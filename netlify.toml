@@ -1,0 +1,36 @@
+[build]
+publish = "dist"
+command = "npm run build"
+
+[[headers]]
+for = "/*"
+
+[headers.values]
+Access-Control-Allow-Origin = "*"
+X-Frame-Options = "SAMEORIGIN"
+X-Content-Type-Options = "nosniff"
+X-XSS-Protection = "1; mode=block"
+
+[[headers]]
+for = "/data/*"
+
+[headers.values]
+Cache-Control = "public, max-age=3600"
+Content-Type = "application/json"
+
+[[headers]]
+for = "/*.css"
+
+[headers.values]
+Cache-Control = "public, max-age=86400"
+
+[[headers]]
+for = "/*.js"
+
+[headers.values]
+Cache-Control = "public, max-age=86400"
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200

@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #f0f9f1;
+  --color-primary-100: #dcf2de;
+  --color-primary-200: #bce5c1;
+  --color-primary-300: #8fd199;
+  --color-primary-400: #5cb56a;
+  --color-primary-500: #3d6b42;
+  --color-primary-600: #2c5530;
+  --color-primary-700: #1e3a21;
+  --color-primary-800: #1a2f1c;
+  --color-primary-900: #162619;
+  
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-200: #fed7aa;
+  --color-accent-300: #fdba74;
+  --color-accent-400: #fb923c;
+  --color-accent-500: #ff6b35;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
+  --color-accent-800: #9a3412;
+  --color-accent-900: #7c2d12;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white;
+  }
+  
+  .filter-badge {
+    @apply inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 text-sm font-medium rounded-full;
+  }
+  
+  .lesson-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 duration-300 relative overflow-hidden;
+  }
+  
+  .lesson-card::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-accent-500 opacity-0 transition-opacity duration-300;
+  }
+  
+  .lesson-card:hover::before {
+    @apply opacity-100;
+  }
+  
+  .lesson-tag {
+    @apply px-2 py-1 text-xs font-medium rounded-full;
+  }
+  
+  .lesson-tag-season {
+    @apply bg-accent-100 text-accent-800;
+  }
+  
+  .lesson-tag-theme {
+    @apply bg-primary-100 text-primary-800;
+  }
+  
+  .lesson-tag-culture {
+    @apply bg-purple-100 text-purple-800;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
