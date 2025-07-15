@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "import-data": "node scripts/import-data.js"
+    "import-data": "node scripts/import-data.js",
+    "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist",
+    "deploy:vercel": "npm run build && vercel --prod",
+    "test:lighthouse": "npm run build && lhci autorun",
+    "analyze": "npm run build && npx vite-bundle-analyzer dist/"
   },
   "keywords": [
     "education",
