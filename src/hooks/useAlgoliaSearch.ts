@@ -133,7 +133,7 @@ export function useAlgoliaSearch(
         }));
 
         setResults(transformedLessons);
-        setTotalCount(searchResults.nbHits);
+        setTotalCount(searchResults.nbHits || 0);
       } catch (err) {
         console.error('Algolia search error:', err);
         setError(err instanceof Error ? err.message : 'Search failed');
