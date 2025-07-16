@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { lessonsIndex } from '../lib/algolia';
+import { algoliaClient } from '../lib/algolia';
 import type { SearchFilters, Lesson } from '../types';
 import { debounce } from '../utils/debounce';
 
@@ -114,10 +114,14 @@ export function useAlgoliaSearch(
           ],
         };
 
-        const searchResults = await lessonsIndex.search<Lesson>(query, searchParams);
+        // Use v5 searchSingleIndex method
+        const searchResults = await algoliaClient.searchSingleIndex({
+          indexName: 'lessons',
+          searchParams: searchParams as any,
+        });
 
         // Transform Algolia results to match our Lesson type
-        const transformedLessons = searchResults.hits.map((hit) => ({
+        const transformedLessons = searchResults.hits.map((hit: any) => ({
           lessonId: hit.lessonId,
           title: hit.title,
           summary: hit.summary,

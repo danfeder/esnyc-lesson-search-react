@@ -1,13 +1,13 @@
-import algoliasearch, { SearchClient } from 'algoliasearch';
+import { algoliasearch } from 'algoliasearch';
 
 // Initialize Algolia client
-export const algoliaClient: SearchClient = algoliasearch(
+export const algoliaClient = algoliasearch(
   import.meta.env.VITE_ALGOLIA_APP_ID || '',
   import.meta.env.VITE_ALGOLIA_SEARCH_API_KEY || ''
 );
 
-// Get the lessons index
-export const lessonsIndex = algoliaClient.initIndex('lessons');
+// Note: In Algolia v5, we don't pre-initialize indexes
+// Instead we specify the index name when searching
 
 // Algolia search configuration
 export const algoliaConfig = {
