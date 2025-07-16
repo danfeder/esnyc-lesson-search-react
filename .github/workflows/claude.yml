@@ -66,4 +66,19 @@ jobs:
           # Custom environment variables for Claude
           claude_env: |
             NODE_ENV: test
+          
+          # Additional permissions for web access
+          additional_permissions: |
+            actions: read
+          
+          # Allowed domains for reference documentation
+          allowed_domains: |
+            supabase.com
+            react.dev
+            typescriptlang.org
+            tailwindcss.com
+            tanstack.com
+            zustand-demo.pmnd.rs
+            vitejs.dev
+            vitest.dev
 

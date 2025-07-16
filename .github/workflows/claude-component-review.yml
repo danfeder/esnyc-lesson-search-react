@@ -1,0 +1,87 @@
+name: Claude Component Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'src/components/**/*.tsx'
+      - 'src/components/**/*.ts'
+      - 'src/hooks/**/*.ts'
+      - 'src/stores/**/*.ts'
+      - 'src/types/**/*.ts'
+      - 'src/utils/**/*.ts'
+
+jobs:
+  claude-component-review:
+    # Skip for dependabot
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Claude React/TypeScript Review
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          
+          # Use sticky comments for cleaner PR
+          use_sticky_comment: true
+          
+          # Tools Claude can use
+          allowed_tools: "Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run)"
+          
+          # Component-specific review prompt
+          direct_prompt: |
+            Review this React/TypeScript code for the ESNYC Lesson Search application with special attention to:
+            
+            ## React Best Practices:
+            - Hook usage and dependency arrays
+            - Component composition (avoid prop drilling)
+            - Performance optimizations (memo, useMemo, useCallback usage)
+            - Accessibility (ARIA labels, keyboard navigation, focus management)
+            - Error boundaries for robust error handling
+            
+            ## TypeScript Requirements:
+            - No 'any' types - suggest proper types
+            - Proper interface/type definitions
+            - Generic usage where appropriate
+            - Discriminated unions for complex state
+            - Strict null checks
+            
+            ## Zustand Store Patterns:
+            - State shape normalization
+            - Selector performance (use shallow equality)
+            - Action naming conventions (verb prefixes)
+            - Avoid storing derived state
+            
+            ## Tailwind CSS:
+            - Consistent utility class ordering
+            - Responsive design patterns (mobile-first)
+            - Dark mode class preparation
+            - Avoid arbitrary values when possible
+            
+            ## Component Requirements:
+            - All 16 filter categories must be supported
+            - Cultural heritage hierarchy (e.g., "Asian" includes Chinese, Japanese, Korean)
+            - Ingredient grouping (e.g., "Winter squash" includes butternut, pumpkin)
+            - Mobile-responsive design is mandatory
+            
+            ## Performance Considerations:
+            - List virtualization for large result sets
+            - Debouncing for search inputs
+            - Lazy loading for modal content
+            - Image optimization
+            
+            Please provide specific code examples for any improvements.
+            Be constructive and focus on maintainability and user experience.

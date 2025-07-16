@@ -58,6 +58,20 @@ jobs:
           # Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
           use_sticky_comment: true
           
+          # Additional context for first-time contributors
+          custom_instructions: |
+            ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' && 
+            'Welcome! This is a first-time contributor. Please be extra welcoming and provide detailed explanations for any suggestions. Include code examples where helpful.' ||
+            '' }}
+          
+          # Allowed domains for documentation
+          allowed_domains: |
+            supabase.com
+            react.dev
+            typescriptlang.org
+            tailwindcss.com
+            tanstack.com
+          
           # Optional: Customize review based on file types
           # direct_prompt: |
           #   Review this PR focusing on:

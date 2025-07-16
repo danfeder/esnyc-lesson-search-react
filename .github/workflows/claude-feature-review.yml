@@ -1,0 +1,116 @@
+name: Claude Feature Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'src/components/Filters/**'
+      - 'src/components/Search/**'
+      - 'src/components/Results/**'
+      - 'src/pages/SearchPage.tsx'
+      - 'src/stores/filterStore.ts'
+      - 'src/stores/searchStore.ts'
+
+jobs:
+  claude-feature-review:
+    # Skip for dependabot
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Claude Feature Completeness Review
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          
+          # Use sticky comments
+          use_sticky_comment: true
+          
+          # Allow testing tools
+          allowed_tools: "Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run)"
+          
+          # Feature-specific review prompt
+          direct_prompt: |
+            Review these critical components against ESNYC Lesson Search requirements:
+            
+            ## Filter Implementation Checklist (ALL 16 CATEGORIES REQUIRED):
+            
+            ### Basic Filters:
+            - [ ] Activity Type: Cooking, Garden, Both, Academic
+            - [ ] Location: Indoor, Outdoor, Both
+            - [ ] Grade Levels: 3K, Pre-K, K, 1st-8th (multi-select)
+            - [ ] Season: Fall, Winter, Spring, Summer, Flexible
+            
+            ### Thematic Filters:
+            - [ ] Thematic Categories (7 themes with proper icons)
+            - [ ] Core Competencies (6 ESNYC priorities)
+            - [ ] Lesson Format: Demo, Lesson, Activity, etc.
+            - [ ] Group Size: Small, Medium, Large, Whole Class
+            
+            ### Advanced Filters:
+            - [ ] Cultural Heritage with HIERARCHY:
+                  * "Asian" must include: Chinese, Japanese, Korean, etc.
+                  * "Latin American" must include: Mexican, Caribbean, etc.
+                  * Proper parent-child selection logic
+            - [ ] Ingredients with GROUPING:
+                  * "Winter squash" must include: butternut, pumpkin, acorn
+                  * "Leafy greens" must include: kale, spinach, lettuce
+                  * Smart ingredient categorization
+            - [ ] Academic Connections: Math, Science, ELA, Social Studies
+            - [ ] Preparation Time: <30min, 30-60min, >60min
+            - [ ] Materials Needed: Basic, Moderate, Extensive
+            - [ ] Dietary Considerations: Vegetarian, Vegan, Gluten-Free, etc.
+            - [ ] Skills Taught: Knife skills, Measuring, Following recipes, etc.
+            - [ ] Assessment Type: Formative, Summative, Both, None
+            
+            ## Search Functionality:
+            - [ ] Full-text search across: titles, summaries, ingredients, skills
+            - [ ] Search debouncing (300ms minimum)
+            - [ ] Loading states during search
+            - [ ] Clear search button
+            - [ ] Search suggestions/autocomplete
+            - [ ] Empty state with helpful message
+            - [ ] Error state handling
+            
+            ## Results Display:
+            - [ ] Result count display
+            - [ ] Lesson cards with all key info
+            - [ ] Modal/detail view for full lesson
+            - [ ] CSV export with ALL lesson data
+            - [ ] Pagination or infinite scroll for 831+ lessons
+            - [ ] Sort options (relevance, date, grade)
+            
+            ## Mobile Requirements:
+            - [ ] Collapsible filter sidebar
+            - [ ] Touch-friendly filter controls
+            - [ ] Responsive grid (1 col mobile, 2 tablet, 3+ desktop)
+            - [ ] Swipe gestures for filter panel
+            - [ ] Mobile-optimized search bar
+            
+            ## State Management:
+            - [ ] URL persistence for filters (shareable links)
+            - [ ] Filter state in Zustand store
+            - [ ] Proper filter combination logic
+            - [ ] Reset all filters button
+            - [ ] Filter count badges
+            
+            ## Performance:
+            - [ ] Virtualized lists for large result sets
+            - [ ] Optimistic UI updates
+            - [ ] Proper memoization
+            - [ ] Efficient re-renders
+            
+            Mark items as complete (✓) or incomplete (✗) with specific feedback.
+            This is CRITICAL for feature parity with v1.

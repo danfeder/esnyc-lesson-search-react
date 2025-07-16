@@ -1,0 +1,85 @@
+name: Claude Database Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'supabase/migrations/**/*.sql'
+      - 'supabase/functions/**/*.ts'
+      - 'src/lib/supabase.ts'
+      - 'src/types/database.ts'
+      - 'src/types/database.types.ts'
+      - '**/*supabase*.ts'
+
+jobs:
+  claude-database-review:
+    # Skip for dependabot
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Claude Database Schema Review
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          
+          # Use sticky comments
+          use_sticky_comment: true
+          
+          # Database-specific review prompt
+          direct_prompt: |
+            Review database and Supabase-related changes for the ESNYC Lesson Search application:
+            
+            ## Migration Safety:
+            - Ensure backward compatibility (can rollback if needed)
+            - Check for data integrity during migration
+            - Verify no data loss scenarios
+            - Include DOWN migrations for rollback
+            
+            ## Performance Critical Areas:
+            - Full-text search indexes (tsvector) properly configured
+            - Composite indexes for filter combinations
+            - Query performance for 831+ lessons
+            - Avoid N+1 queries in Edge Functions
+            - Connection pooling considerations
+            
+            ## Security Requirements:
+            - Row Level Security (RLS) policies must be enabled
+            - Validate all user inputs in Edge Functions
+            - SQL injection prevention (use parameterized queries)
+            - Proper authentication checks
+            - No exposed sensitive data
+            
+            ## Data Model Considerations:
+            - Lesson table must support all 16 filter categories
+            - Cultural heritage hierarchy support (parent-child relationships)
+            - Ingredient grouping/categorization
+            - Efficient storage of array fields (grade levels, themes)
+            - Proper foreign key constraints
+            
+            ## Supabase Specifics:
+            - Use Supabase client best practices
+            - Handle network errors gracefully
+            - Implement proper retry logic
+            - Use realtime subscriptions efficiently
+            - Edge Function cold start optimization
+            
+            ## Search Implementation:
+            - PostgreSQL full-text search configuration
+            - Search across: titles, summaries, ingredients, skills
+            - Weighted search results (title > summary > content)
+            - Handle special characters and stemming
+            
+            Please highlight any potential performance bottlenecks or security risks.
+            Suggest indexes or query optimizations where appropriate.
