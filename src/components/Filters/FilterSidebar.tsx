@@ -18,11 +18,11 @@ interface FilterSectionProps {
   defaultOpen?: boolean;
 }
 
-const FilterSection: React.FC<FilterSectionProps> = ({ 
-  title, 
-  icon, 
-  children, 
-  defaultOpen = false 
+const FilterSection: React.FC<FilterSectionProps> = ({
+  title,
+  icon,
+  children,
+  defaultOpen = false,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -42,12 +42,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({
           <ChevronRight className="w-4 h-4 text-gray-500" />
         )}
       </button>
-      
-      {isOpen && (
-        <div className="mt-3 space-y-2 animate-slide-up">
-          {children}
-        </div>
-      )}
+
+      {isOpen && <div className="mt-3 space-y-2 animate-slide-up">{children}</div>}
     </div>
   );
 };
@@ -58,16 +54,12 @@ interface CheckboxGroupProps {
   onChange: (values: string[]) => void;
 }
 
-const CheckboxGroup: React.FC<CheckboxGroupProps> = ({ 
-  options, 
-  selectedValues, 
-  onChange 
-}) => {
+const CheckboxGroup: React.FC<CheckboxGroupProps> = ({ options, selectedValues, onChange }) => {
   const handleChange = (value: string, checked: boolean) => {
     if (checked) {
       onChange([...selectedValues, value]);
     } else {
-      onChange(selectedValues.filter(v => v !== value));
+      onChange(selectedValues.filter((v) => v !== value));
     }
   };
 
@@ -100,7 +92,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   filters,
   onFiltersChange,
   isOpen,
-  onClose
+  onClose,
 }) => {
   const gradeOptions = [
     { value: '3K', label: '3K', count: 45 },
@@ -148,21 +140,21 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     { value: 'Both', label: 'Both', count: 188 },
   ];
 
-
-
-  const coreCompetencyOptions = CORE_COMPETENCIES.map(comp => ({
+  const coreCompetencyOptions = CORE_COMPETENCIES.map((comp) => ({
     value: comp,
-    label: comp.replace('and Related Academic Content', '').replace('Environmental and Community Stewardship', 'Environmental/Community Stewardship'),
-    count: 0 // Will be updated with real counts
+    label: comp
+      .replace('and Related Academic Content', '')
+      .replace('Environmental and Community Stewardship', 'Environmental/Community Stewardship'),
+    count: 0, // Will be updated with real counts
   }));
 
-  const lessonFormatOptions = LESSON_FORMATS.map(format => ({
+  const lessonFormatOptions = LESSON_FORMATS.map((format) => ({
     value: format,
     label: format,
-    count: 0 // Will be updated with real counts
+    count: 0, // Will be updated with real counts
   }));
 
-  const activeFilterCount = 
+  const activeFilterCount =
     filters.gradeLevels.length +
     filters.thematicCategories.length +
     filters.seasons.length +
@@ -191,20 +183,19 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={onClose} />
       )}
 
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed lg:sticky top-0 left-0 h-full lg:h-auto
         w-80 bg-white shadow-xl lg:shadow-sm border-r border-gray-200
         transform transition-transform duration-300 ease-in-out z-50
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         overflow-y-auto
-      `}>
+      `}
+      >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -216,7 +207,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                 </span>
               )}
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {activeFilterCount > 0 && (
                 <button
@@ -226,10 +217,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   Clear All
                 </button>
               )}
-              <button
-                onClick={onClose}
-                className="lg:hidden p-1 hover:bg-gray-100 rounded-lg"
-              >
+              <button onClick={onClose} className="lg:hidden p-1 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
@@ -288,15 +276,15 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   <input
                     type="checkbox"
                     checked={filters.includeAllSeasons}
-                    onChange={(e) => onFiltersChange({ 
-                      ...filters, 
-                      includeAllSeasons: e.target.checked 
-                    })}
+                    onChange={(e) =>
+                      onFiltersChange({
+                        ...filters,
+                        includeAllSeasons: e.target.checked,
+                      })
+                    }
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700 italic">
-                    Include year-round lessons
-                  </span>
+                  <span className="text-sm text-gray-700 italic">Include year-round lessons</span>
                 </label>
               </div>
             </FilterSection>
@@ -324,10 +312,12 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               <div className="space-y-2">
                 <select
                   value={filters.lessonFormat[0] || ''}
-                  onChange={(e) => onFiltersChange({ 
-                    ...filters, 
-                    lessonFormat: e.target.value ? [e.target.value] : [] 
-                  })}
+                  onChange={(e) =>
+                    onFiltersChange({
+                      ...filters,
+                      lessonFormat: e.target.value ? [e.target.value] : [],
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                 >
                   <option value="">All Formats</option>

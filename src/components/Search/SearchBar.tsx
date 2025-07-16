@@ -7,12 +7,12 @@ import { debounce } from '../../utils/debounce';
 export const SearchBar: React.FC = () => {
   const { filters, setFilters } = useSearchStore();
   const [localQuery, setLocalQuery] = useState(filters.query);
-  
+
   // Get search results to show suggestions when no results found
-  const { data: searchResults } = useSearch({ 
-    filters, 
+  const { data: searchResults } = useSearch({
+    filters,
     enabled: !!filters.query.trim(),
-    limit: 5 // Limit for testing
+    limit: 5, // Limit for testing
   });
 
   // Debounced search to avoid too many API calls
@@ -45,7 +45,7 @@ export const SearchBar: React.FC = () => {
         <form onSubmit={handleSubmit} className="relative">
           <div className="relative flex items-center">
             <Search className="absolute left-6 w-6 h-6 text-gray-400" />
-            
+
             <input
               type="text"
               value={localQuery}
@@ -54,7 +54,7 @@ export const SearchBar: React.FC = () => {
               className="w-full pl-16 pr-16 py-4 text-lg border-2 border-gray-200 rounded-full focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 bg-gray-50 focus:bg-white"
               aria-label="Search lessons"
             />
-            
+
             {localQuery && (
               <button
                 type="button"
@@ -65,11 +65,8 @@ export const SearchBar: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             )}
-            
-            <button
-              type="submit"
-              className="absolute right-2 btn-primary py-3 px-6"
-            >
+
+            <button type="submit" className="absolute right-2 btn-primary py-3 px-6">
               Search
             </button>
           </div>
@@ -107,12 +104,12 @@ export const SearchBar: React.FC = () => {
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <span className="text-sm text-gray-600 font-medium">Quick searches:</span>
           {[
-            'women\'s history',
+            "women's history",
             'thanksgiving',
             'winter vegetables',
             'hispanic heritage',
             'cooking skills',
-            'middle school'
+            'middle school',
           ].map((suggestion) => (
             <button
               key={suggestion}

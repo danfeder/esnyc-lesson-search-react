@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -23,7 +22,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <Header />
-          
+
           <main>
             <Routes>
               <Route path="/" element={<SearchPage />} />
@@ -32,7 +31,7 @@ function App() {
           </main>
         </div>
       </Router>
-      
+
       {/* React Query DevTools - only in development */}
       {import.meta.env.MODE === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>

@@ -17,12 +17,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
-  }
+    detectSessionInUrl: true,
+  },
 });
 
 // Test the connection
-supabase.from('lessons').select('count', { count: 'exact', head: true })
+supabase
+  .from('lessons')
+  .select('count', { count: 'exact', head: true })
   .then(({ count, error }) => {
     if (error) {
       console.error('❌ Supabase connection test failed:', error);
@@ -35,7 +37,7 @@ export const handleSupabaseError = (error: any) => {
   console.error('Supabase error:', error);
   return {
     message: error.message || 'An unexpected error occurred',
-    code: error.code || 'UNKNOWN_ERROR'
+    code: error.code || 'UNKNOWN_ERROR',
   };
 };
 
@@ -44,7 +46,7 @@ export const buildSearchQuery = (query: string) => {
   // Convert search query to tsquery format for full-text search
   return query
     .split(' ')
-    .filter(term => term.length > 0)
-    .map(term => `${term}:*`)
+    .filter((term) => term.length > 0)
+    .map((term) => `${term}:*`)
     .join(' & ');
 };

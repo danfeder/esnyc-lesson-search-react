@@ -18,7 +18,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
   regionName,
   subregions,
   selectedValues,
-  onChange
+  onChange,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -30,7 +30,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
     } else {
       // Remove region and all its subregions
       const newValues = selectedValues.filter(
-        value => value !== regionName && !subregions.includes(value)
+        (value) => value !== regionName && !subregions.includes(value)
       );
       onChange(newValues);
     }
@@ -40,12 +40,12 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
     if (checked) {
       onChange([...selectedValues, subregion]);
     } else {
-      onChange(selectedValues.filter(value => value !== subregion));
+      onChange(selectedValues.filter((value) => value !== subregion));
     }
   };
 
   const isRegionSelected = selectedValues.includes(regionName);
-  const hasSelectedSubregions = subregions.some(sub => selectedValues.includes(sub));
+  const hasSelectedSubregions = subregions.some((sub) => selectedValues.includes(sub));
 
   return (
     <div className="border-b border-gray-100 pb-2 mb-2">
@@ -60,7 +60,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
             <ChevronRight className="w-3 h-3 text-gray-500" />
           )}
         </button>
-        
+
         <label className="flex items-center space-x-2 cursor-pointer flex-1">
           <input
             type="checkbox"
@@ -68,7 +68,9 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
             onChange={(e) => handleRegionChange(e.target.checked)}
             className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
-          <span className={`text-sm font-medium ${isRegionSelected || hasSelectedSubregions ? 'text-primary-700' : 'text-gray-700'}`}>
+          <span
+            className={`text-sm font-medium ${isRegionSelected || hasSelectedSubregions ? 'text-primary-700' : 'text-gray-700'}`}
+          >
             {regionName}
           </span>
           <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
@@ -101,13 +103,14 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
 
 export const CulturalHeritageFilter: React.FC<CulturalHeritageFilterProps> = ({
   selectedValues,
-  onChange
+  onChange,
 }) => {
   // Get top-level regions (those that have subregions)
-  const topLevelRegions = Object.keys(CULTURAL_HIERARCHY).filter(region => 
-    CULTURAL_HIERARCHY[region].length > 0 && 
-    // Only include regions that aren't subregions of other regions
-    !Object.values(CULTURAL_HIERARCHY).some(subregions => subregions.includes(region))
+  const topLevelRegions = Object.keys(CULTURAL_HIERARCHY).filter(
+    (region) =>
+      CULTURAL_HIERARCHY[region].length > 0 &&
+      // Only include regions that aren't subregions of other regions
+      !Object.values(CULTURAL_HIERARCHY).some((subregions) => subregions.includes(region))
   );
 
   return (

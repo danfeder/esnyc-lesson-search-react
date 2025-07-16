@@ -32,7 +32,16 @@ export default [
         window: 'readonly',
         document: 'readonly',
         console: 'readonly',
-        process: 'readonly'
+        process: 'readonly',
+        NodeJS: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        HTMLInputElement: 'readonly',
+        Response: 'readonly',
+        Deno: 'readonly',
+        global: 'readonly',
+        __dirname: 'readonly',
+        vi: 'readonly'
       }
     },
     settings: {
@@ -70,6 +79,6 @@ export default [
     }
   },
   {
-    ignores: ['dist/', 'node_modules/', '*.config.js', 'vite.config.ts']
+    ignores: ['dist/', 'node_modules/', '*.config.js', 'vite.config.ts', 'scripts/**/*.js', 'supabase/functions/**/*.ts']
   }
 ];

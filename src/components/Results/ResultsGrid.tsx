@@ -8,10 +8,10 @@ interface ResultsGridProps {
   isLoading?: boolean;
 }
 
-export const ResultsGrid: React.FC<ResultsGridProps> = ({ 
-  lessons, 
-  onLessonClick, 
-  isLoading = false 
+export const ResultsGrid: React.FC<ResultsGridProps> = ({
+  lessons,
+  onLessonClick,
+  isLoading = false,
 }) => {
   if (isLoading) {
     return (
@@ -59,11 +59,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {lessons.map((lesson) => (
-        <LessonCard
-          key={lesson.lessonId}
-          lesson={lesson}
-          onClick={() => onLessonClick(lesson)}
-        />
+        <LessonCard key={lesson.lessonId} lesson={lesson} onClick={() => onLessonClick(lesson)} />
       ))}
     </div>
   );

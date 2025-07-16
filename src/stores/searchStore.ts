@@ -9,10 +9,10 @@ interface SearchState {
   totalCount: number;
   isLoading: boolean;
   error: string | null;
-  
+
   // View state
   viewState: ViewState;
-  
+
   // Actions
   setFilters: (filters: Partial<SearchFilters>) => void;
   clearFilters: () => void;
@@ -20,7 +20,7 @@ interface SearchState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setViewState: (viewState: Partial<ViewState>) => void;
-  
+
   // Filter helpers
   addFilter: (key: keyof SearchFilters, value: string) => void;
   removeFilter: (key: keyof SearchFilters, value: string) => void;
@@ -57,37 +57,36 @@ export const useSearchStore = create<SearchState>()(
       isLoading: false,
       error: null,
       viewState: initialViewState,
-      
+
       // Actions
       setFilters: (newFilters) =>
         set((state) => ({
           filters: { ...state.filters, ...newFilters },
           viewState: { ...state.viewState, currentPage: 1 }, // Reset to first page
         })),
-      
+
       clearFilters: () =>
         set({
           filters: initialFilters,
           viewState: { ...initialViewState },
         }),
-      
-      setResults: (results, totalCount) =>
-        set({ results, totalCount, error: null }),
-      
+
+      setResults: (results, totalCount) => set({ results, totalCount, error: null }),
+
       setLoading: (isLoading) => set({ isLoading }),
-      
+
       setError: (error) => set({ error, isLoading: false }),
-      
+
       setViewState: (newViewState) =>
         set((state) => ({
           viewState: { ...state.viewState, ...newViewState },
         })),
-      
+
       // Filter helpers
       addFilter: (key, value) => {
         const { filters } = get();
         const currentValues = filters[key] as string[];
-        
+
         if (Array.isArray(currentValues) && !currentValues.includes(value)) {
           set((state) => ({
             filters: {
@@ -98,11 +97,11 @@ export const useSearchStore = create<SearchState>()(
           }));
         }
       },
-      
+
       removeFilter: (key, value) => {
         const { filters } = get();
         const currentValues = filters[key] as string[];
-        
+
         if (Array.isArray(currentValues)) {
           set((state) => ({
             filters: {
@@ -113,11 +112,11 @@ export const useSearchStore = create<SearchState>()(
           }));
         }
       },
-      
+
       toggleFilter: (key, value) => {
         const { filters } = get();
         const currentValues = filters[key] as string[];
-        
+
         if (Array.isArray(currentValues)) {
           const hasValue = currentValues.includes(value);
           set((state) => ({

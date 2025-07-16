@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { SearchFilters, Lesson } from '../types';
-import { 
-  matchesCulturalHeritage, 
-  hasAnyMatch, 
-  matchesTextSearch, 
-  matchesActivityType, 
-  matchesSeasonFilter 
+import {
+  matchesCulturalHeritage,
+  hasAnyMatch,
+  matchesTextSearch,
+  matchesActivityType,
+  matchesSeasonFilter,
 } from '../utils/filterHelpers';
 
 interface UseSearchOptions {
@@ -29,7 +29,7 @@ const searchLessonsWithSmartSearch = async ({
   limit = 20,
 }: Omit<UseSearchOptions, 'enabled'>): Promise<SearchResponse> => {
   console.log('🔍 Searching with filters:', filters);
-  
+
   // Use the smart search edge function
   const { data, error } = await supabase.functions.invoke('smart-search', {
     body: {
@@ -50,15 +50,15 @@ const searchLessonsWithSmartSearch = async ({
       sortBy: 'relevance',
     },
   });
-  
+
   if (error) {
     console.error('Smart search error:', error);
-    
+
     // Fallback to direct database search if edge function fails
     console.log('🔄 Falling back to direct database search...');
     return await fallbackSearch({ filters, page, limit });
   }
-  
+
   console.log('✅ Smart search results:', data);
   return {
     lessons: data.lessons || [],
@@ -75,20 +75,18 @@ const fallbackSearch = async ({
   limit = 20,
 }: Omit<UseSearchOptions, 'enabled'>): Promise<SearchResponse> => {
   console.log('🔄 Using fallback search...');
-  
+
   // Get all lessons first, then filter client-side for now
   // In production, this should be moved to a database function for performance
-  let query = supabase
-    .from('lessons')
-    .select('*', { count: 'exact' });
-  
+  let query = supabase.from('lessons').select('*', { count: 'exact' });
+
   const { data, error } = await query;
-  
+
   if (error) {
     console.error('Fallback search error:', error);
     throw new Error(`Search failed: ${error.message}`);
   }
-  
+
   // Transform the data to match our Lesson type
   const allLessons = (data || []).map((row) => ({
     lessonId: row.lesson_id,
@@ -101,16 +99,18 @@ const fallbackSearch = async ({
     created_at: row.created_at,
     updated_at: row.updated_at,
   }));
-  
+
   // Apply client-side filtering using the sophisticated logic
   const filteredLessons = await applyAdvancedFiltering(allLessons, filters);
-  
+
   // Apply pagination
   const offset = (page - 1) * limit;
   const paginatedLessons = filteredLessons.slice(offset, offset + limit);
-  
-  console.log(`✅ Fallback search found ${filteredLessons.length} lessons (showing ${paginatedLessons.length})`);
-  
+
+  console.log(
+    `✅ Fallback search found ${filteredLessons.length} lessons (showing ${paginatedLessons.length})`
+  );
+
   return {
     lessons: paginatedLessons,
     totalCount: filteredLessons.length,
@@ -118,53 +118,74 @@ const fallbackSearch = async ({
 };
 
 // Advanced filtering function that implements all the sophisticated logic from the original project
-const applyAdvancedFiltering = async (lessons: Lesson[], filters: SearchFilters): Promise<Lesson[]> => {
-  return lessons.filter(lesson => {
+const applyAdvancedFiltering = async (
+  lessons: Lesson[],
+  filters: SearchFilters
+): Promise<Lesson[]> => {
+  return lessons.filter((lesson) => {
     // Text search with ingredient grouping and preprocessing
     if (filters.query.trim() && !matchesTextSearch(lesson, filters.query.trim())) {
       return false;
     }
-    
+
     // Grade level filter
     if (filters.gradeLevels.length && !hasAnyMatch(lesson.gradeLevels, filters.gradeLevels)) {
       return false;
     }
-    
+
     // Thematic categories filter
-    if (filters.thematicCategories.length && !hasAnyMatch(lesson.metadata.thematicCategories, filters.thematicCategories)) {
+    if (
+      filters.thematicCategories.length &&
+      !hasAnyMatch(lesson.metadata.thematicCategories, filters.thematicCategories)
+    ) {
       return false;
     }
-    
+
     // Season filter with "All Seasons" logic
-    if (filters.seasons.length && !matchesSeasonFilter(lesson, filters.seasons, filters.includeAllSeasons)) {
+    if (
+      filters.seasons.length &&
+      !matchesSeasonFilter(lesson, filters.seasons, filters.includeAllSeasons)
+    ) {
       return false;
     }
-    
+
     // Core competencies filter
-    if (filters.coreCompetencies.length && !hasAnyMatch(lesson.metadata.coreCompetencies, filters.coreCompetencies)) {
+    if (
+      filters.coreCompetencies.length &&
+      !hasAnyMatch(lesson.metadata.coreCompetencies, filters.coreCompetencies)
+    ) {
       return false;
     }
-    
+
     // Cultural heritage filter with hierarchical matching
-    if (filters.culturalHeritage.length && !matchesCulturalHeritage(lesson.metadata.culturalHeritage, filters.culturalHeritage)) {
+    if (
+      filters.culturalHeritage.length &&
+      !matchesCulturalHeritage(lesson.metadata.culturalHeritage, filters.culturalHeritage)
+    ) {
       return false;
     }
-    
+
     // Location filter
-    if (filters.location.length && !hasAnyMatch(lesson.metadata.locationRequirements, filters.location)) {
+    if (
+      filters.location.length &&
+      !hasAnyMatch(lesson.metadata.locationRequirements, filters.location)
+    ) {
       return false;
     }
-    
+
     // Activity type filter based on cooking/garden skills
     if (filters.activityType.length && !matchesActivityType(lesson, filters.activityType)) {
       return false;
     }
-    
+
     // Lesson format filter
-    if (filters.lessonFormat.length > 0 && !hasAnyMatch(lesson.metadata.lessonFormat, filters.lessonFormat)) {
+    if (
+      filters.lessonFormat.length > 0 &&
+      !hasAnyMatch(lesson.metadata.lessonFormat, filters.lessonFormat)
+    ) {
       return false;
     }
-    
+
     return true;
   });
 };

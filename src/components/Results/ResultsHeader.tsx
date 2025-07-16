@@ -18,7 +18,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({
   onViewModeChange,
   sortBy,
   onSortChange,
-  onExport
+  onExport,
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -80,10 +80,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({
           </div>
 
           {/* Export Button */}
-          <button
-            onClick={onExport}
-            className="btn-secondary flex items-center space-x-2"
-          >
+          <button onClick={onExport} className="btn-secondary flex items-center space-x-2">
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">Export CSV</span>
           </button>

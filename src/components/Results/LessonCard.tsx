@@ -49,15 +49,15 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
             {lesson.title}
           </h3>
         </div>
-        <div className={`px-3 py-1 rounded-full text-xs font-medium border ${confidence.className} flex-shrink-0`}>
+        <div
+          className={`px-3 py-1 rounded-full text-xs font-medium border ${confidence.className} flex-shrink-0`}
+        >
           {confidence.label}
         </div>
       </div>
 
       {/* Summary */}
-      <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-        {lesson.summary}
-      </p>
+      <p className="text-gray-600 text-sm mb-4 leading-relaxed">{lesson.summary}</p>
 
       {/* Metadata */}
       <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
@@ -65,16 +65,20 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
           {/* Grade Levels */}
           <div className="flex items-center space-x-1">
             <Users className="w-4 h-4" />
-            <span>{lesson.gradeLevels.slice(0, 3).join(', ')}{lesson.gradeLevels.length > 3 ? '...' : ''}</span>
+            <span>
+              {lesson.gradeLevels.slice(0, 3).join(', ')}
+              {lesson.gradeLevels.length > 3 ? '...' : ''}
+            </span>
           </div>
 
           {/* Location */}
-          {lesson.metadata.locationRequirements && lesson.metadata.locationRequirements.length > 0 && (
-            <div className="flex items-center space-x-1">
-              <MapPin className="w-4 h-4" />
-              <span>{lesson.metadata.locationRequirements.join(', ')}</span>
-            </div>
-          )}
+          {lesson.metadata.locationRequirements &&
+            lesson.metadata.locationRequirements.length > 0 && (
+              <div className="flex items-center space-x-1">
+                <MapPin className="w-4 h-4" />
+                <span>{lesson.metadata.locationRequirements.join(', ')}</span>
+              </div>
+            )}
 
           {/* Activity Type */}
           <div className="flex items-center space-x-1">
@@ -131,13 +135,17 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
         {/* Show more indicator */}
         {(lesson.metadata.seasonTiming?.length || 0) +
           (lesson.metadata.thematicCategories?.length || 0) +
-          (lesson.metadata.culturalHeritage?.length || 0) > 4 && (
-            <span className="lesson-tag bg-gray-100 text-gray-600">
-              +{((lesson.metadata.seasonTiming?.length || 0) +
-                (lesson.metadata.thematicCategories?.length || 0) +
-                (lesson.metadata.culturalHeritage?.length || 0)) - 4} more
-            </span>
-          )}
+          (lesson.metadata.culturalHeritage?.length || 0) >
+          4 && (
+          <span className="lesson-tag bg-gray-100 text-gray-600">
+            +
+            {(lesson.metadata.seasonTiming?.length || 0) +
+              (lesson.metadata.thematicCategories?.length || 0) +
+              (lesson.metadata.culturalHeritage?.length || 0) -
+              4}{' '}
+            more
+          </span>
+        )}
       </div>
 
       {/* View Lesson Plan Button */}

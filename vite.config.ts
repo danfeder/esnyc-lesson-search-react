@@ -25,7 +25,7 @@ export default defineConfig({
           router: ['react-router-dom'],
           query: ['@tanstack/react-query'],
           supabase: ['@supabase/supabase-js'],
-          ui: ['@headlessui/react', '@heroicons/react'],
+          ui: ['@headlessui/react', 'lucide-react'],
         },
       },
     },

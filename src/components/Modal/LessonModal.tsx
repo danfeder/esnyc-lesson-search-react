@@ -13,9 +13,15 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
 
   const getConfidenceBadge = (confidence: number) => {
     if (confidence >= 0.8) {
-      return { label: 'High Confidence', className: 'bg-green-100 text-green-800 border-green-200' };
+      return {
+        label: 'High Confidence',
+        className: 'bg-green-100 text-green-800 border-green-200',
+      };
     } else if (confidence >= 0.6) {
-      return { label: 'Medium Confidence', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
+      return {
+        label: 'Medium Confidence',
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      };
     } else {
       return { label: 'Low Confidence', className: 'bg-red-100 text-red-800 border-red-200' };
     }
@@ -23,14 +29,14 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
 
   const getActivityIcon = (hasCooking: boolean, hasGarden: boolean) => {
     if (hasCooking && hasGarden) {
-      return { 
+      return {
         icon: (
           <div className="flex space-x-1">
             <ChefHat className="w-4 h-4" />
             <Sprout className="w-4 h-4" />
           </div>
-        ), 
-        label: 'Cooking + Garden' 
+        ),
+        label: 'Cooking + Garden',
       };
     } else if (hasCooking && !hasGarden) {
       return { icon: <ChefHat className="w-5 h-5" />, label: 'Cooking Only' };
@@ -57,25 +63,26 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
           >
             <X className="w-6 h-6" />
           </button>
-          
+
           <div className="pr-12">
             <div className="flex items-start justify-between mb-4">
               <h1 className="text-2xl font-bold leading-tight">{lesson.title}</h1>
             </div>
-            
+
             <div className="flex items-center space-x-4 text-primary-100">
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4" />
                 <span>Grades {lesson.gradeLevels.join(', ')}</span>
               </div>
-              
-              {lesson.metadata.locationRequirements && lesson.metadata.locationRequirements.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>{lesson.metadata.locationRequirements.join(', ')}</span>
-                </div>
-              )}
-              
+
+              {lesson.metadata.locationRequirements &&
+                lesson.metadata.locationRequirements.length > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>{lesson.metadata.locationRequirements.join(', ')}</span>
+                  </div>
+                )}
+
               {activity && (
                 <div className="flex items-center space-x-2">
                   {activity.icon}
@@ -92,7 +99,9 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
           <div className="mb-8">
             <div className="flex items-start justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Lesson Summary</h2>
-              <div className={`px-3 py-1 rounded-full text-sm font-medium border ${confidence.className}`}>
+              <div
+                className={`px-3 py-1 rounded-full text-sm font-medium border ${confidence.className}`}
+              >
                 <div className="flex items-center space-x-1">
                   <Star className="w-4 h-4" />
                   <span>{confidence.label}</span>
@@ -121,18 +130,19 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
           {/* Metadata Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Thematic Categories */}
-            {lesson.metadata.thematicCategories && lesson.metadata.thematicCategories.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Thematic Categories</h3>
-                <div className="flex flex-wrap gap-2">
-                  {lesson.metadata.thematicCategories.map((theme) => (
-                    <span key={theme} className="lesson-tag lesson-tag-theme">
-                      {theme}
-                    </span>
-                  ))}
+            {lesson.metadata.thematicCategories &&
+              lesson.metadata.thematicCategories.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Thematic Categories</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {lesson.metadata.thematicCategories.map((theme) => (
+                      <span key={theme} className="lesson-tag lesson-tag-theme">
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Seasons */}
             {lesson.metadata.seasonTiming && lesson.metadata.seasonTiming.length > 0 && (
@@ -221,19 +231,27 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Overall:</span>
-                <span className="ml-2 font-medium">{Math.round(lesson.confidence.overall * 100)}%</span>
+                <span className="ml-2 font-medium">
+                  {Math.round(lesson.confidence.overall * 100)}%
+                </span>
               </div>
               <div>
                 <span className="text-gray-600">Title:</span>
-                <span className="ml-2 font-medium">{Math.round(lesson.confidence.title * 100)}%</span>
+                <span className="ml-2 font-medium">
+                  {Math.round(lesson.confidence.title * 100)}%
+                </span>
               </div>
               <div>
                 <span className="text-gray-600">Summary:</span>
-                <span className="ml-2 font-medium">{Math.round(lesson.confidence.summary * 100)}%</span>
+                <span className="ml-2 font-medium">
+                  {Math.round(lesson.confidence.summary * 100)}%
+                </span>
               </div>
               <div>
                 <span className="text-gray-600">Categories:</span>
-                <span className="ml-2 font-medium">{Math.round(lesson.confidence.overall * 100)}%</span>
+                <span className="ml-2 font-medium">
+                  {Math.round(lesson.confidence.overall * 100)}%
+                </span>
               </div>
             </div>
           </div>
