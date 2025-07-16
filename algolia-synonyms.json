@@ -1,0 +1,271 @@
+[
+  {
+    "type": "synonym",
+    "synonyms": ["woman", "women", "female", "lady", "ladies"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["man", "men", "male", "gentleman", "gentlemen"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["child", "children", "kid", "kids", "student", "students"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["vegetable", "vegetables", "veggie", "veggies", "veg"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["herb", "herbs", "spice", "spices", "seasoning", "seasonings"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["cooking", "cook", "culinary", "kitchen", "baking", "bake"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["garden", "gardening", "planting", "plant", "growing", "grow", "cultivation"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["harvest", "harvesting", "picking", "gathering", "collecting"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["recipe", "recipes", "instructions", "directions"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["3", "3rd", "third", "three"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["4", "4th", "fourth", "four"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["5", "5th", "fifth", "five"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["6", "6th", "sixth", "six"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["7", "7th", "seventh", "seven"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["8", "8th", "eighth", "eight"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["k", "kindergarten", "kinder"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["pk", "prek", "prekindergarten", "3k", "4k"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["elementary", "elem", "primary"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["middle", "ms", "intermediate"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["thanksgiving", "gratitude", "harvest"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["fall", "autumn", "september", "october", "november"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["winter", "december", "january", "february"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["spring", "march", "april", "may"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["summer", "june", "july", "august"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["healthy", "healthful", "nutritious", "wholesome"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["quick", "fast", "easy", "simple"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["nutrition", "nutrients", "dietary", "diet", "eating"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["activity", "activities", "lesson", "lessons", "project", "projects"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["squash", "butternut", "acorn", "pumpkin", "kabocha", "delicata"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["greens", "kale", "spinach", "lettuce", "chard", "collards", "arugula"]
+  },
+  {
+    "type": "synonym",
+    "synonyms": ["roots", "carrot", "potato", "beet", "turnip", "radish"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "asian",
+    "synonyms": ["chinese", "japanese", "korean", "vietnamese", "thai", "indian", "filipino"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "hispanic",
+    "synonyms": ["latino", "latina", "latinx", "mexican", "spanish", "caribbean"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "latin",
+    "synonyms": ["latino", "latina", "latinx", "mexican", "spanish", "caribbean"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "mediterranean",
+    "synonyms": ["italian", "greek", "spanish", "turkish", "moroccan"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "african",
+    "synonyms": ["ethiopian", "nigerian", "moroccan"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "citrus",
+    "synonyms": ["orange", "lemon", "lime", "grapefruit", "tangerine"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "berries",
+    "synonyms": ["strawberry", "blueberry", "raspberry", "blackberry", "cranberry"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "thanksgiving",
+    "synonyms": ["harvest", "turkey", "gratitude", "cranberry", "pumpkin"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "christmas",
+    "synonyms": ["holiday", "gingerbread"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "halloween",
+    "synonyms": ["pumpkin", "october"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "valentine",
+    "synonyms": ["love", "heart", "february"]
+  },
+  {
+    "type": "onewaysynonym",
+    "input": "easter",
+    "synonyms": ["eggs", "april", "bunny"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "pumkin",
+    "corrections": ["pumpkin"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "vegitable",
+    "corrections": ["vegetable"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "vegitables",
+    "corrections": ["vegetables"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "reciepe",
+    "corrections": ["recipe"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "reciepes",
+    "corrections": ["recipes"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "kindergarden",
+    "corrections": ["kindergarten"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "elementry",
+    "corrections": ["elementary"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "nutrtion",
+    "corrections": ["nutrition"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "healty",
+    "corrections": ["healthy"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "womens",
+    "corrections": ["womens"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "childrens",
+    "corrections": ["childrens"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "cookin",
+    "corrections": ["cooking"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "plantin",
+    "corrections": ["planting"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "growin",
+    "corrections": ["growing"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "skwash",
+    "corrections": ["squash"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "tomatoe",
+    "corrections": ["tomato"]
+  },
+  {
+    "type": "altcorrection1",
+    "word": "potatos",
+    "corrections": ["potatoes"]
+  }
+]

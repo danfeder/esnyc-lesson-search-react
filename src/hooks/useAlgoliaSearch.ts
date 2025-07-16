@@ -105,6 +105,7 @@ export function useAlgoliaSearch(
           hitsPerPage: limit,
           // Enable typo tolerance and synonyms
           typoTolerance: true,
+          synonyms: true,
           // Get facet counts
           facets: [
             'gradeLevels',
