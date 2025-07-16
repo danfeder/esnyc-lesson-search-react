@@ -11,7 +11,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-console.log('🔗 Supabase client initialized with URL:', supabaseUrl);
+// console.log('🔗 Supabase client initialized with URL:', supabaseUrl);
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -25,12 +25,13 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 supabase
   .from('lessons')
   .select('count', { count: 'exact', head: true })
-  .then(({ count, error }) => {
+  .then(({ error }) => {
     if (error) {
       console.error('❌ Supabase connection test failed:', error);
-    } else {
-      console.log(`✅ Supabase connected successfully! Found ${count} lessons in database`);
     }
+    // else {
+    //   console.log(`✅ Supabase connected successfully! Found ${count} lessons in database`);
+    // }
   });
 // Helper function for handling Supabase errors
 export const handleSupabaseError = (error: any) => {

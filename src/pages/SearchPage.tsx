@@ -33,7 +33,7 @@ export const SearchPage: React.FC = () => {
 
   const handleExport = () => {
     // TODO: Implement CSV export
-    console.log('Export functionality coming soon...');
+    // console.log('Export functionality coming soon...');
   };
 
   return (
@@ -69,11 +69,7 @@ export const SearchPage: React.FC = () => {
             </div>
           )}
 
-          <ResultsGrid
-            lessons={lessons}
-            onLessonClick={handleLessonClick}
-            isLoading={isLoading}
-          />
+          <ResultsGrid lessons={lessons} onLessonClick={handleLessonClick} isLoading={isLoading} />
         </main>
       </div>
 

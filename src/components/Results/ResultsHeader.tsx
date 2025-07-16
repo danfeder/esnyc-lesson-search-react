@@ -5,8 +5,10 @@ interface ResultsHeaderProps {
   totalCount: number;
   currentQuery: string;
   viewMode: 'grid' | 'list';
+  // eslint-disable-next-line no-unused-vars
   onViewModeChange: (mode: 'grid' | 'list') => void;
   sortBy: string;
+  // eslint-disable-next-line no-unused-vars
   onSortChange: (sort: string) => void;
   onExport: () => void;
 }

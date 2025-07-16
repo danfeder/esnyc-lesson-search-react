@@ -19,13 +19,10 @@ export const algoliaConfig = {
     'metadata.cookingSkills,metadata.gardenSkills',
     'metadata.academicConnections',
   ],
-  
+
   // Define custom ranking
-  customRanking: [
-    'desc(confidence.overall)',
-    'asc(title)',
-  ],
-  
+  customRanking: ['desc(confidence.overall)', 'asc(title)'],
+
   // Facets for filtering
   attributesForFaceting: [
     'searchable(gradeLevels)',
@@ -42,12 +39,12 @@ export const algoliaConfig = {
     'metadata.dietaryConsiderations',
     'metadata.academicConnections',
   ],
-  
+
   // Configure typo tolerance
   typoTolerance: true,
   minWordSizefor1Typo: 4,
   minWordSizefor2Typos: 8,
-  
+
   // Configure synonyms
   synonyms: [
     // Seasonal synonyms
@@ -67,7 +64,7 @@ export const algoliaConfig = {
       type: 'synonym',
       synonyms: ['summer', 'june', 'july', 'august', 'warm weather'],
     },
-    
+
     // Cultural synonyms
     {
       type: 'oneWaySynonym',
@@ -79,7 +76,7 @@ export const algoliaConfig = {
       input: 'hispanic',
       synonyms: ['latino', 'latina', 'latinx', 'spanish', 'mexican'],
     },
-    
+
     // Grade level synonyms
     {
       type: 'synonym',
@@ -93,7 +90,7 @@ export const algoliaConfig = {
       type: 'synonym',
       synonyms: ['pk', 'pre-k', 'prek', 'pre kindergarten'],
     },
-    
+
     // Activity synonyms
     {
       type: 'synonym',
@@ -103,7 +100,7 @@ export const algoliaConfig = {
       type: 'synonym',
       synonyms: ['garden', 'gardening', 'planting', 'growing'],
     },
-    
+
     // Common word variations
     {
       type: 'synonym',
@@ -117,7 +114,7 @@ export const algoliaConfig = {
       type: 'synonym',
       synonyms: ['herb', 'herbs', 'spices', 'seasoning'],
     },
-    
+
     // Common misspellings
     {
       type: 'altCorrection1',
@@ -135,7 +132,7 @@ export const algoliaConfig = {
       corrections: ['recipe'],
     },
   ],
-  
+
   // Configure distinct/deduplication
   distinct: 1,
   attributeForDistinct: 'lessonId',

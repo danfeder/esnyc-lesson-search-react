@@ -14,16 +14,24 @@ interface SearchState {
   viewState: ViewState;
 
   // Actions
+  // eslint-disable-next-line no-unused-vars
   setFilters: (filters: Partial<SearchFilters>) => void;
   clearFilters: () => void;
+  // eslint-disable-next-line no-unused-vars
   setResults: (results: Lesson[], totalCount: number) => void;
+  // eslint-disable-next-line no-unused-vars
   setLoading: (loading: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
   setError: (error: string | null) => void;
+  // eslint-disable-next-line no-unused-vars
   setViewState: (viewState: Partial<ViewState>) => void;
 
   // Filter helpers
+  // eslint-disable-next-line no-unused-vars
   addFilter: (key: keyof SearchFilters, value: string) => void;
+  // eslint-disable-next-line no-unused-vars
   removeFilter: (key: keyof SearchFilters, value: string) => void;
+  // eslint-disable-next-line no-unused-vars
   toggleFilter: (key: keyof SearchFilters, value: string) => void;
 }
 

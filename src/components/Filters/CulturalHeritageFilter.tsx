@@ -4,6 +4,7 @@ import { CULTURAL_HIERARCHY } from '../../utils/filterConstants';
 
 interface CulturalHeritageFilterProps {
   selectedValues: string[];
+  // eslint-disable-next-line no-unused-vars
   onChange: (values: string[]) => void;
 }
 
@@ -11,6 +12,7 @@ interface CulturalRegionProps {
   regionName: string;
   subregions: string[];
   selectedValues: string[];
+  // eslint-disable-next-line no-unused-vars
   onChange: (values: string[]) => void;
 }
 

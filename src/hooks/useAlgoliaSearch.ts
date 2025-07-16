@@ -26,9 +26,7 @@ export function useAlgoliaSearch(
 
     // Grade levels
     if (filters.gradeLevels?.length) {
-      const gradeFilter = filters.gradeLevels
-        .map((grade) => `gradeLevels:"${grade}"`)
-        .join(' OR ');
+      const gradeFilter = filters.gradeLevels.map((grade) => `gradeLevels:"${grade}"`).join(' OR ');
       algoliaFilters.push(`(${gradeFilter})`);
     }
 
@@ -113,7 +111,7 @@ export function useAlgoliaSearch(
         };
 
         // Debug logging
-        console.log('Algolia search params:', searchParams);
+        // console.log('Algolia search params:', searchParams);
 
         // Use v5 searchSingleIndex method
         const searchResults = await algoliaClient.searchSingleIndex({
@@ -122,11 +120,11 @@ export function useAlgoliaSearch(
         });
 
         // Debug logging
-        console.log('Algolia search results:', {
-          hits: searchResults.hits.length,
-          nbHits: searchResults.nbHits,
-          query: searchResults.query,
-        });
+        // console.log('Algolia search results:', {
+        //   hits: searchResults.hits.length,
+        //   nbHits: searchResults.nbHits,
+        //   query: searchResults.query,
+        // });
 
         // Transform Algolia results to match our Lesson type
         const transformedLessons = searchResults.hits.map((hit: any) => ({
