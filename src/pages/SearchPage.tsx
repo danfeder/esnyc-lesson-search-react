@@ -6,7 +6,7 @@ import { ResultsHeader } from '../components/Results/ResultsHeader';
 import { ResultsGrid } from '../components/Results/ResultsGrid';
 import { LessonModal } from '../components/Modal/LessonModal';
 import { useSearchStore } from '../stores/searchStore';
-import { useSearch } from '../hooks/useSearch';
+import { useAlgoliaSearch } from '../hooks/useAlgoliaSearch';
 import type { Lesson } from '../types';
 
 export const SearchPage: React.FC = () => {
@@ -15,15 +15,11 @@ export const SearchPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const {
-    data: searchResults,
-    isLoading,
-    error,
-  } = useSearch({
+  const { lessons, totalCount, isLoading, error } = useAlgoliaSearch(
     filters,
-    page: viewState.currentPage,
-    limit: viewState.resultsPerPage,
-  });
+    viewState.currentPage,
+    viewState.resultsPerPage
+  );
 
   const handleLessonClick = (lesson: Lesson) => {
     setSelectedLesson(lesson);
@@ -58,7 +54,7 @@ export const SearchPage: React.FC = () => {
         {/* Results Area */}
         <main className="lg:col-span-3">
           <ResultsHeader
-            totalCount={searchResults?.totalCount || 0}
+            totalCount={totalCount}
             currentQuery={filters.query}
             viewMode={viewState.view}
             onViewModeChange={(mode) => setViewState({ view: mode })}
@@ -69,12 +65,12 @@ export const SearchPage: React.FC = () => {
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800">Error loading lessons: {error.message}</p>
+              <p className="text-red-800">Error loading lessons: {error}</p>
             </div>
           )}
 
           <ResultsGrid
-            lessons={searchResults?.lessons || []}
+            lessons={lessons}
             onLessonClick={handleLessonClick}
             isLoading={isLoading}
           />
