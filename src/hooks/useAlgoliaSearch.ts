@@ -103,9 +103,6 @@ export function useAlgoliaSearch(
           filters: filterString,
           page: currentPage - 1, // Algolia uses 0-based pages
           hitsPerPage: limit,
-          // Enable typo tolerance and synonyms
-          typoTolerance: true,
-          synonyms: true,
           // Get facet counts
           facets: [
             'gradeLevels',
@@ -115,10 +112,20 @@ export function useAlgoliaSearch(
           ],
         };
 
+        // Debug logging
+        console.log('Algolia search params:', searchParams);
+
         // Use v5 searchSingleIndex method
         const searchResults = await algoliaClient.searchSingleIndex({
           indexName: 'lessons',
           searchParams: searchParams as any,
+        });
+
+        // Debug logging
+        console.log('Algolia search results:', {
+          hits: searchResults.hits.length,
+          nbHits: searchResults.nbHits,
+          query: searchResults.query,
         });
 
         // Transform Algolia results to match our Lesson type
