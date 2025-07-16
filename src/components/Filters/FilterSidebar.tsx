@@ -219,8 +219,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   Clear All
                 </button>
               )}
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 className="lg:hidden p-1 hover:bg-gray-100 rounded-lg"
                 aria-label="Close filters"
               >
