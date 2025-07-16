@@ -71,6 +71,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({
               value={sortBy}
               onChange={(e) => onSortChange(e.target.value)}
               className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              aria-label="Sort results"
             >
               <option value="relevance">Sort by Relevance</option>
               <option value="title">Sort by Title</option>

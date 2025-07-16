@@ -37,10 +37,16 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
 
           {/* User Actions */}
           <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-primary-500 rounded-lg transition-colors">
+            <button 
+              className="p-2 hover:bg-primary-500 rounded-lg transition-colors"
+              aria-label="Search"
+            >
               <Search className="w-6 h-6" />
             </button>
-            <button className="p-2 hover:bg-primary-500 rounded-lg transition-colors">
+            <button 
+              className="p-2 hover:bg-primary-500 rounded-lg transition-colors"
+              aria-label="User account"
+            >
               <User className="w-6 h-6" />
             </button>
           </div>

@@ -80,7 +80,7 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({ options, selectedValues, 
           />
           <span className="text-sm text-gray-700 flex-1">{option.label}</span>
           {option.count !== undefined && (
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
               {option.count}
             </span>
           )}
@@ -219,7 +219,11 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   Clear All
                 </button>
               )}
-              <button onClick={onClose} className="lg:hidden p-1 hover:bg-gray-100 rounded-lg">
+              <button 
+                onClick={onClose} 
+                className="lg:hidden p-1 hover:bg-gray-100 rounded-lg"
+                aria-label="Close filters"
+              >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
@@ -227,7 +231,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
           {/* Primary Filters */}
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">
               Primary Filters
             </h3>
 
@@ -255,7 +259,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               />
             </FilterSection>
 
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 mt-8">
+            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4 mt-8">
               Topic & Content
             </h3>
 
@@ -306,7 +310,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               />
             </FilterSection>
 
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 mt-8">
+            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4 mt-8">
               Advanced Filters
             </h3>
 

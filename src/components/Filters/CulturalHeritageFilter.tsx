@@ -75,7 +75,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
           >
             {regionName}
           </span>
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
             {subregions.length}
           </span>
         </label>
