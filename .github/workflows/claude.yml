@@ -49,16 +49,21 @@ jobs:
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
           
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
+          # Allow Claude to run specific commands for testing and validation
+          allowed_tools: "Bash(npm run type-check),Bash(npm run lint),Bash(npm test),Bash(npm run build)"
           
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
+          # Custom instructions for Claude to follow React/TypeScript/Supabase best practices
+          custom_instructions: |
+            - Use React 19 and TypeScript best practices
+            - Follow Tailwind CSS conventions for styling
+            - Ensure Supabase queries are optimized and use proper error handling
+            - Check for accessibility issues in React components
+            - Verify all new code has proper TypeScript types
+            - Follow the project structure defined in CLAUDE.md
+            - Use Zustand for state management, not Redux or Context API
+            - Use React Query (TanStack Query) for data fetching
           
-          # Optional: Custom environment variables for Claude
-          # claude_env: |
-          #   NODE_ENV: test
+          # Custom environment variables for Claude
+          claude_env: |
+            NODE_ENV: test
 
