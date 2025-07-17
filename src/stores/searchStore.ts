@@ -45,6 +45,9 @@ const initialFilters: SearchFilters = {
   location: [],
   activityType: [],
   lessonFormat: [],
+  academicIntegration: [],
+  socialEmotionalLearning: [],
+  cookingMethods: '', // Single-select, empty string = all
   includeAllSeasons: false,
 };
 

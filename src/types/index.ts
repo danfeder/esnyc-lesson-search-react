@@ -46,24 +46,10 @@ export interface SearchFilters {
   location: string[];
   activityType: string[];
   lessonFormat: string[];
+  academicIntegration: string[];
+  socialEmotionalLearning: string[];
+  cookingMethods: string; // Single-select, so string not array
   includeAllSeasons: boolean;
-}
-
-export interface SearchResult {
-  lessons: Lesson[];
-  totalCount: number;
-  facets: SearchFacets;
-}
-
-export interface SearchFacets {
-  gradeLevels: FacetCount[];
-  thematicCategories: FacetCount[];
-  seasons: FacetCount[];
-  coreCompetencies: FacetCount[];
-  culturalHeritage: FacetCount[];
-  location: FacetCount[];
-  activityType: FacetCount[];
-  lessonFormat: FacetCount[];
 }
 
 export interface FacetCount {

@@ -89,6 +89,27 @@ export function useAlgoliaSearch(
       algoliaFilters.push(`(${formatFilter})`);
     }
 
+    // Academic Integration
+    if (filters.academicIntegration?.length) {
+      const academicFilter = filters.academicIntegration
+        .map((subject) => `metadata.academicIntegration.selected:"${subject}"`)
+        .join(' OR ');
+      algoliaFilters.push(`(${academicFilter})`);
+    }
+
+    // Social-Emotional Learning
+    if (filters.socialEmotionalLearning?.length) {
+      const selFilter = filters.socialEmotionalLearning
+        .map((sel) => `metadata.socialEmotionalLearning:"${sel}"`)
+        .join(' OR ');
+      algoliaFilters.push(`(${selFilter})`);
+    }
+
+    // Cooking Methods (single select, but stored as array in data)
+    if (filters.cookingMethods) {
+      algoliaFilters.push(`metadata.cookingMethods:"${filters.cookingMethods}"`);
+    }
+
     return algoliaFilters.join(' AND ');
   }, [filters]);
 
@@ -114,6 +135,9 @@ export function useAlgoliaSearch(
             'metadata.locationRequirements',
             'metadata.coreCompetencies',
             'metadata.lessonFormat',
+            'metadata.academicIntegration.selected',
+            'metadata.socialEmotionalLearning',
+            'metadata.cookingMethods',
           ],
         };
 
