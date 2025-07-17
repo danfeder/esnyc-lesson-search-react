@@ -105,7 +105,7 @@ export function useAlgoliaSearch(
       algoliaFilters.push(`(${selFilter})`);
     }
 
-    // Cooking Methods (single select)
+    // Cooking Methods (single select, but stored as array in data)
     if (filters.cookingMethods) {
       algoliaFilters.push(`metadata.cookingMethods:"${filters.cookingMethods}"`);
     }
@@ -181,6 +181,10 @@ export function useAlgoliaSearch(
 
         // Set facet counts if available
         if (searchResults.facets) {
+          // Debug: log cooking methods facet
+          if (searchResults.facets['metadata.cookingMethods']) {
+            console.log('Cooking methods facet:', searchResults.facets['metadata.cookingMethods']);
+          }
           setFacets(searchResults.facets);
         }
       } catch (err) {
