@@ -313,6 +313,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               <CulturalHeritageFilter
                 selectedValues={filters.culturalHeritage}
                 onChange={(values) => onFiltersChange({ ...filters, culturalHeritage: values })}
+                facets={facets}
               />
             </FilterSection>
 

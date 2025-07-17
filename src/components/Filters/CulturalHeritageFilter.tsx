@@ -6,6 +6,7 @@ interface CulturalHeritageFilterProps {
   selectedValues: string[];
   // eslint-disable-next-line no-unused-vars
   onChange: (values: string[]) => void;
+  facets?: Record<string, Record<string, number>>;
 }
 
 interface CulturalRegionProps {
@@ -14,6 +15,7 @@ interface CulturalRegionProps {
   selectedValues: string[];
   // eslint-disable-next-line no-unused-vars
   onChange: (values: string[]) => void;
+  getFacetCount: (value: string) => number;
 }
 
 const CulturalRegion: React.FC<CulturalRegionProps> = ({
@@ -21,6 +23,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
   subregions,
   selectedValues,
   onChange,
+  getFacetCount,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -76,7 +79,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
             {regionName}
           </span>
           <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-            {subregions.length}
+            {getFacetCount(regionName)}
           </span>
         </label>
       </div>
@@ -95,6 +98,9 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
                 className="w-3 h-3 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               />
               <span className="text-sm text-gray-600">{subregion}</span>
+              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full ml-auto">
+                {getFacetCount(subregion)}
+              </span>
             </label>
           ))}
         </div>
@@ -106,7 +112,12 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
 export const CulturalHeritageFilter: React.FC<CulturalHeritageFilterProps> = ({
   selectedValues,
   onChange,
+  facets = {},
 }) => {
+  // Helper function to get facet count
+  const getFacetCount = (value: string): number => {
+    return facets['metadata.culturalHeritage']?.[value] || 0;
+  };
   // Get top-level regions (those that have subregions)
   const topLevelRegions = Object.keys(CULTURAL_HIERARCHY).filter(
     (region) =>
@@ -124,6 +135,7 @@ export const CulturalHeritageFilter: React.FC<CulturalHeritageFilterProps> = ({
           subregions={CULTURAL_HIERARCHY[region]}
           selectedValues={selectedValues}
           onChange={onChange}
+          getFacetCount={getFacetCount}
         />
       ))}
     </div>
