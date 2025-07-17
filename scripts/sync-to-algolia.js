@@ -64,10 +64,25 @@ async function syncLessonsToAlgolia() {
         activityType = 'garden-only';
       }
       
+      // Normalize cooking methods
+      let normalizedCookingMethods = lesson.metadata?.cookingMethods || [];
+      if (normalizedCookingMethods.length > 0) {
+        normalizedCookingMethods = normalizedCookingMethods.map(method => {
+          // Normalize variations to standard values
+          if (method === 'Sautéing' || method === 'Steam' || method === 'Stovetop (sautéing, boiling, simmering)') {
+            return 'Stovetop';
+          }
+          return method;
+        });
+        // Remove duplicates
+        normalizedCookingMethods = [...new Set(normalizedCookingMethods)];
+      }
+      
       // Add activityType to metadata
       const enhancedMetadata = {
         ...lesson.metadata,
-        activityType: activityType
+        activityType: activityType,
+        cookingMethods: normalizedCookingMethods
       };
       
       return {
@@ -130,6 +145,9 @@ async function syncLessonsToAlgolia() {
           'metadata.locationRequirements',
           'metadata.activityType',
           'metadata.lessonFormat',
+          'metadata.academicIntegration.selected',
+          'metadata.socialEmotionalLearning',
+          'metadata.cookingMethods',
         ],
         
         customRanking: ['desc(confidence.overall)'],

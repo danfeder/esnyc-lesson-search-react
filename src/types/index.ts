@@ -46,6 +46,9 @@ export interface SearchFilters {
   location: string[];
   activityType: string[];
   lessonFormat: string[];
+  academicIntegration: string[];
+  socialEmotionalLearning: string[];
+  cookingMethods: string; // Single-select, so string not array
   includeAllSeasons: boolean;
 }
 
