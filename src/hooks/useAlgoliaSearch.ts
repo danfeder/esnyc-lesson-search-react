@@ -8,6 +8,7 @@ interface AlgoliaSearchResult {
   totalCount: number;
   isLoading: boolean;
   error: string | null;
+  facets?: Record<string, Record<string, number>>;
 }
 
 export function useAlgoliaSearch(
@@ -19,6 +20,7 @@ export function useAlgoliaSearch(
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [facets, setFacets] = useState<Record<string, Record<string, number>>>({});
 
   // Build Algolia filters from our filter state
   const buildAlgoliaFilters = useCallback(() => {
@@ -107,6 +109,10 @@ export function useAlgoliaSearch(
             'metadata.thematicCategories',
             'metadata.seasonTiming',
             'metadata.culturalHeritage',
+            'metadata.activityType',
+            'metadata.locationRequirements',
+            'metadata.coreCompetencies',
+            'metadata.lessonFormat',
           ],
         };
 
@@ -139,11 +145,17 @@ export function useAlgoliaSearch(
 
         setResults(transformedLessons);
         setTotalCount(searchResults.nbHits || 0);
+        
+        // Set facet counts if available
+        if (searchResults.facets) {
+          setFacets(searchResults.facets);
+        }
       } catch (err) {
         console.error('Algolia search error:', err);
         setError(err instanceof Error ? err.message : 'Search failed');
         setResults([]);
         setTotalCount(0);
+        setFacets({});
       } finally {
         setIsLoading(false);
       }
@@ -163,5 +175,6 @@ export function useAlgoliaSearch(
     totalCount,
     isLoading,
     error,
+    facets,
   };
 }

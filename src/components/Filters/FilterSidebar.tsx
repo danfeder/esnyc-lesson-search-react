@@ -10,6 +10,7 @@ interface FilterSidebarProps {
   onFiltersChange: (filters: SearchFilters) => void;
   isOpen: boolean;
   onClose: () => void;
+  facets?: Record<string, Record<string, number>>;
 }
 
 interface FilterSectionProps {
@@ -95,51 +96,56 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   onFiltersChange,
   isOpen,
   onClose,
+  facets = {},
 }) => {
+  // Helper function to get facet count for a specific value
+  const getFacetCount = (facetName: string, value: string): number => {
+    return facets[facetName]?.[value] || 0;
+  };
   const gradeOptions = [
-    { value: '3K', label: '3K', count: 45 },
-    { value: 'PK', label: 'Pre-K', count: 67 },
-    { value: 'K', label: 'Kindergarten', count: 89 },
-    { value: '1', label: '1st Grade', count: 92 },
-    { value: '2', label: '2nd Grade', count: 88 },
-    { value: '3', label: '3rd Grade', count: 95 },
-    { value: '4', label: '4th Grade', count: 91 },
-    { value: '5', label: '5th Grade', count: 87 },
-    { value: '6', label: '6th Grade', count: 76 },
-    { value: '7', label: '7th Grade', count: 72 },
-    { value: '8', label: '8th Grade', count: 68 },
+    { value: '3K', label: '3K', count: getFacetCount('gradeLevels', '3K') },
+    { value: 'PK', label: 'Pre-K', count: getFacetCount('gradeLevels', 'PK') },
+    { value: 'K', label: 'Kindergarten', count: getFacetCount('gradeLevels', 'K') },
+    { value: '1', label: '1st Grade', count: getFacetCount('gradeLevels', '1') },
+    { value: '2', label: '2nd Grade', count: getFacetCount('gradeLevels', '2') },
+    { value: '3', label: '3rd Grade', count: getFacetCount('gradeLevels', '3') },
+    { value: '4', label: '4th Grade', count: getFacetCount('gradeLevels', '4') },
+    { value: '5', label: '5th Grade', count: getFacetCount('gradeLevels', '5') },
+    { value: '6', label: '6th Grade', count: getFacetCount('gradeLevels', '6') },
+    { value: '7', label: '7th Grade', count: getFacetCount('gradeLevels', '7') },
+    { value: '8', label: '8th Grade', count: getFacetCount('gradeLevels', '8') },
   ];
 
   const themeOptions = [
-    { value: 'Garden Basics', label: 'Garden Basics', count: 156 },
-    { value: 'Plant Growth', label: 'Plant Growth', count: 134 },
-    { value: 'Garden Communities', label: 'Garden Communities', count: 98 },
-    { value: 'Ecosystems', label: 'Ecosystems', count: 87 },
-    { value: 'Seed to Table', label: 'Seed to Table', count: 145 },
-    { value: 'Food Systems', label: 'Food Systems', count: 76 },
-    { value: 'Food Justice', label: 'Food Justice', count: 54 },
+    { value: 'Garden Basics', label: 'Garden Basics', count: getFacetCount('metadata.thematicCategories', 'Garden Basics') },
+    { value: 'Plant Growth', label: 'Plant Growth', count: getFacetCount('metadata.thematicCategories', 'Plant Growth') },
+    { value: 'Garden Communities', label: 'Garden Communities', count: getFacetCount('metadata.thematicCategories', 'Garden Communities') },
+    { value: 'Ecosystems', label: 'Ecosystems', count: getFacetCount('metadata.thematicCategories', 'Ecosystems') },
+    { value: 'Seed to Table', label: 'Seed to Table', count: getFacetCount('metadata.thematicCategories', 'Seed to Table') },
+    { value: 'Food Systems', label: 'Food Systems', count: getFacetCount('metadata.thematicCategories', 'Food Systems') },
+    { value: 'Food Justice', label: 'Food Justice', count: getFacetCount('metadata.thematicCategories', 'Food Justice') },
   ];
 
   const seasonOptions = [
-    { value: 'Fall', label: 'Fall', count: 234 },
-    { value: 'Winter', label: 'Winter', count: 187 },
-    { value: 'Spring', label: 'Spring', count: 256 },
-    { value: 'Summer', label: 'Summer', count: 198 },
-    { value: 'Beginning of year', label: 'Beginning of Year', count: 45 },
-    { value: 'End of year', label: 'End of Year', count: 38 },
+    { value: 'Fall', label: 'Fall', count: getFacetCount('metadata.seasonTiming', 'Fall') },
+    { value: 'Winter', label: 'Winter', count: getFacetCount('metadata.seasonTiming', 'Winter') },
+    { value: 'Spring', label: 'Spring', count: getFacetCount('metadata.seasonTiming', 'Spring') },
+    { value: 'Summer', label: 'Summer', count: getFacetCount('metadata.seasonTiming', 'Summer') },
+    { value: 'Beginning of year', label: 'Beginning of Year', count: getFacetCount('metadata.seasonTiming', 'Beginning of year') },
+    { value: 'End of year', label: 'End of Year', count: getFacetCount('metadata.seasonTiming', 'End of year') },
   ];
 
   const activityOptions = [
-    { value: 'cooking-only', label: 'Cooking Only', count: 298 },
-    { value: 'garden-only', label: 'Garden Only', count: 267 },
-    { value: 'both', label: 'Cooking + Garden', count: 189 },
-    { value: 'academic-only', label: 'Academic Only', count: 77 },
+    { value: 'cooking-only', label: 'Cooking Only', count: getFacetCount('metadata.activityType', 'cooking-only') },
+    { value: 'garden-only', label: 'Garden Only', count: getFacetCount('metadata.activityType', 'garden-only') },
+    { value: 'both', label: 'Cooking + Garden', count: getFacetCount('metadata.activityType', 'both') },
+    { value: 'academic-only', label: 'Academic Only', count: getFacetCount('metadata.activityType', 'academic-only') },
   ];
 
   const locationOptions = [
-    { value: 'Indoor', label: 'Indoor', count: 345 },
-    { value: 'Outdoor', label: 'Outdoor', count: 298 },
-    { value: 'Both', label: 'Both', count: 188 },
+    { value: 'Indoor', label: 'Indoor', count: getFacetCount('metadata.locationRequirements', 'Indoor') },
+    { value: 'Outdoor', label: 'Outdoor', count: getFacetCount('metadata.locationRequirements', 'Outdoor') },
+    { value: 'Both', label: 'Both', count: getFacetCount('metadata.locationRequirements', 'Both') },
   ];
 
   const coreCompetencyOptions = CORE_COMPETENCIES.map((comp) => ({
@@ -147,13 +153,13 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     label: comp
       .replace('and Related Academic Content', '')
       .replace('Environmental and Community Stewardship', 'Environmental/Community Stewardship'),
-    count: 0, // Will be updated with real counts
+    count: getFacetCount('metadata.coreCompetencies', comp),
   }));
 
   const lessonFormatOptions = LESSON_FORMATS.map((format) => ({
     value: format,
     label: format,
-    count: 0, // Will be updated with real counts
+    count: getFacetCount('metadata.lessonFormat', format),
   }));
 
   const activeFilterCount =
