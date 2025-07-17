@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CULTURAL_HIERARCHY } from '../../utils/filterConstants';
+import { getFacetCount } from '../../utils/facetHelpers';
 
 interface CulturalHeritageFilterProps {
   selectedValues: string[];
@@ -15,8 +16,7 @@ interface CulturalRegionProps {
   selectedValues: string[];
   // eslint-disable-next-line no-unused-vars
   onChange: (values: string[]) => void;
-  // eslint-disable-next-line no-unused-vars
-  getFacetCount: (value: string) => number;
+  facets: Record<string, Record<string, number>>;
 }
 
 const CulturalRegion: React.FC<CulturalRegionProps> = ({
@@ -24,7 +24,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
   subregions,
   selectedValues,
   onChange,
-  getFacetCount,
+  facets,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -54,11 +54,13 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
   const hasSelectedSubregions = subregions.some((sub) => selectedValues.includes(sub));
 
   return (
-    <div className="border-b border-gray-100 pb-2 mb-2">
+    <div className="border-b border-gray-100 pb-2 mb-2" role="treeitem" aria-expanded={isExpanded}>
       <div className="flex items-center space-x-2">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="p-1 hover:bg-gray-100 rounded transition-colors duration-200"
+          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${regionName} region`}
+          aria-expanded={isExpanded}
         >
           {isExpanded ? (
             <ChevronDown className="w-3 h-3 text-gray-500" />
@@ -73,20 +75,21 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
             checked={isRegionSelected}
             onChange={(e) => handleRegionChange(e.target.checked)}
             className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+            aria-label={`${regionName} region with ${getFacetCount(facets, 'metadata.culturalHeritage', regionName)} lessons`}
           />
           <span
             className={`text-sm font-medium ${isRegionSelected || hasSelectedSubregions ? 'text-primary-700' : 'text-gray-700'}`}
           >
             {regionName}
           </span>
-          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-            {getFacetCount(regionName)}
+          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full" aria-hidden="true">
+            {getFacetCount(facets, 'metadata.culturalHeritage', regionName)}
           </span>
         </label>
       </div>
 
       {isExpanded && (
-        <div className="ml-6 mt-2 space-y-1 animate-slide-up">
+        <div className="ml-6 mt-2 space-y-1 animate-slide-up" role="group" aria-label={`${regionName} subregions`}>
           {subregions.map((subregion) => (
             <label
               key={subregion}
@@ -97,10 +100,11 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
                 checked={selectedValues.includes(subregion)}
                 onChange={(e) => handleSubregionChange(subregion, e.target.checked)}
                 className="w-3 h-3 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                aria-label={`${subregion} with ${getFacetCount(facets, 'metadata.culturalHeritage', subregion)} lessons`}
               />
               <span className="text-sm text-gray-600">{subregion}</span>
-              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full ml-auto">
-                {getFacetCount(subregion)}
+              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full ml-auto" aria-hidden="true">
+                {getFacetCount(facets, 'metadata.culturalHeritage', subregion)}
               </span>
             </label>
           ))}
@@ -115,10 +119,6 @@ export const CulturalHeritageFilter: React.FC<CulturalHeritageFilterProps> = ({
   onChange,
   facets = {},
 }) => {
-  // Helper function to get facet count
-  const getFacetCount = (value: string): number => {
-    return facets['metadata.culturalHeritage']?.[value] || 0;
-  };
   // Get top-level regions (those that have subregions)
   const topLevelRegions = Object.keys(CULTURAL_HIERARCHY).filter(
     (region) =>
@@ -128,7 +128,7 @@ export const CulturalHeritageFilter: React.FC<CulturalHeritageFilterProps> = ({
   );
 
   return (
-    <div className="space-y-1 max-h-64 overflow-y-auto">
+    <div className="space-y-1 max-h-64 overflow-y-auto" role="tree" aria-label="Cultural Heritage Filter Options">
       {topLevelRegions.map((region) => (
         <CulturalRegion
           key={region}
@@ -136,7 +136,7 @@ export const CulturalHeritageFilter: React.FC<CulturalHeritageFilterProps> = ({
           subregions={CULTURAL_HIERARCHY[region]}
           selectedValues={selectedValues}
           onChange={onChange}
-          getFacetCount={getFacetCount}
+          facets={facets}
         />
       ))}
     </div>
