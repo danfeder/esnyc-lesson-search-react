@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { algoliaClient } from '../lib/algolia';
 import type { SearchFilters, Lesson } from '../types';
+import type { LessonSearchParams, AlgoliaLessonHit } from '../types/algolia';
 import { debounce } from '../utils/debounce';
 
 interface AlgoliaSearchResult {
@@ -8,6 +9,7 @@ interface AlgoliaSearchResult {
   totalCount: number;
   isLoading: boolean;
   error: string | null;
+  facets?: Record<string, Record<string, number>>;
 }
 
 export function useAlgoliaSearch(
@@ -19,6 +21,7 @@ export function useAlgoliaSearch(
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [facets, setFacets] = useState<Record<string, Record<string, number>>>({});
 
   // Build Algolia filters from our filter state
   const buildAlgoliaFilters = useCallback(() => {
@@ -96,7 +99,7 @@ export function useAlgoliaSearch(
       setError(null);
 
       try {
-        const searchParams = {
+        const searchParams: LessonSearchParams = {
           query,
           filters: filterString,
           page: currentPage - 1, // Algolia uses 0-based pages
@@ -107,6 +110,10 @@ export function useAlgoliaSearch(
             'metadata.thematicCategories',
             'metadata.seasonTiming',
             'metadata.culturalHeritage',
+            'metadata.activityType',
+            'metadata.locationRequirements',
+            'metadata.coreCompetencies',
+            'metadata.lessonFormat',
           ],
         };
 
@@ -116,7 +123,7 @@ export function useAlgoliaSearch(
         // Use v5 searchSingleIndex method
         const searchResults = await algoliaClient.searchSingleIndex({
           indexName: 'lessons',
-          searchParams: searchParams as any,
+          searchParams,
         });
 
         // Debug logging
@@ -127,23 +134,37 @@ export function useAlgoliaSearch(
         // });
 
         // Transform Algolia results to match our Lesson type
-        const transformedLessons = searchResults.hits.map((hit: any) => ({
-          lessonId: hit.lessonId,
-          title: hit.title,
-          summary: hit.summary,
-          fileLink: hit.fileLink,
-          metadata: hit.metadata,
-          gradeLevels: hit.gradeLevels,
-          confidence: hit.confidence,
-        }));
+        const transformedLessons: Lesson[] = searchResults.hits.map((hit) => {
+          const algoliaHit = hit as unknown as AlgoliaLessonHit;
+          return {
+            lessonId: algoliaHit.lessonId,
+            title: algoliaHit.title,
+            summary: algoliaHit.summary,
+            fileLink: algoliaHit.fileLink,
+            metadata: algoliaHit.metadata,
+            gradeLevels: algoliaHit.gradeLevels,
+            confidence: {
+              overall: algoliaHit.confidence.overall,
+              title: algoliaHit.confidence.byCategory?.title || 0,
+              summary: algoliaHit.confidence.byCategory?.summary || 0,
+              gradeLevels: algoliaHit.confidence.byCategory?.gradeLevels || 0,
+            },
+          };
+        });
 
         setResults(transformedLessons);
         setTotalCount(searchResults.nbHits || 0);
+
+        // Set facet counts if available
+        if (searchResults.facets) {
+          setFacets(searchResults.facets);
+        }
       } catch (err) {
         console.error('Algolia search error:', err);
         setError(err instanceof Error ? err.message : 'Search failed');
         setResults([]);
         setTotalCount(0);
+        setFacets({});
       } finally {
         setIsLoading(false);
       }
@@ -163,5 +184,6 @@ export function useAlgoliaSearch(
     totalCount,
     isLoading,
     error,
+    facets,
   };
 }

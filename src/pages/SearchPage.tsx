@@ -15,7 +15,7 @@ export const SearchPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const { lessons, totalCount, isLoading, error } = useAlgoliaSearch(
+  const { lessons, totalCount, isLoading, error, facets } = useAlgoliaSearch(
     filters,
     viewState.currentPage,
     viewState.resultsPerPage
@@ -48,6 +48,7 @@ export const SearchPage: React.FC = () => {
             onFiltersChange={(newFilters) => useSearchStore.getState().setFilters(newFilters)}
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
+            facets={facets}
           />
         </aside>
 

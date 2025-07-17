@@ -49,28 +49,50 @@ async function syncLessonsToAlgolia() {
     console.log(`✅ Fetched ${lessons.length} lessons from Supabase`);
     
     // Transform lessons for Algolia
-    const algoliaRecords = lessons.map((lesson) => ({
-      objectID: lesson.lesson_id, // Algolia requires objectID
-      lessonId: lesson.lesson_id,
-      title: lesson.title || 'Untitled',
-      summary: lesson.summary || '',
-      fileLink: lesson.file_link,
-      gradeLevels: lesson.grade_levels || [],
-      metadata: lesson.metadata || {},
-      confidence: lesson.confidence || { overall: 0.5 },
-      createdAt: lesson.created_at,
-      updatedAt: lesson.updated_at,
+    const algoliaRecords = lessons.map((lesson) => {
+      // Derive activity type from skills
+      const hasCooking = (lesson.metadata?.cookingSkills?.length > 0) || 
+                         (lesson.metadata?.cookingMethods?.length > 0);
+      const hasGarden = lesson.metadata?.gardenSkills?.length > 0;
       
-      // Flatten some metadata for better searching
-      mainIngredients: lesson.metadata?.mainIngredients || [],
-      thematicCategories: lesson.metadata?.thematicCategories || [],
-      culturalHeritage: lesson.metadata?.culturalHeritage || [],
-      skills: [
-        ...(lesson.metadata?.skills || []),
-        ...(lesson.metadata?.cookingSkills || []),
-        ...(lesson.metadata?.gardenSkills || []),
-      ],
-    }));
+      let activityType = 'academic-only';
+      if (hasCooking && hasGarden) {
+        activityType = 'both';
+      } else if (hasCooking) {
+        activityType = 'cooking-only';
+      } else if (hasGarden) {
+        activityType = 'garden-only';
+      }
+      
+      // Add activityType to metadata
+      const enhancedMetadata = {
+        ...lesson.metadata,
+        activityType: activityType
+      };
+      
+      return {
+        objectID: lesson.lesson_id, // Algolia requires objectID
+        lessonId: lesson.lesson_id,
+        title: lesson.title || 'Untitled',
+        summary: lesson.summary || '',
+        fileLink: lesson.file_link,
+        gradeLevels: lesson.grade_levels || [],
+        metadata: enhancedMetadata,
+        confidence: lesson.confidence || { overall: 0.5 },
+        createdAt: lesson.created_at,
+        updatedAt: lesson.updated_at,
+        
+        // Flatten some metadata for better searching
+        mainIngredients: lesson.metadata?.mainIngredients || [],
+        thematicCategories: lesson.metadata?.thematicCategories || [],
+        culturalHeritage: lesson.metadata?.culturalHeritage || [],
+        skills: [
+          ...(lesson.metadata?.skills || []),
+          ...(lesson.metadata?.cookingSkills || []),
+          ...(lesson.metadata?.gardenSkills || []),
+        ],
+      };
+    });
     
     console.log('📤 Uploading lessons to Algolia...');
     
