@@ -181,10 +181,6 @@ export function useAlgoliaSearch(
 
         // Set facet counts if available
         if (searchResults.facets) {
-          // Debug: log cooking methods facet
-          if (searchResults.facets['metadata.cookingMethods']) {
-            console.log('Cooking methods facet:', searchResults.facets['metadata.cookingMethods']);
-          }
           setFacets(searchResults.facets);
         }
       } catch (err) {
