@@ -111,6 +111,5 @@ temp/
 .claude/
 
 # Development files
-CLAUDE.md
 DEVELOPMENT_PLAN.md
 FIXES_NEEDED.md
