@@ -49,7 +49,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
       </button>
 
       {isOpen && (
-        <div 
+        <div
           className="mt-3 space-y-2 animate-slide-up"
           id={`filter-section-${title.toLowerCase().replace(/\s+/g, '-')}`}
           role="region"
@@ -164,9 +164,21 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
   const seasonOptions = [
     { value: 'Fall', label: 'Fall', count: getFacetCount(facets, 'metadata.seasonTiming', 'Fall') },
-    { value: 'Winter', label: 'Winter', count: getFacetCount(facets, 'metadata.seasonTiming', 'Winter') },
-    { value: 'Spring', label: 'Spring', count: getFacetCount(facets, 'metadata.seasonTiming', 'Spring') },
-    { value: 'Summer', label: 'Summer', count: getFacetCount(facets, 'metadata.seasonTiming', 'Summer') },
+    {
+      value: 'Winter',
+      label: 'Winter',
+      count: getFacetCount(facets, 'metadata.seasonTiming', 'Winter'),
+    },
+    {
+      value: 'Spring',
+      label: 'Spring',
+      count: getFacetCount(facets, 'metadata.seasonTiming', 'Spring'),
+    },
+    {
+      value: 'Summer',
+      label: 'Summer',
+      count: getFacetCount(facets, 'metadata.seasonTiming', 'Summer'),
+    },
     {
       value: 'Beginning of year',
       label: 'Beginning of Year',
@@ -213,7 +225,11 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       label: 'Outdoor',
       count: getFacetCount(facets, 'metadata.locationRequirements', 'Outdoor'),
     },
-    { value: 'Both', label: 'Both', count: getFacetCount(facets, 'metadata.locationRequirements', 'Both') },
+    {
+      value: 'Both',
+      label: 'Both',
+      count: getFacetCount(facets, 'metadata.locationRequirements', 'Both'),
+    },
   ];
 
   const coreCompetencyOptions = CORE_COMPETENCIES.map((comp) => ({

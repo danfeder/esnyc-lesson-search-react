@@ -29,6 +29,6 @@ export const getTotalFacetCount = (
 ): number => {
   const facetValues = facets[facetName];
   if (!facetValues) return 0;
-  
+
   return Object.values(facetValues).reduce((sum, count) => sum + count, 0);
 };

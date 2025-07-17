@@ -82,14 +82,21 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
           >
             {regionName}
           </span>
-          <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full" aria-hidden="true">
+          <span
+            className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full"
+            aria-hidden="true"
+          >
             {getFacetCount(facets, 'metadata.culturalHeritage', regionName)}
           </span>
         </label>
       </div>
 
       {isExpanded && (
-        <div className="ml-6 mt-2 space-y-1 animate-slide-up" role="group" aria-label={`${regionName} subregions`}>
+        <div
+          className="ml-6 mt-2 space-y-1 animate-slide-up"
+          role="group"
+          aria-label={`${regionName} subregions`}
+        >
           {subregions.map((subregion) => (
             <label
               key={subregion}
@@ -103,7 +110,10 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
                 aria-label={`${subregion} with ${getFacetCount(facets, 'metadata.culturalHeritage', subregion)} lessons`}
               />
               <span className="text-sm text-gray-600">{subregion}</span>
-              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full ml-auto" aria-hidden="true">
+              <span
+                className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full ml-auto"
+                aria-hidden="true"
+              >
                 {getFacetCount(facets, 'metadata.culturalHeritage', subregion)}
               </span>
             </label>
@@ -128,7 +138,11 @@ export const CulturalHeritageFilter: React.FC<CulturalHeritageFilterProps> = ({
   );
 
   return (
-    <div className="space-y-1 max-h-64 overflow-y-auto" role="tree" aria-label="Cultural Heritage Filter Options">
+    <div
+      className="space-y-1 max-h-64 overflow-y-auto"
+      role="tree"
+      aria-label="Cultural Heritage Filter Options"
+    >
       {topLevelRegions.map((region) => (
         <CulturalRegion
           key={region}
