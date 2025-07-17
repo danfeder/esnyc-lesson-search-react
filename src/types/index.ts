@@ -52,23 +52,6 @@ export interface SearchFilters {
   includeAllSeasons: boolean;
 }
 
-export interface SearchResult {
-  lessons: Lesson[];
-  totalCount: number;
-  facets: SearchFacets;
-}
-
-export interface SearchFacets {
-  gradeLevels: FacetCount[];
-  thematicCategories: FacetCount[];
-  seasons: FacetCount[];
-  coreCompetencies: FacetCount[];
-  culturalHeritage: FacetCount[];
-  location: FacetCount[];
-  activityType: FacetCount[];
-  lessonFormat: FacetCount[];
-}
-
 export interface FacetCount {
   value: string;
   count: number;
