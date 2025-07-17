@@ -247,28 +247,92 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   }));
 
   const academicIntegrationOptions = [
-    { value: 'Science', label: 'Science', count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Science') },
-    { value: 'Social Studies', label: 'Social Studies', count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Social Studies') },
-    { value: 'Literacy/ELA', label: 'Literacy/ELA', count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Literacy/ELA') },
-    { value: 'Math', label: 'Math', count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Math') },
-    { value: 'Health', label: 'Health', count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Health') },
-    { value: 'Arts', label: 'Arts', count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Arts') },
+    {
+      value: 'Science',
+      label: 'Science',
+      count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Science'),
+    },
+    {
+      value: 'Social Studies',
+      label: 'Social Studies',
+      count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Social Studies'),
+    },
+    {
+      value: 'Literacy/ELA',
+      label: 'Literacy/ELA',
+      count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Literacy/ELA'),
+    },
+    {
+      value: 'Math',
+      label: 'Math',
+      count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Math'),
+    },
+    {
+      value: 'Health',
+      label: 'Health',
+      count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Health'),
+    },
+    {
+      value: 'Arts',
+      label: 'Arts',
+      count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Arts'),
+    },
   ];
 
   const socialEmotionalLearningOptions = [
-    { value: 'Relationship skills', label: 'Relationship Skills', count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Relationship skills') },
-    { value: 'Self-awareness', label: 'Self-Awareness', count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Self-awareness') },
-    { value: 'Responsible decision-making', label: 'Responsible Decision-Making', count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Responsible decision-making') },
-    { value: 'Self-management', label: 'Self-Management', count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Self-management') },
-    { value: 'Social awareness', label: 'Social Awareness', count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Social awareness') },
+    {
+      value: 'Relationship skills',
+      label: 'Relationship Skills',
+      count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Relationship skills'),
+    },
+    {
+      value: 'Self-awareness',
+      label: 'Self-Awareness',
+      count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Self-awareness'),
+    },
+    {
+      value: 'Responsible decision-making',
+      label: 'Responsible Decision-Making',
+      count: getFacetCount(
+        facets,
+        'metadata.socialEmotionalLearning',
+        'Responsible decision-making'
+      ),
+    },
+    {
+      value: 'Self-management',
+      label: 'Self-Management',
+      count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Self-management'),
+    },
+    {
+      value: 'Social awareness',
+      label: 'Social Awareness',
+      count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Social awareness'),
+    },
   ];
 
   const cookingMethodsOptions = [
     { value: '', label: 'All Cooking Methods' },
-    { value: 'No-cook', label: 'No-cook (salads, cold preparations)', count: getFacetCount(facets, 'metadata.cookingMethods', 'No-cook') },
-    { value: 'Stovetop', label: 'Stovetop (sautéing, boiling, simmering)', count: getFacetCount(facets, 'metadata.cookingMethods', 'Stovetop') },
-    { value: 'Oven', label: 'Oven (roasting, baking)', count: getFacetCount(facets, 'metadata.cookingMethods', 'Oven') },
-    { value: 'Basic prep only', label: 'Basic prep only (cutting, mixing, assembling)', count: getFacetCount(facets, 'metadata.cookingMethods', 'Basic prep only') },
+    {
+      value: 'No-cook',
+      label: 'No-cook (salads, cold preparations)',
+      count: getFacetCount(facets, 'metadata.cookingMethods', 'No-cook'),
+    },
+    {
+      value: 'Stovetop',
+      label: 'Stovetop (sautéing, boiling, simmering)',
+      count: getFacetCount(facets, 'metadata.cookingMethods', 'Stovetop'),
+    },
+    {
+      value: 'Oven',
+      label: 'Oven (roasting, baking)',
+      count: getFacetCount(facets, 'metadata.cookingMethods', 'Oven'),
+    },
+    {
+      value: 'Basic prep only',
+      label: 'Basic prep only (cutting, mixing, assembling)',
+      count: getFacetCount(facets, 'metadata.cookingMethods', 'Basic prep only'),
+    },
   ];
 
   const activeFilterCount =
@@ -436,7 +500,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               <CheckboxGroup
                 options={socialEmotionalLearningOptions}
                 selectedValues={filters.socialEmotionalLearning}
-                onChange={(values) => onFiltersChange({ ...filters, socialEmotionalLearning: values })}
+                onChange={(values) =>
+                  onFiltersChange({ ...filters, socialEmotionalLearning: values })
+                }
               />
             </FilterSection>
 
