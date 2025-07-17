@@ -15,6 +15,7 @@ interface CulturalRegionProps {
   selectedValues: string[];
   // eslint-disable-next-line no-unused-vars
   onChange: (values: string[]) => void;
+  // eslint-disable-next-line no-unused-vars
   getFacetCount: (value: string) => number;
 }
 

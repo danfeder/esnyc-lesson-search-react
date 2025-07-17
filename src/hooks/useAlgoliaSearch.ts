@@ -145,7 +145,7 @@ export function useAlgoliaSearch(
 
         setResults(transformedLessons);
         setTotalCount(searchResults.nbHits || 0);
-        
+
         // Set facet counts if available
         if (searchResults.facets) {
           setFacets(searchResults.facets);

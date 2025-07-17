@@ -117,13 +117,41 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   ];
 
   const themeOptions = [
-    { value: 'Garden Basics', label: 'Garden Basics', count: getFacetCount('metadata.thematicCategories', 'Garden Basics') },
-    { value: 'Plant Growth', label: 'Plant Growth', count: getFacetCount('metadata.thematicCategories', 'Plant Growth') },
-    { value: 'Garden Communities', label: 'Garden Communities', count: getFacetCount('metadata.thematicCategories', 'Garden Communities') },
-    { value: 'Ecosystems', label: 'Ecosystems', count: getFacetCount('metadata.thematicCategories', 'Ecosystems') },
-    { value: 'Seed to Table', label: 'Seed to Table', count: getFacetCount('metadata.thematicCategories', 'Seed to Table') },
-    { value: 'Food Systems', label: 'Food Systems', count: getFacetCount('metadata.thematicCategories', 'Food Systems') },
-    { value: 'Food Justice', label: 'Food Justice', count: getFacetCount('metadata.thematicCategories', 'Food Justice') },
+    {
+      value: 'Garden Basics',
+      label: 'Garden Basics',
+      count: getFacetCount('metadata.thematicCategories', 'Garden Basics'),
+    },
+    {
+      value: 'Plant Growth',
+      label: 'Plant Growth',
+      count: getFacetCount('metadata.thematicCategories', 'Plant Growth'),
+    },
+    {
+      value: 'Garden Communities',
+      label: 'Garden Communities',
+      count: getFacetCount('metadata.thematicCategories', 'Garden Communities'),
+    },
+    {
+      value: 'Ecosystems',
+      label: 'Ecosystems',
+      count: getFacetCount('metadata.thematicCategories', 'Ecosystems'),
+    },
+    {
+      value: 'Seed to Table',
+      label: 'Seed to Table',
+      count: getFacetCount('metadata.thematicCategories', 'Seed to Table'),
+    },
+    {
+      value: 'Food Systems',
+      label: 'Food Systems',
+      count: getFacetCount('metadata.thematicCategories', 'Food Systems'),
+    },
+    {
+      value: 'Food Justice',
+      label: 'Food Justice',
+      count: getFacetCount('metadata.thematicCategories', 'Food Justice'),
+    },
   ];
 
   const seasonOptions = [
@@ -131,20 +159,52 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     { value: 'Winter', label: 'Winter', count: getFacetCount('metadata.seasonTiming', 'Winter') },
     { value: 'Spring', label: 'Spring', count: getFacetCount('metadata.seasonTiming', 'Spring') },
     { value: 'Summer', label: 'Summer', count: getFacetCount('metadata.seasonTiming', 'Summer') },
-    { value: 'Beginning of year', label: 'Beginning of Year', count: getFacetCount('metadata.seasonTiming', 'Beginning of year') },
-    { value: 'End of year', label: 'End of Year', count: getFacetCount('metadata.seasonTiming', 'End of year') },
+    {
+      value: 'Beginning of year',
+      label: 'Beginning of Year',
+      count: getFacetCount('metadata.seasonTiming', 'Beginning of year'),
+    },
+    {
+      value: 'End of year',
+      label: 'End of Year',
+      count: getFacetCount('metadata.seasonTiming', 'End of year'),
+    },
   ];
 
   const activityOptions = [
-    { value: 'cooking-only', label: 'Cooking Only', count: getFacetCount('metadata.activityType', 'cooking-only') },
-    { value: 'garden-only', label: 'Garden Only', count: getFacetCount('metadata.activityType', 'garden-only') },
-    { value: 'both', label: 'Cooking + Garden', count: getFacetCount('metadata.activityType', 'both') },
-    { value: 'academic-only', label: 'Academic Only', count: getFacetCount('metadata.activityType', 'academic-only') },
+    {
+      value: 'cooking-only',
+      label: 'Cooking Only',
+      count: getFacetCount('metadata.activityType', 'cooking-only'),
+    },
+    {
+      value: 'garden-only',
+      label: 'Garden Only',
+      count: getFacetCount('metadata.activityType', 'garden-only'),
+    },
+    {
+      value: 'both',
+      label: 'Cooking + Garden',
+      count: getFacetCount('metadata.activityType', 'both'),
+    },
+    {
+      value: 'academic-only',
+      label: 'Academic Only',
+      count: getFacetCount('metadata.activityType', 'academic-only'),
+    },
   ];
 
   const locationOptions = [
-    { value: 'Indoor', label: 'Indoor', count: getFacetCount('metadata.locationRequirements', 'Indoor') },
-    { value: 'Outdoor', label: 'Outdoor', count: getFacetCount('metadata.locationRequirements', 'Outdoor') },
+    {
+      value: 'Indoor',
+      label: 'Indoor',
+      count: getFacetCount('metadata.locationRequirements', 'Indoor'),
+    },
+    {
+      value: 'Outdoor',
+      label: 'Outdoor',
+      count: getFacetCount('metadata.locationRequirements', 'Outdoor'),
+    },
     { value: 'Both', label: 'Both', count: getFacetCount('metadata.locationRequirements', 'Both') },
   ];
 
