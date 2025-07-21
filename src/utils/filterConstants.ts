@@ -105,3 +105,25 @@ export const GRADE_GROUPS = {
     grades: ['6', '7', '8'],
   },
 };
+
+// Academic subject options
+export const ACADEMIC_SUBJECTS = [
+  'Science',
+  'Social Studies',
+  'Literacy/ELA',
+  'Math',
+  'Health',
+  'Arts',
+];
+
+// SEL competency options
+export const SEL_COMPETENCIES = [
+  'Relationship skills',
+  'Self-awareness',
+  'Responsible decision-making',
+  'Self-management',
+  'Social awareness',
+];
+
+// Cooking method options
+export const COOKING_METHODS = ['No-cook', 'Stovetop', 'Oven', 'Basic prep only'];
