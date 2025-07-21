@@ -6,6 +6,8 @@ import { FilterModal } from '../components/Filters/FilterModal';
 import { ResultsHeader } from '../components/Results/ResultsHeader';
 import { ResultsGrid } from '../components/Results/ResultsGrid';
 import { LessonModal } from '../components/Modal/LessonModal';
+import { ScreenReaderAnnouncer } from '../components/Common/ScreenReaderAnnouncer';
+import { SkipLink } from '../components/Common/SkipLink';
 import { useSearchStore } from '../stores/searchStore';
 import { useAlgoliaSearch } from '../hooks/useAlgoliaSearch';
 import type { Lesson, ViewState } from '../types';
@@ -47,13 +49,15 @@ export const SearchPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SkipLink />
+      <ScreenReaderAnnouncer />
       <SearchBar />
 
       {/* Filter Pills */}
       <FilterPills onAddFilters={handleOpenFilterModal} />
 
       {/* Results Area */}
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <ResultsHeader
           totalCount={totalCount}
           currentQuery={filters.query}

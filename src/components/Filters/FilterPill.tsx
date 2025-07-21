@@ -32,10 +32,10 @@ export const FilterPill: React.FC<FilterPillProps> = ({ category, value, onRemov
       <span>{value}</span>
       <button
         onClick={onRemove}
-        className="ml-1 p-0.5 rounded-full hover:bg-primary-300 transition-colors"
-        aria-label={`Remove ${category} filter: ${value}`}
+        className="ml-1 p-0.5 rounded-full hover:bg-primary-300 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
+        aria-label={`Remove ${formatCategory(category)} filter: ${value}`}
       >
-        <X className="w-3.5 h-3.5" />
+        <X className="w-3.5 h-3.5" aria-hidden="true" />
       </button>
     </span>
   );
