@@ -67,10 +67,6 @@ jobs:
           claude_env: |
             NODE_ENV: test
           
-          # Additional permissions for web access
-          additional_permissions: |
-            actions: read
-          
           # Allowed domains for reference documentation
           allowed_domains: |
             supabase.com
