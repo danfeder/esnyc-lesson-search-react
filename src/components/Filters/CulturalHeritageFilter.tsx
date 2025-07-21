@@ -58,9 +58,10 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
       <div className="flex items-center space-x-2">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1 hover:bg-gray-100 rounded transition-colors duration-200"
+          className="p-1 hover:bg-gray-100 rounded transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
           aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${regionName} region`}
           aria-expanded={isExpanded}
+          aria-controls={`region-${regionName.toLowerCase().replace(/\s+/g, '-')}-content`}
         >
           {isExpanded ? (
             <ChevronDown className="w-3 h-3 text-gray-500" />
@@ -74,8 +75,9 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
             type="checkbox"
             checked={isRegionSelected}
             onChange={(e) => handleRegionChange(e.target.checked)}
-            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             aria-label={`${regionName} region with ${getFacetCount(facets, 'metadata.culturalHeritage', regionName)} lessons`}
+            aria-describedby={`region-${regionName.toLowerCase().replace(/\s+/g, '-')}-desc`}
           />
           <span
             className={`text-sm font-medium ${isRegionSelected || hasSelectedSubregions ? 'text-primary-700' : 'text-gray-700'}`}
@@ -93,6 +95,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
 
       {isExpanded && (
         <div
+          id={`region-${regionName.toLowerCase().replace(/\s+/g, '-')}-content`}
           className="ml-6 mt-2 space-y-1 animate-slide-up"
           role="group"
           aria-label={`${regionName} subregions`}
@@ -106,7 +109,7 @@ const CulturalRegion: React.FC<CulturalRegionProps> = ({
                 type="checkbox"
                 checked={selectedValues.includes(subregion)}
                 onChange={(e) => handleSubregionChange(subregion, e.target.checked)}
-                className="w-3 h-3 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                className="w-3 h-3 text-primary-600 border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 aria-label={`${subregion} with ${getFacetCount(facets, 'metadata.culturalHeritage', subregion)} lessons`}
               />
               <span className="text-sm text-gray-600">{subregion}</span>

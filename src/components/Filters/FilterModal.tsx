@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from 'react';
+import React, { useState, Fragment, useEffect, useRef } from 'react';
 import { Dialog, Transition, Tab, Disclosure } from '@headlessui/react';
 import { X, ChevronDown } from 'lucide-react';
 import { SearchFilters } from '../../types';
@@ -29,6 +29,33 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   facets = {},
 }) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const applyButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      // Escape key closes modal
+      if (e.key === 'Escape') {
+        onClose();
+      }
+
+      // Tab navigation between tabs (Ctrl/Cmd + Left/Right arrow)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowRight') {
+        e.preventDefault();
+        setSelectedTab((prev) => (prev + 1) % 3);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setSelectedTab((prev) => (prev - 1 + 3) % 3);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Grade level options
   const gradeOptions = [
@@ -91,7 +118,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={onClose} initialFocus={closeButtonRef}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -122,10 +149,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     Filter Lessons
                   </Dialog.Title>
                   <button
+                    ref={closeButtonRef}
                     onClick={onClose}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    aria-label="Close filter modal"
                   >
-                    <X className="w-5 h-5 text-gray-500" />
+                    <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -135,10 +164,19 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   onChange={setSelectedTab}
                   className="flex-1 min-h-0 flex flex-col"
                 >
-                  <Tab.List className="flex-shrink-0 flex px-6 bg-white border-b border-gray-200">
-                    <Tab className={tabClasses}>Essential</Tab>
-                    <Tab className={tabClasses}>Themes & Culture</Tab>
-                    <Tab className={tabClasses}>Advanced</Tab>
+                  <Tab.List
+                    className="flex-shrink-0 flex px-6 bg-white border-b border-gray-200"
+                    aria-label="Filter categories"
+                  >
+                    <Tab className={tabClasses} aria-label="Essential filters tab">
+                      Essential
+                    </Tab>
+                    <Tab className={tabClasses} aria-label="Themes and culture filters tab">
+                      Themes & Culture
+                    </Tab>
+                    <Tab className={tabClasses} aria-label="Advanced filters tab">
+                      Advanced
+                    </Tab>
                   </Tab.List>
 
                   <Tab.Panels className="flex-1 min-h-0 overflow-hidden">
@@ -289,6 +327,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                                   })
                                 }
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                aria-label="Select lesson format"
                               >
                                 <option value="">All Formats</option>
                                 {LESSON_FORMATS.map((format) => (
@@ -331,6 +370,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                                   })
                                 }
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                aria-label="Select cooking method"
                               >
                                 <option value="">All Cooking Methods</option>
                                 {COOKING_METHODS.map((method) => (
@@ -380,8 +420,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 {/* Footer */}
                 <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4">
                   <button
+                    ref={applyButtonRef}
                     onClick={onClose}
-                    className="w-full btn-primary py-3 text-base font-medium"
+                    className="w-full btn-primary py-3 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    aria-label="Apply selected filters and close modal"
                   >
                     Apply Filters
                   </button>

@@ -78,9 +78,10 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
       {/* Add filters button */}
       <button
         onClick={onAddFilters}
-        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border-2 border-dashed border-gray-300 text-gray-600 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all"
+        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border-2 border-dashed border-gray-300 text-gray-600 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        aria-label="Open filter modal to add more filters"
       >
-        <Plus className="w-4 h-4" />
+        <Plus className="w-4 h-4" aria-hidden="true" />
         <span>Add Filters</span>
       </button>
 
@@ -88,7 +89,8 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
       {hasActiveFilters && (
         <button
           onClick={clearFilters}
-          className="ml-auto text-sm text-red-600 hover:text-red-700 font-medium"
+          className="ml-auto text-sm text-red-600 hover:text-red-700 font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-2 py-1"
+          aria-label="Clear all active filters and search query"
         >
           Clear All
         </button>

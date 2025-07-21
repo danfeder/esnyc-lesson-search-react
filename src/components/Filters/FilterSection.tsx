@@ -54,12 +54,18 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
     <Disclosure defaultOpen={defaultOpen}>
       {({ open }) => (
         <div className="border-b border-gray-200 pb-4">
-          <Disclosure.Button className="flex w-full items-center justify-between text-left">
+          <Disclosure.Button
+            className="flex w-full items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset rounded-md px-2 py-1"
+            aria-expanded={open}
+          >
             <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-              <span>{icon}</span>
+              <span aria-hidden="true">{icon}</span>
               <span>{title}</span>
               {selectedValues.length > 0 && (
-                <span className="ml-2 text-sm font-normal text-gray-600">
+                <span
+                  className="ml-2 text-sm font-normal text-gray-600"
+                  aria-label={`${selectedValues.length} filters selected`}
+                >
                   ({selectedValues.length} selected)
                 </span>
               )}
@@ -68,6 +74,7 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
               className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
                 open ? 'rotate-180' : ''
               }`}
+              aria-hidden="true"
             />
           </Disclosure.Button>
 
@@ -97,7 +104,9 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
                         type="checkbox"
                         checked={selectedValues.includes(option.value)}
                         onChange={(e) => handleCheckboxChange(option.value, e.target.checked)}
-                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                        aria-label={`${option.label}${count !== undefined ? `, ${count} lessons` : ''}`}
+                        id={`filter-${title.toLowerCase().replace(/\s+/g, '-')}-${option.value.toLowerCase().replace(/\s+/g, '-')}`}
                       />
                       <span className="text-gray-700">{option.label}</span>
                     </div>
