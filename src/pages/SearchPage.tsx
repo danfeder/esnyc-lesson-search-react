@@ -1,7 +1,8 @@
 import React from 'react';
 import { useState } from 'react';
 import { SearchBar } from '../components/Search/SearchBar';
-import { FilterSidebar } from '../components/Filters/FilterSidebar';
+import { FilterPills } from '../components/Filters/FilterPills';
+import { FilterModal } from '../components/Filters/FilterModal';
 import { ResultsHeader } from '../components/Results/ResultsHeader';
 import { ResultsGrid } from '../components/Results/ResultsGrid';
 import { LessonModal } from '../components/Modal/LessonModal';
@@ -10,10 +11,10 @@ import { useAlgoliaSearch } from '../hooks/useAlgoliaSearch';
 import type { Lesson, ViewState } from '../types';
 
 export const SearchPage: React.FC = () => {
-  const { filters, viewState, setViewState } = useSearchStore();
+  const { filters, viewState, setViewState, setFilters } = useSearchStore();
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const { lessons, totalCount, isLoading, error, facets } = useAlgoliaSearch(
     filters,
@@ -23,12 +24,20 @@ export const SearchPage: React.FC = () => {
 
   const handleLessonClick = (lesson: Lesson) => {
     setSelectedLesson(lesson);
-    setIsModalOpen(true);
+    setIsLessonModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseLessonModal = () => {
+    setIsLessonModalOpen(false);
     setSelectedLesson(null);
+  };
+
+  const handleOpenFilterModal = () => {
+    setIsFilterModalOpen(true);
+  };
+
+  const handleCloseFilterModal = () => {
+    setIsFilterModalOpen(false);
   };
 
   const handleExport = () => {
@@ -40,48 +49,43 @@ export const SearchPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <SearchBar />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Filters Sidebar */}
-        <aside className="lg:col-span-1">
-          <FilterSidebar
-            filters={filters}
-            onFiltersChange={(newFilters) => useSearchStore.getState().setFilters(newFilters)}
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            facets={facets}
-          />
-        </aside>
+      {/* Filter Pills */}
+      <FilterPills onAddFilters={handleOpenFilterModal} />
 
-        {/* Results Area */}
-        <main className="lg:col-span-3">
-          <ResultsHeader
-            totalCount={totalCount}
-            currentQuery={filters.query}
-            sortBy={viewState.sortBy}
-            onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
-            onExport={handleExport}
-          />
+      {/* Results Area */}
+      <main>
+        <ResultsHeader
+          totalCount={totalCount}
+          currentQuery={filters.query}
+          sortBy={viewState.sortBy}
+          onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
+          onExport={handleExport}
+        />
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800">Error loading lessons: {error}</p>
-            </div>
-          )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-800">Error loading lessons: {error}</p>
+          </div>
+        )}
 
-          <ResultsGrid lessons={lessons} onLessonClick={handleLessonClick} isLoading={isLoading} />
-        </main>
-      </div>
+        <ResultsGrid lessons={lessons} onLessonClick={handleLessonClick} isLoading={isLoading} />
+      </main>
 
-      {/* Mobile Filter Toggle */}
-      <button
-        onClick={() => setIsSidebarOpen(true)}
-        className="lg:hidden fixed bottom-6 right-6 bg-primary-600 text-white p-4 rounded-full shadow-lg hover:bg-primary-700 transition-colors z-40"
-      >
-        <span className="text-sm font-medium">Filters</span>
-      </button>
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={handleCloseFilterModal}
+        filters={filters}
+        onFiltersChange={setFilters}
+        facets={facets}
+      />
 
       {/* Lesson Detail Modal */}
-      <LessonModal lesson={selectedLesson} isOpen={isModalOpen} onClose={handleCloseModal} />
+      <LessonModal
+        lesson={selectedLesson}
+        isOpen={isLessonModalOpen}
+        onClose={handleCloseLessonModal}
+      />
     </div>
   );
 };
