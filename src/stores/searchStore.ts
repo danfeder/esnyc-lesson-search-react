@@ -52,8 +52,7 @@ const initialFilters: SearchFilters = {
 };
 
 const initialViewState: ViewState = {
-  view: 'grid',
-  sortBy: 'title',
+  sortBy: 'relevance',
   resultsPerPage: 20,
   currentPage: 1,
 };

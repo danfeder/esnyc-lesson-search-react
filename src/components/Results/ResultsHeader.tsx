@@ -1,12 +1,9 @@
 import React from 'react';
-import { Grid, List, Download, SortAsc } from 'lucide-react';
+import { Download, SortAsc } from 'lucide-react';
 
 interface ResultsHeaderProps {
   totalCount: number;
   currentQuery: string;
-  viewMode: 'grid' | 'list';
-  // eslint-disable-next-line no-unused-vars
-  onViewModeChange: (mode: 'grid' | 'list') => void;
   sortBy: string;
   // eslint-disable-next-line no-unused-vars
   onSortChange: (sort: string) => void;
@@ -16,8 +13,6 @@ interface ResultsHeaderProps {
 export const ResultsHeader: React.FC<ResultsHeaderProps> = ({
   totalCount,
   currentQuery,
-  viewMode,
-  onViewModeChange,
   sortBy,
   onSortChange,
   onExport,
@@ -39,32 +34,6 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({
 
         {/* Controls */}
         <div className="flex items-center space-x-4">
-          {/* View Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => onViewModeChange('grid')}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === 'grid'
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              aria-label="Grid view"
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onViewModeChange('list')}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === 'list'
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              aria-label="List view"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-
           {/* Sort Dropdown */}
           <div className="relative">
             <select
