@@ -115,9 +115,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               leaveFrom="opacity-100 scale-100 translate-y-0"
               leaveTo="opacity-0 scale-95 translate-y-full sm:translate-y-0"
             >
-              <Dialog.Panel className="w-full h-[90vh] sm:h-auto sm:max-h-[80vh] sm:max-w-4xl transform overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel className="w-full h-[90vh] sm:h-[80vh] sm:max-w-4xl transform flex flex-col rounded-t-2xl sm:rounded-2xl bg-white text-left align-middle shadow-xl transition-all overflow-hidden">
                 {/* Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+                <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                   <Dialog.Title as="h2" className="text-xl font-bold text-gray-900">
                     Filter Lessons
                   </Dialog.Title>
@@ -130,19 +130,20 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </div>
 
                 {/* Tabs */}
-                <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
-                  <Tab.List className="flex px-6 bg-white border-b border-gray-200">
+                <Tab.Group
+                  selectedIndex={selectedTab}
+                  onChange={setSelectedTab}
+                  className="flex-1 min-h-0 flex flex-col"
+                >
+                  <Tab.List className="flex-shrink-0 flex px-6 bg-white border-b border-gray-200">
                     <Tab className={tabClasses}>Essential</Tab>
                     <Tab className={tabClasses}>Themes & Culture</Tab>
                     <Tab className={tabClasses}>Advanced</Tab>
                   </Tab.List>
 
-                  <Tab.Panels
-                    className="p-6 overflow-y-auto"
-                    style={{ height: 'calc(100% - 140px)' }}
-                  >
+                  <Tab.Panels className="flex-1 min-h-0 overflow-hidden">
                     {/* Essential Filters */}
-                    <Tab.Panel className="space-y-6">
+                    <Tab.Panel className="h-full overflow-y-auto p-6 space-y-6">
                       <FilterSection
                         title="Grade Level"
                         icon="📚"
@@ -190,7 +191,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     </Tab.Panel>
 
                     {/* Themes & Culture */}
-                    <Tab.Panel className="space-y-6">
+                    <Tab.Panel className="h-full overflow-y-auto p-6 space-y-6">
                       <FilterSection
                         title="Thematic Category"
                         icon="🌿"
@@ -239,7 +240,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     </Tab.Panel>
 
                     {/* Advanced Filters */}
-                    <Tab.Panel className="space-y-6">
+                    <Tab.Panel className="h-full overflow-y-auto p-6 space-y-6">
                       <div>
                         <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
                           <span>📋</span>
@@ -322,7 +323,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </Tab.Group>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
+                <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4">
                   <button
                     onClick={onClose}
                     className="w-full btn-primary py-3 text-base font-medium"
