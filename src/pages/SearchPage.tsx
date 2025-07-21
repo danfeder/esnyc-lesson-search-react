@@ -7,7 +7,7 @@ import { ResultsGrid } from '../components/Results/ResultsGrid';
 import { LessonModal } from '../components/Modal/LessonModal';
 import { useSearchStore } from '../stores/searchStore';
 import { useAlgoliaSearch } from '../hooks/useAlgoliaSearch';
-import type { Lesson } from '../types';
+import type { Lesson, ViewState } from '../types';
 
 export const SearchPage: React.FC = () => {
   const { filters, viewState, setViewState } = useSearchStore();
@@ -57,10 +57,8 @@ export const SearchPage: React.FC = () => {
           <ResultsHeader
             totalCount={totalCount}
             currentQuery={filters.query}
-            viewMode={viewState.view}
-            onViewModeChange={(mode) => setViewState({ view: mode })}
             sortBy={viewState.sortBy}
-            onSortChange={(sort) => setViewState({ sortBy: sort as any })}
+            onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
             onExport={handleExport}
           />
 

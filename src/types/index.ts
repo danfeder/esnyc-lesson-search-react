@@ -103,8 +103,7 @@ export interface Bookmark {
 
 // UI state types
 export interface ViewState {
-  view: 'grid' | 'list';
-  sortBy: 'title' | 'confidence' | 'grade' | 'modified';
+  sortBy: 'title' | 'confidence' | 'grade' | 'modified' | 'relevance';
   resultsPerPage: number;
   currentPage: number;
 }
