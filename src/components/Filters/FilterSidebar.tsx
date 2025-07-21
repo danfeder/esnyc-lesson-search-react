@@ -4,6 +4,7 @@ import { SearchFilters } from '../../types';
 import { CORE_COMPETENCIES, LESSON_FORMATS } from '../../utils/filterConstants';
 import { CulturalHeritageFilter } from './CulturalHeritageFilter';
 import { getFacetCount } from '../../utils/facetHelpers';
+import { useSearchStore } from '../../stores/searchStore';
 
 interface FilterSidebarProps {
   filters: SearchFilters;
@@ -110,6 +111,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   onClose,
   facets = {},
 }) => {
+  const { clearFilters } = useSearchStore();
   const gradeOptions = [
     { value: '3K', label: '3K', count: getFacetCount(facets, 'gradeLevels', '3K') },
     { value: 'PK', label: 'Pre-K', count: getFacetCount(facets, 'gradeLevels', 'PK') },
@@ -336,6 +338,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   ];
 
   const activeFilterCount =
+    (filters.query?.trim() ? 1 : 0) + // Include search query in count
     filters.gradeLevels.length +
     filters.thematicCategories.length +
     filters.seasons.length +
@@ -348,22 +351,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     filters.socialEmotionalLearning.length +
     (filters.cookingMethods ? 1 : 0);
 
-  const clearAllFilters = () => {
-    onFiltersChange({
-      ...filters,
-      gradeLevels: [],
-      thematicCategories: [],
-      seasons: [],
-      coreCompetencies: [],
-      activityType: [],
-      location: [],
-      culturalHeritage: [],
-      lessonFormat: [],
-      academicIntegration: [],
-      socialEmotionalLearning: [],
-      cookingMethods: '',
-      includeAllSeasons: false,
-    });
+  const handleClearAll = () => {
+    clearFilters(); // Use store's clearFilters function to clear both search and filters
   };
 
   return (
@@ -398,8 +387,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             <div className="flex items-center space-x-2">
               {activeFilterCount > 0 && (
                 <button
-                  onClick={clearAllFilters}
+                  onClick={handleClearAll}
                   className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  title="Clear all filters and search"
                 >
                   Clear All
                 </button>
