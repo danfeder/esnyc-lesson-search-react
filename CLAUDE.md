@@ -52,22 +52,22 @@ The project is transitioning from a vanilla JavaScript implementation (v1) to a 
 
 ### Core Features (Must Have)
 - Full-text search across lesson titles, summaries, ingredients, skills
-- 11 filter categories (all implemented):
+- **EXACTLY 11 filter categories** (all implemented):
   
-  **Implemented Filters:**
-  - Activity Type (Cooking, Garden, Both, Academic) - derived from skills
-  - Location (Indoor, Outdoor, Both)
-  - Grade Levels (3K through 8th with grade group selection)
-  - Thematic Categories (7 themes: Garden Basics, Plant Growth, Garden Communities, Ecosystems, Seed to Table, Food Systems, Food Justice)
-  - Season & Timing (4 seasons + Beginning/End of year + "Include year-round" option)
-  - Core Competencies (6 ESNYC priorities)
-  - Cultural Heritage (hierarchical with 5 main regions)
-  - Lesson Format (Single period, Multi-session unit, etc.) - single-select dropdown
-  - Academic Integration (Math, Science, Literacy/ELA, Social Studies, Health, Arts) - multi-select
-  - Social-Emotional Learning (5 SEL competencies) - multi-select
-  - Cooking Methods (No-cook, Stovetop, Oven, Basic prep only) - single-select dropdown
+  **Implemented Filters (11 total):**
+  1. Activity Type (Cooking, Garden, Both, Academic) - derived from skills
+  2. Location (Indoor, Outdoor, Both)
+  3. Grade Levels (3K through 8th with grade group selection)
+  4. Thematic Categories (7 themes: Garden Basics, Plant Growth, Garden Communities, Ecosystems, Seed to Table, Food Systems, Food Justice)
+  5. Season & Timing (4 seasons + Beginning/End of year + "Include year-round" option)
+  6. Core Competencies (6 ESNYC priorities)
+  7. Cultural Heritage (hierarchical with 5 main regions)
+  8. Lesson Format (Single period, Multi-session unit, etc.) - single-select dropdown
+  9. Academic Integration (Math, Science, Literacy/ELA, Social Studies, Health, Arts) - multi-select
+  10. Social-Emotional Learning (5 SEL competencies) - multi-select
+  11. Cooking Methods (No-cook, Stovetop, Oven, Basic prep only) - single-select dropdown
   
-  **Searchable But Not Filters:**
+  **Searchable But Not Filters (NOT counted in the 11):**
   - Observances & Holidays (handled through search functionality)
   - Main Ingredients (with smart grouping via search synonyms)
   - Garden Skills (searchable in lesson content)
