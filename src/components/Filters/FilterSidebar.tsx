@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import { SearchFilters } from '../../types';
 import { CORE_COMPETENCIES, LESSON_FORMATS } from '../../utils/filterConstants';
@@ -22,46 +22,43 @@ interface FilterSectionProps {
   defaultOpen?: boolean;
 }
 
-const FilterSection: React.FC<FilterSectionProps> = ({
-  title,
-  icon,
-  children,
-  defaultOpen = false,
-}) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+const FilterSection = React.memo<FilterSectionProps>(
+  ({ title, icon, children, defaultOpen = false }) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  return (
-    <div className="border-b border-gray-200 pb-4 mb-4">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full py-2 text-left hover:text-primary-600 transition-colors duration-200"
-        aria-expanded={isOpen}
-        aria-controls={`filter-section-${title.toLowerCase().replace(/\s+/g, '-')}`}
-      >
-        <div className="flex items-center space-x-2">
-          <span className="text-lg">{icon}</span>
-          <span className="font-semibold text-gray-900">{title}</span>
-        </div>
-        {isOpen ? (
-          <ChevronDown className="w-4 h-4 text-gray-500" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-gray-500" />
-        )}
-      </button>
-
-      {isOpen && (
-        <div
-          className="mt-3 space-y-2 animate-slide-up"
-          id={`filter-section-${title.toLowerCase().replace(/\s+/g, '-')}`}
-          role="region"
-          aria-label={`${title} filter options`}
+    return (
+      <div className="border-b border-gray-200 pb-4 mb-4">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-between w-full py-2 text-left hover:text-primary-600 transition-colors duration-200"
+          aria-expanded={isOpen}
+          aria-controls={`filter-section-${title.toLowerCase().replace(/\s+/g, '-')}`}
         >
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{icon}</span>
+            <span className="font-semibold text-gray-900">{title}</span>
+          </div>
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+        </button>
+
+        {isOpen && (
+          <div
+            className="mt-3 space-y-2 animate-slide-up"
+            id={`filter-section-${title.toLowerCase().replace(/\s+/g, '-')}`}
+            role="region"
+            aria-label={`${title} filter options`}
+          >
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  }
+);
 
 interface CheckboxGroupProps {
   options: { value: string; label: string; count?: number }[];
@@ -70,14 +67,17 @@ interface CheckboxGroupProps {
   onChange: (values: string[]) => void;
 }
 
-const CheckboxGroup: React.FC<CheckboxGroupProps> = ({ options, selectedValues, onChange }) => {
-  const handleChange = (value: string, checked: boolean) => {
-    if (checked) {
-      onChange([...selectedValues, value]);
-    } else {
-      onChange(selectedValues.filter((v) => v !== value));
-    }
-  };
+const CheckboxGroup = React.memo<CheckboxGroupProps>(({ options, selectedValues, onChange }) => {
+  const handleChange = useCallback(
+    (value: string, checked: boolean) => {
+      if (checked) {
+        onChange([...selectedValues, value]);
+      } else {
+        onChange(selectedValues.filter((v) => v !== value));
+      }
+    },
+    [selectedValues, onChange]
+  );
 
   return (
     <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -102,7 +102,7 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({ options, selectedValues, 
       ))}
     </div>
   );
-};
+});
 
 export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   filters,
