@@ -1,6 +1,6 @@
 import React, { useState, Fragment } from 'react';
-import { Dialog, Transition, Tab } from '@headlessui/react';
-import { X } from 'lucide-react';
+import { Dialog, Transition, Tab, Disclosure } from '@headlessui/react';
+import { X, ChevronDown } from 'lucide-react';
 import { SearchFilters } from '../../types';
 import { FilterSection } from './FilterSection';
 import { CulturalHeritageFilter } from './CulturalHeritageFilter';
@@ -152,6 +152,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         onChange={(values) => onFiltersChange({ ...filters, gradeLevels: values })}
                         facets={facets}
                         facetKey="gradeLevels"
+                        defaultOpen={true}
                       />
 
                       <FilterSection
@@ -204,19 +205,37 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         facetKey="metadata.thematicCategories"
                       />
 
-                      <div>
-                        <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
-                          <span>🌍</span>
-                          <span>Cultural Heritage</span>
-                        </h3>
-                        <CulturalHeritageFilter
-                          selectedValues={filters.culturalHeritage}
-                          onChange={(values) =>
-                            onFiltersChange({ ...filters, culturalHeritage: values })
-                          }
-                          facets={facets}
-                        />
-                      </div>
+                      <Disclosure>
+                        {({ open }) => (
+                          <div className="border-b border-gray-200 pb-4">
+                            <Disclosure.Button className="flex w-full items-center justify-between text-left">
+                              <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                <span>🌍</span>
+                                <span>Cultural Heritage</span>
+                                {filters.culturalHeritage.length > 0 && (
+                                  <span className="ml-2 text-sm font-normal text-gray-600">
+                                    ({filters.culturalHeritage.length} selected)
+                                  </span>
+                                )}
+                              </h3>
+                              <ChevronDown
+                                className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
+                                  open ? 'rotate-180' : ''
+                                }`}
+                              />
+                            </Disclosure.Button>
+                            <Disclosure.Panel className="mt-4">
+                              <CulturalHeritageFilter
+                                selectedValues={filters.culturalHeritage}
+                                onChange={(values) =>
+                                  onFiltersChange({ ...filters, culturalHeritage: values })
+                                }
+                                facets={facets}
+                              />
+                            </Disclosure.Panel>
+                          </div>
+                        )}
+                      </Disclosure>
 
                       <FilterSection
                         title="Core Competencies"
@@ -241,53 +260,89 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
                     {/* Advanced Filters */}
                     <Tab.Panel className="h-full overflow-y-auto p-6 space-y-6">
-                      <div>
-                        <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
-                          <span>📋</span>
-                          <span>Lesson Format</span>
-                        </h3>
-                        <select
-                          value={filters.lessonFormat[0] || ''}
-                          onChange={(e) =>
-                            onFiltersChange({
-                              ...filters,
-                              lessonFormat: e.target.value ? [e.target.value] : [],
-                            })
-                          }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                          <option value="">All Formats</option>
-                          {LESSON_FORMATS.map((format) => (
-                            <option key={format} value={format}>
-                              {format}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <Disclosure>
+                        {({ open }) => (
+                          <div className="border-b border-gray-200 pb-4">
+                            <Disclosure.Button className="flex w-full items-center justify-between text-left">
+                              <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                <span>📋</span>
+                                <span>Lesson Format</span>
+                                {filters.lessonFormat.length > 0 && (
+                                  <span className="ml-2 text-sm font-normal text-gray-600">
+                                    ({filters.lessonFormat[0]})
+                                  </span>
+                                )}
+                              </h3>
+                              <ChevronDown
+                                className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
+                                  open ? 'rotate-180' : ''
+                                }`}
+                              />
+                            </Disclosure.Button>
+                            <Disclosure.Panel className="mt-4">
+                              <select
+                                value={filters.lessonFormat[0] || ''}
+                                onChange={(e) =>
+                                  onFiltersChange({
+                                    ...filters,
+                                    lessonFormat: e.target.value ? [e.target.value] : [],
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              >
+                                <option value="">All Formats</option>
+                                {LESSON_FORMATS.map((format) => (
+                                  <option key={format} value={format}>
+                                    {format}
+                                  </option>
+                                ))}
+                              </select>
+                            </Disclosure.Panel>
+                          </div>
+                        )}
+                      </Disclosure>
 
-                      <div>
-                        <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
-                          <span>🍳</span>
-                          <span>Cooking Methods</span>
-                        </h3>
-                        <select
-                          value={filters.cookingMethods}
-                          onChange={(e) =>
-                            onFiltersChange({
-                              ...filters,
-                              cookingMethods: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                          <option value="">All Cooking Methods</option>
-                          {COOKING_METHODS.map((method) => (
-                            <option key={method} value={method}>
-                              {method}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <Disclosure>
+                        {({ open }) => (
+                          <div className="border-b border-gray-200 pb-4">
+                            <Disclosure.Button className="flex w-full items-center justify-between text-left">
+                              <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                <span>🍳</span>
+                                <span>Cooking Methods</span>
+                                {filters.cookingMethods && (
+                                  <span className="ml-2 text-sm font-normal text-gray-600">
+                                    ({filters.cookingMethods})
+                                  </span>
+                                )}
+                              </h3>
+                              <ChevronDown
+                                className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
+                                  open ? 'rotate-180' : ''
+                                }`}
+                              />
+                            </Disclosure.Button>
+                            <Disclosure.Panel className="mt-4">
+                              <select
+                                value={filters.cookingMethods}
+                                onChange={(e) =>
+                                  onFiltersChange({
+                                    ...filters,
+                                    cookingMethods: e.target.value,
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              >
+                                <option value="">All Cooking Methods</option>
+                                {COOKING_METHODS.map((method) => (
+                                  <option key={method} value={method}>
+                                    {method}
+                                  </option>
+                                ))}
+                              </select>
+                            </Disclosure.Panel>
+                          </div>
+                        )}
+                      </Disclosure>
 
                       <FilterSection
                         title="Academic Integration"
