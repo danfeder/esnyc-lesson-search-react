@@ -1,8 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { algoliaClient } from '../lib/algolia';
 import type { SearchFilters, Lesson } from '../types';
 import type { LessonSearchParams, AlgoliaLessonHit } from '../types/algolia';
 import { debounce } from '../utils/debounce';
+
+// Sanitize error messages to be user-friendly
+const sanitizeError = (error: unknown): string => {
+  if (error instanceof Error) {
+    // Map known errors to user-friendly messages
+    if (error.message.includes('network') || error.message.includes('fetch')) {
+      return 'Unable to connect to search service. Please check your internet connection and try again.';
+    }
+    if (error.message.includes('timeout')) {
+      return 'Search request timed out. Please try again.';
+    }
+    if (error.message.includes('quota') || error.message.includes('rate')) {
+      return 'Search service is temporarily unavailable. Please try again in a few moments.';
+    }
+    if (error.message.includes('index') || error.message.includes('404')) {
+      return 'Search configuration error. Please contact support.';
+    }
+    // Log the actual error for debugging but return generic message
+    console.error('Search error details:', error);
+  }
+  return 'An error occurred while searching. Please try again.';
+};
 
 interface AlgoliaSearchResult {
   lessons: Lesson[];
@@ -23,95 +45,102 @@ export function useAlgoliaSearch(
   const [error, setError] = useState<string | null>(null);
   const [facets, setFacets] = useState<Record<string, Record<string, number>>>({});
 
-  // Build Algolia filters from our filter state
-  const buildAlgoliaFilters = useCallback(() => {
-    const algoliaFilters: string[] = [];
+  // Memoize individual filter builders for better performance
+  const gradeFilter = useMemo(() => {
+    if (!filters.gradeLevels?.length) return '';
+    return filters.gradeLevels.map((grade) => `gradeLevels:"${grade}"`).join(' OR ');
+  }, [filters.gradeLevels]);
 
-    // Grade levels
-    if (filters.gradeLevels?.length) {
-      const gradeFilter = filters.gradeLevels.map((grade) => `gradeLevels:"${grade}"`).join(' OR ');
-      algoliaFilters.push(`(${gradeFilter})`);
-    }
+  const themeFilter = useMemo(() => {
+    if (!filters.thematicCategories?.length) return '';
+    return filters.thematicCategories
+      .map((cat) => `metadata.thematicCategories:"${cat}"`)
+      .join(' OR ');
+  }, [filters.thematicCategories]);
 
-    // Thematic categories
-    if (filters.thematicCategories?.length) {
-      const themeFilter = filters.thematicCategories
-        .map((cat) => `metadata.thematicCategories:"${cat}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${themeFilter})`);
-    }
+  const seasonFilter = useMemo(() => {
+    if (!filters.seasons?.length) return '';
+    return filters.seasons.map((season) => `metadata.seasonTiming:"${season}"`).join(' OR ');
+  }, [filters.seasons]);
 
-    // Seasons
-    if (filters.seasons?.length) {
-      const seasonFilter = filters.seasons
-        .map((season) => `metadata.seasonTiming:"${season}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${seasonFilter})`);
-    }
+  const competencyFilter = useMemo(() => {
+    if (!filters.coreCompetencies?.length) return '';
+    return filters.coreCompetencies
+      .map((comp) => `metadata.coreCompetencies:"${comp}"`)
+      .join(' OR ');
+  }, [filters.coreCompetencies]);
 
-    // Core competencies
-    if (filters.coreCompetencies?.length) {
-      const competencyFilter = filters.coreCompetencies
-        .map((comp) => `metadata.coreCompetencies:"${comp}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${competencyFilter})`);
-    }
+  const cultureFilter = useMemo(() => {
+    if (!filters.culturalHeritage?.length) return '';
+    return filters.culturalHeritage
+      .map((culture) => `metadata.culturalHeritage:"${culture}"`)
+      .join(' OR ');
+  }, [filters.culturalHeritage]);
 
-    // Cultural heritage
-    if (filters.culturalHeritage?.length) {
-      const cultureFilter = filters.culturalHeritage
-        .map((culture) => `metadata.culturalHeritage:"${culture}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${cultureFilter})`);
-    }
+  const locationFilter = useMemo(() => {
+    if (!filters.location?.length) return '';
+    return filters.location.map((loc) => `metadata.locationRequirements:"${loc}"`).join(' OR ');
+  }, [filters.location]);
 
-    // Location
-    if (filters.location?.length) {
-      const locationFilter = filters.location
-        .map((loc) => `metadata.locationRequirements:"${loc}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${locationFilter})`);
-    }
+  const activityFilter = useMemo(() => {
+    if (!filters.activityType?.length) return '';
+    return filters.activityType.map((type) => `metadata.activityType:"${type}"`).join(' OR ');
+  }, [filters.activityType]);
 
-    // Activity type
-    if (filters.activityType?.length) {
-      const activityFilter = filters.activityType
-        .map((type) => `metadata.activityType:"${type}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${activityFilter})`);
-    }
+  const formatFilter = useMemo(() => {
+    if (!filters.lessonFormat?.length) return '';
+    return filters.lessonFormat.map((format) => `metadata.lessonFormat:"${format}"`).join(' OR ');
+  }, [filters.lessonFormat]);
 
-    // Lesson format
-    if (filters.lessonFormat?.length) {
-      const formatFilter = filters.lessonFormat
-        .map((format) => `metadata.lessonFormat:"${format}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${formatFilter})`);
-    }
+  const academicFilter = useMemo(() => {
+    if (!filters.academicIntegration?.length) return '';
+    return filters.academicIntegration
+      .map((subject) => `metadata.academicIntegration.selected:"${subject}"`)
+      .join(' OR ');
+  }, [filters.academicIntegration]);
 
-    // Academic Integration
-    if (filters.academicIntegration?.length) {
-      const academicFilter = filters.academicIntegration
-        .map((subject) => `metadata.academicIntegration.selected:"${subject}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${academicFilter})`);
-    }
+  const selFilter = useMemo(() => {
+    if (!filters.socialEmotionalLearning?.length) return '';
+    return filters.socialEmotionalLearning
+      .map((sel) => `metadata.socialEmotionalLearning:"${sel}"`)
+      .join(' OR ');
+  }, [filters.socialEmotionalLearning]);
 
-    // Social-Emotional Learning
-    if (filters.socialEmotionalLearning?.length) {
-      const selFilter = filters.socialEmotionalLearning
-        .map((sel) => `metadata.socialEmotionalLearning:"${sel}"`)
-        .join(' OR ');
-      algoliaFilters.push(`(${selFilter})`);
-    }
+  const cookingMethodsFilter = useMemo(() => {
+    if (!filters.cookingMethods) return '';
+    return `metadata.cookingMethods:"${filters.cookingMethods}"`;
+  }, [filters.cookingMethods]);
 
-    // Cooking Methods (single select, but stored as array in data)
-    if (filters.cookingMethods) {
-      algoliaFilters.push(`metadata.cookingMethods:"${filters.cookingMethods}"`);
-    }
+  // Combine all filters into final Algolia filter string
+  const algoliaFilterString = useMemo(() => {
+    const parts = [
+      gradeFilter,
+      themeFilter,
+      seasonFilter,
+      competencyFilter,
+      cultureFilter,
+      locationFilter,
+      activityFilter,
+      formatFilter,
+      academicFilter,
+      selFilter,
+      cookingMethodsFilter,
+    ].filter(Boolean);
 
-    return algoliaFilters.join(' AND ');
-  }, [filters]);
+    return parts.map((part) => `(${part})`).join(' AND ');
+  }, [
+    gradeFilter,
+    themeFilter,
+    seasonFilter,
+    competencyFilter,
+    cultureFilter,
+    locationFilter,
+    activityFilter,
+    formatFilter,
+    academicFilter,
+    selFilter,
+    cookingMethodsFilter,
+  ]);
 
   // Debounced search function
   const performSearch = useCallback(
@@ -184,8 +213,7 @@ export function useAlgoliaSearch(
           setFacets(searchResults.facets);
         }
       } catch (err) {
-        console.error('Algolia search error:', err);
-        setError(err instanceof Error ? err.message : 'Search failed');
+        setError(sanitizeError(err));
         setResults([]);
         setTotalCount(0);
         setFacets({});
@@ -199,9 +227,8 @@ export function useAlgoliaSearch(
   // Trigger search when filters or page changes
   useEffect(() => {
     const query = filters.query || '';
-    const filterString = buildAlgoliaFilters();
-    performSearch(query, filterString, page);
-  }, [filters, page, buildAlgoliaFilters, performSearch]);
+    performSearch(query, algoliaFilterString, page);
+  }, [filters.query, algoliaFilterString, page, performSearch]);
 
   return {
     lessons: results,
