@@ -29,12 +29,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   facets = {},
 }) => {
   const [selectedTab, setSelectedTab] = useState(0);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const applyButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<globalThis.HTMLButtonElement>(null);
+  const applyButtonRef = useRef<globalThis.HTMLButtonElement>(null);
 
   // Handle keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       if (!isOpen) return;
 
       // Escape key closes modal
