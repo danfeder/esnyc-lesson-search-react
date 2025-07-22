@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { FilterPill } from './FilterPill';
+import { GroupedFilterPill } from './GroupedFilterPill';
 import { useSearchStore } from '../../stores/searchStore';
 import type { SearchFilters } from '../../types';
 
@@ -9,7 +10,7 @@ interface FilterPillsProps {
 }
 
 export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
-  const { filters, removeFilter, clearFilters } = useSearchStore();
+  const { filters, removeFilter, clearFilters, setFilters } = useSearchStore();
 
   // Convert current filters to pill format
   const getActiveFilters = (): Array<{ category: keyof SearchFilters; value: string }> => {
@@ -51,8 +52,24 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     return pills;
   };
 
-  const activeFilters = getActiveFilters();
+  const activeFilters = useMemo(() => getActiveFilters(), [filters]);
   const hasActiveFilters = activeFilters.length > 0 || filters.query.trim() !== '';
+
+  // Group filters by category
+  const groupedFilters = useMemo(
+    () =>
+      activeFilters.reduce(
+        (acc, filter) => {
+          if (!acc[filter.category]) {
+            acc[filter.category] = [];
+          }
+          acc[filter.category].push(filter.value);
+          return acc;
+        },
+        {} as Record<keyof SearchFilters, string[]>
+      ),
+    [activeFilters]
+  );
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -61,19 +78,40 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
         <FilterPill
           category="Search"
           value={`"${filters.query}"`}
-          onRemove={() => useSearchStore.getState().setFilters({ query: '' })}
+          onRemove={() => setFilters({ query: '' })}
         />
       )}
 
-      {/* Filter pills */}
-      {activeFilters.map((filter, index) => (
-        <FilterPill
-          key={`${filter.category}-${filter.value}-${index}`}
-          category={filter.category}
-          value={filter.value}
-          onRemove={() => removeFilter(filter.category, filter.value)}
-        />
-      ))}
+      {/* Filter pills - grouped by category */}
+      {Object.entries(groupedFilters).map(([category, values]) => {
+        const categoryKey = category as keyof SearchFilters;
+
+        if (values.length === 1) {
+          // Single value - use regular FilterPill
+          return (
+            <FilterPill
+              key={`${category}-${values[0]}`}
+              category={category}
+              value={values[0]}
+              onRemove={() => removeFilter(categoryKey, values[0])}
+            />
+          );
+        } else {
+          // Multiple values - use GroupedFilterPill
+          return (
+            <GroupedFilterPill
+              key={category}
+              category={categoryKey}
+              values={values}
+              onRemove={(value) => removeFilter(categoryKey, value)}
+              onRemoveAll={() => {
+                // Remove all values for this category
+                values.forEach((value) => removeFilter(categoryKey, value));
+              }}
+            />
+          );
+        }
+      })}
 
       {/* Add filters button */}
       <button
