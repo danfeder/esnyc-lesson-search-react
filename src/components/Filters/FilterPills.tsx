@@ -97,7 +97,7 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
           return (
             <GroupedFilterPill
               key={category}
-              category={category}
+              category={categoryKey}
               values={values}
               onRemove={(value) => removeFilter(categoryKey, value)}
               onRemoveAll={() => {
