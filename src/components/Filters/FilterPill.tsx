@@ -8,7 +8,7 @@ interface FilterPillProps {
   onRemove: () => void;
 }
 
-export const FilterPill: React.FC<FilterPillProps> = ({ category, value, onRemove }) => {
+export const FilterPill = React.memo<FilterPillProps>(({ category, value, onRemove }) => {
   return (
     <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-primary-100 text-primary-800 hover:bg-primary-200 transition-colors group">
       <span className="text-primary-600">{formatCategoryName(category)}:</span>
@@ -22,4 +22,4 @@ export const FilterPill: React.FC<FilterPillProps> = ({ category, value, onRemov
       </button>
     </span>
   );
-};
+});

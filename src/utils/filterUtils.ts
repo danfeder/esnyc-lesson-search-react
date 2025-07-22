@@ -28,7 +28,7 @@ export const formatCategoryName = (category: string): string => {
 export const getCategoryIcon = (category: string): string => {
   const categoryIcons: Record<string, string> = {
     gradeLevels: '📚',
-    activityType: '🍳',
+    activityType: '🎯',
     seasons: '🍂',
     thematicCategories: '🌿',
     culturalHeritage: '🌍',

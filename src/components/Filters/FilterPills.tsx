@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { FilterPill } from './FilterPill';
 import { GroupedFilterPill } from './GroupedFilterPill';
@@ -10,7 +10,7 @@ interface FilterPillsProps {
 }
 
 export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
-  const { filters, removeFilter, clearFilters } = useSearchStore();
+  const { filters, removeFilter, clearFilters, setFilters } = useSearchStore();
 
   // Convert current filters to pill format
   const getActiveFilters = (): Array<{ category: keyof SearchFilters; value: string }> => {
@@ -52,19 +52,23 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     return pills;
   };
 
-  const activeFilters = getActiveFilters();
+  const activeFilters = useMemo(() => getActiveFilters(), [filters]);
   const hasActiveFilters = activeFilters.length > 0 || filters.query.trim() !== '';
 
   // Group filters by category
-  const groupedFilters = activeFilters.reduce(
-    (acc, filter) => {
-      if (!acc[filter.category]) {
-        acc[filter.category] = [];
-      }
-      acc[filter.category].push(filter.value);
-      return acc;
-    },
-    {} as Record<keyof SearchFilters, string[]>
+  const groupedFilters = useMemo(
+    () =>
+      activeFilters.reduce(
+        (acc, filter) => {
+          if (!acc[filter.category]) {
+            acc[filter.category] = [];
+          }
+          acc[filter.category].push(filter.value);
+          return acc;
+        },
+        {} as Record<keyof SearchFilters, string[]>
+      ),
+    [activeFilters]
   );
 
   return (
@@ -74,7 +78,7 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
         <FilterPill
           category="Search"
           value={`"${filters.query}"`}
-          onRemove={() => useSearchStore.getState().setFilters({ query: '' })}
+          onRemove={() => setFilters({ query: '' })}
         />
       )}
 
