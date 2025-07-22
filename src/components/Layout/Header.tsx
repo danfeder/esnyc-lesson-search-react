@@ -7,7 +7,7 @@ interface HeaderProps {
   totalCategories?: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategories = 16 }) => {
+export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategories = 11 }) => {
   return (
     <header className="bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
