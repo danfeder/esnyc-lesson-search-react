@@ -203,7 +203,15 @@ export const VirtualizedCulturalHeritageFilter: React.FC<CulturalHeritageFilterP
     };
 
     return (
-      <div role="tree" aria-label="Cultural Heritage Filter Options">
+      <div
+        role="tree"
+        aria-label="Cultural Heritage Filter Options"
+        aria-describedby="cultural-heritage-help"
+      >
+        <div id="cultural-heritage-help" className="sr-only">
+          Use arrow keys to navigate between regions and subregions. Press Enter or Space to expand
+          or collapse regions. Check or uncheck items to filter results.
+        </div>
         <List
           height={256} // max-h-64 = 16rem = 256px
           itemCount={flattenedItems.length}

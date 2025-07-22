@@ -13,7 +13,7 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
   const { filters, removeFilter, clearFilters, setFilters } = useSearchStore();
 
   // Convert current filters to pill format
-  const getActiveFilters = (): Array<{ category: keyof SearchFilters; value: string }> => {
+  const activeFilters = useMemo(() => {
     const pills: Array<{ category: keyof SearchFilters; value: string }> = [];
 
     // Handle array-based filters
@@ -50,10 +50,7 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     }
 
     return pills;
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const activeFilters = useMemo(() => getActiveFilters(), [filters]);
+  }, [filters]);
   const hasActiveFilters = activeFilters.length > 0 || filters.query.trim() !== '';
 
   // Group filters by category
