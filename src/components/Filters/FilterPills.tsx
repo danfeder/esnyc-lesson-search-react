@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { FilterPill } from './FilterPill';
+import { GroupedFilterPill } from './GroupedFilterPill';
 import { useSearchStore } from '../../stores/searchStore';
 import type { SearchFilters } from '../../types';
 
@@ -54,6 +55,18 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
   const activeFilters = getActiveFilters();
   const hasActiveFilters = activeFilters.length > 0 || filters.query.trim() !== '';
 
+  // Group filters by category
+  const groupedFilters = activeFilters.reduce(
+    (acc, filter) => {
+      if (!acc[filter.category]) {
+        acc[filter.category] = [];
+      }
+      acc[filter.category].push(filter.value);
+      return acc;
+    },
+    {} as Record<keyof SearchFilters, string[]>
+  );
+
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
       {/* Search query pill */}
@@ -65,15 +78,36 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
         />
       )}
 
-      {/* Filter pills */}
-      {activeFilters.map((filter, index) => (
-        <FilterPill
-          key={`${filter.category}-${filter.value}-${index}`}
-          category={filter.category}
-          value={filter.value}
-          onRemove={() => removeFilter(filter.category, filter.value)}
-        />
-      ))}
+      {/* Filter pills - grouped by category */}
+      {Object.entries(groupedFilters).map(([category, values]) => {
+        const categoryKey = category as keyof SearchFilters;
+
+        if (values.length === 1) {
+          // Single value - use regular FilterPill
+          return (
+            <FilterPill
+              key={`${category}-${values[0]}`}
+              category={category}
+              value={values[0]}
+              onRemove={() => removeFilter(categoryKey, values[0])}
+            />
+          );
+        } else {
+          // Multiple values - use GroupedFilterPill
+          return (
+            <GroupedFilterPill
+              key={category}
+              category={category}
+              values={values}
+              onRemove={(value) => removeFilter(categoryKey, value)}
+              onRemoveAll={() => {
+                // Remove all values for this category
+                values.forEach((value) => removeFilter(categoryKey, value));
+              }}
+            />
+          );
+        }
+      })}
 
       {/* Add filters button */}
       <button
