@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 interface GroupedFilterPillProps {
   category: string;
   values: string[];
+  // eslint-disable-next-line no-unused-vars
   onRemove: (value: string) => void;
   onRemoveAll: () => void;
 }
