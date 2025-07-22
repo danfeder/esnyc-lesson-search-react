@@ -4,6 +4,7 @@ import { X, ChevronDown } from 'lucide-react';
 import { SearchFilters } from '../../types';
 import { FilterSection } from './FilterSection';
 import { VirtualizedCulturalHeritageFilter } from './VirtualizedCulturalHeritageFilter';
+import { LazyTabPanel } from './LazyTabPanel';
 import {
   CORE_COMPETENCIES,
   LESSON_FORMATS,
@@ -176,7 +177,11 @@ export const FilterModal = React.memo<FilterModalProps>(
 
                     <Tab.Panels className="flex-1 min-h-0 overflow-hidden">
                       {/* Essential Filters */}
-                      <Tab.Panel className="h-full overflow-y-auto p-6 space-y-6">
+                      <LazyTabPanel
+                        className="h-full overflow-y-auto p-6 space-y-6"
+                        index={0}
+                        selectedIndex={selectedTab}
+                      >
                         <FilterSection
                           title="Grade Level"
                           icon="📚"
@@ -226,10 +231,14 @@ export const FilterModal = React.memo<FilterModalProps>(
                           facets={facets}
                           facetKey="metadata.locationRequirements"
                         />
-                      </Tab.Panel>
+                      </LazyTabPanel>
 
                       {/* Themes & Culture */}
-                      <Tab.Panel className="h-full overflow-y-auto p-6 space-y-6">
+                      <LazyTabPanel
+                        className="h-full overflow-y-auto p-6 space-y-6"
+                        index={1}
+                        selectedIndex={selectedTab}
+                      >
                         <FilterSection
                           title="Thematic Category"
                           icon="🌿"
@@ -293,10 +302,14 @@ export const FilterModal = React.memo<FilterModalProps>(
                           facets={facets}
                           facetKey="metadata.coreCompetencies"
                         />
-                      </Tab.Panel>
+                      </LazyTabPanel>
 
                       {/* Advanced Filters */}
-                      <Tab.Panel className="h-full overflow-y-auto p-6 space-y-6">
+                      <LazyTabPanel
+                        className="h-full overflow-y-auto p-6 space-y-6"
+                        index={2}
+                        selectedIndex={selectedTab}
+                      >
                         <Disclosure>
                           {({ open }) => (
                             <div className="border-b border-gray-200 pb-4">
@@ -412,7 +425,7 @@ export const FilterModal = React.memo<FilterModalProps>(
                           facets={facets}
                           facetKey="metadata.socialEmotionalLearning"
                         />
-                      </Tab.Panel>
+                      </LazyTabPanel>
                     </Tab.Panels>
                   </Tab.Group>
 
