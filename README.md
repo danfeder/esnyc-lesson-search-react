@@ -6,7 +6,7 @@ A modern, responsive React/TypeScript application for searching and filtering 83
 
 ### Advanced Search & Filtering
 - **Full-text Search**: Searches across titles, summaries, ingredients, skills, and metadata
-- **Smart Filtering**: 16+ categories including grade levels, themes, seasons, cultural heritage
+- **Smart Filtering**: 11 filter categories including grade levels, themes, seasons, cultural heritage
 - **Hierarchical Cultural Search**: Select "Asian" to find all Asian cultures and subcultures
 - **Ingredient Grouping**: Search "butternut squash" to find "Winter squash" lessons
 - **Activity Type Detection**: Automatically categorizes lessons based on cooking/garden skills
