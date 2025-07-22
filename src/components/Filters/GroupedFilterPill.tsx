@@ -68,14 +68,14 @@ export const GroupedFilterPill: React.FC<GroupedFilterPillProps> = ({
       )}
       <span className="text-primary-600">{formattedCategory}:</span>
 
-      {/* Show values with individual remove buttons on hover (desktop) */}
+      {/* Show values with individual remove buttons on hover (desktop only) */}
       <span className="flex items-center gap-1">
         {!isHovered ? (
           // Default view: comma-separated values
           <span>{values.join(', ')}</span>
         ) : (
-          // Hover view: individual values with remove buttons
-          <span className="flex items-center gap-1.5">
+          // Hover view: individual values with remove buttons (desktop only)
+          <span className="hidden sm:flex items-center gap-1.5">
             {values.map((value, index) => (
               <span key={value} className="flex items-center">
                 <span>{value}</span>
@@ -98,6 +98,8 @@ export const GroupedFilterPill: React.FC<GroupedFilterPillProps> = ({
             ))}
           </span>
         )}
+        {/* On mobile, always show the grouped values */}
+        {isHovered && <span className="sm:hidden">{values.join(', ')}</span>}
       </span>
 
       {/* Main remove button (removes all) */}
@@ -108,38 +110,6 @@ export const GroupedFilterPill: React.FC<GroupedFilterPillProps> = ({
       >
         <X className="w-3.5 h-3.5" aria-hidden="true" />
       </button>
-
-      {/* Mobile-friendly dropdown on small screens */}
-      <div className="sm:hidden absolute top-full left-0 mt-1 z-10 hidden group-focus-within:block">
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[200px]">
-          {values.map((value) => (
-            <div
-              key={value}
-              className="flex items-center justify-between p-1 hover:bg-gray-50 rounded"
-            >
-              <span className="text-sm">{value}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(value);
-                }}
-                className="p-1 rounded hover:bg-gray-200 transition-colors"
-                aria-label={`Remove ${formattedCategory} filter: ${value}`}
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-          <div className="border-t border-gray-200 mt-1 pt-1">
-            <button
-              onClick={onRemoveAll}
-              className="w-full text-left p-1 text-sm text-red-600 hover:bg-red-50 rounded"
-            >
-              Clear all {formattedCategory.toLowerCase()}s
-            </button>
-          </div>
-        </div>
-      </div>
     </span>
   );
 };
