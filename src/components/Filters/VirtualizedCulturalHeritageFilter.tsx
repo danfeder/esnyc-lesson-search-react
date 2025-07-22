@@ -4,6 +4,10 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CULTURAL_HIERARCHY } from '../../utils/filterConstants';
 import { getFacetCount } from '../../utils/facetHelpers';
 
+// Constants for virtualization
+const LIST_HEIGHT = 256; // 16rem = 256px (max-h-64)
+const ROW_HEIGHT = 40; // Height of each row in pixels
+
 interface CulturalHeritageFilterProps {
   selectedValues: string[];
   // eslint-disable-next-line no-unused-vars
@@ -213,9 +217,9 @@ export const VirtualizedCulturalHeritageFilter: React.FC<CulturalHeritageFilterP
           or collapse regions. Check or uncheck items to filter results.
         </div>
         <List
-          height={256} // max-h-64 = 16rem = 256px
+          height={LIST_HEIGHT}
           itemCount={flattenedItems.length}
-          itemSize={40} // Approximate height of each row
+          itemSize={ROW_HEIGHT}
           width="100%"
           itemData={itemData}
         >

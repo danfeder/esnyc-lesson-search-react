@@ -15,6 +15,9 @@ import {
   COOKING_METHODS,
 } from '../../utils/filterConstants';
 
+// Constants
+const TAB_COUNT = 3; // Number of tabs in the modal
+
 interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -43,11 +46,11 @@ export const FilterModal = React.memo<FilterModalProps>(
         // Tab navigation between tabs (Ctrl/Cmd + Left/Right arrow)
         if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowRight') {
           e.preventDefault();
-          setSelectedTab((prev) => (prev + 1) % 3);
+          setSelectedTab((prev) => (prev + 1) % TAB_COUNT);
         }
         if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft') {
           e.preventDefault();
-          setSelectedTab((prev) => (prev - 1 + 3) % 3);
+          setSelectedTab((prev) => (prev - 1 + TAB_COUNT) % TAB_COUNT);
         }
       };
 
