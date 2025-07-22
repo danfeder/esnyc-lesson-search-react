@@ -52,6 +52,7 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     return pills;
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const activeFilters = useMemo(() => getActiveFilters(), [filters]);
   const hasActiveFilters = activeFilters.length > 0 || filters.query.trim() !== '';
 

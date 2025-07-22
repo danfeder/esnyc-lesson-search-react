@@ -27,8 +27,11 @@ interface RowProps {
     expandedRegions: Set<string>;
     selectedValues: string[];
     facets: Record<string, Record<string, number>>;
+    // eslint-disable-next-line no-unused-vars
     onToggleExpand: (region: string) => void;
+    // eslint-disable-next-line no-unused-vars
     onRegionChange: (regionName: string, subregions: string[], checked: boolean) => void;
+    // eslint-disable-next-line no-unused-vars
     onSubregionChange: (subregion: string, checked: boolean) => void;
   };
 }
