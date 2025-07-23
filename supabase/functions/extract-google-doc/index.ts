@@ -1,5 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { getGoogleAccessToken } from '../_shared/google-auth.ts';
+import {
+  extractTextFromGoogleDoc,
+  extractMetadataFromContent,
+} from '../_shared/google-docs-parser.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,8 +35,57 @@ serve(async (req) => {
     const googleServiceAccount = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON');
 
     if (googleServiceAccount) {
-      // TODO: Implement real Google Docs API extraction
-      // For now, continue with enhanced mock
+      try {
+        const credentials = JSON.parse(googleServiceAccount);
+        const accessToken = await getGoogleAccessToken(credentials);
+
+        // Get document from Google Docs API
+        const docResponse = await fetch(`https://docs.googleapis.com/v1/documents/${docId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!docResponse.ok) {
+          const errorText = await docResponse.text();
+          console.error(`Google Docs API error: ${docResponse.status} - ${errorText}`);
+
+          // Check if it's a permission error
+          if (docResponse.status === 403) {
+            throw new Error(
+              'Document not accessible. Please share the document with the service account or make it public.'
+            );
+          }
+          throw new Error(`Google Docs API error: ${docResponse.status}`);
+        }
+
+        const doc = await docResponse.json();
+        const content = extractTextFromGoogleDoc(doc);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              docId,
+              title: doc.title,
+              content,
+              metadata: {
+                wordCount: content.split(/\s+/).length,
+                extractionMethod: 'google-api',
+                hasImages: doc.inlineObjects ? Object.keys(doc.inlineObjects).length > 0 : false,
+              },
+              extractedAt: new Date().toISOString(),
+            },
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      } catch (error) {
+        console.error('Google Docs extraction failed:', error);
+        // Fall back to mock if real extraction fails
+      }
     }
 
     // Enhanced mock that simulates real lesson content
