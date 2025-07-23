@@ -12,6 +12,7 @@ interface DetectDuplicatesRequest {
   content: string;
   title: string;
   metadata?: any;
+  embedding?: number[];
 }
 
 interface DuplicateResult {
@@ -91,7 +92,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { submissionId, content, title, metadata } =
+    const { submissionId, content, title, metadata, embedding } =
       (await req.json()) as DetectDuplicatesRequest;
 
     // Generate content hash
@@ -124,45 +125,88 @@ serve(async (req) => {
       }
     }
 
-    // Get embedding for semantic search (would be generated in production)
-    // For now, we'll search by title similarity
-    const { data: allLessons, error: lessonsError } = await supabase
-      .from('lessons')
-      .select('lesson_id, title, metadata')
-      .limit(100); // In production, would use vector similarity search
+    // Get semantic matches if embedding provided
+    if (embedding && embedding.length === 1536) {
+      const vectorString = `[${embedding.join(',')}]`;
 
-    if (lessonsError) throw lessonsError;
+      // Use the SQL function for semantic search
+      const { data: semanticMatches, error: semanticError } = await supabase.rpc(
+        'find_similar_lessons_by_embedding',
+        {
+          query_embedding: vectorString,
+          similarity_threshold: 0.3,
+          max_results: 20,
+        }
+      );
 
-    // Find similar lessons by title
-    for (const lesson of allLessons || []) {
-      // Skip if already found as exact match
-      if (duplicates.some((d) => d.lessonId === lesson.lesson_id)) continue;
+      if (!semanticError && semanticMatches) {
+        for (const match of semanticMatches) {
+          // Skip if already found as exact match
+          if (duplicates.some((d) => d.lessonId === match.lesson_id)) continue;
 
-      const titleSim = calculateTitleSimilarity(title, lesson.title);
-      const metaOverlap = calculateMetadataOverlap(metadata, lesson.metadata);
+          // Get full lesson data for metadata
+          const { data: lesson } = await supabase
+            .from('lessons')
+            .select('metadata')
+            .eq('lesson_id', match.lesson_id)
+            .single();
 
-      // Combined score (would include semantic similarity in production)
-      const combinedScore = titleSim * 0.5 + metaOverlap * 0.3 + 0.2; // 0.2 is placeholder for semantic
+          const titleSim = calculateTitleSimilarity(title, match.title);
+          const metaOverlap = calculateMetadataOverlap(metadata, lesson?.metadata);
+          const semanticSim = match.similarity_score;
 
-      if (combinedScore >= 0.3) {
-        // Threshold for considering as potential duplicate
-        let matchType: 'high' | 'medium' | 'low';
-        if (combinedScore >= 0.85) matchType = 'high';
-        else if (combinedScore >= 0.7) matchType = 'medium';
-        else matchType = 'low';
+          // Combined score with real semantic similarity
+          const combinedScore = titleSim * 0.3 + metaOverlap * 0.2 + semanticSim * 0.5;
 
-        duplicates.push({
-          lessonId: lesson.lesson_id,
-          title: lesson.title,
-          similarityScore: combinedScore,
-          matchType,
-          matchDetails: {
-            hashMatch: false,
-            titleSimilarity: titleSim,
-            semanticSimilarity: 0.2, // Placeholder
-            metadataOverlap: metaOverlap,
-          },
-        });
+          duplicates.push({
+            lessonId: match.lesson_id,
+            title: match.title,
+            similarityScore: combinedScore,
+            matchType: match.match_type as any,
+            matchDetails: {
+              hashMatch: false,
+              titleSimilarity: titleSim,
+              semanticSimilarity: semanticSim,
+              metadataOverlap: metaOverlap,
+            },
+          });
+        }
+      }
+    } else {
+      // Fallback to title-based search if no embedding
+      const { data: allLessons, error: lessonsError } = await supabase
+        .from('lessons')
+        .select('lesson_id, title, metadata')
+        .limit(100);
+
+      if (lessonsError) throw lessonsError;
+
+      for (const lesson of allLessons || []) {
+        if (duplicates.some((d) => d.lessonId === lesson.lesson_id)) continue;
+
+        const titleSim = calculateTitleSimilarity(title, lesson.title);
+        const metaOverlap = calculateMetadataOverlap(metadata, lesson.metadata);
+        const combinedScore = titleSim * 0.7 + metaOverlap * 0.3;
+
+        if (combinedScore >= 0.3) {
+          let matchType: 'high' | 'medium' | 'low';
+          if (combinedScore >= 0.85) matchType = 'high';
+          else if (combinedScore >= 0.7) matchType = 'medium';
+          else matchType = 'low';
+
+          duplicates.push({
+            lessonId: lesson.lesson_id,
+            title: lesson.title,
+            similarityScore: combinedScore,
+            matchType,
+            matchDetails: {
+              hashMatch: false,
+              titleSimilarity: titleSim,
+              semanticSimilarity: 0,
+              metadataOverlap: metaOverlap,
+            },
+          });
+        }
       }
     }
 

@@ -96,8 +96,39 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // Step 4: Generate embedding (would use OpenAI in production)
-    // For now, we'll skip this step
+    // Step 4: Generate embedding
+    let contentEmbedding = null;
+    try {
+      const openAIKey = Deno.env.get('OPENAI_API_KEY');
+      if (openAIKey) {
+        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${openAIKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: `${title}\n${content}`.substring(0, 8000), // Truncate to avoid token limits
+          }),
+        });
+
+        if (embeddingResponse.ok) {
+          const embeddingData = await embeddingResponse.json();
+          contentEmbedding = embeddingData.data[0].embedding;
+
+          // Store embedding in submission
+          const vectorString = `[${contentEmbedding.join(',')}]`;
+          await supabaseAdmin
+            .from('lesson_submissions')
+            .update({ content_embedding: vectorString })
+            .eq('id', submission.id);
+        }
+      }
+    } catch (error) {
+      console.error('Embedding generation failed:', error);
+      // Continue without embedding
+    }
 
     // Step 5: Detect duplicates
     const duplicateResponse = await fetch(`${supabaseUrl}/functions/v1/detect-duplicates`, {
@@ -111,6 +142,7 @@ serve(async (req) => {
         content,
         title,
         metadata: {}, // Would extract from content in production
+        embedding: contentEmbedding,
       }),
     });
 
