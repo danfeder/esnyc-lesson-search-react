@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-import { createHash } from 'https://deno.land/std@0.168.0/crypto/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,11 +28,11 @@ interface DuplicateResult {
 }
 
 // Generate content hash for exact duplicate detection
-function generateContentHash(content: string, metadata: any = {}): string {
+async function generateContentHash(content: string, metadata: any = {}): Promise<string> {
   const contentParts = [content.toLowerCase().trim(), JSON.stringify(metadata)];
   const contentString = contentParts.join('|');
   const msgUint8 = new TextEncoder().encode(contentString);
-  const hashBuffer = createHash('sha256').update(msgUint8).digest();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
@@ -96,7 +95,7 @@ serve(async (req) => {
       (await req.json()) as DetectDuplicatesRequest;
 
     // Generate content hash
-    const contentHash = generateContentHash(content, metadata);
+    const contentHash = await generateContentHash(content, metadata);
 
     // First, check for exact hash matches
     const { data: hashMatches, error: hashError } = await supabase.rpc('find_lessons_by_hash', {
