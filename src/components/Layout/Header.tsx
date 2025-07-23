@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, User } from 'lucide-react';
+import { Search, User, Plus, Shield } from 'lucide-react';
 
 interface HeaderProps {
   totalLessons?: number;
@@ -8,6 +8,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategories = 11 }) => {
+  // Temporarily removed auth to debug crashes
+
   return (
     <header className="bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,6 +39,20 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
 
           {/* User Actions */}
           <div className="flex items-center gap-4">
+            <Link
+              to="/submit"
+              className="flex items-center gap-2 px-4 py-2 bg-accent-500 hover:bg-accent-600 rounded-lg transition-colors font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Submit Lesson</span>
+            </Link>
+            <Link
+              to="/review"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-400 rounded-lg transition-colors font-medium"
+            >
+              <Shield className="w-5 h-5" />
+              <span className="hidden sm:inline">Review</span>
+            </Link>
             <button
               className="p-2 hover:bg-primary-500 rounded-lg transition-colors"
               aria-label="Search"
