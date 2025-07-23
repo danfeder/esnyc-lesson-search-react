@@ -113,3 +113,8 @@ temp/
 # Development files
 DEVELOPMENT_PLAN.md
 FIXES_NEEDED.md
+
+# Data files
+*.csv
+database-backups/
+supabase/.temp/
