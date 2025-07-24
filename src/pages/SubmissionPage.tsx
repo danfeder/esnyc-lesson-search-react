@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { AlertCircle, CheckCircle2, Loader2, FileText, AlertTriangle } from 'lucide-react';
@@ -307,7 +307,7 @@ export function SubmissionPage() {
           setShowAuthModal(false);
           // Re-submit form after successful auth
           if (googleDocUrl) {
-            handleSubmit(new Event('submit') as any);
+            handleSubmit({ preventDefault: () => {} } as React.FormEvent);
           }
         }}
       />
