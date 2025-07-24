@@ -36,11 +36,12 @@ serve(async (req) => {
     // Create service client for admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user
+    // Get user - need to pass the JWT token
+    const token = authHeader.replace('Bearer ', '');
     const {
       data: { user },
       error: userError,
-    } = await supabaseClient.auth.getUser();
+    } = await supabaseClient.auth.getUser(token);
     if (userError || !user) throw new Error('Unauthorized');
 
     const { googleDocUrl, submissionType, originalLessonId } =

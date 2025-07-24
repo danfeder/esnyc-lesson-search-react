@@ -92,45 +92,77 @@ export function ReviewDetail() {
 
   const loadSubmission = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get the submission
+      const { data: submissionData, error: submissionError } = await supabase
         .from('lesson_submissions')
-        .select(
-          `
-          *,
-          teacher:teacher_id (
-            email,
-            full_name
-          ),
-          similarities:submission_similarities (
-            lesson_id,
-            combined_score,
-            match_type,
-            title_similarity,
-            content_similarity,
-            lesson:lesson_id (
-              title,
-              grade_levels,
-              thematic_categories
-            )
-          ),
-          review:submission_reviews (
-            metadata,
-            decision,
-            notes
-          )
-        `
-        )
+        .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (submissionError) throw submissionError;
+      if (!submissionData) {
+        console.error('No submission found with id:', id);
+        setLoading(false);
+        return;
+      }
 
-      setSubmission(data);
+      // Get similarities separately
+      const { data: similarities } = await supabase
+        .from('submission_similarities')
+        .select('*')
+        .eq('submission_id', id)
+        .order('combined_score', { ascending: false });
+
+      // Get lessons for similarities
+      let similaritiesWithLessons = [];
+      if (similarities && similarities.length > 0) {
+        const lessonIds = similarities.map((s) => s.lesson_id);
+        const { data: lessons } = await supabase
+          .from('lessons')
+          .select('id, title, grade_levels, thematic_categories')
+          .in('id', lessonIds);
+
+        if (lessons) {
+          similaritiesWithLessons = similarities.map((sim) => {
+            const lesson = lessons.find((l) => l.id === sim.lesson_id);
+            return {
+              ...sim,
+              lesson: lesson || { title: 'Unknown', grade_levels: [], thematic_categories: [] },
+            };
+          });
+        }
+      }
+
+      // Get review separately
+      const { data: reviews } = await supabase
+        .from('submission_reviews')
+        .select('*')
+        .eq('submission_id', id);
+
+      // Get teacher profile
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id, full_name')
+        .eq('id', submissionData.teacher_id)
+        .single();
+
+      // Combine all data
+      const fullSubmission = {
+        ...submissionData,
+        similarities: similaritiesWithLessons,
+        review: reviews || [],
+        teacher: {
+          email: 'teacher@example.com',
+          full_name: profile?.full_name || 'Unknown Teacher',
+        },
+      };
+
+      setSubmission(fullSubmission);
 
       // If there's an existing review, load its data
-      if (data.review && data.review.length > 0) {
-        const review = data.review[0];
-        setMetadata(review.metadata || {});
+      if (reviews && reviews.length > 0) {
+        const review = reviews[0];
+        setMetadata(review.tagged_metadata || {});
         setDecision(review.decision);
         setNotes(review.notes || '');
       }
@@ -154,7 +186,7 @@ export function ReviewDetail() {
           reviewer_id: (await supabase.auth.getUser()).data.user?.id,
           decision,
           notes,
-          metadata,
+          tagged_metadata: metadata, // Use the actual column name
           created_at: new Date().toISOString(),
         })
         .select()
