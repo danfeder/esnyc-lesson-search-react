@@ -179,10 +179,7 @@ const applyAdvancedFiltering = async (
     }
 
     // Lesson format filter
-    if (
-      filters.lessonFormat.length > 0 &&
-      !hasAnyMatch(lesson.metadata.lessonFormat, filters.lessonFormat)
-    ) {
+    if (filters.lessonFormat && !lesson.metadata.lessonFormat?.includes(filters.lessonFormat)) {
       return false;
     }
 
