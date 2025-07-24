@@ -14,10 +14,10 @@ export default [
     files: ['**/*.{js,jsx,ts,tsx}'],
     plugins: {
       '@typescript-eslint': typescript,
-      'react': react,
+      react: react,
       'react-hooks': reactHooks,
       'jsx-a11y': jsxA11y,
-      'prettier': prettier
+      prettier: prettier,
     },
     languageOptions: {
       parser: typescriptParser,
@@ -25,8 +25,8 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
         ecmaFeatures: {
-          jsx: true
-        }
+          jsx: true,
+        },
       },
       globals: {
         window: 'readonly',
@@ -41,44 +41,53 @@ export default [
         Deno: 'readonly',
         global: 'readonly',
         __dirname: 'readonly',
-        vi: 'readonly'
-      }
+        vi: 'readonly',
+      },
     },
     settings: {
       react: {
-        version: 'detect'
-      }
+        version: 'detect',
+      },
     },
     rules: {
       // TypeScript
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      
+
       // React
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      
+
       // Accessibility
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/anchor-is-valid': 'warn',
       'jsx-a11y/no-autofocus': 'warn',
-      
+
       // General
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
-      'prettier/prettier': 'error'
-    }
+      'prettier/prettier': 'error',
+    },
   },
   {
     files: ['**/*.js'],
     rules: {
-      '@typescript-eslint/no-var-requires': 'off'
-    }
+      '@typescript-eslint/no-var-requires': 'off',
+    },
   },
   {
-    ignores: ['dist/', 'node_modules/', '*.config.js', 'vite.config.ts', 'scripts/**/*.js', 'supabase/functions/**/*.ts']
-  }
+    ignores: [
+      'dist/',
+      'node_modules/',
+      '*.config.js',
+      'vite.config.ts',
+      'scripts/**/*.js',
+      'scripts/**/*.mjs',
+      'supabase/functions/**/*.ts',
+      'temp-debug-files/**/*',
+    ],
+  },
 ];
