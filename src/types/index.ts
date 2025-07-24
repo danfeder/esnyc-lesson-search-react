@@ -12,6 +12,8 @@ export interface Lesson {
     summary: number;
     gradeLevels: number;
   };
+  last_modified?: string;
+  processing_notes?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -33,6 +35,10 @@ export interface LessonMetadata {
   gardenSkills?: string[];
   cookingSkills?: string[];
   cookingMethods?: string[];
+  observancesHolidays?: string[];
+  academicIntegration?: string[];
+  socialEmotionalLearning?: string[];
+  culturalResponsivenessFeatures?: string[];
 }
 
 // Search and filter types

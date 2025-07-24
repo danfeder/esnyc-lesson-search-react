@@ -238,10 +238,13 @@ export function ReviewDetail() {
             academicIntegration: metadata.academicIntegration || [],
             socialEmotionalLearning: metadata.socialEmotionalLearning || [],
             cookingMethods: metadata.cookingMethods ? [metadata.cookingMethods] : [],
+            observancesHolidays: metadata.observancesHolidays || [],
+            culturalResponsivenessFeatures: metadata.culturalResponsivenessFeatures || [],
           },
           content_text: submission.extracted_content,
           content_hash: submission.content_hash,
           original_submission_id: submission.id,
+          processing_notes: metadata.processingNotes || '',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -296,11 +299,14 @@ export function ReviewDetail() {
               academicIntegration: metadata.academicIntegration || [],
               socialEmotionalLearning: metadata.socialEmotionalLearning || [],
               cookingMethods: metadata.cookingMethods ? [metadata.cookingMethods] : [],
+              observancesHolidays: metadata.observancesHolidays || [],
+              culturalResponsivenessFeatures: metadata.culturalResponsivenessFeatures || [],
             },
             content_text: submission.extracted_content,
             content_hash: submission.content_hash,
             version_number: (existingLesson.version_number || 1) + 1,
             has_versions: true,
+            processing_notes: metadata.processingNotes || '',
             updated_at: new Date().toISOString(),
           })
           .eq('lesson_id', selectedDuplicate);
@@ -722,6 +728,66 @@ export function ReviewDetail() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Additional Metadata Section */}
+            <h3 className="text-md font-semibold text-gray-900 mt-6 mb-3">
+              Additional Metadata (Optional)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Observances & Holidays */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Observances & Holidays
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Thanksgiving, Earth Day (comma-separated)"
+                  value={metadata.observancesHolidays?.join(', ') || ''}
+                  onChange={(e) => {
+                    const values = e.target.value
+                      .split(',')
+                      .map((v) => v.trim())
+                      .filter(Boolean);
+                    handleMetadataChange('observancesHolidays', values);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Cultural Responsiveness Features */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cultural Responsiveness Features
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Diverse perspectives, Inclusive language (comma-separated)"
+                  value={metadata.culturalResponsivenessFeatures?.join(', ') || ''}
+                  onChange={(e) => {
+                    const values = e.target.value
+                      .split(',')
+                      .map((v) => v.trim())
+                      .filter(Boolean);
+                    handleMetadataChange('culturalResponsivenessFeatures', values);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Processing Notes */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Processing Notes
+                </label>
+                <textarea
+                  placeholder="Any notes about the extraction or processing of this lesson..."
+                  value={metadata.processingNotes || ''}
+                  onChange={(e) => handleMetadataChange('processingNotes', e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
               </div>
             </div>
           </div>
