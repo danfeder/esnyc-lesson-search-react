@@ -6,6 +6,7 @@ import { SearchPage } from './pages/SearchPage';
 import { SubmissionPage } from './pages/SubmissionPage';
 import { ReviewDashboard } from './pages/ReviewDashboard';
 import { ReviewDetail } from './pages/ReviewDetail';
+import { useLessonStats } from './hooks/useLessonStats';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -19,25 +20,32 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppContent() {
+  const { totalLessons, totalCategories } = useLessonStats();
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <Header totalLessons={totalLessons} totalCategories={totalCategories} />
+
+        <main>
+          <Routes>
+            <Route path="/" element={<SearchPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/submit" element={<SubmissionPage />} />
+            <Route path="/review" element={<ReviewDashboard />} />
+            <Route path="/review/:id" element={<ReviewDetail />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <Header />
-
-          <main>
-            <Routes>
-              <Route path="/" element={<SearchPage />} />
-              <Route path="/search" element={<SearchPage />} />
-              <Route path="/submit" element={<SubmissionPage />} />
-              <Route path="/review" element={<ReviewDashboard />} />
-              <Route path="/review/:id" element={<ReviewDetail />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-
+      <AppContent />
       {/* React Query DevTools - only in development */}
       {import.meta.env.MODE === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>

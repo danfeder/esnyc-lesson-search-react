@@ -4,6 +4,7 @@ import { Search, User, Plus, Shield, LogOut, LogIn, ChevronDown } from 'lucide-r
 import { supabase } from '../../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { AuthModal } from '../Auth/AuthModal';
+import { APP_VERSION } from '../../config/version';
 
 interface HeaderProps {
   totalLessons?: number;
@@ -95,8 +96,10 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
             <Link to="/" className="flex items-center gap-4 hover:opacity-90 transition-opacity">
               <div className="text-4xl">🌱</div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Edible Schoolyard NYC</h1>
-                <p className="text-primary-100 text-sm">Modern Lesson Library</p>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Edible Schoolyard NYC Lesson Library
+                </h1>
+                <p className="text-primary-100 text-sm">Version {APP_VERSION}</p>
               </div>
             </Link>
 
