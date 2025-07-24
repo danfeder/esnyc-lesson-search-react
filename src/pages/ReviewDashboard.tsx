@@ -167,9 +167,7 @@ export function ReviewDashboard() {
   };
 
   // Temporarily disabled until we fix the relationship
-  const getTopDuplicates = (
-    _submission: Submission
-  ): Array<{
+  const getTopDuplicates = (): Array<{
     lesson_id: string;
     lesson: { title: string };
     combined_score: number;
@@ -242,7 +240,7 @@ export function ReviewDashboard() {
         ) : (
           submissions.map((submission) => {
             const StatusIcon = statusIcons[submission.status];
-            const topDuplicates = getTopDuplicates(submission);
+            const topDuplicates = getTopDuplicates();
 
             return (
               <div

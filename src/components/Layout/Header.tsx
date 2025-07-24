@@ -148,7 +148,6 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('User menu clicked!');
                     setShowUserMenu(!showUserMenu);
                   }}
                   className="inline-flex items-center gap-2 p-2 hover:bg-primary-500 rounded-lg transition-colors"
