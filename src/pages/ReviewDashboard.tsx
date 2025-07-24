@@ -167,7 +167,13 @@ export function ReviewDashboard() {
   };
 
   // Temporarily disabled until we fix the relationship
-  const getTopDuplicates = (submission: Submission) => {
+  const getTopDuplicates = (
+    _submission: Submission
+  ): Array<{
+    lesson_id: string;
+    lesson: { title: string };
+    combined_score: number;
+  }> => {
     return [];
   };
 

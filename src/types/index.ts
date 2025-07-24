@@ -45,7 +45,7 @@ export interface SearchFilters {
   culturalHeritage: string[];
   location: string[];
   activityType: string[];
-  lessonFormat: string[];
+  lessonFormat: string; // Single-select dropdown
   academicIntegration: string[];
   socialEmotionalLearning: string[];
   cookingMethods: string; // Single-select, so string not array
