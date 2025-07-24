@@ -44,7 +44,7 @@ const initialFilters: SearchFilters = {
   culturalHeritage: [],
   location: [],
   activityType: [],
-  lessonFormat: [],
+  lessonFormat: '', // Single-select dropdown, empty string = all
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: '', // Single-select, empty string = all

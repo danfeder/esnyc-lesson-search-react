@@ -9,7 +9,7 @@ import { LessonModal } from '../components/Modal/LessonModal';
 import { ScreenReaderAnnouncer } from '../components/Common/ScreenReaderAnnouncer';
 import { SkipLink } from '../components/Common/SkipLink';
 import { useSearchStore } from '../stores/searchStore';
-import { useAlgoliaSearch } from '../hooks/useAlgoliaSearch';
+import { useSupabaseSearch } from '../hooks/useSupabaseSearch';
 import type { Lesson, ViewState } from '../types';
 
 export const SearchPage: React.FC = () => {
@@ -18,7 +18,7 @@ export const SearchPage: React.FC = () => {
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  const { lessons, totalCount, isLoading, error, facets } = useAlgoliaSearch(
+  const { lessons, totalCount, isLoading, error, facets } = useSupabaseSearch(
     filters,
     viewState.currentPage,
     viewState.resultsPerPage

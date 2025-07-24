@@ -88,8 +88,8 @@ export function useAlgoliaSearch(
   }, [filters.activityType]);
 
   const formatFilter = useMemo(() => {
-    if (!filters.lessonFormat?.length) return '';
-    return filters.lessonFormat.map((format) => `metadata.lessonFormat:"${format}"`).join(' OR ');
+    if (!filters.lessonFormat) return '';
+    return `metadata.lessonFormat:"${filters.lessonFormat}"`;
   }, [filters.lessonFormat]);
 
   const academicFilter = useMemo(() => {
