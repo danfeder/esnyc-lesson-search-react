@@ -192,7 +192,7 @@ export function AdminUsers() {
         .join('\n');
 
       // Download
-      const blob = new Blob([csv], { type: 'text/csv' });
+      const blob = new window.Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
