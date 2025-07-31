@@ -108,10 +108,10 @@ export function AdminInviteUser() {
       // TODO: Send invitation email via edge function
       // For development, show the invitation link
       if (inviteData) {
-        console.log(
-          'Invitation link:',
-          `${window.location.origin}/accept-invitation?token=${inviteData.token}`
-        );
+        // Development only - in production this would be sent via email
+        const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
+        // Store in window for debugging
+        (window as any)._lastInvitationLink = invitationLink;
       }
 
       setSuccess(true);

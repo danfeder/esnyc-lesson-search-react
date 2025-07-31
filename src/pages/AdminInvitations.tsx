@@ -123,7 +123,7 @@ export function AdminInvitations() {
   };
 
   const handleCancel = async (invitationId: string) => {
-    if (!confirm('Are you sure you want to cancel this invitation?')) {
+    if (!window.confirm('Are you sure you want to cancel this invitation?')) {
       return;
     }
 
@@ -181,13 +181,13 @@ export function AdminInvitations() {
       .map((row) => row.map((cell) => `"${cell}"`).join(','))
       .join('\n');
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
+    const blob = new window.Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `invitations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
-    URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url);
   };
 
   const getStatusIcon = (invitation: UserInvitation) => {
