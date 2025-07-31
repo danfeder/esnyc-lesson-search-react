@@ -69,17 +69,23 @@ export function AdminUserDetail() {
       if (profileError) throw profileError;
 
       // Load email separately
+      console.log('Loading email for user:', userId);
       const { data: emailData, error: emailError } = await supabase.rpc('get_user_emails', {
         user_ids: [userId],
       });
 
+      console.log('Email RPC response:', { emailData, emailError });
+
       if (!emailError && emailData && emailData.length > 0) {
+        console.log('Setting email from RPC:', emailData[0].email);
         setEmail(emailData[0].email);
       } else {
         // Check if profile has email field as fallback
         if (profile.email) {
+          console.log('Using email from profile:', profile.email);
           setEmail(profile.email);
         } else {
+          console.log('No email found for user');
           setEmail('No email on file');
         }
 
