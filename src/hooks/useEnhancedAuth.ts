@@ -65,7 +65,6 @@ export function useEnhancedAuth(): AuthContextValue {
 
       if (!data) {
         // No profile exists, create one
-        console.log('Creating new user profile for:', authUser.email);
 
         const newProfile = {
           id: authUser.id,
@@ -122,7 +121,7 @@ export function useEnhancedAuth(): AuthContextValue {
     // Apply custom permission overrides if any
     if (user.permissions) {
       const customPermissions = Object.entries(user.permissions)
-        .filter(([_, enabled]) => enabled)
+        .filter(([, enabled]) => enabled)
         .map(([permission]) => permission as Permission);
 
       // Merge with role permissions (custom overrides take precedence)

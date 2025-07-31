@@ -15,7 +15,7 @@ export async function verifyUserManagementSetup() {
   try {
     // 1. Check if we can query user_profiles with new columns
     console.log('1️⃣ Checking user_profiles table...');
-    const { data: profileData, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('user_profiles')
       .select('id, role, is_active, school_name, permissions')
       .limit(1);
@@ -100,7 +100,7 @@ export async function verifyUserManagementSetup() {
       }
 
       // Try to query invitations (admin only)
-      const { data: invites, error: rlsInviteError } = await supabase
+      const { error: rlsInviteError } = await supabase
         .from('user_invitations')
         .select('id')
         .limit(1);

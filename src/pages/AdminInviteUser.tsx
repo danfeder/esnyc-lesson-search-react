@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   Send,
   Mail,
-  User,
   Building,
   MapPin,
   GraduationCap,
@@ -75,7 +74,7 @@ export function AdminInviteUser() {
       }
 
       // Create invitation
-      const { data: invitation, error: inviteError } = await supabase
+      const { error: inviteError } = await supabase
         .from('user_invitations')
         .insert({
           email: formData.email,

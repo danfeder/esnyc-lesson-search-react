@@ -1,20 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Users,
   Search,
-  Filter,
   Plus,
   Edit,
-  Shield,
   CheckCircle,
   XCircle,
   Download,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { EnhancedUserProfile, UserRole, UserFilters } from '../types/auth';
+import { EnhancedUserProfile, UserFilters } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
 
 export function AdminUsers() {
@@ -82,9 +80,7 @@ export function AdminUsers() {
 
       if (profiles && profiles.length > 0) {
         // Get auth users to fetch emails
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        await supabase.auth.getUser();
 
         // Create an RPC function call to get emails
         const { data: emailsData, error: emailError } = await supabase.rpc('get_user_emails', {
@@ -107,13 +103,13 @@ export function AdminUsers() {
             filters.search &&
             !usersWithEmails.some(
               (u) =>
-                u.full_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
-                u.school_name?.toLowerCase().includes(filters.search.toLowerCase())
+                u.full_name?.toLowerCase().includes(filters.search?.toLowerCase() || '') ||
+                u.school_name?.toLowerCase().includes(filters.search?.toLowerCase() || '')
             )
           ) {
             // If search doesn't match name/school, check emails
             filteredUsers = usersWithEmails.filter((u) =>
-              u.email.toLowerCase().includes(filters.search.toLowerCase())
+              u.email.toLowerCase().includes(filters.search?.toLowerCase() || '')
             );
           }
 

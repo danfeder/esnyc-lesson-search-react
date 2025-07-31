@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { verifyUserManagementSetup, setupAdminUser } from '../utils/verifyUserManagement';
 import { CheckCircle, XCircle, AlertCircle, Shield } from 'lucide-react';
 
