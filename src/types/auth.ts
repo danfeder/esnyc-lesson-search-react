@@ -1,4 +1,5 @@
 // User roles and permissions types
+/* eslint-disable no-unused-vars */
 export enum UserRole {
   TEACHER = 'teacher',
   REVIEWER = 'reviewer',
@@ -27,6 +28,7 @@ export enum Permission {
   EXPORT_DATA = 'export_data',
   SYSTEM_SETTINGS = 'system_settings',
 }
+/* eslint-enable no-unused-vars */
 
 // Default permissions for each role
 export const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
