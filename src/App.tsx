@@ -8,7 +8,12 @@ import { ReviewDashboard } from './pages/ReviewDashboard';
 import { ReviewDetail } from './pages/ReviewDetail';
 import { AdminDuplicates } from './pages/AdminDuplicates';
 import { AdminDuplicateDetail } from './pages/AdminDuplicateDetail';
+import { AdminUsers } from './pages/AdminUsers';
+import { AdminInviteUser } from './pages/AdminInviteUser';
+import { VerifySetup } from './pages/VerifySetup';
 import { useLessonStats } from './hooks/useLessonStats';
+import { ProtectedRoute } from './components/Auth/ProtectedRoute';
+import { Permission } from './types/auth';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -35,10 +40,56 @@ function AppContent() {
             <Route path="/" element={<SearchPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/submit" element={<SubmissionPage />} />
-            <Route path="/review" element={<ReviewDashboard />} />
-            <Route path="/review/:id" element={<ReviewDetail />} />
-            <Route path="/admin/duplicates" element={<AdminDuplicates />} />
-            <Route path="/admin/duplicates/:groupId" element={<AdminDuplicateDetail />} />
+            <Route
+              path="/review"
+              element={
+                <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
+                  <ReviewDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/review/:id"
+              element={
+                <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
+                  <ReviewDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/duplicates"
+              element={
+                <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
+                  <AdminDuplicates />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/duplicates/:groupId"
+              element={
+                <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
+                  <AdminDuplicateDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users/invite"
+              element={
+                <ProtectedRoute permissions={[Permission.INVITE_USERS]}>
+                  <AdminInviteUser />
+                </ProtectedRoute>
+              }
+            />
+            {/* Temporary route for testing - remove in production */}
+            <Route path="/verify-setup" element={<VerifySetup />} />
           </Routes>
         </main>
       </div>

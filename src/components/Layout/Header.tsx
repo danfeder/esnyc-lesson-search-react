@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, Plus, Shield, LogOut, LogIn, ChevronDown } from 'lucide-react';
+import { Search, User, Plus, Shield, LogOut, LogIn, ChevronDown, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { User as SupabaseUser } from '@supabase/supabase-js';
 import { AuthModal } from '../Auth/AuthModal';
 import { APP_VERSION } from '../../config/version';
+import { useEnhancedAuth } from '../../hooks/useEnhancedAuth';
+import { Permission } from '../../types/auth';
 
 interface HeaderProps {
   totalLessons?: number;
@@ -13,37 +14,12 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategories = 11 }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { user, hasPermission } = useEnhancedAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) {
-        fetchUserRole(user.id);
-      }
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      } else {
-        setUserRole(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
+  React.useEffect(() => {
     // Close dropdown when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -55,37 +31,11 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching user role:', error);
-        // Default to teacher if profile doesn't exist
-        setUserRole('teacher');
-      } else if (data) {
-        setUserRole(data.role);
-      } else {
-        // No profile found, default to teacher
-        setUserRole('teacher');
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      setUserRole('teacher');
-    }
-  };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setShowUserMenu(false);
     navigate('/');
   };
-
-  const isReviewerOrAdmin = userRole === 'reviewer' || userRole === 'admin';
 
   return (
     <>
@@ -126,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                 <Plus className="w-5 h-5" />
                 <span className="hidden sm:inline">Submit Lesson</span>
               </Link>
-              {isReviewerOrAdmin && (
+              {hasPermission(Permission.REVIEW_LESSONS) && (
                 <Link
                   to="/review"
                   className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-400 rounded-lg transition-colors font-medium"
@@ -166,10 +116,20 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                         <div className="px-4 py-2 border-b border-gray-200">
                           <p className="text-sm font-medium">{user.email}</p>
                           <p className="text-xs text-gray-500 capitalize">
-                            {userRole || 'Teacher'}
+                            {user.role?.replace('_', ' ') || 'Teacher'}
                           </p>
                         </div>
-                        {isReviewerOrAdmin && (
+                        {hasPermission(Permission.VIEW_USERS) && (
+                          <Link
+                            to="/admin/users"
+                            onClick={() => setShowUserMenu(false)}
+                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <Users className="w-4 h-4" />
+                            Manage Users
+                          </Link>
+                        )}
+                        {hasPermission(Permission.MANAGE_DUPLICATES) && (
                           <Link
                             to="/admin/duplicates"
                             onClick={() => setShowUserMenu(false)}

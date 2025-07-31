@@ -54,11 +54,26 @@ export function useAuth() {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('role')
-        .eq('user_id', user.id)
-        .single();
+        .eq('id', user.id) // Changed from user_id to id
+        .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching user role:', error);
+        setAuthState({ user, role: 'teacher', loading: false });
+      } else if (!data) {
+        // No profile exists, create one
+        const { error: createError } = await supabase.from('user_profiles').insert({
+          id: user.id,
+          user_id: user.id,
+          role: 'teacher',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (createError) {
+          console.error('Error creating user profile:', createError);
+        }
         setAuthState({ user, role: 'teacher', loading: false });
       } else {
         setAuthState({ user, role: data?.role || 'teacher', loading: false });
