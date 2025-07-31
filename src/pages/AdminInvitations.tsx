@@ -26,7 +26,6 @@ export function AdminInvitations() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<InvitationFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedInvitations, setSelectedInvitations] = useState<string[]>([]);
   const [resending, setResending] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
 

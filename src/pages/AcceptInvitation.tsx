@@ -24,6 +24,7 @@ interface InvitationData {
   metadata?: any;
   expires_at: string;
   accepted_at?: string;
+  invited_at: string;
 }
 
 export function AcceptInvitation() {

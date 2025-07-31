@@ -18,10 +18,9 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  XCircle,
   Plus,
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
 interface LessonSubmission {
   id: string;
