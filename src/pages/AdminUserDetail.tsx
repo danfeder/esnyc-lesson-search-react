@@ -132,18 +132,24 @@ export function AdminUserDetail() {
 
       // Try to log the update, but don't fail if audit fails
       try {
-        await supabase.from('user_management_audit').insert({
-          action: 'user_profile_updated',
-          target_user_id: userId,
-          old_values: {
-            role: user.role,
-            is_active: user.is_active,
-          },
-          new_values: {
-            role: formData.role,
-            is_active: formData.is_active,
-          },
-        });
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        if (authUser) {
+          await supabase.from('user_management_audit').insert({
+            actor_id: authUser.id,
+            action: 'user_profile_updated',
+            target_user_id: userId,
+            old_values: {
+              role: user.role,
+              is_active: user.is_active,
+            },
+            new_values: {
+              role: formData.role,
+              is_active: formData.is_active,
+            },
+          });
+        }
       } catch (auditError) {
         console.warn('Failed to log audit trail:', auditError);
         // Continue even if audit fails
@@ -175,10 +181,16 @@ export function AdminUserDetail() {
 
       // Try to log the action
       try {
-        await supabase.from('user_management_audit').insert({
-          action: newStatus ? 'user_activated' : 'user_deactivated',
-          target_user_id: userId,
-        });
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        if (authUser) {
+          await supabase.from('user_management_audit').insert({
+            actor_id: authUser.id,
+            action: newStatus ? 'user_activated' : 'user_deactivated',
+            target_user_id: userId,
+          });
+        }
       } catch (auditError) {
         console.warn('Failed to log audit trail:', auditError);
       }
@@ -211,10 +223,16 @@ export function AdminUserDetail() {
 
       // Try to log the deletion
       try {
-        await supabase.from('user_management_audit').insert({
-          action: 'user_deleted',
-          target_user_id: userId,
-        });
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        if (authUser) {
+          await supabase.from('user_management_audit').insert({
+            actor_id: authUser.id,
+            action: 'user_deleted',
+            target_user_id: userId,
+          });
+        }
       } catch (auditError) {
         console.warn('Failed to log audit trail:', auditError);
       }
