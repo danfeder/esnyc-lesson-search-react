@@ -9,6 +9,7 @@ import { ReviewDetail } from './pages/ReviewDetail';
 import { AdminDuplicates } from './pages/AdminDuplicates';
 import { AdminDuplicateDetail } from './pages/AdminDuplicateDetail';
 import { AdminUsers } from './pages/AdminUsers';
+import { AdminUserDetail } from './pages/AdminUserDetail';
 import { AdminInviteUser } from './pages/AdminInviteUser';
 import { VerifySetup } from './pages/VerifySetup';
 import { useLessonStats } from './hooks/useLessonStats';
@@ -85,6 +86,14 @@ function AppContent() {
               element={
                 <ProtectedRoute permissions={[Permission.INVITE_USERS]}>
                   <AdminInviteUser />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users/:userId"
+              element={
+                <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
+                  <AdminUserDetail />
                 </ProtectedRoute>
               }
             />
