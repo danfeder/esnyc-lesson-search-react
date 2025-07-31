@@ -145,7 +145,7 @@ serve(async (req) => {
 
           // Get full lesson data for metadata
           const { data: lesson } = await supabase
-            .from('lessons')
+            .from('lessons_with_metadata')
             .select('metadata')
             .eq('lesson_id', match.lesson_id)
             .single();
@@ -174,7 +174,7 @@ serve(async (req) => {
     } else {
       // Fallback to title-based search if no embedding
       const { data: allLessons, error: lessonsError } = await supabase
-        .from('lessons')
+        .from('lessons_with_metadata')
         .select('lesson_id, title, metadata')
         .limit(100);
 

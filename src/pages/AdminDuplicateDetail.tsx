@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { ChevronLeft, Check, X } from 'lucide-react';
+import { ChevronLeft, Check } from 'lucide-react';
 
 interface LessonDetail {
   lessonId: string;
@@ -47,6 +47,7 @@ export const AdminDuplicateDetail: React.FC = () => {
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lessonDetails, setLessonDetails] = useState<Record<string, any>>({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     if (groupId) {
@@ -78,7 +79,7 @@ export const AdminDuplicateDetail: React.FC = () => {
       // Load full lesson details from database
       const lessonIds = foundGroup.lessons.map((l: any) => l.lessonId);
       const { data: lessons, error: dbError } = await supabase
-        .from('lessons')
+        .from('lessons_with_metadata')
         .select('*')
         .in('lesson_id', lessonIds);
 
@@ -104,28 +105,39 @@ export const AdminDuplicateDetail: React.FC = () => {
       setResolving(true);
       setError(null);
 
-      // TODO: Implement actual resolution logic
-      // For now, just simulate the process
-      console.log('Resolving duplicates:', {
-        groupId,
-        canonicalId: selectedCanonical,
-        mergeMetadata,
-        duplicateIds: group.lessons
-          .filter((l) => l.lessonId !== selectedCanonical)
-          .map((l) => l.lessonId),
+      // Get the duplicate IDs (all lessons except the canonical one)
+      const duplicateIds = group.lessons
+        .filter((l) => l.lessonId !== selectedCanonical)
+        .map((l) => l.lessonId);
+
+      // Call the SQL function to resolve the duplicate group
+      const { data, error: resolveError } = await supabase.rpc('resolve_duplicate_group', {
+        p_group_id: group.groupId,
+        p_canonical_id: selectedCanonical,
+        p_duplicate_ids: duplicateIds,
+        p_duplicate_type: group.type,
+        p_similarity_score: group.similarityScore,
+        p_merge_metadata: mergeMetadata,
+        p_resolution_notes: `Resolved ${group.type} duplicate group with ${group.lessons.length} lessons`,
       });
 
-      // In production, this would:
-      // 1. Create canonical_lessons entries
-      // 2. Optionally merge metadata
-      // 3. Archive duplicates
-      // 4. Update references
-      // 5. Log resolution
+      if (resolveError) {
+        throw new Error(resolveError.message || 'Failed to resolve duplicates');
+      }
 
-      // Simulate success
-      setTimeout(() => {
-        navigate('/admin/duplicates');
-      }, 1000);
+      if (!data?.success) {
+        throw new Error(data?.error || 'Resolution failed');
+      }
+
+      // Show success message and navigate back
+      console.log('Successfully resolved duplicates:', data);
+
+      // Navigate back to the duplicates list
+      navigate('/admin/duplicates', {
+        state: {
+          message: `Successfully resolved ${data.archived_count} duplicate${data.archived_count > 1 ? 's' : ''}. Canonical lesson: ${selectedCanonical}`,
+        },
+      });
     } catch (err) {
       console.error('Error resolving duplicates:', err);
       setError(err instanceof Error ? err.message : 'Failed to resolve duplicates');
@@ -212,6 +224,13 @@ export const AdminDuplicateDetail: React.FC = () => {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
       {/* Action Bar */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between">
@@ -232,7 +251,7 @@ export const AdminDuplicateDetail: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={handleResolve}
+            onClick={() => setShowConfirmation(true)}
             disabled={!selectedCanonical || resolving}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
@@ -334,7 +353,7 @@ export const AdminDuplicateDetail: React.FC = () => {
                         <div className="mt-2 pt-2 border-t border-gray-200">
                           <div className="font-medium">Content has:</div>
                           {Object.entries(lesson.scoreBreakdown.contentDetails.components || {})
-                            .filter(([_, has]) => has)
+                            .filter(([, has]) => has)
                             .map(([component]) => (
                               <div key={component} className="pl-2">
                                 ✓ {component}
@@ -425,6 +444,63 @@ export const AdminDuplicateDetail: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Duplicate Resolution
+            </h3>
+
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-gray-600">
+                This action will permanently archive {group.lessons.length - 1} duplicate lesson
+                {group.lessons.length - 1 > 1 ? 's' : ''}.
+              </p>
+
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-sm text-blue-900 font-medium">Canonical lesson to keep:</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  {group.lessons.find((l) => l.lessonId === selectedCanonical)?.title}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">ID: {selectedCanonical}</p>
+              </div>
+
+              {mergeMetadata && (
+                <p className="text-sm text-gray-600">
+                  ✓ Metadata from duplicates will be merged into the canonical lesson
+                </p>
+              )}
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                <p className="text-sm text-yellow-800">
+                  <strong>Warning:</strong> This action cannot be undone. Archived lessons will be
+                  removed from the main library.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmation(false);
+                  handleResolve();
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Confirm & Archive Duplicates
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

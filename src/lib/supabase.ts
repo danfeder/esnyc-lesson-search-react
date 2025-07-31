@@ -23,7 +23,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 
 // Test the connection
 supabase
-  .from('lessons')
+  .from('lessons_with_metadata')
   .select('count', { count: 'exact', head: true })
   .then(({ error }) => {
     if (error) {

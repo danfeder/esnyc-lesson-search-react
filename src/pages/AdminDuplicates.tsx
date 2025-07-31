@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
+import { CheckCircle } from 'lucide-react';
 
 interface DuplicateGroup {
   groupId: string;
@@ -18,14 +20,26 @@ interface DuplicateGroup {
 
 export const AdminDuplicates: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'resolved'>('pending');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadDuplicateGroups();
   }, []);
+
+  useEffect(() => {
+    // Check for success message from navigation state
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      // Clear the message after 5 seconds
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   const loadDuplicateGroups = async () => {
     try {
@@ -41,10 +55,17 @@ export const AdminDuplicates: React.FC = () => {
 
       const report = await response.json();
 
+      // Get list of resolved groups from database
+      const { data: resolvedGroups } = await supabase
+        .from('duplicate_resolutions')
+        .select('group_id');
+
+      const resolvedGroupIds = new Set(resolvedGroups?.map((r) => r.group_id) || []);
+
       // Transform the report groups into our component format
       const transformedGroups = report.groups.map((group: any) => ({
         ...group,
-        status: 'pending', // All are pending until resolved
+        status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
         lessons: group.lessons.map((lesson: any) => ({
           lessonId: lesson.lessonId,
           title: lesson.title,
@@ -116,6 +137,14 @@ export const AdminDuplicates: React.FC = () => {
           found.
         </p>
       </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+          <CheckCircle className="h-5 w-5 text-green-600 mr-3 flex-shrink-0" />
+          <p className="text-green-800">{successMessage}</p>
+        </div>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

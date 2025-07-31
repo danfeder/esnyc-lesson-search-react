@@ -118,7 +118,7 @@ export function ReviewDetail() {
       if (similarities && similarities.length > 0) {
         const lessonIds = similarities.map((s) => s.lesson_id);
         const { data: lessons } = await supabase
-          .from('lessons')
+          .from('lessons_with_metadata')
           .select('id, title, grade_levels, thematic_categories')
           .in('id', lessonIds);
 
@@ -221,7 +221,7 @@ export function ReviewDetail() {
         const lessonData = parseExtractedContent(submission.extracted_content);
 
         // Create new lesson in the lessons table
-        const { error: lessonError } = await supabase.from('lessons').insert({
+        const { error: lessonError } = await supabase.from('lessons_with_metadata').insert({
           lesson_id: `lesson_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           title: lessonData.title || 'Untitled Lesson',
           summary: lessonData.summary || '',
@@ -253,7 +253,7 @@ export function ReviewDetail() {
       } else if (decision === 'approve_update' && selectedDuplicate) {
         // Get the existing lesson to preserve some fields
         const { data: existingLesson, error: fetchError } = await supabase
-          .from('lessons')
+          .from('lessons_with_metadata')
           .select('*')
           .eq('lesson_id', selectedDuplicate)
           .single();
@@ -282,7 +282,7 @@ export function ReviewDetail() {
 
         // Update the existing lesson
         const { error: updateLessonError } = await supabase
-          .from('lessons')
+          .from('lessons_with_metadata')
           .update({
             title: lessonData.title || existingLesson.title,
             summary: lessonData.summary || existingLesson.summary,

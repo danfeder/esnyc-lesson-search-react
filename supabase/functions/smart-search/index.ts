@@ -154,7 +154,9 @@ serve(async (req) => {
     }: SearchRequest = await req.json();
 
     // Build the base query
-    let supabaseQuery = supabaseClient.from('lessons').select('*', { count: 'exact' });
+    let supabaseQuery = supabaseClient
+      .from('lessons_with_metadata')
+      .select('*', { count: 'exact' });
 
     // Apply smart text search if query exists
     if (query && query.trim()) {
