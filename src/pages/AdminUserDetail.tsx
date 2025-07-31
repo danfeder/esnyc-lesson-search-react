@@ -130,19 +130,24 @@ export function AdminUserDetail() {
 
       if (updateError) throw updateError;
 
-      // Log the update
-      await supabase.from('user_management_audit').insert({
-        action: 'user_profile_updated',
-        target_user_id: userId,
-        old_values: {
-          role: user.role,
-          is_active: user.is_active,
-        },
-        new_values: {
-          role: formData.role,
-          is_active: formData.is_active,
-        },
-      });
+      // Try to log the update, but don't fail if audit fails
+      try {
+        await supabase.from('user_management_audit').insert({
+          action: 'user_profile_updated',
+          target_user_id: userId,
+          old_values: {
+            role: user.role,
+            is_active: user.is_active,
+          },
+          new_values: {
+            role: formData.role,
+            is_active: formData.is_active,
+          },
+        });
+      } catch (auditError) {
+        console.warn('Failed to log audit trail:', auditError);
+        // Continue even if audit fails
+      }
 
       setEditMode(false);
       loadUserDetails(); // Reload to get fresh data
@@ -168,11 +173,15 @@ export function AdminUserDetail() {
 
       if (error) throw error;
 
-      // Log the action
-      await supabase.from('user_management_audit').insert({
-        action: newStatus ? 'user_activated' : 'user_deactivated',
-        target_user_id: userId,
-      });
+      // Try to log the action
+      try {
+        await supabase.from('user_management_audit').insert({
+          action: newStatus ? 'user_activated' : 'user_deactivated',
+          target_user_id: userId,
+        });
+      } catch (auditError) {
+        console.warn('Failed to log audit trail:', auditError);
+      }
 
       setFormData({ ...formData, is_active: newStatus });
       loadAuditLogs();
@@ -200,11 +209,15 @@ export function AdminUserDetail() {
 
       if (error) throw error;
 
-      // Log the deletion
-      await supabase.from('user_management_audit').insert({
-        action: 'user_deleted',
-        target_user_id: userId,
-      });
+      // Try to log the deletion
+      try {
+        await supabase.from('user_management_audit').insert({
+          action: 'user_deleted',
+          target_user_id: userId,
+        });
+      } catch (auditError) {
+        console.warn('Failed to log audit trail:', auditError);
+      }
 
       navigate('/admin/users');
     } catch (error) {
