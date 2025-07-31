@@ -45,9 +45,14 @@ export const handleSupabaseError = (error: any) => {
 // Helper function for building search queries
 export const buildSearchQuery = (query: string) => {
   // Convert search query to tsquery format for full-text search
-  return query
-    .split(' ')
-    .filter((term) => term.length > 0)
-    .map((term) => `${term}:*`)
-    .join(' & ');
+  return (
+    query
+      .split(' ')
+      .filter((term) => term.length > 0)
+      // Sanitize input to prevent SQL injection - allow only alphanumeric and basic punctuation
+      .map((term) => term.replace(/[^a-zA-Z0-9\-\_\s]/g, '').trim())
+      .filter((term) => term.length > 0) // Re-filter after sanitization
+      .map((term) => `${term}:*`)
+      .join(' & ')
+  );
 };

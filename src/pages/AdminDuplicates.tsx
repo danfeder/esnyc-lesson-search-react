@@ -85,7 +85,7 @@ export const AdminDuplicates: React.FC = () => {
   const filteredGroups = groups.filter((group) => filter === 'all' || group.status === filter);
 
   // Check if user has admin privileges
-  const isAdmin = user?.role === 'admin' || user?.role === 'reviewer' || true; // TODO: Remove || true after setting up roles
+  const isAdmin = user?.role === 'admin' || user?.role === 'reviewer';
 
   if (!isAdmin) {
     return (
@@ -239,7 +239,9 @@ export const AdminDuplicates: React.FC = () => {
                     <span>{group.lessonCount} lessons</span>
                     <span>{(group.similarityScore * 100).toFixed(0)}% similar</span>
                     {group.status === 'resolved' && (
-                      <span className="text-green-600 font-medium">✓ Resolved</span>
+                      <span className="text-green-600 font-medium">
+                        <span className="sr-only">Status: </span>✓ Resolved
+                      </span>
                     )}
                   </div>
                   {group.lessonCount > 2 && (
@@ -251,6 +253,7 @@ export const AdminDuplicates: React.FC = () => {
                 <Link
                   to={`/admin/duplicates/${group.groupId}`}
                   className="ml-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                  aria-label={`Review duplicate group: ${primaryLesson?.title || 'Untitled'} (${group.lessons.length} lessons)`}
                 >
                   Review
                 </Link>
