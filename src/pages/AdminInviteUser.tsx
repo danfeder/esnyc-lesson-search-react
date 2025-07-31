@@ -74,7 +74,7 @@ export function AdminInviteUser() {
       }
 
       // Create invitation
-      const { error: inviteError } = await supabase
+      const { data: inviteData, error: inviteError } = await supabase
         .from('user_invitations')
         .insert({
           email: formData.email,
@@ -86,6 +86,7 @@ export function AdminInviteUser() {
           metadata: {
             grades_taught: formData.grades_taught,
             subjects_taught: formData.subjects_taught,
+            invited_by_id: user?.id,
           },
         })
         .select()
@@ -105,7 +106,14 @@ export function AdminInviteUser() {
       });
 
       // TODO: Send invitation email via edge function
-      // For now, we'll just show success
+      // For development, show the invitation link
+      if (inviteData) {
+        console.log(
+          'Invitation link:',
+          `${window.location.origin}/accept-invitation?token=${inviteData.token}`
+        );
+      }
+
       setSuccess(true);
 
       // Reset form after a delay

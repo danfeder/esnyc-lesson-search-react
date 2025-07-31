@@ -119,6 +119,14 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                             {user.role?.replace('_', ' ') || 'Teacher'}
                           </p>
                         </div>
+                        <Link
+                          to="/profile"
+                          onClick={() => setShowUserMenu(false)}
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <User className="w-4 h-4" />
+                          My Profile
+                        </Link>
                         {hasPermission(Permission.VIEW_USERS) && (
                           <Link
                             to="/admin/users"

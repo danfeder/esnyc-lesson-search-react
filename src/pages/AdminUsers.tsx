@@ -11,6 +11,7 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
+  Mail,
 } from 'lucide-react';
 import { EnhancedUserProfile, UserFilters } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
@@ -296,6 +297,14 @@ export function AdminUsers() {
             >
               <Plus className="w-5 h-5" />
               Invite User
+            </button>
+
+            <button
+              onClick={() => navigate('/admin/invitations')}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              <Mail className="w-5 h-5" />
+              Invitations
             </button>
 
             <button
