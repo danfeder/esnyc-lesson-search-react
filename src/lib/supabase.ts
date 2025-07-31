@@ -50,7 +50,7 @@ export const buildSearchQuery = (query: string) => {
       .split(' ')
       .filter((term) => term.length > 0)
       // Sanitize input to prevent SQL injection - allow only alphanumeric and basic punctuation
-      .map((term) => term.replace(/[^a-zA-Z0-9\-\_\s]/g, '').trim())
+      .map((term) => term.replace(/[^a-zA-Z0-9\-_\s]/g, '').trim())
       .filter((term) => term.length > 0) // Re-filter after sanitization
       .map((term) => `${term}:*`)
       .join(' & ')
