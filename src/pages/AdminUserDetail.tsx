@@ -27,7 +27,7 @@ export function AdminUserDetail() {
   const { user: currentUser, hasPermission } = useEnhancedAuth();
 
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>('Loading...');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -69,12 +69,21 @@ export function AdminUserDetail() {
       if (profileError) throw profileError;
 
       // Load email separately
+      console.log('Fetching email for user:', userId);
       const { data: emailData, error: emailError } = await supabase.rpc('get_user_emails', {
         user_ids: [userId],
       });
 
+      console.log('Email fetch result:', { emailData, emailError });
+
       if (!emailError && emailData?.[0]) {
         setEmail(emailData[0].email);
+      } else {
+        // If email fetch fails, set a message
+        setEmail('Email not available');
+        if (emailError) {
+          console.error('Error fetching email:', emailError);
+        }
       }
 
       setUser(profile);
