@@ -131,8 +131,11 @@ export interface AuthContextValue {
   user: EnhancedUserProfile | null;
   loading: boolean;
   permissions: Permission[];
+  // eslint-disable-next-line no-unused-vars
   hasPermission: (permission: Permission) => boolean;
+  // eslint-disable-next-line no-unused-vars
   hasAnyPermission: (permissions: Permission[]) => boolean;
+  // eslint-disable-next-line no-unused-vars
   hasAllPermissions: (permissions: Permission[]) => boolean;
   isAdmin: () => boolean;
   isReviewer: () => boolean;
