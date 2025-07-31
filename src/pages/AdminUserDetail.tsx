@@ -69,18 +69,20 @@ export function AdminUserDetail() {
       if (profileError) throw profileError;
 
       // Load email separately
-      console.log('Fetching email for user:', userId);
       const { data: emailData, error: emailError } = await supabase.rpc('get_user_emails', {
         user_ids: [userId],
       });
 
-      console.log('Email fetch result:', { emailData, emailError });
-
-      if (!emailError && emailData?.[0]) {
+      if (!emailError && emailData && emailData.length > 0) {
         setEmail(emailData[0].email);
       } else {
-        // If email fetch fails, set a message
-        setEmail('Email not available');
+        // Check if profile has email field as fallback
+        if (profile.email) {
+          setEmail(profile.email);
+        } else {
+          setEmail('No email on file');
+        }
+
         if (emailError) {
           console.error('Error fetching email:', emailError);
         }
