@@ -262,6 +262,16 @@ export const AdminDuplicateDetail: React.FC = () => {
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg text-gray-900">{lesson.title}</h3>
                     <p className="text-sm text-gray-500 mt-1">ID: {lesson.lessonId}</p>
+                    {fullLesson?.file_link && (
+                      <a
+                        href={fullLesson.file_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 underline mt-1 inline-block"
+                      >
+                        View Google Doc →
+                      </a>
+                    )}
                   </div>
                   <button
                     onClick={() => setSelectedCanonical(lesson.lessonId)}
