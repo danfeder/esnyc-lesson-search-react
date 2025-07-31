@@ -48,7 +48,7 @@ export const AdminDuplicateDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lessonDetails, setLessonDetails] = useState<Record<string, any>>({});
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const confirmButtonRef = useRef<React.ElementRef<'button'>>(null);
 
   useEffect(() => {
     if (groupId) {
@@ -155,7 +155,7 @@ export const AdminDuplicateDetail: React.FC = () => {
   };
 
   // Check if user has admin privileges
-  const isAdmin = user?.role === 'admin' || user?.role === 'reviewer' || true; // TODO: Remove || true after setting up roles
+  const isAdmin = user?.role === 'admin' || user?.role === 'reviewer';
 
   if (!isAdmin) {
     return (
