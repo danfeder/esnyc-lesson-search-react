@@ -169,6 +169,16 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                             {userRole || 'Teacher'}
                           </p>
                         </div>
+                        {isReviewerOrAdmin && (
+                          <Link
+                            to="/admin/duplicates"
+                            onClick={() => setShowUserMenu(false)}
+                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <Shield className="w-4 h-4" />
+                            Manage Duplicates
+                          </Link>
+                        )}
                         <button
                           onClick={handleSignOut}
                           className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"

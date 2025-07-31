@@ -6,6 +6,8 @@ import { SearchPage } from './pages/SearchPage';
 import { SubmissionPage } from './pages/SubmissionPage';
 import { ReviewDashboard } from './pages/ReviewDashboard';
 import { ReviewDetail } from './pages/ReviewDetail';
+import { AdminDuplicates } from './pages/AdminDuplicates';
+import { AdminDuplicateDetail } from './pages/AdminDuplicateDetail';
 import { useLessonStats } from './hooks/useLessonStats';
 
 // Create a client
@@ -35,6 +37,8 @@ function AppContent() {
             <Route path="/submit" element={<SubmissionPage />} />
             <Route path="/review" element={<ReviewDashboard />} />
             <Route path="/review/:id" element={<ReviewDetail />} />
+            <Route path="/admin/duplicates" element={<AdminDuplicates />} />
+            <Route path="/admin/duplicates/:groupId" element={<AdminDuplicateDetail />} />
           </Routes>
         </main>
       </div>

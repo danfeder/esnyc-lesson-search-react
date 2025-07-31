@@ -1,0 +1,53 @@
+ESNYC Lesson Library - Duplicate Analysis Report
+Generated: 7/31/2025, 10:34:54 AM
+============================================================
+
+OVERVIEW
+--------
+Total Lessons: 832
+Unique Lessons: 574
+Duplicate Lessons: 440
+
+DUPLICATE GROUPS
+----------------
+Exact Matches: 45 groups
+Near Duplicates: 123 groups
+Title Variations: 14 groups
+Total Groups: 182
+
+TOP DUPLICATE GROUPS BY SIZE
+----------------------------
+
+1. Eat the Rainbow Intro Lesson
+   Type: near | Lessons: 7 | Similarity: 90%
+   Recommended: Eat the Rainbow Intro Lesson
+2. Three Sisters Tacos
+   Type: near | Lessons: 6 | Similarity: 95%
+   Recommended: Three Sisters Tacos
+3. Seed Save
+   Type: near | Lessons: 6 | Similarity: 100%
+   Recommended: Seed Save
+4. Cajun Black Eyed Peas Sliders (3rd-5th)
+   Type: title | Lessons: 6 | Similarity: 83%
+   Recommended: Cajun Black Eyed Peas Sliders (3rd-5th)
+5. Pesto Pizza
+   Type: near | Lessons: 5 | Similarity: 100%
+   Recommended: Pesto Pizza
+6. Garden Tasks
+   Type: near | Lessons: 5 | Similarity: 90%
+   Recommended: Garden Tasks
+7. Foods From Around the World: Ukraine
+   Type: title | Lessons: 5 | Similarity: 71%
+   Recommended: Foods From Around the World: Ukraine
+8. Unknown
+   Type: exact | Lessons: 4 | Similarity: 100%
+   Recommended: Unknown
+9. The Summer Garden
+   Type: near | Lessons: 4 | Similarity: 95%
+   Recommended: The Summer Garden
+10. All About Compost
+   Type: near | Lessons: 4 | Similarity: 98%
+   Recommended: All About Compost
+
+============================================================
+Full details available in the JSON report.
