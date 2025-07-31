@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -48,12 +48,20 @@ export const AdminDuplicateDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lessonDetails, setLessonDetails] = useState<Record<string, any>>({});
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (groupId) {
       loadGroupDetails();
     }
   }, [groupId]);
+
+  // Focus management for confirmation modal
+  useEffect(() => {
+    if (showConfirmation && confirmButtonRef.current) {
+      confirmButtonRef.current.focus();
+    }
+  }, [showConfirmation]);
 
   const loadGroupDetails = async () => {
     try {
@@ -447,8 +455,19 @@ export const AdminDuplicateDetail: React.FC = () => {
 
       {/* Confirmation Dialog */}
       {showConfirmation && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50"
+          onClick={() => setShowConfirmation(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowConfirmation(false);
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Confirm Duplicate Resolution
             </h3>
@@ -483,6 +502,7 @@ export const AdminDuplicateDetail: React.FC = () => {
 
             <div className="flex gap-3 justify-end">
               <button
+                ref={confirmButtonRef}
                 onClick={() => setShowConfirmation(false)}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >

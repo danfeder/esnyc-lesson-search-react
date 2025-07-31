@@ -27,7 +27,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
 
   return (
     <div
-      className="card p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group animate-fade-in"
+      className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
       onClick={onClick}
     >
       {/* Header */}
