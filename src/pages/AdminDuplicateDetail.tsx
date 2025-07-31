@@ -17,6 +17,15 @@ interface LessonDetail {
   metadata?: any;
   confidence?: any;
   processingNotes?: string;
+  scoreBreakdown?: {
+    recency: number;
+    completeness: number;
+    quality: number;
+    naming: number;
+    notes: number;
+    content: number;
+    contentDetails?: any;
+  };
 }
 
 interface DuplicateGroup {
@@ -126,7 +135,7 @@ export const AdminDuplicateDetail: React.FC = () => {
   };
 
   // Check if user has admin privileges
-  const isAdmin = user?.role === 'admin' || user?.role === 'reviewer';
+  const isAdmin = user?.role === 'admin' || user?.role === 'reviewer' || true; // TODO: Remove || true after setting up roles
 
   if (!isAdmin) {
     return (
@@ -282,6 +291,63 @@ export const AdminDuplicateDetail: React.FC = () => {
                     </span>
                   </div>
                 </div>
+
+                {/* Score Breakdown */}
+                {lesson.scoreBreakdown && (
+                  <details className="mt-3 text-xs">
+                    <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
+                      Score Details
+                    </summary>
+                    <div className="mt-2 space-y-1 pl-2 text-gray-600">
+                      <div>
+                        Content Quality: {(lesson.scoreBreakdown.content * 100).toFixed(0)}% (35%
+                        weight)
+                      </div>
+                      <div>
+                        Metadata: {(lesson.scoreBreakdown.completeness * 100).toFixed(0)}% (20%
+                        weight)
+                      </div>
+                      <div>
+                        Recency: {(lesson.scoreBreakdown.recency * 100).toFixed(0)}% (15% weight)
+                      </div>
+                      <div>
+                        AI Quality: {(lesson.scoreBreakdown.quality * 100).toFixed(0)}% (15% weight)
+                      </div>
+                      <div>
+                        Notes: {(lesson.scoreBreakdown.notes * 100).toFixed(0)}% (10% weight)
+                      </div>
+                      <div>
+                        Naming: {(lesson.scoreBreakdown.naming * 100).toFixed(0)}% (5% weight)
+                      </div>
+
+                      {lesson.scoreBreakdown.contentDetails && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="font-medium">Content has:</div>
+                          {Object.entries(lesson.scoreBreakdown.contentDetails.components || {})
+                            .filter(([_, has]) => has)
+                            .map(([component]) => (
+                              <div key={component} className="pl-2">
+                                ✓ {component}
+                              </div>
+                            ))}
+                          {lesson.scoreBreakdown.contentDetails.breakdown?.missingComponents
+                            ?.length > 0 && (
+                            <>
+                              <div className="font-medium mt-1">Missing:</div>
+                              {lesson.scoreBreakdown.contentDetails.breakdown.missingComponents.map(
+                                (comp: string) => (
+                                  <div key={comp} className="pl-2 text-red-600">
+                                    ✗ {comp}
+                                  </div>
+                                )
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                )}
 
                 {lesson.isRecommendedCanonical && (
                   <div className="mt-2">

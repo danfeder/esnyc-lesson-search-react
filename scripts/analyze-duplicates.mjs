@@ -12,6 +12,7 @@ import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { analyzeContentQuality } from './analyze-content-quality.mjs';
 
 // Load environment variables
 dotenv.config();
@@ -32,11 +33,12 @@ const CONFIG = {
     titleMatch: 0.70
   },
   weights: {
-    recency: 0.20,
-    completeness: 0.30,
-    quality: 0.20,
-    naming: 0.10,
-    notes: 0.20
+    recency: 0.15,      // Reduced from 0.20
+    completeness: 0.20, // Reduced from 0.30
+    quality: 0.15,      // Reduced from 0.20
+    naming: 0.05,       // Reduced from 0.10
+    notes: 0.10,        // Reduced from 0.20
+    content: 0.35       // NEW: 35% weight for content quality
   }
 };
 
@@ -185,15 +187,20 @@ function findTitleVariations(lessons) {
 // Calculate canonical score for a lesson
 function calculateCanonicalScore(lesson, group) {
   let score = 0;
+  const scoreBreakdown = {};
   
-  // Recency score (20%)
-  if (lesson.last_modified) {
-    const date = new Date(lesson.last_modified);
+  // Recency score (15%)
+  const dateField = lesson.last_modified || lesson.updated_at || lesson.created_at;
+  let recencyScore = 0;
+  if (dateField) {
+    const date = new Date(dateField);
     const age = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24 * 365);
-    score += CONFIG.weights.recency * (1 - Math.min(age / 10, 1));
+    recencyScore = (1 - Math.min(age / 10, 1));
+    score += CONFIG.weights.recency * recencyScore;
   }
+  scoreBreakdown.recency = recencyScore;
   
-  // Completeness score (30%)
+  // Completeness score (20%)
   const metadataFields = [
     'thematicCategories', 'seasonTiming', 'coreCompetencies',
     'culturalHeritage', 'locationRequirements', 'activityType',
@@ -206,22 +213,36 @@ function calculateCanonicalScore(lesson, group) {
   }, 0) / metadataFields.length;
   
   score += CONFIG.weights.completeness * completeness;
+  scoreBreakdown.completeness = completeness;
   
-  // Quality score (20%)
-  if (lesson.confidence?.overall) {
-    score += CONFIG.weights.quality * lesson.confidence.overall;
-  }
+  // Quality score (15%)
+  const qualityScore = lesson.confidence?.overall || 0;
+  score += CONFIG.weights.quality * qualityScore;
+  scoreBreakdown.quality = qualityScore;
   
-  // File naming score (10%)
+  // File naming score (5%)
   const hasCleanName = /^[A-Z]/.test(lesson.title) && 
                       !lesson.title.includes('Copy') &&
                       !lesson.title.includes('_v2') &&
                       !lesson.title.includes('(Updated)');
-  score += CONFIG.weights.naming * (hasCleanName ? 1 : 0);
+  const namingScore = hasCleanName ? 1 : 0;
+  score += CONFIG.weights.naming * namingScore;
+  scoreBreakdown.naming = namingScore;
   
-  // Processing notes score (20%)
+  // Processing notes score (10%)
   const hasDuplicateNote = lesson.processing_notes?.toLowerCase().includes('duplicate');
-  score += CONFIG.weights.notes * (hasDuplicateNote ? 0 : 1);
+  const notesScore = hasDuplicateNote ? 0 : 1;
+  score += CONFIG.weights.notes * notesScore;
+  scoreBreakdown.notes = notesScore;
+  
+  // Content quality score (35%)
+  const contentAnalysis = analyzeContentQuality(lesson.raw_text || '');
+  score += CONFIG.weights.content * contentAnalysis.totalScore;
+  scoreBreakdown.content = contentAnalysis.totalScore;
+  scoreBreakdown.contentDetails = contentAnalysis;
+  
+  // Store breakdown on the lesson object
+  lesson.scoreBreakdown = scoreBreakdown;
   
   return score;
 }
@@ -296,13 +317,14 @@ function generateReport(groupsWithScores, lessons) {
       lessons: group.lessons.map(lesson => ({
         lessonId: lesson.lesson_id,
         title: lesson.title,
-        lastModified: lesson.last_modified,
+        lastModified: lesson.last_modified || lesson.updated_at || lesson.created_at,
         createdAt: lesson.created_at,
         metadataCompleteness: lesson.metadataCompleteness,
         canonicalScore: lesson.canonicalScore,
         isRecommendedCanonical: lesson.lesson_id === group.recommendedCanonical,
         confidence: lesson.confidence,
-        processingNotes: lesson.processing_notes
+        processingNotes: lesson.processing_notes,
+        scoreBreakdown: lesson.scoreBreakdown
       }))
     }))
   };

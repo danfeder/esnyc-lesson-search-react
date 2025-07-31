@@ -1,5 +1,5 @@
 ESNYC Lesson Library - Duplicate Analysis Report
-Generated: 7/31/2025, 10:34:54 AM
+Generated: 7/31/2025, 11:00:14 AM
 ============================================================
 
 OVERVIEW
@@ -18,36 +18,36 @@ Total Groups: 182
 TOP DUPLICATE GROUPS BY SIZE
 ----------------------------
 
-1. Eat the Rainbow Intro Lesson
+1. Eat the Rainbow Lesson Series
    Type: near | Lessons: 7 | Similarity: 90%
-   Recommended: Eat the Rainbow Intro Lesson
+   Recommended: Eat the Rainbow Lesson Series
 2. Three Sisters Tacos
    Type: near | Lessons: 6 | Similarity: 95%
    Recommended: Three Sisters Tacos
-3. Seed Save
+3. October Seed Saving
    Type: near | Lessons: 6 | Similarity: 100%
-   Recommended: Seed Save
+   Recommended: October Seed Saving
 4. Cajun Black Eyed Peas Sliders (3rd-5th)
    Type: title | Lessons: 6 | Similarity: 83%
    Recommended: Cajun Black Eyed Peas Sliders (3rd-5th)
-5. Pesto Pizza
-   Type: near | Lessons: 5 | Similarity: 100%
-   Recommended: Pesto Pizza
-6. Garden Tasks
+5. Middle School Garden Tasks Lesson
    Type: near | Lessons: 5 | Similarity: 90%
-   Recommended: Garden Tasks
-7. Foods From Around the World: Ukraine
+   Recommended: Middle School Garden Tasks Lesson
+6. Foods From Around the World: China
    Type: title | Lessons: 5 | Similarity: 71%
-   Recommended: Foods From Around the World: Ukraine
-8. Unknown
+   Recommended: Foods From Around the World: China
+7. Unknown
    Type: exact | Lessons: 4 | Similarity: 100%
    Recommended: Unknown
-9. The Summer Garden
+8. September Sixth Grade Summer and Pizza Plant Hunt
    Type: near | Lessons: 4 | Similarity: 95%
-   Recommended: The Summer Garden
-10. All About Compost
+   Recommended: September Sixth Grade Summer and Pizza Plant Hunt
+9. All About Compost
    Type: near | Lessons: 4 | Similarity: 98%
    Recommended: All About Compost
+10. Greens Two Ways
+   Type: near | Lessons: 4 | Similarity: 97%
+   Recommended: Greens Two Ways
 
 ============================================================
 Full details available in the JSON report.
