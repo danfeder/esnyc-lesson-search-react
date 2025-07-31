@@ -239,6 +239,11 @@ export function AdminUsers() {
         <p className="text-gray-600 mt-1">Manage user accounts, roles, and permissions</p>
       </div>
 
+      {/* Status announcements for screen readers */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {selectedUsers.length > 0 && `${selectedUsers.length} users selected`}
+      </div>
+
       {/* Actions Bar */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -336,9 +341,10 @@ export function AdminUsers() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left">
+              <th scope="col" className="px-6 py-3 text-left">
                 <input
                   type="checkbox"
+                  aria-label="Select all users"
                   checked={selectedUsers.length === users.length && users.length > 0}
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -350,22 +356,40 @@ export function AdminUsers() {
                   className="rounded text-green-600"
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 User
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 School
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Joined
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Actions
               </th>
             </tr>
@@ -376,6 +400,7 @@ export function AdminUsers() {
                 <td className="px-6 py-4">
                   <input
                     type="checkbox"
+                    aria-label={`Select ${user.full_name || user.email}`}
                     checked={selectedUsers.includes(user.id)}
                     onChange={(e) => {
                       if (e.target.checked) {
@@ -400,6 +425,8 @@ export function AdminUsers() {
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
                       user.role
                     )}`}
+                    role="status"
+                    aria-label={`Role: ${user.role.replace('_', ' ')}`}
                   >
                     {user.role.replace('_', ' ')}
                   </span>
@@ -414,13 +441,21 @@ export function AdminUsers() {
                 </td>
                 <td className="px-6 py-4">
                   {user.is_active ? (
-                    <span className="inline-flex items-center gap-1 text-green-600">
-                      <CheckCircle className="w-4 h-4" />
+                    <span
+                      className="inline-flex items-center gap-1 text-green-600"
+                      role="status"
+                      aria-label="Status: Active"
+                    >
+                      <CheckCircle className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm">Active</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-red-600">
-                      <XCircle className="w-4 h-4" />
+                    <span
+                      className="inline-flex items-center gap-1 text-red-600"
+                      role="status"
+                      aria-label="Status: Inactive"
+                    >
+                      <XCircle className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm">Inactive</span>
                     </span>
                   )}
