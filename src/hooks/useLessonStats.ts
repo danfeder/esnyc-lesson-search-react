@@ -21,7 +21,7 @@ export function useLessonStats(): LessonStats {
       try {
         // Get total lesson count
         const { count, error } = await supabase
-          .from('lessons')
+          .from('lessons_with_metadata')
           .select('*', { count: 'exact', head: true });
 
         if (error) throw error;

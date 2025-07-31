@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Clock, Users, MapPin, ChefHat, Sprout } from 'lucide-react';
+import { ExternalLink, Clock, Users, MapPin, ChefHat, Sprout, Flame } from 'lucide-react';
 import { Lesson } from '../../types';
 
 interface LessonCardProps {
@@ -8,16 +8,6 @@ interface LessonCardProps {
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
-  const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 0.8) {
-      return { label: 'High', className: 'bg-green-100 text-green-800 border-green-200' };
-    } else if (confidence >= 0.6) {
-      return { label: 'Medium', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
-    } else {
-      return { label: 'Low', className: 'bg-red-100 text-red-800 border-red-200' };
-    }
-  };
-
   const getActivityIcon = (hasCooking: boolean, hasGarden: boolean) => {
     if (hasCooking && hasGarden) {
       return (
@@ -35,25 +25,16 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
     }
   };
 
-  const confidence = getConfidenceBadge(lesson.confidence.overall);
-
   return (
     <div
-      className="card p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group animate-fade-in"
+      className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
       onClick={onClick}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 pr-4">
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors duration-200 line-clamp-2">
-            {lesson.title}
-          </h3>
-        </div>
-        <div
-          className={`px-3 py-1 rounded-full text-xs font-medium border ${confidence.className} flex-shrink-0`}
-        >
-          {confidence.label}
-        </div>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors duration-200 line-clamp-2">
+          {lesson.title}
+        </h3>
       </div>
 
       {/* Summary */}
@@ -108,6 +89,25 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
         {/* External Link Indicator */}
         <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
       </div>
+
+      {/* Cooking Method for cooking lessons */}
+      {lesson.metadata.cookingMethods && lesson.metadata.cookingMethods.length > 0 && (
+        <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
+          {lesson.metadata.cookingMethods.includes('No-cook') ? (
+            <>
+              <div className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center">
+                <span className="text-white text-xs">✓</span>
+              </div>
+              <span className="text-green-700 font-medium">No-cook</span>
+            </>
+          ) : (
+            <>
+              <Flame className="w-3.5 h-3.5" />
+              <span>{lesson.metadata.cookingMethods.join(', ')}</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Tags */}
       <div className="flex flex-wrap gap-2 mb-4">

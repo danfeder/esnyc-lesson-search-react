@@ -78,7 +78,7 @@ const fallbackSearch = async ({
 
   // Get all lessons first, then filter client-side for now
   // In production, this should be moved to a database function for performance
-  let query = supabase.from('lessons').select('*', { count: 'exact' });
+  let query = supabase.from('lessons_with_metadata').select('*', { count: 'exact' });
 
   const { data, error } = await query;
 

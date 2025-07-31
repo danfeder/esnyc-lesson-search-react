@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ExternalLink, Clock, Users, MapPin, ChefHat, Sprout, Star } from 'lucide-react';
+import { X, ExternalLink, Clock, Users, MapPin, ChefHat, Sprout } from 'lucide-react';
 import { Lesson } from '../../types';
 
 interface LessonModalProps {
@@ -10,22 +10,6 @@ interface LessonModalProps {
 
 export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClose }) => {
   if (!isOpen || !lesson) return null;
-
-  const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 0.8) {
-      return {
-        label: 'High Confidence',
-        className: 'bg-green-100 text-green-800 border-green-200',
-      };
-    } else if (confidence >= 0.6) {
-      return {
-        label: 'Medium Confidence',
-        className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      };
-    } else {
-      return { label: 'Low Confidence', className: 'bg-red-100 text-red-800 border-red-200' };
-    }
-  };
 
   const getActivityIcon = (hasCooking: boolean, hasGarden: boolean) => {
     if (hasCooking && hasGarden) {
@@ -47,7 +31,6 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
     }
   };
 
-  const confidence = getConfidenceBadge(lesson.confidence.overall);
   const hasCooking = (lesson.metadata.cookingSkills?.length ?? 0) > 0;
   const hasGarden = (lesson.metadata.gardenSkills?.length ?? 0) > 0;
   const activity = getActivityIcon(hasCooking, hasGarden);
@@ -95,19 +78,9 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          {/* Summary & Confidence */}
+          {/* Summary */}
           <div className="mb-8">
-            <div className="flex items-start justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Lesson Summary</h2>
-              <div
-                className={`px-3 py-1 rounded-full text-sm font-medium border ${confidence.className}`}
-              >
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4" />
-                  <span>{confidence.label}</span>
-                </div>
-              </div>
-            </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Lesson Summary</h2>
             <p className="text-gray-700 leading-relaxed">{lesson.summary}</p>
           </div>
 
@@ -124,6 +97,18 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
                 <span>View Complete Lesson</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
+            </div>
+          )}
+
+          {/* Last Modified Date */}
+          {lesson.last_modified && (
+            <div className="mb-6 text-sm text-gray-600">
+              <span className="font-medium">Last Modified:</span>{' '}
+              {new Date(lesson.last_modified).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </div>
           )}
 
@@ -186,6 +171,21 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
               </div>
             )}
 
+            {/* Observances & Holidays */}
+            {lesson.metadata.observancesHolidays &&
+              lesson.metadata.observancesHolidays.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Observances & Holidays</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {lesson.metadata.observancesHolidays.map((holiday) => (
+                      <span key={holiday} className="lesson-tag bg-amber-100 text-amber-800">
+                        {holiday}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             {/* Ingredients */}
             {lesson.metadata.mainIngredients && lesson.metadata.mainIngredients.length > 0 && (
               <div>
@@ -223,38 +223,112 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
                 </div>
               </div>
             )}
+
+            {/* Academic Integration */}
+            {lesson.metadata.academicIntegration &&
+              lesson.metadata.academicIntegration.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Academic Integration</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {lesson.metadata.academicIntegration.map((subject) => (
+                      <span key={subject} className="lesson-tag bg-indigo-100 text-indigo-800">
+                        {subject}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Social-Emotional Learning */}
+            {lesson.metadata.socialEmotionalLearning &&
+              lesson.metadata.socialEmotionalLearning.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Social-Emotional Learning</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {lesson.metadata.socialEmotionalLearning.map((sel) => (
+                      <span key={sel} className="lesson-tag bg-pink-100 text-pink-800">
+                        {sel}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Cultural Responsiveness Features */}
+            {lesson.metadata.culturalResponsivenessFeatures &&
+              lesson.metadata.culturalResponsivenessFeatures.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Cultural Responsiveness Features
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {lesson.metadata.culturalResponsivenessFeatures.map((feature) => (
+                      <span key={feature} className="lesson-tag bg-teal-100 text-teal-800">
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Lesson Format */}
+            {lesson.metadata.lessonFormat && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Lesson Format</h3>
+                <p className="text-gray-700">{lesson.metadata.lessonFormat}</p>
+              </div>
+            )}
+
+            {/* Cooking Skills (detailed) */}
+            {lesson.metadata.cookingSkills && lesson.metadata.cookingSkills.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Cooking Skills</h3>
+                <div className="flex flex-wrap gap-2">
+                  {lesson.metadata.cookingSkills.map((skill) => (
+                    <span key={skill} className="lesson-tag bg-orange-100 text-orange-800">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cooking Methods */}
+            {lesson.metadata.cookingMethods && lesson.metadata.cookingMethods.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Cooking Methods</h3>
+                <div className="flex flex-wrap gap-2">
+                  {lesson.metadata.cookingMethods.map((method) => (
+                    <span key={method} className="lesson-tag bg-red-100 text-red-800">
+                      {method}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Garden Skills (detailed) */}
+            {lesson.metadata.gardenSkills && lesson.metadata.gardenSkills.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Garden Skills</h3>
+                <div className="flex flex-wrap gap-2">
+                  {lesson.metadata.gardenSkills.map((skill) => (
+                    <span key={skill} className="lesson-tag bg-green-100 text-green-800">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Confidence Breakdown */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-xl">
-            <h3 className="font-semibold text-gray-900 mb-3">Data Confidence Scores</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">Overall:</span>
-                <span className="ml-2 font-medium">
-                  {Math.round(lesson.confidence.overall * 100)}%
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Title:</span>
-                <span className="ml-2 font-medium">
-                  {Math.round(lesson.confidence.title * 100)}%
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Summary:</span>
-                <span className="ml-2 font-medium">
-                  {Math.round(lesson.confidence.summary * 100)}%
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Categories:</span>
-                <span className="ml-2 font-medium">
-                  {Math.round(lesson.confidence.overall * 100)}%
-                </span>
-              </div>
+          {/* Processing Notes */}
+          {lesson.processing_notes && (
+            <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <h3 className="font-semibold text-gray-900 mb-2">Processing Notes</h3>
+              <p className="text-gray-700 italic">{lesson.processing_notes}</p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
