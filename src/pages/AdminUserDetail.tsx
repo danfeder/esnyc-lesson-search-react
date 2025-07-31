@@ -28,6 +28,11 @@ export function AdminUserDetail() {
 
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
   const [email, setEmail] = useState<string>('Loading...');
+
+  // Debug email changes
+  useEffect(() => {
+    console.log('Email state changed to:', email);
+  }, [email]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -69,18 +74,24 @@ export function AdminUserDetail() {
       if (profileError) throw profileError;
 
       // Load email separately
+      console.log('Fetching email for userId:', userId);
       const { data: emailData, error: emailError } = await supabase.rpc('get_user_emails', {
         user_ids: [userId],
       });
 
+      console.log('Email RPC result:', emailData, 'Error:', emailError);
+
       if (!emailError && emailData && emailData.length > 0) {
+        console.log('Setting email to:', emailData[0].email);
         setEmail(emailData[0].email);
       } else {
         // Check if profile has email field as fallback
         if (profile.email) {
+          console.log('Using profile email:', profile.email);
           setEmail(profile.email);
         } else {
           // For test users without auth records, show a placeholder
+          console.log('No email found, using placeholder');
           setEmail('test-user@example.com (Test Account)');
         }
       }
