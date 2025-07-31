@@ -101,7 +101,7 @@ export function AdminUserDetail() {
         full_name: profile.full_name || '',
         role: profile.role || UserRole.TEACHER,
         school_name: profile.school_name || '',
-        school_borough: profile.school_borough || '',
+        school_borough: profile.school_borough || '', // This is OK for the form
         grades_taught: profile.grades_taught || [],
         subjects_taught: profile.subjects_taught || [],
         is_active: profile.is_active ?? true,
@@ -139,12 +139,23 @@ export function AdminUserDetail() {
     setSaving(true);
     try {
       // Update user profile
+      console.log('Updating user with data:', formData);
+      const updateData = {
+        full_name: formData.full_name || null,
+        role: formData.role,
+        school_name: formData.school_name || null,
+        school_borough: formData.school_borough || null,
+        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : null,
+        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : null,
+        is_active: formData.is_active,
+        notes: formData.notes || null,
+        updated_at: new Date().toISOString(),
+      };
+      console.log('Final update data:', updateData);
+
       const { error: updateError } = await supabase
         .from('user_profiles')
-        .update({
-          ...formData,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', userId);
 
       if (updateError) throw updateError;
