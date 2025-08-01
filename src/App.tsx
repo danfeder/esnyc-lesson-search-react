@@ -12,6 +12,8 @@ import { AdminUsers } from './pages/AdminUsers';
 import { AdminUserDetail } from './pages/AdminUserDetail';
 import { AdminInviteUser } from './pages/AdminInviteUser';
 import { AdminInvitations } from './pages/AdminInvitations';
+import { AdminAnalytics } from './pages/AdminAnalytics';
+import { AdminDashboard } from './pages/AdminDashboard';
 import { UserProfile } from './pages/UserProfile';
 import { AcceptInvitation } from './pages/AcceptInvitation';
 import { VerifySetup } from './pages/VerifySetup';
@@ -62,6 +64,21 @@ function AppContent() {
               }
             />
             <Route
+              path="/admin"
+              element={
+                <ProtectedRoute
+                  permissions={[
+                    Permission.VIEW_USERS,
+                    Permission.VIEW_ANALYTICS,
+                    Permission.MANAGE_DUPLICATES,
+                    Permission.REVIEW_LESSONS,
+                  ]}
+                >
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin/duplicates"
               element={
                 <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
@@ -106,6 +123,14 @@ function AppContent() {
               element={
                 <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
                   <AdminUserDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedRoute permissions={[Permission.VIEW_ANALYTICS]}>
+                  <AdminAnalytics />
                 </ProtectedRoute>
               }
             />
