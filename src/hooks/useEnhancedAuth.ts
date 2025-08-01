@@ -69,6 +69,7 @@ export function useEnhancedAuth(): AuthContextValue {
         const newProfile = {
           id: authUser.id,
           user_id: authUser.id,
+          email: authUser.email!,
           full_name: authUser.user_metadata?.full_name || null,
           role: UserRole.TEACHER,
           is_active: true,

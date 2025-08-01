@@ -37,12 +37,22 @@ As of 2025-08-01, we've consolidated 51 individual migration files into 5 logica
 - Permission grants
 - Security configuration
 
+### 6. `06_fix_login_tracking.sql` (New)
+- Fixes "Database error granting user" authentication issue
+- Removes problematic auth.users trigger
+- Creates safer manual login tracking mechanism
+- Ensures user_management_audit table exists with proper structure
+
 ## Archive Directory
 
 The `/archive` subdirectory contains all original migration files that were consolidated. These are kept for:
 - Historical reference
 - Rollback purposes
 - Understanding the evolution of the schema
+
+The `/archive/user-specific` subdirectory contains migrations specific to individual user accounts:
+- These should NOT be run in production deployments
+- They contain hardcoded user IDs or account-specific fixes
 
 See `/archive/MANIFEST.md` for details about the archived migrations.
 
