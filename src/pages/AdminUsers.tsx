@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useDebounce } from '../hooks/useDebounce';
 import {
   Users,
   Search,
@@ -24,6 +25,8 @@ export function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<EnhancedUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
     role: 'all',
@@ -39,6 +42,11 @@ export function AdminUsers() {
   const bulkActionsRef = useRef<HTMLDivElement>(null);
 
   const USERS_PER_PAGE = 20;
+
+  // Update filters when debounced search changes
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, search: debouncedSearch }));
+  }, [debouncedSearch]);
 
   useEffect(() => {
     loadUsers();
@@ -306,8 +314,8 @@ export function AdminUsers() {
               <input
                 type="text"
                 placeholder="Search by name, email, or school..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>

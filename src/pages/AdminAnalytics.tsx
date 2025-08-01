@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
@@ -108,29 +108,7 @@ export function AdminAnalytics() {
 
   const [growthData, setGrowthData] = useState<GrowthData[]>([]);
 
-  useEffect(() => {
-    if (hasPermission(Permission.VIEW_ANALYTICS)) {
-      loadAnalytics();
-    }
-  }, [hasPermission, dateRange]);
-
-  const loadAnalytics = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        loadUserStats(),
-        loadInvitationStats(),
-        loadActivityStats(),
-        loadGrowthData(),
-      ]);
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadUserStats = async () => {
+  const loadUserStats = useCallback(async () => {
     // Get total users and by role
     const { data: users, error } = await supabase
       .from('user_profiles')
@@ -162,9 +140,9 @@ export function AdminAnalytics() {
     }));
 
     setUserStats(stats);
-  };
+  }, []);
 
-  const loadInvitationStats = async () => {
+  const loadInvitationStats = useCallback(async () => {
     const { data: invitations, error } = await supabase
       .from('user_invitations')
       .select('accepted_at, expires_at');
@@ -190,9 +168,9 @@ export function AdminAnalytics() {
       expired,
       acceptanceRate,
     });
-  };
+  }, []);
 
-  const loadActivityStats = async () => {
+  const loadActivityStats = useCallback(async () => {
     const startDate = subDays(new Date(), dateRange);
 
     // Get recent login activity
@@ -327,9 +305,9 @@ export function AdminAnalytics() {
       topReviewers,
       recentActivities,
     });
-  };
+  }, [dateRange]);
 
-  const loadGrowthData = async () => {
+  const loadGrowthData = useCallback(async () => {
     const data: GrowthData[] = [];
 
     // Get all users and invitations first to minimize queries
@@ -362,7 +340,29 @@ export function AdminAnalytics() {
     }
 
     setGrowthData(data);
-  };
+  }, [dateRange]);
+
+  const loadAnalytics = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadUserStats(),
+        loadInvitationStats(),
+        loadActivityStats(),
+        loadGrowthData(),
+      ]);
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadUserStats, loadInvitationStats, loadActivityStats, loadGrowthData]);
+
+  useEffect(() => {
+    if (hasPermission(Permission.VIEW_ANALYTICS)) {
+      loadAnalytics();
+    }
+  }, [hasPermission, loadAnalytics]);
 
   const formatAction = (action: string) => {
     const actionMap: Record<string, string> = {
