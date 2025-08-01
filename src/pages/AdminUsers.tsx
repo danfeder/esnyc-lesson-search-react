@@ -71,9 +71,9 @@ export function AdminUsers() {
 
       // Apply filters (except email search - we'll handle that after)
       if (filters.search) {
-        query = query.or(
-          `full_name.ilike.%${filters.search}%,school_name.ilike.%${filters.search}%`
-        );
+        // Escape special characters to prevent SQL injection
+        const escapedSearch = filters.search.replace(/[%_]/g, '\\$&');
+        query = query.or(`full_name.ilike.%${escapedSearch}%,school_name.ilike.%${escapedSearch}%`);
       }
 
       if (filters.role !== 'all') {

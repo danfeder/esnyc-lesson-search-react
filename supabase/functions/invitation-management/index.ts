@@ -299,9 +299,11 @@ serve(async (req) => {
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
-      // Apply filters
+      // Apply filters - escape special characters to prevent SQL injection
       if (search) {
-        query = query.or(`email.ilike.%${search}%,school_name.ilike.%${search}%`);
+        // Escape % and _ characters that have special meaning in LIKE patterns
+        const escapedSearch = search.replace(/[%_]/g, '\\$&');
+        query = query.or(`email.ilike.%${escapedSearch}%,school_name.ilike.%${escapedSearch}%`);
       }
 
       if (status === 'pending') {

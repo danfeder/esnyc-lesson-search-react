@@ -118,9 +118,12 @@ serve(async (req) => {
         .select('*, email:auth.users!inner(email)', { count: 'exact' })
         .range(offset, offset + limit - 1);
 
-      // Apply filters
+      // Apply filters - using Supabase's built-in query builder to prevent SQL injection
       if (filters.search) {
-        query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+        // Use ilike with proper parameterization
+        query = query.or(
+          `full_name.ilike.%${filters.search.replace(/[%_]/g, '\\$&')}%,email.ilike.%${filters.search.replace(/[%_]/g, '\\$&')}%`
+        );
       }
       if (filters.role) {
         query = query.eq('role', filters.role);
@@ -129,7 +132,8 @@ serve(async (req) => {
         query = query.eq('is_active', filters.isActive);
       }
       if (filters.school) {
-        query = query.ilike('school_name', `%${filters.school}%`);
+        // Escape special characters in LIKE patterns
+        query = query.ilike('school_name', `%${filters.school.replace(/[%_]/g, '\\$&')}%`);
       }
       if (filters.borough) {
         query = query.eq('school_borough', filters.borough);
