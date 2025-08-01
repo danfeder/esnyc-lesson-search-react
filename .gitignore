@@ -103,6 +103,10 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+temp-*
+*-temp/
+debug-*/
+*-debug/
 
 # Kiro IDE files
 .kiro/
@@ -110,11 +114,32 @@ temp/
 # Claude files
 .claude/
 
-# Development files
-DEVELOPMENT_PLAN.md
-FIXES_NEEDED.md
-
 # Data files
 *.csv
+
+# Backup and archive directories
 database-backups/
+*-backup/
+backup-*/
+archive-*/
+
+# Supabase temporary files
 supabase/.temp/
+# Archive old migrations but keep the manifest
+supabase/migrations/archive/*.sql
+!supabase/migrations/archive/MANIFEST.md
+
+# Debug and test files
+debug-*.js
+debug-*.sql
+test-*.js
+test-*.sql
+*.test.js
+*.spec.js
+
+# Old and deprecated files
+*.old
+*.bak
+*.backup
+*-old.*
+*-deprecated.*
