@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   History,
   UserPlus,
+  TrendingUp,
 } from 'lucide-react';
 import { EnhancedUserProfile, UserRole, Permission, UserManagementAudit } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
@@ -34,6 +35,13 @@ export function AdminUserDetail() {
   const [editMode, setEditMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [auditLogs, setAuditLogs] = useState<UserManagementAudit[]>([]);
+  const [activityMetrics, setActivityMetrics] = useState<{
+    login_count: number;
+    last_login: string | null;
+    submission_count: number;
+    review_count: number;
+    last_activity: string | null;
+  } | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -51,6 +59,7 @@ export function AdminUserDetail() {
     if (userId) {
       loadUserDetails();
       loadAuditLogs();
+      loadActivityMetrics();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
@@ -120,6 +129,41 @@ export function AdminUserDetail() {
       }
     } catch (error) {
       console.error('Error loading audit logs:', error);
+    }
+  };
+
+  const loadActivityMetrics = async () => {
+    if (!userId) return;
+
+    try {
+      const { data, error } = await supabase.rpc('get_user_activity_metrics', {
+        p_user_id: userId,
+        p_days: 30,
+      });
+
+      if (!error && data) {
+        setActivityMetrics(data);
+      } else if (error?.code === 'PGRST202') {
+        // Function doesn't exist yet - set some default data
+        console.log('Activity metrics function not found, using defaults');
+        setActivityMetrics({
+          login_count: 0,
+          last_login: null,
+          submission_count: 0,
+          review_count: 0,
+          last_activity: null,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading activity metrics:', error);
+      // Set default metrics on error
+      setActivityMetrics({
+        login_count: 0,
+        last_login: null,
+        submission_count: 0,
+        review_count: 0,
+        last_activity: null,
+      });
     }
   };
 
@@ -562,6 +606,63 @@ export function AdminUserDetail() {
               )}
             </div>
           </div>
+
+          {/* Activity Metrics */}
+          {activityMetrics && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Activity Metrics
+              </h2>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Logins (30d)</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {activityMetrics.login_count}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Lessons Submitted</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {activityMetrics.submission_count}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Reviews (30d)</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {activityMetrics.review_count}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Last Login</p>
+                    <p className="text-sm text-gray-900">
+                      {activityMetrics.last_login
+                        ? formatDistanceToNow(new Date(activityMetrics.last_login), {
+                            addSuffix: true,
+                          })
+                        : 'Never'}
+                    </p>
+                  </div>
+                </div>
+
+                {activityMetrics.last_activity && (
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">Last Activity</p>
+                    <p className="text-sm text-gray-900">
+                      {formatDistanceToNow(new Date(activityMetrics.last_activity), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Recent Activity */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

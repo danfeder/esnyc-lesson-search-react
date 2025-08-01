@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useDebounce } from '../hooks/useDebounce';
 import {
   Users,
   Search,
@@ -12,6 +13,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
+  ChevronDown,
+  UserCheck,
+  UserX,
+  Trash2,
 } from 'lucide-react';
 import { EnhancedUserProfile, UserFilters } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
@@ -20,6 +25,8 @@ export function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<EnhancedUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
     role: 'all',
@@ -31,12 +38,30 @@ export function AdminUsers() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const bulkActionsRef = useRef<HTMLDivElement>(null);
 
   const USERS_PER_PAGE = 20;
+
+  // Update filters when debounced search changes
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, search: debouncedSearch }));
+  }, [debouncedSearch]);
 
   useEffect(() => {
     loadUsers();
   }, [filters, page]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (bulkActionsRef.current && !bulkActionsRef.current.contains(event.target as Node)) {
+        setShowBulkActions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -46,9 +71,11 @@ export function AdminUsers() {
 
       // Apply filters (except email search - we'll handle that after)
       if (filters.search) {
-        query = query.or(
-          `full_name.ilike.%${filters.search}%,school_name.ilike.%${filters.search}%`
-        );
+        // Escape special characters including backslashes to prevent SQL injection
+        const escapedSearch = filters.search
+          .replace(/\\/g, '\\\\') // Escape backslashes first
+          .replace(/[%_]/g, '\\$&'); // Then escape wildcards
+        query = query.or(`full_name.ilike.%${escapedSearch}%,school_name.ilike.%${escapedSearch}%`);
       }
 
       if (filters.role !== 'all') {
@@ -139,29 +166,63 @@ export function AdminUsers() {
     }
   };
 
-  const handleBulkAction = async (action: 'activate' | 'deactivate') => {
+  const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
     if (selectedUsers.length === 0) return;
 
+    // Confirm destructive actions
+    if (action === 'delete') {
+      const confirm = window.confirm(
+        `Are you sure you want to delete ${selectedUsers.length} user(s)? This action cannot be undone.`
+      );
+      if (!confirm) return;
+    }
+
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ is_active: action === 'activate' })
-        .in('id', selectedUsers);
+      if (action === 'delete') {
+        // Use the bulk operations API endpoint
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
 
-      if (error) throw error;
-
-      // Log audit
-      for (const userId of selectedUsers) {
-        await supabase.from('user_management_audit').insert({
-          action: action === 'activate' ? 'user_activated' : 'user_deactivated',
-          target_user_id: userId,
+        const response = await supabase.functions.invoke('user-management', {
+          body: JSON.stringify({
+            action: 'delete',
+            userIds: selectedUsers,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
         });
+
+        if (response.error) throw response.error;
+      } else {
+        // Handle activate/deactivate
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({ is_active: action === 'activate' })
+          .in('id', selectedUsers);
+
+        if (error) throw error;
+
+        // Log audit
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('user_management_audit').insert({
+            actor_id: user.id,
+            action: action === 'activate' ? 'bulk_users_activated' : 'bulk_users_deactivated',
+            metadata: { userIds: selectedUsers, count: selectedUsers.length },
+          });
+        }
       }
 
       setSelectedUsers([]);
       loadUsers();
     } catch (error) {
-      console.error(`Error ${action}ing users:`, error);
+      console.error(`Error performing bulk ${action}:`, error);
     }
   };
 
@@ -255,8 +316,8 @@ export function AdminUsers() {
               <input
                 type="text"
                 placeholder="Search by name, email, or school..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -319,28 +380,64 @@ export function AdminUsers() {
 
         {/* Bulk Actions */}
         {selectedUsers.length > 0 && (
-          <div className="mt-4 flex items-center gap-4 p-3 bg-blue-50 rounded-md">
+          <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 rounded-md">
             <span className="text-sm text-blue-800">
               {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
             </span>
-            <button
-              onClick={() => handleBulkAction('activate')}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Activate
-            </button>
-            <button
-              onClick={() => handleBulkAction('deactivate')}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Deactivate
-            </button>
-            <button
-              onClick={() => setSelectedUsers([])}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Clear Selection
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="relative" ref={bulkActionsRef}>
+                <button
+                  onClick={() => setShowBulkActions(!showBulkActions)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                >
+                  Bulk Actions
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {showBulkActions && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                    <button
+                      onClick={() => {
+                        handleBulkAction('activate');
+                        setShowBulkActions(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <UserCheck className="w-4 h-4 text-green-600" />
+                      Activate Users
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleBulkAction('deactivate');
+                        setShowBulkActions(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <UserX className="w-4 h-4 text-yellow-600" />
+                      Deactivate Users
+                    </button>
+                    <hr className="my-1 border-gray-200" />
+                    <button
+                      onClick={() => {
+                        handleBulkAction('delete');
+                        setShowBulkActions(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Users
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setSelectedUsers([])}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Clear Selection
+              </button>
+            </div>
           </div>
         )}
       </div>

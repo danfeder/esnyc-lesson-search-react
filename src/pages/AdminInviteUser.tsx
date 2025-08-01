@@ -27,6 +27,37 @@ const SUBJECTS = [
   'Cooking',
 ];
 
+const getPermissionsForRole = (role: UserRole): string[] => {
+  switch (role) {
+    case UserRole.TEACHER:
+      return ['view_lessons', 'submit_lessons'];
+    case UserRole.REVIEWER:
+      return [
+        'view_lessons',
+        'submit_lessons',
+        'review_lessons',
+        'approve_lessons',
+        'view_analytics',
+      ];
+    case UserRole.ADMIN:
+      return [
+        'view_lessons',
+        'submit_lessons',
+        'review_lessons',
+        'approve_lessons',
+        'delete_lessons',
+        'view_users',
+        'invite_users',
+        'edit_users',
+        'view_analytics',
+        'manage_duplicates',
+        'export_data',
+      ];
+    default:
+      return ['view_lessons', 'submit_lessons'];
+  }
+};
+
 export function AdminInviteUser() {
   const navigate = useNavigate();
   const { user } = useEnhancedAuth();
@@ -105,13 +136,39 @@ export function AdminInviteUser() {
         },
       });
 
-      // TODO: Send invitation email via edge function
-      // For development, show the invitation link
+      // Send invitation email
       if (inviteData) {
-        // Development only - in production this would be sent via email
-        const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
-        // Store in window for debugging
-        (window as any)._lastInvitationLink = invitationLink;
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'invitation',
+              to: formData.email,
+              data: {
+                invitationId: inviteData.id,
+                token: inviteData.token,
+                inviterName: user?.full_name || user?.email,
+                role: formData.role,
+                customMessage: formData.message,
+                permissions: getPermissionsForRole(formData.role),
+                expiresAt: inviteData.expires_at,
+              },
+            },
+          });
+
+          if (emailError) {
+            console.error('Failed to send invitation email:', emailError);
+            // In development, show the invitation link as fallback
+            const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
+            (window as any)._lastInvitationLink = invitationLink;
+            console.log('Invitation link (email failed):', invitationLink);
+          }
+        } catch (err) {
+          console.error('Error invoking email function:', err);
+          // In development, show the invitation link as fallback
+          const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
+          (window as any)._lastInvitationLink = invitationLink;
+          console.log('Invitation link (email failed):', invitationLink);
+        }
       }
 
       setSuccess(true);

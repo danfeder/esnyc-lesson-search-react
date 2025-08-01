@@ -1,6 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, Plus, Shield, LogOut, LogIn, ChevronDown, Users } from 'lucide-react';
+import {
+  Search,
+  User,
+  Plus,
+  Shield,
+  LogOut,
+  LogIn,
+  ChevronDown,
+  Users,
+  BarChart3,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { AuthModal } from '../Auth/AuthModal';
 import { APP_VERSION } from '../../config/version';
@@ -127,6 +137,22 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                           <User className="w-4 h-4" />
                           My Profile
                         </Link>
+                        {(hasPermission(Permission.VIEW_USERS) ||
+                          hasPermission(Permission.VIEW_ANALYTICS) ||
+                          hasPermission(Permission.MANAGE_DUPLICATES) ||
+                          hasPermission(Permission.REVIEW_LESSONS)) && (
+                          <>
+                            <div className="border-t border-gray-200 my-2"></div>
+                            <Link
+                              to="/admin"
+                              onClick={() => setShowUserMenu(false)}
+                              className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <Shield className="w-4 h-4" />
+                              Admin Dashboard
+                            </Link>
+                          </>
+                        )}
                         {hasPermission(Permission.VIEW_USERS) && (
                           <Link
                             to="/admin/users"
@@ -135,6 +161,16 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                           >
                             <Users className="w-4 h-4" />
                             Manage Users
+                          </Link>
+                        )}
+                        {hasPermission(Permission.VIEW_ANALYTICS) && (
+                          <Link
+                            to="/admin/analytics"
+                            onClick={() => setShowUserMenu(false)}
+                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                            Analytics
                           </Link>
                         )}
                         {hasPermission(Permission.MANAGE_DUPLICATES) && (
