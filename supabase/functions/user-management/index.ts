@@ -17,7 +17,7 @@ const getCorsHeaders = (origin: string | null) => {
     origin &&
     (ALLOWED_ORIGINS.includes(origin) ||
       ALLOWED_ORIGINS.some(
-        (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace('*', '.*')))
+        (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace(/\*/g, '.*')))
       ));
 
   return {
@@ -121,9 +121,11 @@ serve(async (req) => {
       // Apply filters - using Supabase's built-in query builder to prevent SQL injection
       if (filters.search) {
         // Use ilike with proper parameterization
-        query = query.or(
-          `full_name.ilike.%${filters.search.replace(/[%_]/g, '\\$&')}%,email.ilike.%${filters.search.replace(/[%_]/g, '\\$&')}%`
-        );
+        // Escape special characters including backslashes for LIKE patterns
+        const escapedSearch = filters.search
+          .replace(/\\/g, '\\\\') // Escape backslashes first
+          .replace(/[%_]/g, '\\$&'); // Then escape wildcards
+        query = query.or(`full_name.ilike.%${escapedSearch}%,email.ilike.%${escapedSearch}%`);
       }
       if (filters.role) {
         query = query.eq('role', filters.role);
@@ -132,8 +134,11 @@ serve(async (req) => {
         query = query.eq('is_active', filters.isActive);
       }
       if (filters.school) {
-        // Escape special characters in LIKE patterns
-        query = query.ilike('school_name', `%${filters.school.replace(/[%_]/g, '\\$&')}%`);
+        // Escape special characters including backslashes in LIKE patterns
+        const escapedSchool = filters.school
+          .replace(/\\/g, '\\\\') // Escape backslashes first
+          .replace(/[%_]/g, '\\$&'); // Then escape wildcards
+        query = query.ilike('school_name', `%${escapedSchool}%`);
       }
       if (filters.borough) {
         query = query.eq('school_borough', filters.borough);

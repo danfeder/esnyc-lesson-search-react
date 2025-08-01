@@ -17,7 +17,7 @@ const getCorsHeaders = (origin: string | null) => {
     origin &&
     (ALLOWED_ORIGINS.includes(origin) ||
       ALLOWED_ORIGINS.some(
-        (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace('*', '.*')))
+        (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace(/\*/g, '.*')))
       ));
 
   return {
@@ -301,8 +301,10 @@ serve(async (req) => {
 
       // Apply filters - escape special characters to prevent SQL injection
       if (search) {
-        // Escape % and _ characters that have special meaning in LIKE patterns
-        const escapedSearch = search.replace(/[%_]/g, '\\$&');
+        // Escape special characters including backslashes that have special meaning in LIKE patterns
+        const escapedSearch = search
+          .replace(/\\/g, '\\\\') // Escape backslashes first
+          .replace(/[%_]/g, '\\$&'); // Then escape wildcards
         query = query.or(`email.ilike.%${escapedSearch}%,school_name.ilike.%${escapedSearch}%`);
       }
 

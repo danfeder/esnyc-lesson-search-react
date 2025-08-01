@@ -33,7 +33,7 @@ const getCorsHeaders = (origin: string | null) => {
     origin &&
     (ALLOWED_ORIGINS.includes(origin) ||
       ALLOWED_ORIGINS.some(
-        (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace('*', '.*')))
+        (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace(/\*/g, '.*')))
       ));
 
   return {

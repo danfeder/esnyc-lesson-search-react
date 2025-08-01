@@ -71,8 +71,10 @@ export function AdminUsers() {
 
       // Apply filters (except email search - we'll handle that after)
       if (filters.search) {
-        // Escape special characters to prevent SQL injection
-        const escapedSearch = filters.search.replace(/[%_]/g, '\\$&');
+        // Escape special characters including backslashes to prevent SQL injection
+        const escapedSearch = filters.search
+          .replace(/\\/g, '\\\\') // Escape backslashes first
+          .replace(/[%_]/g, '\\$&'); // Then escape wildcards
         query = query.or(`full_name.ilike.%${escapedSearch}%,school_name.ilike.%${escapedSearch}%`);
       }
 
