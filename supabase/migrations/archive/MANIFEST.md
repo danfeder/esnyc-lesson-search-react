@@ -55,3 +55,13 @@ The individual migration files in this directory were applied in the following o
 - Various fixes and optimizations
 
 These files are kept for historical reference and rollback purposes.
+
+## User-Specific Migrations
+
+The `/user-specific` subdirectory contains migrations that were created for specific user accounts or one-time fixes:
+
+- `07_create_admin_profile.sql` - Creates admin profile for df@esynyc.org (specific to Dan Feder's account)
+  - Created: 2025-08-01
+  - Purpose: Fixed missing user profile issue after login
+  - Should NOT be included in production deployments
+  - Contains hardcoded user IDs specific to Dan's account

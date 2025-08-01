@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { ChevronLeft, Check } from 'lucide-react';
 
 interface LessonDetail {
@@ -39,7 +39,7 @@ interface DuplicateGroup {
 export const AdminDuplicateDetail: React.FC = () => {
   const { groupId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useEnhancedAuth();
   const [group, setGroup] = useState<DuplicateGroup | null>(null);
   const [selectedCanonical, setSelectedCanonical] = useState<string>('');
   const [mergeMetadata, setMergeMetadata] = useState(true);
