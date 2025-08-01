@@ -9,7 +9,11 @@ import { ReviewDetail } from './pages/ReviewDetail';
 import { AdminDuplicates } from './pages/AdminDuplicates';
 import { AdminDuplicateDetail } from './pages/AdminDuplicateDetail';
 import { AdminUsers } from './pages/AdminUsers';
+import { AdminUserDetail } from './pages/AdminUserDetail';
 import { AdminInviteUser } from './pages/AdminInviteUser';
+import { AdminInvitations } from './pages/AdminInvitations';
+import { UserProfile } from './pages/UserProfile';
+import { AcceptInvitation } from './pages/AcceptInvitation';
 import { VerifySetup } from './pages/VerifySetup';
 import { useLessonStats } from './hooks/useLessonStats';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
@@ -40,6 +44,7 @@ function AppContent() {
             <Route path="/" element={<SearchPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/submit" element={<SubmissionPage />} />
+            <Route path="/accept-invitation" element={<AcceptInvitation />} />
             <Route
               path="/review"
               element={
@@ -85,6 +90,30 @@ function AppContent() {
               element={
                 <ProtectedRoute permissions={[Permission.INVITE_USERS]}>
                   <AdminInviteUser />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/invitations"
+              element={
+                <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
+                  <AdminInvitations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users/:userId"
+              element={
+                <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
+                  <AdminUserDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
                 </ProtectedRoute>
               }
             />
