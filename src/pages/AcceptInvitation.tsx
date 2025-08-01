@@ -166,6 +166,23 @@ export function AcceptInvitation() {
         target_email: invitation.email,
       });
 
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'welcome',
+            to: invitation.email,
+            data: {
+              recipientName: formData.full_name,
+              role: invitation.role,
+            },
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't block the flow if email fails
+      }
+
       // Sign in the user
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: invitation.email,

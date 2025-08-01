@@ -19,6 +19,37 @@ import { formatDistanceToNow, format, isPast } from 'date-fns';
 
 type InvitationFilter = 'all' | 'pending' | 'accepted' | 'expired';
 
+const getPermissionsForRole = (role: string): string[] => {
+  switch (role) {
+    case 'teacher':
+      return ['view_lessons', 'submit_lessons'];
+    case 'reviewer':
+      return [
+        'view_lessons',
+        'submit_lessons',
+        'review_lessons',
+        'approve_lessons',
+        'view_analytics',
+      ];
+    case 'admin':
+      return [
+        'view_lessons',
+        'submit_lessons',
+        'review_lessons',
+        'approve_lessons',
+        'delete_lessons',
+        'view_users',
+        'invite_users',
+        'edit_users',
+        'view_analytics',
+        'manage_duplicates',
+        'export_data',
+      ];
+    default:
+      return ['view_lessons', 'submit_lessons'];
+  }
+};
+
 export function AdminInvitations() {
   const navigate = useNavigate();
   const { user, hasPermission } = useEnhancedAuth();
@@ -111,7 +142,31 @@ export function AdminInvitations() {
         });
       }
 
-      // TODO: Trigger email sending edge function
+      // Send the invitation email
+      try {
+        const inviterProfile = await supabase
+          .from('user_profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'invitation',
+            to: invitation.email,
+            data: {
+              invitationId: invitation.id,
+              token: invitation.token,
+              inviterName: inviterProfile.data?.full_name || user.email,
+              role: invitation.role,
+              permissions: getPermissionsForRole(invitation.role),
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            },
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to resend invitation email:', emailError);
+      }
 
       // Reload invitations
       await loadInvitations();
