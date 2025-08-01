@@ -12,9 +12,7 @@ import {
   Mail,
   CheckCircle,
   Clock,
-  XCircle,
   UserCheck,
-  Calendar,
   FileText,
   Star,
 } from 'lucide-react';
@@ -33,7 +31,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, endOfDay } from 'date-fns';
 
 interface UserStats {
   total: number;
@@ -78,11 +76,9 @@ const ROLE_COLORS = {
   super_admin: '#a855f7',
 };
 
-const PIE_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'];
-
 export function AdminAnalytics() {
   const navigate = useNavigate();
-  const { user, hasPermission } = useEnhancedAuth();
+  const { hasPermission } = useEnhancedAuth();
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(30); // days
 

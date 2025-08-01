@@ -144,6 +144,10 @@ export function AdminInvitations() {
 
       // Send the invitation email
       try {
+        if (!user || !invitation) {
+          throw new Error('User or invitation not found');
+        }
+
         const inviterProfile = await supabase
           .from('user_profiles')
           .select('full_name')
@@ -157,7 +161,7 @@ export function AdminInvitations() {
             data: {
               invitationId: invitation.id,
               token: invitation.token,
-              inviterName: inviterProfile.data?.full_name || user.email,
+              inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
               role: invitation.role,
               permissions: getPermissionsForRole(invitation.role),
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
