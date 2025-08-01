@@ -38,6 +38,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_pending_invitation_per_email
 ON user_invitations (email) 
 WHERE accepted_at IS NULL;
 
+-- Index for cleanup of expired invitations
+CREATE INDEX IF NOT EXISTS idx_invitations_expired 
+ON user_invitations(expires_at) 
+WHERE accepted_at IS NULL;
+
 -- =====================================================
 -- USER MANAGEMENT AUDIT TABLE
 -- =====================================================

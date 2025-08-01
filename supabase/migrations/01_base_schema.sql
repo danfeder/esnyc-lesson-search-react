@@ -223,3 +223,11 @@ CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles
 
 CREATE TRIGGER update_lesson_submissions_updated_at BEFORE UPDATE ON lesson_submissions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- Performance Indexes
+-- =====================================================
+
+-- Index for efficient submission queries by status and teacher
+CREATE INDEX IF NOT EXISTS idx_submissions_status_teacher 
+ON lesson_submissions(status, teacher_id);

@@ -125,7 +125,9 @@ archive-*/
 
 # Supabase temporary files
 supabase/.temp/
-supabase/migrations/archive/
+# Archive old migrations but keep the manifest
+supabase/migrations/archive/*.sql
+!supabase/migrations/archive/MANIFEST.md
 
 # Debug and test files
 debug-*.js

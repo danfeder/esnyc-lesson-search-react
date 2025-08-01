@@ -152,6 +152,10 @@ CREATE INDEX IF NOT EXISTS idx_lessons_embedding
 ON lessons USING ivfflat (content_embedding vector_cosine_ops)
 WITH (lists = 100);
 
+-- Composite index for lesson format and cooking method filters
+CREATE INDEX IF NOT EXISTS idx_lessons_format_method 
+ON lessons(lesson_format, cooking_method);
+
 -- =====================================================
 -- MAIN SEARCH FUNCTION
 -- =====================================================
