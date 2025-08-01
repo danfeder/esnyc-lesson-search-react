@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { supabase } from '../lib/supabase';
 import { CheckCircle } from 'lucide-react';
+import { Permission } from '../types/auth';
 
 interface DuplicateGroup {
   groupId: string;
@@ -19,7 +20,7 @@ interface DuplicateGroup {
 }
 
 export const AdminDuplicates: React.FC = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useEnhancedAuth();
   const location = useLocation();
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'resolved'>('pending');

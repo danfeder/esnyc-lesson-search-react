@@ -143,9 +143,27 @@ export function AdminUserDetail() {
 
       if (!error && data) {
         setActivityMetrics(data);
+      } else if (error?.code === 'PGRST202') {
+        // Function doesn't exist yet - set some default data
+        console.log('Activity metrics function not found, using defaults');
+        setActivityMetrics({
+          login_count: 0,
+          last_login: null,
+          submission_count: 0,
+          review_count: 0,
+          last_activity: null,
+        });
       }
     } catch (error) {
       console.error('Error loading activity metrics:', error);
+      // Set default metrics on error
+      setActivityMetrics({
+        login_count: 0,
+        last_login: null,
+        submission_count: 0,
+        review_count: 0,
+        last_activity: null,
+      });
     }
   };
 

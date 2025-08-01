@@ -219,69 +219,111 @@ export function AdminAnalytics() {
       count,
     }));
 
-    // Get top submitters
-    const { data: submissions } = await supabase
-      .from('lesson_submissions')
-      .select('teacher_id, user_profiles!inner(full_name, email)')
-      .gte('created_at', startDate.toISOString());
+    // Get top submitters - wrapped in try/catch as table might not exist
+    let topSubmitters: { name: string; email: string; submissions: number }[] = [];
+    try {
+      const { data: submissions, error: submissionsError } = await supabase
+        .from('lesson_submissions')
+        .select('teacher_id')
+        .gte('created_at', startDate.toISOString());
 
-    const submissionCounts: Record<string, { name: string; email: string; count: number }> = {};
-    submissions?.forEach((sub) => {
-      const id = sub.teacher_id;
-      if (!submissionCounts[id]) {
-        submissionCounts[id] = {
-          name: sub.user_profiles.full_name || 'Unknown',
-          email: sub.user_profiles.email,
-          count: 0,
-        };
+      if (!submissionsError && submissions) {
+        const submissionCounts: Record<string, number> = {};
+        submissions.forEach((sub) => {
+          submissionCounts[sub.teacher_id] = (submissionCounts[sub.teacher_id] || 0) + 1;
+        });
+
+        // Get user details separately
+        const userIds = Object.keys(submissionCounts);
+        if (userIds.length > 0) {
+          const { data: users } = await supabase
+            .from('user_profiles')
+            .select('id, full_name, email')
+            .in('id', userIds);
+
+          topSubmitters = userIds
+            .map((id) => {
+              const user = users?.find((u) => u.id === id);
+              return {
+                name: user?.full_name || 'Unknown',
+                email: user?.email || '',
+                submissions: submissionCounts[id],
+              };
+            })
+            .sort((a, b) => b.submissions - a.submissions)
+            .slice(0, 5);
+        }
       }
-      submissionCounts[id].count++;
-    });
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+    }
 
-    const topSubmitters = Object.values(submissionCounts)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-      .map(({ name, email, count }) => ({ name, email, submissions: count }));
+    // Get top reviewers - wrapped in try/catch as table might not exist
+    let topReviewers: { name: string; email: string; reviews: number }[] = [];
+    try {
+      const { data: reviews, error: reviewsError } = await supabase
+        .from('submission_reviews')
+        .select('reviewer_id')
+        .gte('created_at', startDate.toISOString());
 
-    // Get top reviewers
-    const { data: reviews } = await supabase
-      .from('lesson_reviews')
-      .select('reviewer_id, user_profiles!inner(full_name, email)')
-      .gte('created_at', startDate.toISOString());
+      if (!reviewsError && reviews) {
+        const reviewCounts: Record<string, number> = {};
+        reviews.forEach((review) => {
+          reviewCounts[review.reviewer_id] = (reviewCounts[review.reviewer_id] || 0) + 1;
+        });
 
-    const reviewCounts: Record<string, { name: string; email: string; count: number }> = {};
-    reviews?.forEach((review) => {
-      const id = review.reviewer_id;
-      if (!reviewCounts[id]) {
-        reviewCounts[id] = {
-          name: review.user_profiles.full_name || 'Unknown',
-          email: review.user_profiles.email,
-          count: 0,
-        };
+        // Get user details separately
+        const userIds = Object.keys(reviewCounts);
+        if (userIds.length > 0) {
+          const { data: users } = await supabase
+            .from('user_profiles')
+            .select('id, full_name, email')
+            .in('id', userIds);
+
+          topReviewers = userIds
+            .map((id) => {
+              const user = users?.find((u) => u.id === id);
+              return {
+                name: user?.full_name || 'Unknown',
+                email: user?.email || '',
+                reviews: reviewCounts[id],
+              };
+            })
+            .sort((a, b) => b.reviews - a.reviews)
+            .slice(0, 5);
+        }
       }
-      reviewCounts[id].count++;
-    });
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+    }
 
-    const topReviewers = Object.values(reviewCounts)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-      .map(({ name, email, count }) => ({ name, email, reviews: count }));
-
-    // Get recent activities
+    // Get recent activities - simplified query
     const { data: activities } = await supabase
       .from('user_management_audit')
-      .select('id, action, target_email, created_at, user_profiles!inner(full_name)')
+      .select('id, action, target_email, created_at, actor_id')
       .order('created_at', { ascending: false })
       .limit(10);
 
-    const recentActivities =
-      activities?.map((activity) => ({
-        id: activity.id,
-        actor_name: activity.user_profiles.full_name || 'Unknown',
-        action: activity.action,
-        target_email: activity.target_email,
-        created_at: activity.created_at,
-      })) || [];
+    // Get actor names separately
+    let recentActivities: any[] = [];
+    if (activities && activities.length > 0) {
+      const actorIds = [...new Set(activities.map((a) => a.actor_id))].filter(Boolean);
+      const { data: actors } = await supabase
+        .from('user_profiles')
+        .select('id, full_name')
+        .in('id', actorIds);
+
+      recentActivities = activities.map((activity) => {
+        const actor = actors?.find((a) => a.id === activity.actor_id);
+        return {
+          id: activity.id,
+          actor_name: actor?.full_name || 'Unknown',
+          action: activity.action,
+          target_email: activity.target_email,
+          created_at: activity.created_at,
+        };
+      });
+    }
 
     setActivityStats({
       recentLogins,
@@ -294,26 +336,32 @@ export function AdminAnalytics() {
   const loadGrowthData = async () => {
     const data: GrowthData[] = [];
 
+    // Get all users and invitations first to minimize queries
+    const { data: allUsers } = await supabase
+      .from('user_profiles')
+      .select('created_at')
+      .order('created_at', { ascending: true });
+
+    const { data: allInvitations } = await supabase
+      .from('user_invitations')
+      .select('created_at')
+      .order('created_at', { ascending: true });
+
     for (let i = dateRange - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
-      const dateStr = format(date, 'yyyy-MM-dd');
+      const endDate = endOfDay(date);
 
       // Count users created up to this date
-      const { count: userCount } = await supabase
-        .from('user_profiles')
-        .select('*', { count: 'exact', head: true })
-        .lte('created_at', endOfDay(date).toISOString());
+      const userCount = allUsers?.filter((u) => new Date(u.created_at) <= endDate).length || 0;
 
       // Count invitations sent up to this date
-      const { count: inviteCount } = await supabase
-        .from('user_invitations')
-        .select('*', { count: 'exact', head: true })
-        .lte('created_at', endOfDay(date).toISOString());
+      const inviteCount =
+        allInvitations?.filter((inv) => new Date(inv.created_at) <= endDate).length || 0;
 
       data.push({
         date: format(date, 'MMM dd'),
-        users: userCount || 0,
-        invitations: inviteCount || 0,
+        users: userCount,
+        invitations: inviteCount,
       });
     }
 

@@ -76,7 +76,7 @@ BEGIN
     
     -- Review count
     (SELECT COUNT(*)::INTEGER 
-     FROM lesson_reviews 
+     FROM submission_reviews 
      WHERE reviewer_id = p_user_id 
      AND created_at >= NOW() - INTERVAL '1 day' * p_days) AS review_count,
     
@@ -84,7 +84,7 @@ BEGIN
     GREATEST(
       (SELECT MAX(created_at) FROM user_management_audit WHERE actor_id = p_user_id),
       (SELECT MAX(created_at) FROM lesson_submissions WHERE teacher_id = p_user_id),
-      (SELECT MAX(created_at) FROM lesson_reviews WHERE reviewer_id = p_user_id)
+      (SELECT MAX(created_at) FROM submission_reviews WHERE reviewer_id = p_user_id)
     ) AS last_activity;
 END;
 $$ LANGUAGE plpgsql STABLE;
