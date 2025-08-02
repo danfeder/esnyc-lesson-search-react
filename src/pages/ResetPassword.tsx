@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Lock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
@@ -28,7 +28,7 @@ export function ResetPassword() {
         } else {
           setHasValidToken(true);
         }
-      } catch (err) {
+      } catch {
         setError('Unable to verify reset link. Please try again.');
         setHasValidToken(false);
       } finally {
