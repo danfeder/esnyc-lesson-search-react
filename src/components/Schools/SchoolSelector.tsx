@@ -59,8 +59,10 @@ export function SchoolSelector({
     <div className="space-y-2">
       <Listbox value={selectedSchools} onChange={() => {}} disabled={disabled}>
         <div className="relative">
-          <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent sm:text-sm">
-            <span className="block truncate">
+          <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none">
+            <span
+              className={`block truncate ${selectedSchools.length === 0 ? 'text-gray-500' : 'text-gray-900'}`}
+            >
               {selectedSchools.length === 0
                 ? placeholder
                 : `${selectedSchools.length} school${selectedSchools.length !== 1 ? 's' : ''} selected`}
@@ -75,11 +77,11 @@ export function SchoolSelector({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base border border-gray-300 shadow-sm focus:outline-none sm:text-sm">
+            <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-700 text-white py-1 text-base shadow-lg focus:outline-none">
               {loading ? (
-                <div className="px-4 py-2 text-gray-500">Loading schools...</div>
+                <div className="px-4 py-2 text-gray-300">Loading schools...</div>
               ) : schools.length === 0 ? (
-                <div className="px-4 py-2 text-gray-500">No schools available</div>
+                <div className="px-4 py-2 text-gray-300">No schools available</div>
               ) : (
                 schools.map((school) => {
                   const isSelected = selectedSchools.some((s) => s.id === school.id);
@@ -88,7 +90,7 @@ export function SchoolSelector({
                       key={school.id}
                       className={({ active }) =>
                         `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                          active ? 'bg-green-100 text-green-900' : 'text-gray-900'
+                          active ? 'bg-gray-600 text-white' : 'text-white'
                         }`
                       }
                       value={school}
@@ -100,8 +102,8 @@ export function SchoolSelector({
                         {school.name}
                       </span>
                       {isSelected ? (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-green-600">
-                          <Check className="h-5 w-5" aria-hidden="true" />
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
+                          <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       ) : null}
                     </Listbox.Option>
