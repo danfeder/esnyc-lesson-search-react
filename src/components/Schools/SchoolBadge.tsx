@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface SchoolBadgeProps {
   name: string;
   size?: 'sm' | 'md' | 'lg';

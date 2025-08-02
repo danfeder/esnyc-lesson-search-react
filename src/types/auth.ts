@@ -78,6 +78,7 @@ export interface EnhancedUserProfile {
   permissions?: Record<Permission, boolean>; // Custom permission overrides
   created_at: string;
   updated_at: string;
+  schools?: Array<{ id: string; name: string }>; // User's assigned schools
 }
 
 // User invitation interface

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { SchoolBadge, SchoolCheckboxGroup, School } from '../components/Schools';
+import { SchoolBadge, School } from '../components/Schools';
 import {
   ArrowLeft,
   User,
@@ -102,7 +102,8 @@ export function UserProfile() {
 
       if (schoolsError) throw schoolsError;
 
-      const schools = userSchoolData?.map((us) => us.schools).filter(Boolean) || [];
+      const schools =
+        (userSchoolData?.map((us: any) => us.schools).filter(Boolean) as School[]) || [];
       setUserSchools(schools);
     } catch (error) {
       console.error('Error loading profile:', error);

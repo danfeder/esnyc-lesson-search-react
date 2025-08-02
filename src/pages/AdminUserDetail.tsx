@@ -119,7 +119,7 @@ export function AdminUserDetail() {
         .eq('user_id', userId);
 
       if (!schoolsError && userSchoolData) {
-        const schools = userSchoolData.map((us) => us.schools).filter(Boolean);
+        const schools = userSchoolData.map((us: any) => us.schools).filter(Boolean) as School[];
         setUserSchools(schools);
         setEditedSchools(schools);
       }
