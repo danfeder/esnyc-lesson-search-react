@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { EnhancedUserProfile, UserFilters } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
+import { SchoolBadge } from '../components/Schools';
 
 export function AdminUsers() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ export function AdminUsers() {
     role: 'all',
     is_active: 'all',
     school_borough: 'all',
+    schoolId: 'all',
     sort_by: 'created_at',
     sort_order: 'desc',
   });
@@ -39,6 +41,7 @@ export function AdminUsers() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
 
   const USERS_PER_PAGE = 20;
@@ -53,6 +56,10 @@ export function AdminUsers() {
   }, [filters, page]);
 
   useEffect(() => {
+    loadSchools();
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (bulkActionsRef.current && !bulkActionsRef.current.contains(event.target as Node)) {
         setShowBulkActions(false);
@@ -63,11 +70,48 @@ export function AdminUsers() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const loadSchools = async () => {
+    try {
+      const { data, error } = await supabase.from('schools').select('id, name').order('name');
+      if (!error && data) {
+        setSchools(data);
+      }
+    } catch (error) {
+      console.error('Error loading schools:', error);
+    }
+  };
+
   const loadUsers = async () => {
     setLoading(true);
     try {
-      // First, query user_profiles directly
+      // Check if we need to filter by school
+      let userIds: string[] | null = null;
+      if (filters.schoolId && filters.schoolId !== 'all') {
+        // First get all user IDs that belong to this school
+        const { data: schoolUsers, error: schoolError } = await supabase
+          .from('user_schools')
+          .select('user_id')
+          .eq('school_id', filters.schoolId);
+
+        if (schoolError) throw schoolError;
+        userIds = schoolUsers?.map((su) => su.user_id) || [];
+
+        // If no users in this school, return empty results
+        if (userIds.length === 0) {
+          setUsers([]);
+          setTotalPages(1);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Query user_profiles directly
       let query = supabase.from('user_profiles').select('*', { count: 'exact' });
+
+      // If filtering by school, only include users from that school
+      if (userIds) {
+        query = query.in('id', userIds);
+      }
 
       // Apply filters (except email search - we'll handle that after)
       if (filters.search) {
@@ -115,14 +159,37 @@ export function AdminUsers() {
           user_ids: profiles.map((p) => p.id),
         });
 
+        // Fetch user schools
+        const { data: userSchoolsData, error: schoolsError } = await supabase
+          .from('user_schools')
+          .select('user_id, schools(id, name)')
+          .in(
+            'user_id',
+            profiles.map((p) => p.id)
+          );
+
         if (!emailError && emailsData) {
           // Create email map
           const emailMap = new Map(emailsData.map((item: any) => [item.id, item.email]));
 
-          // Merge profiles with emails
+          // Create schools map
+          const schoolsMap = new Map();
+          if (!schoolsError && userSchoolsData) {
+            userSchoolsData.forEach((us) => {
+              if (!schoolsMap.has(us.user_id)) {
+                schoolsMap.set(us.user_id, []);
+              }
+              if (us.schools) {
+                schoolsMap.get(us.user_id).push(us.schools);
+              }
+            });
+          }
+
+          // Merge profiles with emails and schools
           const usersWithEmails = profiles.map((profile) => ({
             ...profile,
             email: emailMap.get(profile.id) || 'No email',
+            schools: schoolsMap.get(profile.id) || [],
           }));
 
           // Handle email search filtering
@@ -352,6 +419,19 @@ export function AdminUsers() {
               <option value="false">Inactive</option>
             </select>
 
+            <select
+              value={filters.schoolId || 'all'}
+              onChange={(e) => setFilters({ ...filters, schoolId: e.target.value as any })}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="all">All Schools</option>
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                </option>
+              ))}
+            </select>
+
             <button
               onClick={() => navigate('/admin/users/invite')}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
@@ -537,11 +617,14 @@ export function AdminUsers() {
                     {user.role.replace('_', ' ')}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <div>
-                    {user.school_name || '-'}
-                    {user.school_borough && (
-                      <div className="text-xs text-gray-500">{user.school_borough}</div>
+                <td className="px-6 py-4">
+                  <div className="flex flex-wrap gap-1">
+                    {user.schools && user.schools.length > 0 ? (
+                      user.schools.map((school: any) => (
+                        <SchoolBadge key={school.id} name={school.name} size="sm" />
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-500">-</span>
                     )}
                   </div>
                 </td>

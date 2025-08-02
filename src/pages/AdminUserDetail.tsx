@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
+import { SchoolBadge, SchoolSelector, School } from '../components/Schools';
 import {
   ArrowLeft,
   User,
@@ -55,6 +56,10 @@ export function AdminUserDetail() {
     notes: '',
   });
 
+  // Schools state
+  const [userSchools, setUserSchools] = useState<School[]>([]);
+  const [editedSchools, setEditedSchools] = useState<School[]>([]);
+
   useEffect(() => {
     if (userId) {
       loadUserDetails();
@@ -106,6 +111,18 @@ export function AdminUserDetail() {
         is_active: profile.is_active ?? true,
         notes: profile.notes || '',
       });
+
+      // Load user's schools
+      const { data: userSchoolData, error: schoolsError } = await supabase
+        .from('user_schools')
+        .select('schools(id, name)')
+        .eq('user_id', userId);
+
+      if (!schoolsError && userSchoolData) {
+        const schools = userSchoolData.map((us) => us.schools).filter(Boolean);
+        setUserSchools(schools);
+        setEditedSchools(schools);
+      }
     } catch (error) {
       console.error('Error loading user details:', error);
     } finally {
@@ -191,6 +208,41 @@ export function AdminUserDetail() {
         .eq('id', userId);
 
       if (updateError) throw updateError;
+
+      // Update schools if they've changed
+      const currentSchoolIds = userSchools.map((s) => s.id).sort();
+      const newSchoolIds = editedSchools.map((s) => s.id).sort();
+
+      if (JSON.stringify(currentSchoolIds) !== JSON.stringify(newSchoolIds)) {
+        // Call the user-management function to update schools
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+
+        if (authUser) {
+          // Remove all existing school associations
+          const { error: deleteError } = await supabase
+            .from('user_schools')
+            .delete()
+            .eq('user_id', userId);
+
+          if (deleteError) throw deleteError;
+
+          // Add new school associations
+          if (editedSchools.length > 0) {
+            const schoolEntries = editedSchools.map((school) => ({
+              user_id: userId,
+              school_id: school.id,
+            }));
+
+            const { error: insertError } = await supabase
+              .from('user_schools')
+              .insert(schoolEntries);
+
+            if (insertError) throw insertError;
+          }
+        }
+      }
 
       // Try to log the update, but don't fail if audit fails
       try {
@@ -520,17 +572,24 @@ export function AdminUserDetail() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <Building className="w-4 h-4 inline mr-1" />
-                    School
+                    Schools
                   </label>
                   {editMode ? (
-                    <input
-                      type="text"
-                      value={formData.school_name}
-                      onChange={(e) => setFormData({ ...formData, school_name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    <SchoolSelector
+                      selectedSchools={editedSchools}
+                      onChange={setEditedSchools}
+                      disabled={saving}
                     />
                   ) : (
-                    <p className="text-gray-900">{formData.school_name || 'Not provided'}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {userSchools.length > 0 ? (
+                        userSchools.map((school) => (
+                          <SchoolBadge key={school.id} name={school.name} />
+                        ))
+                      ) : (
+                        <p className="text-gray-500">No schools assigned</p>
+                      )}
+                    </div>
                   )}
                 </div>
 

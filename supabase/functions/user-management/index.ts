@@ -32,6 +32,7 @@ interface UserFilters {
   role?: string;
   isActive?: boolean;
   school?: string;
+  schoolId?: string;
   borough?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -91,6 +92,115 @@ serve(async (req) => {
     // Route handling
     const pathParts = pathname.split('/').filter(Boolean);
 
+    // GET /schools - List all schools
+    if (req.method === 'GET' && pathParts.length === 1 && pathParts[0] === 'schools') {
+      const { data: schools, error } = await supabase.from('schools').select('*').order('name');
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ schools }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // POST /schools - Create new school
+    if (req.method === 'POST' && pathParts.length === 1 && pathParts[0] === 'schools') {
+      const { name } = await req.json();
+
+      if (!name) {
+        return new Response(JSON.stringify({ error: 'School name is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: school, error } = await supabase
+        .from('schools')
+        .insert({ name })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log audit trail
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'school_created',
+        metadata: { school_id: school.id, school_name: name },
+      });
+
+      return new Response(JSON.stringify({ school }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // PUT /schools/:id - Update school
+    if (req.method === 'PUT' && pathParts.length === 2 && pathParts[0] === 'schools') {
+      const schoolId = pathParts[1];
+      const { name } = await req.json();
+
+      if (!name) {
+        return new Response(JSON.stringify({ error: 'School name is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: school, error } = await supabase
+        .from('schools')
+        .update({ name })
+        .eq('id', schoolId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log audit trail
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'school_updated',
+        metadata: { school_id: schoolId, new_name: name },
+      });
+
+      return new Response(JSON.stringify({ school }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // DELETE /schools/:id - Delete school
+    if (req.method === 'DELETE' && pathParts.length === 2 && pathParts[0] === 'schools') {
+      if (profile.role !== 'super_admin') {
+        return new Response(JSON.stringify({ error: 'Only super admins can delete schools' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const schoolId = pathParts[1];
+
+      // Get school name for audit trail
+      const { data: school } = await supabase
+        .from('schools')
+        .select('name')
+        .eq('id', schoolId)
+        .single();
+
+      const { error } = await supabase.from('schools').delete().eq('id', schoolId);
+
+      if (error) throw error;
+
+      // Log audit trail
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'school_deleted',
+        metadata: { school_id: schoolId, school_name: school?.name },
+      });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // GET /users - List all users with filtering
     if (req.method === 'GET' && pathParts.length === 1 && pathParts[0] === 'users') {
       const page = parseInt(url.searchParams.get('page') || '1');
@@ -107,15 +217,23 @@ serve(async (req) => {
               ? false
               : undefined,
         school: url.searchParams.get('school') || undefined,
+        schoolId: url.searchParams.get('schoolId') || undefined,
         borough: url.searchParams.get('borough') || undefined,
         sortBy: url.searchParams.get('sortBy') || 'created_at',
         sortOrder: (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
       };
 
-      // Build query
+      // Build base query
+      let baseQuery = `*, email:auth.users!inner(email)`;
+
+      // If filtering by schoolId, we need to join with user_schools
+      if (filters.schoolId) {
+        baseQuery = `*, email:auth.users!inner(email), user_schools!inner(school_id)`;
+      }
+
       let query = supabase
         .from('user_profiles')
-        .select('*, email:auth.users!inner(email)', { count: 'exact' })
+        .select(baseQuery, { count: 'exact' })
         .range(offset, offset + limit - 1);
 
       // Apply filters - using Supabase's built-in query builder to prevent SQL injection
@@ -140,6 +258,9 @@ serve(async (req) => {
           .replace(/[%_]/g, '\\$&'); // Then escape wildcards
         query = query.ilike('school_name', `%${escapedSchool}%`);
       }
+      if (filters.schoolId) {
+        query = query.eq('user_schools.school_id', filters.schoolId);
+      }
       if (filters.borough) {
         query = query.eq('school_borough', filters.borough);
       }
@@ -157,18 +278,28 @@ serve(async (req) => {
         user_ids: userIds,
       });
 
-      // Merge email data
-      const usersWithEmails = users?.map((user) => {
+      // Get schools for all users
+      const { data: allUserSchools } = await supabase
+        .from('user_schools')
+        .select('user_id, schools(id, name)')
+        .in('user_id', userIds);
+
+      // Merge email data and schools
+      const usersWithEmailsAndSchools = users?.map((user) => {
         const emailInfo = emailData?.find((e) => e.id === user.id);
+        const userSchoolData = allUserSchools?.filter((us) => us.user_id === user.id) || [];
+        const schools = userSchoolData.map((us) => us.schools).filter(Boolean);
+
         return {
           ...user,
           email: emailInfo?.email || user.email || 'Unknown',
+          schools,
         };
       });
 
       return new Response(
         JSON.stringify({
-          users: usersWithEmails,
+          users: usersWithEmailsAndSchools,
           pagination: {
             page,
             limit,
@@ -224,17 +355,120 @@ serve(async (req) => {
           0,
       };
 
+      // Get user's schools
+      const { data: userSchools } = await supabase
+        .from('user_schools')
+        .select('schools(id, name)')
+        .eq('user_id', userId);
+
+      const schools = userSchools?.map((us) => us.schools).filter(Boolean) || [];
+
       return new Response(
         JSON.stringify({
           user: {
             ...userProfile,
             email: emailData?.[0]?.email || userProfile.email || 'Unknown',
+            schools,
           },
           activity: recentActivity || [],
           stats,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // GET /users/:id/schools - Get user's schools
+    if (
+      req.method === 'GET' &&
+      pathParts.length === 3 &&
+      pathParts[0] === 'users' &&
+      pathParts[2] === 'schools'
+    ) {
+      const userId = pathParts[1];
+
+      const { data: userSchools, error } = await supabase
+        .from('user_schools')
+        .select('schools(id, name)')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      const schools = userSchools?.map((us) => us.schools).filter(Boolean) || [];
+
+      return new Response(JSON.stringify({ schools }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // POST /users/:id/schools - Add user to schools
+    if (
+      req.method === 'POST' &&
+      pathParts.length === 3 &&
+      pathParts[0] === 'users' &&
+      pathParts[2] === 'schools'
+    ) {
+      const userId = pathParts[1];
+      const { schoolIds } = await req.json();
+
+      if (!schoolIds || !Array.isArray(schoolIds)) {
+        return new Response(JSON.stringify({ error: 'schoolIds array is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Add user to schools
+      const userSchoolEntries = schoolIds.map((schoolId) => ({
+        user_id: userId,
+        school_id: schoolId,
+      }));
+
+      const { error } = await supabase.from('user_schools').insert(userSchoolEntries).select();
+
+      if (error) throw error;
+
+      // Log audit trail
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'user_added_to_schools',
+        target_user_id: userId,
+        metadata: { school_ids: schoolIds },
+      });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // DELETE /users/:id/schools/:schoolId - Remove user from school
+    if (
+      req.method === 'DELETE' &&
+      pathParts.length === 4 &&
+      pathParts[0] === 'users' &&
+      pathParts[2] === 'schools'
+    ) {
+      const userId = pathParts[1];
+      const schoolId = pathParts[3];
+
+      const { error } = await supabase
+        .from('user_schools')
+        .delete()
+        .eq('user_id', userId)
+        .eq('school_id', schoolId);
+
+      if (error) throw error;
+
+      // Log audit trail
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'user_removed_from_school',
+        target_user_id: userId,
+        metadata: { school_id: schoolId },
+      });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // PATCH /users/:id - Update user

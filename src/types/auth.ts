@@ -158,6 +158,7 @@ export interface UserFilters {
   role?: UserRole | 'all';
   is_active?: boolean | 'all';
   school_borough?: string | 'all';
+  schoolId?: string | 'all';
   sort_by?: 'name' | 'email' | 'role' | 'created_at' | 'last_active';
   sort_order?: 'asc' | 'desc';
 }
