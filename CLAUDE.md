@@ -5,7 +5,81 @@
 This is a modern React/TypeScript rewrite of the ESYNYC Lesson Search application. It provides a searchable interface for 831 Edible Schoolyard NYC lesson plans with advanced filtering capabilities.
 
 ### Current Status: IN DEVELOPMENT
-The project is transitioning from a vanilla JavaScript implementation (v1) to a React/TypeScript/Supabase stack (v2). The v1 files are still present but should be removed.
+The project has been migrated from vanilla JavaScript (v1) to React/TypeScript/Supabase stack (v2). Most features are implemented, with only Google Docs API integration and CSV export remaining.
+
+## Essential Commands
+
+### Development
+```bash
+npm run dev          # Start development server (http://localhost:5173)
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run type-check   # Run TypeScript type checking
+```
+
+### Code Quality
+```bash
+npm run lint         # Check code quality
+npm run lint:fix     # Auto-fix linting issues
+npm run format       # Format code with Prettier
+```
+
+### Testing
+```bash
+npm test             # Run all tests
+npm run test:ui      # Run tests with UI
+npm run test:coverage # Generate coverage report
+```
+
+### Data Management
+```bash
+npm run import-data  # Import lesson data to Supabase
+npm run sync-algolia # Sync data to Algolia search
+npm run configure-synonyms # Set up search synonyms
+```
+
+### Database
+```bash
+# Run migrations (in Supabase dashboard or CLI)
+supabase db push
+supabase db reset    # Reset database to clean state
+```
+
+## Code Style Guidelines
+
+### TypeScript Conventions
+- Use explicit types for function parameters and return values
+- Prefer interfaces over types for object shapes
+- Use path aliases: `@/components` instead of relative imports
+- Export types from `src/types/index.ts`
+
+### React Component Patterns
+- Use functional components with hooks
+- Place component files in feature folders (e.g., `components/Filters/GradeFilter.tsx`)
+- Export component props interfaces
+- Use descriptive prop names
+
+### State Management (Zustand)
+- Keep stores focused on single domains
+- Use TypeScript for store interfaces
+- Implement actions as methods on the store
+- Example pattern:
+```typescript
+interface StoreState {
+  items: Item[];
+  setItems: (items: Item[]) => void;
+  addItem: (item: Item) => void;
+}
+```
+
+### Import Order
+1. React imports
+2. Third-party libraries
+3. Local components
+4. Hooks
+5. Utils/constants
+6. Types
+7. Styles
 
 ## Architecture
 
@@ -124,72 +198,52 @@ npm run dev
 1. Run migrations in Supabase
 2. Import lesson data: `npm run import-data`
 
-## Current Tasks
+## Current Implementation Status
 
-### Phase 1: Cleanup & Setup ✅
-- [x] Remove legacy v1 files
-- [x] Create proper React index.html
-- [x] Install missing dependencies
-- [x] Create .env.example
+### Completed ✅
+- [x] All 11 filter categories implemented
+- [x] Search functionality with Algolia
+- [x] User authentication system
+- [x] Admin dashboard for submissions
+- [x] Duplicate detection system
+- [x] All UI components
+- [x] Database schema and migrations
+- [x] Testing setup
 
-### Phase 2: Core Implementation 🚧
-- [ ] Create src/index.css with Tailwind
-- [ ] Implement TypeScript interfaces
-- [ ] Complete Zustand store
-- [ ] Implement all components
+### Remaining Tasks 🚧
+- [ ] Google Docs API integration (currently mocked)
+- [ ] CSV export functionality
+- [ ] OpenAI embeddings in edge functions
+- [ ] Production environment configuration
 
-### Phase 3: Feature Parity
-- [ ] Implement all v1 filters
-- [ ] Add CSV export
-- [ ] Test with real data
+## Project-Specific Instructions
 
-### Phase 4: New Features
-- [ ] User authentication
-- [ ] Saved searches
-- [ ] Collections
+### Working with Filters (EXACTLY 11 Categories)
+- Never add or remove filter categories - there must be exactly 11
+- Filter components are in `src/components/Filters/`
+- Each filter updates the `filterStore` in Zustand
+- Filters are registered in `src/utils/constants.ts`
 
-## Important Commands
+### Adding New Features
+1. Check if it affects the 11 filter categories rule
+2. Add types to `src/types/index.ts`
+3. Update relevant Zustand store
+4. Create component in appropriate feature folder
+5. Add tests for new functionality
 
-```bash
-# Development
-npm run dev          # Start Vite dev server
-npm run build        # Build for production
-npm run preview      # Preview production build
+### Working with Supabase
+- Edge functions are in `supabase/functions/`
+- Use `supabase.from('table').select()` pattern
+- Always handle errors with try-catch
+- RLS policies are enforced - check permissions
 
-# Data Management
-npm run import-data  # Import lessons to Supabase
+### Common Gotchas
+- Environment variables must start with `VITE_` for frontend access
+- Supabase migrations must be numbered sequentially
+- Algolia search requires manual synonym configuration
+- Cultural heritage uses hierarchical filtering (parent includes children)
+- Google Docs API integration currently uses mock data
 
-# Linting & Formatting
-npm run lint         # Run ESLint
-npm run format       # Run Prettier
-```
-
-## Component Status
-
-### Implemented ✅
-- App.tsx - Main app shell
-- SearchPage.tsx - Main search page
-- Basic component structure
-
-### Needs Implementation 🚧
-- All filter components
-- Search functionality
-- Results display
-- Modal details
-- CSV export
-
-## Known Issues
-1. Legacy v1 files still present
-2. Missing dependencies need installation
-3. Components are scaffolded but not fully implemented
-4. Supabase connection needs testing
-
-## Next Steps
-1. Remove all v1 files (index.html, search.js, styles.css, server.js)
-2. Create new Vite-compatible index.html
-3. Install missing npm packages
-4. Implement core components
-5. Test Supabase integration
 
 ## Testing Checklist
 - [ ] All filters work correctly
@@ -200,8 +254,82 @@ npm run format       # Run Prettier
 - [ ] Mobile responsive design
 - [ ] Performance with full dataset
 
+## Architecture Decisions
+
+### Why These Technologies?
+- **React + TypeScript**: Type safety and modern component patterns
+- **Vite**: Fast development and optimized production builds
+- **Zustand**: Lightweight state management without boilerplate
+- **Supabase**: Integrated auth, database, and edge functions
+- **Algolia**: Purpose-built search with typo tolerance and synonyms
+- **Tailwind + Headless UI**: Rapid UI development with accessibility
+
+### Database Design Rationale
+- Single `lessons` table with JSONB for flexible metadata
+- PostgreSQL full-text search for content
+- Vector embeddings for future semantic search
+- Normalized tables for user data and relationships
+
+### Component Organization
+- Feature-based folders for related components
+- Shared components in root components folder
+- Pages represent routes
+- Hooks encapsulate reusable logic
+
 ## Deployment Notes
 - Requires Supabase project setup
-- Environment variables must be configured
+- Environment variables must be configured (see .env.example)
 - Build with `npm run build`
 - Deploy `dist` folder to hosting service
+- Supports both Netlify and Vercel (see package.json scripts)
+
+## Recursive CLAUDE.md Structure
+
+Claude Code automatically discovers CLAUDE.md files throughout the project:
+
+### Directory-Specific Context
+```
+/                           # This file - project overview
+├── src/
+│   ├── components/CLAUDE.md    # Component patterns
+│   ├── hooks/CLAUDE.md         # Custom hook patterns
+│   └── pages/CLAUDE.md         # Page structure patterns
+├── supabase/
+│   ├── functions/CLAUDE.md     # Edge function patterns
+│   └── migrations/CLAUDE.md    # Migration guidelines
+└── scripts/CLAUDE.md           # Data management scripts
+```
+
+### How It Works
+- Claude reads CLAUDE.md files from current directory up to root
+- When working in subdirectories, Claude automatically includes relevant context
+- Each directory can have specific instructions for that area
+- No manual imports needed - it's automatic!
+
+### Import Strategy for Detailed Docs
+For comprehensive documentation, import when needed:
+```
+@docs/api-reference.md         # Full API documentation
+@docs/component-guide.md       # Detailed component guide
+@docs/architecture-decisions.md # Architecture rationale
+```
+
+## Living Documentation
+
+### When to Update CLAUDE.md
+- New frequently-used commands added
+- Architecture decisions made
+- Common patterns established
+- Gotchas discovered
+
+### Quick Update Method
+Start your message with `#` to quickly add to CLAUDE.md:
+```
+# npm run test:watch is useful for TDD
+```
+
+### Documentation Maintenance
+- Review this file monthly
+- Remove outdated information
+- Keep focused on developer needs
+- Import detailed docs when needed
