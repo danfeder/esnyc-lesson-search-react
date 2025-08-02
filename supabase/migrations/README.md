@@ -1,6 +1,6 @@
 # Supabase Migrations
 
-This directory contains consolidated database migrations for the ESNYC Lesson Search application.
+This directory contains consolidated database migrations for the ESYNYC Lesson Search application.
 
 ## Consolidated Migration Structure
 

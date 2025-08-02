@@ -1,4 +1,4 @@
-# ESNYC Lesson Search Interface - React Version
+# ESYNYC Lesson Search Interface - React Version
 
 A modern, responsive React/TypeScript application for searching and filtering 831 tagged Edible Schoolyard NYC lesson plans. This version features advanced filtering capabilities, hierarchical search, and a Supabase backend.
 
@@ -97,7 +97,7 @@ npm run import-data
 ### Advanced Filtering Logic
 - **Cultural Heritage Hierarchy**: Sophisticated parent-child relationships
 - **Ingredient Grouping**: Smart categorization for food-related searches
-- **Core Competencies**: Filter by ESNYC's 6 educational priorities
+- **Core Competencies**: Filter by ESYNYC's 6 educational priorities
 - **Lesson Format**: Filter by lesson structure and timing
 - **Enhanced Activity Types**: Accurate classification based on skills data
 
@@ -136,7 +136,7 @@ src/
 ## 🔧 Configuration
 
 ### Tailwind CSS
-Custom design system with ESNYC brand colors:
+Custom design system with ESYNYC brand colors:
 - Primary green: `#2c5530`
 - Accent orange: `#ff6b35`
 
@@ -200,6 +200,6 @@ This project is licensed under the MIT License. The lesson content belongs to Ed
 
 ---
 
-**Built with ❤️ for ESNYC educators**
+**Built with ❤️ for ESYNYC educators**
 
 For questions or support, please open an issue or contact the maintainers.

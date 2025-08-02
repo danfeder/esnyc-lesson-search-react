@@ -43,7 +43,7 @@ jobs:
           
           # Component-specific review prompt
           direct_prompt: |
-            Review this React/TypeScript code for the ESNYC Lesson Search application with special attention to:
+            Review this React/TypeScript code for the ESYNYC Lesson Search application with special attention to:
             
             ## React Best Practices:
             - Hook usage and dependency arrays

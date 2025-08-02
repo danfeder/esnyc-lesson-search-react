@@ -113,12 +113,12 @@ serve(async (req) => {
 
     switch (type) {
       case 'invitation':
-        subject = "You're invited to join ESNYC Lesson Library";
+        subject = "You're invited to join ESYNYC Lesson Library";
         emailHtml = generateInvitationEmail(data, to);
         break;
 
       case 'welcome':
-        subject = 'Welcome to ESNYC Lesson Library!';
+        subject = 'Welcome to ESYNYC Lesson Library!';
         emailHtml = generateWelcomeEmail(data, to);
         break;
 
@@ -134,7 +134,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'ESNYC Lesson Library <onboarding@resend.dev>',
+        from: 'ESYNYC Lesson Library <onboarding@resend.dev>',
         to: [to],
         subject,
         html: emailHtml,
@@ -170,7 +170,7 @@ serve(async (req) => {
 });
 
 function generateInvitationEmail(data: any, email: string): string {
-  const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esnyc.org';
+  const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
   const invitationUrl = `${baseUrl}/accept-invitation?token=${data.token}`;
 
   const permissions = data.permissions || [];
@@ -185,7 +185,7 @@ function generateInvitationEmail(data: any, email: string): string {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Invitation to ESNYC Lesson Library</title>
+        <title>Invitation to ESYNYC Lesson Library</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -205,7 +205,7 @@ function generateInvitationEmail(data: any, email: string): string {
           <div class="content">
             <p>Hi there,</p>
             
-            <p><strong>${data.inviterName || 'An administrator'}</strong> has invited you to join the ESNYC Lesson Library as a <strong>${data.role || 'teacher'}</strong>.</p>
+            <p><strong>${data.inviterName || 'An administrator'}</strong> has invited you to join the ESYNYC Lesson Library as a <strong>${data.role || 'teacher'}</strong>.</p>
             
             ${data.customMessage ? `<p><em>"${data.customMessage}"</em></p>` : ''}
             
@@ -236,7 +236,7 @@ function generateInvitationEmail(data: any, email: string): string {
 }
 
 function generateWelcomeEmail(data: any, email: string): string {
-  const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esnyc.org';
+  const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
   const dashboardUrl = `${baseUrl}/`;
 
   const roleGuides: Record<string, string[]> = {
@@ -268,7 +268,7 @@ function generateWelcomeEmail(data: any, email: string): string {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to ESNYC Lesson Library</title>
+        <title>Welcome to ESYNYC Lesson Library</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -283,7 +283,7 @@ function generateWelcomeEmail(data: any, email: string): string {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Welcome to ESNYC Lesson Library!</h1>
+            <h1>Welcome to ESYNYC Lesson Library!</h1>
           </div>
           <div class="content">
             <p>Hi ${data.recipientName || 'there'},</p>
@@ -307,7 +307,7 @@ function generateWelcomeEmail(data: any, email: string): string {
             <p>We're here to support you:</p>
             <ul>
               <li>📚 <a href="${baseUrl}/help">Browse our help documentation</a></li>
-              <li>📧 Contact support at <a href="mailto:support@esnyc.org">support@esnyc.org</a></li>
+              <li>📧 Contact support at <a href="mailto:support@esynyc.org">support@esynyc.org</a></li>
               <li>🎥 <a href="${baseUrl}/tutorials">Watch video tutorials</a></li>
             </ul>
           </div>

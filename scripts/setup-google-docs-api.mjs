@@ -42,7 +42,7 @@ console.log('Run these commands:');
 console.log(`
 # Create service account
 gcloud iam service-accounts create esnyc-docs-reader \\
-  --display-name="ESNYC Docs Reader" \\
+  --display-name="ESYNYC Docs Reader" \\
   --description="Service account for reading Google Docs in lesson submissions"
 
 # Get the service account email

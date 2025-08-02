@@ -1,4 +1,4 @@
-# Manual Fixes Needed for ESNYC Lesson Search v2
+# Manual Fixes Needed for ESYNYC Lesson Search v2
 
 Due to auto-formatting/linting issues, please apply these fixes manually:
 

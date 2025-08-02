@@ -1,8 +1,8 @@
-# ESNYC Lesson Search v2 - Project Documentation
+# ESYNYC Lesson Search v2 - Project Documentation
 
 ## Project Overview
 
-This is a modern React/TypeScript rewrite of the ESNYC Lesson Search application. It provides a searchable interface for 831 Edible Schoolyard NYC lesson plans with advanced filtering capabilities.
+This is a modern React/TypeScript rewrite of the ESYNYC Lesson Search application. It provides a searchable interface for 831 Edible Schoolyard NYC lesson plans with advanced filtering capabilities.
 
 ### Current Status: IN DEVELOPMENT
 The project is transitioning from a vanilla JavaScript implementation (v1) to a React/TypeScript/Supabase stack (v2). The v1 files are still present but should be removed.
@@ -60,7 +60,7 @@ The project is transitioning from a vanilla JavaScript implementation (v1) to a 
   3. Grade Levels (3K through 8th with grade group selection)
   4. Thematic Categories (7 themes: Garden Basics, Plant Growth, Garden Communities, Ecosystems, Seed to Table, Food Systems, Food Justice)
   5. Season & Timing (4 seasons + Beginning/End of year + "Include year-round" option)
-  6. Core Competencies (6 ESNYC priorities)
+  6. Core Competencies (6 ESYNYC priorities)
   7. Cultural Heritage (hierarchical with 5 main regions)
   8. Lesson Format (Single period, Multi-session unit, etc.) - single-select dropdown
   9. Academic Integration (Math, Science, Literacy/ELA, Social Studies, Health, Arts) - multi-select

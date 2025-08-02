@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the design and implementation of a comprehensive user management system for the ESNYC Lesson Search application, including role-based access control, user invitation workflow, and admin management interface.
+This document outlines the design and implementation of a comprehensive user management system for the ESYNYC Lesson Search application, including role-based access control, user invitation workflow, and admin management interface.
 
 ## Implementation Summary
 
@@ -242,11 +242,11 @@ graph TD
 
 1. **Invitation Email**
    ```
-   Subject: You're invited to join ESNYC Lesson Library
+   Subject: You're invited to join ESYNYC Lesson Library
    
    Hi [Name],
    
-   [Inviter Name] has invited you to join the ESNYC Lesson Library as a [Role].
+   [Inviter Name] has invited you to join the ESYNYC Lesson Library as a [Role].
    
    [Custom Message]
    
@@ -259,12 +259,12 @@ graph TD
    This invitation will expire in 7 days.
    
    Best regards,
-   The ESNYC Team
+   The ESYNYC Team
    ```
 
 2. **Welcome Email**
    ```
-   Subject: Welcome to ESNYC Lesson Library!
+   Subject: Welcome to ESYNYC Lesson Library!
    
    Hi [Name],
    
@@ -277,7 +277,7 @@ graph TD
    Need help? Check out our [Help Documentation] or contact [Support Email]
    
    Best regards,
-   The ESNYC Team
+   The ESYNYC Team
    ```
 
 ### 5. UI Components

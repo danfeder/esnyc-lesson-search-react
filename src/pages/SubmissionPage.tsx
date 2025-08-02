@@ -88,7 +88,7 @@ export function SubmissionPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Submit a Lesson Plan</h1>
             <p className="text-gray-600">
-              Share your lesson plan with the ESNYC community by submitting a Google Doc link.
+              Share your lesson plan with the ESYNYC community by submitting a Google Doc link.
             </p>
           </div>
           {user && (
