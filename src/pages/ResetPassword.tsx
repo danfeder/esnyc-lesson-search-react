@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Lock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 export function ResetPassword() {
   const navigate = useNavigate();
@@ -79,7 +80,7 @@ export function ResetPassword() {
             },
           });
         } catch (notifyError) {
-          console.error('Failed to send password changed notification:', notifyError);
+          logger.error('Failed to send password changed notification:', notifyError);
         }
       }
 

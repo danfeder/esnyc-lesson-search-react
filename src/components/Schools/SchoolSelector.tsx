@@ -3,6 +3,7 @@ import { Listbox, Transition } from '@headlessui/react';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { SchoolBadge } from './SchoolBadge';
+import { logger } from '../../utils/logger';
 
 export interface School {
   id: string;
@@ -32,9 +33,24 @@ export function SchoolSelector({
         const { data, error } = await supabase.from('schools').select('id, name').order('name');
 
         if (error) throw error;
-        setSchools(data || []);
+
+        // Add validation
+        if (!Array.isArray(data)) throw new Error('Invalid schools data');
+
+        // Filter out any invalid entries
+        const validSchools = data.filter(
+          (school) =>
+            school &&
+            typeof school.id === 'string' &&
+            typeof school.name === 'string' &&
+            school.id.trim() !== '' &&
+            school.name.trim() !== ''
+        );
+
+        setSchools(validSchools);
       } catch (error) {
-        console.error('Error fetching schools:', error);
+        logger.error('Error fetching schools:', error);
+        setSchools([]); // Set empty array on error
       } finally {
         setLoading(false);
       }

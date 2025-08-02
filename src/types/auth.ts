@@ -93,11 +93,34 @@ export interface UserInvitation {
   token: string;
   metadata?: {
     message?: string;
-    [key: string]: any;
+    schoolAssignments?: string[];
+    source?: 'admin_invite' | 'self_signup';
+    notes?: string;
   };
   school_name?: string;
   school_borough?: string;
   created_at: string;
+}
+
+// Audit log value types
+export interface AuditValues {
+  role?: UserRole;
+  is_active?: boolean;
+  full_name?: string;
+  school_name?: string;
+  school_borough?: string;
+  grades_taught?: string[];
+  subjects_taught?: string[];
+  permissions?: Record<Permission, boolean>;
+  schools?: Array<{ id: string; name: string }>;
+}
+
+export interface AuditMetadata {
+  reason?: string;
+  bulk_action?: boolean;
+  affected_count?: number;
+  invitation_id?: string;
+  source?: string;
 }
 
 // Audit log interface
@@ -107,9 +130,9 @@ export interface UserManagementAudit {
   action: AuditAction;
   target_user_id?: string;
   target_email?: string;
-  old_values?: any;
-  new_values?: any;
-  metadata?: any;
+  old_values?: AuditValues;
+  new_values?: AuditValues;
+  metadata?: AuditMetadata;
   ip_address?: string;
   user_agent?: string;
   created_at: string;
