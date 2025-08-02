@@ -31,6 +31,12 @@ npm run test:ui      # Run tests with UI
 npm run test:coverage # Generate coverage report
 ```
 
+### Accessibility Testing
+```bash
+npm run test:lighthouse # Lighthouse accessibility audit
+# Consider adding: npm run test:axe for WCAG compliance
+```
+
 ### Data Management
 ```bash
 npm run import-data  # Import lesson data to Supabase

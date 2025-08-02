@@ -11,6 +11,21 @@ This directory contains all React components. When working here, follow these pa
 
 ## Quick Patterns
 
+### Component Props Interface Pattern
+```typescript
+interface ComponentProps {
+  // Required props first
+  id: string;
+  title: string;
+  
+  // Optional props with defaults
+  className?: string;
+  
+  // Event handlers last
+  onClick?: () => void;
+}
+```
+
 ### New Filter Component
 ```typescript
 interface [Name]FilterProps {

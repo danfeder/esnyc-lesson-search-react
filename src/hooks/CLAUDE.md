@@ -19,6 +19,26 @@ export function useLesson(id: string) {
 }
 ```
 
+### React Query Error Handling
+```typescript
+export function useLessons() {
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['lessons'],
+    queryFn: fetchLessons,
+    throwOnError: false,    // Handle errors in UI
+    retry: 2,               // Educational content should be reliable
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+  });
+  
+  // Handle error states in component
+  if (error) {
+    return { error: 'Failed to load lessons. Please try again.' };
+  }
+  
+  return { data, isLoading };
+}
+```
+
 ### State Management Hook
 ```typescript
 export function useFilters() {
