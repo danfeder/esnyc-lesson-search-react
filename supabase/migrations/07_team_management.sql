@@ -1,9 +1,10 @@
 -- Create schools table
 CREATE TABLE IF NOT EXISTS schools (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT schools_name_unique UNIQUE (name)
 );
 
 -- Create index on school name for performance
@@ -114,7 +115,9 @@ CREATE TRIGGER update_schools_updated_at
   EXECUTE FUNCTION update_updated_at();
 
 -- Insert some initial schools (you can modify this list as needed)
-INSERT INTO schools (name) VALUES 
+-- Using EXISTS check instead of ON CONFLICT for better compatibility
+INSERT INTO schools (name)
+SELECT name FROM (VALUES 
   ('PS 7 Samuel Stern School'),
   ('PS 29 John Harrigan School'),
   ('PS 89 Cypress Hills School'),
@@ -122,7 +125,8 @@ INSERT INTO schools (name) VALUES
   ('PS 344 Americaʼs School of Heroes'),
   ('Tompkins Square Middle School'),
   ('Williamsburg High School for Architecture and Design')
-ON CONFLICT (name) DO NOTHING;
+) AS v(name)
+WHERE NOT EXISTS (SELECT 1 FROM schools WHERE schools.name = v.name);
 
 -- Grant necessary permissions
 GRANT ALL ON schools TO authenticated;
