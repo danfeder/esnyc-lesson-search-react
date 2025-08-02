@@ -4,6 +4,7 @@ import { School } from './SchoolSelector';
 
 interface SchoolCheckboxGroupProps {
   selectedSchools: School[];
+  // eslint-disable-next-line no-unused-vars
   onChange: (schools: School[]) => void;
   disabled?: boolean;
 }
