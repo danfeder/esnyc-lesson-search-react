@@ -285,15 +285,14 @@ serve(async (req) => {
 
       if (updateError) throw updateError;
 
+      // Get user email for notifications
+      const { data: emailData } = await supabase.rpc('get_user_emails', {
+        user_ids: [userId],
+      });
+      const userEmail = emailData?.[0]?.email || currentUser.email;
+
       // Check if role was changed
       if ('role' in updateData && updateData.role !== currentUser.role) {
-        // Get user email
-        const { data: emailData } = await supabase.rpc('get_user_emails', {
-          user_ids: [userId],
-        });
-
-        const userEmail = emailData?.[0]?.email || currentUser.email;
-
         // Send role change notification
         if (userEmail) {
           try {
@@ -311,6 +310,30 @@ serve(async (req) => {
             });
           } catch (emailError) {
             console.error('Failed to send role change notification:', emailError);
+          }
+        }
+      }
+
+      // Check if account active status was changed
+      if ('is_active' in updateData && updateData.is_active !== currentUser.is_active) {
+        // Send account status change notification
+        if (userEmail) {
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                type: updateData.is_active ? 'account-reactivated' : 'account-deactivated',
+                to: userEmail,
+                data: {
+                  recipientName: currentUser.full_name || userEmail,
+                  role: currentUser.role,
+                  ...(updateData.is_active
+                    ? { reactivatedBy: profile.full_name || user.email }
+                    : { deactivatedBy: profile.full_name || user.email }),
+                },
+              },
+            });
+          } catch (emailError) {
+            console.error('Failed to send account status notification:', emailError);
           }
         }
       }
@@ -333,6 +356,20 @@ serve(async (req) => {
     if (req.method === 'DELETE' && pathParts.length === 2 && pathParts[0] === 'users') {
       const userId = pathParts[1];
 
+      // Get current user data before deletion
+      const { data: currentUser } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (!currentUser) {
+        return new Response(JSON.stringify({ error: 'User not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Soft delete by deactivating
       const { error } = await supabase
         .from('user_profiles')
@@ -344,6 +381,33 @@ serve(async (req) => {
         .eq('id', userId);
 
       if (error) throw error;
+
+      // Send deactivation notification if user was active
+      if (currentUser.is_active) {
+        const { data: emailData } = await supabase.rpc('get_user_emails', {
+          user_ids: [userId],
+        });
+        const userEmail = emailData?.[0]?.email || currentUser.email;
+
+        if (userEmail) {
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                type: 'account-deactivated',
+                to: userEmail,
+                data: {
+                  recipientName: currentUser.full_name || userEmail,
+                  role: currentUser.role,
+                  deactivatedBy: profile.full_name || user.email,
+                  reason: 'Account deleted',
+                },
+              },
+            });
+          } catch (emailError) {
+            console.error('Failed to send deletion notification:', emailError);
+          }
+        }
+      }
 
       // Log audit trail
       await supabase.from('user_management_audit').insert({
@@ -376,6 +440,12 @@ serve(async (req) => {
       let updateData: any = {};
       let auditAction = '';
 
+      // Get current user data for all affected users before update
+      const { data: affectedUsers } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, email, is_active')
+        .in('id', userIds);
+
       switch (action) {
         case 'activate':
           updateData = { is_active: true };
@@ -405,6 +475,45 @@ serve(async (req) => {
       const { error } = await supabase.from('user_profiles').update(updateData).in('id', userIds);
 
       if (error) throw error;
+
+      // Send notification emails for activate/deactivate actions
+      if ((action === 'activate' || action === 'deactivate') && affectedUsers) {
+        // Get emails for affected users
+        const { data: emailData } = await supabase.rpc('get_user_emails', {
+          user_ids: userIds,
+        });
+
+        // Send notifications to each affected user
+        for (const affectedUser of affectedUsers) {
+          // Only send notification if status actually changed
+          const wasActive = affectedUser.is_active;
+          const willBeActive = action === 'activate';
+
+          if (wasActive !== willBeActive) {
+            const userEmailData = emailData?.find((e) => e.id === affectedUser.id);
+            const userEmail = userEmailData?.email || affectedUser.email;
+
+            if (userEmail) {
+              try {
+                await supabase.functions.invoke('send-email', {
+                  body: {
+                    type: willBeActive ? 'account-reactivated' : 'account-deactivated',
+                    to: userEmail,
+                    data: {
+                      recipientName: affectedUser.full_name || userEmail,
+                      ...(willBeActive
+                        ? { reactivatedBy: profile.full_name || user.email }
+                        : { deactivatedBy: profile.full_name || user.email }),
+                    },
+                  },
+                });
+              } catch (emailError) {
+                console.error(`Failed to send notification to ${userEmail}:`, emailError);
+              }
+            }
+          }
+        }
+      }
 
       // Log audit trail
       await supabase.from('user_management_audit').insert({

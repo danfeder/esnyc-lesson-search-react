@@ -7,7 +7,14 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface EmailRequest {
-  type: 'invitation' | 'welcome' | 'password-reset' | 'password-changed' | 'role-changed';
+  type:
+    | 'invitation'
+    | 'welcome'
+    | 'password-reset'
+    | 'password-changed'
+    | 'role-changed'
+    | 'account-deactivated'
+    | 'account-reactivated';
   to: string;
   data: {
     invitationId?: string;
@@ -22,6 +29,9 @@ interface EmailRequest {
     oldRole?: string;
     newRole?: string;
     changedBy?: string;
+    deactivatedBy?: string;
+    reactivatedBy?: string;
+    reason?: string;
   };
 }
 
@@ -61,9 +71,14 @@ serve(async (req) => {
 
     const { type, to, data } = (await req.json()) as EmailRequest;
 
-    // Password reset and role change emails don't require authentication
+    // Password reset, role change, and account status emails don't require authentication
     let user = null;
-    if (type !== 'password-reset' && type !== 'role-changed') {
+    if (
+      type !== 'password-reset' &&
+      type !== 'role-changed' &&
+      type !== 'account-deactivated' &&
+      type !== 'account-reactivated'
+    ) {
       // Verify the request is authenticated
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
@@ -146,6 +161,16 @@ serve(async (req) => {
       case 'role-changed':
         subject = 'Your ESYNYC Lesson Library Role Has Been Updated';
         emailHtml = generateRoleChangedEmail(data, to);
+        break;
+
+      case 'account-deactivated':
+        subject = 'Your ESYNYC Lesson Library Account Has Been Deactivated';
+        emailHtml = generateAccountDeactivatedEmail(data, to);
+        break;
+
+      case 'account-reactivated':
+        subject = 'Your ESYNYC Lesson Library Account Has Been Reactivated';
+        emailHtml = generateAccountReactivatedEmail(data, to);
         break;
 
       default:
@@ -487,6 +512,116 @@ function generatePasswordChangedEmail(data: any, email: string): string {
           <div class="footer">
             <p>© ${new Date().getFullYear()} Edible Schoolyard NYC. All rights reserved.</p>
             <p>This is an automated security notification. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateAccountDeactivatedEmail(data: any, email: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Account Deactivated</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #ef4444; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .alert { background-color: #fee2e2; border: 1px solid #fecaca; padding: 15px; border-radius: 6px; margin: 20px 0; color: #991b1b; }
+          .info { background-color: #e0f2fe; border: 1px solid #7dd3fc; padding: 15px; border-radius: 6px; margin: 20px 0; }
+          .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Account Deactivated</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${data.recipientName || 'there'},</p>
+            
+            <div class="alert">
+              <p><strong>Your ESYNYC Lesson Library account has been deactivated</strong> by ${data.deactivatedBy || 'an administrator'}.</p>
+              ${data.reason ? `<p>Reason: ${data.reason}</p>` : ''}
+            </div>
+            
+            <p>While your account is deactivated:</p>
+            <ul>
+              <li>You cannot sign in to the platform</li>
+              <li>Your submitted lessons remain in the system</li>
+              <li>Your profile information is preserved</li>
+            </ul>
+            
+            <div class="info">
+              <p><strong>Need to reactivate your account?</strong></p>
+              <p>Please contact your administrator or reach out to our support team at <a href="mailto:support@esynyc.org">support@esynyc.org</a> for assistance.</p>
+            </div>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} Edible Schoolyard NYC. All rights reserved.</p>
+            <p>This is an automated notification about your account status.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateAccountReactivatedEmail(data: any, email: string): string {
+  const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Account Reactivated</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #22c55e; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .success { background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 6px; margin: 20px 0; color: #155724; }
+          .button { display: inline-block; background-color: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+          .button:hover { background-color: #16a34a; }
+          .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Welcome Back!</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${data.recipientName || 'there'},</p>
+            
+            <div class="success">
+              <p><strong>Good news! Your ESYNYC Lesson Library account has been reactivated</strong> by ${data.reactivatedBy || 'an administrator'}.</p>
+            </div>
+            
+            <p>You now have full access to:</p>
+            <ul>
+              <li>Search and browse the lesson library</li>
+              <li>Submit new lessons</li>
+              <li>Access your previously submitted content</li>
+              <li>All features associated with your ${data.role || 'teacher'} role</li>
+            </ul>
+            
+            <div style="text-align: center;">
+              <a href="${baseUrl}" class="button">Sign In to Your Account</a>
+            </div>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team at <a href="mailto:support@esynyc.org">support@esynyc.org</a>.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} Edible Schoolyard NYC. All rights reserved.</p>
+            <p>This is an automated notification about your account status.</p>
           </div>
         </div>
       </body>
