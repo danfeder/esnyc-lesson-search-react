@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
-import { Check, ChevronUpDown, X } from 'lucide-react';
+import { Check, ChevronDown, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { SchoolBadge } from './SchoolBadge';
 
@@ -66,7 +66,7 @@ export function SchoolSelector({
                 : `${selectedSchools.length} school${selectedSchools.length !== 1 ? 's' : ''} selected`}
             </span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-              <ChevronUpDown className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <ChevronDown className="h-5 w-5 text-gray-400" aria-hidden="true" />
             </span>
           </Listbox.Button>
           <Transition
