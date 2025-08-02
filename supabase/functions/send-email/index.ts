@@ -1,12 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.1';
+import { generateRoleChangedEmail } from './role-changed-template.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface EmailRequest {
-  type: 'invitation' | 'welcome' | 'password-reset' | 'password-changed';
+  type: 'invitation' | 'welcome' | 'password-reset' | 'password-changed' | 'role-changed';
   to: string;
   data: {
     invitationId?: string;
@@ -18,6 +19,9 @@ interface EmailRequest {
     permissions?: string[];
     expiresAt?: string;
     resetUrl?: string;
+    oldRole?: string;
+    newRole?: string;
+    changedBy?: string;
   };
 }
 
@@ -57,9 +61,9 @@ serve(async (req) => {
 
     const { type, to, data } = (await req.json()) as EmailRequest;
 
-    // Password reset emails don't require authentication
+    // Password reset and role change emails don't require authentication
     let user = null;
-    if (type !== 'password-reset') {
+    if (type !== 'password-reset' && type !== 'role-changed') {
       // Verify the request is authenticated
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
@@ -137,6 +141,11 @@ serve(async (req) => {
       case 'password-changed':
         subject = 'Your ESYNYC Lesson Library Password Has Been Changed';
         emailHtml = generatePasswordChangedEmail(data, to);
+        break;
+
+      case 'role-changed':
+        subject = 'Your ESYNYC Lesson Library Role Has Been Updated';
+        emailHtml = generateRoleChangedEmail(data, to);
         break;
 
       default:

@@ -285,6 +285,36 @@ serve(async (req) => {
 
       if (updateError) throw updateError;
 
+      // Check if role was changed
+      if ('role' in updateData && updateData.role !== currentUser.role) {
+        // Get user email
+        const { data: emailData } = await supabase.rpc('get_user_emails', {
+          user_ids: [userId],
+        });
+
+        const userEmail = emailData?.[0]?.email || currentUser.email;
+
+        // Send role change notification
+        if (userEmail) {
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                type: 'role-changed',
+                to: userEmail,
+                data: {
+                  recipientName: currentUser.full_name || userEmail,
+                  oldRole: currentUser.role,
+                  newRole: updateData.role,
+                  changedBy: profile.full_name || user.email,
+                },
+              },
+            });
+          } catch (emailError) {
+            console.error('Failed to send role change notification:', emailError);
+          }
+        }
+      }
+
       // Log audit trail
       await supabase.from('user_management_audit').insert({
         actor_id: user.id,
