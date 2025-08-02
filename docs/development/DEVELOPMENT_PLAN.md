@@ -1,4 +1,4 @@
-# ESNYC Lesson Search v2 - Development Plan
+# ESYNYC Lesson Search v2 - Development Plan
 
 ## Completed Tasks ✅
 
@@ -132,7 +132,7 @@ export default {
 ## Important Notes
 
 1. **Environment Setup**: Ensure `.env` file is created with actual Supabase credentials
-2. **Tailwind Configuration**: The tailwind.config.js file needs proper color configuration for ESNYC brand
+2. **Tailwind Configuration**: The tailwind.config.js file needs proper color configuration for ESYNYC brand
 3. **Component Implementation**: Many components are scaffolded but need full implementation
 4. **State Management**: Zustand store is set up but needs to be connected to components
 
@@ -181,7 +181,7 @@ Priority files that need completion:
 
 1. Package.json scripts need manual update (automated updates failing)
 2. Missing router configuration in App.tsx
-3. Tailwind configuration needs ESNYC color scheme
+3. Tailwind configuration needs ESYNYC color scheme
 4. Components need implementation beyond scaffolding
 5. Supabase connection needs testing with real credentials
 

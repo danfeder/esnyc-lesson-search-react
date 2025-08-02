@@ -28,7 +28,7 @@ gcloud services enable docs.googleapis.com
 ```bash
 # Create service account
 gcloud iam service-accounts create esnyc-docs-reader \
-  --display-name="ESNYC Docs Reader"
+  --display-name="ESYNYC Docs Reader"
 
 # Get the email
 gcloud iam service-accounts list

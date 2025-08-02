@@ -260,7 +260,7 @@ export function AcceptInvitation() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Accept Your Invitation</h1>
           <p className="mt-2 text-gray-600">
-            You've been invited to join ESNYC Lesson Library as a{' '}
+            You've been invited to join ESYNYC Lesson Library as a{' '}
             <span className="font-semibold">{invitation?.role}</span>
           </p>
         </div>

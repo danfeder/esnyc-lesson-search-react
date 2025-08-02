@@ -1,8 +1,8 @@
-# Duplicate Resolution Plan for ESNYC Lesson Library
+# Duplicate Resolution Plan for ESYNYC Lesson Library
 
 ## Overview
 
-This document outlines the comprehensive plan for identifying and resolving duplicate lessons in the ESNYC Lesson Library database. The database currently contains 831 lessons with at least 55 exact duplicate groups and potentially many more near-duplicates.
+This document outlines the comprehensive plan for identifying and resolving duplicate lessons in the ESYNYC Lesson Library database. The database currently contains 831 lessons with at least 55 exact duplicate groups and potentially many more near-duplicates.
 
 ## Problem Statement
 

@@ -16,6 +16,7 @@ import { AdminAnalytics } from './pages/AdminAnalytics';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { UserProfile } from './pages/UserProfile';
 import { AcceptInvitation } from './pages/AcceptInvitation';
+import { ResetPassword } from './pages/ResetPassword';
 import { VerifySetup } from './pages/VerifySetup';
 import { useLessonStats } from './hooks/useLessonStats';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
@@ -47,6 +48,7 @@ function AppContent() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/submit" element={<SubmissionPage />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/review"
               element={

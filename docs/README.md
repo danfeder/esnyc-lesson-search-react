@@ -1,4 +1,4 @@
-# ESNYC Lesson Search Documentation
+# ESYNYC Lesson Search Documentation
 
 This directory contains all project documentation organized by category.
 

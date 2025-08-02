@@ -1,10 +1,10 @@
 # Supabase Migrations
 
-This directory contains consolidated database migrations for the ESNYC Lesson Search application.
+This directory contains consolidated database migrations for the ESYNYC Lesson Search application.
 
 ## Consolidated Migration Structure
 
-As of 2025-08-01, we've consolidated 51 individual migration files into 5 logical migration files:
+As of 2025-08-01, we've consolidated 51 individual migration files into logical migration files:
 
 ### 1. `01_base_schema.sql`
 - Core tables: lessons, user_profiles, lesson_submissions, submission_reviews
@@ -37,11 +37,18 @@ As of 2025-08-01, we've consolidated 51 individual migration files into 5 logica
 - Permission grants
 - Security configuration
 
-### 6. `06_fix_login_tracking.sql` (New)
+### 6. `06_fix_login_tracking.sql`
 - Fixes "Database error granting user" authentication issue
 - Removes problematic auth.users trigger
 - Creates safer manual login tracking mechanism
 - Ensures user_management_audit table exists with proper structure
+
+### 7. `07_team_management.sql`
+- Creates schools table for team organization
+- Creates user_schools junction table for many-to-many relationships
+- Implements RLS policies for school access control
+- Inserts initial NYC school data
+- Enables team-based features and school filtering
 
 ## Archive Directory
 

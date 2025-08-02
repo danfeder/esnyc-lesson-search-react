@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers setting up CI/CD and deploying the ESNYC Lesson Search React application.
+This guide covers setting up CI/CD and deploying the ESYNYC Lesson Search React application.
 
 ## 🚀 Automated CI/CD Pipeline
 

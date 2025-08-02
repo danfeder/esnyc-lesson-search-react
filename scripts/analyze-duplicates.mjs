@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Comprehensive duplicate analysis for ESNYC Lesson Library
+ * Comprehensive duplicate analysis for ESYNYC Lesson Library
  * Identifies exact duplicates, near-duplicates, and title variations
  * Generates a detailed report with canonical recommendations
  */
@@ -358,7 +358,7 @@ async function saveReport(report) {
 
 // Generate text summary
 function generateTextSummary(report) {
-  let summary = `ESNYC Lesson Library - Duplicate Analysis Report
+  let summary = `ESYNYC Lesson Library - Duplicate Analysis Report
 Generated: ${new Date(report.analysisDate).toLocaleString()}
 ${'='.repeat(60)}
 

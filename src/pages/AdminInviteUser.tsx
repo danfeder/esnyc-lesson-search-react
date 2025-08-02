@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { UserRole, InvitationFormData } from '../types/auth';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
+import { logger } from '../utils/logger';
 
 const NYC_BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
 const GRADE_LEVELS = ['3K', 'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -156,18 +157,22 @@ export function AdminInviteUser() {
           });
 
           if (emailError) {
-            console.error('Failed to send invitation email:', emailError);
+            logger.error('Failed to send invitation email:', emailError);
             // In development, show the invitation link as fallback
             const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
-            (window as any)._lastInvitationLink = invitationLink;
-            console.log('Invitation link (email failed):', invitationLink);
+            if (import.meta.env.DEV) {
+              (window as any)._lastInvitationLink = invitationLink;
+              logger.log('Invitation link available in window._lastInvitationLink');
+            }
           }
         } catch (err) {
-          console.error('Error invoking email function:', err);
+          logger.error('Error invoking email function:', err);
           // In development, show the invitation link as fallback
           const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
-          (window as any)._lastInvitationLink = invitationLink;
-          console.log('Invitation link (email failed):', invitationLink);
+          if (import.meta.env.DEV) {
+            (window as any)._lastInvitationLink = invitationLink;
+            logger.log('Invitation link available in window._lastInvitationLink');
+          }
         }
       }
 

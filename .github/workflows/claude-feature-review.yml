@@ -43,7 +43,7 @@ jobs:
           
           # Feature-specific review prompt
           direct_prompt: |
-            Review these critical components against ESNYC Lesson Search requirements:
+            Review these critical components against ESYNYC Lesson Search requirements:
             
             ## Filter Implementation Checklist (ALL 16 CATEGORIES REQUIRED):
             
@@ -55,7 +55,7 @@ jobs:
             
             ### Thematic Filters:
             - [ ] Thematic Categories (7 themes with proper icons)
-            - [ ] Core Competencies (6 ESNYC priorities)
+            - [ ] Core Competencies (6 ESYNYC priorities)
             - [ ] Lesson Format: Demo, Lesson, Activity, etc.
             - [ ] Group Size: Small, Medium, Large, Whole Class
             

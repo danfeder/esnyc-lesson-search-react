@@ -9,18 +9,20 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
 
     try {
@@ -30,7 +32,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           password,
         });
         if (error) throw error;
-      } else {
+      } else if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -41,6 +43,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           },
         });
         if (error) throw error;
+      } else if (mode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setSuccess('Password reset link sent! Check your email.');
+        return;
       }
 
       onSuccess?.();
@@ -63,7 +72,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         </button>
 
         <h2 className="text-2xl font-bold mb-6">
-          {mode === 'signin' ? 'Sign In' : 'Create Account'}
+          {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -105,56 +114,97 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <div className="relative">
-              <Lock
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="••••••••"
-                required
-              />
+          {mode !== 'forgot' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <Lock
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {error && <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">{error}</div>}
+          {success && (
+            <div className="text-green-600 text-sm bg-green-50 p-3 rounded-md">{success}</div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+            {loading
+              ? 'Loading...'
+              : mode === 'signin'
+                ? 'Sign In'
+                : mode === 'signup'
+                  ? 'Create Account'
+                  : 'Send Reset Link'}
           </button>
         </form>
 
         <div className="mt-4 text-center text-sm">
           {mode === 'signin' ? (
             <>
-              Don't have an account?{' '}
-              <button
-                onClick={() => {
-                  setMode('signup');
-                  setError(null);
-                }}
-                className="text-green-600 hover:text-green-700 font-medium"
-              >
-                Sign up
-              </button>
+              <div>
+                Don't have an account?{' '}
+                <button
+                  onClick={() => {
+                    setMode('signup');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  className="text-green-600 hover:text-green-700 font-medium"
+                >
+                  Sign up
+                </button>
+              </div>
+              <div className="mt-2">
+                <button
+                  onClick={() => {
+                    setMode('forgot');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  className="text-green-600 hover:text-green-700 font-medium"
+                >
+                  Forgot your password?
+                </button>
+              </div>
             </>
-          ) : (
+          ) : mode === 'signup' ? (
             <>
               Already have an account?{' '}
               <button
                 onClick={() => {
                   setMode('signin');
                   setError(null);
+                  setSuccess(null);
+                }}
+                className="text-green-600 hover:text-green-700 font-medium"
+              >
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              Remember your password?{' '}
+              <button
+                onClick={() => {
+                  setMode('signin');
+                  setError(null);
+                  setSuccess(null);
                 }}
                 className="text-green-600 hover:text-green-700 font-medium"
               >

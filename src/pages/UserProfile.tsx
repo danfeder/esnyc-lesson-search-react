@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
+import { SchoolBadge, School } from '../components/Schools';
 import {
   ArrowLeft,
   User,
@@ -55,6 +56,9 @@ export function UserProfile() {
     subjects_taught: [] as string[],
   });
 
+  // Schools state
+  const [userSchools, setUserSchools] = useState<School[]>([]);
+
   // Grade options
   const gradeOptions = ['3K', '4K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 
@@ -73,13 +77,14 @@ export function UserProfile() {
 
     setLoading(true);
     try {
-      const { data: profile, error } = await supabase
+      // Load profile data
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
       setFormData({
         full_name: profile.full_name || '',
@@ -88,6 +93,18 @@ export function UserProfile() {
         grades_taught: profile.grades_taught || [],
         subjects_taught: profile.subjects_taught || [],
       });
+
+      // Load user's schools
+      const { data: userSchoolData, error: schoolsError } = await supabase
+        .from('user_schools')
+        .select('schools(id, name)')
+        .eq('user_id', user.id);
+
+      if (schoolsError) throw schoolsError;
+
+      const schools =
+        (userSchoolData?.map((us: any) => us.schools).filter(Boolean) as School[]) || [];
+      setUserSchools(schools);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -123,6 +140,7 @@ export function UserProfile() {
     setSuccessMessage('');
 
     try {
+      // Update profile data
       const updateData = {
         full_name: formData.full_name || null,
         school_name: formData.school_name || null,
@@ -132,9 +150,12 @@ export function UserProfile() {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from('user_profiles').update(updateData).eq('id', user.id);
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update(updateData)
+        .eq('id', user.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
       setEditMode(false);
       setSuccessMessage('Profile updated successfully!');
@@ -338,17 +359,18 @@ export function UserProfile() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">School Name</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    value={formData.school_name}
-                    onChange={(e) => setFormData({ ...formData, school_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Enter your school name"
-                  />
-                ) : (
-                  <p className="text-gray-900">{formData.school_name || 'Not provided'}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Schools</label>
+                <div className="flex flex-wrap gap-2">
+                  {userSchools.length > 0 ? (
+                    userSchools.map((school) => <SchoolBadge key={school.id} name={school.name} />)
+                  ) : (
+                    <p className="text-gray-500">No schools assigned</p>
+                  )}
+                </div>
+                {userSchools.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Contact an administrator to update school assignments
+                  </p>
                 )}
               </div>
 

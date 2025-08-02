@@ -1,4 +1,4 @@
-# ESNYC Lesson Submission Pipeline Specifications
+# ESYNYC Lesson Submission Pipeline Specifications
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -15,7 +15,7 @@
 ## System Overview
 
 ### Purpose
-The Lesson Submission Pipeline is a comprehensive system for managing the submission, review, and approval of new and updated lesson plans for the ESNYC Lesson Library. It addresses the critical need to prevent duplicate lessons while maintaining version history and ensuring quality through a structured review process.
+The Lesson Submission Pipeline is a comprehensive system for managing the submission, review, and approval of new and updated lesson plans for the ESYNYC Lesson Library. It addresses the critical need to prevent duplicate lessons while maintaining version history and ensuring quality through a structured review process.
 
 ### Key Objectives
 1. **Eliminate Duplicates**: Use AI-powered detection to identify and consolidate duplicate lessons

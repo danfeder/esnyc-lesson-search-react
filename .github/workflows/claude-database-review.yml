@@ -39,7 +39,7 @@ jobs:
           
           # Database-specific review prompt
           direct_prompt: |
-            Review database and Supabase-related changes for the ESNYC Lesson Search application:
+            Review database and Supabase-related changes for the ESYNYC Lesson Search application:
             
             ## Migration Safety:
             - Ensure backward compatibility (can rollback if needed)

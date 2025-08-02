@@ -40,7 +40,7 @@ jobs:
           
           # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
-            Please review this pull request for the ESNYC Lesson Search React application and provide feedback on:
+            Please review this pull request for the ESYNYC Lesson Search React application and provide feedback on:
             - React 19 and TypeScript best practices
             - Proper use of Zustand for state management
             - React Query (TanStack Query) usage and data fetching patterns
