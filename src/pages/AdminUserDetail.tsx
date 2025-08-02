@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { SchoolBadge, SchoolSelector, School } from '../components/Schools';
+import { SchoolBadge, SchoolCheckboxGroup, School } from '../components/Schools';
 import {
   ArrowLeft,
   User,
@@ -575,7 +575,7 @@ export function AdminUserDetail() {
                     Schools
                   </label>
                   {editMode ? (
-                    <SchoolSelector
+                    <SchoolCheckboxGroup
                       selectedSchools={editedSchools}
                       onChange={setEditedSchools}
                       disabled={saving}

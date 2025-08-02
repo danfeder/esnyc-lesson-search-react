@@ -118,13 +118,10 @@ CREATE TRIGGER update_schools_updated_at
 -- Using EXISTS check instead of ON CONFLICT for better compatibility
 INSERT INTO schools (name)
 SELECT name FROM (VALUES 
-  ('PS 7 Samuel Stern School'),
-  ('PS 29 John Harrigan School'),
-  ('PS 89 Cypress Hills School'),
-  ('PS 216 Arturo Toscanini School'),
-  ('PS 344 Americaʼs School of Heroes'),
-  ('Tompkins Square Middle School'),
-  ('Williamsburg High School for Architecture and Design')
+  ('PS/MS 7'),
+  ('BCCS'),
+  ('PS 109'),
+  ('PS 216')
 ) AS v(name)
 WHERE NOT EXISTS (SELECT 1 FROM schools WHERE schools.name = v.name);
 

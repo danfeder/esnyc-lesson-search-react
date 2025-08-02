@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { SchoolBadge, SchoolSelector, School } from '../components/Schools';
+import { SchoolBadge, SchoolCheckboxGroup, School } from '../components/Schools';
 import {
   ArrowLeft,
   User,
@@ -58,7 +58,6 @@ export function UserProfile() {
 
   // Schools state
   const [userSchools, setUserSchools] = useState<School[]>([]);
-  const [editedSchools, setEditedSchools] = useState<School[]>([]);
 
   // Grade options
   const gradeOptions = ['3K', '4K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
@@ -105,7 +104,6 @@ export function UserProfile() {
 
       const schools = userSchoolData?.map((us) => us.schools).filter(Boolean) || [];
       setUserSchools(schools);
-      setEditedSchools(schools);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -158,34 +156,6 @@ export function UserProfile() {
 
       if (profileError) throw profileError;
 
-      // Update schools if they've changed
-      const currentSchoolIds = userSchools.map((s) => s.id).sort();
-      const newSchoolIds = editedSchools.map((s) => s.id).sort();
-
-      if (JSON.stringify(currentSchoolIds) !== JSON.stringify(newSchoolIds)) {
-        // Remove all existing school associations
-        const { error: deleteError } = await supabase
-          .from('user_schools')
-          .delete()
-          .eq('user_id', user.id);
-
-        if (deleteError) throw deleteError;
-
-        // Add new school associations
-        if (editedSchools.length > 0) {
-          const schoolEntries = editedSchools.map((school) => ({
-            user_id: user.id,
-            school_id: school.id,
-          }));
-
-          const { error: insertError } = await supabase.from('user_schools').insert(schoolEntries);
-
-          if (insertError) throw insertError;
-        }
-
-        setUserSchools(editedSchools);
-      }
-
       setEditMode(false);
       setSuccessMessage('Profile updated successfully!');
 
@@ -200,7 +170,6 @@ export function UserProfile() {
 
   const handleCancel = () => {
     setEditMode(false);
-    setEditedSchools(userSchools); // Reset schools to original values
     loadUserProfile(); // Reset form to original values
   };
 
@@ -390,22 +359,17 @@ export function UserProfile() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Schools</label>
-                {editMode ? (
-                  <SchoolSelector
-                    selectedSchools={editedSchools}
-                    onChange={setEditedSchools}
-                    disabled={saving}
-                  />
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {userSchools.length > 0 ? (
-                      userSchools.map((school) => (
-                        <SchoolBadge key={school.id} name={school.name} />
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No schools assigned</p>
-                    )}
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {userSchools.length > 0 ? (
+                    userSchools.map((school) => <SchoolBadge key={school.id} name={school.name} />)
+                  ) : (
+                    <p className="text-gray-500">No schools assigned</p>
+                  )}
+                </div>
+                {userSchools.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Contact an administrator to update school assignments
+                  </p>
                 )}
               </div>
 
