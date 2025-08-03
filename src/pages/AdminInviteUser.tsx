@@ -14,6 +14,7 @@ import {
 import { UserRole, InvitationFormData } from '../types/auth';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { logger } from '../utils/logger';
+import { parseDbError, isEmailDuplicateError } from '../utils/errorHandling';
 
 const NYC_BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
 const GRADE_LEVELS = ['3K', 'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -183,7 +184,14 @@ export function AdminInviteUser() {
         navigate('/admin/users');
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send invitation');
+      // Use the enhanced error handling for better user feedback
+      if (isEmailDuplicateError(err)) {
+        setError(
+          'This email address is already registered to another user. Please use a different email address.'
+        );
+      } else {
+        setError(parseDbError(err));
+      }
     } finally {
       setLoading(false);
     }

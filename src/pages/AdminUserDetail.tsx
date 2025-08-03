@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { SchoolBadge, SchoolCheckboxGroup, School } from '../components/Schools';
+import { parseDbError } from '../utils/errorHandling';
 import {
   ArrowLeft,
   User,
@@ -274,6 +275,7 @@ export function AdminUserDetail() {
       loadAuditLogs();
     } catch (error) {
       console.error('Error updating user:', error);
+      alert(parseDbError(error));
     } finally {
       setSaving(false);
     }
