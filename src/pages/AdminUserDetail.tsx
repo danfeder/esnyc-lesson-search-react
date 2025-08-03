@@ -37,6 +37,7 @@ export function AdminUserDetail() {
   const [editMode, setEditMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [auditLogs, setAuditLogs] = useState<UserManagementAudit[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [activityMetrics, setActivityMetrics] = useState<{
     login_count: number;
     last_login: string | null;
@@ -273,9 +274,10 @@ export function AdminUserDetail() {
       setEditMode(false);
       loadUserDetails(); // Reload to get fresh data
       loadAuditLogs();
+      setSaveError(null); // Clear any previous errors on success
     } catch (error) {
       console.error('Error updating user:', error);
-      alert(parseDbError(error));
+      setSaveError(parseDbError(error));
     } finally {
       setSaving(false);
     }
@@ -458,6 +460,7 @@ export function AdminUserDetail() {
                 <button
                   onClick={() => {
                     setEditMode(false);
+                    setSaveError(null); // Clear any errors
                     loadUserDetails(); // Reset form
                   }}
                   className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
@@ -478,6 +481,17 @@ export function AdminUserDetail() {
           </div>
         </div>
       </div>
+
+      {/* Error Display */}
+      {saveError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-800">Error saving changes</p>
+            <p className="text-sm text-red-700 mt-1">{saveError}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Info */}
