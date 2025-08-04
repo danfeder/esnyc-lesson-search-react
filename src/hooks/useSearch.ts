@@ -8,6 +8,7 @@ import {
   matchesActivityType,
   matchesSeasonFilter,
 } from '../utils/filterHelpers';
+import { logger } from '../utils/logger';
 
 interface UseSearchOptions {
   filters: SearchFilters;
@@ -28,7 +29,7 @@ const searchLessonsWithSmartSearch = async ({
   page = 1,
   limit = 20,
 }: Omit<UseSearchOptions, 'enabled'>): Promise<SearchResponse> => {
-  // console.log('🔍 Searching with filters:', filters);
+  // logger.log('🔍 Searching with filters:', filters);
 
   // Use the smart search edge function
   const { data, error } = await supabase.functions.invoke('smart-search', {
@@ -52,14 +53,14 @@ const searchLessonsWithSmartSearch = async ({
   });
 
   if (error) {
-    console.error('Smart search error:', error);
+    logger.error('Smart search error:', error);
 
     // Fallback to direct database search if edge function fails
-    // console.log('🔄 Falling back to direct database search...');
+    // logger.log('🔄 Falling back to direct database search...');
     return await fallbackSearch({ filters, page, limit });
   }
 
-  // console.log('✅ Smart search results:', data);
+  // logger.log('✅ Smart search results:', data);
   return {
     lessons: data.lessons || [],
     totalCount: data.totalCount || 0,
@@ -74,7 +75,7 @@ const fallbackSearch = async ({
   page = 1,
   limit = 20,
 }: Omit<UseSearchOptions, 'enabled'>): Promise<SearchResponse> => {
-  // console.log('🔄 Using fallback search...');
+  // logger.log('🔄 Using fallback search...');
 
   // Get all lessons first, then filter client-side for now
   // In production, this should be moved to a database function for performance
@@ -83,7 +84,7 @@ const fallbackSearch = async ({
   const { data, error } = await query;
 
   if (error) {
-    console.error('Fallback search error:', error);
+    logger.error('Fallback search error:', error);
     throw new Error(`Search failed: ${error.message}`);
   }
 
@@ -107,7 +108,7 @@ const fallbackSearch = async ({
   const offset = (page - 1) * limit;
   const paginatedLessons = filteredLessons.slice(offset, offset + limit);
 
-  // console.log(
+  // logger.log(
   //   `✅ Fallback search found ${filteredLessons.length} lessons (showing ${paginatedLessons.length})`
   // );
 

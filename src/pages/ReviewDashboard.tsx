@@ -12,6 +12,7 @@ import {
   User as UserIcon,
   FileText,
 } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface Submission {
   id: string;
@@ -85,7 +86,7 @@ export function ReviewDashboard() {
       .single();
 
     if (error || !profile) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
       setIsReviewer(false);
       return;
     }
@@ -140,7 +141,7 @@ export function ReviewDashboard() {
         setSubmissions(data || []);
       }
     } catch (error) {
-      console.error('Error loading submissions:', error);
+      logger.error('Error loading submissions:', error);
     } finally {
       setLoading(false);
     }
@@ -148,7 +149,12 @@ export function ReviewDashboard() {
 
   const updateSubmissionStatus = async (id: string, status: string, notes?: string) => {
     try {
-      const updates: any = {
+      const updates: {
+        status: string;
+        review_notes?: string;
+        reviewed_at: string;
+        reviewed_by?: string;
+      } = {
         status,
         review_notes: notes,
         reviewed_at: new Date().toISOString(),
@@ -162,7 +168,7 @@ export function ReviewDashboard() {
       // Reload submissions
       loadSubmissions();
     } catch (error) {
-      console.error('Error updating submission:', error);
+      logger.error('Error updating submission:', error);
     }
   };
 

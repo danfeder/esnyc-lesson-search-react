@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 interface LessonStats {
   totalLessons: number;
@@ -33,7 +34,7 @@ export function useLessonStats(): LessonStats {
           error: null,
         });
       } catch (err) {
-        console.error('Error fetching lesson stats:', err);
+        logger.error('Error fetching lesson stats:', err);
         setStats((prev) => ({
           ...prev,
           isLoading: false,

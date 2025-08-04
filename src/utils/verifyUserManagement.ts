@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 export async function verifyUserManagementSetup() {
-  console.log('🔍 Verifying User Management Setup...\n');
+  logger.log('🔍 Verifying User Management Setup...\n');
 
   const checks = {
     userProfilesTable: false,
@@ -14,7 +15,7 @@ export async function verifyUserManagementSetup() {
 
   try {
     // 1. Check if we can query user_profiles with new columns
-    console.log('1️⃣ Checking user_profiles table...');
+    logger.log('1️⃣ Checking user_profiles table...');
     const { error: profileError } = await supabase
       .from('user_profiles')
       .select('id, role, is_active, school_name, permissions')
@@ -22,13 +23,13 @@ export async function verifyUserManagementSetup() {
 
     if (!profileError) {
       checks.userProfilesTable = true;
-      console.log('✅ user_profiles table is accessible with new columns');
+      logger.log('✅ user_profiles table is accessible with new columns');
     } else {
-      console.log('❌ user_profiles error:', profileError.message);
+      logger.log('❌ user_profiles error:', profileError.message);
     }
 
     // 2. Check if user_invitations table exists
-    console.log('\n2️⃣ Checking user_invitations table...');
+    logger.log('\n2️⃣ Checking user_invitations table...');
     const { error: inviteError } = await supabase
       .from('user_invitations')
       .select('id, email, role, token')
@@ -37,13 +38,13 @@ export async function verifyUserManagementSetup() {
     if (!inviteError || inviteError.code === 'PGRST116') {
       // PGRST116 = no rows
       checks.userInvitationsTable = true;
-      console.log('✅ user_invitations table exists');
+      logger.log('✅ user_invitations table exists');
     } else {
-      console.log('❌ user_invitations error:', inviteError.message);
+      logger.log('❌ user_invitations error:', inviteError.message);
     }
 
     // 3. Check if user_management_audit table exists
-    console.log('\n3️⃣ Checking user_management_audit table...');
+    logger.log('\n3️⃣ Checking user_management_audit table...');
     const { error: auditError } = await supabase
       .from('user_management_audit')
       .select('id, action, actor_id')
@@ -51,19 +52,19 @@ export async function verifyUserManagementSetup() {
 
     if (!auditError || auditError.code === 'PGRST116') {
       checks.auditTable = true;
-      console.log('✅ user_management_audit table exists');
+      logger.log('✅ user_management_audit table exists');
     } else {
-      console.log('❌ user_management_audit error:', auditError.message);
+      logger.log('❌ user_management_audit error:', auditError.message);
     }
 
     // 4. Check if we can query with RLS
-    console.log('\n4️⃣ Checking RLS policies...');
+    logger.log('\n4️⃣ Checking RLS policies...');
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (user) {
-      console.log('✅ Authenticated as:', user.email);
+      logger.log('✅ Authenticated as:', user.email);
 
       // Try to query profiles (should work for own profile)
       const { data: profileCheck, error: rlsProfileError } = await supabase
@@ -75,9 +76,9 @@ export async function verifyUserManagementSetup() {
       if (!rlsProfileError) {
         checks.canQueryProfiles = true;
         if (profileCheck) {
-          console.log('✅ Can query own profile (RLS working)');
+          logger.log('✅ Can query own profile (RLS working)');
         } else {
-          console.log('⚠️  No profile exists yet for this user');
+          logger.log('⚠️  No profile exists yet for this user');
           // Create a profile if it doesn't exist
           const { error: createError } = await supabase.from('user_profiles').insert({
             id: user.id,
@@ -89,14 +90,14 @@ export async function verifyUserManagementSetup() {
           });
 
           if (!createError) {
-            console.log('✅ Created initial profile for user');
+            logger.log('✅ Created initial profile for user');
             checks.canQueryProfiles = true;
           } else {
-            console.log('❌ Could not create profile:', createError.message);
+            logger.log('❌ Could not create profile:', createError.message);
           }
         }
       } else {
-        console.log('❌ Cannot query own profile:', rlsProfileError.message);
+        logger.log('❌ Cannot query own profile:', rlsProfileError.message);
       }
 
       // Try to query invitations (admin only)
@@ -107,21 +108,21 @@ export async function verifyUserManagementSetup() {
 
       if (!rlsInviteError || rlsInviteError.code === 'PGRST116') {
         checks.canQueryInvitations = true;
-        console.log('✅ Can query invitations (admin) or blocked (non-admin)');
+        logger.log('✅ Can query invitations (admin) or blocked (non-admin)');
       } else if (rlsInviteError.code === '42501') {
         // Permission denied
-        console.log('✅ RLS correctly blocking non-admin from invitations');
+        logger.log('✅ RLS correctly blocking non-admin from invitations');
         checks.canQueryInvitations = true;
       } else {
-        console.log('❌ Invitation query error:', rlsInviteError.message);
+        logger.log('❌ Invitation query error:', rlsInviteError.message);
       }
     } else {
-      console.log('❌ Not authenticated - please sign in first');
-      console.log('   You can sign in by clicking the user icon in the header');
+      logger.log('❌ Not authenticated - please sign in first');
+      logger.log('   You can sign in by clicking the user icon in the header');
     }
 
     // 5. Check current user's profile
-    console.log('\n5️⃣ Checking current user profile...');
+    logger.log('\n5️⃣ Checking current user profile...');
     if (user) {
       const { data: profile, error: currentProfileError } = await supabase
         .from('user_profiles')
@@ -131,33 +132,33 @@ export async function verifyUserManagementSetup() {
 
       if (profile && !currentProfileError) {
         checks.currentUserProfile = true;
-        console.log('✅ Current user profile:', {
+        logger.log('✅ Current user profile:', {
           email: user.email,
           role: profile.role || 'not set',
           is_active: profile.is_active !== false,
           school: profile.school_name || 'not set',
         });
       } else {
-        console.log('❌ No profile found for current user');
+        logger.log('❌ No profile found for current user');
       }
     }
 
     // Summary
-    console.log('\n📊 Summary:');
+    logger.log('\n📊 Summary:');
     const passedChecks = Object.values(checks).filter(Boolean).length;
     const totalChecks = Object.keys(checks).length;
 
-    console.log(`Passed: ${passedChecks}/${totalChecks} checks`);
+    logger.log(`Passed: ${passedChecks}/${totalChecks} checks`);
 
     if (passedChecks === totalChecks) {
-      console.log('\n🎉 All checks passed! User management system is ready.');
+      logger.log('\n🎉 All checks passed! User management system is ready.');
     } else {
-      console.log('\n⚠️  Some checks failed. Please review the errors above.');
+      logger.log('\n⚠️  Some checks failed. Please review the errors above.');
     }
 
     return checks;
   } catch (error) {
-    console.error('❌ Verification failed:', error);
+    logger.error('❌ Verification failed:', error);
     return checks;
   }
 }
@@ -170,7 +171,7 @@ export async function setupAdminUser(email: string) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      console.log('❌ No authenticated user');
+      logger.log('❌ No authenticated user');
       return;
     }
 
@@ -193,9 +194,9 @@ export async function setupAdminUser(email: string) {
         .eq('id', user.id);
 
       if (error) {
-        console.log('❌ Failed to update role:', error.message);
+        logger.log('❌ Failed to update role:', error.message);
       } else {
-        console.log('✅ Updated current user to admin role');
+        logger.log('✅ Updated current user to admin role');
       }
     } else {
       // Update the target user
@@ -209,12 +210,12 @@ export async function setupAdminUser(email: string) {
         .eq('id', targetUser.id);
 
       if (error) {
-        console.log('❌ Failed to update role:', error.message);
+        logger.log('❌ Failed to update role:', error.message);
       } else {
-        console.log(`✅ Updated ${targetEmail} to admin role`);
+        logger.log(`✅ Updated ${targetEmail} to admin role`);
       }
     }
   } catch (error) {
-    console.error('❌ Setup failed:', error);
+    logger.error('❌ Setup failed:', error);
   }
 }

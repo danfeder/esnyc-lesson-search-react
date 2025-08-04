@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { EnhancedUserProfile, UserRole, Permission, UserManagementAudit } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
+import { logger } from '../utils/logger';
 
 export function AdminUserDetail() {
   const { userId } = useParams<{ userId: string }>();
@@ -132,7 +133,7 @@ export function AdminUserDetail() {
         setEditedSchools(schools);
       }
     } catch (error) {
-      console.error('Error loading user details:', error);
+      logger.error('Error loading user details:', error);
     } finally {
       setLoading(false);
     }
@@ -153,7 +154,7 @@ export function AdminUserDetail() {
         setAuditLogs(data);
       }
     } catch (error) {
-      console.error('Error loading audit logs:', error);
+      logger.error('Error loading audit logs:', error);
     }
   };
 
@@ -170,7 +171,7 @@ export function AdminUserDetail() {
         setActivityMetrics(data);
       } else if (error?.code === 'PGRST202') {
         // Function doesn't exist yet - set some default data
-        console.log('Activity metrics function not found, using defaults');
+        logger.log('Activity metrics function not found, using defaults');
         setActivityMetrics({
           login_count: 0,
           last_login: null,
@@ -180,7 +181,7 @@ export function AdminUserDetail() {
         });
       }
     } catch (error) {
-      console.error('Error loading activity metrics:', error);
+      logger.error('Error loading activity metrics:', error);
       // Set default metrics on error
       setActivityMetrics({
         login_count: 0,
@@ -273,7 +274,7 @@ export function AdminUserDetail() {
           });
         }
       } catch (auditError) {
-        console.warn('Failed to log audit trail:', auditError);
+        logger.warn('Failed to log audit trail:', auditError);
         // Continue even if audit fails
       }
 
@@ -282,7 +283,7 @@ export function AdminUserDetail() {
       loadAuditLogs();
       setSaveError(null); // Clear any previous errors on success
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       setSaveError(parseDbError(error));
     } finally {
       setSaving(false);
@@ -316,13 +317,13 @@ export function AdminUserDetail() {
           });
         }
       } catch (auditError) {
-        console.warn('Failed to log audit trail:', auditError);
+        logger.warn('Failed to log audit trail:', auditError);
       }
 
       setFormData({ ...formData, is_active: newStatus });
       loadAuditLogs();
     } catch (error) {
-      console.error('Error toggling user activation:', error);
+      logger.error('Error toggling user activation:', error);
     } finally {
       setSaving(false);
     }
@@ -358,12 +359,12 @@ export function AdminUserDetail() {
           });
         }
       } catch (auditError) {
-        console.warn('Failed to log audit trail:', auditError);
+        logger.warn('Failed to log audit trail:', auditError);
       }
 
       navigate('/admin/users');
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error);
     } finally {
       setSaving(false);
     }

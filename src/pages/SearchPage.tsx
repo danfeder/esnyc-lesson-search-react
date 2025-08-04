@@ -44,7 +44,7 @@ export const SearchPage: React.FC = () => {
 
   const handleExport = () => {
     // TODO: Implement CSV export
-    // console.log('Export functionality coming soon...');
+    // logger.log('Export functionality coming soon...');
   };
 
   return (

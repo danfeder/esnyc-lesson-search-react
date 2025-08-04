@@ -8,6 +8,7 @@ import {
   EnhancedUserProfile,
   AuthContextValue,
 } from '../types/auth';
+import { logger } from '../utils/logger';
 
 export function useEnhancedAuth(): AuthContextValue {
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
@@ -43,7 +44,7 @@ export function useEnhancedAuth(): AuthContextValue {
         setLoading(false);
       }
     } catch (error) {
-      console.error('Error checking user:', error);
+      logger.error('Error checking user:', error);
       setLoading(false);
     }
   };
@@ -58,7 +59,7 @@ export function useEnhancedAuth(): AuthContextValue {
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user profile:', error);
+        logger.error('Error fetching user profile:', error);
         setLoading(false);
         return;
       }
@@ -84,7 +85,7 @@ export function useEnhancedAuth(): AuthContextValue {
           .single();
 
         if (createError) {
-          console.error('Error creating user profile:', createError);
+          logger.error('Error creating user profile:', createError);
           // Still set a basic user object
           setUser({
             ...newProfile,
@@ -105,7 +106,7 @@ export function useEnhancedAuth(): AuthContextValue {
         });
       }
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
+      logger.error('Error in fetchUserProfile:', error);
       setUser(null);
     } finally {
       setLoading(false);
