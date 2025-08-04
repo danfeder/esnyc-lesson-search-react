@@ -1,10 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Save, AlertTriangle, CheckCircle, ExternalLink, FileText } from 'lucide-react';
 import { FILTER_CONFIGS } from '../utils/filterDefinitions';
 import { logger } from '../utils/logger';
 import CreatableSelect from 'react-select/creatable';
+
+interface LessonMetadata {
+  activityType?: string;
+  location?: string;
+  gradeLevels?: string[];
+  themes?: string[];
+  season?: string;
+  coreCompetencies?: string[];
+  socialEmotionalLearning?: string[];
+  cookingMethods?: string[];
+  mainIngredients?: string[];
+  gardenSkills?: string[];
+  cookingSkills?: string[];
+  culturalHeritage?: string[];
+  lessonFormat?: string;
+  academicIntegration?: string[];
+  observancesHolidays?: string[];
+  culturalResponsivenessFeatures?: string[];
+  processingNotes?: string;
+}
 
 interface SubmissionDetail {
   id: string;
@@ -33,7 +53,7 @@ interface SubmissionDetail {
     };
   }>;
   review?: {
-    metadata: any;
+    metadata: LessonMetadata;
     decision: string;
     notes: string;
   };
@@ -79,12 +99,13 @@ export function ReviewDetail() {
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [metadata, setMetadata] = useState<any>({});
+  const [metadata, setMetadata] = useState<LessonMetadata>({});
   const [decision, setDecision] = useState<
     'approve_new' | 'approve_update' | 'reject' | 'needs_revision'
   >('approve_new');
   const [notes, setNotes] = useState('');
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Helper functions for conditional field visibility
   const showCookingFields = () => {
@@ -215,13 +236,14 @@ export function ReviewDetail() {
     if (!submission) return;
 
     // Validate required fields
-    const validationErrors = validateRequiredFields();
-    if (validationErrors.length > 0) {
-      window.alert(
-        `Please fill in the following required fields:\n\n• ${validationErrors.join('\n• ')}`
-      );
+    const errors = validateRequiredFields();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      // Scroll to the error message at the top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+    setValidationErrors([]);
 
     setSaving(true);
     try {
@@ -377,12 +399,12 @@ export function ReviewDetail() {
     }
   };
 
-  const handleMetadataChange = (filterKey: string, value: any) => {
-    setMetadata((prev: any) => ({
+  const handleMetadataChange = useCallback((filterKey: string, value: any) => {
+    setMetadata((prev) => ({
       ...prev,
       [filterKey]: value,
     }));
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -405,8 +427,67 @@ export function ReviewDetail() {
     );
   }
 
-  const topDuplicates =
-    submission.similarities?.sort((a, b) => b.combined_score - a.combined_score).slice(0, 5) || [];
+  const topDuplicates = useMemo(
+    () =>
+      submission?.similarities?.sort((a, b) => b.combined_score - a.combined_score).slice(0, 5) ||
+      [],
+    [submission?.similarities]
+  );
+
+  // Calculate progress for required fields
+  const fieldProgress = useMemo(() => {
+    const requiredFields = [
+      { key: 'activityType', label: 'Activity Type', value: metadata.activityType },
+      { key: 'location', label: 'Location', value: metadata.location },
+      { key: 'gradeLevels', label: 'Grade Levels', value: (metadata.gradeLevels?.length ?? 0) > 0 },
+      { key: 'themes', label: 'Thematic Categories', value: (metadata.themes?.length ?? 0) > 0 },
+      { key: 'season', label: 'Season & Timing', value: metadata.season },
+      {
+        key: 'coreCompetencies',
+        label: 'Core Competencies',
+        value: (metadata.coreCompetencies?.length ?? 0) > 0,
+      },
+      {
+        key: 'socialEmotionalLearning',
+        label: 'Social-Emotional Learning',
+        value: (metadata.socialEmotionalLearning?.length ?? 0) > 0,
+      },
+    ];
+
+    // Add conditional fields
+    if (showCookingFields()) {
+      requiredFields.push(
+        {
+          key: 'cookingMethods',
+          label: 'Cooking Methods',
+          value: (metadata.cookingMethods?.length ?? 0) > 0,
+        },
+        {
+          key: 'mainIngredients',
+          label: 'Main Ingredients',
+          value: (metadata.mainIngredients?.length ?? 0) > 0,
+        },
+        {
+          key: 'cookingSkills',
+          label: 'Cooking Skills',
+          value: (metadata.cookingSkills?.length ?? 0) > 0,
+        }
+      );
+    }
+    if (showGardenFields()) {
+      requiredFields.push({
+        key: 'gardenSkills',
+        label: 'Garden Skills',
+        value: (metadata.gardenSkills?.length ?? 0) > 0,
+      });
+    }
+
+    const completed = requiredFields.filter((field) => field.value).length;
+    const total = requiredFields.length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return { completed, total, percentage };
+  }, [metadata, showCookingFields, showGardenFields]);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -500,7 +581,59 @@ export function ReviewDetail() {
             <div className="mb-4">
               <h2 className="text-lg font-semibold">Lesson Metadata</h2>
               <p className="text-sm text-gray-600 mt-1">Complete all required fields (*) to save</p>
+
+              {/* Progress Indicator */}
+              <div className="mt-3">
+                <div className="flex justify-between text-sm text-gray-600 mb-1">
+                  <span>
+                    Progress: {fieldProgress.completed}/{fieldProgress.total} fields
+                  </span>
+                  <span>{fieldProgress.percentage}% complete</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      fieldProgress.percentage === 100
+                        ? 'bg-green-600'
+                        : fieldProgress.percentage >= 75
+                          ? 'bg-blue-600'
+                          : fieldProgress.percentage >= 50
+                            ? 'bg-yellow-600'
+                            : 'bg-red-600'
+                    }`}
+                    style={{ width: `${fieldProgress.percentage}%` }}
+                    role="progressbar"
+                    aria-valuenow={fieldProgress.percentage}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${fieldProgress.percentage}% of required fields completed`}
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* Validation Errors */}
+            {validationErrors.length > 0 && (
+              <div
+                className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg"
+                role="alert"
+                aria-live="polite"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="text-red-600 mt-0.5" size={18} />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">
+                      Please fill in the following required fields:
+                    </p>
+                    <ul className="mt-2 text-sm text-red-700 space-y-1">
+                      {validationErrors.map((error, index) => (
+                        <li key={index}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Required Fields Section */}
             <div className="mb-6">
@@ -517,6 +650,8 @@ export function ReviewDetail() {
                     value={metadata.activityType || ''}
                     onChange={(e) => handleMetadataChange('activityType', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    aria-required="true"
+                    aria-invalid={validationErrors.includes('Activity Type') ? 'true' : 'false'}
                   >
                     <option value="">Select activity type</option>
                     {FILTER_CONFIGS.activityType.options.map((opt) => (
@@ -546,6 +681,8 @@ export function ReviewDetail() {
                     value={metadata.location || ''}
                     onChange={(e) => handleMetadataChange('location', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    aria-required="true"
+                    aria-invalid={validationErrors.includes('Location') ? 'true' : 'false'}
                   >
                     <option value="">Select location</option>
                     {FILTER_CONFIGS.location.options.map((opt) => (
@@ -557,11 +694,14 @@ export function ReviewDetail() {
                 </div>
 
                 {/* Grade Levels */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-gray-700 mb-1">
                     Grade Levels *
-                  </label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                  </legend>
+                  <div
+                    className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2"
+                    aria-label="Grade level selection"
+                  >
                     {FILTER_CONFIGS.gradeLevel.options.map((grade) => (
                       <label key={grade.value} className="flex items-center">
                         <input
@@ -580,7 +720,7 @@ export function ReviewDetail() {
                       </label>
                     ))}
                   </div>
-                </div>
+                </fieldset>
 
                 {/* Thematic Categories */}
                 <div>
