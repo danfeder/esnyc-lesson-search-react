@@ -115,18 +115,18 @@ export function AdminUserDetail() {
       });
 
       // Load user's schools
-      interface UserSchoolData {
-        schools: School | null;
-      }
-
       const { data: userSchoolData, error: schoolsError } = await supabase
         .from('user_schools')
         .select('schools(id, name)')
         .eq('user_id', userId);
 
       if (!schoolsError && userSchoolData) {
+        // The query returns an array of objects with a schools property
         const schools = userSchoolData
-          .map((us: UserSchoolData) => us.schools)
+          .map((us: unknown) => {
+            const userSchool = us as { schools: School | null };
+            return userSchool.schools;
+          })
           .filter((school): school is School => school !== null);
         setUserSchools(schools);
         setEditedSchools(schools);
