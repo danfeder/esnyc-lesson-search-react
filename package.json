@@ -33,6 +33,7 @@
   "license": "MIT",
   "dependencies": {
     "@headlessui/react": "^2.2.4",
+    "@sentry/react": "^10.0.0",
     "@supabase/supabase-js": "^2.51.0",
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
@@ -78,6 +79,7 @@
     "eslint-plugin-prettier": "^5.5.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "glob": "^11.0.3",
     "http-server": "^14.1.1",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.6",

@@ -32,6 +32,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format, subDays, endOfDay } from 'date-fns';
+import { logger } from '../utils/logger';
 
 interface UserStats {
   total: number;
@@ -229,7 +230,7 @@ export function AdminAnalytics() {
         }
       }
     } catch (error) {
-      console.error('Error loading submissions:', error);
+      logger.error('Error loading submissions:', error);
     }
 
     // Get top reviewers - wrapped in try/catch as table might not exist
@@ -268,7 +269,7 @@ export function AdminAnalytics() {
         }
       }
     } catch (error) {
-      console.error('Error loading reviews:', error);
+      logger.error('Error loading reviews:', error);
     }
 
     // Get recent activities - simplified query
@@ -352,7 +353,7 @@ export function AdminAnalytics() {
         loadGrowthData(),
       ]);
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      logger.error('Error loading analytics:', error);
     } finally {
       setLoading(false);
     }

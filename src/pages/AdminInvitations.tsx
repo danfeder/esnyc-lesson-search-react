@@ -16,6 +16,7 @@ import {
   Download,
 } from 'lucide-react';
 import { formatDistanceToNow, format, isPast } from 'date-fns';
+import { logger } from '../utils/logger';
 
 type InvitationFilter = 'all' | 'pending' | 'accepted' | 'expired';
 
@@ -80,7 +81,7 @@ export function AdminInvitations() {
 
       setInvitations(data || []);
     } catch (error) {
-      console.error('Error loading invitations:', error);
+      logger.error('Error loading invitations:', error);
     } finally {
       setLoading(false);
     }
@@ -169,13 +170,13 @@ export function AdminInvitations() {
           },
         });
       } catch (emailError) {
-        console.error('Failed to resend invitation email:', emailError);
+        logger.error('Failed to resend invitation email:', emailError);
       }
 
       // Reload invitations
       await loadInvitations();
     } catch (error) {
-      console.error('Error resending invitation:', error);
+      logger.error('Error resending invitation:', error);
     } finally {
       setResending(null);
     }
@@ -205,7 +206,7 @@ export function AdminInvitations() {
       // Remove from local state
       setInvitations(invitations.filter((inv) => inv.id !== invitationId));
     } catch (error) {
-      console.error('Error cancelling invitation:', error);
+      logger.error('Error cancelling invitation:', error);
     } finally {
       setCancelling(null);
     }

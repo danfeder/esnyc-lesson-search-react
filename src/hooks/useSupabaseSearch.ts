@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { SearchFilters, Lesson } from '../types';
 import { debounce } from '../utils/debounce';
+import { logger } from '../utils/logger';
 
 interface SearchResult {
   lessons: Lesson[];
@@ -71,12 +72,12 @@ export function useSupabaseSearch(
         setResults(lessons);
         setTotalCount(total);
       } catch (err) {
-        console.error('Search error details:', err);
+        logger.error('Search error details:', err);
         if (err && typeof err === 'object' && 'message' in err) {
-          console.error('Error message:', err.message);
+          logger.error('Error message:', err.message);
         }
         if (err && typeof err === 'object' && 'details' in err) {
-          console.error('Error details:', err.details);
+          logger.error('Error details:', err.details);
         }
         setError(err instanceof Error ? err.message : 'Search failed');
         setResults([]);

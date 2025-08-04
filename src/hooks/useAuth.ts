@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { logger } from '../utils/logger';
 
 interface AuthState {
   user: User | null;
@@ -44,7 +45,7 @@ export function useAuth() {
         setAuthState({ user: null, role: null, loading: false });
       }
     } catch (error) {
-      console.error('Error checking user:', error);
+      logger.error('Error checking user:', error);
       setAuthState({ user: null, role: null, loading: false });
     }
   };
@@ -58,7 +59,7 @@ export function useAuth() {
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user role:', error);
+        logger.error('Error fetching user role:', error);
         setAuthState({ user, role: 'teacher', loading: false });
       } else if (!data) {
         // No profile exists, create one
@@ -72,14 +73,14 @@ export function useAuth() {
         });
 
         if (createError) {
-          console.error('Error creating user profile:', createError);
+          logger.error('Error creating user profile:', createError);
         }
         setAuthState({ user, role: 'teacher', loading: false });
       } else {
         setAuthState({ user, role: data?.role || 'teacher', loading: false });
       }
     } catch (error) {
-      console.error('Error in fetchUserRole:', error);
+      logger.error('Error in fetchUserRole:', error);
       setAuthState({ user, role: 'teacher', loading: false });
     }
   };

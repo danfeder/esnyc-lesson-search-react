@@ -3,6 +3,7 @@ import { algoliaClient } from '../lib/algolia';
 import type { SearchFilters, Lesson } from '../types';
 import type { LessonSearchParams, AlgoliaLessonHit } from '../types/algolia';
 import { debounce } from '../utils/debounce';
+import { logger } from '../utils/logger';
 
 // Sanitize error messages to be user-friendly
 const sanitizeError = (error: unknown): string => {
@@ -21,7 +22,7 @@ const sanitizeError = (error: unknown): string => {
       return 'Search configuration error. Please contact support.';
     }
     // Log the actual error for debugging but return generic message
-    console.error('Search error details:', error);
+    logger.error('Search error details:', error);
   }
   return 'An error occurred while searching. Please try again.';
 };
@@ -171,7 +172,7 @@ export function useAlgoliaSearch(
         };
 
         // Debug logging
-        // console.log('Algolia search params:', searchParams);
+        // logger.log('Algolia search params:', searchParams);
 
         // Use v5 searchSingleIndex method
         const searchResults = await algoliaClient.searchSingleIndex({
@@ -180,7 +181,7 @@ export function useAlgoliaSearch(
         });
 
         // Debug logging
-        // console.log('Algolia search results:', {
+        // logger.log('Algolia search results:', {
         //   hits: searchResults.hits.length,
         //   nbHits: searchResults.nbHits,
         //   query: searchResults.query,

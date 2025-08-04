@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { ChevronLeft, Check } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface LessonDetail {
   lessonId: string;
@@ -99,7 +100,7 @@ export const AdminDuplicateDetail: React.FC = () => {
       });
       setLessonDetails(detailsMap);
     } catch (err) {
-      console.error('Error loading group details:', err);
+      logger.error('Error loading group details:', err);
       setError(err instanceof Error ? err.message : 'Failed to load details');
     } finally {
       setLoading(false);
@@ -138,7 +139,7 @@ export const AdminDuplicateDetail: React.FC = () => {
       }
 
       // Show success message and navigate back
-      console.log('Successfully resolved duplicates:', data);
+      logger.log('Successfully resolved duplicates:', data);
 
       // Navigate back to the duplicates list
       navigate('/admin/duplicates', {
@@ -147,7 +148,7 @@ export const AdminDuplicateDetail: React.FC = () => {
         },
       });
     } catch (err) {
-      console.error('Error resolving duplicates:', err);
+      logger.error('Error resolving duplicates:', err);
       setError(err instanceof Error ? err.message : 'Failed to resolve duplicates');
     } finally {
       setResolving(false);

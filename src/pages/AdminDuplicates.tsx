@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { supabase } from '../lib/supabase';
 import { CheckCircle } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface DuplicateGroup {
   groupId: string;
@@ -75,7 +76,7 @@ export const AdminDuplicates: React.FC = () => {
 
       setGroups(transformedGroups);
     } catch (err) {
-      console.error('Error loading duplicates:', err);
+      logger.error('Error loading duplicates:', err);
       setError(err instanceof Error ? err.message : 'Failed to load duplicates');
     } finally {
       setLoading(false);

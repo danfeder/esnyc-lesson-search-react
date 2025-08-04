@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Save, AlertTriangle, CheckCircle, ExternalLink, FileText } from 'lucide-react';
 import { FILTER_CONFIGS } from '../utils/filterDefinitions';
+import { logger } from '../utils/logger';
 
 interface SubmissionDetail {
   id: string;
@@ -101,7 +102,7 @@ export function ReviewDetail() {
 
       if (submissionError) throw submissionError;
       if (!submissionData) {
-        console.error('No submission found with id:', id);
+        logger.error('No submission found with id:', id);
         setLoading(false);
         return;
       }
@@ -167,7 +168,7 @@ export function ReviewDetail() {
         setNotes(review.notes || '');
       }
     } catch (error) {
-      console.error('Error loading submission:', error);
+      logger.error('Error loading submission:', error);
     } finally {
       setLoading(false);
     }
@@ -316,7 +317,7 @@ export function ReviewDetail() {
 
       navigate('/review');
     } catch (error) {
-      console.error('Error saving review:', error);
+      logger.error('Error saving review:', error);
     } finally {
       setSaving(false);
     }

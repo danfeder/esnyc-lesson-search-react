@@ -22,6 +22,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { logger } from '../utils/logger';
 
 interface LessonSubmission {
   id: string;
@@ -106,7 +107,7 @@ export function UserProfile() {
         (userSchoolData?.map((us: any) => us.schools).filter(Boolean) as School[]) || [];
       setUserSchools(schools);
     } catch (error) {
-      console.error('Error loading profile:', error);
+      logger.error('Error loading profile:', error);
     } finally {
       setLoading(false);
     }
@@ -127,7 +128,7 @@ export function UserProfile() {
 
       setSubmissions(data || []);
     } catch (error) {
-      console.error('Error loading submissions:', error);
+      logger.error('Error loading submissions:', error);
     } finally {
       setLoadingSubmissions(false);
     }
@@ -163,7 +164,7 @@ export function UserProfile() {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
     } finally {
       setSaving(false);
     }

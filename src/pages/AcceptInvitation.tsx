@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { UserRole } from '../types/auth';
+import { logger } from '../utils/logger';
 
 interface InvitationData {
   id: string;
@@ -179,7 +180,7 @@ export function AcceptInvitation() {
           },
         });
       } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
+        logger.error('Failed to send welcome email:', emailError);
         // Don't block the flow if email fails
       }
 
@@ -194,7 +195,7 @@ export function AcceptInvitation() {
       // Redirect to dashboard
       navigate('/');
     } catch (err: any) {
-      console.error('Error accepting invitation:', err);
+      logger.error('Error accepting invitation:', err);
       setError(err.message || 'Failed to accept invitation');
     } finally {
       setSubmitting(false);

@@ -21,6 +21,7 @@ import {
 import { EnhancedUserProfile, UserFilters } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
 import { SchoolBadge } from '../components/Schools';
+import { logger } from '../utils/logger';
 
 export function AdminUsers() {
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ export function AdminUsers() {
         setSchools(data);
       }
     } catch (error) {
-      console.error('Error loading schools:', error);
+      logger.error('Error loading schools:', error);
     }
   };
 
@@ -227,7 +228,7 @@ export function AdminUsers() {
 
       setTotalPages(Math.ceil((count || 0) / USERS_PER_PAGE));
     } catch (error) {
-      console.error('Error loading users:', error);
+      logger.error('Error loading users:', error);
     } finally {
       setLoading(false);
     }
@@ -289,7 +290,7 @@ export function AdminUsers() {
       setSelectedUsers([]);
       loadUsers();
     } catch (error) {
-      console.error(`Error performing bulk ${action}:`, error);
+      logger.error(`Error performing bulk ${action}:`, error);
     }
   };
 
@@ -329,7 +330,7 @@ export function AdminUsers() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error exporting users:', error);
+      logger.error('Error exporting users:', error);
     }
   };
 
