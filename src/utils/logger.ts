@@ -8,19 +8,43 @@ import type { SeverityLevel } from '@sentry/types';
 const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
 
+// Configurable list of sensitive keys for data sanitization
+const SENSITIVE_KEYS = [
+  'password',
+  'token',
+  'secret',
+  'key',
+  'auth',
+  'authorization',
+  'cookie',
+  'session',
+  'email',
+  'phone',
+  'ssn',
+  'credit_card',
+  'api_key',
+  'private_key',
+  'access_token',
+  'refresh_token',
+];
+
 /**
  * Sanitize sensitive data from log arguments
  */
 function sanitizeArgs(args: unknown[]): unknown[] {
   return args.map((arg) => {
     if (typeof arg === 'string') {
-      // Check for patterns that look like tokens or passwords
-      if (
-        arg.match(/^[A-Za-z0-9+/]{20,}={0,2}$/) || // Base64 tokens
-        arg.includes('password') ||
-        arg.includes('token') ||
-        arg.includes('secret')
-      ) {
+      // JWT tokens (more specific pattern)
+      if (arg.match(/^ey[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)) {
+        return '[REDACTED JWT]';
+      }
+      // API keys and tokens (common patterns)
+      if (arg.match(/^(sk|pk|pat|ghp|gho|ghs|ghu)_[A-Za-z0-9]{20,}$/)) {
+        return '[REDACTED API KEY]';
+      }
+      // Check for sensitive keywords
+      const lowerArg = arg.toLowerCase();
+      if (SENSITIVE_KEYS.some((key) => lowerArg.includes(key))) {
         return '[REDACTED]';
       }
     }
@@ -45,11 +69,9 @@ function sanitizeArgs(args: unknown[]): unknown[] {
 function sanitizeObject(obj: any): any {
   if (!obj || typeof obj !== 'object') return obj;
 
-  const sensitiveKeys = ['password', 'token', 'secret', 'auth', 'key', 'email'];
-
   for (const key in obj) {
     const lowerKey = key.toLowerCase();
-    if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
+    if (SENSITIVE_KEYS.some((sensitive) => lowerKey.includes(sensitive))) {
       obj[key] = '[REDACTED]';
     } else if (typeof obj[key] === 'object') {
       obj[key] = sanitizeObject(obj[key]);

@@ -98,7 +98,7 @@ export function initSentry() {
  */
 function sanitizeUrl(url: string): string {
   try {
-    const urlObj = new globalThis.URL(url);
+    const urlObj = new URL(url);
     const sensitiveParams = ['token', 'key', 'secret', 'password', 'auth'];
 
     sensitiveParams.forEach((param) => {
@@ -207,12 +207,20 @@ export function setUserContext(user: { id: string; email?: string; role?: string
 }
 
 /**
- * Hash email for privacy (simple hash for demo, use proper hashing in production)
+ * Hash email for privacy using a one-way hash
  */
 function hashEmail(email: string): string {
-  // This is a simple hash for demonstration
-  // In production, use a proper one-way hash function
-  return `user_${email.split('@')[0].substring(0, 3)}***@${email.split('@')[1]}`;
+  // Create a simple one-way hash that preserves domain for debugging
+  // but obscures the actual email address
+  const [localPart, domain] = email.split('@');
+  let hash = 0;
+  for (let i = 0; i < localPart.length; i++) {
+    const char = localPart.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  // Return hashed local part with preserved domain for debugging
+  return `user_${Math.abs(hash).toString(36)}@${domain}`;
 }
 
 /**
