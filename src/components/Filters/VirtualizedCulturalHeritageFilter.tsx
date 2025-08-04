@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { FixedSizeList as List } from 'react-window';
+// TODO: Replace with @tanstack/react-virtual
+// import { FixedSizeList as List } from 'react-window';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CULTURAL_HIERARCHY } from '../../utils/filterConstants';
 import { getFacetCount } from '../../utils/facetHelpers';
 
 // Constants for virtualization
-const LIST_HEIGHT = 256; // 16rem = 256px (max-h-64)
+// const LIST_HEIGHT = 256; // 16rem = 256px (max-h-64) - TODO: Use when migrating to @tanstack/react-virtual
 const ROW_HEIGHT = 40; // Height of each row in pixels
 
 interface CulturalHeritageFilterProps {
@@ -216,15 +217,12 @@ export const VirtualizedCulturalHeritageFilter: React.FC<CulturalHeritageFilterP
           Use arrow keys to navigate between regions and subregions. Press Enter or Space to expand
           or collapse regions. Check or uncheck items to filter results.
         </div>
-        <List
-          height={LIST_HEIGHT}
-          itemCount={flattenedItems.length}
-          itemSize={ROW_HEIGHT}
-          width="100%"
-          itemData={itemData}
-        >
-          {Row}
-        </List>
+        {/* Temporary non-virtualized list - TODO: Migrate to @tanstack/react-virtual */}
+        <div className="max-h-64 overflow-y-auto">
+          {flattenedItems.map((_item, index) => (
+            <Row key={index} index={index} style={{ height: ROW_HEIGHT }} data={itemData} />
+          ))}
+        </div>
       </div>
     );
   }

@@ -1,28 +1,137 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SearchBar } from '../components/Search/SearchBar';
 import { FilterPills } from '../components/Filters/FilterPills';
 import { FilterModal } from '../components/Filters/FilterModal';
 import { ResultsHeader } from '../components/Results/ResultsHeader';
-import { ResultsGrid } from '../components/Results/ResultsGrid';
+import { AdaptiveResultsGrid } from '../components/Results/AdaptiveResultsGrid';
 import { LessonModal } from '../components/Modal/LessonModal';
 import { ScreenReaderAnnouncer } from '../components/Common/ScreenReaderAnnouncer';
 import { SkipLink } from '../components/Common/SkipLink';
+import { InfiniteScrollTrigger } from '../components/Common/InfiniteScrollTrigger';
 import { useSearchStore } from '../stores/searchStore';
 import { useSupabaseSearch } from '../hooks/useSupabaseSearch';
+import { supabase } from '../lib/supabase';
 import type { Lesson, ViewState } from '../types';
 
 export const SearchPage: React.FC = () => {
-  const { filters, viewState, setViewState, setFilters } = useSearchStore();
+  const {
+    filters,
+    viewState,
+    results,
+    totalCount,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMore,
+    setViewState,
+    setFilters,
+    setResults,
+    appendResults,
+    setLoading,
+    setLoadingMore,
+    setError,
+  } = useSearchStore();
+
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { lessons, totalCount, isLoading, error, facets } = useSupabaseSearch(
+  // Initial search for first page
+  const {
+    lessons: initialLessons,
+    totalCount: searchTotalCount,
+    isLoading: searchIsLoading,
+    error: searchError,
+    facets,
+  } = useSupabaseSearch(
     filters,
-    viewState.currentPage,
+    1, // Always fetch first page for initial load
     viewState.resultsPerPage
   );
+
+  // Update store when initial search completes
+  useEffect(() => {
+    if (!searchIsLoading && initialLessons) {
+      setResults(initialLessons, searchTotalCount);
+      setLoading(searchIsLoading);
+      setCurrentPage(1);
+    }
+    if (searchError) {
+      setError(searchError);
+    }
+  }, [
+    initialLessons,
+    searchTotalCount,
+    searchIsLoading,
+    searchError,
+    setResults,
+    setLoading,
+    setError,
+  ]);
+
+  // Load more handler for infinite scroll
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    const nextPage = currentPage + 1;
+    setLoadingMore(true);
+
+    try {
+      // Use supabase directly for pagination
+
+      const searchParams = {
+        search_query: filters.query || null,
+        filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : null,
+        filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : null,
+        filter_seasons: filters.seasons?.length ? filters.seasons : null,
+        filter_competencies: filters.coreCompetencies?.length ? filters.coreCompetencies : null,
+        filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : null,
+        filter_location: filters.location?.length ? filters.location : null,
+        filter_activity_type: filters.activityType?.length ? filters.activityType : null,
+        filter_lesson_format: filters.lessonFormat || null,
+        filter_academic: filters.academicIntegration?.length ? filters.academicIntegration : null,
+        filter_sel: filters.socialEmotionalLearning?.length
+          ? filters.socialEmotionalLearning
+          : null,
+        filter_cooking_method: filters.cookingMethods || null,
+        page_size: viewState.resultsPerPage,
+        page_offset: (nextPage - 1) * viewState.resultsPerPage,
+      };
+
+      const { data, error: loadError } = await supabase.rpc('search_lessons', searchParams);
+
+      if (loadError) throw loadError;
+
+      const newLessons: Lesson[] =
+        data?.map((row: Record<string, unknown>) => ({
+          lessonId: row.lesson_id as string,
+          title: row.title as string,
+          summary: row.summary as string,
+          fileLink: row.file_link as string,
+          gradeLevels: row.grade_levels as string[],
+          metadata: row.metadata as Record<string, unknown>,
+          confidence: (row.confidence as { overall: number }) || { overall: 0 },
+        })) || [];
+
+      appendResults(newLessons);
+      setCurrentPage(nextPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more results');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [
+    currentPage,
+    filters,
+    viewState.resultsPerPage,
+    hasMore,
+    isLoadingMore,
+    appendResults,
+    setLoadingMore,
+    setError,
+  ]);
 
   const handleLessonClick = (lesson: Lesson) => {
     setSelectedLesson(lesson);
@@ -72,7 +181,22 @@ export const SearchPage: React.FC = () => {
           </div>
         )}
 
-        <ResultsGrid lessons={lessons} onLessonClick={handleLessonClick} isLoading={isLoading} />
+        <AdaptiveResultsGrid
+          lessons={results}
+          onLessonClick={handleLessonClick}
+          isLoading={isLoading}
+        />
+
+        {/* Infinite Scroll Trigger */}
+        {results.length > 0 && (
+          <InfiniteScrollTrigger
+            onLoadMore={handleLoadMore}
+            isLoading={isLoadingMore}
+            hasMore={hasMore}
+            currentCount={results.length}
+            totalCount={totalCount}
+          />
+        )}
       </main>
 
       {/* Filter Modal */}

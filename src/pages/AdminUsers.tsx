@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useDebounce } from '../hooks/useDebounce';
@@ -22,6 +22,8 @@ import { EnhancedUserProfile, UserFilters } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
 import { SchoolBadge } from '../components/Schools';
 import { logger } from '../utils/logger';
+import { VirtualizedTable, Column } from '../components/Common/VirtualizedTable';
+import { shouldVirtualize } from '../utils/virtualization';
 
 export function AdminUsers() {
   const navigate = useNavigate();
@@ -357,6 +359,120 @@ export function AdminUsers() {
     }
   };
 
+  // Define table columns for virtualized table
+  const tableColumns = useMemo<Column<EnhancedUserProfile>[]>(
+    () => [
+      {
+        key: 'select',
+        header: '',
+        width: '50px',
+        render: (user) => (
+          <input
+            type="checkbox"
+            aria-label={`Select ${user.full_name || user.email}`}
+            checked={selectedUsers.includes(user.id)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedUsers([...selectedUsers, user.id]);
+              } else {
+                setSelectedUsers(selectedUsers.filter((id) => id !== user.id));
+              }
+            }}
+            className="rounded text-green-600"
+          />
+        ),
+      },
+      {
+        key: 'user',
+        header: 'User',
+        render: (user) => (
+          <div>
+            <div className="text-sm font-medium text-gray-900">
+              {user.full_name || 'Unnamed User'}
+            </div>
+            <div className="text-sm text-gray-500">{user.email}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'role',
+        header: 'Role',
+        render: (user) => (
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
+              user.role
+            )}`}
+            role="status"
+            aria-label={`Role: ${user.role.replace('_', ' ')}`}
+          >
+            {user.role.replace('_', ' ')}
+          </span>
+        ),
+      },
+      {
+        key: 'school',
+        header: 'School',
+        render: (user) => (
+          <div className="flex flex-wrap gap-1">
+            {user.schools && user.schools.length > 0 ? (
+              user.schools.map((school: { id: string; name: string }) => (
+                <SchoolBadge key={school.id} name={school.name} size="sm" />
+              ))
+            ) : (
+              <span className="text-sm text-gray-500">-</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        render: (user) =>
+          user.is_active ? (
+            <span className="inline-flex items-center gap-1 text-green-600">
+              <CheckCircle className="w-4 h-4" aria-hidden="true" />
+              <span>Active</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-gray-400">
+              <XCircle className="w-4 h-4" aria-hidden="true" />
+              <span>Inactive</span>
+            </span>
+          ),
+      },
+      {
+        key: 'joined',
+        header: 'Joined',
+        render: (user) => (
+          <span className="text-sm text-gray-500">
+            {user.created_at
+              ? formatDistanceToNow(new Date(user.created_at), { addSuffix: true })
+              : 'Unknown'}
+          </span>
+        ),
+      },
+      {
+        key: 'actions',
+        header: 'Actions',
+        width: '100px',
+        className: 'text-right',
+        render: (user) => (
+          <button
+            onClick={() => navigate(`/admin/users/${user.id}`)}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={`Edit ${user.full_name || user.email}`}
+          >
+            <Edit className="w-5 h-5" />
+          </button>
+        ),
+      },
+    ],
+    [selectedUsers, navigate]
+  );
+
+  // Determine whether to use virtualization
+  const useVirtualization = shouldVirtualize(users.length, 'table');
+
   if (loading && users.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -533,176 +649,187 @@ export function AdminUsers() {
         )}
       </div>
 
-      {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left">
-                <input
-                  type="checkbox"
-                  aria-label="Select all users"
-                  checked={selectedUsers.length === users.length && users.length > 0}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedUsers(users.map((u) => u.id));
-                    } else {
-                      setSelectedUsers([]);
-                    }
-                  }}
-                  className="rounded text-green-600"
-                />
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                User
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Role
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                School
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Joined
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
+      {/* Users Table - Use virtualization for large datasets */}
+      {useVirtualization ? (
+        <VirtualizedTable
+          data={users}
+          columns={tableColumns}
+          getRowKey={(user) => user.id}
+          isLoading={loading}
+          emptyMessage="No users found"
+          className="bg-white"
+        />
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left">
                   <input
                     type="checkbox"
-                    aria-label={`Select ${user.full_name || user.email}`}
-                    checked={selectedUsers.includes(user.id)}
+                    aria-label="Select all users"
+                    checked={selectedUsers.length === users.length && users.length > 0}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedUsers([...selectedUsers, user.id]);
+                        setSelectedUsers(users.map((u) => u.id));
                       } else {
-                        setSelectedUsers(selectedUsers.filter((id) => id !== user.id));
+                        setSelectedUsers([]);
                       }
                     }}
                     className="rounded text-green-600"
                   />
-                </td>
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.full_name || 'Unnamed User'}
-                    </div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                      user.role
-                    )}`}
-                    role="status"
-                    aria-label={`Role: ${user.role.replace('_', ' ')}`}
-                  >
-                    {user.role.replace('_', ' ')}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
-                    {user.schools && user.schools.length > 0 ? (
-                      user.schools.map((school: { id: string; name: string }) => (
-                        <SchoolBadge key={school.id} name={school.name} size="sm" />
-                      ))
-                    ) : (
-                      <span className="text-sm text-gray-500">-</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  {user.is_active ? (
-                    <span
-                      className="inline-flex items-center gap-1 text-green-600"
-                      role="status"
-                      aria-label="Status: Active"
-                    >
-                      <CheckCircle className="w-4 h-4" aria-hidden="true" />
-                      <span className="text-sm">Active</span>
-                    </span>
-                  ) : (
-                    <span
-                      className="inline-flex items-center gap-1 text-red-600"
-                      role="status"
-                      aria-label="Status: Inactive"
-                    >
-                      <XCircle className="w-4 h-4" aria-hidden="true" />
-                      <span className="text-sm">Inactive</span>
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
-                </td>
-                <td className="px-6 py-4 text-right text-sm font-medium">
-                  <button
-                    onClick={() => navigate(`/admin/users/${user.id}`)}
-                    className="text-indigo-600 hover:text-indigo-900"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                </td>
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  User
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Role
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  School
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Joined
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${user.full_name || user.email}`}
+                      checked={selectedUsers.includes(user.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUsers([...selectedUsers, user.id]);
+                        } else {
+                          setSelectedUsers(selectedUsers.filter((id) => id !== user.id));
+                        }
+                      }}
+                      className="rounded text-green-600"
+                    />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {user.full_name || 'Unnamed User'}
+                      </div>
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                        user.role
+                      )}`}
+                      role="status"
+                      aria-label={`Role: ${user.role.replace('_', ' ')}`}
+                    >
+                      {user.role.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {user.schools && user.schools.length > 0 ? (
+                        user.schools.map((school: { id: string; name: string }) => (
+                          <SchoolBadge key={school.id} name={school.name} size="sm" />
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-500">-</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {user.is_active ? (
+                      <span
+                        className="inline-flex items-center gap-1 text-green-600"
+                        role="status"
+                        aria-label="Status: Active"
+                      >
+                        <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                        <span className="text-sm">Active</span>
+                      </span>
+                    ) : (
+                      <span
+                        className="inline-flex items-center gap-1 text-red-600"
+                        role="status"
+                        aria-label="Status: Inactive"
+                      >
+                        <XCircle className="w-4 h-4" aria-hidden="true" />
+                        <span className="text-sm">Inactive</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
+                  </td>
+                  <td className="px-6 py-4 text-right text-sm font-medium">
+                    <button
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {/* Pagination */}
-        <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
-          <div className="text-sm text-gray-700">
-            Showing {(page - 1) * USERS_PER_PAGE + 1} to{' '}
-            {Math.min(page * USERS_PER_PAGE, users.length)} users
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="px-3 py-1">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+          {/* Pagination */}
+          <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+            <div className="text-sm text-gray-700">
+              Showing {(page - 1) * USERS_PER_PAGE + 1} to{' '}
+              {Math.min(page * USERS_PER_PAGE, users.length)} users
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-3 py-1">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
