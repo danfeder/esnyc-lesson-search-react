@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { AppErrorFallback } from './components/Common/AppErrorFallback';
-import { RouteErrorFallback } from './components/Common/RouteErrorBoundary';
+import { RouteErrorFallback } from './components/Common/RouteErrorFallback';
 import { Header } from './components/Layout/Header';
 import { SearchPage } from './pages/SearchPage';
 import { SubmissionPage } from './pages/SubmissionPage';

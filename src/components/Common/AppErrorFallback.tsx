@@ -89,7 +89,11 @@ export const AppErrorFallback: React.FC<ErrorFallbackProps> = ({
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => (window.location.href = '/')}
+              onClick={() => {
+                // Intentionally using window.location for full page reload
+                // This ensures complete app reset when recovering from app-level errors
+                window.location.href = '/';
+              }}
               className="px-6 py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors"
             >
               Go to Home

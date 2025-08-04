@@ -5,7 +5,7 @@ import React, { useState } from 'react';
  * This component should only be used in development mode for testing.
  * Remove or disable in production.
  */
-export const ErrorBoundaryTest: React.FC = () => {
+const ErrorBoundaryTestComponent: React.FC = () => {
   const [shouldThrow, setShouldThrow] = useState(false);
 
   if (shouldThrow) {
@@ -27,3 +27,7 @@ export const ErrorBoundaryTest: React.FC = () => {
     </div>
   );
 };
+
+// Only export in development mode
+export const ErrorBoundaryTest =
+  import.meta.env.MODE === 'development' ? ErrorBoundaryTestComponent : () => null;
