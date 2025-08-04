@@ -125,6 +125,7 @@ export function AdminInviteUser() {
 
       // Log audit
       await supabase.from('user_management_audit').insert({
+        actor_id: user?.id,
         action: 'invite_sent',
         target_email: formData.email,
         new_values: {
