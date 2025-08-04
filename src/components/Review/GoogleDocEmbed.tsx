@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, ExternalLink, FileText } from 'lucide-react';
+import { AlertCircle, ExternalLink, FileText, RefreshCw, Lock } from 'lucide-react';
+import { useGoogleDocPermission } from '@/hooks/useGoogleDocPermission';
 
 interface GoogleDocEmbedProps {
   docId: string;
@@ -20,6 +21,15 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   const [error, setError] = useState<Error | null>(null);
   const [iframeWidth, setIframeWidth] = useState<number>(0);
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Check permissions before showing iframe
+  const {
+    hasAccess,
+    isChecking,
+    error: permissionError,
+    reason,
+    recheckAccess,
+  } = useGoogleDocPermission(docId);
 
   const handleLoad = () => {
     setLoading(false);
@@ -72,12 +82,78 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     };
   }, []);
 
-  if (error) {
+  // Show permission checking state
+  if (isChecking) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-gray-600">Checking document access...</p>
+      </div>
+    );
+  }
+
+  // Show no access state
+  if (hasAccess === false) {
+    const isNotFound = reason === 'not_found';
+
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg">
+        <Lock className="w-12 h-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          {isNotFound ? 'Document Not Found' : 'Access Required'}
+        </h3>
+        <p className="text-gray-600 text-center mb-6 max-w-md">
+          {isNotFound
+            ? 'This document does not exist or has been deleted.'
+            : 'You need permission to access this Google Doc. Request access from the document owner to view and edit.'}
+        </p>
+        <div className="flex gap-4">
+          {!isNotFound && (
+            <>
+              <button
+                onClick={openInGoogleDocs}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Request Access
+              </button>
+              <button
+                onClick={recheckAccess}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Check Again
+              </button>
+            </>
+          )}
+          {fallbackToText && (
+            <button
+              onClick={fallbackToText}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              Show Text View
+            </button>
+          )}
+        </div>
+        {!isNotFound && (
+          <p className="text-xs text-gray-500 mt-4">
+            After requesting access, click "Check Again" to refresh
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Show error state for other errors
+  if (error || permissionError) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load Document</h3>
-        <p className="text-gray-600 text-center mb-6 max-w-md">{error.message}</p>
+        <p className="text-gray-600 text-center mb-6 max-w-md">
+          {error?.message || permissionError || 'An unexpected error occurred'}
+        </p>
         <div className="flex gap-4">
           <button
             onClick={openInGoogleDocs}
