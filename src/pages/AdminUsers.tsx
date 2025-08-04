@@ -155,17 +155,24 @@ export function AdminUsers() {
 
         if (!emailError && emailsData) {
           // Create email map
-          const emailMap = new Map(emailsData.map((item: any) => [item.id, item.email]));
+          interface EmailData {
+            id: string;
+            email: string;
+          }
+          const emailMap = new Map(emailsData.map((item: EmailData) => [item.id, item.email]));
 
           // Create schools map
-          const schoolsMap = new Map();
+          const schoolsMap = new Map<string, Array<{ id: string; name: string }>>();
           if (!schoolsError && userSchoolsData) {
-            userSchoolsData.forEach((us) => {
+            userSchoolsData.forEach((us: any) => {
               if (!schoolsMap.has(us.user_id)) {
                 schoolsMap.set(us.user_id, []);
               }
               if (us.schools) {
-                schoolsMap.get(us.user_id).push(us.schools);
+                const userSchools = schoolsMap.get(us.user_id);
+                if (userSchools) {
+                  userSchools.push(us.schools);
+                }
               }
             });
           }
@@ -295,7 +302,13 @@ export function AdminUsers() {
 
       if (emailError) throw emailError;
 
-      const emailMap = new Map(emailsData?.map((item: any) => [item.id, item.email]) || []);
+      interface EmailDataExport {
+        id: string;
+        email: string;
+      }
+      const emailMap = new Map(
+        emailsData?.map((item: EmailDataExport) => [item.id, item.email]) || []
+      );
       const data = profiles?.map((profile) => ({
         ...profile,
         email: emailMap.get(profile.id) || 'No email',
@@ -304,7 +317,7 @@ export function AdminUsers() {
       // Convert to CSV
       const csv = [
         ['Email', 'Name', 'Role', 'School', 'Borough', 'Status', 'Joined', 'Invited By'],
-        ...(data || []).map((user: any) => [
+        ...(data || []).map((user) => [
           user.email || '',
           user.full_name || '',
           user.role || 'teacher',
@@ -618,7 +631,7 @@ export function AdminUsers() {
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap gap-1">
                     {user.schools && user.schools.length > 0 ? (
-                      user.schools.map((school: any) => (
+                      user.schools.map((school: { id: string; name: string }) => (
                         <SchoolBadge key={school.id} name={school.name} size="sm" />
                       ))
                     ) : (
