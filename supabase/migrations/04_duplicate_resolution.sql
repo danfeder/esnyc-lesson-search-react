@@ -248,3 +248,32 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- ROLLBACK INSTRUCTIONS (commented for safety)
+-- =====================================================
+-- To rollback this migration, run the following commands:
+-- 
+-- -- Drop functions
+-- DROP FUNCTION IF EXISTS find_duplicate_lessons(numeric, integer);
+-- DROP FUNCTION IF EXISTS calculate_text_similarity(text, text);
+-- DROP FUNCTION IF EXISTS find_similar_lessons(uuid, numeric, integer);
+-- DROP FUNCTION IF EXISTS merge_duplicate_lessons(uuid, uuid[]);
+-- 
+-- -- Drop indexes
+-- DROP INDEX IF EXISTS idx_duplicate_resolutions_canonical;
+-- DROP INDEX IF EXISTS idx_duplicate_resolutions_duplicate;
+-- DROP INDEX IF EXISTS idx_submissions_lesson_id;
+-- DROP INDEX IF EXISTS idx_submission_similarities_submission;
+-- DROP INDEX IF EXISTS idx_lesson_similarities_lesson;
+-- 
+-- -- Drop tables
+-- DROP TABLE IF EXISTS duplicate_resolutions CASCADE;
+-- DROP TABLE IF EXISTS submission_similarities CASCADE;
+-- DROP TABLE IF EXISTS lesson_similarities CASCADE;
+-- 
+-- -- Drop columns added to existing tables
+-- ALTER TABLE lesson_submissions DROP COLUMN IF EXISTS existing_lesson_id;
+-- ALTER TABLE lesson_submissions DROP COLUMN IF EXISTS similarity_score;
+-- 
+-- =====================================================
