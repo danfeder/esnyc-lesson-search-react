@@ -217,7 +217,9 @@ export function ReviewDetail() {
     // Validate required fields
     const validationErrors = validateRequiredFields();
     if (validationErrors.length > 0) {
-      alert(`Please fill in the following required fields:\n\n• ${validationErrors.join('\n• ')}`);
+      window.alert(
+        `Please fill in the following required fields:\n\n• ${validationErrors.join('\n• ')}`
+      );
       return;
     }
 
@@ -837,8 +839,6 @@ export function ReviewDetail() {
                                 let updated: string[];
                                 if (e.target.checked) {
                                   updated = [...current, heritage.value];
-                                  if (heritage.children) {
-                                  }
                                 } else {
                                   updated = current.filter((c: string) => {
                                     if (c === heritage.value) return false;
