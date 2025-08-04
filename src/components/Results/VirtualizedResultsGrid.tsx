@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useMemo, useCallback } from 'react';
-import { VariableSizeGrid as Grid } from 'react-window';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { Lesson } from '../../types';
 import { LessonCard } from './LessonCard';
 
@@ -11,9 +11,10 @@ interface VirtualizedResultsGridProps {
 }
 
 // Constants for grid layout
-const CARD_HEIGHT = 320; // Approximate height of a lesson card
+const CARD_HEIGHT = 280; // Fixed height of lesson cards
 const GAP = 24; // Gap between cards (gap-6 = 1.5rem = 24px)
 const MOBILE_BREAKPOINT = 1024; // lg breakpoint
+const ROW_HEIGHT = CARD_HEIGHT + GAP; // Fixed row height (304px)
 
 // Loading skeleton component
 const LoadingSkeleton: React.FC = () => (
@@ -57,102 +58,35 @@ export const VirtualizedResultsGrid: React.FC<VirtualizedResultsGridProps> = ({
   onLessonClick,
   isLoading = false,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<Grid>(null);
-  const [dimensions, setDimensions] = React.useState({ width: 0, height: 600 });
+  // Calculate number of columns based on window width
+  const [columnCount, setColumnCount] = useState(() => {
+    if (typeof window === 'undefined') return 2;
+    return window.innerWidth < MOBILE_BREAKPOINT ? 1 : 2;
+  });
 
-  // Calculate number of columns based on width
-  const columnCount = useMemo(() => {
-    if (dimensions.width < MOBILE_BREAKPOINT) return 1;
-    return 2;
-  }, [dimensions.width]);
+  // Update column count on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setColumnCount(window.innerWidth < MOBILE_BREAKPOINT ? 1 : 2);
+    };
 
-  // Calculate row count
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Calculate total rows needed
   const rowCount = useMemo(() => {
     if (isLoading) return 3; // Show 3 rows of skeletons
     return Math.ceil(lessons.length / columnCount);
   }, [lessons.length, columnCount, isLoading]);
 
-  // Update dimensions on mount and resize
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setDimensions({
-          width: rect.width,
-          height: Math.min(window.innerHeight - 200, 800), // Max height of 800px
-        });
-      }
-    };
-
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
-
-  // Reset scroll position when lessons change significantly
-  useEffect(() => {
-    if (gridRef.current) {
-      gridRef.current.scrollTo({ scrollLeft: 0, scrollTop: 0 });
-    }
-  }, [lessons.length]);
-
-  // Calculate column width
-  const getColumnWidth = useCallback(
-    (index: number) => {
-      if (columnCount === 1) return dimensions.width;
-      // For 2 columns, account for gap
-      return (dimensions.width - GAP) / 2;
-    },
-    [dimensions.width, columnCount]
-  );
-
-  // Row height is constant
-  const getRowHeight = useCallback(() => CARD_HEIGHT + GAP, []);
-
-  // Cell renderer
-  const Cell = useCallback(
-    ({ columnIndex, rowIndex, style }: any) => {
-      const index = rowIndex * columnCount + columnIndex;
-
-      // Handle loading state
-      if (isLoading) {
-        return (
-          <div
-            style={{
-              ...style,
-              paddingRight: columnIndex === 0 && columnCount === 2 ? GAP / 2 : 0,
-              paddingLeft: columnIndex === 1 ? GAP / 2 : 0,
-              paddingBottom: GAP,
-            }}
-          >
-            <LoadingSkeleton />
-          </div>
-        );
-      }
-
-      // Check if we have a lesson at this index
-      if (index >= lessons.length) {
-        return null;
-      }
-
-      const lesson = lessons[index];
-
-      return (
-        <div
-          style={{
-            ...style,
-            paddingRight: columnIndex === 0 && columnCount === 2 ? GAP / 2 : 0,
-            paddingLeft: columnIndex === 1 ? GAP / 2 : 0,
-            paddingBottom: GAP,
-          }}
-        >
-          <LessonCard lesson={lesson} onClick={() => onLessonClick(lesson)} />
-        </div>
-      );
-    },
-    [lessons, onLessonClick, columnCount, isLoading]
-  );
+  // Use window virtualizer for natural scrolling with fixed row heights
+  const virtualizer = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: useCallback(() => ROW_HEIGHT, []),
+    overscan: 2, // Render 2 extra rows for smoother scrolling
+    scrollMargin: 0,
+  });
 
   // Handle loading state with skeletons
   if (isLoading && lessons.length === 0) {
@@ -170,41 +104,63 @@ export const VirtualizedResultsGrid: React.FC<VirtualizedResultsGridProps> = ({
     return <EmptyState />;
   }
 
-  // If dimensions aren't ready yet, show loading
-  if (dimensions.width === 0) {
-    return (
-      <div ref={containerRef} className="w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <LoadingSkeleton key={index} />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full"
-      role="region"
-      aria-label="Search results"
-      aria-busy={isLoading}
-    >
-      <Grid
-        ref={gridRef}
-        columnCount={columnCount}
-        columnWidth={getColumnWidth}
-        height={dimensions.height}
-        rowCount={rowCount}
-        rowHeight={getRowHeight}
-        width={dimensions.width}
-        className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
-        overscanRowCount={2} // Render 2 extra rows for smoother scrolling
-        overscanColumnCount={1} // Render 1 extra column for smoother scrolling
+    <div className="w-full" role="region" aria-label="Search results" aria-busy={isLoading}>
+      {/* Virtual container with total size */}
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: '100%',
+          position: 'relative',
+        }}
       >
-        {Cell}
-      </Grid>
+        {/* Render only visible rows */}
+        {virtualItems.map((virtualRow) => {
+          const startIndex = virtualRow.index * columnCount;
+
+          return (
+            <div
+              key={virtualRow.key}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${ROW_HEIGHT}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <div className="flex gap-6">
+                {isLoading
+                  ? // Show loading skeletons
+                    Array.from({ length: columnCount }).map((_, colIndex) => (
+                      <div key={`skeleton-${virtualRow.index}-${colIndex}`} className="flex-1">
+                        <LoadingSkeleton />
+                      </div>
+                    ))
+                  : // Show actual lesson cards
+                    Array.from({ length: columnCount }).map((_, colIndex) => {
+                      const lessonIndex = startIndex + colIndex;
+                      if (lessonIndex < lessons.length) {
+                        const lesson = lessons[lessonIndex];
+                        return (
+                          <div key={`lesson-${lessonIndex}`} className="flex-1">
+                            <LessonCard lesson={lesson} onClick={() => onLessonClick(lesson)} />
+                          </div>
+                        );
+                      }
+                      // Empty cell for incomplete rows
+                      return (
+                        <div key={`empty-${virtualRow.index}-${colIndex}`} className="flex-1" />
+                      );
+                    })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Provide context for screen readers */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">

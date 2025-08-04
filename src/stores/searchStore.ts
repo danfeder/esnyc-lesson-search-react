@@ -9,6 +9,8 @@ interface SearchState {
   totalCount: number;
   isLoading: boolean;
   error: string | null;
+  hasMore: boolean;
+  isLoadingMore: boolean;
 
   // View state
   viewState: ViewState;
@@ -20,11 +22,17 @@ interface SearchState {
   // eslint-disable-next-line no-unused-vars
   setResults: (results: Lesson[], totalCount: number) => void;
   // eslint-disable-next-line no-unused-vars
+  appendResults: (results: Lesson[]) => void;
+  // eslint-disable-next-line no-unused-vars
   setLoading: (loading: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
+  setLoadingMore: (loading: boolean) => void;
   // eslint-disable-next-line no-unused-vars
   setError: (error: string | null) => void;
   // eslint-disable-next-line no-unused-vars
   setViewState: (viewState: Partial<ViewState>) => void;
+  // eslint-disable-next-line no-unused-vars
+  setHasMore: (hasMore: boolean) => void;
 
   // Filter helpers
   // eslint-disable-next-line no-unused-vars
@@ -66,6 +74,8 @@ export const useSearchStore = create<SearchState>()(
       totalCount: 0,
       isLoading: false,
       error: null,
+      hasMore: true,
+      isLoadingMore: false,
       viewState: initialViewState,
 
       // Actions
@@ -73,24 +83,44 @@ export const useSearchStore = create<SearchState>()(
         set((state) => ({
           filters: { ...state.filters, ...newFilters },
           viewState: { ...state.viewState, currentPage: 1 }, // Reset to first page
+          results: [], // Clear results when filters change
+          hasMore: true,
         })),
 
       clearFilters: () =>
         set({
           filters: initialFilters,
           viewState: { ...initialViewState },
+          results: [],
+          hasMore: true,
         }),
 
-      setResults: (results, totalCount) => set({ results, totalCount, error: null }),
+      setResults: (results, totalCount) =>
+        set({
+          results,
+          totalCount,
+          error: null,
+          hasMore: results.length < totalCount,
+        }),
+
+      appendResults: (newResults) =>
+        set((state) => ({
+          results: [...state.results, ...newResults],
+          hasMore: state.results.length + newResults.length < state.totalCount,
+        })),
 
       setLoading: (isLoading) => set({ isLoading }),
 
-      setError: (error) => set({ error, isLoading: false }),
+      setLoadingMore: (isLoadingMore) => set({ isLoadingMore }),
+
+      setError: (error) => set({ error, isLoading: false, isLoadingMore: false }),
 
       setViewState: (newViewState) =>
         set((state) => ({
           viewState: { ...state.viewState, ...newViewState },
         })),
+
+      setHasMore: (hasMore) => set({ hasMore }),
 
       // Filter helpers
       addFilter: (key, value) => {

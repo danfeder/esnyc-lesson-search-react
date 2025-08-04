@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { VariableSizeList as List } from 'react-window';
-import { DIMENSIONS, calculateOptimalHeight, debounceResize } from '../../utils/virtualization';
+import React, { useMemo, useCallback } from 'react';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import { DIMENSIONS } from '../../utils/virtualization';
 
 export interface Column<T> {
   key: string;
@@ -23,7 +23,6 @@ interface VirtualizedTableProps<T> {
   rowClassName?: string;
   // eslint-disable-next-line no-unused-vars
   onRowClick?: (item: T) => void;
-  maxHeight?: number;
 }
 
 // Loading skeleton row
@@ -40,97 +39,32 @@ const LoadingRow: React.FC<{ columns: Column<any>[] }> = ({ columns }) => (
 export function VirtualizedTable<T>({
   data,
   columns,
-  getRowKey,
+  getRowKey: _getRowKey, // Currently unused with window virtualization
   isLoading = false,
   emptyMessage = 'No data available',
   className = '',
   headerClassName = '',
   rowClassName = '',
   onRowClick,
-  maxHeight = 600,
 }: VirtualizedTableProps<T>) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<List>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  // Calculate row count
+  const rowCount = useMemo(() => {
+    if (isLoading && data.length === 0) return 10; // Show 10 skeleton rows
+    return data.length;
+  }, [data.length, isLoading]);
 
-  // Update dimensions on mount and resize
-  useEffect(() => {
-    const updateDimensions = debounceResize(() => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const calculatedHeight = calculateOptimalHeight(window.innerHeight, 300);
-        setDimensions({
-          width: rect.width,
-          height: Math.min(calculatedHeight, maxHeight),
-        });
-      }
-    });
-
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, [maxHeight]);
-
-  // Row renderer
-  const Row = useCallback(
-    ({ index, style }: { index: number; style: React.CSSProperties }) => {
-      if (isLoading || index >= data.length) {
-        return (
-          <div style={style} className="flex items-center border-b border-gray-200">
-            <div className="w-full px-6 py-4 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
-          </div>
-        );
-      }
-
-      const item = data[index];
-      const key = getRowKey(item, index);
-
-      return (
-        <div
-          key={key}
-          style={style}
-          className={`flex items-center border-b border-gray-200 hover:bg-gray-50 ${
-            onRowClick ? 'cursor-pointer' : ''
-          } ${rowClassName}`}
-          onClick={() => onRowClick?.(item)}
-          role="row"
-          tabIndex={onRowClick ? 0 : undefined}
-          onKeyDown={(e) => {
-            if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
-              e.preventDefault();
-              onRowClick(item);
-            }
-          }}
-        >
-          <div className="w-full flex">
-            {columns.map((col) => (
-              <div
-                key={col.key}
-                className={`px-6 py-4 ${col.className || ''}`}
-                style={{
-                  width: col.width || `${100 / columns.length}%`,
-                  flexShrink: col.width ? 0 : 1,
-                }}
-              >
-                {col.render(item)}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    },
-    [data, columns, getRowKey, isLoading, onRowClick, rowClassName]
-  );
-
-  // Get row height
-  const getItemSize = useCallback(() => DIMENSIONS.TABLE_ROW_HEIGHT, []);
+  // Use window virtualizer for natural scrolling
+  const virtualizer = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: useCallback(() => DIMENSIONS.TABLE_ROW_HEIGHT, []),
+    overscan: 3, // Render 3 extra rows for smoother scrolling
+    scrollMargin: 0,
+  });
 
   // Handle loading state
   if (isLoading && data.length === 0) {
     return (
-      <div className={`overflow-hidden rounded-lg border border-gray-200 ${className}`}>
+      <div className={`rounded-lg border border-gray-200 ${className}`}>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className={`bg-gray-50 ${headerClassName}`}>
             <tr>
@@ -158,7 +92,7 @@ export function VirtualizedTable<T>({
   // Handle empty state
   if (!isLoading && data.length === 0) {
     return (
-      <div className={`overflow-hidden rounded-lg border border-gray-200 ${className}`}>
+      <div className={`rounded-lg border border-gray-200 ${className}`}>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className={`bg-gray-50 ${headerClassName}`}>
             <tr>
@@ -185,20 +119,13 @@ export function VirtualizedTable<T>({
     );
   }
 
-  // Calculate item count
-  const itemCount = isLoading ? Math.max(data.length, 10) : data.length;
+  const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <div
-      ref={containerRef}
-      className={`overflow-hidden rounded-lg border border-gray-200 ${className}`}
-    >
-      {/* Table Header */}
-      <div
-        className={`bg-gray-50 border-b border-gray-200 ${headerClassName}`}
-        style={{ height: DIMENSIONS.TABLE_HEADER_HEIGHT }}
-      >
-        <div className="flex w-full h-full items-center">
+    <div className={`rounded-lg border border-gray-200 ${className}`}>
+      {/* Table Header - Fixed at top */}
+      <div className={`bg-gray-50 border-b border-gray-200 sticky top-0 z-10 ${headerClassName}`}>
+        <div className="flex w-full" style={{ minHeight: DIMENSIONS.TABLE_HEADER_HEIGHT }}>
           {columns.map((col) => (
             <div
               key={col.key}
@@ -214,20 +141,71 @@ export function VirtualizedTable<T>({
         </div>
       </div>
 
-      {/* Virtualized Table Body */}
-      {dimensions.width > 0 && (
-        <List
-          ref={listRef}
-          height={dimensions.height - DIMENSIONS.TABLE_HEADER_HEIGHT}
-          itemCount={itemCount}
-          itemSize={getItemSize}
-          width={dimensions.width}
-          className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
-          overscanCount={3}
-        >
-          {Row}
-        </List>
-      )}
+      {/* Virtual container with total size */}
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {/* Render only visible rows */}
+        {virtualItems.map((virtualRow) => {
+          const isLoadingRow = isLoading && virtualRow.index >= data.length;
+          const item = isLoadingRow ? null : data[virtualRow.index];
+
+          return (
+            <div
+              key={virtualRow.key}
+              data-index={virtualRow.index}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <div
+                className={`flex items-center border-b border-gray-200 h-full bg-white hover:bg-gray-50 ${
+                  onRowClick && !isLoadingRow ? 'cursor-pointer' : ''
+                } ${rowClassName}`}
+                onClick={() => item && onRowClick?.(item)}
+                role="row"
+                tabIndex={onRowClick && !isLoadingRow ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (item && onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onRowClick(item);
+                  }
+                }}
+              >
+                {isLoadingRow ? (
+                  <div className="w-full px-6 py-4 animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <div className="w-full flex">
+                    {columns.map((col) => (
+                      <div
+                        key={col.key}
+                        className={`px-6 py-4 ${col.className || ''}`}
+                        style={{
+                          width: col.width || `${100 / columns.length}%`,
+                          flexShrink: col.width ? 0 : 1,
+                        }}
+                      >
+                        {item && col.render(item)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Screen reader announcements */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">

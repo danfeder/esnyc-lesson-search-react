@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { supabase } from '../lib/supabase';
 import { CheckCircle } from 'lucide-react';
 import { logger } from '../utils/logger';
-import { VirtualizedTable, Column } from '../components/Common/VirtualizedTable';
-import { shouldVirtualize } from '../utils/virtualization';
 
 interface DuplicateGroup {
   groupId: string;

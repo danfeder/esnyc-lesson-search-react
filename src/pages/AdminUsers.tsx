@@ -658,7 +658,6 @@ export function AdminUsers() {
           isLoading={loading}
           emptyMessage="No users found"
           className="bg-white"
-          maxHeight={600}
         />
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
