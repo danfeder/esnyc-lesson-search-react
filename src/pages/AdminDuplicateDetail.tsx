@@ -421,11 +421,11 @@ export const AdminDuplicateDetail: React.FC = () => {
                   <div>
                     <span className="font-medium text-gray-700">Metadata:</span>
                     <div className="mt-1 space-y-1">
-                      {fullLesson.metadata.gradeLevels?.length > 0 && (
+                      {fullLesson.grade_levels?.length > 0 && (
                         <div>
                           <span className="text-gray-500">Grades:</span>
                           <span className="ml-1 text-gray-600">
-                            {fullLesson.metadata.gradeLevels.join(', ')}
+                            {fullLesson.grade_levels.join(', ')}
                           </span>
                         </div>
                       )}
