@@ -64,6 +64,9 @@ export default [
         fetch: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
+        crypto: 'readonly',
+        TextEncoder: 'readonly',
+        Uint8Array: 'readonly',
       },
     },
     settings: {

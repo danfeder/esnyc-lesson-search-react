@@ -66,7 +66,7 @@ function sanitizeArgs(args: unknown[]): unknown[] {
 /**
  * Recursively sanitize sensitive keys from objects
  */
-function sanitizeObject(obj: any): any {
+function sanitizeObject<T>(obj: T): T {
   if (!obj || typeof obj !== 'object') return obj;
 
   for (const key in obj) {
@@ -210,7 +210,7 @@ export const logger = {
   /**
    * Track specific events or metrics
    */
-  track: (eventName: string, data?: Record<string, any>) => {
+  track: (eventName: string, data?: Record<string, unknown>) => {
     const sanitizedData = data ? sanitizeObject({ ...data }) : undefined;
 
     if (isDevelopment) {

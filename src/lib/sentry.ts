@@ -116,7 +116,7 @@ function sanitizeUrl(url: string): string {
 /**
  * Recursively sanitize object data
  */
-function sanitizeData(data: any): any {
+function sanitizeData<T>(data: T): T {
   if (!data || typeof data !== 'object') {
     return data;
   }
@@ -160,7 +160,7 @@ function sanitizeData(data: any): any {
 /**
  * Capture an exception with Sentry
  */
-export function captureException(error: Error | unknown, context?: Record<string, any>) {
+export function captureException(error: Error | unknown, context?: Record<string, unknown>) {
   if (isProduction && SENTRY_DSN) {
     Sentry.captureException(error, {
       extra: context,
@@ -191,13 +191,13 @@ export function captureMessage(message: string, level: Sentry.SeverityLevel = 'i
 /**
  * Set user context for Sentry
  */
-export function setUserContext(user: { id: string; email?: string; role?: string } | null) {
+export async function setUserContext(user: { id: string; email?: string; role?: string } | null) {
   if (isProduction && SENTRY_DSN) {
     if (user) {
       Sentry.setUser({
         id: user.id,
         // Only include email if necessary, otherwise hash it
-        email: user.email ? hashEmail(user.email) : undefined,
+        email: user.email ? await hashEmail(user.email) : undefined,
         role: user.role,
       });
     } else {
@@ -209,17 +209,31 @@ export function setUserContext(user: { id: string; email?: string; role?: string
 /**
  * Hash email for privacy using a one-way hash
  */
-function hashEmail(email: string): string {
-  // Create a simple one-way hash that preserves domain for debugging
-  // but obscures the actual email address
+async function hashEmail(email: string): Promise<string> {
   const [localPart, domain] = email.split('@');
+
+  // Use Web Crypto API if available
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(localPart);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      // Take first 8 chars of hash for brevity
+      return `user_${hashHex.substring(0, 8)}@${domain}`;
+    } catch {
+      // Fall through to simple hash
+    }
+  }
+
+  // Fallback to simple hash
   let hash = 0;
   for (let i = 0; i < localPart.length; i++) {
     const char = localPart.charCodeAt(i);
     hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
-  // Return hashed local part with preserved domain for debugging
   return `user_${Math.abs(hash).toString(36)}@${domain}`;
 }
 
@@ -230,7 +244,7 @@ export function addBreadcrumb(breadcrumb: {
   message: string;
   category?: string;
   level?: Sentry.SeverityLevel;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }) {
   if (isProduction && SENTRY_DSN) {
     Sentry.addBreadcrumb({
@@ -248,11 +262,11 @@ export function addBreadcrumb(breadcrumb: {
 /**
  * Wrap async functions with error handling
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
+export function withErrorHandling<TArgs extends readonly unknown[], TReturn>(
+  fn: (...args: TArgs) => Promise<TReturn>,
   context?: string
-): T {
-  return (async (...args: Parameters<T>) => {
+): (...args: TArgs) => Promise<TReturn> {
+  return (async (...args: TArgs) => {
     try {
       return await fn(...args);
     } catch (error) {
@@ -266,5 +280,5 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
       });
       throw error;
     }
-  }) as T;
+  }) as (...args: TArgs) => Promise<TReturn>;
 }
