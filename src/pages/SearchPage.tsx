@@ -4,7 +4,7 @@ import { SearchBar } from '../components/Search/SearchBar';
 import { FilterPills } from '../components/Filters/FilterPills';
 import { FilterModal } from '../components/Filters/FilterModal';
 import { ResultsHeader } from '../components/Results/ResultsHeader';
-import { ResultsGrid } from '../components/Results/ResultsGrid';
+import { AdaptiveResultsGrid } from '../components/Results/AdaptiveResultsGrid';
 import { LessonModal } from '../components/Modal/LessonModal';
 import { ScreenReaderAnnouncer } from '../components/Common/ScreenReaderAnnouncer';
 import { SkipLink } from '../components/Common/SkipLink';
@@ -72,7 +72,11 @@ export const SearchPage: React.FC = () => {
           </div>
         )}
 
-        <ResultsGrid lessons={lessons} onLessonClick={handleLessonClick} isLoading={isLoading} />
+        <AdaptiveResultsGrid
+          lessons={lessons}
+          onLessonClick={handleLessonClick}
+          isLoading={isLoading}
+        />
       </main>
 
       {/* Filter Modal */}
