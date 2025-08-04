@@ -241,3 +241,65 @@ GRANT EXECUTE ON FUNCTION is_admin(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION has_role(UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION search_lessons TO authenticated;
 GRANT EXECUTE ON FUNCTION get_user_emails(UUID[]) TO authenticated;
+
+-- =====================================================
+-- ROLLBACK INSTRUCTIONS (commented for safety)
+-- =====================================================
+-- To rollback this migration, run the following commands:
+-- 
+-- -- Revoke grants
+-- REVOKE EXECUTE ON FUNCTION get_user_emails(UUID[]) FROM authenticated;
+-- REVOKE EXECUTE ON FUNCTION search_lessons FROM authenticated;
+-- REVOKE EXECUTE ON FUNCTION has_role(UUID, TEXT) FROM authenticated;
+-- REVOKE EXECUTE ON FUNCTION is_admin(UUID) FROM authenticated;
+-- REVOKE USAGE ON SCHEMA auth FROM authenticated;
+-- REVOKE USAGE ON SCHEMA public FROM authenticated;
+-- 
+-- -- Drop policies for lesson_similarities
+-- DROP POLICY IF EXISTS "Anyone can view lesson similarities" ON lesson_similarities;
+-- DROP POLICY IF EXISTS "Admins can manage lesson similarities" ON lesson_similarities;
+-- 
+-- -- Drop policies for submission_similarities
+-- DROP POLICY IF EXISTS "Users can view similarities for their submissions" ON submission_similarities;
+-- DROP POLICY IF EXISTS "Reviewers can view all submission similarities" ON submission_similarities;
+-- DROP POLICY IF EXISTS "Users can create similarities for their submissions" ON submission_similarities;
+-- DROP POLICY IF EXISTS "Admins can manage submission similarities" ON submission_similarities;
+-- 
+-- -- Drop policies for submission_reviews
+-- DROP POLICY IF EXISTS "Teachers can view reviews of their submissions" ON submission_reviews;
+-- DROP POLICY IF EXISTS "Reviewers can view all reviews" ON submission_reviews;
+-- DROP POLICY IF EXISTS "Reviewers can create reviews" ON submission_reviews;
+-- DROP POLICY IF EXISTS "Reviewers can update their own reviews" ON submission_reviews;
+-- DROP POLICY IF EXISTS "Admins can manage all reviews" ON submission_reviews;
+-- 
+-- -- Drop policies for lesson_submissions
+-- DROP POLICY IF EXISTS "Users can view their own submissions" ON lesson_submissions;
+-- DROP POLICY IF EXISTS "Reviewers can view submitted lessons" ON lesson_submissions;
+-- DROP POLICY IF EXISTS "Users can create their own submissions" ON lesson_submissions;
+-- DROP POLICY IF EXISTS "Users can update their draft submissions" ON lesson_submissions;
+-- DROP POLICY IF EXISTS "Reviewers can update submission status" ON lesson_submissions;
+-- DROP POLICY IF EXISTS "Admins can manage all submissions" ON lesson_submissions;
+-- 
+-- -- Drop policies for lessons
+-- DROP POLICY IF EXISTS "Anyone can view lessons" ON lessons;
+-- DROP POLICY IF EXISTS "Reviewers can create lessons" ON lessons;
+-- DROP POLICY IF EXISTS "Reviewers can update lessons" ON lessons;
+-- DROP POLICY IF EXISTS "Admins can delete lessons" ON lessons;
+-- 
+-- -- Drop functions
+-- DROP FUNCTION IF EXISTS get_user_emails(UUID[]);
+-- DROP FUNCTION IF EXISTS is_admin(UUID);
+-- DROP FUNCTION IF EXISTS has_role(UUID, TEXT);
+-- 
+-- -- Disable RLS on tables
+-- =====================================================
+-- WARNING: Disabling RLS removes all row-level access controls and may expose sensitive data.
+-- ONLY disable RLS if the tables are being completely removed immediately after.
+-- =====================================================
+-- ALTER TABLE lessons DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE lesson_submissions DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE submission_reviews DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE submission_similarities DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE lesson_similarities DISABLE ROW LEVEL SECURITY;
+-- 
+-- =====================================================

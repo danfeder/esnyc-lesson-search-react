@@ -181,3 +181,38 @@ LEFT JOIN auth.users au ON up.id = au.id;
 
 -- Grant access to authenticated users to view their own profile
 GRANT SELECT ON user_profiles_with_emails TO authenticated;
+
+-- =====================================================
+-- ROLLBACK INSTRUCTIONS (commented for safety)
+-- =====================================================
+-- To rollback this migration, run the following commands:
+-- 
+-- -- Revoke grants
+-- REVOKE SELECT ON user_profiles_with_emails FROM authenticated;
+-- 
+-- -- Drop views
+-- DROP VIEW IF EXISTS user_profiles_with_emails CASCADE;
+-- 
+-- -- Drop policies
+-- DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON user_profiles;
+-- DROP POLICY IF EXISTS "Users can view their own full profile" ON user_profiles;
+-- DROP POLICY IF EXISTS "Admins can view all profiles" ON user_profiles;
+-- DROP POLICY IF EXISTS "Users can insert their own profile" ON user_profiles;
+-- DROP POLICY IF EXISTS "Users can update their own profile" ON user_profiles;
+-- DROP POLICY IF EXISTS "Admins can update any profile" ON user_profiles;
+-- DROP POLICY IF EXISTS "Admins can delete profiles" ON user_profiles;
+-- 
+-- -- Drop functions
+-- DROP FUNCTION IF EXISTS get_user_role(uuid);
+-- DROP FUNCTION IF EXISTS get_user_permissions(uuid);
+-- DROP FUNCTION IF EXISTS handle_new_user();
+-- DROP FUNCTION IF EXISTS check_user_permissions(uuid, text);
+-- DROP FUNCTION IF EXISTS check_is_admin(uuid);
+-- 
+-- -- Drop triggers
+-- DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+-- 
+-- -- Disable RLS (if you want to completely revert)
+-- ALTER TABLE user_profiles DISABLE ROW LEVEL SECURITY;
+-- 
+-- =====================================================

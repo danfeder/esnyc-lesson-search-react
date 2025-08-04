@@ -231,3 +231,36 @@ CREATE TRIGGER update_lesson_submissions_updated_at BEFORE UPDATE ON lesson_subm
 -- Index for efficient submission queries by status and teacher
 CREATE INDEX IF NOT EXISTS idx_submissions_status_teacher 
 ON lesson_submissions(status, teacher_id);
+
+-- =====================================================
+-- ROLLBACK INSTRUCTIONS (commented for safety)
+-- =====================================================
+-- To rollback this migration, run the following commands:
+-- 
+-- -- Drop indexes
+-- DROP INDEX IF EXISTS idx_submissions_status_teacher;
+-- 
+-- -- Drop triggers
+-- DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
+-- DROP TRIGGER IF EXISTS update_lesson_submissions_updated_at ON lesson_submissions;
+-- DROP TRIGGER IF EXISTS update_lessons_updated_at ON lessons;
+-- 
+-- -- Drop functions
+-- DROP FUNCTION IF EXISTS update_updated_at_column();
+-- 
+-- -- Drop tables (CASCADE will drop dependent objects)
+-- DROP TABLE IF EXISTS submission_reviews CASCADE;
+-- DROP TABLE IF EXISTS lesson_submissions CASCADE;
+-- DROP TABLE IF EXISTS user_profiles CASCADE;
+-- DROP TABLE IF EXISTS lessons CASCADE;
+-- 
+-- -- Drop extensions
+-- WARNING: Dropping extensions can affect other parts of the database that may depend on them.
+--          Only drop these extensions if you are certain they are not used by other database objects.
+-- DROP EXTENSION IF EXISTS vector;
+-- DROP EXTENSION IF EXISTS unaccent;
+-- DROP EXTENSION IF EXISTS pg_trgm;
+-- DROP EXTENSION IF EXISTS pgcrypto;
+-- DROP EXTENSION IF EXISTS "uuid-ossp";
+-- 
+-- =====================================================

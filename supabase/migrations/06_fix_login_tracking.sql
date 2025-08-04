@@ -109,3 +109,53 @@ GRANT EXECUTE ON FUNCTION track_user_login(UUID) TO authenticated;
 
 -- Add comment explaining the fix
 COMMENT ON TABLE user_management_audit IS 'Audit table for user management actions. Login tracking is now done manually via track_user_login() function instead of auth.users trigger to avoid authentication errors.';
+
+-- =====================================================
+-- ROLLBACK INSTRUCTIONS (commented for safety)
+-- =====================================================
+-- To rollback this migration, run the following commands:
+-- 
+-- -- Remove comment
+-- COMMENT ON TABLE user_management_audit IS NULL;
+-- 
+-- -- Revoke grant
+-- REVOKE EXECUTE ON FUNCTION track_user_login(UUID) FROM authenticated;
+-- 
+-- -- Drop the manual tracking function
+-- DROP FUNCTION IF EXISTS track_user_login(UUID);
+-- 
+-- -- Drop the policy for profile creation
+-- DROP POLICY IF EXISTS "Users can create their own profile on first login" ON user_profiles;
+-- 
+-- -- Recreate the original trigger (ONLY if you have fixed the auth issue):
+-- -- CREATE OR REPLACE FUNCTION log_user_login()
+-- -- RETURNS trigger AS $$
+-- -- BEGIN
+-- --   IF NEW.last_sign_in_at IS DISTINCT FROM OLD.last_sign_in_at THEN
+-- --     INSERT INTO user_management_audit (
+-- --       action_type,
+-- --       user_id,
+-- --       details
+-- --     ) VALUES (
+-- --       'login',
+-- --       NEW.id,
+-- --       jsonb_build_object(
+-- --         'login_at', NEW.last_sign_in_at,
+-- --         'email', NEW.email
+-- --       )
+-- --     );
+-- --   END IF;
+-- --   RETURN NEW;
+-- -- END;
+-- -- $$ LANGUAGE plpgsql SECURITY DEFINER;
+-- -- 
+-- -- CREATE TRIGGER on_user_login
+-- --   AFTER UPDATE OF last_sign_in_at ON auth.users
+-- --   FOR EACH ROW
+-- --   EXECUTE FUNCTION log_user_login();
+-- 
+-- Note: The original trigger is commented out because it was causing 
+-- authentication errors. Only restore it if you have a fix for the 
+-- underlying auth.users access issue.
+-- 
+-- =====================================================

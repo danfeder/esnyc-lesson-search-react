@@ -307,3 +307,61 @@ BEGIN
     l.title ASC;
 END;
 $$;
+
+-- =====================================================
+-- ROLLBACK INSTRUCTIONS (commented for safety)
+-- =====================================================
+-- To rollback this migration, run the following commands:
+-- 
+-- -- Drop functions
+-- DROP FUNCTION IF EXISTS search_lessons_with_filters(
+--   text, text[], text[], text[], text[], text[], 
+--   text[], text[], text[], text[], text[], text, text
+-- );
+-- DROP FUNCTION IF EXISTS search_lessons(text);
+-- 
+-- -- Drop indexes
+-- DROP INDEX IF EXISTS idx_lessons_season;
+-- DROP INDEX IF EXISTS idx_lessons_cultural_heritage_gin;
+-- DROP INDEX IF EXISTS idx_lessons_sel_gin;
+-- DROP INDEX IF EXISTS idx_lessons_academic_gin;
+-- DROP INDEX IF EXISTS idx_lessons_competencies_gin;
+-- DROP INDEX IF EXISTS idx_lessons_cooking_skills_gin;
+-- DROP INDEX IF EXISTS idx_lessons_garden_skills_gin;
+-- DROP INDEX IF EXISTS idx_lessons_ingredients_gin;
+-- DROP INDEX IF EXISTS idx_lessons_activity_gin;
+-- DROP INDEX IF EXISTS idx_lessons_themes_gin;
+-- DROP INDEX IF EXISTS idx_lessons_skills_gin;
+-- DROP INDEX IF EXISTS idx_lessons_grades_gin;
+-- DROP INDEX IF EXISTS idx_lessons_search_vector;
+-- 
+-- -- Drop triggers
+-- DROP TRIGGER IF EXISTS update_lessons_search_vector ON lessons;
+-- 
+-- -- Drop functions used by triggers
+-- DROP FUNCTION IF EXISTS lessons_search_vector_trigger();
+-- 
+-- -- Drop columns
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS search_vector;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS content_text;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS metadata;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS confidence;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS lesson_id;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS file_link;
+-- 
+-- -- Drop additional columns for enhanced search
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS sel_self_awareness;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS sel_self_management;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS sel_social_awareness;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS sel_relationship_skills;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS sel_responsible_decision_making;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS academic_science;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS academic_math;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS academic_ela;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS academic_social_studies;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS academic_health;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS academic_arts;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS lesson_format;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS cooking_method;
+-- 
+-- =====================================================
