@@ -196,7 +196,7 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Cooking Methods',
     type: 'multiple',
     options: [
-      { value: 'basic-prep', label: 'Basic prep only (no cooking)' },
+      { value: 'basic-prep', label: 'Basic prep only' },
       { value: 'stovetop', label: 'Stovetop' },
       { value: 'oven', label: 'Oven' },
     ],
