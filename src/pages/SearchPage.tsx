@@ -105,14 +105,14 @@ export const SearchPage: React.FC = () => {
       if (loadError) throw loadError;
 
       const newLessons: Lesson[] =
-        data?.map((row: any) => ({
-          lessonId: row.lesson_id,
-          title: row.title,
-          summary: row.summary,
-          fileLink: row.file_link,
-          gradeLevels: row.grade_levels,
-          metadata: row.metadata,
-          confidence: row.confidence || { overall: 0 },
+        data?.map((row: Record<string, unknown>) => ({
+          lessonId: row.lesson_id as string,
+          title: row.title as string,
+          summary: row.summary as string,
+          fileLink: row.file_link as string,
+          gradeLevels: row.grade_levels as string[],
+          metadata: row.metadata as Record<string, unknown>,
+          confidence: (row.confidence as { overall: number }) || { overall: 0 },
         })) || [];
 
       appendResults(newLessons);

@@ -23,7 +23,7 @@ export const InfiniteScrollTrigger: React.FC<InfiniteScrollTriggerProps> = ({
   useEffect(() => {
     if (!hasMore || isLoading) return;
 
-    const observer = new IntersectionObserver(
+    const observer = new window.IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {

@@ -25,13 +25,6 @@ export const AdaptiveResultsGrid: React.FC<AdaptiveResultsGridProps> = ({
   // Determine whether to use virtualization
   const useVirtualization = forceVirtualization || shouldVirtualize(lessons.length, 'grid');
 
-  // Log the decision in development mode
-  if (import.meta.env.MODE === 'development') {
-    console.log(
-      `AdaptiveResultsGrid: ${lessons.length} lessons, virtualization: ${useVirtualization}`
-    );
-  }
-
   // Use virtualized grid for better performance with many items
   if (useVirtualization) {
     return (
