@@ -14,6 +14,14 @@ import {
 import { UserRole, InvitationFormData } from '../types/auth';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { logger } from '../utils/logger';
+import { parseDbError, isEmailDuplicateError } from '../utils/errorHandling';
+
+// Extend Window interface for development debugging
+declare global {
+  interface Window {
+    _lastInvitationLink?: string;
+  }
+}
 
 const NYC_BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
 const GRADE_LEVELS = ['3K', 'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -82,17 +90,6 @@ export function AdminInviteUser() {
     setLoading(true);
 
     try {
-      // Check if email is already registered
-      const { data: existingUser } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('email', formData.email)
-        .single();
-
-      if (existingUser) {
-        throw new Error('A user with this email already exists');
-      }
-
       // Check if there's already a pending invitation
       const { data: existingInvite } = await supabase
         .from('user_invitations')
@@ -161,7 +158,7 @@ export function AdminInviteUser() {
             // In development, show the invitation link as fallback
             const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
             if (import.meta.env.DEV) {
-              (window as any)._lastInvitationLink = invitationLink;
+              window._lastInvitationLink = invitationLink;
               logger.log('Invitation link available in window._lastInvitationLink');
             }
           }
@@ -170,20 +167,22 @@ export function AdminInviteUser() {
           // In development, show the invitation link as fallback
           const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
           if (import.meta.env.DEV) {
-            (window as any)._lastInvitationLink = invitationLink;
+            window._lastInvitationLink = invitationLink;
             logger.log('Invitation link available in window._lastInvitationLink');
           }
         }
       }
 
       setSuccess(true);
-
-      // Reset form after a delay
-      setTimeout(() => {
-        navigate('/admin/users');
-      }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send invitation');
+      // Use the enhanced error handling for better user feedback
+      if (isEmailDuplicateError(err)) {
+        setError(
+          'This email address is already registered to another user. Please use a different email address.'
+        );
+      } else {
+        setError(parseDbError(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -217,8 +216,32 @@ export function AdminInviteUser() {
             </div>
           </div>
           <h2 className="text-xl font-semibold text-green-800 mb-2">Invitation Sent!</h2>
-          <p className="text-green-700">An invitation has been sent to {formData.email}</p>
-          <p className="text-sm text-green-600 mt-2">Redirecting to user management...</p>
+          <p className="text-green-700 mb-4">An invitation has been sent to {formData.email}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                setSuccess(false);
+                setFormData({
+                  email: '',
+                  role: UserRole.TEACHER,
+                  school_name: '',
+                  school_borough: '',
+                  message: '',
+                  grades_taught: [],
+                  subjects_taught: [],
+                });
+              }}
+              className="px-4 py-2 border border-green-300 text-green-700 rounded-md hover:bg-green-100 transition-colors"
+            >
+              Send Another Invitation
+            </button>
+            <button
+              onClick={() => navigate('/admin/users')}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              Go to User Management
+            </button>
+          </div>
         </div>
       </div>
     );
