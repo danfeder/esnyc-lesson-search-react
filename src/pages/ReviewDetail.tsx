@@ -85,6 +85,15 @@ export function ReviewDetail() {
   const [notes, setNotes] = useState('');
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
 
+  // Helper functions for conditional field visibility
+  const showCookingFields = () => {
+    return metadata.activityType === 'cooking' || metadata.activityType === 'both';
+  };
+
+  const showGardenFields = () => {
+    return metadata.activityType === 'garden' || metadata.activityType === 'both';
+  };
+
   useEffect(() => {
     if (id) {
       loadSubmission();
@@ -228,17 +237,20 @@ export function ReviewDetail() {
           summary: lessonData.summary || '',
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || [],
+          activity_type: metadata.activityType ? [metadata.activityType] : [],
           metadata: {
             thematicCategories: metadata.themes || [],
             seasonTiming: metadata.season ? [metadata.season] : [],
             coreCompetencies: metadata.coreCompetencies || [],
             culturalHeritage: metadata.culturalHeritage || [],
             locationRequirements: metadata.location ? [metadata.location] : [],
-            activityType: metadata.activityType ? [metadata.activityType] : [],
             lessonFormat: metadata.lessonFormat ? [metadata.lessonFormat] : [],
             academicIntegration: metadata.academicIntegration || [],
             socialEmotionalLearning: metadata.socialEmotionalLearning || [],
             cookingMethods: metadata.cookingMethods ? [metadata.cookingMethods] : [],
+            mainIngredients: metadata.mainIngredients || [],
+            gardenSkills: metadata.gardenSkills || [],
+            cookingSkills: metadata.cookingSkills || [],
             observancesHolidays: metadata.observancesHolidays || [],
             culturalResponsivenessFeatures: metadata.culturalResponsivenessFeatures || [],
           },
@@ -289,17 +301,22 @@ export function ReviewDetail() {
             summary: lessonData.summary || existingLesson.summary,
             file_link: submission.google_doc_url,
             grade_levels: metadata.gradeLevels || existingLesson.grade_levels,
+            activity_type: metadata.activityType
+              ? [metadata.activityType]
+              : existingLesson.activity_type,
             metadata: {
               thematicCategories: metadata.themes || [],
               seasonTiming: metadata.season ? [metadata.season] : [],
               coreCompetencies: metadata.coreCompetencies || [],
               culturalHeritage: metadata.culturalHeritage || [],
               locationRequirements: metadata.location ? [metadata.location] : [],
-              activityType: metadata.activityType ? [metadata.activityType] : [],
               lessonFormat: metadata.lessonFormat ? [metadata.lessonFormat] : [],
               academicIntegration: metadata.academicIntegration || [],
               socialEmotionalLearning: metadata.socialEmotionalLearning || [],
               cookingMethods: metadata.cookingMethods ? [metadata.cookingMethods] : [],
+              mainIngredients: metadata.mainIngredients || [],
+              gardenSkills: metadata.gardenSkills || [],
+              cookingSkills: metadata.cookingSkills || [],
               observancesHolidays: metadata.observancesHolidays || [],
               culturalResponsivenessFeatures: metadata.culturalResponsivenessFeatures || [],
             },
@@ -448,7 +465,7 @@ export function ReviewDetail() {
               {/* Activity Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Activity Type
+                  Activity Type *
                 </label>
                 <select
                   value={metadata.activityType || ''}
@@ -462,6 +479,17 @@ export function ReviewDetail() {
                     </option>
                   ))}
                 </select>
+                {metadata.activityType && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {metadata.activityType === 'cooking' &&
+                      '📚 Showing cooking-related fields only'}
+                    {metadata.activityType === 'garden' && '🌱 Showing garden-related fields only'}
+                    {metadata.activityType === 'both' &&
+                      '🌱📚 Showing all cooking and garden fields'}
+                    {metadata.activityType === 'academic' &&
+                      '📖 No cooking or garden fields needed'}
+                  </p>
+                )}
               </div>
 
               {/* Location */}
@@ -712,24 +740,134 @@ export function ReviewDetail() {
                 </div>
               </div>
 
-              {/* Cooking Methods */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cooking Methods
-                </label>
-                <select
-                  value={metadata.cookingMethods || ''}
-                  onChange={(e) => handleMetadataChange('cookingMethods', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">Select cooking method</option>
-                  {FILTER_CONFIGS.cookingMethods.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Cooking Methods - Only show for cooking or both */}
+              {showCookingFields() && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cooking Methods
+                  </label>
+                  <select
+                    value={metadata.cookingMethods || ''}
+                    onChange={(e) => handleMetadataChange('cookingMethods', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select cooking method</option>
+                    {FILTER_CONFIGS.cookingMethods.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Main Ingredients - Only show for cooking or both */}
+              {showCookingFields() && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Main Ingredients
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {/* Group ingredients by category */}
+                    {['Vegetables', 'Fruits', 'Grains', 'Proteins', 'Dairy', 'Seasonings'].map(
+                      (category) => (
+                        <div key={category}>
+                          <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
+                            {category}
+                          </div>
+                          {FILTER_CONFIGS.mainIngredients.options
+                            .filter((ingredient) => ingredient.category === category)
+                            .map((ingredient) => (
+                              <label key={ingredient.value} className="flex items-center ml-2">
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    metadata.mainIngredients?.includes(ingredient.value) || false
+                                  }
+                                  onChange={(e) => {
+                                    const current = metadata.mainIngredients || [];
+                                    const updated = e.target.checked
+                                      ? [...current, ingredient.value]
+                                      : current.filter((i: string) => i !== ingredient.value);
+                                    handleMetadataChange('mainIngredients', updated);
+                                  }}
+                                  className="mr-2 text-green-600"
+                                />
+                                <span className="text-sm">{ingredient.label}</span>
+                              </label>
+                            ))}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Garden Skills - Only show for garden or both */}
+              {showGardenFields() && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Garden Skills
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {FILTER_CONFIGS.gardenSkills.options.map((skill) => (
+                      <label key={skill.value} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={metadata.gardenSkills?.includes(skill.value) || false}
+                          onChange={(e) => {
+                            const current = metadata.gardenSkills || [];
+                            const updated = e.target.checked
+                              ? [...current, skill.value]
+                              : current.filter((s: string) => s !== skill.value);
+                            handleMetadataChange('gardenSkills', updated);
+                          }}
+                          className="mr-2 text-green-600"
+                        />
+                        <span className="text-sm">{skill.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cooking Skills - Only show for cooking or both */}
+              {showCookingFields() && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cooking Skills
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {/* Group cooking skills by category */}
+                    {['Basic', 'Cutting', 'Cooking', 'Advanced', 'Assembly'].map((category) => (
+                      <div key={category}>
+                        <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
+                          {category}
+                        </div>
+                        {FILTER_CONFIGS.cookingSkills.options
+                          .filter((skill) => skill.category === category)
+                          .map((skill) => (
+                            <label key={skill.value} className="flex items-center ml-2">
+                              <input
+                                type="checkbox"
+                                checked={metadata.cookingSkills?.includes(skill.value) || false}
+                                onChange={(e) => {
+                                  const current = metadata.cookingSkills || [];
+                                  const updated = e.target.checked
+                                    ? [...current, skill.value]
+                                    : current.filter((s: string) => s !== skill.value);
+                                  handleMetadataChange('cookingSkills', updated);
+                                }}
+                                className="mr-2 text-green-600"
+                              />
+                              <span className="text-sm">{skill.label}</span>
+                            </label>
+                          ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Additional Metadata Section */}
