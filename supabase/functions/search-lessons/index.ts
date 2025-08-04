@@ -154,8 +154,36 @@ serve(async (req) => {
       summary: row.summary,
       fileLink: row.file_link,
       gradeLevels: row.grade_levels,
-      metadata: row.metadata,
+      metadata: {
+        // Map all metadata fields properly, using both direct columns and metadata object
+        thematicCategories: row.thematic_categories || row.metadata?.thematicCategories || [],
+        seasonTiming: row.season_timing || row.metadata?.seasonTiming || [],
+        coreCompetencies: row.core_competencies || row.metadata?.coreCompetencies || [],
+        culturalHeritage: row.cultural_heritage || row.metadata?.culturalHeritage || [],
+        locationRequirements: row.location_requirements || row.metadata?.locationRequirements || [],
+        activityType: row.metadata?.activityType || [],
+        lessonFormat: row.lesson_format || row.metadata?.lessonFormat || [],
+        mainIngredients: row.main_ingredients || row.metadata?.mainIngredients || [],
+        skills: row.metadata?.skills || [],
+        equipment: row.metadata?.equipment || [],
+        duration: row.metadata?.duration,
+        groupSize: row.metadata?.groupSize,
+        gradeLevel: row.metadata?.gradeLevel || [],
+        gardenSkills: row.garden_skills || row.metadata?.gardenSkills || [],
+        cookingSkills: row.cooking_skills || row.metadata?.cookingSkills || [],
+        cookingMethods: row.cooking_methods || row.metadata?.cookingMethods || [],
+        observancesHolidays: row.observances_holidays || row.metadata?.observancesHolidays || [],
+        academicIntegration: row.academic_integration || row.metadata?.academicIntegration || [],
+        socialEmotionalLearning:
+          row.social_emotional_learning || row.metadata?.socialEmotionalLearning || [],
+        culturalResponsivenessFeatures:
+          row.cultural_responsiveness_features ||
+          row.metadata?.culturalResponsivenessFeatures ||
+          [],
+      },
       confidence: row.confidence,
+      last_modified: row.last_modified,
+      processing_notes: row.processing_notes,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
