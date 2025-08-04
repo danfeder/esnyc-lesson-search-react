@@ -85,33 +85,17 @@ export function AdminUsers() {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      // Check if we need to filter by school
-      let userIds: string[] | null = null;
+      // Build the base query with optional JOIN for school filtering
+      let query;
       if (filters.schoolId && filters.schoolId !== 'all') {
-        // First get all user IDs that belong to this school
-        const { data: schoolUsers, error: schoolError } = await supabase
-          .from('user_schools')
-          .select('user_id')
-          .eq('school_id', filters.schoolId);
-
-        if (schoolError) throw schoolError;
-        userIds = schoolUsers?.map((su) => su.user_id) || [];
-
-        // If no users in this school, return empty results
-        if (userIds.length === 0) {
-          setUsers([]);
-          setTotalPages(1);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Query user_profiles directly
-      let query = supabase.from('user_profiles').select('*', { count: 'exact' });
-
-      // If filtering by school, only include users from that school
-      if (userIds) {
-        query = query.in('id', userIds);
+        // Use JOIN to filter by school in a single query
+        query = supabase
+          .from('user_profiles')
+          .select('*, user_schools!inner(school_id)', { count: 'exact' })
+          .eq('user_schools.school_id', filters.schoolId);
+      } else {
+        // Standard query without school filter
+        query = supabase.from('user_profiles').select('*', { count: 'exact' });
       }
 
       // Apply filters (except email search - we'll handle that after)
@@ -160,10 +144,10 @@ export function AdminUsers() {
           user_ids: profiles.map((p) => p.id),
         });
 
-        // Fetch user schools
+        // Fetch user schools with a single optimized query
         const { data: userSchoolsData, error: schoolsError } = await supabase
           .from('user_schools')
-          .select('user_id, schools(id, name)')
+          .select('user_id, schools!inner(id, name)')
           .in(
             'user_id',
             profiles.map((p) => p.id)
@@ -296,19 +280,32 @@ export function AdminUsers() {
 
   const handleExport = async () => {
     try {
-      // Fetch all users without pagination for export
-      const { data, error } = await supabase
+      // Fetch all users with emails using RPC function for export
+      const { data: profiles, error: profileError } = await supabase
         .from('user_profiles')
-        .select('*, auth.users!inner(email)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Get emails for all users
+      const { data: emailsData, error: emailError } = await supabase.rpc('get_user_emails', {
+        user_ids: profiles?.map((p) => p.id) || [],
+      });
+
+      if (emailError) throw emailError;
+
+      const emailMap = new Map(emailsData?.map((item: any) => [item.id, item.email]) || []);
+      const data = profiles?.map((profile) => ({
+        ...profile,
+        email: emailMap.get(profile.id) || 'No email',
+      }));
 
       // Convert to CSV
       const csv = [
         ['Email', 'Name', 'Role', 'School', 'Borough', 'Status', 'Joined', 'Invited By'],
         ...(data || []).map((user: any) => [
-          user.auth?.users?.email || user.email || '',
+          user.email || '',
           user.full_name || '',
           user.role || 'teacher',
           user.school_name || '',
