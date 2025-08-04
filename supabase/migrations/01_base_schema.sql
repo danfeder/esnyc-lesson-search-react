@@ -255,6 +255,8 @@ ON lesson_submissions(status, teacher_id);
 -- DROP TABLE IF EXISTS lessons CASCADE;
 -- 
 -- -- Drop extensions
+-- WARNING: Dropping extensions can affect other parts of the database that may depend on them.
+--          Only drop these extensions if you are certain they are not used by other database objects.
 -- DROP EXTENSION IF EXISTS vector;
 -- DROP EXTENSION IF EXISTS unaccent;
 -- DROP EXTENSION IF EXISTS pg_trgm;

@@ -154,8 +154,8 @@ COMMENT ON TABLE user_management_audit IS 'Audit table for user management actio
 -- --   FOR EACH ROW
 -- --   EXECUTE FUNCTION log_user_login();
 -- 
--- -- Note: The original trigger is commented out because it was causing 
--- -- authentication errors. Only restore it if you have a fix for the 
--- -- underlying auth.users access issue.
+-- Note: The original trigger is commented out because it was causing 
+-- authentication errors. Only restore it if you have a fix for the 
+-- underlying auth.users access issue.
 -- 
 -- =====================================================

@@ -292,6 +292,10 @@ GRANT EXECUTE ON FUNCTION get_user_emails(UUID[]) TO authenticated;
 -- DROP FUNCTION IF EXISTS has_role(UUID, TEXT);
 -- 
 -- -- Disable RLS on tables
+-- =====================================================
+-- WARNING: Disabling RLS removes all row-level access controls and may expose sensitive data.
+-- ONLY disable RLS if the tables are being completely removed immediately after.
+-- =====================================================
 -- ALTER TABLE lessons DISABLE ROW LEVEL SECURITY;
 -- ALTER TABLE lesson_submissions DISABLE ROW LEVEL SECURITY;
 -- ALTER TABLE submission_reviews DISABLE ROW LEVEL SECURITY;
