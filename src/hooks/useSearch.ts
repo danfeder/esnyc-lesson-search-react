@@ -109,7 +109,6 @@ const fallbackSearch = async ({
       equipment: row.metadata?.equipment || [],
       duration: row.metadata?.duration,
       groupSize: row.metadata?.groupSize,
-      gradeLevel: row.metadata?.gradeLevel || [],
       gardenSkills: row.garden_skills || row.metadata?.gardenSkills || [],
       cookingSkills: row.cooking_skills || row.metadata?.cookingSkills || [],
       cookingMethods: row.cooking_methods || row.metadata?.cookingMethods || [],
