@@ -59,6 +59,9 @@ REVOKE SELECT ON user_profiles_with_email FROM authenticated;
 -- Drop and recreate the view
 DROP VIEW IF EXISTS user_profiles_with_email CASCADE;
 
+-- Drop the function if it already exists (from a previous migration)
+DROP FUNCTION IF EXISTS get_user_profiles_with_email();
+
 -- Instead of a view that exposes auth.users, create a FUNCTION that admins can call
 CREATE OR REPLACE FUNCTION get_user_profiles_with_email()
 RETURNS TABLE (
