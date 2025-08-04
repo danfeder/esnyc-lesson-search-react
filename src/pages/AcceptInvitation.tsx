@@ -16,13 +16,19 @@ import {
 import { UserRole } from '../types/auth';
 import { logger } from '../utils/logger';
 
+interface InvitationMetadata {
+  grades_taught?: string[];
+  subjects_taught?: string[];
+  invited_by_id?: string;
+}
+
 interface InvitationData {
   id: string;
   email: string;
   role: UserRole;
   school_name?: string;
   school_borough?: string;
-  metadata?: any;
+  metadata?: InvitationMetadata;
   expires_at: string;
   accepted_at?: string;
   invited_at: string;
@@ -91,8 +97,8 @@ export function AcceptInvitation() {
           subjects_taught: data.metadata.subjects_taught || [],
         }));
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch invitation');
     } finally {
       setLoading(false);
     }
@@ -194,9 +200,9 @@ export function AcceptInvitation() {
 
       // Redirect to dashboard
       navigate('/');
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Error accepting invitation:', err);
-      setError(err.message || 'Failed to accept invitation');
+      setError(err instanceof Error ? err.message : 'Failed to accept invitation');
     } finally {
       setSubmitting(false);
     }

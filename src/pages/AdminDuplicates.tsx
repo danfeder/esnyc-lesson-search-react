@@ -64,15 +64,28 @@ export const AdminDuplicates: React.FC = () => {
       const resolvedGroupIds = new Set(resolvedGroups?.map((r) => r.group_id) || []);
 
       // Transform the report groups into our component format
-      const transformedGroups = report.groups.map((group: any) => ({
-        ...group,
-        status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
-        lessons: group.lessons.map((lesson: any) => ({
-          lessonId: lesson.lessonId,
-          title: lesson.title,
-          isRecommendedCanonical: lesson.isRecommendedCanonical,
-        })),
-      }));
+      const transformedGroups = report.groups.map(
+        (group: {
+          groupId: string;
+          type: 'exact' | 'near' | 'title';
+          similarityScore: number;
+          lessonCount: number;
+          recommendedCanonical?: string;
+          lessons: Array<{
+            lessonId: string;
+            title: string;
+            isRecommendedCanonical?: boolean;
+          }>;
+        }): DuplicateGroup => ({
+          ...group,
+          status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
+          lessons: group.lessons.map((lesson) => ({
+            lessonId: lesson.lessonId,
+            title: lesson.title,
+            isRecommendedCanonical: lesson.isRecommendedCanonical,
+          })),
+        })
+      );
 
       setGroups(transformedGroups);
     } catch (err) {

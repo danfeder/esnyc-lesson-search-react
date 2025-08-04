@@ -149,7 +149,12 @@ export function ReviewDashboard() {
 
   const updateSubmissionStatus = async (id: string, status: string, notes?: string) => {
     try {
-      const updates: any = {
+      const updates: {
+        status: string;
+        review_notes?: string;
+        reviewed_at: string;
+        reviewed_by?: string;
+      } = {
         status,
         review_notes: notes,
         reviewed_at: new Date().toISOString(),
