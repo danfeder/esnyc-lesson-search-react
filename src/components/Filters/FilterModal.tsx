@@ -5,8 +5,7 @@ import { SearchFilters } from '../../types';
 import { FilterSection } from './FilterSection';
 import { VirtualizedCulturalHeritageFilter } from './VirtualizedCulturalHeritageFilter';
 import { LazyTabPanel } from './LazyTabPanel';
-import { ErrorBoundary } from '../Common/ErrorBoundary';
-import { CulturalHeritageFilter } from './CulturalHeritageFilter';
+import { ErrorBoundary, DefaultErrorFallback } from '../Common/ErrorBoundary';
 import {
   CORE_COMPETENCIES,
   LESSON_FORMATS,
@@ -276,17 +275,7 @@ export const FilterModal = React.memo<FilterModalProps>(
                                 />
                               </Disclosure.Button>
                               <Disclosure.Panel className="mt-4">
-                                <ErrorBoundary
-                                  fallback={
-                                    <CulturalHeritageFilter
-                                      selectedValues={filters.culturalHeritage}
-                                      onChange={(values) =>
-                                        onFiltersChange({ ...filters, culturalHeritage: values })
-                                      }
-                                      facets={facets}
-                                    />
-                                  }
-                                >
+                                <ErrorBoundary fallback={DefaultErrorFallback}>
                                   <VirtualizedCulturalHeritageFilter
                                     selectedValues={filters.culturalHeritage}
                                     onChange={(values) =>

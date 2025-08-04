@@ -1,6 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ErrorBoundary } from './components/Common/ErrorBoundary';
+import { AppErrorFallback } from './components/Common/AppErrorFallback';
+import { RouteErrorFallback } from './components/Common/RouteErrorFallback';
 import { Header } from './components/Layout/Header';
 import { SearchPage } from './pages/SearchPage';
 import { SubmissionPage } from './pages/SubmissionPage';
@@ -155,11 +158,21 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-      {/* React Query DevTools - only in development */}
-      {import.meta.env.MODE === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    <ErrorBoundary
+      fallback={AppErrorFallback}
+      onError={(error, errorInfo) => {
+        // In production, you could log to an error tracking service here
+        console.error('App Error:', error, errorInfo);
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary fallback={RouteErrorFallback}>
+          <AppContent />
+        </ErrorBoundary>
+        {/* React Query DevTools - only in development */}
+        {import.meta.env.MODE === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
