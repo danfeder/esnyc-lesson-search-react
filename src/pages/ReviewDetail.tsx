@@ -5,26 +5,7 @@ import { ArrowLeft, Save, AlertTriangle, CheckCircle, ExternalLink, FileText } f
 import { FILTER_CONFIGS } from '../utils/filterDefinitions';
 import { logger } from '../utils/logger';
 import CreatableSelect from 'react-select/creatable';
-
-interface LessonMetadata {
-  activityType?: string;
-  location?: string;
-  gradeLevels?: string[];
-  themes?: string[];
-  season?: string;
-  coreCompetencies?: string[];
-  socialEmotionalLearning?: string[];
-  cookingMethods?: string[];
-  mainIngredients?: string[];
-  gardenSkills?: string[];
-  cookingSkills?: string[];
-  culturalHeritage?: string[];
-  lessonFormat?: string;
-  academicIntegration?: string[];
-  observancesHolidays?: string[];
-  culturalResponsivenessFeatures?: string[];
-  processingNotes?: string;
-}
+import type { ReviewMetadata } from '../types';
 
 interface SubmissionDetail {
   id: string;
@@ -53,7 +34,7 @@ interface SubmissionDetail {
     };
   }>;
   review?: {
-    metadata: LessonMetadata;
+    metadata: ReviewMetadata;
     decision: string;
     notes: string;
   };
@@ -99,7 +80,7 @@ export function ReviewDetail() {
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [metadata, setMetadata] = useState<LessonMetadata>({});
+  const [metadata, setMetadata] = useState<ReviewMetadata>({});
   const [decision, setDecision] = useState<
     'approve_new' | 'approve_update' | 'reject' | 'needs_revision'
   >('approve_new');
@@ -153,10 +134,10 @@ export function ReviewDetail() {
   useEffect(() => {
     if (validationErrors.length > 0) {
       // Focus the first field with an error
-      const firstInvalidField = document.querySelector('[aria-invalid="true"]');
-      if (firstInvalidField) {
-        (firstInvalidField as any).focus();
-        (firstInvalidField as any).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const firstInvalidField = document.querySelector('[aria-invalid="true"]') as HTMLElement;
+      if (firstInvalidField && typeof firstInvalidField.focus === 'function') {
+        firstInvalidField.focus();
+        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   }, [validationErrors]);
@@ -238,7 +219,8 @@ export function ReviewDetail() {
         setNotes(review.notes || '');
       }
     } catch (error) {
-      logger.error('Error loading submission:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error loading submission:', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -405,14 +387,15 @@ export function ReviewDetail() {
 
       navigate('/review');
     } catch (error) {
-      logger.error('Error saving review:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error saving review:', errorMessage);
     } finally {
       setSaving(false);
     }
   };
 
   const handleMetadataChange = useCallback(
-    <K extends keyof LessonMetadata>(filterKey: K, value: LessonMetadata[K]) => {
+    <K extends keyof ReviewMetadata>(filterKey: K, value: ReviewMetadata[K]) => {
       setMetadata((prev) => ({
         ...prev,
         [filterKey]: value,
