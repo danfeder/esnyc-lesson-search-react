@@ -3,10 +3,9 @@ import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import { SearchFilters } from '../../types';
 import { CORE_COMPETENCIES, LESSON_FORMATS } from '../../utils/filterConstants';
 import { VirtualizedCulturalHeritageFilter } from './VirtualizedCulturalHeritageFilter';
-import { CulturalHeritageFilter } from './CulturalHeritageFilter';
 import { getFacetCount } from '../../utils/facetHelpers';
 import { useSearchStore } from '../../stores/searchStore';
-import { ErrorBoundary } from '../Common/ErrorBoundary';
+import { ErrorBoundary, DefaultErrorFallback } from '../Common/ErrorBoundary';
 
 interface FilterSidebarProps {
   filters: SearchFilters;
@@ -537,17 +536,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
               </FilterSection>
 
               <FilterSection title="Cultural Heritage" icon="🌍">
-                <ErrorBoundary
-                  fallback={
-                    <CulturalHeritageFilter
-                      selectedValues={filters.culturalHeritage}
-                      onChange={(values) =>
-                        onFiltersChange({ ...filters, culturalHeritage: values })
-                      }
-                      facets={facets}
-                    />
-                  }
-                >
+                <ErrorBoundary fallback={DefaultErrorFallback}>
                   <VirtualizedCulturalHeritageFilter
                     selectedValues={filters.culturalHeritage}
                     onChange={(values) => onFiltersChange({ ...filters, culturalHeritage: values })}
