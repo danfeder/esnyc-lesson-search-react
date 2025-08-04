@@ -137,6 +137,27 @@ export interface CulturalSubregion {
   expanded: boolean;
 }
 
+// Review types for submission processing
+export interface ReviewMetadata {
+  activityType?: string; // Single select for review
+  location?: string; // Single select for review
+  gradeLevels?: string[];
+  themes?: string[];
+  season?: string; // Single select for review
+  coreCompetencies?: string[];
+  socialEmotionalLearning?: string[];
+  cookingMethods?: string[];
+  mainIngredients?: string[];
+  gardenSkills?: string[];
+  cookingSkills?: string[];
+  culturalHeritage?: string[];
+  lessonFormat?: string; // Single select for review
+  academicIntegration?: string[];
+  observancesHolidays?: string[];
+  culturalResponsivenessFeatures?: string[];
+  processingNotes?: string;
+}
+
 // API response types
 export interface ApiResponse<T> {
   data: T;
