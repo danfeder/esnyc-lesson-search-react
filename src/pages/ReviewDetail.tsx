@@ -108,13 +108,13 @@ export function ReviewDetail() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Helper functions for conditional field visibility
-  const showCookingFields = () => {
+  const showCookingFields = useCallback(() => {
     return metadata.activityType === 'cooking' || metadata.activityType === 'both';
-  };
+  }, [metadata.activityType]);
 
-  const showGardenFields = () => {
+  const showGardenFields = useCallback(() => {
     return metadata.activityType === 'garden' || metadata.activityType === 'both';
-  };
+  }, [metadata.activityType]);
 
   // Validation function for required fields
   const validateRequiredFields = () => {
@@ -406,27 +406,6 @@ export function ReviewDetail() {
     }));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading submission...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!submission) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Submission not found</h2>
-        </div>
-      </div>
-    );
-  }
-
   const topDuplicates = useMemo(
     () =>
       submission?.similarities?.sort((a, b) => b.combined_score - a.combined_score).slice(0, 5) ||
@@ -488,6 +467,27 @@ export function ReviewDetail() {
 
     return { completed, total, percentage };
   }, [metadata, showCookingFields, showGardenFields]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading submission...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!submission) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Submission not found</h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6">
