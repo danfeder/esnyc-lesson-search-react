@@ -18,6 +18,9 @@ interface CheckAccessResponse {
   message?: string;
 }
 
+// DEPRECATED: This function is no longer used.
+// Permission checking should happen client-side through the iframe.
+// Service account checking doesn't reflect user permissions accurately.
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -37,11 +40,13 @@ serve(async (req) => {
     if (!googleServiceAccount) {
       // If no service account, we can't check permissions server-side
       // Return a response indicating client-side check is needed
+      // Without service account, we can't check permissions server-side
+      // Return hasAccess: true to let the iframe handle authentication
       return new Response(
         JSON.stringify({
-          hasAccess: null,
+          hasAccess: true,
           reason: 'no_service_account',
-          message: 'Permission check requires Google authentication',
+          message: 'Client-side authentication will be used',
         } as CheckAccessResponse),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
