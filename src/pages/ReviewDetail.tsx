@@ -227,7 +227,7 @@ export function ReviewDetail() {
           title: lessonData.title || 'Untitled Lesson',
           summary: lessonData.summary || '',
           file_link: submission.google_doc_url,
-          grade_levels: metadata.gradeLevel || metadata.gradeLevels || [],
+          grade_levels: metadata.gradeLevels || [],
           metadata: {
             thematicCategories: metadata.themes || [],
             seasonTiming: metadata.season ? [metadata.season] : [],
@@ -288,8 +288,7 @@ export function ReviewDetail() {
             title: lessonData.title || existingLesson.title,
             summary: lessonData.summary || existingLesson.summary,
             file_link: submission.google_doc_url,
-            grade_levels:
-              metadata.gradeLevel || metadata.gradeLevels || existingLesson.grade_levels,
+            grade_levels: metadata.gradeLevels || existingLesson.grade_levels,
             metadata: {
               thematicCategories: metadata.themes || [],
               seasonTiming: metadata.season ? [metadata.season] : [],
