@@ -8,6 +8,21 @@ import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
+  // First, specify ignores (must be first in the array)
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '*.config.js',
+      'vite.config.ts',
+      'scripts/**',
+      'supabase/functions/**',
+      'temp-debug-files/**',
+      '.eslintrc.*',
+      'coverage/**',
+      'build/**',
+    ],
+  },
   js.configs.recommended,
   prettierConfig,
   {
@@ -47,6 +62,8 @@ export default [
         __dirname: 'readonly',
         vi: 'readonly',
         fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
     settings: {
@@ -56,6 +73,7 @@ export default [
     },
     rules: {
       // TypeScript
+      'no-unused-vars': 'off', // Turn off base rule as it doesn't work with TypeScript
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
@@ -82,17 +100,5 @@ export default [
     rules: {
       '@typescript-eslint/no-var-requires': 'off',
     },
-  },
-  {
-    ignores: [
-      'dist/',
-      'node_modules/',
-      '*.config.js',
-      'vite.config.ts',
-      'scripts/**/*.js',
-      'scripts/**/*.mjs',
-      'supabase/functions/**/*.ts',
-      'temp-debug-files/**/*',
-    ],
   },
 ];

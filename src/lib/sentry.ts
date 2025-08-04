@@ -98,7 +98,7 @@ export function initSentry() {
  */
 function sanitizeUrl(url: string): string {
   try {
-    const urlObj = new URL(url);
+    const urlObj = new globalThis.URL(url);
     const sensitiveParams = ['token', 'key', 'secret', 'password', 'auth'];
 
     sensitiveParams.forEach((param) => {
@@ -156,15 +156,6 @@ function sanitizeData(data: any): any {
 /**
  * Log levels for the application
  */
-/**
- * Log levels for the application
- */
-export enum LogLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
-}
 
 /**
  * Capture an exception with Sentry
