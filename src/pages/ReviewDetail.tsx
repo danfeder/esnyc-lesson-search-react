@@ -153,10 +153,10 @@ export function ReviewDetail() {
   useEffect(() => {
     if (validationErrors.length > 0) {
       // Focus the first field with an error
-      const firstInvalidField = document.querySelector('[aria-invalid="true"]') as HTMLElement;
+      const firstInvalidField = document.querySelector('[aria-invalid="true"]');
       if (firstInvalidField) {
-        firstInvalidField.focus();
-        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (firstInvalidField as any).focus();
+        (firstInvalidField as any).scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   }, [validationErrors]);
