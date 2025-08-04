@@ -11,6 +11,7 @@ import { SkipLink } from '../components/Common/SkipLink';
 import { InfiniteScrollTrigger } from '../components/Common/InfiniteScrollTrigger';
 import { useSearchStore } from '../stores/searchStore';
 import { useSupabaseSearch } from '../hooks/useSupabaseSearch';
+import { supabase } from '../lib/supabase';
 import type { Lesson, ViewState } from '../types';
 
 export const SearchPage: React.FC = () => {
@@ -79,7 +80,6 @@ export const SearchPage: React.FC = () => {
 
     try {
       // Use supabase directly for pagination
-      const { supabase } = await import('../lib/supabase');
 
       const searchParams = {
         search_query: filters.query || null,
@@ -193,6 +193,8 @@ export const SearchPage: React.FC = () => {
             onLoadMore={handleLoadMore}
             isLoading={isLoadingMore}
             hasMore={hasMore}
+            currentCount={results.length}
+            totalCount={totalCount}
           />
         )}
       </main>

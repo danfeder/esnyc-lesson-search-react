@@ -15,7 +15,7 @@ interface VirtualizedTableProps<T> {
   data: T[];
   columns: Column<T>[];
   // eslint-disable-next-line no-unused-vars
-  getRowKey: (item: T, index: number) => string;
+  getRowKey?: (item: T, index: number) => string;
   isLoading?: boolean;
   emptyMessage?: string;
   className?: string;

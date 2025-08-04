@@ -11,7 +11,7 @@ export const VIRTUALIZATION_THRESHOLDS = {
 
 // Common dimensions
 export const DIMENSIONS = {
-  LESSON_CARD_HEIGHT: 320,
+  LESSON_CARD_HEIGHT: 280, // Height matches LessonCard component (280px)
   TABLE_ROW_HEIGHT: 64,
   LIST_ITEM_HEIGHT: 72,
   GRID_GAP: 24,

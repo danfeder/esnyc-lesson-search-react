@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import { debounceResize } from '../../utils/virtualization';
 import { Lesson } from '../../types';
 import { LessonCard } from './LessonCard';
 
@@ -64,11 +65,11 @@ export const VirtualizedResultsGrid: React.FC<VirtualizedResultsGridProps> = ({
     return window.innerWidth < MOBILE_BREAKPOINT ? 1 : 2;
   });
 
-  // Update column count on resize
+  // Update column count on resize with debouncing
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = debounceResize(() => {
       setColumnCount(window.innerWidth < MOBILE_BREAKPOINT ? 1 : 2);
-    };
+    }, 150);
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
