@@ -115,13 +115,19 @@ export function AdminUserDetail() {
       });
 
       // Load user's schools
+      interface UserSchoolData {
+        schools: School | null;
+      }
+
       const { data: userSchoolData, error: schoolsError } = await supabase
         .from('user_schools')
         .select('schools(id, name)')
         .eq('user_id', userId);
 
       if (!schoolsError && userSchoolData) {
-        const schools = userSchoolData.map((us: any) => us.schools).filter(Boolean) as School[];
+        const schools = userSchoolData
+          .map((us: UserSchoolData) => us.schools)
+          .filter((school): school is School => school !== null);
         setUserSchools(schools);
         setEditedSchools(schools);
       }
