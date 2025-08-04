@@ -8,7 +8,7 @@ interface FilterOption {
 
 interface FilterConfig {
   label: string;
-  type: 'single' | 'multiple' | 'hierarchical';
+  type: 'single' | 'multiple' | 'hierarchical' | 'creatable';
   options: FilterOption[];
   groups?: Array<{
     id: string;
@@ -331,6 +331,57 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'garnishing', label: 'Garnishing', category: 'Assembly' },
       { value: 'assembling-dishes', label: 'Assembling dishes', category: 'Assembly' },
       { value: 'wrapping-rolling', label: 'Wrapping/rolling', category: 'Assembly' },
+    ],
+  },
+
+  // Suggested values for optional fields (used with CreatableSelect)
+  observancesHolidays: {
+    label: 'Observances & Holidays',
+    type: 'creatable',
+    options: [
+      { value: 'AAPI Heritage Month', label: 'AAPI Heritage Month' },
+      { value: 'Black History Month', label: 'Black History Month' },
+      { value: 'Hispanic/Latinx Heritage Month', label: 'Hispanic/Latinx Heritage Month' },
+      { value: "Indigenous Peoples' Month", label: "Indigenous Peoples' Month" },
+      { value: "Women's History Month", label: "Women's History Month" },
+      { value: 'Pride', label: 'Pride' },
+      { value: 'Earth Month', label: 'Earth Month' },
+      { value: 'Thanksgiving', label: 'Thanksgiving' },
+      { value: 'Lunar New Year', label: 'Lunar New Year' },
+      { value: 'New Year', label: 'New Year' },
+      { value: 'Ramadan', label: 'Ramadan' },
+      { value: 'Eid', label: 'Eid' },
+      { value: 'Juneteenth', label: 'Juneteenth' },
+      { value: 'School Food Hero Day', label: 'School Food Hero Day' },
+      { value: 'Beginning of year', label: 'Beginning of year' },
+      { value: 'End of year', label: 'End of year' },
+      { value: 'End of year celebrations', label: 'End of year celebrations' },
+    ],
+  },
+
+  culturalResponsivenessFeatures: {
+    label: 'Cultural Responsiveness Features',
+    type: 'creatable',
+    options: [
+      {
+        value: 'Promotes student-centered instruction',
+        label: 'Promotes student-centered instruction',
+      },
+      {
+        value: 'Incorporates different individual and cultural learning styles',
+        label: 'Incorporates different individual and cultural learning styles',
+      },
+      {
+        value: 'Encourages learning within the context of culture',
+        label: 'Encourages learning within the context of culture',
+      },
+      { value: 'Communicates high expectations', label: 'Communicates high expectations' },
+      { value: 'Positions teacher as facilitator', label: 'Positions teacher as facilitator' },
+      {
+        value: 'Promotes positive perspectives on parents and families',
+        label: 'Promotes positive perspectives on parents and families',
+      },
+      { value: 'Reshapes curriculum', label: 'Reshapes curriculum' },
     ],
   },
 };

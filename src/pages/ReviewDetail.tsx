@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { ArrowLeft, Save, AlertTriangle, CheckCircle, ExternalLink, FileText } from 'lucide-react';
 import { FILTER_CONFIGS } from '../utils/filterDefinitions';
 import { logger } from '../utils/logger';
+import CreatableSelect from 'react-select/creatable';
 
 interface SubmissionDetail {
   id: string;
@@ -880,19 +881,37 @@ export function ReviewDetail() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Observances & Holidays
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Thanksgiving, Earth Day (comma-separated)"
-                  value={metadata.observancesHolidays?.join(', ') || ''}
-                  onChange={(e) => {
-                    const values = e.target.value
-                      .split(',')
-                      .map((v) => v.trim())
-                      .filter(Boolean);
+                <CreatableSelect
+                  isMulti
+                  isClearable
+                  options={FILTER_CONFIGS.observancesHolidays.options}
+                  value={(metadata.observancesHolidays || []).map((v: string) => ({
+                    value: v,
+                    label: v,
+                  }))}
+                  onChange={(selected) => {
+                    const values = selected ? selected.map((item) => item.value) : [];
                     handleMetadataChange('observancesHolidays', values);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Select or create observances..."
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderColor: '#d1d5db',
+                      '&:hover': { borderColor: '#9ca3af' },
+                      boxShadow: 'none',
+                    }),
+                    multiValue: (base) => ({
+                      ...base,
+                      backgroundColor: '#e5e7eb',
+                    }),
+                  }}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Select from common observances or type to add custom ones
+                </p>
               </div>
 
               {/* Cultural Responsiveness Features */}
@@ -900,19 +919,37 @@ export function ReviewDetail() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Cultural Responsiveness Features
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Diverse perspectives, Inclusive language (comma-separated)"
-                  value={metadata.culturalResponsivenessFeatures?.join(', ') || ''}
-                  onChange={(e) => {
-                    const values = e.target.value
-                      .split(',')
-                      .map((v) => v.trim())
-                      .filter(Boolean);
+                <CreatableSelect
+                  isMulti
+                  isClearable
+                  options={FILTER_CONFIGS.culturalResponsivenessFeatures.options}
+                  value={(metadata.culturalResponsivenessFeatures || []).map((v: string) => ({
+                    value: v,
+                    label: v,
+                  }))}
+                  onChange={(selected) => {
+                    const values = selected ? selected.map((item) => item.value) : [];
                     handleMetadataChange('culturalResponsivenessFeatures', values);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Select or create features..."
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderColor: '#d1d5db',
+                      '&:hover': { borderColor: '#9ca3af' },
+                      boxShadow: 'none',
+                    }),
+                    multiValue: (base) => ({
+                      ...base,
+                      backgroundColor: '#e5e7eb',
+                    }),
+                  }}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Select from standard features or add custom ones
+                </p>
               </div>
 
               {/* Processing Notes */}
