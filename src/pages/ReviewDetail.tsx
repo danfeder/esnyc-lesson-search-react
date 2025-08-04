@@ -110,7 +110,7 @@ export function ReviewDetail() {
 
     // Conditionally required fields based on activity type
     if (showCookingFields()) {
-      if (!metadata.cookingMethods) errors.push('Cooking Methods');
+      if (!metadata.cookingMethods?.length) errors.push('Cooking Methods');
       if (!metadata.mainIngredients?.length) errors.push('Main Ingredients');
       if (!metadata.cookingSkills?.length) errors.push('Cooking Skills');
     }
@@ -282,7 +282,7 @@ export function ReviewDetail() {
             lessonFormat: metadata.lessonFormat ? [metadata.lessonFormat] : [],
             academicIntegration: metadata.academicIntegration || [],
             socialEmotionalLearning: metadata.socialEmotionalLearning || [],
-            cookingMethods: metadata.cookingMethods ? [metadata.cookingMethods] : [],
+            cookingMethods: metadata.cookingMethods || [],
             mainIngredients: metadata.mainIngredients || [],
             gardenSkills: metadata.gardenSkills || [],
             cookingSkills: metadata.cookingSkills || [],
@@ -348,7 +348,7 @@ export function ReviewDetail() {
               lessonFormat: metadata.lessonFormat ? [metadata.lessonFormat] : [],
               academicIntegration: metadata.academicIntegration || [],
               socialEmotionalLearning: metadata.socialEmotionalLearning || [],
-              cookingMethods: metadata.cookingMethods ? [metadata.cookingMethods] : [],
+              cookingMethods: metadata.cookingMethods || [],
               mainIngredients: metadata.mainIngredients || [],
               gardenSkills: metadata.gardenSkills || [],
               cookingSkills: metadata.cookingSkills || [],
@@ -683,18 +683,25 @@ export function ReviewDetail() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Cooking Methods *
                     </label>
-                    <select
-                      value={metadata.cookingMethods || ''}
-                      onChange={(e) => handleMetadataChange('cookingMethods', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    >
-                      <option value="">Select cooking method</option>
-                      {FILTER_CONFIGS.cookingMethods.options.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
+                    <div className="space-y-2 border border-gray-200 rounded-md p-2">
+                      {FILTER_CONFIGS.cookingMethods.options.map((method) => (
+                        <label key={method.value} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={metadata.cookingMethods?.includes(method.value) || false}
+                            onChange={(e) => {
+                              const current = metadata.cookingMethods || [];
+                              const updated = e.target.checked
+                                ? [...current, method.value]
+                                : current.filter((m: string) => m !== method.value);
+                              handleMetadataChange('cookingMethods', updated);
+                            }}
+                            className="mr-2 text-green-600"
+                          />
+                          <span className="text-sm">{method.label}</span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 )}
 
