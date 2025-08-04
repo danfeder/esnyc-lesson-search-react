@@ -136,7 +136,7 @@ export function ReviewDetail() {
       // Focus the first field with an error
       const firstInvalidField = document.querySelector('[aria-invalid="true"]');
       if (firstInvalidField && 'focus' in firstInvalidField) {
-        (firstInvalidField as Element & { focus: () => void }).focus();
+        (firstInvalidField as any).focus();
         firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
