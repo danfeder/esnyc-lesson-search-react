@@ -95,6 +95,33 @@ export function ReviewDetail() {
     return metadata.activityType === 'garden' || metadata.activityType === 'both';
   };
 
+  // Validation function for required fields
+  const validateRequiredFields = () => {
+    const errors: string[] = [];
+
+    // Always required fields
+    if (!metadata.activityType) errors.push('Activity Type');
+    if (!metadata.location) errors.push('Location');
+    if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
+    if (!metadata.themes?.length) errors.push('Thematic Categories');
+    if (!metadata.season) errors.push('Season & Timing');
+    if (!metadata.coreCompetencies?.length) errors.push('Core Competencies');
+    if (!metadata.socialEmotionalLearning?.length) errors.push('Social-Emotional Learning');
+
+    // Conditionally required fields based on activity type
+    if (showCookingFields()) {
+      if (!metadata.cookingMethods) errors.push('Cooking Methods');
+      if (!metadata.mainIngredients?.length) errors.push('Main Ingredients');
+      if (!metadata.cookingSkills?.length) errors.push('Cooking Skills');
+    }
+
+    if (showGardenFields()) {
+      if (!metadata.gardenSkills?.length) errors.push('Garden Skills');
+    }
+
+    return errors;
+  };
+
   useEffect(() => {
     if (id) {
       loadSubmission();
@@ -186,6 +213,13 @@ export function ReviewDetail() {
 
   const handleSaveReview = async () => {
     if (!submission) return;
+
+    // Validate required fields
+    const validationErrors = validateRequiredFields();
+    if (validationErrors.length > 0) {
+      alert(`Please fill in the following required fields:\n\n• ${validationErrors.join('\n• ')}`);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -461,609 +495,633 @@ export function ReviewDetail() {
         <div className="space-y-6">
           {/* Metadata Tagging */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4">Lesson Metadata</h2>
-            <div className="space-y-4">
-              {/* Activity Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Activity Type *
-                </label>
-                <select
-                  value={metadata.activityType || ''}
-                  onChange={(e) => handleMetadataChange('activityType', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">Select activity type</option>
-                  {FILTER_CONFIGS.activityType.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                {metadata.activityType && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    {metadata.activityType === 'cooking' &&
-                      '📚 Showing cooking-related fields only'}
-                    {metadata.activityType === 'garden' && '🌱 Showing garden-related fields only'}
-                    {metadata.activityType === 'both' &&
-                      '🌱📚 Showing all cooking and garden fields'}
-                    {metadata.activityType === 'academic' &&
-                      '📖 No cooking or garden fields needed'}
-                  </p>
-                )}
-              </div>
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">Lesson Metadata</h2>
+              <p className="text-sm text-gray-600 mt-1">Complete all required fields (*) to save</p>
+            </div>
 
-              {/* Location */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <select
-                  value={metadata.location || ''}
-                  onChange={(e) => handleMetadataChange('location', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">Select location</option>
-                  {FILTER_CONFIGS.location.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Grade Levels */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Grade Levels</label>
-                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                  {FILTER_CONFIGS.gradeLevel.options.map((grade) => (
-                    <label key={grade.value} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={metadata.gradeLevels?.includes(grade.value) || false}
-                        onChange={(e) => {
-                          const current = metadata.gradeLevels || [];
-                          const updated = e.target.checked
-                            ? [...current, grade.value]
-                            : current.filter((g: string) => g !== grade.value);
-                          handleMetadataChange('gradeLevels', updated);
-                        }}
-                        className="mr-2 text-green-600"
-                      />
-                      <span className="text-sm">{grade.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Thematic Categories */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thematic Categories
-                </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                  {FILTER_CONFIGS.theme.options.map((theme) => (
-                    <label key={theme.value} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={metadata.themes?.includes(theme.value) || false}
-                        onChange={(e) => {
-                          const current = metadata.themes || [];
-                          const updated = e.target.checked
-                            ? [...current, theme.value]
-                            : current.filter((t: string) => t !== theme.value);
-                          handleMetadataChange('themes', updated);
-                        }}
-                        className="mr-2 text-green-600"
-                      />
-                      <span className="text-sm">{theme.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Season */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Season & Timing
-                </label>
-                <select
-                  value={metadata.season || ''}
-                  onChange={(e) => handleMetadataChange('season', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">Select season</option>
-                  {FILTER_CONFIGS.seasonTiming.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Core Competencies */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Core Competencies
-                </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                  {FILTER_CONFIGS.coreCompetencies.options.map((competency) => (
-                    <label key={competency.value} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={metadata.coreCompetencies?.includes(competency.value) || false}
-                        onChange={(e) => {
-                          const current = metadata.coreCompetencies || [];
-                          const updated = e.target.checked
-                            ? [...current, competency.value]
-                            : current.filter((c: string) => c !== competency.value);
-                          handleMetadataChange('coreCompetencies', updated);
-                        }}
-                        className="mr-2 text-green-600"
-                      />
-                      <span className="text-sm">{competency.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cultural Heritage */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cultural Heritage
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                  {FILTER_CONFIGS.culturalHeritage.options.map((heritage) => (
-                    <div key={heritage.value}>
-                      <label className="flex items-center font-medium">
-                        <input
-                          type="checkbox"
-                          checked={metadata.culturalHeritage?.includes(heritage.value) || false}
-                          onChange={(e) => {
-                            const current = metadata.culturalHeritage || [];
-                            let updated: string[];
-                            if (e.target.checked) {
-                              // Add parent category
-                              updated = [...current, heritage.value];
-                              // If it has children, optionally add them too
-                              if (heritage.children) {
-                                // Don't auto-add children, let user select individually
-                              }
-                            } else {
-                              // Remove parent and all its children
-                              updated = current.filter((c: string) => {
-                                if (c === heritage.value) return false;
-                                // Check if it's a child of this parent
-                                if (heritage.children) {
-                                  return !heritage.children.some((child) => child.value === c);
-                                }
-                                return true;
-                              });
-                            }
-                            handleMetadataChange('culturalHeritage', updated);
-                          }}
-                          className="mr-2 text-green-600"
-                        />
-                        <span className="text-sm">{heritage.label}</span>
-                      </label>
-                      {heritage.children && (
-                        <div className="ml-6 mt-1 space-y-1">
-                          {heritage.children.map((child) => (
-                            <label key={child.value} className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={metadata.culturalHeritage?.includes(child.value) || false}
-                                onChange={(e) => {
-                                  const current = metadata.culturalHeritage || [];
-                                  const updated = e.target.checked
-                                    ? [...current, child.value]
-                                    : current.filter((c: string) => c !== child.value);
-                                  handleMetadataChange('culturalHeritage', updated);
-                                }}
-                                className="mr-2 text-green-600"
-                              />
-                              <span className="text-sm text-gray-600">{child.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Lesson Format */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Lesson Format
-                </label>
-                <select
-                  value={metadata.lessonFormat || ''}
-                  onChange={(e) => handleMetadataChange('lessonFormat', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">Select lesson format</option>
-                  {FILTER_CONFIGS.lessonFormat.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Academic Integration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Academic Integration
-                </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                  {FILTER_CONFIGS.academicIntegration.options.map((subject) => (
-                    <label key={subject.value} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={metadata.academicIntegration?.includes(subject.value) || false}
-                        onChange={(e) => {
-                          const current = metadata.academicIntegration || [];
-                          const updated = e.target.checked
-                            ? [...current, subject.value]
-                            : current.filter((s: string) => s !== subject.value);
-                          handleMetadataChange('academicIntegration', updated);
-                        }}
-                        className="mr-2 text-green-600"
-                      />
-                      <span className="text-sm">{subject.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Social-Emotional Learning */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Social-Emotional Learning
-                </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                  {FILTER_CONFIGS.socialEmotionalLearning.options.map((sel) => (
-                    <label key={sel.value} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={metadata.socialEmotionalLearning?.includes(sel.value) || false}
-                        onChange={(e) => {
-                          const current = metadata.socialEmotionalLearning || [];
-                          const updated = e.target.checked
-                            ? [...current, sel.value]
-                            : current.filter((s: string) => s !== sel.value);
-                          handleMetadataChange('socialEmotionalLearning', updated);
-                        }}
-                        className="mr-2 text-green-600"
-                      />
-                      <span className="text-sm">{sel.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cooking Methods - Only show for cooking or both */}
-              {showCookingFields() && (
+            {/* Required Fields Section */}
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">
+                Required Fields
+              </h3>
+              <div className="space-y-4">
+                {/* Activity Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cooking Methods
+                    Activity Type *
                   </label>
                   <select
-                    value={metadata.cookingMethods || ''}
-                    onChange={(e) => handleMetadataChange('cookingMethods', e.target.value)}
+                    value={metadata.activityType || ''}
+                    onChange={(e) => handleMetadataChange('activityType', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
-                    <option value="">Select cooking method</option>
-                    {FILTER_CONFIGS.cookingMethods.options.map((opt) => (
+                    <option value="">Select activity type</option>
+                    {FILTER_CONFIGS.activityType.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  {metadata.activityType && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {metadata.activityType === 'cooking' &&
+                        '📚 Showing cooking-related fields only'}
+                      {metadata.activityType === 'garden' &&
+                        '🌱 Showing garden-related fields only'}
+                      {metadata.activityType === 'both' &&
+                        '🌱📚 Showing all cooking and garden fields'}
+                      {metadata.activityType === 'academic' &&
+                        '📖 No cooking or garden fields needed'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Location */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                  <select
+                    value={metadata.location || ''}
+                    onChange={(e) => handleMetadataChange('location', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select location</option>
+                    {FILTER_CONFIGS.location.options.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
                     ))}
                   </select>
                 </div>
-              )}
 
-              {/* Main Ingredients - Only show for cooking or both */}
-              {showCookingFields() && (
+                {/* Grade Levels */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Main Ingredients
+                    Grade Levels *
                   </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                    {/* Group ingredients by category */}
-                    {['Vegetables', 'Fruits', 'Grains', 'Proteins', 'Dairy', 'Seasonings'].map(
-                      (category) => (
-                        <div key={category}>
-                          <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
-                            {category}
-                          </div>
-                          {FILTER_CONFIGS.mainIngredients.options
-                            .filter((ingredient) => ingredient.category === category)
-                            .map((ingredient) => (
-                              <label key={ingredient.value} className="flex items-center ml-2">
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    metadata.mainIngredients?.includes(ingredient.value) || false
-                                  }
-                                  onChange={(e) => {
-                                    const current = metadata.mainIngredients || [];
-                                    const updated = e.target.checked
-                                      ? [...current, ingredient.value]
-                                      : current.filter((i: string) => i !== ingredient.value);
-                                    handleMetadataChange('mainIngredients', updated);
-                                  }}
-                                  className="mr-2 text-green-600"
-                                />
-                                <span className="text-sm">{ingredient.label}</span>
-                              </label>
-                            ))}
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Garden Skills - Only show for garden or both */}
-              {showGardenFields() && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Garden Skills
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                    {FILTER_CONFIGS.gardenSkills.options.map((skill) => (
-                      <label key={skill.value} className="flex items-center">
+                  <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {FILTER_CONFIGS.gradeLevel.options.map((grade) => (
+                      <label key={grade.value} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={metadata.gardenSkills?.includes(skill.value) || false}
+                          checked={metadata.gradeLevels?.includes(grade.value) || false}
                           onChange={(e) => {
-                            const current = metadata.gardenSkills || [];
+                            const current = metadata.gradeLevels || [];
                             const updated = e.target.checked
-                              ? [...current, skill.value]
-                              : current.filter((s: string) => s !== skill.value);
-                            handleMetadataChange('gardenSkills', updated);
+                              ? [...current, grade.value]
+                              : current.filter((g: string) => g !== grade.value);
+                            handleMetadataChange('gradeLevels', updated);
                           }}
                           className="mr-2 text-green-600"
                         />
-                        <span className="text-sm">{skill.label}</span>
+                        <span className="text-sm">{grade.label}</span>
                       </label>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Cooking Skills - Only show for cooking or both */}
-              {showCookingFields() && (
+                {/* Thematic Categories */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cooking Skills
+                    Thematic Categories *
                   </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                    {/* Group cooking skills by category */}
-                    {['Basic', 'Cutting', 'Cooking', 'Advanced', 'Assembly'].map((category) => (
-                      <div key={category}>
-                        <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
-                          {category}
-                        </div>
-                        {FILTER_CONFIGS.cookingSkills.options
-                          .filter((skill) => skill.category === category)
-                          .map((skill) => (
-                            <label key={skill.value} className="flex items-center ml-2">
-                              <input
-                                type="checkbox"
-                                checked={metadata.cookingSkills?.includes(skill.value) || false}
-                                onChange={(e) => {
-                                  const current = metadata.cookingSkills || [];
-                                  const updated = e.target.checked
-                                    ? [...current, skill.value]
-                                    : current.filter((s: string) => s !== skill.value);
-                                  handleMetadataChange('cookingSkills', updated);
-                                }}
-                                className="mr-2 text-green-600"
-                              />
-                              <span className="text-sm">{skill.label}</span>
-                            </label>
-                          ))}
-                      </div>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {FILTER_CONFIGS.theme.options.map((theme) => (
+                      <label key={theme.value} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={metadata.themes?.includes(theme.value) || false}
+                          onChange={(e) => {
+                            const current = metadata.themes || [];
+                            const updated = e.target.checked
+                              ? [...current, theme.value]
+                              : current.filter((t: string) => t !== theme.value);
+                            handleMetadataChange('themes', updated);
+                          }}
+                          className="mr-2 text-green-600"
+                        />
+                        <span className="text-sm">{theme.label}</span>
+                      </label>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
 
-            {/* Additional Metadata Section */}
-            <h3 className="text-md font-semibold text-gray-900 mt-6 mb-3">
-              Additional Metadata (Optional)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Observances & Holidays */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Observances & Holidays
-                </label>
-                <CreatableSelect
-                  isMulti
-                  isClearable
-                  options={FILTER_CONFIGS.observancesHolidays.options}
-                  value={(metadata.observancesHolidays || []).map((v: string) => ({
-                    value: v,
-                    label: v,
-                  }))}
-                  onChange={(selected) => {
-                    const values = selected ? selected.map((item) => item.value) : [];
-                    handleMetadataChange('observancesHolidays', values);
-                  }}
-                  placeholder="Select or create observances..."
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      borderColor: '#d1d5db',
-                      '&:hover': { borderColor: '#9ca3af' },
-                      boxShadow: 'none',
-                    }),
-                    multiValue: (base) => ({
-                      ...base,
-                      backgroundColor: '#e5e7eb',
-                    }),
-                  }}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Select from common observances or type to add custom ones
-                </p>
-              </div>
-
-              {/* Cultural Responsiveness Features */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cultural Responsiveness Features
-                </label>
-                <CreatableSelect
-                  isMulti
-                  isClearable
-                  options={FILTER_CONFIGS.culturalResponsivenessFeatures.options}
-                  value={(metadata.culturalResponsivenessFeatures || []).map((v: string) => ({
-                    value: v,
-                    label: v,
-                  }))}
-                  onChange={(selected) => {
-                    const values = selected ? selected.map((item) => item.value) : [];
-                    handleMetadataChange('culturalResponsivenessFeatures', values);
-                  }}
-                  placeholder="Select or create features..."
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      borderColor: '#d1d5db',
-                      '&:hover': { borderColor: '#9ca3af' },
-                      boxShadow: 'none',
-                    }),
-                    multiValue: (base) => ({
-                      ...base,
-                      backgroundColor: '#e5e7eb',
-                    }),
-                  }}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Select from standard features or add custom ones
-                </p>
-              </div>
-
-              {/* Processing Notes */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Processing Notes
-                </label>
-                <textarea
-                  placeholder="Any notes about the extraction or processing of this lesson..."
-                  value={metadata.processingNotes || ''}
-                  onChange={(e) => handleMetadataChange('processingNotes', e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Decision */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4">Review Decision</h2>
-
-            <div className="space-y-3 mb-4">
-              <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="radio"
-                  value="approve_new"
-                  checked={decision === 'approve_new'}
-                  onChange={(e) => setDecision(e.target.value as any)}
-                  className="mt-1 mr-3 text-green-600"
-                />
+                {/* Season */}
                 <div>
-                  <div className="font-medium">Approve as New Lesson</div>
-                  <div className="text-sm text-gray-600">
-                    This is a unique lesson to add to the collection
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Season & Timing *
+                  </label>
+                  <select
+                    value={metadata.season || ''}
+                    onChange={(e) => handleMetadataChange('season', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select season</option>
+                    {FILTER_CONFIGS.seasonTiming.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Core Competencies */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Core Competencies *
+                  </label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {FILTER_CONFIGS.coreCompetencies.options.map((competency) => (
+                      <label key={competency.value} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={metadata.coreCompetencies?.includes(competency.value) || false}
+                          onChange={(e) => {
+                            const current = metadata.coreCompetencies || [];
+                            const updated = e.target.checked
+                              ? [...current, competency.value]
+                              : current.filter((c: string) => c !== competency.value);
+                            handleMetadataChange('coreCompetencies', updated);
+                          }}
+                          className="mr-2 text-green-600"
+                        />
+                        <span className="text-sm">{competency.label}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
-              </label>
 
-              <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="radio"
-                  value="approve_update"
-                  checked={decision === 'approve_update'}
-                  onChange={(e) => setDecision(e.target.value as any)}
-                  className="mt-1 mr-3 text-green-600"
-                  disabled={!selectedDuplicate}
-                />
+                {/* Social-Emotional Learning */}
                 <div>
-                  <div className="font-medium">Approve as Update</div>
-                  <div className="text-sm text-gray-600">
-                    {selectedDuplicate
-                      ? 'Update the selected duplicate lesson'
-                      : 'Select a duplicate lesson first'}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Social-Emotional Learning *
+                  </label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {FILTER_CONFIGS.socialEmotionalLearning.options.map((sel) => (
+                      <label key={sel.value} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={metadata.socialEmotionalLearning?.includes(sel.value) || false}
+                          onChange={(e) => {
+                            const current = metadata.socialEmotionalLearning || [];
+                            const updated = e.target.checked
+                              ? [...current, sel.value]
+                              : current.filter((s: string) => s !== sel.value);
+                            handleMetadataChange('socialEmotionalLearning', updated);
+                          }}
+                          className="mr-2 text-green-600"
+                        />
+                        <span className="text-sm">{sel.label}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
-              </label>
 
-              <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="radio"
-                  value="needs_revision"
-                  checked={decision === 'needs_revision'}
-                  onChange={(e) => setDecision(e.target.value as any)}
-                  className="mt-1 mr-3 text-yellow-600"
-                />
-                <div>
-                  <div className="font-medium">Needs Revision</div>
-                  <div className="text-sm text-gray-600">Request changes from the teacher</div>
-                </div>
-              </label>
+                {/* Cooking Methods - Only show for cooking or both */}
+                {showCookingFields() && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cooking Methods *
+                    </label>
+                    <select
+                      value={metadata.cookingMethods || ''}
+                      onChange={(e) => handleMetadataChange('cookingMethods', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">Select cooking method</option>
+                      {FILTER_CONFIGS.cookingMethods.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-              <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="radio"
-                  value="reject"
-                  checked={decision === 'reject'}
-                  onChange={(e) => setDecision(e.target.value as any)}
-                  className="mt-1 mr-3 text-red-600"
-                />
-                <div>
-                  <div className="font-medium">Reject</div>
-                  <div className="text-sm text-gray-600">
-                    Do not add this lesson to the collection
+                {/* Main Ingredients - Only show for cooking or both */}
+                {showCookingFields() && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Main Ingredients *
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                      {/* Group ingredients by category */}
+                      {['Vegetables', 'Fruits', 'Grains', 'Proteins', 'Dairy', 'Seasonings'].map(
+                        (category) => (
+                          <div key={category}>
+                            <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
+                              {category}
+                            </div>
+                            {FILTER_CONFIGS.mainIngredients.options
+                              .filter((ingredient) => ingredient.category === category)
+                              .map((ingredient) => (
+                                <label key={ingredient.value} className="flex items-center ml-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      metadata.mainIngredients?.includes(ingredient.value) || false
+                                    }
+                                    onChange={(e) => {
+                                      const current = metadata.mainIngredients || [];
+                                      const updated = e.target.checked
+                                        ? [...current, ingredient.value]
+                                        : current.filter((i: string) => i !== ingredient.value);
+                                      handleMetadataChange('mainIngredients', updated);
+                                    }}
+                                    className="mr-2 text-green-600"
+                                  />
+                                  <span className="text-sm">{ingredient.label}</span>
+                                </label>
+                              ))}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Garden Skills - Only show for garden or both */}
+                {showGardenFields() && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Garden Skills *
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                      {FILTER_CONFIGS.gardenSkills.options.map((skill) => (
+                        <label key={skill.value} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={metadata.gardenSkills?.includes(skill.value) || false}
+                            onChange={(e) => {
+                              const current = metadata.gardenSkills || [];
+                              const updated = e.target.checked
+                                ? [...current, skill.value]
+                                : current.filter((s: string) => s !== skill.value);
+                              handleMetadataChange('gardenSkills', updated);
+                            }}
+                            className="mr-2 text-green-600"
+                          />
+                          <span className="text-sm">{skill.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cooking Skills - Only show for cooking or both */}
+                {showCookingFields() && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cooking Skills *
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                      {/* Group cooking skills by category */}
+                      {['Basic', 'Cutting', 'Cooking', 'Advanced', 'Assembly'].map((category) => (
+                        <div key={category}>
+                          <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
+                            {category}
+                          </div>
+                          {FILTER_CONFIGS.cookingSkills.options
+                            .filter((skill) => skill.category === category)
+                            .map((skill) => (
+                              <label key={skill.value} className="flex items-center ml-2">
+                                <input
+                                  type="checkbox"
+                                  checked={metadata.cookingSkills?.includes(skill.value) || false}
+                                  onChange={(e) => {
+                                    const current = metadata.cookingSkills || [];
+                                    const updated = e.target.checked
+                                      ? [...current, skill.value]
+                                      : current.filter((s: string) => s !== skill.value);
+                                    handleMetadataChange('cookingSkills', updated);
+                                  }}
+                                  className="mr-2 text-green-600"
+                                />
+                                <span className="text-sm">{skill.label}</span>
+                              </label>
+                            ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Optional Fields Section */}
+              <div className="mb-6">
+                <h3 className="text-md font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">
+                  Optional Fields
+                </h3>
+                <div className="space-y-4">
+                  {/* Cultural Heritage */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cultural Heritage
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                      {FILTER_CONFIGS.culturalHeritage.options.map((heritage) => (
+                        <div key={heritage.value}>
+                          <label className="flex items-center font-medium">
+                            <input
+                              type="checkbox"
+                              checked={metadata.culturalHeritage?.includes(heritage.value) || false}
+                              onChange={(e) => {
+                                const current = metadata.culturalHeritage || [];
+                                let updated: string[];
+                                if (e.target.checked) {
+                                  updated = [...current, heritage.value];
+                                  if (heritage.children) {
+                                  }
+                                } else {
+                                  updated = current.filter((c: string) => {
+                                    if (c === heritage.value) return false;
+                                    if (heritage.children) {
+                                      return !heritage.children.some((child) => child.value === c);
+                                    }
+                                    return true;
+                                  });
+                                }
+                                handleMetadataChange('culturalHeritage', updated);
+                              }}
+                              className="mr-2 text-green-600"
+                            />
+                            <span className="text-sm">{heritage.label}</span>
+                          </label>
+                          {heritage.children && (
+                            <div className="ml-6 mt-1 space-y-1">
+                              {heritage.children.map((child) => (
+                                <label key={child.value} className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      metadata.culturalHeritage?.includes(child.value) || false
+                                    }
+                                    onChange={(e) => {
+                                      const current = metadata.culturalHeritage || [];
+                                      const updated = e.target.checked
+                                        ? [...current, child.value]
+                                        : current.filter((c: string) => c !== child.value);
+                                      handleMetadataChange('culturalHeritage', updated);
+                                    }}
+                                    className="mr-2 text-green-600"
+                                  />
+                                  <span className="text-sm text-gray-600">{child.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Lesson Format */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Lesson Format
+                    </label>
+                    <select
+                      value={metadata.lessonFormat || ''}
+                      onChange={(e) => handleMetadataChange('lessonFormat', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">Select lesson format</option>
+                      {FILTER_CONFIGS.lessonFormat.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Academic Integration */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Academic Integration
+                    </label>
+                    <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                      {FILTER_CONFIGS.academicIntegration.options.map((subject) => (
+                        <label key={subject.value} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={metadata.academicIntegration?.includes(subject.value) || false}
+                            onChange={(e) => {
+                              const current = metadata.academicIntegration || [];
+                              const updated = e.target.checked
+                                ? [...current, subject.value]
+                                : current.filter((s: string) => s !== subject.value);
+                              handleMetadataChange('academicIntegration', updated);
+                            }}
+                            className="mr-2 text-green-600"
+                          />
+                          <span className="text-sm">{subject.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </label>
-            </div>
+              </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Review Notes</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Add notes for the teacher or other reviewers..."
-              />
-            </div>
+              {/* Additional Information Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="mt-6">
+                  <h3 className="text-md font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">
+                    Additional Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Observances & Holidays */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Observances & Holidays
+                      </label>
+                      <CreatableSelect
+                        isMulti
+                        isClearable
+                        options={FILTER_CONFIGS.observancesHolidays.options}
+                        value={(metadata.observancesHolidays || []).map((v: string) => ({
+                          value: v,
+                          label: v,
+                        }))}
+                        onChange={(selected) => {
+                          const values = selected ? selected.map((item) => item.value) : [];
+                          handleMetadataChange('observancesHolidays', values);
+                        }}
+                        placeholder="Select or create observances..."
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            borderColor: '#d1d5db',
+                            '&:hover': { borderColor: '#9ca3af' },
+                            boxShadow: 'none',
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#e5e7eb',
+                          }),
+                        }}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Select from common observances or type to add custom ones
+                      </p>
+                    </div>
 
-            <button
-              onClick={handleSaveReview}
-              disabled={saving}
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {saving ? (
-                <>Saving...</>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Save Review
-                </>
-              )}
-            </button>
+                    {/* Cultural Responsiveness Features */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Cultural Responsiveness Features
+                      </label>
+                      <CreatableSelect
+                        isMulti
+                        isClearable
+                        options={FILTER_CONFIGS.culturalResponsivenessFeatures.options}
+                        value={(metadata.culturalResponsivenessFeatures || []).map((v: string) => ({
+                          value: v,
+                          label: v,
+                        }))}
+                        onChange={(selected) => {
+                          const values = selected ? selected.map((item) => item.value) : [];
+                          handleMetadataChange('culturalResponsivenessFeatures', values);
+                        }}
+                        placeholder="Select or create features..."
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            borderColor: '#d1d5db',
+                            '&:hover': { borderColor: '#9ca3af' },
+                            boxShadow: 'none',
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#e5e7eb',
+                          }),
+                        }}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Select from standard features or add custom ones
+                      </p>
+                    </div>
+
+                    {/* Processing Notes */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Processing Notes
+                      </label>
+                      <textarea
+                        placeholder="Any notes about the extraction or processing of this lesson..."
+                        value={metadata.processingNotes || ''}
+                        onChange={(e) => handleMetadataChange('processingNotes', e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Decision */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold mb-4">Review Decision</h2>
+
+                <div className="space-y-3 mb-4">
+                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      value="approve_new"
+                      checked={decision === 'approve_new'}
+                      onChange={(e) => setDecision(e.target.value as any)}
+                      className="mt-1 mr-3 text-green-600"
+                    />
+                    <div>
+                      <div className="font-medium">Approve as New Lesson</div>
+                      <div className="text-sm text-gray-600">
+                        This is a unique lesson to add to the collection
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      value="approve_update"
+                      checked={decision === 'approve_update'}
+                      onChange={(e) => setDecision(e.target.value as any)}
+                      className="mt-1 mr-3 text-green-600"
+                      disabled={!selectedDuplicate}
+                    />
+                    <div>
+                      <div className="font-medium">Approve as Update</div>
+                      <div className="text-sm text-gray-600">
+                        {selectedDuplicate
+                          ? 'Update the selected duplicate lesson'
+                          : 'Select a duplicate lesson first'}
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      value="needs_revision"
+                      checked={decision === 'needs_revision'}
+                      onChange={(e) => setDecision(e.target.value as any)}
+                      className="mt-1 mr-3 text-yellow-600"
+                    />
+                    <div>
+                      <div className="font-medium">Needs Revision</div>
+                      <div className="text-sm text-gray-600">Request changes from the teacher</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      value="reject"
+                      checked={decision === 'reject'}
+                      onChange={(e) => setDecision(e.target.value as any)}
+                      className="mt-1 mr-3 text-red-600"
+                    />
+                    <div>
+                      <div className="font-medium">Reject</div>
+                      <div className="text-sm text-gray-600">
+                        Do not add this lesson to the collection
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Review Notes
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Add notes for the teacher or other reviewers..."
+                  />
+                </div>
+
+                <button
+                  onClick={handleSaveReview}
+                  disabled={saving}
+                  className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>Saving...</>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Save Review
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
