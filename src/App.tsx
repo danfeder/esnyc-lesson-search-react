@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { AppErrorFallback } from './components/Common/AppErrorFallback';
 import { RouteErrorFallback } from './components/Common/RouteErrorFallback';
+import { ReviewErrorBoundary } from './components/Common/ReviewErrorBoundary';
 import { Header } from './components/Layout/Header';
 import { SearchPage } from './pages/SearchPage';
 import { SubmissionPage } from './pages/SubmissionPage';
@@ -64,7 +65,9 @@ function AppContent() {
               path="/review/:id"
               element={
                 <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
-                  <ReviewDetail />
+                  <ReviewErrorBoundary>
+                    <ReviewDetail />
+                  </ReviewErrorBoundary>
                 </ProtectedRoute>
               }
             />

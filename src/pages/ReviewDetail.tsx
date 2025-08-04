@@ -149,6 +149,18 @@ export function ReviewDetail() {
     }
   }, [id]);
 
+  // Focus management for validation errors
+  useEffect(() => {
+    if (validationErrors.length > 0) {
+      // Focus the first field with an error
+      const firstInvalidField = document.querySelector('[aria-invalid="true"]') as HTMLElement;
+      if (firstInvalidField) {
+        firstInvalidField.focus();
+        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [validationErrors]);
+
   const loadSubmission = async () => {
     try {
       // First, get the submission
@@ -399,12 +411,15 @@ export function ReviewDetail() {
     }
   };
 
-  const handleMetadataChange = useCallback((filterKey: string, value: any) => {
-    setMetadata((prev) => ({
-      ...prev,
-      [filterKey]: value,
-    }));
-  }, []);
+  const handleMetadataChange = useCallback(
+    <K extends keyof LessonMetadata>(filterKey: K, value: LessonMetadata[K]) => {
+      setMetadata((prev) => ({
+        ...prev,
+        [filterKey]: value,
+      }));
+    },
+    []
+  );
 
   const topDuplicates = useMemo(
     () =>
