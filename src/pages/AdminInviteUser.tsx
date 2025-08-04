@@ -91,14 +91,13 @@ export function AdminInviteUser() {
 
     try {
       // Check if there's already a pending invitation
-      const { data: existingInvite } = await supabase
+      const { data: existingInvites } = await supabase
         .from('user_invitations')
         .select('id')
         .eq('email', formData.email)
-        .is('accepted_at', null)
-        .single();
+        .is('accepted_at', null);
 
-      if (existingInvite) {
+      if (existingInvites && existingInvites.length > 0) {
         throw new Error('An invitation has already been sent to this email');
       }
 
@@ -125,6 +124,7 @@ export function AdminInviteUser() {
 
       // Log audit
       await supabase.from('user_management_audit').insert({
+        actor_id: user?.id,
         action: 'invite_sent',
         target_email: formData.email,
         new_values: {

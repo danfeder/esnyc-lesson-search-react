@@ -67,9 +67,13 @@ serve(async (req) => {
   }
 
   try {
+    // Log the request for debugging
+    console.log('Received request from origin:', origin);
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { type, to, data } = (await req.json()) as EmailRequest;
+    console.log('Email request:', { type, to, hasData: !!data });
 
     // Password reset, role change, and account status emails don't require authentication
     let user = null;
@@ -178,6 +182,10 @@ serve(async (req) => {
     }
 
     // Send email via Resend
+    console.log('Attempting to send email via Resend to:', to);
+    console.log('Email type:', type);
+    console.log('RESEND_API_KEY present:', !!RESEND_API_KEY);
+
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -195,6 +203,7 @@ serve(async (req) => {
     if (!resendResponse.ok) {
       const error = await resendResponse.text();
       console.error('Resend API error:', error);
+      console.error('Resend status code:', resendResponse.status);
       throw new Error(`Failed to send email: ${error}`);
     }
 
@@ -215,10 +224,18 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in send-email function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    return new Response(
+      JSON.stringify({
+        error: error.message || 'Internal server error',
+        details: error.toString(),
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
 
