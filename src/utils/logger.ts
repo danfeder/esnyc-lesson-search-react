@@ -66,7 +66,7 @@ function sanitizeArgs(args: unknown[]): unknown[] {
 /**
  * Recursively sanitize sensitive keys from objects
  */
-function sanitizeObject<T>(obj: T): T {
+function sanitizeObject(obj: any): any {
   if (!obj || typeof obj !== 'object') return obj;
 
   for (const key in obj) {

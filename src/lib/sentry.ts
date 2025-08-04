@@ -116,7 +116,7 @@ function sanitizeUrl(url: string): string {
 /**
  * Recursively sanitize object data
  */
-function sanitizeData<T>(data: T): T {
+function sanitizeData(data: any): any {
   if (!data || typeof data !== 'object') {
     return data;
   }
