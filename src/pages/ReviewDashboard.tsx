@@ -55,6 +55,36 @@ const statusColors = {
   needs_revision: 'bg-orange-100 text-orange-800',
 };
 
+// Helper function to parse extracted content
+function parseExtractedContent(content: string): { title: string; summary: string } {
+  // Remove leading dashes and clean up the content
+  const cleanedContent = content.replace(/^---+\s*/m, '').trim();
+
+  // Split into lines and filter out empty ones
+  const lines = cleanedContent.split('\n').filter((line) => line.trim() && line.trim() !== '---');
+
+  let title = '';
+  let summary = '';
+
+  // The first non-empty line after removing --- is usually the title
+  if (lines.length > 0) {
+    title = lines[0].trim();
+
+    // Remove special characters that might be at the end
+    title = title.replace(/[\u000b\u0000-\u001f]/g, '').trim();
+  }
+
+  // Look for summary pattern in the content
+  const summaryMatch = cleanedContent.match(
+    /(?:Summary:|Overview:|Description:)\s*\|?\s*(.+?)(?:\||\n|$)/is
+  );
+  if (summaryMatch && summaryMatch[1]) {
+    summary = summaryMatch[1].trim();
+  }
+
+  return { title, summary };
+}
+
 export function ReviewDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -267,9 +297,21 @@ export function ReviewDashboard() {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      Submission #{submission.id.slice(0, 8)}
-                    </h3>
+                    {/* Extract and display lesson title */}
+                    {(() => {
+                      const { title } = parseExtractedContent(submission.extracted_content || '');
+                      const displayTitle = title || 'Untitled Submission';
+                      return (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {displayTitle}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Submission ID: {submission.id.slice(0, 8)}
+                          </p>
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
