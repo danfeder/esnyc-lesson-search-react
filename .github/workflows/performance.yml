@@ -34,10 +34,10 @@ jobs:
       run: npm run build
       env:
         # Use placeholder values for Dependabot PRs (secrets not available)
-        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
-        VITE_ALGOLIA_APP_ID: ${{ secrets.VITE_ALGOLIA_APP_ID || 'placeholder-app-id' }}
-        VITE_ALGOLIA_SEARCH_API_KEY: ${{ secrets.VITE_ALGOLIA_SEARCH_API_KEY || 'placeholder-search-key' }}
+        VITE_SUPABASE_URL: ${{ github.actor == 'dependabot[bot]' && 'https://placeholder.supabase.co' || secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ github.actor == 'dependabot[bot]' && 'placeholder-anon-key' || secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_ALGOLIA_APP_ID: ${{ github.actor == 'dependabot[bot]' && 'placeholder-app-id' || secrets.VITE_ALGOLIA_APP_ID }}
+        VITE_ALGOLIA_SEARCH_API_KEY: ${{ github.actor == 'dependabot[bot]' && 'placeholder-search-key' || secrets.VITE_ALGOLIA_SEARCH_API_KEY }}
         
     - name: Serve built app
       run: |
@@ -80,10 +80,11 @@ jobs:
         npm run build
         npx vite-bundle-analyzer dist/
       env:
-        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        VITE_ALGOLIA_APP_ID: ${{ secrets.VITE_ALGOLIA_APP_ID }}
-        VITE_ALGOLIA_SEARCH_API_KEY: ${{ secrets.VITE_ALGOLIA_SEARCH_API_KEY }}
+        # Use placeholder values for Dependabot PRs (secrets not available)
+        VITE_SUPABASE_URL: ${{ github.actor == 'dependabot[bot]' && 'https://placeholder.supabase.co' || secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ github.actor == 'dependabot[bot]' && 'placeholder-anon-key' || secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_ALGOLIA_APP_ID: ${{ github.actor == 'dependabot[bot]' && 'placeholder-app-id' || secrets.VITE_ALGOLIA_APP_ID }}
+        VITE_ALGOLIA_SEARCH_API_KEY: ${{ github.actor == 'dependabot[bot]' && 'placeholder-search-key' || secrets.VITE_ALGOLIA_SEARCH_API_KEY }}
         
     - name: Upload bundle analysis
       uses: actions/upload-artifact@v4
