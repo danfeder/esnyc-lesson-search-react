@@ -46,10 +46,10 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   // Google Docs default width is ~816px, we'll scale based on that
   const calculateZoom = (containerWidth: number) => {
     const googleDocsDefaultWidth = 816;
-    const padding = 80; // Increased padding to account for Google Docs margins
+    const padding = 120; // Extra padding to account for all margins and scrollbar
     const availableWidth = containerWidth - padding;
-    // Scale down by additional 2% to ensure no horizontal scroll
-    const zoomLevel = Math.min((availableWidth / googleDocsDefaultWidth) * 98, 100);
+    // Scale down by additional 5% to ensure no horizontal scroll
+    const zoomLevel = Math.min((availableWidth / googleDocsDefaultWidth) * 95, 95);
     return Math.floor(zoomLevel);
   };
 
@@ -206,7 +206,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
       {/* Always show the "Open in Google Docs" button for easy access */}
       <div className="mt-4 flex justify-between items-center">
         <span className="text-xs text-gray-500">
-          {zoomLevel < 98 && `Scaled to ${zoomLevel}% to fit width`}
+          {zoomLevel < 95 && `Scaled to ${zoomLevel}% to fit width`}
         </span>
         <div className="flex items-center gap-4">
           <button
