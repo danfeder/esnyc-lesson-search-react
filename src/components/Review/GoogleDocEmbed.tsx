@@ -66,26 +66,25 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   };
 
   // Calculate zoom level based on container width
-  // Google Docs content area is approximately 816px wide
+  // Google Docs requires significant margin to avoid horizontal scrolling
   const calculateZoom = (containerWidth: number) => {
-    // Different viewport sizes need different adjustments
-    let googleDocsWidth = 816;
-    let extraPadding = 0;
+    // Google Docs has a base width of ~816px plus margins/UI elements
+    // We need to account for approximately 900px total width
+    const googleDocsFullWidth = 900;
 
-    // Adjust for different container sizes
-    if (containerWidth < 1200) {
-      // Smaller viewports need more aggressive scaling
-      extraPadding = 140;
-    } else if (containerWidth < 1400) {
-      // Medium viewports
-      extraPadding = 120;
-    } else {
-      // Larger viewports
-      extraPadding = 100;
-    }
+    // Always leave some buffer to ensure no horizontal scrolling
+    const buffer = 50;
+    const availableWidth = containerWidth - buffer;
 
-    const availableWidth = containerWidth - extraPadding;
-    const zoomLevel = Math.min((availableWidth / googleDocsWidth) * 100, 95);
+    // Calculate zoom to fit the document width
+    let zoomLevel = (availableWidth / googleDocsFullWidth) * 100;
+
+    // Cap at 90% to ensure we never get horizontal scrolling
+    zoomLevel = Math.min(zoomLevel, 90);
+
+    // Minimum zoom of 50% to keep it readable
+    zoomLevel = Math.max(zoomLevel, 50);
+
     return Math.floor(zoomLevel);
   };
 
