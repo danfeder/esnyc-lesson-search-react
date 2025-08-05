@@ -23,32 +23,9 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   const [userReady, setUserReady] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
-
   const handleLoad = () => {
     setLoading(false);
     setError(null);
-
-    // Try to detect the actual content width and adjust zoom
-    // This might be limited by cross-origin policies
-    if (iframeRef.current && containerRef.current) {
-      try {
-        // Attempt to measure content (may fail due to cross-origin)
-        const iframeDoc =
-          iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
-        if (iframeDoc) {
-          const contentWidth = iframeDoc.documentElement.scrollWidth;
-          console.log('Detected content width:', contentWidth);
-
-          // Recalculate zoom based on actual content width
-          const containerWidth = containerRef.current.offsetWidth;
-          const newZoom = Math.floor((containerWidth / contentWidth) * 100);
-          setIframeWidth(containerWidth); // Trigger recalculation
-        }
-      } catch (e) {
-        console.log('Cross-origin access denied, using fallback zoom calculation');
-      }
-    }
   };
 
   const handleError = () => {
@@ -66,21 +43,19 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   };
 
   // Calculate zoom level based on container width
-  // Google Docs requires significant margin to avoid horizontal scrolling
+  // Google Docs embedded view has a fixed width that needs to be scaled
   const calculateZoom = (containerWidth: number) => {
-    // Google Docs has a base width of ~816px plus margins/UI elements
-    // We need to account for approximately 900px total width
-    const googleDocsFullWidth = 900;
+    // Google Docs embedded content is approximately 816px wide
+    // With minimal UI, we need about 840-850px total
+    const googleDocsContentWidth = 816;
+    const googleDocsMargins = 30; // Reduced margins for tighter fit
+    const googleDocsTotalWidth = googleDocsContentWidth + googleDocsMargins;
 
-    // Always leave some buffer to ensure no horizontal scrolling
-    const buffer = 50;
-    const availableWidth = containerWidth - buffer;
+    // Calculate zoom to fit the container
+    let zoomLevel = (containerWidth / googleDocsTotalWidth) * 100;
 
-    // Calculate zoom to fit the document width
-    let zoomLevel = (availableWidth / googleDocsFullWidth) * 100;
-
-    // Cap at 90% to ensure we never get horizontal scrolling
-    zoomLevel = Math.min(zoomLevel, 90);
+    // Cap at 100% (don't zoom in beyond normal size)
+    zoomLevel = Math.min(zoomLevel, 100);
 
     // Minimum zoom of 50% to keep it readable
     zoomLevel = Math.max(zoomLevel, 50);
@@ -101,7 +76,8 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
 
   // Set up resize observer to adjust zoom when container size changes
   useEffect(() => {
-    if (!containerRef.current) return;
+    // Only set up observer when we're ready to show the iframe
+    if (!userReady || !containerRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -119,7 +95,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     return () => {
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [userReady]); // Re-run when userReady changes
 
   // Show error state
   if (error) {
@@ -159,6 +135,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     }
   };
 
+  // Calculate zoom level (need to do this before any early returns)
   const zoomLevel = iframeWidth > 0 ? calculateZoom(iframeWidth) : 100;
 
   // Show the pre-flight screen if user hasn't opted in yet
@@ -222,8 +199,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
       <div className="relative overflow-hidden" style={{ height }}>
         {shouldLoadIframe && (
           <iframe
-            ref={iframeRef}
-            src={`https://docs.google.com/document/d/${docId}/edit?embedded=true&rm=minimal&ui=2&chrome=false`}
+            src={`https://docs.google.com/document/d/${docId}/edit?embedded=true&rm=minimal`}
             className={`border-0 ${loading ? 'invisible' : 'visible'}`}
             style={{
               height: `${100 / (zoomLevel / 100)}%`,
