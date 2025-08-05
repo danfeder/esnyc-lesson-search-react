@@ -168,15 +168,16 @@ describe('SearchBar', () => {
       renderComponent();
 
       expect(screen.getByText(/no results found/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /tomatoes/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /tomato sauce/i })).toBeInTheDocument();
+      expect(screen.getByText('tomatoes')).toBeInTheDocument();
+      expect(screen.getByText('tomato sauce')).toBeInTheDocument();
+      expect(screen.getByText('cherry tomatoes')).toBeInTheDocument();
     });
 
     it('should apply suggestion when clicked', async () => {
       const user = userEvent.setup();
       (useSearch as any).mockReturnValue({
         data: {
-          suggestions: ['tomatoes'],
+          suggestions: ['garden planning'],
         },
         isLoading: false,
         error: null,
@@ -184,10 +185,10 @@ describe('SearchBar', () => {
 
       renderComponent();
 
-      const suggestionButton = screen.getByRole('button', { name: /tomatoes/i });
+      const suggestionButton = screen.getByRole('button', { name: 'garden planning' });
       await user.click(suggestionButton);
 
-      expect(mockSetFilters).toHaveBeenCalledWith({ query: 'tomatoes' });
+      expect(mockSetFilters).toHaveBeenCalledWith({ query: 'garden planning' });
     });
 
     it('should not display suggestions when results exist', () => {

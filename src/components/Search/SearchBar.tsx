@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Search, X, Lightbulb } from 'lucide-react';
 import { useSearchStore } from '../../stores/searchStore';
 import { useSearch } from '../../hooks/useSearch';
@@ -7,6 +7,11 @@ import { debounce } from '../../utils/debounce';
 export const SearchBar: React.FC = () => {
   const { filters, setFilters } = useSearchStore();
   const [localQuery, setLocalQuery] = useState(filters.query);
+
+  // Sync local state with external filter changes
+  useEffect(() => {
+    setLocalQuery(filters.query);
+  }, [filters.query]);
 
   // Get search results to show suggestions when no results found
   const { data: searchResults } = useSearch({

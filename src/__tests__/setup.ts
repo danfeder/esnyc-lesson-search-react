@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
+import React from 'react';
 
 // Mock environment variables if not set
 if (!process.env.VITE_SUPABASE_URL) {
@@ -108,4 +109,10 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
+}));
+
+// Mock LazyTabPanel to render content immediately in tests
+vi.mock('@/components/Filters/LazyTabPanel', () => ({
+  LazyTabPanel: ({ children, className }: any) =>
+    React.createElement('div', { className, role: 'tabpanel' }, children),
 }));
