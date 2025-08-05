@@ -66,7 +66,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   // Check if user has previously opted to load Google Docs
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
-      const hasUsedGoogleDocs = localStorage.getItem('hasUsedGoogleDocsEmbed');
+      const hasUsedGoogleDocs = window.localStorage.getItem('hasUsedGoogleDocsEmbed');
       if (hasUsedGoogleDocs === 'true') {
         setUserReady(true);
         setShouldLoadIframe(true);
@@ -79,7 +79,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     // Only set up observer when we're ready to show the iframe
     if (!userReady || !containerRef.current) return;
 
-    const resizeObserver = new ResizeObserver((entries) => {
+    const resizeObserver = new (window as any).ResizeObserver((entries: any) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
         setIframeWidth(width);
@@ -131,7 +131,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     setShouldLoadIframe(true);
     // Remember user's choice
     if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem('hasUsedGoogleDocsEmbed', 'true');
+      window.localStorage.setItem('hasUsedGoogleDocsEmbed', 'true');
     }
   };
 
@@ -224,7 +224,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
           <button
             onClick={() => {
               if (typeof window !== 'undefined' && window.localStorage) {
-                localStorage.removeItem('hasUsedGoogleDocsEmbed');
+                window.localStorage.removeItem('hasUsedGoogleDocsEmbed');
                 window.location.reload();
               }
             }}
