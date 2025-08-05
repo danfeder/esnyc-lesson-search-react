@@ -540,7 +540,7 @@ export function ReviewDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Content & Duplicates */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
           {/* Content Preview with View Mode Toggle */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -590,7 +590,7 @@ export function ReviewDetail() {
               <GoogleDocEmbed
                 docId={submission.google_doc_id}
                 docUrl={submission.google_doc_url}
-                height="600px"
+                height="calc(100vh - 16rem)"
                 fallbackToText={() => {
                   setViewMode('text');
                   if (typeof window !== 'undefined' && window.localStorage) {
