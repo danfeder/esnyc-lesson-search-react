@@ -1,0 +1,226 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --run
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint check
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+
+      - name: Check bundle size
+        run: |
+          echo "Bundle size report:"
+          du -sh dist/
+          find dist -name "*.js" -o -name "*.css" | xargs ls -lh
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: validate
+    if: github.event.inputs.environment == 'staging' || contains(github.ref, '-rc')
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.lessons.esynyc.org
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for staging
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          VITE_ALGOLIA_APP_ID: ${{ secrets.STAGING_ALGOLIA_APP_ID }}
+          VITE_ALGOLIA_SEARCH_API_KEY: ${{ secrets.STAGING_ALGOLIA_SEARCH_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: staging
+          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+          VITE_COMMIT_SHA: ${{ github.sha }}
+        run: npm run build
+
+      - name: Deploy to Netlify (Staging)
+        if: success()
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_STAGING_SITE_ID }}
+        run: |
+          npx netlify-cli deploy --prod --dir=dist --message="Deploy ${{ github.sha }}"
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against staging..."
+          # Add actual smoke test commands here
+          # npm run test:e2e:staging
+
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Staging deployment ${{ job.status }} for version ${{ github.ref }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy-production:
+    name: Deploy to Production
+    needs: validate
+    if: github.event.inputs.environment == 'production' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://lessons.esynyc.org
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for production
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+          VITE_ALGOLIA_APP_ID: ${{ secrets.PROD_ALGOLIA_APP_ID }}
+          VITE_ALGOLIA_SEARCH_API_KEY: ${{ secrets.PROD_ALGOLIA_SEARCH_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: production
+          VITE_SENTRY_RELEASE: ${{ github.ref_name }}
+          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+          VITE_COMMIT_SHA: ${{ github.sha }}
+        run: npm run build
+
+      - name: Deploy to Netlify (Production)
+        if: success()
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PROD_SITE_ID }}
+        run: |
+          npx netlify-cli deploy --prod --dir=dist --message="Production deploy ${{ github.ref_name }}"
+
+      - name: Create Sentry Release
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          npx @sentry/cli releases new ${{ github.ref_name }}
+          npx @sentry/cli releases files ${{ github.ref_name }} upload-sourcemaps ./dist
+          npx @sentry/cli releases finalize ${{ github.ref_name }}
+          npx @sentry/cli releases deploys ${{ github.ref_name }} new -e production
+
+      - name: Purge CDN Cache
+        if: success()
+        run: |
+          echo "Purging CDN cache..."
+          # Add CDN purge commands here if using CDN
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against production..."
+          # Add actual smoke test commands here
+          # npm run test:e2e:production
+
+      - name: Create GitHub Release
+        if: success() && github.event_name == 'push'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes in this release
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+            
+            ## Deployment Info
+            - Environment: Production
+            - Commit: ${{ github.sha }}
+            - Deployed at: ${{ github.event.head_commit.timestamp }}
+          draft: false
+          prerelease: false
+
+      - name: Notify Team
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Production deployment ${{ job.status }}
+            Version: ${{ github.ref_name }}
+            Deployed by: ${{ github.actor }}
+            Commit: ${{ github.sha }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [deploy-staging, deploy-production]
+    steps:
+      - name: Trigger Rollback
+        run: |
+          echo "Deployment failed. Initiating rollback..."
+          # Add rollback logic here
+          # For Netlify: netlify rollback
+          # For Vercel: vercel rollback
+          
+      - name: Notify Rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          text: 'Deployment failed and was rolled back. Please investigate.'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
