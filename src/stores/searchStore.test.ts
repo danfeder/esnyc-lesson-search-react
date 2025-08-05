@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useSearchStore } from './searchStore';
-import type { SearchFilters, Lesson } from '@/types';
+import type { Lesson } from '@/types';
 
 describe('searchStore', () => {
   beforeEach(() => {
@@ -112,8 +112,34 @@ describe('searchStore', () => {
       const { result } = renderHook(() => useSearchStore());
 
       const mockLessons: Lesson[] = [
-        { id: '1', title: 'Test Lesson 1' } as Lesson,
-        { id: '2', title: 'Test Lesson 2' } as Lesson,
+        {
+          lessonId: '1',
+          title: 'Test Lesson 1',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
+        {
+          lessonId: '2',
+          title: 'Test Lesson 2',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
       ];
 
       act(() => {
@@ -227,8 +253,34 @@ describe('searchStore', () => {
       const { result } = renderHook(() => useSearchStore());
 
       const mockLessons: Lesson[] = [
-        { id: '1', title: 'Lesson 1' } as Lesson,
-        { id: '2', title: 'Lesson 2' } as Lesson,
+        {
+          lessonId: '1',
+          title: 'Lesson 1',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
+        {
+          lessonId: '2',
+          title: 'Lesson 2',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
       ];
 
       act(() => {
@@ -244,13 +296,65 @@ describe('searchStore', () => {
       const { result } = renderHook(() => useSearchStore());
 
       const firstBatch: Lesson[] = [
-        { id: '1', title: 'Lesson 1' } as Lesson,
-        { id: '2', title: 'Lesson 2' } as Lesson,
+        {
+          lessonId: '1',
+          title: 'Lesson 1',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
+        {
+          lessonId: '2',
+          title: 'Lesson 2',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
       ];
 
       const secondBatch: Lesson[] = [
-        { id: '3', title: 'Lesson 3' } as Lesson,
-        { id: '4', title: 'Lesson 4' } as Lesson,
+        {
+          lessonId: '3',
+          title: 'Lesson 3',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
+        {
+          lessonId: '4',
+          title: 'Lesson 4',
+          summary: '',
+          fileLink: '',
+          gradeLevels: [],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
       ];
 
       act(() => {
@@ -262,21 +366,27 @@ describe('searchStore', () => {
       });
 
       expect(result.current.results).toHaveLength(4);
-      expect(result.current.results[2].id).toBe('3');
+      expect(result.current.results[2].lessonId).toBe('3');
       expect(result.current.hasMore).toBe(false);
     });
 
     it('should update hasMore correctly', () => {
       const { result } = renderHook(() => useSearchStore());
 
-      const lessons: Lesson[] = Array.from(
-        { length: 20 },
-        (_, i) =>
-          ({
-            id: `${i + 1}`,
-            title: `Lesson ${i + 1}`,
-          }) as Lesson
-      );
+      const lessons: Lesson[] = Array.from({ length: 20 }, (_, i) => ({
+        lessonId: `${i + 1}`,
+        title: `Lesson ${i + 1}`,
+        summary: '',
+        fileLink: '',
+        gradeLevels: [],
+        metadata: {
+          coreCompetencies: [],
+          culturalHeritage: [],
+          activityType: [],
+          lessonFormat: [],
+        },
+        confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+      }));
 
       act(() => {
         result.current.setResults(lessons, 20);
@@ -363,12 +473,12 @@ describe('searchStore', () => {
 
       act(() => {
         result.current.setViewState({
-          sortBy: 'date',
+          sortBy: 'modified',
           resultsPerPage: 50,
         });
       });
 
-      expect(result.current.viewState.sortBy).toBe('date');
+      expect(result.current.viewState.sortBy).toBe('modified');
       expect(result.current.viewState.resultsPerPage).toBe(50);
     });
 
@@ -376,14 +486,14 @@ describe('searchStore', () => {
       const { result } = renderHook(() => useSearchStore());
 
       act(() => {
-        result.current.setViewState({ sortBy: 'date' });
+        result.current.setViewState({ sortBy: 'modified' });
       });
 
       act(() => {
         result.current.setViewState({ resultsPerPage: 50 });
       });
 
-      expect(result.current.viewState.sortBy).toBe('date');
+      expect(result.current.viewState.sortBy).toBe('modified');
       expect(result.current.viewState.resultsPerPage).toBe(50);
       expect(result.current.viewState.currentPage).toBe(1);
     });
@@ -393,7 +503,7 @@ describe('searchStore', () => {
 
       act(() => {
         result.current.setViewState({
-          sortBy: 'date',
+          sortBy: 'modified',
           currentPage: 5,
           resultsPerPage: 50,
         });

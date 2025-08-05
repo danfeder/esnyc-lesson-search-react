@@ -1,5 +1,6 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
@@ -143,17 +144,33 @@ describe('Search Flow Integration', () => {
       const user = userEvent.setup();
       const mockLessons: Lesson[] = [
         {
-          id: '1',
+          lessonId: '1',
           title: 'Tomato Salad',
           summary: 'Make a fresh tomato salad',
-          grade_levels: ['3', '4'],
-        } as Lesson,
+          fileLink: 'https://example.com/lesson1',
+          gradeLevels: ['3', '4'],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
         {
-          id: '2',
+          lessonId: '2',
           title: 'Growing Tomatoes',
           summary: 'Learn to grow tomatoes in the garden',
-          grade_levels: ['5', '6'],
-        } as Lesson,
+          fileLink: 'https://example.com/lesson2',
+          gradeLevels: ['5', '6'],
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
+          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+        },
       ];
 
       (useSearch as any).mockReturnValue({
@@ -186,7 +203,25 @@ describe('Search Flow Integration', () => {
       // Set initial search state
       const store = useSearchStore.getState();
       store.setFilters({ query: 'tomato' });
-      store.setResults([{ id: '1', title: 'Test Lesson' } as Lesson], 1);
+      store.setResults(
+        [
+          {
+            lessonId: '1',
+            title: 'Test Lesson',
+            summary: 'Test',
+            fileLink: 'https://example.com/test',
+            gradeLevels: [],
+            metadata: {
+              coreCompetencies: [],
+              culturalHeritage: [],
+              activityType: [],
+              lessonFormat: [],
+            },
+            confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
+          },
+        ],
+        1
+      );
 
       renderApp();
 
