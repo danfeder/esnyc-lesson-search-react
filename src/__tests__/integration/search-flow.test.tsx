@@ -444,16 +444,11 @@ describe('Search Flow Integration', () => {
     it('should show loading state during search', async () => {
       const user = userEvent.setup();
 
-      let resolveSearch: any;
-      const searchPromise = new Promise((resolve) => {
-        resolveSearch = resolve;
-      });
-
       (useSearch as any).mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
-        refetch: vi.fn(() => searchPromise),
+        refetch: vi.fn(),
       });
 
       renderApp();
@@ -471,9 +466,12 @@ describe('Search Flow Integration', () => {
         expect(store.filters.query).toBe('loading test');
       });
 
-      // Resolve the search
-      resolveSearch({
+      // Mock search completion
+      (useSearch as any).mockReturnValue({
         data: { results: [], totalCount: 0 },
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
       });
     });
   });

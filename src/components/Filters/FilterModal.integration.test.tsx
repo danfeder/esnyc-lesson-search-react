@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render } from '@testing-library/react';
 import { FilterModal } from './FilterModal';
 import type { SearchFilters } from '@/types';
 
@@ -53,8 +52,6 @@ describe('FilterModal Integration Tests', () => {
   });
 
   it('should call onFiltersChange when filters are modified', async () => {
-    const user = userEvent.setup();
-
     render(
       <FilterModal
         isOpen={true}
