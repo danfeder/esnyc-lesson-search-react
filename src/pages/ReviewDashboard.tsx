@@ -71,6 +71,7 @@ function parseExtractedContent(content: string): string {
 
     // Remove Unicode control characters (vertical tab \u000b and C0 controls \u0000-\u001f)
     // These are non-printable characters that may cause display issues
+    // eslint-disable-next-line no-control-regex
     title = title.replace(/[\u000b\u0000-\u001f]/g, '').trim();
   }
 
