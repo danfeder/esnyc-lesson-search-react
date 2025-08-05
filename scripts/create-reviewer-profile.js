@@ -1,3 +1,16 @@
+/**
+ * @description Create reviewer profiles for admin users
+ * @requires Environment variables: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * @example
+ * node scripts/create-reviewer-profile.js
+ *
+ * @notes
+ * - Uses service role key to bypass RLS
+ * - Creates user profile with reviewer role
+ * - Sets up necessary permissions
+ * - Useful for onboarding new reviewers
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -14,6 +27,11 @@ if (!supabaseUrl || !supabaseServiceKey) {
 // Use service role key to bypass RLS
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+/**
+ * Create a reviewer profile in the database
+ * @returns {Promise<void>}
+ * @throws {Error} If database operations fail
+ */
 async function createReviewerProfile() {
   console.log('Creating reviewer profile for new user...');
 

@@ -1,6 +1,16 @@
 /**
- * Script to import lesson data from the existing JSON file to Supabase
- * Run with: node scripts/import-data.js
+ * @description Import lesson data from consolidated JSON file to Supabase database
+ * @requires Environment variables: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * @example
+ * npm run import-data
+ * # or
+ * node scripts/import-data.js
+ *
+ * @notes
+ * - Imports from data/consolidated_lessons.json
+ * - Filters out lessons without essential data (lesson_id, file_link)
+ * - Imports in batches of 50 to avoid timeouts
+ * - Uses upsert to handle existing records
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -26,6 +36,11 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+/**
+ * Import lessons from JSON file to Supabase database
+ * @returns {Promise<void>}
+ * @throws {Error} If import fails or required files are missing
+ */
 async function importLessons() {
   try {
     console.log('🔄 Loading lesson data...');

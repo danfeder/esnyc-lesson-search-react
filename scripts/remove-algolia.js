@@ -1,8 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Script to remove Algolia dependencies and clean up after migration
- * Run this AFTER confirming PostgreSQL search is working
+ * @description Remove Algolia dependencies and clean up after migration to PostgreSQL search
+ * @requires No environment variables
+ * @example
+ * node scripts/remove-algolia.js
+ *
+ * @notes
+ * - Run ONLY after confirming PostgreSQL search is working
+ * - Removes Algolia-related files
+ * - Updates package.json to remove Algolia dependencies
+ * - Updates environment variables
+ * - Creates backup before making changes
+ *
+ * @warning This is a destructive operation - ensure you have backups
  */
 
 import fs from 'fs/promises';
@@ -13,6 +24,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, '..');
 
+/**
+ * Remove Algolia dependencies from the project
+ * @returns {Promise<void>}
+ * @throws {Error} If file operations fail
+ */
 async function removeAlgolia() {
   console.log('🧹 Removing Algolia dependencies and cleaning up...\n');
 

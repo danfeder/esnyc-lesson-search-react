@@ -1,3 +1,16 @@
+/**
+ * @description Create test user profiles for development
+ * @requires Environment variables: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * @example
+ * node scripts/create-test-profiles.js
+ *
+ * @notes
+ * - Creates test users with different roles (teacher, reviewer, admin)
+ * - Uses service role key to bypass RLS
+ * - Useful for testing authentication and permissions
+ * - DO NOT run in production
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
