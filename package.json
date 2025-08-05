@@ -44,7 +44,7 @@
     "@types/react-dom": "^19.1.6",
     "@types/react-select": "^5.0.0",
     "@vitejs/plugin-react": "^4.6.0",
-    "algoliasearch": "^5.33.0",
+    "algoliasearch": "^5.35.0",
     "csv-parse": "^6.1.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.0",
