@@ -108,6 +108,11 @@ describe('Search Flow Integration', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    // Reset store state after each test to prevent state pollution
+    const store = useSearchStore.getState();
+    store.clearFilters();
+    store.setResults([], 0);
+    store.setError(null);
   });
 
   const renderApp = () => {
@@ -455,6 +460,8 @@ describe('Search Flow Integration', () => {
 
       // Perform a search
       const searchInput = screen.getByPlaceholderText(/search lessons/i);
+      // Clear any existing value first
+      await user.clear(searchInput);
       await user.type(searchInput, 'loading test');
 
       const searchButton = screen.getByRole('button', { name: /^search$/i });
