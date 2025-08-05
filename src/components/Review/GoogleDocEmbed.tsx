@@ -23,9 +23,32 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   const [userReady, setUserReady] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
   const handleLoad = () => {
     setLoading(false);
     setError(null);
+
+    // Try to detect the actual content width and adjust zoom
+    // This might be limited by cross-origin policies
+    if (iframeRef.current && containerRef.current) {
+      try {
+        // Attempt to measure content (may fail due to cross-origin)
+        const iframeDoc =
+          iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+        if (iframeDoc) {
+          const contentWidth = iframeDoc.documentElement.scrollWidth;
+          console.log('Detected content width:', contentWidth);
+
+          // Recalculate zoom based on actual content width
+          const containerWidth = containerRef.current.offsetWidth;
+          const newZoom = Math.floor((containerWidth / contentWidth) * 100);
+          setIframeWidth(containerWidth); // Trigger recalculation
+        }
+      } catch (e) {
+        console.log('Cross-origin access denied, using fallback zoom calculation');
+      }
+    }
   };
 
   const handleError = () => {
@@ -43,13 +66,26 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   };
 
   // Calculate zoom level based on container width
-  // Google Docs default width is ~816px, we'll scale based on that
+  // Google Docs content area is approximately 816px wide
   const calculateZoom = (containerWidth: number) => {
-    const googleDocsDefaultWidth = 816;
-    const padding = 120; // Extra padding to account for all margins and scrollbar
-    const availableWidth = containerWidth - padding;
-    // Scale down by additional 5% to ensure no horizontal scroll
-    const zoomLevel = Math.min((availableWidth / googleDocsDefaultWidth) * 95, 95);
+    // Different viewport sizes need different adjustments
+    let googleDocsWidth = 816;
+    let extraPadding = 0;
+
+    // Adjust for different container sizes
+    if (containerWidth < 1200) {
+      // Smaller viewports need more aggressive scaling
+      extraPadding = 140;
+    } else if (containerWidth < 1400) {
+      // Medium viewports
+      extraPadding = 120;
+    } else {
+      // Larger viewports
+      extraPadding = 100;
+    }
+
+    const availableWidth = containerWidth - extraPadding;
+    const zoomLevel = Math.min((availableWidth / googleDocsWidth) * 100, 95);
     return Math.floor(zoomLevel);
   };
 
@@ -187,6 +223,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
       <div className="relative overflow-hidden" style={{ height }}>
         {shouldLoadIframe && (
           <iframe
+            ref={iframeRef}
             src={`https://docs.google.com/document/d/${docId}/edit?embedded=true&rm=minimal&ui=2&chrome=false`}
             className={`border-0 ${loading ? 'invisible' : 'visible'}`}
             style={{
