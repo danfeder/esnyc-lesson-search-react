@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -37,6 +37,7 @@ interface Submission {
       title: string;
     };
   }>;
+  extractedTitle?: string; // Added for memoized title
 }
 
 const statusIcons = {
@@ -204,6 +205,17 @@ export function ReviewDashboard() {
     return [];
   };
 
+  // Optimize title extraction with useMemo to avoid recalculating on every render
+  const submissionsWithTitles = useMemo(
+    () =>
+      submissions.map((submission) => ({
+        ...submission,
+        extractedTitle:
+          parseExtractedContent(submission.extracted_content || '') || 'Untitled Submission',
+      })),
+    [submissions]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -250,7 +262,7 @@ export function ReviewDashboard() {
                 {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
                 {status !== 'all' && (
                   <span className="ml-2 text-xs">
-                    ({submissions.filter((s) => s.status === status).length})
+                    ({submissionsWithTitles.filter((s) => s.status === status).length})
                   </span>
                 )}
               </button>
@@ -261,13 +273,13 @@ export function ReviewDashboard() {
 
       {/* Submissions List */}
       <div className="space-y-4">
-        {submissions.length === 0 ? (
+        {submissionsWithTitles.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-gray-600">No submissions found</p>
           </div>
         ) : (
-          submissions.map((submission) => {
+          submissionsWithTitles.map((submission) => {
             const StatusIcon = statusIcons[submission.status];
             const topDuplicates = getTopDuplicates();
 
@@ -281,6 +293,8 @@ export function ReviewDashboard() {
                     <div className="flex items-center gap-4 mb-2">
                       <span
                         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${statusColors[submission.status]}`}
+                        role="status"
+                        aria-label={`Submission status: ${submission.status.replace('_', ' ')}`}
                       >
                         <StatusIcon size={16} />
                         {submission.status.replace('_', ' ')}
@@ -290,13 +304,17 @@ export function ReviewDashboard() {
                       </span>
                     </div>
 
-                    {/* Extract and display lesson title */}
+                    {/* Display lesson title with accessibility */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {parseExtractedContent(submission.extracted_content || '') ||
-                          'Untitled Submission'}
+                        <span aria-label={`Lesson title: ${submission.extractedTitle}`}>
+                          {submission.extractedTitle}
+                        </span>
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p
+                        className="text-sm text-gray-500"
+                        aria-label={`Submission ID: ${submission.id.slice(0, 8)}`}
+                      >
                         Submission ID: {submission.id.slice(0, 8)}
                       </p>
                     </div>
