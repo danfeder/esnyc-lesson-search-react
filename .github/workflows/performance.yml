@@ -22,7 +22,13 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: |
+        # Workaround for Dependabot PRs with missing optional dependencies
+        if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+          npm install
+        else
+          npm ci
+        fi
       
     - name: Build project
       run: npm run build
@@ -60,7 +66,13 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: |
+        # Workaround for Dependabot PRs with missing optional dependencies
+        if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+          npm install
+        else
+          npm ci
+        fi
       
     - name: Build and analyze bundle
       run: |
