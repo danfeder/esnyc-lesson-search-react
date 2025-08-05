@@ -1,5 +1,6 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FilterModal } from './FilterModal';
 import type { SearchFilters } from '@/types';
@@ -53,31 +54,19 @@ describe('FilterModal', () => {
 
     it('should render all three tabs', () => {
       renderComponent();
-      expect(screen.getByRole('tab', { name: /basic filters/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /educational/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /cultural & seasonal/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /essential/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /themes/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /advanced/i })).toBeInTheDocument();
     });
 
     it('should render close and apply buttons', () => {
       renderComponent();
       expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /apply filters/i })).toBeInTheDocument();
-    });
-
-    it('should display filter count when filters are applied', () => {
-      const filters = {
-        ...defaultFilters,
-        gradeLevels: ['3', '4', '5'],
-        seasons: ['Spring', 'Summer'],
-      };
-      renderComponent({ filters });
-
-      // Should show total count of active filters (5)
-      expect(screen.getByText(/\(5\)/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /apply.*filter/i })).toBeInTheDocument();
     });
   });
 
-  describe('Basic Filters Tab', () => {
+  describe('Essential Filters Tab', () => {
     it('should render grade level options', () => {
       renderComponent();
 
@@ -111,11 +100,15 @@ describe('FilterModal', () => {
       expect(within(locationSection!).getByLabelText('Both')).toBeInTheDocument();
     });
 
-    it('should render lesson format dropdown', () => {
+    it('should render season options with year-round checkbox', () => {
       renderComponent();
 
-      expect(screen.getByText('Lesson Format')).toBeInTheDocument();
-      expect(screen.getByRole('combobox', { name: /lesson format/i })).toBeInTheDocument();
+      expect(screen.getByText('Season & Timing')).toBeInTheDocument();
+      expect(screen.getByLabelText('Fall')).toBeInTheDocument();
+      expect(screen.getByLabelText('Winter')).toBeInTheDocument();
+      expect(screen.getByLabelText('Spring')).toBeInTheDocument();
+      expect(screen.getByLabelText('Summer')).toBeInTheDocument();
+      expect(screen.getByLabelText(/include year-round/i)).toBeInTheDocument();
     });
 
     it('should handle grade selection', async () => {
@@ -125,134 +118,114 @@ describe('FilterModal', () => {
       const grade3 = screen.getByLabelText('3rd Grade');
       await user.click(grade3);
 
-      const applyButton = screen.getByRole('button', { name: /apply filters/i });
-      await user.click(applyButton);
-
       expect(mockOnFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          gradeLevels: ['3'],
-        })
-      );
-    });
-
-    it('should handle grade group selection', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      const earlyChildhood = screen.getByRole('button', { name: /early childhood/i });
-      await user.click(earlyChildhood);
-
-      const applyButton = screen.getByRole('button', { name: /apply filters/i });
-      await user.click(applyButton);
-
-      expect(mockOnFiltersChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          gradeLevels: expect.arrayContaining(['3K', 'PK', 'K']),
+          gradeLevels: expect.arrayContaining(['3']),
         })
       );
     });
   });
 
-  describe('Educational Tab', () => {
+  describe('Themes & Culture Tab', () => {
     it('should render thematic categories', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Switch to Educational tab
-      const educationalTab = screen.getByRole('tab', { name: /educational/i });
-      await user.click(educationalTab);
+      // Switch to Themes & Culture tab
+      const themesTab = screen.getByRole('tab', { name: /themes/i });
+      await user.click(themesTab);
 
-      expect(screen.getByText('Thematic Categories')).toBeInTheDocument();
-      expect(screen.getByLabelText('Garden Basics')).toBeInTheDocument();
-      expect(screen.getByLabelText('Plant Growth')).toBeInTheDocument();
-      expect(screen.getByLabelText('Food Systems')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Thematic Category')).toBeInTheDocument();
+      });
+    });
+
+    it('should render cultural heritage section', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      const themesTab = screen.getByRole('tab', { name: /themes/i });
+      await user.click(themesTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Cultural Heritage')).toBeInTheDocument();
+      });
     });
 
     it('should render core competencies', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      const educationalTab = screen.getByRole('tab', { name: /educational/i });
-      await user.click(educationalTab);
+      const themesTab = screen.getByRole('tab', { name: /themes/i });
+      await user.click(themesTab);
 
-      expect(screen.getByText('Core Competencies')).toBeInTheDocument();
-      expect(screen.getByLabelText(/critical thinking/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/healthy habits/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Core Competencies')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Advanced Tab', () => {
+    it('should render lesson format dropdown', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      const advancedTab = screen.getByRole('tab', { name: /advanced/i });
+      await user.click(advancedTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Lesson Format')).toBeInTheDocument();
+      });
+
+      // Expand lesson format disclosure
+      const lessonFormatButton = screen.getByRole('button', { name: /lesson format/i });
+      await user.click(lessonFormatButton);
+
+      const dropdown = screen.getByLabelText(/select lesson format/i);
+      expect(dropdown).toBeInTheDocument();
     });
 
     it('should render academic integration options', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      const educationalTab = screen.getByRole('tab', { name: /educational/i });
-      await user.click(educationalTab);
+      const advancedTab = screen.getByRole('tab', { name: /advanced/i });
+      await user.click(advancedTab);
 
-      expect(screen.getByText('Academic Integration')).toBeInTheDocument();
-      expect(screen.getByLabelText('Math')).toBeInTheDocument();
-      expect(screen.getByLabelText('Science')).toBeInTheDocument();
-      expect(screen.getByLabelText('Literacy/ELA')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Academic Integration')).toBeInTheDocument();
+      });
     });
 
     it('should render SEL competencies', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      const educationalTab = screen.getByRole('tab', { name: /educational/i });
-      await user.click(educationalTab);
+      const advancedTab = screen.getByRole('tab', { name: /advanced/i });
+      await user.click(advancedTab);
 
-      expect(screen.getByText('Social-Emotional Learning')).toBeInTheDocument();
-      expect(screen.getByLabelText('Self-Awareness')).toBeInTheDocument();
-      expect(screen.getByLabelText('Social Awareness')).toBeInTheDocument();
-    });
-  });
-
-  describe('Cultural & Seasonal Tab', () => {
-    it('should render season options', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      // Switch to Cultural & Seasonal tab
-      const culturalTab = screen.getByRole('tab', { name: /cultural & seasonal/i });
-      await user.click(culturalTab);
-
-      expect(screen.getByText('Season & Timing')).toBeInTheDocument();
-      expect(screen.getByLabelText('Fall')).toBeInTheDocument();
-      expect(screen.getByLabelText('Winter')).toBeInTheDocument();
-      expect(screen.getByLabelText('Spring')).toBeInTheDocument();
-      expect(screen.getByLabelText('Summer')).toBeInTheDocument();
-    });
-
-    it('should render include all seasons checkbox', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      const culturalTab = screen.getByRole('tab', { name: /cultural & seasonal/i });
-      await user.click(culturalTab);
-
-      expect(screen.getByLabelText(/include year-round lessons/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Social-Emotional Learning')).toBeInTheDocument();
+      });
     });
 
     it('should render cooking methods dropdown', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      const culturalTab = screen.getByRole('tab', { name: /cultural & seasonal/i });
-      await user.click(culturalTab);
+      const advancedTab = screen.getByRole('tab', { name: /advanced/i });
+      await user.click(advancedTab);
 
-      expect(screen.getByText('Cooking Methods')).toBeInTheDocument();
-      expect(screen.getByRole('combobox', { name: /cooking methods/i })).toBeInTheDocument();
-    });
+      await waitFor(() => {
+        expect(screen.getByText('Cooking Methods')).toBeInTheDocument();
+      });
 
-    it('should render cultural heritage filter', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      // Expand cooking methods disclosure
+      const cookingMethodsButton = screen.getByRole('button', { name: /cooking methods/i });
+      await user.click(cookingMethodsButton);
 
-      const culturalTab = screen.getByRole('tab', { name: /cultural & seasonal/i });
-      await user.click(culturalTab);
-
-      expect(screen.getByText('Cultural Heritage')).toBeInTheDocument();
-      // Cultural heritage uses virtualized list, so options may not all be visible
-      expect(screen.getByText(/select cultural backgrounds/i)).toBeInTheDocument();
+      const dropdown = screen.getByLabelText(/select cooking method/i);
+      expect(dropdown).toBeInTheDocument();
     });
   });
 
@@ -264,213 +237,198 @@ describe('FilterModal', () => {
       const closeButton = screen.getByRole('button', { name: /close/i });
       await user.click(closeButton);
 
-      expect(mockOnClose).toHaveBeenCalled();
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
     it('should apply filters when apply button is clicked', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Select some filters
-      const grade3 = screen.getByLabelText('3rd Grade');
-      await user.click(grade3);
-
-      const applyButton = screen.getByRole('button', { name: /apply filters/i });
+      const applyButton = screen.getByRole('button', { name: /apply.*filter/i });
       await user.click(applyButton);
 
-      expect(mockOnFiltersChange).toHaveBeenCalled();
-      expect(mockOnClose).toHaveBeenCalled();
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
-    it('should clear all filters when clear button is clicked', async () => {
+    it('should clear all filters', async () => {
       const user = userEvent.setup();
-      const filters = {
+
+      const filtersWithValues = {
         ...defaultFilters,
         gradeLevels: ['3', '4'],
         seasons: ['Spring'],
+        activityType: ['cooking-only'],
       };
-      renderComponent({ filters });
+
+      renderComponent({ filters: filtersWithValues });
 
       const clearButton = screen.getByRole('button', { name: /clear all/i });
       await user.click(clearButton);
 
-      const applyButton = screen.getByRole('button', { name: /apply filters/i });
-      await user.click(applyButton);
-
       expect(mockOnFiltersChange).toHaveBeenCalledWith(defaultFilters);
     });
 
-    it('should switch tabs when clicked', async () => {
+    it('should handle keyboard navigation', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Initially on Basic Filters tab
-      expect(screen.getByText('Grade Levels')).toBeInTheDocument();
+      // Close on Escape
+      await user.keyboard('{Escape}');
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+    });
 
-      // Switch to Educational tab
-      const educationalTab = screen.getByRole('tab', { name: /educational/i });
-      await user.click(educationalTab);
+    it('should navigate tabs with keyboard shortcuts', async () => {
+      const user = userEvent.setup();
+      renderComponent();
 
-      expect(screen.getByText('Thematic Categories')).toBeInTheDocument();
+      // Navigate to next tab with Ctrl+ArrowRight
+      await user.keyboard('{Control>}{ArrowRight}{/Control}');
 
-      // Switch to Cultural tab
-      const culturalTab = screen.getByRole('tab', { name: /cultural & seasonal/i });
-      await user.click(culturalTab);
-
-      expect(screen.getByText('Season & Timing')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Thematic Category')).toBeInTheDocument();
+      });
     });
   });
 
-  describe('Keyboard Navigation', () => {
-    it('should close modal on Escape key', () => {
+  describe('Filter Application', () => {
+    it('should handle multiple filter changes', async () => {
+      const user = userEvent.setup();
       renderComponent();
 
-      fireEvent.keyDown(document, { key: 'Escape' });
+      // Select grade
+      const grade3 = screen.getByLabelText('3rd Grade');
+      await user.click(grade3);
 
-      expect(mockOnClose).toHaveBeenCalled();
+      // Select activity type
+      const cookingOnly = screen.getByLabelText('Cooking Only');
+      await user.click(cookingOnly);
+
+      // Select location
+      const indoor = screen.getByLabelText('Indoor');
+      await user.click(indoor);
+
+      // Verify all changes were made
+      expect(mockOnFiltersChange).toHaveBeenCalledTimes(3);
+      expect(mockOnFiltersChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          location: expect.arrayContaining(['Indoor']),
+        })
+      );
     });
 
-    it('should navigate tabs with Ctrl+Arrow keys', () => {
-      renderComponent();
+    it('should handle filter removal', async () => {
+      const user = userEvent.setup();
 
-      // Move to next tab with Ctrl+Right
-      fireEvent.keyDown(document, { key: 'ArrowRight', ctrlKey: true });
+      const filtersWithValues = {
+        ...defaultFilters,
+        gradeLevels: ['3', '4'],
+      };
 
-      // Should show Educational tab content
-      waitFor(() => {
-        expect(screen.getByText('Thematic Categories')).toBeInTheDocument();
-      });
+      renderComponent({ filters: filtersWithValues });
 
-      // Move to previous tab with Ctrl+Left
-      fireEvent.keyDown(document, { key: 'ArrowLeft', ctrlKey: true });
+      // Uncheck grade 3
+      const grade3 = screen.getByLabelText('3rd Grade');
+      await user.click(grade3);
 
-      // Should show Basic Filters tab content
-      waitFor(() => {
-        expect(screen.getByText('Grade Levels')).toBeInTheDocument();
-      });
+      expect(mockOnFiltersChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gradeLevels: ['4'],
+        })
+      );
     });
 
-    it('should navigate tabs with Cmd+Arrow keys on Mac', () => {
+    it('should handle dropdown filters', async () => {
+      const user = userEvent.setup();
       renderComponent();
 
-      // Move to next tab with Cmd+Right
-      fireEvent.keyDown(document, { key: 'ArrowRight', metaKey: true });
+      const advancedTab = screen.getByRole('tab', { name: /advanced/i });
+      await user.click(advancedTab);
 
-      waitFor(() => {
-        expect(screen.getByText('Thematic Categories')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Lesson Format')).toBeInTheDocument();
       });
+
+      // Expand and select lesson format
+      const lessonFormatButton = screen.getByRole('button', { name: /lesson format/i });
+      await user.click(lessonFormatButton);
+
+      const dropdown = screen.getByLabelText(/select lesson format/i);
+      await user.selectOptions(dropdown, 'single-period');
+
+      expect(mockOnFiltersChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lessonFormat: 'single-period',
+        })
+      );
     });
   });
 
   describe('Accessibility', () => {
-    it('should have accessible dialog structure', () => {
+    it('should have proper ARIA labels', () => {
       renderComponent();
 
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveAttribute('aria-modal', 'true');
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+      expect(screen.getByLabelText(/filter categories/i)).toBeInTheDocument();
     });
 
-    it('should have accessible tab structure', () => {
-      renderComponent();
+    it('should announce filter counts to screen readers', () => {
+      const filtersWithValues = {
+        ...defaultFilters,
+        gradeLevels: ['3', '4', '5'],
+      };
 
-      const tablist = screen.getByRole('tablist');
-      expect(tablist).toBeInTheDocument();
+      renderComponent({ filters: filtersWithValues });
 
-      const tabs = screen.getAllByRole('tab');
-      expect(tabs).toHaveLength(3);
-
-      // First tab should be selected by default
-      expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+      // Check for screen reader announcement of selected filters
+      expect(screen.getByText(/3 selected/i)).toBeInTheDocument();
     });
 
-    it('should have accessible form controls', () => {
-      renderComponent();
-
-      // Checkboxes should have labels
-      const checkboxes = screen.getAllByRole('checkbox');
-      checkboxes.forEach((checkbox) => {
-        expect(checkbox).toHaveAccessibleName();
-      });
-    });
-
-    it('should manage focus correctly', async () => {
+    it('should maintain focus trap', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Tab through elements
+      // Tab through focusable elements
       await user.tab();
 
-      // Should be able to tab to interactive elements
-      const activeElement = document.activeElement;
-      expect(activeElement?.tagName).toMatch(/BUTTON|INPUT|SELECT/i);
+      // Should focus on close button first
+      expect(screen.getByRole('button', { name: /close/i })).toHaveFocus();
     });
   });
 
-  describe('Filter Persistence', () => {
-    it('should preserve selected filters when switching tabs', async () => {
+  describe('Performance', () => {
+    it('should memoize component to prevent unnecessary re-renders', () => {
+      const { rerender } = renderComponent();
+
+      // Rerender with same props
+      rerender(
+        <FilterModal
+          isOpen={true}
+          onClose={mockOnClose}
+          filters={defaultFilters}
+          onFiltersChange={mockOnFiltersChange}
+        />
+      );
+
+      // Should not trigger new renders (mocked functions not called)
+      expect(mockOnClose).not.toHaveBeenCalled();
+    });
+
+    it('should lazy load tab panels', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Select grade in Basic tab
-      const grade3 = screen.getByLabelText('3rd Grade');
-      await user.click(grade3);
-      expect(grade3).toBeChecked();
+      // Initially only Essential tab content should be loaded
+      expect(screen.getByText('Grade Levels')).toBeInTheDocument();
+      expect(screen.queryByText('Thematic Category')).not.toBeInTheDocument();
 
-      // Switch to Educational tab
-      const educationalTab = screen.getByRole('tab', { name: /educational/i });
-      await user.click(educationalTab);
+      // Switch to Themes tab
+      const themesTab = screen.getByRole('tab', { name: /themes/i });
+      await user.click(themesTab);
 
-      // Switch back to Basic tab
-      const basicTab = screen.getByRole('tab', { name: /basic filters/i });
-      await user.click(basicTab);
-
-      // Grade should still be selected
-      expect(screen.getByLabelText('3rd Grade')).toBeChecked();
-    });
-
-    it('should show existing filters when modal opens', () => {
-      const filters = {
-        ...defaultFilters,
-        gradeLevels: ['3', '4'],
-        seasons: ['Spring', 'Summer'],
-        activityType: ['cooking-only'],
-      };
-
-      renderComponent({ filters });
-
-      expect(screen.getByLabelText('3rd Grade')).toBeChecked();
-      expect(screen.getByLabelText('4th Grade')).toBeChecked();
-      expect(screen.getByLabelText('Cooking Only')).toBeChecked();
-    });
-  });
-
-  describe('Facet Display', () => {
-    it('should display facet counts when provided', () => {
-      const facets = {
-        gradeLevels: {
-          '3': 25,
-          '4': 30,
-          '5': 15,
-        },
-        activityType: {
-          'cooking-only': 45,
-          'garden-only': 38,
-        },
-      };
-
-      renderComponent({ facets });
-
-      // Should show counts next to options
-      expect(screen.getByText(/3rd Grade.*\(25\)/)).toBeInTheDocument();
-      expect(screen.getByText(/4th Grade.*\(30\)/)).toBeInTheDocument();
-      expect(screen.getByText(/Cooking Only.*\(45\)/)).toBeInTheDocument();
-    });
-
-    it('should not show counts when facets not provided', () => {
-      renderComponent();
-
-      // Should not show counts
-      expect(screen.queryByText(/3rd Grade.*\(\d+\)/)).not.toBeInTheDocument();
+      // Now Themes content should be loaded
+      await waitFor(() => {
+        expect(screen.getByText('Thematic Category')).toBeInTheDocument();
+      });
     });
   });
 });

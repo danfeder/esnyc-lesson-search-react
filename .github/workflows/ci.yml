@@ -36,6 +36,9 @@ jobs:
       
     - name: Run tests
       run: npm test -- --run
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       
     - name: Build project
       run: npm run build
@@ -75,6 +78,9 @@ jobs:
       run: |
         npm install --save-dev @vitest/coverage-v8
         npm run test:coverage -- --run
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
