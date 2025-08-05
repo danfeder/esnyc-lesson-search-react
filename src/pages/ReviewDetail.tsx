@@ -540,7 +540,11 @@ export function ReviewDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Content & Duplicates */}
-        <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+        <section
+          className="lg:col-span-2 space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+          aria-label="Submission content and duplicates"
+          tabIndex={0}
+        >
           {/* Content Preview with View Mode Toggle */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -649,7 +653,7 @@ export function ReviewDetail() {
               </div>
             </div>
           )}
-        </div>
+        </section>
 
         {/* Right Column - Metadata & Decision */}
         <div className="space-y-6">

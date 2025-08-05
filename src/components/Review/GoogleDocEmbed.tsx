@@ -9,6 +9,14 @@ interface GoogleDocEmbedProps {
   fallbackToText?: () => void;
 }
 
+// Validate docId to prevent injection attacks
+const isValidDocId = (id: string): boolean => {
+  // Google Doc IDs are alphanumeric with hyphens and underscores
+  // They're typically 44 characters but can vary
+  const docIdPattern = /^[a-zA-Z0-9_-]+$/;
+  return docIdPattern.test(id) && id.length > 0 && id.length < 100;
+};
+
 export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   docId,
   docUrl,
@@ -22,6 +30,18 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   const [shouldLoadIframe, setShouldLoadIframe] = useState(false);
   const [userReady, setUserReady] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Validate docId immediately
+  const safeDocId = isValidDocId(docId) ? docId : '';
+
+  // Check for invalid docId early
+  useEffect(() => {
+    if (!safeDocId && docId) {
+      const validationError = new Error('Invalid Google Doc ID format');
+      setError(validationError);
+      onError?.(validationError);
+    }
+  }, [docId, safeDocId, onError]);
 
   const handleLoad = () => {
     setLoading(false);
@@ -79,7 +99,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     // Only set up observer when we're ready to show the iframe
     if (!userReady || !containerRef.current) return;
 
-    const resizeObserver = new (window as any).ResizeObserver((entries: any) => {
+    const resizeObserver = new (window as any).ResizeObserver((entries: any[]) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
         setIframeWidth(width);
@@ -199,7 +219,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
       <div className="relative overflow-hidden" style={{ height }}>
         {shouldLoadIframe && (
           <iframe
-            src={`https://docs.google.com/document/d/${docId}/edit?embedded=true&rm=minimal`}
+            src={`https://docs.google.com/document/d/${safeDocId}/edit?embedded=true&rm=minimal`}
             className={`border-0 ${loading ? 'invisible' : 'visible'}`}
             style={{
               height: `${100 / (zoomLevel / 100)}%`,
