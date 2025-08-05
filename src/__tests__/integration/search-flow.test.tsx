@@ -459,9 +459,13 @@ describe('Search Flow Integration', () => {
       renderApp();
 
       // Perform a search
-      const searchInput = screen.getByPlaceholderText(/search lessons/i);
-      // Clear any existing value first
-      await user.clear(searchInput);
+      const searchInput = screen.getByPlaceholderText(/search lessons/i) as HTMLInputElement;
+
+      // Clear any existing value first if needed
+      if (searchInput.value) {
+        await user.clear(searchInput);
+      }
+
       await user.type(searchInput, 'loading test');
 
       const searchButton = screen.getByRole('button', { name: /^search$/i });
@@ -490,7 +494,16 @@ describe('Search Flow Integration', () => {
 
       // Tab to search input
       await user.tab();
-      expect(screen.getByPlaceholderText(/search lessons/i)).toHaveFocus();
+      const searchInput = screen.getByPlaceholderText(/search lessons/i);
+      expect(searchInput).toHaveFocus();
+
+      // Check if there's text in the input that would show the clear button
+      const inputValue = (searchInput as HTMLInputElement).value;
+
+      // Tab past clear button if it exists (when there's text in the input)
+      if (inputValue) {
+        await user.tab(); // Tab to clear button
+      }
 
       // Tab to search button
       await user.tab();
