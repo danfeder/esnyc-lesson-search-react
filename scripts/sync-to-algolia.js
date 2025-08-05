@@ -1,3 +1,18 @@
+/**
+ * @description Sync lesson data from Supabase to Algolia search index
+ * @requires Environment variables: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, VITE_ALGOLIA_APP_ID, ALGOLIA_ADMIN_API_KEY
+ * @example
+ * npm run sync-algolia
+ * # or
+ * node scripts/sync-to-algolia.js
+ *
+ * @notes
+ * - Fetches all lessons from Supabase
+ * - Transforms data for Algolia format
+ * - Replaces entire index content
+ * - Configures searchable attributes
+ */
+
 import 'dotenv/config';
 import { algoliasearch } from 'algoliasearch';
 import { createClient } from '@supabase/supabase-js';
@@ -21,10 +36,7 @@ for (const envVar of requiredEnvVars) {
 }
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 // Initialize Algolia client
 const algoliaClient = algoliasearch(
@@ -32,29 +44,31 @@ const algoliaClient = algoliasearch(
   process.env.ALGOLIA_ADMIN_API_KEY
 );
 
+/**
+ * Sync lessons from Supabase to Algolia search index
+ * @returns {Promise<void>}
+ * @throws {Error} If sync fails or API calls fail
+ */
 async function syncLessonsToAlgolia() {
   try {
     console.log('🔄 Fetching lessons from Supabase...');
-    
+
     // Fetch all lessons from Supabase
-    const { data: lessons, error } = await supabase
-      .from('lessons')
-      .select('*')
-      .order('lesson_id');
-    
+    const { data: lessons, error } = await supabase.from('lessons').select('*').order('lesson_id');
+
     if (error) {
       throw new Error(`Failed to fetch lessons: ${error.message}`);
     }
-    
+
     console.log(`✅ Fetched ${lessons.length} lessons from Supabase`);
-    
+
     // Transform lessons for Algolia
     const algoliaRecords = lessons.map((lesson) => {
       // Derive activity type from skills
-      const hasCooking = (lesson.metadata?.cookingSkills?.length > 0) || 
-                         (lesson.metadata?.cookingMethods?.length > 0);
+      const hasCooking =
+        lesson.metadata?.cookingSkills?.length > 0 || lesson.metadata?.cookingMethods?.length > 0;
       const hasGarden = lesson.metadata?.gardenSkills?.length > 0;
-      
+
       let activityType = 'academic-only';
       if (hasCooking && hasGarden) {
         activityType = 'both';
@@ -63,13 +77,17 @@ async function syncLessonsToAlgolia() {
       } else if (hasGarden) {
         activityType = 'garden-only';
       }
-      
+
       // Normalize cooking methods
       let normalizedCookingMethods = lesson.metadata?.cookingMethods || [];
       if (normalizedCookingMethods.length > 0) {
-        normalizedCookingMethods = normalizedCookingMethods.map(method => {
+        normalizedCookingMethods = normalizedCookingMethods.map((method) => {
           // Normalize variations to standard values
-          if (method === 'Sautéing' || method === 'Steam' || method === 'Stovetop (sautéing, boiling, simmering)') {
+          if (
+            method === 'Sautéing' ||
+            method === 'Steam' ||
+            method === 'Stovetop (sautéing, boiling, simmering)'
+          ) {
             return 'Stovetop';
           }
           return method;
@@ -77,14 +95,14 @@ async function syncLessonsToAlgolia() {
         // Remove duplicates
         normalizedCookingMethods = [...new Set(normalizedCookingMethods)];
       }
-      
+
       // Add activityType to metadata
       const enhancedMetadata = {
         ...lesson.metadata,
         activityType: activityType,
-        cookingMethods: normalizedCookingMethods
+        cookingMethods: normalizedCookingMethods,
       };
-      
+
       return {
         objectID: lesson.lesson_id, // Algolia requires objectID
         lessonId: lesson.lesson_id,
@@ -96,7 +114,7 @@ async function syncLessonsToAlgolia() {
         confidence: lesson.confidence || { overall: 0.5 },
         createdAt: lesson.created_at,
         updatedAt: lesson.updated_at,
-        
+
         // Flatten some metadata for better searching
         mainIngredients: lesson.metadata?.mainIngredients || [],
         thematicCategories: lesson.metadata?.thematicCategories || [],
@@ -108,23 +126,25 @@ async function syncLessonsToAlgolia() {
         ],
       };
     });
-    
+
     console.log('📤 Uploading lessons to Algolia...');
-    
+
     // Upload records in batches using v5 API
     const batchSize = 100;
     for (let i = 0; i < algoliaRecords.length; i += batchSize) {
       const batch = algoliaRecords.slice(i, i + batchSize);
-      
+
       // Use v5 saveObjects method
       await algoliaClient.saveObjects({
         indexName: 'lessons',
         objects: batch,
       });
-      
-      console.log(`📦 Uploaded batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(algoliaRecords.length / batchSize)}`);
+
+      console.log(
+        `📦 Uploaded batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(algoliaRecords.length / batchSize)}`
+      );
     }
-    
+
     // Configure index settings using v5 API
     console.log('🔧 Configuring index settings...');
     await algoliaClient.setSettings({
@@ -135,7 +155,7 @@ async function syncLessonsToAlgolia() {
           'mainIngredients,skills',
           'thematicCategories,culturalHeritage',
         ],
-        
+
         attributesForFaceting: [
           'searchable(gradeLevels)',
           'metadata.thematicCategories',
@@ -149,15 +169,15 @@ async function syncLessonsToAlgolia() {
           'metadata.socialEmotionalLearning',
           'metadata.cookingMethods',
         ],
-        
+
         customRanking: ['desc(confidence.overall)'],
-        
+
         typoTolerance: true,
         minWordSizefor1Typo: 4,
         minWordSizefor2Typos: 8,
       },
     });
-    
+
     // Configure synonyms using v5 API
     console.log('🔧 Synonyms can be configured in Algolia dashboard');
     // Note: Algolia v5 has a different synonym API that's more complex
@@ -171,10 +191,9 @@ async function syncLessonsToAlgolia() {
     //    - 3 ↔ 3rd ↔ third ↔ grade 3
     //    - asian → chinese, japanese, korean, vietnamese, thai (one-way)
     //    - hispanic → latino, latina, mexican, spanish (one-way)
-    
+
     console.log('✅ Successfully synced all lessons to Algolia!');
     console.log(`📊 Total records indexed: ${algoliaRecords.length}`);
-    
   } catch (error) {
     console.error('❌ Sync failed:', error);
     process.exit(1);

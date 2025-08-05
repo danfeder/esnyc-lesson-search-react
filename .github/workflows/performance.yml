@@ -2,9 +2,9 @@ name: Performance & Quality
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, cleanup/main ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, cleanup/main ]
 
 jobs:
   lighthouse:
