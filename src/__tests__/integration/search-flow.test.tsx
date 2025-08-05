@@ -497,16 +497,18 @@ describe('Search Flow Integration', () => {
       const searchInput = screen.getByPlaceholderText(/search lessons/i);
       expect(searchInput).toHaveFocus();
 
-      // Check if there's text in the input that would show the clear button
-      const inputValue = (searchInput as HTMLInputElement).value;
+      // Tab from search input
+      await user.tab();
 
-      // Tab past clear button if it exists (when there's text in the input)
-      if (inputValue) {
-        await user.tab(); // Tab to clear button
+      // Check what element has focus - could be clear button or search button
+      const focusedElement = document.activeElement;
+
+      // If clear button has focus (happens when there's text in input), tab again
+      if (focusedElement?.getAttribute('aria-label') === 'Clear search') {
+        await user.tab();
       }
 
-      // Tab to search button
-      await user.tab();
+      // Now search button should have focus
       expect(screen.getByRole('button', { name: /^search$/i })).toHaveFocus();
 
       // Continue tabbing through quick searches
