@@ -1,71 +1,96 @@
-# Implementation Status & Missing Pieces
+# Implementation Status
 
-## Current State (End of Week 2)
+## Current State (As of August 2025)
 
 ### ✅ Fully Implemented
 1. **Database Schema**: All tables, indexes, and RLS policies
 2. **Content Import**: 829/831 lessons with raw text
 3. **Hash Generation**: SHA-256 hashes for exact duplicate detection
 4. **Embeddings**: Generated for all lessons using OpenAI
-5. **Edge Function Structure**: 3 functions deployed and working
+5. **Edge Function Structure**: All functions deployed and working
 6. **Duplicate Detection Logic**: Multi-layer algorithm implemented
+7. **User Authentication**: Complete auth system with role-based access
+8. **Admin Dashboard**: Full review workflow for submissions
+9. **Search Integration**: Algolia search with synonyms configured
+10. **Email Notifications**: Resend integration for user communications
+11. **UI/UX**: Complete React/TypeScript frontend with responsive design
 
-### 🔨 Mock Implementations (Need Completion)
+### 🔧 Partial Implementations (Need Configuration)
 
 #### 1. Google Docs API Integration
 **Location**: `supabase/functions/extract-google-doc/index.ts`
-**Current**: Returns mock content
+**Current**: Full implementation with fallback to mock when no credentials
 **Needed**:
-- Google Cloud project setup
-- Google Docs API credentials
-- Service account or OAuth2 implementation
-- Parse Google Doc to extract structured content
+- Add `GOOGLE_SERVICE_ACCOUNT_JSON` to Supabase secrets
+- Test with real Google Docs
+- Optional: Remove mock fallback for production
 
-#### 2. OpenAI Embedding Generation in Edge Functions
-**Location**: `supabase/functions/process-submission/index.ts` (line 99-100)
-**Current**: Skipped with comment
+#### 2. OpenAI Embeddings
+**Location**: `supabase/functions/process-submission/index.ts`
+**Current**: Fully implemented, just needs API key
 **Needed**:
-- Add OpenAI API key to Edge Function secrets
-- Generate embedding for submission content
-- Store in `content_embedding` column
+- Add `OPENAI_API_KEY` to Supabase secrets
+- Already generates embeddings and stores in `content_embedding`
+- Semantic similarity search is functional
 
-#### 3. Semantic Similarity Search
-**Location**: `supabase/functions/detect-duplicates/index.ts` (line 145)
-**Current**: Uses placeholder value (0.2)
+### 📝 Not Yet Implemented
+
+#### 1. CSV Export
+**Location**: `src/pages/SearchPage.tsx` line 155
+**Current**: TODO comment placeholder
 **Needed**:
-- Generate embedding for new submission
-- Use pgvector's `<=>` operator for similarity
-- Replace placeholder with actual similarity score
+- Generate CSV from search results
+- Include all metadata fields
+- Handle special characters and escaping
+- Download functionality
 
-## Implementation Plan
+## Quick Implementation Guide
 
-### Option A: Complete Before Frontend (Recommended)
-1. Set up Google Cloud project & API credentials
-2. Add OpenAI API key to Edge Function secrets
-3. Update all three Edge Functions with real implementations
-4. Test end-to-end with real Google Docs
-
-### Option B: Continue with Mocks
-1. Build frontend with mock data
-2. Complete integrations in Week 4
-3. Risk: May discover issues late in process
-
-## Required Environment Variables for Edge Functions
-```bash
-# Google Docs API
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-GOOGLE_DOCS_API_KEY=your-api-key
-# Or for service account:
-GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
-
-# OpenAI API
-OPENAI_API_KEY=sk-proj-...
+### Priority 1: CSV Export (2-3 hours)
+```typescript
+// See docs/guides/csv-export-implementation.md
+const handleExport = async () => {
+  const csv = generateCSV(results);
+  downloadCSV(csv, 'lessons.csv');
+};
 ```
 
-## Estimated Time to Complete
-- Google Docs API: 2-3 hours (includes setup)
-- OpenAI in Edge Functions: 1 hour
-- pgvector similarity: 1 hour
-- Testing: 1-2 hours
+### Priority 2: Enable Google Docs API (1 hour)
+```bash
+# Add to Supabase secrets:
+supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+```
 
-**Total: 5-7 hours of additional work**
+### Priority 3: Enable OpenAI Embeddings (30 minutes)
+```bash
+# Add to Supabase secrets:
+supabase secrets set OPENAI_API_KEY='sk-proj-...'
+```
+
+## Testing Coverage
+
+### Current State
+- **Unit Tests**: 100 total (70 passing, 30 skipped)
+- **Coverage**: ~30% estimated
+- **CI/CD**: Fully configured with GitHub Actions
+
+### Areas Needing Tests
+- Edge functions (currently untested)
+- Admin pages
+- CSV export (once implemented)
+- Integration tests for full workflows
+
+## Recent Updates (August 2025)
+
+### Completed in Cleanup Sprint
+- ✅ Added JSDoc to all JavaScript files
+- ✅ Created comprehensive test documentation
+- ✅ Fixed CI/CD pipeline for all branches
+- ✅ Documented all archive locations
+- ✅ Created implementation guides for pending features
+
+### Still Pending
+- ⬜ CSV export implementation
+- ⬜ Google Docs API credentials setup
+- ⬜ OpenAI API key configuration
+- ⬜ Increase test coverage to 80%

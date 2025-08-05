@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, cleanup/main ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, cleanup/main ]
 
 jobs:
   test:
@@ -34,6 +34,12 @@ jobs:
     - name: Run linting
       run: npm run lint
       
+    - name: Run tests
+      run: npm test -- --run
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      
     - name: Build project
       run: npm run build
       env:
@@ -49,6 +55,40 @@ jobs:
         name: build-files
         path: dist/
         retention-days: 7
+
+  test-coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests with coverage
+      run: |
+        npm install --save-dev @vitest/coverage-v8
+        npm run test:coverage -- --run
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage/coverage-final.json
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
 
   deploy-preview:
     name: Deploy Preview
