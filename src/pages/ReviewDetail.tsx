@@ -1,11 +1,22 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Save, AlertTriangle, CheckCircle, ExternalLink, FileText } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  AlertTriangle,
+  CheckCircle,
+  ExternalLink,
+  FileText,
+  Monitor,
+  FileCode,
+} from 'lucide-react';
 import { FILTER_CONFIGS } from '../utils/filterDefinitions';
 import { logger } from '../utils/logger';
 import CreatableSelect from 'react-select/creatable';
 import type { ReviewMetadata } from '../types';
+import { FEATURES } from '../utils/featureFlags';
+import { GoogleDocEmbed } from '../components/Review/GoogleDocEmbed';
 
 interface SubmissionDetail {
   id: string;
@@ -87,6 +98,15 @@ export function ReviewDetail() {
   const [notes, setNotes] = useState('');
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // View mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<'embed' | 'text'>(() => {
+    if (!FEATURES.GOOGLE_DOC_EMBED) return 'text';
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return (window.localStorage.getItem('reviewViewMode') as 'embed' | 'text') || 'embed';
+    }
+    return 'embed';
+  });
 
   // Helper functions for conditional field visibility
   const showCookingFields = useCallback(() => {
@@ -520,15 +540,78 @@ export function ReviewDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Content & Duplicates */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Content Preview */}
+        <section
+          className="lg:col-span-2 space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+          aria-label="Submission content and duplicates"
+          tabIndex={0}
+        >
+          {/* Content Preview with View Mode Toggle */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4">Extracted Content</h2>
-            <div className="prose prose-sm max-w-none">
-              <pre className="whitespace-pre-wrap text-gray-700 text-sm bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
-                {submission.extracted_content}
-              </pre>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Lesson Content</h2>
+              {FEATURES.GOOGLE_DOC_EMBED && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setViewMode('embed');
+                      if (typeof window !== 'undefined' && window.localStorage) {
+                        window.localStorage.setItem('reviewViewMode', 'embed');
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+                      viewMode === 'embed'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    title="View in Google Docs editor"
+                  >
+                    <Monitor size={16} />
+                    <span className="text-sm">Editor View</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewMode('text');
+                      if (typeof window !== 'undefined' && window.localStorage) {
+                        window.localStorage.setItem('reviewViewMode', 'text');
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+                      viewMode === 'text'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    title="View extracted text"
+                  >
+                    <FileCode size={16} />
+                    <span className="text-sm">Text View</span>
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Conditional rendering based on view mode and feature flag */}
+            {FEATURES.GOOGLE_DOC_EMBED && viewMode === 'embed' ? (
+              <GoogleDocEmbed
+                docId={submission.google_doc_id}
+                docUrl={submission.google_doc_url}
+                height="calc(100vh - 16rem)"
+                fallbackToText={() => {
+                  setViewMode('text');
+                  if (typeof window !== 'undefined' && window.localStorage) {
+                    window.localStorage.setItem('reviewViewMode', 'text');
+                  }
+                }}
+                onError={(error) => {
+                  logger.error('Google Doc embed error:', error.message);
+                }}
+              />
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                <pre className="whitespace-pre-wrap text-gray-700 text-sm bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
+                  {submission.extracted_content}
+                </pre>
+              </div>
+            )}
           </div>
 
           {/* Duplicate Analysis */}
@@ -570,7 +653,7 @@ export function ReviewDetail() {
               </div>
             </div>
           )}
-        </div>
+        </section>
 
         {/* Right Column - Metadata & Decision */}
         <div className="space-y-6">
