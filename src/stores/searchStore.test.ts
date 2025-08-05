@@ -11,6 +11,7 @@ describe('searchStore', () => {
       result.current.clearFilters();
       result.current.setResults([], 0);
       result.current.setError(null);
+      result.current.setHasMore(true);
     });
   });
 
