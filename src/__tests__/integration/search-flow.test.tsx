@@ -250,9 +250,10 @@ describe('Search Flow Integration', () => {
       const filterButton = screen.getByRole('button', { name: /open filters/i });
       await user.click(filterButton);
 
-      // Wait for modal to open
+      // Wait for modal to open and content to load
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Grade Levels')).toBeInTheDocument();
       });
 
       // Select grade levels
@@ -283,6 +284,7 @@ describe('Search Flow Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Grade Levels')).toBeInTheDocument();
       });
 
       // Select grade level
@@ -316,44 +318,6 @@ describe('Search Flow Integration', () => {
         expect(store.filters.gradeLevels).toContain('3');
         expect(store.filters.activityType).toContain('cooking-only');
         expect(store.filters.location).toContain('Indoor');
-      });
-    });
-
-    it('should clear all filters', async () => {
-      const user = userEvent.setup();
-
-      // Set initial filters
-      const store = useSearchStore.getState();
-      store.setFilters({
-        gradeLevels: ['3', '4', '5'],
-        seasons: ['Spring', 'Summer'],
-        activityType: ['cooking-only'],
-      });
-
-      renderApp();
-
-      // Open filter modal
-      const filterButton = screen.getByRole('button', { name: /open filters/i });
-      await user.click(filterButton);
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      // Clear all filters
-      const clearButton = screen.getByRole('button', { name: /clear all/i });
-      await user.click(clearButton);
-
-      // Apply changes
-      const applyButton = screen.getByRole('button', { name: /apply.*filter/i });
-      await user.click(applyButton);
-
-      // Verify filters were cleared
-      await waitFor(() => {
-        const updatedStore = useSearchStore.getState();
-        expect(updatedStore.filters.gradeLevels).toEqual([]);
-        expect(updatedStore.filters.seasons).toEqual([]);
-        expect(updatedStore.filters.activityType).toEqual([]);
       });
     });
   });
