@@ -19,6 +19,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [iframeWidth, setIframeWidth] = useState<number>(0);
+  const [shouldLoadIframe, setShouldLoadIframe] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const handleLoad = () => {
@@ -49,6 +50,15 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     const zoomLevel = Math.min((availableWidth / googleDocsDefaultWidth) * 100, 100);
     return Math.floor(zoomLevel);
   };
+
+  // Delay iframe loading slightly to allow Google auth to settle
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldLoadIframe(true);
+    }, 100); // Small delay to let Google auth initialize
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Set up resize observer to adjust zoom when container size changes
   useEffect(() => {
@@ -121,21 +131,23 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
         </div>
       )}
       <div className="relative overflow-hidden" style={{ height }}>
-        <iframe
-          src={`https://docs.google.com/document/d/${docId}/edit?embedded=true&rm=minimal`}
-          className={`border-0 ${loading ? 'invisible' : 'visible'}`}
-          style={{
-            height: `${100 / (zoomLevel / 100)}%`,
-            width: `${100 / (zoomLevel / 100)}%`,
-            transform: `scale(${zoomLevel / 100})`,
-            transformOrigin: 'top left',
-          }}
-          onLoad={handleLoad}
-          onError={handleError}
-          title="Lesson Document"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        />
+        {shouldLoadIframe && (
+          <iframe
+            src={`https://docs.google.com/document/d/${docId}/edit?embedded=true&rm=minimal&ui=2&chrome=false`}
+            className={`border-0 ${loading ? 'invisible' : 'visible'}`}
+            style={{
+              height: `${100 / (zoomLevel / 100)}%`,
+              width: `${100 / (zoomLevel / 100)}%`,
+              transform: `scale(${zoomLevel / 100})`,
+              transformOrigin: 'top left',
+            }}
+            onLoad={handleLoad}
+            onError={handleError}
+            title="Lesson Document"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          />
+        )}
       </div>
       {/* Always show the "Open in Google Docs" button for easy access */}
       <div className="mt-4 flex justify-between items-center">
