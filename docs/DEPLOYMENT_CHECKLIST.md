@@ -1,5 +1,7 @@
 # Deployment Checklist
 
+> **Note**: This is a comprehensive template. Customize it based on your actual deployment infrastructure and requirements. Not all steps may apply to your setup.
+
 ## Pre-Deployment Verification
 
 ### 🔍 Code Quality

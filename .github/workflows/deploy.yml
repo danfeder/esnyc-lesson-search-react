@@ -1,5 +1,11 @@
 name: Deploy to Production
 
+# ⚠️ NOTE: This workflow requires configuration before use:
+# 1. Add all required secrets to GitHub repository settings
+# 2. Update deployment commands for your hosting platform
+# 3. Configure Slack webhooks if using notifications
+# 4. Test thoroughly in a staging environment first
+
 on:
   push:
     tags:
