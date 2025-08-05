@@ -65,3 +65,44 @@ The `/user-specific` subdirectory contains migrations that were created for spec
   - Purpose: Fixed missing user profile issue after login
   - Should NOT be included in production deployments
   - Contains hardcoded user IDs specific to Dan's account
+
+## Archive Reasoning
+
+### Why These Were Archived
+1. **Consolidation**: 40+ individual migrations were creating deployment complexity
+2. **Performance**: Loading many small migrations slowed down database initialization
+3. **Clarity**: Consolidated files are easier to understand and maintain
+4. **Testing**: Fewer files means faster test database resets
+
+### Why Keep Them
+1. **Rollback capability**: Can reconstruct exact migration sequence if needed
+2. **Debugging**: Understanding how current schema evolved
+3. **Audit trail**: Documentation of all database changes
+4. **Learning**: Examples of migration patterns and fixes
+
+## Rollback Procedures
+
+If you need to rollback to a specific point:
+
+1. **Identify target state**: Find the migration file representing desired state
+2. **Create rollback migration**: Use ROLLBACK-*.sql files as templates
+3. **Test thoroughly**: Always test rollback on a branch database first
+4. **Document changes**: Update this manifest with rollback details
+
+## Migration Patterns Learned
+
+From these archived migrations, key patterns emerged:
+
+- **RLS Recursion Issues**: Multiple attempts to fix (see *_fix_rls_recursion_*.sql files)
+- **Function Ambiguity**: PostgreSQL function overloading issues (see *_fix_*_function_ambiguity.sql)
+- **Array Handling**: JSONB vs array type conversions (see *_fix_*_array_handling.sql)
+- **View Security**: Proper RLS on views requires careful setup (see *_view_security.sql files)
+
+## Review Schedule
+
+- **Next Review Date**: 2026-08-01
+- **Reviewer**: Team Lead
+- **Action Items**: 
+  - Verify all migrations still in consolidated files
+  - Check for any migrations that can be permanently deleted
+  - Update documentation if schema has significantly changed
