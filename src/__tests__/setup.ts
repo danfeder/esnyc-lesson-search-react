@@ -2,6 +2,8 @@ import { vi, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 import React from 'react';
 import { cleanup } from '@testing-library/react';
+// Import store for global cleanup
+import { useSearchStore } from '@/stores/searchStore';
 
 // Mock environment variables if not set
 if (!process.env.VITE_SUPABASE_URL) {
@@ -126,18 +128,9 @@ afterEach(() => {
   // Clear all mocks
   vi.clearAllMocks();
 
-  // Reset any global state if stores are imported
-  // This ensures tests start with a clean slate
-  try {
-    // Dynamically import and reset stores if they exist
-    const { useSearchStore } = require('@/stores/searchStore');
-    if (useSearchStore) {
-      const store = useSearchStore.getState();
-      store.clearFilters?.();
-      store.setResults?.([], 0);
-      store.setError?.(null);
-    }
-  } catch {
-    // Store might not be imported in all tests
-  }
+  // Reset store state to ensure clean slate
+  const store = useSearchStore.getState();
+  store.clearFilters();
+  store.setResults([], 0);
+  store.setError(null);
 });
