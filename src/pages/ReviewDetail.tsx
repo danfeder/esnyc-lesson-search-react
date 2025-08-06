@@ -28,6 +28,7 @@ interface SubmissionDetail {
   status: string;
   extracted_content: string;
   content_hash: string;
+  content_embedding?: string;
   teacher: {
     email: string;
     full_name?: string;
@@ -164,10 +165,10 @@ export function ReviewDetail() {
 
   const loadSubmission = async () => {
     try {
-      // First, get the submission
+      // First, get the submission including embedding
       const { data: submissionData, error: submissionError } = await supabase
         .from('lesson_submissions')
-        .select('*')
+        .select('*, content_embedding')
         .eq('id', id)
         .single();
 
@@ -310,8 +311,8 @@ export function ReviewDetail() {
         // Parse the extracted content to get lesson details
         const lessonData = parseExtractedContent(submission.extracted_content);
 
-        // Create new lesson in the lessons table
-        const { error: lessonError } = await supabase.from('lessons_with_metadata').insert({
+        // Create new lesson in the lessons table (including embedding if available)
+        const newLesson: any = {
           lesson_id: `lesson_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           title: lessonData.title || 'Untitled Lesson',
           summary: lessonData.summary || '',
@@ -340,7 +341,19 @@ export function ReviewDetail() {
           processing_notes: metadata.processingNotes || '',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        };
+
+        // Include embedding if available
+        if (submission.content_embedding) {
+          newLesson.content_embedding = submission.content_embedding;
+          logger.debug('Including embedding in new lesson from submission:', submission.id);
+        } else {
+          logger.debug('No embedding available for submission:', submission.id);
+        }
+
+        const { error: lessonError } = await supabase
+          .from('lessons_with_metadata')
+          .insert(newLesson);
 
         if (lessonError) throw lessonError;
       } else if (decision === 'approve_update' && selectedDuplicate) {

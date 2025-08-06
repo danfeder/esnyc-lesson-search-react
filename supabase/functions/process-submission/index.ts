@@ -101,7 +101,12 @@ serve(async (req) => {
     let contentEmbedding = null;
     try {
       const openAIKey = Deno.env.get('OPENAI_API_KEY');
-      if (openAIKey) {
+      if (!openAIKey) {
+        console.warn('[OpenAI] OPENAI_API_KEY not configured, skipping embedding generation');
+      } else {
+        console.log('[OpenAI] Generating embedding for submission:', submission.id);
+        const startTime = Date.now();
+
         const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
           method: 'POST',
           headers: {
@@ -114,20 +119,48 @@ serve(async (req) => {
           }),
         });
 
+        const responseTime = Date.now() - startTime;
+        console.log(
+          `[OpenAI] Response received in ${responseTime}ms - Status: ${embeddingResponse.status}`
+        );
+
         if (embeddingResponse.ok) {
           const embeddingData = await embeddingResponse.json();
           contentEmbedding = embeddingData.data[0].embedding;
 
+          console.log(
+            `[OpenAI] Embedding generated successfully - Dimensions: ${contentEmbedding.length}`
+          );
+
           // Store embedding in submission
           const vectorString = `[${contentEmbedding.join(',')}]`;
-          await supabaseAdmin
+          const { error: updateError } = await supabaseAdmin
             .from('lesson_submissions')
             .update({ content_embedding: vectorString })
             .eq('id', submission.id);
+
+          if (updateError) {
+            console.error('[OpenAI] Failed to store embedding:', updateError);
+          } else {
+            console.log('[OpenAI] Embedding stored successfully for submission:', submission.id);
+          }
+        } else {
+          // Log detailed error information
+          const errorText = await embeddingResponse.text();
+          console.error('[OpenAI] API error:', {
+            status: embeddingResponse.status,
+            statusText: embeddingResponse.statusText,
+            error: errorText,
+            submissionId: submission.id,
+          });
         }
       }
     } catch (error) {
-      console.error('Embedding generation failed:', error);
+      console.error('[OpenAI] Embedding generation failed:', {
+        error: error.message,
+        stack: error.stack,
+        submissionId: submission.id,
+      });
       // Continue without embedding
     }
 

@@ -21,7 +21,8 @@
     "deploy:vercel": "npm run build && vercel --prod",
     "test:lighthouse": "npm run build && lhci autorun",
     "analyze": "npm run build && npx vite-bundle-analyzer dist/",
-    "test:rls": "node scripts/test-rls-policies.mjs"
+    "test:rls": "node scripts/test-rls-policies.mjs",
+    "test:openai": "npx tsx scripts/test-openai-api.ts"
   },
   "keywords": [
     "education",
