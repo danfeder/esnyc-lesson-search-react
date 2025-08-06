@@ -1,60 +1,278 @@
 # Data Management Scripts
 
-Scripts for data import, sync, and maintenance tasks.
+## ⚠️ CRITICAL RULES
 
-## Environment Setup
-All scripts require `.env` file with:
-- `VITE_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY` (admin access)
-- `ALGOLIA_ADMIN_API_KEY` (for search sync)
+1. **Service Role Key** - NEVER use in frontend, scripts only
+2. **Batch Operations** - Process in batches of 50 to avoid timeouts
+3. **Data Validation** - ALWAYS validate 11 filter categories
+4. **Error Handling** - Scripts MUST exit(1) on errors
+5. **Backup First** - ALWAYS backup before bulk operations
 
-## Common Commands
+## 🚀 Quick Script Commands
 
-### Import Lesson Data
 ```bash
-npm run import-data
-# Imports from data/lessons-combined-cleaned-final.json
+# Data Import/Export
+npm run import-data           # Import lessons from JSON
+npm run sync-algolia          # Sync to Algolia search
+npm run configure-synonyms    # Setup search synonyms
+
+# Testing
+npm run test:rls              # Test RLS policies
+npm run test:edge-functions   # Test edge functions
+
+# Maintenance
+node scripts/generate-embeddings.mjs     # Generate OpenAI embeddings
+node scripts/analyze-duplicates.mjs      # Find duplicate lessons
+node scripts/backup-remote-data.mjs      # Backup production data
 ```
 
-### Sync to Algolia
-```bash
-npm run sync-algolia
-# Updates Algolia search index
-```
+## 🔧 Script Creation Pattern
 
-### Configure Search Synonyms
-```bash
-npm run configure-synonyms
-# Sets up ingredient groupings and cultural hierarchies
-```
-
-## Script Patterns
-
-### Supabase Admin Client
 ```javascript
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-```
+#!/usr/bin/env node
 
-### Error Handling
-```javascript
-const { data, error } = await supabase.from('table').select();
-if (error) {
-  console.error('Error:', error);
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
+// Validate environment
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Missing environment variables');
+  console.error('Required: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
+}
+
+// Create admin client
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
+// Main function
+async function main() {
+  try {
+    console.log('🔄 Starting script...');
+    
+    // Your logic here
+    
+    console.log('✅ Script completed successfully');
+  } catch (error) {
+    console.error('❌ Script failed:', error);
+    process.exit(1);
+  }
+}
+
+// Run script
+main();
+```
+
+## 🐛 Common Script Issues & Solutions
+
+| Issue | Solution |
+|-------|----------|
+| "Missing environment variables" | Check `.env` file exists and has required keys |
+| "RLS policy violation" | Use service role key, not anon key |
+| "Timeout during import" | Reduce batch size from 50 to 25 |
+| "Module not found" | Use `.mjs` extension for ES modules |
+| "Cannot use import" | Add `"type": "module"` to package.json |
+
+## 📊 Data Import Patterns
+
+### Batch Import with Progress
+```javascript
+const BATCH_SIZE = 50;
+const items = JSON.parse(fs.readFileSync('data.json', 'utf8'));
+
+for (let i = 0; i < items.length; i += BATCH_SIZE) {
+  const batch = items.slice(i, i + BATCH_SIZE);
+  
+  console.log(`📥 Importing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(items.length/BATCH_SIZE)}...`);
+  
+  const { error } = await supabase
+    .from('lessons')
+    .upsert(batch, { onConflict: 'lesson_id' });
+  
+  if (error) {
+    console.error('❌ Batch failed:', error);
+    throw error;
+  }
+  
+  console.log(`✅ Imported ${i + batch.length}/${items.length}`);
 }
 ```
 
-## Data Processing Notes
-- Clean ingredient lists before import
-- Normalize grade levels (e.g., "3rd" → "3")
-- Parse duration strings to minutes
-- Validate all 11 filter categories
+### Data Validation
+```javascript
+function validateLesson(lesson) {
+  const errors = [];
+  
+  // Check required fields
+  if (!lesson.lesson_id) errors.push('Missing lesson_id');
+  if (!lesson.title) errors.push('Missing title');
+  
+  // Validate filter count (must be 11)
+  const filterCount = Object.keys(lesson.metadata || {}).length;
+  if (filterCount !== 11) {
+    errors.push(`Wrong filter count: ${filterCount} (must be 11)`);
+  }
+  
+  // Validate grade levels
+  if (lesson.grade_levels) {
+    const validGrades = ['3K', 'PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8'];
+    const invalid = lesson.grade_levels.filter(g => !validGrades.includes(g));
+    if (invalid.length) {
+      errors.push(`Invalid grades: ${invalid.join(', ')}`);
+    }
+  }
+  
+  return errors;
+}
+```
 
-## Creating New Scripts
-1. Add to `scripts/` directory
-2. Use `.env` for configuration
-3. Add npm script to package.json
-4. Document expected data format
+## 🔄 Algolia Sync Pattern
+
+```javascript
+import algoliasearch from 'algoliasearch';
+
+const client = algoliasearch(
+  process.env.VITE_ALGOLIA_APP_ID,
+  process.env.ALGOLIA_ADMIN_API_KEY  // Admin key for writes
+);
+
+const index = client.initIndex('lessons');
+
+// Fetch from Supabase
+const { data: lessons } = await supabase
+  .from('lessons')
+  .select('*');
+
+// Transform for Algolia
+const algoliaRecords = lessons.map(lesson => ({
+  objectID: lesson.lesson_id,
+  title: lesson.title,
+  summary: lesson.summary,
+  gradeLevels: lesson.grade_levels,
+  // ... other fields
+}));
+
+// Batch update Algolia
+await index.saveObjects(algoliaRecords, {
+  autoGenerateObjectIDIfNotExist: false
+});
+
+// Configure settings
+await index.setSettings({
+  searchableAttributes: [
+    'title',
+    'summary',
+    'ingredients',
+    'skills'
+  ],
+  facets: [
+    'gradeLevels',
+    'themes',
+    'culturalHeritage'
+  ]
+});
+```
+
+## 🧪 Testing Scripts
+
+### RLS Policy Test
+```javascript
+// Test as anonymous user
+const anonClient = createClient(
+  supabaseUrl,
+  process.env.VITE_SUPABASE_ANON_KEY
+);
+
+const { data, error } = await anonClient
+  .from('lessons')
+  .select('*')
+  .limit(1);
+
+if (error) {
+  console.error('❌ Anonymous access failed:', error);
+} else {
+  console.log('✅ Anonymous can read lessons');
+}
+```
+
+### Edge Function Test
+```javascript
+const response = await fetch(
+  `${supabaseUrl}/functions/v1/detect-duplicates`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      submissionId: 'test-123',
+      content: 'Test content',
+      title: 'Test Title'
+    })
+  }
+);
+
+const result = await response.json();
+console.log('Edge function response:', result);
+```
+
+## ⚠️ Script-Specific Notes
+
+### import-data.js
+- Filters out lessons without `lesson_id` or `file_link`
+- Imports in batches of 50
+- Uses upsert to handle duplicates
+
+### sync-algolia.js
+- Requires `ALGOLIA_ADMIN_API_KEY` (not search key)
+- Transforms snake_case to camelCase
+- Configures facets for filtering
+
+### test-rls-policies.mjs
+- Tests all tables for RLS enablement
+- Checks policy counts
+- Tests specific scenarios
+
+### generate-embeddings.mjs
+- Currently disabled (no OPENAI_API_KEY)
+- Will generate vector embeddings for semantic search
+- Processes in batches to avoid rate limits
+
+## 📦 Environment Variables Reference
+
+```bash
+# Required for all scripts
+VITE_SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=xxx  # Admin access
+
+# Optional based on script
+VITE_SUPABASE_ANON_KEY=xxx     # For testing
+ALGOLIA_ADMIN_API_KEY=xxx      # For search sync
+OPENAI_API_KEY=xxx              # For embeddings (future)
+```
+
+## 🚦 Pre-Script Checklist
+
+- [ ] Environment variables set
+- [ ] Database backed up
+- [ ] Test on staging first
+- [ ] Batch size appropriate
+- [ ] Error handling in place
+- [ ] Progress logging added
+- [ ] Validation functions written
