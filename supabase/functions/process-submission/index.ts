@@ -7,9 +7,11 @@ const corsHeaders = {
 };
 
 interface ProcessSubmissionRequest {
-  googleDocUrl: string;
-  submissionType: 'new' | 'update';
+  googleDocUrl?: string;
+  submissionType?: 'new' | 'update';
   originalLessonId?: string;
+  submissionId?: string; // For regenerating embeddings
+  regenerateEmbedding?: boolean; // Flag to only regenerate embedding
 }
 
 serve(async (req) => {
@@ -44,58 +46,92 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser(token);
     if (userError || !user) throw new Error('Unauthorized');
 
-    const { googleDocUrl, submissionType, originalLessonId } =
+    const { googleDocUrl, submissionType, originalLessonId, submissionId, regenerateEmbedding } =
       (await req.json()) as ProcessSubmissionRequest;
 
-    // Extract Google Doc ID
-    const docIdMatch = googleDocUrl.match(/\/document\/d\/([a-zA-Z0-9-_]+)/);
-    if (!docIdMatch) {
-      throw new Error('Invalid Google Doc URL');
+    let submission;
+    let title: string;
+    let content: string;
+
+    // Handle regenerating embeddings for existing submissions
+    if (regenerateEmbedding && submissionId) {
+      console.log('[Regenerate] Processing existing submission:', submissionId);
+
+      // Fetch existing submission
+      const { data: existingSubmission, error: fetchError } = await supabaseAdmin
+        .from('lesson_submissions')
+        .select('*')
+        .eq('id', submissionId)
+        .single();
+
+      if (fetchError || !existingSubmission) {
+        throw new Error(`Submission not found: ${submissionId}`);
+      }
+
+      submission = existingSubmission;
+      content = submission.extracted_content || '';
+
+      // Extract title from content or use a default
+      const titleMatch = content.match(/^#?\s*(.+)/);
+      title = titleMatch ? titleMatch[1].trim() : 'Untitled Lesson';
+    } else {
+      // Normal flow: create new submission
+      if (!googleDocUrl) {
+        throw new Error('Google Doc URL is required for new submissions');
+      }
+
+      // Extract Google Doc ID
+      const docIdMatch = googleDocUrl.match(/\/document\/d\/([a-zA-Z0-9-_]+)/);
+      if (!docIdMatch) {
+        throw new Error('Invalid Google Doc URL');
+      }
+      const googleDocId = docIdMatch[1];
+
+      // Step 1: Create submission record
+      const { data: newSubmission, error: submissionError } = await supabaseClient
+        .from('lesson_submissions')
+        .insert({
+          teacher_id: user.id,
+          google_doc_url: googleDocUrl,
+          google_doc_id: googleDocId,
+          submission_type: submissionType || 'new',
+          original_lesson_id: originalLessonId,
+          status: 'submitted',
+        })
+        .select()
+        .single();
+
+      if (submissionError) throw submissionError;
+      submission = newSubmission;
+
+      // Step 2: Extract content from Google Doc
+      const extractResponse = await fetch(`${supabaseUrl}/functions/v1/extract-google-doc`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ googleDocUrl }),
+      });
+
+      const extractResult = await extractResponse.json();
+      if (!extractResult.success) {
+        throw new Error('Failed to extract content');
+      }
+
+      title = extractResult.data.title;
+      content = extractResult.data.content;
+
+      // Step 3: Update submission with extracted content
+      const { error: updateError } = await supabaseAdmin
+        .from('lesson_submissions')
+        .update({
+          extracted_content: content,
+        })
+        .eq('id', submission.id);
+
+      if (updateError) throw updateError;
     }
-    const googleDocId = docIdMatch[1];
-
-    // Step 1: Create submission record
-    const { data: submission, error: submissionError } = await supabaseClient
-      .from('lesson_submissions')
-      .insert({
-        teacher_id: user.id,
-        google_doc_url: googleDocUrl,
-        google_doc_id: googleDocId,
-        submission_type: submissionType,
-        original_lesson_id: originalLessonId,
-        status: 'submitted',
-      })
-      .select()
-      .single();
-
-    if (submissionError) throw submissionError;
-
-    // Step 2: Extract content from Google Doc
-    const extractResponse = await fetch(`${supabaseUrl}/functions/v1/extract-google-doc`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({ googleDocUrl }),
-    });
-
-    const extractResult = await extractResponse.json();
-    if (!extractResult.success) {
-      throw new Error('Failed to extract content');
-    }
-
-    const { title, content } = extractResult.data;
-
-    // Step 3: Update submission with extracted content
-    const { error: updateError } = await supabaseAdmin
-      .from('lesson_submissions')
-      .update({
-        extracted_content: content,
-      })
-      .eq('id', submission.id);
-
-    if (updateError) throw updateError;
 
     // Step 4: Generate embedding
     let contentEmbedding = null;
@@ -164,53 +200,71 @@ serve(async (req) => {
       // Continue without embedding
     }
 
-    // Step 5: Detect duplicates
-    const duplicateResponse = await fetch(`${supabaseUrl}/functions/v1/detect-duplicates`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({
-        submissionId: submission.id,
-        content,
-        title,
-        metadata: {}, // Would extract from content in production
-        embedding: contentEmbedding,
-      }),
-    });
-
-    const duplicateResult = await duplicateResponse.json();
-    if (!duplicateResult.success) {
-      console.error('Duplicate detection failed:', duplicateResult.error);
-    }
-
-    // Step 6: Update submission with content hash
-    if (duplicateResult.data?.contentHash) {
-      await supabaseAdmin
-        .from('lesson_submissions')
-        .update({
-          content_hash: duplicateResult.data.contentHash,
-        })
-        .eq('id', submission.id);
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: {
-          submissionId: submission.id,
-          status: submission.status,
-          extractedTitle: title,
-          duplicatesFound: duplicateResult.data?.duplicatesFound || 0,
-          topDuplicates: duplicateResult.data?.duplicates?.slice(0, 3) || [],
+    // Skip duplicate detection if we're just regenerating embeddings
+    if (!regenerateEmbedding) {
+      // Step 5: Detect duplicates
+      const duplicateResponse = await fetch(`${supabaseUrl}/functions/v1/detect-duplicates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseServiceKey}`,
         },
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        body: JSON.stringify({
+          submissionId: submission.id,
+          content,
+          title,
+          metadata: {}, // Would extract from content in production
+          embedding: contentEmbedding,
+        }),
+      });
+
+      const duplicateResult = await duplicateResponse.json();
+      if (!duplicateResult.success) {
+        console.error('Duplicate detection failed:', duplicateResult.error);
       }
-    );
+
+      // Step 6: Update submission with content hash
+      if (duplicateResult.data?.contentHash) {
+        await supabaseAdmin
+          .from('lesson_submissions')
+          .update({
+            content_hash: duplicateResult.data.contentHash,
+          })
+          .eq('id', submission.id);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            submissionId: submission.id,
+            status: submission.status,
+            extractedTitle: title,
+            duplicatesFound: duplicateResult.data?.duplicatesFound || 0,
+            topDuplicates: duplicateResult.data?.duplicates?.slice(0, 3) || [],
+          },
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    } else {
+      // Return simple success for embedding regeneration
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            submissionId: submission.id,
+            embeddingGenerated: contentEmbedding !== null,
+          },
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
   } catch (error) {
     console.error('Process submission error:', error);
     return new Response(
