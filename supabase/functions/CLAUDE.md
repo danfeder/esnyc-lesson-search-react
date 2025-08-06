@@ -118,14 +118,19 @@ if (!embedding || embedding.length === 0) {
 
 ### process-submission
 ```typescript
-// ⚠️ OpenAI embeddings COMMENTED OUT
-// Uncomment when OPENAI_API_KEY available
+// ✅ OpenAI embeddings WORKING - Generates embeddings when OPENAI_API_KEY is configured
+// The code attempts to generate embeddings but continues if it fails
 
-// Currently disabled:
-// const embedding = await generateEmbedding(content);
+// Production flow:
+if (openAIKey) {
+  // Generates embeddings using text-embedding-3-small model
+  const embedding = await generateEmbedding(content);
+  // Stores in lesson_submissions.content_embedding
+} else {
+  // Continues without embeddings (falls back to text similarity)
+}
 
-// Temporary workaround:
-const embedding = null; // Will skip semantic search
+// Note: Check logs if embeddings aren't being generated
 ```
 
 ### send-email
