@@ -343,10 +343,23 @@ export function ReviewDetail() {
           updated_at: new Date().toISOString(),
         };
 
-        // Include embedding if available
-        if (submission.content_embedding) {
-          newLesson.content_embedding = submission.content_embedding;
-          logger.debug('Including embedding in new lesson from submission:', submission.id);
+        // Include embedding if available and valid
+        if (submission.content_embedding && typeof submission.content_embedding === 'string') {
+          try {
+            // Validate it's a proper embedding array
+            const parsed = JSON.parse(submission.content_embedding);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              newLesson.content_embedding = submission.content_embedding;
+              logger.debug(
+                'Including valid embedding in new lesson from submission:',
+                submission.id
+              );
+            } else {
+              logger.warn('Invalid embedding format for submission:', submission.id);
+            }
+          } catch (error) {
+            logger.warn('Failed to validate embedding for submission:', submission.id, error);
+          }
         } else {
           logger.debug('No embedding available for submission:', submission.id);
         }
@@ -1280,7 +1293,14 @@ export function ReviewDetail() {
                       type="radio"
                       value="approve_new"
                       checked={decision === 'approve_new'}
-                      onChange={(e) => setDecision(e.target.value as any)}
+                      onChange={(e) => {
+                        const value = e.target.value as
+                          | 'approve_new'
+                          | 'approve_update'
+                          | 'reject'
+                          | 'needs_revision';
+                        setDecision(value);
+                      }}
                       className="mt-1 mr-3 text-green-600"
                     />
                     <div>
@@ -1296,7 +1316,14 @@ export function ReviewDetail() {
                       type="radio"
                       value="approve_update"
                       checked={decision === 'approve_update'}
-                      onChange={(e) => setDecision(e.target.value as any)}
+                      onChange={(e) => {
+                        const value = e.target.value as
+                          | 'approve_new'
+                          | 'approve_update'
+                          | 'reject'
+                          | 'needs_revision';
+                        setDecision(value);
+                      }}
                       className="mt-1 mr-3 text-green-600"
                       disabled={!selectedDuplicate}
                     />
@@ -1315,7 +1342,14 @@ export function ReviewDetail() {
                       type="radio"
                       value="needs_revision"
                       checked={decision === 'needs_revision'}
-                      onChange={(e) => setDecision(e.target.value as any)}
+                      onChange={(e) => {
+                        const value = e.target.value as
+                          | 'approve_new'
+                          | 'approve_update'
+                          | 'reject'
+                          | 'needs_revision';
+                        setDecision(value);
+                      }}
                       className="mt-1 mr-3 text-yellow-600"
                     />
                     <div>
@@ -1329,7 +1363,14 @@ export function ReviewDetail() {
                       type="radio"
                       value="reject"
                       checked={decision === 'reject'}
-                      onChange={(e) => setDecision(e.target.value as any)}
+                      onChange={(e) => {
+                        const value = e.target.value as
+                          | 'approve_new'
+                          | 'approve_update'
+                          | 'reject'
+                          | 'needs_revision';
+                        setDecision(value);
+                      }}
                       className="mt-1 mr-3 text-red-600"
                     />
                     <div>

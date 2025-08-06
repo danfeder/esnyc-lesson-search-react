@@ -53,7 +53,7 @@ serve(async (req) => {
 
       if (openAIKey) {
         keyLength = openAIKey.length;
-        keyStatus = `configured (length: ${keyLength}, starts with: ${openAIKey.substring(0, 7)}...)`;
+        keyStatus = 'configured';
 
         // Test the API
         try {
