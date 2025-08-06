@@ -1,341 +1,174 @@
-# ESYNYC Lesson Search v2 - Project Documentation
+# ESYNYC Lesson Search v2 - Claude Code Documentation
 
-## Project Overview
+## 🚀 QUICK COMMANDS - RUN THESE FREQUENTLY
 
-This is a modern React/TypeScript rewrite of the ESYNYC Lesson Search application. It provides a searchable interface for 831 Edible Schoolyard NYC lesson plans with advanced filtering capabilities.
-
-### Current Status: IN DEVELOPMENT
-The project has been migrated from vanilla JavaScript (v1) to React/TypeScript/Supabase stack (v2). Most features are implemented, with only Google Docs API integration and CSV export remaining.
-
-## Essential Commands
-
-### Development
 ```bash
-npm run dev          # Start development server (http://localhost:5173)
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run type-check   # Run TypeScript type checking
-```
+npm run dev               # Start development server (http://localhost:5173)
+npm run type-check        # YOU MUST run before any commit
+npm run lint:fix          # YOU MUST run to fix ESLint issues  
+npm run test              # Run all tests
+npm run test:rls          # Test RLS policies after DB changes
+npm run build             # Build for production
 
-### Code Quality
-```bash
-npm run lint         # Check code quality
-npm run lint:fix     # Auto-fix linting issues
-npm run format       # Format code with Prettier
-```
-
-### Testing
-```bash
-npm test             # Run all tests
-npm run test:ui      # Run tests with UI
-npm run test:coverage # Generate coverage report
-```
-
-### Accessibility Testing
-```bash
-npm run test:lighthouse # Lighthouse accessibility audit
-# Consider adding: npm run test:axe for WCAG compliance
-```
-
-### Data Management
-```bash
-npm run import-data  # Import lesson data to Supabase
-npm run sync-algolia # Sync data to Algolia search
+# Data Management
+npm run import-data       # Import lesson data to Supabase
+npm run sync-algolia      # Sync data to Algolia search
 npm run configure-synonyms # Set up search synonyms
+
+# Database
+supabase db push          # Apply migrations
+supabase db reset         # Reset database to clean state
 ```
 
-### Database
+## ⚠️ CRITICAL RULES - NEVER VIOLATE THESE
+
+1. **EXACTLY 11 FILTERS** - NEVER add or remove filter categories. There must be EXACTLY 11.
+2. **NO console.log** in production code - Use `logger.debug()` from `utils/logger.ts` instead
+3. **VITE_ PREFIX REQUIRED** for ALL frontend environment variables
+4. **RUN TYPE-CHECK** before EVERY commit - `npm run type-check` MUST pass
+5. **TEST RLS POLICIES** after ANY migration - `npm run test:rls` MUST pass
+6. **ESLint no-unused-vars** - Add `// eslint-disable-next-line no-unused-vars` for parameters
+7. **Path Aliases** - ALWAYS use `@/components` not relative imports like `../components`
+8. **Google Docs API** - Currently MOCKED, returns fake data (see extract-google-doc function)
+
+## 🔥 COMMON WORKFLOWS
+
+### Adding a New Component
 ```bash
-# Run migrations (in Supabase dashboard or CLI)
-supabase db push
-supabase db reset    # Reset database to clean state
+1. YOU MUST check if it affects the 11 filters rule
+2. Create in feature folder: components/FeatureName/ComponentName.tsx
+3. Define Props interface: interface ComponentNameProps { }
+4. Export from barrel: Add to components/FeatureName/index.ts
+5. Run type-check: npm run type-check
+6. Fix ESLint: npm run lint:fix
 ```
 
-## Code Style Guidelines
+### Debugging Supabase RLS Errors
+```bash
+1. Run: npm run test:rls
+2. Check user role: SELECT * FROM user_profiles WHERE id = auth.uid()
+3. Test function: SELECT is_admin(auth.uid())
+4. NEVER disable RLS without admin approval
+5. Common fix: Check if table has RLS enabled in migration
+```
 
-### TypeScript Conventions
-- Use explicit types for function parameters and return values
-- Prefer interfaces over types for object shapes
-- Use path aliases: `@/components` instead of relative imports
-- Export types from `src/types/index.ts`
-
-### React Component Patterns
-- Use functional components with hooks
-- Place component files in feature folders (e.g., `components/Filters/GradeFilter.tsx`)
-- Export component props interfaces
-- Use descriptive prop names
-
-### State Management (Zustand)
-- Keep stores focused on single domains
-- Use TypeScript for store interfaces
-- Implement actions as methods on the store
-- Example pattern:
+### Working with Filters (EXACTLY 11)
 ```typescript
-interface StoreState {
-  items: Item[];
-  setItems: (items: Item[]) => void;
-  addItem: (item: Item) => void;
-}
+// The 11 filters are sacred - NEVER change count:
+1. Activity Type        7. Cultural Heritage
+2. Location            8. Lesson Format  
+3. Grade Levels        9. Academic Integration
+4. Thematic Categories 10. Social-Emotional Learning
+5. Season & Timing     11. Cooking Methods
+6. Core Competencies
+
+// Located in: src/utils/filterDefinitions.ts
 ```
 
-### Import Order
-1. React imports
-2. Third-party libraries
-3. Local components
-4. Hooks
-5. Utils/constants
-6. Types
-7. Styles
+### ESLint Parameter Fixes
+```typescript
+// ALWAYS add this comment for unused parameters:
+// eslint-disable-next-line no-unused-vars
+onChange: (value: string) => void;
+```
 
-## Architecture
-
-### Tech Stack
-- **Frontend**: React 19 + TypeScript + Vite
-- **State Management**: Zustand
-- **Data Fetching**: React Query (TanStack Query)
-- **Styling**: Tailwind CSS + Headless UI
-- **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **Search**: Algolia Search with synonyms and typo tolerance
-
-### Key Improvements Over v1
-- Server-side search with better performance for large datasets
-- User authentication and personalization features
-- Type safety with TypeScript
-- Modern component-based architecture
-- Database storage instead of static JSON
-
-## Project Structure
+## 🏗️ PROJECT STRUCTURE
 
 ```
 /src
-  /components     # Reusable UI components
-    /Filters      # Filter sidebar components
-    /Layout       # Header, footer, layout components
-    /Modal        # Modal components
-    /Results      # Search results components
-    /Search       # Search bar components
-  /hooks          # Custom React hooks
-  /lib            # Utilities and Supabase client
-  /pages          # Page-level components
-  /stores         # Zustand state stores
-  /types          # TypeScript type definitions
-  /utils          # Helper functions
+  /components     # UI components (filters, layout, modals, results, search)
+  /hooks          # Custom React hooks  
+  /lib            # Supabase, Algolia, Sentry configs
+  /pages          # Page components (routes)
+  /stores         # Zustand state management
+  /types          # TypeScript definitions
+  /utils          # Helper functions, constants
 
 /supabase
-  /functions      # Edge functions for API
-  /migrations     # Database schema migrations
+  /functions      # Edge functions (detect-duplicates, process-submission, etc.)
+  /migrations     # Database schema (01-11 + dated migrations)
 
-/data            # Legacy JSON data (to be imported to Supabase)
+/scripts         # Data import, testing, migration scripts
+/data           # Legacy JSON data
 ```
 
-## Features
+## 📋 CURRENT STATUS
 
-### Core Features (Must Have)
-- Full-text search across lesson titles, summaries, ingredients, skills
-- **EXACTLY 11 filter categories** (all implemented):
-  
-  **Implemented Filters (11 total):**
-  1. Activity Type (Cooking, Garden, Both, Academic) - derived from skills
-  2. Location (Indoor, Outdoor, Both)
-  3. Grade Levels (3K through 8th with grade group selection)
-  4. Thematic Categories (7 themes: Garden Basics, Plant Growth, Garden Communities, Ecosystems, Seed to Table, Food Systems, Food Justice)
-  5. Season & Timing (4 seasons + Beginning/End of year + "Include year-round" option)
-  6. Core Competencies (6 ESYNYC priorities)
-  7. Cultural Heritage (hierarchical with 5 main regions)
-  8. Lesson Format (Single period, Multi-session unit, etc.) - single-select dropdown
-  9. Academic Integration (Math, Science, Literacy/ELA, Social Studies, Health, Arts) - multi-select
-  10. Social-Emotional Learning (5 SEL competencies) - multi-select
-  11. Cooking Methods (No-cook, Stovetop, Oven, Basic prep only) - single-select dropdown
-  
-  **Searchable But Not Filters (NOT counted in the 11):**
-  - Observances & Holidays (handled through search functionality)
-  - Main Ingredients (with smart grouping via search synonyms)
-  - Garden Skills (searchable in lesson content)
-  - Cooking Skills (searchable in lesson content)
-  - Materials/Equipment (searchable in lesson content)
-  - Group Size (searchable in lesson content)
-  - Duration/Prep Time (searchable in lesson content)
-
-- Cultural heritage hierarchy (e.g., "Asian" includes Chinese, Japanese, Korean)
-- Ingredient grouping (e.g., "Winter squash" includes butternut, pumpkin)
-- CSV export functionality
-- Mobile-responsive design
-
-### New v2 Features (Planned)
-- User authentication
-- Saved searches
-- Lesson collections
-- Bookmarking favorite lessons
-- Teacher profiles
-
-## Database Schema
-
-### Main Tables
-- `lessons` - Stores all lesson data with full-text search vector
-- `user_profiles` - Teacher profiles with school/grade info
-- `saved_searches` - User's saved filter combinations
-- `lesson_collections` - Curated lesson lists
-- `bookmarks` - User's bookmarked lessons
-
-## Development Setup
-
-### Prerequisites
-- Node.js 18+
-- Supabase account
-- PostgreSQL (via Supabase)
-
-### Environment Variables
-Create `.env` file:
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_ALGOLIA_APP_ID=your_algolia_app_id
-VITE_ALGOLIA_SEARCH_API_KEY=your_algolia_search_api_key
-ALGOLIA_ADMIN_API_KEY=your_algolia_admin_key (for data sync only, not in frontend)
-```
-
-### Installation
-```bash
-npm install
-npm run dev
-```
-
-### Database Setup
-1. Run migrations in Supabase
-2. Import lesson data: `npm run import-data`
-
-## Current Implementation Status
-
-### Completed ✅
-- [x] All 11 filter categories implemented
-- [x] Search functionality with Algolia
-- [x] User authentication system
-- [x] Admin dashboard for submissions
-- [x] Duplicate detection system
-- [x] All UI components
-- [x] Database schema and migrations
-- [x] Testing setup
-
-### Remaining Tasks 🚧
+**IN DEVELOPMENT** - Most features complete, remaining:
 - [ ] Google Docs API integration (currently mocked)
-- [ ] CSV export functionality
+- [ ] CSV export functionality  
 - [ ] OpenAI embeddings in edge functions
 - [ ] Production environment configuration
 
-## Project-Specific Instructions
+## 🔧 TECH STACK
 
-### Working with Filters (EXACTLY 11 Categories)
-- Never add or remove filter categories - there must be exactly 11
-- Filter components are in `src/components/Filters/`
-- Each filter updates the `filterStore` in Zustand
-- Filters are registered in `src/utils/constants.ts`
+- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
+- **State**: Zustand (see `/src/stores/CLAUDE.md`)
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **Search**: Algolia (with synonyms & typo tolerance)
+- **Testing**: Vitest + React Testing Library
 
-### Adding New Features
-1. Check if it affects the 11 filter categories rule
-2. Add types to `src/types/index.ts`
-3. Update relevant Zustand store
-4. Create component in appropriate feature folder
-5. Add tests for new functionality
+## 🗄️ DATABASE ESSENTIALS
 
-### Working with Supabase
-- Edge functions are in `supabase/functions/`
-- Use `supabase.from('table').select()` pattern
-- Always handle errors with try-catch
-- RLS policies are enforced - check permissions
+### Key Tables
+- `lessons` - 831 lesson plans with full-text search
+- `user_profiles` - User accounts with roles (teacher/reviewer/admin)
+- `lesson_submissions` - Teacher-submitted lessons
+- `duplicate_pairs` - Duplicate detection results
 
-### Common Gotchas
-- Environment variables must start with `VITE_` for frontend access
-- Supabase migrations must be numbered sequentially
-- Algolia search requires manual synonym configuration
-- Cultural heritage uses hierarchical filtering (parent includes children)
-- Google Docs API integration currently uses mock data
-
-
-## Testing Checklist
-- [ ] All filters work correctly
-- [ ] Search returns relevant results
-- [ ] Cultural hierarchy filtering works
-- [ ] Ingredient grouping works
-- [ ] CSV export includes all data
-- [ ] Mobile responsive design
-- [ ] Performance with full dataset
-
-## Architecture Decisions
-
-### Why These Technologies?
-- **React + TypeScript**: Type safety and modern component patterns
-- **Vite**: Fast development and optimized production builds
-- **Zustand**: Lightweight state management without boilerplate
-- **Supabase**: Integrated auth, database, and edge functions
-- **Algolia**: Purpose-built search with typo tolerance and synonyms
-- **Tailwind + Headless UI**: Rapid UI development with accessibility
-
-### Database Design Rationale
-- Single `lessons` table with JSONB for flexible metadata
-- PostgreSQL full-text search for content
-- Vector embeddings for future semantic search
-- Normalized tables for user data and relationships
-
-### Component Organization
-- Feature-based folders for related components
-- Shared components in root components folder
-- Pages represent routes
-- Hooks encapsulate reusable logic
-
-## Deployment Notes
-- Requires Supabase project setup
-- Environment variables must be configured (see .env.example)
-- Build with `npm run build`
-- Deploy `dist` folder to hosting service
-- Supports both Netlify and Vercel (see package.json scripts)
-
-## Recursive CLAUDE.md Structure
-
-Claude Code automatically discovers CLAUDE.md files throughout the project:
-
-### Directory-Specific Context
+### User Roles Hierarchy
 ```
-/                           # This file - project overview
-├── src/
-│   ├── components/CLAUDE.md    # Component patterns
-│   ├── hooks/CLAUDE.md         # Custom hook patterns
-│   └── pages/CLAUDE.md         # Page structure patterns
-├── supabase/
-│   ├── functions/CLAUDE.md     # Edge function patterns
-│   └── migrations/CLAUDE.md    # Migration guidelines
-└── scripts/CLAUDE.md           # Data management scripts
+super_admin → admin → reviewer → teacher
 ```
 
-### How It Works
-- Claude reads CLAUDE.md files from current directory up to root
-- When working in subdirectories, Claude automatically includes relevant context
-- Each directory can have specific instructions for that area
-- No manual imports needed - it's automatic!
+## 🐛 COMMON ERRORS & SOLUTIONS
 
-### Import Strategy for Detailed Docs
-For comprehensive documentation, import when needed:
+| Error | Solution |
+|-------|----------|
+| "RLS policy violation" | Check user role with `is_admin(auth.uid())` |
+| "no-unused-vars" | Add `// eslint-disable-next-line no-unused-vars` |
+| "Module not found" | Use `@/` alias imports |
+| "VITE_* not defined" | Prefix env vars with `VITE_` |
+| "Cannot read lessons" | Check if RLS enabled: `ALTER TABLE lessons ENABLE ROW LEVEL SECURITY` |
+| "Type error in filter" | Verify against 11 filters in `filterDefinitions.ts` |
+
+## 📚 DETAILED DOCUMENTATION
+
+For in-depth information, see:
+- Architecture: `/docs/architecture-decisions.md`
+- Database Schema: `/docs/DATABASE_SAFETY_CHECKLIST.md`
+- Testing Guide: `/docs/TESTING_GUIDE.md`
+- Deployment: `/docs/DEPLOYMENT_CHECKLIST.md`
+- RLS Security: `/docs/RLS_SECURITY.md`
+
+## 🚦 QUICK CHECKLIST BEFORE COMMIT
+
+```bash
+✓ npm run type-check      # No TypeScript errors
+✓ npm run lint            # No linting errors  
+✓ npm test                # All tests pass
+✓ No console.log          # Use logger.debug()
+✓ 11 filters maintained   # Count unchanged
 ```
-@docs/api-reference.md         # Full API documentation
-@docs/component-guide.md       # Detailed component guide
-@docs/architecture-decisions.md # Architecture rationale
-```
 
-## Living Documentation
+## 💡 IMPORTANT REMINDERS
 
-### When to Update CLAUDE.md
-- New frequently-used commands added
-- Architecture decisions made
-- Common patterns established
-- Gotchas discovered
+- **Cultural Heritage Hierarchy**: Parent includes ALL children (e.g., "Asian" → Chinese, Japanese, Korean, etc.)
+- **Ingredient Grouping**: Smart search (e.g., "butternut squash" → "Winter squash")
+- **Season Logic**: "Include year-round" option for seasonal filters
+- **Supabase Migrations**: Must be numbered sequentially
+- **Algolia Synonyms**: Require manual configuration after data sync
+- **Edge Functions**: Test locally with `supabase functions serve <name> --no-verify-jwt`
 
-### Quick Update Method
-Start your message with `#` to quickly add to CLAUDE.md:
-```
-# npm run test:watch is useful for TDD
-```
+## 📂 DIRECTORY-SPECIFIC DOCS
 
-### Documentation Maintenance
-- Review this file monthly
-- Remove outdated information
-- Keep focused on developer needs
-- Import detailed docs when needed
+Each directory has its own Claude.md for context-specific guidance:
+- `/src/components/CLAUDE.md` - Component patterns
+- `/src/stores/CLAUDE.md` - Zustand store patterns  
+- `/src/hooks/CLAUDE.md` - Custom hook patterns
+- `/src/types/CLAUDE.md` - TypeScript conventions
+- `/src/utils/CLAUDE.md` - Constants & utilities
+- `/src/lib/CLAUDE.md` - External library configs
+- `/supabase/functions/CLAUDE.md` - Edge function patterns
+- `/supabase/migrations/CLAUDE.md` - Migration guidelines
+- `/scripts/CLAUDE.md` - Data management scripts
