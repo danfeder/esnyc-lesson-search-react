@@ -189,14 +189,21 @@ export function ReviewDetail() {
       let similaritiesWithLessons = [];
       if (similarities && similarities.length > 0) {
         const lessonIds = similarities.map((s) => s.lesson_id);
-        const { data: lessons } = await supabase
+        const { data: lessons, error: lessonsError } = await supabase
           .from('lessons_with_metadata')
-          .select('id, title, grade_levels, thematic_categories')
-          .in('id', lessonIds);
+          .select('lesson_id, title, grade_levels, thematic_categories')
+          .in('lesson_id', lessonIds);
+
+        if (lessonsError) {
+          logger.error('Error fetching similar lessons:', lessonsError);
+        }
 
         if (lessons) {
           similaritiesWithLessons = similarities.map((sim) => {
-            const lesson = lessons.find((l) => l.id === sim.lesson_id);
+            const lesson = lessons.find((l) => l.lesson_id === sim.lesson_id);
+            if (!lesson) {
+              logger.debug(`Lesson not found for similarity: ${sim.lesson_id}`);
+            }
             return {
               ...sim,
               lesson: lesson || { title: 'Unknown', grade_levels: [], thematic_categories: [] },
