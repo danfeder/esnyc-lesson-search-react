@@ -361,10 +361,10 @@ Replace localhost URL with your Supabase project URL.
    - Docs API permissions
    - Proper error handling for rate limits
 
-2. **OpenAI Embeddings**: Currently commented out. To enable:
-   - Add OpenAI API key to environment
-   - Uncomment embedding generation code
-   - Update similarity calculations
+2. **OpenAI Embeddings**: Working in production. Requirements:
+   - `OPENAI_API_KEY` environment variable (configured in production)
+   - Uses `text-embedding-3-small` model for semantic similarity
+   - Falls back gracefully if API fails
 
 3. **Email Sending**: Requires Resend API key and verified domain
 

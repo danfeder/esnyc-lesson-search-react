@@ -97,7 +97,7 @@ onChange: (value: string) => void;
 **IN DEVELOPMENT** - Most features complete, remaining:
 - [x] Google Docs API integration (working in production, falls back to mock in dev without credentials)
 - [ ] CSV export functionality  
-- [ ] OpenAI embeddings in edge functions
+- [x] OpenAI embeddings in edge functions (working in production, but needs debugging)
 - [ ] Production environment configuration
 
 ## 🔧 TECH STACK
