@@ -1,6 +1,9 @@
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 import React from 'react';
+import { cleanup } from '@testing-library/react';
+// Import store for global cleanup
+import { useSearchStore } from '@/stores/searchStore';
 
 // Mock environment variables if not set
 if (!process.env.VITE_SUPABASE_URL) {
@@ -116,3 +119,18 @@ vi.mock('@/components/Filters/LazyTabPanel', () => ({
   LazyTabPanel: ({ children, className }: any) =>
     React.createElement('div', { className, role: 'tabpanel' }, children),
 }));
+
+// Global test cleanup
+afterEach(() => {
+  // Clean up DOM after each test
+  cleanup();
+
+  // Clear all mocks
+  vi.clearAllMocks();
+
+  // Reset store state to ensure clean slate
+  const store = useSearchStore.getState();
+  store.clearFilters();
+  store.setResults([], 0);
+  store.setError(null);
+});
