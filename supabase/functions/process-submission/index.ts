@@ -44,8 +44,14 @@ serve(async (req) => {
       testOpenAI,
     } = requestBody;
 
-    // Debug mode to test OpenAI configuration
+    // Debug mode to test OpenAI configuration (only allow in development)
     if (debug && testOpenAI) {
+      // Restrict debug endpoint to development environment
+      const isDevelopment = Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
+      if (!isDevelopment) {
+        throw new Error('Debug endpoint is only available in development');
+      }
+
       const openAIKey = Deno.env.get('OPENAI_API_KEY');
       let keyStatus = 'not configured';
       let keyLength = 0;
@@ -101,10 +107,13 @@ serve(async (req) => {
     const isServiceRole = token === supabaseServiceKey;
 
     let user: any = null;
-    let supabaseClient = supabaseAdmin; // Default to admin client
+    let supabaseClient: any;
 
-    if (!isServiceRole || !regenerateEmbedding) {
-      // Regular user flow - require user authentication
+    if (isServiceRole && regenerateEmbedding) {
+      // Service role for embedding regeneration only
+      supabaseClient = supabaseAdmin;
+    } else {
+      // Regular user flow - default to user's client with RLS
       supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: authHeader } },
       });

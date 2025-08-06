@@ -24,7 +24,7 @@ async function testOpenAIDirectly() {
   }
 
   console.log('✅ OPENAI_API_KEY found');
-  console.log(`   Key starts with: ${OPENAI_API_KEY.substring(0, 10)}...`);
+  console.log(`   Key length: ${OPENAI_API_KEY.length} characters`);
 
   try {
     console.log('\n📡 Calling OpenAI embeddings API...');
