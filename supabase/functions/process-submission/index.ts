@@ -70,7 +70,7 @@ serve(async (req) => {
 
     if (submissionError) throw submissionError;
 
-    // Step 2: Extract content from Google Doc (mock for now)
+    // Step 2: Extract content from Google Doc
     const extractResponse = await fetch(`${supabaseUrl}/functions/v1/extract-google-doc`, {
       method: 'POST',
       headers: {

@@ -80,23 +80,23 @@ serve(async (req) => {
 
 ### extract-google-doc
 ```typescript
-// ⚠️ CURRENTLY MOCKED - Returns fake data
-// TODO: Implement when GOOGLE_SERVICE_ACCOUNT_JSON available
+// ✅ WORKING - Extracts real content when GOOGLE_SERVICE_ACCOUNT_JSON is configured
+// Falls back to mock data if credentials not available (e.g., local dev)
 
-// Mock response structure
-return new Response(
-  JSON.stringify({
-    content: "Mock lesson content...",
-    title: "Mock Lesson Title",
-    metadata: { /* mock metadata */ }
-  }),
-  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-);
+// Production flow:
+if (googleServiceAccount) {
+  // Real Google Docs API extraction
+  const doc = await fetchGoogleDoc(docId);
+  const content = extractTextFromGoogleDoc(doc);
+  return realContent;
+} else {
+  // Fallback mock for local development
+  return mockContent;
+}
 
-// Future implementation needs:
-// 1. GOOGLE_SERVICE_ACCOUNT_JSON env var
-// 2. Google Docs API client
-// 3. Document parsing logic
+// Requirements:
+// 1. GOOGLE_SERVICE_ACCOUNT_JSON env var (configured in production)
+// 2. Document must be shared with service account or publicly accessible
 ```
 
 ### detect-duplicates

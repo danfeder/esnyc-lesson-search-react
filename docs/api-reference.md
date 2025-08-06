@@ -108,7 +108,7 @@ Authorization: Bearer <supabase-jwt-token>
 
 **Endpoint:** `/extract-google-doc`  
 **Method:** POST  
-**Description:** Extract content from Google Docs (currently returns mock data)
+**Description:** Extract content from Google Docs (production: real API, dev: mock fallback)
 
 #### Request Body
 ```typescript
