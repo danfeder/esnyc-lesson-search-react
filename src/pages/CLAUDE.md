@@ -207,7 +207,7 @@ const {
 - EXACTLY 11 filters must be maintained
 
 ### ReviewDetail
-- Google Docs embed currently MOCKED
+- Google Docs extraction WORKING (real API in production, mock fallback in dev)
 - Validates metadata before submission
 - Must handle all 11 filter categories
 

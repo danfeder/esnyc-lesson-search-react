@@ -88,7 +88,8 @@ serve(async (req) => {
       }
     }
 
-    // Enhanced mock that simulates real lesson content
+    // Fallback mock data for local development when Google credentials not configured
+    // This helps developers test the submission flow without needing Google API setup
     const mockLessons = [
       {
         title: 'Garden-Based Math: Measuring Plant Growth',

@@ -29,7 +29,7 @@ supabase db reset         # Reset database to clean state
 5. **TEST RLS POLICIES** after ANY migration - `npm run test:rls` MUST pass
 6. **ESLint no-unused-vars** - Add `// eslint-disable-next-line no-unused-vars` for parameters
 7. **Path Aliases** - ALWAYS use `@/components` not relative imports like `../components`
-8. **Google Docs API** - Currently MOCKED, returns fake data (see extract-google-doc function)
+8. **Google Docs API** - WORKING in production (configured via GOOGLE_SERVICE_ACCOUNT_JSON secret)
 
 ## 🔥 COMMON WORKFLOWS
 
@@ -95,7 +95,7 @@ onChange: (value: string) => void;
 ## 📋 CURRENT STATUS
 
 **IN DEVELOPMENT** - Most features complete, remaining:
-- [ ] Google Docs API integration (currently mocked)
+- [x] Google Docs API integration (working in production, falls back to mock in dev without credentials)
 - [ ] CSV export functionality  
 - [ ] OpenAI embeddings in edge functions
 - [ ] Production environment configuration
