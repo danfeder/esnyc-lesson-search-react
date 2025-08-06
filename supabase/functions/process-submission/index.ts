@@ -12,6 +12,8 @@ interface ProcessSubmissionRequest {
   originalLessonId?: string;
   submissionId?: string; // For regenerating embeddings
   regenerateEmbedding?: boolean; // Flag to only regenerate embedding
+  debug?: boolean; // For debugging
+  testOpenAI?: boolean; // For testing OpenAI connectivity
 }
 
 serve(async (req) => {
@@ -32,8 +34,64 @@ serve(async (req) => {
 
     // Parse request body first to check if it's a regenerate request
     const requestBody = (await req.json()) as ProcessSubmissionRequest;
-    const { googleDocUrl, submissionType, originalLessonId, submissionId, regenerateEmbedding } =
-      requestBody;
+    const {
+      googleDocUrl,
+      submissionType,
+      originalLessonId,
+      submissionId,
+      regenerateEmbedding,
+      debug,
+      testOpenAI,
+    } = requestBody;
+
+    // Debug mode to test OpenAI configuration
+    if (debug && testOpenAI) {
+      const openAIKey = Deno.env.get('OPENAI_API_KEY');
+      let keyStatus = 'not configured';
+      let keyLength = 0;
+      let apiTest = null;
+
+      if (openAIKey) {
+        keyLength = openAIKey.length;
+        keyStatus = `configured (length: ${keyLength}, starts with: ${openAIKey.substring(0, 7)}...)`;
+
+        // Test the API
+        try {
+          const testResponse = await fetch('https://api.openai.com/v1/models', {
+            headers: {
+              Authorization: `Bearer ${openAIKey}`,
+            },
+          });
+
+          apiTest = {
+            status: testResponse.status,
+            ok: testResponse.ok,
+            statusText: testResponse.statusText,
+          };
+
+          if (!testResponse.ok) {
+            const errorText = await testResponse.text();
+            apiTest.error = errorText.substring(0, 200);
+          }
+        } catch (error) {
+          apiTest = { error: error.message };
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          debug: true,
+          openAIKeyStatus: keyStatus,
+          keyLength,
+          apiTest,
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     // Create service client for admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
