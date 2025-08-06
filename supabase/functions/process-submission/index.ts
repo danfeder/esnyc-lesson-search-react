@@ -30,24 +30,35 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Create client with user's token for RLS
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // Parse request body first to check if it's a regenerate request
+    const requestBody = (await req.json()) as ProcessSubmissionRequest;
+    const { googleDocUrl, submissionType, originalLessonId, submissionId, regenerateEmbedding } =
+      requestBody;
 
     // Create service client for admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user - need to pass the JWT token
+    // If regenerating embeddings with service role key, skip user auth
     const token = authHeader.replace('Bearer ', '');
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) throw new Error('Unauthorized');
+    const isServiceRole = token === supabaseServiceKey;
 
-    const { googleDocUrl, submissionType, originalLessonId, submissionId, regenerateEmbedding } =
-      (await req.json()) as ProcessSubmissionRequest;
+    let user: any = null;
+    let supabaseClient = supabaseAdmin; // Default to admin client
+
+    if (!isServiceRole || !regenerateEmbedding) {
+      // Regular user flow - require user authentication
+      supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      // Get user - need to pass the JWT token
+      const {
+        data: { user: authUser },
+        error: userError,
+      } = await supabaseClient.auth.getUser(token);
+      if (userError || !authUser) throw new Error('Unauthorized');
+      user = authUser;
+    }
 
     let submission;
     let title: string;
@@ -78,6 +89,10 @@ serve(async (req) => {
       // Normal flow: create new submission
       if (!googleDocUrl) {
         throw new Error('Google Doc URL is required for new submissions');
+      }
+
+      if (!user) {
+        throw new Error('User authentication required for new submissions');
       }
 
       // Extract Google Doc ID

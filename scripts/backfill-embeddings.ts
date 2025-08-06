@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' }); // Also load .env for Supabase credentials
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -42,31 +43,30 @@ async function generateEmbeddingViaEdgeFunction(submissionId: string) {
 
     console.log(`📡 Generating embedding for submission ${submissionId}...`);
 
-    // Call the edge function to regenerate just the embedding part
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/process-submission`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-      body: JSON.stringify({
-        submissionId,
-        regenerateEmbedding: true, // Flag to only regenerate embedding
-      }),
-    });
+    // Use Supabase client to invoke the function properly
+    const { data: result, error: invokeError } = await supabase.functions.invoke(
+      'process-submission',
+      {
+        body: {
+          submissionId,
+          regenerateEmbedding: true, // Flag to only regenerate embedding
+        },
+      }
+    );
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error(`❌ Edge function error for ${submissionId}:`, error);
+    if (invokeError) {
+      console.error(`❌ Edge function error for ${submissionId}:`, invokeError.message);
       return false;
     }
 
-    const result = await response.json();
-    if (result.success) {
+    if (result?.success) {
       console.log(`✅ Embedding generated for submission ${submissionId}`);
       return true;
     } else {
-      console.error(`❌ Failed to generate embedding for ${submissionId}:`, result.error);
+      console.error(
+        `❌ Failed to generate embedding for ${submissionId}:`,
+        result?.error || 'Unknown error'
+      );
       return false;
     }
   } catch (error) {
