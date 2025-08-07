@@ -27,6 +27,11 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
+// Configuration constants
+const EMBEDDING_RATE_LIMIT_DELAY_MS = 100; // Delay between API calls to avoid rate limiting
+const GEMINI_TOKEN_LIMIT = 2048; // Maximum tokens supported by Gemini
+const EMBEDDING_DIMENSIONS = 1536; // Target embedding dimensions
+
 // Initialize Supabase client with service role key
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -49,7 +54,7 @@ async function generateGeminiEmbedding(text: string): Promise<number[] | null> {
     // Call the Supabase edge function to generate Gemini embeddings
     const { data, error } = await supabase.functions.invoke('generate-gemini-embeddings', {
       body: {
-        text: text.slice(0, 2048), // Gemini supports 2048 tokens
+        text: text.slice(0, GEMINI_TOKEN_LIMIT),
         taskType: 'SEMANTIC_SIMILARITY', // Optimized for duplicate detection
       },
     });
@@ -130,7 +135,7 @@ async function main() {
     // Step 4: Generate new Gemini embeddings
     if (allLessons && allLessons.length > 0) {
       console.log('🤖 Generating Gemini embeddings...');
-      console.log('   Using model: gemini-embedding-001 (1536 dimensions)');
+      console.log(`   Using model: gemini-embedding-001 (${EMBEDDING_DIMENSIONS} dimensions)`);
       console.log('   Task type: SEMANTIC_SIMILARITY (optimized for duplicate detection)');
       console.log('   This may take several minutes...\n');
 
@@ -175,7 +180,7 @@ async function main() {
         }
 
         // Add delay to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, EMBEDDING_RATE_LIMIT_DELAY_MS));
       }
 
       console.log(`\n   ✅ Generated ${succeeded} Gemini embeddings`);
@@ -198,8 +203,10 @@ async function main() {
       const embeddingLength = (verifyData[0].content_embedding as any[]).length;
       console.log(`   ✅ Embeddings now have ${embeddingLength} dimensions`);
 
-      if (embeddingLength === 1536) {
-        console.log('   ✅ Successfully migrated to Gemini embeddings (1536 dimensions)!');
+      if (embeddingLength === EMBEDDING_DIMENSIONS) {
+        console.log(
+          `   ✅ Successfully migrated to Gemini embeddings (${EMBEDDING_DIMENSIONS} dimensions)!`
+        );
       } else if (embeddingLength === 768) {
         console.log('   ⚠️  Showing 768 dimensions. Check outputDimensionality setting.');
       }

@@ -1,5 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
+// Configuration constants
+const GEMINI_TOKEN_LIMIT = 2048; // Maximum tokens supported by Gemini embedding model
+const GEMINI_MODEL_NAME = 'models/gemini-embedding-001';
+const EMBEDDING_DIMENSIONS = 1536; // Optimal for quality and matches existing DB schema
+
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute window
+const RATE_LIMIT_MAX_REQUESTS = 60; // Max 60 requests per minute
+
+// Simple in-memory rate limiter (resets on function cold start)
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -11,6 +23,53 @@ serve(async (req) => {
   }
 
   try {
+    // Simple rate limiting based on IP address
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+
+    // Check rate limit
+    const clientData = requestCounts.get(clientIp);
+    if (clientData) {
+      if (now < clientData.resetTime) {
+        if (clientData.count >= RATE_LIMIT_MAX_REQUESTS) {
+          return new Response(
+            JSON.stringify({
+              error: 'Rate limit exceeded. Please try again later.',
+              retryAfter: Math.ceil((clientData.resetTime - now) / 1000),
+            }),
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+                'Retry-After': String(Math.ceil((clientData.resetTime - now) / 1000)),
+              },
+            }
+          );
+        }
+        clientData.count++;
+      } else {
+        // Reset window
+        clientData.count = 1;
+        clientData.resetTime = now + RATE_LIMIT_WINDOW_MS;
+      }
+    } else {
+      // First request from this client
+      requestCounts.set(clientIp, {
+        count: 1,
+        resetTime: now + RATE_LIMIT_WINDOW_MS,
+      });
+    }
+
+    // Clean up old entries to prevent memory leak
+    if (requestCounts.size > 1000) {
+      for (const [ip, data] of requestCounts.entries()) {
+        if (now > data.resetTime) {
+          requestCounts.delete(ip);
+        }
+      }
+    }
+
     const { text, taskType = 'RETRIEVAL_DOCUMENT' } = await req.json();
 
     if (!text) {
@@ -32,16 +91,16 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'models/gemini-embedding-001',
+          model: GEMINI_MODEL_NAME,
           content: {
             parts: [
               {
-                text: text.slice(0, 2048), // Gemini supports 2048 tokens
+                text: text.slice(0, GEMINI_TOKEN_LIMIT),
               },
             ],
           },
           taskType: taskType, // Can be: RETRIEVAL_QUERY, RETRIEVAL_DOCUMENT, SEMANTIC_SIMILARITY, CLASSIFICATION, CLUSTERING
-          outputDimensionality: 1536, // Optimal for quality and matches existing DB schema
+          outputDimensionality: EMBEDDING_DIMENSIONS,
         }),
       }
     );

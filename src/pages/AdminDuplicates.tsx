@@ -49,7 +49,7 @@ export const AdminDuplicates: React.FC = () => {
 
       // For now, load from the JSON file we just generated
       // In production, this would come from a database or API
-      const response = await fetch('/reports/duplicate-analysis-2025-07-31.json');
+      const response = await fetch('/reports/duplicate-analysis-v2-2025-08-07.json');
       if (!response.ok) {
         throw new Error('Failed to load duplicate analysis');
       }
@@ -69,11 +69,13 @@ export const AdminDuplicates: React.FC = () => {
       const resolvedGroupIds = new Set(resolvedGroups?.map((r) => r.group_id) || []);
 
       // Transform the report groups into our component format
+      // Note: new report uses 'averageSimilarity' instead of 'similarityScore'
       const transformedGroups = report.groups.map(
         (group: {
           groupId: string;
-          type: 'exact' | 'near' | 'title';
-          similarityScore: number;
+          type: 'exact' | 'near' | 'title' | 'mixed';
+          similarityScore?: number; // Old format
+          averageSimilarity?: number; // New format
           lessonCount: number;
           recommendedCanonical?: string;
           lessons: Array<{
@@ -82,7 +84,11 @@ export const AdminDuplicates: React.FC = () => {
             isRecommendedCanonical?: boolean;
           }>;
         }): DuplicateGroup => ({
-          ...group,
+          groupId: group.groupId,
+          type: group.type === 'mixed' ? 'near' : group.type, // Map 'mixed' to 'near' for now
+          similarityScore: group.similarityScore ?? group.averageSimilarity ?? 0,
+          lessonCount: group.lessonCount,
+          recommendedCanonical: group.recommendedCanonical,
           status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
           lessons: group.lessons.map((lesson) => ({
             lessonId: lesson.lessonId,
@@ -263,9 +269,9 @@ export const AdminDuplicates: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  {group.lessonCount > 2 && (
+                  {group.lessonCount > 1 && (
                     <p className="mt-2 text-sm text-gray-500">
-                      and {group.lessonCount - 1} other variations
+                      {group.lessonCount} total variations of this lesson
                     </p>
                   )}
                 </div>

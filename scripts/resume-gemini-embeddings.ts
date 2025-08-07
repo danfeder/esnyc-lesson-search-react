@@ -16,9 +16,15 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
-// Configuration
-const START_FROM_INDEX = parseInt(process.argv[2] || '680');
-const BATCH_LIMIT = parseInt(process.argv[3] || '200'); // Process limited batch to avoid timeout
+// Configuration constants
+const EMBEDDING_RATE_LIMIT_DELAY_MS = 100; // Delay between API calls to avoid rate limiting
+const GEMINI_TOKEN_LIMIT = 2048; // Maximum tokens supported by Gemini
+const DEFAULT_START_INDEX = 0; // Default starting point for resumption
+const DEFAULT_BATCH_LIMIT = 200; // Default batch size to avoid timeout
+
+// Configuration from command line args
+const START_FROM_INDEX = parseInt(process.argv[2] || String(DEFAULT_START_INDEX));
+const BATCH_LIMIT = parseInt(process.argv[3] || String(DEFAULT_BATCH_LIMIT));
 
 // Initialize Supabase client with service role key
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
@@ -42,7 +48,7 @@ async function generateGeminiEmbedding(text: string): Promise<number[] | null> {
     // Call the Supabase edge function to generate Gemini embeddings
     const { data, error } = await supabase.functions.invoke('generate-gemini-embeddings', {
       body: {
-        text: text.slice(0, 2048), // Gemini supports 2048 tokens
+        text: text.slice(0, GEMINI_TOKEN_LIMIT),
         taskType: 'SEMANTIC_SIMILARITY', // Optimized for duplicate detection
       },
     });
@@ -149,7 +155,7 @@ async function resumeMigration() {
         }
 
         // Add delay to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, EMBEDDING_RATE_LIMIT_DELAY_MS));
       }
 
       const elapsed = (Date.now() - startTime) / 1000;

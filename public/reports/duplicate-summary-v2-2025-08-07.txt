@@ -1,0 +1,31 @@
+
+DUPLICATE ANALYSIS REPORT V2
+Generated: 8/6/2025, 9:29:14 PM
+============================================================
+
+SUMMARY
+-------
+Total Lessons: 777
+Unique Lessons: 658
+Duplicate Lessons: 205
+
+DUPLICATE GROUPS
+----------------
+Exact Matches: 58
+Near Duplicates: 13
+Title Variations: 7
+Mixed Groups: 8
+TOTAL: 86
+
+TOP GROUPS BY SIZE
+------------------
+1. Three Sisters Tacos (exact, 6 lessons, 100% similar)
+2. Foods From Around the World: China (mixed, 5 lessons, 59% similar)
+3. All About Compost (exact, 4 lessons, 100% similar)
+4. Seed Save (exact, 4 lessons, 100% similar)
+5. Borscht (exact, 4 lessons, 100% similar)
+6. Food Webs (mixed, 4 lessons, 93% similar)
+7. Planting in Patterns (mixed, 4 lessons, 92% similar)
+8. Seed Dispersal (exact, 3 lessons, 100% similar)
+9. The Seasons: Fall (exact, 3 lessons, 100% similar)
+10. Leaves (exact, 3 lessons, 100% similar)

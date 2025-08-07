@@ -40,10 +40,39 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 /**
- * Generate a content-based hash from lesson content
- * @param {string} content - The lesson content text
- * @param {object} metadata - Optional metadata for fallback
- * @returns {string} The generated hash with optional prefix
+ * Generates a deterministic hash for lesson content, with fallback to metadata.
+ *
+ * If `content` is provided and non-empty, the function normalizes it by:
+ *   - Converting to lowercase
+ *   - Replacing all sequences of whitespace with a single space
+ *   - Trimming leading and trailing whitespace
+ * The normalized content is then hashed using SHA-256.
+ *
+ * If `content` is missing or empty, the function falls back to selected metadata fields
+ * (title, summary, grade_levels), normalizes them (lowercase, trim, sort grade_levels),
+ * and concatenates them with a pipe (`|`). This string is then hashed using SHA-256,
+ * and the result is prefixed with `META_` to indicate that the hash is based on metadata only.
+ *
+ * The `META_` prefix convention allows consumers to distinguish hashes generated from
+ * actual content from those generated from metadata fallback. This is critical for
+ * duplicate detection accuracy.
+ *
+ * @param {string} content - The lesson content text to hash
+ * @param {object} [metadata={}] - Optional metadata for fallback hashing
+ * @param {string} [metadata.title] - The lesson title
+ * @param {string} [metadata.summary] - The lesson summary  
+ * @param {string[]} [metadata.grade_levels] - The grade levels associated with the lesson
+ * @returns {string} The generated SHA-256 hash, prefixed with 'META_' if based on metadata
+ * 
+ * @example
+ * // Content-based hash
+ * generateProperContentHash("This is the lesson content", {})
+ * // Returns: "a1b2c3d4..." (64-char hex hash)
+ * 
+ * @example
+ * // Metadata fallback hash
+ * generateProperContentHash("", { title: "Lesson 1", summary: "Intro" })
+ * // Returns: "META_e5f6g7h8..." (META_ prefix + 64-char hex hash)
  */
 function generateProperContentHash(content, metadata = {}) {
   if (content && content.trim().length > 0) {

@@ -23,7 +23,12 @@
     "analyze": "npm run build && npx vite-bundle-analyzer dist/",
     "test:rls": "node scripts/test-rls-policies.mjs",
     "test:openai": "npx tsx scripts/test-openai-api.ts",
-    "backfill:embeddings": "npx tsx scripts/backfill-embeddings.ts"
+    "backfill:embeddings": "npx tsx scripts/backfill-embeddings.ts",
+    "auto-resolve-duplicates": "npx tsx scripts/auto-resolve-duplicates.ts",
+    "analyze-duplicates-v2": "npx tsx scripts/analyze-duplicates-v2.ts",
+    "undo-resolutions": "npx tsx scripts/undo-all-duplicate-resolutions.ts",
+    "recover-failed": "npx tsx scripts/recover-failed-lessons.ts",
+    "restore-missing": "npx tsx scripts/identify-and-restore-missing-lessons.ts"
   },
   "keywords": [
     "education",

@@ -143,3 +143,5 @@ test-*.sql
 *.backup
 *-old.*
 *-deprecated.*
+# Backup files
+backups/

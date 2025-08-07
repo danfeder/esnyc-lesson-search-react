@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-08-07T19:58:56.638Z",
+  "method": "public_url_extraction",
+  "summary": {
+    "total": 5,
+    "success": 5,
+    "improved": 0,
+    "failed": 0
+  },
+  "results": [
+    {
+      "lesson_id": "1_uY_JrUrSpMW7MS1gj8-1JMNjLYutFeYY0tMkgXdDrY",
+      "title": "New Years Food Traditions",
+      "old_length": 1339,
+      "new_length": 1487,
+      "status": "success"
+    },
+    {
+      "lesson_id": "1_ydG2Y3b-n8BEQ8lov8MJ-X7jRcMSxmOKYvbylfpzR0",
+      "title": "Green Room Scavenger Hunt",
+      "old_length": 2993,
+      "new_length": 3185,
+      "status": "success"
+    },
+    {
+      "lesson_id": "18tWASHJiuuzERapsEfBhxV6-7WvN9IB_5DCxbF-_CrE",
+      "title": "Shepherd Salad",
+      "old_length": 13910,
+      "new_length": 15098,
+      "status": "success"
+    },
+    {
+      "lesson_id": "1ADD07O2PRW6hxGfTYKlSb55ZgL20GioiOKfBIhMKLgc",
+      "title": "Tamales",
+      "old_length": 3369,
+      "new_length": 3571,
+      "status": "success"
+    },
+    {
+      "lesson_id": "1B-4jTGPsOXmFJp-q-4JpMJ3e7Qw5I92aOxtgWHD6UNU",
+      "title": "Farm Workers & Pesticides",
+      "old_length": 8920,
+      "new_length": 9155,
+      "status": "success"
+    }
+  ]
+}

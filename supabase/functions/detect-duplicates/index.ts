@@ -28,14 +28,36 @@ interface DuplicateResult {
 }
 
 // Generate content hash for exact duplicate detection
+// Now properly hashes the actual content, not metadata
 async function generateContentHash(content: string, metadata: any = {}): Promise<string> {
-  const contentParts = [content.toLowerCase().trim(), JSON.stringify(metadata)];
-  const contentString = contentParts.join('|');
-  const msgUint8 = new TextEncoder().encode(contentString);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  if (content && content.trim().length > 0) {
+    // Normalize content: lowercase, single spaces, trim
+    const normalizedContent = content.toLowerCase().replace(/\s+/g, ' ').trim();
+
+    const msgUint8 = new TextEncoder().encode(normalizedContent);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  } else {
+    // Fallback to metadata hash with prefix
+    const metadataParts = [
+      metadata.title?.toLowerCase().trim() || '',
+      metadata.summary?.toLowerCase().trim() || '',
+      JSON.stringify(metadata.gradeLevels || []),
+      // Add other metadata fields as needed
+    ];
+
+    const metadataString = metadataParts.join('|');
+    const msgUint8 = new TextEncoder().encode(metadataString);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hash = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    // Prefix to indicate this is metadata-only
+    return 'META_' + hash;
+  }
 }
 
 // Calculate title similarity (simple Jaccard similarity)

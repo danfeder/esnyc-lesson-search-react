@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-import { getGoogleAccessToken } from '../_shared/google-auth-with-delegation.ts';
+import { getGoogleAccessToken } from '../_shared/google-auth.ts';
 import {
   extractTextFromGoogleDoc,
   extractMetadataFromContent,
@@ -40,14 +40,8 @@ serve(async (req) => {
         const credentials = JSON.parse(googleServiceAccount);
         console.log('Service account email:', credentials.client_email);
 
-        // Get the email to impersonate from environment variable
-        // This should be a user in your @esynyc.org domain
-        const impersonateEmail =
-          Deno.env.get('GOOGLE_IMPERSONATE_EMAIL') || 'docs-reader@esynyc.org';
-        console.log('Impersonating user:', impersonateEmail);
-
-        const accessToken = await getGoogleAccessToken(credentials, impersonateEmail);
-        console.log('Successfully obtained access token with domain-wide delegation');
+        const accessToken = await getGoogleAccessToken(credentials);
+        console.log('Successfully obtained access token');
 
         // Get document from Google Docs API
         const docResponse = await fetch(`https://docs.googleapis.com/v1/documents/${docId}`, {
