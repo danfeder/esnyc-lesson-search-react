@@ -1,0 +1,132 @@
+{
+  "timestamp": "2025-08-07T17:15:47.297Z",
+  "summary": {
+    "totalLessons": 832,
+    "uniqueHashes": 800,
+    "potentialDuplicates": 32,
+    "falsePositiveGroups": 10,
+    "suspiciousPairs": 0
+  },
+  "problem": "Content hashes are generated from metadata only (title, summary, grade_levels, etc.), not from actual lesson content",
+  "evidence": {
+    "falsePositives": [
+      {
+        "hash": "52532c844bd26bfda9a694d78b0dccf67dda801b62eb0dcb41fb693a64b44274",
+        "lessonCount": 2,
+        "lengthDiff": 8838,
+        "lessonIds": [
+          "0BwC8Pf3ZwAXjYjl4Smtva0xnYm8",
+          "1pO7e5xDvm4Z_ak-QRPkL0D25SJbyOXMaG5ZMLOUIezs"
+        ],
+        "titles": [
+          "Borscht",
+          "Borscht"
+        ]
+      },
+      {
+        "hash": "dd0625924f18d1265d3df80b913e8d877ee2691d60e143b1c6417ec3f0e61c4c",
+        "lessonCount": 2,
+        "lengthDiff": 6275,
+        "lessonIds": [
+          "0BwC8Pf3ZwAXjV1NrbS1WWnppZTQ",
+          "18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS"
+        ],
+        "titles": [
+          "Earth Heroes",
+          "Earth Heroes"
+        ]
+      },
+      {
+        "hash": "a3cb17625579dad042298402f62cf3b62a2118a1f46adaff73ebe303b56998ef",
+        "lessonCount": 2,
+        "lengthDiff": 4792,
+        "lessonIds": [
+          "0BzCUl-9h7sgEb1NPdnZLNUJFNzg",
+          "1tnuw26Uque0EgYpR9yq-jVI2zgkz4-sP"
+        ],
+        "titles": [
+          "Soil Conservation",
+          "Soil Conservation"
+        ]
+      },
+      {
+        "hash": "64ed901a7444223c9520283f5ec01ae9f98a02da67ed418fb4c21eef380bdd30",
+        "lessonCount": 3,
+        "lengthDiff": 4355,
+        "lessonIds": [
+          "1FsfuHw8RzGJY2Lzwuv2qKwhAjkqFezOS",
+          "0BwC8Pf3ZwAXjY3UwQ0RzbmI0RE0",
+          "1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4"
+        ],
+        "titles": [
+          "Planting in Patterns",
+          "Planting in Patterns",
+          "Planting in Patterns"
+        ]
+      },
+      {
+        "hash": "9e5b16bb7dc345ea6f12e27a241b430f2ac5699a1365a1837e13c1ddc7013721",
+        "lessonCount": 3,
+        "lengthDiff": 3542,
+        "lessonIds": [
+          "1BV5W-c-wRcxVVCuS3f7OvvtFKK229t1LREgVnFt3bNM",
+          "0BzCUl-9h7sgERVM0eXR5RFA2Y2s",
+          "1vY0gOo9IooV6W9uAVYskU1G0byTHEfzIPHnFMGPKQQo"
+        ],
+        "titles": [
+          "Bees and Pollination",
+          "Bees and Pollination",
+          "Bees and Pollination"
+        ]
+      }
+    ],
+    "lowSimilarityPairs": [
+      {
+        "id1": "0BwC8Pf3ZwAXjYjl4Smtva0xnYm8",
+        "id2": "1pO7e5xDvm4Z_ak-QRPkL0D25SJbyOXMaG5ZMLOUIezs",
+        "title": "Borscht",
+        "len1": 20427,
+        "len2": 11589,
+        "len_diff": 8838,
+        "embedding_similarity": null
+      },
+      {
+        "id1": "0BwC8Pf3ZwAXjV1NrbS1WWnppZTQ",
+        "id2": "18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS",
+        "title": "Earth Heroes",
+        "len1": 11170,
+        "len2": 4895,
+        "len_diff": 6275,
+        "embedding_similarity": null
+      },
+      {
+        "id1": "0BzCUl-9h7sgEb1NPdnZLNUJFNzg",
+        "id2": "1tnuw26Uque0EgYpR9yq-jVI2zgkz4-sP",
+        "title": "Soil Conservation",
+        "len1": 7065,
+        "len2": 2273,
+        "len_diff": 4792,
+        "embedding_similarity": null
+      },
+      {
+        "id1": "1FsfuHw8RzGJY2Lzwuv2qKwhAjkqFezOS",
+        "id2": "0BwC8Pf3ZwAXjY3UwQ0RzbmI0RE0",
+        "title": "Planting in Patterns",
+        "len1": 6715,
+        "len2": 6715,
+        "len_diff": 0,
+        "embedding_similarity": null
+      },
+      {
+        "id1": "1FsfuHw8RzGJY2Lzwuv2qKwhAjkqFezOS",
+        "id2": "1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4",
+        "title": "Planting in Patterns",
+        "len1": 6715,
+        "len2": 2360,
+        "len_diff": 4355,
+        "embedding_similarity": null
+      }
+    ]
+  },
+  "recommendation": "Regenerate hashes using actual content_text field"
+}

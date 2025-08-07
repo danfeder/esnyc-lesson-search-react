@@ -1,0 +1,515 @@
+{
+  "timestamp": "2025-08-07T17:16:01.704Z",
+  "mode": "dry-run",
+  "summary": {
+    "totalProcessed": 832,
+    "hashesChanged": 832,
+    "contentBasedHashes": 832,
+    "metadataOnlyHashes": 0
+  },
+  "improvements": {
+    "resolvedFalsePositives": 18,
+    "newDuplicatesFound": 10
+  },
+  "validation": {
+    "totalLessons": 832,
+    "contentHashes": 832,
+    "metadataHashes": 0,
+    "resolvedFalsePositives": [
+      {
+        "oldHash": "ccf062aa68089b2a...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0B-9rQRyZMNzUMmp4UW5qTlpjb00",
+            "title": "The Seasons: Fall",
+            "contentLength": 4154
+          },
+          {
+            "id": "1cX_lHizAQAD-XccT95OugIwfmcCXIWsI35hk4ewmF1c",
+            "title": "The Seasons: Fall",
+            "contentLength": 4156
+          }
+        ]
+      },
+      {
+        "oldHash": "f911d458a6c33ab1...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0B-9rQRyZMNzUSlQydmtZYjhpTlU",
+            "title": "Respect and Rainbows in the Garden",
+            "contentLength": 5047
+          },
+          {
+            "id": "1xQebmPuWM1ZFPnfDCekLW5qSatOXSoDtJKWRvJQPGnU",
+            "title": "Respect and Rainbows in the Garden",
+            "contentLength": 4807
+          }
+        ]
+      },
+      {
+        "oldHash": "b82efdec5ccea257...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0B-haDqSHcXMCYmFNVjhPMGRRLVh3UzAzTUNldS1BQ3FYRDdr",
+            "title": "Fall/Winter Veggies and Fruits",
+            "contentLength": 3975
+          },
+          {
+            "id": "19ZBXDDQ5vZ2y5LrJ8w_7D7sqXSQNQeUF06ovPagaQo0",
+            "title": "Fall/Winter Veggies and Fruits",
+            "contentLength": 3975
+          }
+        ]
+      },
+      {
+        "oldHash": "ab57656e50b4eacc...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjdFkzWE9XUC1QaVk",
+            "title": "Fruit Kabobs with Yogurt Dressing and Trail Mix",
+            "contentLength": 6762
+          },
+          {
+            "id": "1Gg9cS6HdfQtR07EWyy1l_L3Z4DuIhxAFNS12fiJsC6o",
+            "title": "Fruit Kabobs with Yogurt Dressing and Trail Mix",
+            "contentLength": 4812
+          }
+        ]
+      },
+      {
+        "oldHash": "d42f6a22222b16d7...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjLXYwc3FQbS1ZMHc",
+            "title": "Soil Is Where Food Begins!",
+            "contentLength": 5843
+          },
+          {
+            "id": "0BwC8Pf3ZwAXjMHNNOUlpUW1Hcmc",
+            "title": "Soil Is Where Food Begins!",
+            "contentLength": 6283
+          }
+        ]
+      },
+      {
+        "oldHash": "54fd26c475b4bf23...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjRkVMWDlaTVlkaVk",
+            "title": "Day in the Life of a Worm",
+            "contentLength": 7476
+          },
+          {
+            "id": "1_i0zHlSi0RQfsV5Z3VNTPti7w_rg2w8Dx7Z30co0KCg",
+            "title": "Day in the Life of a Worm",
+            "contentLength": 7475
+          }
+        ]
+      },
+      {
+        "oldHash": "bf2c02626fef70b0...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjS3NFd21DaG9vS1k",
+            "title": "Food Miles",
+            "contentLength": 8750
+          },
+          {
+            "id": "1He6EDEwg39xOfTJ19vI6TWxjLWzYd-y8RIL5h6uSZqI",
+            "title": "Food Miles",
+            "contentLength": 9792
+          }
+        ]
+      },
+      {
+        "oldHash": "dd0625924f18d126...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjV1NrbS1WWnppZTQ",
+            "title": "Earth Heroes",
+            "contentLength": 11170
+          },
+          {
+            "id": "18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS",
+            "title": "Earth Heroes",
+            "contentLength": 4895
+          }
+        ]
+      },
+      {
+        "oldHash": "64ed901a7444223c...",
+        "lessonCount": 3,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjY3UwQ0RzbmI0RE0",
+            "title": "Planting in Patterns",
+            "contentLength": 6715
+          },
+          {
+            "id": "1FsfuHw8RzGJY2Lzwuv2qKwhAjkqFezOS",
+            "title": "Planting in Patterns",
+            "contentLength": 6715
+          },
+          {
+            "id": "1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4",
+            "title": "Planting in Patterns",
+            "contentLength": 2360
+          }
+        ]
+      },
+      {
+        "oldHash": "52532c844bd26bfd...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjYjl4Smtva0xnYm8",
+            "title": "Borscht",
+            "contentLength": 20427
+          },
+          {
+            "id": "1pO7e5xDvm4Z_ak-QRPkL0D25SJbyOXMaG5ZMLOUIezs",
+            "title": "Borscht",
+            "contentLength": 11589
+          }
+        ]
+      },
+      {
+        "oldHash": "7381049bcefa2d09...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BxEc0RZeYtCiN2U4MjM3d3UxcEU",
+            "title": "Food Web",
+            "contentLength": 5415
+          },
+          {
+            "id": "0BxEc0RZeYtCiYm1rQk9YLWtfMjg",
+            "title": "Food Web",
+            "contentLength": 5157
+          }
+        ]
+      },
+      {
+        "oldHash": "aa08b335bb537725...",
+        "lessonCount": 3,
+        "newHashCount": 3,
+        "lessons": [
+          {
+            "id": "0BxEc0RZeYtCiWkpwSUdsU1JIQm8",
+            "title": "Simple Machines",
+            "contentLength": 5794
+          },
+          {
+            "id": "0BxEc0RZeYtCiZGJ1VWhKbFpEbVk",
+            "title": "Simple Machines",
+            "contentLength": 8476
+          },
+          {
+            "id": "1gT5RObyuVItDDvq_URSt9jsfX-SUKsCk9qu2P840h2g",
+            "title": "Simple Machines",
+            "contentLength": 5765
+          }
+        ]
+      },
+      {
+        "oldHash": "a764ec5e2c212581...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BxEc0RZeYtCiX2JSVkVSc3FQNVk",
+            "title": "Describing Our Garden",
+            "contentLength": 6767
+          },
+          {
+            "id": "1eQF5NWcYwKxoswPigPABqleFqY3kDFoWxWmu0Ke-urQ",
+            "title": "Describing Our Garden",
+            "contentLength": 6778
+          }
+        ]
+      },
+      {
+        "oldHash": "cba1c150dd828ce1...",
+        "lessonCount": 3,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BzCUl-9h7sgEaFNySmhiX3ZEUTQ",
+            "title": "The Seasons: Winter",
+            "contentLength": 6441
+          },
+          {
+            "id": "1-YPPCAVXCBbAADxbPyWnkXcLS30C90oBFRwX-aBE024",
+            "title": "The Seasons: Winter",
+            "contentLength": 7146
+          },
+          {
+            "id": "1ncYLZbPt8k5p09bbTterR3d6U3hv6MzRH7-JXRP4rDQ",
+            "title": "The Seasons: Winter",
+            "contentLength": 6441
+          }
+        ]
+      },
+      {
+        "oldHash": "a3cb17625579dad0...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BzCUl-9h7sgEb1NPdnZLNUJFNzg",
+            "title": "Soil Conservation",
+            "contentLength": 7065
+          },
+          {
+            "id": "1tnuw26Uque0EgYpR9yq-jVI2zgkz4-sP",
+            "title": "Soil Conservation",
+            "contentLength": 2273
+          }
+        ]
+      },
+      {
+        "oldHash": "9e5b16bb7dc345ea...",
+        "lessonCount": 3,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "0BzCUl-9h7sgERVM0eXR5RFA2Y2s",
+            "title": "Bees and Pollination",
+            "contentLength": 8076
+          },
+          {
+            "id": "1BV5W-c-wRcxVVCuS3f7OvvtFKK229t1LREgVnFt3bNM",
+            "title": "Bees and Pollination",
+            "contentLength": 4534
+          },
+          {
+            "id": "1vY0gOo9IooV6W9uAVYskU1G0byTHEfzIPHnFMGPKQQo",
+            "title": "Bees and Pollination",
+            "contentLength": 8076
+          }
+        ]
+      },
+      {
+        "oldHash": "e5ce4283200df36b...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "1-1T0a4pCECA5e0ek7pcvFoTRa3-piEGwGHKWrsnxtUs",
+            "title": "Chinese Scrambled Eggs and Soybean Dumplings",
+            "contentLength": 15542
+          },
+          {
+            "id": "16QWo7thyIv-ILwLdi5x7m2VUPDY1wiqSkiO9VG970gs",
+            "title": "Chinese Scrambled Eggs and Soybean Dumplings",
+            "contentLength": 15047
+          }
+        ]
+      },
+      {
+        "oldHash": "4c07a0deffb2eb81...",
+        "lessonCount": 2,
+        "newHashCount": 2,
+        "lessons": [
+          {
+            "id": "10cWBpxz46T0K1L_kndimGdmI-9ZhTBZP",
+            "title": "Rainbow Scavenger Hunt",
+            "contentLength": 5478
+          },
+          {
+            "id": "191PIYwHk_RQdbAUYKF87W2FW80g1nEYy4pCCYrrZR6k",
+            "title": "Rainbow Scavenger Hunt",
+            "contentLength": 3805
+          }
+        ]
+      }
+    ],
+    "newDuplicatesFound": [
+      {
+        "newHash": "bbd2bc184c269a33...",
+        "lessonCount": 3,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "0BwC8Pf3ZwAXjY3UwQ0RzbmI0RE0",
+            "title": "Planting in Patterns"
+          },
+          {
+            "id": "0BxEc0RZeYtCiZFZHUWhNQUdVczA",
+            "title": "May Planting in Patterns"
+          },
+          {
+            "id": "1FsfuHw8RzGJY2Lzwuv2qKwhAjkqFezOS",
+            "title": "Planting in Patterns"
+          }
+        ]
+      },
+      {
+        "newHash": "6f3c0880ea4991ea...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "0BxEc0RZeYtCiOWhTRk5FRjBUc0k",
+            "title": "Pizza Lesson"
+          },
+          {
+            "id": "1AD3bMH1KeEHbuTMGUA12F2WBhcC-w-h_knowiUKE4QQ",
+            "title": "Food Geography"
+          }
+        ]
+      },
+      {
+        "newHash": "3c124813370ea866...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "0BxEc0RZeYtCiR29sMU1pOUZSdUE",
+            "title": "Staple Foods: Amaranth (6th Grade)"
+          },
+          {
+            "id": "0BzCUl-9h7sgEVHdwcE9LZlJxRXM",
+            "title": "Staple Foods: Amaranth"
+          }
+        ]
+      },
+      {
+        "newHash": "d9340a3e653b60ed...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "0BzCUl-9h7sgEVEhqQW83V0F1TGc",
+            "title": "Seed Save"
+          },
+          {
+            "id": "10K9aJOH9UjwAN7jLsPO0Lom09eeWCgQyj997_6XW8lw",
+            "title": "Seed Save"
+          }
+        ]
+      },
+      {
+        "newHash": "d4d55572e00a93d8...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "0BzCUl-9h7sgEVV9lMlhzLWtVWmM",
+            "title": "Will It Decompose? Part 2"
+          },
+          {
+            "id": "1Hrjix7fb6KQEVKwegeWLkoiUx8fIWpO1UBKEU0ni2QU",
+            "title": "November Will It Decompose, Part II (1)"
+          }
+        ]
+      },
+      {
+        "newHash": "705663c9f4083b05...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "10UxVt5Jt8yfwK22qJwbAKvDqE1iSz1kfAKnxY2I05dU",
+            "title": "Leaves"
+          },
+          {
+            "id": "1cAsWzlZLdPRCZInGvha3_ElMtHRbqefS3CWy2pCY7cE",
+            "title": "Leaves"
+          }
+        ]
+      },
+      {
+        "newHash": "a6049a0e8f3887ce...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "14HjkUM0EMA5cDVzRRu5wJjhglIwRW3Ush2HVaZe95rs",
+            "title": "Pumpkin Seed Bites"
+          },
+          {
+            "id": "1faUlnI_7LKC3boiKwAxUv68F1GQiKFo5SoQ2aA1dvj4",
+            "title": "Pumpkin Seed Bites"
+          }
+        ]
+      },
+      {
+        "newHash": "f49ed2888cb931dd...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "1bp91OI4dE1D_kVBKsv60ofJsME6VKO-qoGetpFPvNjU",
+            "title": "Carrot Fries & Homemade Ketchup"
+          },
+          {
+            "id": "1NPsQyCl99T9qCgwkknVXwYlbeFBkxp6PJHtf6PnAtaA",
+            "title": "Garlic Parmesan Carrot Fries"
+          }
+        ]
+      },
+      {
+        "newHash": "f833ef301c2d682b...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": 0,
+        "lessons": [
+          {
+            "id": "1CMOg0xDu650zM2Pnnhy1EMB4r25fLs9Nx7h7AJVVYdE",
+            "title": "Summer Veggies/Orientation"
+          },
+          {
+            "id": "1zOcWoXR6K3Lsy-ldsSh_mtXlQVQp7B6DI2yBNhlTJnE",
+            "title": "Summer Vegetable Kitchen Orientation"
+          }
+        ]
+      },
+      {
+        "newHash": "819fae39d0e37fc0...",
+        "lessonCount": 2,
+        "oldHashCount": 2,
+        "avgEmbeddingSimilarity": null,
+        "lessons": [
+          {
+            "id": "1FvqNjiredIZoP3OpTxeYbaR_nG8gbQza_CdwSR0VMeo",
+            "title": "Seed Save"
+          },
+          {
+            "id": "1k7KqowpILVoRe-X0sOiOtcwJyC8_fJ17nwLu-DW5_r4",
+            "title": "October Seed Saving"
+          }
+        ]
+      }
+    ],
+    "suspiciousCases": []
+  },
+  "applied": false
+}

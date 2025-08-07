@@ -32,7 +32,8 @@ interface LessonDetail {
 interface DuplicateGroup {
   groupId: string;
   type: 'exact' | 'near' | 'title';
-  similarityScore: number;
+  similarityScore?: number;
+  averageSimilarity?: number;
   recommendedCanonical: string;
   lessons: LessonDetail[];
 }
@@ -70,7 +71,7 @@ export const AdminDuplicateDetail: React.FC = () => {
       setError(null);
 
       // Load from the JSON report
-      const response = await fetch('/reports/duplicate-analysis-2025-07-31.json');
+      const response = await fetch('/reports/duplicate-analysis-v2-2025-08-07.json');
       if (!response.ok) {
         throw new Error('Failed to load duplicate analysis');
       }
@@ -82,7 +83,13 @@ export const AdminDuplicateDetail: React.FC = () => {
         throw new Error('Duplicate group not found');
       }
 
-      setGroup(foundGroup);
+      // Handle both old and new format
+      const normalizedGroup = {
+        ...foundGroup,
+        similarityScore: foundGroup.similarityScore ?? foundGroup.averageSimilarity ?? 1,
+      };
+
+      setGroup(normalizedGroup);
       setSelectedCanonical(foundGroup.recommendedCanonical);
 
       // Load full lesson details from database
@@ -231,7 +238,9 @@ export const AdminDuplicateDetail: React.FC = () => {
                 : 'Title Variation'}
           </span>
           <span>{group.lessons.length} lessons</span>
-          <span>{(group.similarityScore * 100).toFixed(0)}% similar</span>
+          <span>
+            {((group.similarityScore ?? group.averageSimilarity ?? 1) * 100).toFixed(0)}% similar
+          </span>
         </div>
       </div>
 
