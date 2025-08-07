@@ -12,7 +12,7 @@ WHERE content_hash IS NOT NULL;
 
 -- Add composite index for duplicate pairs lookups
 CREATE INDEX IF NOT EXISTS idx_duplicate_pairs_lookup 
-ON duplicate_pairs(lesson_id_1, lesson_id_2);
+ON duplicate_pairs(lesson1_id, lesson2_id);
 
 -- ROLLBACK COMMANDS:
 -- DROP INDEX IF EXISTS idx_lessons_content_hash;
