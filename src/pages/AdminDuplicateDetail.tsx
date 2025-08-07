@@ -131,10 +131,12 @@ export const AdminDuplicateDetail: React.FC = () => {
       });
 
       if (resolveError) {
+        logger.error('Supabase RPC error:', resolveError);
         throw new Error(resolveError.message || 'Failed to resolve duplicates');
       }
 
       if (!data?.success) {
+        logger.error('Resolution failed:', data);
         throw new Error(data?.error || 'Resolution failed');
       }
 

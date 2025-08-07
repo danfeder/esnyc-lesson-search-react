@@ -57,9 +57,14 @@ export const AdminDuplicates: React.FC = () => {
       const report = await response.json();
 
       // Get list of resolved groups from database
-      const { data: resolvedGroups } = await supabase
+      const { data: resolvedGroups, error: resolutionsError } = await supabase
         .from('duplicate_resolutions')
         .select('group_id');
+
+      if (resolutionsError) {
+        logger.warn('Could not fetch resolved groups:', resolutionsError);
+        // Continue without marking any as resolved
+      }
 
       const resolvedGroupIds = new Set(resolvedGroups?.map((r) => r.group_id) || []);
 
