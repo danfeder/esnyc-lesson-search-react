@@ -11,7 +11,7 @@ import { SubmissionPage } from './pages/SubmissionPage';
 import { ReviewDashboard } from './pages/ReviewDashboard';
 import { ReviewDetail } from './pages/ReviewDetail';
 import { AdminDuplicates } from './pages/AdminDuplicates';
-import { AdminDuplicateDetail } from './pages/AdminDuplicateDetail';
+import { AdminDuplicateDetailV3 } from './pages/AdminDuplicateDetailV3';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminUserDetail } from './pages/AdminUserDetail';
 import { AdminInviteUser } from './pages/AdminInviteUser';
@@ -98,7 +98,7 @@ function AppContent() {
               path="/admin/duplicates/:groupId"
               element={
                 <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
-                  <AdminDuplicateDetail />
+                  <AdminDuplicateDetailV3 />
                 </ProtectedRoute>
               }
             />

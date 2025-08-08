@@ -1,0 +1,50 @@
+
+DUPLICATE ANALYSIS REPORT V3 - HUMAN-CENTRIC APPROACH
+Generated: 8/8/2025, 2:04:22 PM
+============================================================
+
+OVERVIEW
+--------
+Total Lessons: 828
+Unique Lessons: 684
+Duplicate Groups: 97
+Lessons in Groups: 241
+
+CATEGORIZATION BREAKDOWN
+------------------------
+EXACT_CONTENT: 8 groups
+CULTURAL_VARIATIONS: 1 groups
+SEASONAL_VARIATIONS: 3 groups
+PEDAGOGICAL_VARIATIONS: 85 groups
+
+RECOMMENDED ACTIONS
+-------------------
+Auto-merge Safe: 8 groups
+Manual Review Needed: 14 groups
+Keep All (Grade/Cultural): 0 groups
+Split into Sub-groups: 75 groups
+
+KEY FINDINGS
+------------
+• Grade Adaptations Found: 0 groups
+• Cultural Variations Found: 1 groups
+• Groups Needing Split: 75
+
+SIMILARITY DISTRIBUTION
+-----------------------
+Exact Matches (1.0): 19 groups
+Auto-consolidate (0.999+): 0 groups
+Manual Review (0.995-0.999): 0 groups
+Careful Review (0.99-0.995): 0 groups
+Significant Variations (0.90-0.99): 85 groups
+
+ACTION ITEMS
+------------
+1. Review and auto-merge 8 formatting-only groups
+2. Manually review 14 groups for consolidation
+3. Preserve 0 grade adaptation groups
+4. Carefully review 1 cultural variation groups
+5. Consider splitting 75 mixed groups
+
+Note: This analysis prioritizes pedagogical value over pure similarity scores.
+Groups marked "keep_all" contain valuable variations that should be preserved.

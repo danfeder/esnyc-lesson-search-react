@@ -8,10 +8,13 @@ import { logger } from '../utils/logger';
 interface DuplicateGroup {
   groupId: string;
   type: 'exact' | 'near' | 'title';
+  category?: string;
+  recommendedAction?: 'auto_merge' | 'manual_review' | 'keep_all' | 'split_group';
+  confidence?: 'high' | 'medium' | 'low';
   similarityScore: number;
   lessonCount: number;
   status?: 'pending' | 'resolved';
-  recommendedCanonical?: string;
+  recommendedCanonical?: string | string[];
   lessons: Array<{
     lessonId: string;
     title: string;
@@ -47,11 +50,14 @@ export const AdminDuplicates: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // For now, load from the JSON file we just generated
-      // In production, this would come from a database or API
-      const response = await fetch('/reports/duplicate-analysis-v2-2025-08-07.json');
+      // Try to load V3 report first, fall back to V2
+      let response = await fetch('/reports/duplicate-analysis-v3-2025-08-08.json');
       if (!response.ok) {
-        throw new Error('Failed to load duplicate analysis');
+        // Fall back to V2 report
+        response = await fetch('/reports/duplicate-analysis-v2-2025-08-07.json');
+        if (!response.ok) {
+          throw new Error('Failed to load duplicate analysis');
+        }
       }
 
       const report = await response.json();
@@ -68,35 +74,68 @@ export const AdminDuplicates: React.FC = () => {
 
       const resolvedGroupIds = new Set(resolvedGroups?.map((r) => r.group_id) || []);
 
-      // Transform the report groups into our component format
-      // Note: new report uses 'averageSimilarity' instead of 'similarityScore'
-      const transformedGroups = report.groups.map(
-        (group: {
-          groupId: string;
-          type: 'exact' | 'near' | 'title' | 'mixed';
-          similarityScore?: number; // Old format
-          averageSimilarity?: number; // New format
-          lessonCount: number;
-          recommendedCanonical?: string;
-          lessons: Array<{
-            lessonId: string;
-            title: string;
-            isRecommendedCanonical?: boolean;
-          }>;
-        }): DuplicateGroup => ({
-          groupId: group.groupId,
-          type: group.type === 'mixed' ? 'near' : group.type, // Map 'mixed' to 'near' for now
-          similarityScore: group.similarityScore ?? group.averageSimilarity ?? 0,
-          lessonCount: group.lessonCount,
-          recommendedCanonical: group.recommendedCanonical,
-          status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
-          lessons: group.lessons.map((lesson) => ({
-            lessonId: lesson.lessonId,
-            title: lesson.title,
-            isRecommendedCanonical: lesson.isRecommendedCanonical,
-          })),
-        })
-      );
+      // Handle both V2 and V3 report formats
+      let transformedGroups: DuplicateGroup[] = [];
+
+      if (report.version === '3.0') {
+        // V3 format - groups are organized by category
+        const allGroups: any[] = [];
+        for (const category of Object.values(report.categorizedGroups || {})) {
+          allGroups.push(...(category as any[]));
+        }
+
+        transformedGroups = allGroups.map((group): DuplicateGroup => {
+          // Calculate average similarity from the similarity matrix
+          let avgSimilarity = 0;
+          if (group.similarityMatrix) {
+            let totalSim = 0;
+            let count = 0;
+            for (const id1 in group.similarityMatrix) {
+              for (const id2 in group.similarityMatrix[id1]) {
+                totalSim += group.similarityMatrix[id1][id2];
+                count++;
+              }
+            }
+            avgSimilarity = count > 0 ? totalSim / count : 0;
+          }
+
+          return {
+            groupId: group.groupId,
+            type: 'near', // V3 doesn't use type, default to 'near'
+            category: group.category,
+            recommendedAction: group.recommendedAction,
+            confidence: group.confidence,
+            similarityScore: avgSimilarity,
+            lessonCount: group.lessonCount,
+            recommendedCanonical: group.recommendedCanonical,
+            status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
+            lessons: group.lessons.map((lesson: any) => ({
+              lessonId: lesson.lessonId,
+              title: lesson.title,
+              isRecommendedCanonical: Array.isArray(group.recommendedCanonical)
+                ? group.recommendedCanonical.includes(lesson.lessonId)
+                : lesson.lessonId === group.recommendedCanonical,
+            })),
+          };
+        });
+      } else {
+        // V2 format
+        transformedGroups = report.groups.map(
+          (group: any): DuplicateGroup => ({
+            groupId: group.groupId,
+            type: group.type === 'mixed' ? 'near' : group.type,
+            similarityScore: group.similarityScore ?? group.averageSimilarity ?? 0,
+            lessonCount: group.lessonCount,
+            recommendedCanonical: group.recommendedCanonical,
+            status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
+            lessons: group.lessons.map((lesson: any) => ({
+              lessonId: lesson.lessonId,
+              title: lesson.title,
+              isRecommendedCanonical: lesson.isRecommendedCanonical,
+            })),
+          })
+        );
+      }
 
       setGroups(transformedGroups);
     } catch (err) {
@@ -178,21 +217,21 @@ export const AdminDuplicates: React.FC = () => {
           <p className="text-2xl font-bold text-gray-900">{groups.length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-600">Exact Matches</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {groups.filter((g) => g.type === 'exact').length}
+          <p className="text-sm text-gray-600">Auto-merge Safe</p>
+          <p className="text-2xl font-bold text-green-600">
+            {groups.filter((g) => g.recommendedAction === 'auto_merge').length}
           </p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-600">Near Duplicates</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {groups.filter((g) => g.type === 'near').length}
+          <p className="text-sm text-gray-600">Need Review</p>
+          <p className="text-2xl font-bold text-yellow-600">
+            {groups.filter((g) => g.recommendedAction === 'manual_review').length}
           </p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-600">Title Variations</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {groups.filter((g) => g.type === 'title').length}
+          <p className="text-sm text-gray-600">Split Groups</p>
+          <p className="text-2xl font-bold text-purple-600">
+            {groups.filter((g) => g.recommendedAction === 'split_group').length}
           </p>
         </div>
       </div>
@@ -246,21 +285,47 @@ export const AdminDuplicates: React.FC = () => {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{primaryLesson?.title}</h3>
                   <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        group.type === 'exact'
-                          ? 'bg-red-100 text-red-800'
-                          : group.type === 'near'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {group.type === 'exact'
-                        ? 'Exact Match'
-                        : group.type === 'near'
-                          ? 'Near Duplicate'
-                          : 'Title Variation'}
-                    </span>
+                    {/* Category badge for V3 */}
+                    {group.category && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        {group.category.replace(/_/g, ' ')}
+                      </span>
+                    )}
+
+                    {/* Action badge for V3 */}
+                    {group.recommendedAction && (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          group.recommendedAction === 'auto_merge'
+                            ? 'bg-green-100 text-green-800'
+                            : group.recommendedAction === 'manual_review'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : group.recommendedAction === 'keep_all'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-purple-100 text-purple-800'
+                        }`}
+                      >
+                        {group.recommendedAction === 'auto_merge'
+                          ? 'Auto-merge'
+                          : group.recommendedAction === 'manual_review'
+                            ? 'Review'
+                            : group.recommendedAction === 'keep_all'
+                              ? 'Keep All'
+                              : 'Split'}
+                      </span>
+                    )}
+
+                    {/* Confidence for V3 */}
+                    {group.confidence && (
+                      <span className="text-xs">
+                        {group.confidence === 'high'
+                          ? '●●●'
+                          : group.confidence === 'medium'
+                            ? '●●○'
+                            : '●○○'}
+                      </span>
+                    )}
+
                     <span>{group.lessonCount} lessons</span>
                     <span>{(group.similarityScore * 100).toFixed(0)}% similar</span>
                     {group.status === 'resolved' && (
