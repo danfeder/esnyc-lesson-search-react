@@ -48,10 +48,72 @@ interface DuplicateGroup {
   similarityMatrix?: Record<string, Record<string, number>>;
 }
 
+// Tailwind color class mappings (must be static for build-time optimization)
+const COLOR_CLASSES = {
+  green: {
+    bg50: 'bg-green-50',
+    border200: 'border-green-200',
+    text600: 'text-green-600',
+    text700: 'text-green-700',
+    text800: 'text-green-800',
+    text900: 'text-green-900',
+  },
+  blue: {
+    bg50: 'bg-blue-50',
+    border200: 'border-blue-200',
+    text600: 'text-blue-600',
+    text700: 'text-blue-700',
+    text800: 'text-blue-800',
+    text900: 'text-blue-900',
+  },
+  yellow: {
+    bg50: 'bg-yellow-50',
+    border200: 'border-yellow-200',
+    text600: 'text-yellow-600',
+    text700: 'text-yellow-700',
+    text800: 'text-yellow-800',
+    text900: 'text-yellow-900',
+  },
+  purple: {
+    bg50: 'bg-purple-50',
+    border200: 'border-purple-200',
+    text600: 'text-purple-600',
+    text700: 'text-purple-700',
+    text800: 'text-purple-800',
+    text900: 'text-purple-900',
+  },
+  orange: {
+    bg50: 'bg-orange-50',
+    border200: 'border-orange-200',
+    text600: 'text-orange-600',
+    text700: 'text-orange-700',
+    text800: 'text-orange-800',
+    text900: 'text-orange-900',
+  },
+  indigo: {
+    bg50: 'bg-indigo-50',
+    border200: 'border-indigo-200',
+    text600: 'text-indigo-600',
+    text700: 'text-indigo-700',
+    text800: 'text-indigo-800',
+    text900: 'text-indigo-900',
+  },
+  red: {
+    bg50: 'bg-red-50',
+    border200: 'border-red-200',
+    text600: 'text-red-600',
+    text700: 'text-red-700',
+    text800: 'text-red-800',
+    text900: 'text-red-900',
+  },
+} as const;
+
+type ColorName = keyof typeof COLOR_CLASSES;
+
 // Category explanations
 const CATEGORY_INFO: Record<
   string,
-  { label: string; description: string; icon: React.ReactNode; color: string }
+  { label: string; description: string; icon: React.ReactNode; color: ColorName }
 > = {
   FORMATTING_ONLY: {
     label: 'Formatting Differences',
@@ -98,7 +160,7 @@ const CATEGORY_INFO: Record<
 };
 
 // Action recommendations
-const ACTION_INFO: Record<string, { label: string; description: string; color: string }> = {
+const ACTION_INFO: Record<string, { label: string; description: string; color: ColorName }> = {
   auto_merge: {
     label: 'Safe to Auto-Merge',
     description: 'These can be automatically consolidated without loss',
@@ -155,9 +217,13 @@ export const AdminDuplicateDetailV3: React.FC = () => {
       setError(null);
 
       // Try to load v3 report first, fall back to v2
-      let response = await fetch('/reports/duplicate-analysis-v3-2025-08-08.json');
+      // TODO: Make this configurable or dynamic based on available reports
+      const v3ReportDate = '2025-08-08'; // Latest V3 report
+      const v2ReportDate = '2025-08-07'; // Fallback V2 report
+
+      let response = await fetch(`/reports/duplicate-analysis-v3-${v3ReportDate}.json`);
       if (!response.ok) {
-        response = await fetch('/reports/duplicate-analysis-v2-2025-08-07.json');
+        response = await fetch(`/reports/duplicate-analysis-v2-${v2ReportDate}.json`);
         if (!response.ok) {
           throw new Error('Failed to load duplicate analysis');
         }
@@ -437,13 +503,15 @@ export const AdminDuplicateDetailV3: React.FC = () => {
 
           {/* Category Badge */}
           <div
-            className={`px-4 py-2 rounded-lg bg-${categoryInfo.color}-50 border border-${categoryInfo.color}-200`}
+            className={`px-4 py-2 rounded-lg ${COLOR_CLASSES[categoryInfo.color].bg50} ${COLOR_CLASSES[categoryInfo.color].border200}`}
           >
             <div className="flex items-center space-x-2">
-              <span className={`text-${categoryInfo.color}-600`}>{categoryInfo.icon}</span>
+              <span className={COLOR_CLASSES[categoryInfo.color].text600}>{categoryInfo.icon}</span>
               <div>
-                <p className={`font-medium text-${categoryInfo.color}-900`}>{categoryInfo.label}</p>
-                <p className={`text-sm text-${categoryInfo.color}-700`}>
+                <p className={`font-medium ${COLOR_CLASSES[categoryInfo.color].text900}`}>
+                  {categoryInfo.label}
+                </p>
+                <p className={`text-sm ${COLOR_CLASSES[categoryInfo.color].text700}`}>
                   Confidence: {group.confidence}
                 </p>
               </div>
@@ -513,12 +581,12 @@ export const AdminDuplicateDetailV3: React.FC = () => {
 
       {/* Recommended Action */}
       <div
-        className={`bg-${actionInfo.color}-50 border border-${actionInfo.color}-200 rounded-lg p-4 mb-6`}
+        className={`${COLOR_CLASSES[actionInfo.color].bg50} ${COLOR_CLASSES[actionInfo.color].border200} rounded-lg p-4 mb-6`}
       >
-        <h3 className={`font-medium text-${actionInfo.color}-900 mb-2`}>
+        <h3 className={`font-medium ${COLOR_CLASSES[actionInfo.color].text900} mb-2`}>
           Recommended Action: {actionInfo.label}
         </h3>
-        <p className={`text-${actionInfo.color}-800`}>{actionInfo.description}</p>
+        <p className={COLOR_CLASSES[actionInfo.color].text800}>{actionInfo.description}</p>
       </div>
 
       {/* All Lessons in Group */}

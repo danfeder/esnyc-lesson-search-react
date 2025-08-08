@@ -51,10 +51,14 @@ export const AdminDuplicates: React.FC = () => {
       setError(null);
 
       // Try to load V3 report first, fall back to V2
-      let response = await fetch('/reports/duplicate-analysis-v3-2025-08-08.json');
+      // TODO: Make this configurable or dynamic based on available reports
+      const v3ReportDate = '2025-08-08'; // Latest V3 report
+      const v2ReportDate = '2025-08-07'; // Fallback V2 report
+
+      let response = await fetch(`/reports/duplicate-analysis-v3-${v3ReportDate}.json`);
       if (!response.ok) {
         // Fall back to V2 report
-        response = await fetch('/reports/duplicate-analysis-v2-2025-08-07.json');
+        response = await fetch(`/reports/duplicate-analysis-v2-${v2ReportDate}.json`);
         if (!response.ok) {
           throw new Error('Failed to load duplicate analysis');
         }
