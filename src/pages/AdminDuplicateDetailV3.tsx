@@ -536,7 +536,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                   <p className="font-medium text-gray-900">{lesson.title}</p>
                   <p className="text-xs text-gray-500 mt-1">ID: {lesson.lessonId}</p>
                   <div className="text-sm text-gray-600 mt-1">
-                    {lesson.gradelevels?.length > 0 && (
+                    {lesson.gradelevels && lesson.gradelevels.length > 0 && (
                       <span>Grades: {lesson.gradelevels.join(', ')} • </span>
                     )}
                     <span>Score: {(lesson.canonicalScore || 0).toFixed(3)} • </span>
@@ -661,7 +661,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                         <p>
                           Completeness: {((lesson.metadataCompleteness || 0) * 100).toFixed(0)}%
                         </p>
-                        {lesson.gradelevels?.length > 0 && (
+                        {lesson.gradelevels && lesson.gradelevels.length > 0 && (
                           <p>Grades: {lesson.gradelevels.join(', ')}</p>
                         )}
                       </div>
@@ -759,7 +759,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                           <p>
                             Completeness: {((lesson.metadataCompleteness || 0) * 100).toFixed(0)}%
                           </p>
-                          {lesson.gradelevels?.length > 0 && (
+                          {lesson.gradelevels && lesson.gradelevels.length > 0 && (
                             <p>Grades: {lesson.gradelevels.join(', ')}</p>
                           )}
                         </div>
