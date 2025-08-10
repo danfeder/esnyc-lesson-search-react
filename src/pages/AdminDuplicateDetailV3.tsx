@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { ChevronLeft, Check, AlertTriangle, Info, BookOpen, Users, Calendar } from 'lucide-react';
 import { logger } from '../utils/logger';
+import { EditableTitle } from '@/components/Admin';
 
 interface LessonDetail {
   lessonId: string;
@@ -135,6 +136,8 @@ export const AdminDuplicateDetailV3: React.FC = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [resolutionMode, setResolutionMode] = useState<'single' | 'split' | 'keep_all'>('single');
   const [splitSelections, setSplitSelections] = useState<Record<string, string>>({});
+  const [titleEdits, setTitleEdits] = useState<Record<string, string>>({});
+  const [originalTitles, setOriginalTitles] = useState<Record<string, string>>({});
   const confirmButtonRef = useRef<React.ElementRef<'button'>>(null);
 
   useEffect(() => {
@@ -203,6 +206,13 @@ export const AdminDuplicateDetailV3: React.FC = () => {
 
       setGroup(foundGroup);
 
+      // Store original titles for comparison
+      const origTitles: Record<string, string> = {};
+      foundGroup.lessons.forEach((lesson: LessonDetail) => {
+        origTitles[lesson.lessonId] = lesson.title;
+      });
+      setOriginalTitles(origTitles);
+
       // Determine resolution mode based on recommended action
       if (foundGroup.recommendedAction === 'keep_all') {
         setResolutionMode('keep_all');
@@ -251,6 +261,25 @@ export const AdminDuplicateDetailV3: React.FC = () => {
     }
   };
 
+  const handleTitleChange = (lessonId: string, newTitle: string) => {
+    if (newTitle === originalTitles[lessonId]) {
+      // If setting back to original, remove from edits
+      const newEdits = { ...titleEdits };
+      delete newEdits[lessonId];
+      setTitleEdits(newEdits);
+    } else {
+      setTitleEdits((prev) => ({ ...prev, [lessonId]: newTitle }));
+    }
+
+    // Update the lesson in the group state
+    if (group) {
+      const updatedLessons = group.lessons.map((lesson) =>
+        lesson.lessonId === lessonId ? { ...lesson, title: newTitle } : lesson
+      );
+      setGroup({ ...group, lessons: updatedLessons });
+    }
+  };
+
   const handleResolve = async () => {
     if (!group) return;
 
@@ -268,33 +297,144 @@ export const AdminDuplicateDetailV3: React.FC = () => {
         });
       } else if (resolutionMode === 'split') {
         // Handle split group resolution
-        for (const [subGroupName, canonicalId] of Object.entries(splitSelections)) {
-          const subGroup = group.subGroups?.find((sg) => sg.groupName === subGroupName);
-          if (!subGroup) continue;
+        if (group.subGroups && group.subGroups.length > 0) {
+          // Use predefined subGroups
+          for (const [subGroupName, canonicalId] of Object.entries(splitSelections)) {
+            const subGroup = group.subGroups?.find((sg) => sg.groupName === subGroupName);
+            if (!subGroup) continue;
 
-          const duplicateIds = subGroup.lessonIds.filter((id) => id !== canonicalId);
+            const duplicateIds = subGroup.lessonIds.filter((id) => id !== canonicalId);
 
-          if (duplicateIds.length > 0) {
+            if (duplicateIds.length > 0) {
+              const { data, error: resolveError } = await supabase.rpc('resolve_duplicate_group', {
+                p_group_id: `${group.groupId}_${subGroupName}`,
+                p_canonical_id: canonicalId,
+                p_duplicate_ids: duplicateIds,
+                p_duplicate_type: 'near',
+                p_similarity_score: 0.95,
+                p_merge_metadata: false,
+                p_resolution_notes: `Split group resolution: ${subGroupName}`,
+                p_title_updates: Object.keys(titleEdits).length > 0 ? titleEdits : null,
+              });
+
+              if (resolveError) throw resolveError;
+              if (!data?.success) throw new Error(data?.error || 'Resolution failed');
+            }
+          }
+
+          navigate('/admin/duplicates', {
+            state: {
+              message: `Successfully split group into ${group.subGroups?.length} distinct approaches`,
+            },
+          });
+        } else {
+          // Manual selection - keep selected lessons, archive the rest
+          const selectedLessonIds = Object.keys(splitSelections);
+          const unselectedLessonIds = group.lessons
+            .filter((l) => !selectedLessonIds.includes(l.lessonId))
+            .map((l) => l.lessonId);
+
+          if (selectedLessonIds.length === 0) {
+            throw new Error('No lessons selected to keep');
+          }
+
+          if (selectedLessonIds.length === 1) {
+            // If only one selected, treat as single canonical resolution
             const { data, error: resolveError } = await supabase.rpc('resolve_duplicate_group', {
-              p_group_id: `${group.groupId}_${subGroupName}`,
-              p_canonical_id: canonicalId,
-              p_duplicate_ids: duplicateIds,
-              p_duplicate_type: 'pedagogical',
+              p_group_id: group.groupId,
+              p_canonical_id: selectedLessonIds[0],
+              p_duplicate_ids: unselectedLessonIds,
+              p_duplicate_type: 'near',
               p_similarity_score: 0.95,
               p_merge_metadata: false,
-              p_resolution_notes: `Split group resolution: ${subGroupName}`,
+              p_resolution_notes: `Manual split resolution: kept 1 canonical lesson`,
+              p_title_updates: Object.keys(titleEdits).length > 0 ? titleEdits : null,
             });
 
             if (resolveError) throw resolveError;
             if (!data?.success) throw new Error(data?.error || 'Resolution failed');
-          }
-        }
+          } else {
+            // Multiple selected - only archive the unselected ones
+            // For multiple selections, we just need to update titles and archive unselected
+            // We'll pass title updates through the RPC function instead of updating separately
 
-        navigate('/admin/duplicates', {
-          state: {
-            message: `Successfully split group into ${group.subGroups?.length} distinct approaches`,
-          },
-        });
+            // Ensure titleEdits is a proper JSON object
+            let titleUpdatesForRpc: Record<string, string> | null = null;
+            if (Object.keys(titleEdits).length > 0) {
+              // Create a clean object with only string key-value pairs
+              const cleanEdits: Record<string, string> = {};
+              for (const [lessonId, newTitle] of Object.entries(titleEdits)) {
+                if (typeof newTitle === 'string' && newTitle.trim()) {
+                  cleanEdits[lessonId] = newTitle;
+                }
+              }
+              // If we have valid edits, use them
+              if (Object.keys(cleanEdits).length > 0) {
+                titleUpdatesForRpc = cleanEdits;
+              }
+            }
+
+            // If there are unselected lessons, archive them
+            if (unselectedLessonIds.length > 0) {
+              // Use the first selected lesson as the "canonical" for archiving purposes
+              const rpcParams = {
+                p_group_id: group.groupId,
+                p_canonical_id: selectedLessonIds[0],
+                p_duplicate_ids: unselectedLessonIds,
+                p_duplicate_type: 'near',
+                p_similarity_score: 0.95,
+                p_merge_metadata: false,
+                p_resolution_notes: `Manual split resolution: kept ${selectedLessonIds.length} lessons as canonical, archived ${unselectedLessonIds.length}`,
+                p_title_updates: titleUpdatesForRpc,
+              };
+
+              const { data, error: resolveError } = await supabase.rpc(
+                'resolve_duplicate_group',
+                rpcParams
+              );
+
+              if (resolveError) {
+                logger.error('RPC error:', resolveError);
+                throw resolveError;
+              }
+
+              if (!data?.success) throw new Error(data?.error || 'Resolution failed');
+            } else {
+              // No unselected lessons to archive, just update titles if needed
+              if (titleUpdatesForRpc) {
+                // Call the RPC with empty duplicate_ids just to update titles
+                const rpcParams = {
+                  p_group_id: group.groupId,
+                  p_canonical_id: selectedLessonIds[0],
+                  p_duplicate_ids: [],
+                  p_duplicate_type: 'near',
+                  p_similarity_score: 0.95,
+                  p_merge_metadata: false,
+                  p_resolution_notes: `Manual split resolution: updated titles only`,
+                  p_title_updates: titleUpdatesForRpc,
+                };
+
+                const { data, error: resolveError } = await supabase.rpc(
+                  'resolve_duplicate_group',
+                  rpcParams
+                );
+
+                if (resolveError) {
+                  logger.error('RPC error:', resolveError);
+                  throw resolveError;
+                }
+
+                if (!data?.success) throw new Error(data?.error || 'Resolution failed');
+              }
+            }
+          }
+
+          navigate('/admin/duplicates', {
+            state: {
+              message: `Successfully kept ${selectedLessonIds.length} lesson(s) as canonical`,
+            },
+          });
+        }
       } else {
         // Single canonical resolution
         if (!selectedCanonical || typeof selectedCanonical !== 'string') return;
@@ -311,20 +451,6 @@ export const AdminDuplicateDetailV3: React.FC = () => {
               ? 'near'
               : 'near';
 
-        // Log the parameters being sent
-        logger.log('Calling resolve_duplicate_group with:', {
-          p_group_id: group.groupId,
-          p_canonical_id: selectedCanonical,
-          p_duplicate_ids: duplicateIds,
-          p_duplicate_type: duplicateType,
-          p_similarity_score: 0.95,
-          p_merge_metadata: mergeMetadata,
-          p_resolution_notes: `Category: ${group.category}, Action: ${group.recommendedAction}`,
-          p_resolution_mode: 'single',
-          p_sub_group_name: null,
-          p_parent_group_id: null,
-        });
-
         const { data, error: resolveError } = await supabase.rpc('resolve_duplicate_group', {
           p_group_id: group.groupId,
           p_canonical_id: selectedCanonical,
@@ -336,19 +462,13 @@ export const AdminDuplicateDetailV3: React.FC = () => {
           p_resolution_mode: 'single',
           p_sub_group_name: null,
           p_parent_group_id: null,
+          p_title_updates: Object.keys(titleEdits).length > 0 ? titleEdits : null,
         });
 
         if (resolveError) {
-          logger.error('RPC error details:', {
-            code: resolveError.code,
-            message: resolveError.message,
-            details: resolveError.details,
-            hint: resolveError.hint,
-          });
+          logger.error('Resolution error:', resolveError);
           throw resolveError;
         }
-
-        logger.log('RPC response:', data);
 
         if (!data?.success) {
           logger.error('Resolution failed with data:', data);
@@ -533,7 +653,15 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                 className="flex items-start justify-between p-3 bg-gray-50 rounded-lg"
               >
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{lesson.title}</p>
+                  <div className="font-medium text-gray-900">
+                    <EditableTitle
+                      title={lesson.title}
+                      lessonId={lesson.lessonId}
+                      onTitleChange={handleTitleChange}
+                      isEdited={!!titleEdits[lesson.lessonId]}
+                      originalTitle={originalTitles[lesson.lessonId]}
+                    />
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">ID: {lesson.lessonId}</p>
                   <div className="text-sm text-gray-600 mt-1">
                     {lesson.gradelevels && lesson.gradelevels.length > 0 && (
@@ -655,7 +783,15 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                       className="mt-1 mr-3"
                     />
                     <div className="flex-1">
-                      <p className="font-medium">{lesson.title}</p>
+                      <div className="font-medium">
+                        <EditableTitle
+                          title={lesson.title}
+                          lessonId={lesson.lessonId}
+                          onTitleChange={handleTitleChange}
+                          isEdited={!!titleEdits[lesson.lessonId]}
+                          originalTitle={originalTitles[lesson.lessonId]}
+                        />
+                      </div>
                       <div className="text-sm text-gray-600 mt-1">
                         <p>Score: {(lesson.canonicalScore || 0).toFixed(3)}</p>
                         <p>
@@ -707,7 +843,16 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                               className="mt-1 mr-3"
                             />
                             <div className="flex-1">
-                              <p className="text-sm font-medium">{lesson.title}</p>
+                              <div className="text-sm font-medium">
+                                <EditableTitle
+                                  title={lesson.title}
+                                  lessonId={lesson.lessonId}
+                                  onTitleChange={handleTitleChange}
+                                  isEdited={!!titleEdits[lesson.lessonId]}
+                                  originalTitle={originalTitles[lesson.lessonId]}
+                                  className="text-sm"
+                                />
+                              </div>
                               <p className="text-xs text-gray-600 mt-1">
                                 Score: {(lesson.canonicalScore || 0).toFixed(3)}
                               </p>
@@ -753,7 +898,15 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                         className="mt-1 mr-3"
                       />
                       <div className="flex-1">
-                        <p className="font-medium">{lesson.title}</p>
+                        <div className="font-medium">
+                          <EditableTitle
+                            title={lesson.title}
+                            lessonId={lesson.lessonId}
+                            onTitleChange={handleTitleChange}
+                            isEdited={!!titleEdits[lesson.lessonId]}
+                            originalTitle={originalTitles[lesson.lessonId]}
+                          />
+                        </div>
                         <div className="text-sm text-gray-600 mt-1">
                           <p>Score: {(lesson.canonicalScore || 0).toFixed(3)}</p>
                           <p>
@@ -834,6 +987,18 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                     <li>Archive {group.lessons.length - 1} duplicate lesson(s)</li>
                     {mergeMetadata && <li>Merge metadata into the canonical lesson</li>}
                   </ul>
+                  {Object.keys(titleEdits).length > 0 && (
+                    <div className="mt-3 p-2 bg-blue-50 rounded">
+                      <p className="text-sm font-medium text-blue-900 mb-1">Title Updates:</p>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        {Object.entries(titleEdits).map(([lessonId, newTitle]) => (
+                          <li key={lessonId}>
+                            "{originalTitles[lessonId]}" → "{newTitle}"
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -854,6 +1019,18 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                       </li>
                     ))}
                   </ul>
+                  {Object.keys(titleEdits).length > 0 && (
+                    <div className="mt-3 p-2 bg-blue-50 rounded">
+                      <p className="text-sm font-medium text-blue-900 mb-1">Title Updates:</p>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        {Object.entries(titleEdits).map(([lessonId, newTitle]) => (
+                          <li key={lessonId}>
+                            "{originalTitles[lessonId]}" → "{newTitle}"
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </>
               )}
 
