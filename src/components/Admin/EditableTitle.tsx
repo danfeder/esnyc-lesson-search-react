@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Edit2, Check, X } from 'lucide-react';
+import { validateTitle, MAX_TITLE_LENGTH } from '@/utils/validation';
 
 interface EditableTitleProps {
   title: string;
@@ -53,13 +54,9 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({
     const trimmedTitle = localTitle.trim();
 
     // Validation
-    if (!trimmedTitle) {
-      setError('Title cannot be empty');
-      return;
-    }
-
-    if (trimmedTitle.length > 500) {
-      setError('Title must be less than 500 characters');
+    const validationError = validateTitle(trimmedTitle);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -90,7 +87,7 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({
             className={`flex-1 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               error ? 'border-red-500' : 'border-gray-300'
             }`}
-            maxLength={500}
+            maxLength={MAX_TITLE_LENGTH}
           />
           <button
             onClick={handleSave}

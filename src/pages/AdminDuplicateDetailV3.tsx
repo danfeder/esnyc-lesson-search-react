@@ -5,6 +5,7 @@ import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
 import { ChevronLeft, Check, AlertTriangle, Info, BookOpen, Users, Calendar } from 'lucide-react';
 import { logger } from '../utils/logger';
 import { EditableTitle } from '@/components/Admin';
+import { prepareTitleUpdatesForRpc } from '@/utils/validation';
 
 interface LessonDetail {
   lessonId: string;
@@ -314,7 +315,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                 p_similarity_score: 0.95,
                 p_merge_metadata: false,
                 p_resolution_notes: `Split group resolution: ${subGroupName}`,
-                p_title_updates: Object.keys(titleEdits).length > 0 ? titleEdits : null,
+                p_title_updates: prepareTitleUpdatesForRpc(titleEdits),
               });
 
               if (resolveError) throw resolveError;
@@ -348,7 +349,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
               p_similarity_score: 0.95,
               p_merge_metadata: false,
               p_resolution_notes: `Manual split resolution: kept 1 canonical lesson`,
-              p_title_updates: Object.keys(titleEdits).length > 0 ? titleEdits : null,
+              p_title_updates: prepareTitleUpdatesForRpc(titleEdits),
             });
 
             if (resolveError) throw resolveError;
@@ -357,22 +358,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
             // Multiple selected - only archive the unselected ones
             // For multiple selections, we just need to update titles and archive unselected
             // We'll pass title updates through the RPC function instead of updating separately
-
-            // Ensure titleEdits is a proper JSON object
-            let titleUpdatesForRpc: Record<string, string> | null = null;
-            if (Object.keys(titleEdits).length > 0) {
-              // Create a clean object with only string key-value pairs
-              const cleanEdits: Record<string, string> = {};
-              for (const [lessonId, newTitle] of Object.entries(titleEdits)) {
-                if (typeof newTitle === 'string' && newTitle.trim()) {
-                  cleanEdits[lessonId] = newTitle;
-                }
-              }
-              // If we have valid edits, use them
-              if (Object.keys(cleanEdits).length > 0) {
-                titleUpdatesForRpc = cleanEdits;
-              }
-            }
+            const titleUpdatesForRpc = prepareTitleUpdatesForRpc(titleEdits);
 
             // If there are unselected lessons, archive them
             if (unselectedLessonIds.length > 0) {
@@ -462,7 +448,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
           p_resolution_mode: 'single',
           p_sub_group_name: null,
           p_parent_group_id: null,
-          p_title_updates: Object.keys(titleEdits).length > 0 ? titleEdits : null,
+          p_title_updates: prepareTitleUpdatesForRpc(titleEdits),
         });
 
         if (resolveError) {
