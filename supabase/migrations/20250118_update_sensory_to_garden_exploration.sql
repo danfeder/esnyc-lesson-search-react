@@ -2,6 +2,27 @@
 -- Date: 2025-01-18
 -- Purpose: Rename the garden skill from "Sensory exploration" to "Garden exploration" for clarity
 
+-- First, count how many records will be affected
+DO $$
+DECLARE
+  v_metadata_count INTEGER;
+  v_array_count INTEGER;
+BEGIN
+  -- Count lessons with "Sensory exploration" in metadata
+  SELECT COUNT(*) INTO v_metadata_count
+  FROM lessons
+  WHERE metadata->'gardenSkills' @> '["Sensory exploration"]'::jsonb;
+  
+  -- Count lessons with "Sensory exploration" in array column
+  SELECT COUNT(*) INTO v_array_count
+  FROM lessons
+  WHERE 'Sensory exploration' = ANY(garden_skills)
+     OR 'sensory exploration' = ANY(garden_skills);
+  
+  RAISE NOTICE 'Found % lessons with "Sensory exploration" in metadata', v_metadata_count;
+  RAISE NOTICE 'Found % lessons with "Sensory exploration" in array column', v_array_count;
+END $$;
+
 -- Update lessons with "Sensory exploration" in metadata.gardenSkills
 UPDATE lessons
 SET metadata = jsonb_set(
@@ -20,27 +41,32 @@ SET metadata = jsonb_set(
 WHERE metadata->'gardenSkills' IS NOT NULL
   AND metadata->'gardenSkills' @> '["Sensory exploration"]'::jsonb;
 
--- Also update if stored in the garden_skills array column (if any exist)
+-- Update if stored in the garden_skills array column
+-- This handles both proper case and lowercase versions
 UPDATE lessons
-SET garden_skills = array_replace(garden_skills, 'Sensory exploration', 'Garden exploration')
-WHERE 'Sensory exploration' = ANY(garden_skills);
+SET garden_skills = (
+  SELECT array_agg(
+    CASE 
+      WHEN skill = 'Sensory exploration' THEN 'Garden exploration'
+      WHEN skill = 'sensory exploration' THEN 'garden exploration'
+      ELSE skill
+    END
+  )
+  FROM unnest(garden_skills) AS skill
+)
+WHERE 'Sensory exploration' = ANY(garden_skills)
+   OR 'sensory exploration' = ANY(garden_skills);
 
--- Update lowercase versions if they exist
-UPDATE lessons
-SET garden_skills = array_replace(garden_skills, 'sensory exploration', 'garden exploration')
-WHERE 'sensory exploration' = ANY(garden_skills);
-
--- Log the changes
+-- Final count of updated records
 DO $$
 DECLARE
-  v_count INTEGER;
+  v_final_count INTEGER;
 BEGIN
-  -- Count affected rows
-  SELECT COUNT(*) INTO v_count
+  SELECT COUNT(*) INTO v_final_count
   FROM lessons
   WHERE metadata->'gardenSkills' @> '["Garden exploration"]'::jsonb
      OR 'Garden exploration' = ANY(garden_skills)
      OR 'garden exploration' = ANY(garden_skills);
   
-  RAISE NOTICE 'Updated % lessons from "Sensory exploration" to "Garden exploration"', v_count;
+  RAISE NOTICE 'Successfully updated % lessons to use "Garden exploration"', v_final_count;
 END $$;
