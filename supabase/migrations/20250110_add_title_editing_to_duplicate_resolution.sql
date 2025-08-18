@@ -4,7 +4,8 @@
 -- Date: 2025-01-10
 
 -- Drop the existing function to recreate with new signature
-DROP FUNCTION IF EXISTS resolve_duplicate_group(text, text, text[], text, numeric, boolean, text, text, text, text);
+-- Note: Adding jsonb parameter for title updates
+DROP FUNCTION IF EXISTS resolve_duplicate_group(text, text, text[], text, numeric, boolean, text, text, text, text, jsonb);
 
 -- Create enhanced version with title editing support
 CREATE OR REPLACE FUNCTION resolve_duplicate_group(

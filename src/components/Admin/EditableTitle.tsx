@@ -105,7 +105,9 @@ export const EditableTitle: React.FC<EditableTitleProps> = ({
           </button>
         </div>
         {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-        <p className="text-xs text-gray-500 mt-1">{localTitle.length}/500 characters</p>
+        <p className="text-xs text-gray-500 mt-1">
+          {localTitle.length}/{MAX_TITLE_LENGTH} characters
+        </p>
       </div>
     );
   }
