@@ -73,7 +73,7 @@
     "zustand": "^5.0.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.31.0",
+    "@eslint/js": "^9.33.0",
     "@lhci/cli": "^0.15.1",
     "@tanstack/react-query-devtools": "^5.83.0",
     "@testing-library/jest-dom": "^6.6.4",
