@@ -10,38 +10,32 @@ UPDATE lessons SET season_timing_backup = season_timing WHERE season_timing IS N
 -- This approach handles all mappings in a single pass to avoid missing combinations
 UPDATE lessons
 SET season_timing = (
+  -- Build array, UNION already handles duplicates
   SELECT ARRAY(
-    SELECT DISTINCT mapped_season FROM (
+    SELECT DISTINCT season FROM (
       -- Start with any existing core seasons
-      SELECT elem AS mapped_season 
+      SELECT elem AS season
       FROM unnest(season_timing) AS elem
       WHERE elem IN ('Fall', 'Winter', 'Spring', 'Summer')
       
       UNION
       
       -- Add all four seasons if 'All Seasons' or 'Year-round' is present
-      SELECT unnest(ARRAY['Fall', 'Winter', 'Spring', 'Summer']) AS mapped_season
+      SELECT unnest(ARRAY['Fall', 'Winter', 'Spring', 'Summer']) AS season
       WHERE 'All Seasons' = ANY(season_timing) OR 'Year-round' = ANY(season_timing)
       
       UNION
       
       -- Add Fall if 'Beginning of year' is present
-      SELECT 'Fall' AS mapped_season
+      SELECT 'Fall' AS season
       WHERE 'Beginning of year' = ANY(season_timing)
       
       UNION
       
       -- Add Spring and Summer if 'End of year' is present  
-      SELECT unnest(ARRAY['Spring', 'Summer']) AS mapped_season
+      SELECT unnest(ARRAY['Spring', 'Summer']) AS season
       WHERE 'End of year' = ANY(season_timing)
-    ) AS all_mappings
-    ORDER BY 
-      CASE mapped_season
-        WHEN 'Fall' THEN 1
-        WHEN 'Winter' THEN 2
-        WHEN 'Spring' THEN 3
-        WHEN 'Summer' THEN 4
-      END
+    ) AS all_seasons
   )
 )
 WHERE season_timing IS NOT NULL;
@@ -51,6 +45,8 @@ DROP INDEX IF EXISTS idx_lessons_season_timing;
 CREATE INDEX idx_lessons_season_timing ON lessons USING GIN (season_timing);
 
 -- Step 4: Add check constraint to ensure only valid seasons are stored
+-- Drop existing constraint if it exists (in case of re-running migration)
+ALTER TABLE lessons DROP CONSTRAINT IF EXISTS valid_seasons;
 ALTER TABLE lessons 
 ADD CONSTRAINT valid_seasons 
 CHECK (
@@ -81,31 +77,25 @@ SET tagged_metadata = jsonb_set(
     -- If already an array, remap deprecated values and clean it up
     WHEN jsonb_typeof(tagged_metadata->'season') = 'array' THEN
       (
-        SELECT jsonb_agg(DISTINCT mapped_value ORDER BY
-          CASE mapped_value
-            WHEN 'Fall' THEN 1
-            WHEN 'Winter' THEN 2
-            WHEN 'Spring' THEN 3
-            WHEN 'Summer' THEN 4
-          END
-        ) FROM (
-          SELECT unnest(
-            CASE
-              WHEN value IN ('All Seasons', 'Year-round') THEN 
-                ARRAY['Fall', 'Winter', 'Spring', 'Summer']
-              WHEN value = 'Beginning of year' THEN 
-                ARRAY['Fall']
-              WHEN value = 'End of year' THEN 
-                ARRAY['Spring', 'Summer']
-              WHEN value IN ('Fall', 'Winter', 'Spring', 'Summer') THEN 
-                ARRAY[value]
-              ELSE 
-                ARRAY[]::text[]
-            END
-          ) AS mapped_value
-          FROM jsonb_array_elements_text(tagged_metadata->'season') AS value
-        ) AS mapped
-        WHERE mapped_value IS NOT NULL
+        SELECT to_jsonb(ARRAY(
+          SELECT DISTINCT season FROM (
+            SELECT unnest(
+              CASE value
+                WHEN 'All Seasons' THEN ARRAY['Fall', 'Winter', 'Spring', 'Summer']
+                WHEN 'Year-round' THEN ARRAY['Fall', 'Winter', 'Spring', 'Summer']
+                WHEN 'Beginning of year' THEN ARRAY['Fall']
+                WHEN 'End of year' THEN ARRAY['Spring', 'Summer']
+                WHEN 'Fall' THEN ARRAY['Fall']
+                WHEN 'Winter' THEN ARRAY['Winter']
+                WHEN 'Spring' THEN ARRAY['Spring']
+                WHEN 'Summer' THEN ARRAY['Summer']
+                ELSE ARRAY[]::text[]
+              END
+            ) AS season
+            FROM jsonb_array_elements_text(tagged_metadata->'season') AS value
+          ) AS all_seasons
+          WHERE season IS NOT NULL
+        ))
       )
     ELSE
       '[]'::jsonb
