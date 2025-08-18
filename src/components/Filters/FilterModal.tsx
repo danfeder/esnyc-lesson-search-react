@@ -214,7 +214,9 @@ export const FilterModal = React.memo<FilterModalProps>(
                           icon="🍂"
                           options={seasonOptions}
                           selectedValues={filters.seasonTiming}
-                          onChange={(values) => onFiltersChange({ ...filters, seasonTiming: values })}
+                          onChange={(values) =>
+                            onFiltersChange({ ...filters, seasonTiming: values })
+                          }
                           facets={facets}
                           facetKey="metadata.seasonTiming"
                         />
