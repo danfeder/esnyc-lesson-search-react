@@ -127,7 +127,7 @@ export function ReviewDetail() {
     if (!metadata.location) errors.push('Location');
     if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
     if (!metadata.themes?.length) errors.push('Thematic Categories');
-    if (!metadata.season) errors.push('Season & Timing');
+    if (!metadata.season?.length) errors.push('Season & Timing');
     if (!metadata.coreCompetencies?.length) errors.push('Core Competencies');
     if (!metadata.socialEmotionalLearning?.length) errors.push('Social-Emotional Learning');
 
@@ -321,7 +321,7 @@ export function ReviewDetail() {
           activity_type: metadata.activityType ? [metadata.activityType] : [],
           metadata: {
             thematicCategories: metadata.themes || [],
-            seasonTiming: metadata.season ? [metadata.season] : [],
+            seasonTiming: metadata.season || [],
             coreCompetencies: metadata.coreCompetencies || [],
             culturalHeritage: metadata.culturalHeritage || [],
             locationRequirements: metadata.location ? [metadata.location] : [],
@@ -412,7 +412,7 @@ export function ReviewDetail() {
               : existingLesson.activity_type,
             metadata: {
               thematicCategories: metadata.themes || [],
-              seasonTiming: metadata.season ? [metadata.season] : [],
+              seasonTiming: metadata.season || [],
               coreCompetencies: metadata.coreCompetencies || [],
               culturalHeritage: metadata.culturalHeritage || [],
               locationRequirements: metadata.location ? [metadata.location] : [],
@@ -471,7 +471,7 @@ export function ReviewDetail() {
       { key: 'location', label: 'Location', value: metadata.location },
       { key: 'gradeLevels', label: 'Grade Levels', value: (metadata.gradeLevels?.length ?? 0) > 0 },
       { key: 'themes', label: 'Thematic Categories', value: (metadata.themes?.length ?? 0) > 0 },
-      { key: 'season', label: 'Season & Timing', value: metadata.season },
+      { key: 'season', label: 'Season & Timing', value: (metadata.season?.length ?? 0) > 0 },
       {
         key: 'coreCompetencies',
         label: 'Core Competencies',
@@ -867,18 +867,25 @@ export function ReviewDetail() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Season & Timing *
                   </label>
-                  <select
-                    value={metadata.season || ''}
-                    onChange={(e) => handleMetadataChange('season', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">Select season</option>
-                    {FILTER_CONFIGS.seasonTiming.options.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
+                  <div className="border border-gray-300 rounded-md p-3 space-y-2">
+                    {FILTER_CONFIGS.seasonTiming.options.map((season) => (
+                      <label key={season.value} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={metadata.season?.includes(season.value) || false}
+                          onChange={(e) => {
+                            const current = metadata.season || [];
+                            const updated = e.target.checked
+                              ? [...current, season.value]
+                              : current.filter((s: string) => s !== season.value);
+                            handleMetadataChange('season', updated);
+                          }}
+                          className="mr-2 text-green-600"
+                        />
+                        <span className="text-sm">{season.label}</span>
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 {/* Core Competencies */}

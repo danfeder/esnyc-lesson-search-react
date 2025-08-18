@@ -20,7 +20,7 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     const arrayFilters: Array<keyof SearchFilters> = [
       'gradeLevels',
       'thematicCategories',
-      'seasons',
+      'seasonTiming',
       'coreCompetencies',
       'culturalHeritage',
       'location',
@@ -42,11 +42,6 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     // Handle single-value filters
     if (filters.cookingMethods) {
       pills.push({ category: 'cookingMethods', value: filters.cookingMethods });
-    }
-
-    // Handle boolean filters
-    if (filters.includeAllSeasons) {
-      pills.push({ category: 'seasons' as keyof SearchFilters, value: 'Year-round' });
     }
 
     return pills;

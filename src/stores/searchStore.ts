@@ -47,7 +47,7 @@ const initialFilters: SearchFilters = {
   query: '',
   gradeLevels: [],
   thematicCategories: [],
-  seasons: [],
+  seasonTiming: [],
   coreCompetencies: [],
   culturalHeritage: [],
   location: [],
@@ -56,7 +56,6 @@ const initialFilters: SearchFilters = {
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: '', // Single-select, empty string = all
-  includeAllSeasons: false,
 };
 
 const initialViewState: ViewState = {

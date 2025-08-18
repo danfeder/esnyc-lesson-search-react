@@ -12,10 +12,6 @@ interface FilterSectionProps {
   onChange: (values: string[]) => void;
   facets?: Record<string, Record<string, number>>;
   facetKey?: string;
-  showYearRoundOption?: boolean;
-  includeAllSeasons?: boolean;
-
-  onIncludeAllSeasonsChange?: (checked: boolean) => void;
   defaultOpen?: boolean;
 }
 
@@ -28,9 +24,6 @@ export const FilterSection = React.memo<FilterSectionProps>(
     onChange,
     facets = {},
     facetKey,
-    showYearRoundOption,
-    includeAllSeasons,
-    onIncludeAllSeasonsChange,
     defaultOpen = false,
   }) => {
     const handleCheckboxChange = useCallback(
@@ -127,21 +120,6 @@ export const FilterSection = React.memo<FilterSectionProps>(
                     </label>
                   );
                 })}
-
-                {/* Year-round option for seasons */}
-                {showYearRoundOption && onIncludeAllSeasonsChange && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={includeAllSeasons}
-                        onChange={(e) => onIncludeAllSeasonsChange(e.target.checked)}
-                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
-                      <span className="text-gray-700 italic">Include year-round lessons</span>
-                    </label>
-                  </div>
-                )}
               </div>
             </Disclosure.Panel>
           </div>

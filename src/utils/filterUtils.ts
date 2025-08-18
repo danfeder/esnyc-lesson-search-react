@@ -9,7 +9,7 @@ export const formatCategoryName = (category: string): string => {
   const categoryNames: Record<string, string> = {
     gradeLevels: 'Grade',
     activityType: 'Activity',
-    seasons: 'Season',
+    seasonTiming: 'Season',
     thematicCategories: 'Theme',
     culturalHeritage: 'Culture',
     coreCompetencies: 'Competency',
@@ -29,7 +29,7 @@ export const getCategoryIcon = (category: string): string => {
   const categoryIcons: Record<string, string> = {
     gradeLevels: '📚',
     activityType: '🎯',
-    seasons: '🍂',
+    seasonTiming: '🍂',
     thematicCategories: '🌿',
     culturalHeritage: '🌍',
     coreCompetencies: '⭐',

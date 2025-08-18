@@ -65,13 +65,13 @@ describe('searchStore', () => {
 
       act(() => {
         result.current.setFilters({
-          seasons: ['Spring'],
+          seasonTiming: ['Spring'],
         });
       });
 
       expect(result.current.filters.query).toBe('tomato');
       expect(result.current.filters.gradeLevels).toEqual(['3rd']);
-      expect(result.current.filters.seasons).toEqual(['Spring']);
+      expect(result.current.filters.seasonTiming).toEqual(['Spring']);
     });
 
     it('should clear all filters', () => {
@@ -81,7 +81,7 @@ describe('searchStore', () => {
         result.current.setFilters({
           query: 'tomato',
           gradeLevels: ['3rd', '4th'],
-          seasons: ['Spring'],
+          seasonTiming: ['Spring'],
         });
       });
 
@@ -91,7 +91,7 @@ describe('searchStore', () => {
 
       expect(result.current.filters.query).toBe('');
       expect(result.current.filters.gradeLevels).toEqual([]);
-      expect(result.current.filters.seasons).toEqual([]);
+      expect(result.current.filters.seasonTiming).toEqual([]);
     });
 
     it('should reset page when filters change', () => {
@@ -527,17 +527,15 @@ describe('searchStore', () => {
         result.current.setFilters({
           query: 'cooking',
           gradeLevels: ['3rd', '4th'],
-          seasons: ['Spring', 'Summer'],
+          seasonTiming: ['Spring', 'Summer'],
           location: ['Indoor'],
-          includeAllSeasons: true,
         });
       });
 
       expect(result.current.filters.query).toBe('cooking');
       expect(result.current.filters.gradeLevels).toEqual(['3rd', '4th']);
-      expect(result.current.filters.seasons).toEqual(['Spring', 'Summer']);
+      expect(result.current.filters.seasonTiming).toEqual(['Spring', 'Summer']);
       expect(result.current.filters.location).toEqual(['Indoor']);
-      expect(result.current.filters.includeAllSeasons).toBe(true);
     });
 
     it('should handle single-select dropdown filters', () => {
@@ -586,13 +584,13 @@ describe('searchStore', () => {
 
       // Toggle filter
       act(() => {
-        result.current.toggleFilter('seasons', 'Spring');
+        result.current.toggleFilter('seasonTiming', 'Spring');
       });
 
       expect(result.current.filters.query).toBe('garden');
       expect(result.current.filters.gradeLevels).toEqual(['3rd', '5th']);
       expect(result.current.filters.thematicCategories).toEqual(['Plant Growth']);
-      expect(result.current.filters.seasons).toEqual(['Spring']);
+      expect(result.current.filters.seasonTiming).toEqual(['Spring']);
     });
   });
 

@@ -12,7 +12,7 @@ describe.skip('FilterModal - Skipped due to Headless UI mocking complexity', () 
     query: '',
     gradeLevels: [],
     thematicCategories: [],
-    seasons: [],
+    seasonTiming: [],
     coreCompetencies: [],
     culturalHeritage: [],
     location: [],
@@ -21,7 +21,6 @@ describe.skip('FilterModal - Skipped due to Headless UI mocking complexity', () 
     academicIntegration: [],
     socialEmotionalLearning: [],
     cookingMethods: '',
-    includeAllSeasons: false,
   };
 
   beforeEach(() => {

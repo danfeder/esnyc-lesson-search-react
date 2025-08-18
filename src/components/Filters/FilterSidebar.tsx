@@ -190,16 +190,6 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
           label: 'Summer',
           count: getFacetCount(facets, 'metadata.seasonTiming', 'Summer'),
         },
-        {
-          value: 'Beginning of year',
-          label: 'Beginning of Year',
-          count: getFacetCount(facets, 'metadata.seasonTiming', 'Beginning of year'),
-        },
-        {
-          value: 'End of year',
-          label: 'End of Year',
-          count: getFacetCount(facets, 'metadata.seasonTiming', 'End of year'),
-        },
       ],
       [facets]
     );
@@ -378,7 +368,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
       (filters.query?.trim() ? 1 : 0) + // Include search query in count
       filters.gradeLevels.length +
       filters.thematicCategories.length +
-      filters.seasons.length +
+      filters.seasonTiming.length +
       filters.coreCompetencies.length +
       filters.activityType.length +
       filters.location.length +
@@ -486,25 +476,9 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
               <FilterSection title="Season & Timing" icon="🍂">
                 <CheckboxGroup
                   options={seasonOptions}
-                  selectedValues={filters.seasons}
-                  onChange={(values) => onFiltersChange({ ...filters, seasons: values })}
+                  selectedValues={filters.seasonTiming}
+                  onChange={(values) => onFiltersChange({ ...filters, seasonTiming: values })}
                 />
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.includeAllSeasons}
-                      onChange={(e) =>
-                        onFiltersChange({
-                          ...filters,
-                          includeAllSeasons: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-700 italic">Include year-round lessons</span>
-                  </label>
-                </div>
               </FilterSection>
 
               <FilterSection title="Core Competencies" icon="⭐">
