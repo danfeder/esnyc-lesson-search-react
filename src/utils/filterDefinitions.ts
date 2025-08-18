@@ -290,7 +290,7 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'seed-saving', label: 'Seed saving' },
       { value: 'tool-maintenance', label: 'Tool use and maintenance' },
       { value: 'preservation', label: 'Preservation techniques' },
-      { value: 'sensory-exploration', label: 'Sensory exploration' },
+      { value: 'garden-exploration', label: 'Garden exploration' },
     ],
   },
 
