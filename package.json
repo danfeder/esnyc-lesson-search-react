@@ -66,7 +66,7 @@
     "react-select": "^5.10.2",
     "react-window": "^1.8.11",
     "react-window-infinite-loader": "^1.0.10",
-    "recharts": "^3.1.0",
+    "recharts": "^3.1.2",
     "tiktoken": "^1.0.21",
     "typescript": "^5.9.2",
     "vite": "^7.0.6",
