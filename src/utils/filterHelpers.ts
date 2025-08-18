@@ -89,17 +89,12 @@ export function matchesActivityType(lesson: Lesson, selectedActivities: string[]
   });
 }
 
-// Season filtering with "All Seasons" logic
-export function matchesSeasonFilter(
-  lesson: Lesson,
-  selectedSeasons: string[],
-  includeAllSeasons: boolean
-): boolean {
+// Season filtering - simplified for 4-season multi-select
+export function matchesSeasonFilter(lesson: Lesson, selectedSeasons: string[]): boolean {
   if (selectedSeasons.length === 0) return true;
 
   const lessonSeasons = lesson.metadata.seasonTiming || [];
-  const hasSelectedSeason = hasAnyMatch(lessonSeasons, selectedSeasons);
-  const hasAllSeasons = lessonSeasons.includes('All Seasons');
 
-  return hasSelectedSeason || (includeAllSeasons && hasAllSeasons);
+  // Check if any lesson season matches any selected season
+  return hasAnyMatch(lessonSeasons, selectedSeasons);
 }

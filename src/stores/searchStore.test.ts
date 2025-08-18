@@ -529,7 +529,6 @@ describe('searchStore', () => {
           gradeLevels: ['3rd', '4th'],
           seasons: ['Spring', 'Summer'],
           location: ['Indoor'],
-          includeAllSeasons: true,
         });
       });
 
@@ -537,7 +536,6 @@ describe('searchStore', () => {
       expect(result.current.filters.gradeLevels).toEqual(['3rd', '4th']);
       expect(result.current.filters.seasons).toEqual(['Spring', 'Summer']);
       expect(result.current.filters.location).toEqual(['Indoor']);
-      expect(result.current.filters.includeAllSeasons).toBe(true);
     });
 
     it('should handle single-select dropdown filters', () => {

@@ -44,7 +44,6 @@ const searchLessonsWithSmartSearch = async ({
         location: filters.location,
         activityType: filters.activityType,
         lessonFormat: filters.lessonFormat,
-        includeAllSeasons: filters.includeAllSeasons,
       },
       page,
       limit,
@@ -167,11 +166,8 @@ const applyAdvancedFiltering = async (
       return false;
     }
 
-    // Season filter with "All Seasons" logic
-    if (
-      filters.seasons.length &&
-      !matchesSeasonFilter(lesson, filters.seasons, filters.includeAllSeasons)
-    ) {
+    // Season filter - simplified for multi-select
+    if (filters.seasons.length && !matchesSeasonFilter(lesson, filters.seasons)) {
       return false;
     }
 

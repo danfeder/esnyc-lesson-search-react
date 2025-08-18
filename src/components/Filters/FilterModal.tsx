@@ -86,8 +86,6 @@ export const FilterModal = React.memo<FilterModalProps>(
       { value: 'Winter', label: 'Winter' },
       { value: 'Spring', label: 'Spring' },
       { value: 'Summer', label: 'Summer' },
-      { value: 'Beginning of year', label: 'Beginning of Year' },
-      { value: 'End of year', label: 'End of Year' },
     ];
 
     // Location options
@@ -219,11 +217,6 @@ export const FilterModal = React.memo<FilterModalProps>(
                           onChange={(values) => onFiltersChange({ ...filters, seasons: values })}
                           facets={facets}
                           facetKey="metadata.seasonTiming"
-                          showYearRoundOption
-                          includeAllSeasons={filters.includeAllSeasons}
-                          onIncludeAllSeasonsChange={(checked) =>
-                            onFiltersChange({ ...filters, includeAllSeasons: checked })
-                          }
                         />
 
                         <FilterSection

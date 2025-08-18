@@ -55,7 +55,6 @@ export interface SearchFilters {
   academicIntegration: string[];
   socialEmotionalLearning: string[];
   cookingMethods: string; // Single-select, so string not array
-  includeAllSeasons: boolean;
 }
 
 export interface FacetCount {
@@ -143,7 +142,7 @@ export interface ReviewMetadata {
   location?: string; // Single select for review
   gradeLevels?: string[];
   themes?: string[];
-  season?: string; // Single select for review
+  season?: string[]; // Multi-select for seasons
   coreCompetencies?: string[];
   socialEmotionalLearning?: string[];
   cookingMethods?: string[];

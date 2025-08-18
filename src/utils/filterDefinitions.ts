@@ -80,15 +80,12 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
 
   seasonTiming: {
     label: 'Season & Timing',
-    type: 'single',
+    type: 'multiple',
     options: [
-      { value: 'fall', label: 'Fall' },
-      { value: 'winter', label: 'Winter' },
-      { value: 'spring', label: 'Spring' },
-      { value: 'summer', label: 'Summer' },
-      { value: 'beginning-of-year', label: 'Beginning of Year' },
-      { value: 'end-of-year', label: 'End of Year' },
-      { value: 'year-round', label: 'Year-round' },
+      { value: 'Fall', label: 'Fall' },
+      { value: 'Winter', label: 'Winter' },
+      { value: 'Spring', label: 'Spring' },
+      { value: 'Summer', label: 'Summer' },
     ],
   },
 

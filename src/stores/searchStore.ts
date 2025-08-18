@@ -56,7 +56,6 @@ const initialFilters: SearchFilters = {
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: '', // Single-select, empty string = all
-  includeAllSeasons: false,
 };
 
 const initialViewState: ViewState = {

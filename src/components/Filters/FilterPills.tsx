@@ -44,11 +44,6 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
       pills.push({ category: 'cookingMethods', value: filters.cookingMethods });
     }
 
-    // Handle boolean filters
-    if (filters.includeAllSeasons) {
-      pills.push({ category: 'seasons' as keyof SearchFilters, value: 'Year-round' });
-    }
-
     return pills;
   }, [filters]);
   const hasActiveFilters = activeFilters.length > 0 || filters.query.trim() !== '';
