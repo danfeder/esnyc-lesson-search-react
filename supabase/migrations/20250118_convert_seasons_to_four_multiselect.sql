@@ -10,43 +10,32 @@ UPDATE lessons SET season_timing_backup = season_timing WHERE season_timing IS N
 -- This approach handles all mappings in a single pass to avoid missing combinations
 UPDATE lessons
 SET season_timing = (
-  -- Build array with proper ordering, UNION already handles duplicates
+  -- Build array, UNION already handles duplicates
   SELECT ARRAY(
-    SELECT season FROM (
+    SELECT DISTINCT season FROM (
       -- Start with any existing core seasons
-      SELECT elem AS season, 
-             CASE elem
-               WHEN 'Fall' THEN 1
-               WHEN 'Winter' THEN 2
-               WHEN 'Spring' THEN 3
-               WHEN 'Summer' THEN 4
-             END AS sort_order
+      SELECT elem AS season
       FROM unnest(season_timing) AS elem
       WHERE elem IN ('Fall', 'Winter', 'Spring', 'Summer')
       
       UNION
       
       -- Add all four seasons if 'All Seasons' or 'Year-round' is present
-      SELECT season, sort_order FROM (
-        VALUES ('Fall', 1), ('Winter', 2), ('Spring', 3), ('Summer', 4)
-      ) AS seasons(season, sort_order)
+      SELECT unnest(ARRAY['Fall', 'Winter', 'Spring', 'Summer']) AS season
       WHERE 'All Seasons' = ANY(season_timing) OR 'Year-round' = ANY(season_timing)
       
       UNION
       
       -- Add Fall if 'Beginning of year' is present
-      SELECT 'Fall' AS season, 1 AS sort_order
+      SELECT 'Fall' AS season
       WHERE 'Beginning of year' = ANY(season_timing)
       
       UNION
       
       -- Add Spring and Summer if 'End of year' is present  
-      SELECT season, sort_order FROM (
-        VALUES ('Spring', 3), ('Summer', 4)
-      ) AS seasons(season, sort_order)
+      SELECT unnest(ARRAY['Spring', 'Summer']) AS season
       WHERE 'End of year' = ANY(season_timing)
     ) AS all_seasons
-    ORDER BY sort_order
   )
 )
 WHERE season_timing IS NOT NULL;
@@ -106,12 +95,6 @@ SET tagged_metadata = jsonb_set(
             FROM jsonb_array_elements_text(tagged_metadata->'season') AS value
           ) AS all_seasons
           WHERE season IS NOT NULL
-          ORDER BY CASE season
-            WHEN 'Fall' THEN 1
-            WHEN 'Winter' THEN 2
-            WHEN 'Spring' THEN 3
-            WHEN 'Summer' THEN 4
-          END
         ))
       )
     ELSE
