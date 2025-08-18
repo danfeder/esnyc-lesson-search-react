@@ -393,11 +393,7 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                   p_group_id: group.groupId,
                   p_canonical_id: selectedLessonIds[0],
                   p_duplicate_ids: [],
-<<<<<<< HEAD
                   p_duplicate_type: 'pedagogical',
-=======
-                  p_duplicate_type: 'near',
->>>>>>> origin/main
                   p_similarity_score: 0.95,
                   p_merge_metadata: false,
                   p_resolution_notes: `Manual split resolution: updated titles only`,
