@@ -1,5 +1,5 @@
 // User roles and permissions types
-/* eslint-disable no-unused-vars */
+
 export enum UserRole {
   TEACHER = 'teacher',
   REVIEWER = 'reviewer',
@@ -28,7 +28,6 @@ export enum Permission {
   EXPORT_DATA = 'export_data',
   SYSTEM_SETTINGS = 'system_settings',
 }
-/* eslint-enable no-unused-vars */
 
 // Default permissions for each role
 export const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -155,11 +154,11 @@ export interface AuthContextValue {
   user: EnhancedUserProfile | null;
   loading: boolean;
   permissions: Permission[];
-  // eslint-disable-next-line no-unused-vars
+
   hasPermission: (permission: Permission) => boolean;
-  // eslint-disable-next-line no-unused-vars
+
   hasAnyPermission: (permissions: Permission[]) => boolean;
-  // eslint-disable-next-line no-unused-vars
+
   hasAllPermissions: (permissions: Permission[]) => boolean;
   isAdmin: () => boolean;
   isReviewer: () => boolean;

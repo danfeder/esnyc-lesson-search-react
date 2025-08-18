@@ -5,7 +5,7 @@ interface ResultsHeaderProps {
   totalCount: number;
   currentQuery: string;
   sortBy: string;
-  // eslint-disable-next-line no-unused-vars
+
   onSortChange: (sort: string) => void;
   onExport: () => void;
 }

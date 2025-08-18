@@ -4,7 +4,7 @@ import { logger } from '../../utils/logger';
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: React.ComponentType<ErrorFallbackProps>;
-  // eslint-disable-next-line no-unused-vars
+
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
   resetKeys?: Array<string | number>;
   resetOnPropsChange?: boolean;

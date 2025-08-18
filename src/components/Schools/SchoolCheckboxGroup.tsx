@@ -5,7 +5,7 @@ import { logger } from '../../utils/logger';
 
 interface SchoolCheckboxGroupProps {
   selectedSchools: School[];
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (schools: School[]) => void;
   disabled?: boolean;
 }

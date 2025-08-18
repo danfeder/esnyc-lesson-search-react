@@ -21,7 +21,7 @@ interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   filters: SearchFilters;
-  // eslint-disable-next-line no-unused-vars
+
   onFiltersChange: (filters: SearchFilters) => void;
   facets?: Record<string, Record<string, number>>;
 }

@@ -11,7 +11,7 @@ const ROW_HEIGHT = 40; // Height of each row in pixels
 
 interface CulturalHeritageFilterProps {
   selectedValues: string[];
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (values: string[]) => void;
   facets?: Record<string, Record<string, number>>;
 }
@@ -32,11 +32,11 @@ interface RowProps {
     expandedRegions: Set<string>;
     selectedValues: string[];
     facets: Record<string, Record<string, number>>;
-    // eslint-disable-next-line no-unused-vars
+
     onToggleExpand: (region: string) => void;
-    // eslint-disable-next-line no-unused-vars
+
     onRegionChange: (regionName: string, subregions: string[], checked: boolean) => void;
-    // eslint-disable-next-line no-unused-vars
+
     onSubregionChange: (subregion: string, checked: boolean) => void;
   };
 }

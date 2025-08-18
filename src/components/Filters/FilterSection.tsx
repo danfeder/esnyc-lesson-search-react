@@ -8,13 +8,13 @@ interface FilterSectionProps {
   icon: string;
   options: Array<{ value: string; label: string }>;
   selectedValues: string[];
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (values: string[]) => void;
   facets?: Record<string, Record<string, number>>;
   facetKey?: string;
   showYearRoundOption?: boolean;
   includeAllSeasons?: boolean;
-  // eslint-disable-next-line no-unused-vars
+
   onIncludeAllSeasonsChange?: (checked: boolean) => void;
   defaultOpen?: boolean;
 }

@@ -12,7 +12,7 @@ export interface School {
 
 interface SchoolSelectorProps {
   selectedSchools: School[];
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (schools: School[]) => void;
   placeholder?: string;
   disabled?: boolean;
