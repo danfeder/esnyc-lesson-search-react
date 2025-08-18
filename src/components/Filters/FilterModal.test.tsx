@@ -12,7 +12,7 @@ describe.skip('FilterModal - Skipped due to Headless UI mocking complexity', () 
     query: '',
     gradeLevels: [],
     thematicCategories: [],
-    seasons: [],
+    seasonTiming: [],
     coreCompetencies: [],
     culturalHeritage: [],
     location: [],

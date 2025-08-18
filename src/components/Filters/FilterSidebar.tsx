@@ -368,7 +368,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
       (filters.query?.trim() ? 1 : 0) + // Include search query in count
       filters.gradeLevels.length +
       filters.thematicCategories.length +
-      filters.seasons.length +
+      filters.seasonTiming.length +
       filters.coreCompetencies.length +
       filters.activityType.length +
       filters.location.length +
@@ -476,8 +476,8 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
               <FilterSection title="Season & Timing" icon="🍂">
                 <CheckboxGroup
                   options={seasonOptions}
-                  selectedValues={filters.seasons}
-                  onChange={(values) => onFiltersChange({ ...filters, seasons: values })}
+                  selectedValues={filters.seasonTiming}
+                  onChange={(values) => onFiltersChange({ ...filters, seasonTiming: values })}
                 />
               </FilterSection>
 

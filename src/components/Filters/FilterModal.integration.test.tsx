@@ -11,7 +11,7 @@ describe('FilterModal Integration Tests', () => {
     query: '',
     gradeLevels: [],
     thematicCategories: [],
-    seasons: [],
+    seasonTiming: [],
     coreCompetencies: [],
     culturalHeritage: [],
     location: [],
@@ -74,7 +74,7 @@ describe('FilterModal Integration Tests', () => {
     const filtersWithValues = {
       ...defaultFilters,
       gradeLevels: ['3', '4'],
-      seasons: ['Spring', 'Summer'],
+      seasonTiming: ['Spring', 'Summer'],
     };
 
     const { rerender } = render(

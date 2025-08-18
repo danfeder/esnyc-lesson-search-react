@@ -46,7 +46,7 @@ export interface SearchFilters {
   query: string;
   gradeLevels: string[];
   thematicCategories: string[];
-  seasons: string[];
+  seasonTiming: string[]; // Changed from 'seasons' to match LessonMetadata
   coreCompetencies: string[];
   culturalHeritage: string[];
   location: string[];

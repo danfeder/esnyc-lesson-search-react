@@ -47,7 +47,7 @@ const initialFilters: SearchFilters = {
   query: '',
   gradeLevels: [],
   thematicCategories: [],
-  seasons: [],
+  seasonTiming: [],
   coreCompetencies: [],
   culturalHeritage: [],
   location: [],

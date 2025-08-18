@@ -34,7 +34,7 @@ export function useSupabaseSearch(
           search_query: filters.query || null,
           filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : null,
           filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : null,
-          filter_seasons: filters.seasons?.length ? filters.seasons : null,
+          filter_seasonTiming: filters.seasonTiming?.length ? filters.seasonTiming : null,
           filter_competencies: filters.coreCompetencies?.length ? filters.coreCompetencies : null,
           filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : null,
           filter_location: filters.location?.length ? filters.location : null,

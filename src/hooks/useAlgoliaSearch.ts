@@ -60,9 +60,9 @@ export function useAlgoliaSearch(
   }, [filters.thematicCategories]);
 
   const seasonFilter = useMemo(() => {
-    if (!filters.seasons?.length) return '';
-    return filters.seasons.map((season) => `metadata.seasonTiming:"${season}"`).join(' OR ');
-  }, [filters.seasons]);
+    if (!filters.seasonTiming?.length) return '';
+    return filters.seasonTiming.map((season) => `metadata.seasonTiming:"${season}"`).join(' OR ');
+  }, [filters.seasonTiming]);
 
   const competencyFilter = useMemo(() => {
     if (!filters.coreCompetencies?.length) return '';

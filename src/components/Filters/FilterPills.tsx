@@ -20,7 +20,7 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     const arrayFilters: Array<keyof SearchFilters> = [
       'gradeLevels',
       'thematicCategories',
-      'seasons',
+      'seasonTiming',
       'coreCompetencies',
       'culturalHeritage',
       'location',

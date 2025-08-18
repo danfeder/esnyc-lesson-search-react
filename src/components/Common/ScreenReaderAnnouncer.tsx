@@ -14,7 +14,7 @@ export const ScreenReaderAnnouncer: React.FC = () => {
       activeFilters.push(`${filters.gradeLevels.length} grade levels`);
     if (filters.activityType.length)
       activeFilters.push(`${filters.activityType.length} activity types`);
-    if (filters.seasons.length) activeFilters.push(`${filters.seasons.length} seasons`);
+    if (filters.seasonTiming.length) activeFilters.push(`${filters.seasonTiming.length} seasons`);
     if (filters.location.length) activeFilters.push(`${filters.location.length} locations`);
     if (filters.thematicCategories.length)
       activeFilters.push(`${filters.thematicCategories.length} themes`);

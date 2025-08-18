@@ -38,7 +38,7 @@ const searchLessonsWithSmartSearch = async ({
       filters: {
         gradeLevels: filters.gradeLevels,
         thematicCategories: filters.thematicCategories,
-        seasons: filters.seasons,
+        seasonTiming: filters.seasonTiming,
         coreCompetencies: filters.coreCompetencies,
         culturalHeritage: filters.culturalHeritage,
         location: filters.location,
@@ -167,7 +167,7 @@ const applyAdvancedFiltering = async (
     }
 
     // Season filter - simplified for multi-select
-    if (filters.seasons.length && !matchesSeasonFilter(lesson, filters.seasons)) {
+    if (filters.seasonTiming.length && !matchesSeasonFilter(lesson, filters.seasonTiming)) {
       return false;
     }
 
@@ -229,7 +229,7 @@ export const useFilterCounts = (filters: SearchFilters) => {
       return {
         gradeLevels: [],
         thematicCategories: [],
-        seasons: [],
+        seasonTiming: [],
         coreCompetencies: [],
         culturalHeritage: [],
         location: [],

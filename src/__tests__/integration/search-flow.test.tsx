@@ -374,7 +374,7 @@ describe('Search Flow Integration', () => {
       const store = useSearchStore.getState();
       store.setFilters({
         gradeLevels: ['3', '4'],
-        seasons: ['Spring'],
+        seasonTiming: ['Spring'],
       });
 
       renderApp();
@@ -391,7 +391,7 @@ describe('Search Flow Integration', () => {
         const updatedStore = useSearchStore.getState();
         expect(updatedStore.filters.query).toBe('cooking');
         expect(updatedStore.filters.gradeLevels).toEqual(['3', '4']);
-        expect(updatedStore.filters.seasons).toEqual(['Spring']);
+        expect(updatedStore.filters.seasonTiming).toEqual(['Spring']);
       });
     });
   });

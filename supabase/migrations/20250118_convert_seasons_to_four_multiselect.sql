@@ -7,43 +7,43 @@ ALTER TABLE lessons ADD COLUMN IF NOT EXISTS season_timing_backup TEXT[];
 UPDATE lessons SET season_timing_backup = season_timing WHERE season_timing IS NOT NULL;
 
 -- Step 2: Remap season data according to the new schema
+-- This approach handles all mappings in a single pass to avoid missing combinations
 UPDATE lessons
-SET season_timing = 
-  CASE
-    -- Map "All Seasons" or "Year-round" to all 4 seasons
-    WHEN 'All Seasons' = ANY(season_timing) OR 'Year-round' = ANY(season_timing) THEN
-      ARRAY(
-        SELECT DISTINCT elem FROM unnest(
-          season_timing || ARRAY['Fall', 'Winter', 'Spring', 'Summer']
-        ) AS elem
-        WHERE elem NOT IN ('All Seasons', 'Year-round', 'Beginning of year', 'End of year')
-      )
-    
-    -- Map "Beginning of year" to Fall (when it appears alone or with other seasons)
-    WHEN 'Beginning of year' = ANY(season_timing) THEN
-      ARRAY(
-        SELECT DISTINCT elem FROM unnest(
-          array_remove(array_remove(season_timing, 'Beginning of year'), 'All Seasons') || ARRAY['Fall']
-        ) AS elem
-        WHERE elem NOT IN ('Year-round', 'End of year')
-      )
-    
-    -- Map "End of year" to Spring and Summer
-    WHEN 'End of year' = ANY(season_timing) THEN
-      ARRAY(
-        SELECT DISTINCT elem FROM unnest(
-          array_remove(array_remove(season_timing, 'End of year'), 'All Seasons') || ARRAY['Spring', 'Summer']
-        ) AS elem
-        WHERE elem NOT IN ('Year-round', 'Beginning of year')
-      )
-    
-    -- Keep regular seasons as-is, just remove any non-season values
-    ELSE
-      ARRAY(
-        SELECT DISTINCT elem FROM unnest(season_timing) AS elem
-        WHERE elem IN ('Fall', 'Winter', 'Spring', 'Summer')
-      )
-  END
+SET season_timing = (
+  SELECT ARRAY(
+    SELECT DISTINCT mapped_season FROM (
+      -- Start with any existing core seasons
+      SELECT elem AS mapped_season 
+      FROM unnest(season_timing) AS elem
+      WHERE elem IN ('Fall', 'Winter', 'Spring', 'Summer')
+      
+      UNION
+      
+      -- Add all four seasons if 'All Seasons' or 'Year-round' is present
+      SELECT unnest(ARRAY['Fall', 'Winter', 'Spring', 'Summer']) AS mapped_season
+      WHERE 'All Seasons' = ANY(season_timing) OR 'Year-round' = ANY(season_timing)
+      
+      UNION
+      
+      -- Add Fall if 'Beginning of year' is present
+      SELECT 'Fall' AS mapped_season
+      WHERE 'Beginning of year' = ANY(season_timing)
+      
+      UNION
+      
+      -- Add Spring and Summer if 'End of year' is present  
+      SELECT unnest(ARRAY['Spring', 'Summer']) AS mapped_season
+      WHERE 'End of year' = ANY(season_timing)
+    ) AS all_mappings
+    ORDER BY 
+      CASE mapped_season
+        WHEN 'Fall' THEN 1
+        WHEN 'Winter' THEN 2
+        WHEN 'Spring' THEN 3
+        WHEN 'Summer' THEN 4
+      END
+  )
+)
 WHERE season_timing IS NOT NULL;
 
 -- Step 3: Create index for better performance on the updated column
@@ -78,12 +78,34 @@ SET tagged_metadata = jsonb_set(
         ELSE
           '[]'::jsonb
       END
-    -- If already an array, clean it up
+    -- If already an array, remap deprecated values and clean it up
     WHEN jsonb_typeof(tagged_metadata->'season') = 'array' THEN
       (
-        SELECT jsonb_agg(value)
-        FROM jsonb_array_elements_text(tagged_metadata->'season') AS value
-        WHERE value IN ('Fall', 'Winter', 'Spring', 'Summer')
+        SELECT jsonb_agg(DISTINCT mapped_value ORDER BY
+          CASE mapped_value
+            WHEN 'Fall' THEN 1
+            WHEN 'Winter' THEN 2
+            WHEN 'Spring' THEN 3
+            WHEN 'Summer' THEN 4
+          END
+        ) FROM (
+          SELECT unnest(
+            CASE
+              WHEN value IN ('All Seasons', 'Year-round') THEN 
+                ARRAY['Fall', 'Winter', 'Spring', 'Summer']
+              WHEN value = 'Beginning of year' THEN 
+                ARRAY['Fall']
+              WHEN value = 'End of year' THEN 
+                ARRAY['Spring', 'Summer']
+              WHEN value IN ('Fall', 'Winter', 'Spring', 'Summer') THEN 
+                ARRAY[value]
+              ELSE 
+                ARRAY[]::text[]
+            END
+          ) AS mapped_value
+          FROM jsonb_array_elements_text(tagged_metadata->'season') AS value
+        ) AS mapped
+        WHERE mapped_value IS NOT NULL
       )
     ELSE
       '[]'::jsonb
