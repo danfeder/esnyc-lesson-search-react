@@ -10,39 +10,37 @@ UPDATE lessons SET season_timing_backup = season_timing WHERE season_timing IS N
 -- This approach handles all mappings in a single pass to avoid missing combinations
 UPDATE lessons
 SET season_timing = (
-  SELECT ARRAY(
-    SELECT DISTINCT mapped_season FROM (
-      -- Start with any existing core seasons
-      SELECT elem AS mapped_season 
-      FROM unnest(season_timing) AS elem
-      WHERE elem IN ('Fall', 'Winter', 'Spring', 'Summer')
-      
-      UNION
-      
-      -- Add all four seasons if 'All Seasons' or 'Year-round' is present
-      SELECT unnest(ARRAY['Fall', 'Winter', 'Spring', 'Summer']) AS mapped_season
-      WHERE 'All Seasons' = ANY(season_timing) OR 'Year-round' = ANY(season_timing)
-      
-      UNION
-      
-      -- Add Fall if 'Beginning of year' is present
-      SELECT 'Fall' AS mapped_season
-      WHERE 'Beginning of year' = ANY(season_timing)
-      
-      UNION
-      
-      -- Add Spring and Summer if 'End of year' is present  
-      SELECT unnest(ARRAY['Spring', 'Summer']) AS mapped_season
-      WHERE 'End of year' = ANY(season_timing)
-    ) AS all_mappings
-    ORDER BY 
-      CASE mapped_season
-        WHEN 'Fall' THEN 1
-        WHEN 'Winter' THEN 2
-        WHEN 'Spring' THEN 3
-        WHEN 'Summer' THEN 4
-      END
-  )
+  SELECT array_agg(DISTINCT mapped_season ORDER BY 
+    CASE mapped_season
+      WHEN 'Fall' THEN 1
+      WHEN 'Winter' THEN 2
+      WHEN 'Spring' THEN 3
+      WHEN 'Summer' THEN 4
+    END
+  ) FROM (
+    -- Start with any existing core seasons
+    SELECT elem AS mapped_season 
+    FROM unnest(season_timing) AS elem
+    WHERE elem IN ('Fall', 'Winter', 'Spring', 'Summer')
+    
+    UNION
+    
+    -- Add all four seasons if 'All Seasons' or 'Year-round' is present
+    SELECT unnest(ARRAY['Fall', 'Winter', 'Spring', 'Summer']) AS mapped_season
+    WHERE 'All Seasons' = ANY(season_timing) OR 'Year-round' = ANY(season_timing)
+    
+    UNION
+    
+    -- Add Fall if 'Beginning of year' is present
+    SELECT 'Fall' AS mapped_season
+    WHERE 'Beginning of year' = ANY(season_timing)
+    
+    UNION
+    
+    -- Add Spring and Summer if 'End of year' is present  
+    SELECT unnest(ARRAY['Spring', 'Summer']) AS mapped_season
+    WHERE 'End of year' = ANY(season_timing)
+  ) AS all_mappings
 )
 WHERE season_timing IS NOT NULL;
 
