@@ -88,45 +88,31 @@ SET tagged_metadata = jsonb_set(
     -- If already an array, remap deprecated values and clean it up
     WHEN jsonb_typeof(tagged_metadata->'season') = 'array' THEN
       (
-        SELECT jsonb_agg(season ORDER BY sort_order) FROM (
-          SELECT DISTINCT season, sort_order FROM (
+        SELECT to_jsonb(ARRAY(
+          SELECT DISTINCT season FROM (
             SELECT unnest(
-              CASE
-                WHEN value IN ('All Seasons', 'Year-round') THEN 
-                  ARRAY['Fall', 'Winter', 'Spring', 'Summer']
-                WHEN value = 'Beginning of year' THEN 
-                  ARRAY['Fall']
-                WHEN value = 'End of year' THEN 
-                  ARRAY['Spring', 'Summer']
-                WHEN value IN ('Fall', 'Winter', 'Spring', 'Summer') THEN 
-                  ARRAY[value]
-                ELSE 
-                  ARRAY[]::text[]
+              CASE value
+                WHEN 'All Seasons' THEN ARRAY['Fall', 'Winter', 'Spring', 'Summer']
+                WHEN 'Year-round' THEN ARRAY['Fall', 'Winter', 'Spring', 'Summer']
+                WHEN 'Beginning of year' THEN ARRAY['Fall']
+                WHEN 'End of year' THEN ARRAY['Spring', 'Summer']
+                WHEN 'Fall' THEN ARRAY['Fall']
+                WHEN 'Winter' THEN ARRAY['Winter']
+                WHEN 'Spring' THEN ARRAY['Spring']
+                WHEN 'Summer' THEN ARRAY['Summer']
+                ELSE ARRAY[]::text[]
               END
-            ) AS season,
-            CASE unnest(
-              CASE
-                WHEN value IN ('All Seasons', 'Year-round') THEN 
-                  ARRAY['Fall', 'Winter', 'Spring', 'Summer']
-                WHEN value = 'Beginning of year' THEN 
-                  ARRAY['Fall']
-                WHEN value = 'End of year' THEN 
-                  ARRAY['Spring', 'Summer']
-                WHEN value IN ('Fall', 'Winter', 'Spring', 'Summer') THEN 
-                  ARRAY[value]
-                ELSE 
-                  ARRAY[]::text[]
-              END
-            )
-              WHEN 'Fall' THEN 1
-              WHEN 'Winter' THEN 2
-              WHEN 'Spring' THEN 3
-              WHEN 'Summer' THEN 4
-            END AS sort_order
+            ) AS season
             FROM jsonb_array_elements_text(tagged_metadata->'season') AS value
-          ) AS all_values
+          ) AS all_seasons
           WHERE season IS NOT NULL
-        ) AS unique_seasons
+          ORDER BY CASE season
+            WHEN 'Fall' THEN 1
+            WHEN 'Winter' THEN 2
+            WHEN 'Spring' THEN 3
+            WHEN 'Summer' THEN 4
+          END
+        ))
       )
     ELSE
       '[]'::jsonb
