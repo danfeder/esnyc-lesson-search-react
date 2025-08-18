@@ -56,6 +56,8 @@ DROP INDEX IF EXISTS idx_lessons_season_timing;
 CREATE INDEX idx_lessons_season_timing ON lessons USING GIN (season_timing);
 
 -- Step 4: Add check constraint to ensure only valid seasons are stored
+-- Drop existing constraint if it exists (in case of re-running migration)
+ALTER TABLE lessons DROP CONSTRAINT IF EXISTS valid_seasons;
 ALTER TABLE lessons 
 ADD CONSTRAINT valid_seasons 
 CHECK (
