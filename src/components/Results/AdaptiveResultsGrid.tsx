@@ -6,7 +6,7 @@ import { shouldVirtualize } from '../../utils/virtualization';
 
 interface AdaptiveResultsGridProps {
   lessons: Lesson[];
-  // eslint-disable-next-line no-unused-vars
+
   onLessonClick: (lesson: Lesson) => void;
   isLoading?: boolean;
   forceVirtualization?: boolean; // For testing/debugging

@@ -5,7 +5,7 @@ import { getFacetCount } from '../../utils/facetHelpers';
 
 interface CulturalHeritageFilterProps {
   selectedValues: string[];
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (values: string[]) => void;
   facets?: Record<string, Record<string, number>>;
 }
@@ -14,7 +14,7 @@ interface CulturalRegionProps {
   regionName: string;
   subregions: string[];
   selectedValues: string[];
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (values: string[]) => void;
   facets: Record<string, Record<string, number>>;
 }

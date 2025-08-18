@@ -6,7 +6,7 @@ export interface Column<T> {
   key: string;
   header: string;
   width?: number | string;
-  // eslint-disable-next-line no-unused-vars
+
   render: (item: T) => React.ReactNode;
   className?: string;
 }
@@ -14,14 +14,14 @@ export interface Column<T> {
 interface VirtualizedTableProps<T> {
   data: T[];
   columns: Column<T>[];
-  // eslint-disable-next-line no-unused-vars
+
   getRowKey?: (item: T, index: number) => string;
   isLoading?: boolean;
   emptyMessage?: string;
   className?: string;
   headerClassName?: string;
   rowClassName?: string;
-  // eslint-disable-next-line no-unused-vars
+
   onRowClick?: (item: T) => void;
 }
 

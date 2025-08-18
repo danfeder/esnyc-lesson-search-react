@@ -9,7 +9,7 @@ import { ErrorBoundary, DefaultErrorFallback } from '../Common/ErrorBoundary';
 
 interface FilterSidebarProps {
   filters: SearchFilters;
-  // eslint-disable-next-line no-unused-vars
+
   onFiltersChange: (filters: SearchFilters) => void;
   isOpen: boolean;
   onClose: () => void;
@@ -64,7 +64,7 @@ const FilterSection = React.memo<FilterSectionProps>(
 interface CheckboxGroupProps {
   options: { value: string; label: string; count?: number }[];
   selectedValues: string[];
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (values: string[]) => void;
 }
 

@@ -6,7 +6,7 @@ import { LessonCard } from './LessonCard';
 
 interface VirtualizedResultsGridProps {
   lessons: Lesson[];
-  // eslint-disable-next-line no-unused-vars
+
   onLessonClick: (lesson: Lesson) => void;
   isLoading?: boolean;
 }

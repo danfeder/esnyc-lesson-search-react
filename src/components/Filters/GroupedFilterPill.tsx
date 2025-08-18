@@ -6,7 +6,7 @@ import type { SearchFilters } from '../../types';
 interface GroupedFilterPillProps {
   category: keyof SearchFilters;
   values: string[];
-  // eslint-disable-next-line no-unused-vars
+
   onRemove: (value: string) => void;
   onRemoveAll: () => void;
 }
