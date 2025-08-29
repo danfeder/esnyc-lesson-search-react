@@ -47,35 +47,23 @@ jobs:
             
             Requirements checklist:
             
-            ## Filter Implementation Checklist (ALL 16 CATEGORIES REQUIRED):
+            ## Filter Implementation Checklist (ALL 11 FILTERS REQUIRED):
             
-            ### Basic Filters:
-            - [ ] Activity Type: Cooking, Garden, Both, Academic
-            - [ ] Location: Indoor, Outdoor, Both
-            - [ ] Grade Levels: 3K, Pre-K, K, 1st-8th (multi-select)
-            - [ ] Season: Fall, Winter, Spring, Summer, Flexible
-            
-            ### Thematic Filters:
-            - [ ] Thematic Categories (7 themes with proper icons)
-            - [ ] Core Competencies (6 ESYNYC priorities)
-            - [ ] Lesson Format: Demo, Lesson, Activity, etc.
-            - [ ] Group Size: Small, Medium, Large, Whole Class
-            
-            ### Advanced Filters:
-            - [ ] Cultural Heritage with HIERARCHY:
+            ### The 11 Essential Filters:
+            - [ ] 1. Activity Type: Cooking, Garden, Both, Academic
+            - [ ] 2. Location: Indoor, Outdoor, Both
+            - [ ] 3. Grade Levels: 3K, Pre-K, K, 1st-8th (multi-select)
+            - [ ] 4. Thematic Categories (7 themes with proper icons)
+            - [ ] 5. Season & Timing: Fall, Winter, Spring, Summer, Flexible
+            - [ ] 6. Core Competencies (6 ESYNYC priorities)
+            - [ ] 7. Cultural Heritage with HIERARCHY:
                   * "Asian" must include: Chinese, Japanese, Korean, etc.
                   * "Latin American" must include: Mexican, Caribbean, etc.
                   * Proper parent-child selection logic
-            - [ ] Ingredients with GROUPING:
-                  * "Winter squash" must include: butternut, pumpkin, acorn
-                  * "Leafy greens" must include: kale, spinach, lettuce
-                  * Smart ingredient categorization
-            - [ ] Academic Connections: Math, Science, ELA, Social Studies
-            - [ ] Preparation Time: <30min, 30-60min, >60min
-            - [ ] Materials Needed: Basic, Moderate, Extensive
-            - [ ] Dietary Considerations: Vegetarian, Vegan, Gluten-Free, etc.
-            - [ ] Skills Taught: Knife skills, Measuring, Following recipes, etc.
-            - [ ] Assessment Type: Formative, Summative, Both, None
+            - [ ] 8. Lesson Format: Demo, Lesson, Activity, etc.
+            - [ ] 9. Academic Integration: Math, Science, ELA, Social Studies
+            - [ ] 10. Social-Emotional Learning components
+            - [ ] 11. Cooking Methods (if applicable)
             
             ## Search Functionality:
             - [ ] Full-text search across: titles, summaries, ingredients, skills

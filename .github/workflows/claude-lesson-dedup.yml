@@ -14,7 +14,7 @@ jobs:
   check-duplicate-lessons:
     # Run when issue is labeled as lesson-submission OR when PR modifies lesson data
     if: |
-      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'lesson-submission')) ||
+      (github.event_name == 'issues' && github.event.issue.labels && contains(github.event.issue.labels.*.name, 'lesson-submission')) ||
       (github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     timeout-minutes: 10
