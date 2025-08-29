@@ -133,10 +133,10 @@ jobs:
             
             Commit your fixes with a clear message explaining what was fixed.
             
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           claude_args: |
             --max-turns 10
-            --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(npm:*),Bash(npx:*)"
-          fallback_model: "claude-opus-4-1-20250805"
+            --allowed-tools "Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(npm:*),Bash(npx:*)"
 
       - name: Push fix branch
         if: success()

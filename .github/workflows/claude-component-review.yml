@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
+      pull-requests: read
+      issues: read
       id-token: write
       actions: read
     
@@ -74,7 +74,7 @@ jobs:
             - Avoid arbitrary values when possible
             
             ## Component Requirements:
-            - All 16 filter categories must be supported
+            - All 11 filter categories must be supported
             - Cultural heritage hierarchy (e.g., "Asian" includes Chinese, Japanese, Korean)
             - Ingredient grouping (e.g., "Winter squash" includes butternut, pumpkin)
             - Mobile-responsive design is mandatory
@@ -89,7 +89,7 @@ jobs:
             Be constructive and focus on maintainability and user experience.
           
           # Claude CLI arguments
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           claude_args: |
             --max-turns 5
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request_files,Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run),Bash(npm run build),Bash(gh pr diff -- src/components),Read,Grep"
-          fallback_model: "claude-opus-4-1-20250805"
+            --allowed-tools "Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run),Bash(npm run build),Bash(gh pr diff -- src/components),Bash(gh pr comment:*),Read,Grep"

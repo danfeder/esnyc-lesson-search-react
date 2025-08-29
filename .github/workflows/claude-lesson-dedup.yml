@@ -127,7 +127,7 @@ jobs:
             - mcp__github__add_issue_comment / mcp__github__create_pull_request_review
             - mcp__github__update_issue to add labels
             
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           claude_args: |
             --max-turns 8
-            --allowedTools "mcp__github__get_issue,mcp__github__get_pull_request,mcp__github__get_pull_request_files,mcp__github__search_issues,mcp__github__list_issues,mcp__github__add_issue_comment,mcp__github__create_pull_request_review,mcp__github__update_issue,Read,Grep,Glob"
-          fallback_model: "claude-opus-4-1-20250805"
+            --allowed-tools "mcp__github__get_issue,mcp__github__get_pull_request,mcp__github__get_pull_request_files,mcp__github__search_issues,mcp__github__list_issues,mcp__github__add_issue_comment,mcp__github__create_pull_request_review,mcp__github__update_issue,Read,Grep,Glob"
