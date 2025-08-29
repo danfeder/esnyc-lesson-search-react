@@ -31,6 +31,29 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Create GitHub MCP Config
+        run: |
+          cat > /tmp/github-mcp-config.json << 'EOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run",
+                  "-i",
+                  "--rm",
+                  "-e",
+                  "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITHUB_PAT || secrets.GITHUB_TOKEN }}"
+                }
+              }
+            }
+          }
+          EOF
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
@@ -60,7 +83,10 @@ jobs:
             ## How to Provide Feedback
             
             ### For Line-Specific Issues (PREFERRED):
-            Use `mcp__github_inline_comment__create_inline_comment` to highlight specific code problems.
+            Create a pending PR review and add inline comments using:
+            1. `mcp__github__create_pending_pull_request_review` to start the review
+            2. `mcp__github__add_comment_to_pending_review` for each inline comment
+            3. `mcp__github__submit_pending_pull_request_review` to submit the review
             This is best for:
             - Bugs or errors in specific lines
             - Style/convention violations
@@ -87,5 +113,6 @@ jobs:
           
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           claude_args: |
-            --allowed-tools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request,mcp__github__get_pull_request_files,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep"
+            --mcp-config /tmp/github-mcp-config.json
+            --allowed-tools "mcp__github__create_pending_pull_request_review,mcp__github__add_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request,mcp__github__get_pull_request_files,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep"
 
