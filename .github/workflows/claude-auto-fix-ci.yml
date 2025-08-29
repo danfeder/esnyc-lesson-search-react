@@ -136,7 +136,7 @@ jobs:
           claude_args: |
             --max-turns 10
             --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(npm:*),Bash(npx:*)"
-            --model claude-4-0-sonnet-20250805
+          fallback_model: "claude-opus-4-1-20250805"
 
       - name: Push fix branch
         if: success()
