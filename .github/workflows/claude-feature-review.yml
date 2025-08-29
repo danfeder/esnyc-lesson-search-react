@@ -31,49 +31,39 @@ jobs:
           fetch-depth: 0
       
       - name: Claude Feature Completeness Review
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           
-          # Use sticky comments
-          use_sticky_comment: true
-          
-          # Allow testing tools
-          allowed_tools: "Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run)"
-          
           # Feature-specific review prompt
-          direct_prompt: |
-            Review these critical components against ESYNYC Lesson Search requirements:
+          prompt: |
+            Review these critical components against ESYNYC Lesson Search requirements.
             
-            ## Filter Implementation Checklist (ALL 16 CATEGORIES REQUIRED):
+            PR Context:
+            - PR #${{ github.event.pull_request.number }}
+            - Feature: ${{ github.event.pull_request.title }}
+            - Author: ${{ github.event.pull_request.user.login }}
+            - Changed Files: ${{ github.event.pull_request.changed_files }}
             
-            ### Basic Filters:
-            - [ ] Activity Type: Cooking, Garden, Both, Academic
-            - [ ] Location: Indoor, Outdoor, Both
-            - [ ] Grade Levels: 3K, Pre-K, K, 1st-8th (multi-select)
-            - [ ] Season: Fall, Winter, Spring, Summer, Flexible
+            Requirements checklist:
             
-            ### Thematic Filters:
-            - [ ] Thematic Categories (7 themes with proper icons)
-            - [ ] Core Competencies (6 ESYNYC priorities)
-            - [ ] Lesson Format: Demo, Lesson, Activity, etc.
-            - [ ] Group Size: Small, Medium, Large, Whole Class
+            ## Filter Implementation Checklist (ALL 11 FILTERS REQUIRED):
             
-            ### Advanced Filters:
-            - [ ] Cultural Heritage with HIERARCHY:
+            ### The 11 Essential Filters:
+            - [ ] 1. Activity Type: Cooking, Garden, Both, Academic
+            - [ ] 2. Location: Indoor, Outdoor, Both
+            - [ ] 3. Grade Levels: 3K, Pre-K, K, 1st-8th (multi-select)
+            - [ ] 4. Thematic Categories (7 themes with proper icons)
+            - [ ] 5. Season & Timing: Fall, Winter, Spring, Summer, Flexible
+            - [ ] 6. Core Competencies (6 ESYNYC priorities)
+            - [ ] 7. Cultural Heritage with HIERARCHY:
                   * "Asian" must include: Chinese, Japanese, Korean, etc.
                   * "Latin American" must include: Mexican, Caribbean, etc.
                   * Proper parent-child selection logic
-            - [ ] Ingredients with GROUPING:
-                  * "Winter squash" must include: butternut, pumpkin, acorn
-                  * "Leafy greens" must include: kale, spinach, lettuce
-                  * Smart ingredient categorization
-            - [ ] Academic Connections: Math, Science, ELA, Social Studies
-            - [ ] Preparation Time: <30min, 30-60min, >60min
-            - [ ] Materials Needed: Basic, Moderate, Extensive
-            - [ ] Dietary Considerations: Vegetarian, Vegan, Gluten-Free, etc.
-            - [ ] Skills Taught: Knife skills, Measuring, Following recipes, etc.
-            - [ ] Assessment Type: Formative, Summative, Both, None
+            - [ ] 8. Lesson Format: Demo, Lesson, Activity, etc.
+            - [ ] 9. Academic Integration: Math, Science, ELA, Social Studies
+            - [ ] 10. Social-Emotional Learning components
+            - [ ] 11. Cooking Methods (if applicable)
             
             ## Search Functionality:
             - [ ] Full-text search across: titles, summaries, ingredients, skills
@@ -114,3 +104,9 @@ jobs:
             
             Mark items as complete (✓) or incomplete (✗) with specific feedback.
             This is CRITICAL for feature parity with v1.
+          
+          # Claude CLI arguments
+          claude_args: |
+            --max-turns 5
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request_files,Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run),Bash(gh pr diff),Read,Grep"
+            --model claude-sonnet-4-20250805

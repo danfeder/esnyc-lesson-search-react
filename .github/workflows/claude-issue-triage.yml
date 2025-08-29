@@ -1,0 +1,92 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage-issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Triage issue with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Analyze and triage this new issue for the ESYNYC Lesson Search application.
+            
+            Issue: #${{ github.event.issue.number }}
+            Repository: ${{ github.repository }}
+            
+            TASK 1: Get available labels
+            Run: `gh label list` to see all available labels in this repository.
+            
+            TASK 2: Analyze the issue
+            Use these tools to understand the issue:
+            - mcp__github__get_issue - Get full issue details
+            - mcp__github__search_issues - Search for similar/duplicate issues
+            - mcp__github__list_issues - Review recent issues for patterns
+            
+            TASK 3: Categorize the issue
+            Consider these ESYNYC-specific categories:
+            
+            **Issue Type:**
+            - bug: Something isn't working correctly
+            - enhancement: New feature or improvement request
+            - question: User needs help or clarification
+            - documentation: Docs need updating
+            - lesson-submission: New lesson submission
+            - duplicate: Duplicate of existing issue
+            
+            **Component Areas:**
+            - filters: Related to the 11 filter system
+            - search: Search functionality (Algolia/Supabase)
+            - ui/ux: Interface or user experience
+            - database: Supabase/PostgreSQL related
+            - authentication: Login/user management
+            - performance: Speed or optimization issues
+            - accessibility: WCAG compliance issues
+            
+            **Priority:** (based on impact)
+            - critical: System breaking, data loss risk
+            - high-priority: Major feature broken, affects many users
+            - medium-priority: Important but workaround exists
+            - low-priority: Nice to have, minor issue
+            
+            **Special Labels:**
+            - good-first-issue: If suitable for new contributors
+            - help-wanted: If community help would be valuable
+            - needs-triage: If more information needed
+            - teacher-feedback: If from a teacher using the system
+            
+            TASK 4: Check for duplicates
+            If this appears to be a duplicate:
+            1. Add "duplicate" label
+            2. Reference the original issue in a comment
+            3. Be polite and explain the duplication
+            
+            TASK 5: Apply labels
+            Use mcp__github__update_issue to apply appropriate labels.
+            DO NOT post any comments unless it's a duplicate.
+            
+            IMPORTANT:
+            - Only use labels that exist in the repository
+            - Be thorough but don't over-label
+            - For lesson submissions, check if it matches the 11 filter requirements
+            - NO comments unless marking as duplicate
+            
+          claude_args: |
+            --max-turns 5
+            --allowedTools "Bash(gh label list),mcp__github__get_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__update_issue,mcp__github__add_issue_comment"
+            --model claude-haiku-4-20250805

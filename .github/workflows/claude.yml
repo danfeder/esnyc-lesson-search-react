@@ -32,49 +32,21 @@ jobs:
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          # This is an optional setting that allows Claude to read CI results on PRs
-          additional_permissions: |
-            actions: read
           
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
+          # Optional: Add custom prompt for specific instructions
+          # prompt: "Provide additional context or instructions here"
           
-          # Optional: Customize the trigger phrase (default: @claude)
-          # trigger_phrase: "/claude"
+          # Claude CLI arguments for advanced configuration
+          claude_args: |
+            --allowedTools "Bash(npm run type-check),Bash(npm run lint),Bash(npm test),Bash(npm run build)"
+            --system-prompt "Use React 19 and TypeScript best practices. Follow Tailwind CSS conventions for styling. Ensure Supabase queries are optimized and use proper error handling. Check for accessibility issues in React components. Verify all new code has proper TypeScript types. Follow the project structure defined in CLAUDE.md. Use Zustand for state management, not Redux or Context API. Use React Query (TanStack Query) for data fetching."
           
-          # Optional: Trigger when specific user is assigned to an issue
-          # assignee_trigger: "claude-bot"
-          
-          # Allow Claude to run specific commands for testing and validation
-          allowed_tools: "Bash(npm run type-check),Bash(npm run lint),Bash(npm test),Bash(npm run build)"
-          
-          # Custom instructions for Claude to follow React/TypeScript/Supabase best practices
-          custom_instructions: |
-            - Use React 19 and TypeScript best practices
-            - Follow Tailwind CSS conventions for styling
-            - Ensure Supabase queries are optimized and use proper error handling
-            - Check for accessibility issues in React components
-            - Verify all new code has proper TypeScript types
-            - Follow the project structure defined in CLAUDE.md
-            - Use Zustand for state management, not Redux or Context API
-            - Use React Query (TanStack Query) for data fetching
-          
-          # Custom environment variables for Claude
-          claude_env: |
-            NODE_ENV: test
-          
-          # Allowed domains for reference documentation
-          allowed_domains: |
-            supabase.com
-            react.dev
-            typescriptlang.org
-            tailwindcss.com
-            tanstack.com
-            zustand-demo.pmnd.rs
-            vitejs.dev
-            vitest.dev
+          # Environment settings for Claude
+          settings: |
+            {
+              "NODE_ENV": "test"
+            }
 
