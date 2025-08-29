@@ -70,7 +70,7 @@ export function AcceptInvitation() {
       const { data, error: fetchError } = await supabase
         .from('user_invitations')
         .select('*')
-        .eq('token', token)
+        .eq('token', token!)
         .single();
 
       if (fetchError || !data) {
@@ -87,14 +87,19 @@ export function AcceptInvitation() {
         throw new Error('This invitation has expired');
       }
 
-      setInvitation(data);
+      setInvitation({
+        ...data,
+        role: data.role as UserRole,
+        metadata: data.metadata as InvitationMetadata | null,
+      });
 
       // Pre-fill form data from invitation metadata
-      if (data.metadata) {
+      const metadata = data.metadata as InvitationMetadata | null;
+      if (metadata) {
         setFormData((prev) => ({
           ...prev,
-          grades_taught: data.metadata.grades_taught || [],
-          subjects_taught: data.metadata.subjects_taught || [],
+          grades_taught: metadata.grades_taught || [],
+          subjects_taught: metadata.subjects_taught || [],
         }));
       }
     } catch (err) {

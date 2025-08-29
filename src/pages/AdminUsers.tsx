@@ -18,7 +18,7 @@ import {
   UserX,
   Trash2,
 } from 'lucide-react';
-import { EnhancedUserProfile, UserFilters } from '../types/auth';
+import { EnhancedUserProfile, UserFilters, UserRole, Permission } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
 import { SchoolBadge } from '../components/Schools';
 import { logger } from '../utils/logger';
@@ -110,15 +110,15 @@ export function AdminUsers() {
       }
 
       if (filters.role !== 'all') {
-        query = query.eq('role', filters.role);
+        query = query.eq('role', filters.role as string);
       }
 
       if (filters.is_active !== 'all') {
-        query = query.eq('is_active', filters.is_active);
+        query = query.eq('is_active', filters.is_active === 'true');
       }
 
       if (filters.school_borough !== 'all') {
-        query = query.eq('school_borough', filters.school_borough);
+        query = query.eq('school_borough', filters.school_borough as string);
       }
 
       // Apply sorting (except email - we'll handle that after)
@@ -210,10 +210,31 @@ export function AdminUsers() {
             });
           }
 
-          setUsers(filteredUsers);
+          setUsers(
+            filteredUsers.map(
+              (u) =>
+                ({
+                  ...u,
+                  role: (u.role || 'teacher') as UserRole,
+                  user_id: u.user_id || u.id,
+                  permissions: u.permissions as Record<Permission, boolean> | undefined,
+                }) as EnhancedUserProfile
+            )
+          );
         } else {
           // Fallback: show profiles without emails
-          setUsers(profiles.map((p) => ({ ...p, email: 'Loading...' })));
+          setUsers(
+            profiles.map(
+              (p) =>
+                ({
+                  ...p,
+                  email: 'Loading...',
+                  role: (p.role || 'teacher') as UserRole,
+                  user_id: p.user_id || p.id,
+                  permissions: p.permissions as Record<Permission, boolean> | undefined,
+                }) as EnhancedUserProfile
+            )
+          );
         }
       } else {
         setUsers([]);

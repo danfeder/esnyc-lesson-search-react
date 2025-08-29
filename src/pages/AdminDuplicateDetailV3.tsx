@@ -319,7 +319,8 @@ export const AdminDuplicateDetailV3: React.FC = () => {
               });
 
               if (resolveError) throw resolveError;
-              if (!data?.success) throw new Error(data?.error || 'Resolution failed');
+              const result = data as { success?: boolean; error?: string } | null;
+              if (!result?.success) throw new Error(result?.error || 'Resolution failed');
             }
           }
 

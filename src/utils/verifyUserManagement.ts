@@ -83,6 +83,7 @@ export async function verifyUserManagementSetup() {
           const { error: createError } = await supabase.from('user_profiles').insert({
             id: user.id,
             user_id: user.id,
+            full_name: user.email?.split('@')[0] || 'Test User',
             role: 'teacher',
             is_active: true,
             created_at: new Date().toISOString(),

@@ -124,7 +124,12 @@ const fallbackSearch = async ({
           culturalResponsivenessFeatures:
             row.cultural_responsiveness_features || metadata?.culturalResponsivenessFeatures || [],
         },
-        confidence: row.confidence,
+        confidence: (row.confidence as Record<string, any>) || {
+          overall: 0,
+          title: 0,
+          summary: 0,
+          gradeLevels: 0,
+        },
         last_modified: row.last_modified,
         processing_notes: row.processing_notes,
         created_at: row.created_at,
