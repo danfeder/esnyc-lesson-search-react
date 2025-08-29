@@ -31,19 +31,21 @@ jobs:
           fetch-depth: 0
       
       - name: Claude Feature Completeness Review
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           
-          # Use sticky comments
-          use_sticky_comment: true
-          
-          # Allow testing tools
-          allowed_tools: "Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run)"
-          
           # Feature-specific review prompt
-          direct_prompt: |
-            Review these critical components against ESYNYC Lesson Search requirements:
+          prompt: |
+            Review these critical components against ESYNYC Lesson Search requirements.
+            
+            PR Context:
+            - PR #${{ github.event.pull_request.number }}
+            - Feature: ${{ github.event.pull_request.title }}
+            - Author: ${{ github.event.pull_request.user.login }}
+            - Changed Files: ${{ github.event.pull_request.changed_files }}
+            
+            Requirements checklist:
             
             ## Filter Implementation Checklist (ALL 16 CATEGORIES REQUIRED):
             
@@ -114,3 +116,9 @@ jobs:
             
             Mark items as complete (✓) or incomplete (✗) with specific feedback.
             This is CRITICAL for feature parity with v1.
+          
+          # Claude CLI arguments
+          claude_args: |
+            --max-turns 5
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request_files,Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run),Bash(gh pr diff),Read,Grep"
+            --model claude-sonnet-4-20250805

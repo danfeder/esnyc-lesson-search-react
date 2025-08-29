@@ -1,0 +1,187 @@
+name: Claude Auto-Fix CI Failures
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  issues: write
+  id-token: write
+
+jobs:
+  auto-fix:
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.pull_requests[0] &&
+      !startsWith(github.event.workflow_run.head_branch, 'claude-auto-fix-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup git identity
+        run: |
+          git config --global user.email "claude[bot]@users.noreply.github.com"
+          git config --global user.name "claude[bot]"
+
+      - name: Create fix branch
+        id: branch
+        run: |
+          BRANCH_NAME="claude-auto-fix-${{ github.event.workflow_run.head_branch }}-${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Get CI failure details
+        id: failure_details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+
+            const failedJobs = jobs.data.jobs.filter(job => job.conclusion === 'failure');
+
+            let errorLogs = [];
+            for (const job of failedJobs) {
+              try {
+                const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  job_id: job.id
+                });
+                errorLogs.push({
+                  jobName: job.name,
+                  logs: logs.data.substring(0, 10000) // Limit log size
+                });
+              } catch (e) {
+                console.log(`Failed to get logs for job ${job.name}`);
+              }
+            }
+
+            return {
+              runUrl: run.data.html_url,
+              failedJobs: failedJobs.map(j => j.name),
+              errorLogs: errorLogs
+            };
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fix CI failures with Claude
+        id: claude_fix
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Fix the CI failures in this ESYNYC Lesson Search React application.
+            
+            Failed CI Run: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
+            Failed Jobs: ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
+            PR Number: ${{ github.event.workflow_run.pull_requests[0].number }}
+            Branch: ${{ steps.branch.outputs.branch_name }}
+            Base Branch: ${{ github.event.workflow_run.head_branch }}
+            
+            Error Analysis:
+            ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorLogs) }}
+            
+            Common failure patterns to check:
+            1. TypeScript errors - run `npm run type-check` and fix any type issues
+            2. ESLint errors - run `npm run lint:fix` to auto-fix, then manually fix remaining
+            3. Test failures - run `npm test` and fix failing tests
+            4. Build errors - run `npm run build` and fix any import/export issues
+            5. Missing dependencies - check if new packages need to be installed
+            
+            IMPORTANT Requirements:
+            - MUST maintain exactly 11 filters (never add or remove filter categories)
+            - Use path aliases (@/components) not relative imports
+            - Add `// eslint-disable-next-line no-unused-vars` for unused parameters
+            - Follow React 19 and TypeScript best practices
+            - Ensure Supabase RLS policies are respected
+            - No console.log - use logger.debug() from utils/logger.ts
+            
+            After fixing, verify your changes:
+            1. Run npm run type-check - MUST pass
+            2. Run npm run lint - MUST pass  
+            3. Run npm test -- --run - MUST pass
+            4. Run npm run build - MUST succeed
+            
+            Commit your fixes with a clear message explaining what was fixed.
+            
+          claude_args: |
+            --max-turns 10
+            --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(npm:*),Bash(npx:*)"
+            --model claude-sonnet-4-20250805
+
+      - name: Push fix branch
+        if: success()
+        run: |
+          git push origin ${{ steps.branch.outputs.branch_name }}
+
+      - name: Create Pull Request
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🤖 Auto-fix CI failures for PR #${{ github.event.workflow_run.pull_requests[0].number }}`,
+              body: `## 🔧 Automated CI Fix
+              
+              This PR automatically fixes CI failures detected in PR #${{ github.event.workflow_run.pull_requests[0].number }}.
+              
+              ### 📋 Fixed Issues
+              - Failed jobs: ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
+              - [View original CI run](${{ fromJSON(steps.failure_details.outputs.result).runUrl }})
+              
+              ### 🤖 Automated by Claude
+              This fix was automatically generated. Please review the changes before merging.
+              
+              ---
+              *Generated with Claude Code Action*`,
+              head: `${{ steps.branch.outputs.branch_name }}`,
+              base: `${{ github.event.workflow_run.head_branch }}`,
+              draft: false
+            });
+            
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.data.number,
+              labels: ['auto-fix', 'ci-failure']
+            });
+            
+            // Link to original PR
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.workflow_run.pull_requests[0].number }},
+              body: `🤖 I've detected CI failures and created an automatic fix: #${pr.data.number}`
+            });
