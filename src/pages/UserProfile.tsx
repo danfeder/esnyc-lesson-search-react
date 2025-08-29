@@ -126,7 +126,15 @@ export function UserProfile() {
 
       if (error) throw error;
 
-      setSubmissions(data || []);
+      setSubmissions(
+        (data || []).map((sub) => ({
+          ...sub,
+          status: sub.status as 'submitted' | 'in_review' | 'needs_revision' | 'approved',
+          submission_type: sub.submission_type as 'new' | 'update',
+          created_at: sub.created_at || '',
+          updated_at: sub.updated_at || '',
+        }))
+      );
     } catch (error) {
       logger.error('Error loading submissions:', error);
     } finally {
@@ -143,11 +151,11 @@ export function UserProfile() {
     try {
       // Update profile data
       const updateData = {
-        full_name: formData.full_name || null,
-        school_name: formData.school_name || null,
-        school_borough: formData.school_borough || null,
-        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : null,
-        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : null,
+        full_name: formData.full_name || undefined,
+        school_name: formData.school_name || undefined,
+        school_borough: formData.school_borough || undefined,
+        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : undefined,
+        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : undefined,
         updated_at: new Date().toISOString(),
       };
 
