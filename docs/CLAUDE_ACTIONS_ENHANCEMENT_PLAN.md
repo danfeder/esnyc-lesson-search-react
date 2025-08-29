@@ -150,7 +150,13 @@ This document outlines a comprehensive plan to enhance the ESYNYC Lesson Search 
 
 ### Potential Issues & Solutions
 
-1. **MCP Tool Failures**
+1. **First-Time Workflow Changes**
+   - **Issue**: Workflows fail with "Workflow validation failed" on first PR
+   - **Reason**: GitHub security requires workflow to exist on main branch
+   - **Solution**: Merge PR to main, then test on subsequent PRs
+   - **Expected**: This is normal behavior, not an actual error
+
+2. **MCP Tool Failures**
    - Keep Bash alternatives commented but available
    - Test in separate PR first
    - Monitor initial runs closely
