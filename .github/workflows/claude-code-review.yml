@@ -37,18 +37,55 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            ## Context
+            Repository: ${{ github.repository }}
+            PR Number: #${{ github.event.pull_request.number }}
+            Author: ${{ github.event.pull_request.user.login }}
+            Base Branch: ${{ github.event.pull_request.base.ref }}
+            Files Changed: ${{ github.event.pull_request.changed_files }}
             
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
-
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            ## Your Task
+            Please review this pull request for the ESYNYC Lesson Search React application.
+            
+            The PR branch is already checked out in the current working directory.
+            
+            ## Review Focus Areas
+            1. **Code Quality**: React 19 and TypeScript best practices
+            2. **ESYNYC Requirements**: Verify the 11 filters are maintained (see CLAUDE.md)
+            3. **Potential Bugs**: Look for edge cases and error handling
+            4. **Performance**: Check for unnecessary re-renders, large bundles
+            5. **Security**: XSS prevention, data validation, Supabase RLS
+            6. **Test Coverage**: Suggest tests for critical paths
+            
+            ## How to Provide Feedback
+            
+            ### For Line-Specific Issues (PREFERRED):
+            Use `mcp__github_inline_comment__create_inline_comment` to highlight specific code problems.
+            This is best for:
+            - Bugs or errors in specific lines
+            - Style/convention violations
+            - Performance issues in specific code blocks
+            - Security vulnerabilities
+            
+            ### For General Feedback:
+            Use `gh pr comment` to post an overall review summary at the end.
+            This is best for:
+            - Overall architecture feedback
+            - Missing test coverage
+            - General suggestions
+            
+            ## Important Instructions
+            - Use the repository's CLAUDE.md for ESYNYC-specific guidance
+            - Be constructive and provide specific code examples
+            - If the PR looks good, provide positive feedback
+            - DO NOT comment on generated files (*.generated.ts, package-lock.json)
+            - DO NOT suggest adding more than 11 filters
+            - DO NOT recommend console.log (use logger.debug instead)
+            
+            Start by examining the changed files, then provide inline comments where appropriate,
+            and finish with a summary comment if needed.
           
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.anthropic.com/en/docs/claude-code/sdk#command-line for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: |
+            --allowed-tools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request,mcp__github__get_pull_request_files,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep"
 
