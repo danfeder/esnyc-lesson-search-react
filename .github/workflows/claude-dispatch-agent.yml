@@ -1,0 +1,265 @@
+name: Claude Manual Analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      analysis_type:
+        description: "Type of analysis to perform"
+        required: true
+        type: choice
+        options:
+          - filter-validation
+          - security-review
+          - performance-audit
+          - accessibility-check
+          - dependency-review
+          - migration-check
+          - lesson-quality
+        default: "filter-validation"
+      target:
+        description: "Target (PR number, branch, or 'main')"
+        required: false
+        default: "main"
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.target == 'main' && 'main' || format('pull/{0}/head', github.event.inputs.target) }}
+
+      - name: Setup Node.js
+        if: ${{ github.event.inputs.analysis_type == 'performance-audit' || github.event.inputs.analysis_type == 'dependency-review' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: ${{ github.event.inputs.analysis_type == 'performance-audit' || github.event.inputs.analysis_type == 'dependency-review' }}
+        run: npm ci
+
+      - name: Run Claude Analysis
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            ## Context
+            Repository: ${{ github.repository }}
+            Analysis Type: ${{ github.event.inputs.analysis_type }}
+            Target: ${{ github.event.inputs.target }}
+            Triggered By: ${{ github.actor }}
+            
+            ## Task: Perform ${{ github.event.inputs.analysis_type }} Analysis
+            
+            ${{ github.event.inputs.analysis_type == 'filter-validation' && '
+            ### Filter Validation Task
+            Verify that the ESYNYC Lesson Search maintains EXACTLY 11 filters:
+            
+            1. **Activity Type**: Cooking, Garden, Both, Academic
+            2. **Location**: Indoor, Outdoor, Both
+            3. **Grade Levels**: 3K, Pre-K, K, 1st-8th (multi-select)
+            4. **Thematic Categories**: 7 themes with proper icons
+            5. **Season & Timing**: Fall, Winter, Spring, Summer, Flexible
+            6. **Core Competencies**: 6 ESYNYC priorities
+            7. **Cultural Heritage**: With proper hierarchy (Asian includes Chinese, Japanese, etc.)
+            8. **Lesson Format**: Demo, Lesson, Activity, etc.
+            9. **Academic Integration**: Math, Science, ELA, Social Studies
+            10. **Social-Emotional Learning**: Components
+            11. **Cooking Methods**: If applicable
+            
+            Check files:
+            - src/utils/filterDefinitions.ts
+            - src/components/Filters/*
+            - src/stores/filterStore.ts
+            
+            Report any deviations or missing filters.
+            ' || '' }}
+            
+            ${{ github.event.inputs.analysis_type == 'security-review' && '
+            ### Security Review Task
+            Review the codebase for security vulnerabilities:
+            
+            1. **Authentication & Authorization**:
+               - Check Supabase RLS policies
+               - Review auth flows in useAuth.ts
+               - Verify role-based access
+            
+            2. **Data Validation**:
+               - Input sanitization
+               - XSS prevention
+               - SQL injection protection (Supabase)
+            
+            3. **Secrets Management**:
+               - No hardcoded credentials
+               - Proper use of environment variables
+               - Check for exposed API keys
+            
+            4. **Dependencies**:
+               - Run npm audit
+               - Check for known vulnerabilities
+               - Review dependency licenses
+            
+            5. **Client-Side Security**:
+               - Content Security Policy
+               - HTTPS enforcement
+               - Secure cookie handling
+            ' || '' }}
+            
+            ${{ github.event.inputs.analysis_type == 'performance-audit' && '
+            ### Performance Audit Task
+            Analyze performance bottlenecks:
+            
+            1. **Bundle Size**:
+               - Run npm run build
+               - Check bundle sizes
+               - Identify large dependencies
+               - Suggest code splitting opportunities
+            
+            2. **React Performance**:
+               - Unnecessary re-renders
+               - Missing React.memo
+               - Inefficient useEffect usage
+               - Large component trees
+            
+            3. **Data Fetching**:
+               - N+1 query problems
+               - Missing caching
+               - Inefficient Supabase queries
+               - Algolia search optimization
+            
+            4. **Asset Optimization**:
+               - Image loading strategies
+               - Font loading
+               - CSS optimization
+               - Lazy loading opportunities
+            ' || '' }}
+            
+            ${{ github.event.inputs.analysis_type == 'accessibility-check' && '
+            ### Accessibility Check Task
+            Verify WCAG 2.1 AA compliance:
+            
+            1. **Semantic HTML**:
+               - Proper heading hierarchy
+               - ARIA labels and roles
+               - Form labels and descriptions
+            
+            2. **Keyboard Navigation**:
+               - Tab order
+               - Focus management
+               - Skip links
+               - Keyboard shortcuts
+            
+            3. **Screen Reader Support**:
+               - Alt text for images
+               - Descriptive link text
+               - Error messages
+               - Loading states
+            
+            4. **Visual Accessibility**:
+               - Color contrast ratios
+               - Focus indicators
+               - Responsive text sizing
+               - Motion preferences
+            ' || '' }}
+            
+            ${{ github.event.inputs.analysis_type == 'dependency-review' && '
+            ### Dependency Review Task
+            Analyze project dependencies:
+            
+            1. **Outdated Packages**:
+               - Check for updates
+               - Review breaking changes
+               - Security patches needed
+            
+            2. **Unused Dependencies**:
+               - Identify unused packages
+               - Check for duplicate functionality
+               - Recommend removals
+            
+            3. **License Compliance**:
+               - Check all licenses
+               - Flag any GPL/AGPL
+               - Ensure MIT/Apache compatibility
+            
+            4. **Bundle Impact**:
+               - Size of each dependency
+               - Tree-shaking effectiveness
+               - Alternative lighter packages
+            ' || '' }}
+            
+            ${{ github.event.inputs.analysis_type == 'migration-check' && '
+            ### Database Migration Check
+            Review Supabase migrations:
+            
+            1. **Migration Order**:
+               - Check sequential numbering
+               - No gaps in sequence
+               - Proper dependencies
+            
+            2. **RLS Policies**:
+               - All tables have RLS enabled
+               - Policies cover all operations
+               - Role hierarchy maintained
+            
+            3. **Data Integrity**:
+               - Foreign key constraints
+               - Check constraints
+               - Default values
+               - Not null constraints
+            
+            4. **Performance**:
+               - Indexes on foreign keys
+               - Indexes on commonly queried fields
+               - No missing indexes
+            ' || '' }}
+            
+            ${{ github.event.inputs.analysis_type == 'lesson-quality' && '
+            ### Lesson Data Quality Check
+            Analyze lesson data quality:
+            
+            1. **Data Completeness**:
+               - Check for missing required fields
+               - Verify all 831 lessons present
+               - Check filter assignments
+            
+            2. **Data Consistency**:
+               - Validate filter values
+               - Check ingredient formats
+               - Verify grade level assignments
+            
+            3. **Search Quality**:
+               - Test Algolia indexing
+               - Check searchable fields
+               - Verify synonyms configured
+            
+            4. **Content Quality**:
+               - Check for duplicate lessons
+               - Verify lesson descriptions
+               - Review categorization accuracy
+            ' || '' }}
+            
+            ## Output Format
+            
+            Provide a detailed report with:
+            1. **Executive Summary** - Key findings in 2-3 sentences
+            2. **Issues Found** - Numbered list with severity (Critical/High/Medium/Low)
+            3. **Recommendations** - Specific actionable fixes
+            4. **Code Examples** - Where applicable
+            
+            If analyzing a PR, post findings as a comment using `gh pr comment`.
+            Otherwise, create an issue with the findings using `mcp__github__create_issue`.
+            
+          claude_args: |
+            --max-turns 10
+            --allowed-tools "Read,Glob,Grep,Bash(npm:*),Bash(npx:*),Bash(gh:*),mcp__github__create_issue,mcp__github__add_issue_comment,mcp__supabase__list_tables,mcp__supabase__list_migrations"

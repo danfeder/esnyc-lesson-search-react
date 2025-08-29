@@ -1,0 +1,101 @@
+name: Claude Issue Deduplication
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  deduplicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Check for duplicate issues
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            ## Context
+            Repository: ${{ github.repository }}
+            New Issue: #${{ github.event.issue.number }}
+            Issue Title: ${{ github.event.issue.title }}
+            Issue Author: ${{ github.event.issue.user.login }}
+            
+            ## Task: Detect Duplicate Issues
+            
+            Analyze this new issue and check if it's a duplicate of existing issues in the ESYNYC Lesson Search repository.
+            
+            ### Step 1: Get Issue Details
+            Use `mcp__github__get_issue` to retrieve the full details of issue #${{ github.event.issue.number }}
+            
+            ### Step 2: Search for Similar Issues
+            Use `mcp__github__search_issues` to find potentially similar issues. Search for:
+            - Keywords from the issue title
+            - Key concepts from the issue body
+            - Error messages if present
+            - Feature names (e.g., "filter", "search", "export")
+            
+            ### Step 3: Compare for Duplicates
+            
+            #### ESYNYC-Specific Duplicate Patterns:
+            1. **Lesson Submissions**: Same lesson topic or ingredients
+            2. **Filter Issues**: Problems with any of the 11 filters
+            3. **Search Problems**: Algolia or Supabase search issues
+            4. **Data Issues**: Missing or incorrect lesson data
+            5. **UI/UX**: Mobile responsiveness, accessibility
+            
+            #### General Duplicate Criteria:
+            - Same bug or error being reported
+            - Same feature request (even if worded differently)
+            - Same question being asked
+            - Issues describing the same root problem
+            
+            ### Step 4: Take Action
+            
+            #### If DUPLICATE Found:
+            1. Add a polite comment using `mcp__github__add_issue_comment`:
+               - Thank the user for the report
+               - Link to the original issue(s)
+               - Suggest following the original issue for updates
+               - Example: "Thanks for reporting this! This appears to be a duplicate of #XX. Please follow that issue for updates."
+            
+            2. Apply labels using `mcp__github__update_issue`:
+               - Add "duplicate" label
+               - Copy any relevant labels from the original issue
+            
+            #### If NOT a Duplicate:
+            1. Apply appropriate topic labels based on content:
+               - "bug" - Something broken
+               - "enhancement" - Feature request
+               - "question" - User needs help
+               - "documentation" - Docs need updating
+               - "filters" - Related to the 11 filter system
+               - "search" - Search functionality
+               - "ui/ux" - Interface issues
+               - "database" - Supabase/data issues
+               - "lesson-submission" - New lesson submission
+               - "performance" - Speed/optimization
+               - "accessibility" - WCAG compliance
+            
+            2. DO NOT add any comments (let maintainers handle it)
+            
+            ### Important Instructions:
+            - Be thorough but efficient
+            - Only mark as duplicate if you're confident (>80% similarity)
+            - For lesson submissions, check if the same recipe/activity exists
+            - Consider closed issues too - they might be reporting a regression
+            - If unsure, don't mark as duplicate
+            - Be extra welcoming to first-time contributors
+            
+          claude_args: |
+            --max-turns 5
+            --allowed-tools "mcp__github__get_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__add_issue_comment,mcp__github__update_issue"
