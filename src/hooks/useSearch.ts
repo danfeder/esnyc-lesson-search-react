@@ -88,42 +88,54 @@ const fallbackSearch = async ({
   }
 
   // Transform the data to match our Lesson type
-  const allLessons = (data || []).map((row) => ({
-    lessonId: row.lesson_id,
-    title: row.title,
-    summary: row.summary,
-    fileLink: row.file_link,
-    gradeLevels: row.grade_levels,
-    metadata: {
-      // Map all metadata fields properly
-      thematicCategories: row.thematic_categories || row.metadata?.thematicCategories || [],
-      seasonTiming: row.season_timing || row.metadata?.seasonTiming || [],
-      coreCompetencies: row.core_competencies || row.metadata?.coreCompetencies || [],
-      culturalHeritage: row.cultural_heritage || row.metadata?.culturalHeritage || [],
-      locationRequirements: row.location_requirements || row.metadata?.locationRequirements || [],
-      activityType: row.metadata?.activityType || [],
-      lessonFormat: row.lesson_format || row.metadata?.lessonFormat || [],
-      mainIngredients: row.main_ingredients || row.metadata?.mainIngredients || [],
-      skills: row.metadata?.skills || [],
-      equipment: row.metadata?.equipment || [],
-      duration: row.metadata?.duration,
-      groupSize: row.metadata?.groupSize,
-      gardenSkills: row.garden_skills || row.metadata?.gardenSkills || [],
-      cookingSkills: row.cooking_skills || row.metadata?.cookingSkills || [],
-      cookingMethods: row.cooking_methods || row.metadata?.cookingMethods || [],
-      observancesHolidays: row.observances_holidays || row.metadata?.observancesHolidays || [],
-      academicIntegration: row.academic_integration || row.metadata?.academicIntegration || [],
-      socialEmotionalLearning:
-        row.social_emotional_learning || row.metadata?.socialEmotionalLearning || [],
-      culturalResponsivenessFeatures:
-        row.cultural_responsiveness_features || row.metadata?.culturalResponsivenessFeatures || [],
-    },
-    confidence: row.confidence,
-    last_modified: row.last_modified,
-    processing_notes: row.processing_notes,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  }));
+  const allLessons = (data || [])
+    .filter((row) => row.lesson_id && row.title) // Filter out null IDs and titles
+    .map((row) => {
+      // Cast metadata to proper type
+      const metadata = row.metadata as Record<string, any> | null;
+
+      return {
+        lessonId: row.lesson_id!,
+        title: row.title!,
+        summary: row.summary || '',
+        fileLink: row.file_link || '',
+        gradeLevels: row.grade_levels || [],
+        metadata: {
+          // Map all metadata fields properly
+          thematicCategories: row.thematic_categories || metadata?.thematicCategories || [],
+          seasonTiming: row.season_timing || metadata?.seasonTiming || [],
+          coreCompetencies: row.core_competencies || metadata?.coreCompetencies || [],
+          culturalHeritage: row.cultural_heritage || metadata?.culturalHeritage || [],
+          locationRequirements: row.location_requirements || metadata?.locationRequirements || [],
+          activityType: metadata?.activityType || [],
+          lessonFormat: row.lesson_format || metadata?.lessonFormat || [],
+          mainIngredients: row.main_ingredients || metadata?.mainIngredients || [],
+          skills: metadata?.skills || [],
+          equipment: metadata?.equipment || [],
+          duration: metadata?.duration,
+          groupSize: metadata?.groupSize,
+          gardenSkills: row.garden_skills || metadata?.gardenSkills || [],
+          cookingSkills: row.cooking_skills || metadata?.cookingSkills || [],
+          cookingMethods: row.cooking_methods || metadata?.cookingMethods || [],
+          observancesHolidays: row.observances_holidays || metadata?.observancesHolidays || [],
+          academicIntegration: row.academic_integration || metadata?.academicIntegration || [],
+          socialEmotionalLearning:
+            row.social_emotional_learning || metadata?.socialEmotionalLearning || [],
+          culturalResponsivenessFeatures:
+            row.cultural_responsiveness_features || metadata?.culturalResponsivenessFeatures || [],
+        },
+        confidence: {
+          overall: (row.confidence as any)?.overall || 0,
+          title: (row.confidence as any)?.title || 0,
+          summary: (row.confidence as any)?.summary || 0,
+          gradeLevels: (row.confidence as any)?.gradeLevels || 0,
+        },
+        last_modified: row.last_modified || undefined,
+        processing_notes: row.processing_notes || undefined,
+        created_at: row.created_at || undefined,
+        updated_at: row.updated_at || undefined,
+      };
+    });
 
   // Apply client-side filtering using the sophisticated logic
   const filteredLessons = await applyAdvancedFiltering(allLessons, filters);

@@ -71,7 +71,8 @@ export function useEnhancedAuth(): AuthContextValue {
           id: authUser.id,
           user_id: authUser.id,
           email: authUser.email!,
-          full_name: authUser.user_metadata?.full_name || null,
+          full_name:
+            authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Unknown User',
           role: UserRole.TEACHER,
           is_active: true,
           created_at: new Date().toISOString(),
@@ -91,19 +92,23 @@ export function useEnhancedAuth(): AuthContextValue {
             ...newProfile,
             email: authUser.email,
           });
-        } else {
+        } else if (createdProfile) {
           setUser({
             ...createdProfile,
             email: authUser.email,
-          });
+            user_id: createdProfile.user_id || authUser.id, // Handle nullable user_id
+            permissions: createdProfile.permissions as Record<Permission, boolean> | undefined,
+          } as EnhancedUserProfile);
         }
       } else {
         // Profile exists, use it
         setUser({
           ...data,
           email: authUser.email,
-          role: data.role || UserRole.TEACHER,
-        });
+          role: (data.role || UserRole.TEACHER) as UserRole,
+          user_id: data.user_id || authUser.id, // Handle nullable user_id
+          permissions: data.permissions as Record<Permission, boolean> | undefined,
+        } as EnhancedUserProfile);
       }
     } catch (error) {
       logger.error('Error in fetchUserProfile:', error);

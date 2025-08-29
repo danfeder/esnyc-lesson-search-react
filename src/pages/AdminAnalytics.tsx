@@ -125,14 +125,17 @@ export function AdminAnalytics() {
       byRole: [],
       active: users?.filter((u) => u.is_active).length || 0,
       inactive: users?.filter((u) => !u.is_active).length || 0,
-      newThisWeek: users?.filter((u) => new Date(u.created_at) >= weekAgo).length || 0,
-      newThisMonth: users?.filter((u) => new Date(u.created_at) >= monthAgo).length || 0,
+      newThisWeek:
+        users?.filter((u) => u.created_at && new Date(u.created_at) >= weekAgo).length || 0,
+      newThisMonth:
+        users?.filter((u) => u.created_at && new Date(u.created_at) >= monthAgo).length || 0,
     };
 
     // Count by role
     const roleCounts: Record<string, number> = {};
     users?.forEach((user) => {
-      roleCounts[user.role] = (roleCounts[user.role] || 0) + 1;
+      const role = user.role || 'unknown';
+      roleCounts[role] = (roleCounts[role] || 0) + 1;
     });
 
     stats.byRole = Object.entries(roleCounts).map(([role, count]) => ({
@@ -327,7 +330,8 @@ export function AdminAnalytics() {
       const endDate = endOfDay(date);
 
       // Count users created up to this date
-      const userCount = allUsers?.filter((u) => new Date(u.created_at) <= endDate).length || 0;
+      const userCount =
+        allUsers?.filter((u) => u.created_at && new Date(u.created_at) <= endDate).length || 0;
 
       // Count invitations sent up to this date
       const inviteCount =

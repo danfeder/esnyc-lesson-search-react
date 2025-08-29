@@ -179,7 +179,7 @@ export interface InvitationFormData {
 export interface UserFilters {
   search?: string;
   role?: UserRole | 'all';
-  is_active?: boolean | 'all';
+  is_active?: 'active' | 'inactive' | 'all';
   school_borough?: string | 'all';
   schoolId?: string | 'all';
   sort_by?: 'name' | 'email' | 'role' | 'created_at' | 'last_active';

@@ -12,7 +12,7 @@ import { InfiniteScrollTrigger } from '../components/Common/InfiniteScrollTrigge
 import { useSearchStore } from '../stores/searchStore';
 import { useSupabaseSearch } from '../hooks/useSupabaseSearch';
 import { supabase } from '../lib/supabase';
-import type { Lesson, ViewState } from '../types';
+import type { Lesson, ViewState, LessonMetadata } from '../types';
 
 export const SearchPage: React.FC = () => {
   const {
@@ -82,20 +82,24 @@ export const SearchPage: React.FC = () => {
       // Use supabase directly for pagination
 
       const searchParams = {
-        search_query: filters.query || null,
-        filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : null,
-        filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : null,
-        filter_seasonTiming: filters.seasonTiming?.length ? filters.seasonTiming : null,
-        filter_competencies: filters.coreCompetencies?.length ? filters.coreCompetencies : null,
-        filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : null,
-        filter_location: filters.location?.length ? filters.location : null,
-        filter_activity_type: filters.activityType?.length ? filters.activityType : null,
-        filter_lesson_format: filters.lessonFormat || null,
-        filter_academic: filters.academicIntegration?.length ? filters.academicIntegration : null,
+        search_query: filters.query || undefined,
+        filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : undefined,
+        filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : undefined,
+        filter_seasonTiming: filters.seasonTiming?.length ? filters.seasonTiming : undefined,
+        filter_competencies: filters.coreCompetencies?.length
+          ? filters.coreCompetencies
+          : undefined,
+        filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : undefined,
+        filter_location: filters.location?.length ? filters.location : undefined,
+        filter_activity_type: filters.activityType?.length ? filters.activityType : undefined,
+        filter_lesson_format: filters.lessonFormat || undefined,
+        filter_academic: filters.academicIntegration?.length
+          ? filters.academicIntegration
+          : undefined,
         filter_sel: filters.socialEmotionalLearning?.length
           ? filters.socialEmotionalLearning
-          : null,
-        filter_cooking_method: filters.cookingMethods || null,
+          : undefined,
+        filter_cooking_method: filters.cookingMethods || undefined,
         page_size: viewState.resultsPerPage,
         page_offset: (nextPage - 1) * viewState.resultsPerPage,
       };
@@ -111,8 +115,19 @@ export const SearchPage: React.FC = () => {
           summary: row.summary as string,
           fileLink: row.file_link as string,
           gradeLevels: row.grade_levels as string[],
-          metadata: row.metadata as Record<string, unknown>,
-          confidence: (row.confidence as { overall: number }) || { overall: 0 },
+          metadata: {
+            ...((row.metadata as Record<string, any>) || {}),
+            coreCompetencies: (row.metadata as any)?.coreCompetencies || [],
+            culturalHeritage: (row.metadata as any)?.culturalHeritage || [],
+            activityType: (row.metadata as any)?.activityType || [],
+            lessonFormat: (row.metadata as any)?.lessonFormat || [],
+          } as LessonMetadata,
+          confidence: {
+            overall: (row.confidence as any)?.overall || 0,
+            title: (row.confidence as any)?.title || 0,
+            summary: (row.confidence as any)?.summary || 0,
+            gradeLevels: (row.confidence as any)?.gradeLevels || 0,
+          },
         })) || [];
 
       appendResults(newLessons);

@@ -31,20 +31,26 @@ export function useSupabaseSearch(
         // IMPORTANT: We must pass ALL parameters to the RPC function
         // If we don't include a parameter, it won't use the DEFAULT value
         const searchParams = {
-          search_query: filters.query || null,
-          filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : null,
-          filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : null,
-          filter_seasonTiming: filters.seasonTiming?.length ? filters.seasonTiming : null,
-          filter_competencies: filters.coreCompetencies?.length ? filters.coreCompetencies : null,
-          filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : null,
-          filter_location: filters.location?.length ? filters.location : null,
-          filter_activity_type: filters.activityType?.length ? filters.activityType : null,
-          filter_lesson_format: filters.lessonFormat || null,
-          filter_academic: filters.academicIntegration?.length ? filters.academicIntegration : null,
+          search_query: filters.query || undefined,
+          filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : undefined,
+          filter_themes: filters.thematicCategories?.length
+            ? filters.thematicCategories
+            : undefined,
+          filter_seasonTiming: filters.seasonTiming?.length ? filters.seasonTiming : undefined,
+          filter_competencies: filters.coreCompetencies?.length
+            ? filters.coreCompetencies
+            : undefined,
+          filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : undefined,
+          filter_location: filters.location?.length ? filters.location : undefined,
+          filter_activity_type: filters.activityType?.length ? filters.activityType : undefined,
+          filter_lesson_format: filters.lessonFormat || undefined,
+          filter_academic: filters.academicIntegration?.length
+            ? filters.academicIntegration
+            : undefined,
           filter_sel: filters.socialEmotionalLearning?.length
             ? filters.socialEmotionalLearning
-            : null,
-          filter_cooking_method: filters.cookingMethods || null,
+            : undefined,
+          filter_cooking_method: filters.cookingMethods || undefined,
           page_size: limit,
           page_offset: (page - 1) * limit,
         };

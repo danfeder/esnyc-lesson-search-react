@@ -79,7 +79,17 @@ export function AdminInvitations() {
 
       if (error) throw error;
 
-      setInvitations(data || []);
+      setInvitations(
+        (data || []).map((inv) => ({
+          ...inv,
+          role: inv.role as UserInvitation['role'],
+          accepted_at: inv.accepted_at || undefined,
+          school_name: inv.school_name || undefined,
+          school_borough: inv.school_borough || undefined,
+          message: inv.message || undefined,
+          metadata: (inv.metadata as UserInvitation['metadata']) || undefined,
+        }))
+      );
     } catch (error) {
       logger.error('Error loading invitations:', error);
     } finally {

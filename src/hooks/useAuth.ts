@@ -66,8 +66,10 @@ export function useAuth() {
         const { error: createError } = await supabase.from('user_profiles').insert({
           id: user.id,
           user_id: user.id,
+          full_name: user.email?.split('@')[0] || 'Unknown User', // Required field
           role: 'teacher',
           is_active: true,
+          email: user.email,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });

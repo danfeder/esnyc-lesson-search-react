@@ -18,7 +18,7 @@ import {
   UserX,
   Trash2,
 } from 'lucide-react';
-import { EnhancedUserProfile, UserFilters } from '../types/auth';
+import { EnhancedUserProfile, UserFilters, UserRole, Permission } from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
 import { SchoolBadge } from '../components/Schools';
 import { logger } from '../utils/logger';
@@ -110,15 +110,15 @@ export function AdminUsers() {
       }
 
       if (filters.role !== 'all') {
-        query = query.eq('role', filters.role);
+        query = query.eq('role', filters.role as string);
       }
 
       if (filters.is_active !== 'all') {
-        query = query.eq('is_active', filters.is_active);
+        query = query.eq('is_active', filters.is_active === 'active');
       }
 
       if (filters.school_borough !== 'all') {
-        query = query.eq('school_borough', filters.school_borough);
+        query = query.eq('school_borough', filters.school_borough as string);
       }
 
       // Apply sorting (except email - we'll handle that after)
@@ -210,10 +210,31 @@ export function AdminUsers() {
             });
           }
 
-          setUsers(filteredUsers);
+          setUsers(
+            filteredUsers.map(
+              (u) =>
+                ({
+                  ...u,
+                  role: (u.role || 'teacher') as UserRole,
+                  user_id: u.user_id || u.id,
+                  permissions: u.permissions as Record<Permission, boolean> | undefined,
+                }) as EnhancedUserProfile
+            )
+          );
         } else {
           // Fallback: show profiles without emails
-          setUsers(profiles.map((p) => ({ ...p, email: 'Loading...' })));
+          setUsers(
+            profiles.map(
+              (p) =>
+                ({
+                  ...p,
+                  email: 'Loading...',
+                  role: (p.role || 'teacher') as UserRole,
+                  user_id: p.user_id || p.id,
+                  permissions: p.permissions as Record<Permission, boolean> | undefined,
+                }) as EnhancedUserProfile
+            )
+          );
         }
       } else {
         setUsers([]);
@@ -326,7 +347,7 @@ export function AdminUsers() {
           user.school_name || '',
           user.school_borough || '',
           user.is_active ? 'Active' : 'Inactive',
-          new Date(user.created_at).toLocaleDateString(),
+          user.created_at ? new Date(user.created_at).toLocaleDateString() : '',
           user.invited_by || 'Self-registered',
         ]),
       ]
@@ -536,14 +557,14 @@ export function AdminUsers() {
               onChange={(e) =>
                 setFilters({
                   ...filters,
-                  is_active: e.target.value === 'all' ? 'all' : e.target.value === 'true',
+                  is_active: e.target.value as 'all' | 'active' | 'inactive',
                 })
               }
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
 
             <select
