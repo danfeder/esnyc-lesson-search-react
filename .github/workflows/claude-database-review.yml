@@ -94,4 +94,3 @@ jobs:
           claude_args: |
             --max-turns 5
             --allowed-tools "Bash(npm run test:rls),Bash(gh pr diff -- supabase/migrations),Bash(gh pr comment:*),Read,Grep"
-            --model claude-opus-4-1-20250805

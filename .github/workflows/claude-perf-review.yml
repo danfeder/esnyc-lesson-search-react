@@ -155,4 +155,3 @@ jobs:
           claude_args: |
             --max-turns 5
             --allowed-tools "Bash(npm run build),Bash(npm ls),Bash(gh pr diff),Bash(gh pr comment:*),Read,Grep,Glob"
-            --model claude-opus-4-1-20250805
