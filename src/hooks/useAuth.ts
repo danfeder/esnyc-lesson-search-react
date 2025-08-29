@@ -10,6 +10,9 @@ interface AuthState {
 }
 
 export function useAuth() {
+  // Test: Adding console.log that Claude should flag
+  console.log('useAuth hook called - this should be logger.debug');
+
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     role: null,
