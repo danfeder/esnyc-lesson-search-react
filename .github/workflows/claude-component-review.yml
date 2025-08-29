@@ -74,7 +74,7 @@ jobs:
             - Avoid arbitrary values when possible
             
             ## Component Requirements:
-            - All 16 filter categories must be supported
+            - All 11 filter categories must be supported
             - Cultural heritage hierarchy (e.g., "Asian" includes Chinese, Japanese, Korean)
             - Ingredient grouping (e.g., "Winter squash" includes butternut, pumpkin)
             - Mobile-responsive design is mandatory
