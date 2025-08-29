@@ -93,4 +93,4 @@ jobs:
           claude_args: |
             --max-turns 5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request_files,Bash(npm run test:rls),Bash(gh pr diff -- supabase/migrations),Read,Grep"
-            --model claude-4-0-sonnet-20250805
+          fallback_model: "claude-opus-4-1-20250805"
