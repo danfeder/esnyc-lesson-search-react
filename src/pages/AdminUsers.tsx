@@ -114,7 +114,7 @@ export function AdminUsers() {
       }
 
       if (filters.is_active !== 'all') {
-        query = query.eq('is_active', filters.is_active === 'true');
+        query = query.eq('is_active', filters.is_active === 'active');
       }
 
       if (filters.school_borough !== 'all') {
@@ -347,7 +347,7 @@ export function AdminUsers() {
           user.school_name || '',
           user.school_borough || '',
           user.is_active ? 'Active' : 'Inactive',
-          new Date(user.created_at).toLocaleDateString(),
+          user.created_at ? new Date(user.created_at).toLocaleDateString() : '',
           user.invited_by || 'Self-registered',
         ]),
       ]
@@ -557,14 +557,14 @@ export function AdminUsers() {
               onChange={(e) =>
                 setFilters({
                   ...filters,
-                  is_active: e.target.value === 'all' ? 'all' : e.target.value === 'true',
+                  is_active: e.target.value as 'all' | 'active' | 'inactive',
                 })
               }
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
 
             <select

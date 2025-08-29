@@ -21,7 +21,13 @@ import {
   UserPlus,
   TrendingUp,
 } from 'lucide-react';
-import { EnhancedUserProfile, UserRole, Permission, UserManagementAudit } from '../types/auth';
+import {
+  EnhancedUserProfile,
+  UserRole,
+  Permission,
+  UserManagementAudit,
+  AuditAction,
+} from '../types/auth';
 import { formatDistanceToNow } from 'date-fns';
 import { logger } from '../utils/logger';
 
@@ -103,10 +109,15 @@ export function AdminUserDetail() {
         }
       }
 
-      setUser(profile);
+      setUser({
+        ...profile,
+        role: (profile.role || UserRole.TEACHER) as UserRole,
+        user_id: profile.user_id || profile.id,
+        permissions: profile.permissions as Record<Permission, boolean> | undefined,
+      } as EnhancedUserProfile);
       setFormData({
         full_name: profile.full_name || '',
-        role: profile.role || UserRole.TEACHER,
+        role: (profile.role || UserRole.TEACHER) as UserRole,
         school_name: profile.school_name || '',
         school_borough: profile.school_borough || '', // This is OK for the form
         grades_taught: profile.grades_taught || [],
@@ -151,7 +162,15 @@ export function AdminUserDetail() {
         .limit(10);
 
       if (!error && data) {
-        setAuditLogs(data);
+        setAuditLogs(
+          data.map(
+            (log) =>
+              ({
+                ...log,
+                action: log.action as AuditAction,
+              }) as UserManagementAudit
+          )
+        );
       }
     } catch (error) {
       logger.error('Error loading audit logs:', error);
@@ -168,7 +187,9 @@ export function AdminUserDetail() {
       });
 
       if (!error && data) {
-        setActivityMetrics(data);
+        // RPC returns an array, take the first item
+        const metrics = Array.isArray(data) ? data[0] : data;
+        setActivityMetrics(metrics);
       } else if (error?.code === 'PGRST202') {
         // Function doesn't exist yet - set some default data
         logger.log('Activity metrics function not found, using defaults');
@@ -200,14 +221,14 @@ export function AdminUserDetail() {
     try {
       // Update user profile
       const updateData = {
-        full_name: formData.full_name || null,
+        full_name: formData.full_name || undefined,
         role: formData.role,
-        school_name: formData.school_name || null,
-        school_borough: formData.school_borough || null,
-        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : null,
-        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : null,
+        school_name: formData.school_name || undefined,
+        school_borough: formData.school_borough || undefined,
+        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : undefined,
+        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : undefined,
         is_active: formData.is_active,
-        notes: formData.notes || null,
+        notes: formData.notes || undefined,
         updated_at: new Date().toISOString(),
       };
 

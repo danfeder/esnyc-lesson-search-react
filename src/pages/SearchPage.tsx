@@ -122,7 +122,12 @@ export const SearchPage: React.FC = () => {
             activityType: (row.metadata as any)?.activityType || [],
             lessonFormat: (row.metadata as any)?.lessonFormat || [],
           } as LessonMetadata,
-          confidence: (row.confidence as { overall: number }) || { overall: 0 },
+          confidence: {
+            overall: (row.confidence as any)?.overall || 0,
+            title: (row.confidence as any)?.title || 0,
+            summary: (row.confidence as any)?.summary || 0,
+            gradeLevels: (row.confidence as any)?.gradeLevels || 0,
+          },
         })) || [];
 
       appendResults(newLessons);

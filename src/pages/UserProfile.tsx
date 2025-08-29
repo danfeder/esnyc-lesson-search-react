@@ -133,6 +133,10 @@ export function UserProfile() {
           submission_type: sub.submission_type as 'new' | 'update',
           created_at: sub.created_at || '',
           updated_at: sub.updated_at || '',
+          reviewer_notes: sub.reviewer_notes || undefined,
+          revision_requested_reason: sub.revision_requested_reason || undefined,
+          review_completed_at: sub.review_completed_at || undefined,
+          original_lesson_id: sub.original_lesson_id || undefined,
         }))
       );
     } catch (error) {

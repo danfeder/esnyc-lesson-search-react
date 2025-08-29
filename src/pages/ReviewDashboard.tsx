@@ -153,6 +153,17 @@ export function ReviewDashboard() {
           const profile = profiles?.find((p) => p.id === submission.teacher_id);
           return {
             ...submission,
+            created_at: submission.created_at || '',
+            updated_at: submission.updated_at || '',
+            submission_type: (submission.submission_type || 'new') as 'new' | 'update',
+            original_lesson_id: submission.original_lesson_id || undefined,
+            status: (submission.status || 'submitted') as
+              | 'submitted'
+              | 'under_review'
+              | 'approved'
+              | 'rejected'
+              | 'needs_revision',
+            extracted_content: submission.extracted_content || undefined,
             teacher: {
               email: 'teacher@example.com', // We'll use a placeholder for now
               full_name: profile?.full_name || 'Unknown Teacher',
@@ -162,7 +173,22 @@ export function ReviewDashboard() {
 
         setSubmissions(submissionsWithTeachers);
       } else {
-        setSubmissions(data || []);
+        setSubmissions(
+          (data || []).map((submission) => ({
+            ...submission,
+            created_at: submission.created_at || '',
+            updated_at: submission.updated_at || '',
+            submission_type: (submission.submission_type || 'new') as 'new' | 'update',
+            original_lesson_id: submission.original_lesson_id || undefined,
+            status: (submission.status || 'submitted') as
+              | 'submitted'
+              | 'under_review'
+              | 'approved'
+              | 'rejected'
+              | 'needs_revision',
+            extracted_content: submission.extracted_content || undefined,
+          }))
+        );
       }
     } catch (error) {
       logger.error('Error loading submissions:', error);

@@ -90,7 +90,10 @@ export function AcceptInvitation() {
       setInvitation({
         ...data,
         role: data.role as UserRole,
-        metadata: data.metadata as InvitationMetadata | null,
+        metadata: (data.metadata as InvitationMetadata | null) || undefined,
+        school_name: data.school_name || undefined,
+        school_borough: data.school_borough || undefined,
+        accepted_at: data.accepted_at || undefined,
       });
 
       // Pre-fill form data from invitation metadata

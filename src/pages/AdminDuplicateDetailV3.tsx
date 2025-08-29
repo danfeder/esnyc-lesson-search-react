@@ -251,7 +251,9 @@ export const AdminDuplicateDetailV3: React.FC = () => {
 
       const detailsMap: Record<string, any> = {};
       lessons?.forEach((lesson) => {
-        detailsMap[lesson.lesson_id] = lesson;
+        if (lesson.lesson_id) {
+          detailsMap[lesson.lesson_id] = lesson;
+        }
       });
       setLessonDetails(detailsMap);
     } catch (err) {
@@ -354,7 +356,8 @@ export const AdminDuplicateDetailV3: React.FC = () => {
             });
 
             if (resolveError) throw resolveError;
-            if (!data?.success) throw new Error(data?.error || 'Resolution failed');
+            const result = data as { success: boolean; error?: string } | null;
+            if (!result?.success) throw new Error(result?.error || 'Resolution failed');
           } else {
             // Multiple selected - only archive the unselected ones
             // For multiple selections, we just need to update titles and archive unselected
@@ -385,7 +388,8 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                 throw resolveError;
               }
 
-              if (!data?.success) throw new Error(data?.error || 'Resolution failed');
+              const result = data as { success: boolean; error?: string } | null;
+              if (!result?.success) throw new Error(result?.error || 'Resolution failed');
             } else {
               // No unselected lessons to archive, just update titles if needed
               if (titleUpdatesForRpc) {
@@ -411,7 +415,8 @@ export const AdminDuplicateDetailV3: React.FC = () => {
                   throw resolveError;
                 }
 
-                if (!data?.success) throw new Error(data?.error || 'Resolution failed');
+                const result = data as { success: boolean; error?: string } | null;
+                if (!result?.success) throw new Error(result?.error || 'Resolution failed');
               }
             }
           }
@@ -447,8 +452,8 @@ export const AdminDuplicateDetailV3: React.FC = () => {
           p_merge_metadata: mergeMetadata,
           p_resolution_notes: `Category: ${group.category}, Action: ${group.recommendedAction}`,
           p_resolution_mode: 'single',
-          p_sub_group_name: null,
-          p_parent_group_id: null,
+          p_sub_group_name: undefined,
+          p_parent_group_id: undefined,
           p_title_updates: prepareTitleUpdatesForRpc(titleEdits),
         });
 
@@ -457,9 +462,10 @@ export const AdminDuplicateDetailV3: React.FC = () => {
           throw resolveError;
         }
 
-        if (!data?.success) {
-          logger.error('Resolution failed with data:', data);
-          throw new Error(data?.error || 'Resolution failed');
+        const result = data as { success: boolean; error?: string } | null;
+        if (!result?.success) {
+          logger.error('Resolution failed with data:', result);
+          throw new Error(result?.error || 'Resolution failed');
         }
 
         navigate('/admin/duplicates', {

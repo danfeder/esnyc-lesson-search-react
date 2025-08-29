@@ -17,6 +17,7 @@ import CreatableSelect from 'react-select/creatable';
 import type { ReviewMetadata } from '../types';
 import { FEATURES } from '../utils/featureFlags';
 import { GoogleDocEmbed } from '../components/Review/GoogleDocEmbed';
+import type { Json } from '../lib/database.types';
 
 interface SubmissionDetail {
   id: string;
@@ -169,7 +170,7 @@ export function ReviewDetail() {
       const { data: submissionData, error: submissionError } = await supabase
         .from('lesson_submissions')
         .select('*, content_embedding')
-        .eq('id', id)
+        .eq('id', id!)
         .single();
 
       if (submissionError) throw submissionError;
@@ -183,11 +184,11 @@ export function ReviewDetail() {
       const { data: similarities } = await supabase
         .from('submission_similarities')
         .select('*')
-        .eq('submission_id', id)
+        .eq('submission_id', id!)
         .order('combined_score', { ascending: false });
 
       // Get lessons for similarities
-      let similaritiesWithLessons = [];
+      let similaritiesWithLessons: any[] = [];
       if (similarities && similarities.length > 0) {
         const lessonIds = similarities.map((s) => s.lesson_id);
         const { data: lessons, error: lessonsError } = await supabase
@@ -217,7 +218,7 @@ export function ReviewDetail() {
       const { data: reviews } = await supabase
         .from('submission_reviews')
         .select('*')
-        .eq('submission_id', id);
+        .eq('submission_id', id!);
 
       // Get teacher profile
       const { data: profile } = await supabase
@@ -227,10 +228,23 @@ export function ReviewDetail() {
         .single();
 
       // Combine all data
-      const fullSubmission = {
+      const fullSubmission: SubmissionDetail = {
         ...submissionData,
+        created_at: submissionData.created_at || '',
+        status: submissionData.status || 'pending',
+        extracted_content: submissionData.extracted_content || '',
+        content_hash: submissionData.content_hash || '',
+        submission_type: (submissionData.submission_type || 'new') as 'new' | 'update',
+        original_lesson_id: submissionData.original_lesson_id || undefined,
+        content_embedding: submissionData.content_embedding || undefined,
         similarities: similaritiesWithLessons,
-        review: reviews || [],
+        review: reviews?.[0]
+          ? {
+              metadata: (reviews[0].tagged_metadata as ReviewMetadata) || {},
+              decision: reviews[0].decision || '',
+              notes: reviews[0].notes || '',
+            }
+          : undefined,
         teacher: {
           email: 'teacher@example.com',
           full_name: profile?.full_name || 'Unknown Teacher',
@@ -242,8 +256,10 @@ export function ReviewDetail() {
       // If there's an existing review, load its data
       if (reviews && reviews.length > 0) {
         const review = reviews[0];
-        setMetadata(review.tagged_metadata || {});
-        setDecision(review.decision);
+        setMetadata((review.tagged_metadata as ReviewMetadata) || {});
+        setDecision(
+          review.decision as 'approve_new' | 'approve_update' | 'reject' | 'needs_revision'
+        );
         setNotes(review.notes || '');
       }
     } catch (error) {
@@ -270,15 +286,17 @@ export function ReviewDetail() {
     setSaving(true);
     try {
       // Create or update review
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      if (!currentUser) throw new Error('Not authenticated');
+
       const { error: reviewError } = await supabase
         .from('submission_reviews')
-        .upsert({
+        .insert({
           submission_id: submission.id,
-          reviewer_id: (await supabase.auth.getUser()).data.user?.id,
+          reviewer_id: currentUser.id,
           decision,
           notes,
-          tagged_metadata: metadata, // Use the actual column name
-          created_at: new Date().toISOString(),
+          tagged_metadata: metadata as Json, // Cast to Json type
         })
         .select()
         .single();
@@ -318,7 +336,7 @@ export function ReviewDetail() {
           summary: lessonData.summary || '',
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || [],
-          activity_type: metadata.activityType ? [metadata.activityType] : [],
+          activity_type_meta: metadata.activityType || null,
           metadata: {
             thematicCategories: metadata.themes || [],
             seasonTiming: metadata.season || [],
@@ -383,10 +401,10 @@ export function ReviewDetail() {
         const { error: archiveError } = await supabase.from('lesson_versions').insert({
           lesson_id: selectedDuplicate,
           version_number: existingLesson.version_number || 1,
-          title: existingLesson.title,
-          summary: existingLesson.summary,
-          file_link: existingLesson.file_link,
-          grade_levels: existingLesson.grade_levels,
+          title: existingLesson.title || '',
+          summary: existingLesson.summary || '',
+          file_link: existingLesson.file_link || '',
+          grade_levels: existingLesson.grade_levels || [],
           metadata: existingLesson.metadata,
           content_text: existingLesson.content_text,
           archived_from_submission_id: submission.id,
@@ -400,16 +418,23 @@ export function ReviewDetail() {
         const lessonData = parseExtractedContent(submission.extracted_content);
 
         // Update the existing lesson
+        const updateData: any = {
+          title: lessonData.title || existingLesson.title,
+          summary: lessonData.summary || existingLesson.summary,
+          file_link: submission.google_doc_url,
+          grade_levels: metadata.gradeLevels || existingLesson.grade_levels || [],
+        };
+
+        // Only set activity_type_meta if we have a value
+        if (metadata.activityType || existingLesson.activity_type_meta) {
+          updateData.activity_type_meta =
+            metadata.activityType || existingLesson.activity_type_meta;
+        }
+
         const { error: updateLessonError } = await supabase
           .from('lessons_with_metadata')
           .update({
-            title: lessonData.title || existingLesson.title,
-            summary: lessonData.summary || existingLesson.summary,
-            file_link: submission.google_doc_url,
-            grade_levels: metadata.gradeLevels || existingLesson.grade_levels,
-            activity_type: metadata.activityType
-              ? [metadata.activityType]
-              : existingLesson.activity_type,
+            ...updateData,
             metadata: {
               thematicCategories: metadata.themes || [],
               seasonTiming: metadata.season || [],

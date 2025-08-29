@@ -124,16 +124,16 @@ const fallbackSearch = async ({
           culturalResponsivenessFeatures:
             row.cultural_responsiveness_features || metadata?.culturalResponsivenessFeatures || [],
         },
-        confidence: (row.confidence as Record<string, any>) || {
-          overall: 0,
-          title: 0,
-          summary: 0,
-          gradeLevels: 0,
+        confidence: {
+          overall: (row.confidence as any)?.overall || 0,
+          title: (row.confidence as any)?.title || 0,
+          summary: (row.confidence as any)?.summary || 0,
+          gradeLevels: (row.confidence as any)?.gradeLevels || 0,
         },
-        last_modified: row.last_modified,
-        processing_notes: row.processing_notes,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
+        last_modified: row.last_modified || undefined,
+        processing_notes: row.processing_notes || undefined,
+        created_at: row.created_at || undefined,
+        updated_at: row.updated_at || undefined,
       };
     });
 

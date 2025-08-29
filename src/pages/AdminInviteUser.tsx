@@ -102,19 +102,23 @@ export function AdminInviteUser() {
       }
 
       // Create invitation
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
       const { data: inviteData, error: inviteError } = await supabase
         .from('user_invitations')
         .insert({
           email: formData.email,
           role: formData.role,
-          invited_by: user?.id,
-          school_name: formData.school_name || null,
-          school_borough: formData.school_borough || null,
-          message: formData.message || null,
+          invited_by: user.id,
+          school_name: formData.school_name || undefined,
+          school_borough: formData.school_borough || undefined,
+          message: formData.message || undefined,
           metadata: {
             grades_taught: formData.grades_taught,
             subjects_taught: formData.subjects_taught,
-            invited_by_id: user?.id,
+            invited_by_id: user.id,
           },
         })
         .select()
@@ -124,7 +128,7 @@ export function AdminInviteUser() {
 
       // Log audit
       await supabase.from('user_management_audit').insert({
-        actor_id: user?.id,
+        actor_id: user.id,
         action: 'invite_sent',
         target_email: formData.email,
         new_values: {
