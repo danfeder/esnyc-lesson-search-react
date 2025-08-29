@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -86,7 +86,8 @@ jobs:
             - For lesson submissions, check if it matches the 11 filter requirements
             - NO comments unless marking as duplicate
             
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           claude_args: |
             --max-turns 5
-            --allowedTools "Bash(gh label list),mcp__github__get_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__update_issue,mcp__github__add_issue_comment"
+            --allowed-tools "Bash(gh label list),mcp__github__get_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__update_issue,mcp__github__add_issue_comment"
             --model claude-haiku-4-20250805

@@ -18,14 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: read
       issues: read
       id-token: write
       actions: read
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           
@@ -151,7 +151,8 @@ jobs:
             Provide specific code examples for improvements.
             Use inline comments for critical performance issues.
             
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           claude_args: |
             --max-turns 5
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request_files,Bash(npm run build),Bash(npm ls),Bash(gh pr diff),Read,Grep,Glob"
-          fallback_model: "claude-opus-4-1-20250805"
+            --allowed-tools "Bash(npm run build),Bash(npm ls),Bash(gh pr diff),Bash(gh pr comment:*),Read,Grep,Glob"
+            --model claude-opus-4-1-20250805
