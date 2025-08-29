@@ -1,0 +1,157 @@
+name: Claude Performance Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'src/**/*.tsx'
+      - 'src/**/*.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+
+jobs:
+  performance-review:
+    # Skip for dependabot
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build and analyze bundle
+        id: bundle_analysis
+        run: |
+          # Build the project
+          npm run build
+          
+          # Get bundle size
+          BUNDLE_SIZE=$(du -sh dist | cut -f1)
+          echo "bundle_size=$BUNDLE_SIZE" >> $GITHUB_OUTPUT
+          
+          # Analyze main bundle
+          MAIN_JS=$(find dist/assets -name "index-*.js" | head -1)
+          if [ -f "$MAIN_JS" ]; then
+            MAIN_SIZE=$(du -h "$MAIN_JS" | cut -f1)
+            echo "main_size=$MAIN_SIZE" >> $GITHUB_OUTPUT
+          fi
+          
+          # Count lazy-loaded chunks
+          CHUNK_COUNT=$(find dist/assets -name "*.js" | wc -l)
+          echo "chunk_count=$CHUNK_COUNT" >> $GITHUB_OUTPUT
+      
+      - name: Claude Performance Analysis
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Perform a comprehensive performance review of this PR for the ESYNYC Lesson Search React application.
+            
+            PR Context:
+            - PR #${{ github.event.pull_request.number }}
+            - Title: ${{ github.event.pull_request.title }}
+            - Author: ${{ github.event.pull_request.user.login }}
+            - Bundle Size: ${{ steps.bundle_analysis.outputs.bundle_size }}
+            - Main JS: ${{ steps.bundle_analysis.outputs.main_size }}
+            - Chunk Count: ${{ steps.bundle_analysis.outputs.chunk_count }}
+            
+            ## Performance Analysis Tasks:
+            
+            ### 1. Bundle Size Impact
+            - Review changes to package.json for new dependencies
+            - Check if large libraries are being imported
+            - Look for opportunities to use dynamic imports
+            - Suggest lighter alternatives for heavy dependencies
+            
+            ### 2. React Performance Patterns
+            Check for these performance issues:
+            - **Missing React.memo**: Components that should be memoized
+            - **Unnecessary re-renders**: Props that change reference on every render
+            - **useMemo/useCallback**: Missing or incorrect dependency arrays
+            - **Large lists**: Components rendering 831+ lessons without virtualization
+            - **Expensive computations**: Calculations in render without memoization
+            
+            ### 3. State Management (Zustand)
+            - Check for unnecessary global state
+            - Look for derived state being stored (should be computed)
+            - Verify selector usage for optimal re-renders
+            - Check for state normalization opportunities
+            
+            ### 4. Data Fetching (React Query)
+            - Verify proper cache configuration
+            - Check for missing query keys
+            - Look for waterfall loading patterns
+            - Suggest parallel queries where applicable
+            - Check staleTime and cacheTime settings
+            
+            ### 5. Component-Specific Issues
+            
+            **Search Components:**
+            - Debouncing search input (minimum 300ms)
+            - Algolia query optimization
+            - Result pagination or virtualization
+            
+            **Filter Components:**
+            - Efficient filter state updates
+            - Memoized filter calculations
+            - Batched filter applications
+            
+            **Modal Components:**
+            - Lazy loading modal content
+            - Portal usage for better performance
+            - Cleanup on unmount
+            
+            ### 6. Image Optimization
+            - Check for unoptimized images
+            - Suggest lazy loading for images
+            - Verify proper image formats (WebP, AVIF)
+            
+            ### 7. Code Splitting
+            - Identify components that should be lazy loaded
+            - Check route-based code splitting
+            - Suggest dynamic imports for heavy features
+            
+            ### 8. Accessibility vs Performance
+            - Ensure performance optimizations don't harm accessibility
+            - Check ARIA live regions aren't causing excessive updates
+            - Verify focus management doesn't trigger reflows
+            
+            ## Specific Files to Review:
+            Use `gh pr diff` to see changes, then focus on:
+            - Components rendering large lists
+            - Components with complex state
+            - New dependencies in package.json
+            - Changes to search/filter logic
+            
+            ## Performance Benchmarks:
+            - Initial load: Should be < 3s on 3G
+            - Time to Interactive: < 5s
+            - Search response: < 500ms
+            - Filter application: < 100ms
+            
+            Provide specific code examples for improvements.
+            Use inline comments for critical performance issues.
+            
+          claude_args: |
+            --max-turns 5
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request_files,Bash(npm run build),Bash(npm ls),Bash(gh pr diff),Read,Grep,Glob"
+            --model claude-sonnet-4-20250805

@@ -30,16 +30,21 @@ jobs:
           fetch-depth: 0
       
       - name: Claude Database Schema Review
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           
-          # Use sticky comments
-          use_sticky_comment: true
-          
           # Database-specific review prompt
-          direct_prompt: |
-            Review database and Supabase-related changes for the ESYNYC Lesson Search application:
+          prompt: |
+            Review database and Supabase-related changes for the ESYNYC Lesson Search application.
+            
+            PR Context:
+            - PR #${{ github.event.pull_request.number }}
+            - Migration Changes: ${{ github.event.pull_request.title }}
+            - Author: ${{ github.event.pull_request.user.login }}
+            - Files Changed: ${{ github.event.pull_request.changed_files }}
+            
+            Review focus areas:
             
             ## Migration Safety:
             - Ensure backward compatibility (can rollback if needed)
@@ -83,3 +88,9 @@ jobs:
             
             Please highlight any potential performance bottlenecks or security risks.
             Suggest indexes or query optimizations where appropriate.
+          
+          # Claude CLI arguments
+          claude_args: |
+            --max-turns 5
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github__get_pull_request_files,Bash(npm run test:rls),Bash(gh pr diff -- supabase/migrations),Read,Grep"
+            --model claude-sonnet-4-20250805

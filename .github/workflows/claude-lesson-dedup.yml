@@ -1,0 +1,133 @@
+name: Claude Lesson Deduplication
+
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request:
+    types: [opened]
+    paths:
+      - 'data/lessons/**'
+      - 'supabase/seed-data/**'
+      - 'src/data/**'
+
+jobs:
+  check-duplicate-lessons:
+    # Run when issue is labeled as lesson-submission OR when PR modifies lesson data
+    if: |
+      (github.event_name == 'issues' && github.event.issue.labels && contains(github.event.issue.labels.*.name, 'lesson-submission')) ||
+      (github.event_name == 'pull_request')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check for duplicate lessons
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Analyze potential duplicate lessons in the ESYNYC Lesson Search database.
+            
+            Context:
+            - Repository: ${{ github.repository }}
+            - Event: ${{ github.event_name }}
+            ${{ github.event_name == 'issues' && format('- Issue: #{0}', github.event.issue.number) || format('- PR: #{0}', github.event.pull_request.number) }}
+            
+            TASK 1: Extract lesson details
+            ${{ github.event_name == 'issues' && 'Use mcp__github__get_issue to get the lesson submission details from the issue.' || 'Review the changed files in the PR to identify new lessons being added.' }}
+            
+            Look for these key identifiers:
+            - Lesson title
+            - Grade levels
+            - Main ingredients
+            - Activity type (Cooking/Garden/Both)
+            - Core skills/competencies
+            - Cultural heritage connections
+            - Season/timing
+            
+            TASK 2: Search for similar lessons
+            Use multiple strategies to find potential duplicates:
+            
+            1. **Exact title match**: Search for lessons with identical titles
+            2. **Ingredient overlap**: Find lessons using the same main ingredients
+               - Remember ingredient groupings (e.g., "butternut squash" = "winter squash")
+            3. **Activity similarity**: Same grade + same activity type + similar skills
+            4. **Cultural overlap**: Same cultural heritage + similar ingredients
+            5. **Semantic similarity**: Lessons teaching the same concepts differently
+            
+            Search in:
+            - Existing lesson database (data/lessons/)
+            - Recent lesson submissions (search issues with 'lesson-submission' label)
+            - Pending PRs that add lessons
+            
+            TASK 3: Analyze similarity
+            For each potential duplicate found, calculate similarity:
+            
+            **High similarity (likely duplicate):**
+            - Same title OR very similar title (>80% word overlap)
+            - Same main ingredients + same grade levels
+            - Same activity type + same season
+            - Teaching identical skills/concepts
+            
+            **Medium similarity (possible duplicate):**
+            - Similar ingredients (same category)
+            - Overlapping grade ranges
+            - Similar learning objectives
+            - Same cultural heritage focus
+            
+            **Low similarity (probably unique):**
+            - Different approach to similar topic
+            - Different grade levels
+            - Different seasonal focus
+            - Unique cultural perspective
+            
+            TASK 4: Report findings
+            
+            If HIGH similarity duplicates found:
+            1. Add "duplicate" label
+            2. Post a detailed comment explaining:
+               - Which existing lesson(s) are similar
+               - Specific similarities identified
+               - Suggestion to either:
+                 a) Enhance the existing lesson instead
+                 b) Differentiate this lesson more clearly
+                 c) Merge the lessons
+            
+            If MEDIUM similarity found:
+            1. Add "needs-review" label
+            2. Post a comment noting similar lessons
+            3. Ask submitter to clarify differences
+            4. Suggest how to differentiate better
+            
+            If NO significant duplicates:
+            1. Add "unique-lesson" label
+            2. Post brief confirmation: "✅ No duplicate lessons found"
+            
+            TASK 5: Special checks for ESYNYC requirements
+            Also verify:
+            - Lesson fits within the 11 filter categories
+            - Cultural heritage hierarchy is respected
+            - Ingredient groupings are consistent
+            - Grade level progression makes sense
+            
+            Use these tools:
+            - mcp__github__get_issue / mcp__github__get_pull_request
+            - mcp__github__search_issues with query: "label:lesson-submission"
+            - Read to examine lesson files
+            - Grep to search lesson content
+            - mcp__github__add_issue_comment / mcp__github__create_pull_request_review
+            - mcp__github__update_issue to add labels
+            
+          claude_args: |
+            --max-turns 8
+            --allowedTools "mcp__github__get_issue,mcp__github__get_pull_request,mcp__github__get_pull_request_files,mcp__github__search_issues,mcp__github__list_issues,mcp__github__add_issue_comment,mcp__github__create_pull_request_review,mcp__github__update_issue,Read,Grep,Glob"
+            --model claude-sonnet-4-20250805
