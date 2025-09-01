@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import { SearchFilters } from '../../types';
-import { CORE_COMPETENCIES, LESSON_FORMATS } from '../../utils/filterConstants';
+import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { VirtualizedCulturalHeritageFilter } from './VirtualizedCulturalHeritageFilter';
 import { getFacetCount } from '../../utils/facetHelpers';
 import { useSearchStore } from '../../stores/searchStore';
@@ -109,231 +109,98 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
   ({ filters, onFiltersChange, isOpen, onClose, facets = {} }) => {
     const { clearFilters } = useSearchStore();
 
-    // Memoize grade options to prevent recreating on every render
+    // Options from unified definitions + facet counts
     const gradeOptions = useMemo(
-      () => [
-        { value: '3K', label: '3K', count: getFacetCount(facets, 'gradeLevels', '3K') },
-        { value: 'PK', label: 'Pre-K', count: getFacetCount(facets, 'gradeLevels', 'PK') },
-        { value: 'K', label: 'Kindergarten', count: getFacetCount(facets, 'gradeLevels', 'K') },
-        { value: '1', label: '1st Grade', count: getFacetCount(facets, 'gradeLevels', '1') },
-        { value: '2', label: '2nd Grade', count: getFacetCount(facets, 'gradeLevels', '2') },
-        { value: '3', label: '3rd Grade', count: getFacetCount(facets, 'gradeLevels', '3') },
-        { value: '4', label: '4th Grade', count: getFacetCount(facets, 'gradeLevels', '4') },
-        { value: '5', label: '5th Grade', count: getFacetCount(facets, 'gradeLevels', '5') },
-        { value: '6', label: '6th Grade', count: getFacetCount(facets, 'gradeLevels', '6') },
-        { value: '7', label: '7th Grade', count: getFacetCount(facets, 'gradeLevels', '7') },
-        { value: '8', label: '8th Grade', count: getFacetCount(facets, 'gradeLevels', '8') },
-      ],
+      () =>
+        FILTER_CONFIGS.gradeLevel.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'gradeLevels', opt.value),
+        })),
       [facets]
     );
 
     const themeOptions = useMemo(
-      () => [
-        {
-          value: 'Garden Basics',
-          label: 'Garden Basics',
-          count: getFacetCount(facets, 'metadata.thematicCategories', 'Garden Basics'),
-        },
-        {
-          value: 'Plant Growth',
-          label: 'Plant Growth',
-          count: getFacetCount(facets, 'metadata.thematicCategories', 'Plant Growth'),
-        },
-        {
-          value: 'Garden Communities',
-          label: 'Garden Communities',
-          count: getFacetCount(facets, 'metadata.thematicCategories', 'Garden Communities'),
-        },
-        {
-          value: 'Ecosystems',
-          label: 'Ecosystems',
-          count: getFacetCount(facets, 'metadata.thematicCategories', 'Ecosystems'),
-        },
-        {
-          value: 'Seed to Table',
-          label: 'Seed to Table',
-          count: getFacetCount(facets, 'metadata.thematicCategories', 'Seed to Table'),
-        },
-        {
-          value: 'Food Systems',
-          label: 'Food Systems',
-          count: getFacetCount(facets, 'metadata.thematicCategories', 'Food Systems'),
-        },
-        {
-          value: 'Food Justice',
-          label: 'Food Justice',
-          count: getFacetCount(facets, 'metadata.thematicCategories', 'Food Justice'),
-        },
-      ],
+      () =>
+        FILTER_CONFIGS.theme.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'metadata.thematicCategories', opt.value),
+        })),
       [facets]
     );
 
     const seasonOptions = useMemo(
-      () => [
-        {
-          value: 'Fall',
-          label: 'Fall',
-          count: getFacetCount(facets, 'metadata.seasonTiming', 'Fall'),
-        },
-        {
-          value: 'Winter',
-          label: 'Winter',
-          count: getFacetCount(facets, 'metadata.seasonTiming', 'Winter'),
-        },
-        {
-          value: 'Spring',
-          label: 'Spring',
-          count: getFacetCount(facets, 'metadata.seasonTiming', 'Spring'),
-        },
-        {
-          value: 'Summer',
-          label: 'Summer',
-          count: getFacetCount(facets, 'metadata.seasonTiming', 'Summer'),
-        },
-      ],
+      () =>
+        FILTER_CONFIGS.seasonTiming.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'metadata.seasonTiming', opt.value),
+        })),
       [facets]
     );
 
     const activityOptions = useMemo(
-      () => [
-        {
-          value: 'cooking-only',
-          label: 'Cooking Only',
-          count: getFacetCount(facets, 'metadata.activityType', 'cooking-only'),
-        },
-        {
-          value: 'garden-only',
-          label: 'Garden Only',
-          count: getFacetCount(facets, 'metadata.activityType', 'garden-only'),
-        },
-        {
-          value: 'both',
-          label: 'Cooking + Garden',
-          count: getFacetCount(facets, 'metadata.activityType', 'both'),
-        },
-        {
-          value: 'academic-only',
-          label: 'Academic Only',
-          count: getFacetCount(facets, 'metadata.activityType', 'academic-only'),
-        },
-      ],
+      () =>
+        FILTER_CONFIGS.activityType.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'metadata.activityType', opt.value),
+        })),
       [facets]
     );
 
     const locationOptions = useMemo(
-      () => [
-        {
-          value: 'Indoor',
-          label: 'Indoor',
-          count: getFacetCount(facets, 'metadata.locationRequirements', 'Indoor'),
-        },
-        {
-          value: 'Outdoor',
-          label: 'Outdoor',
-          count: getFacetCount(facets, 'metadata.locationRequirements', 'Outdoor'),
-        },
-        {
-          value: 'Both',
-          label: 'Both',
-          count: getFacetCount(facets, 'metadata.locationRequirements', 'Both'),
-        },
-      ],
+      () =>
+        FILTER_CONFIGS.location.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'metadata.locationRequirements', opt.value),
+        })),
       [facets]
     );
 
     const coreCompetencyOptions = useMemo(
       () =>
-        CORE_COMPETENCIES.map((comp) => ({
-          value: comp,
-          label: comp
-            .replace('and Related Academic Content', '')
-            .replace(
-              'Environmental and Community Stewardship',
-              'Environmental/Community Stewardship'
-            ),
-          count: getFacetCount(facets, 'metadata.coreCompetencies', comp),
+        FILTER_CONFIGS.coreCompetencies.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'metadata.coreCompetencies', opt.value),
         })),
       [facets]
     );
 
     const lessonFormatOptions = useMemo(
       () =>
-        LESSON_FORMATS.map((format) => ({
-          value: format,
-          label: format,
-          count: getFacetCount(facets, 'metadata.lessonFormat', format),
+        FILTER_CONFIGS.lessonFormat.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'metadata.lessonFormat', opt.value),
         })),
       [facets]
     );
 
     const academicIntegrationOptions = useMemo(
-      () => [
-        {
-          value: 'Science',
-          label: 'Science',
-          count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Science'),
-        },
-        {
-          value: 'Social Studies',
-          label: 'Social Studies',
-          count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Social Studies'),
-        },
-        {
-          value: 'Literacy/ELA',
-          label: 'Literacy/ELA',
-          count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Literacy/ELA'),
-        },
-        {
-          value: 'Math',
-          label: 'Math',
-          count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Math'),
-        },
-        {
-          value: 'Health',
-          label: 'Health',
-          count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Health'),
-        },
-        {
-          value: 'Arts',
-          label: 'Arts',
-          count: getFacetCount(facets, 'metadata.academicIntegration.selected', 'Arts'),
-        },
-      ],
+      () =>
+        FILTER_CONFIGS.academicIntegration.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(
+            facets,
+            'metadata.academicIntegration.selected',
+            opt.value
+          ),
+        })),
       [facets]
     );
 
     const socialEmotionalLearningOptions = useMemo(
-      () => [
-        {
-          value: 'Relationship skills',
-          label: 'Relationship Skills',
-          count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Relationship skills'),
-        },
-        {
-          value: 'Self-awareness',
-          label: 'Self-Awareness',
-          count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Self-awareness'),
-        },
-        {
-          value: 'Responsible decision-making',
-          label: 'Responsible Decision-Making',
-          count: getFacetCount(
-            facets,
-            'metadata.socialEmotionalLearning',
-            'Responsible decision-making'
-          ),
-        },
-        {
-          value: 'Self-management',
-          label: 'Self-Management',
-          count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Self-management'),
-        },
-        {
-          value: 'Social awareness',
-          label: 'Social Awareness',
-          count: getFacetCount(facets, 'metadata.socialEmotionalLearning', 'Social awareness'),
-        },
-      ],
+      () =>
+        FILTER_CONFIGS.socialEmotionalLearning.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          count: getFacetCount(facets, 'metadata.socialEmotionalLearning', opt.value),
+        })),
       [facets]
     );
 
