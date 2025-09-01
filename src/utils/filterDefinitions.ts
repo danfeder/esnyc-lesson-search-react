@@ -17,7 +17,8 @@ interface FilterConfig {
   }>;
 }
 
-// Filter configurations for the 11 filters
+// Filter configurations for EXACTLY 11 filters used in search
+// CRITICAL: Must maintain exactly 11 filters per ESYNYC requirements
 export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   activityType: {
     label: 'Activity Type',
@@ -198,7 +199,11 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'oven', label: 'Oven' },
     ],
   },
+};
 
+// Metadata fields used in review/submission process (NOT search filters)
+// These are used for lesson data enrichment but not exposed as search filters
+export const METADATA_CONFIGS: Record<string, FilterConfig> = {
   // Additional metadata fields for review process
   mainIngredients: {
     label: 'Main Ingredients',
@@ -384,3 +389,13 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
 
 // Export filter keys for easy iteration
 export const FILTER_KEYS = Object.keys(FILTER_CONFIGS) as Array<keyof typeof FILTER_CONFIGS>;
+
+// Export metadata keys separately
+export const METADATA_KEYS = Object.keys(METADATA_CONFIGS) as Array<keyof typeof METADATA_CONFIGS>;
+
+// Combined configs for backward compatibility in review forms
+// WARNING: Do not use this for search filters!
+export const ALL_FIELD_CONFIGS = {
+  ...FILTER_CONFIGS,
+  ...METADATA_CONFIGS,
+};

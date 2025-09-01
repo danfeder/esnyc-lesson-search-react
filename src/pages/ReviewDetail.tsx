@@ -11,7 +11,7 @@ import {
   Monitor,
   FileCode,
 } from 'lucide-react';
-import { FILTER_CONFIGS } from '../utils/filterDefinitions';
+import { ALL_FIELD_CONFIGS } from '../utils/filterDefinitions';
 import { logger } from '../utils/logger';
 import CreatableSelect from 'react-select/creatable';
 import type { ReviewMetadata } from '../types';
@@ -848,7 +848,7 @@ export function ReviewDetail() {
                     aria-invalid={validationErrors.includes('Activity Type') ? 'true' : 'false'}
                   >
                     <option value="">Select activity type</option>
-                    {FILTER_CONFIGS.activityType.options.map((opt) => (
+                    {ALL_FIELD_CONFIGS.activityType.options.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
@@ -879,7 +879,7 @@ export function ReviewDetail() {
                     aria-invalid={validationErrors.includes('Location') ? 'true' : 'false'}
                   >
                     <option value="">Select location</option>
-                    {FILTER_CONFIGS.location.options.map((opt) => (
+                    {ALL_FIELD_CONFIGS.location.options.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
@@ -896,7 +896,7 @@ export function ReviewDetail() {
                     className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2"
                     aria-label="Grade level selection"
                   >
-                    {FILTER_CONFIGS.gradeLevel.options.map((grade) => (
+                    {ALL_FIELD_CONFIGS.gradeLevel.options.map((grade) => (
                       <label key={grade.value} className="flex items-center">
                         <input
                           type="checkbox"
@@ -922,7 +922,7 @@ export function ReviewDetail() {
                     Thematic Categories *
                   </label>
                   <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                    {FILTER_CONFIGS.theme.options.map((theme) => (
+                    {ALL_FIELD_CONFIGS.theme.options.map((theme) => (
                       <label key={theme.value} className="flex items-center">
                         <input
                           type="checkbox"
@@ -948,7 +948,7 @@ export function ReviewDetail() {
                     Season & Timing *
                   </label>
                   <div className="border border-gray-300 rounded-md p-3 space-y-2">
-                    {FILTER_CONFIGS.seasonTiming.options.map((season) => (
+                    {ALL_FIELD_CONFIGS.seasonTiming.options.map((season) => (
                       <label key={season.value} className="flex items-center">
                         <input
                           type="checkbox"
@@ -974,7 +974,7 @@ export function ReviewDetail() {
                     Core Competencies *
                   </label>
                   <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                    {FILTER_CONFIGS.coreCompetencies.options.map((competency) => (
+                    {ALL_FIELD_CONFIGS.coreCompetencies.options.map((competency) => (
                       <label key={competency.value} className="flex items-center">
                         <input
                           type="checkbox"
@@ -1000,7 +1000,7 @@ export function ReviewDetail() {
                     Social-Emotional Learning *
                   </label>
                   <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                    {FILTER_CONFIGS.socialEmotionalLearning.options.map((sel) => (
+                    {ALL_FIELD_CONFIGS.socialEmotionalLearning.options.map((sel) => (
                       <label key={sel.value} className="flex items-center">
                         <input
                           type="checkbox"
@@ -1027,7 +1027,7 @@ export function ReviewDetail() {
                       Cooking Methods *
                     </label>
                     <div className="space-y-2 border border-gray-200 rounded-md p-2">
-                      {FILTER_CONFIGS.cookingMethods.options.map((method) => (
+                      {ALL_FIELD_CONFIGS.cookingMethods.options.map((method) => (
                         <label key={method.value} className="flex items-center">
                           <input
                             type="checkbox"
@@ -1062,7 +1062,7 @@ export function ReviewDetail() {
                             <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
                               {category}
                             </div>
-                            {FILTER_CONFIGS.mainIngredients.options
+                            {ALL_FIELD_CONFIGS.mainIngredients.options
                               .filter((ingredient) => ingredient.category === category)
                               .map((ingredient) => (
                                 <label key={ingredient.value} className="flex items-center ml-2">
@@ -1097,7 +1097,7 @@ export function ReviewDetail() {
                       Garden Skills *
                     </label>
                     <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                      {FILTER_CONFIGS.gardenSkills.options.map((skill) => (
+                      {ALL_FIELD_CONFIGS.gardenSkills.options.map((skill) => (
                         <label key={skill.value} className="flex items-center">
                           <input
                             type="checkbox"
@@ -1131,7 +1131,7 @@ export function ReviewDetail() {
                           <div className="font-medium text-xs text-gray-600 mt-2 mb-1">
                             {category}
                           </div>
-                          {FILTER_CONFIGS.cookingSkills.options
+                          {ALL_FIELD_CONFIGS.cookingSkills.options
                             .filter((skill) => skill.category === category)
                             .map((skill) => (
                               <label key={skill.value} className="flex items-center ml-2">
@@ -1169,7 +1169,7 @@ export function ReviewDetail() {
                       Cultural Heritage
                     </label>
                     <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                      {FILTER_CONFIGS.culturalHeritage.options.map((heritage) => (
+                      {ALL_FIELD_CONFIGS.culturalHeritage.options.map((heritage) => (
                         <div key={heritage.value}>
                           <label className="flex items-center font-medium">
                             <input
@@ -1234,7 +1234,7 @@ export function ReviewDetail() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                       <option value="">Select lesson format</option>
-                      {FILTER_CONFIGS.lessonFormat.options.map((opt) => (
+                      {ALL_FIELD_CONFIGS.lessonFormat.options.map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}
                         </option>
@@ -1248,7 +1248,7 @@ export function ReviewDetail() {
                       Academic Integration
                     </label>
                     <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                      {FILTER_CONFIGS.academicIntegration.options.map((subject) => (
+                      {ALL_FIELD_CONFIGS.academicIntegration.options.map((subject) => (
                         <label key={subject.value} className="flex items-center">
                           <input
                             type="checkbox"
@@ -1285,7 +1285,7 @@ export function ReviewDetail() {
                       <CreatableSelect
                         isMulti
                         isClearable
-                        options={FILTER_CONFIGS.observancesHolidays.options}
+                        options={ALL_FIELD_CONFIGS.observancesHolidays.options}
                         value={(metadata.observancesHolidays || []).map((v: string) => ({
                           value: v,
                           label: v,
@@ -1323,7 +1323,7 @@ export function ReviewDetail() {
                       <CreatableSelect
                         isMulti
                         isClearable
-                        options={FILTER_CONFIGS.culturalResponsivenessFeatures.options}
+                        options={ALL_FIELD_CONFIGS.culturalResponsivenessFeatures.options}
                         value={(metadata.culturalResponsivenessFeatures || []).map((v: string) => ({
                           value: v,
                           label: v,
