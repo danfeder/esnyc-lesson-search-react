@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { getSearchRpcName } from '../lib/search';
 import type { SearchFilters, Lesson } from '../types';
 import { debounce } from '../utils/debounce';
 import { logger } from '../utils/logger';
@@ -56,7 +57,8 @@ export function useSupabaseSearch(
         };
 
         // Call our PostgreSQL search function
-        const { data, error: searchError } = await supabase.rpc('search_lessons', searchParams);
+        const rpcName = getSearchRpcName();
+        const { data, error: searchError } = await supabase.rpc(rpcName, searchParams);
 
         if (searchError) throw searchError;
 
