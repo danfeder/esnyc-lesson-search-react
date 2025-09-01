@@ -204,11 +204,12 @@ serve(async (req) => {
       title = extractResult.data.title;
       content = extractResult.data.content;
 
-      // Step 3: Update submission with extracted content
+      // Step 3: Update submission with extracted content and title
       const { error: updateError } = await supabaseAdmin
         .from('lesson_submissions')
         .update({
           extracted_content: content,
+          extracted_title: title,
         })
         .eq('id', submission.id);
 

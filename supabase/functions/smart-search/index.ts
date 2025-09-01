@@ -263,7 +263,7 @@ serve(async (req) => {
         coreCompetencies: row.core_competencies || row.metadata?.coreCompetencies || [],
         culturalHeritage: row.cultural_heritage || row.metadata?.culturalHeritage || [],
         locationRequirements: row.location_requirements || row.metadata?.locationRequirements || [],
-        activityType: row.metadata?.activityType || [],
+        activityType: row.activity_type || row.metadata?.activityType || [],
         lessonFormat: row.lesson_format || row.metadata?.lessonFormat || [],
         mainIngredients: row.main_ingredients || row.metadata?.mainIngredients || [],
         skills: row.metadata?.skills || [],
