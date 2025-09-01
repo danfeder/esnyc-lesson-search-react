@@ -49,13 +49,30 @@ describe('Search invalidation and cache-key isolation', () => {
         error: null,
       })
       .mockResolvedValueOnce({
-        data: [makeRpcRow({ lesson_id: 'L3', title: 'Lesson Three', grade_levels: ['5'], total_count: 4 })],
+        data: [
+          makeRpcRow({
+            lesson_id: 'L3',
+            title: 'Lesson Three',
+            grade_levels: ['5'],
+            total_count: 4,
+          }),
+        ],
         error: null,
       })
       .mockResolvedValueOnce({
         data: [
-          makeRpcRow({ lesson_id: 'LF1', title: 'Filtered One', grade_levels: ['5'], total_count: 2 }),
-          makeRpcRow({ lesson_id: 'LF2', title: 'Filtered Two', grade_levels: ['5'], total_count: 2 }),
+          makeRpcRow({
+            lesson_id: 'LF1',
+            title: 'Filtered One',
+            grade_levels: ['5'],
+            total_count: 2,
+          }),
+          makeRpcRow({
+            lesson_id: 'LF2',
+            title: 'Filtered Two',
+            grade_levels: ['5'],
+            total_count: 2,
+          }),
         ],
         error: null,
       });
@@ -114,9 +131,24 @@ describe('Search invalidation and cache-key isolation', () => {
       })
       .mockResolvedValueOnce({
         data: [
-          makeRpcRow({ lesson_id: 'L3', title: 'Lesson Three', grade_levels: ['5'], total_count: 5 }),
-          makeRpcRow({ lesson_id: 'L4', title: 'Lesson Four', grade_levels: ['6'], total_count: 5 }),
-          makeRpcRow({ lesson_id: 'L5', title: 'Lesson Five', grade_levels: ['7'], total_count: 5 }),
+          makeRpcRow({
+            lesson_id: 'L3',
+            title: 'Lesson Three',
+            grade_levels: ['5'],
+            total_count: 5,
+          }),
+          makeRpcRow({
+            lesson_id: 'L4',
+            title: 'Lesson Four',
+            grade_levels: ['6'],
+            total_count: 5,
+          }),
+          makeRpcRow({
+            lesson_id: 'L5',
+            title: 'Lesson Five',
+            grade_levels: ['7'],
+            total_count: 5,
+          }),
         ],
         error: null,
       });

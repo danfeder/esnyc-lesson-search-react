@@ -52,7 +52,12 @@ describe('Search suggestions integration', () => {
       // After clicking suggestion, return a result
       .mockResolvedValueOnce({
         data: [
-          makeRpcRow({ lesson_id: 'S1', title: 'Garden Planning 101', grade_levels: ['5'], total_count: 1 }),
+          makeRpcRow({
+            lesson_id: 'S1',
+            title: 'Garden Planning 101',
+            grade_levels: ['5'],
+            total_count: 1,
+          }),
         ],
         error: null,
       });
