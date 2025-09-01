@@ -19,7 +19,7 @@ export const SearchPage: React.FC = () => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  // React Query manages pagination; no local page counter required
 
   const {
     data,
@@ -38,7 +38,6 @@ export const SearchPage: React.FC = () => {
   const handleLoadMore = useCallback(async () => {
     if (!hasNextPage || isFetchingNextPage) return;
     await fetchNextPage();
-    setCurrentPage((p) => p + 1);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleLessonClick = (lesson: Lesson) => {

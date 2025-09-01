@@ -46,7 +46,7 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
   const rpcName = getSearchRpcName();
 
   return useInfiniteQuery<PageResult, Error>({
-    queryKey: ['lesson-search', filters, pageSize],
+    queryKey: ['lesson-search', rpcName, filters, pageSize],
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((sum, p) => sum + p.lessons.length, 0);
@@ -93,4 +93,3 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
     gcTime: 10 * 60 * 1000,
   });
 }
-
