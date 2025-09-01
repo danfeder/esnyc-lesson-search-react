@@ -41,7 +41,12 @@ describe('Season parameter naming (RPC and suggestions)', () => {
     // RPC returns one row
     rpcMock.mockResolvedValueOnce({
       data: [
-        makeRpcRow({ lesson_id: 'SZN1', title: 'Fall Planting', grade_levels: ['3'], total_count: 1 }),
+        makeRpcRow({
+          lesson_id: 'SZN1',
+          title: 'Fall Planting',
+          grade_levels: ['3'],
+          total_count: 1,
+        }),
       ],
       error: null,
     });
