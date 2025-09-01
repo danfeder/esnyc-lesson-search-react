@@ -436,12 +436,27 @@ export function ReviewDetail() {
         const lessonData = parseExtractedContent(submission.extracted_content);
 
         // Update the existing lesson
+        // Safely derive existing activityType from metadata JSON when view lacks base column
+        const existingActivityType =
+          existingLesson.metadata &&
+          typeof existingLesson.metadata === 'object' &&
+          !Array.isArray(existingLesson.metadata) &&
+          'activityType' in (existingLesson.metadata as Record<string, any>)
+            ? (existingLesson.metadata as any).activityType
+            : undefined;
+
         const updateData: any = {
           title: lessonData.title || existingLesson.title,
           summary: lessonData.summary || existingLesson.summary,
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || existingLesson.grade_levels || [],
-          activity_type: metadata.activityType ? [metadata.activityType] : (existingLesson.metadata?.activityType || []),
+          activity_type: metadata.activityType
+            ? [metadata.activityType]
+            : Array.isArray(existingActivityType)
+              ? existingActivityType
+              : existingActivityType
+                ? [existingActivityType]
+                : [],
           thematic_categories: metadata.themes || existingLesson.thematic_categories || [],
           season_timing: metadata.season || existingLesson.season_timing || [],
           core_competencies: metadata.coreCompetencies || existingLesson.core_competencies || [],
