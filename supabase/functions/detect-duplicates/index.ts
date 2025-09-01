@@ -60,47 +60,147 @@ async function generateContentHash(content: string, metadata: any = {}): Promise
   }
 }
 
-// Calculate title similarity (simple Jaccard similarity)
-function calculateTitleSimilarity(title1: string, title2: string): number {
-  const words1 = new Set(title1.toLowerCase().split(/\s+/));
-  const words2 = new Set(title2.toLowerCase().split(/\s+/));
+// Common English stop words to filter out
+const STOP_WORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'are',
+  'as',
+  'at',
+  'be',
+  'by',
+  'for',
+  'from',
+  'has',
+  'he',
+  'in',
+  'is',
+  'it',
+  'its',
+  'of',
+  'on',
+  'that',
+  'the',
+  'to',
+  'was',
+  'will',
+  'with',
+  'the',
+  'this',
+  'these',
+  'those',
+  'what',
+  'when',
+  'where',
+  'which',
+  'who',
+  'why',
+  'how',
+]);
 
-  const intersection = new Set([...words1].filter((x) => words2.has(x)));
-  const union = new Set([...words1, ...words2]);
+// Normalize title for comparison
+function normalizeTitle(title: string): string[] {
+  // Lowercase, remove punctuation, split into words
+  const words = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word.length > 0 && !STOP_WORDS.has(word));
 
-  return intersection.size / union.size;
+  return words;
 }
 
-// Calculate metadata overlap
+// Calculate improved title similarity using token set ratio
+function calculateTitleSimilarity(title1: string, title2: string): number {
+  const words1 = normalizeTitle(title1);
+  const words2 = normalizeTitle(title2);
+
+  // Handle empty cases
+  if (words1.length === 0 && words2.length === 0) return 1.0;
+  if (words1.length === 0 || words2.length === 0) return 0.0;
+
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+
+  const intersection = new Set([...set1].filter((x) => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+
+  // Token set ratio with length penalty
+  const jaccardScore = union.size === 0 ? 0 : intersection.size / union.size;
+  const lengthRatio =
+    Math.min(words1.length, words2.length) / Math.max(words1.length, words2.length);
+
+  // Weighted combination favoring Jaccard but considering length
+  return jaccardScore * 0.8 + lengthRatio * 0.2;
+}
+
+// Calculate Jaccard similarity for array fields
+function calculateJaccardSimilarity(arr1: any[], arr2: any[]): number {
+  if (!arr1?.length && !arr2?.length) return 1.0; // Both empty = match
+  if (!arr1?.length || !arr2?.length) return 0.0; // One empty = no match
+
+  // Normalize strings for comparison
+  const normalize = (item: any) => String(item).toLowerCase().trim();
+  const set1 = new Set(arr1.map(normalize));
+  const set2 = new Set(arr2.map(normalize));
+
+  const intersection = new Set([...set1].filter((x) => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+
+  return union.size === 0 ? 0 : intersection.size / union.size;
+}
+
+// Calculate metadata overlap across all 7 array fields
 function calculateMetadataOverlap(meta1: any, meta2: any): number {
   if (!meta1 || !meta2) return 0;
 
-  let overlapScore = 0;
-  let totalChecks = 0;
+  const fieldWeights = {
+    gradeLevels: 0.2, // Important for age appropriateness
+    thematicCategories: 0.2, // Core content categorization
+    activityType: 0.15, // Type of lesson activity
+    culturalHeritage: 0.15, // Cultural context
+    seasonTiming: 0.1, // When lesson is relevant
+    mainIngredients: 0.1, // For cooking lessons
+    cookingMethods: 0.1, // For cooking lessons
+  };
 
-  // Check grade levels
-  if (meta1.gradeLevels && meta2.grade_levels) {
-    const grades1 = new Set(meta1.gradeLevels);
-    const grades2 = new Set(meta2.grade_levels);
-    const intersection = new Set([...grades1].filter((x) => grades2.has(x)));
-    if (intersection.size > 0) {
-      overlapScore += intersection.size / Math.max(grades1.size, grades2.size);
+  let weightedScore = 0;
+  let totalWeight = 0;
+
+  // Map submission fields to lesson fields
+  const fieldMappings = [
+    { sub: 'gradeLevels', lesson: 'grade_levels', weight: fieldWeights.gradeLevels },
+    {
+      sub: 'thematicCategories',
+      lesson: 'thematic_categories',
+      weight: fieldWeights.thematicCategories,
+    },
+    { sub: 'activityType', lesson: 'activity_type', weight: fieldWeights.activityType },
+    { sub: 'culturalHeritage', lesson: 'cultural_heritage', weight: fieldWeights.culturalHeritage },
+    { sub: 'seasonTiming', lesson: 'season_timing', weight: fieldWeights.seasonTiming },
+    { sub: 'mainIngredients', lesson: 'main_ingredients', weight: fieldWeights.mainIngredients },
+    { sub: 'cookingMethods', lesson: 'cooking_methods', weight: fieldWeights.cookingMethods },
+  ];
+
+  for (const mapping of fieldMappings) {
+    const subField = meta1[mapping.sub];
+    const lessonField = meta2[mapping.lesson];
+
+    // Skip if either field is missing
+    if (subField && lessonField) {
+      const similarity = calculateJaccardSimilarity(
+        Array.isArray(subField) ? subField : [subField],
+        Array.isArray(lessonField) ? lessonField : [lessonField]
+      );
+
+      weightedScore += similarity * mapping.weight;
+      totalWeight += mapping.weight;
     }
-    totalChecks++;
   }
 
-  // Check skills
-  if (meta1.skills && meta2.skills) {
-    const skills1 = new Set(meta1.skills);
-    const skills2 = new Set(meta2.skills);
-    const intersection = new Set([...skills1].filter((x) => skills2.has(x)));
-    if (intersection.size > 0) {
-      overlapScore += intersection.size / Math.max(skills1.size, skills2.size);
-    }
-    totalChecks++;
-  }
-
-  return totalChecks > 0 ? overlapScore / totalChecks : 0;
+  // Normalize by actual weight used (in case some fields were missing)
+  return totalWeight > 0 ? weightedScore / totalWeight : 0;
 }
 
 serve(async (req) => {
@@ -155,7 +255,7 @@ serve(async (req) => {
         'find_similar_lessons_by_embedding',
         {
           query_embedding: vectorString,
-          similarity_threshold: 0.3,
+          similarity_threshold: 0.5,
           max_results: 20,
         }
       );
@@ -176,7 +276,8 @@ serve(async (req) => {
           const metaOverlap = calculateMetadataOverlap(metadata, lesson?.metadata);
           const semanticSim = match.similarity_score;
 
-          // Combined score with real semantic similarity
+          // Combined score with improved weighting
+          // Semantic similarity is most important (0.5), then title (0.3), then metadata (0.2)
           const combinedScore = titleSim * 0.3 + metaOverlap * 0.2 + semanticSim * 0.5;
 
           duplicates.push({
@@ -209,7 +310,8 @@ serve(async (req) => {
         const metaOverlap = calculateMetadataOverlap(metadata, lesson.metadata);
         const combinedScore = titleSim * 0.7 + metaOverlap * 0.3;
 
-        if (combinedScore >= 0.3) {
+        // Apply floor for fallback path as well
+        if (combinedScore >= 0.45) {
           let matchType: 'high' | 'medium' | 'low';
           if (combinedScore >= 0.85) matchType = 'high';
           else if (combinedScore >= 0.7) matchType = 'medium';
@@ -234,9 +336,17 @@ serve(async (req) => {
     // Sort by similarity score
     duplicates.sort((a, b) => b.similarityScore - a.similarityScore);
 
+    // Apply combined score floor (0.45) and limit to top 10
+    const COMBINED_SCORE_FLOOR = 0.45;
+    const MAX_RESULTS = 10;
+
+    const filteredDuplicates = duplicates
+      .filter((dup) => dup.similarityScore >= COMBINED_SCORE_FLOOR || dup.matchType === 'exact')
+      .slice(0, MAX_RESULTS);
+
     // Store results in submission_similarities table
-    if (submissionId && duplicates.length > 0) {
-      const similaritiesToInsert = duplicates.map((dup) => ({
+    if (submissionId && filteredDuplicates.length > 0) {
+      const similaritiesToInsert = filteredDuplicates.map((dup) => ({
         submission_id: submissionId,
         lesson_id: dup.lessonId,
         title_similarity: dup.matchDetails.titleSimilarity,
@@ -260,8 +370,8 @@ serve(async (req) => {
         data: {
           submissionId,
           contentHash,
-          duplicatesFound: duplicates.length,
-          duplicates: duplicates.slice(0, 10), // Return top 10
+          duplicatesFound: filteredDuplicates.length,
+          duplicates: filteredDuplicates, // Already filtered to top 10
         },
       }),
       {

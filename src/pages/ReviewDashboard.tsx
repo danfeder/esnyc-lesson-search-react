@@ -14,6 +14,15 @@ import {
 } from 'lucide-react';
 import { logger } from '../utils/logger';
 
+interface Similarity {
+  lesson_id: string;
+  combined_score: number;
+  match_type: 'exact' | 'high' | 'medium' | 'low';
+  title_similarity: number;
+  content_similarity: number;
+  metadata_overlap_score: number;
+}
+
 interface Submission {
   id: string;
   created_at: string;
@@ -29,14 +38,7 @@ interface Submission {
     email: string;
     full_name?: string;
   };
-  similarities?: Array<{
-    lesson_id: string;
-    combined_score: number;
-    match_type: string;
-    lesson: {
-      title: string;
-    };
-  }>;
+  similarities?: Similarity[];
   extractedTitle?: string; // Added for memoized title
 }
 
@@ -90,6 +92,7 @@ export function ReviewDashboard() {
   useEffect(() => {
     checkAuth();
     loadSubmissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const checkAuth = async () => {
@@ -140,17 +143,59 @@ export function ReviewDashboard() {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Fetch teacher information separately from user_profiles
+      // Fetch teacher information and similarities in parallel
       if (data && data.length > 0) {
+        const submissionIds = data.map((s) => s.id);
         const teacherIds = [...new Set(data.map((s) => s.teacher_id))];
-        const { data: profiles } = await supabase
-          .from('user_profiles')
-          .select('id, full_name')
-          .in('id', teacherIds);
 
-        // Map teacher info to submissions
-        const submissionsWithTeachers = data.map((submission) => {
+        // Parallel fetch of profiles and similarities
+        const [profilesResult, similaritiesResult] = await Promise.all([
+          supabase.from('user_profiles').select('id, full_name').in('id', teacherIds),
+          supabase
+            .from('submission_similarities')
+            .select(
+              'submission_id, lesson_id, combined_score, match_type, title_similarity, content_similarity, metadata_overlap_score'
+            )
+            .in('submission_id', submissionIds)
+            .order('combined_score', { ascending: false }),
+        ]);
+
+        const profiles = profilesResult.data;
+        const allSimilarities = similaritiesResult.data || [];
+
+        // Group similarities by submission_id, filtering out nulls
+        const similaritiesBySubmission = allSimilarities.reduce(
+          (acc, sim) => {
+            // Only include if all required fields are non-null
+            if (
+              sim.combined_score !== null &&
+              sim.match_type !== null &&
+              sim.title_similarity !== null &&
+              sim.content_similarity !== null &&
+              sim.metadata_overlap_score !== null
+            ) {
+              if (!acc[sim.submission_id]) {
+                acc[sim.submission_id] = [];
+              }
+              acc[sim.submission_id].push({
+                lesson_id: sim.lesson_id,
+                combined_score: sim.combined_score,
+                match_type: sim.match_type as 'exact' | 'high' | 'medium' | 'low',
+                title_similarity: sim.title_similarity,
+                content_similarity: sim.content_similarity,
+                metadata_overlap_score: sim.metadata_overlap_score,
+              });
+            }
+            return acc;
+          },
+          {} as Record<string, Similarity[]>
+        );
+
+        // Map teacher info and similarities to submissions
+        const submissionsWithDetails = data.map((submission) => {
           const profile = profiles?.find((p) => p.id === submission.teacher_id);
+          const similarities = similaritiesBySubmission[submission.id] || [];
+
           return {
             ...submission,
             created_at: submission.created_at || '',
@@ -168,10 +213,11 @@ export function ReviewDashboard() {
               email: 'teacher@example.com', // We'll use a placeholder for now
               full_name: profile?.full_name || 'Unknown Teacher',
             },
+            similarities: similarities,
           };
         });
 
-        setSubmissions(submissionsWithTeachers);
+        setSubmissions(submissionsWithDetails);
       } else {
         setSubmissions(
           (data || []).map((submission) => ({
@@ -187,6 +233,7 @@ export function ReviewDashboard() {
               | 'rejected'
               | 'needs_revision',
             extracted_content: submission.extracted_content || undefined,
+            similarities: [],
           }))
         );
       }
@@ -222,13 +269,65 @@ export function ReviewDashboard() {
     }
   };
 
-  // Temporarily disabled until we fix the relationship
-  const getTopDuplicates = (): Array<{
-    lesson_id: string;
-    lesson: { title: string };
-    combined_score: number;
-  }> => {
-    return [];
+  // Get lesson titles for similarity matches
+  const [lessonTitles, setLessonTitles] = useState<Record<string, string>>({});
+  const [showLowMatches, setShowLowMatches] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    // Fetch lesson titles for all similarities
+    const fetchLessonTitles = async () => {
+      const allLessonIds = new Set<string>();
+      submissions.forEach((sub) => {
+        sub.similarities?.forEach((sim) => {
+          allLessonIds.add(sim.lesson_id);
+        });
+      });
+
+      if (allLessonIds.size > 0) {
+        const { data: lessons } = await supabase
+          .from('lessons')
+          .select('lesson_id, title')
+          .in('lesson_id', Array.from(allLessonIds));
+
+        if (lessons) {
+          const titles = lessons.reduce(
+            (acc, lesson) => {
+              acc[lesson.lesson_id] = lesson.title;
+              return acc;
+            },
+            {} as Record<string, string>
+          );
+          setLessonTitles(titles);
+        }
+      }
+    };
+
+    if (submissions.length > 0) {
+      fetchLessonTitles();
+    }
+  }, [submissions]);
+
+  // Filter similarities to show only high-quality matches by default
+  const getFilteredSimilarities = (
+    similarities: Similarity[] | undefined,
+    submissionId: string
+  ) => {
+    if (!similarities || similarities.length === 0) return { visible: [], hidden: [] };
+
+    const highQuality = similarities.filter(
+      (s) => s.match_type === 'exact' || s.match_type === 'high' || s.match_type === 'medium'
+    );
+    const lowQuality = similarities.filter((s) => s.match_type === 'low');
+
+    // If showing low matches for this submission, include them
+    const visible = showLowMatches[submissionId] ? similarities : highQuality;
+
+    return {
+      visible: visible.slice(0, 5), // Show max 5 matches
+      hidden: lowQuality,
+      hasMore: visible.length > 5,
+      totalCount: similarities.length,
+    };
   };
 
   // Optimize title extraction with useMemo to avoid recalculating on every render
@@ -307,7 +406,11 @@ export function ReviewDashboard() {
         ) : (
           submissionsWithTitles.map((submission) => {
             const StatusIcon = statusIcons[submission.status];
-            const topDuplicates = getTopDuplicates();
+            const {
+              visible: visibleDuplicates,
+              hidden: hiddenDuplicates,
+              hasMore,
+            } = getFilteredSimilarities(submission.similarities, submission.id);
 
             return (
               <div
@@ -368,19 +471,65 @@ export function ReviewDashboard() {
                   </a>
                 </div>
 
-                {/* Duplicate Warnings */}
-                {topDuplicates.length > 0 && (
+                {/* Duplicate Warnings with Smart Filtering */}
+                {visibleDuplicates.length > 0 && (
                   <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-md p-4">
-                    <h4 className="text-sm font-medium text-yellow-800 mb-2">
-                      Potential Duplicates Detected
-                    </h4>
-                    <ul className="space-y-1">
-                      {topDuplicates.map((dup) => (
-                        <li key={dup.lesson_id} className="text-sm text-yellow-700">
-                          • "{dup.lesson.title}" - {Math.round(dup.combined_score * 100)}% match
-                        </li>
-                      ))}
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-yellow-800">
+                        Potential Duplicates Detected
+                      </h4>
+                      {hiddenDuplicates.length > 0 && (
+                        <button
+                          onClick={() =>
+                            setShowLowMatches((prev) => ({
+                              ...prev,
+                              [submission.id]: !prev[submission.id],
+                            }))
+                          }
+                          className="text-xs text-yellow-600 hover:text-yellow-700 underline"
+                        >
+                          {showLowMatches[submission.id]
+                            ? `Hide ${hiddenDuplicates.length} low matches`
+                            : `Show ${hiddenDuplicates.length} more low-quality matches`}
+                        </button>
+                      )}
+                    </div>
+                    <ul className="space-y-2">
+                      {visibleDuplicates.map((dup) => {
+                        const matchColor = {
+                          exact: 'text-red-700 font-semibold',
+                          high: 'text-orange-700',
+                          medium: 'text-yellow-700',
+                          low: 'text-yellow-600 opacity-75',
+                        }[dup.match_type];
+
+                        return (
+                          <li key={dup.lesson_id} className="text-sm">
+                            <div className="flex items-start gap-2">
+                              <span className={`${matchColor} uppercase text-xs mt-0.5`}>
+                                [{dup.match_type}]
+                              </span>
+                              <div className="flex-1">
+                                <span className="text-yellow-800">
+                                  "{lessonTitles[dup.lesson_id] || 'Loading...'}"
+                                </span>
+                                <div className="text-xs text-yellow-600 mt-1">
+                                  Score: {Math.round(dup.combined_score * 100)}% (Title:{' '}
+                                  {Math.round(dup.title_similarity * 100)}%, Content:{' '}
+                                  {Math.round(dup.content_similarity * 100)}%, Metadata:{' '}
+                                  {Math.round(dup.metadata_overlap_score * 100)}%)
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
+                    {hasMore && (
+                      <p className="text-xs text-yellow-600 mt-2 italic">
+                        Showing top 5 matches only
+                      </p>
+                    )}
                   </div>
                 )}
 
