@@ -333,7 +333,7 @@ export function ReviewDetail() {
 
         // Create new lesson (write to base table to set all native columns)
         const newLesson: any = {
-          lesson_id: `lesson_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          lesson_id: `lesson_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
           title: baseTitle || 'Untitled Lesson',
           summary: lessonData.summary || '',
           file_link: submission.google_doc_url,
