@@ -4,11 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SearchBar } from './SearchBar';
 import { useSearchStore } from '@/stores/searchStore';
-import { useSearch } from '@/hooks/useSearch';
 
 // Mock the stores and hooks
 vi.mock('@/stores/searchStore');
-vi.mock('@/hooks/useSearch');
+// Suggestions moved to SearchPage; no dynamic suggestions from SearchBar
 vi.mock('@/utils/debounce', () => ({
   debounce: (fn: any) => fn,
 }));
@@ -32,11 +31,7 @@ describe('SearchBar', () => {
       setFilters: mockSetFilters,
     });
 
-    (useSearch as any).mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: null,
-    });
+    // No suggestions hook needed for SearchBar tests
   });
 
   const renderComponent = () => {
@@ -155,57 +150,7 @@ describe('SearchBar', () => {
     });
   });
 
-  describe('Search Suggestions', () => {
-    it('should display suggestions when no results found', () => {
-      (useSearch as any).mockReturnValue({
-        data: {
-          suggestions: ['tomatoes', 'tomato sauce', 'cherry tomatoes'],
-        },
-        isLoading: false,
-        error: null,
-      });
-
-      renderComponent();
-
-      expect(screen.getByText(/no results found/i)).toBeInTheDocument();
-      expect(screen.getByText('tomatoes')).toBeInTheDocument();
-      expect(screen.getByText('tomato sauce')).toBeInTheDocument();
-      expect(screen.getByText('cherry tomatoes')).toBeInTheDocument();
-    });
-
-    it('should apply suggestion when clicked', async () => {
-      const user = userEvent.setup();
-      (useSearch as any).mockReturnValue({
-        data: {
-          suggestions: ['garden planning'],
-        },
-        isLoading: false,
-        error: null,
-      });
-
-      renderComponent();
-
-      const suggestionButton = screen.getByRole('button', { name: 'garden planning' });
-      await user.click(suggestionButton);
-
-      expect(mockSetFilters).toHaveBeenCalledWith({ query: 'garden planning' });
-    });
-
-    it('should not display suggestions when results exist', () => {
-      (useSearch as any).mockReturnValue({
-        data: {
-          results: [{ id: 1, title: 'Test' }],
-          suggestions: [],
-        },
-        isLoading: false,
-        error: null,
-      });
-
-      renderComponent();
-
-      expect(screen.queryByText(/no results found/i)).not.toBeInTheDocument();
-    });
-  });
+  // No dynamic suggestions section in SearchBar anymore; covered in SearchPage integration tests
 
   describe('Accessibility', () => {
     it('should have accessible label for search input', () => {

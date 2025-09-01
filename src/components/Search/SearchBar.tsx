@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Search, X, Lightbulb } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useSearchStore } from '../../stores/searchStore';
-import { useSearch } from '../../hooks/useSearch';
 import { debounce } from '../../utils/debounce';
 
 export const SearchBar: React.FC = () => {
@@ -13,12 +12,7 @@ export const SearchBar: React.FC = () => {
     setLocalQuery(filters.query);
   }, [filters.query]);
 
-  // Get search results to show suggestions when no results found
-  const { data: searchResults } = useSearch({
-    filters,
-    enabled: !!filters.query.trim(),
-    limit: 5, // Limit for testing
-  });
+  // Suggestions are now rendered in SearchPage when no results exist.
 
   // Debounced search to avoid too many API calls
   const debouncedSearch = useCallback(
@@ -77,33 +71,7 @@ export const SearchBar: React.FC = () => {
           </div>
         </form>
 
-        {/* Search Suggestions */}
-        {searchResults?.suggestions && searchResults.suggestions.length > 0 && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-blue-900 mb-2">
-                  No results found. Try these suggestions:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {searchResults.suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setLocalQuery(suggestion);
-                        setFilters({ query: suggestion });
-                      }}
-                      className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Suggestions removed from SearchBar; shown in SearchPage when no results */}
 
         {/* Quick Search Suggestions */}
         <div className="mt-6 flex flex-wrap items-center gap-3">

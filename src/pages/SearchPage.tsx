@@ -11,6 +11,8 @@ import { SkipLink } from '../components/Common/SkipLink';
 import { InfiniteScrollTrigger } from '../components/Common/InfiniteScrollTrigger';
 import { useSearchStore } from '../stores/searchStore';
 import { useLessonSearch } from '@/hooks/useLessonSearch';
+import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
+import { Lightbulb } from 'lucide-react';
 import type { Lesson, ViewState } from '../types';
 
 export const SearchPage: React.FC = () => {
@@ -26,6 +28,13 @@ export const SearchPage: React.FC = () => {
 
   const lessons = (data?.pages || []).flatMap((p) => p.lessons);
   const totalCount = data?.pages?.[0]?.totalCount || 0;
+
+  // Suggestions when there are no results
+  const { data: suggestionsData } = useLessonSuggestions({
+    filters,
+    enabled: !!filters.query?.trim(),
+  });
+  const suggestions = suggestionsData?.suggestions || [];
 
   // Load more handler for infinite scroll
   const handleLoadMore = useCallback(async () => {
@@ -86,6 +95,31 @@ export const SearchPage: React.FC = () => {
           onLessonClick={handleLessonClick}
           isLoading={isLoading}
         />
+
+        {/* Suggestions Panel when no results */}
+        {totalCount === 0 && !!filters.query?.trim() && suggestions.length > 0 && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-900 mb-2">
+                  No results found. Try these suggestions:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.map((s, index) => (
+                    <button
+                      key={`${s}-${index}`}
+                      onClick={() => setFilters({ query: s })}
+                      className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Infinite Scroll Trigger */}
         {lessons.length > 0 && (
