@@ -107,7 +107,7 @@ const fallbackSearch = async ({
           coreCompetencies: row.core_competencies || metadata?.coreCompetencies || [],
           culturalHeritage: row.cultural_heritage || metadata?.culturalHeritage || [],
           locationRequirements: row.location_requirements || metadata?.locationRequirements || [],
-          activityType: row.activity_type || metadata?.activityType || [],
+          activityType: metadata?.activityType || [],
           lessonFormat: row.lesson_format || metadata?.lessonFormat || [],
           mainIngredients: row.main_ingredients || metadata?.mainIngredients || [],
           skills: metadata?.skills || [],

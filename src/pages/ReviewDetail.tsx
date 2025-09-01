@@ -441,12 +441,10 @@ export function ReviewDetail() {
           summary: lessonData.summary || existingLesson.summary,
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || existingLesson.grade_levels || [],
-          activity_type: metadata.activityType
-            ? [metadata.activityType]
-            : existingLesson.activity_type || [],
+          activity_type: metadata.activityType ? [metadata.activityType] : (existingLesson.metadata?.activityType || []),
           thematic_categories: metadata.themes || existingLesson.thematic_categories || [],
           season_timing: metadata.season || existingLesson.season_timing || [],
-          core_competencies: metadata.core_competencies || existingLesson.core_competencies || [],
+          core_competencies: metadata.coreCompetencies || existingLesson.core_competencies || [],
           cultural_heritage: metadata.culturalHeritage || existingLesson.cultural_heritage || [],
           location_requirements:
             (metadata.location ? [metadata.location] : null) ||
