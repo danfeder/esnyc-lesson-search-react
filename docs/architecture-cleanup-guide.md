@@ -92,13 +92,14 @@ This section is a living checklist to track cleanup progress. Do not remove prio
 Recent Notes
 - 2025‑09‑01: Phase 0 completed. Added RPC switch, env flags, baseline DB snapshot + plans.
 - 2025‑09‑01: Phase 1A merged; CI green after cache‑key + typing fixes.
-- 2025‑09‑01: Phase 1B in progress — added invalidation, cache‑key, and suggestions integration tests; preparing PR.
+- 2025‑09‑01: Phase 1B merged — invalidation, cache‑key, and suggestions integration tests landed. Branch deleted.
   - Addressed review feedback: shared test factories + smart-search suggestions mock integrated.
-  - Branch: `feat/tests-search-invalidation-phase-1b`
   - PR: https://github.com/danfeder/esnyc-lesson-search-react/pull/222
+  - Follow-up branch: `feat/tests-consistency-phase-1b1` (tests-only consistency + suggestions error-path).
 
 Next Planned Actions
-- Phase 1B: Open PR including invalidation, cache-key, and suggestions tests; address CI.
+- Open PR for Phase 1B.1 follow-up (tests consistency + error-path) and merge.
+- Phase 1C: Decide on suggestions path unification; scope small UI/logic changes accordingly.
 
 ======================================================================
 
