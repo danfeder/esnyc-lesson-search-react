@@ -25,7 +25,6 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
       'culturalHeritage',
       'location',
       'activityType',
-      'lessonFormat',
       'academicIntegration',
       'socialEmotionalLearning',
     ];
@@ -42,6 +41,9 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
     // Handle single-value filters
     if (filters.cookingMethods) {
       pills.push({ category: 'cookingMethods', value: filters.cookingMethods });
+    }
+    if (filters.lessonFormat) {
+      pills.push({ category: 'lessonFormat', value: filters.lessonFormat });
     }
 
     return pills;
@@ -81,12 +83,22 @@ export const FilterPills: React.FC<FilterPillsProps> = ({ onAddFilters }) => {
 
         if (values.length === 1) {
           // Single value - use regular FilterPill
+          const value = values[0];
+          const onRemove = () => {
+            if (categoryKey === 'lessonFormat') {
+              setFilters({ lessonFormat: '' });
+            } else if (categoryKey === 'cookingMethods') {
+              setFilters({ cookingMethods: '' });
+            } else {
+              removeFilter(categoryKey, value);
+            }
+          };
           return (
             <FilterPill
-              key={`${category}-${values[0]}`}
+              key={`${category}-${value}`}
               category={category}
-              value={values[0]}
-              onRemove={() => removeFilter(categoryKey, values[0])}
+              value={value}
+              onRemove={onRemove}
             />
           );
         } else {

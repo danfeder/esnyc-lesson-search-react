@@ -373,7 +373,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
       filters.activityType.length +
       filters.location.length +
       filters.culturalHeritage.length +
-      (filters.lessonFormat.length > 0 ? 1 : 0) +
+      (filters.lessonFormat ? 1 : 0) +
       filters.academicIntegration.length +
       filters.socialEmotionalLearning.length +
       (filters.cookingMethods ? 1 : 0);
