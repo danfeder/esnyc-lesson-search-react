@@ -344,6 +344,42 @@ serve(async (req) => {
       .filter((dup) => dup.similarityScore >= COMBINED_SCORE_FLOOR || dup.matchType === 'exact')
       .slice(0, MAX_RESULTS);
 
+    // Calculate observability metrics
+    const matchCounts = {
+      exact: filteredDuplicates.filter((d) => d.matchType === 'exact').length,
+      high: filteredDuplicates.filter((d) => d.matchType === 'high').length,
+      medium: filteredDuplicates.filter((d) => d.matchType === 'medium').length,
+      low: filteredDuplicates.filter((d) => d.matchType === 'low').length,
+      total: filteredDuplicates.length,
+      preFilterTotal: duplicates.length,
+      filtered: duplicates.length - filteredDuplicates.length,
+    };
+
+    // Calculate score statistics
+    const scores = filteredDuplicates.map((d) => d.similarityScore).sort((a, b) => a - b);
+    const scoreStats =
+      scores.length > 0
+        ? {
+            min: scores[0],
+            max: scores[scores.length - 1],
+            avg: scores.reduce((a, b) => a + b, 0) / scores.length,
+            p50: scores[Math.floor(scores.length * 0.5)],
+            p90: scores[Math.floor(scores.length * 0.9)],
+          }
+        : null;
+
+    // Log observability metrics
+    console.log('Duplicate detection metrics:', {
+      submissionId,
+      matchCounts,
+      scoreStats,
+      thresholds: {
+        semantic: 0.5,
+        combinedFloor: COMBINED_SCORE_FLOOR,
+        maxResults: MAX_RESULTS,
+      },
+    });
+
     // Store results in submission_similarities table
     if (submissionId && filteredDuplicates.length > 0) {
       const similaritiesToInsert = filteredDuplicates.map((dup) => ({
