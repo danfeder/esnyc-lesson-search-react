@@ -108,7 +108,7 @@ export const SearchPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {suggestions.map((s, index) => (
                     <button
-                      key={`${s}-${index}`}
+                      key={`sugg-${index}-${s}`}
                       onClick={() => setFilters({ query: s })}
                       className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors"
                     >

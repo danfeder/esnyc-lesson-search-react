@@ -12,10 +12,7 @@ interface UseLessonSuggestionsOptions {
   enabled?: boolean;
 }
 
-export function useLessonSuggestions({
-  filters,
-  enabled = true,
-}: UseLessonSuggestionsOptions) {
+export function useLessonSuggestions({ filters, enabled = true }: UseLessonSuggestionsOptions) {
   const query = (filters.query || '').trim();
   const isEnabled = enabled && query.length > 0;
 
@@ -40,6 +37,11 @@ export function useLessonSuggestions({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     queryFn: async () => {
+      interface SmartSearchResponse {
+        suggestions?: string[];
+        expandedQuery?: string;
+      }
+
       const { data, error } = await supabase.functions.invoke('smart-search', {
         body: {
           query,
@@ -52,6 +54,9 @@ export function useLessonSuggestions({
             location: filters.location,
             activityType: filters.activityType,
             lessonFormat: filters.lessonFormat,
+            academicIntegration: filters.academicIntegration,
+            socialEmotionalLearning: filters.socialEmotionalLearning,
+            cookingMethods: filters.cookingMethods,
           },
           // no need for paging here; we only need suggestions
           limit: 0,
@@ -63,13 +68,11 @@ export function useLessonSuggestions({
         return { suggestions: [] };
       }
 
+      const payload = (data as SmartSearchResponse) || {};
       return {
-        suggestions: Array.isArray((data as any)?.suggestions)
-          ? ((data as any).suggestions as string[])
-          : [],
-        expandedQuery: (data as any)?.expandedQuery,
+        suggestions: Array.isArray(payload.suggestions) ? payload.suggestions! : [],
+        expandedQuery: payload.expandedQuery,
       };
     },
   });
 }
-
