@@ -6,13 +6,7 @@ import { FilterSection } from './FilterSection';
 import { VirtualizedCulturalHeritageFilter } from './VirtualizedCulturalHeritageFilter';
 import { LazyTabPanel } from './LazyTabPanel';
 import { ErrorBoundary, DefaultErrorFallback } from '../Common/ErrorBoundary';
-import {
-  CORE_COMPETENCIES,
-  LESSON_FORMATS,
-  ACADEMIC_SUBJECTS,
-  SEL_COMPETENCIES,
-  COOKING_METHODS,
-} from '../../utils/filterConstants';
+import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 
 // Constants
 const TAB_COUNT = 3; // Number of tabs in the modal
@@ -57,54 +51,16 @@ export const FilterModal = React.memo<FilterModalProps>(
       return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
-    // Grade level options
-    const gradeOptions = [
-      { value: '3K', label: '3K' },
-      { value: 'PK', label: 'Pre-K' },
-      { value: 'K', label: 'Kindergarten' },
-      { value: '1', label: '1st Grade' },
-      { value: '2', label: '2nd Grade' },
-      { value: '3', label: '3rd Grade' },
-      { value: '4', label: '4th Grade' },
-      { value: '5', label: '5th Grade' },
-      { value: '6', label: '6th Grade' },
-      { value: '7', label: '7th Grade' },
-      { value: '8', label: '8th Grade' },
-    ];
+    // Options sourced from unified filter definitions
+    const gradeOptions = FILTER_CONFIGS.gradeLevel.options;
 
-    // Activity type options
-    const activityOptions = [
-      { value: 'cooking-only', label: 'Cooking Only' },
-      { value: 'garden-only', label: 'Garden Only' },
-      { value: 'both', label: 'Cooking + Garden' },
-      { value: 'academic-only', label: 'Academic Only' },
-    ];
+    const activityOptions = FILTER_CONFIGS.activityType.options;
 
-    // Season options
-    const seasonOptions = [
-      { value: 'Fall', label: 'Fall' },
-      { value: 'Winter', label: 'Winter' },
-      { value: 'Spring', label: 'Spring' },
-      { value: 'Summer', label: 'Summer' },
-    ];
+    const seasonOptions = FILTER_CONFIGS.seasonTiming.options;
 
-    // Location options
-    const locationOptions = [
-      { value: 'Indoor', label: 'Indoor' },
-      { value: 'Outdoor', label: 'Outdoor' },
-      { value: 'Both', label: 'Both' },
-    ];
+    const locationOptions = FILTER_CONFIGS.location.options;
 
-    // Thematic category options
-    const themeOptions = [
-      { value: 'Garden Basics', label: 'Garden Basics' },
-      { value: 'Plant Growth', label: 'Plant Growth' },
-      { value: 'Garden Communities', label: 'Garden Communities' },
-      { value: 'Ecosystems', label: 'Ecosystems' },
-      { value: 'Seed to Table', label: 'Seed to Table' },
-      { value: 'Food Systems', label: 'Food Systems' },
-      { value: 'Food Justice', label: 'Food Justice' },
-    ];
+    const themeOptions = FILTER_CONFIGS.theme.options;
 
     const tabClasses = ({ selected }: { selected: boolean }) =>
       `w-full py-3 text-sm font-medium leading-5 transition-all
@@ -287,15 +243,7 @@ export const FilterModal = React.memo<FilterModalProps>(
                         <FilterSection
                           title="Core Competencies"
                           icon="⭐"
-                          options={CORE_COMPETENCIES.map((comp) => ({
-                            value: comp,
-                            label: comp
-                              .replace('and Related Academic Content', '')
-                              .replace(
-                                'Environmental and Community Stewardship',
-                                'Environmental/Community Stewardship'
-                              ),
-                          }))}
+                          options={FILTER_CONFIGS.coreCompetencies.options}
                           selectedValues={filters.coreCompetencies}
                           onChange={(values) =>
                             onFiltersChange({ ...filters, coreCompetencies: values })
@@ -343,9 +291,9 @@ export const FilterModal = React.memo<FilterModalProps>(
                                   aria-label="Select lesson format"
                                 >
                                   <option value="">All Formats</option>
-                                  {LESSON_FORMATS.map((format) => (
-                                    <option key={format} value={format}>
-                                      {format}
+                                  {FILTER_CONFIGS.lessonFormat.options.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
                                     </option>
                                   ))}
                                 </select>
@@ -386,9 +334,9 @@ export const FilterModal = React.memo<FilterModalProps>(
                                   aria-label="Select cooking method"
                                 >
                                   <option value="">All Cooking Methods</option>
-                                  {COOKING_METHODS.map((method) => (
-                                    <option key={method} value={method}>
-                                      {method}
+                                  {FILTER_CONFIGS.cookingMethods.options.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
                                     </option>
                                   ))}
                                 </select>
@@ -400,10 +348,7 @@ export const FilterModal = React.memo<FilterModalProps>(
                         <FilterSection
                           title="Academic Integration"
                           icon="📚"
-                          options={ACADEMIC_SUBJECTS.map((subject) => ({
-                            value: subject,
-                            label: subject,
-                          }))}
+                          options={FILTER_CONFIGS.academicIntegration.options}
                           selectedValues={filters.academicIntegration}
                           onChange={(values) =>
                             onFiltersChange({ ...filters, academicIntegration: values })
@@ -415,10 +360,7 @@ export const FilterModal = React.memo<FilterModalProps>(
                         <FilterSection
                           title="Social-Emotional Learning"
                           icon="💛"
-                          options={SEL_COMPETENCIES.map((comp) => ({
-                            value: comp,
-                            label: comp,
-                          }))}
+                          options={FILTER_CONFIGS.socialEmotionalLearning.options}
                           selectedValues={filters.socialEmotionalLearning}
                           onChange={(values) =>
                             onFiltersChange({ ...filters, socialEmotionalLearning: values })

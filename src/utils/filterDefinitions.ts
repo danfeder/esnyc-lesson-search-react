@@ -24,10 +24,10 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Activity Type',
     type: 'single',
     options: [
-      { value: 'cooking', label: 'Cooking' },
-      { value: 'garden', label: 'Garden' },
-      { value: 'both', label: 'Both' },
-      { value: 'academic', label: 'Academic' },
+      { value: 'cooking-only', label: 'Cooking Only' },
+      { value: 'garden-only', label: 'Garden Only' },
+      { value: 'both', label: 'Cooking + Garden' },
+      { value: 'academic-only', label: 'Academic Only' },
     ],
   },
 
@@ -35,9 +35,9 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Location',
     type: 'single',
     options: [
-      { value: 'indoor', label: 'Indoor' },
-      { value: 'outdoor', label: 'Outdoor' },
-      { value: 'both', label: 'Both' },
+      { value: 'Indoor', label: 'Indoor' },
+      { value: 'Outdoor', label: 'Outdoor' },
+      { value: 'Both', label: 'Both' },
     ],
   },
 
@@ -69,13 +69,13 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Thematic Categories',
     type: 'multiple',
     options: [
-      { value: 'garden-basics', label: 'Garden Basics' },
-      { value: 'plant-growth', label: 'Plant Growth' },
-      { value: 'garden-communities', label: 'Garden Communities' },
-      { value: 'ecosystems', label: 'Ecosystems' },
-      { value: 'seed-to-table', label: 'Seed to Table' },
-      { value: 'food-systems', label: 'Food Systems' },
-      { value: 'food-justice', label: 'Food Justice' },
+      { value: 'Garden Basics', label: 'Garden Basics' },
+      { value: 'Plant Growth', label: 'Plant Growth' },
+      { value: 'Garden Communities', label: 'Garden Communities' },
+      { value: 'Ecosystems', label: 'Ecosystems' },
+      { value: 'Seed to Table', label: 'Seed to Table' },
+      { value: 'Food Systems', label: 'Food Systems' },
+      { value: 'Food Justice', label: 'Food Justice' },
     ],
   },
 
@@ -94,12 +94,21 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Core Competencies',
     type: 'multiple',
     options: [
-      { value: 'environmental-stewardship', label: 'Environmental and Community Stewardship' },
-      { value: 'social-justice', label: 'Social Justice' },
-      { value: 'social-emotional', label: 'Social-Emotional Intelligence' },
-      { value: 'garden-skills', label: 'Garden Skills and Related Academic Content' },
-      { value: 'kitchen-skills', label: 'Kitchen Skills and Related Academic Content' },
-      { value: 'culturally-responsive', label: 'Culturally Responsive Education' },
+      {
+        value: 'Environmental and Community Stewardship',
+        label: 'Environmental and Community Stewardship',
+      },
+      { value: 'Social Justice', label: 'Social Justice' },
+      { value: 'Social-Emotional Intelligence', label: 'Social-Emotional Intelligence' },
+      {
+        value: 'Garden Skills and Related Academic Content',
+        label: 'Garden Skills and Related Academic Content',
+      },
+      {
+        value: 'Kitchen Skills and Related Academic Content',
+        label: 'Kitchen Skills and Related Academic Content',
+      },
+      { value: 'Culturally Responsive Education', label: 'Culturally Responsive Education' },
     ],
   },
 
@@ -182,11 +191,11 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Social-Emotional Learning',
     type: 'multiple',
     options: [
-      { value: 'relationship-skills', label: 'Relationship skills' },
-      { value: 'self-awareness', label: 'Self-awareness' },
-      { value: 'responsible-decision-making', label: 'Responsible decision-making' },
-      { value: 'self-management', label: 'Self-management' },
-      { value: 'social-awareness', label: 'Social awareness' },
+      { value: 'Relationship skills', label: 'Relationship skills' },
+      { value: 'Self-awareness', label: 'Self-awareness' },
+      { value: 'Responsible decision-making', label: 'Responsible decision-making' },
+      { value: 'Self-management', label: 'Self-management' },
+      { value: 'Social awareness', label: 'Social awareness' },
     ],
   },
 
@@ -194,9 +203,9 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Cooking Methods',
     type: 'multiple',
     options: [
-      { value: 'basic-prep', label: 'Basic prep only' },
-      { value: 'stovetop', label: 'Stovetop' },
-      { value: 'oven', label: 'Oven' },
+      { value: 'Basic prep only', label: 'Basic prep only' },
+      { value: 'Stovetop', label: 'Stovetop' },
+      { value: 'Oven', label: 'Oven' },
     ],
   },
 };
