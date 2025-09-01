@@ -55,11 +55,11 @@ This section is a living checklist to track cleanup progress. Do not remove prio
     - [x] Cache-key isolation when page size changes (Phase 1B)
     - [x] Suggestions: click applies query and refetches (Phase 1B)
     - [x] Param naming asserts: RPC `filter_seasons` and suggestions `seasons` key
-    - [ ] Suggestions path unification (Phase 1C)
+    - [x] Suggestions path unification (Phase 1C)
 
 - [ ] Phase 2 — Filter Definitions & Type Cleanups
   - [ ] Consolidate filter options into `src/utils/filterDefinitions.ts`
-  - [ ] Treat `lessonFormat` as string consistently (UI/types/pills/announcer)
+  - [x] Treat `lessonFormat` as string consistently (UI/types/pills/announcer)
   - [ ] Normalize display labels ⇄ DB values
 
 - [ ] Phase 3 — Remove Algolia/Legacy Code
@@ -102,14 +102,22 @@ Recent Notes
   - Addressed review feedback: shared test factories + smart-search suggestions mock integrated.
   - PR: https://github.com/danfeder/esnyc-lesson-search-react/pull/222
   - Follow-up branch: `feat/tests-consistency-phase-1b1` (tests-only consistency + suggestions error-path).
+  - 2025‑09‑01: Phase 1B.2 merged — season param naming + announcer totals fixed; param asserts added.
+    - PR: https://github.com/danfeder/esnyc-lesson-search-react/pull/226
+  - 2025‑09‑01: Phase 1C suggestions path unified — `useLessonSuggestions` + SearchPage panel; SearchBar simplified.
+ - 2025‑09‑01: Phase 2A merged — lessonFormat normalized to string in filters/UI.
+   - PR: https://github.com/danfeder/esnyc-lesson-search-react/pull/225
 
 Next Planned Actions
-- Phase 1B.1: PR opened and merged — keep tests tidy going forward.
-- Phase 1C: PR opened; unify suggestions path and rendering. See plan below.
+- Phase 1: Remove legacy results fields from Zustand store; audit and adjust any dependent components/tests.
+- Phase 2B: Consolidate filter options across FilterModal/FilterSidebar using `src/utils/filterDefinitions.ts`.
+  - Replace hard-coded lists and `filterConstants.ts` where feasible.
+  - Keep `cookingMethods` as single-select in UI; plan array membership on normalized column in v2 RPC.
+  - Update tests to assert options are sourced from definitions.
 
 --------------------------------------------------------------------
 
-Phase 1C — Suggestions Path Unification (Plan)
+Phase 1C — Suggestions Path Unification (Plan) — Status: Completed (2025‑09‑01)
 
 Goals
 - One clear suggestions pathway powered by React Query.
