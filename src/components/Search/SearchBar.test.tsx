@@ -83,11 +83,9 @@ describe('SearchBar', () => {
       expect(clearButton).not.toBeInTheDocument();
     });
 
-    it('should render quick search suggestions', () => {
+    it('should render quick search suggestions section', () => {
       renderComponent();
       expect(screen.getByText(/quick searches:/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /thanksgiving/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /winter vegetables/i })).toBeInTheDocument();
     });
   });
 

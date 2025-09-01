@@ -99,7 +99,7 @@ Recent Notes
 
 Next Planned Actions
 - Phase 1B.1: PR opened and merged — keep tests tidy going forward.
-- Phase 1C: Unify suggestions path and rendering. See plan below.
+- Phase 1C: PR opened; unify suggestions path and rendering. See plan below.
 
 --------------------------------------------------------------------
 
