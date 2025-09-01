@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
 
 // Mocks: rpc for list, functions.invoke for smart-search, from/select for fallback
 const rpcMock = vi.fn();
@@ -70,4 +69,3 @@ describe('Search suggestions error handling', () => {
     expect(screen.queryByText(/no results found\.? try these suggestions/i)).not.toBeInTheDocument();
   });
 });
-

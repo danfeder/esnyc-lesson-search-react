@@ -1,5 +1,6 @@
 // Test data factories for search-related tests
 // These mirror server row shapes and app types to keep tests consistent.
+import type { Lesson } from '@/types';
 
 export interface RpcRowLike {
   lesson_id: string;
@@ -55,7 +56,6 @@ export function makeSmartSearchPayload(overrides: any = {}) {
 }
 
 // App-level lesson factory for UI/store tests
-import type { Lesson } from '@/types';
 
 export function makeLesson(overrides: Partial<Lesson> = {}): Lesson {
   return {
