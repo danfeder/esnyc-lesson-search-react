@@ -1,7 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -81,4 +80,3 @@ describe('Season parameter naming (RPC and suggestions)', () => {
     expect(payload?.body?.filters?.seasonTiming).toBeUndefined();
   });
 });
-
