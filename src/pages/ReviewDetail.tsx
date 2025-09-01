@@ -28,6 +28,7 @@ interface SubmissionDetail {
   original_lesson_id?: string;
   status: string;
   extracted_content: string;
+  extracted_title?: string;
   content_hash: string;
   content_embedding?: string;
   teacher: {
@@ -328,15 +329,32 @@ export function ReviewDetail() {
       if (decision === 'approve_new') {
         // Parse the extracted content to get lesson details
         const lessonData = parseExtractedContent(submission.extracted_content);
+        const baseTitle = submission.extracted_title || lessonData.title;
 
-        // Create new lesson in the lessons table (including embedding if available)
+        // Create new lesson (write to base table to set all native columns)
         const newLesson: any = {
-          lesson_id: `lesson_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          title: lessonData.title || 'Untitled Lesson',
+          lesson_id: `lesson_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+          title: baseTitle || 'Untitled Lesson',
           summary: lessonData.summary || '',
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || [],
-          activity_type_meta: metadata.activityType || null,
+          // Base array columns (ensure arrays)
+          activity_type: metadata.activityType ? [metadata.activityType] : [],
+          thematic_categories: metadata.themes || [],
+          season_timing: metadata.season || [],
+          core_competencies: metadata.coreCompetencies || [],
+          cultural_heritage: metadata.culturalHeritage || [],
+          location_requirements: metadata.location ? [metadata.location] : [],
+          lesson_format: metadata.lessonFormat || null,
+          academic_integration: metadata.academicIntegration || [],
+          social_emotional_learning: metadata.socialEmotionalLearning || [],
+          cooking_methods: metadata.cookingMethods || [],
+          main_ingredients: metadata.mainIngredients || [],
+          garden_skills: metadata.gardenSkills || [],
+          cooking_skills: metadata.cookingSkills || [],
+          observances_holidays: metadata.observancesHolidays || [],
+          cultural_responsiveness_features: metadata.culturalResponsivenessFeatures || [],
+          // Keep metadata JSON as well for compatibility
           metadata: {
             thematicCategories: metadata.themes || [],
             seasonTiming: metadata.season || [],
@@ -382,9 +400,7 @@ export function ReviewDetail() {
           logger.debug('No embedding available for submission:', submission.id);
         }
 
-        const { error: lessonError } = await supabase
-          .from('lessons_with_metadata')
-          .insert(newLesson);
+        const { error: lessonError } = await supabase.from('lessons').insert(newLesson);
 
         if (lessonError) throw lessonError;
       } else if (decision === 'approve_update' && selectedDuplicate) {
@@ -418,11 +434,50 @@ export function ReviewDetail() {
         const lessonData = parseExtractedContent(submission.extracted_content);
 
         // Update the existing lesson
+        // Safely derive existing activityType from metadata JSON when view lacks base column
+        const existingActivityType =
+          existingLesson.metadata &&
+          typeof existingLesson.metadata === 'object' &&
+          !Array.isArray(existingLesson.metadata) &&
+          'activityType' in (existingLesson.metadata as Record<string, any>)
+            ? (existingLesson.metadata as any).activityType
+            : undefined;
+
         const updateData: any = {
           title: lessonData.title || existingLesson.title,
           summary: lessonData.summary || existingLesson.summary,
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || existingLesson.grade_levels || [],
+          activity_type: metadata.activityType
+            ? [metadata.activityType]
+            : Array.isArray(existingActivityType)
+              ? existingActivityType
+              : existingActivityType
+                ? [existingActivityType]
+                : [],
+          thematic_categories: metadata.themes || existingLesson.thematic_categories || [],
+          season_timing: metadata.season || existingLesson.season_timing || [],
+          core_competencies: metadata.coreCompetencies || existingLesson.core_competencies || [],
+          cultural_heritage: metadata.culturalHeritage || existingLesson.cultural_heritage || [],
+          location_requirements:
+            (metadata.location ? [metadata.location] : null) ||
+            existingLesson.location_requirements ||
+            [],
+          lesson_format: metadata.lessonFormat || existingLesson.lesson_format || null,
+          academic_integration:
+            metadata.academicIntegration || existingLesson.academic_integration || [],
+          social_emotional_learning:
+            metadata.socialEmotionalLearning || existingLesson.social_emotional_learning || [],
+          cooking_methods: metadata.cookingMethods || existingLesson.cooking_methods || [],
+          main_ingredients: metadata.mainIngredients || existingLesson.main_ingredients || [],
+          garden_skills: metadata.gardenSkills || existingLesson.garden_skills || [],
+          cooking_skills: metadata.cookingSkills || existingLesson.cooking_skills || [],
+          observances_holidays:
+            metadata.observancesHolidays || existingLesson.observances_holidays || [],
+          cultural_responsiveness_features:
+            metadata.culturalResponsivenessFeatures ||
+            existingLesson.cultural_responsiveness_features ||
+            [],
         };
 
         // Only set activity_type_meta if we have a value
@@ -432,7 +487,7 @@ export function ReviewDetail() {
         }
 
         const { error: updateLessonError } = await supabase
-          .from('lessons_with_metadata')
+          .from('lessons')
           .update({
             ...updateData,
             metadata: {
