@@ -185,11 +185,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
         FILTER_CONFIGS.academicIntegration.options.map((opt) => ({
           value: opt.value,
           label: opt.label,
-          count: getFacetCount(
-            facets,
-            'metadata.academicIntegration.selected',
-            opt.value
-          ),
+          count: getFacetCount(facets, 'metadata.academicIntegration.selected', opt.value),
         })),
       [facets]
     );

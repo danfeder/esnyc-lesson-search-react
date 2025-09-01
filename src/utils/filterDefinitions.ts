@@ -94,11 +94,20 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Core Competencies',
     type: 'multiple',
     options: [
-      { value: 'Environmental and Community Stewardship', label: 'Environmental and Community Stewardship' },
+      {
+        value: 'Environmental and Community Stewardship',
+        label: 'Environmental and Community Stewardship',
+      },
       { value: 'Social Justice', label: 'Social Justice' },
       { value: 'Social-Emotional Intelligence', label: 'Social-Emotional Intelligence' },
-      { value: 'Garden Skills and Related Academic Content', label: 'Garden Skills and Related Academic Content' },
-      { value: 'Kitchen Skills and Related Academic Content', label: 'Kitchen Skills and Related Academic Content' },
+      {
+        value: 'Garden Skills and Related Academic Content',
+        label: 'Garden Skills and Related Academic Content',
+      },
+      {
+        value: 'Kitchen Skills and Related Academic Content',
+        label: 'Kitchen Skills and Related Academic Content',
+      },
       { value: 'Culturally Responsive Education', label: 'Culturally Responsive Education' },
     ],
   },
