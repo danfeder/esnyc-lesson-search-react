@@ -9,6 +9,7 @@ Scope
 - Tests only; no production logic changes.
 - Files added:
   - `src/__tests__/integration/lesson-search.invalidation.test.tsx`
+  - `src/__tests__/helpers/factories.ts` (shared test factories)
 
 Test Plan
 - Filter-change invalidation:
@@ -26,6 +27,11 @@ How to Run
 - `npm run test` (or `pnpm test`) — uses Vitest + RTL.
 - Tests mock `supabase.rpc` via `@/lib/supabase`.
 
+Changelog (since PR opened)
+- Added shared factories for consistent, typed mock data.
+- Switched suggestions test to mock `supabase.functions.invoke` (smart-search) rather than overriding `useSearch`.
+- Fixed Prettier/ESLint formatting flagged by CI.
+
 Risks
 - None to production code; tests assume `getSearchRpcName()` returns `'search_lessons'`.
 
@@ -33,4 +39,3 @@ Checklist
 - [x] Tests added and pass locally
 - [ ] CI green
 - [ ] PR reviewed and merged
-
