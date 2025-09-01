@@ -48,7 +48,8 @@ export function useLessonSuggestions({ filters, enabled = true }: UseLessonSugge
           filters: {
             gradeLevels: filters.gradeLevels,
             thematicCategories: filters.thematicCategories,
-            seasonTiming: filters.seasonTiming,
+            // Edge Function expects `seasons`
+            seasons: filters.seasonTiming,
             coreCompetencies: filters.coreCompetencies,
             culturalHeritage: filters.culturalHeritage,
             location: filters.location,

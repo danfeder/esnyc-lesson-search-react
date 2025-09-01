@@ -85,8 +85,8 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
         search_query: filters.query || undefined,
         filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : undefined,
         filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : undefined,
-        // Note: existing codebase passes `filter_seasonTiming`; preserve for compatibility
-        filter_seasonTiming: filters.seasonTiming?.length ? filters.seasonTiming : undefined,
+        // Season filter: RPC expects `filter_seasons`
+        filter_seasons: filters.seasonTiming?.length ? filters.seasonTiming : undefined,
         filter_competencies: filters.coreCompetencies?.length
           ? filters.coreCompetencies
           : undefined,
