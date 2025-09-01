@@ -40,7 +40,7 @@ This section is a living checklist to track cleanup progress. Do not remove prio
     - New: `docs/db-baseline-2025-09-01.md`
     - Captured EXPLAIN ANALYZE for representative queries
 
-- [ ] Phase 1 — Frontend Search Consolidation
+- [x] Phase 1 — Frontend Search Consolidation
   - [x] Implement unified `useLessonSearch` with `useInfiniteQuery`
   - [x] Update `SearchPage` to use the unified hook for initial + load‑more
   - [x] Move results ownership to React Query (store keeps filters/view only)
@@ -48,7 +48,7 @@ This section is a living checklist to track cleanup progress. Do not remove prio
     - [x] Fix RPC param naming drift: send `filter_seasons` (not `filter_seasonTiming`) from hooks
     - [x] Fix suggestions season filter payload: send `seasons` to Edge Function (not `seasonTiming`)
     - [x] ScreenReaderAnnouncer reads total count from React Query (prop)
-    - [ ] Remove legacy results fields from Zustand store (and any dependents)
+    - [ ] Remove legacy results fields from Zustand store (moved to Phase 3; blocked by legacy Algolia code and tests)
   - [ ] Add/adjust tests (paging, filters, suggestions)
     - [x] Paging (initial + load more) and error path
     - [x] Filter-change invalidation (Phase 1B)
@@ -66,6 +66,7 @@ This section is a living checklist to track cleanup progress. Do not remove prio
   - [ ] Remove hooks/types/client (`useAlgoliaSearch`, `lib/algolia.ts`, `types/algolia.ts`)
   - [ ] Remove facet helpers tied to Algolia (or rewire for SQL counts)
   - [ ] Remove scripts/docs referencing Algolia
+  - [ ] Remove legacy results fields from Zustand store and any dependents (moved from Phase 1)
 
 - [ ] Phase 4 — Database: New Search Function and Triggers
   - [ ] Implement `search_lessons_v2` using normalized columns only
