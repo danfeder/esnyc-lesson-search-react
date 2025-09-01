@@ -22,8 +22,7 @@ export const ScreenReaderAnnouncer: React.FC = () => {
       activeFilters.push(`${filters.culturalHeritage.length} cultural heritage selections`);
     if (filters.coreCompetencies.length)
       activeFilters.push(`${filters.coreCompetencies.length} core competencies`);
-    if (filters.lessonFormat)
-      activeFilters.push(`lesson format: ${filters.lessonFormat}`);
+    if (filters.lessonFormat) activeFilters.push(`lesson format: ${filters.lessonFormat}`);
     if (filters.cookingMethods) activeFilters.push(`cooking method: ${filters.cookingMethods}`);
     if (filters.academicIntegration.length)
       activeFilters.push(`${filters.academicIntegration.length} academic subjects`);
