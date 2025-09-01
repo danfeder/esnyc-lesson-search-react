@@ -318,9 +318,9 @@ export const FilterModal = React.memo<FilterModalProps>(
                                 <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
                                   <span>📋</span>
                                   <span>Lesson Format</span>
-                                  {filters.lessonFormat.length > 0 && (
+                                  {filters.lessonFormat && (
                                     <span className="ml-2 text-sm font-normal text-gray-600">
-                                      ({filters.lessonFormat[0]})
+                                      ({filters.lessonFormat})
                                     </span>
                                   )}
                                 </h3>
