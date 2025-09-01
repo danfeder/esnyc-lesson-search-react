@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { FilterSidebar } from '@/components/Filters/FilterSidebar';
@@ -56,4 +55,3 @@ describe('FilterSidebar uses unified filterDefinitions', () => {
     expect(screen.getByText('1st Grade')).toBeInTheDocument();
   });
 });
-
