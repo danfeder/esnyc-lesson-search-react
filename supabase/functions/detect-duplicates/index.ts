@@ -86,7 +86,6 @@ const STOP_WORDS = new Set([
   'was',
   'will',
   'with',
-  'the',
   'this',
   'these',
   'those',
