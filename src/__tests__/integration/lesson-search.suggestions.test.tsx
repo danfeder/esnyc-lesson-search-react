@@ -78,9 +78,7 @@ describe('Search suggestions integration', () => {
     expect(firstCall[1].search_query).toBe('no-result');
 
     // Suggestions are visible
-    expect(
-      screen.getByText(/no results found\. try these suggestions:/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no results found\. try these suggestions:/i)).toBeInTheDocument();
 
     const user = userEvent.setup();
     const suggestionBtn = screen.getByRole('button', { name: 'garden planning' });
@@ -98,4 +96,3 @@ describe('Search suggestions integration', () => {
     });
   });
 });
-
