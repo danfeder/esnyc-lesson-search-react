@@ -44,11 +44,17 @@ This section is a living checklist to track cleanup progress. Do not remove prio
   - [x] Implement unified `useLessonSearch` with `useInfiniteQuery`
   - [x] Update `SearchPage` to use the unified hook for initial + load‑more
   - [x] Move results ownership to React Query (store keeps filters/view only)
+  - [x] Follow‑ups (Phase 1B.2)
+    - [x] Fix RPC param naming drift: send `filter_seasons` (not `filter_seasonTiming`) from hooks
+    - [x] Fix suggestions season filter payload: send `seasons` to Edge Function (not `seasonTiming`)
+    - [x] ScreenReaderAnnouncer reads total count from React Query (prop)
+    - [ ] Remove legacy results fields from Zustand store (and any dependents)
   - [ ] Add/adjust tests (paging, filters, suggestions)
     - [x] Paging (initial + load more) and error path
     - [x] Filter-change invalidation (Phase 1B)
     - [x] Cache-key isolation when page size changes (Phase 1B)
     - [x] Suggestions: click applies query and refetches (Phase 1B)
+    - [x] Param naming asserts: RPC `filter_seasons` and suggestions `seasons` key
     - [ ] Suggestions path unification (Phase 1C)
 
 - [ ] Phase 2 — Filter Definitions & Type Cleanups

@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchStore } from '../../stores/searchStore';
 
-export const ScreenReaderAnnouncer: React.FC = () => {
+interface ScreenReaderAnnouncerProps {
+  totalCount?: number;
+}
+
+export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({ totalCount }) => {
   const [announcement, setAnnouncement] = useState('');
-  const { filters, totalCount } = useSearchStore();
+  const { filters } = useSearchStore();
 
   // Announce filter changes
   useEffect(() => {
@@ -29,11 +33,12 @@ export const ScreenReaderAnnouncer: React.FC = () => {
     if (filters.socialEmotionalLearning.length)
       activeFilters.push(`${filters.socialEmotionalLearning.length} SEL competencies`);
 
+    const count = typeof totalCount === 'number' ? totalCount : 0;
     if (activeFilters.length > 0) {
       const filterText = activeFilters.join(', ');
-      setAnnouncement(`Filters updated: ${filterText}. Found ${totalCount} lessons.`);
+      setAnnouncement(`Filters updated: ${filterText}. Found ${count} lessons.`);
     } else {
-      setAnnouncement(`All filters cleared. Showing all ${totalCount} lessons.`);
+      setAnnouncement(`All filters cleared. Showing all ${count} lessons.`);
     }
   }, [filters, totalCount]);
 

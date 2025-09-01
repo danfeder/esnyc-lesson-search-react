@@ -37,7 +37,8 @@ export function useSupabaseSearch(
           filter_themes: filters.thematicCategories?.length
             ? filters.thematicCategories
             : undefined,
-          filter_seasonTiming: filters.seasonTiming?.length ? filters.seasonTiming : undefined,
+          // Season filter: RPC expects `filter_seasons`
+          filter_seasons: filters.seasonTiming?.length ? filters.seasonTiming : undefined,
           filter_competencies: filters.coreCompetencies?.length
             ? filters.coreCompetencies
             : undefined,
