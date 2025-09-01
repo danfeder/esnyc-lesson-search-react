@@ -195,7 +195,17 @@ describe('Search Flow Integration', () => {
       // Set initial search state
       const store = useSearchStore.getState();
       store.setFilters({ query: 'tomato' });
-      store.setResults([makeLesson({ lessonId: '1', title: 'Test Lesson', summary: 'Test', fileLink: 'https://example.com/test' })], 1);
+      store.setResults(
+        [
+          makeLesson({
+            lessonId: '1',
+            title: 'Test Lesson',
+            summary: 'Test',
+            fileLink: 'https://example.com/test',
+          }),
+        ],
+        1
+      );
 
       renderApp();
 

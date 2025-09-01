@@ -66,6 +66,8 @@ describe('Search suggestions error handling', () => {
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());
 
     // Suggestions panel should not be shown
-    expect(screen.queryByText(/no results found\.? try these suggestions/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/no results found\.? try these suggestions/i)
+    ).not.toBeInTheDocument();
   });
 });
