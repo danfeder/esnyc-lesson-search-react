@@ -4,17 +4,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
-// Mocks: rpc for list, functions.invoke for smart-search, from/select for fallback
+// Mocks: rpc for list, functions.invoke for smart-search
 const rpcMock = vi.fn();
 const invokeMock = vi.fn();
-const fromMock = vi.fn();
-const selectMock = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: any[]) => rpcMock(...args),
     functions: { invoke: (...args: any[]) => invokeMock(...args) },
-    from: (...args: any[]) => fromMock(...args),
   },
 }));
 
@@ -35,10 +32,6 @@ describe('Search suggestions error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock fallback select to return empty data
-    selectMock.mockResolvedValue({ data: [], error: null });
-    fromMock.mockReturnValue({ select: (..._args: any[]) => selectMock() } as any);
-
     // Reset store to defaults
     const store = useSearchStore.getState();
     store.clearFilters();
@@ -58,9 +51,8 @@ describe('Search suggestions error handling', () => {
 
     renderWithProviders(<SearchPage />);
 
-    // Smart-search called, then fallback select called
+    // Smart-search called
     await waitFor(() => expect(invokeMock).toHaveBeenCalled());
-    await waitFor(() => expect(fromMock).toHaveBeenCalledWith('lessons_with_metadata'));
 
     // List rpc executed
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());

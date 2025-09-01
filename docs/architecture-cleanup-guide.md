@@ -49,7 +49,7 @@ This section is a living checklist to track cleanup progress. Do not remove prio
     - [x] Filter-change invalidation (Phase 1B)
     - [x] Cache-key isolation when page size changes (Phase 1B)
     - [x] Suggestions: click applies query and refetches (Phase 1B)
-    - [ ] Suggestions path unification decision (Phase 1C)
+    - [ ] Suggestions path unification (Phase 1C)
 
 - [ ] Phase 2 — Filter Definitions & Type Cleanups
   - [ ] Consolidate filter options into `src/utils/filterDefinitions.ts`
@@ -98,9 +98,61 @@ Recent Notes
   - Follow-up branch: `feat/tests-consistency-phase-1b1` (tests-only consistency + suggestions error-path).
 
 Next Planned Actions
-- Open PR for Phase 1B.1 follow-up (tests consistency + error-path) and merge.
-- Phase 1C: Decide on suggestions path unification; scope small UI/logic changes accordingly.
+- Phase 1B.1: PR opened and merged — keep tests tidy going forward.
+- Phase 1C: PR opened; unify suggestions path and rendering. See plan below.
 
+--------------------------------------------------------------------
+
+Phase 1C — Suggestions Path Unification (Plan)
+
+Goals
+- One clear suggestions pathway powered by React Query.
+- Avoid fallback-heavy code in suggestions; keep UI logic simple and predictable.
+- Do not reintroduce server results into the Zustand store.
+
+Decision
+- Introduce a dedicated hook `useLessonSuggestions` that calls the smart-search Edge Function and returns `{ suggestions: string[], expandedQuery?: string }`.
+- Render suggestions from `SearchPage` (results area) only when `filters.query.trim()` is truthy AND `totalCount === 0` for the current results. This avoids coupling SearchBar to server results and prevents unnecessary state leakage back into the store.
+- Deprecate `useSearch` (keep temporarily; remove in Phase 3 alongside other legacy paths).
+- Remove the client-side `fallbackSearch` path for suggestions. On Edge Function error, show no suggestions (silent failure) and keep the UI clean.
+
+Implementation Outline
+- New: `src/hooks/useLessonSuggestions.ts`
+  - Inputs: `{ filters, enabled?: boolean }`
+  - Behavior: `enabled = !!filters.query?.trim()`; `staleTime = 5m`; `gcTime = 10m`
+  - RPC: `supabase.functions.invoke('smart-search', { body: { query, filters } })`
+  - Return: `{ suggestions, expandedQuery }`
+
+- Update `src/pages/SearchPage.tsx`
+  - Call `useLessonSuggestions({ filters, enabled: !!filters.query?.trim() })`.
+  - Render suggestions panel under ResultsHeader when `totalCount === 0 && suggestions.length > 0`.
+  - Keep Quick Searches UI unchanged in `SearchBar` (static chips).
+  - Remove dynamic suggestions UI from `SearchBar` to centralize logic near results.
+
+- Types & Flags
+  - Optional feature flag: `VITE_ENABLE_SUGGESTIONS_V2` (on by default) in `.env.*` to allow rollback if needed.
+  - Add a light TS type for Edge Function response to avoid `any`.
+
+Testing (acceptance criteria)
+- When no results are returned, suggestions appear with “No results found. Try these suggestions:”
+- Clicking a suggestion sets `filters.query` and triggers a new search from page 0.
+- When results exist, suggestions panel does not render.
+- If the Edge Function fails, suggestions panel does not render (no console noise).
+- Cache isolation: suggestions query key includes `filters.query` (sanitized) and filter selections.
+- No interference with pagination; suggestions do not alter React Query pages.
+
+Files to change
+- New: `src/hooks/useLessonSuggestions.ts`
+- Update: `src/pages/SearchPage.tsx` (render suggestions panel)
+- Update: `src/components/Search/SearchBar.tsx` (remove dynamic suggestions block)
+- Tests:
+  - Update/keep: `src/__tests__/integration/lesson-search.suggestions.test.tsx` (still valid; panel now in results area)
+  - Keep: `lesson-search.suggestions.error.test.tsx` (Edge Function failure covered)
+  - Adjust SearchBar tests to focus on static quick suggestions only.
+
+Rollout & Risks
+- Small UI movement (suggestions panel from SearchBar → Results area). Functional behavior remains identical or clearer.
+- Edge Function call remains; now isolated and typed; no heavy DB fallback.
 ======================================================================
 
 **Architecture Overview**
