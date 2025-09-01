@@ -93,6 +93,9 @@ Recent Notes
 - 2025‑09‑01: Phase 0 completed. Added RPC switch, env flags, baseline DB snapshot + plans.
 - 2025‑09‑01: Phase 1A merged; CI green after cache‑key + typing fixes.
 - 2025‑09‑01: Phase 1B in progress — added invalidation, cache‑key, and suggestions integration tests; preparing PR.
+  - Addressed review feedback: shared test factories + smart-search suggestions mock integrated.
+  - Branch: `feat/tests-search-invalidation-phase-1b`
+  - PR: https://github.com/danfeder/esnyc-lesson-search-react/pull/222
 
 Next Planned Actions
 - Phase 1B: Open PR including invalidation, cache-key, and suggestions tests; address CI.

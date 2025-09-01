@@ -5,26 +5,20 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
-// Mock Supabase client
+// Mock Supabase client (rpc for search list; functions.invoke for smart-search suggestions)
 const rpcMock = vi.fn();
+const invokeMock = vi.fn();
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: any[]) => rpcMock(...args),
+    functions: { invoke: (...args: any[]) => invokeMock(...args) },
   },
-}));
-
-// Mock suggestions hook to return suggestions
-vi.mock('@/hooks/useSearch', () => ({
-  useSearch: () => ({
-    data: { suggestions: ['garden planning'] },
-    isLoading: false,
-    error: null,
-  }),
 }));
 
 // Import after mocks
 import { SearchPage } from '@/pages/SearchPage';
 import { useSearchStore } from '@/stores/searchStore';
+import { makeRpcRow, makeSmartSearchPayload } from '@/__tests__/helpers/factories';
 
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
@@ -46,22 +40,19 @@ describe('Search suggestions integration', () => {
   });
 
   it('shows suggestions and applies one to trigger a new search', async () => {
-    // Initial call returns no results (simulate empty state)
+    // Smart-search returns suggestions for the current query
+    invokeMock.mockResolvedValue({
+      data: makeSmartSearchPayload({ suggestions: ['garden planning'] }),
+      error: null,
+    });
+
+    // Initial list call returns no results (simulate empty state)
     rpcMock
       .mockResolvedValueOnce({ data: [], error: null })
       // After clicking suggestion, return a result
       .mockResolvedValueOnce({
         data: [
-          {
-            lesson_id: 'S1',
-            title: 'Garden Planning 101',
-            summary: 'Intro to garden planning',
-            file_link: '#',
-            grade_levels: ['5'],
-            metadata: { activityType: [], lessonFormat: [] },
-            confidence: { overall: 0.95 },
-            total_count: 1,
-          },
+          makeRpcRow({ lesson_id: 'S1', title: 'Garden Planning 101', grade_levels: ['5'], total_count: 1 }),
         ],
         error: null,
       });
@@ -72,7 +63,10 @@ describe('Search suggestions integration', () => {
 
     renderWithProviders(<SearchPage />);
 
-    // Ensure initial search executed with the original query
+    // Ensure smart-search was called to populate suggestions
+    await waitFor(() => expect(invokeMock).toHaveBeenCalled());
+
+    // Ensure list search executed with the original query
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());
     const firstCall = rpcMock.mock.calls[0];
     expect(firstCall[1].search_query).toBe('no-result');

@@ -16,6 +16,7 @@ vi.mock('@/lib/supabase', () => ({
 // Import after mocks
 import { SearchPage } from '@/pages/SearchPage';
 import { useSearchStore } from '@/stores/searchStore';
+import { makeRpcRow } from '@/__tests__/helpers/factories';
 
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
@@ -42,93 +43,19 @@ describe('Search invalidation and cache-key isolation', () => {
     rpcMock
       .mockResolvedValueOnce({
         data: [
-          {
-            lesson_id: 'L1',
-            title: 'Lesson One',
-            summary: 'Summary 1',
-            file_link: '#',
-            grade_levels: ['3'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.9 },
-            total_count: 4,
-          },
-          {
-            lesson_id: 'L2',
-            title: 'Lesson Two',
-            summary: 'Summary 2',
-            file_link: '#',
-            grade_levels: ['4'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.8 },
-            total_count: 4,
-          },
+          makeRpcRow({ lesson_id: 'L1', title: 'Lesson One', grade_levels: ['3'], total_count: 4 }),
+          makeRpcRow({ lesson_id: 'L2', title: 'Lesson Two', grade_levels: ['4'], total_count: 4 }),
         ],
         error: null,
       })
-      // 2) Load-more page (1 result)
       .mockResolvedValueOnce({
-        data: [
-          {
-            lesson_id: 'L3',
-            title: 'Lesson Three',
-            summary: 'Summary 3',
-            file_link: '#',
-            grade_levels: ['5'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.7 },
-            total_count: 4,
-          },
-        ],
+        data: [makeRpcRow({ lesson_id: 'L3', title: 'Lesson Three', grade_levels: ['5'], total_count: 4 })],
         error: null,
       })
-      // 3) After filters change, reset to first page (new dataset)
       .mockResolvedValueOnce({
         data: [
-          {
-            lesson_id: 'LF1',
-            title: 'Filtered One',
-            summary: 'Filtered Summary 1',
-            file_link: '#',
-            grade_levels: ['5'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.95 },
-            total_count: 2,
-          },
-          {
-            lesson_id: 'LF2',
-            title: 'Filtered Two',
-            summary: 'Filtered Summary 2',
-            file_link: '#',
-            grade_levels: ['5'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.9 },
-            total_count: 2,
-          },
+          makeRpcRow({ lesson_id: 'LF1', title: 'Filtered One', grade_levels: ['5'], total_count: 2 }),
+          makeRpcRow({ lesson_id: 'LF2', title: 'Filtered Two', grade_levels: ['5'], total_count: 2 }),
         ],
         error: null,
       });
@@ -180,87 +107,16 @@ describe('Search invalidation and cache-key isolation', () => {
     rpcMock
       .mockResolvedValueOnce({
         data: [
-          {
-            lesson_id: 'L1',
-            title: 'Lesson One',
-            summary: 'Summary 1',
-            file_link: '#',
-            grade_levels: ['3'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.9 },
-            total_count: 5,
-          },
-          {
-            lesson_id: 'L2',
-            title: 'Lesson Two',
-            summary: 'Summary 2',
-            file_link: '#',
-            grade_levels: ['4'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.8 },
-            total_count: 5,
-          },
+          makeRpcRow({ lesson_id: 'L1', title: 'Lesson One', grade_levels: ['3'], total_count: 5 }),
+          makeRpcRow({ lesson_id: 'L2', title: 'Lesson Two', grade_levels: ['4'], total_count: 5 }),
         ],
         error: null,
       })
-      // Second call after page size change to 3
       .mockResolvedValueOnce({
         data: [
-          {
-            lesson_id: 'L3',
-            title: 'Lesson Three',
-            summary: 'Summary 3',
-            file_link: '#',
-            grade_levels: ['5'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.7 },
-            total_count: 5,
-          },
-          {
-            lesson_id: 'L4',
-            title: 'Lesson Four',
-            summary: 'Summary 4',
-            file_link: '#',
-            grade_levels: ['6'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.6 },
-            total_count: 5,
-          },
-          {
-            lesson_id: 'L5',
-            title: 'Lesson Five',
-            summary: 'Summary 5',
-            file_link: '#',
-            grade_levels: ['7'],
-            metadata: {
-              coreCompetencies: [],
-              culturalHeritage: [],
-              activityType: [],
-              lessonFormat: [],
-            },
-            confidence: { overall: 0.5 },
-            total_count: 5,
-          },
+          makeRpcRow({ lesson_id: 'L3', title: 'Lesson Three', grade_levels: ['5'], total_count: 5 }),
+          makeRpcRow({ lesson_id: 'L4', title: 'Lesson Four', grade_levels: ['6'], total_count: 5 }),
+          makeRpcRow({ lesson_id: 'L5', title: 'Lesson Five', grade_levels: ['7'], total_count: 5 }),
         ],
         error: null,
       });
