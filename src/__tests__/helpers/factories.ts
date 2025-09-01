@@ -1,5 +1,6 @@
 // Test data factories for search-related tests
 // These mirror server row shapes and app types to keep tests consistent.
+import type { Lesson } from '@/types';
 
 export interface RpcRowLike {
   lesson_id: string;
@@ -51,5 +52,49 @@ export function makeSmartSearchPayload(overrides: any = {}) {
     totalCount: overrides.totalCount ?? 0,
     suggestions: overrides.suggestions ?? [],
     expandedQuery: overrides.expandedQuery ?? undefined,
+  };
+}
+
+// App-level lesson factory for UI/store tests
+
+export function makeLesson(overrides: Partial<Lesson> = {}): Lesson {
+  return {
+    lessonId: overrides.lessonId ?? 'L-APP-1',
+    title: overrides.title ?? 'Sample Lesson',
+    summary: overrides.summary ?? '',
+    fileLink: overrides.fileLink ?? '#',
+    gradeLevels: overrides.gradeLevels ?? [],
+    metadata: overrides.metadata ?? {
+      thematicCategories: [],
+      seasonTiming: [],
+      coreCompetencies: [],
+      culturalHeritage: [],
+      locationRequirements: [],
+      activityType: [],
+      lessonFormat: [],
+      mainIngredients: [],
+      skills: [],
+      equipment: [],
+      duration: undefined,
+      groupSize: undefined,
+      gradeLevel: [],
+      gardenSkills: [],
+      cookingSkills: [],
+      cookingMethods: [],
+      observancesHolidays: [],
+      academicIntegration: [],
+      socialEmotionalLearning: [],
+      culturalResponsivenessFeatures: [],
+    },
+    confidence: overrides.confidence ?? {
+      overall: 0.9,
+      title: 0.9,
+      summary: 0.9,
+      gradeLevels: 0.9,
+    },
+    last_modified: overrides.last_modified,
+    processing_notes: overrides.processing_notes,
+    created_at: overrides.created_at,
+    updated_at: overrides.updated_at,
   };
 }
