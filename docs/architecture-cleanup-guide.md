@@ -46,8 +46,10 @@ This section is a living checklist to track cleanup progress. Do not remove prio
   - [x] Move results ownership to React Query (store keeps filters/view only)
   - [ ] Add/adjust tests (paging, filters, suggestions)
     - [x] Paging (initial + load more) and error path
-    - [ ] Filter-change invalidation
-    - [ ] Suggestions integration (pending decision: unify or keep separate)
+    - [x] Filter-change invalidation (Phase 1B)
+    - [x] Cache-key isolation when page size changes (Phase 1B)
+    - [x] Suggestions: click applies query and refetches (Phase 1B)
+    - [ ] Suggestions path unification decision (Phase 1C)
 
 - [ ] Phase 2 — Filter Definitions & Type Cleanups
   - [ ] Consolidate filter options into `src/utils/filterDefinitions.ts`
@@ -89,9 +91,11 @@ This section is a living checklist to track cleanup progress. Do not remove prio
 
 Recent Notes
 - 2025‑09‑01: Phase 0 completed. Added RPC switch, env flags, baseline DB snapshot + plans.
+- 2025‑09‑01: Phase 1A merged; CI green after cache‑key + typing fixes.
+- 2025‑09‑01: Phase 1B in progress — added invalidation, cache‑key, and suggestions integration tests; preparing PR.
 
 Next Planned Actions
-- Begin Phase 1: Implement `useLessonSearch` with `useInfiniteQuery`, refactor `SearchPage`, and trim store ownership of results.
+- Phase 1B: Open PR including invalidation, cache-key, and suggestions tests; address CI.
 
 ======================================================================
 
