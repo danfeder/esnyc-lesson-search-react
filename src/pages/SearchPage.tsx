@@ -21,15 +21,8 @@ export const SearchPage: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   // React Query manages pagination; no local page counter required
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useLessonSearch({ filters, pageSize: viewState.resultsPerPage });
+  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useLessonSearch({ filters, pageSize: viewState.resultsPerPage });
 
   const lessons = (data?.pages || []).flatMap((p) => p.lessons);
   const totalCount = data?.pages?.[0]?.totalCount || 0;
@@ -88,7 +81,11 @@ export const SearchPage: React.FC = () => {
           </div>
         )}
 
-        <AdaptiveResultsGrid lessons={lessons} onLessonClick={handleLessonClick} isLoading={isLoading} />
+        <AdaptiveResultsGrid
+          lessons={lessons}
+          onLessonClick={handleLessonClick}
+          isLoading={isLoading}
+        />
 
         {/* Infinite Scroll Trigger */}
         {lessons.length > 0 && (

@@ -47,7 +47,12 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
           summary: 'Summary 1',
           file_link: '#',
           grade_levels: ['3'],
-          metadata: { coreCompetencies: [], culturalHeritage: [], activityType: [], lessonFormat: [] },
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
           confidence: { overall: 0.9 },
           total_count: 3,
         },
@@ -57,7 +62,12 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
           summary: 'Summary 2',
           file_link: '#',
           grade_levels: ['4'],
-          metadata: { coreCompetencies: [], culturalHeritage: [], activityType: [], lessonFormat: [] },
+          metadata: {
+            coreCompetencies: [],
+            culturalHeritage: [],
+            activityType: [],
+            lessonFormat: [],
+          },
           confidence: { overall: 0.8 },
           total_count: 3,
         },
@@ -91,7 +101,12 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
             summary: 'Summary 1',
             file_link: '#',
             grade_levels: ['3'],
-            metadata: { coreCompetencies: [], culturalHeritage: [], activityType: [], lessonFormat: [] },
+            metadata: {
+              coreCompetencies: [],
+              culturalHeritage: [],
+              activityType: [],
+              lessonFormat: [],
+            },
             confidence: { overall: 0.9 },
             total_count: 3,
           },
@@ -101,7 +116,12 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
             summary: 'Summary 2',
             file_link: '#',
             grade_levels: ['4'],
-            metadata: { coreCompetencies: [], culturalHeritage: [], activityType: [], lessonFormat: [] },
+            metadata: {
+              coreCompetencies: [],
+              culturalHeritage: [],
+              activityType: [],
+              lessonFormat: [],
+            },
             confidence: { overall: 0.8 },
             total_count: 3,
           },
@@ -117,7 +137,12 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
             summary: 'Summary 3',
             file_link: '#',
             grade_levels: ['5'],
-            metadata: { coreCompetencies: [], culturalHeritage: [], activityType: [], lessonFormat: [] },
+            metadata: {
+              coreCompetencies: [],
+              culturalHeritage: [],
+              activityType: [],
+              lessonFormat: [],
+            },
             confidence: { overall: 0.7 },
             total_count: 3,
           },
@@ -156,4 +181,3 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
     });
   });
 });
-
