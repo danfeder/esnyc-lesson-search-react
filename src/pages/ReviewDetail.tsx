@@ -400,9 +400,7 @@ export function ReviewDetail() {
           logger.debug('No embedding available for submission:', submission.id);
         }
 
-        const { error: lessonError } = await supabase
-          .from('lessons')
-          .insert(newLesson);
+        const { error: lessonError } = await supabase.from('lessons').insert(newLesson);
 
         if (lessonError) throw lessonError;
       } else if (decision === 'approve_update' && selectedDuplicate) {
@@ -463,7 +461,7 @@ export function ReviewDetail() {
           cultural_heritage: metadata.culturalHeritage || existingLesson.cultural_heritage || [],
           location_requirements:
             (metadata.location ? [metadata.location] : null) ||
-            existingLesson.location_requirements || [],
+              existingLesson.location_requirements || [],
           lesson_format: metadata.lessonFormat || existingLesson.lesson_format || null,
           academic_integration:
             metadata.academicIntegration || existingLesson.academic_integration || [],
