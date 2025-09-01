@@ -381,8 +381,8 @@ describe('Search Flow Integration', () => {
       renderApp();
 
       // Click a quick search suggestion
-      const quickSearchButton = screen.getByRole('button', { name: /thanksgiving/i });
-      await user.click(quickSearchButton);
+      const quickSearchChip = screen.getByText(/thanksgiving/i);
+      await user.click(quickSearchChip);
 
       // Verify search was applied
       await waitFor(() => {
