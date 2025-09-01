@@ -461,7 +461,8 @@ export function ReviewDetail() {
           cultural_heritage: metadata.culturalHeritage || existingLesson.cultural_heritage || [],
           location_requirements:
             (metadata.location ? [metadata.location] : null) ||
-              existingLesson.location_requirements || [],
+            existingLesson.location_requirements ||
+            [],
           lesson_format: metadata.lessonFormat || existingLesson.lesson_format || null,
           academic_integration:
             metadata.academicIntegration || existingLesson.academic_integration || [],
