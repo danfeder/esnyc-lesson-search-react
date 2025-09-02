@@ -94,13 +94,18 @@ export const useSearchStore = create<SearchState>()(
           hasMore: true,
         }),
 
-      setResults: (results, totalCount) =>
+      setResults: (results, totalCount) => {
+        if (import.meta.env.DEV) {
+          // Deprecated: results are owned by React Query (Phase 1)
+          console.warn('[searchStore] setResults is deprecated; use React Query for server data');
+        }
         set({
           results,
           totalCount,
           error: null,
           hasMore: results.length < totalCount,
-        }),
+        });
+      },
 
       appendResults: (newResults) =>
         set((state) => ({
@@ -108,11 +113,26 @@ export const useSearchStore = create<SearchState>()(
           hasMore: state.results.length + newResults.length < state.totalCount,
         })),
 
-      setLoading: (isLoading) => set({ isLoading }),
+      setLoading: (isLoading) => {
+        if (import.meta.env.DEV) {
+          console.warn('[searchStore] setLoading is deprecated; use React Query statuses');
+        }
+        set({ isLoading });
+      },
 
-      setLoadingMore: (isLoadingMore) => set({ isLoadingMore }),
+      setLoadingMore: (isLoadingMore) => {
+        if (import.meta.env.DEV) {
+          console.warn('[searchStore] setLoadingMore is deprecated; use React Query statuses');
+        }
+        set({ isLoadingMore });
+      },
 
-      setError: (error) => set({ error, isLoading: false, isLoadingMore: false }),
+      setError: (error) => {
+        if (import.meta.env.DEV) {
+          console.warn('[searchStore] setError is deprecated; use React Query error states');
+        }
+        set({ error, isLoading: false, isLoadingMore: false });
+      },
 
       setViewState: (newViewState) =>
         set((state) => ({
