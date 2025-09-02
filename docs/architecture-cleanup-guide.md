@@ -24,6 +24,9 @@ This document is a comprehensive analysis and action plan for simplifying, harde
 - Improve Developer UX:
   - Align types and names end‑to‑end; reduce special‑case code; clear separation of concerns; testable modules; explicit ownership.
 
+Companion Document
+- See docs/search-architecture-v2.md for the end-to-end V2 search pipeline plan (RPC design, ranking, normalized filters, indexes, triggers, rollout, and testing).
+
 ---
 
 **Progress Tracker (Working Section)**
