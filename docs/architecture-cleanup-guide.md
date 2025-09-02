@@ -57,11 +57,11 @@ This section is a living checklist to track cleanup progress. Do not remove prio
     - [x] Param naming asserts: RPC `filter_seasons` and suggestions `seasons` key
     - [x] Suggestions path unification (Phase 1C)
 
-- [ ] Phase 2 — Filter Definitions & Type Cleanups
-  - [ ] Consolidate filter options into `src/utils/filterDefinitions.ts`
+- [x] Phase 2 — Filter Definitions & Type Cleanups
+  - [x] Consolidate filter options into `src/utils/filterDefinitions.ts`
     - [x] FilterModal sources options from `filterDefinitions`
     - [x] FilterSidebar sources options from `filterDefinitions`
-    - [ ] Cultural heritage remains on dedicated hierarchy config (OK to keep separate)
+    - [x] Cultural heritage intentionally remains on dedicated hierarchy config
   - [x] Treat `lessonFormat` as string consistently (UI/types/pills/announcer)
   - [x] Normalize display labels ⇄ DB values (Academic Integration to Title Case)
 
@@ -108,16 +108,17 @@ Recent Notes
   - Follow-up branch: `feat/tests-consistency-phase-1b1` (tests-only consistency + suggestions error-path).
   - 2025‑09‑01: Phase 1B.2 merged — season param naming + announcer totals fixed; param asserts added.
     - PR: https://github.com/danfeder/esnyc-lesson-search-react/pull/226
-  - 2025‑09‑01: Phase 1C suggestions path unified — `useLessonSuggestions` + SearchPage panel; SearchBar simplified.
+ - 2025‑09‑01: Phase 1C suggestions path unified — `useLessonSuggestions` + SearchPage panel; SearchBar simplified.
  - 2025‑09‑01: Phase 2A merged — lessonFormat normalized to string in filters/UI.
    - PR: https://github.com/danfeder/esnyc-lesson-search-react/pull/225
+ - 2025‑09‑02: Phase 2B merged — filter options consolidated to filterDefinitions; tests added; academicIntegration normalized.
+   - PRs: https://github.com/danfeder/esnyc-lesson-search-react/pull/227, https://github.com/danfeder/esnyc-lesson-search-react/pull/228, https://github.com/danfeder/esnyc-lesson-search-react/pull/229
 
 Next Planned Actions
-- Phase 1: Remove legacy results fields from Zustand store; audit and adjust any dependent components/tests.
-- Phase 2B: Consolidate filter options across FilterModal/FilterSidebar using `src/utils/filterDefinitions.ts`.
-  - Replace hard-coded lists and `filterConstants.ts` where feasible.
-  - Keep `cookingMethods` as single-select in UI; plan array membership on normalized column in v2 RPC.
-  - Update tests to assert options are sourced from definitions.
+- Phase 3: Remove Algolia/legacy code and then remove legacy results fields from the store.
+  - Delete Algolia hooks/types/client and facet helpers; remove scripts/docs references.
+  - Remove legacy results fields from Zustand store (moved from Phase 1) and update any dependents.
+  - Keep Cultural Heritage hierarchy config as-is unless a future consolidation is desired.
 
 --------------------------------------------------------------------
 
