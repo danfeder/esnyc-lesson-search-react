@@ -132,3 +132,10 @@ afterEach(() => {
   const store = useSearchStore.getState();
   store.clearFilters();
 });
+// Polyfill animations API early to avoid Headless UI warnings
+if (typeof Element !== 'undefined' && !('getAnimations' in Element.prototype)) {
+  Object.defineProperty(Element.prototype, 'getAnimations', {
+    configurable: true,
+    value: () => [],
+  });
+}

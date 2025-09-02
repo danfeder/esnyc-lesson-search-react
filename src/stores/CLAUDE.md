@@ -50,13 +50,12 @@ export const useStoreName = create<StoreState>()(
 ## 📋 Current Stores
 
 ### searchStore.ts
-- **Purpose**: Manages search filters, results, and pagination
-- **Key Actions**:
+- Purpose: Manages search filters and view state only (results are owned by React Query)
+- Key Actions:
   - `setFilters`: Updates filters AND resets page to 1
-  - `clearFilters`: Resets to initialFilters
-  - `appendResults`: For infinite scroll
+  - `clearFilters`: Resets to initialFilters and view defaults
   - `toggleFilter`: Add/remove filter values
-- **IMPORTANT**: Filter changes ALWAYS reset currentPage to 1
+- IMPORTANT: Filter changes ALWAYS reset `currentPage` to 1
 
 ## ⚠️ Common Gotchas
 
@@ -82,16 +81,14 @@ export const useStoreName = create<StoreState>()(
    coreCompetencies: string[];
    ```
 
-3. **Always reset page on filter change**
-   ```typescript
-   setFilters: (newFilters) =>
-     set((state) => ({
-       filters: { ...state.filters, ...newFilters },
-       viewState: { ...state.viewState, currentPage: 1 }, // CRITICAL
-       results: [], // Clear old results
-       hasMore: true,
-     })),
-   ```
+3. **Always reset page on filter change (do not touch results)**
+  ```typescript
+  setFilters: (newFilters) =>
+    set((state) => ({
+      filters: { ...state.filters, ...newFilters },
+      viewState: { ...state.viewState, currentPage: 1 }, // CRITICAL
+    })),
+  ```
 
 ## 🧪 Testing Store Actions
 
