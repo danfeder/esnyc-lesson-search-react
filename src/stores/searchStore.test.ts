@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useSearchStore } from './searchStore';
-import type { Lesson } from '@/types';
+// Store now manages only filters and view state; server results are owned by React Query
 
 describe('searchStore', () => {
   beforeEach(() => {
@@ -9,9 +9,6 @@ describe('searchStore', () => {
     const { result } = renderHook(() => useSearchStore());
     act(() => {
       result.current.clearFilters();
-      result.current.setResults([], 0);
-      result.current.setError(null);
-      result.current.setHasMore(true);
     });
   });
 
@@ -22,11 +19,6 @@ describe('searchStore', () => {
       expect(result.current.filters.query).toBe('');
       expect(result.current.filters.gradeLevels).toEqual([]);
       expect(result.current.filters.thematicCategories).toEqual([]);
-      expect(result.current.results).toEqual([]);
-      expect(result.current.totalCount).toBe(0);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBeNull();
-      expect(result.current.hasMore).toBe(true);
     });
 
     it('should have correct initial view state', () => {
@@ -108,50 +100,17 @@ describe('searchStore', () => {
       expect(result.current.viewState.currentPage).toBe(1);
     });
 
-    it('should clear results when filters change', () => {
+    it('should clear paging when filters change', () => {
       const { result } = renderHook(() => useSearchStore());
-
-      const mockLessons: Lesson[] = [
-        {
-          lessonId: '1',
-          title: 'Test Lesson 1',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-        {
-          lessonId: '2',
-          title: 'Test Lesson 2',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-      ];
-
       act(() => {
-        result.current.setResults(mockLessons, 2);
+        result.current.setViewState({ currentPage: 3 });
       });
 
       act(() => {
         result.current.setFilters({ query: 'new search' });
       });
 
-      expect(result.current.results).toEqual([]);
-      expect(result.current.hasMore).toBe(true);
+      expect(result.current.viewState.currentPage).toBe(1);
     });
   });
 
@@ -248,7 +207,7 @@ describe('searchStore', () => {
     });
   });
 
-  describe('Results Management', () => {
+  describe('Results Management (removed)', () => {
     it('should set results and total count', () => {
       const { result } = renderHook(() => useSearchStore());
 
@@ -594,42 +553,5 @@ describe('searchStore', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should set and clear errors', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setError('Network error occurred');
-      });
-
-      expect(result.current.error).toBe('Network error occurred');
-
-      act(() => {
-        result.current.setError(null);
-      });
-
-      expect(result.current.error).toBeNull();
-    });
-
-    it('should clear error when performing new search', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setError('Previous error');
-      });
-
-      act(() => {
-        result.current.setFilters({ query: 'new search' });
-      });
-
-      // Error should be preserved until new results arrive
-      expect(result.current.error).toBe('Previous error');
-
-      act(() => {
-        result.current.setResults([], 0);
-      });
-
-      expect(result.current.error).toBeNull();
-    });
-  });
+  // Error handling for server data is owned by React Query; store no longer manages error state
 });
