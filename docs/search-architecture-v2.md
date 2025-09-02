@@ -56,9 +56,11 @@ V2 RPC Sketch
   - location_requirements && filter_location
   - activity_type && filter_activity_type
   - (lesson_format = filter_lesson_format) when provided
+    - Note: lesson_format is a single-select field stored as text (not array) and should use equality, unlike other array-backed filters that use &&
   - academic_integration && filter_academic
   - social_emotional_learning && filter_sel
   - (filter_cooking_method is null OR filter_cooking_method = '' OR filter_cooking_method = ANY(cooking_methods))
+    - Note: UI sends a single string for cookingMethods (single-select), while DB stores cooking_methods as text[] for consistency; use ANY() for membership
 
 - Ranking (stable and explainable):
   - rank := GREATEST(
@@ -106,10 +108,14 @@ Rollout Plan
 
 Testing Plan
 - DB: EXPLAIN ANALYZE representative queries with combinations of filters; verify index usage; compare v1 vs v2 latency
+  - Success thresholds (staging):
+    - P95 latency without search_query (filters-only): ≤ 200ms
+    - P95 latency with search_query (tsquery + rank): ≤ 350ms
+    - No sequential scan on lessons for typical queries; GIN/GIN-trgm indexes used
+  - Result parity: v2 returns equivalent or narrower result sets vs v1; any differences should stem from normalized filter semantics (document cases)
 - FE: Existing integration tests should pass unchanged; add a small suite to assert v2 routing via flag and param mapping
 
 Risks & Mitigations
 - Synonym expansion producing overly broad tsquery: handle with sane OR limits or rank thresholds
 - Array filters growing large: ensure GIN indexes exist; consider partial indexes for hot values if needed
 - Trigram similarity false positives: use GREATEST with ts_rank_cd to stabilize ranking
-
