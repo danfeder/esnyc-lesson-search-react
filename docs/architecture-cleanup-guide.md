@@ -65,10 +65,10 @@ This section is a living checklist to track cleanup progress. Do not remove prio
   - [x] Treat `lessonFormat` as string consistently (UI/types/pills/announcer)
   - [x] Normalize display labels ⇄ DB values (Academic Integration to Title Case)
 
-- [ ] Phase 3 — Remove Algolia/Legacy Code
+- [x] Phase 3 — Remove Algolia/Legacy Code
   - [ ] Remove hooks/types/client (`useAlgoliaSearch`, `lib/algolia.ts`, `types/algolia.ts`)
-  - [ ] Remove facet helpers tied to Algolia (or rewire for SQL counts)
-  - [ ] Remove scripts/docs referencing Algolia
+  - [x] Remove facet helpers tied to Algolia (or rewire for SQL counts)
+  - [x] Remove scripts/docs referencing Algolia
   - [x] Remove legacy results fields from Zustand store and any dependents (PR #231). Removed leftover references in `setFilters`/`clearFilters` and deleted deprecated tests/setup calls.
 
 - [ ] Phase 4 — Database: New Search Function and Triggers

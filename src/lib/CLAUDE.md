@@ -87,14 +87,15 @@ useEffect(() => {
 }, []);
 ```
 
-## 🔍 Algolia Search Client
+## 🔍 Legacy: Algolia Search Client (Archived)
 
 ```typescript
 // lib/algolia.ts
 import algoliasearch from 'algoliasearch';
 
-const appId = import.meta.env.VITE_ALGOLIA_APP_ID;
-const searchKey = import.meta.env.VITE_ALGOLIA_SEARCH_API_KEY;
+// Note: Algolia has been removed from the app. Kept here for historical context.
+const appId = import.meta.env.VITE_ALGOLIA_APP_ID; // legacy
+const searchKey = import.meta.env.VITE_ALGOLIA_SEARCH_API_KEY; // legacy
 
 if (!appId || !searchKey) {
   logger.warn('Algolia not configured, search disabled');
@@ -108,7 +109,7 @@ export const searchClient = appId && searchKey
 // Admin key is only for backend/scripts
 ```
 
-### Algolia Search Pattern
+### Algolia Search Pattern (Legacy)
 ```typescript
 const index = searchClient?.initIndex('lessons');
 
@@ -217,7 +218,7 @@ useQuery({
 - Use `.maybeSingle()` if row might not exist
 - Timestamps are strings, not Date objects
 
-### Algolia
+### Algolia (Legacy)
 - Requires manual synonym configuration after data sync
 - Facet filters use different syntax than SQL
 - Page numbers are 0-based (not 1-based)
@@ -241,13 +242,13 @@ useQuery({
 # Frontend (.env)
 VITE_SUPABASE_URL=         # Required
 VITE_SUPABASE_ANON_KEY=     # Required
-VITE_ALGOLIA_APP_ID=        # Optional (search)
-VITE_ALGOLIA_SEARCH_API_KEY= # Optional (search)
+VITE_ALGOLIA_APP_ID=        # Legacy (no longer used)
+VITE_ALGOLIA_SEARCH_API_KEY= # Legacy (no longer used)
 VITE_SENTRY_DSN=            # Optional (monitoring)
 
 # Backend/Scripts only
 SUPABASE_SERVICE_ROLE_KEY=  # Admin operations
-ALGOLIA_ADMIN_API_KEY=       # Data sync
+ALGOLIA_ADMIN_API_KEY=       # Legacy data sync (removed)
 OPENAI_API_KEY=              # Embeddings (future)
 GOOGLE_SERVICE_ACCOUNT_JSON= # Google Docs (future)
 RESEND_API_KEY=              # Email sending

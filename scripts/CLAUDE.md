@@ -13,8 +13,7 @@
 ```bash
 # Data Import/Export
 npm run import-data           # Import lessons from JSON
-npm run sync-algolia          # Sync to Algolia search
-npm run configure-synonyms    # Setup search synonyms
+# (Legacy removed) Algolia sync and synonyms configuration are no longer used
 
 # Testing
 npm run test:rls              # Test RLS policies
@@ -141,52 +140,11 @@ function validateLesson(lesson) {
 }
 ```
 
-## 🔄 Algolia Sync Pattern
+## 🔍 Search Migration Notes
 
-```javascript
-import algoliasearch from 'algoliasearch';
-
-const client = algoliasearch(
-  process.env.VITE_ALGOLIA_APP_ID,
-  process.env.ALGOLIA_ADMIN_API_KEY  // Admin key for writes
-);
-
-const index = client.initIndex('lessons');
-
-// Fetch from Supabase
-const { data: lessons } = await supabase
-  .from('lessons')
-  .select('*');
-
-// Transform for Algolia
-const algoliaRecords = lessons.map(lesson => ({
-  objectID: lesson.lesson_id,
-  title: lesson.title,
-  summary: lesson.summary,
-  gradeLevels: lesson.grade_levels,
-  // ... other fields
-}));
-
-// Batch update Algolia
-await index.saveObjects(algoliaRecords, {
-  autoGenerateObjectIDIfNotExist: false
-});
-
-// Configure settings
-await index.setSettings({
-  searchableAttributes: [
-    'title',
-    'summary',
-    'ingredients',
-    'skills'
-  ],
-  facets: [
-    'gradeLevels',
-    'themes',
-    'culturalHeritage'
-  ]
-});
-```
+- Project now uses PostgreSQL full-text search for results and suggestions.
+- Synonym and typo expansion handled via SQL functions and/or Edge Functions.
+- Previous Algolia sync and config scripts have been removed.
 
 ## 🧪 Testing Scripts
 

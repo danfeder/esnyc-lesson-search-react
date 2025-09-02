@@ -12,8 +12,7 @@ npm run build             # Build for production
 
 # Data Management
 npm run import-data       # Import lesson data to Supabase
-npm run sync-algolia      # Sync data to Algolia search
-npm run configure-synonyms # Set up search synonyms
+# (Legacy) Algolia commands removed; PostgreSQL FTS is used
 
 # Database
 supabase db push          # Apply migrations
@@ -78,7 +77,7 @@ onChange: (value: string) => void;
 /src
   /components     # UI components (filters, layout, modals, results, search)
   /hooks          # Custom React hooks  
-  /lib            # Supabase, Algolia, Sentry configs
+  /lib            # Supabase and Sentry configs
   /pages          # Page components (routes)
   /stores         # Zustand state management
   /types          # TypeScript definitions
@@ -105,7 +104,7 @@ onChange: (value: string) => void;
 - **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
 - **State**: Zustand (see `/src/stores/CLAUDE.md`)
 - **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **Search**: Algolia (with synonyms & typo tolerance)
+- **Search**: PostgreSQL full-text search (synonym/typo expansion via SQL/Edge)
 - **Testing**: Vitest + React Testing Library
 
 ## 🗄️ DATABASE ESSENTIALS
@@ -157,7 +156,7 @@ For in-depth information, see:
 - **Ingredient Grouping**: Smart search (e.g., "butternut squash" → "Winter squash")
 - **Season Logic**: "Include year-round" option for seasonal filters
 - **Supabase Migrations**: Must be numbered sequentially
-- **Algolia Synonyms**: Require manual configuration after data sync
+- **Synonyms**: Managed via SQL functions or Edge Functions; no external config
 - **Edge Functions**: Test locally with `supabase functions serve <name> --no-verify-jwt`
 
 ## 📂 DIRECTORY-SPECIFIC DOCS

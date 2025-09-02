@@ -203,7 +203,7 @@ const {
 
 ### SearchPage
 - CSV export NOT implemented yet
-- Uses Algolia for search (fallback to Supabase)
+- Uses PostgreSQL full-text search (Algolia removed)
 - EXACTLY 11 filters must be maintained
 
 ### ReviewDetail

@@ -7,7 +7,7 @@ The ESYNYC Lesson Search v2 is largely feature-complete with a modern React/Type
 ## ✅ Completed Features
 
 ### Core Functionality
-- **Search & Filtering**: Full-text search with 11 filter categories via Algolia
+- **Search & Filtering**: PostgreSQL full-text search with 11 filter categories
 - **Database**: PostgreSQL with full-text search and vector embeddings
 - **Authentication**: Complete auth system with role-based access control
 - **Admin Dashboard**: Full review workflow for lesson submissions
@@ -195,7 +195,7 @@ const handleExport = async () => {
 - [Supabase Docs](https://supabase.com/docs)
 - [React Query Docs](https://tanstack.com/query)
 - [Tailwind CSS](https://tailwindcss.com)
-- [Algolia Search](https://www.algolia.com/doc/)
+- [PostgreSQL Full-Text Search](https://www.postgresql.org/docs/current/textsearch.html)
 
 ---
 

@@ -27,7 +27,7 @@
 ## Testing Guidelines
 - Framework: Vitest + Testing Library (jsdom). Setup at `src/__tests__/setup.ts`.
 - Name tests `*.test.ts(x)` near source or under `src/__tests__/`.
-- Keep tests deterministic; mock Supabase/Algolia as needed (see setup mocks).
+- Keep tests deterministic; mock Supabase as needed (see setup mocks).
 - Generate coverage with `npm run test:coverage`.
 
 ## Commit & Pull Request Guidelines
@@ -38,6 +38,5 @@
 
 ## Security & Configuration Tips
 - Never commit secrets. Use `.env*` files locally; update `*.example` when adding a new var.
-- Required envs typically include Supabase, Algolia, and OpenAI keys (see `.env.example`).
+- Required envs typically include Supabase and OpenAI keys (see `.env.example`).
 - For deployments, see `netlify.toml`/`vercel.json` and ensure `npm run build` succeeds.
-

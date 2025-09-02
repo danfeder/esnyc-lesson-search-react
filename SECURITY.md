@@ -119,7 +119,7 @@ Before submitting a PR:
 
 ### Third-Party Services
 - **Supabase**: Database and authentication
-- **Algolia**: Search functionality
+- **PostgreSQL Full-Text Search**: Search functionality (Algolia removed)
 - **Resend**: Email notifications
 - **Google Docs API**: Document extraction
 - **OpenAI API**: Embeddings generation
