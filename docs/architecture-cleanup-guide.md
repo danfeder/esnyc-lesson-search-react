@@ -63,7 +63,7 @@ This section is a living checklist to track cleanup progress. Do not remove prio
     - [x] FilterSidebar sources options from `filterDefinitions`
     - [ ] Cultural heritage remains on dedicated hierarchy config (OK to keep separate)
   - [x] Treat `lessonFormat` as string consistently (UI/types/pills/announcer)
-  - [ ] Normalize display labels ⇄ DB values
+  - [x] Normalize display labels ⇄ DB values (Academic Integration to Title Case)
 
 - [ ] Phase 3 — Remove Algolia/Legacy Code
   - [ ] Remove hooks/types/client (`useAlgoliaSearch`, `lib/algolia.ts`, `types/algolia.ts`)

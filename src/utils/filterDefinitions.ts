@@ -178,12 +178,12 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     label: 'Academic Integration',
     type: 'multiple',
     options: [
-      { value: 'math', label: 'Math' },
-      { value: 'science', label: 'Science' },
-      { value: 'literacy-ela', label: 'Literacy/ELA' },
-      { value: 'social-studies', label: 'Social Studies' },
-      { value: 'health', label: 'Health' },
-      { value: 'arts', label: 'Arts' },
+      { value: 'Math', label: 'Math' },
+      { value: 'Science', label: 'Science' },
+      { value: 'Literacy/ELA', label: 'Literacy/ELA' },
+      { value: 'Social Studies', label: 'Social Studies' },
+      { value: 'Health', label: 'Health' },
+      { value: 'Arts', label: 'Arts' },
     ],
   },
 
