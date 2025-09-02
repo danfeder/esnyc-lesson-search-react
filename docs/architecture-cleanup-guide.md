@@ -33,6 +33,12 @@ Companion Document
 
 This section is a living checklist to track cleanup progress. Do not remove prior content; append updates with dates as work proceeds.
 
+Next Up (when work resumes)
+- Phase 4A (DB): Implement `search_lessons_v2` over normalized columns; add/confirm GIN indexes on array columns; consolidate to one search_vector trigger.
+- Phase 4B (FE): Flip `VITE_ENABLE_SEARCH_V2` on staging; route via `getSearchRpcName()`; regenerate Supabase types.
+- Phase 4C (Perf): Run EXPLAIN ANALYZE benches; validate P95 thresholds (≤200ms filters-only; ≤350ms with query); verify GIN/pg_trgm usage.
+- Phase 4D (Cleanup): Drop JSON-path indexes; remove old trigger/function once v2 is default.
+
 - [x] Phase 0 — Guardrails & Prep (2025‑09‑01)
   - [x] Add feature flag to route search RPCs (`VITE_ENABLE_SEARCH_V2`)
     - Files updated: `.env.example`, `.env.staging.example`, `.env.production.example`
@@ -68,13 +74,15 @@ This section is a living checklist to track cleanup progress. Do not remove prio
   - [x] Treat `lessonFormat` as string consistently (UI/types/pills/announcer)
   - [x] Normalize display labels ⇄ DB values (Academic Integration to Title Case)
 
-- [x] Phase 3 — Remove Algolia/Legacy Code
-  - [ ] Remove hooks/types/client (`useAlgoliaSearch`, `lib/algolia.ts`, `types/algolia.ts`)
+- [x] Phase 3 — Remove Algolia/Legacy Code (completed 2025‑09‑02)
+  - [x] Remove hooks/types/client (`useAlgoliaSearch`, `lib/algolia.ts`, `types/algolia.ts`)
   - [x] Remove facet helpers tied to Algolia (or rewire for SQL counts)
-  - [x] Remove scripts/docs referencing Algolia
+  - [x] Remove scripts/docs referencing Algolia; remove CI/workflow Algolia envs (PR #233)
   - [x] Remove legacy results fields from Zustand store and any dependents (PR #231). Removed leftover references in `setFilters`/`clearFilters` and deleted deprecated tests/setup calls.
+  - [x] Remove unused dependencies: `algoliasearch`, `react-instantsearch` (PR #232)
 
 - [ ] Phase 4 — Database: New Search Function and Triggers
+  - [x] Document V2 search architecture and rollout plan (docs/search-architecture-v2.md) (2025‑09‑02) (PR #234)
   - [ ] Implement `search_lessons_v2` using normalized columns only
   - [ ] Integrate synonyms + culture expansion (`expand_*` functions)
   - [ ] Keep only one search‑vector trigger (`update_lesson_search_vector`)
