@@ -65,7 +65,6 @@ export const INGREDIENT_GROUPS: Record<string, string[]> = {
   Cruciferous: ['cauliflower', 'cabbage', 'broccoli', 'brussels sprouts'],
 };
 
-
 // Grade level groupings
 export const GRADE_GROUPS = {
   'early-childhood': {
