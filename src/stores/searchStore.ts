@@ -1,45 +1,21 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { SearchFilters, ViewState, Lesson } from '../types';
+import type { SearchFilters, ViewState } from '../types';
 
 interface SearchState {
-  // Search state
+  // Filters (UI state only)
   filters: SearchFilters;
-  results: Lesson[];
-  totalCount: number;
-  isLoading: boolean;
-  error: string | null;
-  hasMore: boolean;
-  isLoadingMore: boolean;
-
   // View state
   viewState: ViewState;
 
   // Actions
-
   setFilters: (filters: Partial<SearchFilters>) => void;
   clearFilters: () => void;
-
-  setResults: (results: Lesson[], totalCount: number) => void;
-
-  appendResults: (results: Lesson[]) => void;
-
-  setLoading: (loading: boolean) => void;
-
-  setLoadingMore: (loading: boolean) => void;
-
-  setError: (error: string | null) => void;
-
   setViewState: (viewState: Partial<ViewState>) => void;
 
-  setHasMore: (hasMore: boolean) => void;
-
   // Filter helpers
-
   addFilter: (key: keyof SearchFilters, value: string) => void;
-
   removeFilter: (key: keyof SearchFilters, value: string) => void;
-
   toggleFilter: (key: keyof SearchFilters, value: string) => void;
 }
 
@@ -69,12 +45,6 @@ export const useSearchStore = create<SearchState>()(
     (set, get) => ({
       // Initial state
       filters: initialFilters,
-      results: [],
-      totalCount: 0,
-      isLoading: false,
-      error: null,
-      hasMore: true,
-      isLoadingMore: false,
       viewState: initialViewState,
 
       // Actions
@@ -82,64 +52,18 @@ export const useSearchStore = create<SearchState>()(
         set((state) => ({
           filters: { ...state.filters, ...newFilters },
           viewState: { ...state.viewState, currentPage: 1 }, // Reset to first page
-          results: [], // Clear results when filters change
-          hasMore: true,
         })),
 
       clearFilters: () =>
         set({
           filters: initialFilters,
           viewState: { ...initialViewState },
-          results: [],
-          hasMore: true,
         }),
-
-      setResults: (results, totalCount) => {
-        if (import.meta.env.DEV) {
-          // Deprecated: results are owned by React Query (Phase 1)
-          console.warn('[searchStore] setResults is deprecated; use React Query for server data');
-        }
-        set({
-          results,
-          totalCount,
-          error: null,
-          hasMore: results.length < totalCount,
-        });
-      },
-
-      appendResults: (newResults) =>
-        set((state) => ({
-          results: [...state.results, ...newResults],
-          hasMore: state.results.length + newResults.length < state.totalCount,
-        })),
-
-      setLoading: (isLoading) => {
-        if (import.meta.env.DEV) {
-          console.warn('[searchStore] setLoading is deprecated; use React Query statuses');
-        }
-        set({ isLoading });
-      },
-
-      setLoadingMore: (isLoadingMore) => {
-        if (import.meta.env.DEV) {
-          console.warn('[searchStore] setLoadingMore is deprecated; use React Query statuses');
-        }
-        set({ isLoadingMore });
-      },
-
-      setError: (error) => {
-        if (import.meta.env.DEV) {
-          console.warn('[searchStore] setError is deprecated; use React Query error states');
-        }
-        set({ error, isLoading: false, isLoadingMore: false });
-      },
 
       setViewState: (newViewState) =>
         set((state) => ({
           viewState: { ...state.viewState, ...newViewState },
         })),
-
-      setHasMore: (hasMore) => set({ hasMore }),
 
       // Filter helpers
       addFilter: (key, value) => {

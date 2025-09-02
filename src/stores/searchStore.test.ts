@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useSearchStore } from './searchStore';
-import type { Lesson } from '@/types';
+// Store now manages only filters and view state; server results are owned by React Query
 
 describe('searchStore', () => {
   beforeEach(() => {
@@ -9,9 +9,6 @@ describe('searchStore', () => {
     const { result } = renderHook(() => useSearchStore());
     act(() => {
       result.current.clearFilters();
-      result.current.setResults([], 0);
-      result.current.setError(null);
-      result.current.setHasMore(true);
     });
   });
 
@@ -22,11 +19,6 @@ describe('searchStore', () => {
       expect(result.current.filters.query).toBe('');
       expect(result.current.filters.gradeLevels).toEqual([]);
       expect(result.current.filters.thematicCategories).toEqual([]);
-      expect(result.current.results).toEqual([]);
-      expect(result.current.totalCount).toBe(0);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBeNull();
-      expect(result.current.hasMore).toBe(true);
     });
 
     it('should have correct initial view state', () => {
@@ -108,50 +100,17 @@ describe('searchStore', () => {
       expect(result.current.viewState.currentPage).toBe(1);
     });
 
-    it('should clear results when filters change', () => {
+    it('should clear paging when filters change', () => {
       const { result } = renderHook(() => useSearchStore());
-
-      const mockLessons: Lesson[] = [
-        {
-          lessonId: '1',
-          title: 'Test Lesson 1',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-        {
-          lessonId: '2',
-          title: 'Test Lesson 2',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-      ];
-
       act(() => {
-        result.current.setResults(mockLessons, 2);
+        result.current.setViewState({ currentPage: 3 });
       });
 
       act(() => {
         result.current.setFilters({ query: 'new search' });
       });
 
-      expect(result.current.results).toEqual([]);
-      expect(result.current.hasMore).toBe(true);
+      expect(result.current.viewState.currentPage).toBe(1);
     });
   });
 
@@ -248,224 +207,7 @@ describe('searchStore', () => {
     });
   });
 
-  describe('Results Management', () => {
-    it('should set results and total count', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      const mockLessons: Lesson[] = [
-        {
-          lessonId: '1',
-          title: 'Lesson 1',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-        {
-          lessonId: '2',
-          title: 'Lesson 2',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-      ];
-
-      act(() => {
-        result.current.setResults(mockLessons, 10);
-      });
-
-      expect(result.current.results).toEqual(mockLessons);
-      expect(result.current.totalCount).toBe(10);
-      expect(result.current.hasMore).toBe(true);
-    });
-
-    it('should append results for pagination', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      const firstBatch: Lesson[] = [
-        {
-          lessonId: '1',
-          title: 'Lesson 1',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-        {
-          lessonId: '2',
-          title: 'Lesson 2',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-      ];
-
-      const secondBatch: Lesson[] = [
-        {
-          lessonId: '3',
-          title: 'Lesson 3',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-        {
-          lessonId: '4',
-          title: 'Lesson 4',
-          summary: '',
-          fileLink: '',
-          gradeLevels: [],
-          metadata: {
-            coreCompetencies: [],
-            culturalHeritage: [],
-            activityType: [],
-            lessonFormat: [],
-          },
-          confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-        },
-      ];
-
-      act(() => {
-        result.current.setResults(firstBatch, 4);
-      });
-
-      act(() => {
-        result.current.appendResults(secondBatch);
-      });
-
-      expect(result.current.results).toHaveLength(4);
-      expect(result.current.results[2].lessonId).toBe('3');
-      expect(result.current.hasMore).toBe(false);
-    });
-
-    it('should update hasMore correctly', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      const lessons: Lesson[] = Array.from({ length: 20 }, (_, i) => ({
-        lessonId: `${i + 1}`,
-        title: `Lesson ${i + 1}`,
-        summary: '',
-        fileLink: '',
-        gradeLevels: [],
-        metadata: {
-          coreCompetencies: [],
-          culturalHeritage: [],
-          activityType: [],
-          lessonFormat: [],
-        },
-        confidence: { overall: 0.9, title: 0.9, summary: 0.9, gradeLevels: 0.9 },
-      }));
-
-      act(() => {
-        result.current.setResults(lessons, 20);
-      });
-
-      expect(result.current.hasMore).toBe(false);
-
-      act(() => {
-        result.current.setResults(lessons.slice(0, 10), 20);
-      });
-
-      expect(result.current.hasMore).toBe(true);
-    });
-
-    it('should clear error when setting results', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setError('Test error');
-      });
-
-      act(() => {
-        result.current.setResults([], 0);
-      });
-
-      expect(result.current.error).toBeNull();
-    });
-  });
-
-  describe('Loading States', () => {
-    it('should set loading state', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setLoading(true);
-      });
-
-      expect(result.current.isLoading).toBe(true);
-
-      act(() => {
-        result.current.setLoading(false);
-      });
-
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    it('should set loading more state', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setLoadingMore(true);
-      });
-
-      expect(result.current.isLoadingMore).toBe(true);
-
-      act(() => {
-        result.current.setLoadingMore(false);
-      });
-
-      expect(result.current.isLoadingMore).toBe(false);
-    });
-
-    it('should clear loading states when setting error', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setLoading(true);
-        result.current.setLoadingMore(true);
-      });
-
-      act(() => {
-        result.current.setError('Network error');
-      });
-
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.isLoadingMore).toBe(false);
-      expect(result.current.error).toBe('Network error');
-    });
-  });
+  // Results and loading are owned by React Query; store tests cover filters and view only.
 
   describe('View State Management', () => {
     it('should update view state', () => {
@@ -594,42 +336,5 @@ describe('searchStore', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should set and clear errors', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setError('Network error occurred');
-      });
-
-      expect(result.current.error).toBe('Network error occurred');
-
-      act(() => {
-        result.current.setError(null);
-      });
-
-      expect(result.current.error).toBeNull();
-    });
-
-    it('should clear error when performing new search', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setError('Previous error');
-      });
-
-      act(() => {
-        result.current.setFilters({ query: 'new search' });
-      });
-
-      // Error should be preserved until new results arrive
-      expect(result.current.error).toBe('Previous error');
-
-      act(() => {
-        result.current.setResults([], 0);
-      });
-
-      expect(result.current.error).toBeNull();
-    });
-  });
+  // Error handling for server data is owned by React Query; store no longer manages error state
 });
