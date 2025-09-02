@@ -80,7 +80,7 @@ Use Supabase as an all-in-one backend platform.
 - **Positive**: Rapid development, integrated solution
 - **Negative**: Vendor lock-in, learning curve for RLS
 
-## ADR-004: Algolia for Search
+## ADR-004: Algolia for Search (Superseded)
 
 ### Status
 Accepted
@@ -94,7 +94,7 @@ While PostgreSQL full-text search is good, we needed:
 - Search analytics
 
 ### Decision
-Use Algolia for primary search functionality.
+Superseded by PostgreSQL full-text search in 2025-09. Historical reference only.
 
 ### Rationale
 - Purpose-built for search UX

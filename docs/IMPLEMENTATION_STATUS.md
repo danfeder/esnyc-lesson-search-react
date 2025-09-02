@@ -11,7 +11,7 @@
 6. **Duplicate Detection Logic**: Multi-layer algorithm implemented
 7. **User Authentication**: Complete auth system with role-based access
 8. **Admin Dashboard**: Full review workflow for submissions
-9. **Search Integration**: Algolia search with synonyms configured
+9. **Search Integration**: PostgreSQL full-text search with synonyms expansion via SQL/Edge Functions
 10. **Email Notifications**: Resend integration for user communications
 11. **UI/UX**: Complete React/TypeScript frontend with responsive design
 
