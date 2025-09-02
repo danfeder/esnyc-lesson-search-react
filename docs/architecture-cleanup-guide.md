@@ -48,7 +48,7 @@ This section is a living checklist to track cleanup progress. Do not remove prio
     - [x] Fix RPC param naming drift: send `filter_seasons` (not `filter_seasonTiming`) from hooks
     - [x] Fix suggestions season filter payload: send `seasons` to Edge Function (not `seasonTiming`)
     - [x] ScreenReaderAnnouncer reads total count from React Query (prop)
-    - [ ] Remove legacy results fields from Zustand store (moved to Phase 3; blocked by legacy Algolia code and tests)
+    - [x] Remove legacy results fields from Zustand store (moved to Phase 3; completed via PR #231 on 2025-09-02)
   - [ ] Add/adjust tests (paging, filters, suggestions)
     - [x] Paging (initial + load more) and error path
     - [x] Filter-change invalidation (Phase 1B)
@@ -69,7 +69,7 @@ This section is a living checklist to track cleanup progress. Do not remove prio
   - [ ] Remove hooks/types/client (`useAlgoliaSearch`, `lib/algolia.ts`, `types/algolia.ts`)
   - [ ] Remove facet helpers tied to Algolia (or rewire for SQL counts)
   - [ ] Remove scripts/docs referencing Algolia
-  - [ ] Remove legacy results fields from Zustand store and any dependents (moved from Phase 1)
+  - [x] Remove legacy results fields from Zustand store and any dependents (PR #231). Removed leftover references in `setFilters`/`clearFilters` and deleted deprecated tests/setup calls.
 
 - [ ] Phase 4 — Database: New Search Function and Triggers
   - [ ] Implement `search_lessons_v2` using normalized columns only
@@ -185,7 +185,7 @@ Rollout & Risks
 - Frontend
   - App shell: `src/App.tsx` with routes; `src/main.tsx` setting Sentry boundary.
   - Search UI: `src/pages/SearchPage.tsx`; components under `src/components/Filters/*`, `src/components/Results/*`, `src/components/Search/SearchBar.tsx`.
-  - State: `src/stores/searchStore.ts` for filters, some results; React Query in `src/hooks/useSupabaseSearch.ts` and `src/hooks/useSearch.ts`.
+  - State: `src/stores/searchStore.ts` for filters and view state only; React Query owns results via `src/hooks/useLessonSearch.ts` (infinite) and `src/hooks/useSupabaseSearch.ts` (legacy/simple).
   - Error handling: Sentry (`src/lib/sentry.ts`) + multiple error boundaries in `src/components/Common/*Error*`.
   - Auth: `src/hooks/useEnhancedAuth.ts`, `src/components/Auth/ProtectedRoute.tsx`, `src/components/Auth/AuthModal.tsx`.
 

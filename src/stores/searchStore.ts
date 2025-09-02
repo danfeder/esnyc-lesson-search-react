@@ -52,16 +52,12 @@ export const useSearchStore = create<SearchState>()(
         set((state) => ({
           filters: { ...state.filters, ...newFilters },
           viewState: { ...state.viewState, currentPage: 1 }, // Reset to first page
-          results: [], // Clear results when filters change
-          hasMore: true,
         })),
 
       clearFilters: () =>
         set({
           filters: initialFilters,
           viewState: { ...initialViewState },
-          results: [],
-          hasMore: true,
         }),
 
       setViewState: (newViewState) =>

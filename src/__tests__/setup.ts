@@ -131,6 +131,4 @@ afterEach(() => {
   // Reset store state to ensure clean slate
   const store = useSearchStore.getState();
   store.clearFilters();
-  store.setResults([], 0);
-  store.setError(null);
 });

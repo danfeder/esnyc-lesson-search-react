@@ -95,8 +95,6 @@ describe('Search Flow Integration', () => {
     // Reset store
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setResults([], 0);
-    store.setError(null);
 
     // Default mock for useSearch
     (useSearch as any).mockReturnValue({
@@ -112,8 +110,6 @@ describe('Search Flow Integration', () => {
     // Reset store state after each test to prevent state pollution
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setResults([], 0);
-    store.setError(null);
   });
 
   const renderApp = () => {
@@ -189,23 +185,12 @@ describe('Search Flow Integration', () => {
       });
     });
 
-    it('should clear search and results', async () => {
+    it('should clear search input and filters', async () => {
       const user = userEvent.setup();
 
       // Set initial search state
       const store = useSearchStore.getState();
       store.setFilters({ query: 'tomato' });
-      store.setResults(
-        [
-          makeLesson({
-            lessonId: '1',
-            title: 'Test Lesson',
-            summary: 'Test',
-            fileLink: 'https://example.com/test',
-          }),
-        ],
-        1
-      );
 
       renderApp();
 
