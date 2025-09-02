@@ -41,7 +41,7 @@ V2 RPC Sketch
     filter_lesson_format text DEFAULT NULL,
     filter_academic text[] DEFAULT NULL,
     filter_sel text[] DEFAULT NULL,
-    filter_cooking_method text DEFAULT NULL,
+    filter_cooking_methods text[] DEFAULT NULL,
     page_size int DEFAULT 20,
     page_offset int DEFAULT 0
   ) RETURNS TABLE (..., total_count bigint)
@@ -59,12 +59,12 @@ V2 RPC Sketch
     - Note: lesson_format is a single-select field stored as text (not array) and should use equality, unlike other array-backed filters that use &&
   - academic_integration && filter_academic
   - social_emotional_learning && filter_sel
-  - (filter_cooking_method is null OR filter_cooking_method = '' OR filter_cooking_method = ANY(cooking_methods))
-    - Note: UI sends a single string for cookingMethods (single-select), while DB stores cooking_methods as text[] for consistency; use ANY() for membership
+  - (filter_cooking_methods IS NULL OR array_length(filter_cooking_methods, 1) IS NULL OR cooking_methods && filter_cooking_methods)
+    - Note: cookingMethods is a multi-select in the UI and DB; use array overlap (&&) with text[] params
 
 - Ranking (stable and explainable):
   - rank := GREATEST(
-      ts_rank_cd(search_vector, to_tsquery('english', expanded_query)),
+      ts_rank_cd(search_vector, to_tsquery('english', expand_search_with_synonyms(search_query))),
       similarity(title, search_query),
       0.8 * similarity(summary, search_query)
     )
