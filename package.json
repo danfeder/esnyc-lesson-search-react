@@ -15,8 +15,6 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "import-data": "node scripts/import-data.js",
-    "sync-algolia": "node scripts/sync-to-algolia.js",
-    "configure-synonyms": "node scripts/configure-synonyms.js",
     "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist",
     "deploy:vercel": "npm run build && vercel --prod",
     "test:lighthouse": "npm run build && lhci autorun",

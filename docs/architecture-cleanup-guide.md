@@ -117,6 +117,9 @@ Recent Notes
 Next Planned Actions
 - Phase 3: Remove Algolia/legacy code and then remove legacy results fields from the store.
   - Delete Algolia hooks/types/client and facet helpers; remove scripts/docs references.
+    - [x] Remove hooks/types/client (`useAlgoliaSearch`, `lib/algolia.ts`, `types/algolia.ts`)
+    - [x] Reword facet helpers to be generic (kept for future SQL counts)
+    - [ ] Remove scripts/docs referencing Algolia (scripts/sync-to-algolia.js; package.json scripts)
   - Remove legacy results fields from Zustand store (moved from Phase 1) and update any dependents.
   - Keep Cultural Heritage hierarchy config as-is unless a future consolidation is desired.
 

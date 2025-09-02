@@ -23,45 +23,8 @@ npm run import-data
 - Inserts lessons into the `lessons` table
 - Updates metadata and activity types
 
-### `sync-to-algolia.js`
-Synchronizes lesson data from Supabase to Algolia search index.
-
-**Usage:**
-```bash
-npm run sync-algolia
-```
-
-**Required Environment Variables:**
-- `VITE_ALGOLIA_APP_ID`
-- `ALGOLIA_ADMIN_API_KEY`
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
-**What it does:**
-- Fetches all lessons from Supabase
-- Transforms data for Algolia format
-- Updates Algolia search index
-- Configures searchable attributes
-
-### `configure-synonyms.js`
-Sets up search synonyms in Algolia for better search results.
-
-**Usage:**
-```bash
-npm run configure-synonyms
-```
-
-**Required Environment Variables:**
-- `VITE_ALGOLIA_APP_ID`
-- `ALGOLIA_ADMIN_API_KEY`
-
-**What it does:**
-- Configures ingredient synonyms (e.g., "butternut squash" → "winter squash")
-- Sets up cultural heritage synonyms
-- Adds common spelling variations
-
-### `remove-algolia.js`
-Removes lesson data from Algolia index (cleanup utility).
+### Search sync (legacy)
+Algolia sync and configuration scripts have been removed as the project now uses PostgreSQL full‑text search. If search sync is needed in the future, prefer SQL functions or Edge Functions.
 
 **Usage:**
 ```bash
