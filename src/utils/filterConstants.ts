@@ -65,27 +65,6 @@ export const INGREDIENT_GROUPS: Record<string, string[]> = {
   Cruciferous: ['cauliflower', 'cabbage', 'broccoli', 'brussels sprouts'],
 };
 
-// Core competencies options
-export const CORE_COMPETENCIES = [
-  'Environmental and Community Stewardship',
-  'Social Justice',
-  'Social-Emotional Intelligence',
-  'Garden Skills and Related Academic Content',
-  'Kitchen Skills and Related Academic Content',
-  'Culturally Responsive Education',
-];
-
-// Lesson format options
-export const LESSON_FORMATS = [
-  'Standalone',
-  'Multi-session unit',
-  'Double period',
-  'Single period',
-  'Co-taught',
-  'Remote/virtual adapted',
-  'Mobile education format',
-];
-
 // Grade level groupings
 export const GRADE_GROUPS = {
   'early-childhood': {
@@ -106,24 +85,5 @@ export const GRADE_GROUPS = {
   },
 };
 
-// Academic subject options
-export const ACADEMIC_SUBJECTS = [
-  'Science',
-  'Social Studies',
-  'Literacy/ELA',
-  'Math',
-  'Health',
-  'Arts',
-];
-
-// SEL competency options
-export const SEL_COMPETENCIES = [
-  'Relationship skills',
-  'Self-awareness',
-  'Responsible decision-making',
-  'Self-management',
-  'Social awareness',
-];
-
-// Cooking method options
-export const COOKING_METHODS = ['No-cook', 'Stovetop', 'Oven', 'Basic prep only'];
+// Note: Option lists for filters have moved to `filterDefinitions.ts` (Phase 2B).
+// The remaining exports are still used by cultural heritage widgets and helpers.
