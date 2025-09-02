@@ -91,7 +91,10 @@ describe('FilterSidebar uses unified filterDefinitions', () => {
   });
 
   it('shows facet count badge when facets provided', () => {
-    const facets = { 'metadata.activityType': { both: 99 } } as Record<string, Record<string, number>>;
+    const facets = { 'metadata.activityType': { both: 99 } } as Record<
+      string,
+      Record<string, number>
+    >;
     render(
       <FilterSidebar
         filters={defaultFilters}
