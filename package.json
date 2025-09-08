@@ -71,7 +71,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@lhci/cli": "^0.15.1",
-    "@tanstack/react-query-devtools": "^5.85.3",
+    "@tanstack/react-query-devtools": "^5.87.1",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
