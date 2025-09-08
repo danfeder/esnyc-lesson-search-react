@@ -52,7 +52,7 @@
     "@vitejs/plugin-react": "^5.0.1",
     "csv-parse": "^6.1.0",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.2.0",
+    "dotenv": "^17.2.2",
     "focus-trap-react": "^11.0.4",
     "lucide-react": "^0.539.0",
     "openai": "^5.15.0",
