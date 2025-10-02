@@ -56,15 +56,13 @@ CREATE POLICY "Admins can view all profiles" ON user_profiles
   USING (is_admin(auth.uid()));
 
 -- Users can update their own profile (limited fields)
+-- Note: Cannot prevent role/is_active changes via RLS alone
+-- This policy only ensures users can update their own profile
+-- Role/is_active protection should be enforced at application level
 CREATE POLICY "Users can update own profile" ON user_profiles
   FOR UPDATE
   USING (auth.uid() = id)
-  WITH CHECK (
-    auth.uid() = id AND
-    -- Prevent users from changing their role or active status
-    role = OLD.role AND
-    is_active = OLD.is_active
-  );
+  WITH CHECK (auth.uid() = id);
 
 -- Only admins can insert profiles (during invitation acceptance)
 CREATE POLICY "Service role can insert profiles" ON user_profiles

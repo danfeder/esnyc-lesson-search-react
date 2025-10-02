@@ -29,15 +29,17 @@ CREATE TABLE IF NOT EXISTS duplicate_pairs (
   
   -- Analysis Details
   similarity_details JSONB DEFAULT '{}',
-  
-  -- Ensure unique pairs (prevent duplicates like A-B and B-A)
-  CONSTRAINT unique_lesson_pair UNIQUE (
-    LEAST(lesson1_id, lesson2_id),
-    GREATEST(lesson1_id, lesson2_id)
-  ),
-  
-  -- Ensure different lessons
+
+  -- Ensure different lessons (inline CHECK constraint is OK)
   CONSTRAINT different_lessons CHECK (lesson1_id != lesson2_id)
+);
+
+-- Ensure unique pairs (prevent duplicates like A-B and B-A)
+-- Must be a separate index because it uses functions
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_lesson_pair
+ON duplicate_pairs (
+  LEAST(lesson1_id, lesson2_id),
+  GREATEST(lesson1_id, lesson2_id)
 );
 
 -- Create indexes for performance

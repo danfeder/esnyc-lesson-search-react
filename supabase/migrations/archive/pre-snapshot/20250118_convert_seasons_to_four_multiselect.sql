@@ -2,6 +2,16 @@
 -- This migration remaps existing season data to use only the 4 core seasons
 -- and removes Year-round, Beginning of Year, and End of Year options
 
+-- Step 0: Create season_timing column if it doesn't exist (migrate from old 'season' TEXT field)
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS season_timing TEXT[];
+
+-- Populate season_timing from old season field (if data exists)
+UPDATE lessons
+SET season_timing = ARRAY[season]::TEXT[]
+WHERE season IS NOT NULL
+  AND season != ''
+  AND season_timing IS NULL;
+
 -- Step 1: Create a backup of current season_timing data
 ALTER TABLE lessons ADD COLUMN IF NOT EXISTS season_timing_backup TEXT[];
 UPDATE lessons SET season_timing_backup = season_timing WHERE season_timing IS NOT NULL;
@@ -54,28 +64,29 @@ CHECK (
   season_timing <@ ARRAY['Fall', 'Winter', 'Spring', 'Summer']::TEXT[]
 );
 
--- Step 5: Update submission_reviews tagged_metadata to convert season from string to array
+-- Step 5: Update submission_reviews metadata to convert season from string to array
+-- Note: Column is 'metadata' not 'tagged_metadata'
 UPDATE submission_reviews
-SET tagged_metadata = jsonb_set(
-  tagged_metadata,
+SET metadata = jsonb_set(
+  metadata,
   '{season}',
   CASE
     -- If season is a string, convert to array
-    WHEN jsonb_typeof(tagged_metadata->'season') = 'string' THEN
+    WHEN jsonb_typeof(metadata->'season') = 'string' THEN
       CASE 
-        WHEN tagged_metadata->>'season' IN ('All Seasons', 'Year-round') THEN
+        WHEN metadata->>'season' IN ('All Seasons', 'Year-round') THEN
           '["Fall", "Winter", "Spring", "Summer"]'::jsonb
-        WHEN tagged_metadata->>'season' = 'Beginning of year' THEN
+        WHEN metadata->>'season' = 'Beginning of year' THEN
           '["Fall"]'::jsonb
-        WHEN tagged_metadata->>'season' = 'End of year' THEN
+        WHEN metadata->>'season' = 'End of year' THEN
           '["Spring", "Summer"]'::jsonb
-        WHEN tagged_metadata->>'season' IS NOT NULL AND tagged_metadata->>'season' != '' THEN
-          jsonb_build_array(tagged_metadata->>'season')
+        WHEN metadata->>'season' IS NOT NULL AND metadata->>'season' != '' THEN
+          jsonb_build_array(metadata->>'season')
         ELSE
           '[]'::jsonb
       END
     -- If already an array, remap deprecated values and clean it up
-    WHEN jsonb_typeof(tagged_metadata->'season') = 'array' THEN
+    WHEN jsonb_typeof(metadata->'season') = 'array' THEN
       (
         SELECT to_jsonb(ARRAY(
           SELECT DISTINCT season FROM (
@@ -92,7 +103,7 @@ SET tagged_metadata = jsonb_set(
                 ELSE ARRAY[]::text[]
               END
             ) AS season
-            FROM jsonb_array_elements_text(tagged_metadata->'season') AS value
+            FROM jsonb_array_elements_text(metadata->'season') AS value
           ) AS all_seasons
           WHERE season IS NOT NULL
         ))
@@ -101,7 +112,7 @@ SET tagged_metadata = jsonb_set(
       '[]'::jsonb
   END
 )
-WHERE tagged_metadata ? 'season';
+WHERE metadata ? 'season';
 
 -- Note: To rollback this migration, run:
 -- UPDATE lessons SET season_timing = season_timing_backup WHERE season_timing_backup IS NOT NULL;

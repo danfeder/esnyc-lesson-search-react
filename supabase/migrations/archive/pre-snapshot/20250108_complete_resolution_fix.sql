@@ -1,5 +1,9 @@
--- Fix duplicate key constraint error when resolving groups with multiple lessons
--- The canonical_lessons table has duplicate_id as primary key, so we need to handle conflicts
+-- COMPLETE fix for resolve_duplicate_group function
+-- This handles ALL column requirements and data types correctly
+
+-- Drop all existing versions
+DROP FUNCTION IF EXISTS resolve_duplicate_group(text, text, text[], text, double precision, boolean, text);
+DROP FUNCTION IF EXISTS resolve_duplicate_group(text, text, text[], text, numeric, boolean, text, text, text, text);
 
 CREATE OR REPLACE FUNCTION resolve_duplicate_group(
   p_group_id text,
@@ -232,8 +236,7 @@ BEGIN
       v_archived_count := v_archived_count + 1;
     END LOOP;
 
-    -- Create canonical mappings with ON CONFLICT handling
-    -- This prevents duplicate key errors if a lesson was already mapped as a duplicate
+    -- Create canonical mappings
     INSERT INTO canonical_lessons (
       duplicate_id,
       canonical_id,
@@ -248,14 +251,7 @@ BEGIN
       p_similarity_score,
       p_duplicate_type,
       v_user_id,
-      p_resolution_notes
-    ON CONFLICT (duplicate_id) DO UPDATE SET
-      canonical_id = EXCLUDED.canonical_id,
-      similarity_score = EXCLUDED.similarity_score,
-      resolution_type = EXCLUDED.resolution_type,
-      resolved_by = EXCLUDED.resolved_by,
-      resolved_at = NOW(),
-      resolution_notes = EXCLUDED.resolution_notes;
+      p_resolution_notes;
 
     -- Delete duplicates from main table
     DELETE FROM lessons 
@@ -285,6 +281,7 @@ END;
 $$;
 
 -- Grant permissions
-GRANT EXECUTE ON FUNCTION resolve_duplicate_group TO authenticated;
+-- Specify full signature (this version has 10 parameters, no jsonb)
+GRANT EXECUTE ON FUNCTION resolve_duplicate_group(text, text, text[], text, numeric, boolean, text, text, text, text) TO authenticated;
 
-COMMENT ON FUNCTION resolve_duplicate_group IS 'Duplicate resolution with ON CONFLICT handling to prevent duplicate key errors when re-resolving lessons.';
+COMMENT ON FUNCTION resolve_duplicate_group IS 'Complete duplicate resolution with proper handling of all required fields in lesson_archive table.';

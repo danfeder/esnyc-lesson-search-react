@@ -17,30 +17,9 @@ DROP VIEW IF EXISTS user_profiles_safe CASCADE;
 RESET SESSION AUTHORIZATION;
 
 -- Create the view with explicit security invoker behavior
--- Using SELECT * to avoid column name issues
+-- Simplified to just pass through all columns (lessons table now has normalized columns)
 CREATE VIEW lessons_with_metadata AS
-SELECT 
-  l.*,
-  -- Extract metadata fields for easier querying
-  l.metadata->>'activity_type' as activity_type_meta,
-  l.metadata->>'location' as location_meta,
-  l.metadata->>'season' as season_meta,
-  l.metadata->>'timing' as timing_meta,
-  l.metadata->>'group_size' as group_size_meta,
-  l.metadata->>'duration_minutes' as duration_minutes_meta,
-  l.metadata->>'prep_time_minutes' as prep_time_minutes_meta,
-  -- Array fields from metadata
-  (l.metadata->>'grade_levels')::jsonb as grade_levels_array,
-  (l.metadata->>'themes')::jsonb as themes_array,
-  (l.metadata->>'core_competencies')::jsonb as core_competencies_array,
-  (l.metadata->>'cultural_heritage')::jsonb as cultural_heritage_array,
-  (l.metadata->>'academic_integration')::jsonb as academic_integration_array,
-  (l.metadata->>'sel_competencies')::jsonb as sel_competencies_array,
-  (l.metadata->>'observances')::jsonb as observances_array,
-  (l.metadata->>'main_ingredients')::jsonb as main_ingredients_array,
-  (l.metadata->>'garden_skills')::jsonb as garden_skills_array,
-  (l.metadata->>'cooking_skills')::jsonb as cooking_skills_array,
-  (l.metadata->>'materials')::jsonb as materials_array
+SELECT l.*
 FROM lessons l;
 
 -- Explicitly set the view owner and ensure it's not SECURITY DEFINER
@@ -53,13 +32,13 @@ GRANT SELECT ON lessons_with_metadata TO anon, authenticated;
 -- 3. RECREATE user_profiles_safe AS INVOKER (DEFAULT)
 -- =====================================================
 CREATE VIEW user_profiles_safe AS
-SELECT 
+SELECT
   up.id,
   up.full_name,
   up.role,
   up.school_name,
   up.grades_taught,
-  up.subjects,
+  up.subjects_taught,
   up.created_at
 FROM user_profiles up
 WHERE up.is_active = true;
