@@ -14,28 +14,10 @@ DROP VIEW IF EXISTS lessons_with_metadata CASCADE;
 
 -- Recreate as a regular view (not SECURITY DEFINER)
 CREATE VIEW lessons_with_metadata AS
-SELECT 
-  l.*,
-  -- Extract metadata fields for easier querying (skip ones that exist as columns)
-  l.metadata->>'activity_type' as activity_type_meta,
-  l.metadata->>'location' as location_meta,
-  l.metadata->>'season' as season_meta,
-  l.metadata->>'timing' as timing_meta,
-  l.metadata->>'group_size' as group_size,
-  l.metadata->>'duration_minutes' as duration_minutes,
-  l.metadata->>'prep_time_minutes' as prep_time_minutes,
-  -- Array fields from metadata
-  (l.metadata->>'grade_levels')::jsonb as grade_levels_array,
-  (l.metadata->>'themes')::jsonb as themes_array,
-  (l.metadata->>'core_competencies')::jsonb as core_competencies_array,
-  (l.metadata->>'cultural_heritage')::jsonb as cultural_heritage_array,
-  (l.metadata->>'academic_integration')::jsonb as academic_integration_array,
-  (l.metadata->>'sel_competencies')::jsonb as sel_competencies_array,
-  (l.metadata->>'observances')::jsonb as observances_array,
-  (l.metadata->>'main_ingredients')::jsonb as main_ingredients_array,
-  (l.metadata->>'garden_skills')::jsonb as garden_skills_array,
-  (l.metadata->>'cooking_skills')::jsonb as cooking_skills_array,
-  (l.metadata->>'materials')::jsonb as materials_array
+SELECT
+  l.*
+  -- Note: Simplified to just pass through all columns from lessons table.
+  -- Removed metadata extractions because lessons now has normalized columns.
 FROM lessons l;
 
 -- Grant SELECT to anon and authenticated (safe because lessons table has RLS)
@@ -75,7 +57,7 @@ RETURNS TABLE (
   school_id UUID,
   school_name TEXT,
   grades_taught TEXT[],
-  subjects TEXT[],
+  subjects_taught TEXT[],
   is_active BOOLEAN,
   invited_by UUID,
   invitation_accepted_at TIMESTAMPTZ,
@@ -107,7 +89,7 @@ BEGIN
     up.school_id,
     up.school_name,
     up.grades_taught,
-    up.subjects,
+    up.subjects_taught,
     up.is_active,
     up.invited_by,
     up.invitation_accepted_at,
@@ -126,13 +108,13 @@ GRANT EXECUTE ON FUNCTION get_user_profiles_with_email() TO authenticated;
 
 -- Create a simpler view for non-admin users that doesn't expose auth.users
 CREATE VIEW user_profiles_safe AS
-SELECT 
+SELECT
   id,
   full_name,
   role,
   school_name,
   grades_taught,
-  subjects,
+  subjects_taught,
   created_at
 FROM user_profiles
 WHERE is_active = true;

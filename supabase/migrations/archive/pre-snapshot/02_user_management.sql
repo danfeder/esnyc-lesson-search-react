@@ -59,12 +59,9 @@ CREATE TABLE IF NOT EXISTS user_management_audit (
   -- Change Tracking
   old_values JSONB,
   new_values JSONB,
-  metadata JSONB DEFAULT '{}',
-  
-  -- Add index for performance
-  INDEX idx_audit_actor_created (actor_id, created_at DESC),
-  INDEX idx_audit_target_created (target_user_id, created_at DESC),
-  INDEX idx_audit_action_created (action, created_at DESC)
+  metadata JSONB DEFAULT '{}'
+
+  -- Indexes created separately below for PostgreSQL compatibility
 );
 
 -- Create indexes if they don't exist (for idempotency)

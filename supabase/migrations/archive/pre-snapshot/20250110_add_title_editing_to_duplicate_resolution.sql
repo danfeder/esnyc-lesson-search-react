@@ -1,10 +1,14 @@
--- COMPLETE fix for resolve_duplicate_group function
--- This handles ALL column requirements and data types correctly
+-- Migration: Add title editing capability to duplicate resolution
+-- Description: Extends resolve_duplicate_group function to support editing lesson titles during resolution
+-- Author: ESYNYC Team
+-- Date: 2025-01-10
 
--- Drop all existing versions
-DROP FUNCTION IF EXISTS resolve_duplicate_group(text, text, text[], text, double precision, boolean, text);
+-- Drop the existing function to recreate with new signature
+-- Note: Adding jsonb parameter for title updates
+-- Drop the OLD version (without jsonb) from migration 20250108
 DROP FUNCTION IF EXISTS resolve_duplicate_group(text, text, text[], text, numeric, boolean, text, text, text, text);
 
+-- Create enhanced version with title editing support
 CREATE OR REPLACE FUNCTION resolve_duplicate_group(
   p_group_id text,
   p_canonical_id text,
@@ -15,7 +19,8 @@ CREATE OR REPLACE FUNCTION resolve_duplicate_group(
   p_resolution_notes text DEFAULT NULL,
   p_resolution_mode text DEFAULT 'single',
   p_sub_group_name text DEFAULT NULL,
-  p_parent_group_id text DEFAULT NULL
+  p_parent_group_id text DEFAULT NULL,
+  p_title_updates jsonb DEFAULT NULL  -- New parameter: {"lesson_id": "new_title"}
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -29,6 +34,11 @@ DECLARE
   v_action_taken text;
   v_lesson_record record;
   v_archive_id uuid;
+  v_title_update_key text;
+  v_new_title text;
+  v_old_title text;
+  v_updated_titles jsonb := '[]'::jsonb;
+  v_title_update_record jsonb;
 BEGIN
   -- Get the current user
   v_user_id := auth.uid();
@@ -36,7 +46,7 @@ BEGIN
   -- Verify user has permission
   IF NOT EXISTS (
     SELECT 1 FROM user_profiles 
-    WHERE id = v_user_id 
+    WHERE user_id = v_user_id 
     AND role IN ('admin', 'reviewer', 'super_admin')
   ) THEN
     RETURN jsonb_build_object(
@@ -65,6 +75,52 @@ BEGIN
     END LOOP;
   END IF;
   
+  -- Apply title updates if provided
+  IF p_title_updates IS NOT NULL THEN
+    FOR v_title_update_key IN SELECT jsonb_object_keys(p_title_updates)
+    LOOP
+      v_new_title := p_title_updates ->> v_title_update_key;
+      
+      -- Validate title is not empty and within reasonable length
+      IF v_new_title IS NULL OR length(trim(v_new_title)) = 0 THEN
+        RETURN jsonb_build_object(
+          'success', false,
+          'error', 'Invalid title for lesson ' || v_title_update_key || ': Title cannot be empty'
+        );
+      END IF;
+      
+      IF length(v_new_title) > 500 THEN
+        RETURN jsonb_build_object(
+          'success', false,
+          'error', 'Invalid title for lesson ' || v_title_update_key || ': Title exceeds 500 characters'
+        );
+      END IF;
+      
+      -- Get the old title first
+      SELECT title INTO v_old_title 
+      FROM lessons 
+      WHERE lesson_id = v_title_update_key;
+      
+      -- Update the title in the lessons table
+      UPDATE lessons 
+      SET 
+        title = v_new_title,
+        updated_at = now(),
+        processing_notes = COALESCE(processing_notes, '') || 
+          E'\n[' || now()::text || '] Title updated during duplicate resolution by user ' || v_user_id::text ||
+          '. Original title: "' || COALESCE(v_old_title, 'unknown') || '"'
+      WHERE lesson_id = v_title_update_key;
+      
+      -- Track the title update
+      v_title_update_record := jsonb_build_object(
+        'lesson_id', v_title_update_key,
+        'old_title', v_old_title,
+        'new_title', v_new_title
+      );
+      v_updated_titles := v_updated_titles || v_title_update_record;
+    END LOOP;
+  END IF;
+  
   -- Calculate lessons in group
   v_lesson_count := 1;
   IF p_duplicate_ids IS NOT NULL THEN
@@ -79,7 +135,7 @@ BEGIN
     ELSE 'archive_only'
   END;
   
-  -- Create resolution record
+  -- Create resolution record with title updates tracked
   INSERT INTO duplicate_resolutions (
     group_id,
     canonical_lesson_id,
@@ -100,7 +156,12 @@ BEGIN
     p_similarity_score::double precision,
     v_lesson_count,
     v_action_taken,
-    p_resolution_notes,
+    COALESCE(p_resolution_notes, '') || 
+      CASE 
+        WHEN jsonb_array_length(v_updated_titles) > 0 
+        THEN E'\nTitle updates: ' || v_updated_titles::text
+        ELSE ''
+      END,
     v_user_id,
     COALESCE(p_resolution_mode, 'single'),
     p_sub_group_name,
@@ -154,7 +215,7 @@ BEGIN
       
       -- Insert into lesson_archive with ALL required fields
       INSERT INTO lesson_archive (
-        id,  -- REQUIRED: Generate new UUID
+        id,
         lesson_id,
         title,
         summary,
@@ -167,7 +228,7 @@ BEGIN
         content_embedding,
         content_hash,
         last_modified,
-        created_at,  -- REQUIRED: Use existing or current timestamp
+        created_at,
         updated_at,
         thematic_categories,
         cultural_heritage,
@@ -193,20 +254,20 @@ BEGIN
         canonical_id,
         activity_type
       ) VALUES (
-        v_archive_id,  -- Generate new ID
+        v_archive_id,
         v_lesson_record.lesson_id,
-        v_lesson_record.title,
-        COALESCE(v_lesson_record.summary, ''),  -- Provide default for NOT NULL
-        COALESCE(v_lesson_record.file_link, ''),  -- Provide default for NOT NULL
-        COALESCE(v_lesson_record.grade_levels, ARRAY[]::text[]),  -- Default empty array
-        COALESCE(v_lesson_record.metadata, '{}'::jsonb),  -- Default empty object
-        COALESCE(v_lesson_record.confidence, '{}'::jsonb),  -- Default empty object
+        v_lesson_record.title,  -- Original title preserved in archive
+        COALESCE(v_lesson_record.summary, ''),
+        COALESCE(v_lesson_record.file_link, ''),
+        COALESCE(v_lesson_record.grade_levels, ARRAY[]::text[]),
+        COALESCE(v_lesson_record.metadata, '{}'::jsonb),
+        COALESCE(v_lesson_record.confidence, '{}'::jsonb),
         v_lesson_record.search_vector,
         v_lesson_record.content_text,
         v_lesson_record.content_embedding,
         v_lesson_record.content_hash,
         v_lesson_record.last_modified,
-        COALESCE(v_lesson_record.created_at, NOW()),  -- Use existing or current time
+        COALESCE(v_lesson_record.created_at, now()),
         v_lesson_record.updated_at,
         v_lesson_record.thematic_categories,
         v_lesson_record.cultural_heritage,
@@ -226,46 +287,32 @@ BEGIN
         v_lesson_record.review_notes,
         v_lesson_record.flagged_for_review,
         v_lesson_record.tags,
-        NOW(),  -- archived_at
-        v_user_id,  -- archived_by
-        'Duplicate resolved - ' || p_duplicate_type || ' (Group: ' || p_group_id || ')',  -- archive_reason
-        p_canonical_id,  -- canonical_id
+        now(),
+        v_user_id,
+        'Duplicate resolution: ' || p_duplicate_type || ' duplicate of ' || p_canonical_id || 
+          ' (group: ' || p_group_id || ')',
+        p_canonical_id,
         v_lesson_record.activity_type
       );
       
       v_archived_count := v_archived_count + 1;
     END LOOP;
-
-    -- Create canonical mappings
-    INSERT INTO canonical_lessons (
-      duplicate_id,
-      canonical_id,
-      similarity_score,
-      resolution_type,
-      resolved_by,
-      resolution_notes
-    )
-    SELECT 
-      unnest(p_duplicate_ids),
-      p_canonical_id,
-      p_similarity_score,
-      p_duplicate_type,
-      v_user_id,
-      p_resolution_notes;
-
-    -- Delete duplicates from main table
-    DELETE FROM lessons 
-    WHERE lesson_id = ANY(p_duplicate_ids);
+    
+    -- Delete the duplicate lessons from main table
+    -- Note: We don't insert into canonical_lessons because the foreign key constraint
+    -- would prevent inserting references to lessons we're about to delete.
+    -- The canonical_lessons table is meant for tracking already-deleted duplicates.
+    DELETE FROM lessons WHERE lesson_id = ANY(p_duplicate_ids);
   END IF;
   
-  -- Return success
+  -- Return success with details
   RETURN jsonb_build_object(
     'success', true,
-    'archived_count', v_archived_count,
     'resolution_id', v_resolution_id,
+    'archived_count', v_archived_count,
     'canonical_id', p_canonical_id,
     'action_taken', v_action_taken,
-    'lessons_in_group', v_lesson_count
+    'title_updates', v_updated_titles
   );
   
 EXCEPTION
@@ -273,14 +320,21 @@ EXCEPTION
     RETURN jsonb_build_object(
       'success', false,
       'error', SQLERRM,
-      'detail', SQLSTATE,
-      'context', 'Error at: ' || COALESCE(p_group_id, 'unknown'),
-      'hint', 'Check that all lessons exist and have required fields'
+      'detail', SQLSTATE
     );
 END;
 $$;
 
--- Grant permissions
-GRANT EXECUTE ON FUNCTION resolve_duplicate_group TO authenticated;
+-- Grant execute permission to authenticated users
+-- Must specify full signature because multiple overloads exist
+GRANT EXECUTE ON FUNCTION resolve_duplicate_group(text, text, text[], text, numeric, boolean, text, text, text, text, jsonb) TO authenticated;
 
-COMMENT ON FUNCTION resolve_duplicate_group IS 'Complete duplicate resolution with proper handling of all required fields in lesson_archive table.';
+-- Add comment describing the function
+COMMENT ON FUNCTION resolve_duplicate_group IS 'Resolves a group of duplicate lessons by selecting a canonical version, optionally editing titles, and archiving duplicates. Supports multiple resolution modes including single canonical, split groups, and keep all. Added support for title editing during resolution.';
+
+-- ============================================
+-- ROLLBACK COMMANDS (as comments)
+-- ============================================
+-- To rollback this migration:
+-- DROP FUNCTION IF EXISTS resolve_duplicate_group(text, text, text[], text, numeric, boolean, text, text, text, text, jsonb);
+-- Then re-apply the previous version of the function from migration 20250108_complete_resolution_fix.sql

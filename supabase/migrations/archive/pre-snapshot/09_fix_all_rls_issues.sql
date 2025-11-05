@@ -62,109 +62,112 @@ ALTER TABLE submission_reviews ENABLE ROW LEVEL SECURITY;
 -- 2. ENABLE RLS ON TABLES WITHOUT ANY PROTECTION
 -- =====================================================
 
+-- Note: Commented out tables that don't exist in active migrations
+-- (They were in archived migrations from 20250123)
+
 -- Enable RLS on search_synonyms
-ALTER TABLE search_synonyms ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE search_synonyms ENABLE ROW LEVEL SECURITY;
 
 -- Enable RLS on cultural_heritage_hierarchy
-ALTER TABLE cultural_heritage_hierarchy ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE cultural_heritage_hierarchy ENABLE ROW LEVEL SECURITY;
 
 -- Enable RLS on lesson_archive
-ALTER TABLE lesson_archive ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE lesson_archive ENABLE ROW LEVEL SECURITY;
 
 -- Enable RLS on canonical_lessons
-ALTER TABLE canonical_lessons ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE canonical_lessons ENABLE ROW LEVEL SECURITY;
 
--- Enable RLS on duplicate_resolutions
+-- Enable RLS on duplicate_resolutions (this one exists)
 ALTER TABLE duplicate_resolutions ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
 -- 3. ADD POLICIES FOR NEWLY PROTECTED TABLES
 -- =====================================================
 
--- SEARCH_SYNONYMS POLICIES
+-- SEARCH_SYNONYMS POLICIES (COMMENTED - TABLE DOESN'T EXIST)
 -- Public read-only access (synonyms are public configuration)
-CREATE POLICY "Public can view synonyms" ON search_synonyms
-  FOR SELECT
-  USING (true);
+-- CREATE POLICY "Public can view synonyms" ON search_synonyms
+--   FOR SELECT
+--   USING (true);
 
 -- Only admins can manage synonyms
-CREATE POLICY "Admins can insert synonyms" ON search_synonyms
-  FOR INSERT
-  WITH CHECK (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can insert synonyms" ON search_synonyms
+--   FOR INSERT
+--   WITH CHECK (is_admin(auth.uid()));
 
-CREATE POLICY "Admins can update synonyms" ON search_synonyms
-  FOR UPDATE
-  USING (is_admin(auth.uid()))
-  WITH CHECK (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can update synonyms" ON search_synonyms
+--   FOR UPDATE
+--   USING (is_admin(auth.uid()))
+--   WITH CHECK (is_admin(auth.uid()));
 
-CREATE POLICY "Admins can delete synonyms" ON search_synonyms
-  FOR DELETE
-  USING (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can delete synonyms" ON search_synonyms
+--   FOR DELETE
+--   USING (is_admin(auth.uid()));
 
--- CULTURAL_HERITAGE_HIERARCHY POLICIES
+-- CULTURAL_HERITAGE_HIERARCHY POLICIES (COMMENTED - TABLE DOESN'T EXIST)
 -- Public read-only access (hierarchy is public configuration)
-CREATE POLICY "Public can view cultural hierarchy" ON cultural_heritage_hierarchy
-  FOR SELECT
-  USING (true);
+-- CREATE POLICY "Public can view cultural hierarchy" ON cultural_heritage_hierarchy
+--   FOR SELECT
+--   USING (true);
 
 -- Only admins can manage hierarchy
-CREATE POLICY "Admins can insert hierarchy" ON cultural_heritage_hierarchy
-  FOR INSERT
-  WITH CHECK (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can insert hierarchy" ON cultural_heritage_hierarchy
+--   FOR INSERT
+--   WITH CHECK (is_admin(auth.uid()));
 
-CREATE POLICY "Admins can update hierarchy" ON cultural_heritage_hierarchy
-  FOR UPDATE
-  USING (is_admin(auth.uid()))
-  WITH CHECK (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can update hierarchy" ON cultural_heritage_hierarchy
+--   FOR UPDATE
+--   USING (is_admin(auth.uid()))
+--   WITH CHECK (is_admin(auth.uid()));
 
-CREATE POLICY "Admins can delete hierarchy" ON cultural_heritage_hierarchy
-  FOR DELETE
-  USING (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can delete hierarchy" ON cultural_heritage_hierarchy
+--   FOR DELETE
+--   USING (is_admin(auth.uid()));
 
--- LESSON_ARCHIVE POLICIES
+-- LESSON_ARCHIVE POLICIES (COMMENTED - TABLE DOESN'T EXIST)
 -- Only admins can view archived lessons
-CREATE POLICY "Admins can view lesson archive" ON lesson_archive
-  FOR SELECT
-  USING (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can view lesson archive" ON lesson_archive
+--   FOR SELECT
+--   USING (is_admin(auth.uid()));
 
 -- System/admin operations only
-CREATE POLICY "Admins can insert to archive" ON lesson_archive
-  FOR INSERT
-  WITH CHECK (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can insert to archive" ON lesson_archive
+--   FOR INSERT
+--   WITH CHECK (is_admin(auth.uid()));
 
 -- Archive should be immutable - no updates
 -- No update policy
 
 -- Only super admins can delete from archive
-CREATE POLICY "Super admins can delete from archive" ON lesson_archive
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM user_profiles
-      WHERE id = auth.uid()
-      AND role = 'super_admin'
-    )
-  );
+-- CREATE POLICY "Super admins can delete from archive" ON lesson_archive
+--   FOR DELETE
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM user_profiles
+--       WHERE id = auth.uid()
+--       AND role = 'super_admin'
+--     )
+--   );
 
--- CANONICAL_LESSONS POLICIES
+-- CANONICAL_LESSONS POLICIES (COMMENTED - TABLE DOESN'T EXIST)
 -- Public can view canonical lessons
-CREATE POLICY "Public can view canonical lessons" ON canonical_lessons
-  FOR SELECT
-  USING (true);
+-- CREATE POLICY "Public can view canonical lessons" ON canonical_lessons
+--   FOR SELECT
+--   USING (true);
 
 -- Only admins can manage canonical lessons
-CREATE POLICY "Admins can insert canonical lessons" ON canonical_lessons
-  FOR INSERT
-  WITH CHECK (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can insert canonical lessons" ON canonical_lessons
+--   FOR INSERT
+--   WITH CHECK (is_admin(auth.uid()));
 
-CREATE POLICY "Admins can update canonical lessons" ON canonical_lessons
-  FOR UPDATE
-  USING (is_admin(auth.uid()))
-  WITH CHECK (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can update canonical lessons" ON canonical_lessons
+--   FOR UPDATE
+--   USING (is_admin(auth.uid()))
+--   WITH CHECK (is_admin(auth.uid()));
 
-CREATE POLICY "Admins can delete canonical lessons" ON canonical_lessons
-  FOR DELETE
-  USING (is_admin(auth.uid()));
+-- CREATE POLICY "Admins can delete canonical lessons" ON canonical_lessons
+--   FOR DELETE
+--   USING (is_admin(auth.uid()));
 
 -- DUPLICATE_RESOLUTIONS POLICIES
 -- Reviewers can view resolutions
@@ -195,28 +198,11 @@ CREATE POLICY "Admins can update resolutions" ON duplicate_resolutions
 DROP VIEW IF EXISTS lessons_with_metadata CASCADE;
 
 CREATE VIEW lessons_with_metadata AS
-SELECT 
-  l.*,
-  -- Extract metadata fields for easier querying (skip ones that exist as columns)
-  l.metadata->>'activity_type' as activity_type_meta,
-  l.metadata->>'location' as location_meta,
-  l.metadata->>'season' as season_meta,
-  l.metadata->>'timing' as timing_meta,
-  l.metadata->>'group_size' as group_size,
-  l.metadata->>'duration_minutes' as duration_minutes,
-  l.metadata->>'prep_time_minutes' as prep_time_minutes,
-  -- Array fields from metadata
-  (l.metadata->>'grade_levels')::jsonb as grade_levels_array,
-  (l.metadata->>'themes')::jsonb as themes_array,
-  (l.metadata->>'core_competencies')::jsonb as core_competencies_array,
-  (l.metadata->>'cultural_heritage')::jsonb as cultural_heritage_array,
-  (l.metadata->>'academic_integration')::jsonb as academic_integration_array,
-  (l.metadata->>'sel_competencies')::jsonb as sel_competencies_array,
-  (l.metadata->>'observances')::jsonb as observances_array,
-  (l.metadata->>'main_ingredients')::jsonb as main_ingredients_array,
-  (l.metadata->>'garden_skills')::jsonb as garden_skills_array,
-  (l.metadata->>'cooking_skills')::jsonb as cooking_skills_array,
-  (l.metadata->>'materials')::jsonb as materials_array
+SELECT
+  l.*
+  -- Note: Removed metadata extractions because lessons table now has normalized columns
+  -- for all filterable fields. The l.* wildcard already includes everything needed.
+  -- metadata JSONB is still accessible via l.metadata for any remaining legacy fields.
 FROM lessons l;
 
 -- Grant appropriate permissions
@@ -294,10 +280,10 @@ GRANT EXECUTE ON FUNCTION verify_rls_enabled() TO authenticated;
 -- 6. ADD COMMENTS FOR DOCUMENTATION
 -- =====================================================
 
-COMMENT ON TABLE search_synonyms IS 'Search synonym configuration for improving search results';
-COMMENT ON TABLE cultural_heritage_hierarchy IS 'Hierarchical structure of cultural heritage categories';
-COMMENT ON TABLE lesson_archive IS 'Archive of deleted or replaced lessons for audit trail';
-COMMENT ON TABLE canonical_lessons IS 'Canonical version of lessons after duplicate resolution';
+-- COMMENT ON TABLE search_synonyms IS 'Search synonym configuration for improving search results';
+-- COMMENT ON TABLE cultural_heritage_hierarchy IS 'Hierarchical structure of cultural heritage categories';
+-- COMMENT ON TABLE lesson_archive IS 'Archive of deleted or replaced lessons for audit trail';
+-- COMMENT ON TABLE canonical_lessons IS 'Canonical version of lessons after duplicate resolution';
 COMMENT ON TABLE duplicate_resolutions IS 'Record of duplicate resolution decisions';
 
 -- =====================================================

@@ -146,3 +146,8 @@ test-*.sql
 *-deprecated.*
 # Backup files
 backups/
+
+# Supabase local config
+supabase/config.toml
+supabase/.branches/
+supabase/.temp/
