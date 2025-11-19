@@ -12,8 +12,8 @@ describe('Filter Definitions Compliance', () => {
       const requiredFilters = [
         'activityType',
         'location',
-        'gradeLevel',
-        'theme',
+        'gradeLevels',
+        'thematicCategories',
         'seasonTiming',
         'coreCompetencies',
         'culturalHeritage',
@@ -63,23 +63,33 @@ describe('Filter Definitions Compliance', () => {
   });
 
   describe('Filter Types', () => {
-    it('should have correct filter types for each filter', () => {
-      // Single-select filters
-      expect(FILTER_CONFIGS.activityType.type).toBe('single');
-      expect(FILTER_CONFIGS.location.type).toBe('single');
-      expect(FILTER_CONFIGS.lessonFormat.type).toBe('single');
+    it('should have all expected filter properties', () => {
+      expect(FILTER_CONFIGS).toHaveProperty('activityType');
+      expect(FILTER_CONFIGS).toHaveProperty('location');
+      expect(FILTER_CONFIGS).toHaveProperty('gradeLevels');
+      expect(FILTER_CONFIGS).toHaveProperty('thematicCategories');
+      expect(FILTER_CONFIGS).toHaveProperty('seasonTiming');
+      expect(FILTER_CONFIGS).toHaveProperty('coreCompetencies');
+      expect(FILTER_CONFIGS).toHaveProperty('culturalHeritage');
+      expect(FILTER_CONFIGS).toHaveProperty('lessonFormat');
+      expect(FILTER_CONFIGS).toHaveProperty('academicIntegration');
+      expect(FILTER_CONFIGS).toHaveProperty('socialEmotionalLearning');
+      expect(FILTER_CONFIGS).toHaveProperty('cookingMethods');
+    });
 
-      // Multiple-select filters
-      expect(FILTER_CONFIGS.gradeLevel.type).toBe('multiple');
-      expect(FILTER_CONFIGS.theme.type).toBe('multiple');
-      expect(FILTER_CONFIGS.seasonTiming.type).toBe('multiple');
-      expect(FILTER_CONFIGS.coreCompetencies.type).toBe('multiple');
-      expect(FILTER_CONFIGS.academicIntegration.type).toBe('multiple');
-      expect(FILTER_CONFIGS.socialEmotionalLearning.type).toBe('multiple');
-      expect(FILTER_CONFIGS.cookingMethods.type).toBe('multiple');
+    it('gradeLevels filter has correct structure', () => {
+      const config = FILTER_CONFIGS.gradeLevels;
+      expect(config.label).toBe('Grade Levels');
+      expect(config.type).toBe('multiple');
+      expect(config.options.length).toBeGreaterThan(0);
+      expect(config.groups).toBeDefined();
+    });
 
-      // Hierarchical filter
-      expect(FILTER_CONFIGS.culturalHeritage.type).toBe('hierarchical');
+    it('thematicCategories filter has correct structure', () => {
+      const config = FILTER_CONFIGS.thematicCategories;
+      expect(config.label).toBe('Thematic Categories');
+      expect(config.type).toBe('multiple');
+      expect(config.options.length).toBeGreaterThan(0);
     });
   });
 

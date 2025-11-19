@@ -286,12 +286,12 @@ describe('searchStore', () => {
       act(() => {
         result.current.setFilters({
           lessonFormat: 'single-period',
-          cookingMethods: 'no-cook',
+          cookingMethods: ['no-cook'],
         });
       });
 
       expect(result.current.filters.lessonFormat).toBe('single-period');
-      expect(result.current.filters.cookingMethods).toBe('no-cook');
+      expect(result.current.filters.cookingMethods).toEqual(['no-cook']);
 
       // Should overwrite, not append
       act(() => {
