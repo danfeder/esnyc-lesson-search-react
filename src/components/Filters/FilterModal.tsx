@@ -52,7 +52,7 @@ export const FilterModal = React.memo<FilterModalProps>(
     }, [isOpen, onClose]);
 
     // Options sourced from unified filter definitions
-    const gradeOptions = FILTER_CONFIGS.gradeLevel.options;
+    const gradeOptions = FILTER_CONFIGS.gradeLevels.options;
 
     const activityOptions = FILTER_CONFIGS.activityType.options;
 
@@ -60,7 +60,7 @@ export const FilterModal = React.memo<FilterModalProps>(
 
     const locationOptions = FILTER_CONFIGS.location.options;
 
-    const themeOptions = FILTER_CONFIGS.theme.options;
+    const themeOptions = FILTER_CONFIGS.thematicCategories.options;
 
     const tabClasses = ({ selected }: { selected: boolean }) =>
       `w-full py-3 text-sm font-medium leading-5 transition-all
@@ -302,48 +302,17 @@ export const FilterModal = React.memo<FilterModalProps>(
                           )}
                         </Disclosure>
 
-                        <Disclosure>
-                          {({ open }) => (
-                            <div className="border-b border-gray-200 pb-4">
-                              <Disclosure.Button className="flex w-full items-center justify-between text-left">
-                                <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-                                  <span>🍳</span>
-                                  <span>Cooking Methods</span>
-                                  {filters.cookingMethods && (
-                                    <span className="ml-2 text-sm font-normal text-gray-600">
-                                      ({filters.cookingMethods})
-                                    </span>
-                                  )}
-                                </h3>
-                                <ChevronDown
-                                  className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
-                                    open ? 'rotate-180' : ''
-                                  }`}
-                                />
-                              </Disclosure.Button>
-                              <Disclosure.Panel className="mt-4">
-                                <select
-                                  value={filters.cookingMethods}
-                                  onChange={(e) =>
-                                    onFiltersChange({
-                                      ...filters,
-                                      cookingMethods: e.target.value,
-                                    })
-                                  }
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                  aria-label="Select cooking method"
-                                >
-                                  <option value="">All Cooking Methods</option>
-                                  {FILTER_CONFIGS.cookingMethods.options.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                      {opt.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </Disclosure.Panel>
-                            </div>
-                          )}
-                        </Disclosure>
+                        <FilterSection
+                          title="Cooking Methods"
+                          icon="🍳"
+                          options={FILTER_CONFIGS.cookingMethods.options}
+                          selectedValues={filters.cookingMethods}
+                          onChange={(values) =>
+                            onFiltersChange({ ...filters, cookingMethods: values })
+                          }
+                          facets={facets}
+                          facetKey="metadata.cookingMethods"
+                        />
 
                         <FilterSection
                           title="Academic Integration"

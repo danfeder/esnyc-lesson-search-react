@@ -36,6 +36,12 @@
 - PRs: clear description, link issues (`Closes #123`), include screenshots for UI changes, and notes on tests/migrations.
 - Ensure `lint`, `type-check`, and `test` pass before requesting review.
 
+## Recursive Context Pattern (CLAUDE.md)
+This project uses a recursive context pattern for AI agents (specifically Claude Code).
+- **Root `CLAUDE.md`**: Contains high-level project rules, critical commands, and global context.
+- **Directory-level `CLAUDE.md`**: Contains context specific to that directory (e.g., `src/components/CLAUDE.md` explains component patterns).
+- **Usage**: Agents should read the root `CLAUDE.md` first, then the specific `CLAUDE.md` for the directory they are working in. This ensures they have the most relevant context without being overwhelmed by the entire codebase documentation.
+
 ## Security & Configuration Tips
 - Never commit secrets. Use `.env*` files locally; update `*.example` when adding a new var.
 - Required envs typically include Supabase and OpenAI keys (see `.env.example`).

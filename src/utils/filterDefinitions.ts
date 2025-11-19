@@ -17,8 +17,7 @@ interface FilterConfig {
   }>;
 }
 
-// Filter configurations for EXACTLY 11 filters used in search
-// CRITICAL: Must maintain exactly 11 filters per ESYNYC requirements
+// Filter configurations for filters used in search
 export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   activityType: {
     label: 'Activity Type',
@@ -41,7 +40,7 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     ],
   },
 
-  gradeLevel: {
+  gradeLevels: {
     label: 'Grade Levels',
     type: 'multiple',
     options: [
@@ -65,7 +64,7 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     ],
   },
 
-  theme: {
+  thematicCategories: {
     label: 'Thematic Categories',
     type: 'multiple',
     options: [

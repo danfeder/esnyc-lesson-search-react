@@ -16,7 +16,7 @@ const defaultFilters: SearchFilters = {
   lessonFormat: '',
   academicIntegration: [],
   socialEmotionalLearning: [],
-  cookingMethods: '',
+  cookingMethods: [],
 };
 
 describe('FilterSidebar uses unified filterDefinitions', () => {

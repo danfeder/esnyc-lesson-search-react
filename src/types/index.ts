@@ -31,7 +31,7 @@ export interface LessonMetadata {
   equipment?: string[];
   duration?: string;
   groupSize?: string;
-  gradeLevel?: string[];
+  gradeLevels?: string[];
   gardenSkills?: string[];
   cookingSkills?: string[];
   cookingMethods?: string[];
@@ -54,7 +54,7 @@ export interface SearchFilters {
   lessonFormat: string; // Single-select dropdown
   academicIntegration: string[];
   socialEmotionalLearning: string[];
-  cookingMethods: string; // Single-select, so string not array
+  cookingMethods: string[]; // Multi-select
 }
 
 export interface FacetCount {

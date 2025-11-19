@@ -31,7 +31,7 @@ const initialFilters: SearchFilters = {
   lessonFormat: '', // Single-select dropdown, empty string = all
   academicIntegration: [],
   socialEmotionalLearning: [],
-  cookingMethods: '', // Single-select, empty string = all
+  cookingMethods: [], // Multi-select, empty array = all
 };
 
 const initialViewState: ViewState = {
