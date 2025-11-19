@@ -17,42 +17,19 @@ jobs:
     #   github.event.pull_request.user.login == 'external-contributor' ||
     #   github.event.pull_request.user.login == 'new-developer' ||
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-    
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
       issues: read
       id-token: write
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
-      - name: Create GitHub MCP Config
-        run: |
-          cat > /tmp/github-mcp-config.json << 'EOF'
-          {
-            "mcpServers": {
-              "github": {
-                "command": "docker",
-                "args": [
-                  "run",
-                  "-i",
-                  "--rm",
-                  "-e",
-                  "GITHUB_PERSONAL_ACCESS_TOKEN",
-                  "ghcr.io/github/github-mcp-server"
-                ],
-                "env": {
-                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}"
-                }
-              }
-            }
-          }
-          EOF
 
       - name: Run Claude Code Review
         id: claude-review
@@ -60,59 +37,21 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            ## Context
-            Repository: ${{ github.repository }}
-            PR Number: #${{ github.event.pull_request.number }}
-            Author: ${{ github.event.pull_request.user.login }}
-            Base Branch: ${{ github.event.pull_request.base.ref }}
-            Files Changed: ${{ github.event.pull_request.changed_files }}
-            
-            ## Your Task
-            Please review this pull request for the ESYNYC Lesson Search React application.
-            
-            The PR branch is already checked out in the current working directory.
-            
-            ## Review Focus Areas
-            1. **Code Quality**: React 19 and TypeScript best practices
-            2. **ESYNYC Requirements**: Verify the 11 filters are maintained (see CLAUDE.md)
-            3. **Potential Bugs**: Look for edge cases and error handling
-            4. **Performance**: Check for unnecessary re-renders, large bundles
-            5. **Security**: XSS prevention, data validation, Supabase RLS
-            6. **Test Coverage**: Suggest tests for critical paths
-            
-            ## How to Provide Feedback
-            
-            ### For Line-Specific Issues (PREFERRED):
-            Create a pending PR review and add inline comments using:
-            1. `mcp__github__create_pending_pull_request_review` to start the review
-            2. `mcp__github__add_comment_to_pending_review` for each inline comment
-            3. `mcp__github__submit_pending_pull_request_review` to submit the review
-            This is best for:
-            - Bugs or errors in specific lines
-            - Style/convention violations
-            - Performance issues in specific code blocks
-            - Security vulnerabilities
-            
-            ### For General Feedback:
-            Use `gh pr comment` to post an overall review summary at the end.
-            This is best for:
-            - Overall architecture feedback
-            - Missing test coverage
-            - General suggestions
-            
-            ## Important Instructions
-            - Use the repository's CLAUDE.md for ESYNYC-specific guidance
-            - Be constructive and provide specific code examples
-            - If the PR looks good, provide positive feedback
-            - DO NOT comment on generated files (*.generated.ts, package-lock.json)
-            - DO NOT suggest adding more than 11 filters
-            - DO NOT recommend console.log (use logger.debug instead)
-            
-            Start by examining the changed files, then provide inline comments where appropriate,
-            and finish with a summary comment if needed.
-          
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+
+            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+
+            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          claude_args: |
-            --mcp-config /tmp/github-mcp-config.json
-            --allowed-tools "mcp__github__create_pending_pull_request_review,mcp__github__add_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request,mcp__github__get_pull_request_files,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep"
+          # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 
