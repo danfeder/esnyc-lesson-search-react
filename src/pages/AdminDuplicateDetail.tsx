@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
@@ -21,12 +21,11 @@ export function AdminDuplicateDetail() {
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lessonDetails, setLessonDetails] = useState<Record<string, any>>({});
-  const [showConfirmation, setShowConfirmation] = useState(false);
   const [resolutionMode, setResolutionMode] = useState<'single' | 'split' | 'keep_all'>('single');
   const [splitSelections, setSplitSelections] = useState<Record<string, string>>({});
   const [titleEdits, setTitleEdits] = useState<Record<string, string>>({});
   const [originalTitles, setOriginalTitles] = useState<Record<string, string>>({});
-  const confirmButtonRef = useRef<React.ElementRef<'button'>>(null);
+
 
   useEffect(() => {
     if (groupId) {
@@ -34,11 +33,6 @@ export function AdminDuplicateDetail() {
     }
   }, [groupId]);
 
-  useEffect(() => {
-    if (showConfirmation && confirmButtonRef.current) {
-      confirmButtonRef.current.focus();
-    }
-  }, [showConfirmation]);
 
   const loadGroupDetails = async () => {
     try {
@@ -372,7 +366,6 @@ export function AdminDuplicateDetail() {
       setError(err instanceof Error ? err.message : 'Failed to resolve duplicates');
     } finally {
       setResolving(false);
-      setShowConfirmation(false);
     }
   };
 

@@ -117,8 +117,8 @@ debug-*/
 
 # Data files
 *.csv
-*.json
-*.sql
+data/*.json
+supabase/*.sql
 
 # Backup and archive directories
 database-backups/

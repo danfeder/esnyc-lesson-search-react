@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Check, Users, AlertTriangle, BookOpen, Calendar } from 'lucide-react';
-import { CATEGORY_INFO } from '../../../utils/duplicateConstants';
+import { CATEGORY_INFO, COLOR_CLASSES } from '../../../utils/duplicateConstants';
 import type { DuplicateGroup } from '../../../types/admin';
 
 interface DuplicateHeaderProps {
@@ -46,15 +46,15 @@ export function DuplicateHeader({ group }: DuplicateHeaderProps) {
 
         {/* Category Badge */}
         <div
-          className={`px-4 py-2 rounded-lg bg-${categoryInfo.color}-50 border border-${categoryInfo.color}-200`}
+          className={`px-4 py-2 rounded-lg ${COLOR_CLASSES[categoryInfo.color]?.split(' ').slice(0, 2).join(' ')}`}
         >
           <div className="flex items-center space-x-2">
-            <span className={`text-${categoryInfo.color}-600`}>
+            <span className={`${COLOR_CLASSES[categoryInfo.color]?.split(' ')[3]}`}>
               {getIcon(categoryInfo.iconName)}
             </span>
             <div>
-              <p className={`font-medium text-${categoryInfo.color}-900`}>{categoryInfo.label}</p>
-              <p className={`text-sm text-${categoryInfo.color}-700`}>
+              <p className={`font-medium ${COLOR_CLASSES[categoryInfo.color]?.split(' ')[2]}`}>{categoryInfo.label}</p>
+              <p className={`text-sm ${COLOR_CLASSES[categoryInfo.color]?.split(' ')[4]}`}>
                 Confidence: {group.confidence}
               </p>
             </div>
