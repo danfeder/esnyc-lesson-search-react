@@ -238,7 +238,6 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
       (filters.lessonFormat ? 1 : 0) +
       filters.academicIntegration.length +
       filters.socialEmotionalLearning.length +
-      filters.socialEmotionalLearning.length +
       filters.cookingMethods.length;
 
     const handleClearAll = () => {

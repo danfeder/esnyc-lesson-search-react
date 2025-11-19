@@ -208,8 +208,14 @@ export function AdminDuplicateDetail() {
               });
 
               if (resolveError) throw resolveError;
-              const result = data as { success?: boolean; error?: string } | null;
-              if (!result?.success) throw new Error(result?.error || 'Resolution failed');
+
+              if (!data || typeof data !== 'object') {
+                throw new Error('Invalid response from resolve_duplicate_group');
+              }
+              const result = data as { success?: boolean; error?: string };
+              if (!result.success) {
+                throw new Error(result.error || 'Resolution failed');
+              }
             }
           }
 
