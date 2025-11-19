@@ -53,7 +53,9 @@ export function DuplicateHeader({ group }: DuplicateHeaderProps) {
               {getIcon(categoryInfo.iconName)}
             </span>
             <div>
-              <p className={`font-medium ${COLOR_CLASSES[categoryInfo.color]?.split(' ')[2]}`}>{categoryInfo.label}</p>
+              <p className={`font-medium ${COLOR_CLASSES[categoryInfo.color]?.split(' ')[2]}`}>
+                {categoryInfo.label}
+              </p>
               <p className={`text-sm ${COLOR_CLASSES[categoryInfo.color]?.split(' ')[4]}`}>
                 Confidence: {group.confidence}
               </p>

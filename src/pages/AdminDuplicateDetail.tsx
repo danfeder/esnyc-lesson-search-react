@@ -26,13 +26,11 @@ export function AdminDuplicateDetail() {
   const [titleEdits, setTitleEdits] = useState<Record<string, string>>({});
   const [originalTitles, setOriginalTitles] = useState<Record<string, string>>({});
 
-
   useEffect(() => {
     if (groupId) {
       loadGroupDetails();
     }
   }, [groupId]);
-
 
   const loadGroupDetails = async () => {
     try {
