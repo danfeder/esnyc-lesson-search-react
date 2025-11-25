@@ -111,8 +111,8 @@ debug-*/
 # Kiro IDE files
 .kiro/
 
-# Claude files
-.claude/
+# Claude files (keep settings.local.json private, share commands)
+.claude/settings.local.json
 .mcp.json
 
 # Data files
