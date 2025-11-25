@@ -1,173 +1,136 @@
-# ESYNYC Lesson Search v2 - Claude Code Documentation
+# ESYNYC Lesson Search v2
 
-## 🚀 QUICK COMMANDS - RUN THESE FREQUENTLY
+## Quick Commands
 
 ```bash
-npm run dev               # Start development server (http://localhost:5173)
-npm run type-check        # YOU MUST run before any commit
-npm run lint:fix          # YOU MUST run to fix ESLint issues  
+# Development
+npm run dev               # Start dev server (localhost:5173)
+npm run type-check        # Required before commits
+npm run lint:fix          # Auto-fix ESLint issues
 npm run test              # Run all tests
-npm run test:rls          # Test RLS policies after DB changes
-npm run build             # Build for production
-
-# Data Management
-npm run import-data       # Import lesson data to Supabase
-# (Legacy) Algolia commands removed; PostgreSQL FTS is used
+npm run build             # Production build
 
 # Database
+npm run test:rls          # Test RLS policies (run after migrations)
+npm run import-data       # Import lesson data to Supabase
 supabase db push          # Apply migrations
-supabase db reset         # Reset database to clean state
+supabase db reset         # Reset database
 ```
 
-## ⚠️ CRITICAL RULES - NEVER VIOLATE THESE
+## Core Constraints
 
-1. **EXACTLY 11 FILTERS** - NEVER add or remove filter categories. There must be EXACTLY 11.
-2. **NO console.log** in production code - Use `logger.debug()` from `utils/logger.ts` instead
-3. **VITE_ PREFIX REQUIRED** for ALL frontend environment variables
-4. **RUN TYPE-CHECK** before EVERY commit - `npm run type-check` MUST pass
-5. **TEST RLS POLICIES** after ANY migration - `npm run test:rls` MUST pass
-6. **ESLint no-unused-vars** - Add `// eslint-disable-next-line no-unused-vars` for parameters
-7. **Path Aliases** - ALWAYS use `@/components` not relative imports like `../components`
-8. **Google Docs API** - WORKING in production (configured via GOOGLE_SERVICE_ACCOUNT_JSON secret)
+| Rule | Details |
+|------|---------|
+| **11 Filters** | Exactly 11 filter categories exist - never add or remove (see filterDefinitions.ts) |
+| **Logging** | Use `logger.debug()` from `@/utils/logger`, not `console.log` |
+| **Env Vars** | Frontend vars require `VITE_` prefix |
+| **Imports** | Use `@/` path aliases, not relative paths |
+| **Pre-commit** | `npm run type-check` and `npm run lint` must pass |
+| **RLS Testing** | Run `npm run test:rls` after any database migration |
 
-## 🔥 COMMON WORKFLOWS
+## The 11 Filters
 
-### Adding a New Component
-```bash
-1. YOU MUST check if it affects the 11 filters rule
-2. Create in feature folder: components/FeatureName/ComponentName.tsx
-3. Define Props interface: interface ComponentNameProps { }
-4. Export from barrel: Add to components/FeatureName/index.ts
-5. Run type-check: npm run type-check
-6. Fix ESLint: npm run lint:fix
-```
+Located in `src/utils/filterDefinitions.ts`:
 
-### Debugging Supabase RLS Errors
-```bash
-1. Run: npm run test:rls
-2. Check user role: SELECT * FROM user_profiles WHERE id = auth.uid()
-3. Test function: SELECT is_admin(auth.uid())
-4. NEVER disable RLS without admin approval
-5. Common fix: Check if table has RLS enabled in migration
-```
+| # | Filter | Type |
+|---|--------|------|
+| 1 | Activity Type | single-select |
+| 2 | Location | single-select |
+| 3 | Grade Levels | multi-select (grouped) |
+| 4 | Thematic Categories | multi-select |
+| 5 | Season & Timing | single-select |
+| 6 | Core Competencies | multi-select |
+| 7 | Cultural Heritage | hierarchical multi-select |
+| 8 | Lesson Format | single-select |
+| 9 | Academic Integration | multi-select |
+| 10 | Social-Emotional Learning | multi-select |
+| 11 | Cooking Methods | single-select |
 
-### Working with Filters (EXACTLY 11)
-```typescript
-// The 11 filters are sacred - NEVER change count:
-1. Activity Type        7. Cultural Heritage
-2. Location            8. Lesson Format  
-3. Grade Levels        9. Academic Integration
-4. Thematic Categories 10. Social-Emotional Learning
-5. Season & Timing     11. Cooking Methods
-6. Core Competencies
+## Tech Stack
 
-// Located in: src/utils/filterDefinitions.ts
-```
-
-### ESLint Parameter Fixes
-```typescript
-// ALWAYS add this comment for unused parameters:
-// eslint-disable-next-line no-unused-vars
-onChange: (value: string) => void;
-```
-
-## 🏗️ PROJECT STRUCTURE
-
-```
-/src
-  /components     # UI components (filters, layout, modals, results, search)
-  /hooks          # Custom React hooks  
-  /lib            # Supabase and Sentry configs
-  /pages          # Page components (routes)
-  /stores         # Zustand state management
-  /types          # TypeScript definitions
-  /utils          # Helper functions, constants
-
-/supabase
-  /functions      # Edge functions (detect-duplicates, process-submission, etc.)
-  /migrations     # Database schema (01-11 + dated migrations)
-
-/scripts         # Data import, testing, migration scripts
-/data           # Legacy JSON data
-```
-
-## 📋 CURRENT STATUS
-
-**IN DEVELOPMENT** - Most features complete, remaining:
-- [x] Google Docs API integration (working in production, falls back to mock in dev without credentials)
-- [ ] CSV export functionality  
-- [x] OpenAI embeddings in edge functions (working in production, but needs debugging)
-- [ ] Production environment configuration
-
-## 🔧 TECH STACK
-
-- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
-- **State**: Zustand (see `/src/stores/CLAUDE.md`)
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS
+- **State**: Zustand
 - **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **Search**: PostgreSQL full-text search (synonym/typo expansion via SQL/Edge)
+- **Search**: PostgreSQL full-text search with synonym/typo expansion
 - **Testing**: Vitest + React Testing Library
 
-## 🗄️ DATABASE ESSENTIALS
+## Project Structure
+
+```
+src/
+  components/     # UI components (each has CLAUDE.md)
+  hooks/          # Custom React hooks
+  lib/            # Supabase/Sentry configs
+  pages/          # Route components
+  stores/         # Zustand stores
+  types/          # TypeScript definitions
+  utils/          # Helpers, constants, filterDefinitions
+
+supabase/
+  functions/      # Edge functions (detect-duplicates, process-submission, etc.)
+  migrations/     # Database schema
+
+scripts/          # Data import, testing scripts
+```
+
+## Key Patterns
+
+### ESLint Unused Parameters
+```typescript
+interface Props {
+  // eslint-disable-next-line no-unused-vars
+  onChange: (value: string) => void;
+}
+```
+
+### Cultural Heritage Hierarchy
+Parent selection includes all children. Selecting "Asian" automatically includes Chinese, Japanese, Korean, etc.
+
+### Component Props
+Name interfaces with `Props` suffix: `ComponentNameProps`
+
+### Store Actions
+Reset `currentPage` to 1 whenever filters change.
+
+## Database
 
 ### Key Tables
-- `lessons` - 831 lesson plans with full-text search
-- `user_profiles` - User accounts with roles (teacher/reviewer/admin)
-- `lesson_submissions` - Teacher-submitted lessons
-- `duplicate_pairs` - Duplicate detection results
+- `lessons` - 831 lesson plans with FTS
+- `user_profiles` - Users with roles
+- `lesson_submissions` - Teacher submissions
+- `duplicate_pairs` - Duplicate detection
 
-### User Roles Hierarchy
-```
-super_admin → admin → reviewer → teacher
-```
+### Role Hierarchy
+`super_admin > admin > reviewer > teacher`
 
-## 🐛 COMMON ERRORS & SOLUTIONS
-
-| Error | Solution |
-|-------|----------|
-| "RLS policy violation" | Check user role with `is_admin(auth.uid())` |
-| "no-unused-vars" | Add `// eslint-disable-next-line no-unused-vars` |
-| "Module not found" | Use `@/` alias imports |
-| "VITE_* not defined" | Prefix env vars with `VITE_` |
-| "Cannot read lessons" | Check if RLS enabled: `ALTER TABLE lessons ENABLE ROW LEVEL SECURITY` |
-| "Type error in filter" | Verify against 11 filters in `filterDefinitions.ts` |
-
-## 📚 DETAILED DOCUMENTATION
-
-For in-depth information, see:
-- Architecture: `/docs/architecture-decisions.md`
-- Database Schema: `/docs/DATABASE_SAFETY_CHECKLIST.md`
-- Testing Guide: `/docs/TESTING_GUIDE.md`
-- Deployment: `/docs/DEPLOYMENT_CHECKLIST.md`
-- RLS Security: `/docs/RLS_SECURITY.md`
-
-## 🚦 QUICK CHECKLIST BEFORE COMMIT
-
-```bash
-✓ npm run type-check      # No TypeScript errors
-✓ npm run lint            # No linting errors  
-✓ npm test                # All tests pass
-✓ No console.log          # Use logger.debug()
-✓ 11 filters maintained   # Count unchanged
+### RLS Debugging
+```sql
+SELECT * FROM user_profiles WHERE id = auth.uid();
+SELECT is_admin(auth.uid());
 ```
 
-## 💡 IMPORTANT REMINDERS
+## Common Errors
 
-- **Cultural Heritage Hierarchy**: Parent includes ALL children (e.g., "Asian" → Chinese, Japanese, Korean, etc.)
-- **Ingredient Grouping**: Smart search (e.g., "butternut squash" → "Winter squash")
-- **Season Logic**: "Include year-round" option for seasonal filters
-- **Supabase Migrations**: Must be numbered sequentially
-- **Synonyms**: Managed via SQL functions or Edge Functions; no external config
-- **Edge Functions**: Test locally with `supabase functions serve <name> --no-verify-jwt`
+| Error | Fix |
+|-------|-----|
+| RLS policy violation | Check role with `is_admin(auth.uid())` |
+| Module not found | Use `@/` imports |
+| VITE_* undefined | Add `VITE_` prefix |
 
-## 📂 DIRECTORY-SPECIFIC DOCS
+## Current Status
 
-Each directory has its own Claude.md for context-specific guidance:
-- `/src/components/CLAUDE.md` - Component patterns
-- `/src/stores/CLAUDE.md` - Zustand store patterns  
-- `/src/hooks/CLAUDE.md` - Custom hook patterns
-- `/src/types/CLAUDE.md` - TypeScript conventions
-- `/src/utils/CLAUDE.md` - Constants & utilities
-- `/src/lib/CLAUDE.md` - External library configs
-- `/supabase/functions/CLAUDE.md` - Edge function patterns
-- `/supabase/migrations/CLAUDE.md` - Migration guidelines
-- `/scripts/CLAUDE.md` - Data management scripts
+- Google Docs API: Working in production
+- OpenAI embeddings: Working in production
+- CSV export: Not yet implemented
+
+## Documentation
+
+Directory-specific guidance in each folder's `CLAUDE.md`:
+- `src/components/` - Component patterns
+- `src/stores/` - Zustand patterns
+- `src/hooks/` - Hook patterns
+- `src/types/` - TypeScript conventions
+- `src/utils/` - Constants and utilities
+- `supabase/functions/` - Edge function patterns
+- `supabase/migrations/` - Migration guidelines
+- `scripts/` - Data management

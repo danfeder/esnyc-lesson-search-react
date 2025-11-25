@@ -1431,7 +1431,7 @@ export type Database = {
           filter_academic?: string[];
           filter_activity_type?: string[];
           filter_competencies?: string[];
-          filter_cooking_method?: string;
+          filter_cooking_method?: string[];
           filter_cultures?: string[];
           filter_grade_levels?: string[];
           filter_lesson_format?: string;

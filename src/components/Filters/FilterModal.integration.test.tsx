@@ -19,7 +19,7 @@ describe('FilterModal Integration Tests', () => {
     lessonFormat: '',
     academicIntegration: [],
     socialEmotionalLearning: [],
-    cookingMethods: '',
+    cookingMethods: [],
   };
 
   beforeEach(() => {

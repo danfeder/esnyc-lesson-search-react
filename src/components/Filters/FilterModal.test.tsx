@@ -20,7 +20,7 @@ describe.skip('FilterModal - Skipped due to Headless UI mocking complexity', () 
     lessonFormat: '',
     academicIntegration: [],
     socialEmotionalLearning: [],
-    cookingMethods: '',
+    cookingMethods: [],
   };
 
   beforeEach(() => {

@@ -112,7 +112,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
     // Options from unified definitions + facet counts
     const gradeOptions = useMemo(
       () =>
-        FILTER_CONFIGS.gradeLevel.options.map((opt) => ({
+        FILTER_CONFIGS.gradeLevels.options.map((opt) => ({
           value: opt.value,
           label: opt.label,
           count: getFacetCount(facets, 'gradeLevels', opt.value),
@@ -122,7 +122,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
 
     const themeOptions = useMemo(
       () =>
-        FILTER_CONFIGS.theme.options.map((opt) => ({
+        FILTER_CONFIGS.thematicCategories.options.map((opt) => ({
           value: opt.value,
           label: opt.label,
           count: getFacetCount(facets, 'metadata.thematicCategories', opt.value),
@@ -202,7 +202,6 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
 
     const cookingMethodsOptions = useMemo(
       () => [
-        { value: '', label: 'All Cooking Methods' },
         {
           value: 'No-cook',
           label: 'No-cook (salads, cold preparations)',
@@ -239,7 +238,7 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
       (filters.lessonFormat ? 1 : 0) +
       filters.academicIntegration.length +
       filters.socialEmotionalLearning.length +
-      (filters.cookingMethods ? 1 : 0);
+      filters.cookingMethods.length;
 
     const handleClearAll = () => {
       clearFilters(); // Use store's clearFilters function to clear both search and filters
@@ -410,26 +409,11 @@ export const FilterSidebar = React.memo<FilterSidebarProps>(
               </FilterSection>
 
               <FilterSection title="Cooking Methods" icon="🍳">
-                <div className="space-y-2">
-                  <select
-                    value={filters.cookingMethods}
-                    onChange={(e) =>
-                      onFiltersChange({
-                        ...filters,
-                        cookingMethods: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                    aria-label="Select cooking method"
-                  >
-                    {cookingMethodsOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                        {option.count !== undefined && ` (${option.count})`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CheckboxGroup
+                  options={cookingMethodsOptions}
+                  selectedValues={filters.cookingMethods}
+                  onChange={(values) => onFiltersChange({ ...filters, cookingMethods: values })}
+                />
               </FilterSection>
             </div>
           </div>
