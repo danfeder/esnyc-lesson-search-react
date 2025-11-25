@@ -1,14 +1,6 @@
-# Edge Functions Development
+# Edge Functions Guidelines
 
-## ⚠️ CRITICAL RULES
-
-1. **CORS Headers** - YOU MUST include CORS headers in ALL responses
-2. **Error Responses** - ALWAYS return proper JSON error responses
-3. **Environment Variables** - NEVER hardcode secrets, use `Deno.env.get()`
-4. **JWT Verification** - Skip with `--no-verify-jwt` for local testing ONLY
-5. **Service Role Key** - NEVER expose in frontend, edge functions only
-
-## 🚀 Edge Function Pattern
+## Function Pattern
 
 ```typescript
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -20,205 +12,62 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // ALWAYS handle OPTIONS for CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Create admin client for server operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Parse request
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
     const { data } = await req.json();
-    
-    // Function logic here
-    
-    // Return success response
+    // Function logic
+
     return new Response(
       JSON.stringify({ success: true, data: result }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    // ALWAYS return proper error response
-    console.error('Edge function error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 ```
 
-## 🐛 Common Issues & Solutions
+## Key Rules
 
-| Issue | Solution |
-|-------|----------|
-| "CORS error" | Add corsHeaders to ALL responses including OPTIONS |
-| "JWT verification failed" | Use `--no-verify-jwt` for local testing |
-| "Environment variable undefined" | Check `.env` file and Supabase dashboard |
-| "Cannot find module" | Use full URLs for Deno imports |
-| "RLS policy violation" | Use service role key for admin operations |
-| "Function timeout" | Implement request timeout (max 150s) |
+- Include CORS headers in ALL responses (including OPTIONS)
+- Use `Deno.env.get()` for secrets
+- Return JSON errors with proper status codes
+- Use service role key for admin operations
 
-## 🔧 Function-Specific Issues
+## Available Functions
 
-### extract-google-doc
-```typescript
-// ✅ WORKING - Extracts real content when GOOGLE_SERVICE_ACCOUNT_JSON is configured
-// Falls back to mock data if credentials not available (e.g., local dev)
+| Function | Status | Notes |
+|----------|--------|-------|
+| `extract-google-doc` | Working | Needs GOOGLE_SERVICE_ACCOUNT_JSON |
+| `detect-duplicates` | Working | Falls back to text similarity |
+| `process-submission` | Working | Generates embeddings with OPENAI_API_KEY |
+| `send-email` | Working | Needs RESEND_API_KEY |
 
-// Production flow:
-if (googleServiceAccount) {
-  // Real Google Docs API extraction
-  const doc = await fetchGoogleDoc(docId);
-  const content = extractTextFromGoogleDoc(doc);
-  return realContent;
-} else {
-  // Fallback mock for local development
-  return mockContent;
-}
-
-// Requirements:
-// 1. GOOGLE_SERVICE_ACCOUNT_JSON env var (configured in production)
-// 2. Document must be shared with service account or publicly accessible
-```
-
-### detect-duplicates
-```typescript
-// Common issue: Content hash mismatch
-// Solution: Normalize content before hashing
-const normalizedContent = content
-  .toLowerCase()
-  .replace(/\s+/g, ' ')
-  .trim();
-
-// Common issue: Embedding comparison fails
-// Solution: Check if embeddings exist
-if (!embedding || embedding.length === 0) {
-  console.warn('No embedding provided, skipping semantic search');
-  // Fall back to text-based comparison
-}
-```
-
-### process-submission
-```typescript
-// ✅ OpenAI embeddings WORKING - Generates embeddings when OPENAI_API_KEY is configured
-// The code attempts to generate embeddings but continues if it fails
-
-// Production flow:
-if (openAIKey) {
-  // Generates embeddings using text-embedding-3-small model
-  const embedding = await generateEmbedding(content);
-  // Stores in lesson_submissions.content_embedding
-} else {
-  // Continues without embeddings (falls back to text similarity)
-}
-
-// Note: Check logs if embeddings aren't being generated
-```
-
-### send-email
-```typescript
-// Common issue: Email not sending
-// Check: RESEND_API_KEY environment variable
-
-// Template pattern
-const emailHtml = getEmailTemplate({
-  recipientName: user.full_name,
-  actionUrl: `${SITE_URL}/action/${token}`,
-  ...templateData
-});
-
-// Error handling
-if (!RESEND_API_KEY) {
-  console.error('RESEND_API_KEY not configured');
-  // Return success anyway (don't break flow)
-  return new Response(
-    JSON.stringify({ success: true, emailSkipped: true }),
-    { headers: corsHeaders }
-  );
-}
-```
-
-## 🧪 Local Testing
+## Local Testing
 
 ```bash
-# Serve single function
-supabase functions serve detect-duplicates --no-verify-jwt
+supabase functions serve <name> --no-verify-jwt
 
-# Test with curl
-curl -i --location --request POST \
-  'http://localhost:54321/functions/v1/detect-duplicates' \
-  --header 'Authorization: Bearer YOUR_ANON_KEY' \
-  --header 'Content-Type: application/json' \
-  --data '{"submissionId":"123","content":"test","title":"Test"}'
-
-# Debug mode
-supabase functions serve detect-duplicates --debug --no-verify-jwt
+curl -X POST 'http://localhost:54321/functions/v1/<name>' \
+  -H 'Content-Type: application/json' \
+  -d '{}'
 ```
 
-## 📦 Deployment
+## Common Errors
 
-```bash
-# Deploy single function
-supabase functions deploy detect-duplicates
-
-# Deploy all functions
-supabase functions deploy
-
-# Check deployment status
-supabase functions list
-
-# View logs
-supabase functions logs detect-duplicates
-```
-
-## ⚠️ Security Checklist
-
-- [ ] NEVER expose service role key in frontend
-- [ ] Always validate input data
-- [ ] Use parameterized queries (Supabase handles this)
-- [ ] Implement rate limiting for public endpoints
-- [ ] Log errors but don't expose sensitive data
-- [ ] Use HTTPS for all external API calls
-- [ ] Verify JWT claims for user operations
-
-## 🔑 Environment Variables
-
-```typescript
-// Required for all functions
-SUPABASE_URL              // Your Supabase project URL
-SUPABASE_ANON_KEY         // Public anon key
-SUPABASE_SERVICE_ROLE_KEY // Admin key (functions only!)
-
-// Function-specific
-OPENAI_API_KEY            // For embeddings (not yet active)
-GOOGLE_SERVICE_ACCOUNT_JSON // For Google Docs (not yet active)
-RESEND_API_KEY            // For email sending
-SITE_URL                  // For email links
-```
-
-## 📊 Performance Tips
-
-1. **Batch Operations**: Use `.insert()` with arrays
-2. **Limit Responses**: Use `.select()` with specific columns
-3. **Connection Pooling**: Reuse Supabase client
-4. **Streaming**: Use streams for large responses
-5. **Caching**: Implement response caching where appropriate
-6. **Timeouts**: Set reasonable timeouts (default 150s max)
+| Error | Fix |
+|-------|-----|
+| CORS error | Add corsHeaders to ALL responses |
+| JWT verification failed | Use `--no-verify-jwt` locally |
+| RLS policy violation | Use service role key |

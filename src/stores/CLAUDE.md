@@ -1,196 +1,70 @@
-# Zustand Store Patterns
+# Zustand Store Guidelines
 
-## ⚠️ CRITICAL: ESLint no-unused-vars Pattern
-
-YOU MUST follow this EXACT pattern for ALL store actions with parameters:
-
-```typescript
-interface SearchState {
-  // ALWAYS add eslint comment for function parameters
-  // eslint-disable-next-line no-unused-vars
-  setFilter: (key: keyof SearchFilters, value: string) => void;
-  // eslint-disable-next-line no-unused-vars
-  setResults: (results: Lesson[], totalCount: number) => void;
-  // eslint-disable-next-line no-unused-vars
-  toggleFilter: (key: keyof SearchFilters, value: string) => void;
-}
-```
-
-## 🏪 Store Creation Pattern
+## Store Pattern
 
 ```typescript
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
+interface StoreState {
+  items: Item[];
+  isLoading: boolean;
+  // eslint-disable-next-line no-unused-vars
+  setItems: (items: Item[]) => void;
+}
+
 export const useStoreName = create<StoreState>()(
   devtools(
     (set, get) => ({
-      // Initial state
       items: [],
       isLoading: false,
-      
-      // Actions - NEVER mutate state directly
       setItems: (items) => set({ items }),
-      
-      // Complex updates - use spread operator
-      updateItem: (id, updates) => 
-        set((state) => ({
-          items: state.items.map(item => 
-            item.id === id ? { ...item, ...updates } : item
-          )
-        })),
     }),
-    {
-      name: 'store-name', // Shows in Redux DevTools
-    }
+    { name: 'store-name' }
   )
 );
 ```
 
-## 📋 Current Stores
+## Key Rules
 
-### searchStore.ts
-- Purpose: Manages search filters and view state only (results are owned by React Query)
-- Key Actions:
-  - `setFilters`: Updates filters AND resets page to 1
-  - `clearFilters`: Resets to initialFilters and view defaults
-  - `toggleFilter`: Add/remove filter values
-- IMPORTANT: Filter changes ALWAYS reset `currentPage` to 1
+1. **Never mutate state** - Use `set()` with spread operator
+2. **Reset page on filter change** - `setFilters` must reset `currentPage` to 1
+3. **ESLint comments** - Add `// eslint-disable-next-line no-unused-vars` above action function types
 
-## ⚠️ Common Gotchas
+## Filter Types
 
-1. **NEVER mutate state directly**
-   ```typescript
-   // ❌ WRONG
-   state.filters.query = 'new query';
-   
-   // ✅ CORRECT
-   set((state) => ({ 
-     filters: { ...state.filters, query: 'new query' }
-   }));
-   ```
+| Type | Examples |
+|------|----------|
+| Single-select (`string`) | `lessonFormat`, `cookingMethods` |
+| Multi-select (`string[]`) | `gradeLevels`, `coreCompetencies` |
 
-2. **Filter types vary by selection mode**
-   ```typescript
-   // Single-select filters use string
-   lessonFormat: string;
-   cookingMethods: string;
-   
-   // Multi-select filters use string[]
-   gradeLevels: string[];
-   coreCompetencies: string[];
-   ```
+## Current Store: searchStore.ts
 
-3. **Always reset page on filter change (do not touch results)**
-  ```typescript
-  setFilters: (newFilters) =>
-    set((state) => ({
-      filters: { ...state.filters, ...newFilters },
-      viewState: { ...state.viewState, currentPage: 1 }, // CRITICAL
-    })),
-  ```
+- Manages filters and view state (not results - those come from React Query)
+- `setFilters`: Updates filters AND resets `currentPage` to 1
+- `clearFilters`: Resets to initial state
+- `toggleFilter`: Add/remove filter values
 
-## 🧪 Testing Store Actions
+## State Updates
+
+```typescript
+// Correct: immutable update
+set((state) => ({
+  filters: { ...state.filters, query: 'new' }
+}));
+
+// Wrong: direct mutation
+state.filters.query = 'new';
+```
+
+## Testing
 
 ```typescript
 import { renderHook, act } from '@testing-library/react';
-import { useSearchStore } from './searchStore';
 
-test('setFilters resets page to 1', () => {
+test('setFilters resets page', () => {
   const { result } = renderHook(() => useSearchStore());
-  
-  // Set page to 5
-  act(() => {
-    result.current.setViewState({ currentPage: 5 });
-  });
-  
-  // Change filters
-  act(() => {
-    result.current.setFilters({ query: 'test' });
-  });
-  
-  // Page should reset to 1
+  act(() => result.current.setFilters({ query: 'test' }));
   expect(result.current.viewState.currentPage).toBe(1);
 });
-```
-
-## 💡 Best Practices
-
-1. **Use devtools in development only**
-   ```typescript
-   const store = process.env.NODE_ENV === 'development' 
-     ? devtools(storeCreator) 
-     : storeCreator;
-   ```
-
-2. **Separate concerns**
-   - One store per domain (search, auth, UI)
-   - Don't mix unrelated state
-
-3. **Use TypeScript interfaces**
-   ```typescript
-   interface StoreState {
-     // Define all state properties
-     // Define all action signatures with eslint comments
-   }
-   ```
-
-4. **Computed values with get()**
-   ```typescript
-   get activeFiltersCount: () => {
-     const filters = get().filters;
-     return Object.values(filters).filter(v => 
-       Array.isArray(v) ? v.length > 0 : !!v
-     ).length;
-   }
-   ```
-
-## 🔧 Common Store Patterns
-
-### Async Actions
-```typescript
-fetchData: async () => {
-  set({ isLoading: true, error: null });
-  try {
-    const data = await api.getData();
-    set({ data, isLoading: false });
-  } catch (error) {
-    set({ error: error.message, isLoading: false });
-  }
-}
-```
-
-### Optimistic Updates
-```typescript
-updateOptimistically: (id, updates) => {
-  // Update UI immediately
-  set((state) => ({
-    items: state.items.map(item =>
-      item.id === id ? { ...item, ...updates } : item
-    )
-  }));
-  
-  // Then sync with server
-  api.update(id, updates).catch(() => {
-    // Revert on error
-    get().reloadItems();
-  });
-}
-```
-
-### Persisted State
-```typescript
-import { persist } from 'zustand/middleware';
-
-const useStore = create(
-  persist(
-    (set) => ({
-      preferences: {},
-      setPreferences: (prefs) => set({ preferences: prefs }),
-    }),
-    {
-      name: 'user-preferences',
-    }
-  )
-);
 ```
