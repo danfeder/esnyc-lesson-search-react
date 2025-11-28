@@ -67,7 +67,7 @@ jobs:
             - No exposed sensitive data
             
             ## Data Model Considerations:
-            - Lesson table must support all 16 filter categories
+            - Lesson table must support all filter categories defined in filterDefinitions.ts
             - Cultural heritage hierarchy support (parent-child relationships)
             - Ingredient grouping/categorization
             - Efficient storage of array fields (grade levels, themes)

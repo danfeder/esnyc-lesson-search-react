@@ -4,7 +4,7 @@
 
 | File | Purpose |
 |------|---------|
-| `filterDefinitions.ts` | The 11 filter categories (never modify count) |
+| `filterDefinitions.ts` | Filter categories (consult stakeholders before changes) |
 | `filterConstants.ts` | Cultural hierarchy, ingredient groups |
 | `logger.ts` | Use instead of console.log |
 | `cn.ts` | Tailwind class merging |
@@ -44,6 +44,6 @@ import.meta.env.API_KEY            // Won't work
 
 ## Filter Constants
 
-- 11 filters total - never add or remove
+- Filters defined in `filterDefinitions.ts` - consult stakeholders before changes
 - 6 Core Competencies (ESYNYC priorities)
 - Grade groups: early-childhood, lower-elementary, upper-elementary, middle

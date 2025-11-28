@@ -5,6 +5,8 @@
 **Branch**: `refactor/architecture-cleanup`
 **Outcome**: Production baseline snapshot created and verified
 
+> **Note (Nov 2025)**: The "EXACTLY 11 filters" constraint documented in this session has been superseded. Filter count is now flexible with stakeholder consultation. See ADR-006 for updated guidance.
+
 ---
 
 ## Session Objectives

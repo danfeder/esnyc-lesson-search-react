@@ -133,26 +133,28 @@ Use Tailwind CSS with Headless UI components.
 - **Positive**: Fast development, consistent design
 - **Negative**: HTML can get verbose, learning curve
 
-## ADR-006: Exactly 11 Filter Categories
+## ADR-006: Filter Categories (Updated)
 
 ### Status
-Accepted
+Superseded (Nov 2025)
 
 ### Context
 User research and stakeholder requirements identified many possible filter options. Need to balance functionality with usability.
 
-### Decision
+### Original Decision (2024)
 Implement exactly 11 filter categories, with additional attributes searchable but not filterable.
 
-### Rationale
-- UX research shows 10-12 filters is optimal
-- Covers primary teacher needs
-- Prevents UI overwhelm
-- Additional attributes still discoverable via search
+### Updated Decision (Nov 2025)
+Filter count is no longer fixed. Filter categories can be added or removed as needed, with stakeholder consultation. All filters are defined in `filterDefinitions.ts`.
+
+### Rationale for Update
+- Project optimization efforts require flexibility
+- Fixed count was overly restrictive
+- Stakeholder consultation ensures appropriate changes
 
 ### Consequences
-- **Positive**: Clean UI, focused experience
-- **Negative**: Some users may want more filters
+- **Positive**: More flexibility for optimization
+- **Negative**: Changes require coordination with stakeholders
 
 ## ADR-007: PostgreSQL JSONB for Flexible Metadata
 

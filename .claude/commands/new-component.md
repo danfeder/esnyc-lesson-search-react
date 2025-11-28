@@ -1,7 +1,7 @@
 Create a new React component. The component name should be provided as an argument: /new-component ComponentName
 
 Before creating:
-1. Confirm the component doesn't affect the 11 filter count (if filter-related, stop and discuss)
+1. If filter-related, consult stakeholders before modifying filter categories
 2. Determine the appropriate feature folder under `src/components/`
 
 Create the component following these patterns:

@@ -64,7 +64,7 @@ jobs:
             
             ${{ github.event.inputs.analysis_type == 'filter-validation' && '
             ### Filter Validation Task
-            Verify that the ESYNYC Lesson Search maintains EXACTLY 11 filters:
+            Verify that the ESYNYC Lesson Search filter categories are properly configured:
             
             1. **Activity Type**: Cooking, Garden, Both, Academic
             2. **Location**: Indoor, Outdoor, Both

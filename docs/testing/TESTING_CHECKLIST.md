@@ -43,7 +43,7 @@ This will verify your Edge Functions are deployed and working.
 2. Go to http://localhost:5173/review
 3. You should see submitted lessons
 4. Click on a submission to review
-5. Test the 11 filters:
+5. Test the filters:
    - [ ] Activity Type
    - [ ] Location
    - [ ] Grade Levels

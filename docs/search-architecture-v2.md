@@ -12,7 +12,7 @@ Current State (v1)
 - Extensions in use: public.pg_trgm, public.unaccent, public.vector.
 
 Key DB Findings (from Supabase inspection)
-- Table public.lessons includes normalized columns for all 11 filters:
+- Table public.lessons includes normalized columns for all filters:
   - grade_levels text[], thematic_categories text[], season_timing text[], core_competencies text[], cultural_heritage text[], location_requirements text[], activity_type text[], lesson_format text, academic_integration text[], social_emotional_learning text[], cooking_methods text[]
   - content_text (full-text source) and search_vector tsvector present
 - Functions: search_lessons (v1), expand_search_with_synonyms, expand_cultural_heritage, generate_lesson_search_vector

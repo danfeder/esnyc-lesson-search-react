@@ -4,7 +4,7 @@
 
 1. **Service Role Key** - NEVER use in frontend, scripts only
 2. **Batch Operations** - Process in batches of 50 to avoid timeouts
-3. **Data Validation** - ALWAYS validate 11 filter categories
+3. **Data Validation** - ALWAYS validate filter categories (see filterDefinitions.ts)
 4. **Error Handling** - Scripts MUST exit(1) on errors
 5. **Backup First** - ALWAYS backup before bulk operations
 
@@ -121,10 +121,10 @@ function validateLesson(lesson) {
   if (!lesson.lesson_id) errors.push('Missing lesson_id');
   if (!lesson.title) errors.push('Missing title');
   
-  // Validate filter count (must be 11)
+  // Validate filter categories exist
   const filterCount = Object.keys(lesson.metadata || {}).length;
-  if (filterCount !== 11) {
-    errors.push(`Wrong filter count: ${filterCount} (must be 11)`);
+  if (filterCount === 0) {
+    errors.push('No filter metadata found');
   }
   
   // Validate grade levels

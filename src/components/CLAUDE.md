@@ -17,7 +17,7 @@ export function ComponentName({ id, className = '' }: ComponentNameProps) {
 ```
 
 ### Filter Components
-Check if changes affect the 11 filter count before modifying.
+Consult stakeholders before modifying filter categories.
 
 ### Imports
 ```typescript

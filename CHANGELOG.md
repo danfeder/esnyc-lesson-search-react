@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release with vanilla JavaScript
 - Static JSON data file with 831 lessons
 - Client-side search and filtering
-- 11 filter categories
+- Multiple filter categories (see filterDefinitions.ts)
 - CSV export functionality
 - Responsive design
 - Lesson detail modals

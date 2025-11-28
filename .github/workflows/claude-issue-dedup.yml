@@ -48,7 +48,7 @@ jobs:
             
             #### ESYNYC-Specific Duplicate Patterns:
             1. **Lesson Submissions**: Same lesson topic or ingredients
-            2. **Filter Issues**: Problems with any of the 11 filters
+            2. **Filter Issues**: Problems with any of the filters
             3. **Search Problems**: Algolia or Supabase search issues
             4. **Data Issues**: Missing or incorrect lesson data
             5. **UI/UX**: Mobile responsiveness, accessibility
@@ -78,7 +78,7 @@ jobs:
                - "enhancement" - Feature request
                - "question" - User needs help
                - "documentation" - Docs need updating
-               - "filters" - Related to the 11 filter system
+               - "filters" - Related to the filter system
                - "search" - Search functionality
                - "ui/ux" - Interface issues
                - "database" - Supabase/data issues

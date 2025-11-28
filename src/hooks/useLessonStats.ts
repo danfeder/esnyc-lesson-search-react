@@ -12,7 +12,7 @@ interface LessonStats {
 export function useLessonStats(): LessonStats {
   const [stats, setStats] = useState<LessonStats>({
     totalLessons: 0,
-    totalCategories: 11, // This is fixed based on the 11 filter categories
+    totalCategories: 11, // Current filter count - see filterDefinitions.ts
     isLoading: true,
     error: null,
   });

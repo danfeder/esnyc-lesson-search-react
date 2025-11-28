@@ -12,7 +12,7 @@ This document outlines how to migrate from Algolia to PostgreSQL while preservin
   2. `mainIngredients,skills`  
   3. `thematicCategories,culturalHeritage`
 - **Custom Ranking**: `desc(confidence.overall)`
-- **Faceted Attributes**: 11 filter categories
+- **Faceted Attributes**: Multiple filter categories (see filterDefinitions.ts)
 - **Synonyms**: 270 rules (not yet uploaded to Algolia)
 
 ## Feature-by-Feature Migration
@@ -386,7 +386,7 @@ $$ LANGUAGE plpgsql;
    - [ ] Grade synonyms: "3" finds "third grade" lessons
    - [ ] Season synonyms: "fall" finds autumn/September/October/November lessons
    - [ ] Cultural hierarchy: Selecting "Asian" includes all Asian cuisines
-   - [ ] All 11 filters work correctly
+   - [ ] All filters work correctly
    - [ ] Facet counts update dynamically
    - [ ] Results sorted by relevance and confidence
 

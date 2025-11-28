@@ -18,6 +18,7 @@ interface FilterConfig {
 }
 
 // Filter configurations for filters used in search
+// IMPORTANT: Consult stakeholders before adding or removing filter categories
 export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   activityType: {
     label: 'Activity Type',

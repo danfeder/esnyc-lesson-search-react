@@ -101,7 +101,7 @@ jobs:
             - Avoid arbitrary values when possible
             
             ## Component Requirements:
-            - All 11 filter categories must be supported
+            - All filter categories must be supported (see filterDefinitions.ts)
             - Cultural heritage hierarchy (e.g., "Asian" includes Chinese, Japanese, Korean)
             - Ingredient grouping (e.g., "Winter squash" includes butternut, pumpkin)
             - Mobile-responsive design is mandatory
@@ -130,7 +130,7 @@ jobs:
             Use `gh pr comment` for overall architectural feedback.
             
             ## Important DO NOT Rules:
-            - DO NOT suggest adding more than 11 filters
+            - DO NOT suggest filter changes without stakeholder consultation
             - DO NOT recommend console.log (use logger.debug)
             - DO NOT comment on generated files
             - DO NOT provide excessive positive feedback inline

@@ -118,7 +118,7 @@ jobs:
             5. Missing dependencies - check if new packages need to be installed
             
             IMPORTANT Requirements:
-            - MUST maintain exactly 11 filters (never add or remove filter categories)
+            - Filter categories are defined in filterDefinitions.ts (consult stakeholders before changes)
             - Use path aliases (@/components) not relative imports
             - Add `// eslint-disable-next-line no-unused-vars` for unused parameters
             - Follow React 19 and TypeScript best practices

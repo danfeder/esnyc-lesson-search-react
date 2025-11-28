@@ -21,30 +21,21 @@ supabase db reset         # Reset database
 
 | Rule | Details |
 |------|---------|
-| **11 Filters** | Exactly 11 filter categories exist - never add or remove (see filterDefinitions.ts) |
+| **Filters** | Filter categories defined in `filterDefinitions.ts` - consult stakeholders before changes |
 | **Logging** | Use `logger.debug()` from `@/utils/logger`, not `console.log` |
 | **Env Vars** | Frontend vars require `VITE_` prefix |
 | **Imports** | Use `@/` path aliases, not relative paths |
 | **Pre-commit** | `npm run type-check` and `npm run lint` must pass |
 | **RLS Testing** | Run `npm run test:rls` after any database migration |
 
-## The 11 Filters
+## Filter Categories
 
-Located in `src/utils/filterDefinitions.ts`:
+Defined in `src/utils/filterDefinitions.ts`. Consult stakeholders before adding or removing filters.
 
-| # | Filter | Type |
-|---|--------|------|
-| 1 | Activity Type | single-select |
-| 2 | Location | single-select |
-| 3 | Grade Levels | multi-select (grouped) |
-| 4 | Thematic Categories | multi-select |
-| 5 | Season & Timing | single-select |
-| 6 | Core Competencies | multi-select |
-| 7 | Cultural Heritage | hierarchical multi-select |
-| 8 | Lesson Format | single-select |
-| 9 | Academic Integration | multi-select |
-| 10 | Social-Emotional Learning | multi-select |
-| 11 | Cooking Methods | single-select |
+See `filterDefinitions.ts` for the current list of filters and their configurations. Key features:
+- **Single-select filters**: Activity Type, Location, Season & Timing, Lesson Format, Cooking Methods
+- **Multi-select filters**: Grade Levels, Thematic Categories, Core Competencies, Academic Integration, Social-Emotional Learning
+- **Hierarchical filter**: Cultural Heritage (parent selection includes all children)
 
 ## Tech Stack
 
