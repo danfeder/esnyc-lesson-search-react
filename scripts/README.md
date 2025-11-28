@@ -35,66 +35,14 @@ node scripts/remove-algolia.js
 - `VITE_ALGOLIA_APP_ID`
 - `ALGOLIA_ADMIN_API_KEY`
 
-## User Management Scripts
-
-### `create-reviewer-profile.js`
-Creates reviewer profiles for admin users.
-
-**Usage:**
-```bash
-node scripts/create-reviewer-profile.js
-```
-
-**Required Environment Variables:**
-- `VITE_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-**What it does:**
-- Creates user profiles with reviewer role
-- Sets up necessary permissions
-- Useful for onboarding new reviewers
-
-### `create-test-profiles.js`
-Creates test user profiles for development.
-
-**Usage:**
-```bash
-node scripts/create-test-profiles.js
-```
-
-**Required Environment Variables:**
-- `VITE_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-**What it does:**
-- Creates test users with different roles
-- Useful for testing authentication and permissions
-
-### `fix-rls-policies.js`
-Fixes Row Level Security policies in the database.
-
-**Usage:**
-```bash
-node scripts/fix-rls-policies.js
-```
-
-**Required Environment Variables:**
-- `VITE_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-**What it does:**
-- Updates RLS policies on all tables
-- Ensures proper security configuration
-- Run after database schema changes
-
 ## Testing Scripts
 
-### `test-edge-function.js`
+### `test-edge-function.ts`
 Tests Supabase Edge Functions locally.
 
 **Usage:**
 ```bash
-node scripts/test-edge-function.js [function-name]
+npx tsx scripts/test-edge-function.ts
 ```
 
 **Required Environment Variables:**
@@ -182,9 +130,9 @@ Deploys edge functions to Supabase.
 
 ## Archive Directory
 
-The `scripts/archive/` directory contains deprecated scripts kept for reference:
-- `debug-edge-function.mjs` - Old edge function debugger
-- `debug-user-email.sql` - SQL queries for debugging user emails
+The `scripts/archive/` directory contains deprecated scripts kept for reference. See `scripts/archive/README.md` for full documentation.
+
+Key archived scripts include one-time migration scripts, setup utilities, and deprecated test files.
 
 ## Development Notes
 
