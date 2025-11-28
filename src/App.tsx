@@ -25,6 +25,7 @@ import { VerifySetup } from './pages/VerifySetup';
 import { useLessonStats } from './hooks/useLessonStats';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import { Permission } from './types/auth';
+import { logger } from './utils/logger';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -164,8 +165,7 @@ function App() {
     <ErrorBoundary
       fallback={AppErrorFallback}
       onError={(error, errorInfo) => {
-        // In production, you could log to an error tracking service here
-        console.error('App Error:', error, errorInfo);
+        logger.error('App Error:', error, errorInfo);
       }}
     >
       <QueryClientProvider client={queryClient}>
