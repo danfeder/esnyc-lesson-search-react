@@ -32,18 +32,10 @@ supabase db reset         # Reset database
 
 Defined in `src/utils/filterDefinitions.ts`. Consult stakeholders before adding or removing filters.
 
-**Current filters:**
-- Activity Type (single-select)
-- Location (single-select)
-- Grade Levels (multi-select, grouped)
-- Thematic Categories (multi-select)
-- Season & Timing (single-select)
-- Core Competencies (multi-select)
-- Cultural Heritage (hierarchical multi-select)
-- Lesson Format (single-select)
-- Academic Integration (multi-select)
-- Social-Emotional Learning (multi-select)
-- Cooking Methods (single-select)
+See `filterDefinitions.ts` for the current list of filters and their configurations. Key features:
+- **Single-select filters**: Activity Type, Location, Season & Timing, Lesson Format, Cooking Methods
+- **Multi-select filters**: Grade Levels, Thematic Categories, Core Competencies, Academic Integration, Social-Emotional Learning
+- **Hierarchical filter**: Cultural Heritage (parent selection includes all children)
 
 ## Tech Stack
 
