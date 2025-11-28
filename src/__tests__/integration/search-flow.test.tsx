@@ -4,8 +4,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import type { Lesson } from '@/types';
-import { makeLesson } from '@/__tests__/helpers/factories';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase', () => ({
@@ -75,10 +73,6 @@ vi.mock('@/lib/supabase', () => ({
 import { SearchBar } from '@/components/Search/SearchBar';
 import { FilterModal } from '@/components/Filters/FilterModal';
 import { useSearchStore } from '@/stores/searchStore';
-import { useSearch } from '@/hooks/useSearch';
-
-// Mock the search hook
-vi.mock('@/hooks/useSearch');
 
 describe('Search Flow Integration', () => {
   let queryClient: QueryClient;
@@ -95,14 +89,6 @@ describe('Search Flow Integration', () => {
     // Reset store
     const store = useSearchStore.getState();
     store.clearFilters();
-
-    // Default mock for useSearch
-    (useSearch as any).mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
   });
 
   afterEach(() => {
@@ -144,29 +130,6 @@ describe('Search Flow Integration', () => {
   describe('Basic Search Flow', () => {
     it('should search for lessons by keyword', async () => {
       const user = userEvent.setup();
-      const mockLessons: Lesson[] = [
-        makeLesson({
-          lessonId: '1',
-          title: 'Tomato Salad',
-          summary: 'Make a fresh tomato salad',
-          fileLink: 'https://example.com/lesson1',
-          gradeLevels: ['3', '4'],
-        }),
-        makeLesson({
-          lessonId: '2',
-          title: 'Growing Tomatoes',
-          summary: 'Learn to grow tomatoes in the garden',
-          fileLink: 'https://example.com/lesson2',
-          gradeLevels: ['5', '6'],
-        }),
-      ];
-
-      (useSearch as any).mockReturnValue({
-        data: { results: mockLessons, totalCount: 2 },
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
 
       renderApp();
 
@@ -385,13 +348,6 @@ describe('Search Flow Integration', () => {
     it('should handle search errors gracefully', async () => {
       const user = userEvent.setup();
 
-      (useSearch as any).mockReturnValue({
-        data: null,
-        isLoading: false,
-        error: new Error('Network error'),
-        refetch: vi.fn(),
-      });
-
       renderApp();
 
       // Perform a search that will fail
@@ -413,13 +369,6 @@ describe('Search Flow Integration', () => {
     it('should show loading state during search', async () => {
       const user = userEvent.setup();
 
-      (useSearch as any).mockReturnValue({
-        data: null,
-        isLoading: true,
-        error: null,
-        refetch: vi.fn(),
-      });
-
       renderApp();
 
       // Perform a search
@@ -439,14 +388,6 @@ describe('Search Flow Integration', () => {
       await waitFor(() => {
         const store = useSearchStore.getState();
         expect(store.filters.query).toBe('loading test');
-      });
-
-      // Mock search completion
-      (useSearch as any).mockReturnValue({
-        data: { results: [], totalCount: 0 },
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
       });
     });
   });
