@@ -16,4 +16,3 @@ export const getFacetCount = (
 ): number => {
   return facets[facetName]?.[value] || 0;
 };
-
