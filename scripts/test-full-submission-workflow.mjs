@@ -116,7 +116,7 @@ async function testFullWorkflow() {
     console.log('\n5️⃣ Next steps in the workflow:');
     console.log('   1. Reviewer sees the submission in their dashboard');
     console.log('   2. Reviewer reads the extracted content');
-    console.log('   3. Reviewer tags with 11 filter categories');
+    console.log('   3. Reviewer tags with filter categories');
     console.log('   4. Reviewer decides: approve as new, merge with existing, or reject');
     
     // Cleanup test data

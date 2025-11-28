@@ -7,7 +7,7 @@ The ESYNYC Lesson Search v2 is largely feature-complete with a modern React/Type
 ## ✅ Completed Features
 
 ### Core Functionality
-- **Search & Filtering**: PostgreSQL full-text search with 11 filter categories
+- **Search & Filtering**: PostgreSQL full-text search with multiple filter categories
 - **Database**: PostgreSQL with full-text search and vector embeddings
 - **Authentication**: Complete auth system with role-based access control
 - **Admin Dashboard**: Full review workflow for lesson submissions

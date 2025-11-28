@@ -114,7 +114,7 @@ jobs:
             
             TASK 5: Special checks for ESYNYC requirements
             Also verify:
-            - Lesson fits within the 11 filter categories
+            - Lesson fits within the filter categories (see filterDefinitions.ts)
             - Cultural heritage hierarchy is respected
             - Ingredient groupings are consistent
             - Grade level progression makes sense

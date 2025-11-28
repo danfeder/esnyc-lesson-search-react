@@ -50,7 +50,7 @@ jobs:
             - duplicate: Duplicate of existing issue
             
             **Component Areas:**
-            - filters: Related to the 11 filter system
+            - filters: Related to the filter system
             - search: Search functionality (Algolia/Supabase)
             - ui/ux: Interface or user experience
             - database: Supabase/PostgreSQL related
@@ -83,7 +83,7 @@ jobs:
             IMPORTANT:
             - Only use labels that exist in the repository
             - Be thorough but don't over-label
-            - For lesson submissions, check if it matches the 11 filter requirements
+            - For lesson submissions, check if it matches the filter requirements
             - NO comments unless marking as duplicate
             
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md

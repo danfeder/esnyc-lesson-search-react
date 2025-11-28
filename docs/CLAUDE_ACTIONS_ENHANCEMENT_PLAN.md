@@ -10,7 +10,7 @@ This document outlines a comprehensive plan to enhance the ESYNYC Lesson Search 
 2. **Reduce PR Clutter**: Implement sticky comments to prevent duplicate reviews
 3. **Enhance Automation**: Add specialized workflows for different scenarios
 4. **Optimize Token Usage**: Filter unnecessary files and implement smart limits
-5. **Maintain Domain Requirements**: Preserve all ESYNYC-specific rules (11 filters, etc.)
+5. **Maintain Domain Requirements**: Preserve all ESYNYC-specific rules (filter categories, etc.)
 
 ## 🚀 Implementation Phases
 

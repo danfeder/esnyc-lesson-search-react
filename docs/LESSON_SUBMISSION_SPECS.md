@@ -21,7 +21,7 @@ The Lesson Submission Pipeline is a comprehensive system for managing the submis
 1. **Eliminate Duplicates**: Use AI-powered detection to identify and consolidate duplicate lessons
 2. **Streamline Review**: Provide an efficient interface for the dedicated reviewer to tag and approve lessons
 3. **Maintain History**: Track version changes while keeping the main collection clean
-4. **Ensure Quality**: Enforce consistent tagging across all 11 filter categories
+4. **Ensure Quality**: Enforce consistent tagging across all filter categories
 
 ### System Components
 - **Submission Portal**: Teacher-facing interface for submitting Google Doc links
