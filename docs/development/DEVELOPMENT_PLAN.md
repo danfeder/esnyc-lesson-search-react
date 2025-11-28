@@ -19,9 +19,12 @@
 
 #### 1. Install Missing Dependencies
 ```bash
-npm install react-router-dom @headlessui/react tailwindcss autoprefixer postcss
-npm install -D @types/node postcss-config
+npm install react-router-dom @headlessui/react tailwindcss @tailwindcss/vite
+npm install -D @types/node
 ```
+
+> **Note:** With Tailwind v4, `autoprefixer` and `postcss` are no longer needed.
+> The `@tailwindcss/vite` plugin handles everything directly in Vite.
 
 #### 2. Update package.json Scripts
 Manually update the scripts section to:
@@ -32,17 +35,6 @@ Manually update the scripts section to:
   "preview": "vite preview",
   "import-data": "node scripts/import-data.js",
   "type-check": "tsc --noEmit"
-}
-```
-
-#### 3. Create PostCSS Configuration
-Create `postcss.config.js`:
-```js
-export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
 }
 ```
 
