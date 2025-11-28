@@ -149,7 +149,7 @@ Goals
 Decision
 - Introduce a dedicated hook `useLessonSuggestions` that calls the smart-search Edge Function and returns `{ suggestions: string[], expandedQuery?: string }`.
 - Render suggestions from `SearchPage` (results area) only when `filters.query.trim()` is truthy AND `totalCount === 0` for the current results. This avoids coupling SearchBar to server results and prevents unnecessary state leakage back into the store.
-- Deprecate `useSearch` (keep temporarily; remove in Phase 3 alongside other legacy paths).
+- `useSearch` has been removed; all search now uses `useLessonSearch`.
 - Remove the client-side `fallbackSearch` path for suggestions. On Edge Function error, show no suggestions (silent failure) and keep the UI clean.
 
 Implementation Outline
@@ -215,7 +215,7 @@ Rollout & Risks
 1) One App, Two Active Search Pipelines (+ a Ghost)
 - Findings:
   - Pipeline A: `useSupabaseSearch.ts` calls SQL RPC `search_lessons` to fetch results (used by `SearchPage`).
-  - Pipeline B: `useSearch.ts` calls Edge Function `smart-search` (synonym/misspelling expansion + results + suggestions). It falls back to a client‑side filter path if errors occur.
+  - Pipeline B (REMOVED): `useSearch.ts` previously called Edge Function `smart-search`. This pipeline has been removed; all search now uses Pipeline A via `useLessonSearch.ts`.
   - Ghost: Old Algolia pipeline remains in code (`src/hooks/useAlgoliaSearch.ts`, `src/lib/algolia.ts`, `src/types/algolia.ts`, `src/utils/facetHelpers.ts`) and scripts.
 - Why this hurts:
   - More codepaths → higher risk of bugs, duplicated logic, inconsistent behavior (e.g., facet counts).
