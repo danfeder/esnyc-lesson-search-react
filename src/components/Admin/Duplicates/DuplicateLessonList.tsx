@@ -1,5 +1,5 @@
-import { EditableTitle } from '../../Admin';
-import type { DuplicateGroup } from '../../../types/admin';
+import { EditableTitle } from '@/components/Admin';
+import type { DuplicateGroup } from '@/types/admin';
 
 interface DuplicateLessonListProps {
   group: DuplicateGroup;

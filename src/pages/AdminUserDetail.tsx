@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { SchoolBadge, SchoolCheckboxGroup, School } from '../components/Schools';
-import { parseDbError } from '../utils/errorHandling';
+import { supabase } from '@/lib/supabase';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { SchoolBadge, SchoolCheckboxGroup, School } from '@/components/Schools';
+import { parseDbError } from '@/utils/errorHandling';
 import {
   ArrowLeft,
   User,
@@ -27,9 +27,9 @@ import {
   Permission,
   UserManagementAudit,
   AuditAction,
-} from '../types/auth';
+} from '@/types/auth';
 import { formatDistanceToNow } from 'date-fns';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 export function AdminUserDetail() {
   const { userId } = useParams<{ userId: string }>();

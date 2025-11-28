@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
-import { logger } from '../utils/logger';
-import type { ReviewMetadata } from '../types';
-import { FEATURES } from '../utils/featureFlags';
+import { logger } from '@/utils/logger';
+import type { ReviewMetadata } from '@/types';
+import { FEATURES } from '@/utils/featureFlags';
 import type { Json } from '@/types/database.types';
-import { ReviewContent } from '../components/Review/ReviewContent';
-import { ReviewDuplicates } from '../components/Review/ReviewDuplicates';
-import { ReviewMetadataForm } from '../components/Review/ReviewMetadataForm';
-import { ReviewActions } from '../components/Review/ReviewActions';
+import { ReviewContent } from '@/components/Review/ReviewContent';
+import { ReviewDuplicates } from '@/components/Review/ReviewDuplicates';
+import { ReviewMetadataForm } from '@/components/Review/ReviewMetadataForm';
+import { ReviewActions } from '@/components/Review/ReviewActions';
 
 interface SubmissionDetail {
   id: string;

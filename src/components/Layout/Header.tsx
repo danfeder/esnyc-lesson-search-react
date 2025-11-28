@@ -11,11 +11,11 @@ import {
   Users,
   BarChart3,
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { AuthModal } from '../Auth/AuthModal';
-import { APP_VERSION } from '../../config/version';
-import { useEnhancedAuth } from '../../hooks/useEnhancedAuth';
-import { Permission } from '../../types/auth';
+import { supabase } from '@/lib/supabase';
+import { AuthModal } from '@/components/Auth/AuthModal';
+import { APP_VERSION } from '@/config/version';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { Permission } from '@/types/auth';
 
 interface HeaderProps {
   totalLessons?: number;

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { Check, ChevronDown, X } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { SchoolBadge } from './SchoolBadge';
-import { logger } from '../../utils/logger';
+import { logger } from '@/utils/logger';
 
 export interface School {
   id: string;

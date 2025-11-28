@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { SchoolBadge, School } from '../components/Schools';
+import { supabase } from '@/lib/supabase';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { SchoolBadge, School } from '@/components/Schools';
 import {
   ArrowLeft,
   User,
@@ -22,7 +22,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 interface LessonSubmission {
   id: string;

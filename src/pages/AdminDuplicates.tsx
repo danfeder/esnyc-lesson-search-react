@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { supabase } from '../lib/supabase';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { supabase } from '@/lib/supabase';
 import { CheckCircle } from 'lucide-react';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 interface DuplicateGroup {
   groupId: string;

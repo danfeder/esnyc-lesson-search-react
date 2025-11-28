@@ -2,8 +2,8 @@ import React, { useState, useMemo, useCallback } from 'react';
 // TODO: Replace with @tanstack/react-virtual
 // import { FixedSizeList as List } from 'react-window';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { CULTURAL_HIERARCHY } from '../../utils/filterConstants';
-import { getFacetCount } from '../../utils/facetHelpers';
+import { CULTURAL_HIERARCHY } from '@/utils/filterConstants';
+import { getFacetCount } from '@/utils/facetHelpers';
 
 // Constants for virtualization
 // const LIST_HEIGHT = 256; // 16rem = 256px (max-h-64) - TODO: Use when migrating to @tanstack/react-virtual

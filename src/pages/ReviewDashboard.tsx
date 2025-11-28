@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import {
   Clock,
@@ -12,7 +12,7 @@ import {
   User as UserIcon,
   FileText,
 } from 'lucide-react';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 interface Similarity {
   lesson_id: string;

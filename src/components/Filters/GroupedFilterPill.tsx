@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { X } from 'lucide-react';
-import { formatCategoryName, getCategoryIcon } from '../../utils/filterUtils';
-import type { SearchFilters } from '../../types';
+import { formatCategoryName, getCategoryIcon } from '@/utils/filterUtils';
+import type { SearchFilters } from '@/types';
 
 interface GroupedFilterPillProps {
   category: keyof SearchFilters;

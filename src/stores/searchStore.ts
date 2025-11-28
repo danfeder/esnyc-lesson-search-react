@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { SearchFilters, ViewState } from '../types';
+import type { SearchFilters, ViewState } from '@/types';
 
 interface SearchState {
   // Filters (UI state only)

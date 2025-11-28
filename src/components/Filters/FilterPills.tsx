@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { FilterPill } from './FilterPill';
 import { GroupedFilterPill } from './GroupedFilterPill';
-import { useSearchStore } from '../../stores/searchStore';
-import type { SearchFilters } from '../../types';
+import { useSearchStore } from '@/stores/searchStore';
+import type { SearchFilters } from '@/types';
 
 interface FilterPillsProps {
   onAddFilters: () => void;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import {
   UserRole,
@@ -7,8 +7,8 @@ import {
   DEFAULT_PERMISSIONS,
   EnhancedUserProfile,
   AuthContextValue,
-} from '../types/auth';
-import { logger } from '../utils/logger';
+} from '@/types/auth';
+import { logger } from '@/utils/logger';
 
 export function useEnhancedAuth(): AuthContextValue {
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);

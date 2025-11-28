@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import {
   Mail,
   User,
@@ -13,8 +13,8 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react';
-import { UserRole } from '../types/auth';
-import { logger } from '../utils/logger';
+import { UserRole } from '@/types/auth';
+import { logger } from '@/utils/logger';
 
 interface InvitationMetadata {
   grades_taught?: string[];

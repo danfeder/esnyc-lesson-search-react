@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { logger } from '../utils/logger';
+import { supabase } from '@/lib/supabase';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { logger } from '@/utils/logger';
 import { prepareTitleUpdatesForRpc } from '@/utils/validation';
-import type { DuplicateGroup, LessonDetail } from '../types/admin';
-import { DuplicateHeader } from '../components/Admin/Duplicates/DuplicateHeader';
-import { DuplicateInsights } from '../components/Admin/Duplicates/DuplicateInsights';
-import { DuplicateLessonList } from '../components/Admin/Duplicates/DuplicateLessonList';
-import { DuplicateResolution } from '../components/Admin/Duplicates/DuplicateResolution';
+import type { DuplicateGroup, LessonDetail } from '@/types/admin';
+import { DuplicateHeader } from '@/components/Admin/Duplicates/DuplicateHeader';
+import { DuplicateInsights } from '@/components/Admin/Duplicates/DuplicateInsights';
+import { DuplicateLessonList } from '@/components/Admin/Duplicates/DuplicateLessonList';
+import { DuplicateResolution } from '@/components/Admin/Duplicates/DuplicateResolution';
 
 export function AdminDuplicateDetail() {
   const { groupId } = useParams();

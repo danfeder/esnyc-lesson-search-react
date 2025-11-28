@@ -1,5 +1,5 @@
 import { CULTURAL_HIERARCHY, INGREDIENT_GROUPS } from './filterConstants';
-import type { Lesson } from '../types';
+import type { Lesson } from '@/types';
 
 // Cultural heritage matching with hierarchy
 export function matchesCulturalHeritage(

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useDebounce } from '../hooks/useDebounce';
+import { supabase } from '@/lib/supabase';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   Users,
   Search,
@@ -18,12 +18,12 @@ import {
   UserX,
   Trash2,
 } from 'lucide-react';
-import { EnhancedUserProfile, UserFilters, UserRole, Permission } from '../types/auth';
+import { EnhancedUserProfile, UserFilters, UserRole, Permission } from '@/types/auth';
 import { formatDistanceToNow } from 'date-fns';
-import { SchoolBadge } from '../components/Schools';
-import { logger } from '../utils/logger';
-import { VirtualizedTable, Column } from '../components/Common/VirtualizedTable';
-import { shouldVirtualize } from '../utils/virtualization';
+import { SchoolBadge } from '@/components/Schools';
+import { logger } from '@/utils/logger';
+import { VirtualizedTable, Column } from '@/components/Common/VirtualizedTable';
+import { shouldVirtualize } from '@/utils/virtualization';
 
 export function AdminUsers() {
   const navigate = useNavigate();

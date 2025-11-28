@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { DIMENSIONS } from '../../utils/virtualization';
+import { DIMENSIONS } from '@/utils/virtualization';
 
 export interface Column<T> {
   key: string;

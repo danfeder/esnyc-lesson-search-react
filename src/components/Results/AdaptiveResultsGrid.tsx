@@ -1,8 +1,8 @@
 import React from 'react';
-import { Lesson } from '../../types';
+import { Lesson } from '@/types';
 import { ResultsGrid } from './ResultsGrid';
 import { VirtualizedResultsGrid } from './VirtualizedResultsGrid';
-import { shouldVirtualize } from '../../utils/virtualization';
+import { shouldVirtualize } from '@/utils/virtualization';
 
 interface AdaptiveResultsGridProps {
   lessons: Lesson[];

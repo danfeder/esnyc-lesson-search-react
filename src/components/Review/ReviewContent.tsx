@@ -1,7 +1,7 @@
 import { Monitor, FileCode } from 'lucide-react';
-import { FEATURES } from '../../utils/featureFlags';
+import { FEATURES } from '@/utils/featureFlags';
 import { GoogleDocEmbed } from './GoogleDocEmbed';
-import { logger } from '../../utils/logger';
+import { logger } from '@/utils/logger';
 
 interface ReviewContentProps {
   submission: {

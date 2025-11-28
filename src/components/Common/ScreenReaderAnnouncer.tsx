@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchStore } from '../../stores/searchStore';
+import { useSearchStore } from '@/stores/searchStore';
 
 interface ScreenReaderAnnouncerProps {
   totalCount?: number;

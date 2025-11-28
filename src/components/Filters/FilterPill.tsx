@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { formatCategoryName } from '../../utils/filterUtils';
+import { formatCategoryName } from '@/utils/filterUtils';
 
 interface FilterPillProps {
   category: string;

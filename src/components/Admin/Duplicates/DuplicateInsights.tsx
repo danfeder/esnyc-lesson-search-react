@@ -1,5 +1,5 @@
 import { AlertTriangle, Info } from 'lucide-react';
-import type { DuplicateGroup } from '../../../types/admin';
+import type { DuplicateGroup } from '@/types/admin';
 
 interface DuplicateInsightsProps {
   insights: DuplicateGroup['insights'];
