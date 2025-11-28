@@ -275,7 +275,7 @@ supabase db push --linked
 
 ### Lessons Table (1,098 rows in production)
 
-**11 Filter Columns** (EXACTLY 11 - business requirement):
+**Filter Columns** (consult stakeholders before changes):
 1. `grade_levels` TEXT[]
 2. `thematic_categories` TEXT[]
 3. `season_timing` TEXT[]

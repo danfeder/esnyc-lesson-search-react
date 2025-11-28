@@ -55,7 +55,7 @@ export default {
 
 2. **Filter Components**
    - Complete FilterSidebar implementation
-   - Add all 16 filter categories
+   - Implement all filter categories from filterDefinitions.ts
    - Implement hierarchical cultural heritage filtering
    - Add grade group functionality
 
@@ -166,7 +166,7 @@ Priority files that need completion:
 
 ## Testing Checklist
 
-- [ ] All 16 filter categories work
+- [ ] All filter categories work
 - [ ] Search returns relevant results
 - [ ] Cultural hierarchy filtering works
 - [ ] Ingredient grouping works

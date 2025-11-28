@@ -4,15 +4,16 @@
 **Current Task**: Priority 1 - Drop duplicate indexes
 **PR Status**: #265 - [CHECK IF MERGED BEFORE SESSION 2]
 
+> **Note (Nov 2025)**: The "EXACTLY 11 filters" constraint documented in this session has been superseded. Filter count is now flexible with stakeholder consultation. See ADR-006 for updated guidance.
+
 ---
 
 ## I. Architectural Principles (Persistent)
 
 ### 1. Filter System
-- **EXACTLY 11 filters** (ESYNYC business requirement - never change count)
+- ~~**EXACTLY 11 filters** (ESYNYC business requirement - never change count)~~ **SUPERSEDED** - see note above
 - **Single source of truth**: `src/utils/filterDefinitions.ts`
-- **Enforced**: TypeScript compile-time checks, database schema, UI components
-- **Never**: Add 12th filter or remove existing without architectural review
+- **Consult stakeholders** before adding or removing filter categories
 
 ### 2. Data Model
 - **Normalized columns**: All 11 filters as TEXT[] (or TEXT for single-select)

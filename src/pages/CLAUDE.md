@@ -204,12 +204,12 @@ const {
 ### SearchPage
 - CSV export NOT implemented yet
 - Uses PostgreSQL full-text search (Algolia removed)
-- EXACTLY 11 filters must be maintained
+- Filter categories defined in `filterDefinitions.ts`
 
 ### ReviewDetail
 - Google Docs extraction WORKING (real API in production, mock fallback in dev)
 - Validates metadata before submission
-- Must handle all 11 filter categories
+- Must handle all filter categories defined in `filterDefinitions.ts`
 
 ### AdminDuplicates
 - Uses similarity scoring algorithm

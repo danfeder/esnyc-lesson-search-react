@@ -22,8 +22,8 @@ ESYNYC Lesson Search is a full-stack web application for searching, filtering, a
 
 ### Key Architectural Decisions
 
-1. **Normalized TEXT[] Columns**: All 11 filter categories use typed PostgreSQL arrays (not JSONB) for performance
-2. **EXACTLY 11 Filters**: Business requirement from ESYNYC - enforced across database, types, and UI
+1. **Normalized TEXT[] Columns**: All filter categories use typed PostgreSQL arrays (not JSONB) for performance
+2. **Filter Categories**: Defined in `filterDefinitions.ts` - consult stakeholders before changes
 3. **PostgreSQL Full-Text Search**: No external search service (Algolia removed) - all search is SQL-based
 4. **Production Baseline Snapshot**: Accepted production as source of truth (Oct 2025) due to migration drift
 5. **Zustand for UI, React Query for Server**: Clear separation of state concerns
@@ -93,7 +93,7 @@ SELECT expand_search_with_synonyms('garden');
 
 | Purpose | File Path | Description |
 |---------|-----------|-------------|
-| **Filter definitions** | `src/utils/filterDefinitions.ts` | **SINGLE SOURCE OF TRUTH** for 11 filter categories |
+| **Filter definitions** | `src/utils/filterDefinitions.ts` | **SINGLE SOURCE OF TRUTH** for filter categories |
 | **Search hook** | `src/hooks/useLessonSearch.ts` | React Query infinite scroll integration |
 | **RPC wrapper** | `src/hooks/useSupabaseSearch.ts` | Direct RPC call wrapper (legacy) |
 | **Search function** | Database: `search_lessons()` | Main PostgreSQL search RPC |
@@ -271,7 +271,7 @@ parent: "African"   → children: ["West African", "Ethiopian", "Nigerian"]
 
 #### The Normalized Approach (Production Reality)
 
-**All 11 filter categories use typed TEXT[] columns:**
+**All filter categories use typed TEXT[] columns:**
 
 ```sql
 CREATE TABLE lessons (
@@ -365,16 +365,16 @@ metadata: {
 - ✅ Complex nested data (academicIntegration.concepts)
 
 **Current split** (production):
-- Normalized: 11 filters + search fields + core metadata
+- Normalized: filters + search fields + core metadata
 - JSONB: Confidence scores, processing/review notes, legacy duplicate filter data (to clean)
 
 ---
 
-## 3. The 11 Filter System (EXACTLY 11 - Business Rule)
+## 3. The Filter System
 
 ### 3.1 Filter Categories
 
-**The 11 filters** (enforced across database, types, and UI):
+**Current filter categories** (defined in `filterDefinitions.ts` - consult stakeholders before changes):
 
 1. **grade_levels** (TEXT[] multi-select)
    - Values: 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
@@ -431,27 +431,21 @@ metadata: {
 
 ---
 
-### 3.2 Why EXACTLY 11?
+### 3.2 Modifying Filters
 
-**Business Requirement**: ESYNYC (Edible Schoolyard NYC) determined these 11 categories cover all pedagogical dimensions for garden-based education.
+**Consult stakeholders before adding or removing filter categories.**
 
-**Enforcement points**:
-1. Database: 11 columns in lessons table
-2. TypeScript: `SearchFilters` interface has 11 properties
-3. UI: `filterDefinitions.ts` exports 11 filter configs
-4. Documentation: CLAUDE.md files warn "NEVER add or remove filters"
-
-**Adding a 12th filter would require**:
+**Adding a new filter requires**:
 1. Database migration (add column)
-2. TypeScript type update
+2. TypeScript type update (`SearchFilters` interface)
 3. UI component update (FilterModal, FilterSidebar)
 4. Search RPC function signature change
-5. Business approval from ESYNYC
+5. Update `filterDefinitions.ts`
 
 **Historical context**:
-- Original design had variable filters
-- ESYNYC locked it to 11 in 2024
-- Became a "sacred constraint" in codebase
+- Original design had 11 filters as a fixed constraint
+- This restriction was lifted in late 2025 to allow optimization
+- Filter changes now require stakeholder consultation rather than being prohibited
 
 ---
 
@@ -467,7 +461,7 @@ grade_levels TEXT[] NOT NULL DEFAULT '{}'  -- Performance, type safety
 interface SearchFilters {
   gradeLevels: string[];      // Multi-select → array
   lessonFormat: string;       // Single-select → string
-  // ... 9 more
+  // ... additional filters
 }
 ```
 
@@ -504,7 +498,7 @@ const useSearchStore = create<SearchState>()(devtools((set) => ({
        │
        ▼ RPC Call
 ┌─────────────────────────────────────────────────────────┐
-│ Database: search_lessons(query, 11 filters, page, size) │
+│ Database: search_lessons(query, filters, page, size)    │
 │                                                          │
 │  1. Expand query with synonyms                          │
 │     expand_search_with_synonyms("garden")               │
@@ -518,7 +512,7 @@ const useSearchStore = create<SearchState>()(devtools((set) => ({
 │     WHERE grade_levels && ['5','6']  (array overlap)    │
 │       AND thematic_categories && filter_themes          │
 │       AND cultural_heritage && expanded_cultures        │
-│       AND ...  (11 filter conditions)                   │
+│       AND ...  (filter conditions)                      │
 │                                                          │
 │  4. Text search on search_vector                        │
 │     search_vector @@ to_tsquery('expanded_query')       │
@@ -1331,8 +1325,8 @@ src/components/
 │   ├── VirtualizedTable.tsx
 │   ├── InfiniteScrollTrigger.tsx
 │   └── ...
-├── Filters/         # Filter UI components (11 filters)
-│   ├── FilterModal.tsx          # All 11 filters in tabs
+├── Filters/         # Filter UI components
+│   ├── FilterModal.tsx          # All filters in tabs
 │   ├── FilterSidebar.tsx        # Desktop filter panel
 │   ├── FilterPills.tsx          # Active filter chips
 │   ├── CulturalHeritageFilter.tsx  # Hierarchical filter
@@ -1464,12 +1458,11 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'academic-only', label: 'Academic Only' },
     ]
   },
-  // ... 10 more filter configs
+  // ... additional filter configs
 };
 
-// CRITICAL: Must maintain exactly 11 filters
+// Consult stakeholders before modifying filter categories
 export const FILTER_KEYS = Object.keys(FILTER_CONFIGS) as Array<keyof typeof FILTER_CONFIGS>;
-// Compile-time check: If not 11, TypeScript error
 ```
 
 **Consumed by**:
@@ -1481,8 +1474,9 @@ export const FILTER_KEYS = Object.keys(FILTER_CONFIGS) as Array<keyof typeof FIL
 **Consistency check**:
 ```typescript
 // In filterDefinitions.test.ts
-test('must have exactly 11 filters', () => {
-  expect(FILTER_KEYS).toHaveLength(11);
+test('filters should be properly configured', () => {
+  expect(FILTER_KEYS.length).toBeGreaterThan(0);
+  // Validates each filter has required properties
 });
 ```
 
