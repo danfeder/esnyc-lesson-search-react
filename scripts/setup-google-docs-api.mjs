@@ -257,7 +257,7 @@ if (!fs.existsSync(helpersDir)) {
 }
 
 fs.writeFileSync(
-  path.join(helpersDir, 'google-auth.ts'),
+  path.join(helpersDir, 'google-auth-with-delegation.ts'),
   jwtHelperCode
 );
 
@@ -272,7 +272,7 @@ console.log('📄 Sample Implementation:');
 console.log('-------------------------');
 console.log(`
 // In your extract-google-doc function:
-import { getGoogleAccessToken } from '../_shared/google-auth.ts';
+import { getGoogleAccessToken } from '../_shared/google-auth-with-delegation.ts';
 import { extractTextFromGoogleDoc, extractMetadataFromContent } from '../_shared/google-docs-parser.ts';
 
 // Inside your function:

@@ -96,7 +96,7 @@ if (googleServiceAccount) {
 
 ### Google Auth Implementation
 
-File: `supabase/functions/_shared/google-auth.ts`
+File: `supabase/functions/_shared/google-auth-with-delegation.ts`
 
 ```typescript
 export async function getGoogleAccessToken(credentials: any): Promise<string> {
