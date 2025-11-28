@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { AlertCircle, CheckCircle2, Loader2, FileText, AlertTriangle } from 'lucide-react';
-import { AuthModal } from '../components/Auth/AuthModal';
+import { AuthModal } from '@/components/Auth/AuthModal';
 import { User } from '@supabase/supabase-js';
 
 export function SubmissionPage() {

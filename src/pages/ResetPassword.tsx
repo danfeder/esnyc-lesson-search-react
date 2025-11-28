@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Lock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 export function ResetPassword() {
   const navigate = useNavigate();

@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
-import { SearchFilters } from '../../types';
+import { SearchFilters } from '@/types';
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { VirtualizedCulturalHeritageFilter } from './VirtualizedCulturalHeritageFilter';
-import { getFacetCount } from '../../utils/facetHelpers';
-import { useSearchStore } from '../../stores/searchStore';
-import { ErrorBoundary, DefaultErrorFallback } from '../Common/ErrorBoundary';
+import { getFacetCount } from '@/utils/facetHelpers';
+import { useSearchStore } from '@/stores/searchStore';
+import { ErrorBoundary, DefaultErrorFallback } from '@/components/Common/ErrorBoundary';
 
 interface FilterSidebarProps {
   filters: SearchFilters;

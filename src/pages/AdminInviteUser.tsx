@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import {
   ArrowLeft,
   Send,
@@ -11,10 +11,10 @@ import {
   BookOpen,
   MessageSquare,
 } from 'lucide-react';
-import { UserRole, InvitationFormData } from '../types/auth';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { logger } from '../utils/logger';
-import { parseDbError, isEmailDuplicateError } from '../utils/errorHandling';
+import { UserRole, InvitationFormData } from '@/types/auth';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { logger } from '@/utils/logger';
+import { parseDbError, isEmailDuplicateError } from '@/utils/errorHandling';
 
 // Extend Window interface for development debugging
 declare global {

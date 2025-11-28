@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import CreatableSelect from 'react-select/creatable';
-import { ALL_FIELD_CONFIGS } from '../../utils/filterDefinitions';
-import type { ReviewMetadata } from '../../types';
+import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
+import type { ReviewMetadata } from '@/types';
 
 interface ReviewMetadataFormProps {
   metadata: ReviewMetadata;

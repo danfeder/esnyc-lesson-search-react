@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import { getSearchRpcName } from '../lib/search';
-import type { SearchFilters, Lesson } from '../types';
-import { debounce } from '../utils/debounce';
-import { logger } from '../utils/logger';
+import { supabase } from '@/lib/supabase';
+import { getSearchRpcName } from '@/lib/search';
+import type { SearchFilters, Lesson } from '@/types';
+import { debounce } from '@/utils/debounce';
+import { logger } from '@/utils/logger';
 
 interface SearchResult {
   lessons: Lesson[];

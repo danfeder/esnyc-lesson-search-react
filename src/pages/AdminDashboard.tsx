@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { Permission } from '../types/auth';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { Permission } from '@/types/auth';
 import {
   BarChart3,
   Users,

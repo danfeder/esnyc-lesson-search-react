@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { CULTURAL_HIERARCHY } from '../../utils/filterConstants';
-import { getFacetCount } from '../../utils/facetHelpers';
+import { CULTURAL_HIERARCHY } from '@/utils/filterConstants';
+import { getFacetCount } from '@/utils/facetHelpers';
 
 interface CulturalHeritageFilterProps {
   selectedValues: string[];

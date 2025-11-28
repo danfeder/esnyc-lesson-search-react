@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { Permission, UserInvitation } from '../types/auth';
+import { supabase } from '@/lib/supabase';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { Permission, UserInvitation } from '@/types/auth';
 import {
   ArrowLeft,
   Mail,
@@ -16,7 +16,7 @@ import {
   Download,
 } from 'lucide-react';
 import { formatDistanceToNow, format, isPast } from 'date-fns';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 type InvitationFilter = 'all' | 'pending' | 'accepted' | 'expired';
 

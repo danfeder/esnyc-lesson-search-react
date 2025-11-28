@@ -2,7 +2,7 @@
  * Enhanced logger utility with Sentry integration
  * Provides consistent logging across development and production
  */
-import { captureException, captureMessage, addBreadcrumb } from '../lib/sentry';
+import { captureException, captureMessage, addBreadcrumb } from '@/lib/sentry';
 import type { SeverityLevel } from '@sentry/types';
 
 const isDevelopment = import.meta.env.DEV;

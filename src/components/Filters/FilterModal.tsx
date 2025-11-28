@@ -1,11 +1,11 @@
 import React, { useState, Fragment, useEffect, useRef } from 'react';
 import { Dialog, Transition, Tab, Disclosure } from '@headlessui/react';
 import { X, ChevronDown } from 'lucide-react';
-import { SearchFilters } from '../../types';
+import { SearchFilters } from '@/types';
 import { FilterSection } from './FilterSection';
 import { VirtualizedCulturalHeritageFilter } from './VirtualizedCulturalHeritageFilter';
 import { LazyTabPanel } from './LazyTabPanel';
-import { ErrorBoundary, DefaultErrorFallback } from '../Common/ErrorBoundary';
+import { ErrorBoundary, DefaultErrorFallback } from '@/components/Common/ErrorBoundary';
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 
 // Constants

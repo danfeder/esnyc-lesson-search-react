@@ -1,19 +1,19 @@
 import React from 'react';
 import { useState, useCallback } from 'react';
-import { SearchBar } from '../components/Search/SearchBar';
-import { FilterPills } from '../components/Filters/FilterPills';
-import { FilterModal } from '../components/Filters/FilterModal';
-import { ResultsHeader } from '../components/Results/ResultsHeader';
-import { AdaptiveResultsGrid } from '../components/Results/AdaptiveResultsGrid';
-import { LessonModal } from '../components/Modal/LessonModal';
-import { ScreenReaderAnnouncer } from '../components/Common/ScreenReaderAnnouncer';
-import { SkipLink } from '../components/Common/SkipLink';
-import { InfiniteScrollTrigger } from '../components/Common/InfiniteScrollTrigger';
-import { useSearchStore } from '../stores/searchStore';
+import { SearchBar } from '@/components/Search/SearchBar';
+import { FilterPills } from '@/components/Filters/FilterPills';
+import { FilterModal } from '@/components/Filters/FilterModal';
+import { ResultsHeader } from '@/components/Results/ResultsHeader';
+import { AdaptiveResultsGrid } from '@/components/Results/AdaptiveResultsGrid';
+import { LessonModal } from '@/components/Modal/LessonModal';
+import { ScreenReaderAnnouncer } from '@/components/Common/ScreenReaderAnnouncer';
+import { SkipLink } from '@/components/Common/SkipLink';
+import { InfiniteScrollTrigger } from '@/components/Common/InfiniteScrollTrigger';
+import { useSearchStore } from '@/stores/searchStore';
 import { useLessonSearch } from '@/hooks/useLessonSearch';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
 import { Lightbulb } from 'lucide-react';
-import type { Lesson, ViewState } from '../types';
+import type { Lesson, ViewState } from '@/types';
 
 export const SearchPage: React.FC = () => {
   const { filters, viewState, setViewState, setFilters } = useSearchStore();

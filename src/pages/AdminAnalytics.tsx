@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useEnhancedAuth } from '../hooks/useEnhancedAuth';
-import { Permission } from '../types/auth';
+import { supabase } from '@/lib/supabase';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { Permission } from '@/types/auth';
 import {
   ArrowLeft,
   BarChart3,
@@ -32,7 +32,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format, subDays, endOfDay } from 'date-fns';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 interface UserStats {
   total: number;

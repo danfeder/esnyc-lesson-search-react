@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Check, Users, AlertTriangle, BookOpen, Calendar } from 'lucide-react';
-import { CATEGORY_INFO, COLOR_CLASSES } from '../../../utils/duplicateConstants';
-import type { DuplicateGroup } from '../../../types/admin';
+import { CATEGORY_INFO, COLOR_CLASSES } from '@/utils/duplicateConstants';
+import type { DuplicateGroup } from '@/types/admin';
 
 interface DuplicateHeaderProps {
   group: DuplicateGroup;

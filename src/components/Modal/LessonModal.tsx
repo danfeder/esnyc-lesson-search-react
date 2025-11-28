@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, ExternalLink, Clock, Users, MapPin, ChefHat, Sprout } from 'lucide-react';
-import { Lesson } from '../../types';
+import { Lesson } from '@/types';
 
 interface LessonModalProps {
   lesson: Lesson | null;

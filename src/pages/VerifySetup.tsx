@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { verifyUserManagementSetup, setupAdminUser } from '../utils/verifyUserManagement';
+import { verifyUserManagementSetup, setupAdminUser } from '@/utils/verifyUserManagement';
 import { CheckCircle, XCircle, AlertCircle, Shield } from 'lucide-react';
 
 export function VerifySetup() {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Permission } from '../../types/auth';
-import { useEnhancedAuth } from '../../hooks/useEnhancedAuth';
+import { Permission } from '@/types/auth';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { Shield, AlertCircle } from 'lucide-react';
 
 interface ProtectedRouteProps {

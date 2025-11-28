@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import { logger } from '../utils/logger';
+import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
 
 export async function verifyUserManagementSetup() {
   logger.log('🔍 Verifying User Management Setup...\n');

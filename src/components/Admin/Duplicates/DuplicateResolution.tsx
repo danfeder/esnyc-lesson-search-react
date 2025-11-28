@@ -1,7 +1,7 @@
 import React from 'react';
-import { EditableTitle } from '../../Admin';
-import { ACTION_INFO, COLOR_CLASSES } from '../../../utils/duplicateConstants';
-import type { DuplicateGroup } from '../../../types/admin';
+import { EditableTitle } from '@/components/Admin';
+import { ACTION_INFO, COLOR_CLASSES } from '@/utils/duplicateConstants';
+import type { DuplicateGroup } from '@/types/admin';
 
 interface DuplicateResolutionProps {
   group: DuplicateGroup;

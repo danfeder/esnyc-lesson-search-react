@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lesson } from '../../types';
+import { Lesson } from '@/types';
 import { LessonCard } from './LessonCard';
 
 interface ResultsGridProps {

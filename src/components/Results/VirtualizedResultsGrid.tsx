@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { debounceResize } from '../../utils/virtualization';
-import { Lesson } from '../../types';
+import { debounceResize } from '@/utils/virtualization';
+import { Lesson } from '@/types';
 import { LessonCard } from './LessonCard';
 
 interface VirtualizedResultsGridProps {

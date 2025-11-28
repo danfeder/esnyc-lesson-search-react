@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { Disclosure } from '@headlessui/react';
 import { ChevronDown } from 'lucide-react';
-import { getFacetCount } from '../../utils/facetHelpers';
+import { getFacetCount } from '@/utils/facetHelpers';
 
 interface FilterSectionProps {
   title: string;

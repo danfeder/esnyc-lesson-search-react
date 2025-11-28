@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
-import { useSearchStore } from '../../stores/searchStore';
-import { debounce } from '../../utils/debounce';
+import { useSearchStore } from '@/stores/searchStore';
+import { debounce } from '@/utils/debounce';
 
 export const SearchBar: React.FC = () => {
   const { filters, setFilters } = useSearchStore();
