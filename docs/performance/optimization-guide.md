@@ -75,23 +75,33 @@ if (!window.IntersectionObserver) {
 
 #### Virtual Scrolling
 ```typescript
-// Use react-window for large lists
-import { FixedSizeList } from 'react-window';
+// Use @tanstack/react-virtual for large lists
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
-const LessonList = ({ lessons }: { lessons: Lesson[] }) => (
-  <FixedSizeList
-    height={600}
-    itemCount={lessons.length}
-    itemSize={120}
-    width="100%"
-  >
-    {({ index, style }) => (
-      <div style={style}>
-        <LessonCard lesson={lessons[index]} />
-      </div>
-    )}
-  </FixedSizeList>
-);
+const LessonList = ({ lessons }: { lessons: Lesson[] }) => {
+  const virtualizer = useWindowVirtualizer({
+    count: lessons.length,
+    estimateSize: () => 120,
+    overscan: 5,
+  });
+
+  return (
+    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+      {virtualizer.getVirtualItems().map((virtualItem) => (
+        <div
+          key={virtualItem.key}
+          style={{
+            position: 'absolute',
+            top: virtualItem.start,
+            width: '100%',
+          }}
+        >
+          <LessonCard lesson={lessons[virtualItem.index]} />
+        </div>
+      ))}
+    </div>
+  );
+};
 ```
 
 #### React Optimization
