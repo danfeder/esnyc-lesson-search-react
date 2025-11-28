@@ -16,19 +16,3 @@ export const getFacetCount = (
 ): number => {
   return facets[facetName]?.[value] || 0;
 };
-
-/**
- * Get total count across all values for a facet
- * @param facets - The facets object from a search result
- * @param facetName - The name of the facet
- * @returns Total count across all values
- */
-export const getTotalFacetCount = (
-  facets: Record<string, Record<string, number>>,
-  facetName: string
-): number => {
-  const facetValues = facets[facetName];
-  if (!facetValues) return 0;
-
-  return Object.values(facetValues).reduce((sum, count) => sum + count, 0);
-};

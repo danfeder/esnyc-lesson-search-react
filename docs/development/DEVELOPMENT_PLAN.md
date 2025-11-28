@@ -74,10 +74,10 @@ export default {
    - Test connection with environment variables
    - Verify database schema matches types
 
-2. **Implement useSearch Hook**
-   - Connect to Supabase search function
+2. **Implement useLessonSearch Hook** (COMPLETED)
+   - Connect to Supabase search function via `useLessonSearch.ts`
    - Handle loading and error states
-   - Implement pagination
+   - Implement pagination with `useInfiniteQuery`
 
 3. **Data Import**
    - Create/update import script for Supabase
@@ -162,7 +162,7 @@ Priority files that need completion:
 2. `/src/components/Filters/FilterSidebar.tsx`
 3. `/src/components/Results/LessonCard.tsx`
 4. `/src/components/Results/ResultsGrid.tsx`
-5. `/src/hooks/useSearch.ts`
+5. `/src/hooks/useLessonSearch.ts` (COMPLETED)
 
 ## Testing Checklist
 

@@ -21,7 +21,7 @@
 - Formatting: Prettier (2 spaces, single quotes, width 100, semicolons). Run `npm run format`.
 - Linting: ESLint with TS, React, hooks, a11y, Prettier integration. Fix with `npm run lint:fix`.
 - Components: PascalCase files in `src/components/...` (e.g., `LessonCard.tsx`).
-- Hooks: `useCamelCase` in `src/hooks` (e.g., `useSearch.ts`).
+- Hooks: `useCamelCase` in `src/hooks` (e.g., `useLessonSearch.ts`).
 - Utilities/types: camelCase functions in `src/utils`, PascalCase `Type`/`Interface` in `src/types`.
 
 ## Testing Guidelines

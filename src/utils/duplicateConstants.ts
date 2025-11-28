@@ -81,4 +81,8 @@ export const COLOR_CLASSES: Record<string, string> = {
     'bg-purple-50 border-purple-200 text-purple-900 text-purple-600 text-purple-700 text-purple-800',
   red: 'bg-red-50 border-red-200 text-red-900 text-red-600 text-red-700 text-red-800',
   gray: 'bg-gray-50 border-gray-200 text-gray-900 text-gray-600 text-gray-700 text-gray-800',
+  orange:
+    'bg-orange-50 border-orange-200 text-orange-900 text-orange-600 text-orange-700 text-orange-800',
+  indigo:
+    'bg-indigo-50 border-indigo-200 text-indigo-900 text-indigo-600 text-indigo-700 text-indigo-800',
 };
