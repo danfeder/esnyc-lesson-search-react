@@ -107,8 +107,8 @@ Next Up (when work resumes)
 - [ ] Phase 9 — Logging & Error Boundaries
   - [ ] Keep one top‑level boundary, slim logger; remove extras
 
-- [ ] Phase 10 — Duplicate DB Types and Cleanup
-  - [ ] Keep only `src/lib/database.types.ts`; update imports; remove duplicate
+- [x] Phase 10 — Duplicate DB Types and Cleanup
+  - [x] Keep only `src/types/database.types.ts`; update imports; remove duplicate (PR #311)
 
 Recent Notes
 - 2025‑09‑01: Phase 0 completed. Added RPC switch, env flags, baseline DB snapshot + plans.
@@ -266,11 +266,11 @@ Rollout & Risks
 
 7) Duplicate Generated DB Types
 - Findings:
-  - `src/lib/database.types.ts` and `src/types/database.types.ts` are identical.
-- Why this hurts:
-  - Potential for divergence, confusion on which to import.
-- Recommendation:
-  - Keep one (suggest `src/lib/database.types.ts`). Update imports.
+  - `src/lib/database.types.ts` and `src/types/database.types.ts` were identical.
+- Status: ✅ RESOLVED (PR #311)
+  - Kept `src/types/database.types.ts` as the canonical location
+  - Deleted `src/lib/database.types.ts`
+  - Updated all imports to use `@/types/database.types`
 
 8) Legacy Algolia Artifacts Everywhere
 - Findings:
@@ -441,7 +441,7 @@ Phase 9 — Logging & Error Boundaries
 - Slim logger: preserve minimal redaction and Sentry breadcrumb capture; remove deep-sanitization if not required.
 
 Phase 10 — Duplicate DB Types and Cleanup
-- Keep only `src/lib/database.types.ts`. Update imports and remove the duplicate copy.
+- ✅ COMPLETED (PR #311): Kept `src/types/database.types.ts`, deleted duplicate from `src/lib/`.
 - Clean up leftover `CLAUDE.md` files if redundant; keep docs that add real value.
 
 ======================================================================
