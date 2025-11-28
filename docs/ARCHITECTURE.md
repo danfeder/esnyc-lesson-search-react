@@ -1761,22 +1761,16 @@ RETURNS JSONB
 
 #### Issue 4: Type Definition Duplication
 
-**Problem**: database.types.ts exists in TWO locations
+**Problem**: database.types.ts existed in TWO locations
+
+**Status**: ✅ RESOLVED (PR #311)
 
 ```
-src/lib/database.types.ts        # ← Keep this one
-src/types/database.types.ts      # ❌ Duplicate (delete)
+src/types/database.types.ts      # ← Canonical location (kept)
+src/lib/database.types.ts        # ❌ Deleted
 ```
 
-**Impact**: Minor (risk of import confusion)
-
-**Fix**: Simple
-```bash
-rm src/types/database.types.ts
-# Update imports: @/types/database → @/lib/database
-```
-
-**Priority**: Low (cleanup task)
+All imports now use `@/types/database.types`.
 
 ---
 
@@ -2561,7 +2555,7 @@ serve(async (req) => {
 
 **Types**:
 - Core types: `src/types/index.ts` (Lesson, SearchFilters, User, etc.)
-- Generated types: `src/lib/database.types.ts` (from Supabase schema)
+- Generated types: `src/types/database.types.ts` (from Supabase schema)
 - Auth types: `src/types/auth.ts` (Permissions, Roles)
 
 **Database**:
