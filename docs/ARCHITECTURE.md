@@ -95,7 +95,6 @@ SELECT expand_search_with_synonyms('garden');
 |---------|-----------|-------------|
 | **Filter definitions** | `src/utils/filterDefinitions.ts` | **SINGLE SOURCE OF TRUTH** for filter categories |
 | **Search hook** | `src/hooks/useLessonSearch.ts` | React Query infinite scroll integration |
-| **RPC wrapper** | `src/hooks/useSupabaseSearch.ts` | Direct RPC call wrapper (legacy) |
 | **Search function** | Database: `search_lessons()` | Main PostgreSQL search RPC |
 | **Migration baseline** | `supabase/migrations/20251001_production_baseline_snapshot.sql` | Production schema (3,632 lines) |
 | **Type definitions** | `src/types/index.ts` | Core TypeScript types (Lesson, SearchFilters, etc.) |
@@ -1406,17 +1405,6 @@ export function useLessonSearch({ filters, pageSize }: SearchParams) {
 
 ---
 
-#### useSupabaseSearch Hook (Legacy)
-
-```typescript
-// src/hooks/useSupabaseSearch.ts
-// Status: DEPRECATED, being replaced by useLessonSearch
-// Reason: Doesn't support infinite scroll, manual pagination
-// Keep for: Backward compatibility during migration
-```
-
----
-
 #### useLessonSuggestions Hook
 
 ```typescript
@@ -2543,7 +2531,6 @@ serve(async (req) => {
 
 **Search Implementation**:
 - Infinite scroll hook: `src/hooks/useLessonSearch.ts`
-- Direct RPC hook: `src/hooks/useSupabaseSearch.ts` (legacy)
 - Suggestions hook: `src/hooks/useLessonSuggestions.ts`
 - Search page: `src/pages/SearchPage.tsx`
 

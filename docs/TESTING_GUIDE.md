@@ -31,8 +31,8 @@ src/
 │   ├── filterStore.ts
 │   └── filterStore.test.ts
 ├── hooks/
-│   ├── useSupabaseSearch.ts
-│   └── useSupabaseSearch.test.ts
+│   ├── useLessonSearch.ts
+│   └── useLessonSearch.test.ts
 └── __tests__/
     └── integration/
         └── search-flow.test.tsx
@@ -169,12 +169,12 @@ describe('filterStore', () => {
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useSupabaseSearch } from './useSupabaseSearch';
+import { useLessonSearch } from './useLessonSearch';
 import { supabase } from '@/lib/supabase';
 
 vi.mock('@/lib/supabase');
 
-describe('useSupabaseSearch', () => {
+describe('useLessonSearch', () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -189,21 +189,17 @@ describe('useSupabaseSearch', () => {
 
   it('should fetch search results', async () => {
     const mockLessons = [
-      { id: 1, title: 'Tomato Salad' },
-      { id: 2, title: 'Tomato Soup' },
+      { lesson_id: '1', title: 'Tomato Salad', total_count: 2 },
+      { lesson_id: '2', title: 'Tomato Soup', total_count: 2 },
     ];
 
-    (supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        textSearch: vi.fn().mockReturnValue({
-          data: mockLessons,
-          error: null,
-        }),
-      }),
+    (supabase.rpc as any).mockResolvedValue({
+      data: mockLessons,
+      error: null,
     });
 
     const { result } = renderHook(
-      () => useSupabaseSearch('tomato', {}),
+      () => useLessonSearch({ filters: { query: 'tomato' } }),
       { wrapper }
     );
 
@@ -211,7 +207,7 @@ describe('useSupabaseSearch', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.data).toEqual(mockLessons);
+    expect(result.current.data?.pages[0].lessons).toHaveLength(2);
   });
 });
 ```
@@ -288,20 +284,20 @@ it('should merge cultural heritage filters correctly', () => {
 ```typescript
 it('should refetch when filters change', async () => {
   const { result, rerender } = renderHook(
-    ({ filters }) => useSupabaseSearch('tomato', filters),
+    ({ filters }) => useLessonSearch({ filters }),
     {
       wrapper,
-      initialProps: { filters: {} },
+      initialProps: { filters: { query: 'tomato' } },
     }
   );
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  const firstCallCount = mockSupabase.from.mock.calls.length;
+  const firstCallCount = mockSupabase.rpc.mock.calls.length;
 
-  rerender({ filters: { grades: ['3rd'] } });
+  rerender({ filters: { query: 'tomato', gradeLevels: ['3'] } });
 
   await waitFor(() => {
-    expect(mockSupabase.from.mock.calls.length).toBeGreaterThan(firstCallCount);
+    expect(mockSupabase.rpc.mock.calls.length).toBeGreaterThan(firstCallCount);
   });
 });
 ```
@@ -354,17 +350,13 @@ export const createMockSupabaseClient = () => ({
 
 ```typescript
 it('should handle database errors gracefully', async () => {
-  (supabase.from as any).mockReturnValue({
-    select: vi.fn().mockReturnValue({
-      textSearch: vi.fn().mockReturnValue({
-        data: null,
-        error: { message: 'Database connection failed' },
-      }),
-    }),
+  (supabase.rpc as any).mockResolvedValue({
+    data: null,
+    error: { message: 'Database connection failed' },
   });
 
   const { result } = renderHook(
-    () => useSupabaseSearch('tomato', {}),
+    () => useLessonSearch({ filters: { query: 'tomato' } }),
     { wrapper }
   );
 
