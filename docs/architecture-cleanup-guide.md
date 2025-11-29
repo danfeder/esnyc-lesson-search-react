@@ -196,7 +196,7 @@ Rollout & Risks
 - Frontend
   - App shell: `src/App.tsx` with routes; `src/main.tsx` setting Sentry boundary.
   - Search UI: `src/pages/SearchPage.tsx`; components under `src/components/Filters/*`, `src/components/Results/*`, `src/components/Search/SearchBar.tsx`.
-  - State: `src/stores/searchStore.ts` for filters and view state only; React Query owns results via `src/hooks/useLessonSearch.ts` (infinite) and `src/hooks/useSupabaseSearch.ts` (legacy/simple).
+  - State: `src/stores/searchStore.ts` for filters and view state only; React Query owns results via `src/hooks/useLessonSearch.ts` (infinite).
   - Error handling: Sentry (`src/lib/sentry.ts`) + multiple error boundaries in `src/components/Common/*Error*`.
   - Auth: `src/hooks/useEnhancedAuth.ts`, `src/components/Auth/ProtectedRoute.tsx`, `src/components/Auth/AuthModal.tsx`.
 
@@ -212,16 +212,11 @@ Rollout & Risks
 
 **Codebase Review (Findings + Recommendations)**
 
-1) One App, Two Active Search Pipelines (+ a Ghost)
-- Findings:
-  - Pipeline A: `useSupabaseSearch.ts` calls SQL RPC `search_lessons` to fetch results (used by `SearchPage`).
-  - Pipeline B (REMOVED): `useSearch.ts` previously called Edge Function `smart-search`. This pipeline has been removed; all search now uses Pipeline A via `useLessonSearch.ts`.
-  - Ghost: Old Algolia pipeline remains in code (`src/hooks/useAlgoliaSearch.ts`, `src/lib/algolia.ts`, `src/types/algolia.ts`, `src/utils/facetHelpers.ts`) and scripts.
-- Why this hurts:
-  - More codepaths → higher risk of bugs, duplicated logic, inconsistent behavior (e.g., facet counts).
-  - Confusing ownership: Results sometimes come from SQL, sometimes from Edge, sometimes from client‑side fallback.
-- Recommendation:
-  - Consolidate to one pipeline. Prefer SQL RPC for results + suggestions since you already have `expand_search_with_synonyms` and `expand_cultural_heritage` functions. Move suggestion generation fully into SQL (or keep the Edge Function but make it call the SQL function). The frontend should call a single hook that uses React Query `useInfiniteQuery` for paging.
+1) ✅ Search Pipeline (CONSOLIDATED)
+- Status: COMPLETE
+  - Single pipeline: `useLessonSearch.ts` calls SQL RPC `search_lessons` to fetch results (used by `SearchPage`).
+  - Legacy pipelines (useSupabaseSearch, useAlgoliaSearch) have been removed.
+  - Suggestions handled via `useLessonSuggestions.ts` calling the `smart-search` Edge Function.
 
 2) Results State Stored Twice (Zustand + React Query)
 - Findings:

@@ -376,7 +376,7 @@ $$ LANGUAGE plpgsql;
    ```
 
 5. **Update React Hook**
-   Replace `useAlgoliaSearch` with `useSupabaseSearch` that calls the `search_lessons` function
+   Replace `useAlgoliaSearch` with `useLessonSearch` that calls the `search_lessons` function via React Query's `useInfiniteQuery`
 
 6. **Test All Features**
    - [ ] Basic search: "pizza" returns pizza lessons

@@ -47,10 +47,12 @@ export function useLesson(id: string) {
 
 | Hook | Purpose |
 |------|---------|
+| `useLessonSearch({ filters })` | Search lessons with infinite scroll |
+| `useLessonSuggestions({ filters })` | Search suggestions via smart-search |
+| `useEnhancedAuth()` | Auth state with permissions |
 | `useDebounce(value, delay)` | Debounce search input (300ms typical) |
-| `useLocalStorage(key, initial)` | Persist state to localStorage |
-| `useAuthStore()` | Auth state from Zustand |
-| `useSearchStore()` | Search filters/view state |
+| `useLessonStats()` | Lesson statistics |
+| `useSearchStore()` | Search filters/view state (Zustand) |
 
 ## Common Errors
 
