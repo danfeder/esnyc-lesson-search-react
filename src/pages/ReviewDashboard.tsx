@@ -13,6 +13,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { logger } from '@/utils/logger';
+import { sanitizeContent } from '@/utils/sanitize';
 
 interface Similarity {
   lesson_id: string;
@@ -538,7 +539,7 @@ export function ReviewDashboard() {
                   <div className="mb-4 bg-gray-50 rounded-md p-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Content Preview</h4>
                     <p className="text-sm text-gray-600 line-clamp-3">
-                      {submission.extracted_content}
+                      {sanitizeContent(submission.extracted_content)}
                     </p>
                   </div>
                 )}
