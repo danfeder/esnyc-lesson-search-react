@@ -6,7 +6,7 @@ test.describe('Search Functionality', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('search bar is focused on page load', async ({ page }) => {
+  test('search bar is visible on page load', async ({ page }) => {
     const searchBar = page.getByPlaceholder(/search/i);
     await expect(searchBar).toBeVisible();
   });
@@ -16,11 +16,8 @@ test.describe('Search Functionality', () => {
     await searchBar.fill('garden');
     await searchBar.press('Enter');
 
-    await page.waitForTimeout(1500);
-
-    // Should have results containing "garden"
-    const results = page.locator('text=/garden/i');
-    await expect(results.first()).toBeVisible();
+    // Wait for results containing "garden"
+    await expect(page.locator('text=/garden/i').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('search for "cooking" returns relevant results', async ({ page }) => {
@@ -28,10 +25,8 @@ test.describe('Search Functionality', () => {
     await searchBar.fill('cooking');
     await searchBar.press('Enter');
 
-    await page.waitForTimeout(1500);
-
-    const pageText = await page.textContent('body');
-    expect(pageText?.toLowerCase()).toContain('cook');
+    // Wait for results containing "cook"
+    await expect(page.locator('text=/cook/i').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('search for "salad" returns recipe lessons', async ({ page }) => {
@@ -39,19 +34,13 @@ test.describe('Search Functionality', () => {
     await searchBar.fill('salad');
     await searchBar.press('Enter');
 
-    await page.waitForTimeout(1500);
-
-    const pageText = await page.textContent('body');
-    expect(pageText?.toLowerCase()).toContain('salad');
+    // Wait for results containing "salad"
+    await expect(page.locator('text=/salad/i').first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('empty search shows all lessons', async ({ page }) => {
+  test('empty search shows lessons', async ({ page }) => {
     // Page should show lessons by default
-    await page.waitForTimeout(1500);
-
-    // Look for lesson cards or result count
-    const pageContent = await page.content();
-    expect(pageContent).toContain('lesson');
+    await expect(page.locator('body')).toContainText(/lesson/i, { timeout: 10000 });
   });
 
   test('search can be cleared', async ({ page }) => {
@@ -60,12 +49,11 @@ test.describe('Search Functionality', () => {
     // Search for something
     await searchBar.fill('garden');
     await searchBar.press('Enter');
-    await page.waitForTimeout(1000);
+    await expect(page.locator('text=/garden/i').first()).toBeVisible({ timeout: 10000 });
 
     // Clear the search
     await searchBar.clear();
     await searchBar.press('Enter');
-    await page.waitForTimeout(1000);
 
     // Should return to showing all results
     await expect(searchBar).toHaveValue('');
@@ -78,10 +66,9 @@ test.describe('Search Functionality', () => {
     await searchBar.fill('test & "quotes"');
     await searchBar.press('Enter');
 
-    await page.waitForTimeout(1000);
-
     // Should not crash - page should still be functional
     await expect(searchBar).toBeVisible();
+    await expect(searchBar).toBeEnabled();
   });
 
   test('search is case-insensitive', async ({ page }) => {
@@ -90,9 +77,8 @@ test.describe('Search Functionality', () => {
     // Search uppercase
     await searchBar.fill('GARDEN');
     await searchBar.press('Enter');
-    await page.waitForTimeout(1500);
 
-    const pageText = await page.textContent('body');
-    expect(pageText?.toLowerCase()).toContain('garden');
+    // Should find garden results regardless of case
+    await expect(page.locator('text=/garden/i').first()).toBeVisible({ timeout: 10000 });
   });
 });

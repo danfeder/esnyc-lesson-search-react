@@ -1,8 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * Local Database Integration Tests
+ *
+ * Prerequisites:
+ * 1. Run `supabase start` for local database
+ * 2. Run `npm run import-data` to seed lessons
+ * 3. Dev server will be started automatically by webServer config
+ */
 test.describe('Local Database Integration', () => {
   test('homepage loads and displays lessons', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
 
     // Wait for the page to load
     await expect(page).toHaveTitle(/ESYNYC/i);
@@ -11,16 +20,13 @@ test.describe('Local Database Integration', () => {
     const searchBar = page.getByPlaceholder(/search/i);
     await expect(searchBar).toBeVisible();
 
-    // Check that lessons are loaded (should show lesson count or cards)
-    await page.waitForTimeout(2000); // Give time for data to load
-
-    // Look for lesson content
-    const pageContent = await page.content();
-    expect(pageContent.length).toBeGreaterThan(1000); // Page has substantial content
+    // Wait for lesson content to appear
+    await expect(page.locator('body')).toContainText(/lesson/i, { timeout: 10000 });
   });
 
   test('search functionality works', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
 
     // Find and use the search bar
     const searchBar = page.getByPlaceholder(/search/i);
@@ -30,45 +36,32 @@ test.describe('Local Database Integration', () => {
     await searchBar.fill('garden');
     await searchBar.press('Enter');
 
-    // Wait for results
-    await page.waitForTimeout(2000);
-
-    // Check that we have search results containing "garden"
-    const pageText = await page.textContent('body');
-    expect(pageText?.toLowerCase()).toContain('garden');
+    // Wait for results containing "garden"
+    await expect(page.locator('text=/garden/i').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('filters are visible and interactive', async ({ page }) => {
     await page.goto('/');
-
-    // Wait for page to load
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle');
 
     // Look for filter-related elements (buttons, dropdowns, etc.)
     const filterButtons = page.locator('button, [role="button"]');
-    const buttonCount = await filterButtons.count();
+    await expect(filterButtons.first()).toBeVisible();
 
-    // Should have multiple interactive elements
+    const buttonCount = await filterButtons.count();
     expect(buttonCount).toBeGreaterThan(0);
   });
 
   test('lesson cards display correctly', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
 
-    // Wait for lessons to load
-    await page.waitForTimeout(2000);
+    // Wait for lesson content to load
+    await expect(page.locator('body')).toContainText(/lesson/i, { timeout: 10000 });
 
-    // Check for lesson-related content
-    const pageText = await page.textContent('body');
-
-    // Should contain grade level references (common in lesson data)
-    const hasGradeContent =
-      pageText?.includes('Grade') ||
-      pageText?.includes('K') ||
-      pageText?.includes('PK') ||
-      pageText?.match(/\d+(st|nd|rd|th)/);
-
-    expect(hasGradeContent).toBeTruthy();
+    // Check for grade level references (common in lesson data)
+    const gradePattern = /Grade|K|PK|3K|\d(st|nd|rd|th)/i;
+    await expect(page.locator('body')).toContainText(gradePattern);
   });
 
   test('no console errors on page load', async ({ page }) => {
@@ -81,7 +74,7 @@ test.describe('Local Database Integration', () => {
     });
 
     await page.goto('/');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
 
     // Filter out known acceptable errors (like favicon, etc.)
     const criticalErrors = consoleErrors.filter(
