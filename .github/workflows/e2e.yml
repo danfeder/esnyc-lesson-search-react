@@ -58,7 +58,7 @@ jobs:
         if: steps.migration-check.outputs.migrations == 'true'
         run: |
           echo "Applying migrations to test database..."
-          supabase db push
+          supabase db push --db-url "postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.rxgajgmphciuaqzvwmox.supabase.co:5432/postgres"
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## ✅ Migrations Applied to TEST Database" >> $GITHUB_STEP_SUMMARY
         env:
