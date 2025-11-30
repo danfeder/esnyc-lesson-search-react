@@ -13,6 +13,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { logger } from '@/utils/logger';
+import { sanitizeContent } from '@/utils/sanitize';
 
 interface Similarity {
   lesson_id: string;
@@ -335,8 +336,9 @@ export function ReviewDashboard() {
     () =>
       submissions.map((submission) => ({
         ...submission,
-        extractedTitle:
-          parseExtractedContent(submission.extracted_content || '') || 'Untitled Submission',
+        extractedTitle: sanitizeContent(
+          parseExtractedContent(submission.extracted_content || '') || 'Untitled Submission'
+        ),
       })),
     [submissions]
   );
@@ -538,7 +540,7 @@ export function ReviewDashboard() {
                   <div className="mb-4 bg-gray-50 rounded-md p-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Content Preview</h4>
                     <p className="text-sm text-gray-600 line-clamp-3">
-                      {submission.extracted_content}
+                      {sanitizeContent(submission.extracted_content)}
                     </p>
                   </div>
                 )}
@@ -547,7 +549,9 @@ export function ReviewDashboard() {
                 {submission.review_notes && (
                   <div className="mb-4 bg-blue-50 rounded-md p-4">
                     <h4 className="text-sm font-medium text-blue-700 mb-1">Review Notes</h4>
-                    <p className="text-sm text-blue-600">{submission.review_notes}</p>
+                    <p className="text-sm text-blue-600">
+                      {sanitizeContent(submission.review_notes)}
+                    </p>
                   </div>
                 )}
 

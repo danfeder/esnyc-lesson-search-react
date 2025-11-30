@@ -2,6 +2,7 @@ import { Monitor, FileCode } from 'lucide-react';
 import { FEATURES } from '@/utils/featureFlags';
 import { GoogleDocEmbed } from './GoogleDocEmbed';
 import { logger } from '@/utils/logger';
+import { sanitizeContent } from '@/utils/sanitize';
 
 interface ReviewContentProps {
   submission: {
@@ -69,7 +70,7 @@ export function ReviewContent({ submission, viewMode, setViewMode }: ReviewConte
       ) : (
         <div className="prose prose-sm max-w-none">
           <pre className="whitespace-pre-wrap text-gray-700 text-sm bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
-            {submission.extracted_content}
+            {sanitizeContent(submission.extracted_content)}
           </pre>
         </div>
       )}
