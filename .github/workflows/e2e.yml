@@ -43,7 +43,7 @@ jobs:
           echo "## 🔍 Pending Migrations for TEST Database" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          supabase db push --dry-run --db-url "postgresql://postgres.rxgajgmphciuaqzvwmox:${SUPABASE_DB_PASSWORD}@aws-0-us-east-2.pooler.supabase.com:6543/postgres" 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          supabase db push --dry-run --db-url "postgresql://postgres.rxgajgmphciuaqzvwmox:${SUPABASE_DB_PASSWORD}@aws-1-us-east-2.pooler.supabase.com:5432/postgres" 2>&1 | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_TEST }}
@@ -52,7 +52,7 @@ jobs:
         if: steps.migration-check.outputs.migrations == 'true'
         run: |
           echo "Applying migrations to test database..."
-          supabase db push --db-url "postgresql://postgres.rxgajgmphciuaqzvwmox:${SUPABASE_DB_PASSWORD}@aws-0-us-east-2.pooler.supabase.com:6543/postgres"
+          supabase db push --db-url "postgresql://postgres.rxgajgmphciuaqzvwmox:${SUPABASE_DB_PASSWORD}@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## ✅ Migrations Applied to TEST Database" >> $GITHUB_STEP_SUMMARY
         env:
