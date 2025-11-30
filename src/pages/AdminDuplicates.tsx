@@ -4,28 +4,12 @@ import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle } from 'lucide-react';
 import { logger } from '@/utils/logger';
-
-interface DuplicateGroup {
-  groupId: string;
-  type: 'exact' | 'near' | 'title';
-  category?: string;
-  recommendedAction?: 'auto_merge' | 'manual_review' | 'keep_all' | 'split_group';
-  confidence?: 'high' | 'medium' | 'low';
-  similarityScore: number;
-  lessonCount: number;
-  status?: 'pending' | 'resolved';
-  recommendedCanonical?: string | string[];
-  lessons: Array<{
-    lessonId: string;
-    title: string;
-    isRecommendedCanonical?: boolean;
-  }>;
-}
+import type { DuplicateGroupReport } from '@/utils/duplicateDetection';
 
 export const AdminDuplicates: React.FC = () => {
   const { user } = useEnhancedAuth();
   const location = useLocation();
-  const [groups, setGroups] = useState<DuplicateGroup[]>([]);
+  const [groups, setGroups] = useState<DuplicateGroupReport[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'resolved'>('pending');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +59,7 @@ export const AdminDuplicates: React.FC = () => {
       const resolvedGroupIds = new Set(resolvedGroups?.map((r) => r.group_id) || []);
 
       // Handle both V2 and V3 report formats
-      let transformedGroups: DuplicateGroup[] = [];
+      let transformedGroups: DuplicateGroupReport[] = [];
 
       if (report.version === '3.0') {
         // V3 format - groups are organized by category
@@ -84,7 +68,7 @@ export const AdminDuplicates: React.FC = () => {
           allGroups.push(...(category as any[]));
         }
 
-        transformedGroups = allGroups.map((group): DuplicateGroup => {
+        transformedGroups = allGroups.map((group): DuplicateGroupReport => {
           // Calculate average similarity from the similarity matrix
           let avgSimilarity = 0;
           if (group.similarityMatrix) {
@@ -121,7 +105,7 @@ export const AdminDuplicates: React.FC = () => {
       } else {
         // V2 format
         transformedGroups = report.groups.map(
-          (group: any): DuplicateGroup => ({
+          (group: any): DuplicateGroupReport => ({
             groupId: group.groupId,
             type: group.type === 'mixed' ? 'near' : group.type,
             similarityScore: group.similarityScore ?? group.averageSimilarity ?? 0,
