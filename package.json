@@ -31,7 +31,10 @@
     "analyze-duplicates-v3": "npx tsx scripts/analyze-duplicates-v3.ts",
     "undo-resolutions": "npx tsx scripts/undo-all-duplicate-resolutions.ts",
     "recover-failed": "npx tsx scripts/recover-failed-lessons.ts",
-    "restore-missing": "npx tsx scripts/identify-and-restore-missing-lessons.ts"
+    "restore-missing": "npx tsx scripts/identify-and-restore-missing-lessons.ts",
+    "test:e2e": "npx playwright test",
+    "test:e2e:headed": "npx playwright test --headed",
+    "test:e2e:ui": "npx playwright test --ui"
   },
   "keywords": [
     "education",
@@ -73,6 +76,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.57.0",
     "@tanstack/react-query-devtools": "^5.85.3",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",

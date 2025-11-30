@@ -1,0 +1,159 @@
+import { test, expect } from '@playwright/test';
+
+// Use more generous limits in CI
+const isCI = !!process.env.CI;
+const PAGE_LOAD_TIMEOUT = isCI ? 10000 : 5000;
+const SEARCH_TIMEOUT = isCI ? 5000 : 3000;
+
+// Viewport sizes for responsive testing
+const VIEWPORT = {
+  MOBILE: { width: 375, height: 667 }, // iPhone SE
+  TABLET: { width: 768, height: 1024 }, // iPad
+  DESKTOP: { width: 1920, height: 1080 },
+  DESKTOP_SMALL: { width: 1200, height: 800 },
+} as const;
+
+// Tolerance for viewport width checks (accounts for scrollbars, etc.)
+const VIEWPORT_TOLERANCE = 20;
+
+// Minimum touch target size for accessibility (WCAG 2.1 AA recommends 44px, but 24px is minimum)
+const MIN_TOUCH_TARGET_SIZE = 24;
+
+test.describe('Performance', () => {
+  test('page loads within acceptable time', async ({ page }) => {
+    const startTime = Date.now();
+
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+
+    const loadTime = Date.now() - startTime;
+    expect(loadTime).toBeLessThan(PAGE_LOAD_TIMEOUT);
+  });
+
+  test('search responds quickly', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const searchBar = page.getByPlaceholder(/search/i);
+    await searchBar.fill('garden');
+
+    const startTime = Date.now();
+    await searchBar.press('Enter');
+
+    // Wait for results to appear
+    await expect(page.locator('text=/garden/i').first()).toBeVisible({
+      timeout: SEARCH_TIMEOUT,
+    });
+
+    const searchTime = Date.now() - startTime;
+    expect(searchTime).toBeLessThan(SEARCH_TIMEOUT);
+  });
+
+  test('filter changes respond quickly', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const startTime = Date.now();
+
+    // Navigate with filter
+    await page.goto('/?grade=K');
+    await page.waitForLoadState('networkidle');
+
+    const filterTime = Date.now() - startTime;
+    expect(filterTime).toBeLessThan(SEARCH_TIMEOUT);
+  });
+
+  test('page remains responsive after repeated searches', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const searchBar = page.getByPlaceholder(/search/i);
+    const searchTerms = ['garden', 'cooking', 'salad', 'plant', 'food'];
+
+    for (const term of searchTerms) {
+      await searchBar.fill(term);
+      await searchBar.press('Enter');
+      await page.waitForLoadState('networkidle');
+    }
+
+    // Page should still be responsive after multiple searches
+    await expect(searchBar).toBeVisible();
+    await expect(searchBar).toBeEnabled();
+
+    // Should be able to perform another search
+    await searchBar.fill('test');
+    await expect(searchBar).toHaveValue('test');
+  });
+});
+
+test.describe('Responsive Design', () => {
+  test('mobile viewport renders correctly', async ({ page }) => {
+    await page.setViewportSize(VIEWPORT.MOBILE);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Search should still be visible
+    const searchBar = page.getByPlaceholder(/search/i);
+    await expect(searchBar).toBeVisible();
+
+    // Content should fit within viewport (no horizontal scroll needed)
+    const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
+    expect(bodyWidth).toBeLessThanOrEqual(VIEWPORT.MOBILE.width + VIEWPORT_TOLERANCE);
+  });
+
+  test('tablet viewport renders correctly', async ({ page }) => {
+    await page.setViewportSize(VIEWPORT.TABLET);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const searchBar = page.getByPlaceholder(/search/i);
+    await expect(searchBar).toBeVisible();
+  });
+
+  test('desktop viewport renders correctly', async ({ page }) => {
+    await page.setViewportSize(VIEWPORT.DESKTOP);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const searchBar = page.getByPlaceholder(/search/i);
+    await expect(searchBar).toBeVisible();
+  });
+
+  test('content reflows on resize', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Start desktop
+    await page.setViewportSize(VIEWPORT.DESKTOP_SMALL);
+    await page.waitForLoadState('networkidle');
+
+    // Resize to mobile
+    await page.setViewportSize(VIEWPORT.MOBILE);
+    await page.waitForLoadState('networkidle');
+
+    // Content should still be visible and accessible
+    const searchBar = page.getByPlaceholder(/search/i);
+    await expect(searchBar).toBeVisible();
+  });
+
+  test('touch targets are reasonably sized on mobile', async ({ page }) => {
+    await page.setViewportSize(VIEWPORT.MOBILE);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const buttons = page.locator('button:visible');
+    await expect(buttons.first()).toBeVisible();
+
+    const count = await buttons.count();
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      const button = buttons.nth(i);
+      const box = await button.boundingBox();
+
+      if (box) {
+        // Touch targets should meet minimum size for usability
+        expect(box.width).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_SIZE);
+        expect(box.height).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_SIZE);
+      }
+    }
+  });
+});
