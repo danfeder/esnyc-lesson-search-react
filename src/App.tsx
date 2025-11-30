@@ -15,6 +15,8 @@ import { Permission } from '@/types/auth';
 import { logger } from '@/utils/logger';
 
 // Lazy load all pages except SearchPage (landing page)
+// Note: We use .then((m) => ({ default: m.ComponentName })) because our pages
+// use named exports. React.lazy() requires a default export, so we remap it.
 const SubmissionPage = lazy(() =>
   import('@/pages/SubmissionPage').then((m) => ({ default: m.SubmissionPage }))
 );
