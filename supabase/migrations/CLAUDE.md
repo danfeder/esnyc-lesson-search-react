@@ -1,5 +1,14 @@
 # Migration Guidelines
 
+**See also:** `/docs/MIGRATION_WORKFLOW.md` for the complete workflow.
+
+## Critical: Never Edit Production Directly
+
+- **NEVER** create tables/policies in Supabase Studio
+- **ALWAYS** create a migration file first
+- **ALWAYS** test locally with `supabase db reset --local`
+- **ALWAYS** push migrations with `supabase db push`
+
 ## Migration Pattern
 
 ```sql
@@ -68,3 +77,23 @@ npm run test:rls    # Verify policies
 | infinite recursion | Use SECURITY DEFINER function |
 | permission denied | Add GRANT statements |
 | column already exists | Use IF NOT EXISTS |
+| migration history mismatch | `supabase migration repair` (see workflow doc) |
+
+## Pushing to Production
+
+```bash
+# 1. Verify what will be pushed
+supabase db push --dry-run
+
+# 2. Push migrations
+supabase db push --include-all
+
+# 3. Verify success
+supabase migration list
+```
+
+## Current State (as of 2025-11-30)
+
+- **Baseline:** `20251001_production_baseline_snapshot.sql`
+- **Latest:** `20251129_teacher_review_access_policy.sql`
+- **Production project:** `jxlxtzkmicfhchkhiojz`
