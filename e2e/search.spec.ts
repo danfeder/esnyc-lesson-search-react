@@ -43,6 +43,30 @@ test.describe('Search Functionality', () => {
     await expect(page.locator('body')).toContainText(/lesson/i, { timeout: 10000 });
   });
 
+  test('search with no results handles gracefully', async ({ page }) => {
+    const searchBar = page.getByPlaceholder(/search/i);
+
+    // Search for something that won't exist
+    await searchBar.fill('xyznonexistent123abc');
+    await searchBar.press('Enter');
+    await page.waitForLoadState('networkidle');
+
+    // Page should still be functional (not crash)
+    await expect(searchBar).toBeVisible();
+    await expect(searchBar).toBeEnabled();
+
+    // Should show "0 lessons found" or similar empty state
+    await expect(page.locator('text=/0 lessons|no results|not found/i').first()).toBeVisible({
+      timeout: 5000,
+    });
+
+    // User can still search again and get results
+    await searchBar.clear();
+    await searchBar.fill('garden');
+    await searchBar.press('Enter');
+    await expect(page.locator('text=/garden/i').first()).toBeVisible({ timeout: 10000 });
+  });
+
   test('search can be cleared', async ({ page }) => {
     const searchBar = page.getByPlaceholder(/search/i);
 
