@@ -73,16 +73,23 @@ test.describe('Accessibility', () => {
     const firstFocused = page.locator(':focus');
     await expect(firstFocused).toBeVisible();
 
-    // Tab again and verify focus moved
-    const firstFocusedTag = await firstFocused.evaluate((el) => el.tagName);
+    // Get a unique identifier for the first focused element
+    const firstFocusedId = await firstFocused.evaluate((el) => el.id || el.tagName + el.className);
+
+    // Tab again
     await page.keyboard.press('Tab');
 
+    // Verify something is still focused
     const secondFocused = page.locator(':focus');
     await expect(secondFocused).toBeVisible();
 
-    // Focus should have moved to a different element or same type
-    const secondFocusedTag = await secondFocused.evaluate((el) => el.tagName);
-    expect(firstFocusedTag || secondFocusedTag).toBeTruthy();
+    // Get identifier for second focused element
+    const secondFocusedId = await secondFocused.evaluate(
+      (el) => el.id || el.tagName + el.className
+    );
+
+    // Verify focus actually moved to a different element
+    expect(secondFocusedId).not.toBe(firstFocusedId);
   });
 
   test('page has sufficient text content', async ({ page }) => {
@@ -142,7 +149,7 @@ test.describe('Screen Reader Compatibility', () => {
       const ariaLabel = await input.getAttribute('aria-label');
       const ariaLabelledBy = await input.getAttribute('aria-labelledby');
       const id = await input.getAttribute('id');
-      const placeholder = await input.getAttribute('placeholder');
+      const inputType = await input.getAttribute('type');
 
       // Check if there's an associated label element
       let hasAssociatedLabel = false;
@@ -151,9 +158,15 @@ test.describe('Screen Reader Compatibility', () => {
         hasAssociatedLabel = labelCount > 0;
       }
 
-      // Must have a proper accessible label (not just an id)
-      const hasLabel = ariaLabel || ariaLabelledBy || hasAssociatedLabel || placeholder;
-      expect(hasLabel).toBeTruthy();
+      // Must have a proper accessible label
+      // Note: Per WCAG, placeholder alone is not sufficient as it disappears when typing
+      // and may not be announced by all screen readers
+      const hasProperLabel = ariaLabel || ariaLabelledBy || hasAssociatedLabel;
+
+      // Hidden inputs don't need labels
+      if (inputType === 'hidden') continue;
+
+      expect(hasProperLabel).toBeTruthy();
     }
   });
 });

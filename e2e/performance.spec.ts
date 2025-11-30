@@ -63,7 +63,7 @@ test.describe('Performance', () => {
     expect(filterTime).toBeLessThan(SEARCH_TIMEOUT);
   });
 
-  test('no memory leaks on repeated searches', async ({ page }) => {
+  test('page remains responsive after repeated searches', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
@@ -76,9 +76,13 @@ test.describe('Performance', () => {
       await page.waitForLoadState('networkidle');
     }
 
-    // Page should still be responsive
+    // Page should still be responsive after multiple searches
     await expect(searchBar).toBeVisible();
     await expect(searchBar).toBeEnabled();
+
+    // Should be able to perform another search
+    await searchBar.fill('test');
+    await expect(searchBar).toHaveValue('test');
   });
 });
 

@@ -7,7 +7,6 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   use: {
     baseURL: 'http://localhost:5173',
-    headless: true,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: 'retain-on-failure',
