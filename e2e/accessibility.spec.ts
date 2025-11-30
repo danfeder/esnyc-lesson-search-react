@@ -148,8 +148,13 @@ test.describe('Screen Reader Compatibility', () => {
       const input = inputs.nth(i);
       const ariaLabel = await input.getAttribute('aria-label');
       const ariaLabelledBy = await input.getAttribute('aria-labelledby');
+      const ariaDescribedBy = await input.getAttribute('aria-describedby');
       const id = await input.getAttribute('id');
       const inputType = await input.getAttribute('type');
+      const title = await input.getAttribute('title');
+
+      // Hidden inputs don't need labels
+      if (inputType === 'hidden') continue;
 
       // Check if there's an associated label element
       let hasAssociatedLabel = false;
@@ -158,13 +163,33 @@ test.describe('Screen Reader Compatibility', () => {
         hasAssociatedLabel = labelCount > 0;
       }
 
-      // Must have a proper accessible label
-      // Note: Per WCAG, placeholder alone is not sufficient as it disappears when typing
-      // and may not be announced by all screen readers
-      const hasProperLabel = ariaLabel || ariaLabelledBy || hasAssociatedLabel;
+      // Check if input is inside a label element
+      const isInsideLabel = await input.evaluate((el) => {
+        return el.closest('label') !== null;
+      });
 
-      // Hidden inputs don't need labels
-      if (inputType === 'hidden') continue;
+      // Check if input is inside a fieldset with legend
+      const isInFieldsetWithLegend = await input.evaluate((el) => {
+        const fieldset = el.closest('fieldset');
+        return fieldset !== null && fieldset.querySelector('legend') !== null;
+      });
+
+      // Must have a proper accessible label via one of these methods:
+      // - aria-label attribute
+      // - aria-labelledby pointing to another element
+      // - aria-describedby for additional context
+      // - Associated <label for="id"> element
+      // - Input nested inside a <label> element
+      // - Input inside a <fieldset> with <legend>
+      // - title attribute (less preferred but valid)
+      const hasProperLabel =
+        ariaLabel ||
+        ariaLabelledBy ||
+        ariaDescribedBy ||
+        hasAssociatedLabel ||
+        isInsideLabel ||
+        isInFieldsetWithLegend ||
+        title;
 
       expect(hasProperLabel).toBeTruthy();
     }

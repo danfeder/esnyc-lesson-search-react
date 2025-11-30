@@ -44,7 +44,7 @@ test.describe('Local Database Integration', () => {
     await expect(page.locator('body')).toContainText(/lesson/i, { timeout: 10000 });
 
     // Check for grade level references (common in lesson data)
-    const gradePattern = /Grade|K|PK|3K|\d(st|nd|rd|th)/i;
+    const gradePattern = /Grade|\bK\b|PK|3K|\d(st|nd|rd|th)/i;
     await expect(page.locator('body')).toContainText(gradePattern);
   });
 
