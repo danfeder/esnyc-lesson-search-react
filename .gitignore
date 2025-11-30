@@ -119,6 +119,7 @@ debug-*/
 *.csv
 data/*.json
 supabase/*.sql
+!supabase/seed.sql
 
 # Backup and archive directories
 database-backups/

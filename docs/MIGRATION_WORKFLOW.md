@@ -12,6 +12,46 @@ This document defines the safe workflow for database migrations. Following this 
 | **Staging** | Pre-production testing | `epedjebjemztzdyhqace` (paused) |
 | **Production** | Live application | `jxlxtzkmicfhchkhiojz` |
 
+### Local Development Setup
+
+```bash
+# Start local Supabase (includes DB, Auth, Storage, Edge Functions)
+supabase start
+
+# Reset database with migrations + seed data
+npm run db:reset
+
+# Regenerate TypeScript types after schema changes
+npm run db:types
+
+# View local Studio
+open http://localhost:54323
+```
+
+### Using the Staging Environment
+
+The `dev_staging` project exists but is currently paused to save resources.
+
+**To activate staging:**
+1. Go to https://supabase.com/dashboard/project/epedjebjemztzdyhqace
+2. Click "Restore project" to unpause
+3. Link locally: `supabase link --project-ref epedjebjemztzdyhqace`
+4. Push migrations: `supabase db push`
+
+**When to use staging:**
+- Testing migrations with production-like data
+- Validating Edge Function changes before production
+- Load testing or performance validation
+
+**To switch between environments:**
+```bash
+# Link to staging
+supabase link --project-ref epedjebjemztzdyhqace
+
+# Link back to production
+supabase link --project-ref jxlxtzkmicfhchkhiojz
+```
+
 ## Golden Rules
 
 1. **NEVER** make direct edits in Supabase Studio on production
@@ -191,6 +231,16 @@ supabase migration repair --status reverted <version>
 
 # 4. Fix the migration locally, then re-push
 ```
+
+## NPM Scripts Reference
+
+| Script | Description |
+|--------|-------------|
+| `npm run db:types` | Regenerate types from local database |
+| `npm run db:types:remote` | Regenerate types from production database |
+| `npm run db:reset` | Reset local database (migrations + seed) |
+| `npm run db:push` | Push migrations to linked remote |
+| `npm run test:rls` | Test RLS policies locally |
 
 ## History
 
