@@ -54,8 +54,7 @@ test.describe('Accessibility', () => {
       const role = await img.getAttribute('role');
 
       // Either has alt text or is marked as decorative
-      const isAccessible =
-        alt !== null || role === 'presentation' || role === 'none';
+      const isAccessible = alt !== null || role === 'presentation' || role === 'none';
       expect(isAccessible).toBeTruthy();
     }
   });
@@ -83,9 +82,7 @@ test.describe('Accessibility', () => {
     expect(bodyText?.length).toBeGreaterThan(100);
   });
 
-  test('page renders without JavaScript (graceful degradation)', async ({
-    browser,
-  }) => {
+  test('page renders without JavaScript (graceful degradation)', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
@@ -116,9 +113,7 @@ test.describe('Screen Reader Compatibility', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const inputs = page.locator(
-      'input:visible, select:visible, textarea:visible'
-    );
+    const inputs = page.locator('input:visible, select:visible, textarea:visible');
     const count = await inputs.count();
 
     for (let i = 0; i < Math.min(count, 5); i++) {

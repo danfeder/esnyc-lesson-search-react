@@ -19,9 +19,7 @@ test.describe('Lesson Display', () => {
 
   test('lesson cards show grade levels', async ({ page }) => {
     // Grade levels should be displayed on cards
-    const gradeIndicators = page.locator(
-      'text=/3K|PK|K|1st|2nd|3rd|4th|5th|6th|7th|8th|Grade/i'
-    );
+    const gradeIndicators = page.locator('text=/3K|PK|K|1st|2nd|3rd|4th|5th|6th|7th|8th|Grade/i');
     await expect(gradeIndicators.first()).toBeVisible({ timeout: 10000 });
   });
 
