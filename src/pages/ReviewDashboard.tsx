@@ -548,7 +548,7 @@ export function ReviewDashboard() {
                 {submission.review_notes && (
                   <div className="mb-4 bg-blue-50 rounded-md p-4">
                     <h4 className="text-sm font-medium text-blue-700 mb-1">Review Notes</h4>
-                    <p className="text-sm text-blue-600">{submission.review_notes}</p>
+                    <p className="text-sm text-blue-600">{sanitizeContent(submission.review_notes)}</p>
                   </div>
                 )}
 

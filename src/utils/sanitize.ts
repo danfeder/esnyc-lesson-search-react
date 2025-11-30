@@ -7,6 +7,9 @@ import DOMPurify from 'dompurify';
  * Note: For displaying user content, React already escapes HTML by default.
  * This provides an additional layer of defense for content from external sources
  * like Google Docs extractions.
+ *
+ * IMPORTANT: DOMPurify requires a DOM environment (browser).
+ * If SSR is added in the future, use 'isomorphic-dompurify' instead.
  */
 export function sanitizeContent(content: string | null | undefined): string {
   if (!content) return '';
