@@ -48,6 +48,11 @@ coverage/
 # nyc test coverage
 .nyc_output
 
+# Playwright test results
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Dependency directories
 jspm_packages/
 
@@ -154,3 +159,6 @@ backups/
 supabase/config.toml
 supabase/.branches/
 supabase/.temp/
+
+# Local-only scripts
+scripts/sync-from-production.mjs
