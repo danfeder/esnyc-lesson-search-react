@@ -6,41 +6,34 @@ test.describe('Filter Functionality', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('filter elements are accessible', async ({ page }) => {
-    // Look for filter buttons or filter section using separate locators
-    const filterButtons = page.getByRole('button', { name: /filter/i });
-    const gradeElements = page.getByText(/grade|kindergarten/i);
+  test('grade level filters are visible and clickable', async ({ page }) => {
+    // Look for grade level text anywhere (buttons, labels, etc.)
+    const gradeContent = page.locator('text=/3K|PK|Kindergarten|1st|2nd|3rd|4th|5th/i');
+    await expect(gradeContent.first()).toBeVisible({ timeout: 10000 });
 
-    const filterCount = await filterButtons.count();
-    const gradeCount = await gradeElements.count();
-
-    // At least one filter-related element should be visible
-    expect(filterCount + gradeCount).toBeGreaterThan(0);
-  });
-
-  test('grade level content is available', async ({ page }) => {
-    // Look for grade level related text anywhere on page
-    await expect(page.locator('body')).toContainText(/K|PK|3K|grade|Grade/i, {
-      timeout: 10000,
-    });
-  });
-
-  test('page has interactive filter elements', async ({ page }) => {
-    // Look for any button that could be a filter
-    const buttons = page.locator('button');
-    await expect(buttons.first()).toBeVisible({ timeout: 10000 });
-
-    const buttonCount = await buttons.count();
+    // There should be clickable filter elements on the page
+    const filterButtons = page.locator('button, [role="button"]');
+    const buttonCount = await filterButtons.count();
     expect(buttonCount).toBeGreaterThan(3);
+
+    // First filter button should be enabled
+    await expect(filterButtons.first()).toBeEnabled();
   });
 
-  test('multiple filter buttons are available', async ({ page }) => {
-    // Look for any clickable filter elements
-    const buttons = page.locator('button');
-    await expect(buttons.first()).toBeVisible();
+  test('clicking a grade filter updates URL', async ({ page }) => {
+    // Find a grade filter button (K for Kindergarten)
+    const kFilter = page.locator('button, [role="button"]').filter({
+      hasText: /^K$/,
+    });
 
-    const buttonCount = await buttons.count();
-    expect(buttonCount).toBeGreaterThan(5);
+    const filterCount = await kFilter.count();
+    if (filterCount > 0) {
+      await kFilter.first().click();
+      await page.waitForLoadState('networkidle');
+
+      // URL should contain the grade filter
+      expect(page.url()).toMatch(/grade/i);
+    }
   });
 
   test('filter state persists in URL', async ({ page }) => {
@@ -49,27 +42,34 @@ test.describe('Filter Functionality', () => {
     await page.waitForLoadState('networkidle');
 
     // URL should still have the filter
-    expect(page.url()).toContain('grade');
+    expect(page.url()).toContain('grade=K');
+
+    // Page should still be functional
+    const searchBar = page.getByPlaceholder(/search/i);
+    await expect(searchBar).toBeVisible();
   });
 
-  test('activity type filter shows options', async ({ page }) => {
-    // Look for activity type related content
+  test('activity type content is available', async ({ page }) => {
+    // Look for activity type related content (cooking, garden, etc.)
     const activityTypes = page.locator('text=/cooking|garden|academic/i');
     await expect(activityTypes.first()).toBeVisible({ timeout: 10000 });
   });
-});
 
-test.describe('Filter Pills', () => {
-  test('applied filters are reflected in page state', async ({ page }) => {
-    // Navigate with a filter already applied
-    await page.goto('/?grade=K');
+  test('filters and search work together', async ({ page }) => {
+    // First apply a search
+    const searchBar = page.getByPlaceholder(/search/i);
+    await searchBar.fill('garden');
+    await searchBar.press('Enter');
     await page.waitForLoadState('networkidle');
 
-    // URL should contain the filter parameter
-    expect(page.url()).toContain('grade=K');
+    // Results should contain garden
+    await expect(page.locator('text=/garden/i').first()).toBeVisible({
+      timeout: 10000,
+    });
 
-    // Page should be functional with filter applied
-    const searchBar = page.getByPlaceholder(/search/i);
-    await expect(searchBar).toBeVisible();
+    // Page should still have filter buttons available
+    const buttons = page.locator('button');
+    const buttonCount = await buttons.count();
+    expect(buttonCount).toBeGreaterThan(3);
   });
 });

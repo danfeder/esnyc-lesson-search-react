@@ -24,22 +24,6 @@ test.describe('Local Database Integration', () => {
     await expect(page.locator('body')).toContainText(/lesson/i, { timeout: 10000 });
   });
 
-  test('search functionality works', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-
-    // Find and use the search bar
-    const searchBar = page.getByPlaceholder(/search/i);
-    await expect(searchBar).toBeVisible();
-
-    // Search for "garden"
-    await searchBar.fill('garden');
-    await searchBar.press('Enter');
-
-    // Wait for results containing "garden"
-    await expect(page.locator('text=/garden/i').first()).toBeVisible({ timeout: 10000 });
-  });
-
   test('filters are visible and interactive', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
