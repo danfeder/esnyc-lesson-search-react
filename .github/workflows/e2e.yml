@@ -70,6 +70,7 @@ jobs:
         run: npm run test:rls
         env:
           VITE_SUPABASE_URL: https://rxgajgmphciuaqzvwmox.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_TEST }}
 
       - name: Install Playwright browsers
