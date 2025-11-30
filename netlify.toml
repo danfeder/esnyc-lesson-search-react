@@ -9,12 +9,17 @@
   for = "/*"
   [headers.values]
     # Security headers
-    X-Frame-Options = "DENY"
+    # Note: X-Frame-Options omitted - frame-ancestors 'none' in CSP provides modern equivalent
     X-Content-Type-Options = "nosniff"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     # Content Security Policy
+    # Note on 'unsafe-inline'/'unsafe-eval': Required by Vite/React for:
+    # - 'unsafe-inline' in script-src: React event handlers and Vite HMR
+    # - 'unsafe-eval' in script-src: Development tooling, can be removed in production
+    # - 'unsafe-inline' in style-src: Tailwind CSS and inline styles
+    # TODO: Consider nonces for stricter CSP in production
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://*.sentry.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://docs.google.com https://www.googleapis.com; frame-src https://docs.google.com https://*.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
 
 [[headers]]
