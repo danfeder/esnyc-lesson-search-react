@@ -28,12 +28,15 @@ jobs:
         id: check
         run: |
           # Handle edge cases: initial commits, force pushes, squash merges
-          MIGRATION_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep "supabase/migrations/.*\.sql$" || true)
+          set +e
+          MIGRATION_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep "supabase/migrations/.*\.sql$")
+          DIFF_EXIT_CODE=$?
+          set -e
 
-          # Fallback: check all migration files if diff fails
-          if [ -z "$MIGRATION_FILES" ] && [ $? -ne 0 ]; then
-            echo "Git diff failed, checking all migration files..."
-            MIGRATION_FILES=$(git ls-files "supabase/migrations/*.sql" 2>/dev/null || true)
+          # Fallback: check all migration files if diff fails or returns empty
+          if [ $DIFF_EXIT_CODE -ne 0 ] || [ -z "$MIGRATION_FILES" ]; then
+            echo "Git diff returned no results, this workflow was triggered by path filter so migrations exist"
+            MIGRATION_FILES=$(git ls-files "supabase/migrations/**/*.sql" 2>/dev/null || true)
           fi
 
           if [ -n "$MIGRATION_FILES" ]; then
