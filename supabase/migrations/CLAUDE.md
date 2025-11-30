@@ -1,99 +1,226 @@
-# Migration Guidelines
+# Database Migration Guidelines for Claude
 
-**See also:** `/docs/MIGRATION_WORKFLOW.md` for the complete workflow.
+**IMPORTANT: Read this entire file before making ANY database changes.**
 
-## Critical: Never Edit Production Directly
+## The 3-Part Database Pipeline
 
-- **NEVER** create tables/policies in Supabase Studio
-- **ALWAYS** create a migration file first
-- **ALWAYS** test locally with `supabase db reset --local`
-- **ALWAYS** push migrations with `supabase db push`
+This project uses a 3-environment database pipeline with automated CI/CD:
 
-## Migration Pattern
+| Environment | Project Ref | Purpose | How Changes Are Applied |
+|-------------|-------------|---------|------------------------|
+| **Local** | Docker container | Development & testing | `supabase db reset` |
+| **Test** | `rxgajgmphciuaqzvwmox` | CI validation | Automatic via GitHub Actions on PR |
+| **Production** | `jxlxtzkmicfhchkhiojz` | Live user data | After merge + manual approval |
 
-```sql
--- Migration: 20250131_description.sql
--- Description: What this migration does
+## Two Types of Database Changes
 
--- Create table with RLS
-CREATE TABLE IF NOT EXISTS feature (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id),
-  created_at timestamptz DEFAULT now()
-);
+### Schema Changes (MUST use migrations)
+These change the **structure** of the database:
+- Creating/dropping tables
+- Adding/removing columns
+- Creating indexes
+- Adding RLS policies
+- Creating functions/triggers
 
-ALTER TABLE feature ENABLE ROW LEVEL SECURITY;
+**Rule: ALL schema changes MUST go through migration files.**
 
-CREATE INDEX idx_feature_user_id ON feature(user_id);
+### Data Changes (Can use MCP tools)
+These change the **content** inside tables:
+- Adding/updating/deleting rows
+- Importing lesson data
+- Fixing incorrect data
 
-CREATE POLICY "Users manage own" ON feature
-  FOR ALL
-  USING (auth.uid() = user_id);
+**Rule: Data changes can use MCP tools directly, but be careful with production.**
 
--- Rollback:
--- DROP POLICY IF EXISTS "Users manage own" ON feature;
--- DROP TABLE IF EXISTS feature;
+## Workflow for Schema Changes
+
+### Step 1: Create Migration File
+
+```bash
+# Create timestamped migration file
+touch supabase/migrations/$(date +%Y%m%d)_description.sql
 ```
 
-## Key Rules
+**Naming:** `YYYYMMDD_short_description.sql` (e.g., `20251201_add_rating_column.sql`)
 
-1. Enable RLS on every new table
-2. Use `IF NOT EXISTS` / `IF EXISTS`
-3. Include rollback commands as comments
-4. Run `npm run test:rls` after applying
+### Step 2: Write Migration SQL
 
-## RLS Gotchas
-
-### Recursion Trap
 ```sql
--- Wrong: queries same table in policy
+-- Migration: 20251201_add_rating_column.sql
+-- Description: Add rating column to lessons table
+
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS rating integer;
+
+CREATE INDEX IF NOT EXISTS idx_lessons_rating ON lessons(rating);
+
+-- Rollback:
+-- DROP INDEX IF EXISTS idx_lessons_rating;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS rating;
+```
+
+**Required elements:**
+1. Description comment at top
+2. Use `IF NOT EXISTS` / `IF EXISTS` for safety
+3. Include rollback commands as comments
+4. Enable RLS on any new tables
+
+### Step 3: Test Locally
+
+```bash
+# Reset local DB and apply all migrations
+supabase db reset
+
+# Verify RLS policies work
+npm run test:rls
+```
+
+### Step 4: Create PR with Migration
+
+```bash
+git checkout -b feat/add-rating-column
+git add supabase/migrations/
+git commit -m "feat(db): add rating column to lessons"
+git push origin feat/add-rating-column
+# Create PR via gh or GitHub UI
+```
+
+### Step 5: CI Automatically Tests on TEST Database
+
+When the PR is created:
+1. GitHub Actions detects migration files changed
+2. Migrations are applied to TEST database automatically
+3. RLS tests run
+4. E2E tests run against Netlify preview
+
+### Step 6: After Merge - Approve Production Deployment
+
+After PR is merged to main:
+1. `migrate-production.yml` workflow triggers
+2. Dry-run shows what will change
+3. **User must manually approve** in GitHub Actions
+4. Migrations apply to production
+
+## MCP Tools Usage
+
+### For LOCAL Database (use freely)
+```
+mcp__supabase__execute_sql       # Query local DB
+mcp__supabase__list_tables       # List local tables
+mcp__supabase__apply_migration   # Apply migration locally
+```
+
+### For PRODUCTION Database (use carefully)
+```
+mcp__supabase-remote__execute_sql       # Query production
+mcp__supabase-remote__list_tables       # List production tables
+```
+
+**NEVER use `mcp__supabase-remote__apply_migration` for schema changes!**
+Schema changes must go through migration files and the CI pipeline.
+
+## Critical Rules
+
+1. **NEVER** make schema changes directly in Supabase Studio
+2. **NEVER** run DDL (CREATE, ALTER, DROP) directly on production
+3. **ALWAYS** create a migration file for schema changes
+4. **ALWAYS** test locally with `supabase db reset` first
+5. **ALWAYS** include rollback commands in migrations
+6. **ALWAYS** enable RLS on new tables
+7. **ALWAYS** wait for E2E tests to pass before merging
+
+## Migration File Template
+
+```sql
+-- =====================================================
+-- Migration: YYYYMMDD_description.sql
+-- =====================================================
+-- Description: What this migration does
+-- Issue: #XXX (if applicable)
+
+-- =====================================================
+-- CHANGES
+-- =====================================================
+
+-- Your SQL here
+-- Use IF NOT EXISTS for safety
+
+-- =====================================================
+-- ROLLBACK (keep as comments)
+-- =====================================================
+-- DROP POLICY IF EXISTS "..." ON "...";
+-- DROP TABLE IF EXISTS ...;
+```
+
+## RLS Best Practices
+
+### Always Enable RLS
+```sql
+CREATE TABLE new_table (...);
+ALTER TABLE new_table ENABLE ROW LEVEL SECURITY;
+```
+
+### Avoid Recursion
+```sql
+-- WRONG: queries same table in policy
 CREATE POLICY "x" ON users USING (
   EXISTS (SELECT 1 FROM users WHERE role='admin')
 );
 
--- Correct: use SECURITY DEFINER function
-CREATE FUNCTION is_admin(uid uuid) RETURNS boolean
+-- CORRECT: use SECURITY DEFINER function
+CREATE OR REPLACE FUNCTION is_admin(uid uuid) RETURNS boolean
 AS $$ ... $$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
-### Null auth.uid()
+### Handle Anonymous Users
 ```sql
--- Handle anonymous users
 USING (auth.uid() IS NOT NULL AND user_id = auth.uid())
 ```
 
-## Testing
-
-```bash
-supabase db reset   # Fresh start
-supabase db push    # Apply migrations
-npm run test:rls    # Verify policies
-```
-
-## Common Errors
+## Common Errors & Fixes
 
 | Error | Fix |
 |-------|-----|
 | infinite recursion | Use SECURITY DEFINER function |
 | permission denied | Add GRANT statements |
 | column already exists | Use IF NOT EXISTS |
-| migration history mismatch | `supabase migration repair` (see workflow doc) |
+| migration history mismatch | See troubleshooting below |
 
-## Pushing to Production
+## Troubleshooting
+
+### Migration History Mismatch
+If `supabase db push` fails with version mismatch:
 
 ```bash
-# 1. Verify what will be pushed
-supabase db push --dry-run
-
-# 2. Push migrations
-supabase db push --include-all
-
-# 3. Verify success
+# Check current state
 supabase migration list
+
+# Repair history (metadata only)
+supabase migration repair --status reverted <old_version>
+supabase migration repair --status applied <current_version>
 ```
 
-## Current State (as of 2025-11-30)
+### Local Database Issues
+```bash
+# Complete reset
+supabase db reset
+
+# If that fails, restart Supabase
+supabase stop
+supabase start
+supabase db reset
+```
+
+## Current State
 
 - **Baseline:** `20251001_production_baseline_snapshot.sql`
-- **Latest:** `20251129_teacher_review_access_policy.sql`
+- **Latest:** Check `supabase/migrations/` for most recent file
+- **Test project:** `rxgajgmphciuaqzvwmox`
 - **Production project:** `jxlxtzkmicfhchkhiojz`
+
+## GitHub Secrets (for reference)
+
+The CI pipeline uses these secrets:
+- `SUPABASE_ACCESS_TOKEN` - API access
+- `SUPABASE_DB_PASSWORD_TEST` - Test database password
+- `SUPABASE_SERVICE_ROLE_KEY_TEST` - Test service role
+- `VITE_SUPABASE_ANON_KEY_TEST` - Test anon key

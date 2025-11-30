@@ -22,68 +22,56 @@ npm run test:e2e:headed   # Run with visible browser
 npm run test:e2e:ui       # Run with Playwright UI
 ```
 
-## Database Environments
+## Database: 3-Part Pipeline
 
-| Environment | Supabase Project | Purpose |
-|-------------|------------------|---------|
-| **Local** | Docker (`supabase start`) | Development |
-| **Test** | `rxgajgmphciuaqzvwmox` | Deploy previews, E2E tests |
-| **Production** | `jxlxtzkmicfhchkhiojz` | Live site |
+**IMPORTANT: Read `supabase/migrations/CLAUDE.md` before making ANY database changes.**
 
-## Database Migration Workflow
+| Environment | Project | Purpose |
+|-------------|---------|---------|
+| **Local** | Docker | Development & testing |
+| **Test** | `rxgajgmphciuaqzvwmox` | CI validation (automatic) |
+| **Production** | `jxlxtzkmicfhchkhiojz` | Live site (requires approval) |
 
-### Creating a Migration (Local Development)
+### Two Types of Database Changes
+
+| Type | How to Make Changes |
+|------|---------------------|
+| **Schema** (tables, columns, RLS, indexes) | Create migration file → PR → CI tests → Merge → Approve |
+| **Data** (rows, content fixes) | Use MCP tools directly (careful with production!) |
+
+### Schema Change Workflow
+
+```
+1. Create migration:   touch supabase/migrations/$(date +%Y%m%d)_description.sql
+2. Test locally:       supabase db reset && npm run test:rls
+3. Create PR:          Migrations auto-apply to TEST DB, E2E tests run
+4. Merge to main:      Production workflow triggers
+5. Approve:            Manual approval in GitHub Actions
+6. Applied:            Migrations run on production
+```
+
+### MCP Tools
+
+```
+LOCAL:      mcp__supabase__execute_sql        (use freely)
+PRODUCTION: mcp__supabase-remote__execute_sql (be careful!)
+```
+
+**NEVER use MCP tools for schema changes on production. Always use migration files.**
+
+### Key Commands
 
 ```bash
-# 1. Start local Supabase
-supabase start
-
-# 2. Make changes in Supabase Studio (http://localhost:54323)
-#    OR write SQL directly
-
-# 3. Generate migration from your changes
-supabase db diff -f descriptive_name
-
-# 4. Test locally
-supabase db reset
-npm run test:rls
+supabase start          # Start local DB
+supabase db reset       # Reset local DB with all migrations
+npm run test:rls        # Test RLS policies
+supabase migration list # Show migration status
 ```
 
-### Automated CI Pipeline
+### See Also
 
-```
-PR Created
-    ↓
-Migration files detected? → Auto-apply to TEST DB
-    ↓
-Netlify builds preview (uses test DB)
-    ↓
-E2E tests run
-    ↓
-PR Merged to main
-    ↓
-Migration files detected? → Shows dry-run
-    ↓
-⏸️ Manual approval required in GitHub
-    ↓
-Auto-apply to PRODUCTION DB
-```
-
-### Manual Database Reset
-
-If test DB gets corrupted, use GitHub Actions:
-1. Go to Actions → "Reset Test Database"
-2. Choose reset type:
-   - **migrations**: Re-apply all migrations (schema only)
-   - **full**: Reset schema + sync data from production
-3. Type "RESET" to confirm
-
-### Migration Best Practices
-
-- Always test migrations locally with `supabase db reset`
-- Run `npm run test:rls` after schema changes
-- Include rollback strategy for destructive changes
-- Use descriptive migration names: `add_column_to_lessons`
+- `supabase/migrations/CLAUDE.md` - Detailed migration guidelines
+- `docs/MIGRATION_WORKFLOW.md` - Complete workflow documentation
 
 ## E2E Testing
 
