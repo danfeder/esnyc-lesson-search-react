@@ -1,3 +1,10 @@
+// Academic Integration can be either a simple array or an object with concepts
+export interface AcademicIntegrationObject {
+  concepts: Record<string, string[]>;
+  selected: string[];
+}
+export type AcademicIntegration = string[] | AcademicIntegrationObject;
+
 // Core lesson data types
 export interface Lesson {
   lessonId: string;
@@ -36,7 +43,7 @@ export interface LessonMetadata {
   cookingSkills?: string[];
   cookingMethods?: string[];
   observancesHolidays?: string[];
-  academicIntegration?: string[];
+  academicIntegration?: AcademicIntegration;
   socialEmotionalLearning?: string[];
   culturalResponsivenessFeatures?: string[];
 }
