@@ -27,7 +27,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Wait for Netlify deploy
-        uses: JakePartusch/wait-for-netlify-action@v2.1.0
+        uses: JakePartusch/wait-for-netlify-action@v1.4
         id: netlify
         with:
           site_id: ${{ secrets.NETLIFY_SITE_ID }}
