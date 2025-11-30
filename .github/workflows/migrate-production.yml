@@ -6,6 +6,11 @@ on:
     paths:
       - 'supabase/migrations/**/*.sql'
 
+# Prevent concurrent production migrations
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
 jobs:
   check-migrations:
     name: Check Migration Changes
@@ -22,7 +27,15 @@ jobs:
       - name: Check for new migrations
         id: check
         run: |
-          MIGRATION_FILES=$(git diff --name-only HEAD~1 HEAD | grep "supabase/migrations/.*\.sql$" || true)
+          # Handle edge cases: initial commits, force pushes, squash merges
+          MIGRATION_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep "supabase/migrations/.*\.sql$" || true)
+
+          # Fallback: check all migration files if diff fails
+          if [ -z "$MIGRATION_FILES" ] && [ $? -ne 0 ]; then
+            echo "Git diff failed, checking all migration files..."
+            MIGRATION_FILES=$(git ls-files "supabase/migrations/*.sql" 2>/dev/null || true)
+          fi
+
           if [ -n "$MIGRATION_FILES" ]; then
             echo "has_migrations=true" >> $GITHUB_OUTPUT
             echo "migration_files<<EOF" >> $GITHUB_OUTPUT
@@ -65,7 +78,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Dry Run Output:" >> $GITHUB_STEP_SUMMARY
           echo '```sql' >> $GITHUB_STEP_SUMMARY
-          supabase db push --dry-run 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
+          supabase db push --dry-run 2>&1 | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "⏸️ **Waiting for manual approval before applying to production...**" >> $GITHUB_STEP_SUMMARY
