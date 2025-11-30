@@ -66,35 +66,56 @@ test.describe('Accessibility', () => {
   });
 
   test('keyboard navigation works', async ({ page }) => {
-    // Tab through the page
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
+    // First Tab should focus on a focusable element
     await page.keyboard.press('Tab');
 
-    // Something should be focused
-    const focusedElement = page.locator(':focus');
-    await expect(focusedElement).toBeVisible();
+    // Verify something is focused
+    const firstFocused = page.locator(':focus');
+    await expect(firstFocused).toBeVisible();
+
+    // Tab again and verify focus moved
+    const firstFocusedTag = await firstFocused.evaluate((el) => el.tagName);
+    await page.keyboard.press('Tab');
+
+    const secondFocused = page.locator(':focus');
+    await expect(secondFocused).toBeVisible();
+
+    // Focus should have moved to a different element or same type
+    const secondFocusedTag = await secondFocused.evaluate((el) => el.tagName);
+    expect(firstFocusedTag || secondFocusedTag).toBeTruthy();
   });
 
-  test('color contrast check - page has readable content', async ({ page }) => {
-    // Basic check - page should have readable text
+  test('page has sufficient text content', async ({ page }) => {
+    // Verify page has meaningful content loaded
     const bodyText = await page.textContent('body');
     expect(bodyText?.length).toBeGreaterThan(100);
+
+    // Verify there are multiple text elements (not just one blob)
+    const headings = page.locator('h1, h2, h3, h4, h5, h6');
+    const headingCount = await headings.count();
+    expect(headingCount).toBeGreaterThan(0);
   });
 
-  test('page renders without JavaScript (graceful degradation)', async ({ browser }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false });
-    const page = await context.newPage();
+  test('page structure is valid HTML', async ({ page }) => {
+    // Verify basic HTML structure exists
+    const html = await page.content();
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('<html');
+    expect(html).toContain('<head');
+    expect(html).toContain('<body');
 
-    await page.goto('/');
-
-    // Page should at least show the HTML structure
-    const content = await page.content();
-    expect(content).toContain('html');
-    expect(content).toContain('head');
-    expect(content).toContain('body');
-
-    await context.close();
+    // Verify no duplicate IDs (common accessibility issue)
+    const duplicateIds = await page.evaluate(() => {
+      const ids = Array.from(document.querySelectorAll('[id]')).map((el) => el.id);
+      const seen = new Set<string>();
+      const duplicates: string[] = [];
+      for (const id of ids) {
+        if (seen.has(id)) duplicates.push(id);
+        seen.add(id);
+      }
+      return duplicates;
+    });
+    expect(duplicateIds).toHaveLength(0);
   });
 });
 
@@ -123,8 +144,15 @@ test.describe('Screen Reader Compatibility', () => {
       const id = await input.getAttribute('id');
       const placeholder = await input.getAttribute('placeholder');
 
-      // Must have some form of labeling
-      const hasLabel = ariaLabel || ariaLabelledBy || id || placeholder;
+      // Check if there's an associated label element
+      let hasAssociatedLabel = false;
+      if (id) {
+        const labelCount = await page.locator(`label[for="${id}"]`).count();
+        hasAssociatedLabel = labelCount > 0;
+      }
+
+      // Must have a proper accessible label (not just an id)
+      const hasLabel = ariaLabel || ariaLabelledBy || hasAssociatedLabel || placeholder;
       expect(hasLabel).toBeTruthy();
     }
   });

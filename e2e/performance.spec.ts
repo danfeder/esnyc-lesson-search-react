@@ -5,6 +5,20 @@ const isCI = !!process.env.CI;
 const PAGE_LOAD_TIMEOUT = isCI ? 10000 : 5000;
 const SEARCH_TIMEOUT = isCI ? 5000 : 3000;
 
+// Viewport sizes for responsive testing
+const VIEWPORT = {
+  MOBILE: { width: 375, height: 667 }, // iPhone SE
+  TABLET: { width: 768, height: 1024 }, // iPad
+  DESKTOP: { width: 1920, height: 1080 },
+  DESKTOP_SMALL: { width: 1200, height: 800 },
+} as const;
+
+// Tolerance for viewport width checks (accounts for scrollbars, etc.)
+const VIEWPORT_TOLERANCE = 20;
+
+// Minimum touch target size for accessibility (WCAG 2.1 AA recommends 44px, but 24px is minimum)
+const MIN_TOUCH_TARGET_SIZE = 24;
+
 test.describe('Performance', () => {
   test('page loads within acceptable time', async ({ page }) => {
     const startTime = Date.now();
@@ -70,7 +84,7 @@ test.describe('Performance', () => {
 
 test.describe('Responsive Design', () => {
   test('mobile viewport renders correctly', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 }); // iPhone SE
+    await page.setViewportSize(VIEWPORT.MOBILE);
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
@@ -80,11 +94,11 @@ test.describe('Responsive Design', () => {
 
     // Content should fit within viewport (no horizontal scroll needed)
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
-    expect(bodyWidth).toBeLessThanOrEqual(395); // Small tolerance
+    expect(bodyWidth).toBeLessThanOrEqual(VIEWPORT.MOBILE.width + VIEWPORT_TOLERANCE);
   });
 
   test('tablet viewport renders correctly', async ({ page }) => {
-    await page.setViewportSize({ width: 768, height: 1024 }); // iPad
+    await page.setViewportSize(VIEWPORT.TABLET);
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
@@ -93,7 +107,7 @@ test.describe('Responsive Design', () => {
   });
 
   test('desktop viewport renders correctly', async ({ page }) => {
-    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.setViewportSize(VIEWPORT.DESKTOP);
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
@@ -106,11 +120,11 @@ test.describe('Responsive Design', () => {
     await page.waitForLoadState('networkidle');
 
     // Start desktop
-    await page.setViewportSize({ width: 1200, height: 800 });
+    await page.setViewportSize(VIEWPORT.DESKTOP_SMALL);
     await page.waitForLoadState('networkidle');
 
     // Resize to mobile
-    await page.setViewportSize({ width: 375, height: 667 });
+    await page.setViewportSize(VIEWPORT.MOBILE);
     await page.waitForLoadState('networkidle');
 
     // Content should still be visible and accessible
@@ -119,7 +133,7 @@ test.describe('Responsive Design', () => {
   });
 
   test('touch targets are reasonably sized on mobile', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
+    await page.setViewportSize(VIEWPORT.MOBILE);
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
@@ -132,9 +146,9 @@ test.describe('Responsive Design', () => {
       const box = await button.boundingBox();
 
       if (box) {
-        // Touch targets should be at least 24x24 for usability
-        expect(box.width).toBeGreaterThanOrEqual(20);
-        expect(box.height).toBeGreaterThanOrEqual(20);
+        // Touch targets should meet minimum size for usability
+        expect(box.width).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_SIZE);
+        expect(box.height).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_SIZE);
       }
     }
   });
