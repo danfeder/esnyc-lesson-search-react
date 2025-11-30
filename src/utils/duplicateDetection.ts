@@ -91,6 +91,28 @@ export interface DuplicateGroup {
 }
 
 /**
+ * Serialized format for duplicate group reports (used in UI/JSON files).
+ * This is distinct from DuplicateGroup which uses Map for similarity scores
+ * and full LessonForDuplicateCheck objects.
+ */
+export interface DuplicateGroupReport {
+  groupId: string;
+  type: 'exact' | 'near' | 'title';
+  category?: string;
+  recommendedAction?: 'auto_merge' | 'manual_review' | 'keep_all' | 'split_group';
+  confidence?: 'high' | 'medium' | 'low';
+  similarityScore: number;
+  lessonCount: number;
+  status?: 'pending' | 'resolved';
+  recommendedCanonical?: string | string[];
+  lessons: Array<{
+    lessonId: string;
+    title: string;
+    isRecommendedCanonical?: boolean;
+  }>;
+}
+
+/**
  * Calculate Levenshtein distance between two strings.
  * Returns the minimum number of single-character edits (insertions, deletions, or substitutions)
  * required to change one string into the other.

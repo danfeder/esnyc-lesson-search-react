@@ -521,6 +521,185 @@ describe('duplicateDetection', () => {
       expect(subGroups[0].lessonIds).toHaveLength(2);
       expect(subGroups[1].lessonIds).toHaveLength(2);
     });
+
+    it('returns sub-group per lesson when all similarities are below threshold', () => {
+      const lessons = [createLesson('a'), createLesson('b'), createLesson('c')];
+
+      // All similarities are below the default 0.96 threshold
+      const similarities = new Map<string, Map<string, number>>();
+      similarities.set(
+        'a',
+        new Map([
+          ['b', 0.95],
+          ['c', 0.94],
+        ])
+      );
+      similarities.set(
+        'b',
+        new Map([
+          ['a', 0.95],
+          ['c', 0.93],
+        ])
+      );
+      similarities.set(
+        'c',
+        new Map([
+          ['a', 0.94],
+          ['b', 0.93],
+        ])
+      );
+
+      const subGroups = identifySubGroups(lessons, similarities, 0.96);
+
+      // Each lesson is isolated (no pairs meet threshold)
+      // This results in 3 separate sub-groups, one per lesson
+      expect(subGroups).toHaveLength(3);
+      expect(subGroups.every((sg) => sg.lessonIds.length === 1)).toBe(true);
+    });
+
+    it('handles multiple disconnected components', () => {
+      const lessons = [
+        createLesson('a'),
+        createLesson('b'),
+        createLesson('c'),
+        createLesson('d'),
+        createLesson('e'),
+        createLesson('f'),
+      ];
+
+      // Three distinct clusters: (a,b), (c,d), (e,f)
+      const similarities = new Map<string, Map<string, number>>();
+      similarities.set(
+        'a',
+        new Map([
+          ['b', 0.98],
+          ['c', 0.5],
+          ['d', 0.5],
+          ['e', 0.5],
+          ['f', 0.5],
+        ])
+      );
+      similarities.set(
+        'b',
+        new Map([
+          ['a', 0.98],
+          ['c', 0.5],
+          ['d', 0.5],
+          ['e', 0.5],
+          ['f', 0.5],
+        ])
+      );
+      similarities.set(
+        'c',
+        new Map([
+          ['a', 0.5],
+          ['b', 0.5],
+          ['d', 0.97],
+          ['e', 0.5],
+          ['f', 0.5],
+        ])
+      );
+      similarities.set(
+        'd',
+        new Map([
+          ['a', 0.5],
+          ['b', 0.5],
+          ['c', 0.97],
+          ['e', 0.5],
+          ['f', 0.5],
+        ])
+      );
+      similarities.set(
+        'e',
+        new Map([
+          ['a', 0.5],
+          ['b', 0.5],
+          ['c', 0.5],
+          ['d', 0.5],
+          ['f', 0.99],
+        ])
+      );
+      similarities.set(
+        'f',
+        new Map([
+          ['a', 0.5],
+          ['b', 0.5],
+          ['c', 0.5],
+          ['d', 0.5],
+          ['e', 0.99],
+        ])
+      );
+
+      const subGroups = identifySubGroups(lessons, similarities);
+
+      expect(subGroups).toHaveLength(3);
+      // Each sub-group should have 2 lessons
+      const lessonCounts = subGroups.map((sg) => sg.lessonIds.length).sort();
+      expect(lessonCounts).toEqual([2, 2, 2]);
+    });
+
+    it('handles threshold boundary condition (exactly 0.96)', () => {
+      const lessons = [createLesson('a'), createLesson('b'), createLesson('c')];
+
+      const similarities = new Map<string, Map<string, number>>();
+      // a-b is exactly at threshold (0.96) - should be grouped
+      // a-c and b-c are below threshold - c should be separate
+      similarities.set(
+        'a',
+        new Map([
+          ['b', 0.96],
+          ['c', 0.95],
+        ])
+      );
+      similarities.set(
+        'b',
+        new Map([
+          ['a', 0.96],
+          ['c', 0.94],
+        ])
+      );
+      similarities.set(
+        'c',
+        new Map([
+          ['a', 0.95],
+          ['b', 0.94],
+        ])
+      );
+
+      const subGroups = identifySubGroups(lessons, similarities, 0.96);
+
+      // a and b should be grouped (exactly at threshold), c is separate
+      expect(subGroups).toHaveLength(2);
+
+      // Find the group with a and b
+      const abGroup = subGroups.find(
+        (sg) => sg.lessonIds.includes('a') && sg.lessonIds.includes('b')
+      );
+      const cGroup = subGroups.find((sg) => sg.lessonIds.includes('c'));
+
+      expect(abGroup).toBeDefined();
+      expect(abGroup!.lessonIds).toHaveLength(2);
+      expect(cGroup).toBeDefined();
+      expect(cGroup!.lessonIds).toHaveLength(1);
+    });
+
+    it('uses custom threshold when provided', () => {
+      const lessons = [createLesson('a'), createLesson('b')];
+
+      const similarities = new Map<string, Map<string, number>>();
+      similarities.set('a', new Map([['b', 0.9]]));
+      similarities.set('b', new Map([['a', 0.9]]));
+
+      // With default threshold (0.96), they're NOT grouped (0.9 < 0.96)
+      // This means 2 separate sub-groups (a and b individually)
+      const subGroupsDefault = identifySubGroups(lessons, similarities);
+      expect(subGroupsDefault).toHaveLength(2);
+
+      // With lower threshold (0.85), they ARE grouped (0.9 >= 0.85)
+      // Single group means empty array returned
+      const subGroupsLow = identifySubGroups(lessons, similarities, 0.85);
+      expect(subGroupsLow).toHaveLength(0);
+    });
   });
 
   describe('calculateSimilarityStats', () => {
