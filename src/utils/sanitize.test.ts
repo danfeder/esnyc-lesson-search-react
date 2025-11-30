@@ -46,6 +46,15 @@ describe('sanitizeContent', () => {
     expect(sanitizeContent('<p>Paragraph text</p>')).toBe('Paragraph text');
     expect(sanitizeContent('<b>Bold</b> and <i>italic</i>')).toBe('Bold and italic');
   });
+
+  it('preserves HTML entities without executing them', () => {
+    // Encoded tags should stay encoded (safe)
+    expect(sanitizeContent('&lt;script&gt;alert(1)&lt;/script&gt;')).toBe(
+      '&lt;script&gt;alert(1)&lt;/script&gt;'
+    );
+    expect(sanitizeContent('Tom &amp; Jerry')).toBe('Tom &amp; Jerry');
+    expect(sanitizeContent('&copy; 2024')).toBe('&copy; 2024');
+  });
 });
 
 describe('sanitizeHtml', () => {

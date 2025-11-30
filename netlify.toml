@@ -15,12 +15,11 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     # Content Security Policy
-    # Note on 'unsafe-inline'/'unsafe-eval': Required by Vite/React for:
-    # - 'unsafe-inline' in script-src: React event handlers and Vite HMR
-    # - 'unsafe-eval' in script-src: Development tooling, can be removed in production
+    # Note on 'unsafe-inline': Required by Vite/React for:
+    # - 'unsafe-inline' in script-src: Vite injects inline scripts for module loading
     # - 'unsafe-inline' in style-src: Tailwind CSS and inline styles
     # TODO: Consider nonces for stricter CSP in production
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://*.sentry.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://docs.google.com https://www.googleapis.com; frame-src https://docs.google.com https://*.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://*.sentry.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://docs.google.com https://www.googleapis.com; frame-src https://docs.google.com https://*.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
 
 [[headers]]
   for = "/assets/*"
