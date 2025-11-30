@@ -1,14 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Local Database Integration Tests
+ * Smoke Tests
  *
- * Prerequisites:
- * 1. Run `supabase start` for local database
- * 2. Run `npm run import-data` to seed lessons
- * 3. Dev server will be started automatically by webServer config
+ * Basic tests to verify the application loads and core functionality works.
+ * These run against whatever Supabase instance the app is configured with.
  */
-test.describe('Local Database Integration', () => {
+test.describe('Smoke Tests', () => {
   test('homepage loads and displays lessons', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');

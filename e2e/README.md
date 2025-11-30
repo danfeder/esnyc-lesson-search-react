@@ -51,7 +51,7 @@ npm run test:e2e:ui
 
 | File                    | Purpose                                                           |
 | ----------------------- | ----------------------------------------------------------------- |
-| `local-db.spec.ts`      | Database integration tests - verifies app connects to Supabase    |
+| `smoke.spec.ts`         | Smoke tests - verifies app loads and basic functionality works    |
 | `search.spec.ts`        | Search functionality - queries, case-insensitivity, special chars |
 | `filters.spec.ts`       | Filter interactions - grade levels, URL state persistence         |
 | `lessons.spec.ts`       | Lesson display - cards, titles, grades, interactions              |

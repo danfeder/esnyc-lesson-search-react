@@ -15,6 +15,32 @@ npm run test:rls          # Test RLS policies (run after migrations)
 npm run import-data       # Import lesson data to Supabase
 supabase db push          # Apply migrations
 supabase db reset         # Reset database
+
+# E2E Tests
+npm run test:e2e          # Run E2E tests (requires local dev server)
+npm run test:e2e:headed   # Run with visible browser
+npm run test:e2e:ui       # Run with Playwright UI
+```
+
+## E2E Testing
+
+E2E tests run in CI on every PR using Playwright against Netlify deploy previews.
+
+| Environment | Supabase Project | Purpose |
+|-------------|------------------|---------|
+| Production | `jxlxtzkmicfhchkhiojz` | Live site |
+| Deploy Previews | `rxgajgmphciuaqzvwmox` | E2E testing in CI |
+| Local | Local Supabase | Development |
+
+**CI Pipeline**: PR → Netlify builds preview with test Supabase → E2E tests run → Must pass to merge
+
+**Test Database**: Seeded with 783 lessons from production. Re-sync if needed:
+```bash
+# Dump production data
+supabase db dump --data-only -f /tmp/prod_data.sql --project-ref jxlxtzkmicfhchkhiojz
+
+# Restore to test project
+psql <test-connection-string> -f /tmp/prod_data.sql
 ```
 
 ## Core Constraints
