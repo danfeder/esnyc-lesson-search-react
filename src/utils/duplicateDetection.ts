@@ -34,7 +34,8 @@ export const DUPLICATE_CONFIG = {
   },
 } as const;
 
-export type DuplicateCategory = (typeof DUPLICATE_CONFIG.categories)[keyof typeof DUPLICATE_CONFIG.categories];
+export type DuplicateCategory =
+  (typeof DUPLICATE_CONFIG.categories)[keyof typeof DUPLICATE_CONFIG.categories];
 
 export interface LessonForDuplicateCheck {
   lesson_id: string;
@@ -443,9 +444,12 @@ export function identifySubGroups(
 /**
  * Calculate similarity statistics for a group.
  */
-export function calculateSimilarityStats(
-  similarities: Map<string, Map<string, number>>
-): { avg: number; min: number; max: number; count: number } {
+export function calculateSimilarityStats(similarities: Map<string, Map<string, number>>): {
+  avg: number;
+  min: number;
+  max: number;
+  count: number;
+} {
   let totalSim = 0;
   let minSim = 1.0;
   let maxSim = 0;

@@ -269,10 +269,7 @@ describe('duplicateDetection', () => {
   });
 
   describe('detectGradeVariations', () => {
-    const createLesson = (
-      id: string,
-      grades: string[]
-    ): LessonForDuplicateCheck => ({
+    const createLesson = (id: string, grades: string[]): LessonForDuplicateCheck => ({
       lesson_id: id,
       title: `Lesson ${id}`,
       created_at: new Date().toISOString(),
@@ -294,10 +291,7 @@ describe('duplicateDetection', () => {
     });
 
     it('handles lessons without grade levels', () => {
-      const lessons = [
-        createLesson('a', []),
-        createLesson('b', undefined as unknown as string[]),
-      ];
+      const lessons = [createLesson('a', []), createLesson('b', undefined as unknown as string[])];
 
       const groups = detectGradeVariations(lessons);
 
@@ -306,10 +300,7 @@ describe('duplicateDetection', () => {
     });
 
     it('sorts grade keys consistently', () => {
-      const lessons = [
-        createLesson('a', ['3', '1', '2']),
-        createLesson('b', ['1', '2', '3']),
-      ];
+      const lessons = [createLesson('a', ['3', '1', '2']), createLesson('b', ['1', '2', '3'])];
 
       const groups = detectGradeVariations(lessons);
 
@@ -319,10 +310,7 @@ describe('duplicateDetection', () => {
   });
 
   describe('detectCulturalVariations', () => {
-    const createLesson = (
-      id: string,
-      cultures: string[]
-    ): LessonForDuplicateCheck => ({
+    const createLesson = (id: string, cultures: string[]): LessonForDuplicateCheck => ({
       lesson_id: id,
       title: `Lesson ${id}`,
       created_at: new Date().toISOString(),
@@ -344,10 +332,7 @@ describe('duplicateDetection', () => {
   });
 
   describe('detectSeasonalVariations', () => {
-    const createLesson = (
-      id: string,
-      seasons: string[]
-    ): LessonForDuplicateCheck => ({
+    const createLesson = (id: string, seasons: string[]): LessonForDuplicateCheck => ({
       lesson_id: id,
       title: `Lesson ${id}`,
       created_at: new Date().toISOString(),
@@ -465,9 +450,27 @@ describe('duplicateDetection', () => {
       const lessons = [createLesson('a'), createLesson('b'), createLesson('c')];
 
       const similarities = new Map<string, Map<string, number>>();
-      similarities.set('a', new Map([['b', 0.98], ['c', 0.97]]));
-      similarities.set('b', new Map([['a', 0.98], ['c', 0.99]]));
-      similarities.set('c', new Map([['a', 0.97], ['b', 0.99]]));
+      similarities.set(
+        'a',
+        new Map([
+          ['b', 0.98],
+          ['c', 0.97],
+        ])
+      );
+      similarities.set(
+        'b',
+        new Map([
+          ['a', 0.98],
+          ['c', 0.99],
+        ])
+      );
+      similarities.set(
+        'c',
+        new Map([
+          ['a', 0.97],
+          ['b', 0.99],
+        ])
+      );
 
       const subGroups = identifySubGroups(lessons, similarities);
 
@@ -475,19 +478,42 @@ describe('duplicateDetection', () => {
     });
 
     it('identifies distinct sub-groups below threshold', () => {
-      const lessons = [
-        createLesson('a'),
-        createLesson('b'),
-        createLesson('c'),
-        createLesson('d'),
-      ];
+      const lessons = [createLesson('a'), createLesson('b'), createLesson('c'), createLesson('d')];
 
       // a-b are similar (0.98), c-d are similar (0.97), but a/b to c/d are below threshold
       const similarities = new Map<string, Map<string, number>>();
-      similarities.set('a', new Map([['b', 0.98], ['c', 0.90], ['d', 0.89]]));
-      similarities.set('b', new Map([['a', 0.98], ['c', 0.91], ['d', 0.88]]));
-      similarities.set('c', new Map([['a', 0.90], ['b', 0.91], ['d', 0.97]]));
-      similarities.set('d', new Map([['a', 0.89], ['b', 0.88], ['c', 0.97]]));
+      similarities.set(
+        'a',
+        new Map([
+          ['b', 0.98],
+          ['c', 0.9],
+          ['d', 0.89],
+        ])
+      );
+      similarities.set(
+        'b',
+        new Map([
+          ['a', 0.98],
+          ['c', 0.91],
+          ['d', 0.88],
+        ])
+      );
+      similarities.set(
+        'c',
+        new Map([
+          ['a', 0.9],
+          ['b', 0.91],
+          ['d', 0.97],
+        ])
+      );
+      similarities.set(
+        'd',
+        new Map([
+          ['a', 0.89],
+          ['b', 0.88],
+          ['c', 0.97],
+        ])
+      );
 
       const subGroups = identifySubGroups(lessons, similarities);
 
@@ -500,9 +526,27 @@ describe('duplicateDetection', () => {
   describe('calculateSimilarityStats', () => {
     it('calculates stats correctly', () => {
       const similarities = new Map<string, Map<string, number>>();
-      similarities.set('a', new Map([['b', 0.9], ['c', 0.8]]));
-      similarities.set('b', new Map([['a', 0.9], ['c', 0.85]]));
-      similarities.set('c', new Map([['a', 0.8], ['b', 0.85]]));
+      similarities.set(
+        'a',
+        new Map([
+          ['b', 0.9],
+          ['c', 0.8],
+        ])
+      );
+      similarities.set(
+        'b',
+        new Map([
+          ['a', 0.9],
+          ['c', 0.85],
+        ])
+      );
+      similarities.set(
+        'c',
+        new Map([
+          ['a', 0.8],
+          ['b', 0.85],
+        ])
+      );
 
       const stats = calculateSimilarityStats(similarities);
 
