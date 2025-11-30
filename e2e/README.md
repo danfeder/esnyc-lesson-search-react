@@ -18,6 +18,22 @@ End-to-end tests using Playwright to verify the application works correctly from
 
 3. The dev server will be started automatically by Playwright's `webServer` config.
 
+## Test Data Requirements
+
+Tests assume the database contains lesson data from `npm run import-data`. Specifically:
+
+- **Search tests** expect lessons containing "garden", "cooking", and "salad"
+- **Filter tests** expect lessons with various grade levels (3K, PK, K, 1st-5th)
+- **Lesson display tests** expect multiple lessons with titles, grades, and activity types
+
+If tests fail unexpectedly, verify the database has been seeded:
+
+```bash
+# Reset and reimport data
+supabase db reset
+npm run import-data
+```
+
 ## Running Tests
 
 ```bash
