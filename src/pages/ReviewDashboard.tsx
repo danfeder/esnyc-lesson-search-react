@@ -336,8 +336,9 @@ export function ReviewDashboard() {
     () =>
       submissions.map((submission) => ({
         ...submission,
-        extractedTitle:
-          parseExtractedContent(submission.extracted_content || '') || 'Untitled Submission',
+        extractedTitle: sanitizeContent(
+          parseExtractedContent(submission.extracted_content || '') || 'Untitled Submission'
+        ),
       })),
     [submissions]
   );
