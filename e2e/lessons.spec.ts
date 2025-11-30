@@ -33,9 +33,7 @@ test.describe('Lesson Display', () => {
     // Grade levels should be displayed on cards
     // Note: Pattern includes common grade level formats
     // "K" alone could match other words but is needed for Kindergarten display
-    const gradeIndicators = page.locator(
-      'text=/3K|PK|K|1st|2nd|3rd|4th|5th|6th|7th|8th|Grade/i'
-    );
+    const gradeIndicators = page.locator('text=/3K|PK|K|1st|2nd|3rd|4th|5th|6th|7th|8th|Grade/i');
     await expect(gradeIndicators.first()).toBeVisible({ timeout: 10000 });
 
     // Should have multiple grade indicators across different lessons
