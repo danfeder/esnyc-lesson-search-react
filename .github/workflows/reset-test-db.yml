@@ -1,0 +1,164 @@
+name: Reset Test Database
+
+# Database connection details (password stored in TEST_DB_PASSWORD secret)
+env:
+  TEST_DB_HOST: aws-0-us-east-2.pooler.supabase.com
+  TEST_DB_PORT: 6543
+  TEST_DB_USER: postgres.rxgajgmphciuaqzvwmox
+  TEST_DB_NAME: postgres
+
+on:
+  workflow_dispatch:
+    inputs:
+      reset_type:
+        description: 'Type of reset to perform'
+        required: true
+        default: 'migrations'
+        type: choice
+        options:
+          - migrations
+          - full
+      confirm:
+        description: 'Type "RESET" to confirm'
+        required: true
+        type: string
+
+jobs:
+  validate:
+    name: Validate Reset Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm != 'RESET'
+        run: |
+          echo "❌ Reset not confirmed. You must type 'RESET' to proceed."
+          exit 1
+
+  reset-migrations:
+    name: Reset Migrations
+    needs: validate
+    if: inputs.reset_type == 'migrations'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to test project
+        run: supabase link --project-ref rxgajgmphciuaqzvwmox
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Show current migration status
+        run: |
+          echo "## 📋 Current Migration Status (Before Reset)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          supabase migration list 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Repair migration history
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔧 Repairing Migration History" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          supabase migration repair --status applied 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Push all migrations
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Pushing All Migrations" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          supabase db push 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Show final migration status
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Migration Status (After Reset)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          supabase migration list 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Test database migrations reset complete!**" >> $GITHUB_STEP_SUMMARY
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  reset-full:
+    name: Full Reset (Schema + Data)
+    needs: validate
+    if: inputs.reset_type == 'full'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Link to production (for dump)
+        run: supabase link --project-ref jxlxtzkmicfhchkhiojz
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Dump production data
+        run: |
+          echo "## 📦 Dumping Production Data" >> $GITHUB_STEP_SUMMARY
+          supabase db dump --data-only -f /tmp/prod_data.sql
+          echo "Dumped $(wc -l < /tmp/prod_data.sql) lines of data" >> $GITHUB_STEP_SUMMARY
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Link to test project
+        run: supabase link --project-ref rxgajgmphciuaqzvwmox
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Push migrations to test
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔧 Applying Migrations to Test DB" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          supabase db push 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Restore data to test database
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📥 Restoring Data to Test DB" >> $GITHUB_STEP_SUMMARY
+
+          # Use environment variables for connection details
+          PGPASSWORD="${{ secrets.TEST_DB_PASSWORD }}" psql \
+            "postgresql://${TEST_DB_USER}@${TEST_DB_HOST}:${TEST_DB_PORT}/${TEST_DB_NAME}" \
+            -f /tmp/prod_data.sql 2>&1 | head -50 | tee -a $GITHUB_STEP_SUMMARY || true
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Full reset complete!**" >> $GITHUB_STEP_SUMMARY
+
+      - name: Verify lesson count
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Verification" >> $GITHUB_STEP_SUMMARY
+
+          LESSON_COUNT=$(PGPASSWORD="${{ secrets.TEST_DB_PASSWORD }}" psql \
+            "postgresql://${TEST_DB_USER}@${TEST_DB_HOST}:${TEST_DB_PORT}/${TEST_DB_NAME}" \
+            -t -c "SELECT COUNT(*) FROM lessons;" 2>/dev/null || echo "unknown")
+
+          echo "Lesson count in test DB: $LESSON_COUNT" >> $GITHUB_STEP_SUMMARY

@@ -22,26 +22,74 @@ npm run test:e2e:headed   # Run with visible browser
 npm run test:e2e:ui       # Run with Playwright UI
 ```
 
+## Database Environments
+
+| Environment | Supabase Project | Purpose |
+|-------------|------------------|---------|
+| **Local** | Docker (`supabase start`) | Development |
+| **Test** | `rxgajgmphciuaqzvwmox` | Deploy previews, E2E tests |
+| **Production** | `jxlxtzkmicfhchkhiojz` | Live site |
+
+## Database Migration Workflow
+
+### Creating a Migration (Local Development)
+
+```bash
+# 1. Start local Supabase
+supabase start
+
+# 2. Make changes in Supabase Studio (http://localhost:54323)
+#    OR write SQL directly
+
+# 3. Generate migration from your changes
+supabase db diff -f descriptive_name
+
+# 4. Test locally
+supabase db reset
+npm run test:rls
+```
+
+### Automated CI Pipeline
+
+```
+PR Created
+    ↓
+Migration files detected? → Auto-apply to TEST DB
+    ↓
+Netlify builds preview (uses test DB)
+    ↓
+E2E tests run
+    ↓
+PR Merged to main
+    ↓
+Migration files detected? → Shows dry-run
+    ↓
+⏸️ Manual approval required in GitHub
+    ↓
+Auto-apply to PRODUCTION DB
+```
+
+### Manual Database Reset
+
+If test DB gets corrupted, use GitHub Actions:
+1. Go to Actions → "Reset Test Database"
+2. Choose reset type:
+   - **migrations**: Re-apply all migrations (schema only)
+   - **full**: Reset schema + sync data from production
+3. Type "RESET" to confirm
+
+### Migration Best Practices
+
+- Always test migrations locally with `supabase db reset`
+- Run `npm run test:rls` after schema changes
+- Include rollback strategy for destructive changes
+- Use descriptive migration names: `add_column_to_lessons`
+
 ## E2E Testing
 
 E2E tests run in CI on every PR using Playwright against Netlify deploy previews.
 
-| Environment | Supabase Project | Purpose |
-|-------------|------------------|---------|
-| Production | `jxlxtzkmicfhchkhiojz` | Live site |
-| Deploy Previews | `rxgajgmphciuaqzvwmox` | E2E testing in CI |
-| Local | Local Supabase | Development |
-
-**CI Pipeline**: PR → Netlify builds preview with test Supabase → E2E tests run → Must pass to merge
-
-**Test Database**: Seeded with 783 lessons from production. Re-sync if needed:
-```bash
-# Dump production data
-supabase db dump --data-only -f /tmp/prod_data.sql --project-ref jxlxtzkmicfhchkhiojz
-
-# Restore to test project
-psql <test-connection-string> -f /tmp/prod_data.sql
-```
+**CI Pipeline**: PR → Migrations applied to test DB → Netlify builds preview → E2E tests run → Must pass to merge
 
 ## Core Constraints
 
