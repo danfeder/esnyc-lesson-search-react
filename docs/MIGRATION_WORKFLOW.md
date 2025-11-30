@@ -212,12 +212,20 @@ If a migration breaks production:
 # 1. Check what's wrong
 # (Use Supabase Dashboard or MCP tools to investigate)
 
-# 2. Apply rollback SQL from migration comments manually
-# (Run the commented rollback commands)
-
-# 3. Create a new migration to fix the issue
-# (Don't edit the broken migration)
+# 2. Create a NEW migration that reverses the changes
+# (Don't edit the broken migration - always move forward)
 ```
+
+Example rollback migration:
+```sql
+-- 20251202_rollback_rating_column.sql
+-- Description: Rollback the rating column added in 20251201
+
+DROP INDEX IF EXISTS idx_lessons_rating;
+ALTER TABLE lessons DROP COLUMN IF EXISTS rating;
+```
+
+Then push the rollback migration through the normal CI pipeline.
 
 ## NPM Scripts Reference
 

@@ -57,7 +57,8 @@ LOCAL:      mcp__supabase__execute_sql        (use freely)
 PRODUCTION: mcp__supabase-remote__execute_sql (be careful!)
 ```
 
-**NEVER use MCP tools for schema changes on production. Always use migration files.**
+**NEVER use `mcp__supabase-remote__apply_migration` for schema changes!**
+Schema changes must go through migration files and the CI pipeline.
 
 ### Key Commands
 

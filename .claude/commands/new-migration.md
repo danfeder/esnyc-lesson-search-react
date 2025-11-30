@@ -19,7 +19,7 @@ Create a new Supabase migration. Usage: /new-migration add_feature_name
    npm run test:rls       # Verify RLS policies
    ```
 
-4. Create a PR - DO NOT run `supabase db push` manually!
+4. Create a PR - DO NOT run `supabase db push` to production manually!
    - The CI pipeline will automatically apply migrations to TEST database
    - E2E tests will run
    - After merge, migrations require manual approval for production

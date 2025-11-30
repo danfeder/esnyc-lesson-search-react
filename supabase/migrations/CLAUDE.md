@@ -41,7 +41,7 @@ These change the **content** inside tables:
 touch supabase/migrations/$(date +%Y%m%d)_description.sql
 ```
 
-**Naming:** `YYYYMMDD_short_description.sql` (e.g., `20251201_add_rating_column.sql`)
+**Naming:** `YYYYMMDD_short_description.sql` where YYYYMMDD has no separators (e.g., `20251201_add_rating_column.sql` for Dec 1, 2025)
 
 ### Step 2: Write Migration SQL
 
