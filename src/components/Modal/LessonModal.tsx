@@ -226,18 +226,28 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
 
             {/* Academic Integration */}
             {lesson.metadata.academicIntegration &&
-              lesson.metadata.academicIntegration.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Academic Integration</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {lesson.metadata.academicIntegration.map((subject) => (
-                      <span key={subject} className="lesson-tag bg-indigo-100 text-indigo-800">
-                        {subject}
-                      </span>
-                    ))}
+              (() => {
+                // Handle both array format and object with selected key
+                const ai = lesson.metadata.academicIntegration;
+                const subjects: string[] = Array.isArray(ai)
+                  ? ai.filter((item): item is string => typeof item === 'string')
+                  : ai && typeof ai === 'object' && 'selected' in ai && Array.isArray(ai.selected)
+                    ? ai.selected.filter((item): item is string => typeof item === 'string')
+                    : [];
+
+                return subjects.length > 0 ? (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">Academic Integration</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {subjects.map((subject) => (
+                        <span key={subject} className="lesson-tag bg-indigo-100 text-indigo-800">
+                          {subject}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
 
             {/* Social-Emotional Learning */}
             {lesson.metadata.socialEmotionalLearning &&
