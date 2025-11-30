@@ -2,63 +2,56 @@
 
 ## Overview
 
-This document defines the safe workflow for database migrations. Following this process ensures local, staging, and production databases stay synchronized.
+This project uses a **3-part database pipeline** with automated CI/CD for safe database migrations:
+
+```
+LOCAL (Docker)  →  TEST (CI)  →  PRODUCTION (Approved)
+```
 
 ## Environments
 
-| Environment | Purpose | Project ID |
-|-------------|---------|------------|
-| **Local** | Development & testing | N/A (Docker) |
-| **Staging** | Pre-production testing | `epedjebjemztzdyhqace` (paused) |
-| **Production** | Live application | `jxlxtzkmicfhchkhiojz` |
+| Environment | Project ID | Purpose |
+|-------------|------------|---------|
+| **Local** | Docker container | Development & experimentation |
+| **Test** | `rxgajgmphciuaqzvwmox` | Automated CI testing |
+| **Production** | `jxlxtzkmicfhchkhiojz` | Live application |
 
-### Local Development Setup
+## The CI/CD Pipeline
 
-```bash
-# Start local Supabase (includes DB, Auth, Storage, Edge Functions)
-supabase start
-
-# Reset database with migrations + seed data
-npm run db:reset
-
-# Regenerate TypeScript types after schema changes
-npm run db:types
-
-# View local Studio
-open http://localhost:54323
 ```
-
-### Using the Staging Environment
-
-The `dev_staging` project exists but is currently paused to save resources.
-
-**To activate staging:**
-1. Go to https://supabase.com/dashboard/project/epedjebjemztzdyhqace
-2. Click "Restore project" to unpause
-3. Link locally: `supabase link --project-ref epedjebjemztzdyhqace`
-4. Push migrations: `supabase db push`
-
-**When to use staging:**
-- Testing migrations with production-like data
-- Validating Edge Function changes before production
-- Load testing or performance validation
-
-**To switch between environments:**
-```bash
-# Link to staging
-supabase link --project-ref epedjebjemztzdyhqace
-
-# Link back to production
-supabase link --project-ref jxlxtzkmicfhchkhiojz
+┌─────────────────────────────────────────────────────────────────┐
+│                    MIGRATION PIPELINE                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. LOCAL DEVELOPMENT                                           │
+│     ├─ Create migration file                                    │
+│     ├─ Test with: supabase db reset                            │
+│     └─ Verify with: npm run test:rls                           │
+│                          │                                      │
+│                          ▼                                      │
+│  2. PULL REQUEST CREATED                                        │
+│     ├─ GitHub detects migration files changed                   │
+│     ├─ E2E workflow auto-applies to TEST database              │
+│     ├─ RLS tests run against TEST database                     │
+│     └─ E2E tests run against Netlify preview                   │
+│                          │                                      │
+│                          ▼                                      │
+│  3. PR MERGED TO MAIN                                          │
+│     ├─ migrate-production.yml triggers                         │
+│     ├─ Dry-run shows pending changes                           │
+│     ├─ ⏸️  WAITS FOR MANUAL APPROVAL                           │
+│     └─ After approval: applies to PRODUCTION                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Golden Rules
 
 1. **NEVER** make direct edits in Supabase Studio on production
-2. **ALWAYS** create a migration file first
-3. **ALWAYS** test locally before pushing to production
+2. **ALWAYS** create a migration file for schema changes
+3. **ALWAYS** test locally before creating a PR
 4. **ALWAYS** run `npm run test:rls` after any RLS changes
-5. **NEVER** mark a migration as "applied" unless it actually is
+5. **ALWAYS** wait for E2E tests to pass before merging
 
 ## Standard Workflow
 
@@ -70,22 +63,21 @@ touch supabase/migrations/$(date +%Y%m%d)_description.sql
 ```
 
 **Naming convention:** `YYYYMMDD_short_description.sql`
-- Example: `20251129_add_teacher_review_policy.sql`
+- Example: `20251201_add_rating_column.sql`
 
 ### Step 2: Write Migration SQL
 
 ```sql
--- Migration: 20251129_add_teacher_review_policy.sql
--- Description: Add RLS policy for teachers to view their own reviews
--- Issue: #122
+-- Migration: 20251201_add_rating_column.sql
+-- Description: Add rating column to lessons table
 
-CREATE POLICY "Policy name" ON "public"."table_name"
-  FOR SELECT
-  TO "authenticated"
-  USING (your_condition);
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS rating integer;
+
+CREATE INDEX IF NOT EXISTS idx_lessons_rating ON lessons(rating);
 
 -- Rollback:
--- DROP POLICY IF EXISTS "Policy name" ON "public"."table_name";
+-- DROP INDEX IF EXISTS idx_lessons_rating;
+-- ALTER TABLE lessons DROP COLUMN IF EXISTS rating;
 ```
 
 ### Step 3: Test Locally
@@ -95,7 +87,7 @@ CREATE POLICY "Policy name" ON "public"."table_name"
 supabase status
 
 # Reset local DB and apply all migrations
-supabase db reset --local
+supabase db reset
 
 # Run RLS tests
 npm run test:rls
@@ -103,72 +95,47 @@ npm run test:rls
 # Test the specific functionality manually
 ```
 
-### Step 4: Verify Before Push
+### Step 4: Create PR
 
 ```bash
-# Check what will be pushed
-supabase db push --dry-run
-
-# Verify migration history matches
-supabase migration list
+git checkout -b feat/add-rating-column
+git add supabase/migrations/
+git commit -m "feat(db): add rating column to lessons"
+git push origin feat/add-rating-column
+gh pr create --title "feat(db): add rating column"
 ```
 
-### Step 5: Push to Production
+### Step 5: CI Tests Automatically
+
+When you create the PR:
+1. GitHub Actions detects migration files in the PR
+2. Migrations are automatically applied to the TEST database
+3. RLS tests verify policies work correctly
+4. E2E tests run against the Netlify deploy preview
+
+### Step 6: Approve Production Deployment
+
+After the PR is merged to main:
+1. Go to **Actions** tab in GitHub
+2. Find the "Production Database Migration" workflow
+3. The "Apply to Production" job will be **waiting for approval**
+4. Click "Review deployments" → Select "production" → "Approve and deploy"
+5. Migrations are applied to production
+
+## Local Development Setup
 
 ```bash
-# Push the migration (will prompt for confirmation)
-supabase db push --include-all
+# Start local Supabase (includes DB, Auth, Storage, Edge Functions)
+supabase start
 
-# Verify it was applied
-supabase db dump --linked --schema public | grep "Your policy name"
-```
+# Reset database with migrations
+supabase db reset
 
-### Step 6: Commit and PR
+# View local Studio
+open http://localhost:54323
 
-```bash
-git add supabase/migrations/20251129_description.sql
-git commit -m "feat(db): add description
-
-Closes #XXX"
-```
-
-## Troubleshooting
-
-### Migration History Mismatch
-
-If `supabase db push` fails with "Remote migration versions not found in local":
-
-```bash
-# Check current state
-supabase migration list
-
-# Repair history (metadata only - doesn't change schema)
-supabase migration repair --status reverted <old_version>
-supabase migration repair --status applied <current_version>
-```
-
-**CAUTION:** Only use `--status applied` if the migration content IS actually on the remote database.
-
-### Connection Issues
-
-If you see SCRAM authentication errors:
-
-```bash
-# Re-link to project
-supabase link --project-ref <project_id>
-
-# Try with --include-all flag
-supabase db push --include-all
-```
-
-### Verifying Remote State
-
-```bash
-# Dump and search for specific objects
-supabase db dump --linked --schema public | grep "your_search_term"
-
-# Check table sizes (quick health check)
-supabase inspect db table-stats
+# Stop when done
+supabase stop
 ```
 
 ## Migration File Template
@@ -179,14 +146,13 @@ supabase inspect db table-stats
 -- =====================================================
 -- Description: What this migration does
 -- Issue: #XXX (if applicable)
--- Author: Your name
--- Date: YYYY-MM-DD
 
 -- =====================================================
 -- CHANGES
 -- =====================================================
 
 -- Your SQL here
+-- Use IF NOT EXISTS / IF EXISTS for safety
 
 -- =====================================================
 -- ROLLBACK (keep as comments for emergency use)
@@ -195,55 +161,89 @@ supabase inspect db table-stats
 -- DROP TABLE IF EXISTS ...;
 ```
 
-## What NOT to Do
+## Two Types of Changes
 
-### Direct Studio Edits
-- Creating tables in Supabase Studio
-- Adding policies via the Dashboard
-- Running SQL in the SQL Editor without a migration file
+### Schema Changes → Migration Files
+- Creating/dropping tables
+- Adding/removing columns
+- Creating indexes
+- Adding RLS policies
+- Creating functions
 
-All of these bypass the migration tracking and cause drift.
+**Must use migration files and go through CI pipeline.**
 
-### Skipping Local Testing
-- Pushing untested migrations
-- Assuming "it's just a small change"
-- Not running `npm run test:rls` after RLS changes
+### Data Changes → Direct Queries
+- Adding/updating/deleting rows
+- Importing data
+- Fixing incorrect data
 
-### Manual Migration Repair Without Verification
+**Can use MCP tools or scripts directly (be careful with production).**
+
+## Troubleshooting
+
+### Migration History Mismatch
+
+If migrations get out of sync:
+
 ```bash
-# DANGEROUS - Don't do this without checking!
-supabase migration repair --status applied 20251129  # <- Only if ACTUALLY applied!
+# Check current state
+supabase migration list
+
+# Repair history (metadata only - doesn't change schema)
+supabase migration repair --status reverted <old_version>
+supabase migration repair --status applied <current_version>
 ```
 
-## Emergency Rollback
+**CAUTION:** Only mark as "applied" if the migration IS actually on the database.
+
+### E2E Tests Failing
+
+If migration tests fail in CI:
+1. Check the GitHub Actions logs for the error
+2. Fix the migration locally
+3. Test with `supabase db reset && npm run test:rls`
+4. Push the fix to the PR
+
+### Production Migration Failed
 
 If a migration breaks production:
 
 ```bash
 # 1. Check what's wrong
-supabase db dump --linked --schema public > emergency-dump.sql
+# (Use Supabase Dashboard or MCP tools to investigate)
 
-# 2. Apply rollback SQL (from migration comments)
-# Run the rollback commands from your migration file
-
-# 3. Mark migration as reverted
-supabase migration repair --status reverted <version>
-
-# 4. Fix the migration locally, then re-push
+# 2. Create a NEW migration that reverses the changes
+# (Don't edit the broken migration - always move forward)
 ```
+
+Example rollback migration:
+```sql
+-- 20251202_rollback_rating_column.sql
+-- Description: Rollback the rating column added in 20251201
+
+DROP INDEX IF EXISTS idx_lessons_rating;
+ALTER TABLE lessons DROP COLUMN IF EXISTS rating;
+```
+
+Then push the rollback migration through the normal CI pipeline.
 
 ## NPM Scripts Reference
 
 | Script | Description |
 |--------|-------------|
-| `npm run db:types` | Regenerate types from local database |
-| `npm run db:types:remote` | Regenerate types from production database |
-| `npm run db:reset` | Reset local database (migrations + seed) |
-| `npm run db:push` | Push migrations to linked remote |
-| `npm run test:rls` | Test RLS policies locally |
+| `npm run test:rls` | Test RLS policies |
+| `supabase db reset` | Reset local database |
+| `supabase migration list` | Show migration status |
+
+## GitHub Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `e2e.yml` | PR to main | Test migrations on TEST db |
+| `migrate-production.yml` | Push to main | Apply to PRODUCTION (requires approval) |
+| `reset-test-db.yml` | Manual | Reset TEST database if corrupted |
 
 ## History
 
-- **2025-11-30:** Documented after fixing migration drift between local (baseline snapshot) and remote (old individual migrations).
-- **Problem solved:** Remote had `20250709015027`, `20250710003355`; Local had consolidated `20251001` baseline.
-- **Solution:** Used `migration repair` to synchronize history, then pushed pending migrations.
+- **2025-11-30:** Implemented 3-part pipeline with TEST database and GitHub Environment approvals
+- **Previous:** Used manual `supabase db push` to production
