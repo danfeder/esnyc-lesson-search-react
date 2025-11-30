@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -5,27 +6,60 @@ import { ErrorBoundary } from '@/components/Common/ErrorBoundary';
 import { AppErrorFallback } from '@/components/Common/AppErrorFallback';
 import { RouteErrorFallback } from '@/components/Common/RouteErrorFallback';
 import { ReviewErrorBoundary } from '@/components/Common/ReviewErrorBoundary';
+import { PageLoader } from '@/components/Common/PageLoader';
 import { Header } from '@/components/Layout/Header';
 import { SearchPage } from '@/pages/SearchPage';
-import { SubmissionPage } from '@/pages/SubmissionPage';
-import { ReviewDashboard } from '@/pages/ReviewDashboard';
-import { ReviewDetail } from '@/pages/ReviewDetail';
-import { AdminDuplicates } from '@/pages/AdminDuplicates';
-import { AdminDuplicateDetail } from '@/pages/AdminDuplicateDetail';
-import { AdminUsers } from '@/pages/AdminUsers';
-import { AdminUserDetail } from '@/pages/AdminUserDetail';
-import { AdminInviteUser } from '@/pages/AdminInviteUser';
-import { AdminInvitations } from '@/pages/AdminInvitations';
-import { AdminAnalytics } from '@/pages/AdminAnalytics';
-import { AdminDashboard } from '@/pages/AdminDashboard';
-import { UserProfile } from '@/pages/UserProfile';
-import { AcceptInvitation } from '@/pages/AcceptInvitation';
-import { ResetPassword } from '@/pages/ResetPassword';
-import { VerifySetup } from '@/pages/VerifySetup';
 import { useLessonStats } from '@/hooks/useLessonStats';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import { Permission } from '@/types/auth';
 import { logger } from '@/utils/logger';
+
+// Lazy load all pages except SearchPage (landing page)
+const SubmissionPage = lazy(() =>
+  import('@/pages/SubmissionPage').then((m) => ({ default: m.SubmissionPage }))
+);
+const ReviewDashboard = lazy(() =>
+  import('@/pages/ReviewDashboard').then((m) => ({ default: m.ReviewDashboard }))
+);
+const ReviewDetail = lazy(() =>
+  import('@/pages/ReviewDetail').then((m) => ({ default: m.ReviewDetail }))
+);
+const AdminDuplicates = lazy(() =>
+  import('@/pages/AdminDuplicates').then((m) => ({ default: m.AdminDuplicates }))
+);
+const AdminDuplicateDetail = lazy(() =>
+  import('@/pages/AdminDuplicateDetail').then((m) => ({ default: m.AdminDuplicateDetail }))
+);
+const AdminUsers = lazy(() =>
+  import('@/pages/AdminUsers').then((m) => ({ default: m.AdminUsers }))
+);
+const AdminUserDetail = lazy(() =>
+  import('@/pages/AdminUserDetail').then((m) => ({ default: m.AdminUserDetail }))
+);
+const AdminInviteUser = lazy(() =>
+  import('@/pages/AdminInviteUser').then((m) => ({ default: m.AdminInviteUser }))
+);
+const AdminInvitations = lazy(() =>
+  import('@/pages/AdminInvitations').then((m) => ({ default: m.AdminInvitations }))
+);
+const AdminAnalytics = lazy(() =>
+  import('@/pages/AdminAnalytics').then((m) => ({ default: m.AdminAnalytics }))
+);
+const AdminDashboard = lazy(() =>
+  import('@/pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
+const UserProfile = lazy(() =>
+  import('@/pages/UserProfile').then((m) => ({ default: m.UserProfile }))
+);
+const AcceptInvitation = lazy(() =>
+  import('@/pages/AcceptInvitation').then((m) => ({ default: m.AcceptInvitation }))
+);
+const ResetPassword = lazy(() =>
+  import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPassword }))
+);
+const VerifySetup = lazy(() =>
+  import('@/pages/VerifySetup').then((m) => ({ default: m.VerifySetup }))
+);
 
 // Create a client
 const queryClient = new QueryClient({
@@ -48,112 +82,114 @@ function AppContent() {
         <Header totalLessons={totalLessons} totalCategories={totalCategories} />
 
         <main>
-          <Routes>
-            <Route path="/" element={<SearchPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/submit" element={<SubmissionPage />} />
-            <Route path="/accept-invitation" element={<AcceptInvitation />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route
-              path="/review"
-              element={
-                <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
-                  <ReviewDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/review/:id"
-              element={
-                <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
-                  <ReviewErrorBoundary>
-                    <ReviewDetail />
-                  </ReviewErrorBoundary>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute
-                  permissions={[
-                    Permission.VIEW_USERS,
-                    Permission.VIEW_ANALYTICS,
-                    Permission.MANAGE_DUPLICATES,
-                    Permission.REVIEW_LESSONS,
-                  ]}
-                >
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/duplicates"
-              element={
-                <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
-                  <AdminDuplicates />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/duplicates/:groupId"
-              element={
-                <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
-                  <AdminDuplicateDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
-                  <AdminUsers />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users/invite"
-              element={
-                <ProtectedRoute permissions={[Permission.INVITE_USERS]}>
-                  <AdminInviteUser />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/invitations"
-              element={
-                <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
-                  <AdminInvitations />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users/:userId"
-              element={
-                <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
-                  <AdminUserDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/analytics"
-              element={
-                <ProtectedRoute permissions={[Permission.VIEW_ANALYTICS]}>
-                  <AdminAnalytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <UserProfile />
-                </ProtectedRoute>
-              }
-            />
-            {/* Temporary route for testing - remove in production */}
-            <Route path="/verify-setup" element={<VerifySetup />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<SearchPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/submit" element={<SubmissionPage />} />
+              <Route path="/accept-invitation" element={<AcceptInvitation />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route
+                path="/review"
+                element={
+                  <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
+                    <ReviewDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/review/:id"
+                element={
+                  <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
+                    <ReviewErrorBoundary>
+                      <ReviewDetail />
+                    </ReviewErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute
+                    permissions={[
+                      Permission.VIEW_USERS,
+                      Permission.VIEW_ANALYTICS,
+                      Permission.MANAGE_DUPLICATES,
+                      Permission.REVIEW_LESSONS,
+                    ]}
+                  >
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/duplicates"
+                element={
+                  <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
+                    <AdminDuplicates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/duplicates/:groupId"
+                element={
+                  <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
+                    <AdminDuplicateDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users/invite"
+                element={
+                  <ProtectedRoute permissions={[Permission.INVITE_USERS]}>
+                    <AdminInviteUser />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/invitations"
+                element={
+                  <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
+                    <AdminInvitations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users/:userId"
+                element={
+                  <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
+                    <AdminUserDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/analytics"
+                element={
+                  <ProtectedRoute permissions={[Permission.VIEW_ANALYTICS]}>
+                    <AdminAnalytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <UserProfile />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Temporary route for testing - remove in production */}
+              <Route path="/verify-setup" element={<VerifySetup />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </Router>
