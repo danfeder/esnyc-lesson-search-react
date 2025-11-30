@@ -1,5 +1,12 @@
 name: Reset Test Database
 
+# Database connection details (password stored in TEST_DB_PASSWORD secret)
+env:
+  TEST_DB_HOST: aws-0-us-east-2.pooler.supabase.com
+  TEST_DB_PORT: 6543
+  TEST_DB_USER: postgres.rxgajgmphciuaqzvwmox
+  TEST_DB_NAME: postgres
+
 on:
   workflow_dispatch:
     inputs:
@@ -137,15 +144,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📥 Restoring Data to Test DB" >> $GITHUB_STEP_SUMMARY
 
-          # Use the pooler connection string for the test database
+          # Use environment variables for connection details
           PGPASSWORD="${{ secrets.TEST_DB_PASSWORD }}" psql \
-            "postgresql://postgres.rxgajgmphciuaqzvwmox@aws-0-us-east-2.pooler.supabase.com:6543/postgres" \
+            "postgresql://${TEST_DB_USER}@${TEST_DB_HOST}:${TEST_DB_PORT}/${TEST_DB_NAME}" \
             -f /tmp/prod_data.sql 2>&1 | head -50 | tee -a $GITHUB_STEP_SUMMARY || true
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Full reset complete!**" >> $GITHUB_STEP_SUMMARY
-        env:
-          TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
 
       - name: Verify lesson count
         run: |
@@ -153,9 +158,7 @@ jobs:
           echo "## 📊 Verification" >> $GITHUB_STEP_SUMMARY
 
           LESSON_COUNT=$(PGPASSWORD="${{ secrets.TEST_DB_PASSWORD }}" psql \
-            "postgresql://postgres.rxgajgmphciuaqzvwmox@aws-0-us-east-2.pooler.supabase.com:6543/postgres" \
+            "postgresql://${TEST_DB_USER}@${TEST_DB_HOST}:${TEST_DB_PORT}/${TEST_DB_NAME}" \
             -t -c "SELECT COUNT(*) FROM lessons;" 2>/dev/null || echo "unknown")
 
           echo "Lesson count in test DB: $LESSON_COUNT" >> $GITHUB_STEP_SUMMARY
-        env:
-          TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
