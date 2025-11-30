@@ -37,22 +37,16 @@ jobs:
         with:
           version: latest
 
-      - name: Link to test project
-        if: steps.migration-check.outputs.migrations == 'true'
-        run: supabase link --project-ref rxgajgmphciuaqzvwmox
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
       - name: Show pending migrations (dry-run)
         if: steps.migration-check.outputs.migrations == 'true'
         run: |
           echo "## 🔍 Pending Migrations for TEST Database" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          supabase db push --dry-run 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          supabase db push --dry-run --db-url "postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.rxgajgmphciuaqzvwmox.supabase.co:5432/postgres" 2>&1 | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_TEST }}
 
       - name: Apply migrations to TEST database
         if: steps.migration-check.outputs.migrations == 'true'
@@ -62,7 +56,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## ✅ Migrations Applied to TEST Database" >> $GITHUB_STEP_SUMMARY
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_TEST }}
 
       - name: Test RLS policies
