@@ -87,39 +87,9 @@ useEffect(() => {
 }, []);
 ```
 
-## 🔍 Legacy: Algolia Search Client (Archived)
+## 🔍 Legacy: Algolia (Removed)
 
-```typescript
-// lib/algolia.ts
-import algoliasearch from 'algoliasearch';
-
-// Note: Algolia has been removed from the app. Kept here for historical context.
-const appId = import.meta.env.VITE_ALGOLIA_APP_ID; // legacy
-const searchKey = import.meta.env.VITE_ALGOLIA_SEARCH_API_KEY; // legacy
-
-if (!appId || !searchKey) {
-  logger.warn('Algolia not configured, search disabled');
-}
-
-export const searchClient = appId && searchKey 
-  ? algoliasearch(appId, searchKey)
-  : null;
-
-// NEVER expose admin key in frontend!
-// Admin key is only for backend/scripts
-```
-
-### Algolia Search Pattern (Legacy)
-```typescript
-const index = searchClient?.initIndex('lessons');
-
-const results = await index?.search(query, {
-  filters: buildAlgoliaFilters(filters),
-  facets: ['gradeLevels', 'themes'],
-  hitsPerPage: 20,
-  page: currentPage - 1, // Algolia uses 0-based pages
-});
-```
+Algolia was removed from this project. Search now uses PostgreSQL full-text search with synonym/typo expansion. See `supabase/functions/search-lessons/` for the current implementation.
 
 ## 📊 Sentry Error Tracking
 
@@ -218,12 +188,6 @@ useQuery({
 - Use `.maybeSingle()` if row might not exist
 - Timestamps are strings, not Date objects
 
-### Algolia (Legacy)
-- Requires manual synonym configuration after data sync
-- Facet filters use different syntax than SQL
-- Page numbers are 0-based (not 1-based)
-- Max 1000 hits per query by default
-
 ### React Query
 - `cacheTime` renamed to `gcTime` in v5
 - Mutations don't refetch by default
@@ -242,15 +206,12 @@ useQuery({
 # Frontend (.env)
 VITE_SUPABASE_URL=         # Required
 VITE_SUPABASE_ANON_KEY=     # Required
-VITE_ALGOLIA_APP_ID=        # Legacy (no longer used)
-VITE_ALGOLIA_SEARCH_API_KEY= # Legacy (no longer used)
 VITE_SENTRY_DSN=            # Optional (monitoring)
 
-# Backend/Scripts only
+# Backend/Scripts only (Supabase secrets)
 SUPABASE_SERVICE_ROLE_KEY=  # Admin operations
-ALGOLIA_ADMIN_API_KEY=       # Legacy data sync (removed)
-OPENAI_API_KEY=              # Embeddings (future)
-GOOGLE_SERVICE_ACCOUNT_JSON= # Google Docs (future)
+OPENAI_API_KEY=              # Embeddings (working in production)
+GOOGLE_SERVICE_ACCOUNT_JSON= # Google Docs API (working in production)
 RESEND_API_KEY=              # Email sending
 ```
 
@@ -261,11 +222,8 @@ RESEND_API_KEY=              # Email sending
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation } from '@tanstack/react-query';
 
-// Default imports where needed
-import algoliasearch from 'algoliasearch';
-
 // Lazy load heavy libraries
-const Sentry = import.meta.env.PROD 
+const Sentry = import.meta.env.PROD
   ? await import('@sentry/react')
   : null;
 ```

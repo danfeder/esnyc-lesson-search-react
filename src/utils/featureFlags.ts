@@ -19,20 +19,3 @@ export const FEATURES = {
 
 // Type for feature flag keys
 export type FeatureFlagKey = keyof typeof FEATURES;
-
-/**
- * Helper function to check if a feature is enabled
- * @param feature - The feature flag key to check
- * @returns boolean indicating if the feature is enabled
- */
-export function isFeatureEnabled(feature: FeatureFlagKey): boolean {
-  return FEATURES[feature] ?? false;
-}
-
-/**
- * Get all feature flags and their current states
- * Useful for debugging and admin panels
- */
-export function getAllFeatureFlags(): Record<FeatureFlagKey, boolean> {
-  return { ...FEATURES };
-}

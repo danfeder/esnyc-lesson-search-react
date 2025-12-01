@@ -102,16 +102,3 @@ export function ProtectedRoute({
   // User is authenticated and has required permissions
   return <>{children}</>;
 }
-
-// Higher-order component for easier route protection
-export function withProtection<P extends object>(
-  Component: React.ComponentType<P>,
-  permissions?: Permission[],
-  requireAll?: boolean
-) {
-  return (props: P) => (
-    <ProtectedRoute permissions={permissions} requireAll={requireAll}>
-      <Component {...props} />
-    </ProtectedRoute>
-  );
-}
