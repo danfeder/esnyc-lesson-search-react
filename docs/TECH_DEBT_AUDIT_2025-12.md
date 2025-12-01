@@ -169,15 +169,13 @@
 |------|-------|
 | `src/lib/CLAUDE.md` | Too much Algolia legacy content |
 | `docs/IMPLEMENTATION_STATUS.md` | Last updated Sept 2025 |
-| `docs/MIGRATION_WORKFLOW_PLAN.md` | Superseded by MIGRATION_WORKFLOW.md |
+| `docs/archive/MIGRATION_WORKFLOW_PLAN.md` | Archived - superseded by MIGRATION_WORKFLOW.md |
 
-### Medium Priority - Archive
+### Medium Priority - Archive ✅ COMPLETED
 
-| Files | Notes |
-|-------|-------|
-| 6 duplicate detection docs | Most from Aug 2025, redundant |
-| 4 planning docs | Unclear implementation status |
-| 3 architecture cleanup docs | Cleanup complete |
+Archived in PR #357:
+- 5 planning docs (MIGRATION_WORKFLOW_PLAN, CLAUDE_ACTIONS_ENHANCEMENT_PLAN, SUPABASE_IMPROVEMENTS_PLAN, CLEANUP_PLAN, LESSON_SUBMISSION_WORKPLAN)
+- 4 historical docs (duplicate-analysis-expert-report, duplicate-resolution-plan, duplicate-detection-improvement-plan, architecture-cleanup-guide)
 
 ---
 

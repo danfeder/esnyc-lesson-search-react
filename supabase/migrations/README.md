@@ -356,7 +356,7 @@ WHERE table_name = 'lessons'
 **Architecture**:
 - `docs/architecture-decisions.md` - Why we made key decisions
 - `docs/search-architecture-v2.md` - Search system design (COMPLETED in production!)
-- `docs/architecture-cleanup-guide.md` - Cleanup progress tracker
+- `docs/archive/architecture-cleanup-guide.md` - Cleanup progress tracker (archived)
 
 **Safety**:
 - `docs/DATABASE_SAFETY_CHECKLIST.md` - Pre-migration checklist
