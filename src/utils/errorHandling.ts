@@ -60,17 +60,6 @@ export function parseDbError(error: PostgrestError | Error | unknown): string {
 }
 
 /**
- * Check if an error is a unique constraint violation
- */
-export function isUniqueConstraintError(error: unknown): boolean {
-  if (error && typeof error === 'object' && 'code' in error) {
-    const pgError = error as PostgrestError;
-    return pgError.code === '23505';
-  }
-  return false;
-}
-
-/**
  * Check if an error is specifically an email uniqueness constraint violation
  */
 export function isEmailDuplicateError(error: unknown): boolean {
