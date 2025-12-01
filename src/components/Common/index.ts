@@ -1,7 +1,6 @@
 export { ErrorBoundary, DefaultErrorFallback } from './ErrorBoundary';
 export { AppErrorFallback } from './AppErrorFallback';
 export { RouteErrorFallback } from './RouteErrorFallback';
-export { ErrorBoundaryTest } from './ErrorBoundaryTest';
 export { InfiniteScrollTrigger } from './InfiniteScrollTrigger';
 export { PageLoader } from './PageLoader';
 export { ReviewErrorBoundary } from './ReviewErrorBoundary';
