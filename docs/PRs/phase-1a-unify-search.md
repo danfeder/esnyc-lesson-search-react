@@ -10,7 +10,7 @@ This PR is the first incremental step of the Architecture Cleanup plan. It unifi
   - `InfiniteScrollTrigger` now calls `fetchNextPage`
 - Add `src/__tests__/integration/lesson-search.infinite.test.tsx`
   - Covers initial page render, load more, and error display
-- Update `docs/architecture-cleanup-guide.md` progress (Phase 1 items marked complete)
+- Update `docs/archive/architecture-cleanup-guide.md` progress (Phase 1 items marked complete)
 - Phase 0 preparatory changes already in tree:
   - RPC flag & helper: `VITE_ENABLE_SEARCH_V2` and `src/lib/search.ts`
   - DB baseline snapshot: `docs/db-baseline-2025-09-01.md`
@@ -32,5 +32,5 @@ This PR is the first incremental step of the Architecture Cleanup plan. It unifi
 - Subsequent PRs will handle filter/type consolidation and removal of Algolia remnants, then introduce `search_lessons_v2` and index/policy cleanup.
 
 ## Related Docs
-- `docs/architecture-cleanup-guide.md` – Progress tracker updated.
+- `docs/archive/architecture-cleanup-guide.md` – Progress tracker (archived).
 - `docs/db-baseline-2025-09-01.md` – Baseline for future DB refactors.

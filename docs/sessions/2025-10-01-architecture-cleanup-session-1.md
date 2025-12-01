@@ -687,7 +687,7 @@ docs: add architecture documentation + cleanup session notes
 - Schema diff: `docs/production-vs-local-diff.sql`
 
 **Related docs**:
-- Cleanup progress: `docs/architecture-cleanup-guide.md`
+- Cleanup progress: `docs/archive/architecture-cleanup-guide.md` (archived)
 - Search architecture: `docs/search-architecture-v2.md` (now reality, not plan!)
 - Implementation status: `docs/IMPLEMENTATION_STATUS.md` (needs update)
 

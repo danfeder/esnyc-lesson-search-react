@@ -2547,7 +2547,7 @@ serve(async (req) => {
 **Documentation**:
 - Architecture (this file): `docs/ARCHITECTURE.md`
 - Search system: `docs/search-architecture-v2.md`
-- Cleanup plan: `docs/architecture-cleanup-guide.md`
+- Cleanup plan: `docs/archive/architecture-cleanup-guide.md` (archived)
 - Testing: `docs/TESTING_GUIDE.md`
 - RLS patterns: `docs/RLS_SECURITY.md`
 
@@ -2580,7 +2580,7 @@ serve(async (req) => {
 **For schema questions**: See `supabase/migrations/README.md`
 **For RLS issues**: See `docs/RLS_SECURITY.md`
 **For testing**: See `docs/TESTING_GUIDE.md`
-**For cleanup roadmap**: See `docs/architecture-cleanup-guide.md`
+**For cleanup roadmap**: See `docs/archive/architecture-cleanup-guide.md` (archived)
 
 **Architecture decisions log**: `docs/architecture-decisions.md`
 

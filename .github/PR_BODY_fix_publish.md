@@ -21,7 +21,7 @@ Changes
   - 2025-09-01-publish-approved-batch-v8.sql: robust SECURITY DEFINER publisher (title‑first, defensive JSON handling, season normalization).
   - 2025-09-01-backfill-lesson-titles-from-submissions.sql: one‑time fix for existing “Untitled Lesson” rows.
 - Docs
-  - docs/duplicate-detection-improvement-plan.md: planned improvements for duplicate detection.
+  - docs/archive/duplicate-detection-improvement-plan.md: planned improvements for duplicate detection (archived).
 
 Rollout
 1) Apply RLS and extracted_title migrations.
