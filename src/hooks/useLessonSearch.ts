@@ -8,14 +8,21 @@ interface UseLessonSearchOptions {
   pageSize?: number;
 }
 
+interface ConfidenceScores {
+  overall?: number;
+  title?: number;
+  summary?: number;
+  gradeLevels?: number;
+}
+
 interface RpcRow {
   lesson_id: string;
   title: string;
   summary: string;
   file_link: string;
   grade_levels: string[];
-  metadata: Record<string, any> | null;
-  confidence?: Record<string, any>;
+  metadata: Record<string, unknown> | null;
+  confidence?: ConfidenceScores;
   total_count?: number;
 }
 
@@ -24,9 +31,9 @@ interface PageResult {
   totalCount: number;
 }
 
-function normalizeMetadata(meta: Record<string, any> | null | undefined): LessonMetadata {
+function normalizeMetadata(meta: Record<string, unknown> | null | undefined): LessonMetadata {
   const m = meta || {};
-  const asArray = (v: any): string[] => (Array.isArray(v) ? v : v ? [v] : []);
+  const asArray = (v: unknown): string[] => (Array.isArray(v) ? v : v ? [String(v)] : []);
   return {
     thematicCategories: asArray(m.thematicCategories),
     seasonTiming: asArray(m.seasonTiming),
@@ -60,10 +67,10 @@ function mapRowToLesson(row: RpcRow): Lesson {
     gradeLevels: Array.isArray(row.grade_levels) ? row.grade_levels : [],
     metadata: normalizeMetadata(row.metadata),
     confidence: {
-      overall: (row.confidence as any)?.overall || 0,
-      title: (row.confidence as any)?.title || 0,
-      summary: (row.confidence as any)?.summary || 0,
-      gradeLevels: (row.confidence as any)?.gradeLevels || 0,
+      overall: row.confidence?.overall ?? 0,
+      title: row.confidence?.title ?? 0,
+      summary: row.confidence?.summary ?? 0,
+      gradeLevels: row.confidence?.gradeLevels ?? 0,
     },
   };
 }

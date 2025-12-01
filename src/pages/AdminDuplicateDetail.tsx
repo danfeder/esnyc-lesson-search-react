@@ -51,6 +51,7 @@ export function AdminDuplicateDetail() {
 
       if (report.version === '3.0') {
         // v3 groups are organized by category
+        // TODO: Issue #341 - Create proper interfaces for V3 report format
         for (const [categoryName, categoryGroups] of Object.entries(report.categorizedGroups)) {
           foundGroup = (categoryGroups as any[]).find((g: any) => g.groupId === groupId);
           if (foundGroup) {

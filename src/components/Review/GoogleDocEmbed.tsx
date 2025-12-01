@@ -99,7 +99,7 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
     // Only set up observer when we're ready to show the iframe
     if (!userReady || !containerRef.current) return;
 
-    const resizeObserver = new (window as any).ResizeObserver((entries: any[]) => {
+    const resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
         setIframeWidth(width);

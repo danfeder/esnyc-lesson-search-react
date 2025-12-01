@@ -151,7 +151,7 @@ export function ReviewDetail() {
       // Focus the first field with an error
       const firstInvalidField = document.querySelector('[aria-invalid="true"]');
       if (firstInvalidField && 'focus' in firstInvalidField) {
-        (firstInvalidField as any).focus();
+        (firstInvalidField as HTMLElement).focus();
         firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
@@ -426,6 +426,7 @@ export function ReviewDetail() {
         const lessonData = parseExtractedContent(submission.extracted_content);
 
         // Update the existing lesson
+        // TODO: Issue #340 - Add proper typing for metadata access
         // Safely derive existing activityType from metadata JSON when view lacks base column
         const existingActivityType =
           existingLesson.metadata &&

@@ -542,7 +542,7 @@ export function AdminUsers() {
           <div className="flex gap-2">
             <select
               value={filters.role}
-              onChange={(e) => setFilters({ ...filters, role: e.target.value as any })}
+              onChange={(e) => setFilters({ ...filters, role: e.target.value as UserRole | 'all' })}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="all">All Roles</option>
@@ -569,7 +569,7 @@ export function AdminUsers() {
 
             <select
               value={filters.schoolId || 'all'}
-              onChange={(e) => setFilters({ ...filters, schoolId: e.target.value as any })}
+              onChange={(e) => setFilters({ ...filters, schoolId: e.target.value as string | 'all' })}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="all">All Schools</option>
