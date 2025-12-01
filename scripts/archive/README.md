@@ -20,6 +20,13 @@ This directory contains scripts that are no longer actively used but are kept fo
 - **Related Issues:** User email not displaying in admin dashboard
 - **Status:** Keep for reference when debugging similar auth issues
 
+### Scripts Archived 2025-12-01 (Tech Debt Phase 2)
+
+| Script | Original Purpose |
+|--------|-----------------|
+| `resume-gemini-embeddings.ts` | Resume Gemini embeddings migration from specific point after timeout |
+| `recover-failed-lessons.ts` | Recover lessons that failed due to malformed activity_type data |
+
 ### Scripts Archived 2025-11-28 (Codebase Cleanup PR #313)
 
 The following scripts were archived as they are not registered in package.json and serve one-time or deprecated purposes:

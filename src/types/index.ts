@@ -87,60 +87,11 @@ export interface UserProfile {
   updated_at: string;
 }
 
-export interface SavedSearch {
-  id: string;
-  user_id: string;
-  name: string;
-  filters: SearchFilters;
-  created_at: string;
-}
-
-export interface LessonCollection {
-  id: string;
-  user_id: string;
-  name: string;
-  description?: string;
-  lesson_ids: string[];
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Bookmark {
-  id: string;
-  user_id: string;
-  lesson_id: string;
-  created_at: string;
-}
-
 // UI state types
 export interface ViewState {
   sortBy: 'title' | 'confidence' | 'grade' | 'modified' | 'relevance';
   resultsPerPage: number;
   currentPage: number;
-}
-
-// Grade level groupings for UI
-export interface GradeGroup {
-  id: string;
-  name: string;
-  grades: string[];
-  expanded: boolean;
-}
-
-// Cultural heritage hierarchy for UI
-export interface CulturalRegion {
-  id: string;
-  name: string;
-  subregions: CulturalSubregion[];
-  expanded: boolean;
-}
-
-export interface CulturalSubregion {
-  id: string;
-  name: string;
-  cultures: string[];
-  expanded: boolean;
 }
 
 // Review types for submission processing

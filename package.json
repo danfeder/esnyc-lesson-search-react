@@ -30,7 +30,6 @@
     "analyze-duplicates-v2": "npx tsx scripts/analyze-duplicates-v2.ts",
     "analyze-duplicates-v3": "npx tsx scripts/analyze-duplicates-v3.ts",
     "undo-resolutions": "npx tsx scripts/undo-all-duplicate-resolutions.ts",
-    "recover-failed": "npx tsx scripts/recover-failed-lessons.ts",
     "restore-missing": "npx tsx scripts/identify-and-restore-missing-lessons.ts",
     "test:e2e": "npx playwright test",
     "test:e2e:headed": "npx playwright test --headed",
