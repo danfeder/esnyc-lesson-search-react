@@ -153,21 +153,6 @@ export async function checkGroupResolved(
 }
 
 /**
- * Get existing resolved groups from duplicate_resolutions table.
- * These should be excluded from new detection.
- */
-export async function getResolvedGroupIds(): Promise<Set<string>> {
-  const { data, error } = await supabase.from('duplicate_resolutions').select('group_id');
-
-  if (error) {
-    logger.warn('Could not fetch resolved groups:', error);
-    return new Set();
-  }
-
-  return new Set(data?.map((r) => r.group_id) || []);
-}
-
-/**
  * Determine detection method and confidence for a group based on its pairs.
  */
 function analyzeGroup(pairs: DuplicatePair[]): {
