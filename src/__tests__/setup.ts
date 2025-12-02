@@ -141,6 +141,44 @@ vi.mock('@/components/Filters/LazyTabPanel', () => ({
     React.createElement('div', { className, role: 'tabpanel' }, children),
 }));
 
+// Mock Headless UI components for testing
+// This fixes tests that fail because of CSS transitions and collapsed disclosure panels
+vi.mock('@headlessui/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@headlessui/react')>();
+
+  // Create a simple Transition that renders children immediately
+  const MockTransition = ({ show, children }: any) => {
+    if (show === false) return null;
+    return React.createElement(React.Fragment, null, children);
+  };
+
+  MockTransition.Child = ({ children }: any) => {
+    return React.createElement(React.Fragment, null, children);
+  };
+
+  // Create a mock Disclosure that always renders its panel content
+  const MockDisclosure = ({ children, defaultOpen: _defaultOpen }: any) => {
+    // Pass open=true to children so panel is always visible in tests
+    const childContent = typeof children === 'function' ? children({ open: true }) : children;
+    return React.createElement(React.Fragment, null, childContent);
+  };
+
+  MockDisclosure.Button = ({ children, className, ...props }: any) => {
+    return React.createElement('button', { className, ...props }, children);
+  };
+
+  MockDisclosure.Panel = ({ children, className }: any) => {
+    // Always render panel content in tests
+    return React.createElement('div', { className }, children);
+  };
+
+  return {
+    ...actual,
+    Transition: MockTransition,
+    Disclosure: MockDisclosure,
+  };
+});
+
 // Global test cleanup
 afterEach(() => {
   // Clean up DOM after each test
