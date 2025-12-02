@@ -255,10 +255,11 @@ export function ReviewDetail() {
         created_at: submissionData.created_at || '',
         status: submissionData.status || 'pending',
         extracted_content: submissionData.extracted_content || '',
+        extracted_title: submissionData.extracted_title ?? undefined,
         content_hash: submissionData.content_hash || '',
         submission_type: (submissionData.submission_type || 'new') as 'new' | 'update',
-        original_lesson_id: submissionData.original_lesson_id || undefined,
-        content_embedding: submissionData.content_embedding || undefined,
+        original_lesson_id: submissionData.original_lesson_id ?? undefined,
+        content_embedding: submissionData.content_embedding ?? undefined,
         similarities: similaritiesWithLessons,
         review: reviews?.[0]
           ? {

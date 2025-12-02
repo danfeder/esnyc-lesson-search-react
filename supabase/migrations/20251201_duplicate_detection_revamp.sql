@@ -24,7 +24,7 @@ COMMENT ON TABLE duplicate_group_dismissals IS 'Track dismissed duplicate groups
 -- Enable RLS
 ALTER TABLE duplicate_group_dismissals ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies - only admins can read/write
+-- RLS Policies - super_admin, admin, and reviewer can read/write
 CREATE POLICY "Admins can view dismissed groups"
   ON duplicate_group_dismissals
   FOR SELECT
@@ -32,7 +32,7 @@ CREATE POLICY "Admins can view dismissed groups"
     EXISTS (
       SELECT 1 FROM user_profiles
       WHERE user_id = auth.uid()
-      AND role IN ('admin', 'reviewer')
+      AND role IN ('super_admin', 'admin', 'reviewer')
     )
   );
 
@@ -43,7 +43,7 @@ CREATE POLICY "Admins can create dismissed groups"
     EXISTS (
       SELECT 1 FROM user_profiles
       WHERE user_id = auth.uid()
-      AND role IN ('admin', 'reviewer')
+      AND role IN ('super_admin', 'admin', 'reviewer')
     )
   );
 

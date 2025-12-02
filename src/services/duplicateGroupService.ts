@@ -206,6 +206,38 @@ function analyzeGroup(pairs: DuplicatePair[]): {
 }
 
 /**
+ * Batch fetch all dismissed lesson ID sets from duplicate_group_dismissals.
+ * Returns a set of sorted, comma-joined lesson ID strings for quick lookup.
+ */
+async function getDismissedGroupKeys(): Promise<Set<string>> {
+  const { data, error } = await supabase.from('duplicate_group_dismissals').select('lesson_ids');
+
+  if (error) {
+    logger.warn('Could not fetch dismissed groups:', error);
+    return new Set();
+  }
+
+  // Create lookup keys by sorting and joining lesson IDs
+  const keys = new Set<string>();
+  for (const row of data || []) {
+    if (row.lesson_ids && row.lesson_ids.length > 0) {
+      const key = [...row.lesson_ids].sort().join(',');
+      keys.add(key);
+    }
+  }
+  return keys;
+}
+
+/**
+ * Check if a group's lesson IDs match any dismissed group.
+ * Uses sorted, comma-joined string comparison for O(1) lookup.
+ */
+function isGroupDismissed(lessonIds: string[], dismissedKeys: Set<string>): boolean {
+  const key = [...lessonIds].sort().join(',');
+  return dismissedKeys.has(key);
+}
+
+/**
  * Fetch all duplicate groups with lesson details.
  * Main entry point for the admin duplicates page.
  */
@@ -233,8 +265,12 @@ export async function fetchDuplicateGroups(
     allLessonIds.add(pair.id2);
   }
 
-  // Fetch lesson details for all lessons at once
-  const lessonDetails = await fetchLessonDetails(Array.from(allLessonIds));
+  // Batch fetch: lesson details and dismissed groups (in parallel)
+  const [lessonDetails, dismissedKeys] = await Promise.all([
+    fetchLessonDetails(Array.from(allLessonIds)),
+    includeResolved ? Promise.resolve(new Set<string>()) : getDismissedGroupKeys(),
+  ]);
+
   const lessonMap = new Map(lessonDetails.map((l) => [l.lesson_id, l]));
 
   // Build groups
@@ -251,12 +287,9 @@ export async function fetchDuplicateGroups(
 
     const lessonIdArray = Array.from(lessonIds);
 
-    // Check if already resolved (optional)
-    if (!includeResolved) {
-      const { isResolved } = await checkGroupResolved(lessonIdArray);
-      if (isResolved) {
-        continue;
-      }
+    // Check if already dismissed (in-memory check, no DB call)
+    if (!includeResolved && isGroupDismissed(lessonIdArray, dismissedKeys)) {
+      continue;
     }
 
     // Get lessons for this group
@@ -332,8 +365,7 @@ export async function resolveDuplicateGroup(resolution: GroupResolution): Promis
         p_duplicate_ids: [archiveRes.lessonId],
         p_duplicate_type: 'near',
         p_similarity_score: 0.95,
-        p_action: 'archive_only',
-        p_notes: notes || 'Archived via new duplicate review interface',
+        p_resolution_notes: notes || 'Archived via new duplicate review interface',
       });
 
       if (error) {
@@ -364,7 +396,7 @@ export async function resolveDuplicateGroup(resolution: GroupResolution): Promis
  */
 export async function dismissDuplicateGroup(
   lessonIds: string[],
-  detectionMethod: string,
+  detectionMethod: 'same_title' | 'embedding' | 'both',
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
