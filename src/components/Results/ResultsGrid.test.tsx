@@ -146,17 +146,13 @@ describe('ResultsGrid', () => {
       const firstCard = screen.getByText('First Lesson').closest('div');
       await user.click(firstCard!);
 
-      expect(mockOnLessonClick).toHaveBeenCalledWith(
-        expect.objectContaining({ lessonId: 'id-1' })
-      );
+      expect(mockOnLessonClick).toHaveBeenCalledWith(expect.objectContaining({ lessonId: 'id-1' }));
 
       // Click second lesson
       const secondCard = screen.getByText('Second Lesson').closest('div');
       await user.click(secondCard!);
 
-      expect(mockOnLessonClick).toHaveBeenCalledWith(
-        expect.objectContaining({ lessonId: 'id-2' })
-      );
+      expect(mockOnLessonClick).toHaveBeenCalledWith(expect.objectContaining({ lessonId: 'id-2' }));
     });
   });
 
