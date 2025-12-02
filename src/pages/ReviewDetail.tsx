@@ -5,11 +5,50 @@ import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import type { ReviewMetadata } from '@/types';
 import { FEATURES } from '@/utils/featureFlags';
-import type { Json } from '@/types/database.types';
+import type { Json, Database } from '@/types/database.types';
 import { ReviewContent } from '@/components/Review/ReviewContent';
 import { ReviewDuplicates } from '@/components/Review/ReviewDuplicates';
 import { ReviewMetadataForm } from '@/components/Review/ReviewMetadataForm';
 import { ReviewActions } from '@/components/Review/ReviewActions';
+
+/** Type for creating a new lesson record */
+type LessonInsert = Database['public']['Tables']['lessons']['Insert'];
+
+/** Type for updating an existing lesson record */
+type LessonUpdate = Database['public']['Tables']['lessons']['Update'];
+
+/** Type for similarity data enriched with lesson information */
+interface SimilarityWithLesson {
+  lesson_id: string;
+  combined_score: number | null;
+  match_type: string | null;
+  title_similarity: number | null;
+  content_similarity: number | null;
+  lesson: {
+    title: string | null;
+    grade_levels: string[] | null;
+    thematic_categories: string[] | null;
+  };
+}
+
+/** Interface for legacy metadata JSON structure */
+interface LessonMetadataJson {
+  activityType?: string | string[];
+  thematicCategories?: string[];
+  seasonTiming?: string[];
+  coreCompetencies?: string[];
+  culturalHeritage?: string[];
+  locationRequirements?: string[];
+  lessonFormat?: string[];
+  academicIntegration?: string[];
+  socialEmotionalLearning?: string[];
+  cookingMethods?: string[];
+  mainIngredients?: string[];
+  gardenSkills?: string[];
+  cookingSkills?: string[];
+  observancesHolidays?: string[];
+  culturalResponsivenessFeatures?: string[];
+}
 
 interface SubmissionDetail {
   id: string;
@@ -27,18 +66,7 @@ interface SubmissionDetail {
     email: string;
     full_name?: string;
   };
-  similarities?: Array<{
-    lesson_id: string;
-    combined_score: number;
-    match_type: string;
-    title_similarity: number;
-    content_similarity: number;
-    lesson: {
-      title: string;
-      grade_levels: string[];
-      thematic_categories: string[];
-    };
-  }>;
+  similarities?: SimilarityWithLesson[];
   review?: {
     metadata: ReviewMetadata;
     decision: string;
@@ -182,7 +210,7 @@ export function ReviewDetail() {
         .order('combined_score', { ascending: false });
 
       // Get lessons for similarities
-      let similaritiesWithLessons: any[] = [];
+      let similaritiesWithLessons: SimilarityWithLesson[] = [];
       if (similarities && similarities.length > 0) {
         const lessonIds = similarities.map((s) => s.lesson_id);
         const { data: lessons, error: lessonsError } = await supabase
@@ -325,7 +353,7 @@ export function ReviewDetail() {
         const baseTitle = submission.extracted_title || lessonData.title;
 
         // Create new lesson (write to base table to set all native columns)
-        const newLesson: any = {
+        const newLesson: LessonInsert = {
           lesson_id: `lesson_${crypto.randomUUID()}`,
           title: baseTitle || 'Untitled Lesson',
           summary: lessonData.summary || '',
@@ -427,19 +455,16 @@ export function ReviewDetail() {
         const lessonData = parseExtractedContent(submission.extracted_content);
 
         // Update the existing lesson
-        // TODO: Issue #340 - Add proper typing for metadata access
         // Safely derive existing activityType from metadata JSON when view lacks base column
+        const metadataObj = existingLesson.metadata as LessonMetadataJson | null;
         const existingActivityType =
-          existingLesson.metadata &&
-          typeof existingLesson.metadata === 'object' &&
-          !Array.isArray(existingLesson.metadata) &&
-          'activityType' in (existingLesson.metadata as Record<string, any>)
-            ? (existingLesson.metadata as any).activityType
+          metadataObj && typeof metadataObj === 'object' && !Array.isArray(metadataObj)
+            ? metadataObj.activityType
             : undefined;
 
-        const updateData: any = {
-          title: lessonData.title || existingLesson.title,
-          summary: lessonData.summary || existingLesson.summary,
+        const updateData: LessonUpdate = {
+          title: lessonData.title || existingLesson.title || undefined,
+          summary: lessonData.summary || existingLesson.summary || undefined,
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || existingLesson.grade_levels || [],
           activity_type: metadata.activityType
@@ -473,12 +498,6 @@ export function ReviewDetail() {
             existingLesson.cultural_responsiveness_features ||
             [],
         };
-
-        // Only set activity_type_meta if we have a value
-        if (metadata.activityType || existingLesson.activity_type_meta) {
-          updateData.activity_type_meta =
-            metadata.activityType || existingLesson.activity_type_meta;
-        }
 
         const { error: updateLessonError } = await supabase
           .from('lessons')
@@ -533,8 +552,9 @@ export function ReviewDetail() {
 
   const topDuplicates = useMemo(
     () =>
-      submission?.similarities?.sort((a, b) => b.combined_score - a.combined_score).slice(0, 5) ||
-      [],
+      submission?.similarities
+        ?.sort((a, b) => (b.combined_score ?? 0) - (a.combined_score ?? 0))
+        .slice(0, 5) || [],
     [submission?.similarities]
   );
 
