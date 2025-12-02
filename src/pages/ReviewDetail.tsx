@@ -151,6 +151,7 @@ export function ReviewDetail() {
       // Focus the first field with an error
       const firstInvalidField = document.querySelector('[aria-invalid="true"]');
       if (firstInvalidField && 'focus' in firstInvalidField) {
+        // eslint-disable-next-line no-undef
         (firstInvalidField as HTMLElement).focus();
         firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }

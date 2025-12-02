@@ -569,7 +569,9 @@ export function AdminUsers() {
 
             <select
               value={filters.schoolId || 'all'}
-              onChange={(e) => setFilters({ ...filters, schoolId: e.target.value as string | 'all' })}
+              onChange={(e) =>
+                setFilters({ ...filters, schoolId: e.target.value as string | 'all' })
+              }
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="all">All Schools</option>
