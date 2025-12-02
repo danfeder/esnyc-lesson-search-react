@@ -1,10 +1,30 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '12.2.3 (519615d)';
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
   public: {
     Tables: {
@@ -121,6 +141,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      duplicate_group_dismissals: {
+        Row: {
+          detection_method: string | null;
+          dismissed_at: string | null;
+          dismissed_by: string | null;
+          id: string;
+          lesson_ids: string[];
+          notes: string | null;
+        };
+        Insert: {
+          detection_method?: string | null;
+          dismissed_at?: string | null;
+          dismissed_by?: string | null;
+          id?: string;
+          lesson_ids: string[];
+          notes?: string | null;
+        };
+        Update: {
+          detection_method?: string | null;
+          dismissed_at?: string | null;
+          dismissed_by?: string | null;
+          id?: string;
+          lesson_ids?: string[];
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
       duplicate_resolutions: {
         Row: {
           action_taken: string;
@@ -222,7 +269,7 @@ export type Database = {
           original_submission_id: string | null;
           processing_notes: string | null;
           review_notes: string | null;
-          search_vector: unknown | null;
+          search_vector: unknown;
           season_timing: string[] | null;
           social_emotional_learning: string[] | null;
           summary: string;
@@ -266,7 +313,7 @@ export type Database = {
           original_submission_id?: string | null;
           processing_notes?: string | null;
           review_notes?: string | null;
-          search_vector?: unknown | null;
+          search_vector?: unknown;
           season_timing?: string[] | null;
           social_emotional_learning?: string[] | null;
           summary: string;
@@ -310,7 +357,7 @@ export type Database = {
           original_submission_id?: string | null;
           processing_notes?: string | null;
           review_notes?: string | null;
-          search_vector?: unknown | null;
+          search_vector?: unknown;
           season_timing?: string[] | null;
           social_emotional_learning?: string[] | null;
           summary?: string;
@@ -376,6 +423,7 @@ export type Database = {
           content_hash: string | null;
           created_at: string | null;
           extracted_content: string | null;
+          extracted_title: string | null;
           google_doc_id: string;
           google_doc_url: string;
           id: string;
@@ -397,6 +445,7 @@ export type Database = {
           content_hash?: string | null;
           created_at?: string | null;
           extracted_content?: string | null;
+          extracted_title?: string | null;
           google_doc_id: string;
           google_doc_url: string;
           id?: string;
@@ -418,6 +467,7 @@ export type Database = {
           content_hash?: string | null;
           created_at?: string | null;
           extracted_content?: string | null;
+          extracted_title?: string | null;
           google_doc_id?: string;
           google_doc_url?: string;
           id?: string;
@@ -538,7 +588,7 @@ export type Database = {
           original_submission_id: string | null;
           processing_notes: string | null;
           review_notes: string | null;
-          search_vector: unknown | null;
+          search_vector: unknown;
           season_timing: string[] | null;
           season_timing_backup: string[] | null;
           social_emotional_learning: string[] | null;
@@ -579,7 +629,7 @@ export type Database = {
           original_submission_id?: string | null;
           processing_notes?: string | null;
           review_notes?: string | null;
-          search_vector?: unknown | null;
+          search_vector?: unknown;
           season_timing?: string[] | null;
           season_timing_backup?: string[] | null;
           social_emotional_learning?: string[] | null;
@@ -620,7 +670,7 @@ export type Database = {
           original_submission_id?: string | null;
           processing_notes?: string | null;
           review_notes?: string | null;
-          search_vector?: unknown | null;
+          search_vector?: unknown;
           season_timing?: string[] | null;
           season_timing_backup?: string[] | null;
           social_emotional_learning?: string[] | null;
@@ -853,7 +903,7 @@ export type Database = {
           actor_id: string;
           created_at: string;
           id: string;
-          ip_address: unknown | null;
+          ip_address: unknown;
           metadata: Json | null;
           new_values: Json | null;
           old_values: Json | null;
@@ -866,7 +916,7 @@ export type Database = {
           actor_id: string;
           created_at?: string;
           id?: string;
-          ip_address?: unknown | null;
+          ip_address?: unknown;
           metadata?: Json | null;
           new_values?: Json | null;
           old_values?: Json | null;
@@ -879,7 +929,7 @@ export type Database = {
           actor_id?: string;
           created_at?: string;
           id?: string;
-          ip_address?: unknown | null;
+          ip_address?: unknown;
           metadata?: Json | null;
           new_values?: Json | null;
           old_values?: Json | null;
@@ -1042,7 +1092,7 @@ export type Database = {
           prep_time_minutes_meta: string | null;
           processing_notes: string | null;
           review_notes: string | null;
-          search_vector: unknown | null;
+          search_vector: unknown;
           season_meta: string | null;
           season_timing: string[] | null;
           sel_competencies_array: Json | null;
@@ -1099,7 +1149,7 @@ export type Database = {
           prep_time_minutes_meta?: never;
           processing_notes?: string | null;
           review_notes?: string | null;
-          search_vector?: unknown | null;
+          search_vector?: unknown;
           season_meta?: never;
           season_timing?: string[] | null;
           sel_competencies_array?: never;
@@ -1156,7 +1206,7 @@ export type Database = {
           prep_time_minutes_meta?: never;
           processing_notes?: string | null;
           review_notes?: string | null;
-          search_vector?: unknown | null;
+          search_vector?: unknown;
           season_meta?: never;
           season_timing?: string[] | null;
           sel_competencies_array?: never;
@@ -1204,12 +1254,16 @@ export type Database = {
       };
     };
     Functions: {
-      binary_quantize: {
-        Args: { '': string } | { '': unknown };
-        Returns: unknown;
+      check_group_already_resolved: {
+        Args: { p_lesson_ids: string[] };
+        Returns: {
+          is_resolved: boolean;
+          resolution_type: string;
+          resolved_at: string;
+        }[];
       };
       check_security_definer_views: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           has_security_definer: boolean;
           view_name: string;
@@ -1232,6 +1286,17 @@ export type Database = {
       expand_search_with_synonyms: {
         Args: { query_text: string };
         Returns: string;
+      };
+      find_duplicate_pairs: {
+        Args: never;
+        Returns: {
+          detection_method: string;
+          id1: string;
+          id2: string;
+          similarity: number;
+          title1: string;
+          title2: string;
+        }[];
       };
       find_lessons_by_hash: {
         Args: { hash_value: string };
@@ -1277,6 +1342,20 @@ export type Database = {
         Args: { lesson_id_param: string };
         Returns: string;
       };
+      get_lesson_details_for_review: {
+        Args: { p_lesson_ids: string[] };
+        Returns: {
+          content_length: number;
+          content_preview: string;
+          file_link: string;
+          grade_levels: string[];
+          has_summary: boolean;
+          has_table_format: boolean;
+          lesson_id: string;
+          summary: string;
+          title: string;
+        }[];
+      };
       get_user_activity_metrics: {
         Args: { p_days?: number; p_user_id: string };
         Returns: {
@@ -1295,7 +1374,7 @@ export type Database = {
         }[];
       };
       get_user_profiles_with_email: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           auth_created_at: string;
           auth_email: string;
@@ -1318,97 +1397,20 @@ export type Database = {
           user_id: string;
         }[];
       };
-      gtrgm_compress: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      gtrgm_decompress: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      gtrgm_in: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      gtrgm_options: {
-        Args: { '': unknown };
-        Returns: undefined;
-      };
-      gtrgm_out: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      halfvec_avg: {
-        Args: { '': number[] };
-        Returns: unknown;
-      };
-      halfvec_out: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      halfvec_send: {
-        Args: { '': unknown };
-        Returns: string;
-      };
-      halfvec_typmod_in: {
-        Args: { '': unknown[] };
-        Returns: number;
-      };
       has_role: {
         Args: { p_user_id: string; required_role: string };
         Returns: boolean;
       };
-      hnsw_bit_support: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      hnsw_halfvec_support: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      hnsw_sparsevec_support: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      hnswhandler: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      is_admin: {
-        Args: Record<PropertyKey, never> | { user_id: string };
-        Returns: boolean;
-      };
-      is_duplicate_lesson: {
-        Args: { p_lesson_id: string };
-        Returns: boolean;
-      };
-      is_lesson_archived: {
-        Args: { p_lesson_id: string };
-        Returns: boolean;
-      };
-      is_reviewer_or_above: {
-        Args: Record<PropertyKey, never>;
-        Returns: boolean;
-      };
-      ivfflat_bit_support: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      ivfflat_halfvec_support: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      ivfflathandler: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      l2_norm: {
-        Args: { '': unknown } | { '': unknown };
-        Returns: number;
-      };
-      l2_normalize: {
-        Args: { '': string } | { '': unknown } | { '': unknown };
-        Returns: string;
+      is_admin: { Args: never; Returns: boolean } | { Args: { user_id: string }; Returns: boolean };
+      is_duplicate_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
+      is_lesson_archived: { Args: { p_lesson_id: string }; Returns: boolean };
+      is_reviewer_or_above: { Args: never; Returns: boolean };
+      publish_approved_submissions: {
+        Args: { p_limit?: number };
+        Returns: {
+          published_lesson_id: string;
+          published_submission_id: string;
+        }[];
       };
       resolve_duplicate_group: {
         Args: {
@@ -1431,7 +1433,7 @@ export type Database = {
           filter_academic?: string[];
           filter_activity_type?: string[];
           filter_competencies?: string[];
-          filter_cooking_method?: string[];
+          filter_cooking_method?: string;
           filter_cultures?: string[];
           filter_grade_levels?: string[];
           filter_lesson_format?: string;
@@ -1455,42 +1457,10 @@ export type Database = {
           total_count: number;
         }[];
       };
-      set_limit: {
-        Args: { '': number };
-        Returns: number;
-      };
-      show_limit: {
-        Args: Record<PropertyKey, never>;
-        Returns: number;
-      };
-      show_trgm: {
-        Args: { '': string };
-        Returns: string[];
-      };
-      sparsevec_out: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
-      sparsevec_send: {
-        Args: { '': unknown };
-        Returns: string;
-      };
-      sparsevec_typmod_in: {
-        Args: { '': unknown[] };
-        Returns: number;
-      };
-      track_user_login: {
-        Args: { p_user_id: string };
-        Returns: undefined;
-      };
-      unaccent: {
-        Args: { '': string };
-        Returns: string;
-      };
-      unaccent_init: {
-        Args: { '': unknown };
-        Returns: unknown;
-      };
+      show_limit: { Args: never; Returns: number };
+      show_trgm: { Args: { '': string }; Returns: string[] };
+      track_user_login: { Args: { p_user_id: string }; Returns: undefined };
+      unaccent: { Args: { '': string }; Returns: string };
       validate_invitation_token: {
         Args: { invite_token: string };
         Returns: {
@@ -1503,32 +1473,8 @@ export type Database = {
           school_name: string;
         }[];
       };
-      vector_avg: {
-        Args: { '': number[] };
-        Returns: string;
-      };
-      vector_dims: {
-        Args: { '': string } | { '': unknown };
-        Returns: number;
-      };
-      vector_norm: {
-        Args: { '': string };
-        Returns: number;
-      };
-      vector_out: {
-        Args: { '': string };
-        Returns: unknown;
-      };
-      vector_send: {
-        Args: { '': string };
-        Returns: string;
-      };
-      vector_typmod_in: {
-        Args: { '': unknown[] };
-        Returns: number;
-      };
       verify_rls_enabled: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           policy_count: number;
           rls_enabled: boolean;
@@ -1662,6 +1608,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
