@@ -53,6 +53,13 @@ CREATE POLICY "Admins can create dismissed groups"
 -- Finds all potential duplicate lesson pairs using:
 -- 1. Same normalized title (case-insensitive, trimmed)
 -- 2. OR embedding similarity >= 0.95
+--
+-- PERFORMANCE NOTE: Uses CROSS JOIN which is O(n²). With ~800 lessons,
+-- this generates ~320K comparisons and runs in ~1 second. If dataset
+-- grows significantly (>5000 lessons), consider:
+-- - Pre-computing pairs in a materialized view (refreshed nightly)
+-- - Using pgvector HNSW/IVFFlat indexes for ANN search
+-- - Adding a LIMIT parameter for pagination
 
 CREATE OR REPLACE FUNCTION find_duplicate_pairs()
 RETURNS TABLE (

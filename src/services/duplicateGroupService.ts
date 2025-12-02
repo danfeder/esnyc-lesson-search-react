@@ -69,11 +69,17 @@ export async function fetchDuplicatePairs(): Promise<DuplicatePair[]> {
     throw error;
   }
 
-  // Cast detection_method from string to the specific union type
-  return (data || []).map((pair) => ({
-    ...pair,
-    detection_method: pair.detection_method as DuplicatePair['detection_method'],
-  }));
+  // Validate and cast detection_method with runtime check
+  const validMethods = ['both', 'same_title', 'embedding'] as const;
+
+  return (data || []).map((pair) => {
+    const method = pair.detection_method;
+    if (!validMethods.includes(method as (typeof validMethods)[number])) {
+      logger.warn(`Unexpected detection_method from database: ${method}, defaulting to 'embedding'`);
+      return { ...pair, detection_method: 'embedding' as const };
+    }
+    return { ...pair, detection_method: method as DuplicatePair['detection_method'] };
+  });
 }
 
 /**
@@ -332,6 +338,9 @@ export async function resolveDuplicateGroup(resolution: GroupResolution): Promis
     };
   }
 
+  // Build set of lesson IDs being kept for validation
+  const keptLessonIds = new Set(toKeep.map((r) => r.lessonId));
+
   try {
     // For each lesson to archive, call the existing resolve function
     for (const archiveRes of toArchive) {
@@ -341,6 +350,16 @@ export async function resolveDuplicateGroup(resolution: GroupResolution): Promis
           archivedCount: 0,
           keptCount: 0,
           error: `Lesson ${archiveRes.lessonId} to archive must specify which lesson to link to`,
+        };
+      }
+
+      // Validate that archiveTo references a lesson being kept
+      if (!keptLessonIds.has(archiveRes.archiveTo)) {
+        return {
+          success: false,
+          archivedCount: 0,
+          keptCount: 0,
+          error: `Cannot archive ${archiveRes.lessonId} to ${archiveRes.archiveTo} - target lesson is not being kept`,
         };
       }
 
