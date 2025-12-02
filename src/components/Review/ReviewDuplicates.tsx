@@ -2,12 +2,12 @@ import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface Duplicate {
   lesson_id: string;
-  combined_score: number;
-  title_similarity: number;
-  content_similarity: number;
+  combined_score: number | null;
+  title_similarity: number | null;
+  content_similarity: number | null;
   lesson: {
-    title: string;
-    grade_levels: string[];
+    title: string | null;
+    grade_levels: string[] | null;
   };
 }
 
@@ -43,14 +43,14 @@ export function ReviewDuplicates({
           >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-medium text-gray-900">{dup.lesson.title}</h3>
+                <h3 className="font-medium text-gray-900">{dup.lesson.title || 'Untitled'}</h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Grades: {dup.lesson.grade_levels?.join(', ') || 'Not specified'}
                 </p>
                 <div className="mt-2 flex gap-4 text-sm">
-                  <span>Overall: {Math.round(dup.combined_score * 100)}%</span>
-                  <span>Title: {Math.round(dup.title_similarity * 100)}%</span>
-                  <span>Content: {Math.round(dup.content_similarity * 100)}%</span>
+                  <span>Overall: {Math.round((dup.combined_score ?? 0) * 100)}%</span>
+                  <span>Title: {Math.round((dup.title_similarity ?? 0) * 100)}%</span>
+                  <span>Content: {Math.round((dup.content_similarity ?? 0) * 100)}%</span>
                 </div>
               </div>
               {selectedDuplicate === dup.lesson_id && (
