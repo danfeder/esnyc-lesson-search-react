@@ -63,6 +63,7 @@ export const AdminDuplicates: React.FC = () => {
 
       if (report.version === '3.0') {
         // V3 format - groups are organized by category
+        // TODO: Issue #341 - Create proper interfaces for V3 report format
         const allGroups: any[] = [];
         for (const category of Object.values(report.categorizedGroups || {})) {
           allGroups.push(...(category as any[]));

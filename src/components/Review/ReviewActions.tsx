@@ -1,8 +1,10 @@
 import { Save } from 'lucide-react';
 
+type ReviewDecision = 'approve_new' | 'approve_update' | 'reject' | 'needs_revision';
+
 interface ReviewActionsProps {
-  decision: 'approve_new' | 'approve_update' | 'reject' | 'needs_revision';
-  setDecision: (decision: 'approve_new' | 'approve_update' | 'reject' | 'needs_revision') => void;
+  decision: ReviewDecision;
+  setDecision: (decision: ReviewDecision) => void;
   notes: string;
   setNotes: (notes: string) => void;
   onSave: () => void;
@@ -30,7 +32,7 @@ export function ReviewActions({
           <label className="block text-sm font-medium text-gray-700 mb-1">Decision</label>
           <select
             value={decision}
-            onChange={(e) => setDecision(e.target.value as any)}
+            onChange={(e) => setDecision(e.target.value as ReviewDecision)}
             className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="approve_new">Approve as New Lesson</option>
