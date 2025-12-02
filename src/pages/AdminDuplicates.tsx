@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { CheckCircle } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import type { DuplicateGroupReport } from '@/utils/duplicateDetection';
+import type { DuplicateReport, V3ReportGroup, V2ReportGroup } from '@/types/admin';
+import { isV3Report } from '@/types/admin';
 
 export const AdminDuplicates: React.FC = () => {
   const { user } = useEnhancedAuth();
@@ -44,7 +46,7 @@ export const AdminDuplicates: React.FC = () => {
         }
       }
 
-      const report = await response.json();
+      const report = (await response.json()) as DuplicateReport;
 
       // Get list of resolved groups from database
       const { data: resolvedGroups, error: resolutionsError } = await supabase
@@ -61,12 +63,11 @@ export const AdminDuplicates: React.FC = () => {
       // Handle both V2 and V3 report formats
       let transformedGroups: DuplicateGroupReport[] = [];
 
-      if (report.version === '3.0') {
+      if (isV3Report(report)) {
         // V3 format - groups are organized by category
-        // TODO: Issue #341 - Create proper interfaces for V3 report format
-        const allGroups: any[] = [];
-        for (const category of Object.values(report.categorizedGroups || {})) {
-          allGroups.push(...(category as any[]));
+        const allGroups: V3ReportGroup[] = [];
+        for (const categoryGroups of Object.values(report.categorizedGroups)) {
+          allGroups.push(...categoryGroups);
         }
 
         transformedGroups = allGroups.map((group): DuplicateGroupReport => {
@@ -94,7 +95,7 @@ export const AdminDuplicates: React.FC = () => {
             lessonCount: group.lessonCount,
             recommendedCanonical: group.recommendedCanonical,
             status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
-            lessons: group.lessons.map((lesson: any) => ({
+            lessons: group.lessons.map((lesson) => ({
               lessonId: lesson.lessonId,
               title: lesson.title,
               isRecommendedCanonical: Array.isArray(group.recommendedCanonical)
@@ -105,15 +106,15 @@ export const AdminDuplicates: React.FC = () => {
         });
       } else {
         // V2 format
-        transformedGroups = report.groups.map(
-          (group: any): DuplicateGroupReport => ({
+        transformedGroups = (report as { groups: V2ReportGroup[] }).groups.map(
+          (group): DuplicateGroupReport => ({
             groupId: group.groupId,
             type: group.type === 'mixed' ? 'near' : group.type,
             similarityScore: group.similarityScore ?? group.averageSimilarity ?? 0,
             lessonCount: group.lessonCount,
             recommendedCanonical: group.recommendedCanonical,
             status: resolvedGroupIds.has(group.groupId) ? 'resolved' : 'pending',
-            lessons: group.lessons.map((lesson: any) => ({
+            lessons: group.lessons.map((lesson) => ({
               lessonId: lesson.lessonId,
               title: lesson.title,
               isRecommendedCanonical: lesson.isRecommendedCanonical,

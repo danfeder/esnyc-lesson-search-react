@@ -59,7 +59,7 @@ interface ActivityStats {
     id: string;
     actor_name: string;
     action: string;
-    target_email?: string;
+    target_email: string | null;
     created_at: string;
   }[];
 }
@@ -283,7 +283,7 @@ export function AdminAnalytics() {
       .limit(10);
 
     // Get actor names separately
-    let recentActivities: any[] = [];
+    let recentActivities: ActivityStats['recentActivities'] = [];
     if (activities && activities.length > 0) {
       const actorIds = [...new Set(activities.map((a) => a.actor_id))].filter(Boolean);
       const { data: actors } = await supabase

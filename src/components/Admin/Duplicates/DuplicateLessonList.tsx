@@ -1,9 +1,9 @@
 import { EditableTitle } from '@/components/Admin';
-import type { DuplicateGroup } from '@/types/admin';
+import type { DuplicateGroup, LessonWithMetadata } from '@/types/admin';
 
 interface DuplicateLessonListProps {
   group: DuplicateGroup;
-  lessonDetails: Record<string, any>;
+  lessonDetails: Record<string, LessonWithMetadata>;
   titleEdits: Record<string, string>;
   originalTitles: Record<string, string>;
   onTitleChange: (lessonId: string, newTitle: string) => void;

@@ -4,7 +4,14 @@ import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { logger } from '@/utils/logger';
 import { prepareTitleUpdatesForRpc } from '@/utils/validation';
-import type { DuplicateGroup, LessonDetail } from '@/types/admin';
+import type {
+  DuplicateGroup,
+  DuplicateReport,
+  V3ReportGroup,
+  V2ReportGroup,
+  LessonWithMetadata,
+} from '@/types/admin';
+import { isV3Report } from '@/types/admin';
 import { DuplicateHeader } from '@/components/Admin/Duplicates/DuplicateHeader';
 import { DuplicateInsights } from '@/components/Admin/Duplicates/DuplicateInsights';
 import { DuplicateLessonList } from '@/components/Admin/Duplicates/DuplicateLessonList';
@@ -20,7 +27,7 @@ export function AdminDuplicateDetail() {
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lessonDetails, setLessonDetails] = useState<Record<string, any>>({});
+  const [lessonDetails, setLessonDetails] = useState<Record<string, LessonWithMetadata>>({});
   const [resolutionMode, setResolutionMode] = useState<'single' | 'split' | 'keep_all'>('single');
   const [splitSelections, setSplitSelections] = useState<Record<string, string>>({});
   const [titleEdits, setTitleEdits] = useState<Record<string, string>>({});
@@ -46,31 +53,38 @@ export function AdminDuplicateDetail() {
         }
       }
 
-      const report = await response.json();
-      let foundGroup;
+      const report = (await response.json()) as DuplicateReport;
+      let foundGroup: V3ReportGroup | undefined;
 
-      if (report.version === '3.0') {
+      if (isV3Report(report)) {
         // v3 groups are organized by category
-        // TODO: Issue #341 - Create proper interfaces for V3 report format
         for (const [categoryName, categoryGroups] of Object.entries(report.categorizedGroups)) {
-          foundGroup = (categoryGroups as any[]).find((g: any) => g.groupId === groupId);
+          foundGroup = categoryGroups.find((g) => g.groupId === groupId);
           if (foundGroup) {
             // Ensure the category is set from the parent category if not already set
             if (!foundGroup.category) {
-              foundGroup.category = categoryName;
+              foundGroup = { ...foundGroup, category: categoryName };
             }
             break;
           }
         }
       } else {
         // v2 report structure - convert to v3 format
-        const v2Group = report.groups.find((g: any) => g.groupId === groupId);
+        const v2Group = (report as { groups: V2ReportGroup[] }).groups.find(
+          (g) => g.groupId === groupId
+        );
         if (v2Group) {
           foundGroup = {
-            ...v2Group,
+            groupId: v2Group.groupId,
+            lessonCount: v2Group.lessonCount,
+            lessons: v2Group.lessons.map((l) => ({
+              lessonId: l.lessonId,
+              title: l.title,
+            })),
             category: 'UNCATEGORIZED',
-            confidence: 'low',
-            recommendedAction: 'manual_review',
+            confidence: 'low' as const,
+            recommendedAction: 'manual_review' as const,
+            recommendedCanonical: v2Group.recommendedCanonical,
             insights: {
               keyDifferences: [],
               commonElements: [],
@@ -85,11 +99,36 @@ export function AdminDuplicateDetail() {
         throw new Error('Duplicate group not found');
       }
 
-      setGroup(foundGroup);
+      // Transform V3ReportGroup to DuplicateGroup for state
+      const transformedGroup: DuplicateGroup = {
+        groupId: foundGroup.groupId,
+        category: foundGroup.category || 'UNCATEGORIZED',
+        confidence: foundGroup.confidence || 'low',
+        recommendedAction: foundGroup.recommendedAction || 'manual_review',
+        recommendedCanonical: foundGroup.recommendedCanonical || '',
+        lessonCount: foundGroup.lessonCount,
+        lessons: foundGroup.lessons.map((l) => ({
+          lessonId: l.lessonId,
+          title: l.title,
+          canonicalScore: l.canonicalScore,
+          metadataCompleteness: l.metadataCompleteness,
+          scoreBreakdown: l.scoreBreakdown,
+        })),
+        insights: foundGroup.insights || {
+          keyDifferences: [],
+          commonElements: [],
+          qualityIssues: [],
+          pedagogicalNotes: [],
+        },
+        subGroups: foundGroup.subGroups,
+        similarityMatrix: foundGroup.similarityMatrix,
+      };
+
+      setGroup(transformedGroup);
 
       // Store original titles for comparison
       const origTitles: Record<string, string> = {};
-      foundGroup.lessons.forEach((lesson: LessonDetail) => {
+      foundGroup.lessons.forEach((lesson) => {
         origTitles[lesson.lessonId] = lesson.title;
       });
       setOriginalTitles(origTitles);
@@ -101,13 +140,10 @@ export function AdminDuplicateDetail() {
         setResolutionMode('split');
         // Initialize split selections
         const selections: Record<string, string> = {};
-        foundGroup.subGroups.forEach((sg: any) => {
+        foundGroup.subGroups.forEach((sg) => {
           const bestLesson = foundGroup.lessons
-            .filter((l: LessonDetail) => sg.lessonIds.includes(l.lessonId))
-            .sort(
-              (a: LessonDetail, b: LessonDetail) =>
-                (b.canonicalScore || 0) - (a.canonicalScore || 0)
-            )[0];
+            .filter((l) => sg.lessonIds.includes(l.lessonId))
+            .sort((a, b) => (b.canonicalScore || 0) - (a.canonicalScore || 0))[0];
           selections[sg.groupName] = bestLesson?.lessonId || sg.lessonIds[0];
         });
         setSplitSelections(selections);
@@ -121,7 +157,7 @@ export function AdminDuplicateDetail() {
       }
 
       // Load full lesson details
-      const lessonIds = foundGroup.lessons.map((l: any) => l.lessonId);
+      const lessonIds = foundGroup.lessons.map((l) => l.lessonId);
       const { data: lessons, error: dbError } = await supabase
         .from('lessons_with_metadata')
         .select('*')
@@ -129,7 +165,7 @@ export function AdminDuplicateDetail() {
 
       if (dbError) throw dbError;
 
-      const detailsMap: Record<string, any> = {};
+      const detailsMap: Record<string, LessonWithMetadata> = {};
       lessons?.forEach((lesson) => {
         if (lesson.lesson_id) {
           detailsMap[lesson.lesson_id] = lesson;
