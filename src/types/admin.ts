@@ -1,3 +1,5 @@
+import type { Database } from './database.types';
+
 export interface LessonDetail {
   lessonId: string;
   title: string;
@@ -143,5 +145,4 @@ export interface DuplicateGroup {
  * Type alias for lesson data from lessons_with_metadata database view.
  * Used when loading full lesson details for admin pages.
  */
-import type { Database } from './database.types';
 export type LessonWithMetadata = Database['public']['Views']['lessons_with_metadata']['Row'];
