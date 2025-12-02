@@ -37,10 +37,9 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO lessons (
   lesson_id, title, summary, file_link, grade_levels,
-  activity_type, location, thematic_categories, season_timing,
+  activity_type, location_requirements, thematic_categories, season_timing,
   core_competencies, cultural_heritage, lesson_format,
-  academic_integration, social_emotional_learning, cooking_methods,
-  created_at, updated_at
+  academic_integration, social_emotional_learning, cooking_methods
 )
 VALUES
   (
@@ -69,7 +68,7 @@ VALUES
     ARRAY['Cooking'],
     ARRAY['Kitchen'],
     ARRAY['Food Science', 'Chemistry'],
-    ARRAY['Year-Round'],
+    ARRAY['Fall', 'Winter', 'Spring', 'Summer'],
     ARRAY['Measuring', 'Following Instructions'],
     ARRAY['European'],
     ARRAY['Full Lesson'],
@@ -88,11 +87,11 @@ VALUES
     ARRAY['Environmental Science', 'Ecology'],
     ARRAY['Fall', 'Spring'],
     ARRAY['Observation', 'Teamwork'],
-    ARRAY[],
+    ARRAY[]::text[],
     ARRAY['Activity'],
     ARRAY['Science'],
     ARRAY['Environmental Awareness'],
-    ARRAY[]
+    ARRAY[]::text[]
   ),
   (
     'LESSON-004',
@@ -122,11 +121,11 @@ VALUES
     ARRAY['Plant Science'],
     ARRAY['Spring'],
     ARRAY['Fine Motor Skills', 'Observation'],
-    ARRAY[],
+    ARRAY[]::text[],
     ARRAY['Activity'],
     ARRAY['Science'],
     ARRAY['Patience', 'Wonder'],
-    ARRAY[]
+    ARRAY[]::text[]
   )
 ON CONFLICT (lesson_id) DO UPDATE SET
   title = EXCLUDED.title,
@@ -136,30 +135,25 @@ ON CONFLICT (lesson_id) DO UPDATE SET
 -- SAMPLE SEARCH SYNONYMS
 -- =====================================================
 
-INSERT INTO search_synonyms (term, synonyms, is_active)
+INSERT INTO search_synonyms (term, synonyms, synonym_type)
 VALUES
-  ('tomato', ARRAY['tomatoes', 'cherry tomato', 'roma', 'heirloom'], true),
-  ('bread', ARRAY['loaf', 'dough', 'baking'], true),
-  ('salsa', ARRAY['sauce', 'dip', 'pico de gallo'], true),
-  ('garden', ARRAY['gardening', 'outdoor', 'growing'], true),
-  ('cook', ARRAY['cooking', 'prepare', 'make', 'chef'], true)
+  ('tomato', ARRAY['tomatoes', 'cherry tomato', 'roma', 'heirloom'], 'bidirectional'),
+  ('bread', ARRAY['loaf', 'dough', 'baking'], 'bidirectional'),
+  ('salsa', ARRAY['sauce', 'dip', 'pico de gallo'], 'bidirectional'),
+  ('garden', ARRAY['gardening', 'outdoor', 'growing'], 'bidirectional'),
+  ('cook', ARRAY['cooking', 'prepare', 'make', 'chef'], 'bidirectional')
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
 -- SAMPLE CULTURAL HERITAGE HIERARCHY
 -- =====================================================
 
-INSERT INTO cultural_heritage_hierarchy (parent, child)
+INSERT INTO cultural_heritage_hierarchy (parent, children)
 VALUES
-  ('Latin American', 'Mexican'),
-  ('Latin American', 'Caribbean'),
-  ('European', 'Italian'),
-  ('European', 'French'),
-  ('Asian', 'Chinese'),
-  ('Asian', 'Japanese'),
-  ('Asian', 'Korean'),
-  ('African', 'West African'),
-  ('African', 'Ethiopian')
+  ('Latin American', ARRAY['Mexican', 'Caribbean']),
+  ('European', ARRAY['Italian', 'French']),
+  ('Asian', ARRAY['Chinese', 'Japanese', 'Korean']),
+  ('African', ARRAY['West African', 'Ethiopian'])
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
