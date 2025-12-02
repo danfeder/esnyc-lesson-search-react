@@ -72,7 +72,13 @@ export const FilterModal = React.memo<FilterModalProps>(
 
     return (
       <Transition appear show={isOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={onClose} initialFocus={closeButtonRef}>
+        <Dialog
+          open={isOpen}
+          as="div"
+          className="relative z-50"
+          onClose={onClose}
+          initialFocus={closeButtonRef}
+        >
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
