@@ -75,7 +75,9 @@ export async function fetchDuplicatePairs(): Promise<DuplicatePair[]> {
   return (data || []).map((pair) => {
     const method = pair.detection_method;
     if (!validMethods.includes(method as (typeof validMethods)[number])) {
-      logger.warn(`Unexpected detection_method from database: ${method}, defaulting to 'embedding'`);
+      logger.warn(
+        `Unexpected detection_method from database: ${method}, defaulting to 'embedding'`
+      );
       return { ...pair, detection_method: 'embedding' as const };
     }
     return { ...pair, detection_method: method as DuplicatePair['detection_method'] };
