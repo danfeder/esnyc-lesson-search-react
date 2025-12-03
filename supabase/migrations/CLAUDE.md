@@ -123,6 +123,93 @@ After PR is merged to main:
 3. **User must manually approve** in GitHub Actions
 4. Migrations apply to production
 
+## Migration Iteration Best Practices
+
+### The Problem: Migrations Only Run Once
+
+Once a migration is applied to TEST DB (via CI), it won't re-run even if you edit the file. This creates a challenge when code review feedback requires changes to a migration.
+
+### Solution: Local-First Development
+
+**BEFORE pushing a PR with migrations:**
+
+1. **Iterate locally until confident**
+   ```bash
+   # Make changes to migration file
+   # Reset and test
+   supabase db reset
+   npm run test:rls
+
+   # Test the function/table works
+   # Use mcp__supabase__execute_sql for verification
+
+   # Repeat until satisfied
+   ```
+
+2. **Test with realistic scenarios locally**
+   - Test edge cases (NULL values, empty arrays, special characters)
+   - Test permission checks work correctly
+   - Test error handling paths
+
+3. **Only push when migration is "final"**
+   - The first push to PR triggers TEST DB migration
+   - After that, the migration is locked on TEST DB
+
+### When Fixes Are Needed After TEST DB Apply
+
+If code review or TEST DB verification reveals issues:
+
+**Option 1: Create a new migration (Recommended)**
+```bash
+# Original migration already applied: 20251201_add_feature.sql
+# Create fix migration:
+touch supabase/migrations/$(date +%Y%m%d)_fix_feature_issue.sql
+```
+
+This is fine! Multiple small migrations are normal. Benefits:
+- Clear audit trail of changes
+- Each migration is atomic and tested
+- No risk of TEST/PROD divergence
+
+**Option 2: Reset TEST DB (only if appropriate)**
+If TEST DB data isn't critical and changes are extensive:
+- Contact project owner about resetting TEST DB
+- After reset, original migration can be edited
+
+### Avoiding Migration Proliferation
+
+To minimize the need for fix migrations:
+
+1. **Thorough local testing** - Catch issues before pushing
+2. **Use `CREATE OR REPLACE`** - Functions can be updated idempotently
+3. **Use `IF NOT EXISTS`** - Tables/columns are safe to re-run
+4. **Review SQL carefully** - Check for:
+   - String escaping (use `format()` with `%L` for user data)
+   - NULL handling
+   - Permission checks
+   - Edge cases
+
+### When to Squash Migrations
+
+Consider squashing migrations:
+- Before major releases
+- When a feature has 3+ related migrations
+- During scheduled maintenance windows
+
+**How to squash** (for future reference):
+1. Create a combined migration with all changes
+2. Mark old migrations as applied in production
+3. Replace old migrations with combined one for new environments
+
+### Summary
+
+| Situation | Action |
+|-----------|--------|
+| Writing new migration | Iterate locally, push when ready |
+| Bug found in review | Create new fix migration |
+| Major issue found | Consider TEST DB reset (coordinate with team) |
+| Too many small migrations | Squash during maintenance |
+
 ## MCP Tools Usage
 
 ### For LOCAL Database (use freely)
