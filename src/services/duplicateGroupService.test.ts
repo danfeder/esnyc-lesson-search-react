@@ -41,6 +41,10 @@ describe('duplicateGroupService', () => {
   });
 
   describe('groupPairsIntoGroups', () => {
+    // These tests verify the union-find algorithm that clusters duplicate pairs
+    // into transitive groups. This is a pure function with no database calls,
+    // so we test it directly without mocks.
+
     it('groups a single pair into one group', () => {
       const pairs: DuplicatePair[] = [
         {
@@ -212,8 +216,23 @@ describe('duplicateGroupService', () => {
   });
 
   describe('resolveDuplicateGroup validation', () => {
-    // Import the function for validation tests
-    // These test the validation logic without hitting the database
+    // These tests verify client-side validation in resolveDuplicateGroup.
+    // The function validates inputs before making any database calls, so we can
+    // test validation logic without mocking the RPC responses.
+
+    it('rejects invalid groupId format', async () => {
+      const { resolveDuplicateGroup } = await import('./duplicateGroupService');
+
+      const resolution: GroupResolution = {
+        groupId: 'invalid_id', // Should be "group_N" format
+        resolutions: [{ lessonId: 'lesson-a', action: 'keep' }],
+      };
+
+      const result = await resolveDuplicateGroup(resolution);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Invalid group ID format');
+    });
 
     it('rejects resolution with no lessons kept', async () => {
       // We need to import resolveDuplicateGroup dynamically to use the mocked supabase
@@ -269,8 +288,10 @@ describe('duplicateGroupService', () => {
   });
 
   describe('isGroupDismissed helper logic', () => {
-    // Test the dismissed group matching logic
-    // Since isGroupDismissed is internal, we test it through the key generation pattern
+    // The isGroupDismissed function is internal (not exported), but we can verify
+    // its core logic by testing the key generation pattern it uses.
+    // Dismissed groups are matched by sorting lesson IDs and joining with commas,
+    // which allows O(1) lookups regardless of the original order.
 
     it('matches dismissed groups regardless of lesson ID order', () => {
       // This tests the sorting logic used in isGroupDismissed
@@ -296,6 +317,10 @@ describe('duplicateGroupService', () => {
   });
 
   describe('detection method runtime validation', () => {
+    // These tests verify that fetchDuplicatePairs validates the detection_method
+    // values returned from the database. If an unexpected value is returned,
+    // it defaults to 'embedding' with a warning (defensive coding against DB changes).
+
     it('validates known detection methods', async () => {
       const { supabase } = await import('@/lib/supabase');
       const { fetchDuplicatePairs } = await import('./duplicateGroupService');

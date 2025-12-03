@@ -225,8 +225,23 @@ END;
 $$;
 
 -- =====================================================
+-- GRANT PERMISSIONS
+-- =====================================================
+-- Ensure authenticated users can call these functions
+-- (The permission check inside handles authorization)
+
+GRANT EXECUTE ON FUNCTION has_duplicate_review_permission() TO authenticated;
+GRANT EXECUTE ON FUNCTION find_duplicate_pairs() TO authenticated;
+GRANT EXECUTE ON FUNCTION get_lesson_details_for_review(TEXT[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION check_group_already_resolved(TEXT[]) TO authenticated;
+
+-- =====================================================
 -- ROLLBACK
 -- =====================================================
 -- To rollback, revert to the original functions from 20251201_duplicate_detection_revamp.sql
+-- REVOKE EXECUTE ON FUNCTION has_duplicate_review_permission() FROM authenticated;
+-- REVOKE EXECUTE ON FUNCTION find_duplicate_pairs() FROM authenticated;
+-- REVOKE EXECUTE ON FUNCTION get_lesson_details_for_review(TEXT[]) FROM authenticated;
+-- REVOKE EXECUTE ON FUNCTION check_group_already_resolved(TEXT[]) FROM authenticated;
 -- DROP FUNCTION IF EXISTS has_duplicate_review_permission();
 -- Then recreate original functions without permission checks
