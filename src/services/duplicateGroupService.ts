@@ -32,8 +32,10 @@ export interface LessonForReview {
   content_preview: string | null;
 }
 
-// Types for grouped duplicates
-export interface DuplicateGroup {
+// Types for grouped duplicates (for review UI)
+// Named distinctly from DuplicateGroup in admin.ts and duplicateDetection.ts
+// which will be removed in Phase 4
+export interface DuplicateGroupForReview {
   groupId: string;
   lessonIds: string[];
   lessons: LessonForReview[];
@@ -238,7 +240,7 @@ export async function fetchDuplicateGroups(
   options: {
     includeResolved?: boolean;
   } = {}
-): Promise<DuplicateGroup[]> {
+): Promise<DuplicateGroupForReview[]> {
   const { includeResolved = false } = options;
 
   // Fetch all duplicate pairs
@@ -267,7 +269,7 @@ export async function fetchDuplicateGroups(
   const lessonMap = new Map(lessonDetails.map((l) => [l.lesson_id, l]));
 
   // Build groups
-  const groups: DuplicateGroup[] = [];
+  const groups: DuplicateGroupForReview[] = [];
   let groupIndex = 1;
 
   for (const pairsInGroup of groupedPairs.values()) {
