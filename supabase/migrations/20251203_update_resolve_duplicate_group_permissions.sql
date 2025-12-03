@@ -95,13 +95,14 @@ BEGIN
       WHERE lesson_id = v_title_update_key;
 
       -- Update the title in the lessons table
+      -- Use format() with %L for safe escaping of v_old_title (may contain quotes)
       UPDATE lessons
       SET
         title = v_new_title,
         updated_at = now(),
         processing_notes = COALESCE(processing_notes, '') ||
-          E'\n[' || now()::text || '] Title updated during duplicate resolution by user ' || v_user_id::text ||
-          '. Original title: "' || COALESCE(v_old_title, 'unknown') || '"'
+          format(E'\n[%s] Title updated during duplicate resolution by user %s. Original title: %L',
+            now()::text, v_user_id::text, COALESCE(v_old_title, 'unknown'))
       WHERE lesson_id = v_title_update_key;
 
       -- Track the title update
