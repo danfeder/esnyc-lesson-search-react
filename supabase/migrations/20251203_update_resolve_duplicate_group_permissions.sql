@@ -317,6 +317,12 @@ COMMENT ON FUNCTION resolve_duplicate_group IS
 'Resolves a group of duplicate lessons. Uses shared permission helper for service_role/postgres access.';
 
 -- =====================================================
+-- GRANT PERMISSIONS
+-- =====================================================
+-- The function already has GRANT from the baseline, but re-grant to be explicit
+GRANT EXECUTE ON FUNCTION resolve_duplicate_group(TEXT, TEXT, TEXT[], TEXT, NUMERIC, BOOLEAN, TEXT, TEXT, TEXT, TEXT, JSONB) TO authenticated;
+
+-- =====================================================
 -- ROLLBACK
 -- =====================================================
 -- To rollback, restore original function from 20251001_production_baseline_snapshot.sql
