@@ -45,17 +45,24 @@ npm run test:e2e:ui       # Run with Playwright UI
 1. Create migration:   touch supabase/migrations/$(date +%Y%m%d)_description.sql
 2. Test locally:       supabase db reset && npm run test:rls
 3. Create PR:          Migrations auto-apply to TEST DB, E2E tests run
-4. Merge to main:      Production workflow triggers
-5. Approve:            Manual approval in GitHub Actions
-6. Applied:            Migrations run on production
+4. **TEST ON TEST DB:** Use mcp__supabase-test__ tools to verify changes with real data
+5. Merge to main:      Production workflow triggers
+6. Approve:            Manual approval in GitHub Actions
+7. Applied:            Migrations run on production
 ```
 
 ### MCP Tools
 
 ```
 LOCAL:      mcp__supabase__execute_sql        (use freely)
+TEST:       mcp__supabase-test__execute_sql   (verify PR changes with real data)
 PRODUCTION: mcp__supabase-remote__execute_sql (be careful!)
 ```
+
+**MANDATORY: Before merging any PR with database changes:**
+1. Wait for deploy preview to be live (CI applies migrations to TEST DB)
+2. Use `mcp__supabase-test__execute_sql` to verify changes work with real data
+3. Test any new functions, RLS policies, or schema changes directly
 
 **NEVER use `mcp__supabase-remote__apply_migration` for schema changes!**
 Schema changes must go through migration files and the CI pipeline.
