@@ -92,7 +92,30 @@ When the PR is created:
 3. RLS tests run
 4. E2E tests run against Netlify preview
 
-### Step 6: After Merge - Approve Production Deployment
+### Step 6: MANDATORY - Verify on TEST Database with Real Data
+
+**Before merging, you MUST test the changes on TEST DB using MCP tools:**
+
+```sql
+-- Use mcp__supabase-test__execute_sql to verify changes
+-- Example: Test a new function
+SELECT * FROM your_new_function() LIMIT 5;
+
+-- Example: Verify new table/column exists
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'your_table';
+
+-- Example: Test RLS policy
+SELECT * FROM your_table LIMIT 5;
+```
+
+**Why this is mandatory:**
+- Local DB has minimal seed data (5 lessons)
+- TEST DB has production-like data (~800 lessons)
+- Only TEST DB reveals issues with real data patterns
+- CI passes ≠ changes work correctly with real data
+
+### Step 7: After Merge - Approve Production Deployment
 
 After PR is merged to main:
 1. `migrate-production.yml` workflow triggers
@@ -108,6 +131,15 @@ mcp__supabase__execute_sql       # Query local DB
 mcp__supabase__list_tables       # List local tables
 mcp__supabase__apply_migration   # Apply migration locally
 ```
+
+### For TEST Database (MANDATORY for PR verification)
+```
+mcp__supabase-test__execute_sql  # Verify migrations with real data
+mcp__supabase-test__list_tables  # List test tables
+```
+
+**Use TEST DB to verify changes before merging PRs!**
+This is the only way to test with production-like data.
 
 ### For PRODUCTION Database (use carefully)
 ```
