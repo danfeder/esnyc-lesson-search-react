@@ -441,6 +441,67 @@ describe('duplicateGroupService', () => {
       expect(result.success).toBe(true);
       expect(result.archivedCount).toBe(0);
     });
+
+    it('does NOT rollback previous archives when one fails mid-way (each RPC is separate transaction)', async () => {
+      // IMPORTANT: This test documents a critical design characteristic.
+      // Each archive_duplicate_lesson RPC call is a separate database transaction.
+      // If the second archive fails, the first archive remains committed.
+      // This is intentional - it allows partial progress and manual recovery.
+      //
+      // In production, this means:
+      // - Admin sees error message but some lessons were already archived
+      // - Re-resolving the group will fail for already-archived lessons (which is fine)
+      // - Retry will skip the archived ones and continue with the rest
+
+      const { supabase } = await import('@/lib/supabase');
+      const { resolveDuplicateGroup } = await import('./duplicateGroupService');
+
+      // First archive succeeds, second archive fails
+      vi.mocked(supabase.rpc)
+        .mockResolvedValueOnce({
+          data: { success: true, archived_lesson_id: 'lesson-b', canonical_id: 'lesson-a' },
+          error: null,
+        } as never)
+        .mockResolvedValueOnce({
+          data: { success: false, error: 'Simulated failure: lesson-c archive failed' },
+          error: null,
+        } as never);
+
+      const resolution: GroupResolution = {
+        groupId: 'group_1',
+        resolutions: [
+          { lessonId: 'lesson-a', action: 'keep' },
+          { lessonId: 'lesson-b', action: 'archive', archiveTo: 'lesson-a' },
+          { lessonId: 'lesson-c', action: 'archive', archiveTo: 'lesson-a' },
+        ],
+      };
+
+      const result = await resolveDuplicateGroup(resolution);
+
+      // Function reports failure (correctly - the operation didn't fully complete)
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('lesson-c archive failed');
+
+      // Both RPC calls were made
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
+
+      // First call succeeded (lesson-b was archived to lesson-a)
+      expect(supabase.rpc).toHaveBeenNthCalledWith(1, 'archive_duplicate_lesson', {
+        p_lesson_id: 'lesson-b',
+        p_canonical_id: 'lesson-a',
+      });
+
+      // Second call was attempted (and failed)
+      expect(supabase.rpc).toHaveBeenNthCalledWith(2, 'archive_duplicate_lesson', {
+        p_lesson_id: 'lesson-c',
+        p_canonical_id: 'lesson-a',
+      });
+
+      // NOTE: In the real database, lesson-b IS now archived (it won't be rolled back).
+      // The archivedCount in the response is 0 because the function returns early on error,
+      // but the actual database state has one archived lesson.
+      // This is a known limitation - manual cleanup may be needed if partial failures occur.
+    });
   });
 
   describe('detection method runtime validation', () => {
