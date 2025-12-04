@@ -152,6 +152,11 @@ BEGIN
     array_to_string(v_lesson_record.activity_type, ',') -- array → text cast
   );
 
+  -- Clean up duplicate_pairs entries referencing the archived lesson
+  -- This prevents stale references and re-detection of resolved duplicates
+  DELETE FROM duplicate_pairs
+  WHERE id1 = p_lesson_id OR id2 = p_lesson_id;
+
   -- Delete from lessons table
   DELETE FROM lessons WHERE lesson_id = p_lesson_id;
 

@@ -1,30 +1,16 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never;
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json;
-          operationName?: string;
-          query?: string;
-          variables?: Json;
-        };
-        Returns: Json;
-      };
-    };
-    Enums: {
-      [_ in never]: never;
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '13.0.5';
   };
   public: {
     Tables: {
@@ -1267,7 +1253,7 @@ export type Database = {
         }[];
       };
       check_security_definer_views: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           has_security_definer: boolean;
           view_name: string;
@@ -1292,7 +1278,7 @@ export type Database = {
         Returns: string;
       };
       find_duplicate_pairs: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           detection_method: string;
           id1: string;
@@ -1378,7 +1364,7 @@ export type Database = {
         }[];
       };
       get_user_profiles_with_email: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           auth_created_at: string;
           auth_email: string;
@@ -1401,15 +1387,23 @@ export type Database = {
           user_id: string;
         }[];
       };
-      has_duplicate_review_permission: { Args: never; Returns: boolean };
+      has_duplicate_review_permission: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       has_role: {
         Args: { p_user_id: string; required_role: string };
         Returns: boolean;
       };
-      is_admin: { Args: never; Returns: boolean } | { Args: { user_id: string }; Returns: boolean };
+      is_admin:
+        | { Args: Record<PropertyKey, never>; Returns: boolean }
+        | { Args: { user_id: string }; Returns: boolean };
       is_duplicate_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       is_lesson_archived: { Args: { p_lesson_id: string }; Returns: boolean };
-      is_reviewer_or_above: { Args: never; Returns: boolean };
+      is_reviewer_or_above: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       publish_approved_submissions: {
         Args: { p_limit?: number };
         Returns: {
@@ -1446,9 +1440,12 @@ export type Database = {
           total_count: number;
         }[];
       };
-      show_limit: { Args: never; Returns: number };
+      show_limit: { Args: Record<PropertyKey, never>; Returns: number };
       show_trgm: { Args: { '': string }; Returns: string[] };
-      track_user_login: { Args: { p_user_id: string }; Returns: undefined };
+      track_user_login: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
       unaccent: { Args: { '': string }; Returns: string };
       validate_invitation_token: {
         Args: { invite_token: string };
@@ -1463,7 +1460,7 @@ export type Database = {
         }[];
       };
       verify_rls_enabled: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           policy_count: number;
           rls_enabled: boolean;
@@ -1483,7 +1480,10 @@ export type Database = {
 
 type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  'public'
+>];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
@@ -1504,8 +1504,10 @@ export type Tables<
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R;
       }
       ? R
@@ -1597,9 +1599,6 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

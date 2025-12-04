@@ -170,6 +170,50 @@ async function testPolicyScenarios() {
         return !error;
       },
     },
+    // archive_duplicate_lesson function tests
+    {
+      name: 'Anonymous cannot call archive_duplicate_lesson',
+      test: async () => {
+        const anonClient = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+        const { data, error } = await anonClient.rpc('archive_duplicate_lesson', {
+          p_lesson_id: 'test-lesson-1',
+          p_canonical_id: 'test-lesson-2',
+        });
+        // Should fail with permission denied
+        return error !== null || (data && data.success === false);
+      },
+    },
+    {
+      name: 'archive_duplicate_lesson validates lesson existence',
+      test: async () => {
+        // Using service role to test validation logic (not auth)
+        const { data, error } = await supabase.rpc('archive_duplicate_lesson', {
+          p_lesson_id: 'nonexistent-lesson-id-12345',
+          p_canonical_id: 'another-nonexistent-id',
+        });
+        // Should return success=false with lesson not found error
+        return data && data.success === false && data.error && data.error.includes('not found');
+      },
+    },
+    {
+      name: 'archive_duplicate_lesson prevents self-archiving',
+      test: async () => {
+        // Get a real lesson ID first
+        const { data: lessons } = await supabase.from('lessons').select('lesson_id').limit(1);
+        if (!lessons || lessons.length === 0) {
+          console.log('    ℹ️  Skipping: No lessons in database');
+          return true; // Skip test if no lessons
+        }
+        const lessonId = lessons[0].lesson_id;
+
+        const { data, error } = await supabase.rpc('archive_duplicate_lesson', {
+          p_lesson_id: lessonId,
+          p_canonical_id: lessonId, // Same ID = self-archiving
+        });
+        // Should return success=false with self-archive error
+        return data && data.success === false && data.error && data.error.includes('Cannot archive');
+      },
+    },
   ];
 
   let passed = 0;

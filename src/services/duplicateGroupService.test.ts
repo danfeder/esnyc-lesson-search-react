@@ -316,6 +316,135 @@ describe('duplicateGroupService', () => {
     });
   });
 
+  describe('resolveDuplicateGroup archive functionality', () => {
+    // Tests for Phase 3 archive functionality using archive_duplicate_lesson RPC
+
+    it('calls archive_duplicate_lesson for each lesson to archive', async () => {
+      const { supabase } = await import('@/lib/supabase');
+      const { resolveDuplicateGroup } = await import('./duplicateGroupService');
+
+      // Mock successful RPC responses
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: { success: true, archived_lesson_id: 'lesson-b', canonical_id: 'lesson-a' },
+        error: null,
+      } as never);
+
+      const resolution: GroupResolution = {
+        groupId: 'group_1',
+        resolutions: [
+          { lessonId: 'lesson-a', action: 'keep' },
+          { lessonId: 'lesson-b', action: 'archive', archiveTo: 'lesson-a' },
+        ],
+      };
+
+      const result = await resolveDuplicateGroup(resolution);
+
+      expect(result.success).toBe(true);
+      expect(supabase.rpc).toHaveBeenCalledWith('archive_duplicate_lesson', {
+        p_lesson_id: 'lesson-b',
+        p_canonical_id: 'lesson-a',
+      });
+    });
+
+    it('handles RPC error gracefully', async () => {
+      const { supabase } = await import('@/lib/supabase');
+      const { resolveDuplicateGroup } = await import('./duplicateGroupService');
+
+      // Mock RPC that throws an Error (simulates network failure)
+      vi.mocked(supabase.rpc).mockRejectedValueOnce(
+        new Error('Database connection failed')
+      );
+
+      const resolution: GroupResolution = {
+        groupId: 'group_1',
+        resolutions: [
+          { lessonId: 'lesson-a', action: 'keep' },
+          { lessonId: 'lesson-b', action: 'archive', archiveTo: 'lesson-a' },
+        ],
+      };
+
+      const result = await resolveDuplicateGroup(resolution);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Database connection failed');
+    });
+
+    it('handles archive function returning success=false', async () => {
+      const { supabase } = await import('@/lib/supabase');
+      const { resolveDuplicateGroup } = await import('./duplicateGroupService');
+
+      // Mock RPC returning success=false (e.g., lesson not found)
+      vi.mocked(supabase.rpc).mockResolvedValueOnce({
+        data: { success: false, error: 'Lesson not found: lesson-b' },
+        error: null,
+      } as never);
+
+      const resolution: GroupResolution = {
+        groupId: 'group_1',
+        resolutions: [
+          { lessonId: 'lesson-a', action: 'keep' },
+          { lessonId: 'lesson-b', action: 'archive', archiveTo: 'lesson-a' },
+        ],
+      };
+
+      const result = await resolveDuplicateGroup(resolution);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Lesson not found');
+    });
+
+    it('archives multiple lessons to the same canonical', async () => {
+      const { supabase } = await import('@/lib/supabase');
+      const { resolveDuplicateGroup } = await import('./duplicateGroupService');
+
+      // Mock successful RPC responses
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: { success: true },
+        error: null,
+      } as never);
+
+      const resolution: GroupResolution = {
+        groupId: 'group_1',
+        resolutions: [
+          { lessonId: 'lesson-a', action: 'keep' },
+          { lessonId: 'lesson-b', action: 'archive', archiveTo: 'lesson-a' },
+          { lessonId: 'lesson-c', action: 'archive', archiveTo: 'lesson-a' },
+        ],
+      };
+
+      const result = await resolveDuplicateGroup(resolution);
+
+      expect(result.success).toBe(true);
+      // Should be called twice (once for each archived lesson)
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
+      expect(supabase.rpc).toHaveBeenCalledWith('archive_duplicate_lesson', {
+        p_lesson_id: 'lesson-b',
+        p_canonical_id: 'lesson-a',
+      });
+      expect(supabase.rpc).toHaveBeenCalledWith('archive_duplicate_lesson', {
+        p_lesson_id: 'lesson-c',
+        p_canonical_id: 'lesson-a',
+      });
+    });
+
+    it('returns success when all lessons are kept (dismiss action)', async () => {
+      const { resolveDuplicateGroup } = await import('./duplicateGroupService');
+
+      const resolution: GroupResolution = {
+        groupId: 'group_1',
+        resolutions: [
+          { lessonId: 'lesson-a', action: 'keep' },
+          { lessonId: 'lesson-b', action: 'keep' },
+        ],
+      };
+
+      const result = await resolveDuplicateGroup(resolution);
+
+      expect(result.success).toBe(true);
+      expect(result.archivedCount).toBe(0);
+    });
+  });
+
   describe('detection method runtime validation', () => {
     // These tests verify that fetchDuplicatePairs validates the detection_method
     // values returned from the database. If an unexpected value is returned,
