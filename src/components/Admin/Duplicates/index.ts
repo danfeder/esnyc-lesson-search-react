@@ -1,4 +1,5 @@
-export { DuplicateHeader } from './DuplicateHeader';
-export { DuplicateInsights } from './DuplicateInsights';
-export { DuplicateLessonList } from './DuplicateLessonList';
-export { DuplicateResolution } from './DuplicateResolution';
+export { DuplicateGroupCard } from './DuplicateGroupCard';
+export { DuplicateReviewHeader } from './DuplicateReviewHeader';
+export { LessonReviewCard } from './LessonReviewCard';
+export type { Selection } from './LessonReviewCard';
+export { ResolutionActions } from './ResolutionActions';

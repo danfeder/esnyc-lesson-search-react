@@ -212,9 +212,9 @@ const {
 - Must handle all filter categories defined in `filterDefinitions.ts`
 
 ### AdminDuplicates
-- Uses similarity scoring algorithm
-- Requires careful merge conflict resolution
-- Archive table tracks all resolutions
+- Uses `archive_duplicate_lesson` RPC for resolution
+- Supports Keep All (dismiss) and Archive actions
+- Archive table tracks all resolutions with `canonical_id` link
 
 ### Submission Flow
 ```
