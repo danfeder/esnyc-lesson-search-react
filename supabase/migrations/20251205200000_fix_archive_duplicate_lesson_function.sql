@@ -1,17 +1,11 @@
 -- =====================================================
--- Migration: 20251205_add_archive_duplicate_lesson_function.sql
+-- Migration: 20251205_fix_archive_duplicate_lesson_function.sql
 -- =====================================================
--- Description: Add simple archive_duplicate_lesson function for Phase 3.
--- This replaces the complex resolve_duplicate_group function with a
--- focused, single-purpose function.
+-- Description: Fix archive_duplicate_lesson function based on code review:
+-- 1. Reorder DELETE: lesson first, then duplicate_pairs (prevents data loss)
+-- 2. Add COALESCE for NULL activity_type array handling
 --
--- Phase 3 of deduplication revamp: simplified resolution backend.
-
--- =====================================================
--- NEW FUNCTION: archive_duplicate_lesson
--- =====================================================
--- Simple function to archive a single lesson as a duplicate of another.
--- Does NOT write to duplicate_resolutions table (lesson_archive is sufficient).
+-- This uses CREATE OR REPLACE to update the existing function.
 
 CREATE OR REPLACE FUNCTION archive_duplicate_lesson(
   p_lesson_id TEXT,
@@ -149,16 +143,17 @@ BEGIN
     v_lesson_record.version_number,
     v_lesson_record.has_versions,
     v_lesson_record.original_submission_id,
-    array_to_string(v_lesson_record.activity_type, ',') -- array → text cast
+    COALESCE(array_to_string(v_lesson_record.activity_type, ','), '') -- array → text cast (with NULL handling)
   );
+
+  -- Delete from lessons table first (before cleaning up duplicate_pairs)
+  -- This ensures if archive fails, we don't lose duplicate_pairs data
+  DELETE FROM lessons WHERE lesson_id = p_lesson_id;
 
   -- Clean up duplicate_pairs entries referencing the archived lesson
   -- This prevents stale references and re-detection of resolved duplicates
   DELETE FROM duplicate_pairs
   WHERE id1 = p_lesson_id OR id2 = p_lesson_id;
-
-  -- Delete from lessons table
-  DELETE FROM lessons WHERE lesson_id = p_lesson_id;
 
   -- Return success
   RETURN jsonb_build_object(
@@ -178,21 +173,7 @@ EXCEPTION
 END;
 $$;
 
-COMMENT ON FUNCTION archive_duplicate_lesson IS
-'Archives a single lesson as a duplicate of another. Part of Phase 3 deduplication revamp.';
-
--- =====================================================
--- DROP OLD FUNCTION: resolve_duplicate_group
--- =====================================================
--- The old function is replaced by archive_duplicate_lesson.
--- Dismissals ("Keep All") are handled separately via duplicate_group_dismissals table.
-
-DROP FUNCTION IF EXISTS resolve_duplicate_group(
-  TEXT, TEXT, TEXT[], TEXT, NUMERIC, BOOLEAN, TEXT, TEXT, TEXT, TEXT, JSONB
-);
-
 -- =====================================================
 -- ROLLBACK (keep as comments)
 -- =====================================================
--- DROP FUNCTION IF EXISTS archive_duplicate_lesson(TEXT, TEXT);
--- Then restore resolve_duplicate_group from git history if needed.
+-- Restore the previous version from 20251205_add_archive_duplicate_lesson_function.sql
