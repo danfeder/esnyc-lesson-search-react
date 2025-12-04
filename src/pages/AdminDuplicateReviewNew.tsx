@@ -150,17 +150,15 @@ export function AdminDuplicateReviewNew() {
 
   // Navigation helpers
   const navigateToGroup = useCallback(
-    (index: number) => {
-      if (index >= 0 && index < allGroups.length) {
-        navigate(`/admin/duplicates/${allGroups[index].groupId}`);
-      }
+    (groupId: string) => {
+      navigate(`/admin/duplicates-new/${groupId}`);
     },
-    [allGroups, navigate]
+    [navigate]
   );
 
   const navigateToList = useCallback(
     (message?: string, resolvedGroup?: DuplicateGroupForReview) => {
-      navigate('/admin/duplicates', {
+      navigate('/admin/duplicates-new', {
         state: message ? { message, resolvedGroup } : undefined,
       });
     },
@@ -199,10 +197,15 @@ export function AdminDuplicateReviewNew() {
       addResolvedGroupToStorage(currentGroup);
 
       // Navigate to next group or back to list
-      if (currentIndex < allGroups.length - 1) {
-        // Remove current group from state BEFORE navigation to prevent race condition
-        setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
-        navigateToGroup(currentIndex + 1);
+      // Calculate next group ID BEFORE updating state to avoid race condition
+      const nextGroupId =
+        currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1].groupId : null;
+
+      // Remove current group from state
+      setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
+
+      if (nextGroupId) {
+        navigateToGroup(nextGroupId);
       } else {
         navigateToList(
           `Kept all ${currentGroup.lessons.length} lessons as non-duplicates`,
@@ -220,8 +223,11 @@ export function AdminDuplicateReviewNew() {
 
   // Handle Skip (go to next without saving)
   const handleSkip = useCallback(() => {
-    if (currentIndex < allGroups.length - 1) {
-      navigateToGroup(currentIndex + 1);
+    const nextGroupId =
+      currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1].groupId : null;
+
+    if (nextGroupId) {
+      navigateToGroup(nextGroupId);
     } else {
       navigateToList();
     }
@@ -271,10 +277,15 @@ export function AdminDuplicateReviewNew() {
       // Navigate to next group or back to list
       const message = `Resolved group: kept ${result.keptCount}, archived ${result.archivedCount}`;
 
-      if (currentIndex < allGroups.length - 1) {
-        // Remove current group from state BEFORE navigation to prevent race condition
-        setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
-        navigateToGroup(currentIndex + 1);
+      // Calculate next group ID BEFORE updating state to avoid race condition
+      const nextGroupId =
+        currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1].groupId : null;
+
+      // Remove current group from state
+      setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
+
+      if (nextGroupId) {
+        navigateToGroup(nextGroupId);
       } else {
         navigateToList(message, currentGroup);
       }
