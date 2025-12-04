@@ -351,9 +351,7 @@ describe('duplicateGroupService', () => {
       const { resolveDuplicateGroup } = await import('./duplicateGroupService');
 
       // Mock RPC that throws an Error (simulates network failure)
-      vi.mocked(supabase.rpc).mockRejectedValueOnce(
-        new Error('Database connection failed')
-      );
+      vi.mocked(supabase.rpc).mockRejectedValueOnce(new Error('Database connection failed'));
 
       const resolution: GroupResolution = {
         groupId: 'group_1',
