@@ -45,7 +45,7 @@ export function AdminDashboard() {
       title: 'Duplicate Management',
       description: 'Review and manage duplicate lessons',
       icon: Shield,
-      path: '/admin/duplicates-new',
+      path: '/admin/duplicates',
       permission: Permission.MANAGE_DUPLICATES,
       color: 'bg-yellow-500',
     },

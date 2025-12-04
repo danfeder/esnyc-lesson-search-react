@@ -1,30 +1,10 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never;
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json;
-          operationName?: string;
-          query?: string;
-          variables?: Json;
-        };
-        Returns: Json;
-      };
-    };
-    Enums: {
-      [_ in never]: never;
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '13.0.5';
   };
   public: {
     Tables: {
@@ -1254,6 +1234,10 @@ export type Database = {
       };
     };
     Functions: {
+      archive_duplicate_lesson: {
+        Args: { p_canonical_id: string; p_lesson_id: string };
+        Returns: Json;
+      };
       check_group_already_resolved: {
         Args: { p_lesson_ids: string[] };
         Returns: {
@@ -1263,7 +1247,7 @@ export type Database = {
         }[];
       };
       check_security_definer_views: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           has_security_definer: boolean;
           view_name: string;
@@ -1288,7 +1272,7 @@ export type Database = {
         Returns: string;
       };
       find_duplicate_pairs: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           detection_method: string;
           id1: string;
@@ -1374,7 +1358,7 @@ export type Database = {
         }[];
       };
       get_user_profiles_with_email: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           auth_created_at: string;
           auth_email: string;
@@ -1397,36 +1381,29 @@ export type Database = {
           user_id: string;
         }[];
       };
+      has_duplicate_review_permission: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       has_role: {
         Args: { p_user_id: string; required_role: string };
         Returns: boolean;
       };
-      is_admin: { Args: never; Returns: boolean } | { Args: { user_id: string }; Returns: boolean };
+      is_admin:
+        | { Args: Record<PropertyKey, never>; Returns: boolean }
+        | { Args: { user_id: string }; Returns: boolean };
       is_duplicate_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       is_lesson_archived: { Args: { p_lesson_id: string }; Returns: boolean };
-      is_reviewer_or_above: { Args: never; Returns: boolean };
+      is_reviewer_or_above: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       publish_approved_submissions: {
         Args: { p_limit?: number };
         Returns: {
           published_lesson_id: string;
           published_submission_id: string;
         }[];
-      };
-      resolve_duplicate_group: {
-        Args: {
-          p_canonical_id: string;
-          p_duplicate_ids: string[];
-          p_duplicate_type?: string;
-          p_group_id: string;
-          p_merge_metadata?: boolean;
-          p_parent_group_id?: string;
-          p_resolution_mode?: string;
-          p_resolution_notes?: string;
-          p_similarity_score?: number;
-          p_sub_group_name?: string;
-          p_title_updates?: Json;
-        };
-        Returns: Json;
       };
       search_lessons: {
         Args: {
@@ -1457,9 +1434,12 @@ export type Database = {
           total_count: number;
         }[];
       };
-      show_limit: { Args: never; Returns: number };
+      show_limit: { Args: Record<PropertyKey, never>; Returns: number };
       show_trgm: { Args: { '': string }; Returns: string[] };
-      track_user_login: { Args: { p_user_id: string }; Returns: undefined };
+      track_user_login: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
       unaccent: { Args: { '': string }; Returns: string };
       validate_invitation_token: {
         Args: { invite_token: string };
@@ -1474,7 +1454,7 @@ export type Database = {
         }[];
       };
       verify_rls_enabled: {
-        Args: never;
+        Args: Record<PropertyKey, never>;
         Returns: {
           policy_count: number;
           rls_enabled: boolean;
@@ -1608,9 +1588,6 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

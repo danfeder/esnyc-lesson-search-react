@@ -1,5 +1,24 @@
 # Database Migration Guidelines for Claude
 
+---
+## ⛔ STOP: NEVER EDIT PUSHED MIGRATIONS ⛔
+
+**If a migration file has been pushed to a remote branch, DO NOT EDIT IT.**
+
+```
+Once pushed → CI applies to TEST DB → Editing does NOTHING on TEST
+                                    → Creates TEST/PROD inconsistency
+```
+
+**If you need to fix a pushed migration:**
+1. Create a NEW migration file: `touch supabase/migrations/$(date +%Y%m%d%H%M%S)_fix_<name>.sql`
+2. Apply fix directly to TEST DB with `mcp__supabase-test__execute_sql`
+3. Push the NEW migration file
+
+**Use the `database-migrations` skill before ANY migration work.**
+
+---
+
 **IMPORTANT: Read this entire file before making ANY database changes.**
 
 ## The 3-Part Database Pipeline
@@ -42,6 +61,12 @@ touch supabase/migrations/$(date +%Y%m%d)_description.sql
 ```
 
 **Naming:** `YYYYMMDD_short_description.sql` where YYYYMMDD has no separators (e.g., `20251201_add_rating_column.sql` for Dec 1, 2025)
+
+**Multiple migrations on same day:** Use timestamp format `YYYYMMDDHHMMSS_description.sql` to control ordering:
+- `20251204140000_first_migration.sql` (runs first - 2:00 PM)
+- `20251204160000_second_migration.sql` (runs second - 4:00 PM)
+
+Supabase uses string sorting on the numeric prefix before the first underscore, so `20251204140000` < `20251204160000` < `20251204_` (underscore > digit in ASCII).
 
 ### Step 2: Write Migration SQL
 
