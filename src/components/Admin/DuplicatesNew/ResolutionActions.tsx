@@ -1,10 +1,14 @@
 import { Loader2, ChevronRight, SkipForward, CheckCheck } from 'lucide-react';
 
+type SubmittingAction = 'keepAll' | 'saveAndNext' | null;
+
 interface ResolutionActionsProps {
   onKeepAll: () => void;
   onSkip: () => void;
   onSaveAndNext: () => void;
   isSubmitting: boolean;
+  /** Which action is currently submitting (for showing appropriate loading state) */
+  submittingAction?: SubmittingAction;
   hasValidSelection: boolean;
   error?: string | null;
 }
@@ -18,9 +22,13 @@ export function ResolutionActions({
   onSkip,
   onSaveAndNext,
   isSubmitting,
+  submittingAction,
   hasValidSelection,
   error,
 }: ResolutionActionsProps) {
+  const isKeepAllSubmitting = isSubmitting && submittingAction === 'keepAll';
+  const isSaveAndNextSubmitting = isSubmitting && submittingAction === 'saveAndNext';
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
       {/* Error message */}
@@ -38,8 +46,17 @@ export function ResolutionActions({
           disabled={isSubmitting}
           className="inline-flex items-center px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <CheckCheck className="h-4 w-4 mr-2" />
-          Keep All
+          {isKeepAllSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Keeping...
+            </>
+          ) : (
+            <>
+              <CheckCheck className="h-4 w-4 mr-2" />
+              Keep All
+            </>
+          )}
         </button>
 
         {/* Right side: Skip and Save & Next */}
@@ -58,7 +75,7 @@ export function ResolutionActions({
             disabled={isSubmitting || !hasValidSelection}
             className="inline-flex items-center px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? (
+            {isSaveAndNextSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Saving...

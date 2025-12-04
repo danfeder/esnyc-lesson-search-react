@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
@@ -8,29 +8,13 @@ import {
   type DuplicateGroupForReview,
 } from '@/services/duplicateGroupService';
 import { DuplicateGroupCard } from '@/components/Admin/DuplicatesNew';
+import {
+  getGroupKey,
+  getStoredResolvedGroups,
+  saveResolvedGroups,
+} from '@/utils/duplicateGroupHelpers';
 
 type FilterStatus = 'pending' | 'resolved' | 'all';
-
-const RESOLVED_GROUPS_KEY = 'duplicates-resolved-groups';
-
-// Helper to get resolved groups from sessionStorage
-function getStoredResolvedGroups(): DuplicateGroupForReview[] {
-  try {
-    const stored = window.sessionStorage.getItem(RESOLVED_GROUPS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-// Helper to save resolved groups to sessionStorage
-function saveResolvedGroups(groups: DuplicateGroupForReview[]) {
-  try {
-    window.sessionStorage.setItem(RESOLVED_GROUPS_KEY, JSON.stringify(groups));
-  } catch (err) {
-    logger.warn('Failed to save resolved groups to sessionStorage:', err);
-  }
-}
 
 /**
  * Admin page for reviewing and resolving duplicate lessons.
@@ -49,25 +33,19 @@ export function AdminDuplicatesNew() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Helper to create stable group key from lesson IDs
-  const getGroupKey = useCallback((lessonIds: string[]) => [...lessonIds].sort().join(','), []);
-
   // Add a resolved group (checks for duplicates by lessonIds)
-  const addResolvedGroup = useCallback(
-    (group: DuplicateGroupForReview) => {
-      setResolvedGroups((prev) => {
-        const groupKey = getGroupKey(group.lessonIds);
-        // Avoid duplicates by comparing lessonIds
-        if (prev.some((g) => getGroupKey(g.lessonIds) === groupKey)) {
-          return prev;
-        }
-        const updated = [...prev, group];
-        saveResolvedGroups(updated);
-        return updated;
-      });
-    },
-    [getGroupKey]
-  );
+  const addResolvedGroup = useCallback((group: DuplicateGroupForReview) => {
+    setResolvedGroups((prev) => {
+      const groupKey = getGroupKey(group.lessonIds);
+      // Avoid duplicates by comparing lessonIds
+      if (prev.some((g) => getGroupKey(g.lessonIds) === groupKey)) {
+        return prev;
+      }
+      const updated = [...prev, group];
+      saveResolvedGroups(updated);
+      return updated;
+    });
+  }, []);
 
   // Load groups on mount
   useEffect(() => {
@@ -256,7 +234,7 @@ interface FilterButtonProps {
   active: boolean;
   onClick: () => void;
   count: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function FilterButton({ active, onClick, count, children }: FilterButtonProps) {

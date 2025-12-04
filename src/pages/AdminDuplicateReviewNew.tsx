@@ -16,30 +16,7 @@ import {
   ResolutionActions,
   type Selection,
 } from '@/components/Admin/DuplicatesNew';
-
-const RESOLVED_GROUPS_KEY = 'duplicates-resolved-groups';
-
-// Helper to save a resolved group to sessionStorage
-function saveResolvedGroupToStorage(group: DuplicateGroupForReview) {
-  try {
-    const stored = window.sessionStorage.getItem(RESOLVED_GROUPS_KEY);
-    const existing: DuplicateGroupForReview[] = stored ? JSON.parse(stored) : [];
-
-    // Create stable key from lessonIds for deduplication
-    const getGroupKey = (lessonIds: string[]) => [...lessonIds].sort().join(',');
-    const groupKey = getGroupKey(group.lessonIds);
-
-    // Avoid duplicates
-    if (existing.some((g) => getGroupKey(g.lessonIds) === groupKey)) {
-      return;
-    }
-
-    existing.push(group);
-    window.sessionStorage.setItem(RESOLVED_GROUPS_KEY, JSON.stringify(existing));
-  } catch (err) {
-    logger.warn('Failed to save resolved group to sessionStorage:', err);
-  }
-}
+import { addResolvedGroupToStorage } from '@/utils/duplicateGroupHelpers';
 
 /**
  * Detail page for reviewing a single duplicate group.
@@ -61,6 +38,7 @@ export function AdminDuplicateReviewNew() {
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<'keepAll' | 'saveAndNext' | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Find current group and index
@@ -80,7 +58,7 @@ export function AdminDuplicateReviewNew() {
     if (currentGroup) {
       initializeSelections(currentGroup);
     }
-  }, [currentGroup?.groupId]);
+  }, [currentGroup]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -174,7 +152,7 @@ export function AdminDuplicateReviewNew() {
   const navigateToGroup = useCallback(
     (index: number) => {
       if (index >= 0 && index < allGroups.length) {
-        navigate(`/admin/duplicates-new/${allGroups[index].groupId}`);
+        navigate(`/admin/duplicates/${allGroups[index].groupId}`);
       }
     },
     [allGroups, navigate]
@@ -182,7 +160,7 @@ export function AdminDuplicateReviewNew() {
 
   const navigateToList = useCallback(
     (message?: string, resolvedGroup?: DuplicateGroupForReview) => {
-      navigate('/admin/duplicates-new', {
+      navigate('/admin/duplicates', {
         state: message ? { message, resolvedGroup } : undefined,
       });
     },
@@ -194,6 +172,7 @@ export function AdminDuplicateReviewNew() {
     if (!currentGroup) return;
 
     setIsSubmitting(true);
+    setSubmittingAction('keepAll');
     setSubmitError(null);
 
     try {
@@ -217,13 +196,13 @@ export function AdminDuplicateReviewNew() {
       }
 
       // Save resolved group to sessionStorage
-      saveResolvedGroupToStorage(currentGroup);
+      addResolvedGroupToStorage(currentGroup);
 
       // Navigate to next group or back to list
       if (currentIndex < allGroups.length - 1) {
-        navigateToGroup(currentIndex + 1);
-        // Remove current group from state
+        // Remove current group from state BEFORE navigation to prevent race condition
         setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
+        navigateToGroup(currentIndex + 1);
       } else {
         navigateToList(
           `Kept all ${currentGroup.lessons.length} lessons as non-duplicates`,
@@ -235,6 +214,7 @@ export function AdminDuplicateReviewNew() {
       setSubmitError(err instanceof Error ? err.message : 'Failed to dismiss group');
     } finally {
       setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   }, [currentGroup, currentIndex, allGroups, navigateToGroup, navigateToList]);
 
@@ -252,6 +232,7 @@ export function AdminDuplicateReviewNew() {
     if (!currentGroup || !hasValidSelection) return;
 
     setIsSubmitting(true);
+    setSubmittingAction('saveAndNext');
     setSubmitError(null);
 
     try {
@@ -285,15 +266,15 @@ export function AdminDuplicateReviewNew() {
       }
 
       // Save resolved group to sessionStorage
-      saveResolvedGroupToStorage(currentGroup);
+      addResolvedGroupToStorage(currentGroup);
 
       // Navigate to next group or back to list
       const message = `Resolved group: kept ${result.keptCount}, archived ${result.archivedCount}`;
 
       if (currentIndex < allGroups.length - 1) {
-        navigateToGroup(currentIndex + 1);
-        // Remove current group from state
+        // Remove current group from state BEFORE navigation to prevent race condition
         setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
+        navigateToGroup(currentIndex + 1);
       } else {
         navigateToList(message, currentGroup);
       }
@@ -302,6 +283,7 @@ export function AdminDuplicateReviewNew() {
       setSubmitError(err instanceof Error ? err.message : 'Failed to resolve group');
     } finally {
       setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   }, [
     currentGroup,
@@ -422,6 +404,7 @@ export function AdminDuplicateReviewNew() {
         onSkip={handleSkip}
         onSaveAndNext={handleSaveAndNext}
         isSubmitting={isSubmitting}
+        submittingAction={submittingAction}
         hasValidSelection={hasValidSelection}
         error={submitError}
       />
