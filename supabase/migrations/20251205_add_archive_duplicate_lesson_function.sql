@@ -149,16 +149,17 @@ BEGIN
     v_lesson_record.version_number,
     v_lesson_record.has_versions,
     v_lesson_record.original_submission_id,
-    array_to_string(v_lesson_record.activity_type, ',') -- array → text cast
+    COALESCE(array_to_string(v_lesson_record.activity_type, ','), '') -- array → text cast (with NULL handling)
   );
+
+  -- Delete from lessons table first (before cleaning up duplicate_pairs)
+  -- This ensures if archive fails, we don't lose duplicate_pairs data
+  DELETE FROM lessons WHERE lesson_id = p_lesson_id;
 
   -- Clean up duplicate_pairs entries referencing the archived lesson
   -- This prevents stale references and re-detection of resolved duplicates
   DELETE FROM duplicate_pairs
   WHERE id1 = p_lesson_id OR id2 = p_lesson_id;
-
-  -- Delete from lessons table
-  DELETE FROM lessons WHERE lesson_id = p_lesson_id;
 
   -- Return success
   RETURN jsonb_build_object(

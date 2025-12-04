@@ -390,9 +390,12 @@ export async function resolveDuplicateGroup(resolution: GroupResolution): Promis
       }
 
       // Check the JSONB response for success
-      // Type narrow the response from Json to our expected shape
-      const result = data as { success: boolean; error?: string } | null;
-      if (result && !result.success) {
+      // Validate response shape before type narrowing
+      if (!data || typeof data !== 'object' || !('success' in data)) {
+        throw new Error('Invalid response from archive_duplicate_lesson');
+      }
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
         logger.error('Archive function returned error:', result.error);
         throw new Error(result.error || 'Archive function failed');
       }
