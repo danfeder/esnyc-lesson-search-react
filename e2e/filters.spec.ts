@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { GRADE_LEVEL_PATTERN } from './utils/patterns';
 
 test.describe('Filter Functionality', () => {
   test.beforeEach(async ({ page }) => {
@@ -11,9 +12,7 @@ test.describe('Filter Functionality', () => {
     await expect(page.locator('text=/lesson/i').first()).toBeVisible({ timeout: 15000 });
 
     // Look for grade level text in lesson cards
-    // Database stores grades as: 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
-    // Match pattern aligned with lessons.spec.ts which passes consistently
-    const gradeContent = page.locator('text=/3K|PK|K|1st|2nd|3rd|4th|5th|6th|7th|8th|Grade/i');
+    const gradeContent = page.locator(`text=${GRADE_LEVEL_PATTERN.source}`);
     await expect(gradeContent.first()).toBeVisible({ timeout: 15000 });
 
     // There should be clickable filter elements on the page

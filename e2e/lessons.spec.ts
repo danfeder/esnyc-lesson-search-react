@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { GRADE_LEVEL_PATTERN } from './utils/patterns';
 
 test.describe('Lesson Display', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,9 +32,7 @@ test.describe('Lesson Display', () => {
 
   test('lesson cards show grade levels', async ({ page }) => {
     // Grade levels should be displayed on cards
-    // Note: Pattern includes common grade level formats
-    // "K" alone could match other words but is needed for Kindergarten display
-    const gradeIndicators = page.locator('text=/3K|PK|K|1st|2nd|3rd|4th|5th|6th|7th|8th|Grade/i');
+    const gradeIndicators = page.locator(`text=${GRADE_LEVEL_PATTERN.source}`);
     await expect(gradeIndicators.first()).toBeVisible({ timeout: 10000 });
 
     // Should have multiple grade indicators across different lessons
