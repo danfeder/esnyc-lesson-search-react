@@ -15,7 +15,7 @@ Once pushed → CI applies to TEST DB → Editing does NOTHING on TEST
 2. Apply fix directly to TEST DB with `mcp__supabase-test__execute_sql`
 3. Push the NEW migration file
 
-**Use `/migration-work` command before ANY migration work.**
+**Use the `database-migrations` skill before ANY migration work.**
 
 ---
 
