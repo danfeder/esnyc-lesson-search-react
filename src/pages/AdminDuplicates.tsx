@@ -7,7 +7,7 @@ import {
   fetchDuplicateGroups,
   type DuplicateGroupForReview,
 } from '@/services/duplicateGroupService';
-import { DuplicateGroupCard } from '@/components/Admin/DuplicatesNew';
+import { DuplicateGroupCard } from '@/components/Admin/Duplicates';
 import {
   getGroupKey,
   getStoredResolvedGroups,
@@ -20,7 +20,7 @@ type FilterStatus = 'pending' | 'resolved' | 'all';
  * Admin page for reviewing and resolving duplicate lessons.
  * Uses the new duplicateGroupService backend.
  */
-export function AdminDuplicatesNew() {
+export function AdminDuplicates() {
   const { user } = useEnhancedAuth();
   const location = useLocation();
 

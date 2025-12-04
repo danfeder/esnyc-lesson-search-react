@@ -15,14 +15,14 @@ import {
   LessonReviewCard,
   ResolutionActions,
   type Selection,
-} from '@/components/Admin/DuplicatesNew';
+} from '@/components/Admin/Duplicates';
 import { addResolvedGroupToStorage } from '@/utils/duplicateGroupHelpers';
 
 /**
  * Detail page for reviewing a single duplicate group.
  * Shows lessons in a grid with Keep/Archive selectors.
  */
-export function AdminDuplicateReviewNew() {
+export function AdminDuplicateReview() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const { user } = useEnhancedAuth();

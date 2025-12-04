@@ -26,12 +26,11 @@ const ReviewDashboard = lazy(() =>
 const ReviewDetail = lazy(() =>
   import('@/pages/ReviewDetail').then((m) => ({ default: m.ReviewDetail }))
 );
-// Phase 3: Using new duplicate review pages (old pages removed)
 const AdminDuplicates = lazy(() =>
-  import('@/pages/AdminDuplicatesNew').then((m) => ({ default: m.AdminDuplicatesNew }))
+  import('@/pages/AdminDuplicates').then((m) => ({ default: m.AdminDuplicates }))
 );
 const AdminDuplicateReview = lazy(() =>
-  import('@/pages/AdminDuplicateReviewNew').then((m) => ({ default: m.AdminDuplicateReviewNew }))
+  import('@/pages/AdminDuplicateReview').then((m) => ({ default: m.AdminDuplicateReview }))
 );
 const AdminUsers = lazy(() =>
   import('@/pages/AdminUsers').then((m) => ({ default: m.AdminUsers }))
