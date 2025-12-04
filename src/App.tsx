@@ -32,6 +32,12 @@ const AdminDuplicates = lazy(() =>
 const AdminDuplicateDetail = lazy(() =>
   import('@/pages/AdminDuplicateDetail').then((m) => ({ default: m.AdminDuplicateDetail }))
 );
+const AdminDuplicatesNew = lazy(() =>
+  import('@/pages/AdminDuplicatesNew').then((m) => ({ default: m.AdminDuplicatesNew }))
+);
+const AdminDuplicateReviewNew = lazy(() =>
+  import('@/pages/AdminDuplicateReviewNew').then((m) => ({ default: m.AdminDuplicateReviewNew }))
+);
 const AdminUsers = lazy(() =>
   import('@/pages/AdminUsers').then((m) => ({ default: m.AdminUsers }))
 );
@@ -138,6 +144,22 @@ function AppContent() {
                   element={
                     <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
                       <AdminDuplicateDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/duplicates-new"
+                  element={
+                    <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
+                      <AdminDuplicatesNew />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/duplicates-new/:groupId"
+                  element={
+                    <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
+                      <AdminDuplicateReviewNew />
                     </ProtectedRoute>
                   }
                 />

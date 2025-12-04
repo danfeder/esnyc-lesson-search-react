@@ -87,6 +87,18 @@ E2E tests run in CI on every PR using Playwright against Netlify deploy previews
 
 **CI Pipeline**: PR → Migrations applied to test DB → Netlify builds preview → E2E tests run → Must pass to merge
 
+## Pre-PR Checklist (MANDATORY)
+
+**Before pushing any branch or creating a PR, ALWAYS run:**
+
+```bash
+npm run type-check && npm run lint
+```
+
+If lint errors exist, fix with `npm run lint:fix` then re-run the check.
+
+This catches issues that CI will fail on (like `sessionStorage` → `window.sessionStorage`).
+
 ## Core Constraints
 
 | Rule | Details |
