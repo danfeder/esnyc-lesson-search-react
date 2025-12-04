@@ -214,17 +214,21 @@ To minimize the need for fix migrations:
    - Permission checks
    - Edge cases
 
-### When to Squash Migrations
+### When to Baseline (Squash) Migrations
 
-Consider squashing migrations:
-- Before major releases
-- When a feature has 3+ related migrations
-- During scheduled maintenance windows
+Consider creating a fresh baseline when:
+- After a major feature has been stable in production for 1-2 weeks
+- When migration count exceeds 15 files after the current baseline
 
-**How to squash** (for future reference):
-1. Create a combined migration with all changes
-2. Mark old migrations as applied in production
-3. Replace old migrations with combined one for new environments
+**Use the `/baseline-db` slash command** to walk through the process.
+
+**Full documentation:** `docs/plans/2024-12-04-periodic-baselining-design.md`
+
+**Quick overview:**
+1. Dump schema from production: `supabase db dump --schema-only`
+2. Archive old migrations to `supabase/migrations/archive/`
+3. Verify locally: `supabase db reset && npm run test:rls`
+4. Commit, push, then reset TEST DB via GitHub workflow
 
 ### Summary
 
