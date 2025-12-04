@@ -1,5 +1,24 @@
 # Database Migration Guidelines for Claude
 
+---
+## ⛔ STOP: NEVER EDIT PUSHED MIGRATIONS ⛔
+
+**If a migration file has been pushed to a remote branch, DO NOT EDIT IT.**
+
+```
+Once pushed → CI applies to TEST DB → Editing does NOTHING on TEST
+                                    → Creates TEST/PROD inconsistency
+```
+
+**If you need to fix a pushed migration:**
+1. Create a NEW migration file: `touch supabase/migrations/$(date +%Y%m%d%H%M%S)_fix_<name>.sql`
+2. Apply fix directly to TEST DB with `mcp__supabase-test__execute_sql`
+3. Push the NEW migration file
+
+**Use `/migration-work` command before ANY migration work.**
+
+---
+
 **IMPORTANT: Read this entire file before making ANY database changes.**
 
 ## The 3-Part Database Pipeline
