@@ -1,6 +1,6 @@
 /**
  * Shared utilities for duplicate group operations.
- * Used by AdminDuplicatesNew and AdminDuplicateReviewNew pages.
+ * Used by AdminDuplicates and AdminDuplicateReview pages.
  */
 
 import type { DuplicateGroupForReview } from '@/services/duplicateGroupService';
