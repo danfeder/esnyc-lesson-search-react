@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
                         )}
                         {hasPermission(Permission.MANAGE_DUPLICATES) && (
                           <Link
-                            to="/admin/duplicates"
+                            to="/admin/duplicates-new"
                             onClick={() => setShowUserMenu(false)}
                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
                           >
