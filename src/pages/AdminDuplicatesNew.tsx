@@ -16,7 +16,7 @@ const RESOLVED_GROUPS_KEY = 'duplicates-resolved-groups';
 // Helper to get resolved groups from sessionStorage
 function getStoredResolvedGroups(): DuplicateGroupForReview[] {
   try {
-    const stored = sessionStorage.getItem(RESOLVED_GROUPS_KEY);
+    const stored = window.sessionStorage.getItem(RESOLVED_GROUPS_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -26,7 +26,7 @@ function getStoredResolvedGroups(): DuplicateGroupForReview[] {
 // Helper to save resolved groups to sessionStorage
 function saveResolvedGroups(groups: DuplicateGroupForReview[]) {
   try {
-    sessionStorage.setItem(RESOLVED_GROUPS_KEY, JSON.stringify(groups));
+    window.sessionStorage.setItem(RESOLVED_GROUPS_KEY, JSON.stringify(groups));
   } catch (err) {
     logger.warn('Failed to save resolved groups to sessionStorage:', err);
   }
@@ -42,19 +42,15 @@ export function AdminDuplicatesNew() {
 
   const [groups, setGroups] = useState<DuplicateGroupForReview[]>([]);
   // Initialize from sessionStorage to persist across navigations
-  const [resolvedGroups, setResolvedGroups] = useState<DuplicateGroupForReview[]>(
-    getStoredResolvedGroups
-  );
+  const [resolvedGroups, setResolvedGroups] =
+    useState<DuplicateGroupForReview[]>(getStoredResolvedGroups);
   const [filter, setFilter] = useState<FilterStatus>('pending');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Helper to create stable group key from lesson IDs
-  const getGroupKey = useCallback(
-    (lessonIds: string[]) => [...lessonIds].sort().join(','),
-    []
-  );
+  const getGroupKey = useCallback((lessonIds: string[]) => [...lessonIds].sort().join(','), []);
 
   // Add a resolved group (checks for duplicates by lessonIds)
   const addResolvedGroup = useCallback(

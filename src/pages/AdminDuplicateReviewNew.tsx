@@ -22,7 +22,7 @@ const RESOLVED_GROUPS_KEY = 'duplicates-resolved-groups';
 // Helper to save a resolved group to sessionStorage
 function saveResolvedGroupToStorage(group: DuplicateGroupForReview) {
   try {
-    const stored = sessionStorage.getItem(RESOLVED_GROUPS_KEY);
+    const stored = window.sessionStorage.getItem(RESOLVED_GROUPS_KEY);
     const existing: DuplicateGroupForReview[] = stored ? JSON.parse(stored) : [];
 
     // Create stable key from lessonIds for deduplication
@@ -35,7 +35,7 @@ function saveResolvedGroupToStorage(group: DuplicateGroupForReview) {
     }
 
     existing.push(group);
-    sessionStorage.setItem(RESOLVED_GROUPS_KEY, JSON.stringify(existing));
+    window.sessionStorage.setItem(RESOLVED_GROUPS_KEY, JSON.stringify(existing));
   } catch (err) {
     logger.warn('Failed to save resolved group to sessionStorage:', err);
   }
