@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20251204160000_add_archive_duplicate_lesson_function.sql
+-- Migration: 20251205_add_archive_duplicate_lesson_function.sql
 -- =====================================================
 -- Description: Add simple archive_duplicate_lesson function for Phase 3.
 -- This replaces the complex resolve_duplicate_group function with a
@@ -149,7 +149,7 @@ BEGIN
     v_lesson_record.version_number,
     v_lesson_record.has_versions,
     v_lesson_record.original_submission_id,
-    v_lesson_record.activity_type                       -- array → text cast
+    array_to_string(v_lesson_record.activity_type, ',') -- array → text cast
   );
 
   -- Delete from lessons table
