@@ -26,16 +26,11 @@ const ReviewDashboard = lazy(() =>
 const ReviewDetail = lazy(() =>
   import('@/pages/ReviewDetail').then((m) => ({ default: m.ReviewDetail }))
 );
+// Phase 3: Using new duplicate review pages (old pages removed)
 const AdminDuplicates = lazy(() =>
-  import('@/pages/AdminDuplicates').then((m) => ({ default: m.AdminDuplicates }))
-);
-const AdminDuplicateDetail = lazy(() =>
-  import('@/pages/AdminDuplicateDetail').then((m) => ({ default: m.AdminDuplicateDetail }))
-);
-const AdminDuplicatesNew = lazy(() =>
   import('@/pages/AdminDuplicatesNew').then((m) => ({ default: m.AdminDuplicatesNew }))
 );
-const AdminDuplicateReviewNew = lazy(() =>
+const AdminDuplicateReview = lazy(() =>
   import('@/pages/AdminDuplicateReviewNew').then((m) => ({ default: m.AdminDuplicateReviewNew }))
 );
 const AdminUsers = lazy(() =>
@@ -143,23 +138,7 @@ function AppContent() {
                   path="/admin/duplicates/:groupId"
                   element={
                     <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
-                      <AdminDuplicateDetail />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/duplicates-new"
-                  element={
-                    <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
-                      <AdminDuplicatesNew />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/duplicates-new/:groupId"
-                  element={
-                    <ProtectedRoute permissions={[Permission.MANAGE_DUPLICATES]}>
-                      <AdminDuplicateReviewNew />
+                      <AdminDuplicateReview />
                     </ProtectedRoute>
                   }
                 />

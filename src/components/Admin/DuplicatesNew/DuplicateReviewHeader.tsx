@@ -30,7 +30,7 @@ export function DuplicateReviewHeader({
       {/* Top row: back link and progress */}
       <div className="flex items-center justify-between mb-4">
         <Link
-          to="/admin/duplicates-new"
+          to="/admin/duplicates"
           className="inline-flex items-center text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />

@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20251204_fix_resolve_duplicate_group_escaping.sql
+-- Migration: 20251204140000_fix_resolve_duplicate_group_escaping.sql
 -- =====================================================
 -- Description: Fix string escaping vulnerability in resolve_duplicate_group
 -- The previous version concatenated v_old_title directly, which could break
