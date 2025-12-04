@@ -151,14 +151,14 @@ export function AdminDuplicateReviewNew() {
   // Navigation helpers
   const navigateToGroup = useCallback(
     (groupId: string) => {
-      navigate(`/admin/duplicates-new/${groupId}`);
+      navigate(`/admin/duplicates/${groupId}`);
     },
     [navigate]
   );
 
   const navigateToList = useCallback(
     (message?: string, resolvedGroup?: DuplicateGroupForReview) => {
-      navigate('/admin/duplicates-new', {
+      navigate('/admin/duplicates', {
         state: message ? { message, resolvedGroup } : undefined,
       });
     },
