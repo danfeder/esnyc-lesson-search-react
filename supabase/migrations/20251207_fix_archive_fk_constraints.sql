@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20251204200000_fix_archive_fk_constraints.sql
+-- Migration: 20251207_fix_archive_fk_constraints.sql
 -- =====================================================
 -- Description: Fix archive_duplicate_lesson function to handle FK constraints
 --
@@ -146,11 +146,11 @@ BEGIN
     v_lesson_record.version_number,
     v_lesson_record.has_versions,
     v_lesson_record.original_submission_id,
-    COALESCE(array_to_string(v_lesson_record.activity_type, ','), '') -- array ’ text cast (with NULL handling)
+    COALESCE(array_to_string(v_lesson_record.activity_type, ','), '') -- array ï¿½ text cast (with NULL handling)
   );
 
   -- Clean up legacy duplicate_resolutions FK references BEFORE deleting lesson
-  -- This table has FK constraint on canonical_lesson_id ’ lessons.lesson_id
+  -- This table has FK constraint on canonical_lesson_id ï¿½ lessons.lesson_id
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'duplicate_resolutions') THEN
     DELETE FROM duplicate_resolutions
     WHERE canonical_lesson_id = p_lesson_id;
