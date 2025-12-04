@@ -100,14 +100,41 @@ export function AdminDuplicateReviewNew() {
     setSubmitError(null);
   }
 
-  const handleSelectionChange = useCallback((lessonId: string, selection: Selection) => {
-    setSelections((prev) => {
-      const next = new Map(prev);
-      next.set(lessonId, selection);
-      return next;
-    });
-    setHasChanges(true);
-  }, []);
+  const handleSelectionChange = useCallback(
+    (lessonId: string, selection: Selection) => {
+      setSelections((prev) => {
+        const next = new Map(prev);
+        const oldSelection = prev.get(lessonId);
+
+        // If changing from 'keep' to 'archive', update any lessons that had archiveTo pointing to this one
+        if (oldSelection?.action === 'keep' && selection.action === 'archive') {
+          // Find all lessons that were pointing to this lesson as their archiveTo
+          for (const [otherId, otherSel] of next.entries()) {
+            if (otherSel.action === 'archive' && otherSel.archiveTo === lessonId) {
+              // Find a new target - the first kept lesson that isn't the current one
+              const newTarget = currentGroup?.lessons.find((l) => {
+                const sel = next.get(l.lesson_id);
+                return (
+                  sel?.action === 'keep' && l.lesson_id !== lessonId && l.lesson_id !== otherId
+                );
+              });
+              if (newTarget) {
+                next.set(otherId, { action: 'archive', archiveTo: newTarget.lesson_id });
+              } else {
+                // No valid target - revert to keep
+                next.set(otherId, { action: 'keep' });
+              }
+            }
+          }
+        }
+
+        next.set(lessonId, selection);
+        return next;
+      });
+      setHasChanges(true);
+    },
+    [currentGroup]
+  );
 
   const handleQuickKeep = useCallback(
     (keepLessonId: string) => {
