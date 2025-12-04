@@ -1,10 +1,9 @@
 -- =====================================================
--- Migration: 20251206_fix_archive_duplicate_lesson_function.sql
+-- Migration: 20251205_fix_archive_duplicate_lesson_function.sql
 -- =====================================================
 -- Description: Fix archive_duplicate_lesson function based on code review:
--- 1. Add COALESCE for NULL activity_type array handling
--- 2. Add IF EXISTS check for duplicate_pairs table (may not exist)
--- 3. Clean up duplicate_resolutions FK references before lesson deletion
+-- 1. Reorder DELETE: lesson first, then duplicate_pairs (prevents data loss)
+-- 2. Add COALESCE for NULL activity_type array handling
 --
 -- This uses CREATE OR REPLACE to update the existing function.
 
@@ -147,23 +146,14 @@ BEGIN
     COALESCE(array_to_string(v_lesson_record.activity_type, ','), '') -- array → text cast (with NULL handling)
   );
 
-  -- Clean up legacy duplicate_resolutions FK references BEFORE deleting lesson
-  -- This table has FK constraint on canonical_lesson_id → lessons.lesson_id
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'duplicate_resolutions') THEN
-    DELETE FROM duplicate_resolutions
-    WHERE canonical_lesson_id = p_lesson_id;
-  END IF;
-
-  -- Delete from lessons table
+  -- Delete from lessons table first (before cleaning up duplicate_pairs)
+  -- This ensures if archive fails, we don't lose duplicate_pairs data
   DELETE FROM lessons WHERE lesson_id = p_lesson_id;
 
   -- Clean up duplicate_pairs entries referencing the archived lesson
   -- This prevents stale references and re-detection of resolved duplicates
-  -- Note: Table may not exist in all environments, so check first
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'duplicate_pairs') THEN
-    DELETE FROM duplicate_pairs
-    WHERE id1 = p_lesson_id OR id2 = p_lesson_id;
-  END IF;
+  DELETE FROM duplicate_pairs
+  WHERE id1 = p_lesson_id OR id2 = p_lesson_id;
 
   -- Return success
   RETURN jsonb_build_object(
