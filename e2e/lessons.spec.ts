@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { GRADE_LEVEL_PATTERN } from './utils/patterns';
+import { GRADE_LEVEL_SELECTOR } from './utils/patterns';
 
 test.describe('Lesson Display', () => {
   test.beforeEach(async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('Lesson Display', () => {
 
   test('lesson cards show grade levels', async ({ page }) => {
     // Grade levels should be displayed on cards
-    const gradeIndicators = page.locator(`text=${GRADE_LEVEL_PATTERN.source}`);
+    const gradeIndicators = page.locator(`text=${GRADE_LEVEL_SELECTOR}`);
     await expect(gradeIndicators.first()).toBeVisible({ timeout: 10000 });
 
     // Should have multiple grade indicators across different lessons
