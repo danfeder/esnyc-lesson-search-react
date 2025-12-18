@@ -34,6 +34,7 @@ interface PageResult {
 function normalizeMetadata(meta: Record<string, unknown> | null | undefined): LessonMetadata {
   const m = meta || {};
   const asArray = (v: unknown): string[] => (Array.isArray(v) ? v : v ? [String(v)] : []);
+  const asString = (v: unknown): string => (typeof v === 'string' ? v : v ? String(v) : '');
   return {
     thematicCategories: asArray(m.thematicCategories),
     seasonTiming: asArray(m.seasonTiming),
@@ -41,7 +42,7 @@ function normalizeMetadata(meta: Record<string, unknown> | null | undefined): Le
     culturalHeritage: asArray(m.culturalHeritage),
     locationRequirements: asArray(m.locationRequirements),
     activityType: asArray(m.activityType),
-    lessonFormat: asArray(m.lessonFormat),
+    lessonFormat: asString(m.lessonFormat),
     mainIngredients: asArray(m.mainIngredients),
     skills: asArray(m.skills),
     equipment: asArray(m.equipment),

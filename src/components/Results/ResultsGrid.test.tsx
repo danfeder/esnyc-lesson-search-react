@@ -15,7 +15,7 @@ const createMockLesson = (id: string, title: string): Lesson => ({
     coreCompetencies: ['Environmental and Community Stewardship'],
     culturalHeritage: ['Mexican'],
     activityType: ['cooking'],
-    lessonFormat: ['standalone'],
+    lessonFormat: 'standalone',
     thematicCategories: ['Nutrition'],
     seasonTiming: ['Fall'],
     locationRequirements: ['Indoor'],
