@@ -139,7 +139,6 @@
 |---------|------|-------|
 | `openai` | 12MB | Move to devDependencies or remove |
 | `tiktoken` | Large | Completely unused |
-| `csv-parse` | - | Feature not implemented |
 
 ### Security Vulnerabilities
 
@@ -185,7 +184,6 @@ Archived in PR #357:
 
 | TODO | File | Effort |
 |------|------|--------|
-| CSV Export | `SearchPage.tsx:64` | 2-3 hours |
 | Metadata merging logic | `duplicate_resolution_tables.sql:147` | Blocked - needs stakeholder input |
 
 ### Minor - Fix When Convenient
@@ -241,7 +239,7 @@ Archived in PR #357:
 
 - [x] Delete `docs/development/FIXES_NEEDED.md`
 - [x] Remove unused exports (`withProtection`, `ErrorBoundaryTest`)
-- [x] Remove unused npm packages (`tiktoken`, `csv-parse`)
+- [x] Remove unused npm packages (`tiktoken`)
 - [x] Move `openai` to devDependencies
 - [ ] Run `npm audit fix`
 - [x] Condense Algolia section in `src/lib/CLAUDE.md`
@@ -288,7 +286,6 @@ Archived in PR #357:
 
 ### Phase 7: Feature Implementation (2-3 days)
 
-- [ ] Implement CSV export (`SearchPage.tsx:64`)
 - [ ] Implement virtual scrolling in CulturalHeritageFilter
 
 ---

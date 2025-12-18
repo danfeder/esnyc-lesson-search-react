@@ -2309,12 +2309,6 @@ CREATE TABLE lesson_collections (
 - Performance: O(n) on lessons table, consider materialized view
 - Time: 1 day
 
-#### CSV Export (Low Priority)
-- Placeholder exists in SearchPage.tsx:155
-- Requirement: Export search results to CSV
-- Fields: All lesson metadata + filter values
-- Time: 3-4 hours
-
 #### Advanced Analytics (Admin Feature)
 - Usage metrics: Searches per day, popular filters, top lessons
 - Submission trends: Acceptance rate, review time

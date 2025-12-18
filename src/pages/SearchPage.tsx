@@ -60,11 +60,6 @@ export const SearchPage: React.FC = () => {
     setIsFilterModalOpen(false);
   };
 
-  const handleExport = () => {
-    // TODO: Implement CSV export
-    // logger.log('Export functionality coming soon...');
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <SkipLink />
@@ -81,7 +76,6 @@ export const SearchPage: React.FC = () => {
           currentQuery={filters.query}
           sortBy={viewState.sortBy}
           onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
-          onExport={handleExport}
         />
 
         {isError && error && (

@@ -24,7 +24,6 @@ A modern, responsive React/TypeScript application for searching and filtering 83
 - **2-Column Layout** with full lesson summaries (matches original design)
 - **Direct Lesson Links**: Dedicated "View Lesson Plan" buttons on each card
 - **Modal Details**: Comprehensive lesson information in overlay
-- **Export Functionality**: CSV download of filtered results
 - **Real-time Filtering**: Instant results without server round-trips
 
 ## 🚀 Quick Start

@@ -23,7 +23,6 @@
 | `/api/auth/login` | POST | < 250ms | ~2KB |
 | `/api/submissions` | POST | < 400ms | ~10KB |
 | `/api/submissions/detect-duplicates` | POST | < 600ms | ~20KB |
-| `/api/export/csv` | GET | < 1000ms | Variable |
 
 ### Expected Database Query Performance
 
@@ -64,7 +63,6 @@ dist/
 - **Search Response**: < 200ms ✅
 - **Filter Application**: < 100ms ✅
 - **Page Navigation**: < 300ms ✅
-- **CSV Export**: < 2s for 1000 records ⚠️
 
 ## How to Measure Actual Performance
 
