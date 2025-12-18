@@ -34,6 +34,41 @@ function createMockProfile(overrides: Record<string, unknown> = {}) {
   };
 }
 
+// Typed mock helper for Supabase profile fetch query chain
+interface ProfileFetchResult {
+  data: ReturnType<typeof createMockProfile> | null;
+  error: { code?: string; message: string } | null;
+}
+
+function createMockProfileFetchQuery(result: ProfileFetchResult) {
+  return {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue(result),
+  } as unknown as ReturnType<typeof supabase.from>;
+}
+
+// Typed mock helper for Supabase profile insert query chain
+interface ProfileInsertResult {
+  data: ReturnType<typeof createMockProfile> | null;
+  error: { message: string } | null;
+}
+
+function createMockProfileInsertQuery(
+  result: ProfileInsertResult,
+  insertMock?: ReturnType<typeof vi.fn>
+) {
+  const insert = insertMock || vi.fn().mockReturnThis();
+  return {
+    chain: {
+      insert,
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue(result),
+    } as unknown as ReturnType<typeof supabase.from>,
+    insertMock: insert,
+  };
+}
+
 describe('useEnhancedAuth', () => {
   // Store auth callback for triggering events
   let authCallback: ((event: string, session: { user: unknown } | null) => void) | null = null;
@@ -124,11 +159,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -149,11 +180,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -171,11 +198,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -191,11 +214,6 @@ describe('useEnhancedAuth', () => {
     it('creates new profile with teacher role', async () => {
       const mockUser = createMockAuthUser();
       const insertMock = vi.fn().mockReturnThis();
-      const selectMock = vi.fn().mockReturnThis();
-      const singleMock = vi.fn().mockResolvedValue({
-        data: createMockProfile(),
-        error: null,
-      });
 
       mockGetUser.mockResolvedValue({
         data: { user: mockUser },
@@ -204,17 +222,13 @@ describe('useEnhancedAuth', () => {
 
       // First call: profile doesn't exist
       // Second call: insert new profile
+      const { chain: insertChain } = createMockProfileInsertQuery(
+        { data: createMockProfile(), error: null },
+        insertMock
+      );
       mockFrom
-        .mockReturnValueOnce({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        } as any)
-        .mockReturnValueOnce({
-          insert: insertMock,
-          select: selectMock,
-          single: singleMock,
-        } as any);
+        .mockReturnValueOnce(createMockProfileFetchQuery({ data: null, error: null }))
+        .mockReturnValueOnce(insertChain);
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -240,20 +254,13 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
+      const { chain: insertChain } = createMockProfileInsertQuery(
+        { data: createMockProfile({ full_name: 'John Doe' }), error: null },
+        insertMock
+      );
       mockFrom
-        .mockReturnValueOnce({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        } as any)
-        .mockReturnValueOnce({
-          insert: insertMock,
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: createMockProfile({ full_name: 'John Doe' }),
-            error: null,
-          }),
-        } as any);
+        .mockReturnValueOnce(createMockProfileFetchQuery({ data: null, error: null }))
+        .mockReturnValueOnce(insertChain);
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -280,20 +287,13 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
+      const { chain: insertChain } = createMockProfileInsertQuery(
+        { data: createMockProfile({ full_name: 'johndoe' }), error: null },
+        insertMock
+      );
       mockFrom
-        .mockReturnValueOnce({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        } as any)
-        .mockReturnValueOnce({
-          insert: insertMock,
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: createMockProfile({ full_name: 'johndoe' }),
-            error: null,
-          }),
-        } as any);
+        .mockReturnValueOnce(createMockProfileFetchQuery({ data: null, error: null }))
+        .mockReturnValueOnce(insertChain);
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -319,11 +319,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -352,11 +348,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -398,11 +390,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -461,11 +449,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -491,11 +475,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -521,11 +501,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -560,11 +536,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -618,11 +590,7 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      } as any);
+      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -705,14 +673,12 @@ describe('useEnhancedAuth', () => {
         error: null,
       });
 
-      mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({
+      mockFrom.mockReturnValue(
+        createMockProfileFetchQuery({
           data: null,
           error: { code: 'SOME_ERROR', message: 'Database error' },
-        }),
-      } as any);
+        })
+      );
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -735,23 +701,18 @@ describe('useEnhancedAuth', () => {
 
       // First call: PGRST116 error (row not found - treated as no profile)
       // Second call: insert new profile
+      const { chain: insertChain } = createMockProfileInsertQuery(
+        { data: createMockProfile(), error: null },
+        insertMock
+      );
       mockFrom
-        .mockReturnValueOnce({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          maybeSingle: vi.fn().mockResolvedValue({
+        .mockReturnValueOnce(
+          createMockProfileFetchQuery({
             data: null,
             error: { code: 'PGRST116', message: 'Row not found' },
-          }),
-        } as any)
-        .mockReturnValueOnce({
-          insert: insertMock,
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: createMockProfile(),
-            error: null,
-          }),
-        } as any);
+          })
+        )
+        .mockReturnValueOnce(insertChain);
 
       const { result } = renderHook(() => useEnhancedAuth());
 
@@ -775,20 +736,13 @@ describe('useEnhancedAuth', () => {
 
       // First call: no profile exists
       // Second call: insert fails
+      const { chain: insertChain } = createMockProfileInsertQuery({
+        data: null,
+        error: { message: 'Insert failed' },
+      });
       mockFrom
-        .mockReturnValueOnce({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        } as any)
-        .mockReturnValueOnce({
-          insert: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: 'Insert failed' },
-          }),
-        } as any);
+        .mockReturnValueOnce(createMockProfileFetchQuery({ data: null, error: null }))
+        .mockReturnValueOnce(insertChain);
 
       const { result } = renderHook(() => useEnhancedAuth());
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
+import { TOTAL_FILTER_CATEGORIES } from '@/utils/filterDefinitions';
 
 interface LessonStats {
   totalLessons: number;
@@ -12,7 +13,7 @@ interface LessonStats {
 export function useLessonStats(): LessonStats {
   const [stats, setStats] = useState<LessonStats>({
     totalLessons: 0,
-    totalCategories: 11, // Current filter count - see filterDefinitions.ts
+    totalCategories: TOTAL_FILTER_CATEGORIES,
     isLoading: true,
     error: null,
   });
@@ -29,7 +30,7 @@ export function useLessonStats(): LessonStats {
 
         setStats({
           totalLessons: count || 0,
-          totalCategories: 11,
+          totalCategories: TOTAL_FILTER_CATEGORIES,
           isLoading: false,
           error: null,
         });

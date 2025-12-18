@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useLessonStats } from './useLessonStats';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
+import { TOTAL_FILTER_CATEGORIES } from '@/utils/filterDefinitions';
 
 // Get the mocked supabase
 const mockSupabase = vi.mocked(supabase);
@@ -17,6 +18,22 @@ vi.mock('@/utils/logger', () => ({
   },
 }));
 
+// Typed mock helper for Supabase select queries
+interface MockSelectResult {
+  count: number | null;
+  error: { message: string } | null;
+}
+
+function createMockSelectQuery(result: MockSelectResult | Promise<MockSelectResult>) {
+  const selectMock = vi
+    .fn()
+    .mockReturnValue(result instanceof Promise ? result : Promise.resolve(result));
+  return {
+    mock: selectMock,
+    chain: { select: selectMock } as unknown as ReturnType<typeof supabase.from>,
+  };
+}
+
 describe('useLessonStats', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -25,35 +42,29 @@ describe('useLessonStats', () => {
   describe('initial state', () => {
     it('returns loading true initially', () => {
       // Setup mock that doesn't resolve immediately
-      const selectMock = vi.fn().mockReturnValue(new Promise(() => {}));
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { chain } = createMockSelectQuery(new Promise(() => {}));
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
       expect(result.current.isLoading).toBe(true);
     });
 
-    it('returns totalCategories as 11 (hardcoded)', () => {
+    it('returns totalCategories from TOTAL_FILTER_CATEGORIES constant', () => {
       // Setup mock that doesn't resolve immediately
-      const selectMock = vi.fn().mockReturnValue(new Promise(() => {}));
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { chain } = createMockSelectQuery(new Promise(() => {}));
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
-      expect(result.current.totalCategories).toBe(11);
+      expect(result.current.totalCategories).toBe(TOTAL_FILTER_CATEGORIES);
     });
   });
 
   describe('successful fetch', () => {
     it('returns lesson count from database', async () => {
-      const selectMock = vi.fn().mockResolvedValue({ count: 831, error: null });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { chain } = createMockSelectQuery({ count: 831, error: null });
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -65,10 +76,8 @@ describe('useLessonStats', () => {
     });
 
     it('sets isLoading to false after fetch', async () => {
-      const selectMock = vi.fn().mockResolvedValue({ count: 100, error: null });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { chain } = createMockSelectQuery({ count: 100, error: null });
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -80,10 +89,8 @@ describe('useLessonStats', () => {
     });
 
     it('returns null error on success', async () => {
-      const selectMock = vi.fn().mockResolvedValue({ count: 500, error: null });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { chain } = createMockSelectQuery({ count: 500, error: null });
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -95,10 +102,8 @@ describe('useLessonStats', () => {
     });
 
     it('calls supabase with correct parameters', async () => {
-      const selectMock = vi.fn().mockResolvedValue({ count: 100, error: null });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { mock, chain } = createMockSelectQuery({ count: 100, error: null });
+      mockSupabase.from.mockReturnValue(chain);
 
       renderHook(() => useLessonStats());
 
@@ -106,7 +111,7 @@ describe('useLessonStats', () => {
         expect(mockSupabase.from).toHaveBeenCalledWith('lessons_with_metadata');
       });
 
-      expect(selectMock).toHaveBeenCalledWith('*', { count: 'exact', head: true });
+      expect(mock).toHaveBeenCalledWith('*', { count: 'exact', head: true });
     });
   });
 
@@ -114,13 +119,11 @@ describe('useLessonStats', () => {
     it('sets error message on fetch failure', async () => {
       // Supabase errors are plain objects, not Error instances
       // The hook throws the error, which gets caught and uses fallback message
-      const selectMock = vi.fn().mockResolvedValue({
+      const { chain } = createMockSelectQuery({
         count: null,
         error: { message: 'Database connection failed' },
       });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -133,13 +136,11 @@ describe('useLessonStats', () => {
     });
 
     it('sets isLoading to false on error', async () => {
-      const selectMock = vi.fn().mockResolvedValue({
+      const { chain } = createMockSelectQuery({
         count: null,
         error: { message: 'Error' },
       });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -149,13 +150,11 @@ describe('useLessonStats', () => {
     });
 
     it('preserves totalCategories on error', async () => {
-      const selectMock = vi.fn().mockResolvedValue({
+      const { chain } = createMockSelectQuery({
         count: null,
         error: { message: 'Error' },
       });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -163,14 +162,14 @@ describe('useLessonStats', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.totalCategories).toBe(11);
+      expect(result.current.totalCategories).toBe(TOTAL_FILTER_CATEGORIES);
     });
 
     it('handles thrown exceptions', async () => {
       const selectMock = vi.fn().mockRejectedValue(new Error('Network error'));
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      mockSupabase.from.mockReturnValue({ select: selectMock } as unknown as ReturnType<
+        typeof supabase.from
+      >);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -183,9 +182,9 @@ describe('useLessonStats', () => {
 
     it('handles non-Error exceptions with fallback message', async () => {
       const selectMock = vi.fn().mockRejectedValue('string error');
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      mockSupabase.from.mockReturnValue({ select: selectMock } as unknown as ReturnType<
+        typeof supabase.from
+      >);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -199,9 +198,9 @@ describe('useLessonStats', () => {
     it('logs error when fetch fails', async () => {
       const testError = new Error('Network error');
       const selectMock = vi.fn().mockRejectedValue(testError);
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      mockSupabase.from.mockReturnValue({ select: selectMock } as unknown as ReturnType<
+        typeof supabase.from
+      >);
 
       renderHook(() => useLessonStats());
 
@@ -213,10 +212,8 @@ describe('useLessonStats', () => {
 
   describe('edge cases', () => {
     it('handles null count from database (returns 0)', async () => {
-      const selectMock = vi.fn().mockResolvedValue({ count: null, error: null });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { chain } = createMockSelectQuery({ count: null, error: null });
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
@@ -228,10 +225,8 @@ describe('useLessonStats', () => {
     });
 
     it('handles zero count', async () => {
-      const selectMock = vi.fn().mockResolvedValue({ count: 0, error: null });
-      mockSupabase.from.mockReturnValue({
-        select: selectMock,
-      } as any);
+      const { chain } = createMockSelectQuery({ count: 0, error: null });
+      mockSupabase.from.mockReturnValue(chain);
 
       const { result } = renderHook(() => useLessonStats());
 
