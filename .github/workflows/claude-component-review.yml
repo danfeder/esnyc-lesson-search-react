@@ -141,6 +141,5 @@ jobs:
           # Claude CLI arguments
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           claude_args: |
-            --max-turns 5
             --mcp-config /tmp/github-mcp-config.json
-            --allowed-tools "mcp__github__create_pending_pull_request_review,mcp__github__add_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request,mcp__github__get_pull_request_files,Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run),Bash(npm run build),Bash(gh pr diff -- src/components),Bash(gh pr comment:*),Read,Grep"
+            --allowed-tools "mcp__github__create_pending_pull_request_review,mcp__github__add_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request,mcp__github__get_pull_request_files,Bash(npm run type-check),Bash(npm run lint),Bash(npm test -- --run),Bash(npm run build),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Read,Grep,Glob"
