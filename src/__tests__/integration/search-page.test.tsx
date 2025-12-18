@@ -158,22 +158,17 @@ describe('SearchPage Integration', () => {
       const user = userEvent.setup();
       await user.click(screen.getByText('Closeable Lesson'));
 
-      // Modal is open - find the modal overlay
+      // Modal is open - verify close button is present
       await waitFor(() => {
-        const modalOverlay = document.querySelector('.fixed.inset-0.bg-black');
-        expect(modalOverlay).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /close lesson modal/i })).toBeInTheDocument();
       });
 
-      // Find and click the close button (in modal header, it's a button with X icon)
-      const modalOverlay = document.querySelector('.fixed.inset-0.bg-black');
-      const closeButton = modalOverlay?.querySelector('button');
-      expect(closeButton).toBeTruthy();
-      await user.click(closeButton!);
+      // Click the close button using accessible selector
+      await user.click(screen.getByRole('button', { name: /close lesson modal/i }));
 
       // Modal should be closed
       await waitFor(() => {
-        const modalOverlay = document.querySelector('.fixed.inset-0.bg-black');
-        expect(modalOverlay).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /close lesson modal/i })).not.toBeInTheDocument();
       });
     });
 
@@ -210,14 +205,11 @@ describe('SearchPage Integration', () => {
         expect(headings.some((h) => h.textContent === 'First Sequential Lesson')).toBe(true);
       });
 
-      // Close modal
-      const modalOverlay = document.querySelector('.fixed.inset-0.bg-black');
-      const closeButton = modalOverlay?.querySelector('button');
-      await user.click(closeButton!);
+      // Close modal using accessible selector
+      await user.click(screen.getByRole('button', { name: /close lesson modal/i }));
 
       await waitFor(() => {
-        const modalOverlay = document.querySelector('.fixed.inset-0.bg-black');
-        expect(modalOverlay).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /close lesson modal/i })).not.toBeInTheDocument();
       });
 
       // Open second lesson
@@ -569,14 +561,10 @@ describe('SearchPage Integration', () => {
 
       renderWithProviders(<SearchPage />);
 
-      // Wait for suggestions panel
-      await waitFor(
-        () => {
-          // The suggestions panel appears when totalCount === 0 and query is present
-          expect(screen.getByText(/No results found/i)).toBeInTheDocument();
-        },
-        { timeout: 3000 }
-      );
+      // Wait for suggestions panel - appears when totalCount === 0 and query is present
+      await waitFor(() => {
+        expect(screen.getByText(/No results found/i)).toBeInTheDocument();
+      });
     });
 
     it('hides suggestions when results exist', async () => {

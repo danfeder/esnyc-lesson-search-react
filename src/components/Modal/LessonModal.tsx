@@ -43,8 +43,9 @@ export const LessonModal: React.FC<LessonModalProps> = ({ lesson, isOpen, onClos
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
+            aria-label="Close lesson modal"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6" aria-hidden="true" />
           </button>
 
           <div className="pr-12">
