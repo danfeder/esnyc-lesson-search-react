@@ -724,6 +724,47 @@ describe('useEnhancedAuth', () => {
       expect(result.current.user).toBeNull();
     });
 
+    it('treats PGRST116 error as no profile exists and creates profile', async () => {
+      const mockUser = createMockAuthUser();
+      const insertMock = vi.fn().mockReturnThis();
+
+      mockGetUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      // First call: PGRST116 error (row not found - treated as no profile)
+      // Second call: insert new profile
+      mockFrom
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116', message: 'Row not found' },
+          }),
+        } as any)
+        .mockReturnValueOnce({
+          insert: insertMock,
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: createMockProfile(),
+            error: null,
+          }),
+        } as any);
+
+      const { result } = renderHook(() => useEnhancedAuth());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      // Should create profile (insert called) and return user
+      expect(insertMock).toHaveBeenCalled();
+      expect(result.current.user).not.toBeNull();
+      expect(result.current.user?.role).toBe(UserRole.TEACHER);
+    });
+
     it('handles profile create error gracefully', async () => {
       const mockUser = createMockAuthUser();
 

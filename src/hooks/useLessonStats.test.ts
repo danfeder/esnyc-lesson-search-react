@@ -2,9 +2,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useLessonStats } from './useLessonStats';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
 
 // Get the mocked supabase
 const mockSupabase = vi.mocked(supabase);
+
+// Mock the logger
+vi.mock('@/utils/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
 
 describe('useLessonStats', () => {
   beforeEach(() => {
@@ -183,6 +194,20 @@ describe('useLessonStats', () => {
       });
 
       expect(result.current.error).toBe('Failed to fetch stats');
+    });
+
+    it('logs error when fetch fails', async () => {
+      const testError = new Error('Network error');
+      const selectMock = vi.fn().mockRejectedValue(testError);
+      mockSupabase.from.mockReturnValue({
+        select: selectMock,
+      } as any);
+
+      renderHook(() => useLessonStats());
+
+      await waitFor(() => {
+        expect(logger.error).toHaveBeenCalledWith('Error fetching lesson stats:', testError);
+      });
     });
   });
 
