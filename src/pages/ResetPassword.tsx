@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { parseDbError } from '@/utils/errorHandling';
 import { Lock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 
@@ -94,7 +95,7 @@ export function ResetPassword() {
         navigate('/');
       }, 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset password');
+      setError(parseDbError(err));
     } finally {
       setLoading(false);
     }

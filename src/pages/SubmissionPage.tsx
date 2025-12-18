@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { parseDbError } from '@/utils/errorHandling';
 import { AlertCircle, CheckCircle2, Loader2, FileText, AlertTriangle } from 'lucide-react';
 import { AuthModal } from '@/components/Auth/AuthModal';
 import { User } from '@supabase/supabase-js';
@@ -75,7 +76,7 @@ export function SubmissionPage() {
       setSuccess(true);
       setSubmissionResult(result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(parseDbError(err));
     } finally {
       setIsSubmitting(false);
     }

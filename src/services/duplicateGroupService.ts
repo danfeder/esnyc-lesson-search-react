@@ -7,6 +7,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { UnionFind } from '@/utils/duplicateDetection';
+import { parseDbError } from '@/utils/errorHandling';
 import { logger } from '@/utils/logger';
 
 // Types for duplicate pairs from database
@@ -412,7 +413,7 @@ export async function resolveDuplicateGroup(resolution: GroupResolution): Promis
       success: false,
       archivedCount: 0,
       keptCount: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: parseDbError(error),
     };
   }
 }
@@ -448,7 +449,7 @@ export async function dismissDuplicateGroup(
     logger.error('Error dismissing duplicate group:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: parseDbError(error),
     };
   }
 }
