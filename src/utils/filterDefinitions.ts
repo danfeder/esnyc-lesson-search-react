@@ -399,6 +399,9 @@ export const METADATA_CONFIGS: Record<string, FilterConfig> = {
 // Export filter keys for easy iteration
 export const FILTER_KEYS = Object.keys(FILTER_CONFIGS) as Array<keyof typeof FILTER_CONFIGS>;
 
+// Total number of filter categories (used in stats display)
+export const TOTAL_FILTER_CATEGORIES = FILTER_KEYS.length;
+
 // Export metadata keys separately
 export const METADATA_KEYS = Object.keys(METADATA_CONFIGS) as Array<keyof typeof METADATA_CONFIGS>;
 
