@@ -91,6 +91,4 @@ jobs:
           
           # Claude CLI arguments
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          claude_args: |
-            --max-turns 5
-            --allowed-tools "Bash(npm run test:rls),Bash(gh pr diff -- supabase/migrations),Bash(gh pr comment:*),Read,Grep"
+          claude_args: '--allowed-tools "Bash(npm run test:rls),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Read,Grep,Glob"'
