@@ -17,35 +17,15 @@
 12. **Google Docs API Integration**: Working in production with service account credentials
 13. **OpenAI Embeddings**: Working in production, generates embeddings for submissions
 
-### 📝 Not Yet Implemented
-
-#### 1. CSV Export
-**Location**: `src/pages/SearchPage.tsx` line 155
-**Current**: TODO comment placeholder
-**Needed**:
-- Generate CSV from search results
-- Include all metadata fields
-- Handle special characters and escaping
-- Download functionality
-
 ## Quick Implementation Guide
 
-### Priority 1: CSV Export (2-3 hours)
-```typescript
-// See docs/guides/csv-export-implementation.md
-const handleExport = async () => {
-  const csv = generateCSV(results);
-  downloadCSV(csv, 'lessons.csv');
-};
-```
-
-### Priority 2: Enable Google Docs API (1 hour)
+### Enable Google Docs API (1 hour)
 ```bash
 # Add to Supabase secrets:
 supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 ```
 
-### Priority 3: Enable OpenAI Embeddings (30 minutes)
+### Enable OpenAI Embeddings (30 minutes)
 ```bash
 # Add to Supabase secrets:
 supabase secrets set OPENAI_API_KEY='sk-proj-...'
@@ -61,7 +41,6 @@ supabase secrets set OPENAI_API_KEY='sk-proj-...'
 ### Areas Needing Tests
 - Edge functions (currently untested)
 - Admin pages
-- CSV export (once implemented)
 - Integration tests for full workflows
 
 ## Recent Updates (December 2025)
@@ -74,5 +53,4 @@ supabase secrets set OPENAI_API_KEY='sk-proj-...'
 - ✅ Automated migration workflow with GitHub Actions
 
 ### Still Pending
-- ⬜ CSV export implementation
 - ⬜ Increase test coverage to 50%+

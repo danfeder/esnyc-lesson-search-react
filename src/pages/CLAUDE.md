@@ -202,7 +202,6 @@ const {
 ## ⚠️ Page-Specific Critical Notes
 
 ### SearchPage
-- CSV export NOT implemented yet
 - Uses PostgreSQL full-text search (Algolia removed)
 - Filter categories defined in `filterDefinitions.ts`
 

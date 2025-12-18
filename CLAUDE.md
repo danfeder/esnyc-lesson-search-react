@@ -194,7 +194,6 @@ SELECT is_admin(auth.uid());
 
 - Google Docs API: Working in production
 - OpenAI embeddings: Working in production
-- CSV export: Not yet implemented
 
 ## Documentation
 

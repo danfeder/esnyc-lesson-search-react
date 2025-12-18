@@ -132,7 +132,6 @@ scp -r dist/* user@server:/var/www/
 #### Functionality Tests (Next 15 minutes)
 - [ ] Submit test lesson
 - [ ] Review submission workflow
-- [ ] Export CSV (when implemented)
 - [ ] Google Docs extraction
 - [ ] Email notifications sending
 - [ ] User registration flow

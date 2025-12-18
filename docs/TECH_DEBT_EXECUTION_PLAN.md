@@ -7,7 +7,6 @@
 
 ### 1.2 Remove Unused NPM Packages
 - [x] Remove `tiktoken` from dependencies
-- [x] Remove `csv-parse` from dependencies
 - [x] Move `openai` to devDependencies
 - [ ] Run `npm audit fix`
 - [x] Verify build still works
@@ -73,7 +72,6 @@ See the following GitHub issues for remaining tech debt work:
 - #352: Expand RLS policy tests
 
 ### Features
-- #353: Implement CSV export
 - #354: Implement virtual scrolling in CulturalHeritageFilter
 
 ---
@@ -145,8 +143,7 @@ See the following GitHub issues for remaining tech debt work:
 |-----|-------|--------|
 | 1 | Error handling pattern | #347 |
 | 2-3 | RLS tests | #352 |
-| 4 | CSV export | #353 |
-| 5 | Virtual scrolling | #354 |
+| 4-5 | Virtual scrolling | #354 |
 
 **Deliverables:**
 - All tech debt issues resolved
