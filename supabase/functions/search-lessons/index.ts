@@ -16,7 +16,7 @@ interface SearchRequest {
     culturalHeritage?: string[];
     location?: string[];
     activityType?: string[];
-    lessonFormat?: string[];
+    lessonFormat?: string;
     includeAllSeasons?: boolean;
   };
   page?: number;
@@ -110,8 +110,8 @@ serve(async (req) => {
       supabaseQuery = supabaseQuery.overlaps('metadata->activityType', filters.activityType);
     }
 
-    if (filters.lessonFormat && filters.lessonFormat.length > 0) {
-      supabaseQuery = supabaseQuery.overlaps('metadata->lessonFormat', filters.lessonFormat);
+    if (filters.lessonFormat) {
+      supabaseQuery = supabaseQuery.eq('metadata->>lessonFormat', filters.lessonFormat);
     }
 
     // Apply sorting
@@ -162,7 +162,7 @@ serve(async (req) => {
         culturalHeritage: row.cultural_heritage || row.metadata?.culturalHeritage || [],
         locationRequirements: row.location_requirements || row.metadata?.locationRequirements || [],
         activityType: row.metadata?.activityType || [],
-        lessonFormat: row.lesson_format || row.metadata?.lessonFormat || [],
+        lessonFormat: row.lesson_format || row.metadata?.lessonFormat || '',
         mainIngredients: row.main_ingredients || row.metadata?.mainIngredients || [],
         skills: row.metadata?.skills || [],
         equipment: row.metadata?.equipment || [],
