@@ -83,7 +83,7 @@ jobs:
         VITE_SUPABASE_ANON_KEY: ${{ github.actor == 'dependabot[bot]' && 'placeholder-anon-key' || secrets.VITE_SUPABASE_ANON_KEY }}
         
     - name: Upload bundle analysis
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: bundle-analysis
         path: bundle-analysis.html
