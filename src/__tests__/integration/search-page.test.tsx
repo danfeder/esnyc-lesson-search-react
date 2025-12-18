@@ -168,7 +168,9 @@ describe('SearchPage Integration', () => {
 
       // Modal should be closed
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /close lesson modal/i })).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole('button', { name: /close lesson modal/i })
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -209,7 +211,9 @@ describe('SearchPage Integration', () => {
       await user.click(screen.getByRole('button', { name: /close lesson modal/i }));
 
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /close lesson modal/i })).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole('button', { name: /close lesson modal/i })
+        ).not.toBeInTheDocument();
       });
 
       // Open second lesson
@@ -438,7 +442,8 @@ describe('SearchPage Integration', () => {
   });
 
   describe('ResultsHeader', () => {
-    it('displays total result count', async () => {
+    it('displays total result count from API response', async () => {
+      // Test that the header shows total_count from API, not just rendered items
       const lessons = [
         createTestLesson({ lesson_id: 'r1', title: 'Result 1', total_count: 42 }),
         createTestLesson({ lesson_id: 'r2', title: 'Result 2', total_count: 42 }),
@@ -452,24 +457,8 @@ describe('SearchPage Integration', () => {
       renderWithProviders(<SearchPage />);
 
       await waitFor(() => {
-        // The count is displayed within a span with primary-600 color
+        // Should show total_count (42), not just rendered items (2)
         expect(screen.getByText('42')).toBeInTheDocument();
-        expect(screen.getByText(/lessons found/i)).toBeInTheDocument();
-      });
-    });
-
-    it('shows result count in header', async () => {
-      const lessons = [createTestLesson({ total_count: 5 })];
-
-      rpcMock.mockResolvedValueOnce({
-        data: lessons,
-        error: null,
-      });
-
-      renderWithProviders(<SearchPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('5')).toBeInTheDocument();
         expect(screen.getByText(/lessons found/i)).toBeInTheDocument();
       });
     });
