@@ -71,7 +71,7 @@ export function makeLesson(overrides: Partial<Lesson> = {}): Lesson {
       culturalHeritage: [],
       locationRequirements: [],
       activityType: [],
-      lessonFormat: [],
+      lessonFormat: '',
       mainIngredients: [],
       skills: [],
       equipment: [],

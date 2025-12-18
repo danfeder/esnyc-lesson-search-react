@@ -32,7 +32,7 @@ export interface LessonMetadata {
   culturalHeritage: string[];
   locationRequirements?: string[];
   activityType: string[];
-  lessonFormat: string[];
+  lessonFormat: string;
   mainIngredients?: string[];
   skills?: string[];
   equipment?: string[];

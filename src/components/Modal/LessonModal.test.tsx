@@ -15,7 +15,7 @@ const createMockLesson = (overrides: Partial<Lesson> = {}): Lesson => ({
     coreCompetencies: ['Environmental and Community Stewardship'],
     culturalHeritage: ['Mexican'],
     activityType: ['cooking'],
-    lessonFormat: ['standalone'],
+    lessonFormat: 'standalone',
     thematicCategories: ['Nutrition'],
     seasonTiming: ['Fall'],
     locationRequirements: ['Indoor'],
@@ -89,7 +89,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           locationRequirements: ['Indoor', 'Outdoor'],
         },
       });
@@ -106,7 +106,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           cookingSkills: ['chopping', 'mixing'],
           gardenSkills: [],
         },
@@ -122,7 +122,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           cookingSkills: [],
           gardenSkills: ['planting', 'weeding'],
         },
@@ -138,7 +138,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           cookingSkills: ['chopping'],
           gardenSkills: ['planting'],
         },
@@ -154,7 +154,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           cookingSkills: [],
           gardenSkills: [],
         },
@@ -213,7 +213,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           thematicCategories: ['Nutrition', 'Ecosystems'],
         },
       });
@@ -230,7 +230,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           seasonTiming: ['Fall', 'Winter'],
         },
       });
@@ -247,7 +247,7 @@ describe('LessonModal', () => {
           coreCompetencies: ['Environmental and Community Stewardship'],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
         },
       });
       render(<LessonModal lesson={lesson} isOpen={true} onClose={mockOnClose} />);
@@ -262,7 +262,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: ['Mexican', 'Italian'],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
         },
       });
       render(<LessonModal lesson={lesson} isOpen={true} onClose={mockOnClose} />);
@@ -278,7 +278,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           cookingMethods: ['Stovetop', 'Oven'],
         },
       });
@@ -296,7 +296,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           mainIngredients: ingredients,
         },
       });
@@ -312,7 +312,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           skills: skills,
         },
       });
@@ -361,7 +361,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           academicIntegration: ['Math', 'Science'],
         },
       });
@@ -378,7 +378,7 @@ describe('LessonModal', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: [],
+          lessonFormat: '',
           academicIntegration: {
             selected: ['Math', 'Science'],
             concepts: { Math: ['fractions'] },
