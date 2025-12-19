@@ -56,14 +56,29 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
             <Link to="/" className="flex items-center gap-4 hover:opacity-90 transition-opacity">
               <div className="text-4xl">🌱</div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
                   Edible Schoolyard NYC Lesson Library
                 </h1>
-                <p className="text-primary-100 text-sm">Version {APP_VERSION}</p>
+                {/* Mobile stats - compact inline display */}
+                <div className="flex md:hidden items-center gap-2 text-sm text-primary-200">
+                  <span>
+                    <span className="font-semibold text-accent-400">
+                      {totalLessons.toLocaleString()}
+                    </span>{' '}
+                    lessons
+                  </span>
+                  <span>•</span>
+                  <span>
+                    <span className="font-semibold text-accent-400">{totalCategories}</span>{' '}
+                    categories
+                  </span>
+                </div>
+                {/* Desktop version info */}
+                <p className="hidden md:block text-primary-100 text-sm">Version {APP_VERSION}</p>
               </div>
             </Link>
 
-            {/* Stats */}
+            {/* Desktop Stats - larger display */}
             <div className="hidden md:flex items-center gap-8">
               <div className="text-center">
                 <div className="text-2xl font-bold text-accent-400">
