@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { parseDbError } from '@/utils/errorHandling';
 import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import type { ReviewMetadata } from '@/types';
@@ -286,8 +287,7 @@ export function ReviewDetail() {
         setNotes(review.notes || '');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Error loading submission:', errorMessage);
+      logger.error('Error loading submission:', parseDbError(error));
     } finally {
       setLoading(false);
     }
@@ -534,8 +534,7 @@ export function ReviewDetail() {
 
       navigate('/review');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Error saving review:', errorMessage);
+      logger.error('Error saving review:', parseDbError(error));
     } finally {
       setSaving(false);
     }

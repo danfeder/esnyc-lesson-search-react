@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { parseDbError } from '@/utils/errorHandling';
 import { X, Mail, Lock, User as UserIcon } from 'lucide-react';
 
 interface AuthModalProps {
@@ -55,7 +56,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       onSuccess?.();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(parseDbError(err));
     } finally {
       setLoading(false);
     }
