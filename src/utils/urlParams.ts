@@ -1,4 +1,5 @@
 import type { SearchFilters } from '@/types';
+import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 
 /**
  * Mapping between store filter keys and short URL parameter names.
@@ -97,4 +98,81 @@ export function hasFilters(filters: Partial<SearchFilters>): boolean {
     if (Array.isArray(value)) return value.length > 0;
     return !!value;
   });
+}
+
+/**
+ * Get all valid values for a filter, including nested children for hierarchical filters.
+ */
+function getValidValuesForFilter(filterKey: string): Set<string> | null {
+  const config = FILTER_CONFIGS[filterKey];
+  if (!config) return null;
+
+  const validValues = new Set<string>();
+
+  const addOptions = (options: typeof config.options) => {
+    for (const option of options) {
+      validValues.add(option.value);
+      // Include children for hierarchical filters (e.g., culturalHeritage)
+      if ('children' in option && option.children) {
+        addOptions(option.children);
+      }
+    }
+  };
+
+  addOptions(config.options);
+
+  // Include grade group IDs as valid values
+  if (config.groups) {
+    for (const group of config.groups) {
+      validValues.add(group.id);
+    }
+  }
+
+  return validValues;
+}
+
+/**
+ * Validate filter values against known valid options.
+ * Invalid values are silently removed to prevent injection of arbitrary data.
+ * The 'query' field is not validated as it's free-form text.
+ */
+export function validateFilterValues(filters: Partial<SearchFilters>): Partial<SearchFilters> {
+  const validated: Partial<SearchFilters> = {};
+
+  for (const [key, value] of Object.entries(filters)) {
+    const filterKey = key as keyof SearchFilters;
+
+    // Query is free-form text, no validation needed
+    if (filterKey === 'query') {
+      if (typeof value === 'string' && value.trim()) {
+        validated.query = value.trim();
+      }
+      continue;
+    }
+
+    const validValues = getValidValuesForFilter(filterKey);
+
+    // If no config found for this filter, skip validation (allow through)
+    // This handles any new filters that might be added later
+    if (!validValues) {
+      (validated as Record<string, unknown>)[filterKey] = value;
+      continue;
+    }
+
+    if (ARRAY_FILTERS.has(filterKey)) {
+      // Filter array values to only include valid options
+      const arr = value as string[];
+      const validArr = arr.filter((v) => validValues.has(v));
+      if (validArr.length > 0) {
+        (validated as Record<string, string[]>)[filterKey] = validArr;
+      }
+    } else {
+      // Validate single value
+      if (typeof value === 'string' && validValues.has(value)) {
+        (validated as Record<string, string>)[filterKey] = value;
+      }
+    }
+  }
+
+  return validated;
 }
