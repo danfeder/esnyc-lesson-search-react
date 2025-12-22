@@ -8,6 +8,9 @@ import {
   validateFilterValues,
 } from '@/utils/urlParams';
 
+/** Debounce delay for URL updates (ms). Prevents URL thrashing during rapid filter changes. */
+const URL_SYNC_DEBOUNCE_MS = 300;
+
 /**
  * Syncs search filters between Zustand store and URL params.
  *
@@ -53,7 +56,7 @@ export function useUrlSync(): void {
       debounceTimeoutRef.current = setTimeout(() => {
         setSearchParams(params, { replace: true });
         debounceTimeoutRef.current = null;
-      }, 300);
+      }, URL_SYNC_DEBOUNCE_MS);
     },
     [setSearchParams]
   );

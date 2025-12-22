@@ -195,6 +195,32 @@ describe('useUrlSync', () => {
       expect(filters.query).toBe('mac & cheese');
     });
 
+    it('handles clearFilters correctly (no sync issues)', () => {
+      const wrapper = createWrapper(['/search?q=cooking&grades=3,4']);
+
+      renderHook(() => useUrlSync(), { wrapper });
+
+      // Verify initial state from URL
+      expect(useSearchStore.getState().filters.query).toBe('cooking');
+      expect(useSearchStore.getState().filters.gradeLevels).toEqual(['3', '4']);
+
+      // Clear filters
+      act(() => {
+        useSearchStore.getState().clearFilters();
+      });
+
+      // Filters should be cleared
+      expect(useSearchStore.getState().filters.query).toBe('');
+      expect(useSearchStore.getState().filters.gradeLevels).toEqual([]);
+
+      // Advance past debounce
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+
+      // No infinite loop, no errors - clearFilters works correctly with URL sync
+    });
+
     it('handles empty query param', () => {
       const wrapper = createWrapper(['/search?q=']);
 
