@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase', () => ({
@@ -104,7 +104,7 @@ describe('Search Flow Integration', () => {
       const [isFilterModalOpen, setFilterModalOpen] = React.useState(false);
 
       return (
-        <BrowserRouter>
+        <MemoryRouter>
           <QueryClientProvider client={queryClient}>
             <div>
               <SearchBar />
@@ -120,7 +120,7 @@ describe('Search Flow Integration', () => {
               <div data-testid="results">{/* Results would be rendered here */}</div>
             </div>
           </QueryClientProvider>
-        </BrowserRouter>
+        </MemoryRouter>
       );
     };
 

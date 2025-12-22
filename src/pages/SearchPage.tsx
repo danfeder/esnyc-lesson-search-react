@@ -12,11 +12,15 @@ import { InfiniteScrollTrigger } from '@/components/Common/InfiniteScrollTrigger
 import { useSearchStore } from '@/stores/searchStore';
 import { useLessonSearch } from '@/hooks/useLessonSearch';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
+import { useUrlSync } from '@/hooks/useUrlSync';
 import { Lightbulb } from 'lucide-react';
 import type { Lesson, ViewState } from '@/types';
 
 export const SearchPage: React.FC = () => {
   const { filters, viewState, setViewState, setFilters } = useSearchStore();
+
+  // Sync filters with URL params (enables shareable links)
+  useUrlSync();
 
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);

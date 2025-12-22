@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock Supabase client
 const rpcMock = vi.fn();
@@ -18,14 +18,14 @@ import { SearchPage } from '@/pages/SearchPage';
 import { useSearchStore } from '@/stores/searchStore';
 import { makeRpcRow } from '@/__tests__/helpers/factories';
 
-function renderWithProviders(ui: React.ReactElement) {
+function renderWithProviders(ui: React.ReactElement, initialEntries: string[] = ['/']) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   );
 }
 
