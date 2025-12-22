@@ -11,16 +11,25 @@ import {
 /**
  * Syncs search filters between Zustand store and URL params.
  *
+ * Behavior:
  * - On mount: parses URL and updates store (enables shared links)
- * - On filter change: updates URL with debounce (avoids history spam)
+ * - On filter change: updates URL with 300ms debounce (avoids history spam)
  *
- * Uses replace mode to update URL without adding history entries.
+ * Design decisions:
+ * - Uses `replace: true` mode so filter changes don't create history entries.
+ *   This keeps browser history clean - users can navigate back to the previous
+ *   page rather than stepping through every filter change. If you want each
+ *   filter change to be a history entry, change to `replace: false`.
  *
- * Note: We intentionally do NOT persist viewState (sortBy, resultsPerPage, currentPage)
- * to URL because:
- * - Sort preference is personal, not worth sharing
- * - Page number is transient (infinite scroll resets it anyway)
- * - This keeps URLs cleaner and focused on the search criteria
+ * - We intentionally do NOT persist viewState (sortBy, resultsPerPage, currentPage)
+ *   to URL because:
+ *   - Sort preference is personal, not worth sharing
+ *   - Page number is transient (infinite scroll resets it anyway)
+ *   - This keeps URLs cleaner and focused on the search criteria
+ *
+ * - URL initialization only happens once on mount. If the URL changes after
+ *   mount (e.g., programmatic navigation), the hook won't re-initialize. This
+ *   is intentional to avoid conflicts with the debounced URL updates.
  */
 export function useUrlSync(): void {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,6 +68,9 @@ export function useUrlSync(): void {
   }, []);
 
   // Initialize from URL on mount
+  // Note: We intentionally use an empty dependency array here. Including searchParams
+  // would cause re-initialization on every URL change, which conflicts with our
+  // debounced URL updates. The setFilters function is stable (Zustand guarantee).
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -67,10 +79,17 @@ export function useUrlSync(): void {
     const validatedFilters = validateFilterValues(filtersFromUrl);
 
     if (hasFilters(validatedFilters)) {
+      // Clear any pending URL updates to prevent race condition where:
+      // 1. User changes filters (debounce timer starts)
+      // 2. URL changes externally (e.g., browser back)
+      // 3. Debounce timer fires, overwrites URL with stale state
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
+      }
       lastSyncSourceRef.current = 'url';
       setFilters(validatedFilters);
     }
-    // Only run on mount - searchParams in deps would cause issues
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
