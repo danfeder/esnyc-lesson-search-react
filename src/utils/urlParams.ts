@@ -72,64 +72,35 @@ export function filtersToUrlParams(filters: SearchFilters): URLSearchParams {
   return params;
 }
 
+// Type for string filter keys (non-array filters)
+type StringFilterKey = 'query' | 'lessonFormat';
+
 /**
- * Type-safe helper to set array filter values.
+ * Type-safe helper to set filter values.
+ * Uses TypeScript's type system for safety without verbose switch statements.
  */
-function setArrayFilter(
+function setFilterValue<K extends keyof SearchFilters>(
   filters: Partial<SearchFilters>,
-  key: keyof SearchFilters,
-  values: string[]
+  key: K,
+  value: SearchFilters[K]
 ): void {
-  switch (key) {
-    case 'gradeLevels':
-      filters.gradeLevels = values;
-      break;
-    case 'activityType':
-      filters.activityType = values;
-      break;
-    case 'location':
-      filters.location = values;
-      break;
-    case 'seasonTiming':
-      filters.seasonTiming = values;
-      break;
-    case 'thematicCategories':
-      filters.thematicCategories = values;
-      break;
-    case 'coreCompetencies':
-      filters.coreCompetencies = values;
-      break;
-    case 'culturalHeritage':
-      filters.culturalHeritage = values;
-      break;
-    case 'academicIntegration':
-      filters.academicIntegration = values;
-      break;
-    case 'socialEmotionalLearning':
-      filters.socialEmotionalLearning = values;
-      break;
-    case 'cookingMethods':
-      filters.cookingMethods = values;
-      break;
-  }
+  filters[key] = value;
 }
 
 /**
- * Type-safe helper to set string filter values.
+ * Check if a key is an array filter key (for type narrowing).
  */
-function setStringFilter(
-  filters: Partial<SearchFilters>,
-  key: keyof SearchFilters,
-  value: string
-): void {
-  switch (key) {
-    case 'query':
-      filters.query = value;
-      break;
-    case 'lessonFormat':
-      filters.lessonFormat = value;
-      break;
-  }
+function isArrayFilterKey(
+  key: keyof SearchFilters
+): key is Exclude<keyof SearchFilters, StringFilterKey> {
+  return ARRAY_FILTERS.has(key);
+}
+
+/**
+ * Check if a key is a string filter key (for type narrowing).
+ */
+function isStringFilterKey(key: keyof SearchFilters): key is StringFilterKey {
+  return key === 'query' || key === 'lessonFormat';
 }
 
 /**
@@ -144,18 +115,18 @@ export function parseUrlToFilters(params: URLSearchParams): Partial<SearchFilter
     const value = params.get(paramKey);
     if (!value || value.length > MAX_PARAM_LENGTH) continue;
 
-    if (ARRAY_FILTERS.has(filterKey)) {
-      // Split comma-separated values, filter empty strings, limit array size
+    if (isArrayFilterKey(filterKey)) {
+      // Split comma-separated values, trim, filter empty, limit array size
       const arr = value
         .split(',')
-        .filter((v) => v.trim())
+        .map((v) => v.trim())
+        .filter(Boolean)
         .slice(0, MAX_ARRAY_LENGTH);
       if (arr.length > 0) {
-        setArrayFilter(filters, filterKey, arr);
+        setFilterValue(filters, filterKey, arr);
       }
-    } else {
-      // String value
-      setStringFilter(filters, filterKey, value);
+    } else if (isStringFilterKey(filterKey)) {
+      setFilterValue(filters, filterKey, value);
     }
   }
 
@@ -177,7 +148,7 @@ export function hasFilters(filters: Partial<SearchFilters>): boolean {
  */
 function getValidValuesForFilter(filterKey: string): Set<string> | null {
   const config = FILTER_CONFIGS[filterKey];
-  if (!config) return null;
+  if (!config || !config.options) return null;
 
   const validValues = new Set<string>();
 
@@ -229,17 +200,17 @@ export function validateFilterValues(filters: Partial<SearchFilters>): Partial<S
       continue;
     }
 
-    if (ARRAY_FILTERS.has(filterKey)) {
+    if (isArrayFilterKey(filterKey)) {
       // Filter array values to only include valid options
       const arr = value as string[];
       const validArr = arr.filter((v) => validValues.has(v));
       if (validArr.length > 0) {
-        setArrayFilter(validated, filterKey, validArr);
+        setFilterValue(validated, filterKey, validArr);
       }
-    } else {
-      // Validate single value
+    } else if (isStringFilterKey(filterKey)) {
+      // Validate single value (excluding query which is handled above)
       if (typeof value === 'string' && validValues.has(value)) {
-        setStringFilter(validated, filterKey, value);
+        setFilterValue(validated, filterKey, value);
       }
     }
   }

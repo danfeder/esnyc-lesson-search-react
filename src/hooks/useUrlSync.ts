@@ -70,10 +70,10 @@ export function useUrlSync(): void {
     };
   }, []);
 
-  // Initialize from URL on mount
-  // Note: We intentionally use an empty dependency array here. Including searchParams
-  // would cause re-initialization on every URL change, which conflicts with our
-  // debounced URL updates. The setFilters function is stable (Zustand guarantee).
+  // Initialize from URL on mount (one-time only)
+  // Empty deps is intentional: we only want to read URL once on mount, not on subsequent
+  // URL changes (which would conflict with our debounced URL updates from filter changes).
+  // setFilters is stable per Zustand guarantees. searchParams is read synchronously.
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -93,7 +93,7 @@ export function useUrlSync(): void {
       lastSyncSourceRef.current = 'url';
       setFilters(validatedFilters);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: one-time init from URL on mount only
   }, []);
 
   // Sync filters to URL when they change
