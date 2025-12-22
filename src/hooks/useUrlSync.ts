@@ -96,6 +96,31 @@ export function useUrlSync(): void {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: one-time init from URL on mount only
   }, []);
 
+  // Handle browser back/forward navigation (popstate)
+  // This effect runs when searchParams change externally (not from our debounced updates)
+  useEffect(() => {
+    // Skip before initialization
+    if (!initializedRef.current) return;
+
+    // Skip if we just updated the URL ourselves
+    if (lastSyncSourceRef.current === 'store') {
+      return;
+    }
+
+    // URL changed externally (browser back/forward) - sync to store
+    const filtersFromUrl = parseUrlToFilters(searchParams);
+    const validatedFilters = validateFilterValues(filtersFromUrl);
+
+    // Clear any pending debounced URL updates to prevent overwriting
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
+    }
+
+    lastSyncSourceRef.current = 'url';
+    setFilters(validatedFilters);
+  }, [searchParams, setFilters]);
+
   // Sync filters to URL when they change
   useEffect(() => {
     // Skip on initial render before URL init
