@@ -27,11 +27,12 @@ test.describe('Filter Functionality', () => {
   test('filter state can be applied via URL', async ({ page }) => {
     // Test that navigating with a filter parameter works
     // This is deterministic - we know exactly what state we're testing
-    await page.goto('/?activityType=cooking');
+    // Uses short URL params: activity (not activityType)
+    await page.goto('/?activity=cooking-only');
     await page.waitForLoadState('networkidle');
 
     // URL should maintain the filter parameter
-    expect(page.url()).toContain('activityType=cooking');
+    expect(page.url()).toContain('activity=cooking-only');
 
     // Page should still be functional
     const searchBar = page.getByPlaceholder(/search/i);
@@ -43,11 +44,12 @@ test.describe('Filter Functionality', () => {
 
   test('filter state persists in URL', async ({ page }) => {
     // Navigate with filter in URL
-    await page.goto('/?grade=K');
+    // Uses short URL params: grades (plural, not grade)
+    await page.goto('/?grades=K');
     await page.waitForLoadState('networkidle');
 
     // URL should still have the filter
-    expect(page.url()).toContain('grade=K');
+    expect(page.url()).toContain('grades=K');
 
     // Page should still be functional
     const searchBar = page.getByPlaceholder(/search/i);
