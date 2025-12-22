@@ -276,3 +276,27 @@ describe('validateFilterValues', () => {
     expect(validated.gradeLevels).toEqual(['early-childhood', '3']);
   });
 });
+
+describe('URL length limits', () => {
+  it('rejects params exceeding max length', () => {
+    const longValue = 'a'.repeat(1001);
+    const params = new URLSearchParams(`q=${longValue}`);
+    const filters = parseUrlToFilters(params);
+    expect(filters.query).toBeUndefined();
+  });
+
+  it('accepts params within max length', () => {
+    const value = 'a'.repeat(999);
+    const params = new URLSearchParams(`q=${value}`);
+    const filters = parseUrlToFilters(params);
+    expect(filters.query).toBe(value);
+  });
+
+  it('limits array size to prevent DoS', () => {
+    // Create more than MAX_ARRAY_LENGTH (50) values
+    const manyGrades = Array.from({ length: 100 }, (_, i) => `${i}`).join(',');
+    const params = new URLSearchParams(`grades=${manyGrades}`);
+    const filters = parseUrlToFilters(params);
+    expect(filters.gradeLevels?.length).toBeLessThanOrEqual(50);
+  });
+});

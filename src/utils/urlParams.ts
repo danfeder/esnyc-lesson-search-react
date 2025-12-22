@@ -1,6 +1,10 @@
 import type { SearchFilters } from '@/types';
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 
+// Limits to prevent DoS via malformed URLs
+const MAX_PARAM_LENGTH = 1000;
+const MAX_ARRAY_LENGTH = 50;
+
 /**
  * Mapping between store filter keys and short URL parameter names.
  * Short names keep URLs readable and shareable.
@@ -24,6 +28,10 @@ const FILTER_TO_PARAM: Record<keyof SearchFilters, string> = Object.fromEntries(
   Object.entries(PARAM_TO_FILTER).map(([param, filter]) => [filter, param])
 ) as Record<keyof SearchFilters, string>;
 
+// Pre-computed entries for performance (avoid creating arrays on each call)
+const FILTER_ENTRIES = Object.entries(FILTER_TO_PARAM) as [keyof SearchFilters, string][];
+const PARAM_ENTRIES = Object.entries(PARAM_TO_FILTER) as [string, keyof SearchFilters][];
+
 // Filters that are arrays (multi-select)
 const ARRAY_FILTERS: Set<keyof SearchFilters> = new Set([
   'gradeLevels',
@@ -45,10 +53,10 @@ const ARRAY_FILTERS: Set<keyof SearchFilters> = new Set([
 export function filtersToUrlParams(filters: SearchFilters): URLSearchParams {
   const params = new URLSearchParams();
 
-  for (const [filterKey, paramKey] of Object.entries(FILTER_TO_PARAM)) {
-    const value = filters[filterKey as keyof SearchFilters];
+  for (const [filterKey, paramKey] of FILTER_ENTRIES) {
+    const value = filters[filterKey];
 
-    if (ARRAY_FILTERS.has(filterKey as keyof SearchFilters)) {
+    if (ARRAY_FILTERS.has(filterKey)) {
       const arr = value as string[];
       if (arr && arr.length > 0) {
         params.set(paramKey, arr.join(','));
@@ -65,25 +73,89 @@ export function filtersToUrlParams(filters: SearchFilters): URLSearchParams {
 }
 
 /**
+ * Type-safe helper to set array filter values.
+ */
+function setArrayFilter(
+  filters: Partial<SearchFilters>,
+  key: keyof SearchFilters,
+  values: string[]
+): void {
+  switch (key) {
+    case 'gradeLevels':
+      filters.gradeLevels = values;
+      break;
+    case 'activityType':
+      filters.activityType = values;
+      break;
+    case 'location':
+      filters.location = values;
+      break;
+    case 'seasonTiming':
+      filters.seasonTiming = values;
+      break;
+    case 'thematicCategories':
+      filters.thematicCategories = values;
+      break;
+    case 'coreCompetencies':
+      filters.coreCompetencies = values;
+      break;
+    case 'culturalHeritage':
+      filters.culturalHeritage = values;
+      break;
+    case 'academicIntegration':
+      filters.academicIntegration = values;
+      break;
+    case 'socialEmotionalLearning':
+      filters.socialEmotionalLearning = values;
+      break;
+    case 'cookingMethods':
+      filters.cookingMethods = values;
+      break;
+  }
+}
+
+/**
+ * Type-safe helper to set string filter values.
+ */
+function setStringFilter(
+  filters: Partial<SearchFilters>,
+  key: keyof SearchFilters,
+  value: string
+): void {
+  switch (key) {
+    case 'query':
+      filters.query = value;
+      break;
+    case 'lessonFormat':
+      filters.lessonFormat = value;
+      break;
+  }
+}
+
+/**
  * Parse URL search params into partial search filters.
  * Invalid or unknown params are ignored for graceful degradation.
+ * Includes length limits to prevent DoS attacks.
  */
 export function parseUrlToFilters(params: URLSearchParams): Partial<SearchFilters> {
   const filters: Partial<SearchFilters> = {};
 
-  for (const [paramKey, filterKey] of Object.entries(PARAM_TO_FILTER)) {
+  for (const [paramKey, filterKey] of PARAM_ENTRIES) {
     const value = params.get(paramKey);
-    if (!value) continue;
+    if (!value || value.length > MAX_PARAM_LENGTH) continue;
 
     if (ARRAY_FILTERS.has(filterKey)) {
-      // Split comma-separated values, filter empty strings
-      const arr = value.split(',').filter((v) => v.trim());
+      // Split comma-separated values, filter empty strings, limit array size
+      const arr = value
+        .split(',')
+        .filter((v) => v.trim())
+        .slice(0, MAX_ARRAY_LENGTH);
       if (arr.length > 0) {
-        (filters as Record<string, string[]>)[filterKey] = arr;
+        setArrayFilter(filters, filterKey, arr);
       }
     } else {
       // String value
-      (filters as Record<string, string>)[filterKey] = value;
+      setStringFilter(filters, filterKey, value);
     }
   }
 
@@ -142,7 +214,7 @@ export function validateFilterValues(filters: Partial<SearchFilters>): Partial<S
   for (const [key, value] of Object.entries(filters)) {
     const filterKey = key as keyof SearchFilters;
 
-    // Query is free-form text, no validation needed
+    // Query is free-form text, no validation needed (but trim whitespace)
     if (filterKey === 'query') {
       if (typeof value === 'string' && value.trim()) {
         validated.query = value.trim();
@@ -152,10 +224,8 @@ export function validateFilterValues(filters: Partial<SearchFilters>): Partial<S
 
     const validValues = getValidValuesForFilter(filterKey);
 
-    // If no config found for this filter, skip validation (allow through)
-    // This handles any new filters that might be added later
+    // If no config found for this filter, skip it (don't allow unknown filters)
     if (!validValues) {
-      (validated as Record<string, unknown>)[filterKey] = value;
       continue;
     }
 
@@ -164,12 +234,12 @@ export function validateFilterValues(filters: Partial<SearchFilters>): Partial<S
       const arr = value as string[];
       const validArr = arr.filter((v) => validValues.has(v));
       if (validArr.length > 0) {
-        (validated as Record<string, string[]>)[filterKey] = validArr;
+        setArrayFilter(validated, filterKey, validArr);
       }
     } else {
       // Validate single value
       if (typeof value === 'string' && validValues.has(value)) {
-        (validated as Record<string, string>)[filterKey] = value;
+        setStringFilter(validated, filterKey, value);
       }
     }
   }
