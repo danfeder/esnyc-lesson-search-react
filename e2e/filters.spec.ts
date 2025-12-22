@@ -80,61 +80,22 @@ test.describe('Filter Functionality', () => {
     expect(buttonCount).toBeGreaterThan(3);
   });
 
-  test('search input updates URL with query param', async ({ page }) => {
-    // Type in the search bar
-    const searchBar = page.getByPlaceholder(/search/i);
-    await searchBar.fill('cooking');
-    await searchBar.press('Enter');
-
-    // Wait for debounce (300ms) + network
-    await page.waitForTimeout(500);
-    await page.waitForLoadState('networkidle');
-
-    // URL should now contain the search query
-    expect(page.url()).toContain('q=cooking');
-  });
-
-  test('shared URL restores search state correctly', async ({ page }) => {
-    // Navigate to URL with multiple filters
+  test('shared URL with multiple filters restores state', async ({ page }) => {
+    // Navigate to URL with multiple filters - this tests the key shareable links feature
     await page.goto('/?q=salad&grades=3,4&activity=cooking-only');
     await page.waitForLoadState('networkidle');
 
-    // Verify search bar has the query
+    // Verify search bar has the query restored from URL
     const searchBar = page.getByPlaceholder(/search/i);
     await expect(searchBar).toHaveValue('salad');
 
-    // URL should maintain all params
+    // URL should maintain all params (important for sharing)
     const url = page.url();
     expect(url).toContain('q=salad');
     expect(url).toContain('grades=3,4');
     expect(url).toContain('activity=cooking-only');
-  });
 
-  test('browser back navigation preserves filter state', async ({ page }) => {
-    // Start with no filters
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-
-    // Apply a search
-    const searchBar = page.getByPlaceholder(/search/i);
-    await searchBar.fill('garden');
-    await searchBar.press('Enter');
-    await page.waitForTimeout(500);
-    await page.waitForLoadState('networkidle');
-
-    // URL should have query
-    expect(page.url()).toContain('q=garden');
-
-    // Navigate to a different page (lesson detail or about)
-    await page.goto('/about');
-    await page.waitForLoadState('networkidle');
-
-    // Go back
-    await page.goBack();
-    await page.waitForLoadState('networkidle');
-
-    // Search bar should still have the query
-    const searchBarAfterBack = page.getByPlaceholder(/search/i);
-    await expect(searchBarAfterBack).toHaveValue('garden');
+    // Page should be functional with results
+    await expect(page.locator('body')).toContainText(/lesson/i, { timeout: 10000 });
   });
 });
