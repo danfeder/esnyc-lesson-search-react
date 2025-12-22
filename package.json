@@ -97,7 +97,7 @@
     "recharts": "^3.6.0",
     "tailwindcss": "^4.1.12",
     "tiktoken": "^1.0.22",
-    "vite-bundle-analyzer": "^1.3.0",
+    "vite-bundle-analyzer": "^1.3.2",
     "vitest": "^3.2.4"
   },
   "engines": {
