@@ -90,7 +90,8 @@ test.describe('Filter Functionality', () => {
     await expect(searchBar).toHaveValue('salad');
 
     // URL should maintain all params (important for sharing)
-    const url = page.url();
+    // Note: commas may be URL-encoded as %2C
+    const url = decodeURIComponent(page.url());
     expect(url).toContain('q=salad');
     expect(url).toContain('grades=3,4');
     expect(url).toContain('activity=cooking-only');
