@@ -16,7 +16,13 @@ const isAllowedOrigin = (origin: string | null): origin is string => {
     origin &&
     (ALLOWED_ORIGINS.includes(origin) ||
       ALLOWED_ORIGINS.some(
-        (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace(/\*/g, '.*')))
+        (allowed) =>
+          allowed.includes('*') &&
+          origin.match(
+            new RegExp(
+              '^' + allowed.replace(/\./g, '\\.').replace(/\*/g, '[a-z0-9-]+') + '$'
+            )
+          )
       ))
   );
 };
