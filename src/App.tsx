@@ -189,8 +189,8 @@ function AppContent() {
                     </ProtectedRoute>
                   }
                 />
-                {/* Temporary route for testing - remove in production */}
-                <Route path="/verify-setup" element={<VerifySetup />} />
+                {/* Temporary route for testing - only available in development */}
+                {import.meta.env.DEV && <Route path="/verify-setup" element={<VerifySetup />} />}
               </Routes>
             </Suspense>
           </main>
@@ -211,7 +211,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AppContent />
         {/* React Query DevTools - only in development */}
-        {import.meta.env.MODE === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </ErrorBoundary>
   );
