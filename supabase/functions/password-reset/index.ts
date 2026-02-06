@@ -20,7 +20,11 @@ const isAllowedOrigin = (origin: string | null): origin is string => {
           allowed.includes('*') &&
           origin.match(
             new RegExp(
-              '^' + allowed.replace(/\./g, '\\.').replace(/\*/g, '[a-z0-9-]+') + '$'
+              '^' +
+                allowed
+                  .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // escape all regex metacharacters
+                  .replace(/\\\*/g, '[a-z0-9-]+') + // convert escaped \* to wildcard pattern
+                '$'
             )
           )
       ))

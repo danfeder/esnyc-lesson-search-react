@@ -190,7 +190,7 @@ function AppContent() {
                   }
                 />
                 {/* Temporary route for testing - only available in development */}
-                {import.meta.env.MODE === 'development' && (
+                {import.meta.env.DEV && (
                   <Route path="/verify-setup" element={<VerifySetup />} />
                 )}
               </Routes>
