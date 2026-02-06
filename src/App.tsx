@@ -189,8 +189,10 @@ function AppContent() {
                     </ProtectedRoute>
                   }
                 />
-                {/* Temporary route for testing - remove in production */}
-                <Route path="/verify-setup" element={<VerifySetup />} />
+                {/* Temporary route for testing - only available in development */}
+                {import.meta.env.MODE === 'development' && (
+                  <Route path="/verify-setup" element={<VerifySetup />} />
+                )}
               </Routes>
             </Suspense>
           </main>
