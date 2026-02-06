@@ -11,17 +11,19 @@ const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
   'https://deploy-preview-*--esynyc-lessonlibrary-v2.netlify.app',
 ];
 
-const getCorsHeaders = (origin: string | null) => {
-  // Check if origin is allowed
-  const isAllowed =
+const isAllowedOrigin = (origin: string | null): origin is string => {
+  return !!(
     origin &&
     (ALLOWED_ORIGINS.includes(origin) ||
       ALLOWED_ORIGINS.some(
         (allowed) => allowed.includes('*') && origin.match(new RegExp(allowed.replace(/\*/g, '.*')))
-      ));
+      ))
+  );
+};
 
+const getCorsHeaders = (origin: string | null) => {
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Origin': isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
@@ -86,7 +88,7 @@ serve(async (req) => {
         type: 'recovery',
         email: email.toLowerCase(),
         options: {
-          redirectTo: `${origin || 'http://localhost:5173'}/reset-password`,
+          redirectTo: `${isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0]}/reset-password`,
         },
       });
 
