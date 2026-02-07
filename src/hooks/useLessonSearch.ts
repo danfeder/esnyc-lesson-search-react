@@ -26,6 +26,8 @@ interface RpcRow {
   total_count?: number;
 }
 
+type SearchParamValue = string | string[] | number | undefined;
+
 interface PageResult {
   lessons: Lesson[];
   totalCount: number;
@@ -89,7 +91,7 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
     queryFn: async ({ pageParam }) => {
       const currentPage = (pageParam as number) || 0;
 
-      const searchParams: Record<string, string | string[] | number | undefined> = {
+      const searchParams: Record<string, SearchParamValue> = {
         search_query: filters.query || undefined,
         filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : undefined,
         filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : undefined,

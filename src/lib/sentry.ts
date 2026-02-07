@@ -137,9 +137,11 @@ function sanitizeData(data: unknown): unknown {
     'credit_card', // PII
   ];
 
-  const sanitized: Record<string, unknown> = Array.isArray(data)
-    ? { ...data }
-    : { ...(data as Record<string, unknown>) };
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeData(item));
+  }
+
+  const sanitized: Record<string, unknown> = { ...(data as Record<string, unknown>) };
 
   for (const key in sanitized) {
     const lowerKey = key.toLowerCase();
@@ -153,7 +155,7 @@ function sanitizeData(data: unknown): unknown {
     }
   }
 
-  return Array.isArray(data) ? Object.values(sanitized) : sanitized;
+  return sanitized;
 }
 
 /**
