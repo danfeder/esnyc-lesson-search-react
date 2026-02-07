@@ -149,7 +149,7 @@ function sanitizeData(data: unknown): unknown {
     // Check if this key contains sensitive data
     if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
       sanitized[key] = '[REDACTED]';
-    } else if (typeof sanitized[key] === 'object') {
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
       // Recursively sanitize nested objects
       sanitized[key] = sanitizeData(sanitized[key]);
     }

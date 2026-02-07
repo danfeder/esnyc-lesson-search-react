@@ -74,7 +74,7 @@ function sanitizeObject(obj: unknown): unknown {
     const lowerKey = key.toLowerCase();
     if (SENSITIVE_KEYS.some((sensitive) => lowerKey.includes(sensitive))) {
       record[key] = '[REDACTED]';
-    } else if (typeof record[key] === 'object') {
+    } else if (typeof record[key] === 'object' && record[key] !== null) {
       record[key] = sanitizeObject(record[key]);
     }
   }
