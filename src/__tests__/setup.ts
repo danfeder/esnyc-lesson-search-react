@@ -79,15 +79,17 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-  takeRecords: vi.fn(),
-  root: null,
-  rootMargin: '',
-  thresholds: [],
-}));
+class MockIntersectionObserver {
+  root = null;
+  rootMargin = '';
+  thresholds: number[] = [];
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+  takeRecords = vi.fn().mockReturnValue([]);
+}
+// eslint-disable-next-line no-undef
+global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -129,11 +131,13 @@ Object.defineProperty(window, 'localStorage', {
 window.scrollTo = vi.fn();
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+class MockResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+// eslint-disable-next-line no-undef
+global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
 // Mock LazyTabPanel to render content immediately in tests
 vi.mock('@/components/Filters/LazyTabPanel', () => ({
