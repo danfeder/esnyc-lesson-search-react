@@ -66,19 +66,24 @@ function sanitizeArgs(args: unknown[]): unknown[] {
 /**
  * Recursively sanitize sensitive keys from objects
  */
-function sanitizeObject(obj: any): any {
+function sanitizeObject(obj: unknown): unknown {
   if (!obj || typeof obj !== 'object') return obj;
 
-  for (const key in obj) {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeObject(item));
+  }
+
+  const record = obj as Record<string, unknown>;
+  for (const key in record) {
     const lowerKey = key.toLowerCase();
     if (SENSITIVE_KEYS.some((sensitive) => lowerKey.includes(sensitive))) {
-      obj[key] = '[REDACTED]';
-    } else if (typeof obj[key] === 'object') {
-      obj[key] = sanitizeObject(obj[key]);
+      record[key] = '[REDACTED]';
+    } else if (typeof record[key] === 'object' && record[key] !== null) {
+      record[key] = sanitizeObject(record[key]);
     }
   }
 
-  return obj;
+  return record;
 }
 
 /**
@@ -107,6 +112,7 @@ export const logger = {
     const sanitized = sanitizeArgs(args);
 
     if (isDevelopment) {
+      // eslint-disable-next-line no-console
       console.log('[DEBUG]', ...sanitized);
     }
 
@@ -127,6 +133,7 @@ export const logger = {
     const sanitized = sanitizeArgs(args);
 
     if (isDevelopment) {
+      // eslint-disable-next-line no-console
       console.log(...sanitized);
     }
 
@@ -147,6 +154,7 @@ export const logger = {
     const sanitized = sanitizeArgs(args);
 
     if (isDevelopment) {
+      // eslint-disable-next-line no-console
       console.info(...sanitized);
     }
 
@@ -211,9 +219,12 @@ export const logger = {
    * Track specific events or metrics
    */
   track: (eventName: string, data?: Record<string, unknown>) => {
-    const sanitizedData = data ? sanitizeObject({ ...data }) : undefined;
+    const sanitizedData = data
+      ? (sanitizeObject({ ...data }) as Record<string, unknown>)
+      : undefined;
 
     if (isDevelopment) {
+      // eslint-disable-next-line no-console
       console.log(`[TRACK] ${eventName}`, sanitizedData);
     }
 

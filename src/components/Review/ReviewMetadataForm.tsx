@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import CreatableSelect from 'react-select/creatable';
-import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
+import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
 import type { ReviewMetadata } from '@/types';
 
 interface ReviewMetadataFormProps {
@@ -37,7 +37,7 @@ export function ReviewMetadataForm({
     );
   }, [metadata.activityType]);
 
-  const renderField = (key: string, config: any) => {
+  const renderField = (key: string, config: FilterConfig) => {
     const value = metadata[key as keyof ReviewMetadata];
     const error = validationErrors.find((e) => e.includes(config.label));
     const isRequired = [
@@ -81,7 +81,7 @@ export function ReviewMetadataForm({
               Array.isArray(value)
                 ? value.map(
                     (v: string) =>
-                      config.options.find((o: any) => o.value === v) || { label: v, value: v }
+                      config.options.find((o) => o.value === v) || { label: v, value: v }
                   )
                 : []
             }
@@ -101,7 +101,7 @@ export function ReviewMetadataForm({
             aria-invalid={!!error}
           >
             <option value="">Select...</option>
-            {config.options.map((opt: any) => (
+            {config.options.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>

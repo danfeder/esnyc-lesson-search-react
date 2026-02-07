@@ -19,6 +19,7 @@ export function initSentry() {
   // Only initialize in production with a valid DSN
   if (!isProduction || !SENTRY_DSN) {
     if (isDevelopment) {
+      // eslint-disable-next-line no-console
       console.log('[Sentry] Skipping initialization in development mode');
     }
     return;
@@ -66,7 +67,7 @@ export function initSentry() {
       if (event.breadcrumbs) {
         event.breadcrumbs = event.breadcrumbs.map((breadcrumb) => {
           if (breadcrumb.data) {
-            breadcrumb.data = sanitizeData(breadcrumb.data);
+            breadcrumb.data = sanitizeData(breadcrumb.data) as Record<string, unknown>;
           }
           return breadcrumb;
         });
@@ -74,7 +75,7 @@ export function initSentry() {
 
       // Remove sensitive context
       if (event.extra) {
-        event.extra = sanitizeData(event.extra);
+        event.extra = sanitizeData(event.extra) as Record<string, unknown>;
       }
 
       return event;
@@ -116,7 +117,7 @@ function sanitizeUrl(url: string): string {
 /**
  * Recursively sanitize object data
  */
-function sanitizeData(data: any): any {
+function sanitizeData(data: unknown): unknown {
   if (!data || typeof data !== 'object') {
     return data;
   }
@@ -136,7 +137,11 @@ function sanitizeData(data: any): any {
     'credit_card', // PII
   ];
 
-  const sanitized = Array.isArray(data) ? [...data] : { ...data };
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeData(item));
+  }
+
+  const sanitized: Record<string, unknown> = { ...(data as Record<string, unknown>) };
 
   for (const key in sanitized) {
     const lowerKey = key.toLowerCase();
@@ -144,7 +149,7 @@ function sanitizeData(data: any): any {
     // Check if this key contains sensitive data
     if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
       sanitized[key] = '[REDACTED]';
-    } else if (typeof sanitized[key] === 'object') {
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
       // Recursively sanitize nested objects
       sanitized[key] = sanitizeData(sanitized[key]);
     }
@@ -184,6 +189,7 @@ export function captureMessage(message: string, level: Sentry.SeverityLevel = 'i
   // Also log to console in development
   if (isDevelopment) {
     const consoleMethod = level === 'error' ? 'error' : level === 'warning' ? 'warn' : 'log';
+    // eslint-disable-next-line no-console
     console[consoleMethod](`[${level}]`, message);
   }
 }
@@ -249,12 +255,15 @@ export function addBreadcrumb(breadcrumb: {
   if (isProduction && SENTRY_DSN) {
     Sentry.addBreadcrumb({
       ...breadcrumb,
-      data: breadcrumb.data ? sanitizeData(breadcrumb.data) : undefined,
+      data: breadcrumb.data
+        ? (sanitizeData(breadcrumb.data) as Record<string, unknown>)
+        : undefined,
     });
   }
 
   // Also log to console in development
   if (isDevelopment) {
+    // eslint-disable-next-line no-console
     console.log('[Breadcrumb]', breadcrumb);
   }
 }
