@@ -62,6 +62,7 @@ export function AcceptInvitation() {
       setError('Invalid invitation link');
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const validateInvitation = async () => {

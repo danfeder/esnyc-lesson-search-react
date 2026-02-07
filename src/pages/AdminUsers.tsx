@@ -56,6 +56,7 @@ export function AdminUsers() {
 
   useEffect(() => {
     loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, page]);
 
   useEffect(() => {

@@ -172,6 +172,7 @@ export function ReviewDetail() {
     if (id) {
       loadSubmission();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Focus management for validation errors

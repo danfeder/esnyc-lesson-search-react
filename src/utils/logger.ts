@@ -74,16 +74,20 @@ function sanitizeObject(obj: unknown): unknown {
   }
 
   const record = obj as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+
   for (const key in record) {
     const lowerKey = key.toLowerCase();
     if (SENSITIVE_KEYS.some((sensitive) => lowerKey.includes(sensitive))) {
-      record[key] = '[REDACTED]';
+      result[key] = '[REDACTED]';
     } else if (typeof record[key] === 'object' && record[key] !== null) {
-      record[key] = sanitizeObject(record[key]);
+      result[key] = sanitizeObject(record[key]);
+    } else {
+      result[key] = record[key];
     }
   }
 
-  return record;
+  return result;
 }
 
 /**
@@ -219,9 +223,7 @@ export const logger = {
    * Track specific events or metrics
    */
   track: (eventName: string, data?: Record<string, unknown>) => {
-    const sanitizedData = data
-      ? (sanitizeObject({ ...data }) as Record<string, unknown>)
-      : undefined;
+    const sanitizedData = data ? (sanitizeObject(data) as Record<string, unknown>) : undefined;
 
     if (isDevelopment) {
       // eslint-disable-next-line no-console
