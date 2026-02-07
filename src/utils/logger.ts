@@ -69,6 +69,10 @@ function sanitizeArgs(args: unknown[]): unknown[] {
 function sanitizeObject(obj: unknown): unknown {
   if (!obj || typeof obj !== 'object') return obj;
 
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeObject(item));
+  }
+
   const record = obj as Record<string, unknown>;
   for (const key in record) {
     const lowerKey = key.toLowerCase();
