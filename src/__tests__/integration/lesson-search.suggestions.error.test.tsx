@@ -10,7 +10,9 @@ const invokeMock = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rpc: (...args: any[]) => rpcMock(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     functions: { invoke: (...args: any[]) => invokeMock(...args) },
   },
 }));

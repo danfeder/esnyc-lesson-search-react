@@ -9,6 +9,7 @@ import { BrowserRouter } from 'react-router-dom';
 const rpcMock = vi.fn();
 vi.mock('@/lib/supabase', () => ({
   supabase: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rpc: (...args: any[]) => rpcMock(...args),
   },
 }));

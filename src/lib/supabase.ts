@@ -35,11 +35,12 @@ supabase
     // }
   });
 // Helper function for handling Supabase errors
-export const handleSupabaseError = (error: any) => {
+export const handleSupabaseError = (error: unknown) => {
   logger.error('Supabase error:', error);
+  const err = error as { message?: string; code?: string };
   return {
-    message: error.message || 'An unexpected error occurred',
-    code: error.code || 'UNKNOWN_ERROR',
+    message: err.message || 'An unexpected error occurred',
+    code: err.code || 'UNKNOWN_ERROR',
   };
 };
 

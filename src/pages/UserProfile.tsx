@@ -104,7 +104,9 @@ export function UserProfile() {
       if (schoolsError) throw schoolsError;
 
       const schools =
-        (userSchoolData?.map((us: any) => us.schools).filter(Boolean) as School[]) || [];
+        (userSchoolData
+          ?.map((us: { schools: School | null }) => us.schools)
+          .filter(Boolean) as School[]) || [];
       setUserSchools(schools);
     } catch (error) {
       logger.error('Error loading profile:', error);

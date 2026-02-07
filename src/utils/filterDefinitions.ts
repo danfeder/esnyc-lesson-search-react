@@ -6,7 +6,7 @@ interface FilterOption {
   children?: FilterOption[];
 }
 
-interface FilterConfig {
+export interface FilterConfig {
   label: string;
   type: 'single' | 'multiple' | 'hierarchical' | 'creatable';
   options: FilterOption[];

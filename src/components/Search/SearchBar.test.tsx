@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import { useSearchStore } from '@/stores/searchStore';
 vi.mock('@/stores/searchStore');
 // Suggestions moved to SearchPage; no dynamic suggestions from SearchBar
 vi.mock('@/utils/debounce', () => ({
-  debounce: (fn: any) => fn,
+  debounce: (fn: unknown) => fn,
 }));
 
 describe('SearchBar', () => {
@@ -26,7 +26,7 @@ describe('SearchBar', () => {
     });
 
     // Setup default mock implementation
-    (useSearchStore as any).mockReturnValue({
+    (useSearchStore as unknown as Mock).mockReturnValue({
       filters: { query: '' },
       setFilters: mockSetFilters,
     });
@@ -56,7 +56,7 @@ describe('SearchBar', () => {
     });
 
     it('should display current search query', () => {
-      (useSearchStore as any).mockReturnValue({
+      (useSearchStore as unknown as Mock).mockReturnValue({
         filters: { query: 'tomato salad' },
         setFilters: mockSetFilters,
       });
@@ -67,7 +67,7 @@ describe('SearchBar', () => {
     });
 
     it('should show clear button when search query exists', () => {
-      (useSearchStore as any).mockReturnValue({
+      (useSearchStore as unknown as Mock).mockReturnValue({
         filters: { query: 'tomato' },
         setFilters: mockSetFilters,
       });
@@ -102,7 +102,7 @@ describe('SearchBar', () => {
 
     it('should clear search when clear button is clicked', async () => {
       const user = userEvent.setup();
-      (useSearchStore as any).mockReturnValue({
+      (useSearchStore as unknown as Mock).mockReturnValue({
         filters: { query: 'tomato' },
         setFilters: mockSetFilters,
       });
@@ -158,7 +158,7 @@ describe('SearchBar', () => {
     });
 
     it('should have accessible label for clear button', () => {
-      (useSearchStore as any).mockReturnValue({
+      (useSearchStore as unknown as Mock).mockReturnValue({
         filters: { query: 'tomato' },
         setFilters: mockSetFilters,
       });
@@ -211,7 +211,7 @@ describe('SearchBar', () => {
         </QueryClientProvider>
       );
 
-      (useSearchStore as any).mockReturnValue({
+      (useSearchStore as unknown as Mock).mockReturnValue({
         filters: { query: 'new query' },
         setFilters: mockSetFilters,
       });

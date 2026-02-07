@@ -3,7 +3,7 @@ import { verifyUserManagementSetup, setupAdminUser } from '@/utils/verifyUserMan
 import { CheckCircle, XCircle, AlertCircle, Shield } from 'lucide-react';
 
 export function VerifySetup() {
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<Record<string, boolean> | null>(null);
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
 

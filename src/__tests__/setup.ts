@@ -141,6 +141,7 @@ global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
 // Mock LazyTabPanel to render content immediately in tests
 vi.mock('@/components/Filters/LazyTabPanel', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   LazyTabPanel: ({ children, className }: any) =>
     React.createElement('div', { className, role: 'tabpanel' }, children),
 }));
@@ -151,26 +152,31 @@ vi.mock('@headlessui/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@headlessui/react')>();
 
   // Create a simple Transition that renders children immediately
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MockTransition = ({ show, children }: any) => {
     if (show === false) return null;
     return React.createElement(React.Fragment, null, children);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   MockTransition.Child = ({ children }: any) => {
     return React.createElement(React.Fragment, null, children);
   };
 
   // Create a mock Disclosure that always renders its panel content
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MockDisclosure = ({ children, defaultOpen: _defaultOpen }: any) => {
     // Pass open=true to children so panel is always visible in tests
     const childContent = typeof children === 'function' ? children({ open: true }) : children;
     return React.createElement(React.Fragment, null, childContent);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   MockDisclosure.Button = ({ children, className, ...props }: any) => {
     return React.createElement('button', { className, ...props }, children);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   MockDisclosure.Panel = ({ children, className }: any) => {
     // Always render panel content in tests
     return React.createElement('div', { className }, children);
@@ -199,6 +205,7 @@ afterEach(() => {
   window.localStorage.clear();
 });
 // Polyfill animations API early to avoid Headless UI warnings
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Elem: any = typeof globalThis !== 'undefined' ? (globalThis as any).Element : undefined;
 if (Elem && !('getAnimations' in Elem.prototype)) {
   Object.defineProperty(Elem.prototype, 'getAnimations', {

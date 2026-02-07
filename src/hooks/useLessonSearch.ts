@@ -89,7 +89,7 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
     queryFn: async ({ pageParam }) => {
       const currentPage = (pageParam as number) || 0;
 
-      const searchParams: Record<string, any> = {
+      const searchParams: Record<string, string | string[] | number | undefined> = {
         search_query: filters.query || undefined,
         filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : undefined,
         filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : undefined,

@@ -14,7 +14,13 @@ export function SubmissionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState<any>(null);
+  const [submissionResult, setSubmissionResult] = useState<{
+    submissionId: string;
+    extractedTitle: string;
+    status: string;
+    duplicatesFound: number;
+    topDuplicates?: Array<{ title: string; similarityScore: number; matchType: string }>;
+  } | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
@@ -248,7 +254,7 @@ export function SubmissionPage() {
                           submissionResult.topDuplicates.length > 0 && (
                             <div className="mt-3 space-y-2">
                               <p className="text-sm font-medium text-gray-700">Top matches:</p>
-                              {submissionResult.topDuplicates.map((dup: any, idx: number) => (
+                              {submissionResult.topDuplicates.map((dup, idx) => (
                                 <div
                                   key={idx}
                                   className="text-sm bg-white p-2 rounded border border-gray-200"

@@ -8,8 +8,8 @@ export interface RpcRowLike {
   summary: string;
   file_link: string;
   grade_levels: string[];
-  metadata: Record<string, any> | null;
-  confidence?: Record<string, any>;
+  metadata: Record<string, unknown> | null;
+  confidence?: Record<string, unknown>;
   total_count?: number;
 }
 
@@ -45,7 +45,7 @@ export function makeRpcRow(overrides: Partial<RpcRowLike> = {}): RpcRowLike {
   };
 }
 
-export function makeSmartSearchPayload(overrides: any = {}) {
+export function makeSmartSearchPayload(overrides: Record<string, unknown> = {}) {
   // Mimics the payload returned by the smart-search edge function
   return {
     lessons: overrides.lessons ?? [],

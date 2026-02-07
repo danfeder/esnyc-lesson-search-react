@@ -166,17 +166,19 @@ export function AdminUsers() {
           // Create schools map
           const schoolsMap = new Map<string, Array<{ id: string; name: string }>>();
           if (!schoolsError && userSchoolsData) {
-            userSchoolsData.forEach((us: any) => {
-              if (!schoolsMap.has(us.user_id)) {
-                schoolsMap.set(us.user_id, []);
-              }
-              if (us.schools) {
-                const userSchools = schoolsMap.get(us.user_id);
-                if (userSchools) {
-                  userSchools.push(us.schools);
+            userSchoolsData.forEach(
+              (us: { user_id: string; schools: { id: string; name: string } | null }) => {
+                if (!schoolsMap.has(us.user_id)) {
+                  schoolsMap.set(us.user_id, []);
+                }
+                if (us.schools) {
+                  const userSchools = schoolsMap.get(us.user_id);
+                  if (userSchools) {
+                    userSchools.push(us.schools);
+                  }
                 }
               }
-            });
+            );
           }
 
           // Merge profiles with emails and schools

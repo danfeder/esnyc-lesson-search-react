@@ -26,6 +26,7 @@ interface VirtualizedTableProps<T> {
 }
 
 // Loading skeleton row
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LoadingRow: React.FC<{ columns: Column<any>[] }> = ({ columns }) => (
   <tr className="animate-pulse">
     {columns.map((col) => (
