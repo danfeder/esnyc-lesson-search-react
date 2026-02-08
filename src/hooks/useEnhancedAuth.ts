@@ -14,43 +14,7 @@ export function useEnhancedAuth(): AuthContextValue {
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check initial auth state
-    checkUser();
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        fetchUserProfile(session.user);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-      if (authUser) {
-        await fetchUserProfile(authUser);
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      logger.error('Error checking user:', error);
-      setLoading(false);
-    }
-  };
-
-  const fetchUserProfile = async (authUser: User) => {
+  const fetchUserProfile = useCallback(async (authUser: User) => {
     try {
       // First, check if profile exists
       const { data, error } = await supabase
@@ -117,7 +81,42 @@ export function useEnhancedAuth(): AuthContextValue {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const checkUser = useCallback(async () => {
+    try {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      if (authUser) {
+        await fetchUserProfile(authUser);
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      logger.error('Error checking user:', error);
+      setLoading(false);
+    }
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    // Check initial auth state
+    checkUser();
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUserProfile(session.user);
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [checkUser, fetchUserProfile]);
 
   // Calculate effective permissions
   const permissions = useMemo(() => {
