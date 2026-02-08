@@ -42,7 +42,7 @@ const initialViewState: ViewState = {
 
 export const useSearchStore = create<SearchState>()(
   devtools(
-    (set, get) => ({
+    (set) => ({
       // Initial state
       filters: initialFilters,
       viewState: initialViewState,
@@ -67,51 +67,54 @@ export const useSearchStore = create<SearchState>()(
 
       // Filter helpers
       addFilter: (key, value) => {
-        const { filters } = get();
-        const currentValues = filters[key] as string[];
-
-        if (Array.isArray(currentValues) && !currentValues.includes(value)) {
-          set((state) => ({
-            filters: {
-              ...state.filters,
-              [key]: [...currentValues, value],
-            },
-            viewState: { ...state.viewState, currentPage: 1 },
-          }));
-        }
+        set((state) => {
+          const currentValues = state.filters[key] as string[];
+          if (Array.isArray(currentValues) && !currentValues.includes(value)) {
+            return {
+              filters: {
+                ...state.filters,
+                [key]: [...currentValues, value],
+              },
+              viewState: { ...state.viewState, currentPage: 1 },
+            };
+          }
+          return state;
+        });
       },
 
       removeFilter: (key, value) => {
-        const { filters } = get();
-        const currentValues = filters[key] as string[];
-
-        if (Array.isArray(currentValues)) {
-          set((state) => ({
-            filters: {
-              ...state.filters,
-              [key]: currentValues.filter((v) => v !== value),
-            },
-            viewState: { ...state.viewState, currentPage: 1 },
-          }));
-        }
+        set((state) => {
+          const currentValues = state.filters[key] as string[];
+          if (Array.isArray(currentValues)) {
+            return {
+              filters: {
+                ...state.filters,
+                [key]: currentValues.filter((v) => v !== value),
+              },
+              viewState: { ...state.viewState, currentPage: 1 },
+            };
+          }
+          return state;
+        });
       },
 
       toggleFilter: (key, value) => {
-        const { filters } = get();
-        const currentValues = filters[key] as string[];
-
-        if (Array.isArray(currentValues)) {
-          const hasValue = currentValues.includes(value);
-          set((state) => ({
-            filters: {
-              ...state.filters,
-              [key]: hasValue
-                ? currentValues.filter((v) => v !== value)
-                : [...currentValues, value],
-            },
-            viewState: { ...state.viewState, currentPage: 1 },
-          }));
-        }
+        set((state) => {
+          const currentValues = state.filters[key] as string[];
+          if (Array.isArray(currentValues)) {
+            const hasValue = currentValues.includes(value);
+            return {
+              filters: {
+                ...state.filters,
+                [key]: hasValue
+                  ? currentValues.filter((v) => v !== value)
+                  : [...currentValues, value],
+              },
+              viewState: { ...state.viewState, currentPage: 1 },
+            };
+          }
+          return state;
+        });
       },
     }),
     {

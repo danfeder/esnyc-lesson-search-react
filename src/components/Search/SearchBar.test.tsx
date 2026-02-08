@@ -9,7 +9,11 @@ import { useSearchStore } from '@/stores/searchStore';
 vi.mock('@/stores/searchStore');
 // Suggestions moved to SearchPage; no dynamic suggestions from SearchBar
 vi.mock('@/utils/debounce', () => ({
-  debounce: (fn: unknown) => fn,
+  debounce: (fn: Function) => {
+    const debounced = (...args: unknown[]) => fn(...args);
+    debounced.cancel = () => {};
+    return debounced;
+  },
 }));
 
 describe('SearchBar', () => {
