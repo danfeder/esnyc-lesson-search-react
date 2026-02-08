@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20260208140000_cleanup_search_triggers.sql
+-- Migration: 20260209140000_cleanup_search_triggers.sql
 -- =====================================================
 -- Description: Remove duplicate search vector triggers on lessons table.
 --   Three triggers fire update_lesson_search_vector() / update_search_vector()

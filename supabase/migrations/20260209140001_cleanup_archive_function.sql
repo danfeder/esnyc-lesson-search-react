@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20260208140001_cleanup_archive_function.sql
+-- Migration: 20260209140001_cleanup_archive_function.sql
 -- =====================================================
 -- Description: Remove dead duplicate_pairs reference from archive_duplicate_lesson.
 --   The function conditionally deletes from duplicate_pairs (with IF EXISTS check),

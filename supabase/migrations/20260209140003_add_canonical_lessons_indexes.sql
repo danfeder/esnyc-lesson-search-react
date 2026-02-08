@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20260208140003_add_canonical_lessons_indexes.sql
+-- Migration: 20260209140003_add_canonical_lessons_indexes.sql
 -- =====================================================
 -- Description: Add missing indexes on canonical_lessons for common query patterns.
 --   The resolved_by FK column has no index, causing sequential scans

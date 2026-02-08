@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20260208140002_add_dismissals_update_delete_policies.sql
+-- Migration: 20260209140002_add_dismissals_update_delete_policies.sql
 -- =====================================================
 -- Description: Add missing UPDATE and DELETE RLS policies on
 --   duplicate_group_dismissals table. Currently admins can create

@@ -103,7 +103,7 @@ async function testRLSEnabled() {
       'user_invitations', 'user_management_audit', 'duplicate_pairs',
       'duplicate_resolution_archive', 'schools', 'user_schools',
       'search_synonyms', 'cultural_heritage_hierarchy', 'lesson_archive',
-      'canonical_lessons', 'duplicate_resolutions'
+      'canonical_lessons', 'duplicate_resolutions', 'duplicate_group_dismissals'
     ];
     
     console.log('📋 Expected tables with RLS:');
@@ -168,6 +168,20 @@ async function testPolicyScenarios() {
       test: async () => {
         const { data, error } = await supabase.from('user_profiles').select('id').limit(1);
         return !error;
+      },
+    },
+    // duplicate_group_dismissals policy tests
+    {
+      name: 'Anonymous cannot read duplicate_group_dismissals',
+      test: async () => {
+        const anonClient = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+        const { data, error } = await anonClient
+          .from('duplicate_group_dismissals')
+          .select('id')
+          .limit(1);
+        // RLS hides all rows from anon users (no SELECT policy for anon)
+        // which also prevents UPDATE/DELETE since rows are invisible
+        return !error && (!data || data.length === 0);
       },
     },
     // archive_duplicate_lesson function tests
