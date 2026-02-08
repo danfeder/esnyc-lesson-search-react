@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useCallback, FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import {
@@ -55,17 +55,7 @@ export function AcceptInvitation() {
   const gradeOptions = ['3K', '4K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
   const subjectOptions = ['Math', 'Science', 'Literacy/ELA', 'Social Studies', 'Health', 'Arts'];
 
-  useEffect(() => {
-    if (token) {
-      validateInvitation();
-    } else {
-      setError('Invalid invitation link');
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
-  const validateInvitation = async () => {
+  const validateInvitation = useCallback(async () => {
     try {
       // Fetch invitation by token
       const { data, error: fetchError } = await supabase
@@ -111,7 +101,16 @@ export function AcceptInvitation() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      validateInvitation();
+    } else {
+      setError('Invalid invitation link');
+      setLoading(false);
+    }
+  }, [token, validateInvitation]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
