@@ -121,10 +121,3 @@ export interface ApiResponse<T> {
   error?: string;
   message?: string;
 }
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  count: number;
-  page: number;
-  totalPages: number;
-}

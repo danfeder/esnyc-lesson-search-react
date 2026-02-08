@@ -37,13 +37,4 @@ export function shouldVirtualize(
   }
 }
 
-/**
- * Debounce function for resize events
- */
-export function debounceResize(callback: () => void, delay: number = 150): () => void {
-  let timeoutId: NodeJS.Timeout;
-  return () => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(callback, delay);
-  };
-}
+// debounceResize removed — use debounce from '@/utils/debounce' instead

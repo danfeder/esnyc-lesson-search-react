@@ -1,5 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  applyFilters,
+  applySorting,
+  applyPagination,
+  transformRow,
+  type SearchFilters,
+  type SortBy,
+} from '../_shared/search-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -113,20 +121,10 @@ function buildSmartSearchQuery(query: string): string {
 
 interface SearchRequest {
   query?: string;
-  filters?: {
-    gradeLevels?: string[];
-    thematicCategories?: string[];
-    seasons?: string[];
-    coreCompetencies?: string[];
-    culturalHeritage?: string[];
-    location?: string[];
-    activityType?: string[];
-    lessonFormat?: string;
-    includeAllSeasons?: boolean;
-  };
+  filters?: SearchFilters;
   page?: number;
   limit?: number;
-  sortBy?: 'relevance' | 'title' | 'confidence' | 'grade' | 'modified';
+  sortBy?: SortBy;
 }
 
 serve(async (req) => {
@@ -142,7 +140,7 @@ serve(async (req) => {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
         },
-      }
+      },
     );
 
     const body: SearchRequest = await req.json();
@@ -166,81 +164,10 @@ serve(async (req) => {
       supabaseQuery = supabaseQuery.textSearch('search_vector', smartSearchQuery);
     }
 
-    // Apply filters (same as before)
-    if (filters.gradeLevels && filters.gradeLevels.length > 0) {
-      supabaseQuery = supabaseQuery.overlaps('grade_levels', filters.gradeLevels);
-    }
-
-    if (filters.thematicCategories && filters.thematicCategories.length > 0) {
-      supabaseQuery = supabaseQuery.overlaps(
-        'metadata->thematicCategories',
-        filters.thematicCategories
-      );
-    }
-
-    if (filters.seasons && filters.seasons.length > 0) {
-      if (filters.includeAllSeasons) {
-        supabaseQuery = supabaseQuery.or(
-          `metadata->seasonTiming.ov.{${filters.seasons.join(',')}},metadata->seasonTiming.cs.{"All Seasons"}`
-        );
-      } else {
-        supabaseQuery = supabaseQuery.overlaps('metadata->seasonTiming', filters.seasons);
-      }
-    }
-
-    if (filters.coreCompetencies && filters.coreCompetencies.length > 0) {
-      supabaseQuery = supabaseQuery.overlaps(
-        'metadata->coreCompetencies',
-        filters.coreCompetencies
-      );
-    }
-
-    if (filters.culturalHeritage && filters.culturalHeritage.length > 0) {
-      supabaseQuery = supabaseQuery.overlaps(
-        'metadata->culturalHeritage',
-        filters.culturalHeritage
-      );
-    }
-
-    if (filters.location && filters.location.length > 0) {
-      supabaseQuery = supabaseQuery.overlaps('metadata->locationRequirements', filters.location);
-    }
-
-    if (filters.activityType && filters.activityType.length > 0) {
-      supabaseQuery = supabaseQuery.overlaps('metadata->activityType', filters.activityType);
-    }
-
-    if (filters.lessonFormat) {
-      supabaseQuery = supabaseQuery.eq('metadata->>lessonFormat', filters.lessonFormat);
-    }
-
-    // Apply sorting
-    switch (sortBy) {
-      case 'title':
-        supabaseQuery = supabaseQuery.order('title', { ascending: true });
-        break;
-      case 'confidence':
-        supabaseQuery = supabaseQuery.order('confidence->overall', { ascending: false });
-        break;
-      case 'grade':
-        supabaseQuery = supabaseQuery.order('grade_levels', { ascending: true });
-        break;
-      case 'modified':
-        supabaseQuery = supabaseQuery.order('updated_at', { ascending: false });
-        break;
-      default: // relevance
-        if (query && query.trim()) {
-          // For text search, PostgreSQL automatically orders by relevance (ts_rank)
-          // We can add a secondary sort by confidence
-          supabaseQuery = supabaseQuery.order('confidence->overall', { ascending: false });
-        } else {
-          supabaseQuery = supabaseQuery.order('confidence->overall', { ascending: false });
-        }
-    }
-
-    // Apply pagination
-    const offset = (page - 1) * limit;
-    supabaseQuery = supabaseQuery.range(offset, offset + limit - 1);
+    // Apply shared filters, sorting, pagination
+    supabaseQuery = applyFilters(supabaseQuery, filters);
+    supabaseQuery = applySorting(supabaseQuery, sortBy, !!(query && query.trim()));
+    supabaseQuery = applyPagination(supabaseQuery, page, limit);
 
     const { data, error, count } = await supabaseQuery;
 
@@ -248,45 +175,8 @@ serve(async (req) => {
       throw error;
     }
 
-    // Transform data to match frontend expectations
-    const lessons = (data || []).map((row: any) => ({
-      lessonId: row.lesson_id,
-      title: row.title,
-      summary: row.summary,
-      fileLink: row.file_link,
-      gradeLevels: row.grade_levels || [],
-      metadata: {
-        // Map all metadata fields properly, using both direct columns and metadata object
-        thematicCategories: row.thematic_categories || row.metadata?.thematicCategories || [],
-        seasonTiming: row.season_timing || row.metadata?.seasonTiming || [],
-        coreCompetencies: row.core_competencies || row.metadata?.coreCompetencies || [],
-        culturalHeritage: row.cultural_heritage || row.metadata?.culturalHeritage || [],
-        locationRequirements: row.location_requirements || row.metadata?.locationRequirements || [],
-        activityType: row.activity_type || row.metadata?.activityType || [],
-        lessonFormat: row.lesson_format || row.metadata?.lessonFormat || '',
-        mainIngredients: row.main_ingredients || row.metadata?.mainIngredients || [],
-        skills: row.metadata?.skills || [],
-        equipment: row.metadata?.equipment || [],
-        duration: row.metadata?.duration,
-        groupSize: row.metadata?.groupSize,
-        gardenSkills: row.garden_skills || row.metadata?.gardenSkills || [],
-        cookingSkills: row.cooking_skills || row.metadata?.cookingSkills || [],
-        cookingMethods: row.cooking_methods || row.metadata?.cookingMethods || [],
-        observancesHolidays: row.observances_holidays || row.metadata?.observancesHolidays || [],
-        academicIntegration: row.academic_integration || row.metadata?.academicIntegration || [],
-        socialEmotionalLearning:
-          row.social_emotional_learning || row.metadata?.socialEmotionalLearning || [],
-        culturalResponsivenessFeatures:
-          row.cultural_responsiveness_features ||
-          row.metadata?.culturalResponsivenessFeatures ||
-          [],
-      },
-      confidence: row.confidence,
-      last_modified: row.last_modified,
-      processing_notes: row.processing_notes,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    }));
+    // deno-lint-ignore no-explicit-any
+    const lessons = (data || []).map((row: any) => transformRow(row));
 
     // Include search suggestions if no results found
     let suggestions: string[] = [];
@@ -306,7 +196,7 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      },
     );
   } catch (error) {
     console.error('Smart search error:', error);
@@ -318,7 +208,7 @@ serve(async (req) => {
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      },
     );
   }
 });
