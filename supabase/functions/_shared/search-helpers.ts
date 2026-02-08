@@ -63,7 +63,7 @@ export function applyFilters(
   }
 
   if (filters.location?.length) {
-    q = q.overlaps('metadata->locationRequirements', filters.location);
+    q = q.overlaps('location_requirements', filters.location);
   }
 
   if (filters.activityType?.length) {
