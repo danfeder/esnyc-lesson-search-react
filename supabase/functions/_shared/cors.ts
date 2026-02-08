@@ -20,7 +20,7 @@ function isAllowedOrigin(origin: string | null): origin is string {
               '^' +
                 allowed
                   .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                  .replace(/\\\*/g, '[a-z0-9-]+') +
+                  .replace(/\\\*/g, '[a-zA-Z0-9-]+') +
                 '$'
             )
           )

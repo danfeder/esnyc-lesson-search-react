@@ -40,7 +40,12 @@ serve(async (req) => {
       );
     }
     const token = authHeader.replace('Bearer ', '');
-    const isServiceRole = token === supabaseServiceKey;
+    // Use constant-time comparison to prevent timing attacks
+    const tokenBytes = new TextEncoder().encode(token);
+    const keyBytes = new TextEncoder().encode(supabaseServiceKey);
+    const isServiceRole =
+      tokenBytes.length === keyBytes.length &&
+      crypto.subtle.timingSafeEqual(tokenBytes, keyBytes);
 
     if (!isServiceRole) {
       // Verify user token
