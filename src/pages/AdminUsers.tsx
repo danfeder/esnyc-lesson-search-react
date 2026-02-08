@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -54,37 +54,7 @@ export function AdminUsers() {
     setFilters((prev) => ({ ...prev, search: debouncedSearch }));
   }, [debouncedSearch]);
 
-  useEffect(() => {
-    loadUsers();
-  }, [filters, page]);
-
-  useEffect(() => {
-    loadSchools();
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (bulkActionsRef.current && !bulkActionsRef.current.contains(event.target as Node)) {
-        setShowBulkActions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const loadSchools = async () => {
-    try {
-      const { data, error } = await supabase.from('schools').select('id, name').order('name');
-      if (!error && data) {
-        setSchools(data);
-      }
-    } catch (error) {
-      logger.error('Error loading schools:', error);
-    }
-  };
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       // Build the base query with optional JOIN for school filtering
@@ -247,6 +217,36 @@ export function AdminUsers() {
       logger.error('Error loading users:', error);
     } finally {
       setLoading(false);
+    }
+  }, [filters, page]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  useEffect(() => {
+    loadSchools();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (bulkActionsRef.current && !bulkActionsRef.current.contains(event.target as Node)) {
+        setShowBulkActions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const loadSchools = async () => {
+    try {
+      const { data, error } = await supabase.from('schools').select('id, name').order('name');
+      if (!error && data) {
+        setSchools(data);
+      }
+    } catch (error) {
+      logger.error('Error loading schools:', error);
     }
   };
 

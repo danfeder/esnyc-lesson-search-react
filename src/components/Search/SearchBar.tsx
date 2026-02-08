@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { useSearchStore } from '@/stores/searchStore';
 import { debounce } from '@/utils/debounce';
@@ -15,10 +15,11 @@ export const SearchBar: React.FC = () => {
   // Suggestions are now rendered in SearchPage when no results exist.
 
   // Debounced search to avoid too many API calls
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      setFilters({ query });
-    }, 300),
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((query: string) => {
+        setFilters({ query });
+      }, 300),
     [setFilters]
   );
 

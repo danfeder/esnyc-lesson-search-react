@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
@@ -66,14 +66,7 @@ export function UserProfile() {
   // Subject options
   const subjectOptions = ['Math', 'Science', 'Literacy/ELA', 'Social Studies', 'Health', 'Arts'];
 
-  useEffect(() => {
-    if (user && !authLoading) {
-      loadUserProfile();
-      loadSubmissions();
-    }
-  }, [user, authLoading]);
-
-  const loadUserProfile = async () => {
+  const loadUserProfile = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -113,9 +106,9 @@ export function UserProfile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const loadSubmissions = async () => {
+  const loadSubmissions = useCallback(async () => {
     if (!user) return;
 
     setLoadingSubmissions(true);
@@ -146,7 +139,14 @@ export function UserProfile() {
     } finally {
       setLoadingSubmissions(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user && !authLoading) {
+      loadUserProfile();
+      loadSubmissions();
+    }
+  }, [user, authLoading, loadUserProfile, loadSubmissions]);
 
   const handleSave = async () => {
     if (!user) return;

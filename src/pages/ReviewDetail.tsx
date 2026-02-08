@@ -168,26 +168,7 @@ export function ReviewDetail() {
     return errors;
   };
 
-  useEffect(() => {
-    if (id) {
-      loadSubmission();
-    }
-  }, [id]);
-
-  // Focus management for validation errors
-  useEffect(() => {
-    if (validationErrors.length > 0) {
-      // Focus the first field with an error
-      const firstInvalidField = document.querySelector('[aria-invalid="true"]');
-      if (firstInvalidField && 'focus' in firstInvalidField) {
-        // eslint-disable-next-line no-undef
-        (firstInvalidField as HTMLElement).focus();
-        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  }, [validationErrors]);
-
-  const loadSubmission = async () => {
+  const loadSubmission = useCallback(async () => {
     try {
       // First, get the submission including embedding
       const { data: submissionData, error: submissionError } = await supabase
@@ -291,7 +272,26 @@ export function ReviewDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      loadSubmission();
+    }
+  }, [id, loadSubmission]);
+
+  // Focus management for validation errors
+  useEffect(() => {
+    if (validationErrors.length > 0) {
+      // Focus the first field with an error
+      const firstInvalidField = document.querySelector('[aria-invalid="true"]');
+      if (firstInvalidField && 'focus' in firstInvalidField) {
+        // eslint-disable-next-line no-undef
+        (firstInvalidField as HTMLElement).focus();
+        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [validationErrors]);
 
   const handleSaveReview = async () => {
     if (!submission) return;
