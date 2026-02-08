@@ -100,7 +100,8 @@ serve(async (req) => {
     // POST /password-reset/request - Request password reset (public endpoint)
     if (req.method === 'POST' && pathname === '/password-reset/request') {
       // Rate limit password reset requests
-      const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+      const forwardedFor = req.headers.get('x-forwarded-for');
+      const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
       const { allowed, retryAfter } = checkRateLimit(clientIp);
       if (!allowed) {
         return new Response(
