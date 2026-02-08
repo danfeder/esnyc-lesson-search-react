@@ -55,35 +55,5 @@ export const CULTURAL_HIERARCHY: Record<string, string[]> = {
   Levantine: ['Palestinian', 'Lebanese', 'Syrian', 'Jordanian'],
 };
 
-// Ingredient groupings for search
-export const INGREDIENT_GROUPS: Record<string, string[]> = {
-  'Root vegetables': ['potatoes', 'carrots', 'beets', 'turnips', 'radishes'],
-  'Winter squash': ['butternut', 'honeynut', 'pumpkin', 'acorn squash', 'kabocha'],
-  'Leafy greens': ['collards', 'kale', 'lettuce', 'spinach', 'chard'],
-  Nightshades: ['tomatoes', 'peppers', 'eggplant'],
-  Alliums: ['onions', 'garlic', 'scallions', 'leeks'],
-  Cruciferous: ['cauliflower', 'cabbage', 'broccoli', 'brussels sprouts'],
-};
-
-// Grade level groupings
-export const GRADE_GROUPS = {
-  'early-childhood': {
-    name: 'Early Childhood (3K-PK)',
-    grades: ['3K', 'PK'],
-  },
-  'lower-elementary': {
-    name: 'Lower Elementary (K-2)',
-    grades: ['K', '1', '2'],
-  },
-  'upper-elementary': {
-    name: 'Upper Elementary (3-5)',
-    grades: ['3', '4', '5'],
-  },
-  middle: {
-    name: 'Middle School (6-8)',
-    grades: ['6', '7', '8'],
-  },
-};
-
 // Note: Option lists for filters have moved to `filterDefinitions.ts` (Phase 2B).
-// The remaining exports are still used by cultural heritage widgets and helpers.
+// CULTURAL_HIERARCHY is used by CulturalHeritageFilter and VirtualizedCulturalHeritageFilter.

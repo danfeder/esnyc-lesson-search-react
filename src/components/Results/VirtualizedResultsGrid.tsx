@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { debounceResize } from '@/utils/virtualization';
+import { debounce } from '@/utils/debounce';
 import { Lesson } from '@/types';
 import { LessonCard } from './LessonCard';
 
@@ -67,12 +67,15 @@ export const VirtualizedResultsGrid: React.FC<VirtualizedResultsGridProps> = ({
 
   // Update column count on resize with debouncing
   useEffect(() => {
-    const handleResize = debounceResize(() => {
+    const handleResize = debounce(() => {
       setColumnCount(window.innerWidth < MOBILE_BREAKPOINT ? 1 : 2);
     }, 150);
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      handleResize.cancel();
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   // Calculate total rows needed
