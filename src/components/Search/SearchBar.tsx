@@ -23,6 +23,13 @@ export const SearchBar: React.FC = () => {
     [setFilters]
   );
 
+  // Cancel pending debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalQuery(value);
