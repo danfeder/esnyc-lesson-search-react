@@ -59,6 +59,8 @@ export const GoogleDocEmbed: React.FC<GoogleDocEmbedProps> = ({
 
   const openInGoogleDocs = () => {
     const url = docUrl || `https://docs.google.com/document/d/${docId}/edit`;
+    // Validate URL is a Google Docs URL to prevent javascript: protocol XSS
+    if (!url.startsWith('https://docs.google.com/')) return;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 

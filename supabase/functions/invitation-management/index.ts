@@ -287,8 +287,8 @@ serve(async (req) => {
 
     // GET /invitations - List invitations
     if (req.method === 'GET' && pathParts.length === 1 && pathParts[0] === 'invitations') {
-      const page = parseInt(url.searchParams.get('page') || '1');
-      const limit = parseInt(url.searchParams.get('limit') || '20');
+      const page = Math.max(1, parseInt(url.searchParams.get('page') || '1') || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20') || 20));
       const status = url.searchParams.get('status'); // pending, accepted, expired
       const search = url.searchParams.get('search');
       const offset = (page - 1) * limit;
