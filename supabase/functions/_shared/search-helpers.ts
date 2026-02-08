@@ -27,21 +27,6 @@ export type SortBy = 'relevance' | 'title' | 'confidence' | 'grade' | 'modified'
 /* ---------- helpers ---------- */
 
 /**
- * Create an authenticated Supabase client from the incoming request.
- */
-export function createSearchClient(supabaseModule: any, req: Request) {
-  return supabaseModule.createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! },
-      },
-    },
-  );
-}
-
-/**
  * Apply filter predicates to a Supabase query builder.
  * Uses the canonical metadata JSON-path names from `lessons_with_metadata`.
  */
