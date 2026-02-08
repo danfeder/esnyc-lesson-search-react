@@ -5,23 +5,49 @@ import {
   extractTextFromGoogleDoc,
   extractMetadataFromContent,
 } from '../_shared/google-docs-parser.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
 
 interface ExtractRequest {
   googleDocUrl: string;
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getRestrictedCorsHeaders(origin);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Require authentication — this function should only be invoked internally
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify the caller is using service role key or a valid user token
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const token = authHeader.replace('Bearer ', '');
+    const isServiceRole = token === supabaseServiceKey;
+
+    if (!isServiceRole) {
+      // Verify user token
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid authentication token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const { googleDocUrl } = (await req.json()) as ExtractRequest;
 
     // Extract Google Doc ID from URL

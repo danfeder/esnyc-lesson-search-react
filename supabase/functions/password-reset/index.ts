@@ -4,6 +4,39 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.1';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Rate limiting for password reset requests
+const RATE_LIMIT_WINDOW_MS = 300000; // 5 minute window
+const RATE_LIMIT_MAX_REQUESTS = 5; // Max 5 requests per 5 minutes per IP
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const clientData = requestCounts.get(ip);
+
+  if (clientData) {
+    if (now < clientData.resetTime) {
+      if (clientData.count >= RATE_LIMIT_MAX_REQUESTS) {
+        return { allowed: false, retryAfter: Math.ceil((clientData.resetTime - now) / 1000) };
+      }
+      clientData.count++;
+    } else {
+      clientData.count = 1;
+      clientData.resetTime = now + RATE_LIMIT_WINDOW_MS;
+    }
+  } else {
+    requestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+  }
+
+  // Clean up old entries to prevent memory leak
+  if (requestCounts.size > 1000) {
+    for (const [key, data] of requestCounts.entries()) {
+      if (now > data.resetTime) requestCounts.delete(key);
+    }
+  }
+
+  return { allowed: true };
+}
+
 // Get allowed origins from environment or use defaults
 const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
   'http://localhost:5173',
@@ -66,6 +99,23 @@ serve(async (req) => {
 
     // POST /password-reset/request - Request password reset (public endpoint)
     if (req.method === 'POST' && pathname === '/password-reset/request') {
+      // Rate limit password reset requests
+      const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+      const { allowed, retryAfter } = checkRateLimit(clientIp);
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+              'Retry-After': String(retryAfter),
+            },
+          }
+        );
+      }
+
       const { email } = (await req.json()) as PasswordResetRequest;
 
       if (!email) {

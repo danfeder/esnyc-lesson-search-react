@@ -41,13 +41,12 @@ serve(async (req) => {
       }
     );
 
-    const {
-      query,
-      filters = {},
-      page = 1,
-      limit = 20,
-      sortBy = 'relevance',
-    }: SearchRequest = await req.json();
+    const body: SearchRequest = await req.json();
+    const query = body.query;
+    const filters = body.filters ?? {};
+    const page = Math.max(1, Math.floor(Number(body.page) || 1));
+    const limit = Math.min(100, Math.max(1, Math.floor(Number(body.limit) || 20)));
+    const sortBy = body.sortBy ?? 'relevance';
 
     // Build the base query
     let supabaseQuery = supabaseClient
