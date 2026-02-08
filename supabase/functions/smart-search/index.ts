@@ -166,7 +166,7 @@ serve(async (req) => {
 
     // Apply shared filters, sorting, pagination
     supabaseQuery = applyFilters(supabaseQuery, filters);
-    supabaseQuery = applySorting(supabaseQuery, sortBy, !!(query && query.trim()));
+    supabaseQuery = applySorting(supabaseQuery, sortBy);
     supabaseQuery = applyPagination(supabaseQuery, page, limit);
 
     const { data, error, count } = await supabaseQuery;

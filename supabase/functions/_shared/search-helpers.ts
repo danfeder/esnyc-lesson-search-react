@@ -7,7 +7,6 @@
  */
 
 // deno-lint-ignore-file no-explicit-any
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 /* ---------- types ---------- */
 
@@ -99,7 +98,6 @@ export function applyFilters(
 export function applySorting(
   query: any,
   sortBy: SortBy,
-  hasTextQuery: boolean,
 ): any {
   switch (sortBy) {
     case 'title':
