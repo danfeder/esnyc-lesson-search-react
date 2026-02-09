@@ -92,7 +92,7 @@
     "glob": "^11.0.3",
     "http-server": "^14.1.1",
     "jsdom": "^27.3.0",
-    "openai": "^6.9.1",
+    "openai": "^6.18.0",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.12",
     "tiktoken": "^1.0.22",
