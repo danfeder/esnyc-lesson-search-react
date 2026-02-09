@@ -89,7 +89,7 @@
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
-    "glob": "^11.0.3",
+    "glob": "^13.0.1",
     "http-server": "^14.1.1",
     "jsdom": "^27.3.0",
     "openai": "^6.9.1",
