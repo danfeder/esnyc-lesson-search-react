@@ -84,7 +84,35 @@
 }
 .int-search-clear:hover { background: var(--color-esy-ink-10); color: var(--color-esy-ink); }
 
-.int-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.int-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* Topbar nav links (Submit, Review, user menu button). Ink-colored small
+   caps that shift green on hover — quiet enough to sit alongside the search
+   input without competing. */
+.int-nav-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-esy-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.int-nav-link:hover { background: var(--color-esy-paper-alt); color: var(--color-esy-green); }
+.int-nav-link--cta {
+  background: var(--color-esy-green);
+  color: var(--color-esy-white);
+}
+.int-nav-link--cta:hover { background: var(--color-esy-green-deep); color: var(--color-esy-white); }
+
 .int-count {
   font-family: var(--font-display);
   font-weight: 700;

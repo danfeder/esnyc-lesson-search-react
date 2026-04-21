@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Search,
   User,
@@ -10,33 +10,45 @@ import {
   ChevronDown,
   Users,
   BarChart3,
+  X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { AuthModal } from '@/components/Auth/AuthModal';
-import { APP_VERSION } from '@/config/version';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { Permission } from '@/types/auth';
+import { useSearchStore } from '@/stores/searchStore';
+import { debounce } from '@/utils/debounce';
 
 interface HeaderProps {
+  /** Retained for backwards compatibility with the old stats display; unused
+      in the new thin topbar. */
   totalLessons?: number;
+  /** Same — kept in the signature so App.tsx prop-passing stays untouched. */
   totalCategories?: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategories = 11 }) => {
+/**
+ * Thin paper+ink topbar (56px) used app-wide. Matches the internal design
+ * system: sprout icon + wordmark on the left, an inline search input on
+ * the search routes only, Submit/Review nav (permission-gated) + user menu
+ * on the right.
+ */
+export const Header: React.FC<HeaderProps> = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, hasPermission } = useEnhancedAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const onSearchRoute = location.pathname === '/' || location.pathname === '/search';
+
   React.useEffect(() => {
-    // Close dropdown when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -49,190 +61,197 @@ export const Header: React.FC<HeaderProps> = ({ totalLessons = 831, totalCategor
 
   return (
     <>
-      <header className="bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            {/* Logo Section */}
-            <Link to="/" className="flex items-center gap-4 hover:opacity-90 transition-opacity">
-              <div className="text-4xl">🌱</div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-                  Edible Schoolyard NYC Lesson Library
-                </h1>
-                {/* Mobile stats - compact inline display */}
-                <div className="flex md:hidden items-center gap-2 text-sm text-primary-200">
-                  <span>
-                    <span className="font-semibold text-accent-400">
-                      {totalLessons.toLocaleString()}
-                    </span>{' '}
-                    lessons
-                  </span>
-                  <span>•</span>
-                  <span>
-                    <span className="font-semibold text-accent-400">{totalCategories}</span>{' '}
-                    categories
-                  </span>
-                </div>
-                {/* Desktop version info */}
-                <p className="hidden md:block text-primary-100 text-sm">Version {APP_VERSION}</p>
-              </div>
+      <header className="int-topbar">
+        <Link to="/" className="int-brand" aria-label="ESYNYC home">
+          <img src="/icons/icon-sprout-green.png" alt="" />
+          <div className="int-brand-text">
+            ESYNYC
+            <small>Lesson Library · Internal</small>
+          </div>
+        </Link>
+
+        {onSearchRoute && <HeaderSearch />}
+
+        <nav className="int-topbar-right">
+          <Link to="/submit" className="int-nav-link int-nav-link--cta">
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Submit Lesson</span>
+          </Link>
+          {hasPermission(Permission.REVIEW_LESSONS) && (
+            <Link to="/review" className="int-nav-link">
+              <Shield className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Review</span>
             </Link>
+          )}
 
-            {/* Desktop Stats - larger display */}
-            <div className="hidden md:flex items-center gap-8">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-accent-400">
-                  {totalLessons.toLocaleString()}
-                </div>
-                <div className="text-sm text-primary-200">Total Lessons</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-accent-400">{totalCategories}</div>
-                <div className="text-sm text-primary-200">Categories</div>
-              </div>
-            </div>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setShowUserMenu((prev) => !prev)}
+              className="int-nav-link"
+              aria-label="User account"
+              aria-expanded={showUserMenu}
+            >
+              <User className="w-4 h-4" aria-hidden="true" />
+              {user && <ChevronDown className="w-3 h-3" aria-hidden="true" />}
+            </button>
 
-            {/* User Actions */}
-            <div className="flex items-center gap-4">
-              <Link
-                to="/submit"
-                className="flex items-center gap-2 px-4 py-2 bg-accent-500 hover:bg-accent-600 rounded-lg transition-colors font-medium"
+            {showUserMenu && (
+              <div
+                className="absolute right-0 top-full mt-2 w-64 rounded-md border text-sm"
+                style={{
+                  background: 'var(--color-esy-white)',
+                  borderColor: 'var(--color-esy-ink-10)',
+                  color: 'var(--color-esy-ink)',
+                  boxShadow: '0 6px 18px rgba(26,26,26,0.08)',
+                  padding: '6px 0',
+                }}
               >
-                <Plus className="w-5 h-5" />
-                <span className="hidden sm:inline">Submit Lesson</span>
-              </Link>
-              {hasPermission(Permission.REVIEW_LESSONS) && (
-                <Link
-                  to="/review"
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-400 rounded-lg transition-colors font-medium"
-                >
-                  <Shield className="w-5 h-5" />
-                  <span className="hidden sm:inline">Review</span>
-                </Link>
-              )}
-              <button
-                className="p-2 hover:bg-primary-500 rounded-lg transition-colors"
-                aria-label="Search"
-              >
-                <Search className="w-6 h-6" />
-              </button>
-
-              {/* User Menu Dropdown */}
-              <div className="relative z-50" ref={dropdownRef}>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowUserMenu(!showUserMenu);
-                  }}
-                  className="inline-flex items-center gap-2 p-2 hover:bg-primary-500 rounded-lg transition-colors"
-                  style={{ cursor: 'pointer' }}
-                  aria-label="User account"
-                  type="button"
-                >
-                  <User className="w-6 h-6" />
-                  {user && <ChevronDown className="w-4 h-4" />}
-                </button>
-
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 text-gray-700 z-50">
-                    {user ? (
+                {user ? (
+                  <>
+                    <div className="px-4 py-2 border-b border-[var(--color-esy-ink-10)]">
+                      <p className="font-medium">{user.email}</p>
+                      <p className="text-xs text-[var(--color-esy-ink-50)] capitalize">
+                        {user.role?.replace('_', ' ') || 'Teacher'}
+                      </p>
+                    </div>
+                    <MenuLink to="/profile" onSelect={() => setShowUserMenu(false)}>
+                      <User className="w-4 h-4" /> My Profile
+                    </MenuLink>
+                    {(hasPermission(Permission.VIEW_USERS) ||
+                      hasPermission(Permission.VIEW_ANALYTICS) ||
+                      hasPermission(Permission.MANAGE_DUPLICATES) ||
+                      hasPermission(Permission.REVIEW_LESSONS)) && (
                       <>
-                        <div className="px-4 py-2 border-b border-gray-200">
-                          <p className="text-sm font-medium">{user.email}</p>
-                          <p className="text-xs text-gray-500 capitalize">
-                            {user.role?.replace('_', ' ') || 'Teacher'}
-                          </p>
-                        </div>
-                        <Link
-                          to="/profile"
-                          onClick={() => setShowUserMenu(false)}
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                        >
-                          <User className="w-4 h-4" />
-                          My Profile
-                        </Link>
-                        {(hasPermission(Permission.VIEW_USERS) ||
-                          hasPermission(Permission.VIEW_ANALYTICS) ||
-                          hasPermission(Permission.MANAGE_DUPLICATES) ||
-                          hasPermission(Permission.REVIEW_LESSONS)) && (
-                          <>
-                            <div className="border-t border-gray-200 my-2"></div>
-                            <Link
-                              to="/admin"
-                              onClick={() => setShowUserMenu(false)}
-                              className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                            >
-                              <Shield className="w-4 h-4" />
-                              Admin Dashboard
-                            </Link>
-                          </>
-                        )}
-                        {hasPermission(Permission.VIEW_USERS) && (
-                          <Link
-                            to="/admin/users"
-                            onClick={() => setShowUserMenu(false)}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                          >
-                            <Users className="w-4 h-4" />
-                            Manage Users
-                          </Link>
-                        )}
-                        {hasPermission(Permission.VIEW_ANALYTICS) && (
-                          <Link
-                            to="/admin/analytics"
-                            onClick={() => setShowUserMenu(false)}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                          >
-                            <BarChart3 className="w-4 h-4" />
-                            Analytics
-                          </Link>
-                        )}
-                        {hasPermission(Permission.MANAGE_DUPLICATES) && (
-                          <Link
-                            to="/admin/duplicates"
-                            onClick={() => setShowUserMenu(false)}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                          >
-                            <Shield className="w-4 h-4" />
-                            Manage Duplicates
-                          </Link>
-                        )}
-                        <button
-                          onClick={handleSignOut}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign Out
-                        </button>
+                        <div
+                          className="my-1"
+                          style={{ borderTop: '1px solid var(--color-esy-ink-10)' }}
+                        />
+                        <MenuLink to="/admin" onSelect={() => setShowUserMenu(false)}>
+                          <Shield className="w-4 h-4" /> Admin Dashboard
+                        </MenuLink>
                       </>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          setShowAuthModal(true);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <LogIn className="w-4 h-4" />
-                        Sign In
-                      </button>
                     )}
-                  </div>
+                    {hasPermission(Permission.VIEW_USERS) && (
+                      <MenuLink to="/admin/users" onSelect={() => setShowUserMenu(false)}>
+                        <Users className="w-4 h-4" /> Manage Users
+                      </MenuLink>
+                    )}
+                    {hasPermission(Permission.VIEW_ANALYTICS) && (
+                      <MenuLink to="/admin/analytics" onSelect={() => setShowUserMenu(false)}>
+                        <BarChart3 className="w-4 h-4" /> Analytics
+                      </MenuLink>
+                    )}
+                    {hasPermission(Permission.MANAGE_DUPLICATES) && (
+                      <MenuLink to="/admin/duplicates" onSelect={() => setShowUserMenu(false)}>
+                        <Shield className="w-4 h-4" /> Manage Duplicates
+                      </MenuLink>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-[var(--color-esy-paper-alt)]"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      setShowAuthModal(true);
+                    }}
+                    className="w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-[var(--color-esy-paper-alt)]"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Sign In
+                  </button>
                 )}
               </div>
-            </div>
+            )}
           </div>
-        </div>
+        </nav>
       </header>
 
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        onSuccess={() => {
-          setShowAuthModal(false);
-        }}
+        onSuccess={() => setShowAuthModal(false)}
       />
     </>
   );
 };
+
+/** Compact search input rendered only on search routes. Mirrors the
+    debounced-store pattern previously in SearchBar.tsx. */
+function HeaderSearch() {
+  const filters = useSearchStore((s) => s.filters);
+  const setFilters = useSearchStore((s) => s.setFilters);
+  const [localQuery, setLocalQuery] = useState(filters.query);
+
+  useEffect(() => {
+    setLocalQuery(filters.query);
+  }, [filters.query]);
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((query: string) => {
+        setFilters({ query });
+      }, 300),
+    [setFilters]
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  return (
+    <div className="int-search">
+      <Search width={15} height={15} aria-hidden="true" />
+      <input
+        type="text"
+        value={localQuery}
+        onChange={(e) => {
+          setLocalQuery(e.target.value);
+          debouncedSearch(e.target.value);
+        }}
+        placeholder="Search title, summary, ingredient, skill…"
+        aria-label="Search lessons"
+      />
+      {localQuery && (
+        <button
+          type="button"
+          className="int-search-clear"
+          onClick={() => {
+            setLocalQuery('');
+            setFilters({ query: '' });
+          }}
+          aria-label="Clear search"
+        >
+          <X width={12} height={12} aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+interface MenuLinkProps {
+  to: string;
+  onSelect: () => void;
+  children: React.ReactNode;
+}
+function MenuLink({ to, onSelect, children }: MenuLinkProps) {
+  return (
+    <Link
+      to={to}
+      onClick={onSelect}
+      className="block w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-[var(--color-esy-paper-alt)]"
+    >
+      {children}
+    </Link>
+  );
+}
