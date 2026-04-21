@@ -72,17 +72,16 @@ describe('SearchPage Integration', () => {
     functionsInvokeMock.mockResolvedValue({ data: null, error: null });
   });
 
-  describe('LessonModal', () => {
-    it('opens modal when lesson card is clicked', async () => {
+  // Lesson detail drawer (replaces the old modal as part of the internal
+  // design system redesign — see docs/plans/yes-let-s-get-to-curried-cake.md).
+  describe('LessonDrawer', () => {
+    it('opens drawer when lesson row is clicked', async () => {
       const testLesson = createTestLesson({
         lesson_id: 'modal-test-1',
         title: 'Clickable Lesson',
       });
 
-      rpcMock.mockResolvedValueOnce({
-        data: [testLesson],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [testLesson], error: null });
 
       renderWithProviders(<SearchPage />);
 
@@ -91,29 +90,25 @@ describe('SearchPage Integration', () => {
       });
 
       const user = userEvent.setup();
-      // Click the lesson card (not the View Plan link)
       const lessonCards = screen.getAllByText('Clickable Lesson');
       await user.click(lessonCards[0]);
 
-      // Modal should now be visible with h1 heading (modal header uses h1)
+      // Drawer title is a level-2 heading (.int-detail-title).
       await waitFor(() => {
-        const headings = screen.getAllByRole('heading', { level: 1 });
+        const headings = screen.getAllByRole('heading', { level: 2 });
         expect(headings.some((h) => h.textContent === 'Clickable Lesson')).toBe(true);
       });
     });
 
-    it('displays correct lesson data in modal', async () => {
+    it('displays correct lesson data in drawer', async () => {
       const testLesson = createTestLesson({
         lesson_id: 'data-test-1',
         title: 'Data Verification Lesson',
-        summary: 'This is a unique summary for testing modal content.',
+        summary: 'This is a unique summary for testing drawer content.',
         grade_levels: ['K', '1', '2'],
       });
 
-      rpcMock.mockResolvedValueOnce({
-        data: [testLesson],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [testLesson], error: null });
 
       renderWithProviders(<SearchPage />);
 
@@ -122,32 +117,27 @@ describe('SearchPage Integration', () => {
       });
 
       const user = userEvent.setup();
-      // Click the title in the card
       await user.click(screen.getByText('Data Verification Lesson'));
 
       await waitFor(() => {
-        // Title in modal header
-        const headings = screen.getAllByRole('heading', { level: 1 });
+        const headings = screen.getAllByRole('heading', { level: 2 });
         expect(headings.some((h) => h.textContent === 'Data Verification Lesson')).toBe(true);
 
-        // Summary appears in both card and modal - verify there are 2 instances
+        // Summary appears in both row and drawer.
         const summaryElements = screen.getAllByText(
-          'This is a unique summary for testing modal content.'
+          'This is a unique summary for testing drawer content.'
         );
-        expect(summaryElements.length).toBe(2); // One in card, one in modal
+        expect(summaryElements.length).toBeGreaterThanOrEqual(2);
 
-        // Grade levels in modal header
-        expect(screen.getByText(/Grades K, 1, 2/)).toBeInTheDocument();
+        // intGradesLabel compresses 3+ grades to a range: "K–2".
+        expect(screen.getByText(/Grades K–2/)).toBeInTheDocument();
       });
     });
 
-    it('closes modal when X button clicked', async () => {
+    it('closes drawer when close button clicked', async () => {
       const testLesson = createTestLesson({ title: 'Closeable Lesson' });
 
-      rpcMock.mockResolvedValueOnce({
-        data: [testLesson],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [testLesson], error: null });
 
       renderWithProviders(<SearchPage />);
 
@@ -158,18 +148,15 @@ describe('SearchPage Integration', () => {
       const user = userEvent.setup();
       await user.click(screen.getByText('Closeable Lesson'));
 
-      // Modal is open - verify close button is present
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /close lesson modal/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /close lesson details/i })).toBeInTheDocument();
       });
 
-      // Click the close button using accessible selector
-      await user.click(screen.getByRole('button', { name: /close lesson modal/i }));
+      await user.click(screen.getByRole('button', { name: /close lesson details/i }));
 
-      // Modal should be closed
       await waitFor(() => {
         expect(
-          screen.queryByRole('button', { name: /close lesson modal/i })
+          screen.queryByRole('button', { name: /close lesson details/i })
         ).not.toBeInTheDocument();
       });
     });
@@ -186,10 +173,7 @@ describe('SearchPage Integration', () => {
         summary: 'Summary of second lesson',
       });
 
-      rpcMock.mockResolvedValueOnce({
-        data: [lesson1, lesson2],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [lesson1, lesson2], error: null });
 
       renderWithProviders(<SearchPage />);
 
@@ -200,40 +184,34 @@ describe('SearchPage Integration', () => {
 
       const user = userEvent.setup();
 
-      // Open first lesson
       await user.click(screen.getByText('First Sequential Lesson'));
       await waitFor(() => {
-        const headings = screen.getAllByRole('heading', { level: 1 });
+        const headings = screen.getAllByRole('heading', { level: 2 });
         expect(headings.some((h) => h.textContent === 'First Sequential Lesson')).toBe(true);
       });
 
-      // Close modal using accessible selector
-      await user.click(screen.getByRole('button', { name: /close lesson modal/i }));
+      await user.click(screen.getByRole('button', { name: /close lesson details/i }));
 
       await waitFor(() => {
         expect(
-          screen.queryByRole('button', { name: /close lesson modal/i })
+          screen.queryByRole('button', { name: /close lesson details/i })
         ).not.toBeInTheDocument();
       });
 
-      // Open second lesson
       await user.click(screen.getByText('Second Sequential Lesson'));
       await waitFor(() => {
-        const headings = screen.getAllByRole('heading', { level: 1 });
+        const headings = screen.getAllByRole('heading', { level: 2 });
         expect(headings.some((h) => h.textContent === 'Second Sequential Lesson')).toBe(true);
       });
     });
 
-    it('displays View Complete Lesson link', async () => {
+    it('displays Open Lesson Plan link', async () => {
       const testLesson = createTestLesson({
         title: 'Lesson With Link',
         file_link: 'https://docs.google.com/test-document',
       });
 
-      rpcMock.mockResolvedValueOnce({
-        data: [testLesson],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [testLesson], error: null });
 
       renderWithProviders(<SearchPage />);
 
@@ -245,9 +223,9 @@ describe('SearchPage Integration', () => {
       await user.click(screen.getByText('Lesson With Link'));
 
       await waitFor(() => {
-        const viewLink = screen.getByRole('link', { name: /view complete lesson/i });
-        expect(viewLink).toHaveAttribute('href', 'https://docs.google.com/test-document');
-        expect(viewLink).toHaveAttribute('target', '_blank');
+        const link = screen.getByRole('link', { name: /open lesson plan/i });
+        expect(link).toHaveAttribute('href', 'https://docs.google.com/test-document');
+        expect(link).toHaveAttribute('target', '_blank');
       });
     });
   });
@@ -290,9 +268,9 @@ describe('SearchPage Integration', () => {
 
       const user = userEvent.setup();
 
-      // Find the remove button by its aria-label
+      // IntActivePills renders a button with aria-label "Remove Nutrition".
       const removeButton = screen.getByRole('button', {
-        name: /remove.*filter.*nutrition/i,
+        name: /remove nutrition/i,
       });
       await user.click(removeButton);
 
@@ -302,7 +280,7 @@ describe('SearchPage Integration', () => {
       });
     });
 
-    it('Clear All button removes all filters', async () => {
+    it('Clear all button removes all filters', async () => {
       const store = useSearchStore.getState();
       store.setFilters({
         query: 'test search',
@@ -318,12 +296,13 @@ describe('SearchPage Integration', () => {
 
       renderWithProviders(<SearchPage />);
 
+      // Sidebar's "Clear all" (lowercase 'all') appears when any filter is set.
       await waitFor(() => {
-        expect(screen.getByText('Clear All')).toBeInTheDocument();
+        expect(screen.getByText('Clear all')).toBeInTheDocument();
       });
 
       const user = userEvent.setup();
-      await user.click(screen.getByText('Clear All'));
+      await user.click(screen.getByText('Clear all'));
 
       await waitFor(() => {
         const currentState = useSearchStore.getState();
@@ -358,20 +337,16 @@ describe('SearchPage Integration', () => {
       });
     });
 
-    it('shows Add Filters button', async () => {
+    it('renders Filters sidebar heading', async () => {
+      // Design rework: filters live in a persistent sidebar instead of
+      // behind a modal, so the old "Add Filters" button is gone.
       const testLesson = createTestLesson();
-      rpcMock.mockResolvedValueOnce({
-        data: [testLesson],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [testLesson], error: null });
 
       renderWithProviders(<SearchPage />);
 
       await waitFor(() => {
-        // The button has aria-label="Open filter modal to add more filters"
-        expect(
-          screen.getByRole('button', { name: /open filter modal to add more filters/i })
-        ).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /^filters$/i, level: 2 })).toBeInTheDocument();
       });
     });
   });
@@ -441,25 +416,22 @@ describe('SearchPage Integration', () => {
     });
   });
 
-  describe('ResultsHeader', () => {
+  describe('Toolbar', () => {
     it('displays total result count from API response', async () => {
-      // Test that the header shows total_count from API, not just rendered items
       const lessons = [
         createTestLesson({ lesson_id: 'r1', title: 'Result 1', total_count: 42 }),
         createTestLesson({ lesson_id: 'r2', title: 'Result 2', total_count: 42 }),
       ];
 
-      rpcMock.mockResolvedValueOnce({
-        data: lessons,
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: lessons, error: null });
 
       renderWithProviders(<SearchPage />);
 
       await waitFor(() => {
-        // Should show total_count (42), not just rendered items (2)
+        // IntToolbar renders `<strong>42</strong> lessons`.
         expect(screen.getByText('42')).toBeInTheDocument();
-        expect(screen.getByText(/lessons found/i)).toBeInTheDocument();
+        // "lessons" appears in the toolbar AND the sr-only announcer.
+        expect(screen.getAllByText(/\blessons\b/i).length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -468,16 +440,13 @@ describe('SearchPage Integration', () => {
       store.setFilters({ query: 'salad recipes' });
 
       const testLesson = createTestLesson({ total_count: 3 });
-      rpcMock.mockResolvedValueOnce({
-        data: [testLesson],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [testLesson], error: null });
 
       renderWithProviders(<SearchPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Results for/i)).toBeInTheDocument();
-        expect(screen.getByText('salad recipes')).toBeInTheDocument();
+        // IntToolbar: `<strong>N</strong> lessons matching "<query>"`.
+        expect(screen.getByText(/matching "salad recipes"/i)).toBeInTheDocument();
       });
     });
 
@@ -520,16 +489,15 @@ describe('SearchPage Integration', () => {
       const store = useSearchStore.getState();
       store.setFilters({ query: 'nonexistent search term xyz' });
 
-      rpcMock.mockResolvedValueOnce({
-        data: [],
-        error: null,
-      });
+      rpcMock.mockResolvedValueOnce({ data: [], error: null });
 
       renderWithProviders(<SearchPage />);
 
       await waitFor(() => {
+        // Toolbar still renders the "0 lessons" count; IntEmptyState surfaces
+        // the "No matches" heading.
         expect(screen.getByText('0')).toBeInTheDocument();
-        expect(screen.getByText(/lessons found/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /no matches/i })).toBeInTheDocument();
       });
     });
 

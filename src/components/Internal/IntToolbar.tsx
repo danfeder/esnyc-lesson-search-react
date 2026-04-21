@@ -25,17 +25,18 @@ export function IntToolbar({
   sortBy,
   onSortChange,
 }: IntToolbarProps) {
+  const lessonWord = count === 1 ? 'lesson' : 'lessons';
+  const trailer = query
+    ? ` ${lessonWord} matching "${query}"`
+    : activeFilterCount > 0
+      ? ` ${lessonWord} · ${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''}`
+      : ` ${lessonWord}`;
+
   return (
     <div className="int-toolbar">
       <div className="int-toolbar-left">
-        <strong>{count}</strong> lesson{count === 1 ? '' : 's'}
-        {query && <> matching "{query}"</>}
-        {!query && activeFilterCount > 0 && (
-          <>
-            {' · '}
-            {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''}
-          </>
-        )}
+        <strong>{count}</strong>
+        <span>{trailer}</span>
       </div>
       <select
         className="int-sort"

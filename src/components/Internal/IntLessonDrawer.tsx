@@ -55,7 +55,7 @@ export function IntLessonDrawer({ lesson, onClose }: IntLessonDrawerProps) {
 
   return (
     <Transition show={lesson !== null} as={Fragment}>
-      <Dialog onClose={onClose} className="relative z-50">
+      <Dialog open={lesson !== null} onClose={onClose} className="relative z-50">
         <TransitionChild
           as={Fragment}
           enter="transition-opacity duration-200"
@@ -85,7 +85,7 @@ export function IntLessonDrawer({ lesson, onClose }: IntLessonDrawerProps) {
                     type="button"
                     className="int-drawer-close"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label="Close lesson details"
                   >
                     <X width={16} height={16} />
                   </button>

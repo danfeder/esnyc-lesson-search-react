@@ -485,6 +485,29 @@
   font-size: 11px;
 }
 
+/* --- Mobile (<768px): stack sidebar above main -----------------------
+   A proper mobile treatment (filter drawer / bottom sheet) is a
+   Phase 2 follow-up; this just keeps the search usable at small widths. */
+@media (max-width: 767px) {
+  .int-topbar { padding: 0 16px; gap: 12px; }
+  .int-brand small { display: none; }
+  .int-search { max-width: none; }
+
+  .int-shell {
+    grid-template-columns: 1fr;
+  }
+  .int-sidebar {
+    position: static;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-esy-ink-10);
+    max-height: none;
+    padding: 8px 0;
+  }
+  .int-main {
+    padding: 12px 16px 32px;
+  }
+}
+
 /* --- Empty state ---------------------------------------------------- */
 .int-empty {
   padding: 48px 24px;
