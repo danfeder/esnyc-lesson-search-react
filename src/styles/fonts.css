@@ -1,0 +1,39 @@
+/* ESYNYC — Intro typeface
+   Loaded from /public/fonts/. Used by the internal design system via
+   var(--font-display) (Intro Caps) and var(--font-body) (Intro). */
+
+@font-face {
+  font-family: 'Intro';
+  src: url('/fonts/Intro-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Intro';
+  src: url('/fonts/Intro-Book.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Intro';
+  src: url('/fonts/Intro-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Intro Caps';
+  src: url('/fonts/Intro-Bold-Caps.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Intro Caps';
+  src: url('/fonts/Intro-Light-Caps.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}

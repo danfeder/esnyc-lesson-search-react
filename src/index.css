@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./styles/fonts.css";
+@import "./styles/internal.css";
 
 @theme {
   --color-primary-50: #f0f9f1;
@@ -11,7 +13,7 @@
   --color-primary-700: #1e3a21;
   --color-primary-800: #1a2f1c;
   --color-primary-900: #162619;
-  
+
   --color-accent-50: #fff7ed;
   --color-accent-100: #ffedd5;
   --color-accent-200: #fed7aa;
@@ -22,6 +24,30 @@
   --color-accent-700: #c2410c;
   --color-accent-800: #9a3412;
   --color-accent-900: #7c2d12;
+
+  /* --- ESYNYC Internal Design System tokens ---
+     Used by Header.tsx topbar and components/Internal/*. Namespaced
+     with --color-esy-* so they don't conflict with the existing
+     --color-primary-* / --color-accent-* scales that admin/submission
+     pages still use. */
+  --color-esy-green: #00843D;
+  --color-esy-green-deep: #005C2B;
+  --color-esy-red: #E03127;
+  --color-esy-yellow: #FFD100;
+  --color-esy-purple: #7E4E9C;
+  --color-esy-mint: #9ED9C3;
+  --color-esy-black: #1A1A1A;
+  --color-esy-white: #FFFFFF;
+  --color-esy-ink: #1A1A1A;
+  --color-esy-ink-70: #4D4D4D;
+  --color-esy-ink-50: #808080;
+  --color-esy-ink-30: #B3B3B3;
+  --color-esy-ink-10: #E6E6E6;
+  --color-esy-paper: #FAF8F3;
+  --color-esy-paper-alt: #F2EEE4;
+
+  --font-display: 'Intro Caps', 'Intro', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Intro', 'Helvetica Neue', Arial, sans-serif;
 }
 
 @layer base {
