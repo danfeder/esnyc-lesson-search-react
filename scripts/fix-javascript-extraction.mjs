@@ -19,6 +19,11 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
+  process.exit(1);
+}
+
 requireNonProd({ scriptName: 'fix-javascript-extraction' });
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {

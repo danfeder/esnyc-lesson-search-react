@@ -156,10 +156,14 @@ jobs:
               ``,
               `Close this issue once a successful backup has run.`,
             ].join('\n');
+            // Labels must already exist in the repo — `issues.create` returns
+            // 422 otherwise, which would silently break this whole step.
+            // `data-integrity` + `monitoring` are existing repo labels that
+            // semantically fit a failed backup notification.
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title,
               body,
-              labels: ['backup', 'urgent'],
+              labels: ['data-integrity', 'monitoring'],
             });

@@ -12,6 +12,11 @@ import { requireNonProd } from './lib/require-env.mjs';
 // Load environment variables
 dotenv.config();
 
+if (!process.env.VITE_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
+  process.exit(1);
+}
+
 requireNonProd({ scriptName: 'update-last-modified-dates' });
 
 const supabase = createClient(
