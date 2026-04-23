@@ -230,7 +230,7 @@ describe('SearchPage Integration', () => {
     });
   });
 
-  describe('FilterPills', () => {
+  describe('Active filter pills', () => {
     it('displays active filters as pills', async () => {
       // Set up filters before rendering
       const store = useSearchStore.getState();
