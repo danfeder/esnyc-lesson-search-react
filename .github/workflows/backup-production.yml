@@ -31,9 +31,13 @@ jobs:
   backup:
     name: Dump production schema + data
     runs-on: ubuntu-latest
-    # Uses the same "production" environment as migrate-production.yml so the
-    # approval policy you set there applies here too.
-    environment: production
+    # Intentionally NOT scoped to `environment: production`. GitHub environment
+    # approval gates apply to scheduled runs too — attaching one here would
+    # make every Monday's run block in Waiting-for-approval forever, defeating
+    # the whole point of automated backups. The workflow only reads from prod
+    # and uploads an artifact; no deploy-style approval is warranted. The
+    # SUPABASE_ACCESS_TOKEN secret is repo-scoped (also used without an
+    # environment gate by reset-test-db.yml for its prod dump step).
 
     steps:
       - name: Checkout code
@@ -63,6 +67,26 @@ jobs:
           echo "Schema dump: $(wc -l < backup/schema.sql) lines, $(du -h backup/schema.sql | cut -f1)"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Sanity-check dump sizes
+        # `supabase db dump` can exit 0 and write a nearly-empty file on
+        # silent auth degradation. Fail loudly if either dump is suspiciously
+        # small so we don't quietly archive a useless backup. Thresholds are
+        # intentionally conservative: schema dumps run ~2000+ lines and data
+        # dumps for ~830 lessons produce far more than 10 KB.
+        run: |
+          DATA_BYTES=$(wc -c < backup/data.sql)
+          SCHEMA_BYTES=$(wc -c < backup/schema.sql)
+          echo "data.sql: ${DATA_BYTES} bytes"
+          echo "schema.sql: ${SCHEMA_BYTES} bytes"
+          if [ "${DATA_BYTES}" -lt 10240 ]; then
+            echo "::error::data.sql is only ${DATA_BYTES} bytes (< 10 KB). Aborting backup."
+            exit 1
+          fi
+          if [ "${SCHEMA_BYTES}" -lt 10240 ]; then
+            echo "::error::schema.sql is only ${SCHEMA_BYTES} bytes (< 10 KB). Aborting backup."
+            exit 1
+          fi
 
       - name: Write manifest
         run: |
