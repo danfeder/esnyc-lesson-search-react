@@ -139,13 +139,6 @@ class MockResizeObserver {
 // eslint-disable-next-line no-undef
 global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
-// Mock LazyTabPanel to render content immediately in tests
-vi.mock('@/components/Filters/LazyTabPanel', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  LazyTabPanel: ({ children, className }: any) =>
-    React.createElement('div', { className, role: 'tabpanel' }, children),
-}));
-
 // Mock Headless UI components for testing
 // This fixes tests that fail because of CSS transitions and collapsed disclosure panels
 vi.mock('@headlessui/react', async (importOriginal) => {
