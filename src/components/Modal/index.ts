@@ -1,1 +1,0 @@
-export { LessonModal } from './LessonModal';

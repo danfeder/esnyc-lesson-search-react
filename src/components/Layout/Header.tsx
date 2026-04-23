@@ -184,8 +184,7 @@ export const Header: React.FC<HeaderProps> = () => {
   );
 };
 
-/** Compact search input rendered only on search routes. Mirrors the
-    debounced-store pattern previously in SearchBar.tsx. */
+/** Compact search input rendered only on search routes. */
 function HeaderSearch() {
   const filters = useSearchStore((s) => s.filters);
   const setFilters = useSearchStore((s) => s.setFilters);
