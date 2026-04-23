@@ -9,6 +9,8 @@ import dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+// @ts-ignore -- .mjs helper, not part of the TS project
+import { requireNonProd } from './lib/require-env.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +26,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing required environment variables');
   process.exit(1);
 }
+
+requireNonProd({ scriptName: 'identify-and-restore-missing-lessons' });
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {

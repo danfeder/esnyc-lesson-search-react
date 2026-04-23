@@ -18,6 +18,8 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 // @ts-ignore
 import { analyzeContentQuality } from './analyze-content-quality.mjs';
+// @ts-ignore -- .mjs helper, not part of the TS project
+import { requireNonProd } from './lib/require-env.mjs';
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +35,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing required environment variables');
   process.exit(1);
 }
+
+requireNonProd({ scriptName: 'analyze-duplicates-v2' });
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {

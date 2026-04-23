@@ -1,0 +1,104 @@
+name: Backup production database
+
+# Weekly snapshot of the production Supabase database, uploaded as a GitHub
+# Actions artifact (90-day retention by default, free).
+#
+# Reasoning: we're on Supabase's free tier, so Point-in-Time Recovery is not
+# available. This workflow is our primary recovery mechanism — if a migration
+# or a data-script mistake damages prod, we can restore from the most recent
+# artifact. Manual trigger is always available via the Actions UI.
+#
+# Authentication matches reset-test-db.yml: `supabase link` + SUPABASE_ACCESS_TOKEN
+# (project-scoped token already configured as a repo secret). No database
+# password needed for a logical data-only dump via the CLI.
+
+on:
+  schedule:
+    # Every Monday at 10:00 UTC (05:00 EST / 06:00 EDT). Shift if it conflicts
+    # with a heavier workflow; the exact time is cosmetic.
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+# Only one backup in flight at a time.
+concurrency:
+  group: backup-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Dump production schema + data
+    runs-on: ubuntu-latest
+    # Uses the same "production" environment as migrate-production.yml so the
+    # approval policy you set there applies here too.
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to production project
+        run: supabase link --project-ref jxlxtzkmicfhchkhiojz
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Dump data
+        run: |
+          mkdir -p backup
+          supabase db dump --data-only -f backup/data.sql
+          echo "Data dump: $(wc -l < backup/data.sql) lines, $(du -h backup/data.sql | cut -f1)"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Dump schema
+        run: |
+          supabase db dump -f backup/schema.sql
+          echo "Schema dump: $(wc -l < backup/schema.sql) lines, $(du -h backup/schema.sql | cut -f1)"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Write manifest
+        run: |
+          {
+            echo "timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo "git_sha: ${GITHUB_SHA}"
+            echo "workflow_run: ${GITHUB_RUN_ID}"
+            echo "project_ref: jxlxtzkmicfhchkhiojz"
+            echo ""
+            echo "--- file sizes ---"
+            ls -la backup/
+          } > backup/manifest.txt
+          cat backup/manifest.txt
+
+      - name: Summary
+        run: |
+          {
+            echo "## 📦 Production backup complete"
+            echo ""
+            echo "- Data dump: \`$(wc -l < backup/data.sql)\` lines"
+            echo "- Schema dump: \`$(wc -l < backup/schema.sql)\` lines"
+            echo "- Artifact retained for **90 days** by default."
+            echo ""
+            echo "To restore locally:"
+            echo '```bash'
+            echo "# Download the artifact, then:"
+            echo "supabase db reset  # drops local DB"
+            echo "psql -f backup/schema.sql \"\$LOCAL_DB_URL\""
+            echo "psql -f backup/data.sql \"\$LOCAL_DB_URL\""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 90
+          if-no-files-found: error

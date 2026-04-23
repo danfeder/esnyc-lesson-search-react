@@ -7,9 +7,12 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { requireNonProd } from './lib/require-env.mjs';
 
 // Load environment variables
 dotenv.config();
+
+requireNonProd({ scriptName: 'update-last-modified-dates' });
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,

@@ -18,6 +18,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+// @ts-ignore -- .mjs helper, not part of the TS project
+import { requireNonProd } from './lib/require-env.mjs';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +37,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓' : '✗');
   process.exit(1);
 }
+
+requireNonProd({ scriptName: 'auto-resolve-duplicates' });
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
