@@ -1,4 +1,6 @@
 export { IntActivePills } from './IntActivePills';
+export { IntCard } from './IntCard';
+export { IntCardGrid } from './IntCardGrid';
 export { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
 export { IntEmptyState } from './IntEmptyState';
 export { IntFilterSection } from './IntFilterSection';
