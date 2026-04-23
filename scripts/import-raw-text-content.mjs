@@ -18,15 +18,15 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+if (!process.env.VITE_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
+  process.exit(1);
+}
+
+requireNonProd({ scriptName: 'import-raw-text-content' });
+
 async function importRawText() {
   console.log('📝 Importing raw text content into database...\n');
-
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY in .env file');
-    process.exit(1);
-  }
-
-  requireNonProd({ scriptName: 'import-raw-text-content' });
 
   // Initialize Supabase client with service role key
   const supabase = createClient(
