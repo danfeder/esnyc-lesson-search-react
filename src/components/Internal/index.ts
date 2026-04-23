@@ -8,6 +8,8 @@ export { IntFilterSection } from './IntFilterSection';
 export { IntLessonDetail } from './IntLessonDetail';
 export { IntLessonDrawer } from './IntLessonDrawer';
 export { IntListRow, intActivityLabel, intGradesLabel } from './IntListRow';
+export { IntMobileFilterButton } from './IntMobileFilterButton';
+export { IntMobileFilterDrawer } from './IntMobileFilterDrawer';
 export { IntSidebar } from './IntSidebar';
 export { IntSplitDetail } from './IntSplitDetail';
 export { IntToolbar } from './IntToolbar';

@@ -9,6 +9,7 @@ import {
   IntEmptyState,
   IntLessonDrawer,
   IntListRow,
+  IntMobileFilterDrawer,
   IntSidebar,
   IntSplitDetail,
   IntToolbar,
@@ -37,6 +38,7 @@ export const SearchPage: React.FC = () => {
   const setFilters = useSearchStore((s) => s.setFilters);
 
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [isMobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const { data, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useLessonSearch({
     filters,
@@ -85,6 +87,7 @@ export const SearchPage: React.FC = () => {
             onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
             onViewChange={(v) => setViewState({ view: v })}
             onDensityChange={(d) => setViewState({ density: d })}
+            onOpenMobileFilters={() => setMobileFilterOpen(true)}
           />
 
           <IntActivePills />
@@ -178,6 +181,12 @@ export const SearchPage: React.FC = () => {
       {!isSplit && (
         <IntLessonDrawer lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />
       )}
+
+      <IntMobileFilterDrawer
+        isOpen={isMobileFilterOpen}
+        onClose={() => setMobileFilterOpen(false)}
+        counts={counts}
+      />
     </div>
   );
 };

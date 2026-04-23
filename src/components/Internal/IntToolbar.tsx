@@ -1,6 +1,7 @@
 import type { ResultDensity, ResultView, ViewState } from '@/types';
 import { IntViewSwitcher } from './IntViewSwitcher';
 import { IntDensitySwitcher } from './IntDensitySwitcher';
+import { IntMobileFilterButton } from './IntMobileFilterButton';
 
 type SortBy = ViewState['sortBy'];
 
@@ -14,6 +15,7 @@ interface IntToolbarProps {
   onSortChange: (sort: SortBy) => void;
   onViewChange: (view: ResultView) => void;
   onDensityChange: (density: ResultDensity) => void;
+  onOpenMobileFilters: () => void;
 }
 
 const SORT_OPTIONS: Array<{ value: SortBy; label: string }> = [
@@ -33,6 +35,7 @@ export function IntToolbar({
   onSortChange,
   onViewChange,
   onDensityChange,
+  onOpenMobileFilters,
 }: IntToolbarProps) {
   const lessonWord = count === 1 ? 'lesson' : 'lessons';
   const trailer = query
@@ -62,6 +65,10 @@ export function IntToolbar({
         </select>
         <IntViewSwitcher value={view} onChange={onViewChange} />
         <IntDensitySwitcher value={density} view={view} onChange={onDensityChange} />
+        <IntMobileFilterButton
+          activeFilterCount={activeFilterCount}
+          onClick={onOpenMobileFilters}
+        />
       </div>
     </div>
   );
