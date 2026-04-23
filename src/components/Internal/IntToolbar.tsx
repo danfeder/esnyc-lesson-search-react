@@ -1,4 +1,6 @@
-import type { ViewState } from '@/types';
+import type { ResultDensity, ResultView, ViewState } from '@/types';
+import { IntViewSwitcher } from './IntViewSwitcher';
+import { IntDensitySwitcher } from './IntDensitySwitcher';
 
 type SortBy = ViewState['sortBy'];
 
@@ -7,8 +9,11 @@ interface IntToolbarProps {
   query: string;
   activeFilterCount: number;
   sortBy: SortBy;
-
+  view: ResultView;
+  density: ResultDensity;
   onSortChange: (sort: SortBy) => void;
+  onViewChange: (view: ResultView) => void;
+  onDensityChange: (density: ResultDensity) => void;
 }
 
 const SORT_OPTIONS: Array<{ value: SortBy; label: string }> = [
@@ -23,7 +28,11 @@ export function IntToolbar({
   query,
   activeFilterCount,
   sortBy,
+  view,
+  density,
   onSortChange,
+  onViewChange,
+  onDensityChange,
 }: IntToolbarProps) {
   const lessonWord = count === 1 ? 'lesson' : 'lessons';
   const trailer = query
@@ -38,18 +47,22 @@ export function IntToolbar({
         <strong>{count}</strong>
         <span>{trailer}</span>
       </div>
-      <select
-        className="int-sort"
-        value={sortBy}
-        onChange={(e) => onSortChange(e.target.value as SortBy)}
-        aria-label="Sort results"
-      >
-        {SORT_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      <div className="int-toolbar-right">
+        <select
+          className="int-sort"
+          value={sortBy}
+          onChange={(e) => onSortChange(e.target.value as SortBy)}
+          aria-label="Sort results"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <IntViewSwitcher value={view} onChange={onViewChange} />
+        <IntDensitySwitcher value={density} view={view} onChange={onDensityChange} />
+      </div>
     </div>
   );
 }

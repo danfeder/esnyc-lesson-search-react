@@ -5,10 +5,12 @@ import { SkipLink } from '@/components/Common/SkipLink';
 import { InfiniteScrollTrigger } from '@/components/Common/InfiniteScrollTrigger';
 import {
   IntActivePills,
+  IntCardGrid,
   IntEmptyState,
   IntLessonDrawer,
   IntListRow,
   IntSidebar,
+  IntSplitDetail,
   IntToolbar,
 } from '@/components/Internal';
 import { useSearchStore } from '@/stores/searchStore';
@@ -58,9 +60,14 @@ export const SearchPage: React.FC = () => {
 
   const activeFilterCount = countActiveFilters(filters);
   const hasQuery = !!filters.query?.trim();
+  const view = viewState.view;
+  const density = viewState.density;
+  const selectedId = selectedLesson?.lessonId ?? null;
+  const isSplit = view === 'split';
+  const isGrid = view === 'grid';
 
   return (
-    <div className="int-shell-root">
+    <div className="int-shell-root" data-view={view} data-density={density}>
       <SkipLink />
       <ScreenReaderAnnouncer totalCount={totalCount} />
 
@@ -73,7 +80,11 @@ export const SearchPage: React.FC = () => {
             query={filters.query}
             activeFilterCount={activeFilterCount}
             sortBy={viewState.sortBy}
+            view={view}
+            density={density}
             onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
+            onViewChange={(v) => setViewState({ view: v })}
+            onDensityChange={(d) => setViewState({ density: d })}
           />
 
           <IntActivePills />
@@ -102,13 +113,15 @@ export const SearchPage: React.FC = () => {
                   : 'Loading lessons…'
               }
             />
+          ) : isGrid ? (
+            <IntCardGrid lessons={lessons} selectedId={selectedId} onSelect={setSelectedLesson} />
           ) : (
             <div className="int-list">
               {lessons.map((lesson) => (
                 <IntListRow
                   key={lesson.lessonId}
                   lesson={lesson}
-                  selected={selectedLesson?.lessonId === lesson.lessonId}
+                  selected={lesson.lessonId === selectedId}
                   onClick={(l) => setSelectedLesson(l)}
                 />
               ))}
@@ -155,9 +168,16 @@ export const SearchPage: React.FC = () => {
             />
           )}
         </main>
+
+        {isSplit && (
+          <IntSplitDetail lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />
+        )}
       </div>
 
-      <IntLessonDrawer lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />
+      {/* Drawer only outside split view — split uses the sticky right rail */}
+      {!isSplit && (
+        <IntLessonDrawer lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />
+      )}
     </div>
   );
 };
