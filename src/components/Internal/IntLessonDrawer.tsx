@@ -68,7 +68,7 @@ export function IntLessonDrawer({ lesson, onClose }: IntLessonDrawerProps) {
           <div className="int-drawer-backdrop" aria-hidden="true" />
         </TransitionChild>
 
-        <div className="fixed inset-0 flex justify-end pointer-events-none">
+        <div className="fixed inset-0 z-[60] flex justify-end pointer-events-none">
           <TransitionChild
             as={Fragment}
             enter="transition-transform duration-200 ease-out"
