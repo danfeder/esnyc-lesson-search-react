@@ -485,9 +485,7 @@
   font-size: 11px;
 }
 
-/* --- Mobile (<768px): stack sidebar above main -----------------------
-   A proper mobile treatment (filter drawer / bottom sheet) is a
-   Phase 2 follow-up; this just keeps the search usable at small widths. */
+/* --- Mobile (<768px): hide desktop sidebar; drawer handles filters --- */
 @media (max-width: 767px) {
   .int-topbar { padding: 0 16px; gap: 12px; }
   .int-brand small { display: none; }
@@ -497,14 +495,21 @@
     grid-template-columns: 1fr;
   }
   .int-sidebar {
-    position: static;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-esy-ink-10);
-    max-height: none;
-    padding: 8px 0;
+    display: none;
   }
   .int-main {
     padding: 12px 16px 32px;
+  }
+  /* Mobile never gets split: collapse rail and force list column */
+  .int-shell-root[data-view="split"] .int-shell {
+    grid-template-columns: 1fr;
+  }
+  .int-detail {
+    display: none;
+  }
+  /* Mobile filter trigger becomes visible */
+  .int-mobile-filter-btn {
+    display: inline-flex;
   }
 }
 
@@ -523,4 +528,271 @@
   letter-spacing: 0.14em;
   font-size: 14px;
   margin: 0 0 6px;
+}
+
+/* =========================================================================
+   Phase 2 — Split view, Grid view, Density variants, Switchers, Mobile drawer
+   All scoped under .int-shell-root so cascade stays contained.
+   ========================================================================= */
+
+/* --- Split view: expand shell to 3 columns -------------------------- */
+.int-shell-root[data-view="split"] .int-shell {
+  grid-template-columns: 260px 1fr 380px;
+}
+/* Narrow tablets: drop split back to 2-col so list isn't squeezed */
+@media (max-width: 1100px) {
+  .int-shell-root[data-view="split"] .int-shell {
+    grid-template-columns: 260px 1fr;
+  }
+  .int-shell-root[data-view="split"] .int-detail {
+    display: none;
+  }
+}
+
+/* --- Density variants (list view only) ------------------------------ */
+.int-shell-root[data-density='compact'] .int-list-row {
+  grid-template-columns: 56px 1fr auto;
+  padding: 10px 16px;
+}
+.int-shell-root[data-density='compact'] .int-row-summary {
+  -webkit-line-clamp: 1;
+  margin-bottom: 4px;
+}
+.int-shell-root[data-density='compact'] .int-row-title {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.int-shell-root[data-density='ultra'] .int-list-row {
+  grid-template-columns: 48px 1fr auto;
+  padding: 6px 12px;
+  align-items: center;
+}
+.int-shell-root[data-density='ultra'] .int-row-summary {
+  display: none;
+}
+.int-shell-root[data-density='ultra'] .int-row-title {
+  font-size: 13px;
+  margin: 0;
+}
+.int-shell-root[data-density='ultra'] .int-row-meta {
+  font-size: 11px;
+}
+.int-shell-root[data-density='ultra'] .int-row-grades {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+.int-shell-root[data-density='ultra'] .int-row-right {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Grid view (text-first cards, no photos) ------------------------ */
+.int-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.int-card {
+  background: var(--color-esy-white);
+  border: 1px solid var(--color-esy-ink-10);
+  border-radius: 6px;
+  padding: 14px 14px 12px;
+  cursor: pointer;
+  transition: border-color 100ms, background 80ms;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.int-card:hover {
+  border-color: var(--color-esy-ink-30);
+  background: var(--color-esy-paper-alt);
+}
+.int-card.selected {
+  background: #e9f4ee;
+  border-color: var(--color-esy-green);
+}
+.int-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-esy-ink-50);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+.int-card-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-esy-ink);
+  line-height: 1.3;
+  margin: 0;
+}
+.int-card-summary {
+  font-size: 13px;
+  color: var(--color-esy-ink-70);
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.int-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 11px;
+  color: var(--color-esy-ink-70);
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-esy-ink-10);
+}
+
+/* --- Split-view detail rail ---------------------------------------- */
+.int-detail {
+  border-left: 1px solid var(--color-esy-ink-10);
+  background: var(--color-esy-white);
+  padding: 24px 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+}
+.int-detail-empty {
+  color: var(--color-esy-ink-50);
+  font-size: 13px;
+  padding: 40px 0;
+  text-align: center;
+  font-style: italic;
+}
+
+/* --- Toolbar right cluster + switchers ------------------------------ */
+.int-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.int-switch {
+  display: inline-flex;
+  border: 1px solid var(--color-esy-ink-30);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.int-switch button {
+  background: var(--color-esy-white);
+  border: 0;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--color-esy-ink-70);
+  border-right: 1px solid var(--color-esy-ink-10);
+}
+.int-switch button:last-child {
+  border-right: 0;
+}
+.int-switch button:hover {
+  background: var(--color-esy-paper-alt);
+  color: var(--color-esy-ink);
+}
+.int-switch button.active {
+  background: var(--color-esy-ink);
+  color: var(--color-esy-white);
+}
+.int-switch button:focus-visible {
+  outline: 2px solid var(--color-esy-green);
+  outline-offset: -2px;
+}
+
+/* --- Mobile filter trigger (hidden on desktop, shown via media query) */
+.int-mobile-filter-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-esy-white);
+  border: 1px solid var(--color-esy-ink-30);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--color-esy-ink-70);
+}
+.int-mobile-filter-btn:hover {
+  border-color: var(--color-esy-ink);
+  color: var(--color-esy-ink);
+}
+.int-mobile-filter-btn-count {
+  background: var(--color-esy-green);
+  color: var(--color-esy-white);
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  font-family: inherit;
+}
+
+/* --- Mobile filter drawer ------------------------------------------ */
+.int-mobile-filter-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.3);
+  z-index: 60;
+}
+.int-mobile-filter-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(300px, 86vw);
+  background: var(--color-esy-paper);
+  border-right: 1px solid var(--color-esy-ink-10);
+  box-shadow: 2px 0 12px rgba(26, 26, 26, 0.1);
+  z-index: 61;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.int-mobile-filter-drawer .int-sidebar {
+  display: block;
+  position: static;
+  max-height: none;
+  border-right: 0;
+  padding: 16px 0;
+  overflow-y: visible;
+}
+.int-mobile-filter-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-esy-ink-10);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: var(--color-esy-ink);
+}
+.int-mobile-filter-drawer-close {
+  background: none;
+  border: 0;
+  padding: 6px;
+  border-radius: 4px;
+  color: var(--color-esy-ink-70);
+}
+.int-mobile-filter-drawer-close:hover {
+  background: var(--color-esy-ink-10);
+  color: var(--color-esy-ink);
 }
