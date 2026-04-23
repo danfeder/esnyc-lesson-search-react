@@ -7,6 +7,11 @@
 3. **Data Validation** - ALWAYS validate filter categories (see filterDefinitions.ts)
 4. **Error Handling** - Scripts MUST exit(1) on errors
 5. **Backup First** - ALWAYS backup before bulk operations
+6. **Prod guard** - Every mutation script must call `requireNonProd()` from
+   `./lib/require-env.mjs` after env validation. Prevents accidental runs
+   against production when the wrong `.env` is loaded or prod creds are
+   uncommented. Explicit opt-in via `--i-mean-prod` flag. See "Script
+   Creation Pattern" below.
 
 ## 🚀 Quick Script Commands
 
@@ -34,6 +39,8 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+// For scripts that MUTATE data, add the prod-guard:
+import { requireNonProd } from './lib/require-env.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -50,6 +57,12 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Required: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
+
+// Refuse to run against prod Supabase unless --i-mean-prod is passed.
+// Omit ONLY for scripts that don't use SUPABASE_SERVICE_ROLE_KEY. A
+// script that's read-only today may mutate tomorrow; the key-presence
+// rule stays true through that change.
+requireNonProd({ scriptName: 'my-script' });
 
 // Create admin client
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {

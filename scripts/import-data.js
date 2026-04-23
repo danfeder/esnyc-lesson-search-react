@@ -17,6 +17,7 @@ import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { requireNonProd } from './lib/require-env.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Required: VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
+
+requireNonProd({ scriptName: 'import-data' });
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

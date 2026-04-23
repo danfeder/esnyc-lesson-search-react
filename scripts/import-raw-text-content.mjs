@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { requireNonProd } from './lib/require-env.mjs';
 
 // Load environment variables
 dotenv.config();
@@ -17,19 +18,21 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+if (!process.env.VITE_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
+  process.exit(1);
+}
+
+requireNonProd({ scriptName: 'import-raw-text-content' });
+
 async function importRawText() {
-  console.log('📝 Importing raw text content into production database...\n');
+  console.log('📝 Importing raw text content into database...\n');
 
   // Initialize Supabase client with service role key
   const supabase = createClient(
     process.env.VITE_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
-
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY in .env file');
-    process.exit(1);
-  }
 
   try {
     // Load CSV data

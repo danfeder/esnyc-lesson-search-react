@@ -1,0 +1,169 @@
+name: Backup production database
+
+# Weekly snapshot of the production Supabase database, uploaded as a GitHub
+# Actions artifact (90-day retention by default, free).
+#
+# Reasoning: we're on Supabase's free tier, so Point-in-Time Recovery is not
+# available. This workflow is our primary recovery mechanism — if a migration
+# or a data-script mistake damages prod, we can restore from the most recent
+# artifact. Manual trigger is always available via the Actions UI.
+#
+# Authentication matches reset-test-db.yml: `supabase link` + SUPABASE_ACCESS_TOKEN
+# (project-scoped token already configured as a repo secret). No database
+# password needed for a logical data-only dump via the CLI.
+
+on:
+  schedule:
+    # Every Monday at 10:00 UTC (05:00 EST / 06:00 EDT). Shift if it conflicts
+    # with a heavier workflow; the exact time is cosmetic.
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+# Only one backup in flight at a time.
+concurrency:
+  group: backup-production
+  cancel-in-progress: false
+
+permissions:
+  # `issues: write` is used by the on-failure step to file a GitHub issue
+  # if the dump fails, so a silent failure doesn't degrade recovery posture
+  # unnoticed. No checkout step, so no `contents: read` needed.
+  issues: write
+
+jobs:
+  backup:
+    name: Dump production schema + data
+    runs-on: ubuntu-latest
+    # Intentionally NOT scoped to `environment: production`. GitHub environment
+    # approval gates apply to scheduled runs too — attaching one here would
+    # make every Monday's run block in Waiting-for-approval forever, defeating
+    # the whole point of automated backups. The workflow only reads from prod
+    # and uploads an artifact; no deploy-style approval is warranted. The
+    # SUPABASE_ACCESS_TOKEN secret is repo-scoped (also used without an
+    # environment gate by reset-test-db.yml for its prod dump step).
+
+    steps:
+      # No `actions/checkout` — this workflow doesn't read any repo files.
+      # supabase link uses a hardcoded project-ref and the backup/ directory
+      # is created fresh.
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Matches `reset-test-db.yml` and `migrate-production.yml`. If this
+          # convention changes (pin to a specific version), update all three
+          # together.
+          version: latest
+
+      - name: Link to production project
+        run: supabase link --project-ref jxlxtzkmicfhchkhiojz
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Dump data
+        run: |
+          mkdir -p backup
+          supabase db dump --data-only -f backup/data.sql
+          echo "Data dump: $(wc -l < backup/data.sql) lines, $(du -h backup/data.sql | cut -f1)"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Dump schema
+        run: |
+          supabase db dump -f backup/schema.sql
+          echo "Schema dump: $(wc -l < backup/schema.sql) lines, $(du -h backup/schema.sql | cut -f1)"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Sanity-check dump sizes
+        # `supabase db dump` can exit 0 and write a nearly-empty file on
+        # silent auth degradation. Fail loudly if either dump is suspiciously
+        # small so we don't quietly archive a useless backup. Thresholds are
+        # intentionally conservative: schema dumps run ~2000+ lines and data
+        # dumps for ~830 lessons produce far more than 10 KB.
+        run: |
+          DATA_BYTES=$(wc -c < backup/data.sql)
+          SCHEMA_BYTES=$(wc -c < backup/schema.sql)
+          echo "data.sql: ${DATA_BYTES} bytes"
+          echo "schema.sql: ${SCHEMA_BYTES} bytes"
+          if [ "${DATA_BYTES}" -lt 10240 ]; then
+            echo "::error::data.sql is only ${DATA_BYTES} bytes (< 10 KB). Aborting backup."
+            exit 1
+          fi
+          if [ "${SCHEMA_BYTES}" -lt 10240 ]; then
+            echo "::error::schema.sql is only ${SCHEMA_BYTES} bytes (< 10 KB). Aborting backup."
+            exit 1
+          fi
+
+      - name: Write manifest
+        run: |
+          {
+            echo "timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo "git_sha: ${GITHUB_SHA}"
+            echo "workflow_run: ${GITHUB_RUN_ID}"
+            echo "project_ref: jxlxtzkmicfhchkhiojz"
+            echo ""
+            echo "--- file sizes ---"
+            ls -la backup/
+          } > backup/manifest.txt
+          cat backup/manifest.txt
+
+      - name: Summary
+        run: |
+          {
+            echo "## 📦 Production backup complete"
+            echo ""
+            echo "- Data dump: \`$(wc -l < backup/data.sql)\` lines"
+            echo "- Schema dump: \`$(wc -l < backup/schema.sql)\` lines"
+            echo "- Artifact retained for **90 days** by default."
+            echo ""
+            echo "To restore locally:"
+            echo '```bash'
+            echo "# Download the artifact, then:"
+            echo "supabase db reset  # drops local DB"
+            echo "psql -f backup/schema.sql \"\$LOCAL_DB_URL\""
+            echo "psql -f backup/data.sql \"\$LOCAL_DB_URL\""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: File issue on failure
+        # GitHub's default email-on-failure depends on the repo owner's
+        # Actions notification settings — not reliable. A tracked issue is.
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const title = `⚠️ Production backup failed (${new Date().toISOString().slice(0, 10)})`;
+            const body = [
+              `The weekly production backup workflow failed.`,
+              ``,
+              `- Workflow run: ${runUrl}`,
+              `- Trigger: \`${context.eventName}\``,
+              `- Commit: ${context.sha}`,
+              ``,
+              `Since Supabase is on the free tier (no PITR), a failing backup`,
+              `silently erodes our recovery posture. Please investigate and`,
+              `re-run the workflow once fixed.`,
+              ``,
+              `Close this issue once a successful backup has run.`,
+            ].join('\n');
+            // Labels must already exist in the repo — `issues.create` returns
+            // 422 otherwise, which would silently break this whole step.
+            // `data-integrity` + `monitoring` are existing repo labels that
+            // semantically fit a failed backup notification.
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['data-integrity', 'monitoring'],
+            });

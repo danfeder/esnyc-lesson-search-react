@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import { encoding_for_model } from 'tiktoken';
+import { requireNonProd } from './lib/require-env.mjs';
 
 // Load environment variables
 dotenv.config();
@@ -16,6 +17,13 @@ dotenv.config();
 // Configuration
 const IS_TEST_MODE = process.argv.includes('--test');
 const DRY_RUN = process.argv.includes('--dry-run');
+
+// The `--test` flag routes to a dedicated hardcoded test project and self-guards.
+// In all other cases, resolve the target from VITE_SUPABASE_URL and refuse prod
+// unless --i-mean-prod is explicitly passed.
+if (!IS_TEST_MODE) {
+  requireNonProd({ scriptName: 'generate-embeddings' });
+}
 const BATCH_SIZE = 5; // Process 5 lessons at a time (reduced to avoid token limit)
 const MAX_TOKENS_PER_LESSON = 7500; // More conservative limit to avoid errors
 

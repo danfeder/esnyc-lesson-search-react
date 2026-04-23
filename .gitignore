@@ -162,3 +162,6 @@ supabase/.temp/
 
 # Local-only scripts
 scripts/sync-from-production.mjs
+
+# Local Netlify folder
+.netlify

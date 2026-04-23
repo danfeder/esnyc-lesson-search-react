@@ -13,11 +13,14 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { analyzeContentQuality } from './analyze-content-quality.mjs';
+import { requireNonProd } from './lib/require-env.mjs';
 
 // Load environment variables
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+requireNonProd({ scriptName: 'analyze-duplicates' });
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
