@@ -59,7 +59,9 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 // Refuse to run against prod Supabase unless --i-mean-prod is passed.
-// Omit this call ONLY for read-only scripts.
+// Omit ONLY for scripts that don't use SUPABASE_SERVICE_ROLE_KEY. A
+// script that's read-only today may mutate tomorrow; the key-presence
+// rule stays true through that change.
 requireNonProd({ scriptName: 'my-script' });
 
 // Create admin client
