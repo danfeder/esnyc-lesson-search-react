@@ -5,10 +5,12 @@ import { useSearchStore } from './searchStore';
 
 describe('searchStore', () => {
   beforeEach(() => {
-    // Reset store state before each test
+    // Reset store state before each test — including layout prefs that
+    // clearFilters deliberately preserves and that persist might hydrate.
     const { result } = renderHook(() => useSearchStore());
     act(() => {
       result.current.clearFilters();
+      result.current.setViewState({ view: 'list', density: 'comfy' });
     });
   });
 
@@ -27,6 +29,8 @@ describe('searchStore', () => {
       expect(result.current.viewState.sortBy).toBe('relevance');
       expect(result.current.viewState.resultsPerPage).toBe(20);
       expect(result.current.viewState.currentPage).toBe(1);
+      expect(result.current.viewState.view).toBe('list');
+      expect(result.current.viewState.density).toBe('comfy');
     });
   });
 
@@ -258,6 +262,61 @@ describe('searchStore', () => {
       expect(result.current.viewState.sortBy).toBe('relevance');
       expect(result.current.viewState.currentPage).toBe(1);
       expect(result.current.viewState.resultsPerPage).toBe(20);
+    });
+
+    it('should update view and density', () => {
+      const { result } = renderHook(() => useSearchStore());
+
+      act(() => {
+        result.current.setViewState({ view: 'grid', density: 'compact' });
+      });
+
+      expect(result.current.viewState.view).toBe('grid');
+      expect(result.current.viewState.density).toBe('compact');
+    });
+
+    it('should not reset currentPage when changing view or density', () => {
+      const { result } = renderHook(() => useSearchStore());
+
+      act(() => {
+        result.current.setViewState({ currentPage: 4 });
+      });
+
+      act(() => {
+        result.current.setViewState({ view: 'split' });
+      });
+
+      expect(result.current.viewState.currentPage).toBe(4);
+      expect(result.current.viewState.view).toBe('split');
+
+      act(() => {
+        result.current.setViewState({ density: 'ultra' });
+      });
+
+      expect(result.current.viewState.currentPage).toBe(4);
+      expect(result.current.viewState.density).toBe('ultra');
+    });
+
+    it('should preserve view and density across clearFilters', () => {
+      const { result } = renderHook(() => useSearchStore());
+
+      act(() => {
+        result.current.setViewState({ view: 'grid', density: 'compact' });
+        result.current.setFilters({ query: 'tomato', gradeLevels: ['3rd'] });
+      });
+
+      act(() => {
+        result.current.clearFilters();
+      });
+
+      expect(result.current.filters.query).toBe('');
+      expect(result.current.filters.gradeLevels).toEqual([]);
+      // Layout preferences survive "Clear all"
+      expect(result.current.viewState.view).toBe('grid');
+      expect(result.current.viewState.density).toBe('compact');
+      // But non-layout view state still resets
+      expect(result.current.viewState.currentPage).toBe(1);
+      expect(result.current.viewState.sortBy).toBe('relevance');
     });
   });
 

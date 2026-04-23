@@ -197,9 +197,11 @@ afterEach(() => {
   // Clear all mocks
   vi.clearAllMocks();
 
-  // Reset store state to ensure clean slate
+  // Reset store state to ensure clean slate (clearFilters preserves layout
+  // prefs, so also reset view/density explicitly for test isolation).
   const store = useSearchStore.getState();
   store.clearFilters();
+  store.setViewState({ view: 'list', density: 'comfy' });
 
   // Clear localStorage
   window.localStorage.clear();

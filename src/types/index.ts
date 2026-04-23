@@ -88,10 +88,15 @@ export interface UserProfile {
 }
 
 // UI state types
+export type ResultView = 'list' | 'grid' | 'split';
+export type ResultDensity = 'comfy' | 'compact' | 'ultra';
+
 export interface ViewState {
   sortBy: 'title' | 'confidence' | 'grade' | 'modified' | 'relevance';
   resultsPerPage: number;
   currentPage: number;
+  view: ResultView;
+  density: ResultDensity;
 }
 
 // Review types for submission processing
