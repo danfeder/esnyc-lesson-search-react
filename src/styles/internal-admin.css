@@ -1583,3 +1583,102 @@
   .adm-auth-card-head, .adm-auth-card-body { padding-left: 20px; padding-right: 20px; }
   .adm-auth-card-footer { padding-left: 20px; padding-right: 20px; }
 }
+
+/* =========================================================================
+   Profile-page helpers (Phase 4 group A — UserProfile)
+   ========================================================================= */
+
+/* Inline icon next to a collapse-head label (e.g. lock before "Change password") */
+.adm-collapse-head-icon {
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+
+/* Form rendered inside an in-card collapsible section */
+.adm-collapse-form { margin-top: 12px; }
+
+/* Right-aligned button row at the bottom of an in-card form */
+.adm-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Spacer between an empty-state's text and its action button */
+.adm-empty-actions { margin-top: 12px; }
+
+/* In-card callouts (lighter than .adm-auth-alert) for inline notes */
+.adm-callout {
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--esy-ink-10);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.adm-callout-title {
+  font-weight: 600;
+  margin: 0 0 2px;
+  font-size: 12px;
+}
+.adm-callout--warning {
+  border-color: var(--esy-amber-review);
+  background: #FEF7E6;
+  color: var(--esy-amber-review);
+}
+.adm-callout--success {
+  border-color: var(--esy-green);
+  background: #E9F4EE;
+  color: var(--esy-green-deep);
+}
+
+/* Card head row (title + trailing action) used by the My submissions card */
+.adm-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* Submission row inside the My submissions card */
+.adm-submission-row {
+  border: 1px solid var(--esy-ink-10);
+  border-radius: 6px;
+  padding: 14px 16px;
+  background: var(--esy-white);
+  transition: background-color 120ms;
+}
+.adm-submission-row + .adm-submission-row { margin-top: 12px; }
+.adm-submission-row:hover { background: var(--esy-paper); }
+.adm-submission-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.adm-submission-row-type {
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--esy-ink-50);
+}
+.adm-submission-row-link { margin-bottom: 6px; font-size: 14px; }
+.adm-submission-row-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--esy-ink-50);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.adm-submission-row-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--esy-ink-70);
+}

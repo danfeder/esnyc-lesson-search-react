@@ -1,33 +1,56 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
-import { SchoolBadge, School } from '@/components/Schools';
+import { parseDbError } from '@/utils/errorHandling';
+import { SchoolBadge, type School } from '@/components/Schools';
 import {
-  ArrowLeft,
-  User,
-  Mail,
-  Building,
-  Calendar,
-  Save,
-  Edit,
-  X,
-  BookOpen,
-  GraduationCap,
-  MapPin,
-  FileText,
-  Clock,
-  CheckCircle,
   AlertCircle,
+  BookOpen,
+  Building,
+  CheckCircle,
+  ChevronRight,
+  Edit,
+  FileText,
+  GraduationCap,
+  Loader2,
+  Lock,
+  Mail,
+  MapPin,
   Plus,
+  Save,
+  User as UserIcon,
+  X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/utils/logger';
+import {
+  IntButton,
+  IntFormField,
+  IntPageHeader,
+  IntRoleBadge,
+  IntStatusBadge,
+  type IntRole,
+  type IntStatus,
+} from '@/components/Internal';
+
+const GRADE_OPTIONS = ['3K', '4K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+const SUBJECT_OPTIONS = ['Math', 'Science', 'Literacy/ELA', 'Social Studies', 'Health', 'Arts'];
+const BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
+
+interface ProfileFormData {
+  full_name: string;
+  school_borough: string;
+  grades_taught: string[];
+  subjects_taught: string[];
+}
+
+type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved';
 
 interface LessonSubmission {
   id: string;
   google_doc_url: string;
-  status: 'submitted' | 'in_review' | 'needs_revision' | 'approved';
+  status: SubmissionStatus;
   submission_type: 'new' | 'update';
   reviewer_notes?: string;
   revision_requested_reason?: string;
@@ -37,6 +60,13 @@ interface LessonSubmission {
   original_lesson_id?: string;
 }
 
+const STATUS_BADGE: Record<SubmissionStatus, IntStatus> = {
+  submitted: 'submitted',
+  in_review: 'review',
+  needs_revision: 'revision',
+  approved: 'approved',
+};
+
 export function UserProfile() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useEnhancedAuth();
@@ -45,55 +75,47 @@ export function UserProfile() {
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const [formData, setFormData] = useState<ProfileFormData>({
+    full_name: '',
+    school_borough: '',
+    grades_taught: [],
+    subjects_taught: [],
+  });
+  const [userSchools, setUserSchools] = useState<School[]>([]);
+
   const [submissions, setSubmissions] = useState<LessonSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    full_name: '',
-    school_name: '',
-    school_borough: '',
-    grades_taught: [] as string[],
-    subjects_taught: [] as string[],
-  });
-
-  // Schools state
-  const [userSchools, setUserSchools] = useState<School[]>([]);
-
-  // Grade options
-  const gradeOptions = ['3K', '4K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
-
-  // Subject options
-  const subjectOptions = ['Math', 'Science', 'Literacy/ELA', 'Social Studies', 'Health', 'Arts'];
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [pwForm, setPwForm] = useState({ next: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
 
   const loadUserProfile = useCallback(async () => {
     if (!user) return;
-
     setLoading(true);
     try {
-      // Load profile data
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
         .single();
-
       if (profileError) throw profileError;
 
       setFormData({
         full_name: profile.full_name || '',
-        school_name: profile.school_name || '',
         school_borough: profile.school_borough || '',
         grades_taught: profile.grades_taught || [],
         subjects_taught: profile.subjects_taught || [],
       });
 
-      // Load user's schools
       const { data: userSchoolData, error: schoolsError } = await supabase
         .from('user_schools')
         .select('schools(id, name)')
         .eq('user_id', user.id);
-
       if (schoolsError) throw schoolsError;
 
       const schools =
@@ -110,7 +132,6 @@ export function UserProfile() {
 
   const loadSubmissions = useCallback(async () => {
     if (!user) return;
-
     setLoadingSubmissions(true);
     try {
       const { data, error } = await supabase
@@ -118,13 +139,12 @@ export function UserProfile() {
         .select('*')
         .eq('teacher_id', user.id)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
 
       setSubmissions(
         (data || []).map((sub) => ({
           ...sub,
-          status: sub.status as 'submitted' | 'in_review' | 'needs_revision' | 'approved',
+          status: sub.status as SubmissionStatus,
           submission_type: sub.submission_type as 'new' | 'update',
           created_at: sub.created_at || '',
           updated_at: sub.updated_at || '',
@@ -150,15 +170,13 @@ export function UserProfile() {
 
   const handleSave = async () => {
     if (!user) return;
-
     setSaving(true);
     setSuccessMessage('');
+    setErrorMessage('');
 
     try {
-      // Update profile data
       const updateData = {
         full_name: formData.full_name || undefined,
-        school_name: formData.school_name || undefined,
         school_borough: formData.school_borough || undefined,
         grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : undefined,
         subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : undefined,
@@ -169,16 +187,14 @@ export function UserProfile() {
         .from('user_profiles')
         .update(updateData)
         .eq('id', user.id);
-
       if (profileError) throw profileError;
 
       setEditMode(false);
-      setSuccessMessage('Profile updated successfully!');
-
-      // Clear success message after 3 seconds
+      setSuccessMessage('Profile updated.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       logger.error('Error updating profile:', error);
+      setErrorMessage(parseDbError(error));
     } finally {
       setSaving(false);
     }
@@ -186,63 +202,65 @@ export function UserProfile() {
 
   const handleCancel = () => {
     setEditMode(false);
-    loadUserProfile(); // Reset form to original values
+    setErrorMessage('');
+    loadUserProfile();
   };
 
-  const toggleGrade = (grade: string) => {
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+
+    if (pwForm.next !== pwForm.confirm) {
+      setPwError('Passwords do not match');
+      return;
+    }
+    if (pwForm.next.length < 6) {
+      setPwError('Password must be at least 6 characters');
+      return;
+    }
+
+    setPwSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwForm.next });
+      if (error) throw error;
+      setPwSuccess('Password updated.');
+      setPwForm({ next: '', confirm: '' });
+      setTimeout(() => {
+        setPwSuccess('');
+        setShowPasswordSection(false);
+      }, 2500);
+    } catch (error) {
+      logger.error('Error updating password:', error);
+      setPwError(parseDbError(error));
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const toggleGrade = (grade: string) =>
     setFormData((prev) => ({
       ...prev,
       grades_taught: prev.grades_taught.includes(grade)
         ? prev.grades_taught.filter((g) => g !== grade)
         : [...prev.grades_taught, grade],
     }));
-  };
 
-  const toggleSubject = (subject: string) => {
+  const toggleSubject = (subject: string) =>
     setFormData((prev) => ({
       ...prev,
       subjects_taught: prev.subjects_taught.includes(subject)
         ? prev.subjects_taught.filter((s) => s !== subject)
         : [...prev.subjects_taught, subject],
     }));
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'needs_revision':
-        return <AlertCircle className="w-5 h-5 text-yellow-600" />;
-      case 'in_review':
-        return <Clock className="w-5 h-5 text-blue-600" />;
-      case 'submitted':
-        return <FileText className="w-5 h-5 text-gray-600" />;
-      default:
-        return <FileText className="w-5 h-5 text-gray-600" />;
-    }
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'needs_revision':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'in_review':
-        return 'bg-blue-100 text-blue-800';
-      case 'submitted':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your profile...</p>
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <p className="adm-section-desc">
+            <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" /> Loading your profile…
+          </p>
         </div>
       </div>
     );
@@ -250,411 +268,406 @@ export function UserProfile() {
 
   if (!user) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-gray-600">Please log in to view your profile</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="mt-4 text-green-600 hover:text-green-700"
-          >
-            Go to Login
-          </button>
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <div className="adm-empty">
+            <h3>Sign in required</h3>
+            <p>You need to be signed in to view your profile.</p>
+            <div className="adm-empty-actions">
+              <IntButton variant="primary" onClick={() => navigate('/login')}>
+                Go to sign in
+              </IntButton>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  const headerActions = !editMode ? (
+    <IntButton variant="primary" onClick={() => setEditMode(true)}>
+      <Edit className="w-4 h-4" aria-hidden="true" />
+      Edit profile
+    </IntButton>
+  ) : (
+    <>
+      <IntButton variant="ghost" onClick={handleCancel}>
+        <X className="w-4 h-4" aria-hidden="true" />
+        Cancel
+      </IntButton>
+      <IntButton variant="primary" onClick={handleSave} disabled={saving}>
+        {saving ? (
+          <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" />
+        ) : (
+          <Save className="w-4 h-4" aria-hidden="true" />
+        )}
+        {saving ? 'Saving…' : 'Save changes'}
+      </IntButton>
+    </>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+    <div className="int-shell-root">
+      <div className="adm-page adm-page--narrow">
+        <IntPageHeader
+          title="My profile"
+          description="Your account details, school affiliation, and what you teach."
+          actions={headerActions}
+          back={{ label: 'Back', onClick: () => navigate(-1) }}
+        />
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <User className="w-6 h-6" />
-              My Profile
-            </h1>
-            <p className="text-gray-600 mt-1">Manage your account information</p>
+        {successMessage && (
+          <div className="adm-auth-alert adm-auth-alert--success" role="status">
+            <CheckCircle className="w-4 h-4" aria-hidden="true" />
+            <span>{successMessage}</span>
           </div>
+        )}
+        {errorMessage && (
+          <div className="adm-auth-alert" role="alert">
+            <AlertCircle className="w-4 h-4" aria-hidden="true" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
-          <div className="flex gap-3">
-            {!editMode ? (
-              <button
-                onClick={() => setEditMode(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Profile
-              </button>
+        {/* --- Basic information --- */}
+        <section className="adm-card">
+          <h2 className="adm-section-eyebrow">
+            <UserIcon className="w-3.5 h-3.5" aria-hidden="true" /> Basic information
+          </h2>
+
+          <IntFormField label="Full name">
+            {editMode ? (
+              <input
+                type="text"
+                className="adm-input"
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                placeholder="Enter your full name"
+                autoComplete="name"
+              />
             ) : (
-              <>
-                <button
-                  onClick={handleCancel}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </>
+              <p className="adm-readonly">{formData.full_name || 'Not provided'}</p>
             )}
-          </div>
-        </div>
-      </div>
+          </IntFormField>
 
-      {/* Success Message */}
-      {successMessage && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
-          <p className="text-green-800">{successMessage}</p>
-        </div>
-      )}
+          <IntFormField label="Email" hint="Email cannot be changed here — contact an admin.">
+            <p className="adm-readonly adm-readonly--muted">
+              <Mail className="w-3.5 h-3.5" aria-hidden="true" />
+              {user.email}
+            </p>
+          </IntFormField>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Enter your full name"
-                  />
-                ) : (
-                  <p className="text-gray-900">{formData.full_name || 'Not provided'}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Mail className="w-4 h-4 inline mr-1" />
-                  Email
-                </label>
-                <p className="text-gray-900">{user.email}</p>
-                <p className="text-xs text-gray-500 mt-1">Email cannot be changed here</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  {user.role.replace('_', ' ')}
-                </span>
-              </div>
+          <IntFormField label="Role">
+            <div>
+              <IntRoleBadge role={user.role as IntRole} />
             </div>
-          </div>
+          </IntFormField>
+        </section>
 
-          {/* School Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              <Building className="w-5 h-5 inline mr-2" />
-              School Information
-            </h2>
+        {/* --- School affiliation --- */}
+        <section className="adm-card">
+          <h2 className="adm-section-eyebrow">
+            <Building className="w-3.5 h-3.5" aria-hidden="true" /> School affiliation
+          </h2>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Schools</label>
-                <div className="flex flex-wrap gap-2">
-                  {userSchools.length > 0 ? (
-                    userSchools.map((school) => <SchoolBadge key={school.id} name={school.name} />)
-                  ) : (
-                    <p className="text-gray-500">No schools assigned</p>
-                  )}
+          <IntFormField
+            label="Schools"
+            hint={
+              userSchools.length > 0
+                ? 'Contact an administrator to update school assignments.'
+                : undefined
+            }
+          >
+            <div className="adm-readonly-stack">
+              {userSchools.length > 0 ? (
+                <div className="adm-school-chips">
+                  {userSchools.map((school) => (
+                    <SchoolBadge key={school.id} name={school.name} />
+                  ))}
                 </div>
-                {userSchools.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Contact an administrator to update school assignments
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <MapPin className="w-4 h-4 inline mr-1" />
-                  Borough
-                </label>
-                {editMode ? (
-                  <select
-                    value={formData.school_borough}
-                    onChange={(e) => setFormData({ ...formData, school_borough: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">Select Borough</option>
-                    <option value="Manhattan">Manhattan</option>
-                    <option value="Brooklyn">Brooklyn</option>
-                    <option value="Queens">Queens</option>
-                    <option value="Bronx">Bronx</option>
-                    <option value="Staten Island">Staten Island</option>
-                  </select>
-                ) : (
-                  <p className="text-gray-900">{formData.school_borough || 'Not provided'}</p>
-                )}
-              </div>
+              ) : (
+                <p className="adm-readonly adm-readonly--muted">No schools assigned</p>
+              )}
             </div>
-          </div>
+          </IntFormField>
 
-          {/* Teaching Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              <GraduationCap className="w-5 h-5 inline mr-2" />
-              Teaching Information
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grades Taught
-                </label>
-                {editMode ? (
-                  <div className="flex flex-wrap gap-2">
-                    {gradeOptions.map((grade) => (
-                      <button
-                        key={grade}
-                        type="button"
-                        onClick={() => toggleGrade(grade)}
-                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                          formData.grades_taught.includes(grade)
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {grade}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.grades_taught.length > 0 ? (
-                      formData.grades_taught.map((grade) => (
-                        <span
-                          key={grade}
-                          className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
-                        >
-                          {grade}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">Not specified</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <BookOpen className="w-4 h-4 inline mr-1" />
-                  Subjects Taught
-                </label>
-                {editMode ? (
-                  <div className="flex flex-wrap gap-2">
-                    {subjectOptions.map((subject) => (
-                      <button
-                        key={subject}
-                        type="button"
-                        onClick={() => toggleSubject(subject)}
-                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                          formData.subjects_taught.includes(subject)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {subject}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.subjects_taught.length > 0 ? (
-                      formData.subjects_taught.map((subject) => (
-                        <span
-                          key={subject}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                        >
-                          {subject}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">Not specified</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Submission History */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                My Submissions
-              </h2>
-              <Link
-                to="/submit"
-                className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+          <IntFormField label="Borough">
+            {editMode ? (
+              <select
+                className="adm-select"
+                value={formData.school_borough}
+                onChange={(e) => setFormData({ ...formData, school_borough: e.target.value })}
               >
-                <Plus className="w-4 h-4" />
-                New Submission
-              </Link>
-            </div>
-
-            {loadingSubmissions ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                <p className="mt-2 text-sm text-gray-600">Loading submissions...</p>
-              </div>
-            ) : submissions.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600">No submissions yet</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Submit your first lesson to share with the community!
-                </p>
-              </div>
+                <option value="">Select borough</option>
+                {BOROUGHS.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
             ) : (
-              <div className="space-y-4">
-                {submissions.map((submission) => (
-                  <div
-                    key={submission.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              <p className="adm-readonly">
+                {formData.school_borough ? (
+                  <>
+                    <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                    {formData.school_borough}
+                  </>
+                ) : (
+                  <span className="adm-readonly--muted">Not provided</span>
+                )}
+              </p>
+            )}
+          </IntFormField>
+        </section>
+
+        {/* --- What you teach --- */}
+        <section className="adm-card">
+          <h2 className="adm-section-eyebrow">
+            <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" /> What you teach
+          </h2>
+
+          <div className="adm-field">
+            <span className="adm-label">Grades</span>
+            {editMode ? (
+              <div className="adm-pill-group">
+                {GRADE_OPTIONS.map((grade) => (
+                  <button
+                    key={grade}
+                    type="button"
+                    className={`adm-pill adm-pill--green${
+                      formData.grades_taught.includes(grade) ? ' active' : ''
+                    }`}
+                    onClick={() => toggleGrade(grade)}
+                    aria-pressed={formData.grades_taught.includes(grade)}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          {getStatusIcon(submission.status)}
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                              submission.status
-                            )}`}
-                          >
-                            {submission.status.replace('_', ' ')}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {submission.submission_type === 'update' ? 'Update' : 'New Lesson'}
-                          </span>
-                        </div>
-
-                        <div className="mb-2">
-                          <a
-                            href={submission.google_doc_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            View Google Doc →
-                          </a>
-                        </div>
-
-                        {submission.revision_requested_reason && (
-                          <div className="mb-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                            <p className="text-sm font-medium text-yellow-800 mb-1">
-                              Revision Requested
-                            </p>
-                            <p className="text-sm text-yellow-700">
-                              {submission.revision_requested_reason}
-                            </p>
-                          </div>
-                        )}
-
-                        {submission.reviewer_notes && submission.status === 'approved' && (
-                          <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                            <p className="text-sm font-medium text-green-800 mb-1">
-                              Reviewer Notes
-                            </p>
-                            <p className="text-sm text-green-700">{submission.reviewer_notes}</p>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>
-                            Submitted{' '}
-                            {formatDistanceToNow(new Date(submission.created_at), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                          {submission.review_completed_at && (
-                            <span>
-                              Reviewed{' '}
-                              {formatDistanceToNow(new Date(submission.review_completed_at), {
-                                addSuffix: true,
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    {grade}
+                  </button>
                 ))}
               </div>
+            ) : formData.grades_taught.length > 0 ? (
+              <div className="adm-pill-group">
+                {formData.grades_taught.map((grade) => (
+                  <span key={grade} className="adm-pill active adm-pill--green">
+                    {grade}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="adm-readonly adm-readonly--muted">Not specified</p>
             )}
           </div>
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Account Details */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Details</h2>
-
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-gray-600">Member Since</p>
-                <p className="text-sm text-gray-900">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
-                </p>
+          <div className="adm-field">
+            <span className="adm-label">
+              <BookOpen className="w-3.5 h-3.5" aria-hidden="true" /> Subjects
+            </span>
+            {editMode ? (
+              <div className="adm-pill-group">
+                {SUBJECT_OPTIONS.map((subject) => (
+                  <button
+                    key={subject}
+                    type="button"
+                    className={`adm-pill${
+                      formData.subjects_taught.includes(subject) ? ' active' : ''
+                    }`}
+                    onClick={() => toggleSubject(subject)}
+                    aria-pressed={formData.subjects_taught.includes(subject)}
+                  >
+                    {subject}
+                  </button>
+                ))}
               </div>
-
-              <div>
-                <p className="text-sm text-gray-600">Last Updated</p>
-                <p className="text-sm text-gray-900">
-                  {formatDistanceToNow(new Date(user.updated_at), { addSuffix: true })}
-                </p>
+            ) : formData.subjects_taught.length > 0 ? (
+              <div className="adm-pill-group">
+                {formData.subjects_taught.map((subject) => (
+                  <span key={subject} className="adm-pill active">
+                    {subject}
+                  </span>
+                ))}
               </div>
+            ) : (
+              <p className="adm-readonly adm-readonly--muted">Not specified</p>
+            )}
+          </div>
+        </section>
 
-              <div>
-                <p className="text-sm text-gray-600">Account Status</p>
-                <p className="text-sm text-green-600 font-medium">Active</p>
+        {/* --- Security / change password --- */}
+        <section className="adm-card">
+          <button
+            type="button"
+            className="adm-collapse-head"
+            onClick={() => setShowPasswordSection((v) => !v)}
+            aria-expanded={showPasswordSection}
+          >
+            <span>
+              <Lock className="w-3.5 h-3.5 adm-collapse-head-icon" aria-hidden="true" />
+              Change password
+            </span>
+            <ChevronRight
+              className={`w-4 h-4 adm-collapse-chev${
+                showPasswordSection ? ' adm-collapse-chev--open' : ''
+              }`}
+              aria-hidden="true"
+            />
+          </button>
+
+          {showPasswordSection && (
+            <form onSubmit={handleChangePassword} className="adm-auth-form adm-collapse-form">
+              {pwError && (
+                <div className="adm-auth-alert" role="alert">
+                  <AlertCircle className="w-4 h-4" aria-hidden="true" />
+                  <span>{pwError}</span>
+                </div>
+              )}
+              {pwSuccess && (
+                <div className="adm-auth-alert adm-auth-alert--success" role="status">
+                  <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                  <span>{pwSuccess}</span>
+                </div>
+              )}
+
+              <IntFormField label="New password" required hint="At least 6 characters.">
+                <input
+                  type="password"
+                  className="adm-input"
+                  value={pwForm.next}
+                  onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                />
+              </IntFormField>
+
+              <IntFormField label="Confirm new password" required>
+                <input
+                  type="password"
+                  className="adm-input"
+                  value={pwForm.confirm}
+                  onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                />
+              </IntFormField>
+
+              <div className="adm-form-actions">
+                <IntButton
+                  variant="ghost"
+                  onClick={() => {
+                    setShowPasswordSection(false);
+                    setPwForm({ next: '', confirm: '' });
+                    setPwError('');
+                  }}
+                >
+                  Cancel
+                </IntButton>
+                <IntButton type="submit" variant="primary" disabled={pwSaving}>
+                  {pwSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" />
+                      Updating…
+                    </>
+                  ) : (
+                    'Update password'
+                  )}
+                </IntButton>
               </div>
-            </div>
+            </form>
+          )}
+        </section>
+
+        {/* --- My submissions --- */}
+        <section className="adm-card">
+          <div className="adm-card-head">
+            <h2 className="adm-section-eyebrow">
+              <FileText className="w-3.5 h-3.5" aria-hidden="true" /> My submissions
+            </h2>
+            <IntButton variant="primary" size="sm" onClick={() => navigate('/submit')}>
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              New submission
+            </IntButton>
           </div>
 
-          {/* Help & Support */}
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Need Help?</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              If you need to change your email address or have any issues with your account, please
-              contact your administrator.
+          {loadingSubmissions ? (
+            <p className="adm-submission-row-loading">
+              <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" /> Loading submissions…
             </p>
-            <button
-              onClick={() => navigate('/contact')}
-              className="text-sm text-green-600 hover:text-green-700 font-medium"
-            >
-              Contact Support →
-            </button>
-          </div>
-        </div>
+          ) : submissions.length === 0 ? (
+            <div className="adm-empty">
+              <h3>No submissions yet</h3>
+              <p>Submit your first lesson to share with the community.</p>
+            </div>
+          ) : (
+            <div>
+              {submissions.map((submission) => (
+                <article key={submission.id} className="adm-submission-row">
+                  <div className="adm-submission-row-head">
+                    <IntStatusBadge status={STATUS_BADGE[submission.status]} />
+                    <span className="adm-submission-row-type">
+                      {submission.submission_type === 'update' ? 'Update' : 'New lesson'}
+                    </span>
+                  </div>
+
+                  <p className="adm-submission-row-link">
+                    <a
+                      href={submission.google_doc_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="adm-link"
+                    >
+                      View Google Doc →
+                    </a>
+                  </p>
+
+                  {submission.revision_requested_reason && (
+                    <div className="adm-callout adm-callout--warning">
+                      <p className="adm-callout-title">Revision requested</p>
+                      <p>{submission.revision_requested_reason}</p>
+                    </div>
+                  )}
+
+                  {submission.reviewer_notes && submission.status === 'approved' && (
+                    <div className="adm-callout adm-callout--success">
+                      <p className="adm-callout-title">Reviewer notes</p>
+                      <p>{submission.reviewer_notes}</p>
+                    </div>
+                  )}
+
+                  <div className="adm-submission-row-meta">
+                    <span>
+                      Submitted{' '}
+                      {formatDistanceToNow(new Date(submission.created_at), { addSuffix: true })}
+                    </span>
+                    {submission.review_completed_at && (
+                      <span>
+                        Reviewed{' '}
+                        {formatDistanceToNow(new Date(submission.review_completed_at), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* --- Account meta --- */}
+        <section className="adm-card adm-card--tight">
+          <dl className="adm-kv-row">
+            <div>
+              <dt className="adm-label">Member since</dt>
+              <dd>{formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}</dd>
+            </div>
+            <div>
+              <dt className="adm-label">Account status</dt>
+              <dd>
+                <span className="adm-status adm-status--active">Active</span>
+              </dd>
+            </div>
+          </dl>
+        </section>
       </div>
     </div>
   );
