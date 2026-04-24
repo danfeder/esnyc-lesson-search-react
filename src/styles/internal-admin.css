@@ -1315,4 +1315,271 @@
   .adm-analytics-grid--2,
   .adm-analytics-grid--3 { grid-template-columns: 1fr; }
   .adm-activity-list li { flex-wrap: wrap; gap: 4px; }
+}/* =========================================================================
+   ESYNYC Internal Admin — auth & profile additions
+   Appended to src/styles/internal-admin.css in production.
+
+   New classes introduced (do not collide with existing .adm-*):
+     .adm-auth-page, .adm-auth-shell(+--wide), .adm-auth-brand(-mark/-label),
+     .adm-auth-card(-head/-body/-footer), .adm-auth-icon(+--green/--red/--amber),
+     .adm-auth-eyebrow, .adm-auth-title, .adm-auth-desc, .adm-auth-caption,
+     .adm-auth-inline-role, .adm-auth-summary(-value/-sub),
+     .adm-auth-form, .adm-auth-grid-2, .adm-auth-submit,
+     .adm-auth-alert(+--success), .adm-auth-quiet,
+     .adm-readonly(+--muted), .adm-readonly-stack, .adm-kv-row,
+     .adm-collapse-chev--open, .adm-spin
+   ========================================================================= */
+
+/* --- Auth page frame ------------------------------------------------ */
+.adm-auth-page {
+  min-height: 100vh;
+  background: var(--esy-paper);
+  padding: 48px 24px 64px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-family: var(--esy-font-body);
+}
+
+.adm-auth-shell {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.adm-auth-shell--wide { max-width: 560px; }
+
+/* Brand strip sits above the card — quieter than a logo */
+.adm-auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+.adm-auth-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: var(--esy-ink);
+  color: var(--esy-white);
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.adm-auth-brand-label {
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  color: var(--esy-ink-70);
+}
+
+/* Card + header block */
+.adm-auth-card {
+  background: var(--esy-white);
+  border: 1px solid var(--esy-ink-10);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.adm-auth-card-head {
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid var(--esy-ink-10);
+  background: var(--esy-white);
+}
+.adm-auth-card-body { padding: 24px 28px 28px; }
+.adm-auth-card-footer {
+  padding: 14px 28px;
+  border-top: 1px solid var(--esy-ink-10);
+  background: var(--esy-paper);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adm-auth-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--esy-paper-alt);
+  color: var(--esy-ink-70);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.adm-auth-icon--green { background: #E9F4EE; color: var(--esy-green); }
+.adm-auth-icon--red   { background: #FEF2F2; color: var(--esy-red); }
+.adm-auth-icon--amber { background: #FEF7E6; color: var(--esy-amber-review); }
+
+.adm-auth-eyebrow {
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  color: var(--esy-green);
+  margin: 0 0 6px;
+}
+.adm-auth-title {
+  font-family: var(--esy-font-display);
+  font-weight: 300;
+  font-size: 22px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--esy-ink);
+  margin: 0;
+  line-height: 1.15;
+}
+.adm-auth-desc {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--esy-ink-70);
+  max-width: 48ch;
+}
+.adm-auth-desc a { color: var(--esy-green); }
+.adm-auth-desc a:hover { text-decoration: underline; }
+
+.adm-auth-caption {
+  margin: 4px 4px 0;
+  font-size: 12px;
+  color: var(--esy-ink-50);
+  line-height: 1.5;
+}
+.adm-auth-caption a { color: var(--esy-green); }
+.adm-auth-caption a:hover { text-decoration: underline; }
+
+/* Role badge rendered inline inside a description sentence */
+.adm-auth-inline-role {
+  display: inline-flex;
+  vertical-align: baseline;
+  transform: translateY(-1px);
+  margin: 0 2px;
+}
+
+/* Read-only context summary shown on AcceptInvitation */
+.adm-auth-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--esy-paper);
+  border: 1px solid var(--esy-ink-10);
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+@media (min-width: 520px) {
+  .adm-auth-summary { grid-template-columns: 1fr 1fr; }
+}
+.adm-auth-summary .adm-label { display: block; margin-bottom: 2px; }
+.adm-auth-summary-value {
+  margin: 0;
+  font-size: 14px;
+  color: var(--esy-ink);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.adm-auth-summary-sub { color: var(--esy-ink-50); }
+
+/* Auth form container (reuses .adm-field / .adm-input inside) */
+.adm-auth-form { display: flex; flex-direction: column; }
+.adm-auth-form .adm-field { margin-bottom: 14px; }
+.adm-auth-form .adm-section-eyebrow {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--esy-ink-10);
+}
+.adm-auth-form .adm-section-eyebrow:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+
+.adm-auth-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 14px;
+}
+@media (min-width: 520px) {
+  .adm-auth-grid-2 { grid-template-columns: 1fr 1fr; }
+}
+
+.adm-auth-submit {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--esy-ink-10);
+}
+
+/* Alerts (error + success) — uses existing .adm-alert pattern but for auth */
+.adm-auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--esy-red);
+  background: #FEF2F2;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--esy-red);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+.adm-auth-alert svg { flex-shrink: 0; margin-top: 1px; }
+.adm-auth-alert--success {
+  border-color: var(--esy-green);
+  background: #E9F4EE;
+  color: var(--esy-green-deep);
+}
+
+.adm-auth-quiet {
+  margin: 0;
+  font-size: 13px;
+  color: var(--esy-ink-70);
+  line-height: 1.5;
+}
+
+/* --- Profile-specific read-only display ---------------------------- */
+.adm-readonly {
+  margin: 0;
+  padding: 7px 0;
+  font-size: 14px;
+  color: var(--esy-ink);
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.adm-readonly--muted { color: var(--esy-ink-50); }
+.adm-readonly-stack { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+
+/* Simple key/value row for account meta */
+.adm-kv-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.adm-kv-row dt { margin-bottom: 4px; }
+.adm-kv-row dd { margin: 0; font-size: 13px; color: var(--esy-ink); }
+
+/* --- Collapse chevron (open state helper) -------------------------- */
+.adm-collapse-chev--open { transform: rotate(90deg); }
+
+/* --- Spinner helper (used by Loader2 icons) ------------------------ */
+.adm-spin {
+  animation: adm-spin 0.9s linear infinite;
+}
+@keyframes adm-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* --- Mobile --------------------------------------------------------- */
+@media (max-width: 560px) {
+  .adm-auth-page { padding: 24px 16px 48px; }
+  .adm-auth-card-head, .adm-auth-card-body { padding-left: 20px; padding-right: 20px; }
+  .adm-auth-card-footer { padding-left: 20px; padding-right: 20px; }
 }

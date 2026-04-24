@@ -1,4 +1,6 @@
 export { IntActivePills } from './IntActivePills';
+export { IntAuthShell } from './IntAuthShell';
+export type { IntAuthShellProps } from './IntAuthShell';
 export { IntButton } from './IntButton';
 export { IntCard } from './IntCard';
 export { IntCardGrid } from './IntCardGrid';
