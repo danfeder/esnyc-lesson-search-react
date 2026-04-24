@@ -1,113 +1,154 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
-import { SchoolBadge, SchoolCheckboxGroup, School } from '@/components/Schools';
-import { parseDbError } from '@/utils/errorHandling';
 import {
-  ArrowLeft,
-  User,
-  Mail,
-  Building,
-  Calendar,
-  Shield,
-  CheckCircle,
-  XCircle,
-  Edit,
-  Save,
-  X,
-  AlertTriangle,
-  History,
-  UserPlus,
-  TrendingUp,
-} from 'lucide-react';
-import {
+  AuditAction,
   EnhancedUserProfile,
-  UserRole,
   Permission,
   UserManagementAudit,
-  AuditAction,
+  UserRole,
 } from '@/types/auth';
-import { formatDistanceToNow } from 'date-fns';
+import { SchoolBadge, SchoolCheckboxGroup, School } from '@/components/Schools';
+import { parseDbError } from '@/utils/errorHandling';
 import { logger } from '@/utils/logger';
+import { cn } from '@/utils/cn';
+import { format, formatDistanceToNow } from 'date-fns';
+import {
+  BookOpen,
+  Check,
+  ChevronRight,
+  Clock,
+  FileText,
+  GitMerge,
+  KeyRound,
+  Pencil,
+  User,
+  UserX,
+  X,
+} from 'lucide-react';
+import {
+  IntActivityTimeline,
+  IntAlert,
+  IntButton,
+  IntPageHeader,
+  IntRoleBadge,
+  IntStatusBadge,
+  type IntRole,
+  type IntStatus,
+} from '@/components/Internal';
+
+type Tab = 'activity' | 'access' | 'profile';
+
+interface RecentSubmission {
+  id: string;
+  title: string | null;
+  status: string;
+  created_at: string | null;
+}
+
+interface RecentReview {
+  id: string;
+  submission_id: string;
+  decision: string | null;
+  created_at: string | null;
+}
+
+function initials(name: string | null | undefined): string {
+  if (!name) return '·';
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join('') || '·'
+  );
+}
+
+function avatarTone(role: string): string {
+  if (role === 'admin' || role === 'super_admin') return 'adm-avatar--ink';
+  if (role === 'reviewer') return 'adm-avatar--green';
+  return '';
+}
+
+function statusToBadge(status: string): IntStatus {
+  switch (status) {
+    case 'submitted':
+      return 'submitted';
+    case 'in_review':
+      return 'review';
+    case 'needs_revision':
+      return 'revision';
+    case 'approved':
+      return 'approved';
+    default:
+      return 'submitted';
+  }
+}
 
 export function AdminUserDetail() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { user: currentUser, hasPermission } = useEnhancedAuth();
+  const { user: currentUser, hasPermission, loading: authLoading } = useEnhancedAuth();
 
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
-  const [email, setEmail] = useState<string>('Loading...');
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [auditLogs, setAuditLogs] = useState<UserManagementAudit[]>([]);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [activityMetrics, setActivityMetrics] = useState<{
-    login_count: number;
-    last_login: string | null;
-    submission_count: number;
-    review_count: number;
-    last_activity: string | null;
-  } | null>(null);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    full_name: '',
-    role: UserRole.TEACHER,
-    school_name: '',
-    school_borough: '',
-    grades_taught: [] as string[],
-    subjects_taught: [] as string[],
-    is_active: true,
-    notes: '',
-  });
-
-  // Schools state
+  const [email, setEmail] = useState<string>('Loading…');
   const [userSchools, setUserSchools] = useState<School[]>([]);
   const [editedSchools, setEditedSchools] = useState<School[]>([]);
+  const [audit, setAudit] = useState<UserManagementAudit[]>([]);
+  const [actorMap, setActorMap] = useState<Record<string, string>>({});
+  const [submissions, setSubmissions] = useState<RecentSubmission[]>([]);
+  const [submissionCount, setSubmissionCount] = useState(0);
+  const [reviews, setReviews] = useState<RecentReview[]>([]);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ kind: 'success' | 'error' | 'info'; msg: string } | null>(
+    null
+  );
 
-  useEffect(() => {
-    if (userId) {
-      loadUserDetails();
-      loadAuditLogs();
-      loadActivityMetrics();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  const [tab, setTab] = useState<Tab>('activity');
+  const [roleEditing, setRoleEditing] = useState(false);
+  const [schoolsEditing, setSchoolsEditing] = useState(false);
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [nameEditing, setNameEditing] = useState(false);
 
-  const loadUserDetails = async () => {
+  const [pendingRole, setPendingRole] = useState<UserRole>(UserRole.TEACHER);
+  const [pendingNotes, setPendingNotes] = useState('');
+  const [pendingName, setPendingName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const loadAll = useCallback(async () => {
     if (!userId) return;
-
     setLoading(true);
     try {
-      // Load user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const [profileRes, emailsRes, schoolsRes, auditRes, subsRes, revsRes] = await Promise.all([
+        supabase.from('user_profiles').select('*').eq('id', userId).single(),
+        supabase.rpc('get_user_emails', { user_ids: [userId] }),
+        supabase.from('user_schools').select('schools(id, name)').eq('user_id', userId),
+        supabase
+          .from('user_management_audit')
+          .select('*')
+          .eq('target_user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(15),
+        supabase
+          .from('lesson_submissions')
+          .select('id, extracted_title, status, created_at', { count: 'exact' })
+          .eq('teacher_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('submission_reviews')
+          .select('id, submission_id, decision, created_at', { count: 'exact' })
+          .eq('reviewer_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ]);
 
-      if (profileError) throw profileError;
-
-      // Load email separately
-      const { data: emailData, error: emailError } = await supabase.rpc('get_user_emails', {
-        user_ids: [userId],
-      });
-
-      if (!emailError && emailData && emailData.length > 0) {
-        setEmail(emailData[0].email);
-      } else {
-        // Check if profile has email field as fallback
-        if (profile.email) {
-          setEmail(profile.email);
-        } else {
-          // For test users without auth records, show a placeholder
-          setEmail('test-user@example.com (Test Account)');
-        }
-      }
+      if (profileRes.error) throw profileRes.error;
+      const profile = profileRes.data;
 
       setUser({
         ...profile,
@@ -115,320 +156,284 @@ export function AdminUserDetail() {
         user_id: profile.user_id || profile.id,
         permissions: profile.permissions as Record<Permission, boolean> | undefined,
       } as EnhancedUserProfile);
-      setFormData({
-        full_name: profile.full_name || '',
-        role: (profile.role || UserRole.TEACHER) as UserRole,
-        school_name: profile.school_name || '',
-        school_borough: profile.school_borough || '', // This is OK for the form
-        grades_taught: profile.grades_taught || [],
-        subjects_taught: profile.subjects_taught || [],
-        is_active: profile.is_active ?? true,
-        notes: profile.notes || '',
-      });
+      setPendingRole((profile.role || UserRole.TEACHER) as UserRole);
+      setPendingNotes(profile.notes || '');
+      setPendingName(profile.full_name || '');
 
-      // Load user's schools
-      const { data: userSchoolData, error: schoolsError } = await supabase
-        .from('user_schools')
-        .select('schools(id, name)')
-        .eq('user_id', userId);
+      if (!emailsRes.error && emailsRes.data && emailsRes.data.length > 0) {
+        setEmail(emailsRes.data[0].email);
+      } else if (profile.email) {
+        setEmail(profile.email);
+      } else {
+        setEmail('test-user@example.com (Test Account)');
+      }
 
-      if (!schoolsError && userSchoolData) {
-        // The query returns an array of objects with a schools property
-        const schools = userSchoolData
-          .map((us: unknown) => {
-            const userSchool = us as { schools: School | null };
-            return userSchool.schools;
-          })
-          .filter((school): school is School => school !== null);
+      if (!schoolsRes.error && schoolsRes.data) {
+        const schools = schoolsRes.data
+          .map((us: unknown) => (us as { schools: School | null }).schools)
+          .filter((s): s is School => s !== null);
         setUserSchools(schools);
         setEditedSchools(schools);
       }
-    } catch (error) {
-      logger.error('Error loading user details:', error);
+
+      if (!auditRes.error && auditRes.data) {
+        const rows = auditRes.data.map(
+          (r) => ({ ...r, action: r.action as AuditAction }) as UserManagementAudit
+        );
+        setAudit(rows);
+        const actorIds = Array.from(new Set(rows.map((r) => r.actor_id).filter(Boolean)));
+        if (actorIds.length > 0) {
+          const { data: actorProfiles } = await supabase
+            .from('user_profiles')
+            .select('id, full_name')
+            .in('id', actorIds);
+          const map: Record<string, string> = {};
+          for (const p of actorProfiles ?? []) {
+            if (p.id && p.full_name) map[p.id] = p.full_name;
+          }
+          setActorMap(map);
+        }
+      }
+
+      if (!subsRes.error) {
+        setSubmissions(
+          (subsRes.data ?? []).map((s) => ({
+            id: s.id,
+            title: s.extracted_title,
+            status: s.status,
+            created_at: s.created_at,
+          }))
+        );
+        setSubmissionCount(subsRes.count ?? 0);
+      }
+
+      if (!revsRes.error) {
+        setReviews(
+          (revsRes.data ?? []).map((r) => ({
+            id: r.id,
+            submission_id: r.submission_id,
+            decision: r.decision,
+            created_at: r.created_at,
+          }))
+        );
+        setReviewCount(revsRes.count ?? 0);
+      }
+    } catch (err) {
+      logger.error('Error loading user detail:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
-  const loadAuditLogs = async () => {
-    if (!userId) return;
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
-    try {
-      const { data, error } = await supabase
-        .from('user_management_audit')
-        .select('*')
-        .eq('target_user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10);
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2800);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
-      if (!error && data) {
-        setAuditLogs(
-          data.map(
-            (log) =>
-              ({
-                ...log,
-                action: log.action as AuditAction,
-              }) as UserManagementAudit
-          )
-        );
-      }
-    } catch (error) {
-      logger.error('Error loading audit logs:', error);
-    }
-  };
+  const isActive = user?.is_active ?? false;
 
-  const loadActivityMetrics = async () => {
-    if (!userId) return;
+  const resolveActor = useCallback((actorId: string) => actorMap[actorId] ?? 'Someone', [actorMap]);
 
-    try {
-      const { data, error } = await supabase.rpc('get_user_activity_metrics', {
-        p_user_id: userId,
-        p_days: 30,
-      });
+  const schoolIdToName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of userSchools) m.set(s.id, s.name);
+    for (const s of editedSchools) m.set(s.id, s.name);
+    return m;
+  }, [userSchools, editedSchools]);
 
-      if (!error && data) {
-        // RPC returns an array, take the first item
-        const metrics = Array.isArray(data) ? data[0] : data;
-        setActivityMetrics(metrics);
-      } else if (error?.code === 'PGRST202') {
-        // Function doesn't exist yet - set some default data
-        logger.log('Activity metrics function not found, using defaults');
-        setActivityMetrics({
-          login_count: 0,
-          last_login: null,
-          submission_count: 0,
-          review_count: 0,
-          last_activity: null,
-        });
-      }
-    } catch (error) {
-      logger.error('Error loading activity metrics:', error);
-      // Set default metrics on error
-      setActivityMetrics({
-        login_count: 0,
-        last_login: null,
-        submission_count: 0,
-        review_count: 0,
-        last_activity: null,
-      });
-    }
-  };
-
-  const handleSave = async () => {
-    if (!user || !userId) return;
-
-    setSaving(true);
-    try {
-      // Update user profile
-      const updateData = {
-        full_name: formData.full_name || undefined,
-        role: formData.role,
-        school_name: formData.school_name || undefined,
-        school_borough: formData.school_borough || undefined,
-        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : undefined,
-        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : undefined,
-        is_active: formData.is_active,
-        notes: formData.notes || undefined,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update(updateData)
-        .eq('id', userId);
-
-      if (updateError) throw updateError;
-
-      // Update schools if they've changed
-      const currentSchoolIds = userSchools.map((s) => s.id).sort();
-      const newSchoolIds = editedSchools.map((s) => s.id).sort();
-
-      if (JSON.stringify(currentSchoolIds) !== JSON.stringify(newSchoolIds)) {
-        // Call the user-management function to update schools
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-
-        if (authUser) {
-          // Remove all existing school associations
-          const { error: deleteError } = await supabase
-            .from('user_schools')
-            .delete()
-            .eq('user_id', userId);
-
-          if (deleteError) throw deleteError;
-
-          // Add new school associations
-          if (editedSchools.length > 0) {
-            const schoolEntries = editedSchools.map((school) => ({
-              user_id: userId,
-              school_id: school.id,
-            }));
-
-            const { error: insertError } = await supabase
-              .from('user_schools')
-              .insert(schoolEntries);
-
-            if (insertError) throw insertError;
-          }
+  const formatDiffValue = useCallback(
+    (key: string, value: unknown): string => {
+      if (value === null || value === undefined) return '';
+      if (typeof value === 'boolean') return value ? 'yes' : 'no';
+      if (Array.isArray(value)) {
+        if (key === 'school_ids') {
+          return (
+            value.map((id) => schoolIdToName.get(String(id)) ?? String(id)).join(', ') || '(none)'
+          );
         }
+        return value.length === 0 ? '(none)' : value.join(', ');
       }
+      return String(value);
+    },
+    [schoolIdToName]
+  );
 
-      // Try to log the update, but don't fail if audit fails
-      try {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-        if (authUser) {
-          await supabase.from('user_management_audit').insert({
-            actor_id: authUser.id,
-            action: 'user_profile_updated',
-            target_user_id: userId,
-            old_values: {
-              role: user.role,
-              is_active: user.is_active,
-            },
-            new_values: {
-              role: formData.role,
-              is_active: formData.is_active,
-            },
-          });
-        }
-      } catch (auditError) {
-        logger.warn('Failed to log audit trail:', auditError);
-        // Continue even if audit fails
-      }
-
-      setEditMode(false);
-      loadUserDetails(); // Reload to get fresh data
-      loadAuditLogs();
-      setSaveError(null); // Clear any previous errors on success
-    } catch (error) {
-      logger.error('Error updating user:', error);
-      setSaveError(parseDbError(error));
-    } finally {
-      setSaving(false);
+  const roleChoices: { role: IntRole; label: string }[] = useMemo(() => {
+    const base: { role: IntRole; label: string }[] = [
+      { role: 'teacher', label: 'Teacher' },
+      { role: 'reviewer', label: 'Reviewer' },
+      { role: 'admin', label: 'Admin' },
+    ];
+    if (currentUser?.role === UserRole.SUPER_ADMIN) {
+      base.push({ role: 'super_admin', label: 'Super Admin' });
     }
-  };
+    return base;
+  }, [currentUser?.role]);
 
-  const handleActivationToggle = async () => {
-    if (!user || !userId) return;
-
+  const handleSaveRole = async () => {
+    if (!user || !userId || !currentUser?.id) return;
     setSaving(true);
+    setSaveError(null);
     try {
-      const newStatus = !formData.is_active;
-
+      const oldRole = user.role;
       const { error } = await supabase
         .from('user_profiles')
-        .update({ is_active: newStatus })
+        .update({ role: pendingRole, updated_at: new Date().toISOString() })
         .eq('id', userId);
-
       if (error) throw error;
-
-      // Try to log the action
-      try {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-        if (authUser) {
-          await supabase.from('user_management_audit').insert({
-            actor_id: authUser.id,
-            action: newStatus ? 'user_activated' : 'user_deactivated',
-            target_user_id: userId,
-          });
-        }
-      } catch (auditError) {
-        logger.warn('Failed to log audit trail:', auditError);
-      }
-
-      setFormData({ ...formData, is_active: newStatus });
-      loadAuditLogs();
-    } catch (error) {
-      logger.error('Error toggling user activation:', error);
+      await supabase.from('user_management_audit').insert({
+        actor_id: currentUser.id,
+        action: 'user_role_changed',
+        target_user_id: userId,
+        old_values: { role: oldRole },
+        new_values: { role: pendingRole },
+      });
+      setRoleEditing(false);
+      setToast({ kind: 'success', msg: `Role changed to ${pendingRole}` });
+      await loadAll();
+    } catch (err) {
+      setSaveError(parseDbError(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!user || !userId) return;
-
+  const handleSaveSchools = async () => {
+    if (!userId || !currentUser) return;
     setSaving(true);
+    setSaveError(null);
     try {
-      // Soft delete by deactivating and marking as deleted
+      const { error: delErr } = await supabase.from('user_schools').delete().eq('user_id', userId);
+      if (delErr) throw delErr;
+      if (editedSchools.length > 0) {
+        const { error: insErr } = await supabase
+          .from('user_schools')
+          .insert(editedSchools.map((s) => ({ user_id: userId, school_id: s.id })));
+        if (insErr) throw insErr;
+      }
+      await supabase.from('user_management_audit').insert({
+        actor_id: currentUser.id,
+        action: 'user_profile_updated',
+        target_user_id: userId,
+        old_values: { school_ids: userSchools.map((s) => s.id) },
+        new_values: { school_ids: editedSchools.map((s) => s.id) },
+      });
+      setSchoolsEditing(false);
+      setToast({ kind: 'success', msg: 'School assignments updated' });
+      await loadAll();
+    } catch (err) {
+      setSaveError(parseDbError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!user || !userId || !currentUser?.id) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
       const { error } = await supabase
         .from('user_profiles')
-        .update({
-          is_active: false,
-          notes: `[DELETED] ${formData.notes || ''}`,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ notes: pendingNotes || undefined, updated_at: new Date().toISOString() })
         .eq('id', userId);
-
       if (error) throw error;
-
-      // Try to log the deletion
-      try {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-        if (authUser) {
-          await supabase.from('user_management_audit').insert({
-            actor_id: authUser.id,
-            action: 'user_deleted',
-            target_user_id: userId,
-          });
-        }
-      } catch (auditError) {
-        logger.warn('Failed to log audit trail:', auditError);
-      }
-
-      navigate('/admin/users');
-    } catch (error) {
-      logger.error('Error deleting user:', error);
+      await supabase.from('user_management_audit').insert({
+        actor_id: currentUser.id,
+        action: 'user_profile_updated',
+        target_user_id: userId,
+        old_values: { notes: user.notes ?? '' },
+        new_values: { notes: pendingNotes },
+      });
+      setNotesEditing(false);
+      setToast({ kind: 'success', msg: 'Notes saved' });
+      await loadAll();
+    } catch (err) {
+      setSaveError(parseDbError(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'reviewer':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleSaveName = async () => {
+    if (!user || !userId) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ full_name: pendingName || undefined, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (error) throw error;
+      setNameEditing(false);
+      setToast({ kind: 'success', msg: 'Name saved' });
+      await loadAll();
+    } catch (err) {
+      setSaveError(parseDbError(err));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case 'user_activated':
-      case 'invite_accepted':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'user_deactivated':
-      case 'user_deleted':
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      case 'user_role_changed':
-      case 'permissions_changed':
-        return <Shield className="w-4 h-4 text-blue-600" />;
-      case 'invite_sent':
-      case 'invite_resent':
-        return <UserPlus className="w-4 h-4 text-indigo-600" />;
-      default:
-        return <Edit className="w-4 h-4 text-gray-600" />;
+  const handleToggleActivation = async () => {
+    if (!user || !userId || !currentUser?.id) return;
+    setSaving(true);
+    try {
+      const newStatus = !user.is_active;
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ is_active: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (error) throw error;
+      await supabase.from('user_management_audit').insert({
+        actor_id: currentUser.id,
+        action: newStatus ? 'user_activated' : 'user_deactivated',
+        target_user_id: userId,
+        old_values: { is_active: user.is_active },
+        new_values: { is_active: newStatus },
+      });
+      setToast({
+        kind: newStatus ? 'success' : 'info',
+        msg: newStatus ? 'Account reactivated' : 'Account deactivated',
+      });
+      await loadAll();
+    } catch (err) {
+      setToast({ kind: 'error', msg: parseDbError(err) });
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading user details...</p>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasPermission(Permission.VIEW_USERS)) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">You don't have permission to view this page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && !user) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">Loading user…</p>
         </div>
       </div>
     );
@@ -436,408 +441,555 @@ export function AdminUserDetail() {
 
   if (!user) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-gray-600">User not found</p>
-          <button
-            onClick={() => navigate('/admin/users')}
-            className="mt-4 text-green-600 hover:text-green-700"
-          >
-            Back to Users
-          </button>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">User not found.</p>
+          <IntButton onClick={() => navigate('/admin/users')}>Back to Users</IntButton>
         </div>
       </div>
     );
   }
 
+  const canEdit = hasPermission(Permission.EDIT_USERS);
+
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/admin/users')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Users
-        </button>
+    <div className="int-shell-root">
+      <div className="adm-page">
+        <IntPageHeader
+          title={user.full_name || email}
+          actions={null}
+          back={{ label: 'Back to Users', onClick: () => navigate('/admin/users') }}
+        />
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <User className="w-6 h-6" />
-              User Details
-            </h1>
-            <p className="text-gray-600 mt-1">Manage user account, roles, and permissions</p>
+        <div className="adm-user-head">
+          <div className={cn('adm-avatar adm-avatar--xl', avatarTone(user.role))}>
+            {initials(user.full_name)}
           </div>
-
-          <div className="flex gap-3">
-            {!editMode ? (
-              <>
-                <button
-                  onClick={() => setEditMode(true)}
-                  disabled={!hasPermission(Permission.EDIT_USERS)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit User
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    setEditMode(false);
-                    setSaveError(null); // Clear any errors
-                    loadUserDetails(); // Reset form
+          <div className="adm-user-head-main">
+            <h2>{user.full_name || 'Unnamed user'}</h2>
+            <div className="adm-user-head-meta">
+              <IntRoleBadge role={user.role as IntRole} />
+              <span className="adm-user-head-meta-sep">·</span>
+              <span>{email}</span>
+              <span className="adm-user-head-meta-sep">·</span>
+              {isActive ? (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    color: 'var(--color-esy-green)',
                   }}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: 'var(--color-esy-green)',
+                    }}
+                  />
+                  Active
+                </span>
+              ) : (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    color: 'var(--color-esy-ink-50)',
+                  }}
                 >
-                  <Save className="w-4 h-4" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </>
-            )}
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: 'var(--color-esy-ink-30)',
+                    }}
+                  />
+                  Deactivated
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="adm-user-head-extras">
+            <dl>
+              <dt>Lessons</dt>
+              <dd>{submissionCount || '—'}</dd>
+            </dl>
+            <dl>
+              <dt>Reviews</dt>
+              <dd>{reviewCount || '—'}</dd>
+            </dl>
           </div>
         </div>
-      </div>
 
-      {/* Error Display */}
-      {saveError && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-red-800">Error saving changes</p>
-            <p className="text-sm text-red-700 mt-1">{saveError}</p>
-          </div>
+        {!isActive && (
+          <IntAlert variant="warn" title="This account is deactivated.">
+            {user.full_name || 'This user'} can't sign in and won't receive invite emails. Use the
+            Access tab to reactivate.
+          </IntAlert>
+        )}
+
+        {saveError && (
+          <IntAlert variant="error" title="Save failed">
+            {saveError}
+          </IntAlert>
+        )}
+
+        <div className="adm-tabs-inline" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'activity'}
+            className={cn(tab === 'activity' && 'is-active')}
+            onClick={() => setTab('activity')}
+          >
+            <Clock className="w-3 h-3" aria-hidden="true" /> Activity
+            <span className="adm-tabs-inline-count">{audit.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'access'}
+            className={cn(tab === 'access' && 'is-active')}
+            onClick={() => setTab('access')}
+          >
+            <User className="w-3 h-3" aria-hidden="true" /> Access
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'profile'}
+            className={cn(tab === 'profile' && 'is-active')}
+            onClick={() => setTab('profile')}
+          >
+            <FileText className="w-3 h-3" aria-hidden="true" /> Profile
+          </button>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                  {editMode ? (
-                    <input
-                      type="text"
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="text-gray-900">{formData.full_name || 'Not provided'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Mail className="w-4 h-4 inline mr-1" />
-                    Email
-                  </label>
-                  <p className="text-gray-900">{email || 'Loading...'}</p>
+        {tab === 'activity' && (
+          <div className="adm-split adm-split--2-1">
+            <div className="adm-card">
+              <div className="adm-section-eyebrow">
+                Activity · {audit.length} event{audit.length === 1 ? '' : 's'}
+              </div>
+              <IntActivityTimeline
+                rows={audit}
+                resolveActor={resolveActor}
+                formatDiffValue={formatDiffValue}
+                emptyMessage={`No activity for ${user.full_name || 'this user'} yet.`}
+              />
+            </div>
+            <div className="adm-col-sticky">
+              <div className="adm-card">
+                <div className="adm-section-eyebrow">Recent submissions</div>
+                {submissions.length === 0 ? (
+                  <p className="adm-section-desc">No submissions yet.</p>
+                ) : (
+                  <ul className="adm-recent-list">
+                    {submissions.map((s) => (
+                      <li key={s.id}>
+                        <div className="adm-recent-title">{s.title || 'Untitled submission'}</div>
+                        <div className="adm-recent-meta">
+                          <IntStatusBadge status={statusToBadge(s.status)} />
+                          <span>
+                            {s.created_at
+                              ? formatDistanceToNow(new Date(s.created_at), { addSuffix: true })
+                              : '—'}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="adm-recent-footer">
+                  {submissionCount > submissions.length
+                    ? `${submissions.length} of ${submissionCount} shown`
+                    : `${submissionCount} total`}
                 </div>
               </div>
+              <div className="adm-card">
+                <div className="adm-section-eyebrow">Recent reviews</div>
+                {reviews.length === 0 ? (
+                  <p className="adm-section-desc">No reviews yet.</p>
+                ) : (
+                  <ul className="adm-recent-list">
+                    {reviews.map((r) => (
+                      <li key={r.id}>
+                        <div className="adm-recent-title">
+                          Submission {r.submission_id.slice(0, 8)}…
+                        </div>
+                        <div className="adm-recent-meta">
+                          {r.decision && <span>{r.decision.replace(/_/g, ' ')}</span>}
+                          <span>
+                            {r.created_at
+                              ? formatDistanceToNow(new Date(r.created_at), { addSuffix: true })
+                              : '—'}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="adm-recent-footer">
+                  {reviewCount > reviews.length
+                    ? `${reviews.length} of ${reviewCount} shown`
+                    : `${reviewCount} total`}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Shield className="w-4 h-4 inline mr-1" />
+        {tab === 'access' && (
+          <div className="adm-split adm-split--2-1">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="adm-card">
+                <div className="adm-card-head">
+                  <div className="adm-section-eyebrow" style={{ margin: 0 }}>
                     Role
-                  </label>
-                  {editMode ? (
-                    <select
-                      value={formData.role}
-                      onChange={(e) =>
-                        setFormData({ ...formData, role: e.target.value as UserRole })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  </div>
+                  {!roleEditing && canEdit && (
+                    <button
+                      type="button"
+                      className="adm-icon-btn"
+                      aria-label="Edit role"
+                      onClick={() => setRoleEditing(true)}
                     >
-                      <option value={UserRole.TEACHER}>Teacher</option>
-                      <option value={UserRole.REVIEWER}>Reviewer</option>
-                      <option value={UserRole.ADMIN}>Admin</option>
-                      {currentUser?.role === UserRole.SUPER_ADMIN && (
-                        <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
-                      )}
-                    </select>
-                  ) : (
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                        formData.role
-                      )}`}
-                    >
-                      {formData.role.replace('_', ' ')}
-                    </span>
+                      <Pencil className="w-4 h-4" aria-hidden="true" />
+                    </button>
                   )}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <div className="flex items-center gap-4">
-                    {formData.is_active ? (
-                      <span className="inline-flex items-center gap-1 text-green-600">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm">Active</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-red-600">
-                        <XCircle className="w-4 h-4" />
-                        <span className="text-sm">Inactive</span>
-                      </span>
-                    )}
-                    {!editMode && hasPermission(Permission.EDIT_USERS) && (
-                      <button
-                        onClick={handleActivationToggle}
-                        disabled={saving}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        {formData.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                    )}
+                {!roleEditing ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <IntRoleBadge role={user.role as IntRole} />
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      since {format(new Date(user.created_at), 'PP')}
+                    </span>
                   </div>
-                </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div role="radiogroup" aria-label="Role">
+                      {roleChoices.map((r) => (
+                        <label
+                          key={r.role}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '6px 8px',
+                            borderRadius: 4,
+                            cursor: 'pointer',
+                            background:
+                              pendingRole === (r.role as unknown as UserRole)
+                                ? 'var(--color-esy-paper-alt)'
+                                : 'transparent',
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="role-edit"
+                            checked={pendingRole === (r.role as unknown as UserRole)}
+                            onChange={() => setPendingRole(r.role as unknown as UserRole)}
+                          />
+                          <IntRoleBadge role={r.role} />
+                        </label>
+                      ))}
+                    </div>
+                    <div className="adm-form-actions" style={{ justifyContent: 'flex-end' }}>
+                      <IntButton
+                        onClick={() => {
+                          setPendingRole(user.role);
+                          setRoleEditing(false);
+                        }}
+                        disabled={saving}
+                      >
+                        Cancel
+                      </IntButton>
+                      <IntButton variant="primary" onClick={handleSaveRole} disabled={saving}>
+                        {saving ? 'Saving…' : 'Save'}
+                      </IntButton>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Building className="w-4 h-4 inline mr-1" />
-                    Schools
-                  </label>
-                  {editMode ? (
+              <div className="adm-card">
+                <div className="adm-card-head">
+                  <div className="adm-section-eyebrow" style={{ margin: 0 }}>
+                    School affiliation
+                  </div>
+                  {!schoolsEditing && canEdit && (
+                    <button
+                      type="button"
+                      className="adm-icon-btn"
+                      aria-label="Edit schools"
+                      onClick={() => setSchoolsEditing(true)}
+                    >
+                      <Pencil className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+                {!schoolsEditing ? (
+                  userSchools.length === 0 ? (
+                    <p className="adm-section-desc">No schools assigned.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {userSchools.map((s) => (
+                        <SchoolBadge key={s.id} name={s.name} />
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <SchoolCheckboxGroup
                       selectedSchools={editedSchools}
                       onChange={setEditedSchools}
                       disabled={saving}
                     />
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {userSchools.length > 0 ? (
-                        userSchools.map((school) => (
-                          <SchoolBadge key={school.id} name={school.name} />
-                        ))
-                      ) : (
-                        <p className="text-gray-500">No schools assigned</p>
-                      )}
+                    <div className="adm-form-actions" style={{ justifyContent: 'flex-end' }}>
+                      <IntButton
+                        onClick={() => {
+                          setEditedSchools(userSchools);
+                          setSchoolsEditing(false);
+                        }}
+                        disabled={saving}
+                      >
+                        Cancel
+                      </IntButton>
+                      <IntButton variant="primary" onClick={handleSaveSchools} disabled={saving}>
+                        {saving ? 'Saving…' : 'Save'}
+                      </IntButton>
                     </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Borough</label>
-                  {editMode ? (
-                    <select
-                      value={formData.school_borough}
-                      onChange={(e) => setFormData({ ...formData, school_borough: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    >
-                      <option value="">Select Borough</option>
-                      <option value="Manhattan">Manhattan</option>
-                      <option value="Brooklyn">Brooklyn</option>
-                      <option value="Queens">Queens</option>
-                      <option value="Bronx">Bronx</option>
-                      <option value="Staten Island">Staten Island</option>
-                    </select>
-                  ) : (
-                    <p className="text-gray-900">{formData.school_borough || 'Not provided'}</p>
-                  )}
-                </div>
-              </div>
-
-              {editMode && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Add any notes about this user..."
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Metadata */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Details</h2>
-
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-gray-600">User ID</p>
-                <p className="text-sm font-mono text-gray-900">{user.id}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600">Created</p>
-                <p className="text-sm text-gray-900">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600">Last Updated</p>
-                <p className="text-sm text-gray-900">
-                  {formatDistanceToNow(new Date(user.updated_at), { addSuffix: true })}
-                </p>
-              </div>
-
-              {user.invited_by && (
-                <div>
-                  <p className="text-sm text-gray-600">Invited By</p>
-                  <p className="text-sm text-gray-900">{user.invited_by}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Activity Metrics */}
-          {activityMetrics && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Activity Metrics
-              </h2>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Logins (30d)</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {activityMetrics.login_count}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Lessons Submitted</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {activityMetrics.submission_count}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Reviews (30d)</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {activityMetrics.review_count}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Last Login</p>
-                    <p className="text-sm text-gray-900">
-                      {activityMetrics.last_login
-                        ? formatDistanceToNow(new Date(activityMetrics.last_login), {
-                            addSuffix: true,
-                          })
-                        : 'Never'}
-                    </p>
-                  </div>
-                </div>
-
-                {activityMetrics.last_activity && (
-                  <div className="pt-2 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">Last Activity</p>
-                    <p className="text-sm text-gray-900">
-                      {formatDistanceToNow(new Date(activityMetrics.last_activity), {
-                        addSuffix: true,
-                      })}
-                    </p>
                   </div>
                 )}
               </div>
-            </div>
-          )}
 
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <History className="w-5 h-5" />
-              Recent Activity
-            </h2>
-
-            <div className="space-y-3">
-              {auditLogs.length > 0 ? (
-                auditLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 text-sm">
-                    {getActionIcon(log.action)}
-                    <div className="flex-1">
-                      <p className="text-gray-900">{log.action.replace(/_/g, ' ')}</p>
-                      <p className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </p>
+              {hasPermission(Permission.DELETE_USERS) && (
+                <div className="adm-danger-zone">
+                  <h3>
+                    <UserX className="w-3 h-3" aria-hidden="true" /> Danger zone
+                  </h3>
+                  <p>Account-level actions. All are logged in the audit trail.</p>
+                  <div className="adm-danger-zone-actions">
+                    <div className="adm-danger-zone-row">
+                      <div>
+                        <div className="adm-danger-zone-row-title">Send password reset</div>
+                        <div>
+                          Admin-initiated password reset needs a service-role endpoint. Ask the user
+                          to click <em>Forgot password</em> from the sign-in screen for now.
+                        </div>
+                      </div>
+                      <IntButton disabled title="Not yet wired — needs a service-role endpoint">
+                        <KeyRound className="w-4 h-4" aria-hidden="true" />
+                        <span>Send link</span>
+                      </IntButton>
+                    </div>
+                    <div className="adm-danger-zone-row">
+                      <div>
+                        <div className="adm-danger-zone-row-title">
+                          {isActive ? 'Deactivate account' : 'Reactivate account'}
+                        </div>
+                        <div>
+                          {isActive
+                            ? 'Prevents sign-in and hides the user from assignment pickers. Submitted lessons are preserved.'
+                            : 'Restores sign-in and makes the user available for review assignment.'}
+                        </div>
+                      </div>
+                      <IntButton
+                        onClick={handleToggleActivation}
+                        disabled={saving}
+                        style={{
+                          borderColor: '#F2C6C3',
+                          color: '#8A1610',
+                        }}
+                      >
+                        {isActive ? (
+                          <>
+                            <UserX className="w-4 h-4" aria-hidden="true" />
+                            <span>Deactivate</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4" aria-hidden="true" />
+                            <span>Reactivate</span>
+                          </>
+                        )}
+                      </IntButton>
                     </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">No recent activity</p>
-              )}
-            </div>
-          </div>
-
-          {/* Danger Zone */}
-          {hasPermission(Permission.DELETE_USERS) && !editMode && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-red-900 mb-2 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Danger Zone
-              </h3>
-              <p className="text-sm text-red-700 mb-4">
-                Deleting a user will deactivate their account and prevent login. This action cannot
-                be undone.
-              </p>
-
-              {!showDeleteConfirm ? (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                >
-                  Delete User
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-red-900">
-                    Are you sure? Type "DELETE" to confirm:
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="Type DELETE"
-                    className="w-full px-3 py-2 border border-red-300 rounded-md"
-                    onChange={(e) => {
-                      if (e.target.value === 'DELETE') {
-                        handleDelete();
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
                 </div>
               )}
             </div>
-          )}
-        </div>
+            <div className="adm-col-sticky">
+              {/* intentionally empty — no permissions matrix */}
+            </div>
+          </div>
+        )}
+
+        {tab === 'profile' && (
+          <div className="adm-split adm-split--2-1">
+            <div className="adm-card">
+              <div className="adm-card-head">
+                <div className="adm-section-eyebrow" style={{ margin: 0 }}>
+                  Profile
+                </div>
+              </div>
+              <dl className="adm-kv">
+                <div className="adm-kv-row">
+                  <dt>Full name</dt>
+                  <dd>
+                    {nameEditing ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <input
+                          className="adm-input"
+                          value={pendingName}
+                          onChange={(e) => setPendingName(e.target.value)}
+                        />
+                        <div className="adm-form-actions" style={{ justifyContent: 'flex-end' }}>
+                          <IntButton
+                            onClick={() => {
+                              setPendingName(user.full_name || '');
+                              setNameEditing(false);
+                            }}
+                            disabled={saving}
+                          >
+                            Cancel
+                          </IntButton>
+                          <IntButton variant="primary" onClick={handleSaveName} disabled={saving}>
+                            {saving ? 'Saving…' : 'Save'}
+                          </IntButton>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>{user.full_name || <span className="muted">Not set</span>}</span>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="adm-icon-btn"
+                            aria-label="Edit full name"
+                            onClick={() => setNameEditing(true)}
+                          >
+                            <Pencil className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </dd>
+                </div>
+                <div className="adm-kv-row">
+                  <dt>Email</dt>
+                  <dd className="adm-kv-mono">{email}</dd>
+                </div>
+                <div className="adm-kv-row">
+                  <dt>User ID</dt>
+                  <dd className="adm-kv-mono">{user.id}</dd>
+                </div>
+                <div className="adm-kv-row">
+                  <dt>Created</dt>
+                  <dd title={user.created_at}>
+                    {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
+                  </dd>
+                </div>
+                <div className="adm-kv-row">
+                  <dt>Last updated</dt>
+                  <dd title={user.updated_at}>
+                    {formatDistanceToNow(new Date(user.updated_at), { addSuffix: true })}
+                  </dd>
+                </div>
+                <div className="adm-kv-row">
+                  <dt>Notes</dt>
+                  <dd>
+                    {notesEditing ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <textarea
+                          className="adm-input"
+                          rows={3}
+                          value={pendingNotes}
+                          onChange={(e) => setPendingNotes(e.target.value)}
+                          placeholder="Internal notes (visible to admins only)"
+                        />
+                        <div className="adm-form-actions" style={{ justifyContent: 'flex-end' }}>
+                          <IntButton
+                            onClick={() => {
+                              setPendingNotes(user.notes || '');
+                              setNotesEditing(false);
+                            }}
+                            disabled={saving}
+                          >
+                            Cancel
+                          </IntButton>
+                          <IntButton variant="primary" onClick={handleSaveNotes} disabled={saving}>
+                            {saving ? 'Saving…' : 'Save'}
+                          </IntButton>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {user.notes ? (
+                          <span style={{ fontStyle: 'italic', color: 'var(--color-esy-ink-70)' }}>
+                            "{user.notes}"
+                          </span>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="adm-icon-btn"
+                            aria-label="Edit notes"
+                            onClick={() => setNotesEditing(true)}
+                          >
+                            <Pencil className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <div className="adm-col-sticky">
+              <div className="adm-card">
+                <div className="adm-section-eyebrow">Related</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                  <Link to="/" className="adm-related-link">
+                    <BookOpen className="w-4 h-4" aria-hidden="true" />
+                    <span>
+                      {submissionCount} submitted lesson{submissionCount === 1 ? '' : 's'}
+                    </span>
+                    <ChevronRight className="w-3 h-3" aria-hidden="true" />
+                  </Link>
+                  {reviewCount > 0 && (
+                    <Link to="/review" className="adm-related-link">
+                      <GitMerge className="w-4 h-4" aria-hidden="true" />
+                      <span>
+                        {reviewCount} review{reviewCount === 1 ? '' : 's'} completed
+                      </span>
+                      <ChevronRight className="w-3 h-3" aria-hidden="true" />
+                    </Link>
+                  )}
+                  <Link to="/admin/invitations" className="adm-related-link">
+                    <Clock className="w-4 h-4" aria-hidden="true" />
+                    <span>Original invitation</span>
+                    <ChevronRight className="w-3 h-3" aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {toast && (
+          <div role="status" aria-live="polite" className={`adm-toast adm-toast--${toast.kind}`}>
+            {toast.kind === 'success' && <Check className="w-3 h-3" aria-hidden="true" />}
+            {toast.kind === 'error' && <X className="w-3 h-3" aria-hidden="true" />}
+            {toast.msg}
+          </div>
+        )}
       </div>
     </div>
   );

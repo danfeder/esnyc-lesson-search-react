@@ -2219,3 +2219,58 @@
   color: var(--esy-ink-50);
   font-style: italic;
 }
+
+/* --- AdminUserDetail — recent submissions / reviews list ------------- */
+.adm-recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.adm-recent-list li {
+  padding: 10px 0;
+  border-top: 1px dashed var(--esy-ink-10);
+}
+.adm-recent-list li:first-child { border-top: 0; }
+.adm-recent-title {
+  font-size: 13px;
+  color: var(--esy-ink);
+  line-height: 1.35;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.adm-recent-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--esy-ink-50);
+  flex-wrap: wrap;
+}
+.adm-recent-footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--esy-ink-10);
+  font-size: 11px;
+  color: var(--esy-ink-50);
+  text-align: right;
+}
+
+/* --- AdminUserDetail — related-resources sidebar links --------------- */
+.adm-related-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  color: var(--esy-ink);
+  text-decoration: none;
+  transition: background-color 120ms;
+}
+.adm-related-link:hover { background: var(--esy-paper-alt); color: var(--esy-ink); }
+.adm-related-link span { flex: 1; }
