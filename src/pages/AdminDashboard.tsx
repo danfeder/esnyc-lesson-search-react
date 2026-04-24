@@ -49,7 +49,11 @@ const adminSections: AdminSection[] = [
 ];
 
 export function AdminDashboard() {
-  const { hasPermission } = useEnhancedAuth();
+  const { hasPermission, loading: authLoading } = useEnhancedAuth();
+
+  if (authLoading) {
+    return null;
+  }
 
   const availableSections = adminSections.filter((section) => hasPermission(section.permission));
 

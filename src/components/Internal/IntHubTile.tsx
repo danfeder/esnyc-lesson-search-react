@@ -10,7 +10,7 @@ export interface IntHubTileProps {
 
 export function IntHubTile({ eyebrow, title, description, to, footerStat }: IntHubTileProps) {
   return (
-    <Link to={to} className="adm-hub-tile">
+    <Link to={to} className="adm-hub-tile" aria-label={title}>
       <div className="adm-hub-tile-eyebrow">{eyebrow}</div>
       <h3>{title}</h3>
       <p>{description}</p>
