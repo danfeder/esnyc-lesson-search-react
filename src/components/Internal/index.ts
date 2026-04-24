@@ -17,6 +17,8 @@ export type {
 export { IntEmptyState } from './IntEmptyState';
 export { IntFilterSection } from './IntFilterSection';
 export { IntFormField } from './IntFormField';
+export { IntHubTile } from './IntHubTile';
+export type { IntHubTileProps } from './IntHubTile';
 export { IntLessonDetail } from './IntLessonDetail';
 export { IntLessonDrawer } from './IntLessonDrawer';
 export { IntListRow, intActivityLabel, intGradesLabel } from './IntListRow';
