@@ -3,6 +3,13 @@ export { IntButton } from './IntButton';
 export { IntCard } from './IntCard';
 export { IntCardGrid } from './IntCardGrid';
 export { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
+export { IntDataTable } from './IntDataTable';
+export type {
+  IntDataTableAlign,
+  IntDataTableColumn,
+  IntDataTableDensity,
+  IntDataTableProps,
+} from './IntDataTable';
 export { IntDecisionBar } from './IntDecisionBar';
 export type { IntDecisionBarProps } from './IntDecisionBar';
 export { IntDensitySwitcher } from './IntDensitySwitcher';

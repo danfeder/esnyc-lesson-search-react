@@ -3,12 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
-  Users,
   Search,
   Plus,
-  Edit,
-  CheckCircle,
-  XCircle,
   Download,
   ChevronLeft,
   ChevronRight,
@@ -17,17 +13,35 @@ import {
   UserCheck,
   UserX,
   Trash2,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { EnhancedUserProfile, UserFilters, UserRole, Permission } from '@/types/auth';
-import { formatDistanceToNow } from 'date-fns';
 import { SchoolBadge } from '@/components/Schools';
 import { logger } from '@/utils/logger';
-import { VirtualizedTable, Column } from '@/components/Common/VirtualizedTable';
-import { shouldVirtualize } from '@/utils/virtualization';
+import {
+  IntButton,
+  IntDataTable,
+  IntPageHeader,
+  IntRoleBadge,
+  IntTabs,
+  type IntDataTableColumn,
+  type IntTab,
+} from '@/components/Internal';
+
+type UserCounts = { lessons: number; reviews: number };
+type EnrichedUser = EnhancedUserProfile & { lessonCount: number; reviewCount: number };
+
+const ROLE_TABS: IntTab[] = [
+  { key: 'all', label: 'All' },
+  { key: 'admin', label: 'Admins' },
+  { key: 'super_admin', label: 'Super Admins' },
+  { key: 'reviewer', label: 'Reviewers' },
+  { key: 'teacher', label: 'Teachers' },
+];
 
 export function AdminUsers() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<EnhancedUserProfile[]>([]);
+  const [users, setUsers] = useState<EnrichedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -49,33 +63,26 @@ export function AdminUsers() {
 
   const USERS_PER_PAGE = 20;
 
-  // Update filters when debounced search changes
   useEffect(() => {
     setFilters((prev) => ({ ...prev, search: debouncedSearch }));
+    setPage(1);
   }, [debouncedSearch]);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
-      // Build the base query with optional JOIN for school filtering
       let query;
       if (filters.schoolId && filters.schoolId !== 'all') {
-        // Use JOIN to filter by school in a single query
         query = supabase
           .from('user_profiles')
           .select('*, user_schools!inner(school_id)', { count: 'exact' })
           .eq('user_schools.school_id', filters.schoolId);
       } else {
-        // Standard query without school filter
         query = supabase.from('user_profiles').select('*', { count: 'exact' });
       }
 
-      // Apply filters (except email search - we'll handle that after)
       if (filters.search) {
-        // Escape special characters including backslashes to prevent SQL injection
-        const escapedSearch = filters.search
-          .replace(/\\/g, '\\\\') // Escape backslashes first
-          .replace(/[%_]/g, '\\$&'); // Then escape wildcards
+        const escapedSearch = filters.search.replace(/\\/g, '\\\\').replace(/[%_]/g, '\\$&');
         query = query.or(`full_name.ilike.%${escapedSearch}%,school_name.ilike.%${escapedSearch}%`);
       }
 
@@ -91,14 +98,12 @@ export function AdminUsers() {
         query = query.eq('school_borough', filters.school_borough as string);
       }
 
-      // Apply sorting (except email - we'll handle that after)
       if (filters.sort_by !== 'email') {
         query = query.order(filters.sort_by || 'created_at', {
           ascending: filters.sort_order === 'asc',
         });
       }
 
-      // Apply pagination
       const from = (page - 1) * USERS_PER_PAGE;
       const to = from + USERS_PER_PAGE - 1;
       query = query.range(from, to);
@@ -108,111 +113,100 @@ export function AdminUsers() {
       if (error) throw error;
 
       if (profiles && profiles.length > 0) {
-        // Get auth users to fetch emails
-        await supabase.auth.getUser();
+        const userIds = profiles.map((p) => p.id);
 
-        // Create an RPC function call to get emails
-        const { data: emailsData, error: emailError } = await supabase.rpc('get_user_emails', {
-          user_ids: profiles.map((p) => p.id),
-        });
+        const [emailsRes, schoolsRes, lessonsRes, reviewsRes] = await Promise.all([
+          supabase.rpc('get_user_emails', { user_ids: userIds }),
+          supabase
+            .from('user_schools')
+            .select('user_id, schools!inner(id, name)')
+            .in('user_id', userIds),
+          supabase.from('lesson_submissions').select('teacher_id').in('teacher_id', userIds),
+          supabase.from('submission_reviews').select('reviewer_id').in('reviewer_id', userIds),
+        ]);
 
-        // Fetch user schools with a single optimized query
-        const { data: userSchoolsData, error: schoolsError } = await supabase
-          .from('user_schools')
-          .select('user_id, schools!inner(id, name)')
-          .in(
-            'user_id',
-            profiles.map((p) => p.id)
+        interface EmailData {
+          id: string;
+          email: string;
+        }
+        const emailMap = new Map<string, string>(
+          !emailsRes.error && emailsRes.data
+            ? (emailsRes.data as EmailData[]).map((item) => [item.id, item.email])
+            : []
+        );
+
+        const schoolsMap = new Map<string, Array<{ id: string; name: string }>>();
+        if (!schoolsRes.error && schoolsRes.data) {
+          schoolsRes.data.forEach(
+            (us: { user_id: string; schools: { id: string; name: string } | null }) => {
+              if (!schoolsMap.has(us.user_id)) schoolsMap.set(us.user_id, []);
+              if (us.schools) schoolsMap.get(us.user_id)!.push(us.schools);
+            }
           );
+        }
 
-        if (!emailError && emailsData) {
-          // Create email map
-          interface EmailData {
-            id: string;
-            email: string;
+        const countsMap = new Map<string, UserCounts>();
+        for (const id of userIds) countsMap.set(id, { lessons: 0, reviews: 0 });
+        if (!lessonsRes.error && lessonsRes.data) {
+          for (const row of lessonsRes.data as Array<{ teacher_id: string }>) {
+            const c = countsMap.get(row.teacher_id);
+            if (c) c.lessons += 1;
           }
-          const emailMap = new Map(emailsData.map((item: EmailData) => [item.id, item.email]));
-
-          // Create schools map
-          const schoolsMap = new Map<string, Array<{ id: string; name: string }>>();
-          if (!schoolsError && userSchoolsData) {
-            userSchoolsData.forEach(
-              (us: { user_id: string; schools: { id: string; name: string } | null }) => {
-                if (!schoolsMap.has(us.user_id)) {
-                  schoolsMap.set(us.user_id, []);
-                }
-                if (us.schools) {
-                  const userSchools = schoolsMap.get(us.user_id);
-                  if (userSchools) {
-                    userSchools.push(us.schools);
-                  }
-                }
-              }
-            );
+        }
+        if (!reviewsRes.error && reviewsRes.data) {
+          for (const row of reviewsRes.data as Array<{ reviewer_id: string }>) {
+            const c = countsMap.get(row.reviewer_id);
+            if (c) c.reviews += 1;
           }
+        }
 
-          // Merge profiles with emails and schools
-          const usersWithEmails = profiles.map((profile) => ({
+        let merged = profiles.map((profile) => {
+          const counts = countsMap.get(profile.id) ?? { lessons: 0, reviews: 0 };
+          return {
             ...profile,
             email: emailMap.get(profile.id) || 'No email',
             schools: schoolsMap.get(profile.id) || [],
-          }));
+            lessonCount: counts.lessons,
+            reviewCount: counts.reviews,
+          };
+        });
 
-          // Handle email search filtering
-          let filteredUsers = usersWithEmails;
-          if (
-            filters.search &&
-            !usersWithEmails.some(
-              (u) =>
-                u.full_name?.toLowerCase().includes(filters.search?.toLowerCase() || '') ||
-                u.school_name?.toLowerCase().includes(filters.search?.toLowerCase() || '')
-            )
-          ) {
-            // If search doesn't match name/school, check emails
-            filteredUsers = usersWithEmails.filter((u) =>
-              u.email.toLowerCase().includes(filters.search?.toLowerCase() || '')
-            );
-          }
-
-          // Handle email sorting
-          if (filters.sort_by === 'email') {
-            filteredUsers.sort((a, b) => {
-              const comparison = a.email.localeCompare(b.email);
-              return filters.sort_order === 'asc' ? comparison : -comparison;
-            });
-          }
-
-          setUsers(
-            filteredUsers.map(
-              (u) =>
-                ({
-                  ...u,
-                  role: (u.role || 'teacher') as UserRole,
-                  user_id: u.user_id || u.id,
-                  permissions: u.permissions as Record<Permission, boolean> | undefined,
-                }) as EnhancedUserProfile
-            )
-          );
-        } else {
-          // Fallback: show profiles without emails
-          setUsers(
-            profiles.map(
-              (p) =>
-                ({
-                  ...p,
-                  email: 'Loading...',
-                  role: (p.role || 'teacher') as UserRole,
-                  user_id: p.user_id || p.id,
-                  permissions: p.permissions as Record<Permission, boolean> | undefined,
-                }) as EnhancedUserProfile
-            )
+        if (
+          filters.search &&
+          !merged.some(
+            (u) =>
+              u.full_name?.toLowerCase().includes(filters.search?.toLowerCase() || '') ||
+              u.school_name?.toLowerCase().includes(filters.search?.toLowerCase() || '')
+          )
+        ) {
+          merged = merged.filter((u) =>
+            u.email.toLowerCase().includes(filters.search?.toLowerCase() || '')
           );
         }
+
+        if (filters.sort_by === 'email') {
+          merged.sort((a, b) => {
+            const comparison = a.email.localeCompare(b.email);
+            return filters.sort_order === 'asc' ? comparison : -comparison;
+          });
+        }
+
+        setUsers(
+          merged.map(
+            (u) =>
+              ({
+                ...u,
+                role: (u.role || 'teacher') as UserRole,
+                user_id: u.user_id || u.id,
+                permissions: u.permissions as Record<Permission, boolean> | undefined,
+              }) as EnrichedUser
+          )
+        );
       } else {
         setUsers([]);
       }
 
-      setTotalPages(Math.ceil((count || 0) / USERS_PER_PAGE));
+      setTotalPages(Math.max(1, Math.ceil((count || 0) / USERS_PER_PAGE)));
     } catch (error) {
       logger.error('Error loading users:', error);
     } finally {
@@ -234,7 +228,6 @@ export function AdminUsers() {
         setShowBulkActions(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -242,9 +235,7 @@ export function AdminUsers() {
   const loadSchools = async () => {
     try {
       const { data, error } = await supabase.from('schools').select('id, name').order('name');
-      if (!error && data) {
-        setSchools(data);
-      }
+      if (!error && data) setSchools(data);
     } catch (error) {
       logger.error('Error loading schools:', error);
     }
@@ -253,7 +244,6 @@ export function AdminUsers() {
   const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
     if (selectedUsers.length === 0) return;
 
-    // Confirm destructive actions
     if (action === 'delete') {
       const confirm = window.confirm(
         `Are you sure you want to delete ${selectedUsers.length} user(s)? This action cannot be undone.`
@@ -263,34 +253,24 @@ export function AdminUsers() {
 
     try {
       if (action === 'delete') {
-        // Use the bulk operations API endpoint
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
         const response = await supabase.functions.invoke('user-management', {
-          body: JSON.stringify({
-            action: 'delete',
-            userIds: selectedUsers,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          body: JSON.stringify({ action: 'delete', userIds: selectedUsers }),
+          headers: { 'Content-Type': 'application/json' },
           method: 'POST',
         });
-
         if (response.error) throw response.error;
       } else {
-        // Handle activate/deactivate
         const { error } = await supabase
           .from('user_profiles')
           .update({ is_active: action === 'activate' })
           .in('id', selectedUsers);
-
         if (error) throw error;
 
-        // Log audit
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -312,19 +292,15 @@ export function AdminUsers() {
 
   const handleExport = async () => {
     try {
-      // Fetch all users with emails using RPC function for export
       const { data: profiles, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (profileError) throw profileError;
 
-      // Get emails for all users
       const { data: emailsData, error: emailError } = await supabase.rpc('get_user_emails', {
         user_ids: profiles?.map((p) => p.id) || [],
       });
-
       if (emailError) throw emailError;
 
       interface EmailDataExport {
@@ -339,7 +315,6 @@ export function AdminUsers() {
         email: emailMap.get(profile.id) || 'No email',
       }));
 
-      // Convert to CSV
       const csv = [
         ['Email', 'Name', 'Role', 'School', 'Borough', 'Status', 'Joined', 'Invited By'],
         ...(data || []).map((user) => [
@@ -356,7 +331,6 @@ export function AdminUsers() {
         .map((row) => row.map((cell) => `"${cell}"`).join(','))
         .join('\n');
 
-      // Download
       const blob = new window.Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -369,492 +343,280 @@ export function AdminUsers() {
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'reviewer':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const initialsFor = (user: EnrichedUser): string => {
+    const source = user.full_name || user.email || '';
+    return (
+      source
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((n) => n[0]?.toUpperCase() ?? '')
+        .join('') || '·'
+    );
   };
 
-  // Define table columns for virtualized table
-  const tableColumns = useMemo<Column<EnhancedUserProfile>[]>(
+  const columns = useMemo<IntDataTableColumn<EnrichedUser>[]>(
     () => [
-      {
-        key: 'select',
-        header: '',
-        width: '50px',
-        render: (user) => (
-          <input
-            type="checkbox"
-            aria-label={`Select ${user.full_name || user.email}`}
-            checked={selectedUsers.includes(user.id)}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedUsers([...selectedUsers, user.id]);
-              } else {
-                setSelectedUsers(selectedUsers.filter((id) => id !== user.id));
-              }
-            }}
-            className="rounded text-green-600"
-          />
-        ),
-      },
       {
         key: 'user',
         header: 'User',
         render: (user) => (
-          <div>
-            <div className="text-sm font-medium text-gray-900">
-              {user.full_name || 'Unnamed User'}
+          <div className="adm-user-cell">
+            <span className="adm-avatar" aria-hidden="true">
+              {initialsFor(user)}
+            </span>
+            <div>
+              <div className="adm-user-cell-name">{user.full_name || 'Unnamed User'}</div>
+              <div className="adm-user-cell-email">{user.email}</div>
             </div>
-            <div className="text-sm text-gray-500">{user.email}</div>
           </div>
         ),
       },
       {
         key: 'role',
         header: 'Role',
-        render: (user) => (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
-              user.role
-            )}`}
-            role="status"
-            aria-label={`Role: ${user.role.replace('_', ' ')}`}
-          >
-            {user.role.replace('_', ' ')}
-          </span>
-        ),
+        render: (user) => <IntRoleBadge role={user.role} />,
       },
       {
         key: 'school',
         header: 'School',
-        render: (user) => (
-          <div className="flex flex-wrap gap-1">
-            {user.schools && user.schools.length > 0 ? (
-              user.schools.map((school: { id: string; name: string }) => (
-                <SchoolBadge key={school.id} name={school.name} size="sm" />
-              ))
-            ) : (
-              <span className="text-sm text-gray-500">-</span>
-            )}
-          </div>
-        ),
-      },
-      {
-        key: 'status',
-        header: 'Status',
+        muted: true,
         render: (user) =>
-          user.is_active ? (
-            <span className="inline-flex items-center gap-1 text-green-600">
-              <CheckCircle className="w-4 h-4" aria-hidden="true" />
-              <span>Active</span>
-            </span>
+          user.schools && user.schools.length > 0 ? (
+            <div className="adm-school-chips">
+              {user.schools.map((school) => (
+                <SchoolBadge key={school.id} name={school.name} size="sm" />
+              ))}
+            </div>
           ) : (
-            <span className="inline-flex items-center gap-1 text-gray-400">
-              <XCircle className="w-4 h-4" aria-hidden="true" />
-              <span>Inactive</span>
-            </span>
+            <span>—</span>
           ),
       },
       {
-        key: 'joined',
-        header: 'Joined',
-        render: (user) => (
-          <span className="text-sm text-gray-500">
-            {user.created_at
-              ? formatDistanceToNow(new Date(user.created_at), { addSuffix: true })
-              : 'Unknown'}
-          </span>
-        ),
+        key: 'lessons',
+        header: 'Lessons',
+        numeric: true,
+        render: (user) =>
+          user.lessonCount > 0 ? user.lessonCount : <span className="muted">—</span>,
+      },
+      {
+        key: 'reviews',
+        header: 'Reviews',
+        numeric: true,
+        render: (user) =>
+          user.reviewCount > 0 ? user.reviewCount : <span className="muted">—</span>,
       },
       {
         key: 'actions',
-        header: 'Actions',
-        width: '100px',
-        className: 'text-right',
+        header: '',
+        width: '48px',
+        align: 'right',
         render: (user) => (
           <button
-            onClick={() => navigate(`/admin/users/${user.id}`)}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label={`Edit ${user.full_name || user.email}`}
+            type="button"
+            className="adm-table-action"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/admin/users/${user.id}`);
+            }}
+            aria-label={`Settings for ${user.full_name || user.email}`}
           >
-            <Edit className="w-5 h-5" />
+            <SettingsIcon className="w-4 h-4" aria-hidden="true" />
           </button>
         ),
       },
     ],
-    [selectedUsers, navigate]
+    [navigate]
   );
 
-  // Determine whether to use virtualization
-  const useVirtualization = shouldVirtualize(users.length, 'table');
-
-  if (loading && users.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading users...</p>
-        </div>
-      </div>
-    );
-  }
+  const headerActions = (
+    <>
+      <IntButton variant="default" onClick={() => navigate('/admin/invitations')}>
+        <Mail className="w-4 h-4" aria-hidden="true" />
+        <span>Invitations</span>
+      </IntButton>
+      <IntButton variant="default" onClick={handleExport}>
+        <Download className="w-4 h-4" aria-hidden="true" />
+        <span>Export</span>
+      </IntButton>
+      <IntButton variant="primary" onClick={() => navigate('/admin/users/invite')}>
+        <Plus className="w-4 h-4" aria-hidden="true" />
+        <span>Invite user</span>
+      </IntButton>
+    </>
+  );
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Users className="w-6 h-6" />
-          User Management
-        </h1>
-        <p className="text-gray-600 mt-1">Manage user accounts, roles, and permissions</p>
-      </div>
+    <div className="int-shell-root">
+      <div className="adm-page">
+        <IntPageHeader
+          title="Users"
+          description="Manage user accounts, roles, and permissions."
+          actions={headerActions}
+        />
 
-      {/* Status announcements for screen readers */}
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {selectedUsers.length > 0 && `${selectedUsers.length} users selected`}
-      </div>
-
-      {/* Actions Bar */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by name, email, or school..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-2">
-            <select
-              value={filters.role}
-              onChange={(e) => setFilters({ ...filters, role: e.target.value as UserRole | 'all' })}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="all">All Roles</option>
-              <option value="teacher">Teachers</option>
-              <option value="reviewer">Reviewers</option>
-              <option value="admin">Admins</option>
-              <option value="super_admin">Super Admins</option>
-            </select>
-
-            <select
-              value={filters.is_active?.toString() || 'all'}
-              onChange={(e) =>
-                setFilters({
-                  ...filters,
-                  is_active: e.target.value as 'all' | 'active' | 'inactive',
-                })
-              }
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-
-            <select
-              value={filters.schoolId || 'all'}
-              onChange={(e) =>
-                setFilters({ ...filters, schoolId: e.target.value as string | 'all' })
-              }
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="all">All Schools</option>
-              {schools.map((school) => (
-                <option key={school.id} value={school.id}>
-                  {school.name}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={() => navigate('/admin/users/invite')}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Invite User
-            </button>
-
-            <button
-              onClick={() => navigate('/admin/invitations')}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              <Mail className="w-5 h-5" />
-              Invitations
-            </button>
-
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-            >
-              <Download className="w-5 h-5" />
-              Export
-            </button>
-          </div>
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {selectedUsers.length > 0 && `${selectedUsers.length} users selected`}
         </div>
 
-        {/* Bulk Actions */}
+        <IntTabs
+          tabs={ROLE_TABS}
+          activeKey={(filters.role as string) || 'all'}
+          onChange={(key) => {
+            setFilters({ ...filters, role: key as UserRole | 'all' });
+            setPage(1);
+          }}
+          ariaLabel="Filter users by role"
+        />
+
+        <div className="adm-toolbar">
+          <div className="adm-toolbar-search">
+            <Search className="w-4 h-4" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search name, email, or school…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search users"
+            />
+          </div>
+
+          <select
+            className="adm-select"
+            value={filters.is_active?.toString() || 'all'}
+            onChange={(e) => {
+              setFilters({
+                ...filters,
+                is_active: e.target.value as 'all' | 'active' | 'inactive',
+              });
+              setPage(1);
+            }}
+            aria-label="Filter by status"
+          >
+            <option value="all">All status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+
+          <select
+            className="adm-select"
+            value={filters.schoolId || 'all'}
+            onChange={(e) => {
+              setFilters({ ...filters, schoolId: e.target.value as string | 'all' });
+              setPage(1);
+            }}
+            aria-label="Filter by school"
+          >
+            <option value="all">All schools</option>
+            {schools.map((school) => (
+              <option key={school.id} value={school.id}>
+                {school.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {selectedUsers.length > 0 && (
-          <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 rounded-md">
-            <span className="text-sm text-blue-800">
+          <div className="adm-bulk-bar">
+            <span>
               {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
             </span>
-            <div className="flex items-center gap-3">
-              <div className="relative" ref={bulkActionsRef}>
-                <button
-                  onClick={() => setShowBulkActions(!showBulkActions)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-                >
-                  Bulk Actions
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-
-                {showBulkActions && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                    <button
-                      onClick={() => {
-                        handleBulkAction('activate');
-                        setShowBulkActions(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <UserCheck className="w-4 h-4 text-green-600" />
-                      Activate Users
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleBulkAction('deactivate');
-                        setShowBulkActions(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <UserX className="w-4 h-4 text-yellow-600" />
-                      Deactivate Users
-                    </button>
-                    <hr className="my-1 border-gray-200" />
-                    <button
-                      onClick={() => {
-                        handleBulkAction('delete');
-                        setShowBulkActions(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Users
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={() => setSelectedUsers([])}
-                className="text-sm text-blue-600 hover:text-blue-800"
+            <div className="adm-bulk-actions" ref={bulkActionsRef}>
+              <IntButton
+                variant="ink"
+                size="sm"
+                onClick={() => setShowBulkActions(!showBulkActions)}
               >
-                Clear Selection
-              </button>
+                Bulk actions
+                <ChevronDown className="w-4 h-4" aria-hidden="true" />
+              </IntButton>
+
+              {showBulkActions && (
+                <div className="adm-bulk-menu" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      handleBulkAction('activate');
+                      setShowBulkActions(false);
+                    }}
+                  >
+                    <UserCheck className="w-4 h-4" aria-hidden="true" />
+                    Activate users
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      handleBulkAction('deactivate');
+                      setShowBulkActions(false);
+                    }}
+                  >
+                    <UserX className="w-4 h-4" aria-hidden="true" />
+                    Deactivate users
+                  </button>
+                  <hr />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="adm-bulk-menu-danger"
+                    onClick={() => {
+                      handleBulkAction('delete');
+                      setShowBulkActions(false);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    Delete users
+                  </button>
+                </div>
+              )}
             </div>
+            <button type="button" className="adm-link" onClick={() => setSelectedUsers([])}>
+              Clear selection
+            </button>
           </div>
         )}
-      </div>
 
-      {/* Users Table - Use virtualization for large datasets */}
-      {useVirtualization ? (
-        <VirtualizedTable
-          data={users}
-          columns={tableColumns}
-          getRowKey={(user) => user.id}
-          isLoading={loading}
-          emptyMessage="No users found"
-          className="bg-white"
-        />
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    aria-label="Select all users"
-                    checked={selectedUsers.length === users.length && users.length > 0}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedUsers(users.map((u) => u.id));
-                      } else {
-                        setSelectedUsers([]);
-                      }
-                    }}
-                    className="rounded text-green-600"
-                  />
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  User
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Role
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  School
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Joined
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${user.full_name || user.email}`}
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedUsers([...selectedUsers, user.id]);
-                        } else {
-                          setSelectedUsers(selectedUsers.filter((id) => id !== user.id));
-                        }
-                      }}
-                      className="rounded text-green-600"
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.full_name || 'Unnamed User'}
-                      </div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                        user.role
-                      )}`}
-                      role="status"
-                      aria-label={`Role: ${user.role.replace('_', ' ')}`}
-                    >
-                      {user.role.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {user.schools && user.schools.length > 0 ? (
-                        user.schools.map((school: { id: string; name: string }) => (
-                          <SchoolBadge key={school.id} name={school.name} size="sm" />
-                        ))
-                      ) : (
-                        <span className="text-sm text-gray-500">-</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {user.is_active ? (
-                      <span
-                        className="inline-flex items-center gap-1 text-green-600"
-                        role="status"
-                        aria-label="Status: Active"
-                      >
-                        <CheckCircle className="w-4 h-4" aria-hidden="true" />
-                        <span className="text-sm">Active</span>
-                      </span>
-                    ) : (
-                      <span
-                        className="inline-flex items-center gap-1 text-red-600"
-                        role="status"
-                        aria-label="Status: Inactive"
-                      >
-                        <XCircle className="w-4 h-4" aria-hidden="true" />
-                        <span className="text-sm">Inactive</span>
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
-                  </td>
-                  <td className="px-6 py-4 text-right text-sm font-medium">
-                    <button
-                      onClick={() => navigate(`/admin/users/${user.id}`)}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {loading && users.length === 0 ? (
+          <p className="adm-section-desc">Loading users…</p>
+        ) : (
+          <IntDataTable
+            columns={columns}
+            rows={users}
+            getRowKey={(user) => user.id}
+            selectable
+            selectedKeys={selectedUsers}
+            onSelectionChange={setSelectedUsers}
+            getSelectRowLabel={(user) => `Select ${user.full_name || user.email}`}
+            ariaLabel="Users"
+            emptyMessage="No users found."
+          />
+        )}
 
-          {/* Pagination */}
-          <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="text-sm text-gray-700">
-              Showing {(page - 1) * USERS_PER_PAGE + 1} to{' '}
-              {Math.min(page * USERS_PER_PAGE, users.length)} users
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="px-3 py-1">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="adm-pagination">
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="adm-pagination-controls">
+            <IntButton
+              size="sm"
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+            </IntButton>
+            <IntButton
+              size="sm"
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page === totalPages}
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-4 h-4" aria-hidden="true" />
+            </IntButton>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
