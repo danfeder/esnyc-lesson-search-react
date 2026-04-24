@@ -2094,3 +2094,35 @@
 .adm-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .adm-icon-btn--danger:hover  { color: var(--esy-red);   background: #FBECEB; }
 .adm-icon-btn--primary:hover { color: var(--esy-green); background: #E6F2EB; }
+
+/* --- Inline message preview under an email in a row ------------------- */
+.adm-inv-message {
+  font-size: 11px;
+  margin-top: 2px;
+  font-style: italic;
+  color: var(--esy-ink-50);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Toast (page-level transient status pill) ------------------------ */
+.adm-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 5px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  background: var(--esy-ink);
+  color: var(--esy-white);
+}
+.adm-toast--success { background: var(--esy-green-deep); }
+.adm-toast--error   { background: var(--esy-red); }

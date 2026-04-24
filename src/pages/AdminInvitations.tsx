@@ -1,84 +1,129 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { Permission, UserInvitation } from '@/types/auth';
-import {
-  ArrowLeft,
-  Mail,
-  Clock,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Send,
-  Plus,
-  Filter,
-  Download,
-} from 'lucide-react';
-import { formatDistanceToNow, format, isPast } from 'date-fns';
+import { Download, Plus, Search, Send, XCircle } from 'lucide-react';
+import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { logger } from '@/utils/logger';
+import {
+  IntAlert,
+  IntButton,
+  IntDataTable,
+  IntPageHeader,
+  IntRoleBadge,
+  IntStatCard,
+  IntStatRow,
+  IntStatusBadge,
+  IntTabs,
+  type IntDataTableColumn,
+  type IntRole,
+  type IntStatus,
+} from '@/components/Internal';
 
 type InvitationFilter = 'all' | 'pending' | 'accepted' | 'expired';
 
-const getPermissionsForRole = (role: string): string[] => {
-  switch (role) {
-    case 'teacher':
-      return ['view_lessons', 'submit_lessons'];
-    case 'reviewer':
-      return [
-        'view_lessons',
-        'submit_lessons',
-        'review_lessons',
-        'approve_lessons',
-        'view_analytics',
-      ];
-    case 'admin':
-      return [
-        'view_lessons',
-        'submit_lessons',
-        'review_lessons',
-        'approve_lessons',
-        'delete_lessons',
-        'view_users',
-        'invite_users',
-        'edit_users',
-        'view_analytics',
-        'manage_duplicates',
-        'export_data',
-      ];
-    default:
-      return ['view_lessons', 'submit_lessons'];
-  }
+const TAB_ORDER: InvitationFilter[] = ['pending', 'expired', 'accepted', 'all'];
+const TAB_LABEL: Record<InvitationFilter, string> = {
+  all: 'All',
+  pending: 'Pending',
+  accepted: 'Accepted',
+  expired: 'Expired',
 };
+
+const EMPTY_COPY: Record<InvitationFilter, { title: string; body: string }> = {
+  pending: {
+    title: 'No pending invitations',
+    body: 'Every invite has been accepted, expired, or cancelled.',
+  },
+  expired: {
+    title: 'No expired invitations',
+    body: 'Expired invites stay here for reference so you can resend them.',
+  },
+  accepted: {
+    title: 'No accepted invitations yet',
+    body: "Once someone clicks through their invite link, they'll appear here.",
+  },
+  all: { title: 'No invitations', body: 'Invite your first teacher or reviewer to get started.' },
+};
+
+const EXPIRING_SOON_MS = 48 * 60 * 60 * 1000;
+
+type Toast = { kind: 'success' | 'error' | 'info'; msg: string };
+
+const PERMISSIONS_FOR_ROLE: Record<string, string[]> = {
+  teacher: ['view_lessons', 'submit_lessons'],
+  reviewer: [
+    'view_lessons',
+    'submit_lessons',
+    'review_lessons',
+    'approve_lessons',
+    'view_analytics',
+  ],
+  admin: [
+    'view_lessons',
+    'submit_lessons',
+    'review_lessons',
+    'approve_lessons',
+    'delete_lessons',
+    'view_users',
+    'invite_users',
+    'edit_users',
+    'view_analytics',
+    'manage_duplicates',
+    'export_data',
+  ],
+  super_admin: [
+    'view_lessons',
+    'submit_lessons',
+    'review_lessons',
+    'approve_lessons',
+    'delete_lessons',
+    'view_users',
+    'invite_users',
+    'edit_users',
+    'view_analytics',
+    'manage_duplicates',
+    'export_data',
+  ],
+};
+
+function getPermissionsForRole(role: string): string[] {
+  return PERMISSIONS_FOR_ROLE[role] ?? ['view_lessons', 'submit_lessons'];
+}
+
+function statusOf(inv: UserInvitation): 'accepted' | 'expired' | 'pending' {
+  if (inv.accepted_at) return 'accepted';
+  if (isPast(new Date(inv.expires_at))) return 'expired';
+  return 'pending';
+}
+
+function statusBadgeVariant(inv: UserInvitation): IntStatus {
+  const s = statusOf(inv);
+  if (s === 'accepted') return 'approved';
+  if (s === 'expired') return 'expired';
+  return 'pending';
+}
 
 export function AdminInvitations() {
   const navigate = useNavigate();
   const { user, hasPermission } = useEnhancedAuth();
   const [invitations, setInvitations] = useState<UserInvitation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<InvitationFilter>('all');
+  const [filter, setFilter] = useState<InvitationFilter>('pending');
   const [searchTerm, setSearchTerm] = useState('');
-  const [resending, setResending] = useState<string | null>(null);
-  const [cancelling, setCancelling] = useState<string | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [toast, setToast] = useState<Toast | null>(null);
 
-  useEffect(() => {
-    if (hasPermission(Permission.VIEW_USERS)) {
-      loadInvitations();
-    }
-  }, [hasPermission]);
-
-  const loadInvitations = async () => {
+  const loadInvitations = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('user_invitations')
         .select('*')
         .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
       if (error) throw error;
-
       setInvitations(
         (data || []).map((inv) => ({
           ...inv,
@@ -86,144 +131,200 @@ export function AdminInvitations() {
           accepted_at: inv.accepted_at || undefined,
           school_name: inv.school_name || undefined,
           school_borough: inv.school_borough || undefined,
-          message: inv.message || undefined,
+          message: (inv as { message?: string }).message || undefined,
           metadata: (inv.metadata as UserInvitation['metadata']) || undefined,
         }))
       );
-    } catch (error) {
-      logger.error('Error loading invitations:', error);
+    } catch (err) {
+      logger.error('Error loading invitations:', err);
+      setToast({ kind: 'error', msg: 'Failed to load invitations.' });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getFilteredInvitations = () => {
-    return invitations.filter((invitation) => {
-      // Apply status filter
-      if (
-        filter === 'pending' &&
-        (invitation.accepted_at || isPast(new Date(invitation.expires_at)))
-      ) {
-        return false;
-      }
-      if (filter === 'accepted' && !invitation.accepted_at) {
-        return false;
-      }
-      if (
-        filter === 'expired' &&
-        (!isPast(new Date(invitation.expires_at)) || invitation.accepted_at)
-      ) {
-        return false;
-      }
+  useEffect(() => {
+    if (hasPermission(Permission.VIEW_USERS)) {
+      loadInvitations();
+    }
+  }, [hasPermission, loadInvitations]);
 
-      // Apply search filter
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        return (
-          invitation.email.toLowerCase().includes(search) ||
-          invitation.school_name?.toLowerCase().includes(search) ||
-          invitation.role.toLowerCase().includes(search)
-        );
-      }
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
-      return true;
-    });
-  };
+  // --- Single-invite helpers (also reused by bulk paths) ------------------
 
-  const handleResend = async (invitationId: string) => {
-    setResending(invitationId);
-    try {
-      // Update expiration date
-      const { error: updateError } = await supabase
-        .from('user_invitations')
-        .update({
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        })
-        .eq('id', invitationId);
+  const resendOne = async (inv: UserInvitation): Promise<void> => {
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      if (updateError) throw updateError;
+    const { error: updateError } = await supabase
+      .from('user_invitations')
+      .update({ expires_at: newExpiresAt })
+      .eq('id', inv.id);
+    if (updateError) throw updateError;
 
-      // Log audit
-      const invitation = invitations.find((inv) => inv.id === invitationId);
-      if (invitation && user) {
-        await supabase.from('user_management_audit').insert({
-          actor_id: user.id,
-          action: 'invite_resent',
-          target_email: invitation.email,
-        });
-      }
+    if (user) {
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'invite_resent',
+        target_email: inv.email,
+      });
 
-      // Send the invitation email
       try {
-        if (!user || !invitation) {
-          throw new Error('User or invitation not found');
-        }
-
         const inviterProfile = await supabase
           .from('user_profiles')
           .select('full_name')
           .eq('id', user.id)
           .single();
-
         await supabase.functions.invoke('send-email', {
           body: {
             type: 'invitation',
-            to: invitation.email,
+            to: inv.email,
             data: {
-              invitationId: invitation.id,
-              token: invitation.token,
+              invitationId: inv.id,
+              token: inv.token,
               inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
-              role: invitation.role,
-              permissions: getPermissionsForRole(invitation.role),
-              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              role: inv.role,
+              permissions: getPermissionsForRole(inv.role),
+              expiresAt: newExpiresAt,
             },
           },
         });
       } catch (emailError) {
         logger.error('Failed to resend invitation email:', emailError);
+        throw emailError;
       }
-
-      // Reload invitations
-      await loadInvitations();
-    } catch (error) {
-      logger.error('Error resending invitation:', error);
-    } finally {
-      setResending(null);
     }
   };
 
-  const handleCancel = async (invitationId: string) => {
-    if (!window.confirm('Are you sure you want to cancel this invitation?')) {
-      return;
+  const cancelOne = async (inv: UserInvitation): Promise<void> => {
+    const { error } = await supabase.from('user_invitations').delete().eq('id', inv.id);
+    if (error) throw error;
+    if (user) {
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'invite_cancelled',
+        target_email: inv.email,
+      });
     }
+  };
 
-    setCancelling(invitationId);
+  // --- Single-row handlers ------------------------------------------------
+
+  const handleResend = async (inv: UserInvitation) => {
     try {
-      const { error } = await supabase.from('user_invitations').delete().eq('id', invitationId);
-
-      if (error) throw error;
-
-      // Log audit
-      const invitation = invitations.find((inv) => inv.id === invitationId);
-      if (invitation && user) {
-        await supabase.from('user_management_audit').insert({
-          actor_id: user.id,
-          action: 'invite_cancelled',
-          target_email: invitation.email,
-        });
-      }
-
-      // Remove from local state
-      setInvitations(invitations.filter((inv) => inv.id !== invitationId));
-    } catch (error) {
-      logger.error('Error cancelling invitation:', error);
-    } finally {
-      setCancelling(null);
+      await resendOne(inv);
+      await loadInvitations();
+      setToast({ kind: 'success', msg: `Invitation resent to ${inv.email}` });
+    } catch (err) {
+      logger.error('Error resending invitation:', err);
+      setToast({ kind: 'error', msg: `Failed to resend to ${inv.email}` });
     }
   };
+
+  const handleCancel = async (inv: UserInvitation) => {
+    if (!window.confirm(`Cancel the invitation to ${inv.email}?`)) return;
+    try {
+      await cancelOne(inv);
+      setInvitations((list) => list.filter((i) => i.id !== inv.id));
+      setSelectedKeys((keys) => keys.filter((k) => k !== inv.id));
+      setToast({ kind: 'info', msg: `Invitation to ${inv.email} cancelled` });
+    } catch (err) {
+      logger.error('Error cancelling invitation:', err);
+      setToast({ kind: 'error', msg: `Failed to cancel invite for ${inv.email}` });
+    }
+  };
+
+  // --- Bulk handlers ------------------------------------------------------
+
+  const selectedInvitations = useMemo(
+    () => invitations.filter((inv) => selectedKeys.includes(inv.id)),
+    [invitations, selectedKeys]
+  );
+  const selectedResendable = selectedInvitations.filter((inv) => !inv.accepted_at);
+
+  const handleBulkResend = async () => {
+    if (selectedResendable.length === 0) return;
+    setBulkRunning(true);
+    try {
+      const results = await Promise.allSettled(selectedResendable.map((inv) => resendOne(inv)));
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      const ok = results.length - failed;
+      await loadInvitations();
+      setSelectedKeys([]);
+      setToast({
+        kind: failed > 0 ? 'error' : 'success',
+        msg:
+          failed > 0
+            ? `${ok} resent, ${failed} failed`
+            : `${ok} invitation${ok === 1 ? '' : 's'} resent`,
+      });
+    } finally {
+      setBulkRunning(false);
+    }
+  };
+
+  const handleBulkCancel = async () => {
+    if (selectedResendable.length === 0) return;
+    if (!window.confirm(`Cancel ${selectedResendable.length} invitation(s)?`)) return;
+    setBulkRunning(true);
+    try {
+      const results = await Promise.allSettled(selectedResendable.map((inv) => cancelOne(inv)));
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      const ok = results.length - failed;
+      await loadInvitations();
+      setSelectedKeys([]);
+      setToast({
+        kind: failed > 0 ? 'error' : 'info',
+        msg:
+          failed > 0
+            ? `${ok} cancelled, ${failed} failed`
+            : `${ok} invitation${ok === 1 ? '' : 's'} cancelled`,
+      });
+    } finally {
+      setBulkRunning(false);
+    }
+  };
+
+  // --- Derived -----------------------------------------------------------
+
+  const counts = useMemo(() => {
+    const c = { all: invitations.length, pending: 0, accepted: 0, expired: 0 };
+    for (const inv of invitations) c[statusOf(inv)]++;
+    return c;
+  }, [invitations]);
+
+  const expiringSoon = useMemo(
+    () =>
+      invitations.filter((inv) => {
+        if (statusOf(inv) !== 'pending') return false;
+        const ms = new Date(inv.expires_at).getTime() - Date.now();
+        return ms > 0 && ms < EXPIRING_SOON_MS;
+      }).length,
+    [invitations]
+  );
+
+  const filteredInvitations = useMemo(() => {
+    let list = invitations;
+    if (filter !== 'all') list = list.filter((inv) => statusOf(inv) === filter);
+    const q = searchTerm.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (inv) =>
+          inv.email.toLowerCase().includes(q) ||
+          inv.school_name?.toLowerCase().includes(q) ||
+          inv.role.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [invitations, filter, searchTerm]);
+
+  // --- Export -----------------------------------------------------------
 
   const exportToCSV = () => {
-    const filtered = getFilteredInvitations();
     const csv = [
       [
         'Email',
@@ -236,12 +337,12 @@ export function AdminInvitations() {
         'Expires At',
         'Accepted At',
       ],
-      ...filtered.map((inv) => [
+      ...filteredInvitations.map((inv) => [
         inv.email,
         inv.role,
         inv.school_name || '',
         inv.school_borough || '',
-        inv.accepted_at ? 'Accepted' : isPast(new Date(inv.expires_at)) ? 'Expired' : 'Pending',
+        statusOf(inv),
         inv.invited_by,
         format(new Date(inv.invited_at), 'yyyy-MM-dd HH:mm'),
         format(new Date(inv.expires_at), 'yyyy-MM-dd HH:mm'),
@@ -253,311 +354,262 @@ export function AdminInvitations() {
 
     const blob = new window.Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = window.document.createElement('a');
     a.href = url;
     a.download = `invitations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
-  const getStatusIcon = (invitation: UserInvitation) => {
-    if (invitation.accepted_at) {
-      return <CheckCircle className="w-5 h-5 text-green-600" />;
-    }
-    if (isPast(new Date(invitation.expires_at))) {
-      return <XCircle className="w-5 h-5 text-red-600" />;
-    }
-    return <Clock className="w-5 h-5 text-yellow-600" />;
-  };
+  // --- Columns ----------------------------------------------------------
 
-  const getStatusBadge = (invitation: UserInvitation) => {
-    if (invitation.accepted_at) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          Accepted
-        </span>
-      );
-    }
-    if (isPast(new Date(invitation.expires_at))) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          Expired
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-        Pending
-      </span>
-    );
-  };
+  const columns: IntDataTableColumn<UserInvitation>[] = useMemo(
+    () => [
+      {
+        key: 'email',
+        header: 'Email',
+        render: (inv) => (
+          <div>
+            <div style={{ fontWeight: 500, color: 'var(--color-esy-ink)' }}>{inv.email}</div>
+            {(inv.metadata?.message || (inv as { message?: string }).message) && (
+              <div className="adm-inv-message">
+                {(inv.metadata?.message || (inv as { message?: string }).message) as string}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'role',
+        header: 'Role',
+        render: (inv) => <IntRoleBadge role={inv.role as IntRole} />,
+      },
+      {
+        key: 'school',
+        header: 'School',
+        render: (inv) =>
+          inv.school_name ? (
+            <span>
+              {inv.school_name}
+              {inv.school_borough && (
+                <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                  · {inv.school_borough}
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="muted">—</span>
+          ),
+      },
+      {
+        key: 'invited_at',
+        header: 'Sent',
+        render: (inv) => (
+          <span className="muted" title={format(new Date(inv.invited_at), 'PPpp')}>
+            {formatDistanceToNow(new Date(inv.invited_at), { addSuffix: true })}
+          </span>
+        ),
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        render: (inv) => (
+          <IntStatusBadge status={statusBadgeVariant(inv)}>
+            {inv.accepted_at ? 'Accepted' : undefined}
+          </IntStatusBadge>
+        ),
+      },
+      {
+        key: 'actions',
+        header: '',
+        width: '92px',
+        render: (inv) => {
+          if (inv.accepted_at) return null;
+          return (
+            <div className="adm-row-actions">
+              <button
+                type="button"
+                className="adm-icon-btn adm-icon-btn--primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleResend(inv);
+                }}
+                aria-label={`Resend invitation to ${inv.email}`}
+                title="Resend"
+              >
+                <Send className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="adm-icon-btn adm-icon-btn--danger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancel(inv);
+                }}
+                aria-label={`Cancel invitation to ${inv.email}`}
+                title="Cancel"
+              >
+                <XCircle className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+          );
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'reviewer':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // --- Tabs -------------------------------------------------------------
 
-  const filteredInvitations = getFilteredInvitations();
+  const tabs = TAB_ORDER.map((key) => ({
+    key,
+    label: TAB_LABEL[key],
+    count: counts[key],
+  }));
 
-  // Calculate stats
-  const stats = {
-    total: invitations.length,
-    pending: invitations.filter((inv) => !inv.accepted_at && !isPast(new Date(inv.expires_at)))
-      .length,
-    accepted: invitations.filter((inv) => inv.accepted_at).length,
-    expired: invitations.filter((inv) => !inv.accepted_at && isPast(new Date(inv.expires_at)))
-      .length,
-  };
+  // --- Guard ------------------------------------------------------------
 
   if (!hasPermission(Permission.VIEW_USERS)) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-gray-600">You don't have permission to view this page</p>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">You don't have permission to view this page.</p>
         </div>
       </div>
     );
   }
 
+  const headerActions = (
+    <>
+      <IntButton onClick={exportToCSV}>
+        <Download className="w-4 h-4" aria-hidden="true" />
+        <span>Export CSV</span>
+      </IntButton>
+      <IntButton variant="primary" onClick={() => navigate('/admin/users/invite')}>
+        <Plus className="w-4 h-4" aria-hidden="true" />
+        <span>Invite user</span>
+      </IntButton>
+    </>
+  );
+
+  const showBulkBar = selectedResendable.length > 0 && filter !== 'accepted';
+
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/admin/users')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Users
-        </button>
+    <div className="int-shell-root">
+      <div className="adm-page">
+        <IntPageHeader
+          title="Invitations"
+          description="Track pending invites, resend if the link never landed, or cancel if an invite shouldn't have gone out."
+          actions={headerActions}
+          back={{ label: 'Back to Users', onClick: () => navigate('/admin/users') }}
+        />
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Mail className="w-6 h-6" />
-              User Invitations
-            </h1>
-            <p className="text-gray-600 mt-1">Manage pending and sent invitations</p>
+        <IntStatRow>
+          <IntStatCard label="Total" value={counts.all} />
+          <IntStatCard label="Pending" value={counts.pending} />
+          <IntStatCard label="Accepted" value={counts.accepted} />
+          <IntStatCard label="Expired" value={counts.expired} />
+        </IntStatRow>
+
+        {expiringSoon > 0 && filter !== 'accepted' && (
+          <IntAlert
+            variant="warn"
+            title={`${expiringSoon} invitation${expiringSoon === 1 ? '' : 's'} expiring in the next 48 hours.`}
+          >
+            Reach out to the teacher, or resend the invite to extend the link another 7 days.
+          </IntAlert>
+        )}
+
+        <IntTabs
+          tabs={tabs}
+          activeKey={filter}
+          onChange={(key) => {
+            setFilter(key as InvitationFilter);
+            setSelectedKeys([]);
+          }}
+          ariaLabel="Filter invitations by status"
+        />
+
+        <div className="adm-toolbar">
+          <div className="adm-toolbar-search">
+            <Search className="w-4 h-4" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search email, school, or role…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search invitations"
+            />
           </div>
+          <span className="muted" style={{ fontSize: 12, marginLeft: 'auto' }}>
+            {filteredInvitations.length} {filteredInvitations.length === 1 ? 'result' : 'results'}
+          </span>
+        </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {selectedKeys.length > 0 &&
+            `${selectedKeys.length} invitation${selectedKeys.length === 1 ? '' : 's'} selected`}
+        </div>
+
+        {showBulkBar && (
+          <div className="adm-bulk-bar">
+            <span>
+              {selectedResendable.length} invitation
+              {selectedResendable.length === 1 ? '' : 's'} selected
+            </span>
+            <IntButton
+              size="sm"
+              variant="primary"
+              onClick={handleBulkResend}
+              disabled={bulkRunning}
             >
-              <Download className="w-4 h-4" />
-              Export CSV
-            </button>
+              <Send className="w-4 h-4" aria-hidden="true" />
+              <span>Resend selected</span>
+            </IntButton>
+            <IntButton size="sm" variant="danger" onClick={handleBulkCancel} disabled={bulkRunning}>
+              <XCircle className="w-4 h-4" aria-hidden="true" />
+              <span>Cancel selected</span>
+            </IntButton>
             <button
-              onClick={() => navigate('/admin/users/invite')}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              type="button"
+              className="adm-link"
+              onClick={() => setSelectedKeys([])}
+              disabled={bulkRunning}
             >
-              <Plus className="w-4 h-4" />
-              New Invitation
+              Clear selection
             </button>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Invitations</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <Mail className="w-8 h-8 text-gray-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Accepted</p>
-              <p className="text-2xl font-bold text-green-600">{stats.accepted}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Expired</p>
-              <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
-            </div>
-            <XCircle className="w-8 h-8 text-red-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Filter className="w-5 h-5 text-gray-500" />
-            <div className="flex gap-2">
-              {(['all', 'pending', 'accepted', 'expired'] as InvitationFilter[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    filter === f
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <input
-            type="text"
-            placeholder="Search by email, school, or role..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-96 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Invitations List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading invitations...</p>
-          </div>
+        {loading && invitations.length === 0 ? (
+          <p className="adm-section-desc">Loading invitations…</p>
         ) : filteredInvitations.length === 0 ? (
-          <div className="text-center py-12">
-            <Mail className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No invitations found</p>
-            {filter !== 'all' && (
-              <p className="text-sm text-gray-500 mt-2">
-                Try changing your filter or search criteria
-              </p>
-            )}
+          <div className="adm-empty adm-empty--large">
+            <h3>{EMPTY_COPY[filter].title}</h3>
+            <p>{EMPTY_COPY[filter].body}</p>
+            <IntButton variant="primary" onClick={() => navigate('/admin/users/invite')}>
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              <span>Invite user</span>
+            </IntButton>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    School
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Invited
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expires
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredInvitations.map((invitation) => (
-                  <tr key={invitation.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {getStatusIcon(invitation)}
-                        <span className="ml-2 text-sm text-gray-900">{invitation.email}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                          invitation.role
-                        )}`}
-                      >
-                        {invitation.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invitation.school_name || '-'}
-                      {invitation.school_borough && (
-                        <span className="text-gray-500 ml-2">({invitation.school_borough})</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(invitation)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDistanceToNow(new Date(invitation.invited_at), { addSuffix: true })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invitation.accepted_at ? (
-                        <span className="text-green-600">Accepted</span>
-                      ) : isPast(new Date(invitation.expires_at)) ? (
-                        <span className="text-red-600">Expired</span>
-                      ) : (
-                        formatDistanceToNow(new Date(invitation.expires_at), { addSuffix: true })
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center gap-2">
-                        {!invitation.accepted_at && (
-                          <>
-                            <button
-                              onClick={() => handleResend(invitation.id)}
-                              disabled={resending === invitation.id}
-                              className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                              title="Resend invitation"
-                            >
-                              {resending === invitation.id ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Send className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleCancel(invitation.id)}
-                              disabled={cancelling === invitation.id}
-                              className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                              title="Cancel invitation"
-                            >
-                              {cancelling === invitation.id ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <XCircle className="w-4 h-4" />
-                              )}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <IntDataTable
+            columns={columns}
+            rows={filteredInvitations}
+            getRowKey={(inv) => inv.id}
+            selectable={filter !== 'accepted'}
+            selectedKeys={selectedKeys}
+            onSelectionChange={setSelectedKeys}
+            getSelectRowLabel={(inv) => `Select invitation to ${inv.email}`}
+            ariaLabel="Invitations"
+            emptyMessage="No invitations match your search."
+          />
+        )}
+
+        {toast && (
+          <div role="status" aria-live="polite" className={`adm-toast adm-toast--${toast.kind}`}>
+            {toast.msg}
           </div>
         )}
       </div>
