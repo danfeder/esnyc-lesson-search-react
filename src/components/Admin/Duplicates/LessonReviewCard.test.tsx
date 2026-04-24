@@ -25,6 +25,14 @@ function makeMockLesson(overrides: Partial<LessonForReview> = {}): LessonForRevi
     has_table_format: overrides.has_table_format ?? false,
     grade_levels: overrides.grade_levels ?? ['3-5', '6-8'],
     file_link: overrides.file_link ?? 'https://docs.google.com/document/d/test',
+    activity_type: overrides.activity_type ?? null,
+    thematic_categories: overrides.thematic_categories ?? null,
+    season_timing: overrides.season_timing ?? null,
+    cultural_heritage: overrides.cultural_heritage ?? null,
+    core_competencies: overrides.core_competencies ?? null,
+    lesson_format: overrides.lesson_format ?? null,
+    updated_at: overrides.updated_at ?? null,
+    teacher_name: overrides.teacher_name ?? null,
   };
 }
 

@@ -31,6 +31,15 @@ export interface LessonForReview {
   has_summary: boolean;
   file_link: string | null;
   content_preview: string | null;
+  activity_type: string[] | null;
+  thematic_categories: string[] | null;
+  season_timing: string[] | null;
+  cultural_heritage: string[] | null;
+  core_competencies: string[] | null;
+  lesson_format: string | null;
+  updated_at: string | null;
+  teacher_name: string | null;
+  similarities?: Record<string, number>;
 }
 
 // Types for grouped duplicates (for review UI)
@@ -44,6 +53,7 @@ export interface DuplicateGroupForReview {
   confidence: 'high' | 'medium' | 'low';
   avgSimilarity: number | null;
   pairCount: number;
+  primaryTeacher: string | null;
 }
 
 // Resolution types
@@ -133,7 +143,10 @@ export async function fetchLessonDetails(lessonIds: string[]): Promise<LessonFor
     throw error;
   }
 
-  return data || [];
+  // Generated DB types lag migrations. The RPC returns the enriched shape
+  // (activity_type, thematic_categories, ..., teacher_name) as of
+  // 20260424_enrich_lesson_details_for_review.sql.
+  return (data || []) as unknown as LessonForReview[];
 }
 
 /**
@@ -288,13 +301,38 @@ export async function fetchDuplicateGroups(
       continue;
     }
 
-    // Get lessons for this group
+    // Get lessons for this group (clone so we can attach per-group similarities)
     const lessons = lessonIdArray
       .map((id) => lessonMap.get(id))
-      .filter((l): l is LessonForReview => l !== undefined);
+      .filter((l): l is LessonForReview => l !== undefined)
+      .map((l) => ({ ...l, similarities: {} as Record<string, number> }));
+
+    // Build per-lesson pairwise similarity map from the group's pairs
+    const lessonByIdInGroup = new Map(lessons.map((l) => [l.lesson_id, l]));
+    for (const pair of pairsInGroup) {
+      if (pair.similarity == null) continue;
+      const a = lessonByIdInGroup.get(pair.id1);
+      const b = lessonByIdInGroup.get(pair.id2);
+      if (a) a.similarities![pair.id2] = pair.similarity;
+      if (b) b.similarities![pair.id1] = pair.similarity;
+    }
 
     // Analyze group
     const { detectionMethod, confidence, avgSimilarity } = analyzeGroup(pairsInGroup);
+
+    // Derive primaryTeacher: most-frequent non-null teacher_name in the cluster
+    const teacherCounts = new Map<string, number>();
+    for (const l of lessons) {
+      if (l.teacher_name) {
+        teacherCounts.set(l.teacher_name, (teacherCounts.get(l.teacher_name) || 0) + 1);
+      }
+    }
+    let primaryTeacher: string | null = null;
+    if (teacherCounts.size === 1) {
+      primaryTeacher = Array.from(teacherCounts.keys())[0];
+    } else if (teacherCounts.size > 1) {
+      primaryTeacher = Array.from(teacherCounts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+    }
 
     groups.push({
       groupId: `group_${groupIndex}`,
@@ -304,6 +342,7 @@ export async function fetchDuplicateGroups(
       confidence,
       avgSimilarity,
       pairCount: pairsInGroup.length,
+      primaryTeacher,
     });
 
     groupIndex++;
