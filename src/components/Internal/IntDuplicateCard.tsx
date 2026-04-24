@@ -15,10 +15,12 @@ export interface IntDuplicateCardData {
   matchLabel?: string;
 }
 
-interface IntDuplicateCardProps {
+export interface IntDuplicateCardProps {
   dup: IntDuplicateCardData;
   selected: boolean;
+
   onSelect: () => void;
+  className?: string;
 }
 
 const DEFAULT_MATCH_LABELS: Record<IntDuplicateMatchType, string> = {
@@ -28,7 +30,7 @@ const DEFAULT_MATCH_LABELS: Record<IntDuplicateMatchType, string> = {
   low: 'Low overlap',
 };
 
-export function IntDuplicateCard({ dup, selected, onSelect }: IntDuplicateCardProps) {
+export function IntDuplicateCard({ dup, selected, onSelect, className }: IntDuplicateCardProps) {
   const handleKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -45,7 +47,7 @@ export function IntDuplicateCard({ dup, selected, onSelect }: IntDuplicateCardPr
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      className={cn('adm-dup', selected && 'selected')}
+      className={cn('adm-dup', selected && 'selected', className)}
       onClick={onSelect}
       onKeyDown={handleKey}
     >

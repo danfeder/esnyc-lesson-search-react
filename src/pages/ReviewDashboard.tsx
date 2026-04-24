@@ -9,20 +9,9 @@ import {
   IntPageHeader,
   IntQueueRow,
   IntTabs,
-  type IntStatus,
   type IntTab,
 } from '@/components/Internal';
-
-/**
- * DB-backed status enum from the lesson_submissions check constraint:
- * 'submitted' | 'in_review' | 'needs_revision' | 'approved'.
- *
- * The TS Submission type elsewhere drifted to 'under_review' / includes
- * 'rejected' which the DB CHECK rejects — pre-existing inconsistency we're
- * NOT trying to fix in this slice. Use the DB-correct values here so the
- * tab filters actually return rows.
- */
-type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved';
+import { STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 
 interface Similarity {
   lesson_id: string;
@@ -45,13 +34,6 @@ interface Submission {
   similarities?: Similarity[];
   extractedTitle?: string;
 }
-
-const STATUS_TO_BADGE: Record<SubmissionStatus, IntStatus> = {
-  submitted: 'submitted',
-  in_review: 'review',
-  needs_revision: 'revision',
-  approved: 'approved',
-};
 
 const FILTER_KEYS = ['all', 'submitted', 'in_review', 'needs_revision', 'approved'] as const;
 type FilterKey = (typeof FILTER_KEYS)[number];

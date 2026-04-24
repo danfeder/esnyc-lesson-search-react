@@ -2,12 +2,12 @@ import type { ReactNode } from 'react';
 import { ExternalLink, FileText } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
-interface IntDocFrameToggleOption {
+export interface IntDocFrameToggleOption {
   value: string;
   label: string;
 }
 
-interface IntDocFrameProps {
+export interface IntDocFrameProps {
   fileName?: string;
   externalHref?: string;
   externalLabel?: string;
@@ -16,6 +16,8 @@ interface IntDocFrameProps {
     value: string;
 
     onChange: (value: string) => void;
+    /** Accessible label for the toggle button group. Defaults to "View mode". */
+    ariaLabel?: string;
   };
   /** When true, wraps children in the padded .adm-doc-body scroll container. */
   padded?: boolean;
@@ -58,19 +60,21 @@ export function IntDocFrame({
           )}
         </div>
         {toggle && (
-          <div className="adm-doc-toggle" role="tablist" aria-label="Document view">
-            {toggle.options.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                role="tab"
-                aria-selected={toggle.value === opt.value}
-                className={cn(toggle.value === opt.value && 'active')}
-                onClick={() => toggle.onChange(opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="adm-doc-toggle" role="group" aria-label={toggle.ariaLabel ?? 'View mode'}>
+            {toggle.options.map((opt) => {
+              const active = toggle.value === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  aria-pressed={active}
+                  className={cn(active && 'active')}
+                  onClick={() => toggle.onChange(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

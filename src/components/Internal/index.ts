@@ -4,10 +4,16 @@ export { IntCard } from './IntCard';
 export { IntCardGrid } from './IntCardGrid';
 export { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
 export { IntDecisionBar } from './IntDecisionBar';
+export type { IntDecisionBarProps } from './IntDecisionBar';
 export { IntDensitySwitcher } from './IntDensitySwitcher';
 export { IntDocFrame } from './IntDocFrame';
+export type { IntDocFrameProps, IntDocFrameToggleOption } from './IntDocFrame';
 export { IntDuplicateCard } from './IntDuplicateCard';
-export type { IntDuplicateCardData, IntDuplicateMatchType } from './IntDuplicateCard';
+export type {
+  IntDuplicateCardData,
+  IntDuplicateCardProps,
+  IntDuplicateMatchType,
+} from './IntDuplicateCard';
 export { IntEmptyState } from './IntEmptyState';
 export { IntFilterSection } from './IntFilterSection';
 export { IntFormField } from './IntFormField';
@@ -18,8 +24,9 @@ export { IntMobileFilterButton } from './IntMobileFilterButton';
 export { IntMobileFilterDrawer } from './IntMobileFilterDrawer';
 export { IntPageHeader } from './IntPageHeader';
 export { IntPillGroup } from './IntPillGroup';
-export type { IntPillOption } from './IntPillGroup';
+export type { IntPillGroupProps, IntPillOption } from './IntPillGroup';
 export { IntProgressBar } from './IntProgressBar';
+export type { IntProgressBarProps } from './IntProgressBar';
 export { IntQueueRow } from './IntQueueRow';
 export { IntRoleBadge } from './IntRoleBadge';
 export type { IntRole } from './IntRoleBadge';

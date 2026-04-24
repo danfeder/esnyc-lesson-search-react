@@ -5,7 +5,7 @@ export interface IntPillOption {
   label: string;
 }
 
-interface IntPillGroupProps {
+export interface IntPillGroupProps {
   options: IntPillOption[];
   selected: string[];
 

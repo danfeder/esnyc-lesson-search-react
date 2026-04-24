@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
 import { ExternalLink } from 'lucide-react';
@@ -10,6 +10,7 @@ import { FEATURES } from '@/utils/featureFlags';
 import type { ReviewMetadata } from '@/types';
 import type { Json, Database } from '@/types/database.types';
 import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
+import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
 import {
   IntButton,
@@ -22,36 +23,18 @@ import {
   IntProgressBar,
   IntStatusBadge,
   type IntDuplicateMatchType,
-  type IntStatus,
 } from '@/components/Internal';
 
 type LessonInsert = Database['public']['Tables']['lessons']['Insert'];
 type LessonUpdate = Database['public']['Tables']['lessons']['Update'];
 
 /**
- * DB-backed status enum from the lesson_submissions check constraint:
- * 'submitted' | 'in_review' | 'needs_revision' | 'approved'.
- *
- * The TS types elsewhere include 'rejected' / 'under_review' which the DB
- * CHECK rejects — so this slice deliberately drops the Reject decision and
- * only writes statuses the constraint accepts.
+ * The DB CHECK constraint on lesson_submissions.status only allows
+ * 'submitted' | 'in_review' | 'needs_revision' | 'approved' — see
+ * `utils/submissionStatus.ts`. This slice deliberately drops the Reject
+ * decision because the legacy 'reject' path silently failed at the status
+ * update step.
  */
-type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved';
-
-const STATUS_TO_BADGE: Record<SubmissionStatus, IntStatus> = {
-  submitted: 'submitted',
-  in_review: 'review',
-  needs_revision: 'revision',
-  approved: 'approved',
-};
-
-const STATUS_LABEL: Record<SubmissionStatus, string> = {
-  submitted: 'Submitted',
-  in_review: 'In review',
-  needs_revision: 'Needs revision',
-  approved: 'Approved',
-};
-
 type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
 
 interface SimilarityWithLesson {
@@ -163,6 +146,22 @@ export function ReviewDetail() {
   const [notes, setNotes] = useState('');
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [legacyDecisionWarning, setLegacyDecisionWarning] = useState<string | null>(null);
+
+  const errorBannerRef = useRef<HTMLDivElement | null>(null);
+
+  // Stable input ids so CreatableSelect labels actually associate. react-select
+  // doesn't accept a top-level `id` that wires the inner input — must use
+  // `inputId` and a matching <label htmlFor>.
+  const baseId = useId();
+  const inputIds = {
+    heritage: `${baseId}-heritage`,
+    mainIngredients: `${baseId}-main-ingredients`,
+    cookingSkills: `${baseId}-cooking-skills`,
+    gardenSkills: `${baseId}-garden-skills`,
+    observances: `${baseId}-observances`,
+    culturalResponsiveness: `${baseId}-cultural-responsiveness`,
+  };
 
   const [viewMode, setViewMode] = useState<'embed' | 'text'>(() => {
     if (!FEATURES.GOOGLE_DOC_EMBED) return 'text';
@@ -332,6 +331,17 @@ export function ReviewDetail() {
           existingDecision === 'needs_revision'
         ) {
           setDecision(existingDecision);
+        } else if (existingDecision) {
+          // Legacy values like 'reject' that the new UI doesn't expose. Surface
+          // it so the reviewer doesn't accidentally re-approve a previously
+          // rejected submission.
+          logger.warn(
+            'Loaded review with unsupported decision, falling back to default:',
+            existingDecision
+          );
+          setLegacyDecisionWarning(
+            `This submission was previously marked "${existingDecision}". That option is no longer available — choose a new decision below.`
+          );
         }
         setNotes(review.notes || '');
       }
@@ -347,13 +357,11 @@ export function ReviewDetail() {
   }, [id, loadSubmission]);
 
   useEffect(() => {
-    if (validationErrors.length > 0) {
-      const firstInvalidField = document.querySelector('[aria-invalid="true"]');
-      if (firstInvalidField && 'focus' in firstInvalidField) {
-        // eslint-disable-next-line no-undef
-        (firstInvalidField as HTMLElement).focus();
-        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    // Pill groups don't expose individual aria-invalid targets, so focus the
+    // banner itself — the visible list of missing fields is the recovery path.
+    if (validationErrors.length > 0 && errorBannerRef.current) {
+      errorBannerRef.current.focus();
+      errorBannerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [validationErrors]);
 
@@ -407,7 +415,7 @@ export function ReviewDetail() {
       if (updateError) throw updateError;
 
       if (decision === 'approve_new') {
-        const lessonData = parseExtractedContent(submission.extracted_content);
+        const lessonData = parsedContent;
         const baseTitle = submission.extracted_title || lessonData.title;
 
         const newLesson: LessonInsert = {
@@ -491,7 +499,7 @@ export function ReviewDetail() {
         });
         if (archiveError) throw archiveError;
 
-        const lessonData = parseExtractedContent(submission.extracted_content);
+        const lessonData = parsedContent;
         const metadataObj = existingLesson.metadata as LessonMetadataJson | null;
         const existingActivityType =
           metadataObj && typeof metadataObj === 'object' && !Array.isArray(metadataObj)
@@ -574,13 +582,17 @@ export function ReviewDetail() {
     }
   };
 
+  // Server orders by combined_score DESC; just take the top 5.
   const topDuplicates = useMemo(
-    () =>
-      submission?.similarities
-        ?.slice()
-        .sort((a, b) => (b.combined_score ?? 0) - (a.combined_score ?? 0))
-        .slice(0, 5) || [],
+    () => submission?.similarities?.slice(0, 5) ?? [],
     [submission?.similarities]
+  );
+
+  // parseExtractedContent is pure but a few hundred lines of regex; memoize once.
+  const parsedContent = useMemo(
+    () =>
+      submission ? parseExtractedContent(submission.extracted_content) : { title: '', summary: '' },
+    [submission]
   );
 
   if (loading) {
@@ -609,10 +621,7 @@ export function ReviewDetail() {
     );
   }
 
-  const headerTitle =
-    submission.extracted_title ||
-    parseExtractedContent(submission.extracted_content).title ||
-    'Untitled submission';
+  const headerTitle = submission.extracted_title || parsedContent.title || 'Untitled submission';
   const submittedOn = submission.created_at
     ? new Date(submission.created_at).toLocaleDateString()
     : '';
@@ -691,21 +700,27 @@ export function ReviewDetail() {
           <div>
             <div className="adm-card">
               <div className="adm-section-eyebrow">Metadata</div>
-              <p style={{ fontSize: 12, color: 'var(--color-esy-ink-70)', margin: '-8px 0 12px' }}>
+              <p className="adm-section-desc">
                 Fix tags before publishing. Reviewer has the final call.
               </p>
-              <IntProgressBar filled={fieldProgress.completed} total={fieldProgress.total} />
+              <IntProgressBar
+                filled={fieldProgress.completed}
+                total={fieldProgress.total}
+                ariaLabel="Required fields"
+              />
+
+              {legacyDecisionWarning && (
+                <div role="status" className="adm-hint adm-hint--error adm-alert--error">
+                  {legacyDecisionWarning}
+                </div>
+              )}
 
               {validationErrors.length > 0 && (
                 <div
+                  ref={errorBannerRef}
+                  tabIndex={-1}
                   role="alert"
-                  className="adm-hint adm-hint--error"
-                  style={{
-                    marginTop: 12,
-                    padding: 10,
-                    border: '1px solid var(--color-esy-red)',
-                    borderRadius: 4,
-                  }}
+                  className="adm-hint adm-hint--error adm-alert--error"
                 >
                   Missing required fields: {validationErrors.join(', ')}
                 </div>
@@ -792,8 +807,11 @@ export function ReviewDetail() {
                 </IntFormField>
 
                 <div className="adm-field">
-                  <label className="adm-label">Cultural heritage</label>
+                  <label className="adm-label" htmlFor={inputIds.heritage}>
+                    Cultural heritage
+                  </label>
                   <CreatableSelect
+                    inputId={inputIds.heritage}
                     isMulti
                     options={heritageOptions}
                     value={(metadata.culturalHeritage ?? []).map(
@@ -826,8 +844,11 @@ export function ReviewDetail() {
                   </IntFormField>
 
                   <div className="adm-field">
-                    <label className="adm-label adm-label-req">Main ingredients</label>
+                    <label className="adm-label adm-label-req" htmlFor={inputIds.mainIngredients}>
+                      Main ingredients
+                    </label>
                     <CreatableSelect
+                      inputId={inputIds.mainIngredients}
                       isMulti
                       options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.mainIngredients)}
                       value={(metadata.mainIngredients ?? []).map((v) => ({
@@ -849,8 +870,11 @@ export function ReviewDetail() {
                   </div>
 
                   <div className="adm-field">
-                    <label className="adm-label adm-label-req">Cooking skills</label>
+                    <label className="adm-label adm-label-req" htmlFor={inputIds.cookingSkills}>
+                      Cooking skills
+                    </label>
                     <CreatableSelect
+                      inputId={inputIds.cookingSkills}
                       isMulti
                       options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.cookingSkills)}
                       value={(metadata.cookingSkills ?? []).map((v) => ({
@@ -876,8 +900,11 @@ export function ReviewDetail() {
                     Garden details
                   </div>
                   <div className="adm-field">
-                    <label className="adm-label adm-label-req">Garden skills</label>
+                    <label className="adm-label adm-label-req" htmlFor={inputIds.gardenSkills}>
+                      Garden skills
+                    </label>
                     <CreatableSelect
+                      inputId={inputIds.gardenSkills}
                       isMulti
                       options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.gardenSkills)}
                       value={(metadata.gardenSkills ?? []).map((v) => ({
@@ -913,8 +940,11 @@ export function ReviewDetail() {
                 </IntFormField>
 
                 <div className="adm-field">
-                  <label className="adm-label">Observances &amp; holidays</label>
+                  <label className="adm-label" htmlFor={inputIds.observances}>
+                    Observances &amp; holidays
+                  </label>
                   <CreatableSelect
+                    inputId={inputIds.observances}
                     isMulti
                     options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.observancesHolidays)}
                     value={(metadata.observancesHolidays ?? []).map((v) => ({
@@ -931,8 +961,11 @@ export function ReviewDetail() {
                 </div>
 
                 <div className="adm-field">
-                  <label className="adm-label">Cultural responsiveness features</label>
+                  <label className="adm-label" htmlFor={inputIds.culturalResponsiveness}>
+                    Cultural responsiveness features
+                  </label>
                   <CreatableSelect
+                    inputId={inputIds.culturalResponsiveness}
                     isMulti
                     options={selectOptionsFromConfig(
                       ALL_FIELD_CONFIGS.culturalResponsivenessFeatures
@@ -1013,13 +1046,7 @@ export function ReviewDetail() {
             {topDuplicates.length > 0 && (
               <div className="adm-card">
                 <div className="adm-section-eyebrow">Possible duplicates</div>
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--color-esy-ink-70)',
-                    margin: '-8px 0 12px',
-                  }}
-                >
+                <p className="adm-section-desc">
                   Select one to merge into instead of publishing new.
                 </p>
                 <div className="adm-dup-list">
