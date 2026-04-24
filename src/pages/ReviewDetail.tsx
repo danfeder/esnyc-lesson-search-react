@@ -1,24 +1,59 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import CreatableSelect from 'react-select/creatable';
+import { ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
-import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
 import { logger } from '@/utils/logger';
-import type { ReviewMetadata } from '@/types';
+import { sanitizeContent } from '@/utils/sanitize';
 import { FEATURES } from '@/utils/featureFlags';
+import type { ReviewMetadata } from '@/types';
 import type { Json, Database } from '@/types/database.types';
-import { ReviewContent } from '@/components/Review/ReviewContent';
-import { ReviewDuplicates } from '@/components/Review/ReviewDuplicates';
-import { ReviewMetadataForm } from '@/components/Review/ReviewMetadataForm';
-import { ReviewActions } from '@/components/Review/ReviewActions';
+import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
+import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
+import {
+  IntButton,
+  IntDecisionBar,
+  IntDocFrame,
+  IntDuplicateCard,
+  IntFormField,
+  IntPageHeader,
+  IntPillGroup,
+  IntProgressBar,
+  IntStatusBadge,
+  type IntDuplicateMatchType,
+  type IntStatus,
+} from '@/components/Internal';
 
-/** Type for creating a new lesson record */
 type LessonInsert = Database['public']['Tables']['lessons']['Insert'];
-
-/** Type for updating an existing lesson record */
 type LessonUpdate = Database['public']['Tables']['lessons']['Update'];
 
-/** Type for similarity data enriched with lesson information */
+/**
+ * DB-backed status enum from the lesson_submissions check constraint:
+ * 'submitted' | 'in_review' | 'needs_revision' | 'approved'.
+ *
+ * The TS types elsewhere include 'rejected' / 'under_review' which the DB
+ * CHECK rejects — so this slice deliberately drops the Reject decision and
+ * only writes statuses the constraint accepts.
+ */
+type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved';
+
+const STATUS_TO_BADGE: Record<SubmissionStatus, IntStatus> = {
+  submitted: 'submitted',
+  in_review: 'review',
+  needs_revision: 'revision',
+  approved: 'approved',
+};
+
+const STATUS_LABEL: Record<SubmissionStatus, string> = {
+  submitted: 'Submitted',
+  in_review: 'In review',
+  needs_revision: 'Needs revision',
+  approved: 'Approved',
+};
+
+type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
+
 interface SimilarityWithLesson {
   lesson_id: string;
   combined_score: number | null;
@@ -32,7 +67,6 @@ interface SimilarityWithLesson {
   };
 }
 
-/** Interface for legacy metadata JSON structure */
 interface LessonMetadataJson {
   activityType?: string | string[];
   thematicCategories?: string[];
@@ -58,55 +92,64 @@ interface SubmissionDetail {
   google_doc_id: string;
   submission_type: 'new' | 'update';
   original_lesson_id?: string;
-  status: string;
+  status: SubmissionStatus;
   extracted_content: string;
   extracted_title?: string;
   content_hash: string;
   content_embedding?: string;
-  teacher: {
-    email: string;
-    full_name?: string;
-  };
+  teacher: { email: string; full_name?: string };
   similarities?: SimilarityWithLesson[];
-  review?: {
-    metadata: ReviewMetadata;
-    decision: string;
-    notes: string;
-  };
+  review?: { metadata: ReviewMetadata; decision: string; notes: string };
 }
 
-// Helper function to parse extracted content
 function parseExtractedContent(content: string): { title: string; summary: string } {
-  // Try to extract title from the first line or header
   const lines = content.split('\n').filter((line) => line.trim());
   let title = '';
   let summary = '';
 
-  // Look for a title pattern (could be the first non-empty line or after "Title:")
   const titleMatch = content.match(/^(Title:|Lesson Title:|#\s+)?(.+)$/im);
   if (titleMatch && titleMatch[2]) {
     title = titleMatch[2].trim();
   } else if (lines.length > 0) {
-    // Use first line as title if no specific title pattern found
     title = lines[0].trim();
   }
 
-  // Look for summary pattern
   const summaryMatch = content.match(
     /(?:Summary:|Overview:|Description:)\s*(.+?)(?:\n\n|\n(?=[A-Z]))/is
   );
   if (summaryMatch && summaryMatch[1]) {
     summary = summaryMatch[1].trim();
   } else {
-    // Use first paragraph after title as summary
     const contentAfterTitle = lines.slice(1).join('\n');
     const firstParagraph = contentAfterTitle.split(/\n\n/)[0];
     if (firstParagraph) {
-      summary = firstParagraph.trim().substring(0, 500); // Limit summary length
+      summary = firstParagraph.trim().substring(0, 500);
     }
   }
 
   return { title, summary };
+}
+
+function normalizeMatchType(raw: string | null): IntDuplicateMatchType | null {
+  if (!raw) return null;
+  if (raw === 'exact' || raw === 'high' || raw === 'medium' || raw === 'low') return raw;
+  return null;
+}
+
+function selectOptionsFromConfig(config: FilterConfig) {
+  return config.options.map((o) => ({ value: o.value, label: o.label }));
+}
+
+/** Hierarchical -> flat options for cultural heritage CreatableSelect. */
+function flattenHeritageOptions(config: FilterConfig) {
+  return config.options.flatMap((parent) => {
+    const parentOpt = { value: parent.value, label: parent.label };
+    const childOpts = (parent.children ?? []).map((c) => ({
+      value: c.value,
+      label: `${parent.label} → ${c.label}`,
+    }));
+    return [parentOpt, ...childOpts];
+  });
 }
 
 export function ReviewDetail() {
@@ -116,14 +159,11 @@ export function ReviewDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [metadata, setMetadata] = useState<ReviewMetadata>({});
-  const [decision, setDecision] = useState<
-    'approve_new' | 'approve_update' | 'reject' | 'needs_revision'
-  >('approve_new');
+  const [decision, setDecision] = useState<ReviewDecision>('approve_new');
   const [notes, setNotes] = useState('');
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  // View mode state with localStorage persistence
   const [viewMode, setViewMode] = useState<'embed' | 'text'>(() => {
     if (!FEATURES.GOOGLE_DOC_EMBED) return 'text';
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -132,20 +172,30 @@ export function ReviewDetail() {
     return 'embed';
   });
 
-  // Helper functions for conditional field visibility
-  const showCookingFields = useCallback(() => {
-    return metadata.activityType === 'cooking' || metadata.activityType === 'both';
-  }, [metadata.activityType]);
+  const handleSetViewMode = useCallback((mode: 'embed' | 'text') => {
+    setViewMode(mode);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('reviewViewMode', mode);
+    }
+  }, []);
 
-  const showGardenFields = useCallback(() => {
-    return metadata.activityType === 'garden' || metadata.activityType === 'both';
-  }, [metadata.activityType]);
+  const showCookingFields = useMemo(
+    () =>
+      metadata.activityType === 'cooking-only' ||
+      metadata.activityType === 'both' ||
+      metadata.activityType === 'cooking',
+    [metadata.activityType]
+  );
+  const showGardenFields = useMemo(
+    () =>
+      metadata.activityType === 'garden-only' ||
+      metadata.activityType === 'both' ||
+      metadata.activityType === 'garden',
+    [metadata.activityType]
+  );
 
-  // Validation function for required fields
-  const validateRequiredFields = () => {
+  const validateRequiredFields = useCallback(() => {
     const errors: string[] = [];
-
-    // Always required fields
     if (!metadata.activityType) errors.push('Activity Type');
     if (!metadata.location) errors.push('Location');
     if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
@@ -153,24 +203,46 @@ export function ReviewDetail() {
     if (!metadata.season?.length) errors.push('Season & Timing');
     if (!metadata.coreCompetencies?.length) errors.push('Core Competencies');
     if (!metadata.socialEmotionalLearning?.length) errors.push('Social-Emotional Learning');
-
-    // Conditionally required fields based on activity type
-    if (showCookingFields()) {
+    if (showCookingFields) {
       if (!metadata.cookingMethods?.length) errors.push('Cooking Methods');
       if (!metadata.mainIngredients?.length) errors.push('Main Ingredients');
       if (!metadata.cookingSkills?.length) errors.push('Cooking Skills');
     }
-
-    if (showGardenFields()) {
+    if (showGardenFields) {
       if (!metadata.gardenSkills?.length) errors.push('Garden Skills');
     }
-
     return errors;
-  };
+  }, [metadata, showCookingFields, showGardenFields]);
+
+  const fieldProgress = useMemo(() => {
+    const required: { label: string; filled: boolean }[] = [
+      { label: 'Activity Type', filled: !!metadata.activityType },
+      { label: 'Location', filled: !!metadata.location },
+      { label: 'Grade Levels', filled: (metadata.gradeLevels?.length ?? 0) > 0 },
+      { label: 'Thematic Categories', filled: (metadata.themes?.length ?? 0) > 0 },
+      { label: 'Season & Timing', filled: (metadata.season?.length ?? 0) > 0 },
+      { label: 'Core Competencies', filled: (metadata.coreCompetencies?.length ?? 0) > 0 },
+      {
+        label: 'Social-Emotional Learning',
+        filled: (metadata.socialEmotionalLearning?.length ?? 0) > 0,
+      },
+    ];
+    if (showCookingFields) {
+      required.push(
+        { label: 'Cooking Methods', filled: (metadata.cookingMethods?.length ?? 0) > 0 },
+        { label: 'Main Ingredients', filled: (metadata.mainIngredients?.length ?? 0) > 0 },
+        { label: 'Cooking Skills', filled: (metadata.cookingSkills?.length ?? 0) > 0 }
+      );
+    }
+    if (showGardenFields) {
+      required.push({ label: 'Garden Skills', filled: (metadata.gardenSkills?.length ?? 0) > 0 });
+    }
+    const completed = required.filter((f) => f.filled).length;
+    return { completed, total: required.length };
+  }, [metadata, showCookingFields, showGardenFields]);
 
   const loadSubmission = useCallback(async () => {
     try {
-      // First, get the submission including embedding
       const { data: submissionData, error: submissionError } = await supabase
         .from('lesson_submissions')
         .select('*, content_embedding')
@@ -184,14 +256,12 @@ export function ReviewDetail() {
         return;
       }
 
-      // Get similarities separately
       const { data: similarities } = await supabase
         .from('submission_similarities')
         .select('*')
         .eq('submission_id', id!)
         .order('combined_score', { ascending: false });
 
-      // Get lessons for similarities
       let similaritiesWithLessons: SimilarityWithLesson[] = [];
       if (similarities && similarities.length > 0) {
         const lessonIds = similarities.map((s) => s.lesson_id);
@@ -207,9 +277,6 @@ export function ReviewDetail() {
         if (lessons) {
           similaritiesWithLessons = similarities.map((sim) => {
             const lesson = lessons.find((l) => l.lesson_id === sim.lesson_id);
-            if (!lesson) {
-              logger.debug(`Lesson not found for similarity: ${sim.lesson_id}`);
-            }
             return {
               ...sim,
               lesson: lesson || { title: 'Unknown', grade_levels: [], thematic_categories: [] },
@@ -218,24 +285,21 @@ export function ReviewDetail() {
         }
       }
 
-      // Get review separately
       const { data: reviews } = await supabase
         .from('submission_reviews')
         .select('*')
         .eq('submission_id', id!);
 
-      // Get teacher profile
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('id, full_name')
         .eq('id', submissionData.teacher_id)
         .single();
 
-      // Combine all data
       const fullSubmission: SubmissionDetail = {
         ...submissionData,
         created_at: submissionData.created_at || '',
-        status: submissionData.status || 'pending',
+        status: ((submissionData.status as SubmissionStatus) || 'submitted') as SubmissionStatus,
         extracted_content: submissionData.extracted_content || '',
         extracted_title: submissionData.extracted_title ?? undefined,
         content_hash: submissionData.content_hash || '',
@@ -258,13 +322,17 @@ export function ReviewDetail() {
 
       setSubmission(fullSubmission);
 
-      // If there's an existing review, load its data
       if (reviews && reviews.length > 0) {
         const review = reviews[0];
         setMetadata((review.tagged_metadata as ReviewMetadata) || {});
-        setDecision(
-          review.decision as 'approve_new' | 'approve_update' | 'reject' | 'needs_revision'
-        );
+        const existingDecision = review.decision as string;
+        if (
+          existingDecision === 'approve_new' ||
+          existingDecision === 'approve_update' ||
+          existingDecision === 'needs_revision'
+        ) {
+          setDecision(existingDecision);
+        }
         setNotes(review.notes || '');
       }
     } catch (error) {
@@ -275,15 +343,11 @@ export function ReviewDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (id) {
-      loadSubmission();
-    }
+    if (id) loadSubmission();
   }, [id, loadSubmission]);
 
-  // Focus management for validation errors
   useEffect(() => {
     if (validationErrors.length > 0) {
-      // Focus the first field with an error
       const firstInvalidField = document.querySelector('[aria-invalid="true"]');
       if (firstInvalidField && 'focus' in firstInvalidField) {
         // eslint-disable-next-line no-undef
@@ -293,22 +357,26 @@ export function ReviewDetail() {
     }
   }, [validationErrors]);
 
+  const handleMetadataChange = useCallback(
+    <K extends keyof ReviewMetadata>(filterKey: K, value: ReviewMetadata[K]) => {
+      setMetadata((prev) => ({ ...prev, [filterKey]: value }));
+    },
+    []
+  );
+
   const handleSaveReview = async () => {
     if (!submission) return;
 
-    // Validate required fields
     const errors = validateRequiredFields();
     if (errors.length > 0) {
       setValidationErrors(errors);
-      // Scroll to the error message at the top
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     setValidationErrors([]);
-
     setSaving(true);
+
     try {
-      // Create or update review
       const currentUser = (await supabase.auth.getUser()).data.user;
       if (!currentUser) throw new Error('Not authenticated');
 
@@ -319,48 +387,35 @@ export function ReviewDetail() {
           reviewer_id: currentUser.id,
           decision,
           notes,
-          tagged_metadata: metadata as Json, // Cast to Json type
+          tagged_metadata: metadata as Json,
         })
         .select()
         .single();
-
       if (reviewError) throw reviewError;
 
-      // Update submission status based on decision
-      let newStatus = 'under_review';
-      if (decision === 'approve_new' || decision === 'approve_update') {
-        newStatus = 'approved';
-      } else if (decision === 'reject') {
-        newStatus = 'rejected';
-      } else if (decision === 'needs_revision') {
-        newStatus = 'needs_revision';
-      }
+      const newStatus: SubmissionStatus =
+        decision === 'approve_new' || decision === 'approve_update' ? 'approved' : 'needs_revision';
 
       const { error: updateError } = await supabase
         .from('lesson_submissions')
         .update({
           status: newStatus,
           reviewed_at: new Date().toISOString(),
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          reviewed_by: currentUser.id,
         })
         .eq('id', submission.id);
-
       if (updateError) throw updateError;
 
-      // If approved as new, create the lesson
       if (decision === 'approve_new') {
-        // Parse the extracted content to get lesson details
         const lessonData = parseExtractedContent(submission.extracted_content);
         const baseTitle = submission.extracted_title || lessonData.title;
 
-        // Create new lesson (write to base table to set all native columns)
         const newLesson: LessonInsert = {
           lesson_id: `lesson_${crypto.randomUUID()}`,
           title: baseTitle || 'Untitled Lesson',
           summary: lessonData.summary || '',
           file_link: submission.google_doc_url,
           grade_levels: metadata.gradeLevels || [],
-          // Base array columns (ensure arrays)
           activity_type: metadata.activityType ? [metadata.activityType] : [],
           thematic_categories: metadata.themes || [],
           season_timing: metadata.season || [],
@@ -376,7 +431,6 @@ export function ReviewDetail() {
           cooking_skills: metadata.cookingSkills || [],
           observances_holidays: metadata.observancesHolidays || [],
           cultural_responsiveness_features: metadata.culturalResponsivenessFeatures || [],
-          // Keep metadata JSON as well for compatibility
           metadata: {
             thematicCategories: metadata.themes || [],
             seasonTiming: metadata.season || [],
@@ -401,41 +455,27 @@ export function ReviewDetail() {
           updated_at: new Date().toISOString(),
         };
 
-        // Include embedding if available and valid
         if (submission.content_embedding && typeof submission.content_embedding === 'string') {
           try {
-            // Validate it's a proper embedding array
             const parsed = JSON.parse(submission.content_embedding);
             if (Array.isArray(parsed) && parsed.length > 0) {
               newLesson.content_embedding = submission.content_embedding;
-              logger.debug(
-                'Including valid embedding in new lesson from submission:',
-                submission.id
-              );
-            } else {
-              logger.warn('Invalid embedding format for submission:', submission.id);
             }
           } catch (error) {
             logger.warn('Failed to validate embedding for submission:', submission.id, error);
           }
-        } else {
-          logger.debug('No embedding available for submission:', submission.id);
         }
 
         const { error: lessonError } = await supabase.from('lessons').insert(newLesson);
-
         if (lessonError) throw lessonError;
       } else if (decision === 'approve_update' && selectedDuplicate) {
-        // Get the existing lesson to preserve some fields
         const { data: existingLesson, error: fetchError } = await supabase
           .from('lessons_with_metadata')
           .select('*')
           .eq('lesson_id', selectedDuplicate)
           .single();
-
         if (fetchError) throw fetchError;
 
-        // Archive the current version before updating
         const { error: archiveError } = await supabase.from('lesson_versions').insert({
           lesson_id: selectedDuplicate,
           version_number: existingLesson.version_number || 1,
@@ -446,17 +486,12 @@ export function ReviewDetail() {
           metadata: existingLesson.metadata,
           content_text: existingLesson.content_text,
           archived_from_submission_id: submission.id,
-          archived_by: (await supabase.auth.getUser()).data.user?.id,
+          archived_by: currentUser.id,
           archive_reason: 'Content update from new submission',
         });
-
         if (archiveError) throw archiveError;
 
-        // Parse the new content
         const lessonData = parseExtractedContent(submission.extracted_content);
-
-        // Update the existing lesson
-        // Safely derive existing activityType from metadata JSON when view lacks base column
         const metadataObj = existingLesson.metadata as LessonMetadataJson | null;
         const existingActivityType =
           metadataObj && typeof metadataObj === 'object' && !Array.isArray(metadataObj)
@@ -528,7 +563,6 @@ export function ReviewDetail() {
             updated_at: new Date().toISOString(),
           })
           .eq('lesson_id', selectedDuplicate);
-
         if (updateLessonError) throw updateLessonError;
       }
 
@@ -540,85 +574,22 @@ export function ReviewDetail() {
     }
   };
 
-  const handleMetadataChange = useCallback(
-    <K extends keyof ReviewMetadata>(filterKey: K, value: ReviewMetadata[K]) => {
-      setMetadata((prev) => ({
-        ...prev,
-        [filterKey]: value,
-      }));
-    },
-    []
-  );
-
   const topDuplicates = useMemo(
     () =>
       submission?.similarities
-        ?.sort((a, b) => (b.combined_score ?? 0) - (a.combined_score ?? 0))
+        ?.slice()
+        .sort((a, b) => (b.combined_score ?? 0) - (a.combined_score ?? 0))
         .slice(0, 5) || [],
     [submission?.similarities]
   );
 
-  // Calculate progress for required fields
-  const fieldProgress = useMemo(() => {
-    const requiredFields = [
-      { key: 'activityType', label: 'Activity Type', value: metadata.activityType },
-      { key: 'location', label: 'Location', value: metadata.location },
-      { key: 'gradeLevels', label: 'Grade Levels', value: (metadata.gradeLevels?.length ?? 0) > 0 },
-      { key: 'themes', label: 'Thematic Categories', value: (metadata.themes?.length ?? 0) > 0 },
-      { key: 'season', label: 'Season & Timing', value: (metadata.season?.length ?? 0) > 0 },
-      {
-        key: 'coreCompetencies',
-        label: 'Core Competencies',
-        value: (metadata.coreCompetencies?.length ?? 0) > 0,
-      },
-      {
-        key: 'socialEmotionalLearning',
-        label: 'Social-Emotional Learning',
-        value: (metadata.socialEmotionalLearning?.length ?? 0) > 0,
-      },
-    ];
-
-    // Add conditional fields
-    if (showCookingFields()) {
-      requiredFields.push(
-        {
-          key: 'cookingMethods',
-          label: 'Cooking Methods',
-          value: (metadata.cookingMethods?.length ?? 0) > 0,
-        },
-        {
-          key: 'mainIngredients',
-          label: 'Main Ingredients',
-          value: (metadata.mainIngredients?.length ?? 0) > 0,
-        },
-        {
-          key: 'cookingSkills',
-          label: 'Cooking Skills',
-          value: (metadata.cookingSkills?.length ?? 0) > 0,
-        }
-      );
-    }
-    if (showGardenFields()) {
-      requiredFields.push({
-        key: 'gardenSkills',
-        label: 'Garden Skills',
-        value: (metadata.gardenSkills?.length ?? 0) > 0,
-      });
-    }
-
-    const completed = requiredFields.filter((field) => field.value).length;
-    const total = requiredFields.length;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    return { completed, total, percentage };
-  }, [metadata, showCookingFields, showGardenFields]);
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading submission...</p>
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-esy-ink-70)' }}>
+            Loading submission…
+          </div>
         </div>
       </div>
     );
@@ -626,88 +597,540 @@ export function ReviewDetail() {
 
   if (!submission) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Submission not found</h2>
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <IntPageHeader
+            title="Submission not found"
+            description="No submission with that id."
+            back={{ label: 'Review queue', onClick: () => navigate('/review') }}
+          />
         </div>
       </div>
     );
   }
 
+  const headerTitle =
+    submission.extracted_title ||
+    parseExtractedContent(submission.extracted_content).title ||
+    'Untitled submission';
+  const submittedOn = submission.created_at
+    ? new Date(submission.created_at).toLocaleDateString()
+    : '';
+  const fieldError = (label: string) =>
+    validationErrors.includes(label) ? `Required.` : undefined;
+
+  // Single-select pill adapter: mode='single' lets IntPillGroup talk in arrays
+  // while we store a single value on metadata.
+  const singleProps = (
+    current: string | undefined,
+    onChange: (next: string | undefined) => void
+  ) => ({
+    mode: 'single' as const,
+    selected: current ? [current] : [],
+    onChange: (next: string[]) => onChange(next[0]),
+  });
+
+  const heritageOptions = flattenHeritageOptions(ALL_FIELD_CONFIGS.culturalHeritage);
+
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/review')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Review Submission</h1>
-            <p className="text-gray-600">
-              Submitted by {submission.teacher.full_name || submission.teacher.email} on{' '}
-              {new Date(submission.created_at).toLocaleDateString()}
-            </p>
-          </div>
+    <div className="int-shell-root">
+      <div className="adm-page adm-page--full">
+        <IntPageHeader
+          title={headerTitle}
+          back={{ label: 'Review queue', onClick: () => navigate('/review') }}
+          description={`Submitted by ${submission.teacher.full_name || submission.teacher.email}${
+            submittedOn ? ` on ${submittedOn}` : ''
+          }`}
+          actions={
+            <a
+              href={submission.google_doc_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="adm-btn adm-btn--ink"
+            >
+              Open Google Doc <ExternalLink size={12} aria-hidden />
+            </a>
+          }
+        />
+
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 12,
+            margin: '-12px 0 16px',
+            fontSize: 13,
+            color: 'var(--color-esy-ink-70)',
+          }}
+        >
+          <IntStatusBadge status={STATUS_TO_BADGE[submission.status]}>
+            {STATUS_LABEL[submission.status]}
+          </IntStatusBadge>
+          <span>
+            {submission.submission_type === 'new' ? 'New lesson' : 'Update to existing lesson'}
+          </span>
+          {topDuplicates.length > 0 && (
+            <span
+              style={{
+                color: 'var(--color-esy-orange-revision)',
+                fontFamily: 'var(--esy-font-display)',
+                fontWeight: 700,
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {topDuplicates.length} possible dup{topDuplicates.length === 1 ? '' : 'es'}
+            </span>
+          )}
         </div>
-        <a
-          href={submission.google_doc_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <FileText size={18} />
-          View Google Doc
-          <ExternalLink size={16} />
-        </a>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Content & Duplicates */}
-        <section
-          className="lg:col-span-2 space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
-          aria-label="Submission content and duplicates"
-          tabIndex={0}
-        >
-          <ReviewContent
-            submission={{
-              google_doc_id: submission.google_doc_id,
-              google_doc_url: submission.google_doc_url,
-              extracted_content: submission.extracted_content,
-            }}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-          />
+        <div className="adm-split adm-split--3col">
+          {/* LEFT — metadata */}
+          <div>
+            <div className="adm-card">
+              <div className="adm-section-eyebrow">Metadata</div>
+              <p style={{ fontSize: 12, color: 'var(--color-esy-ink-70)', margin: '-8px 0 12px' }}>
+                Fix tags before publishing. Reviewer has the final call.
+              </p>
+              <IntProgressBar filled={fieldProgress.completed} total={fieldProgress.total} />
 
-          <ReviewDuplicates
-            duplicates={topDuplicates}
-            selectedDuplicate={selectedDuplicate}
-            onSelectDuplicate={setSelectedDuplicate}
-          />
-        </section>
+              {validationErrors.length > 0 && (
+                <div
+                  role="alert"
+                  className="adm-hint adm-hint--error"
+                  style={{
+                    marginTop: 12,
+                    padding: 10,
+                    border: '1px solid var(--color-esy-red)',
+                    borderRadius: 4,
+                  }}
+                >
+                  Missing required fields: {validationErrors.join(', ')}
+                </div>
+              )}
 
-        {/* Right Column - Metadata & Decision */}
-        <div className="space-y-6">
-          <ReviewMetadataForm
-            metadata={metadata}
-            onChange={handleMetadataChange}
-            validationErrors={validationErrors}
-            fieldProgress={fieldProgress}
-          />
+              <div style={{ marginTop: 16 }}>
+                <IntFormField label="Activity type" required error={fieldError('Activity Type')}>
+                  <IntPillGroup
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.activityType)}
+                    {...singleProps(metadata.activityType, (v) =>
+                      handleMetadataChange('activityType', v)
+                    )}
+                    ariaLabel="Activity type"
+                  />
+                </IntFormField>
 
-          <ReviewActions
-            decision={decision}
-            setDecision={setDecision}
-            notes={notes}
-            setNotes={setNotes}
-            onSave={handleSaveReview}
-            saving={saving}
-            validationErrors={validationErrors}
-            hasSelectedDuplicate={!!selectedDuplicate}
-          />
+                <IntFormField label="Location" required error={fieldError('Location')}>
+                  <IntPillGroup
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.location)}
+                    {...singleProps(metadata.location, (v) => handleMetadataChange('location', v))}
+                    ariaLabel="Location"
+                  />
+                </IntFormField>
+
+                <IntFormField label="Grades" required error={fieldError('Grade Levels')}>
+                  <IntPillGroup
+                    variant="green"
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.gradeLevels)}
+                    selected={metadata.gradeLevels ?? []}
+                    onChange={(next) => handleMetadataChange('gradeLevels', next)}
+                    ariaLabel="Grades"
+                  />
+                </IntFormField>
+
+                <IntFormField label="Seasons" required error={fieldError('Season & Timing')}>
+                  <IntPillGroup
+                    variant="green"
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.seasonTiming)}
+                    selected={metadata.season ?? []}
+                    onChange={(next) => handleMetadataChange('season', next)}
+                    ariaLabel="Seasons"
+                  />
+                </IntFormField>
+
+                <IntFormField label="Thematic" required error={fieldError('Thematic Categories')}>
+                  <IntPillGroup
+                    variant="green"
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.thematicCategories)}
+                    selected={metadata.themes ?? []}
+                    onChange={(next) => handleMetadataChange('themes', next)}
+                    ariaLabel="Thematic categories"
+                  />
+                </IntFormField>
+
+                <IntFormField label="Competencies" required error={fieldError('Core Competencies')}>
+                  <IntPillGroup
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.coreCompetencies)}
+                    selected={metadata.coreCompetencies ?? []}
+                    onChange={(next) => handleMetadataChange('coreCompetencies', next)}
+                    ariaLabel="Core competencies"
+                  />
+                </IntFormField>
+
+                <IntFormField
+                  label="Social-emotional learning"
+                  required
+                  error={fieldError('Social-Emotional Learning')}
+                >
+                  <IntPillGroup
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.socialEmotionalLearning)}
+                    selected={metadata.socialEmotionalLearning ?? []}
+                    onChange={(next) => handleMetadataChange('socialEmotionalLearning', next)}
+                    ariaLabel="Social-emotional learning"
+                  />
+                </IntFormField>
+
+                <IntFormField label="Academic">
+                  <IntPillGroup
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.academicIntegration)}
+                    selected={metadata.academicIntegration ?? []}
+                    onChange={(next) => handleMetadataChange('academicIntegration', next)}
+                    ariaLabel="Academic integration"
+                  />
+                </IntFormField>
+
+                <div className="adm-field">
+                  <label className="adm-label">Cultural heritage</label>
+                  <CreatableSelect
+                    isMulti
+                    options={heritageOptions}
+                    value={(metadata.culturalHeritage ?? []).map(
+                      (v) => heritageOptions.find((o) => o.value === v) || { value: v, label: v }
+                    )}
+                    onChange={(next) =>
+                      handleMetadataChange('culturalHeritage', next ? next.map((o) => o.value) : [])
+                    }
+                  />
+                </div>
+              </div>
+
+              {showCookingFields && (
+                <div style={{ marginTop: 8 }}>
+                  <div className="adm-section-eyebrow" style={{ marginBottom: 8 }}>
+                    Cooking details
+                  </div>
+
+                  <IntFormField
+                    label="Cooking methods"
+                    required
+                    error={fieldError('Cooking Methods')}
+                  >
+                    <IntPillGroup
+                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.cookingMethods)}
+                      selected={metadata.cookingMethods ?? []}
+                      onChange={(next) => handleMetadataChange('cookingMethods', next)}
+                      ariaLabel="Cooking methods"
+                    />
+                  </IntFormField>
+
+                  <div className="adm-field">
+                    <label className="adm-label adm-label-req">Main ingredients</label>
+                    <CreatableSelect
+                      isMulti
+                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.mainIngredients)}
+                      value={(metadata.mainIngredients ?? []).map((v) => ({
+                        value: v,
+                        label:
+                          ALL_FIELD_CONFIGS.mainIngredients.options.find((o) => o.value === v)
+                            ?.label || v,
+                      }))}
+                      onChange={(next) =>
+                        handleMetadataChange(
+                          'mainIngredients',
+                          next ? next.map((o) => o.value) : []
+                        )
+                      }
+                    />
+                    {fieldError('Main Ingredients') && (
+                      <p className="adm-hint adm-hint--error">Required.</p>
+                    )}
+                  </div>
+
+                  <div className="adm-field">
+                    <label className="adm-label adm-label-req">Cooking skills</label>
+                    <CreatableSelect
+                      isMulti
+                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.cookingSkills)}
+                      value={(metadata.cookingSkills ?? []).map((v) => ({
+                        value: v,
+                        label:
+                          ALL_FIELD_CONFIGS.cookingSkills.options.find((o) => o.value === v)
+                            ?.label || v,
+                      }))}
+                      onChange={(next) =>
+                        handleMetadataChange('cookingSkills', next ? next.map((o) => o.value) : [])
+                      }
+                    />
+                    {fieldError('Cooking Skills') && (
+                      <p className="adm-hint adm-hint--error">Required.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {showGardenFields && (
+                <div style={{ marginTop: 8 }}>
+                  <div className="adm-section-eyebrow" style={{ marginBottom: 8 }}>
+                    Garden details
+                  </div>
+                  <div className="adm-field">
+                    <label className="adm-label adm-label-req">Garden skills</label>
+                    <CreatableSelect
+                      isMulti
+                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.gardenSkills)}
+                      value={(metadata.gardenSkills ?? []).map((v) => ({
+                        value: v,
+                        label:
+                          ALL_FIELD_CONFIGS.gardenSkills.options.find((o) => o.value === v)
+                            ?.label || v,
+                      }))}
+                      onChange={(next) =>
+                        handleMetadataChange('gardenSkills', next ? next.map((o) => o.value) : [])
+                      }
+                    />
+                    {fieldError('Garden Skills') && (
+                      <p className="adm-hint adm-hint--error">Required.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: 8 }}>
+                <div className="adm-section-eyebrow" style={{ marginBottom: 8 }}>
+                  Additional
+                </div>
+
+                <IntFormField label="Lesson format">
+                  <IntPillGroup
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.lessonFormat)}
+                    {...singleProps(metadata.lessonFormat, (v) =>
+                      handleMetadataChange('lessonFormat', v)
+                    )}
+                    ariaLabel="Lesson format"
+                  />
+                </IntFormField>
+
+                <div className="adm-field">
+                  <label className="adm-label">Observances &amp; holidays</label>
+                  <CreatableSelect
+                    isMulti
+                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.observancesHolidays)}
+                    value={(metadata.observancesHolidays ?? []).map((v) => ({
+                      value: v,
+                      label: v,
+                    }))}
+                    onChange={(next) =>
+                      handleMetadataChange(
+                        'observancesHolidays',
+                        next ? next.map((o) => o.value) : []
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="adm-field">
+                  <label className="adm-label">Cultural responsiveness features</label>
+                  <CreatableSelect
+                    isMulti
+                    options={selectOptionsFromConfig(
+                      ALL_FIELD_CONFIGS.culturalResponsivenessFeatures
+                    )}
+                    value={(metadata.culturalResponsivenessFeatures ?? []).map((v) => ({
+                      value: v,
+                      label: v,
+                    }))}
+                    onChange={(next) =>
+                      handleMetadataChange(
+                        'culturalResponsivenessFeatures',
+                        next ? next.map((o) => o.value) : []
+                      )
+                    }
+                  />
+                </div>
+
+                <IntFormField label="Processing notes" hint="Internal — not shown to teacher.">
+                  <textarea
+                    className="adm-textarea"
+                    rows={3}
+                    value={metadata.processingNotes || ''}
+                    onChange={(e) => handleMetadataChange('processingNotes', e.target.value)}
+                    placeholder="Internal notes about how this lesson was processed…"
+                  />
+                </IntFormField>
+              </div>
+            </div>
+          </div>
+
+          {/* MIDDLE — document */}
+          <div>
+            <IntDocFrame
+              fileName={`${headerTitle.toLowerCase().replace(/\s+/g, '-')}.gdoc`}
+              externalHref={submission.google_doc_url}
+              toggle={
+                FEATURES.GOOGLE_DOC_EMBED
+                  ? {
+                      options: [
+                        { value: 'embed', label: 'Doc' },
+                        { value: 'text', label: 'Text' },
+                      ],
+                      value: viewMode,
+                      onChange: (v) => handleSetViewMode(v as 'embed' | 'text'),
+                    }
+                  : undefined
+              }
+              padded={viewMode === 'text'}
+            >
+              {FEATURES.GOOGLE_DOC_EMBED && viewMode === 'embed' ? (
+                <GoogleDocEmbed
+                  docId={submission.google_doc_id}
+                  docUrl={submission.google_doc_url}
+                  height="calc(100vh - 18rem)"
+                  fallbackToText={() => handleSetViewMode('text')}
+                  onError={(error) => {
+                    logger.error('Google Doc embed error:', error.message);
+                  }}
+                />
+              ) : (
+                <pre
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'var(--esy-font-body)',
+                    fontSize: 14,
+                    color: 'var(--color-esy-ink)',
+                    margin: 0,
+                  }}
+                >
+                  {sanitizeContent(submission.extracted_content)}
+                </pre>
+              )}
+            </IntDocFrame>
+          </div>
+
+          {/* RIGHT — duplicates + decision */}
+          <div>
+            {topDuplicates.length > 0 && (
+              <div className="adm-card">
+                <div className="adm-section-eyebrow">Possible duplicates</div>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--color-esy-ink-70)',
+                    margin: '-8px 0 12px',
+                  }}
+                >
+                  Select one to merge into instead of publishing new.
+                </p>
+                <div className="adm-dup-list">
+                  {topDuplicates.map((d) => {
+                    const grades = d.lesson.grade_levels?.length
+                      ? `Grades ${d.lesson.grade_levels.join(', ')}`
+                      : 'Grades —';
+                    return (
+                      <IntDuplicateCard
+                        key={d.lesson_id}
+                        dup={{
+                          id: d.lesson_id,
+                          title: d.lesson.title || 'Untitled',
+                          meta: `${grades} · ${d.lesson_id}`,
+                          similarity: d.combined_score ?? 0,
+                          matchType: normalizeMatchType(d.match_type),
+                        }}
+                        selected={selectedDuplicate === d.lesson_id}
+                        onSelect={() =>
+                          setSelectedDuplicate(
+                            selectedDuplicate === d.lesson_id ? null : d.lesson_id
+                          )
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="adm-card">
+              <div className="adm-section-eyebrow">Decision</div>
+              <fieldset className="adm-radio-group" style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend className="sr-only">Choose a decision</legend>
+                <label className="adm-radio">
+                  <input
+                    type="radio"
+                    name="decision"
+                    value="approve_new"
+                    checked={decision === 'approve_new'}
+                    onChange={() => setDecision('approve_new')}
+                  />
+                  Approve &amp; publish
+                </label>
+                <label
+                  className="adm-radio"
+                  style={!selectedDuplicate ? { opacity: 0.5 } : undefined}
+                >
+                  <input
+                    type="radio"
+                    name="decision"
+                    value="approve_update"
+                    disabled={!selectedDuplicate}
+                    checked={decision === 'approve_update'}
+                    onChange={() => setDecision('approve_update')}
+                  />
+                  Merge into existing
+                  {!selectedDuplicate && ' (select a duplicate first)'}
+                </label>
+                <label className="adm-radio">
+                  <input
+                    type="radio"
+                    name="decision"
+                    value="needs_revision"
+                    checked={decision === 'needs_revision'}
+                    onChange={() => setDecision('needs_revision')}
+                  />
+                  Request revisions
+                </label>
+              </fieldset>
+            </div>
+
+            <div className="adm-card">
+              <div className="adm-section-eyebrow">
+                Note to {(submission.teacher.full_name || 'teacher').split(' ')[0]}
+              </div>
+              <textarea
+                className="adm-textarea"
+                rows={4}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Optional. Will be emailed to the teacher along with the decision."
+              />
+            </div>
+
+            <IntDecisionBar
+              eyebrow="Metadata"
+              detail={`${fieldProgress.completed}/${fieldProgress.total} required filled`}
+            >
+              {decision === 'approve_new' && (
+                <IntButton variant="primary" size="lg" onClick={handleSaveReview} disabled={saving}>
+                  {saving ? 'Publishing…' : 'Publish lesson'}
+                </IntButton>
+              )}
+              {decision === 'approve_update' && (
+                <IntButton
+                  variant="ink"
+                  size="lg"
+                  onClick={handleSaveReview}
+                  disabled={saving || !selectedDuplicate}
+                >
+                  {saving ? 'Merging…' : 'Merge & archive'}
+                </IntButton>
+              )}
+              {decision === 'needs_revision' && (
+                <IntButton variant="ink" size="lg" onClick={handleSaveReview} disabled={saving}>
+                  {saving ? 'Sending…' : 'Send for revision'}
+                </IntButton>
+              )}
+            </IntDecisionBar>
+          </div>
         </div>
       </div>
     </div>
