@@ -83,18 +83,23 @@ export function ReviewDashboard() {
   const [isReviewer, setIsReviewer] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-    loadSubmissions();
+    // Run sequentially: only fetch submissions after the auth/role check
+    // confirms reviewer access. Otherwise a non-reviewer briefly issues a
+    // submissions read while waiting for the redirect.
+    (async () => {
+      const ok = await checkAuth();
+      if (ok) await loadSubmissions();
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
-  const checkAuth = async () => {
+  const checkAuth = async (): Promise<boolean> => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
       navigate('/');
-      return;
+      return false;
     }
     setUser(user);
 
@@ -107,12 +112,13 @@ export function ReviewDashboard() {
     if (error || !profile) {
       logger.error('Error fetching user profile:', error);
       setIsReviewer(false);
-      return;
+      return false;
     }
 
-    const ok = profile.role === 'reviewer' || profile.role === 'admin';
+    const ok = ['reviewer', 'admin', 'super_admin'].includes(profile.role ?? '');
     setIsReviewer(ok);
     if (!ok) navigate('/');
+    return ok;
   };
 
   const loadSubmissions = async () => {

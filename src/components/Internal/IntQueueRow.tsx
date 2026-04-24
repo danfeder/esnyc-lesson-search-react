@@ -18,15 +18,16 @@ interface IntQueueRowProps {
 }
 
 function relativeAge(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms)) return '—';
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return '—';
+  const ms = Date.now() - ts;
   const days = Math.floor(ms / 86_400_000);
-  if (days >= 30) return `${Math.floor(days / 30)}mo`;
-  if (days >= 1) return `${days}d`;
+  if (days >= 30) return `${Math.floor(days / 30)}mo ago`;
+  if (days >= 1) return `${days}d ago`;
   const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 1) return `${hours}h`;
+  if (hours >= 1) return `${hours}h ago`;
   const mins = Math.floor(ms / 60_000);
-  if (mins >= 1) return `${mins}m`;
+  if (mins >= 1) return `${mins}m ago`;
   return 'just now';
 }
 
@@ -49,7 +50,7 @@ export function IntQueueRow({ submission, onSelect }: IntQueueRowProps) {
       <div>
         <IntStatusBadge status={submission.status} />
         <div className="adm-queue-row-meta" style={{ marginTop: 6 }}>
-          {relativeAge(submission.submittedAt)} ago
+          {relativeAge(submission.submittedAt)}
         </div>
       </div>
 
@@ -62,7 +63,7 @@ export function IntQueueRow({ submission, onSelect }: IntQueueRowProps) {
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
         <span className="adm-pill">{submission.type === 'new' ? 'New lesson' : 'Update'}</span>
-        {submission.duplicateCount && submission.duplicateCount > 0 ? (
+        {submission.duplicateCount ? (
           <span className="adm-queue-warn">
             {submission.duplicateCount} {submission.duplicateCount === 1 ? 'match' : 'matches'}
             {submission.topMatchType ? ` · ${submission.topMatchType}` : ''}

@@ -41,9 +41,7 @@ export function IntFormField({
       </label>
       {renderedChild}
       {error ? (
-        <p className="adm-hint" style={{ color: 'var(--esy-red)' }}>
-          {error}
-        </p>
+        <p className={cn('adm-hint', 'adm-hint--error')}>{error}</p>
       ) : hint ? (
         <p className="adm-hint">{hint}</p>
       ) : null}

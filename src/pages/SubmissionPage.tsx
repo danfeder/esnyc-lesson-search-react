@@ -5,7 +5,20 @@ import { parseDbError } from '@/utils/errorHandling';
 import { AlertCircle, CheckCircle2, Loader2, FileText, AlertTriangle } from 'lucide-react';
 import { AuthModal } from '@/components/Auth/AuthModal';
 import { User } from '@supabase/supabase-js';
-import { IntButton, IntFormField, IntPageHeader, IntStatusBadge } from '@/components/Internal';
+import {
+  IntButton,
+  IntFormField,
+  IntPageHeader,
+  IntStatusBadge,
+  type IntStatus,
+} from '@/components/Internal';
+
+const SUBMISSION_STATUS_TO_BADGE: Record<string, IntStatus> = {
+  submitted: 'submitted',
+  in_review: 'review',
+  needs_revision: 'revision',
+  approved: 'approved',
+};
 
 export function SubmissionPage() {
   const navigate = useNavigate();
@@ -117,8 +130,10 @@ export function SubmissionPage() {
               />
             </IntFormField>
 
-            <div className="adm-field">
-              <span className="adm-label">Submission Type</span>
+            <fieldset className="adm-field" style={{ border: 0, padding: 0, margin: '0 0 16px' }}>
+              <legend className="adm-label" style={{ padding: 0 }}>
+                Submission Type
+              </legend>
               <div className="adm-radio-group">
                 <label className="adm-radio">
                   <input
@@ -139,7 +154,7 @@ export function SubmissionPage() {
                   <span>Update to an existing lesson</span>
                 </label>
               </div>
-            </div>
+            </fieldset>
 
             {submissionType === 'update' && (
               <IntFormField
@@ -185,7 +200,7 @@ export function SubmissionPage() {
                 variant="primary"
                 size="lg"
                 disabled={isSubmitting}
-                style={{ width: '100%', justifyContent: 'center' }}
+                className="adm-btn--block"
               >
                 {isSubmitting ? (
                   <>
@@ -260,7 +275,11 @@ export function SubmissionPage() {
                   <dd style={{ margin: 0 }}>{submissionResult.extractedTitle}</dd>
                   <dt style={{ color: 'var(--esy-ink-70)' }}>Status</dt>
                   <dd style={{ margin: 0 }}>
-                    <IntStatusBadge status="submitted">{submissionResult.status}</IntStatusBadge>
+                    <IntStatusBadge
+                      status={SUBMISSION_STATUS_TO_BADGE[submissionResult.status] ?? 'submitted'}
+                    >
+                      {submissionResult.status}
+                    </IntStatusBadge>
                   </dd>
                 </dl>
 
@@ -339,14 +358,16 @@ export function SubmissionPage() {
                   setGoogleDocUrl('');
                   setSubmissionResult(null);
                 }}
-                style={{ flex: 1, justifyContent: 'center' }}
+                className="adm-btn--block"
+                style={{ flex: 1 }}
               >
                 Submit another lesson
               </IntButton>
               <IntButton
                 variant="primary"
                 onClick={() => navigate('/')}
-                style={{ flex: 1, justifyContent: 'center' }}
+                className="adm-btn--block"
+                style={{ flex: 1 }}
               >
                 Back to library
               </IntButton>

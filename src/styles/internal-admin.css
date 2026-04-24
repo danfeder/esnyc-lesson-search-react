@@ -184,6 +184,7 @@
 .adm-btn--ghost:hover { background: var(--esy-paper-alt); color: var(--esy-ink); border-color: transparent; }
 .adm-btn--lg { padding: 10px 18px; font-size: 12px; }
 .adm-btn--sm { padding: 5px 10px; font-size: 10px; }
+.adm-btn--block { width: 100%; justify-content: center; }
 .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* --- Status eyebrow (quiet variant) --------------------------------- */
@@ -309,6 +310,7 @@
   background: var(--esy-paper);
 }
 .adm-input--error { border-color: var(--esy-red); }
+.adm-hint--error { color: var(--esy-red); }
 
 .adm-radio-group,
 .adm-check-group {
