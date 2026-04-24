@@ -6,6 +6,7 @@ export { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
 export { IntDensitySwitcher } from './IntDensitySwitcher';
 export { IntEmptyState } from './IntEmptyState';
 export { IntFilterSection } from './IntFilterSection';
+export { IntFormField } from './IntFormField';
 export { IntLessonDetail } from './IntLessonDetail';
 export { IntLessonDrawer } from './IntLessonDrawer';
 export { IntListRow, intActivityLabel, intGradesLabel } from './IntListRow';

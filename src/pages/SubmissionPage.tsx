@@ -5,6 +5,7 @@ import { parseDbError } from '@/utils/errorHandling';
 import { AlertCircle, CheckCircle2, Loader2, FileText, AlertTriangle } from 'lucide-react';
 import { AuthModal } from '@/components/Auth/AuthModal';
 import { User } from '@supabase/supabase-js';
+import { IntButton, IntFormField, IntPageHeader, IntStatusBadge } from '@/components/Internal';
 
 export function SubmissionPage() {
   const navigate = useNavigate();
@@ -25,12 +26,10 @@ export function SubmissionPage() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check if user is logged in
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -46,14 +45,12 @@ export function SubmissionPage() {
     setSuccess(false);
     setSubmissionResult(null);
 
-    // Validate Google Docs URL
     const docIdMatch = googleDocUrl.match(/\/document\/d\/([a-zA-Z0-9-_]+)/);
     if (!docIdMatch) {
       setError('Please enter a valid Google Docs URL');
       return;
     }
 
-    // Check if user is authenticated
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -88,223 +85,296 @@ export function SubmissionPage() {
     }
   };
 
+  const headerActions = user ? (
+    <span className="adm-status adm-status--active" title={user.email ?? undefined}>
+      Signed in
+    </span>
+  ) : null;
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-md p-8">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Submit a Lesson Plan</h1>
-            <p className="text-gray-600">
-              Share your lesson plan with the ESYNYC community by submitting a Google Doc link.
-            </p>
-          </div>
-          {user && (
-            <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-md">
-              Signed in as: <span className="font-medium">{user.email}</span>
-            </div>
-          )}
-        </div>
+    <div className="int-shell-root">
+      <div className="adm-page adm-page--narrow">
+        <IntPageHeader
+          title="Submit a lesson"
+          description="Share a lesson plan with the ESYNYC community by submitting its Google Doc link. Our reviewers will check it for duplicates and metadata before publishing."
+          actions={headerActions}
+        />
 
         {!success ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="docUrl" className="block text-sm font-medium text-gray-700 mb-2">
-                Google Doc URL *
-              </label>
+          <form onSubmit={handleSubmit} className="adm-card">
+            <IntFormField
+              label="Google Doc URL"
+              required
+              hint="Make sure your document is shared with “Anyone with the link can view”."
+            >
               <input
                 type="url"
-                id="docUrl"
+                className="adm-input"
                 value={googleDocUrl}
                 onChange={(e) => setGoogleDocUrl(e.target.value)}
-                placeholder="https://docs.google.com/document/d/..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="https://docs.google.com/document/d/…"
                 required
               />
-              <p className="mt-2 text-sm text-gray-500">
-                Make sure your document is shared with "Anyone with the link can view"
-              </p>
-            </div>
+            </IntFormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Submission Type
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
+            <div className="adm-field">
+              <span className="adm-label">Submission Type</span>
+              <div className="adm-radio-group">
+                <label className="adm-radio">
                   <input
                     type="radio"
                     value="new"
                     checked={submissionType === 'new'}
                     onChange={(e) => setSubmissionType(e.target.value as 'new')}
-                    className="mr-2 text-green-600"
                   />
                   <span>New lesson plan</span>
                 </label>
-                <label className="flex items-center">
+                <label className="adm-radio">
                   <input
                     type="radio"
                     value="update"
                     checked={submissionType === 'update'}
                     onChange={(e) => setSubmissionType(e.target.value as 'update')}
-                    className="mr-2 text-green-600"
                   />
-                  <span>Update to existing lesson</span>
+                  <span>Update to an existing lesson</span>
                 </label>
               </div>
             </div>
 
             {submissionType === 'update' && (
-              <div>
-                <label
-                  htmlFor="originalLesson"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Original Lesson ID
-                </label>
+              <IntFormField
+                label="Original Lesson ID"
+                required
+                hint="Find this on the lesson detail page in the library."
+              >
                 <input
                   type="text"
-                  id="originalLesson"
+                  className="adm-input adm-input-code"
                   value={originalLessonId}
                   onChange={(e) => setOriginalLessonId(e.target.value)}
-                  placeholder="Enter the ID of the lesson you're updating"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="e.g. 8f3c-…"
                   required={submissionType === 'update'}
                 />
-              </div>
+              </IntFormField>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
-                <AlertCircle className="text-red-500 mr-2 flex-shrink-0 mt-0.5" size={20} />
-                <span className="text-red-700">{error}</span>
+              <div className="adm-card adm-card--tight" style={{ borderColor: 'var(--esy-red)' }}>
+                <p
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    color: 'var(--esy-red)',
+                    margin: 0,
+                  }}
+                >
+                  <AlertCircle
+                    size={16}
+                    style={{ flexShrink: 0, marginTop: 2 }}
+                    aria-hidden="true"
+                  />
+                  <span>{error}</span>
+                </p>
               </div>
             )}
 
-            <div className="pt-4">
-              <button
+            <div style={{ marginTop: 8 }}>
+              <IntButton
                 type="submit"
+                variant="primary"
+                size="lg"
                 disabled={isSubmitting}
-                className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                style={{ width: '100%', justifyContent: 'center' }}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="animate-spin mr-2" size={20} />
-                    Processing submission...
+                    <Loader2 className="animate-spin" size={14} aria-hidden="true" />
+                    Processing submission…
                   </>
                 ) : (
-                  'Submit Lesson Plan'
+                  'Submit lesson plan'
                 )}
-              </button>
+              </IntButton>
             </div>
           </form>
         ) : (
-          <div className="space-y-6">
-            <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-start">
-              <CheckCircle2 className="text-green-500 mr-2 flex-shrink-0 mt-0.5" size={20} />
-              <div>
-                <h3 className="font-semibold text-green-800">Submission Received!</h3>
-                <p className="text-green-700 mt-1">
-                  Your lesson plan has been submitted successfully and is now under review.
-                </p>
-              </div>
+          <div>
+            <div
+              className="adm-card adm-card--tight"
+              style={{ borderColor: 'var(--esy-green)', marginBottom: 16 }}
+            >
+              <p
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  color: 'var(--esy-green-deep)',
+                  margin: 0,
+                  fontWeight: 500,
+                }}
+              >
+                <CheckCircle2
+                  size={16}
+                  style={{ flexShrink: 0, marginTop: 2 }}
+                  aria-hidden="true"
+                />
+                <span>Submission received. Your lesson plan is now under review.</span>
+              </p>
             </div>
 
             {submissionResult && (
-              <div className="bg-gray-50 rounded-md p-6 space-y-4">
-                <div className="flex items-center">
-                  <FileText className="text-gray-600 mr-2" size={20} />
-                  <h4 className="font-semibold text-gray-900">Submission Details</h4>
+              <div className="adm-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <FileText size={16} aria-hidden="true" style={{ color: 'var(--esy-ink-70)' }} />
+                  <h3 className="adm-section-eyebrow" style={{ margin: 0 }}>
+                    Submission Details
+                  </h3>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <span className="font-medium">Submission ID:</span>{' '}
-                    <code className="bg-gray-200 px-2 py-1 rounded">
+                <dl
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'auto 1fr',
+                    columnGap: 16,
+                    rowGap: 6,
+                    fontSize: 13,
+                    margin: 0,
+                  }}
+                >
+                  <dt style={{ color: 'var(--esy-ink-70)' }}>Submission ID</dt>
+                  <dd style={{ margin: 0 }}>
+                    <code
+                      style={{
+                        background: 'var(--esy-paper-alt)',
+                        padding: '2px 6px',
+                        borderRadius: 3,
+                        fontFamily: 'SF Mono, Consolas, ui-monospace, monospace',
+                        fontSize: 12,
+                      }}
+                    >
                       {submissionResult.submissionId}
                     </code>
-                  </p>
-                  <p>
-                    <span className="font-medium">Extracted Title:</span>{' '}
-                    {submissionResult.extractedTitle}
-                  </p>
-                  <p>
-                    <span className="font-medium">Status:</span>{' '}
-                    <span className="text-green-600 font-medium">{submissionResult.status}</span>
-                  </p>
-                </div>
+                  </dd>
+                  <dt style={{ color: 'var(--esy-ink-70)' }}>Extracted title</dt>
+                  <dd style={{ margin: 0 }}>{submissionResult.extractedTitle}</dd>
+                  <dt style={{ color: 'var(--esy-ink-70)' }}>Status</dt>
+                  <dd style={{ margin: 0 }}>
+                    <IntStatusBadge status="submitted">{submissionResult.status}</IntStatusBadge>
+                  </dd>
+                </dl>
 
                 {submissionResult.duplicatesFound > 0 && (
-                  <div className="mt-4 border-t pt-4">
-                    <div className="flex items-start">
+                  <div
+                    style={{
+                      marginTop: 16,
+                      paddingTop: 16,
+                      borderTop: '1px solid var(--esy-ink-10)',
+                    }}
+                  >
+                    <p
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 8,
+                        margin: 0,
+                        color: 'var(--esy-orange-revision)',
+                        fontSize: 13,
+                        fontWeight: 500,
+                      }}
+                    >
                       <AlertTriangle
-                        className="text-yellow-600 mr-2 flex-shrink-0 mt-0.5"
-                        size={20}
+                        size={16}
+                        style={{ flexShrink: 0, marginTop: 2 }}
+                        aria-hidden="true"
                       />
-                      <div className="flex-1">
-                        <h5 className="font-medium text-gray-900">
-                          {submissionResult.duplicatesFound} Potential Duplicate
-                          {submissionResult.duplicatesFound > 1 ? 's' : ''} Found
-                        </h5>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Our system detected similar lessons in the database. The reviewer will
-                          check these matches.
-                        </p>
+                      <span>
+                        {submissionResult.duplicatesFound} potential duplicate
+                        {submissionResult.duplicatesFound > 1 ? 's' : ''} found — the reviewer will
+                        compare these matches.
+                      </span>
+                    </p>
 
-                        {submissionResult.topDuplicates &&
-                          submissionResult.topDuplicates.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              <p className="text-sm font-medium text-gray-700">Top matches:</p>
-                              {submissionResult.topDuplicates.map((dup, idx) => (
-                                <div
-                                  key={idx}
-                                  className="text-sm bg-white p-2 rounded border border-gray-200"
-                                >
-                                  <p className="font-medium">{dup.title}</p>
-                                  <p className="text-gray-600">
-                                    {Math.round(dup.similarityScore * 100)}% match ({dup.matchType})
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                      </div>
-                    </div>
+                    {submissionResult.topDuplicates &&
+                      submissionResult.topDuplicates.length > 0 && (
+                        <ul
+                          style={{
+                            listStyle: 'none',
+                            padding: 0,
+                            margin: '12px 0 0',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6,
+                          }}
+                        >
+                          {submissionResult.topDuplicates.map((dup, idx) => (
+                            <li
+                              key={idx}
+                              style={{
+                                border: '1px solid var(--esy-ink-10)',
+                                borderRadius: 4,
+                                padding: '8px 10px',
+                                fontSize: 13,
+                              }}
+                            >
+                              <div style={{ fontWeight: 500 }}>{dup.title}</div>
+                              <div
+                                style={{ color: 'var(--esy-ink-70)', fontSize: 12, marginTop: 2 }}
+                              >
+                                {Math.round(dup.similarityScore * 100)}% match · {dup.matchType}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                   </div>
                 )}
               </div>
             )}
 
-            <div className="flex gap-4">
-              <button
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <IntButton
                 onClick={() => {
                   setSuccess(false);
                   setGoogleDocUrl('');
                   setSubmissionResult(null);
                 }}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+                style={{ flex: 1, justifyContent: 'center' }}
               >
-                Submit Another Lesson
-              </button>
-              <button
+                Submit another lesson
+              </IntButton>
+              <IntButton
+                variant="primary"
                 onClick={() => navigate('/')}
-                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+                style={{ flex: 1, justifyContent: 'center' }}
               >
-                Back to Search
-              </button>
+                Back to library
+              </IntButton>
             </div>
           </div>
         )}
-      </div>
 
-      <div className="mt-8 bg-blue-50 rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-blue-900 mb-2">Submission Guidelines</h2>
-        <ul className="space-y-2 text-sm text-blue-800">
-          <li>• Ensure your Google Doc is formatted with clear sections</li>
-          <li>• Include grade levels, objectives, and materials needed</li>
-          <li>• Add step-by-step instructions for activities</li>
-          <li>• Your submission will be reviewed within 2-3 business days</li>
-          <li>• You'll receive an email once your lesson is approved</li>
-        </ul>
+        <div className="adm-card" style={{ marginTop: 24 }}>
+          <h2 className="adm-section-eyebrow">Submission Guidelines</h2>
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              fontSize: 13,
+              color: 'var(--esy-ink-70)',
+            }}
+          >
+            <li>· Format your Google Doc with clear sections.</li>
+            <li>· Include grade levels, objectives, and materials needed.</li>
+            <li>· Add step-by-step instructions for activities.</li>
+            <li>· Submissions are reviewed within 2–3 business days.</li>
+            <li>· You'll receive an email once your lesson is approved.</li>
+          </ul>
+        </div>
       </div>
 
       <AuthModal
@@ -312,7 +382,6 @@ export function SubmissionPage() {
         onClose={() => setShowAuthModal(false)}
         onSuccess={() => {
           setShowAuthModal(false);
-          // Re-submit form after successful auth
           if (googleDocUrl) {
             handleSubmit({ preventDefault: () => {} } as React.FormEvent);
           }
