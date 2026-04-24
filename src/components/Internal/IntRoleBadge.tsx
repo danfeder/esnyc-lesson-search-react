@@ -1,4 +1,9 @@
-export type IntRole = 'admin' | 'super_admin' | 'reviewer' | 'teacher';
+import type { UserRole } from '@/types/auth';
+
+// String-literal union derived from the UserRole enum so the badge stays
+// decoupled from the enum at the value level while remaining assignable
+// to/from UserRole without unsafe casts.
+export type IntRole = `${UserRole}`;
 
 const ROLE_LABELS: Record<IntRole, string> = {
   super_admin: 'Super Admin',

@@ -117,14 +117,29 @@ export function AdminUsers() {
       if (profiles && profiles.length > 0) {
         const userIds = profiles.map((p) => p.id);
 
-        const [emailsRes, schoolsRes, lessonsRes, reviewsRes] = await Promise.all([
+        // Per-user count-head queries: 2N round-trips for N users on the page,
+        // but only counts come back over the wire (no full-row fetches).
+        const lessonCountQueries = userIds.map((uid) =>
+          supabase
+            .from('lesson_submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('teacher_id', uid)
+        );
+        const reviewCountQueries = userIds.map((uid) =>
+          supabase
+            .from('submission_reviews')
+            .select('*', { count: 'exact', head: true })
+            .eq('reviewer_id', uid)
+        );
+
+        const [emailsRes, schoolsRes, lessonCountResults, reviewCountResults] = await Promise.all([
           supabase.rpc('get_user_emails', { user_ids: userIds }),
           supabase
             .from('user_schools')
             .select('user_id, schools!inner(id, name)')
             .in('user_id', userIds),
-          supabase.from('lesson_submissions').select('teacher_id').in('teacher_id', userIds),
-          supabase.from('submission_reviews').select('reviewer_id').in('reviewer_id', userIds),
+          Promise.all(lessonCountQueries),
+          Promise.all(reviewCountQueries),
         ]);
 
         interface EmailData {
@@ -148,19 +163,12 @@ export function AdminUsers() {
         }
 
         const countsMap = new Map<string, UserCounts>();
-        for (const id of userIds) countsMap.set(id, { lessons: 0, reviews: 0 });
-        if (!lessonsRes.error && lessonsRes.data) {
-          for (const row of lessonsRes.data as Array<{ teacher_id: string }>) {
-            const c = countsMap.get(row.teacher_id);
-            if (c) c.lessons += 1;
-          }
-        }
-        if (!reviewsRes.error && reviewsRes.data) {
-          for (const row of reviewsRes.data as Array<{ reviewer_id: string }>) {
-            const c = countsMap.get(row.reviewer_id);
-            if (c) c.reviews += 1;
-          }
-        }
+        userIds.forEach((id, idx) => {
+          countsMap.set(id, {
+            lessons: lessonCountResults[idx]?.count ?? 0,
+            reviews: reviewCountResults[idx]?.count ?? 0,
+          });
+        });
 
         const merged = profiles.map((profile) => {
           const counts = countsMap.get(profile.id) ?? { lessons: 0, reviews: 0 };

@@ -15,7 +15,6 @@ import { logger } from '@/utils/logger';
 import { cn } from '@/utils/cn';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
-  BookOpen,
   Check,
   ChevronRight,
   Clock,
@@ -361,15 +360,23 @@ export function AdminUserDetail() {
   };
 
   const handleSaveName = async () => {
-    if (!user || !userId) return;
+    if (!user || !userId || !currentUser?.id) return;
     setSaving(true);
     setSaveError(null);
     try {
+      const oldName = user.full_name ?? '';
       const { error } = await supabase
         .from('user_profiles')
         .update({ full_name: pendingName || undefined, updated_at: new Date().toISOString() })
         .eq('id', userId);
       if (error) throw error;
+      await supabase.from('user_management_audit').insert({
+        actor_id: currentUser.id,
+        action: 'user_profile_updated',
+        target_user_id: userId,
+        old_values: { full_name: oldName },
+        new_values: { full_name: pendingName },
+      });
       setNameEditing(false);
       setToast({ kind: 'success', msg: 'Name saved' });
       await loadAll();
@@ -468,7 +475,7 @@ export function AdminUserDetail() {
           <div className="adm-user-head-main">
             <h2>{user.full_name || 'Unnamed user'}</h2>
             <div className="adm-user-head-meta">
-              <IntRoleBadge role={user.role as IntRole} />
+              <IntRoleBadge role={user.role} />
               <span className="adm-user-head-meta-sep">·</span>
               <span>{email}</span>
               <span className="adm-user-head-meta-sep">·</span>
@@ -543,6 +550,7 @@ export function AdminUserDetail() {
             type="button"
             role="tab"
             aria-selected={tab === 'activity'}
+            aria-controls="adm-tab-panel-activity"
             className={cn(tab === 'activity' && 'is-active')}
             onClick={() => setTab('activity')}
           >
@@ -553,6 +561,7 @@ export function AdminUserDetail() {
             type="button"
             role="tab"
             aria-selected={tab === 'access'}
+            aria-controls="adm-tab-panel-access"
             className={cn(tab === 'access' && 'is-active')}
             onClick={() => setTab('access')}
           >
@@ -562,6 +571,7 @@ export function AdminUserDetail() {
             type="button"
             role="tab"
             aria-selected={tab === 'profile'}
+            aria-controls="adm-tab-panel-profile"
             className={cn(tab === 'profile' && 'is-active')}
             onClick={() => setTab('profile')}
           >
@@ -570,7 +580,7 @@ export function AdminUserDetail() {
         </div>
 
         {tab === 'activity' && (
-          <div className="adm-split adm-split--2-1">
+          <div id="adm-tab-panel-activity" role="tabpanel" className="adm-split adm-split--2-1">
             <div className="adm-card">
               <div className="adm-section-eyebrow">
                 Activity · {audit.length} event{audit.length === 1 ? '' : 's'}
@@ -644,7 +654,7 @@ export function AdminUserDetail() {
         )}
 
         {tab === 'access' && (
-          <div className="adm-split adm-split--2-1">
+          <div id="adm-tab-panel-access" role="tabpanel" className="adm-split adm-split--2-1">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="adm-card">
                 <div className="adm-card-head">
@@ -664,7 +674,7 @@ export function AdminUserDetail() {
                 </div>
                 {!roleEditing ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <IntRoleBadge role={user.role as IntRole} />
+                    <IntRoleBadge role={user.role} />
                     <span className="muted" style={{ fontSize: 12 }}>
                       since {format(new Date(user.created_at), 'PP')}
                     </span>
@@ -683,16 +693,14 @@ export function AdminUserDetail() {
                             borderRadius: 4,
                             cursor: 'pointer',
                             background:
-                              pendingRole === (r.role as unknown as UserRole)
-                                ? 'var(--color-esy-paper-alt)'
-                                : 'transparent',
+                              pendingRole === r.role ? 'var(--color-esy-paper-alt)' : 'transparent',
                           }}
                         >
                           <input
                             type="radio"
                             name="role-edit"
-                            checked={pendingRole === (r.role as unknown as UserRole)}
-                            onChange={() => setPendingRole(r.role as unknown as UserRole)}
+                            checked={pendingRole === r.role}
+                            onChange={() => setPendingRole(r.role as UserRole)}
                           />
                           <IntRoleBadge role={r.role} />
                         </label>
@@ -799,12 +807,9 @@ export function AdminUserDetail() {
                         </div>
                       </div>
                       <IntButton
+                        variant="danger"
                         onClick={handleToggleActivation}
                         disabled={saving}
-                        style={{
-                          borderColor: '#F2C6C3',
-                          color: '#8A1610',
-                        }}
                       >
                         {isActive ? (
                           <>
@@ -830,7 +835,7 @@ export function AdminUserDetail() {
         )}
 
         {tab === 'profile' && (
-          <div className="adm-split adm-split--2-1">
+          <div id="adm-tab-panel-profile" role="tabpanel" className="adm-split adm-split--2-1">
             <div className="adm-card">
               <div className="adm-card-head">
                 <div className="adm-section-eyebrow" style={{ margin: 0 }}>
@@ -956,13 +961,6 @@ export function AdminUserDetail() {
               <div className="adm-card">
                 <div className="adm-section-eyebrow">Related</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-                  <Link to="/" className="adm-related-link">
-                    <BookOpen className="w-4 h-4" aria-hidden="true" />
-                    <span>
-                      {submissionCount} submitted lesson{submissionCount === 1 ? '' : 's'}
-                    </span>
-                    <ChevronRight className="w-3 h-3" aria-hidden="true" />
-                  </Link>
                   {reviewCount > 0 && (
                     <Link to="/review" className="adm-related-link">
                       <GitMerge className="w-4 h-4" aria-hidden="true" />

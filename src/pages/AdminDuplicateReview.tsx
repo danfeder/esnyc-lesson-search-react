@@ -44,7 +44,7 @@ const LESSON_DIFF_FIELDS: IntDiffField<LessonForReview>[] = [
 export function AdminDuplicateReview() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
-  const { user } = useEnhancedAuth();
+  const { user, loading: authLoading } = useEnhancedAuth();
 
   const [allGroups, setAllGroups] = useState<DuplicateGroupForReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,6 +267,16 @@ export function AdminDuplicateReview() {
 
   const isAdmin =
     user?.role === 'admin' || user?.role === 'reviewer' || user?.role === 'super_admin';
+
+  if (authLoading) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">Loading…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
