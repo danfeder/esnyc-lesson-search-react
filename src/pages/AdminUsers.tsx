@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -60,6 +60,8 @@ export function AdminUsers() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
+  const bulkTriggerRef = useRef<HTMLButtonElement>(null);
+  const bulkFirstItemRef = useRef<HTMLButtonElement>(null);
 
   const USERS_PER_PAGE = 20;
 
@@ -160,7 +162,7 @@ export function AdminUsers() {
           }
         }
 
-        let merged = profiles.map((profile) => {
+        const merged = profiles.map((profile) => {
           const counts = countsMap.get(profile.id) ?? { lessons: 0, reviews: 0 };
           return {
             ...profile,
@@ -170,19 +172,6 @@ export function AdminUsers() {
             reviewCount: counts.reviews,
           };
         });
-
-        if (
-          filters.search &&
-          !merged.some(
-            (u) =>
-              u.full_name?.toLowerCase().includes(filters.search?.toLowerCase() || '') ||
-              u.school_name?.toLowerCase().includes(filters.search?.toLowerCase() || '')
-          )
-        ) {
-          merged = merged.filter((u) =>
-            u.email.toLowerCase().includes(filters.search?.toLowerCase() || '')
-          );
-        }
 
         if (filters.sort_by === 'email') {
           merged.sort((a, b) => {
@@ -231,6 +220,18 @@ export function AdminUsers() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (showBulkActions) bulkFirstItemRef.current?.focus();
+  }, [showBulkActions]);
+
+  const handleBulkMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      setShowBulkActions(false);
+      bulkTriggerRef.current?.focus();
+    }
+  };
 
   const loadSchools = async () => {
     try {
@@ -522,18 +523,22 @@ export function AdminUsers() {
               {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
             </span>
             <div className="adm-bulk-actions" ref={bulkActionsRef}>
-              <IntButton
-                variant="ink"
-                size="sm"
+              <button
+                ref={bulkTriggerRef}
+                type="button"
+                className="adm-btn adm-btn--ink adm-btn--sm"
+                aria-haspopup="menu"
+                aria-expanded={showBulkActions}
                 onClick={() => setShowBulkActions(!showBulkActions)}
               >
                 Bulk actions
                 <ChevronDown className="w-4 h-4" aria-hidden="true" />
-              </IntButton>
+              </button>
 
               {showBulkActions && (
-                <div className="adm-bulk-menu" role="menu">
+                <div className="adm-bulk-menu" role="menu" onKeyDown={handleBulkMenuKeyDown}>
                   <button
+                    ref={bulkFirstItemRef}
                     type="button"
                     role="menuitem"
                     onClick={() => {

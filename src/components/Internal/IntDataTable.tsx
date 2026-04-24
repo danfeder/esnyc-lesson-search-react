@@ -47,7 +47,13 @@ export function IntDataTable<T>({
 
   const toggleAll = () => {
     if (!onSelectionChange) return;
-    onSelectionChange(allSelected ? [] : allKeys);
+    if (allSelected) {
+      onSelectionChange(selectedKeys.filter((k) => !allKeys.includes(k)));
+    } else {
+      const merged = new Set(selectedKeys);
+      allKeys.forEach((k) => merged.add(k));
+      onSelectionChange(Array.from(merged));
+    }
   };
 
   const toggleRow = (key: string) => {
@@ -107,8 +113,20 @@ export function IntDataTable<T>({
               return (
                 <tr
                   key={key}
-                  className={cn(isSelected && 'selected')}
+                  className={cn(isSelected && 'selected', onRowClick && 'clickable')}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onRowClick(row);
+                          }
+                        }
+                      : undefined
+                  }
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? 'button' : undefined}
                   style={onRowClick ? { cursor: 'pointer' } : undefined}
                 >
                   {selectable && (
