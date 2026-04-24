@@ -6,17 +6,47 @@
 -- =====================================================
 
 -- =====================================================
--- TEST USERS (auth.users)
+-- TEST USERS (auth.users + auth.identities)
 -- =====================================================
 -- Note: These are for local development only
 -- Passwords are 'password123' for all test users
+--
+-- GoTrue is fussy about the auth.users row shape. Inserting only the
+-- "obvious" columns leaves password login broken with two cryptic
+-- errors:
+--   - "Invalid login credentials" if instance_id, raw_app_meta_data, or
+--     auth.identities are missing
+--   - 500 "Database error querying schema" if any of the *_token columns
+--     are NULL (the Go scanner can't convert NULL to string)
+-- So this seed sets the full row shape GoTrue expects.
 
-INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at, aud, role)
+INSERT INTO auth.users (
+  instance_id, id, email, encrypted_password, email_confirmed_at,
+  created_at, updated_at, aud, role,
+  raw_app_meta_data, raw_user_meta_data,
+  confirmation_token, email_change, email_change_token_new, email_change_token_current,
+  recovery_token, phone_change, phone_change_token, reauthentication_token
+)
 VALUES
-  ('11111111-1111-1111-1111-111111111111', 'admin@test.com', crypt('password123', gen_salt('bf')), NOW(), NOW(), NOW(), 'authenticated', 'authenticated'),
-  ('22222222-2222-2222-2222-222222222222', 'reviewer@test.com', crypt('password123', gen_salt('bf')), NOW(), NOW(), NOW(), 'authenticated', 'authenticated'),
-  ('33333333-3333-3333-3333-333333333333', 'teacher@test.com', crypt('password123', gen_salt('bf')), NOW(), NOW(), NOW(), 'authenticated', 'authenticated')
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-1111-1111-111111111111', 'admin@test.com',    crypt('password123', gen_salt('bf')), NOW(), NOW(), NOW(), 'authenticated', 'authenticated', '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'reviewer@test.com', crypt('password123', gen_salt('bf')), NOW(), NOW(), NOW(), 'authenticated', 'authenticated', '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'teacher@test.com',  crypt('password123', gen_salt('bf')), NOW(), NOW(), NOW(), 'authenticated', 'authenticated', '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, '', '', '', '', '', '', '', '')
 ON CONFLICT (id) DO NOTHING;
+
+-- One identity row per user — GoTrue's password lookup goes through here.
+INSERT INTO auth.identities (id, user_id, provider_id, provider, identity_data, created_at, updated_at, last_sign_in_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  u.id::text,
+  'email',
+  jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true, 'phone_verified', false),
+  NOW(),
+  NOW(),
+  NOW()
+FROM auth.users u
+WHERE u.email IN ('admin@test.com', 'reviewer@test.com', 'teacher@test.com')
+ON CONFLICT DO NOTHING;
 
 -- =====================================================
 -- USER PROFILES
