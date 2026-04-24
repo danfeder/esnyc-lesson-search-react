@@ -13,8 +13,6 @@ import {
 } from '@/components/Internal';
 
 interface InvitationMetadata {
-  grades_taught?: string[];
-  subjects_taught?: string[];
   invited_by_id?: string;
 }
 
@@ -30,9 +28,6 @@ interface InvitationData {
   invited_at: string;
 }
 
-const GRADE_OPTIONS = ['3K', '4K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
-const SUBJECT_OPTIONS = ['Math', 'Science', 'Literacy/ELA', 'Social Studies', 'Health', 'Arts'];
-
 export function AcceptInvitation() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -47,8 +42,6 @@ export function AcceptInvitation() {
     password: '',
     confirmPassword: '',
     full_name: '',
-    grades_taught: [] as string[],
-    subjects_taught: [] as string[],
   });
 
   const validateInvitation = useCallback(async () => {
@@ -73,15 +66,6 @@ export function AcceptInvitation() {
         school_borough: data.school_borough || undefined,
         accepted_at: data.accepted_at || undefined,
       });
-
-      const metadata = data.metadata as InvitationMetadata | null;
-      if (metadata) {
-        setFormData((prev) => ({
-          ...prev,
-          grades_taught: metadata.grades_taught || [],
-          subjects_taught: metadata.subjects_taught || [],
-        }));
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch invitation');
     } finally {
@@ -131,8 +115,6 @@ export function AcceptInvitation() {
         role: invitation.role,
         school_name: invitation.school_name,
         school_borough: invitation.school_borough,
-        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : null,
-        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : null,
         invited_by: invitation.metadata?.invited_by_id,
         invited_at: invitation.invited_at,
         accepted_at: new Date().toISOString(),
@@ -179,22 +161,6 @@ export function AcceptInvitation() {
       setSubmitting(false);
     }
   };
-
-  const toggleGrade = (grade: string) =>
-    setFormData((prev) => ({
-      ...prev,
-      grades_taught: prev.grades_taught.includes(grade)
-        ? prev.grades_taught.filter((g) => g !== grade)
-        : [...prev.grades_taught, grade],
-    }));
-
-  const toggleSubject = (subject: string) =>
-    setFormData((prev) => ({
-      ...prev,
-      subjects_taught: prev.subjects_taught.includes(subject)
-        ? prev.subjects_taught.filter((s) => s !== subject)
-        : [...prev.subjects_taught, subject],
-    }));
 
   if (loading) {
     return (
@@ -321,55 +287,6 @@ export function AcceptInvitation() {
             />
           </IntFormField>
         </div>
-
-        {(formData.grades_taught.length > 0 ||
-          formData.subjects_taught.length > 0 ||
-          invitation!.role === 'teacher') && (
-          <>
-            <h2 className="adm-section-eyebrow">What you teach</h2>
-            <p className="adm-section-desc">
-              We use this to recommend lessons. You can change this later.
-            </p>
-
-            <div className="adm-field">
-              <span className="adm-label">Grades</span>
-              <div className="adm-pill-group">
-                {GRADE_OPTIONS.map((grade) => (
-                  <button
-                    key={grade}
-                    type="button"
-                    className={`adm-pill adm-pill--green${
-                      formData.grades_taught.includes(grade) ? ' active' : ''
-                    }`}
-                    onClick={() => toggleGrade(grade)}
-                    aria-pressed={formData.grades_taught.includes(grade)}
-                  >
-                    {grade}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="adm-field">
-              <span className="adm-label">Subjects</span>
-              <div className="adm-pill-group">
-                {SUBJECT_OPTIONS.map((subject) => (
-                  <button
-                    key={subject}
-                    type="button"
-                    className={`adm-pill${
-                      formData.subjects_taught.includes(subject) ? ' active' : ''
-                    }`}
-                    onClick={() => toggleSubject(subject)}
-                    aria-pressed={formData.subjects_taught.includes(subject)}
-                  >
-                    {subject}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
 
         <div className="adm-auth-submit">
           <IntButton
