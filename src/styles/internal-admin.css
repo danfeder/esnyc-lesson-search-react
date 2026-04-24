@@ -880,6 +880,95 @@
   border-radius: 4px;
 }
 
+/* --- react-select overrides (CreatableSelect w/ classNamePrefix="adm-rs") ---
+   react-select v5 emits its own styles via emotion; we override just enough to
+   align the control, menu, and multi-value chips with the ink/paper/green
+   palette. Scope with !important because emotion styles target the same
+   leaf elements with equivalent specificity. */
+.adm-rs__control {
+  border: 1px solid var(--esy-ink-30) !important;
+  border-radius: 4px !important;
+  min-height: 36px !important;
+  font-family: var(--esy-font-body) !important;
+  font-size: 14px !important;
+  color: var(--esy-ink) !important;
+  background: var(--esy-white) !important;
+  box-shadow: none !important;
+  transition: border-color 120ms !important;
+}
+.adm-rs__control:hover {
+  border-color: var(--esy-ink) !important;
+}
+.adm-rs__control--is-focused {
+  border-color: var(--esy-green) !important;
+  box-shadow: none !important;
+}
+.adm-rs__placeholder {
+  color: var(--esy-ink-50) !important;
+  font-family: var(--esy-font-body) !important;
+}
+.adm-rs__single-value,
+.adm-rs__input-container,
+.adm-rs__input {
+  color: var(--esy-ink) !important;
+  font-family: var(--esy-font-body) !important;
+}
+.adm-rs__multi-value {
+  background: var(--esy-ink-10) !important;
+  border-radius: 3px !important;
+  margin: 2px !important;
+}
+.adm-rs__multi-value__label {
+  color: var(--esy-ink) !important;
+  font-family: var(--esy-font-body) !important;
+  font-size: 12px !important;
+  padding: 2px 4px 2px 6px !important;
+}
+.adm-rs__multi-value__remove {
+  color: var(--esy-ink-70) !important;
+  border-radius: 0 3px 3px 0 !important;
+}
+.adm-rs__multi-value__remove:hover {
+  background: var(--esy-ink-30) !important;
+  color: var(--esy-ink) !important;
+}
+.adm-rs__indicator-separator {
+  background: var(--esy-ink-10) !important;
+}
+.adm-rs__dropdown-indicator,
+.adm-rs__clear-indicator {
+  color: var(--esy-ink-50) !important;
+}
+.adm-rs__dropdown-indicator:hover,
+.adm-rs__clear-indicator:hover {
+  color: var(--esy-ink) !important;
+}
+.adm-rs__menu {
+  background: var(--esy-white) !important;
+  border: 1px solid var(--esy-ink-10) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.08) !important;
+  font-family: var(--esy-font-body) !important;
+  margin-top: 4px !important;
+}
+.adm-rs__option {
+  font-size: 14px !important;
+  color: var(--esy-ink) !important;
+  cursor: pointer !important;
+}
+.adm-rs__option--is-focused {
+  background: var(--esy-paper-alt) !important;
+  color: var(--esy-ink) !important;
+}
+.adm-rs__option--is-selected {
+  background: var(--esy-green) !important;
+  color: var(--esy-white) !important;
+}
+.adm-rs__no-options-message {
+  color: var(--esy-ink-50) !important;
+  font-family: var(--esy-font-body) !important;
+}
+
 /* --- Queue card (review dashboard) -------------------------------- */
 .adm-queue-row {
   display: grid;

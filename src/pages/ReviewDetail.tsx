@@ -812,6 +812,7 @@ export function ReviewDetail() {
                   </label>
                   <CreatableSelect
                     inputId={inputIds.heritage}
+                    classNamePrefix="adm-rs"
                     isMulti
                     options={heritageOptions}
                     value={(metadata.culturalHeritage ?? []).map(
@@ -849,6 +850,7 @@ export function ReviewDetail() {
                     </label>
                     <CreatableSelect
                       inputId={inputIds.mainIngredients}
+                      classNamePrefix="adm-rs"
                       isMulti
                       options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.mainIngredients)}
                       value={(metadata.mainIngredients ?? []).map((v) => ({
@@ -875,6 +877,7 @@ export function ReviewDetail() {
                     </label>
                     <CreatableSelect
                       inputId={inputIds.cookingSkills}
+                      classNamePrefix="adm-rs"
                       isMulti
                       options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.cookingSkills)}
                       value={(metadata.cookingSkills ?? []).map((v) => ({
@@ -905,6 +908,7 @@ export function ReviewDetail() {
                     </label>
                     <CreatableSelect
                       inputId={inputIds.gardenSkills}
+                      classNamePrefix="adm-rs"
                       isMulti
                       options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.gardenSkills)}
                       value={(metadata.gardenSkills ?? []).map((v) => ({
@@ -945,6 +949,7 @@ export function ReviewDetail() {
                   </label>
                   <CreatableSelect
                     inputId={inputIds.observances}
+                    classNamePrefix="adm-rs"
                     isMulti
                     options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.observancesHolidays)}
                     value={(metadata.observancesHolidays ?? []).map((v) => ({
@@ -966,6 +971,7 @@ export function ReviewDetail() {
                   </label>
                   <CreatableSelect
                     inputId={inputIds.culturalResponsiveness}
+                    classNamePrefix="adm-rs"
                     isMulti
                     options={selectOptionsFromConfig(
                       ALL_FIELD_CONFIGS.culturalResponsivenessFeatures
