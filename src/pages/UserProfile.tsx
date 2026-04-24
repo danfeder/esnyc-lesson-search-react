@@ -6,13 +6,11 @@ import { parseDbError } from '@/utils/errorHandling';
 import { SchoolBadge, type School } from '@/components/Schools';
 import {
   AlertCircle,
-  BookOpen,
   Building,
   CheckCircle,
   ChevronRight,
   Edit,
   FileText,
-  GraduationCap,
   Loader2,
   Lock,
   Mail,
@@ -34,15 +32,11 @@ import {
   type IntStatus,
 } from '@/components/Internal';
 
-const GRADE_OPTIONS = ['3K', '4K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
-const SUBJECT_OPTIONS = ['Math', 'Science', 'Literacy/ELA', 'Social Studies', 'Health', 'Arts'];
 const BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
 
 interface ProfileFormData {
   full_name: string;
   school_borough: string;
-  grades_taught: string[];
-  subjects_taught: string[];
 }
 
 type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved';
@@ -80,8 +74,6 @@ export function UserProfile() {
   const [formData, setFormData] = useState<ProfileFormData>({
     full_name: '',
     school_borough: '',
-    grades_taught: [],
-    subjects_taught: [],
   });
   const [userSchools, setUserSchools] = useState<School[]>([]);
 
@@ -108,8 +100,6 @@ export function UserProfile() {
       setFormData({
         full_name: profile.full_name || '',
         school_borough: profile.school_borough || '',
-        grades_taught: profile.grades_taught || [],
-        subjects_taught: profile.subjects_taught || [],
       });
 
       const { data: userSchoolData, error: schoolsError } = await supabase
@@ -178,8 +168,6 @@ export function UserProfile() {
       const updateData = {
         full_name: formData.full_name || undefined,
         school_borough: formData.school_borough || undefined,
-        grades_taught: formData.grades_taught.length > 0 ? formData.grades_taught : undefined,
-        subjects_taught: formData.subjects_taught.length > 0 ? formData.subjects_taught : undefined,
         updated_at: new Date().toISOString(),
       };
 
@@ -238,22 +226,6 @@ export function UserProfile() {
     }
   };
 
-  const toggleGrade = (grade: string) =>
-    setFormData((prev) => ({
-      ...prev,
-      grades_taught: prev.grades_taught.includes(grade)
-        ? prev.grades_taught.filter((g) => g !== grade)
-        : [...prev.grades_taught, grade],
-    }));
-
-  const toggleSubject = (subject: string) =>
-    setFormData((prev) => ({
-      ...prev,
-      subjects_taught: prev.subjects_taught.includes(subject)
-        ? prev.subjects_taught.filter((s) => s !== subject)
-        : [...prev.subjects_taught, subject],
-    }));
-
   if (authLoading || loading) {
     return (
       <div className="int-shell-root">
@@ -311,7 +283,7 @@ export function UserProfile() {
       <div className="adm-page adm-page--narrow">
         <IntPageHeader
           title="My profile"
-          description="Your account details, school affiliation, and what you teach."
+          description="Your account details and school affiliation."
           actions={headerActions}
           back={{ label: 'Back', onClick: () => navigate(-1) }}
         />
@@ -418,77 +390,6 @@ export function UserProfile() {
               </p>
             )}
           </IntFormField>
-        </section>
-
-        {/* --- What you teach --- */}
-        <section className="adm-card">
-          <h2 className="adm-section-eyebrow">
-            <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" /> What you teach
-          </h2>
-
-          <div className="adm-field">
-            <span className="adm-label">Grades</span>
-            {editMode ? (
-              <div className="adm-pill-group">
-                {GRADE_OPTIONS.map((grade) => (
-                  <button
-                    key={grade}
-                    type="button"
-                    className={`adm-pill adm-pill--green${
-                      formData.grades_taught.includes(grade) ? ' active' : ''
-                    }`}
-                    onClick={() => toggleGrade(grade)}
-                    aria-pressed={formData.grades_taught.includes(grade)}
-                  >
-                    {grade}
-                  </button>
-                ))}
-              </div>
-            ) : formData.grades_taught.length > 0 ? (
-              <div className="adm-pill-group">
-                {formData.grades_taught.map((grade) => (
-                  <span key={grade} className="adm-pill active adm-pill--green">
-                    {grade}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="adm-readonly adm-readonly--muted">Not specified</p>
-            )}
-          </div>
-
-          <div className="adm-field">
-            <span className="adm-label">
-              <BookOpen className="w-3.5 h-3.5" aria-hidden="true" /> Subjects
-            </span>
-            {editMode ? (
-              <div className="adm-pill-group">
-                {SUBJECT_OPTIONS.map((subject) => (
-                  <button
-                    key={subject}
-                    type="button"
-                    className={`adm-pill${
-                      formData.subjects_taught.includes(subject) ? ' active' : ''
-                    }`}
-                    onClick={() => toggleSubject(subject)}
-                    aria-pressed={formData.subjects_taught.includes(subject)}
-                  >
-                    {subject}
-                  </button>
-                ))}
-              </div>
-            ) : formData.subjects_taught.length > 0 ? (
-              <div className="adm-pill-group">
-                {formData.subjects_taught.map((subject) => (
-                  <span key={subject} className="adm-pill active">
-                    {subject}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="adm-readonly adm-readonly--muted">Not specified</p>
-            )}
-          </div>
         </section>
 
         {/* --- Security / change password --- */}
