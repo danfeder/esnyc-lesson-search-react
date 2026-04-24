@@ -1,22 +1,24 @@
-import React, { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CreatableSelect from 'react-select/creatable';
+import type { SingleValue } from 'react-select';
+import { Clock, Info, Send } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import {
-  ArrowLeft,
-  Send,
-  Mail,
-  Building,
-  MapPin,
-  GraduationCap,
-  BookOpen,
-  MessageSquare,
-} from 'lucide-react';
-import { UserRole, InvitationFormData } from '@/types/auth';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { UserRole, InvitationFormData, Permission } from '@/types/auth';
 import { logger } from '@/utils/logger';
-import { parseDbError, isEmailDuplicateError } from '@/utils/errorHandling';
+import { isEmailDuplicateError, parseDbError } from '@/utils/errorHandling';
+import {
+  IntAlert,
+  IntButton,
+  IntFormField,
+  IntPageHeader,
+  IntRoleBadge,
+  type IntRole,
+} from '@/components/Internal';
+import { cn } from '@/utils/cn';
 
-// Extend Window interface for development debugging
 declare global {
   interface Window {
     _lastInvitationLink?: string;
@@ -24,55 +26,63 @@ declare global {
 }
 
 const NYC_BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
-const GRADE_LEVELS = ['3K', 'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8'];
-const SUBJECTS = [
-  'Math',
-  'Science',
-  'Literacy/ELA',
-  'Social Studies',
-  'Health',
-  'Arts',
-  'Garden',
-  'Cooking',
+
+const ROLE_DEFS: { id: IntRole; label: string; desc: string }[] = [
+  { id: 'teacher', label: 'Teacher', desc: 'Submits lessons, saves drafts, browses the library.' },
+  {
+    id: 'reviewer',
+    label: 'Reviewer',
+    desc: 'Reviews submissions, requests revisions, publishes lessons.',
+  },
+  { id: 'admin', label: 'Admin', desc: 'Full access — users, taxonomy, settings, analytics.' },
 ];
 
-const getPermissionsForRole = (role: UserRole): string[] => {
-  switch (role) {
-    case UserRole.TEACHER:
-      return ['view_lessons', 'submit_lessons'];
-    case UserRole.REVIEWER:
-      return [
-        'view_lessons',
-        'submit_lessons',
-        'review_lessons',
-        'approve_lessons',
-        'view_analytics',
-      ];
-    case UserRole.ADMIN:
-      return [
-        'view_lessons',
-        'submit_lessons',
-        'review_lessons',
-        'approve_lessons',
-        'delete_lessons',
-        'view_users',
-        'invite_users',
-        'edit_users',
-        'view_analytics',
-        'manage_duplicates',
-        'export_data',
-      ];
-    default:
-      return ['view_lessons', 'submit_lessons'];
-  }
+const PERMISSIONS_FOR_ROLE: Record<UserRole, string[]> = {
+  [UserRole.TEACHER]: ['view_lessons', 'submit_lessons'],
+  [UserRole.REVIEWER]: [
+    'view_lessons',
+    'submit_lessons',
+    'review_lessons',
+    'approve_lessons',
+    'view_analytics',
+  ],
+  [UserRole.ADMIN]: [
+    'view_lessons',
+    'submit_lessons',
+    'review_lessons',
+    'approve_lessons',
+    'delete_lessons',
+    'view_users',
+    'invite_users',
+    'edit_users',
+    'view_analytics',
+    'manage_duplicates',
+    'export_data',
+  ],
+  [UserRole.SUPER_ADMIN]: [
+    'view_lessons',
+    'submit_lessons',
+    'review_lessons',
+    'approve_lessons',
+    'delete_lessons',
+    'view_users',
+    'invite_users',
+    'edit_users',
+    'view_analytics',
+    'manage_duplicates',
+    'export_data',
+  ],
 };
+
+type SchoolOption = { value: string; label: string; __isNew__?: boolean };
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
 export function AdminInviteUser() {
   const navigate = useNavigate();
-  const { user } = useEnhancedAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const { user, hasPermission, loading: authLoading } = useEnhancedAuth();
 
   const [formData, setFormData] = useState<InvitationFormData>({
     email: '',
@@ -83,54 +93,89 @@ export function AdminInviteUser() {
     grades_taught: [],
     subjects_taught: [],
   });
+  const [schoolOption, setSchoolOption] = useState<SchoolOption | null>(null);
+  const [schoolOptions, setSchoolOptions] = useState<SchoolOption[]>([]);
+  const [pendingInviteFound, setPendingInviteFound] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error: schoolsErr } = await supabase
+          .from('schools')
+          .select('id, name')
+          .order('name');
+        if (schoolsErr) throw schoolsErr;
+        setSchoolOptions((data ?? []).map((s) => ({ value: s.name, label: s.name })));
+      } catch (err) {
+        logger.error('Failed to load schools list:', err);
+      }
+    })();
+  }, []);
 
-    try {
-      // Check if there's already a pending invitation
-      const { data: existingInvites } = await supabase
+  // Check pending-invite existence as the admin types — debounced lightly via
+  // effect deps.
+  useEffect(() => {
+    const email = formData.email.trim();
+    if (!isValidEmail(email)) {
+      setPendingInviteFound(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
         .from('user_invitations')
         .select('id')
-        .eq('email', formData.email)
-        .is('accepted_at', null);
+        .eq('email', email)
+        .is('accepted_at', null)
+        .limit(1);
+      if (!cancelled) setPendingInviteFound((data ?? []).length > 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.email]);
 
-      if (existingInvites && existingInvites.length > 0) {
-        throw new Error('An invitation has already been sent to this email');
-      }
+  const emailIsValid = isValidEmail(formData.email.trim());
+  const canSubmit = !!formData.email && emailIsValid && !pendingInviteFound && !submitting;
 
-      // Create invitation
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
+  const selectedRoleDef = ROLE_DEFS.find((r) => r.id === formData.role) ?? ROLE_DEFS[0];
+
+  const handleSchoolChange = (opt: SingleValue<SchoolOption>) => {
+    setSchoolOption(opt);
+    setFormData((prev) => ({ ...prev, school_name: opt?.value ?? '' }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      if (!user?.id) throw new Error('User not authenticated');
 
       const { data: inviteData, error: inviteError } = await supabase
         .from('user_invitations')
         .insert({
-          email: formData.email,
+          email: formData.email.trim(),
           role: formData.role,
           invited_by: user.id,
           school_name: formData.school_name || undefined,
           school_borough: formData.school_borough || undefined,
           message: formData.message || undefined,
           metadata: {
-            grades_taught: formData.grades_taught,
-            subjects_taught: formData.subjects_taught,
             invited_by_id: user.id,
           },
         })
         .select()
         .single();
-
       if (inviteError) throw inviteError;
 
-      // Log audit
       await supabase.from('user_management_audit').insert({
         actor_id: user.id,
         action: 'invite_sent',
-        target_email: formData.email,
+        target_email: formData.email.trim(),
         new_values: {
           role: formData.role,
           school_name: formData.school_name,
@@ -138,330 +183,284 @@ export function AdminInviteUser() {
         },
       });
 
-      // Send invitation email
       if (inviteData) {
         try {
           const { error: emailError } = await supabase.functions.invoke('send-email', {
             body: {
               type: 'invitation',
-              to: formData.email,
+              to: formData.email.trim(),
               data: {
                 invitationId: inviteData.id,
                 token: inviteData.token,
-                inviterName: user?.full_name || user?.email,
+                inviterName: user.full_name || user.email,
                 role: formData.role,
                 customMessage: formData.message,
-                permissions: getPermissionsForRole(formData.role),
+                permissions: PERMISSIONS_FOR_ROLE[formData.role],
                 expiresAt: inviteData.expires_at,
               },
             },
           });
-
           if (emailError) {
             logger.error('Failed to send invitation email:', emailError);
-            // In development, show the invitation link as fallback
-            const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
+            const link = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
             if (import.meta.env.DEV) {
-              window._lastInvitationLink = invitationLink;
+              window._lastInvitationLink = link;
               logger.log('Invitation link available in window._lastInvitationLink');
             }
           }
         } catch (err) {
           logger.error('Error invoking email function:', err);
-          // In development, show the invitation link as fallback
-          const invitationLink = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
+          const link = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
           if (import.meta.env.DEV) {
-            window._lastInvitationLink = invitationLink;
+            window._lastInvitationLink = link;
             logger.log('Invitation link available in window._lastInvitationLink');
           }
         }
       }
 
-      setSuccess(true);
+      navigate('/admin/invitations', {
+        state: { toast: { kind: 'success', msg: `Invitation sent to ${formData.email.trim()}` } },
+      });
     } catch (err) {
-      // Use the enhanced error handling for better user feedback
       if (isEmailDuplicateError(err)) {
         setError(
-          'This email address is already registered to another user. Please use a different email address.'
+          'This email address is already registered to another user. Check the Users list or edit that account directly.'
         );
       } else {
         setError(parseDbError(err));
       }
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const handleGradeToggle = (grade: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      grades_taught: prev.grades_taught?.includes(grade)
-        ? prev.grades_taught.filter((g) => g !== grade)
-        : [...(prev.grades_taught || []), grade],
-    }));
-  };
+  const previewFirstLine = useMemo(() => {
+    const target = formData.email.trim() || 'teacher@school.org';
+    return target;
+  }, [formData.email]);
 
-  const handleSubjectToggle = (subject: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      subjects_taught: prev.subjects_taught?.includes(subject)
-        ? prev.subjects_taught.filter((s) => s !== subject)
-        : [...(prev.subjects_taught || []), subject],
-    }));
-  };
-
-  if (success) {
+  if (authLoading) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-green-100 rounded-full p-3">
-              <Send className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-          <h2 className="text-xl font-semibold text-green-800 mb-2">Invitation Sent!</h2>
-          <p className="text-green-700 mb-4">An invitation has been sent to {formData.email}</p>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => {
-                setSuccess(false);
-                setFormData({
-                  email: '',
-                  role: UserRole.TEACHER,
-                  school_name: '',
-                  school_borough: '',
-                  message: '',
-                  grades_taught: [],
-                  subjects_taught: [],
-                });
-              }}
-              className="px-4 py-2 border border-green-300 text-green-700 rounded-md hover:bg-green-100 transition-colors"
-            >
-              Send Another Invitation
-            </button>
-            <button
-              onClick={() => navigate('/admin/users')}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              Go to User Management
-            </button>
-          </div>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">Loading…</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-2xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <button
-          onClick={() => navigate('/admin/users')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Invite New User</h1>
-          <p className="text-gray-600">Send an invitation to join the platform</p>
+  if (!hasPermission(Permission.INVITE_USERS)) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">You don't have permission to invite users.</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-      >
-        {/* Email */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email Address <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="teacher@school.edu"
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-        </div>
+  const headerActions = (
+    <IntButton onClick={() => navigate('/admin/invitations')}>
+      <Clock className="w-4 h-4" aria-hidden="true" />
+      <span>Invitations</span>
+    </IntButton>
+  );
 
-        {/* Role */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Role <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {[UserRole.TEACHER, UserRole.REVIEWER, UserRole.ADMIN].map((role) => (
-              <label
-                key={role}
-                className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                  formData.role === role
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="role"
-                  value={role}
-                  checked={formData.role === role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                  className="sr-only"
-                />
-                <span className="capitalize">{role}</span>
-              </label>
-            ))}
-          </div>
-          <p className="mt-2 text-sm text-gray-600">
-            {formData.role === UserRole.TEACHER && 'Can view and submit lessons'}
-            {formData.role === UserRole.REVIEWER && 'Can review and approve submitted lessons'}
-            {formData.role === UserRole.ADMIN && 'Can manage users and system settings'}
-          </p>
-        </div>
+  return (
+    <div className="int-shell-root">
+      <div className="adm-page adm-page--narrow">
+        <IntPageHeader
+          title="Invite a user"
+          description="Send an invite email. The recipient sets their own password and lands on their dashboard."
+          actions={headerActions}
+          back={{ label: 'Back to Users', onClick: () => navigate('/admin/users') }}
+        />
 
-        {/* School Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">School Name</label>
-            <div className="relative">
-              <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={formData.school_name}
-                onChange={(e) => setFormData({ ...formData, school_name: e.target.value })}
-                placeholder="P.S. 123"
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Borough</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <select
-                value={formData.school_borough}
-                onChange={(e) => setFormData({ ...formData, school_borough: e.target.value })}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
-              >
-                <option value="">Select borough</option>
-                {NYC_BOROUGHS.map((borough) => (
-                  <option key={borough} value={borough}>
-                    {borough}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Grades Taught */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <GraduationCap className="inline w-4 h-4 mr-1" />
-            Grades Taught
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {GRADE_LEVELS.map((grade) => (
-              <label
-                key={grade}
-                className={`px-3 py-1 border rounded-full cursor-pointer text-sm transition-all ${
-                  formData.grades_taught?.includes(grade)
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={formData.grades_taught?.includes(grade) || false}
-                  onChange={() => handleGradeToggle(grade)}
-                  className="sr-only"
-                />
-                {grade}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Subjects Taught */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <BookOpen className="inline w-4 h-4 mr-1" />
-            Subjects Taught
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {SUBJECTS.map((subject) => (
-              <label
-                key={subject}
-                className={`px-3 py-1 border rounded-full cursor-pointer text-sm transition-all ${
-                  formData.subjects_taught?.includes(subject)
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={formData.subjects_taught?.includes(subject) || false}
-                  onChange={() => handleSubjectToggle(subject)}
-                  className="sr-only"
-                />
-                {subject}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Custom Message */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <MessageSquare className="inline w-4 h-4 mr-1" />
-            Personal Message (Optional)
-          </label>
-          <textarea
-            value={formData.message}
-            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-            placeholder="Add a personal message to the invitation..."
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/users')}
-            className="px-4 py-2 text-gray-700 hover:text-gray-900"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>Sending...</>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                Send Invitation
-              </>
+        <div className="adm-invite-grid">
+          <form className="adm-card" onSubmit={handleSubmit} style={{ padding: 24 }}>
+            {error && (
+              <IntAlert variant="error" title="We couldn't send this invite.">
+                {error}
+              </IntAlert>
             )}
-          </button>
+
+            {!error && formData.email && !emailIsValid && (
+              <IntAlert variant="error" title="That email address isn't valid.">
+                Double-check the format (e.g. <code>name@school.org</code>).
+              </IntAlert>
+            )}
+
+            {!error && emailIsValid && pendingInviteFound && (
+              <IntAlert variant="warn" title="An invite for that email is already pending.">
+                <button
+                  type="button"
+                  className="adm-link"
+                  onClick={() => navigate('/admin/invitations')}
+                >
+                  Resend from the Invitations list instead
+                </button>
+                .
+              </IntAlert>
+            )}
+
+            <div className="adm-invite-fields">
+              <IntFormField label="Email address" required>
+                <input
+                  id="invite-email"
+                  className="adm-input"
+                  type="email"
+                  required
+                  autoComplete="off"
+                  placeholder="teacher@school.org"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </IntFormField>
+
+              <div>
+                <div className="adm-section-eyebrow">Role</div>
+                <div className="adm-radio-cards" role="radiogroup" aria-label="Role">
+                  {ROLE_DEFS.map((r) => {
+                    const isSelected = formData.role === (r.id as unknown as UserRole);
+                    return (
+                      <label
+                        key={r.id}
+                        className={cn('adm-radio-card', isSelected && 'is-selected')}
+                      >
+                        <input
+                          type="radio"
+                          name="invite-role"
+                          value={r.id}
+                          checked={isSelected}
+                          onChange={() =>
+                            setFormData({ ...formData, role: r.id as unknown as UserRole })
+                          }
+                        />
+                        <div className="adm-radio-card-head">
+                          <IntRoleBadge role={r.id} />
+                        </div>
+                        <p>{r.desc}</p>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <IntFormField label="School" htmlFor="invite-school">
+                <CreatableSelect<SchoolOption>
+                  inputId="invite-school"
+                  classNamePrefix="adm-rs"
+                  isClearable
+                  placeholder="Search or add a school…"
+                  options={schoolOptions}
+                  value={schoolOption}
+                  onChange={handleSchoolChange}
+                  formatCreateLabel={(input) => `Use "${input}" as school name`}
+                />
+              </IntFormField>
+
+              <IntFormField label="Borough">
+                <select
+                  id="invite-borough"
+                  className="adm-select"
+                  value={formData.school_borough}
+                  onChange={(e) => setFormData({ ...formData, school_borough: e.target.value })}
+                >
+                  <option value="">Select borough</option>
+                  {NYC_BOROUGHS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </IntFormField>
+
+              <IntFormField
+                label="Personal note"
+                hint={`${(formData.message ?? '').length}/240 · shown in the email`}
+              >
+                <textarea
+                  id="invite-message"
+                  className="adm-input"
+                  rows={3}
+                  maxLength={240}
+                  placeholder="e.g. Looking forward to your Three Sisters draft — welcome!"
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                />
+              </IntFormField>
+
+              <div className="adm-info-strip">
+                <span className="adm-info-strip-icon">
+                  <Info className="w-4 h-4" aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>Invites expire in 7 days.</strong> If the recipient misses the window,
+                  resend from the Invitations list — no need to recreate.
+                </span>
+              </div>
+            </div>
+
+            <div className="adm-form-actions">
+              <IntButton type="button" onClick={() => navigate('/admin/users')}>
+                Cancel
+              </IntButton>
+              <IntButton type="submit" variant="primary" disabled={!canSubmit}>
+                <Send className="w-4 h-4" aria-hidden="true" />
+                <span>{submitting ? 'Sending…' : 'Send invite'}</span>
+              </IntButton>
+            </div>
+          </form>
+
+          <aside className="adm-card adm-email-preview" aria-label="Email preview">
+            <div className="adm-section-eyebrow">Email preview</div>
+            <div className="adm-email-preview-body">
+              <dl className="adm-email-preview-headers">
+                <div>
+                  <dt>From</dt>
+                  <dd>Edible Schoolyard NYC &lt;no-reply@esynyc.org&gt;</dd>
+                </div>
+                <div>
+                  <dt>To</dt>
+                  <dd>{previewFirstLine}</dd>
+                </div>
+                <div>
+                  <dt>Subject</dt>
+                  <dd>You're invited to Edible Schoolyard NYC's lesson library</dd>
+                </div>
+              </dl>
+              <p>Hi,</p>
+              <p>
+                {user?.full_name || user?.email || 'An admin'} invited you to join{' '}
+                <strong>Edible Schoolyard NYC</strong> as <strong>{selectedRoleDef.label}</strong>
+                {formData.school_name && (
+                  <>
+                    {' '}
+                    for <strong>{formData.school_name}</strong>
+                  </>
+                )}
+                .
+              </p>
+              {formData.message && (
+                <blockquote className="adm-email-preview-quote">{formData.message}</blockquote>
+              )}
+              <p>
+                Click the link below to accept the invite and set up your account. The link expires
+                in 7 days.
+              </p>
+              <div className="adm-email-preview-cta">
+                <span className="adm-email-preview-cta-btn">Accept invitation</span>
+              </div>
+              <p className="adm-email-preview-footer">
+                If you didn't expect this, you can ignore this email.
+              </p>
+            </div>
+            <div className="adm-email-preview-meta">
+              Live preview — updates as you edit the form.
+            </div>
+          </aside>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

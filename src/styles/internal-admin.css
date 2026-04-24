@@ -2126,3 +2126,96 @@
 }
 .adm-toast--success { background: var(--esy-green-deep); }
 .adm-toast--error   { background: var(--esy-red); }
+
+/* --- AdminInviteUser — form / preview grid --------------------------- */
+.adm-invite-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .adm-invite-grid { grid-template-columns: 1fr; }
+}
+.adm-invite-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* --- AdminInviteUser — email preview panel --------------------------- */
+.adm-email-preview {
+  background: var(--esy-paper);
+  padding: 20px;
+}
+.adm-email-preview-body {
+  background: var(--esy-white);
+  border: 1px solid var(--esy-ink-10);
+  border-radius: 4px;
+  padding: 16px 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--esy-ink);
+}
+.adm-email-preview-body p { margin: 0 0 10px; }
+.adm-email-preview-headers {
+  margin: 0 0 10px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--esy-ink-10);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--esy-ink-50);
+}
+.adm-email-preview-headers > div {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 6px;
+}
+.adm-email-preview-headers dt {
+  font-weight: 500;
+  color: var(--esy-ink-70);
+  margin: 0;
+}
+.adm-email-preview-headers dd {
+  margin: 0;
+  color: var(--esy-ink-70);
+  word-break: break-word;
+}
+.adm-email-preview-quote {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--esy-green);
+  background: var(--esy-paper-alt);
+  font-style: italic;
+  color: var(--esy-ink-70);
+  font-size: 12px;
+}
+.adm-email-preview-cta { margin: 10px 0 14px; }
+.adm-email-preview-cta-btn {
+  display: inline-block;
+  background: var(--esy-green);
+  color: var(--esy-white);
+  padding: 10px 16px;
+  border-radius: 3px;
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.adm-email-preview-footer {
+  margin: 0 !important;
+  font-size: 11px;
+  color: var(--esy-ink-50);
+}
+.adm-email-preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--esy-ink-50);
+  font-style: italic;
+}

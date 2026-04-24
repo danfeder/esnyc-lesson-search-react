@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { Permission, UserInvitation } from '@/types/auth';
@@ -107,7 +107,8 @@ function statusBadgeVariant(inv: UserInvitation): IntStatus {
 
 export function AdminInvitations() {
   const navigate = useNavigate();
-  const { user, hasPermission } = useEnhancedAuth();
+  const location = useLocation();
+  const { user, hasPermission, loading: authLoading } = useEnhancedAuth();
   const [invitations, setInvitations] = useState<UserInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<InvitationFilter>('pending');
@@ -115,6 +116,16 @@ export function AdminInvitations() {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+
+  // Pick up any toast passed in navigation state (e.g. from AdminInviteUser).
+  useEffect(() => {
+    const incoming = (location.state as { toast?: Toast } | null)?.toast;
+    if (incoming) {
+      setToast(incoming);
+      // Clear history state so a refresh doesn't replay the toast.
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   const loadInvitations = useCallback(async () => {
     setLoading(true);
@@ -469,6 +480,16 @@ export function AdminInvitations() {
   }));
 
   // --- Guard ------------------------------------------------------------
+
+  if (authLoading) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">Loading…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasPermission(Permission.VIEW_USERS)) {
     return (
