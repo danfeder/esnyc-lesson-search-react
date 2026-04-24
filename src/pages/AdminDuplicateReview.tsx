@@ -1,80 +1,73 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { logger } from '@/utils/logger';
 import {
+  dismissDuplicateGroup,
   fetchDuplicateGroups,
   resolveDuplicateGroup,
-  dismissDuplicateGroup,
   type DuplicateGroupForReview,
+  type LessonForReview,
   type LessonResolution,
 } from '@/services/duplicateGroupService';
-import {
-  DuplicateReviewHeader,
-  LessonReviewCard,
-  ResolutionActions,
-  type Selection,
-} from '@/components/Admin/Duplicates';
 import { addResolvedGroupToStorage } from '@/utils/duplicateGroupHelpers';
+import {
+  IntAlert,
+  IntConfidencePill,
+  IntDetectionMethodChip,
+  IntGroupReviewBar,
+  IntLessonSpecCard,
+  IntMetadataDiff,
+  IntPageHeader,
+  IntSpecRail,
+  type IntConfidence,
+  type IntDetectionMethod,
+  type IntDiffField,
+  type IntDiffMode,
+} from '@/components/Internal';
 
-/**
- * Detail page for reviewing a single duplicate group.
- * Shows lessons in a grid with Keep/Archive selectors.
- */
+type Selection = { action: 'keep' } | { action: 'archive'; archiveTo?: string };
+
+const LESSON_DIFF_FIELDS: IntDiffField<LessonForReview>[] = [
+  { key: 'activity_type', label: 'Activity type', kind: 'pills' },
+  { key: 'grade_levels', label: 'Grade levels', kind: 'pills' },
+  { key: 'thematic_categories', label: 'Thematic categories', kind: 'pills' },
+  { key: 'season_timing', label: 'Season / timing', kind: 'pills' },
+  { key: 'cultural_heritage', label: 'Cultural heritage', kind: 'pills' },
+  { key: 'core_competencies', label: 'Core competencies', kind: 'pills' },
+  { key: 'lesson_format', label: 'Lesson format', kind: 'text' },
+  { key: 'content_length', label: 'Content length', kind: 'number' },
+  { key: 'has_table_format', label: 'Has table format', kind: 'bool' },
+];
+
 export function AdminDuplicateReview() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const { user } = useEnhancedAuth();
 
-  // Data state
   const [allGroups, setAllGroups] = useState<DuplicateGroupForReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Selection state - map of lessonId to selection
   const [selections, setSelections] = useState<Map<string, Selection>>(new Map());
   const [hasChanges, setHasChanges] = useState(false);
+  const [diffMode, setDiffMode] = useState<IntDiffMode>('only-differing');
 
-  // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittingAction, setSubmittingAction] = useState<'keepAll' | 'saveAndNext' | null>(null);
+  const [submittingAction, setSubmittingAction] = useState<'resolve' | 'dismiss' | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Find current group and index
   const currentIndex = useMemo(
     () => allGroups.findIndex((g) => g.groupId === groupId),
     [allGroups, groupId]
   );
   const currentGroup = currentIndex >= 0 ? allGroups[currentIndex] : null;
+  const prevGroup = currentIndex > 0 ? allGroups[currentIndex - 1] : null;
+  const nextGroup =
+    currentIndex >= 0 && currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1] : null;
 
-  // Load all groups on mount
-  useEffect(() => {
-    loadGroups();
-  }, []);
-
-  // Initialize selections when group changes
-  useEffect(() => {
-    if (currentGroup) {
-      initializeSelections(currentGroup);
-    }
-  }, [currentGroup]);
-
-  // Warn before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: Event) => {
-      if (hasChanges) {
-        e.preventDefault();
-        // Required for Chrome - returnValue is deprecated but still needed
-        (e as unknown as { returnValue: string }).returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasChanges]);
-
-  async function loadGroups() {
+  const loadGroups = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -86,68 +79,52 @@ export function AdminDuplicateReview() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  function initializeSelections(group: DuplicateGroupForReview) {
-    // Default: first lesson is kept, rest are kept too
-    // User can change as needed
-    const newSelections = new Map<string, Selection>();
-    for (const lesson of group.lessons) {
-      newSelections.set(lesson.lesson_id, { action: 'keep' });
+  useEffect(() => {
+    loadGroups();
+  }, [loadGroups]);
+
+  // Initialize selections when group changes. Default: first lesson kept, rest archive to it.
+  useEffect(() => {
+    if (!currentGroup) return;
+    const keepId = currentGroup.lessons[0].lesson_id;
+    const next = new Map<string, Selection>();
+    for (const l of currentGroup.lessons) {
+      if (l.lesson_id === keepId) {
+        next.set(l.lesson_id, { action: 'keep' });
+      } else {
+        next.set(l.lesson_id, { action: 'archive', archiveTo: keepId });
+      }
     }
-    setSelections(newSelections);
+    setSelections(next);
     setHasChanges(false);
     setSubmitError(null);
-  }
+  }, [currentGroup]);
 
-  const handleSelectionChange = useCallback(
-    (lessonId: string, selection: Selection) => {
-      setSelections((prev) => {
-        const next = new Map(prev);
-        const oldSelection = prev.get(lessonId);
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: Event) => {
+      if (hasChanges) {
+        e.preventDefault();
+        (e as unknown as { returnValue: string }).returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
 
-        // If changing from 'keep' to 'archive', update any lessons that had archiveTo pointing to this one
-        if (oldSelection?.action === 'keep' && selection.action === 'archive') {
-          // Find all lessons that were pointing to this lesson as their archiveTo
-          for (const [otherId, otherSel] of next.entries()) {
-            if (otherSel.action === 'archive' && otherSel.archiveTo === lessonId) {
-              // Find a new target - the first kept lesson that isn't the current one
-              const newTarget = currentGroup?.lessons.find((l) => {
-                const sel = next.get(l.lesson_id);
-                return (
-                  sel?.action === 'keep' && l.lesson_id !== lessonId && l.lesson_id !== otherId
-                );
-              });
-              if (newTarget) {
-                next.set(otherId, { action: 'archive', archiveTo: newTarget.lesson_id });
-              } else {
-                // No valid target - revert to keep
-                next.set(otherId, { action: 'keep' });
-              }
-            }
-          }
-        }
-
-        next.set(lessonId, selection);
-        return next;
-      });
-      setHasChanges(true);
-    },
-    [currentGroup]
-  );
-
+  // Quick-keep: click a card → that lesson becomes canonical, rest flip to archive with archiveTo = keeper.
   const handleQuickKeep = useCallback(
     (keepLessonId: string) => {
       if (!currentGroup) return;
-
-      // Set this lesson to keep, archive all others to it
       setSelections((prev) => {
         const next = new Map(prev);
-        for (const lesson of currentGroup.lessons) {
-          if (lesson.lesson_id === keepLessonId) {
-            next.set(lesson.lesson_id, { action: 'keep' });
+        for (const l of currentGroup.lessons) {
+          if (l.lesson_id === keepLessonId) {
+            next.set(l.lesson_id, { action: 'keep' });
           } else {
-            next.set(lesson.lesson_id, { action: 'archive', archiveTo: keepLessonId });
+            next.set(l.lesson_id, { action: 'archive', archiveTo: keepLessonId });
           }
         }
         return next;
@@ -157,31 +134,34 @@ export function AdminDuplicateReview() {
     [currentGroup]
   );
 
-  // Get list of lessons currently marked as "Keep"
+  const handleArchiveTargetChange = useCallback((lessonId: string, targetId: string) => {
+    setSelections((prev) => {
+      const next = new Map(prev);
+      next.set(lessonId, { action: 'archive', archiveTo: targetId });
+      return next;
+    });
+    setHasChanges(true);
+  }, []);
+
   const keptLessons = useMemo(() => {
-    if (!currentGroup) return [];
+    if (!currentGroup) return [] as LessonForReview[];
     return currentGroup.lessons.filter((l) => selections.get(l.lesson_id)?.action === 'keep');
   }, [currentGroup, selections]);
 
-  // Validate that we have at least one kept lesson and all archives have targets
+  const archivedLessons = useMemo(() => {
+    if (!currentGroup) return [] as LessonForReview[];
+    return currentGroup.lessons.filter((l) => selections.get(l.lesson_id)?.action === 'archive');
+  }, [currentGroup, selections]);
+
   const hasValidSelection = useMemo(() => {
     if (!currentGroup || keptLessons.length === 0) return false;
-
-    for (const lesson of currentGroup.lessons) {
-      const sel = selections.get(lesson.lesson_id);
+    for (const l of currentGroup.lessons) {
+      const sel = selections.get(l.lesson_id);
       if (!sel) return false;
       if (sel.action === 'archive' && !sel.archiveTo) return false;
     }
     return true;
-  }, [currentGroup, selections, keptLessons]);
-
-  // Navigation helpers
-  const navigateToGroup = useCallback(
-    (groupId: string) => {
-      navigate(`/admin/duplicates/${groupId}`);
-    },
-    [navigate]
-  );
+  }, [currentGroup, selections, keptLessons.length]);
 
   const navigateToList = useCallback(
     (message?: string, resolvedGroup?: DuplicateGroupForReview) => {
@@ -192,47 +172,29 @@ export function AdminDuplicateReview() {
     [navigate]
   );
 
-  // Handle Keep All (dismiss group)
-  const handleKeepAll = useCallback(async () => {
+  const handleDismiss = useCallback(async () => {
     if (!currentGroup) return;
-
     setIsSubmitting(true);
-    setSubmittingAction('keepAll');
+    setSubmittingAction('dismiss');
     setSubmitError(null);
-
     try {
-      // Map detection method - dismissDuplicateGroup expects specific values
-      let detectionMethod: 'same_title' | 'embedding' | 'both';
-      if (currentGroup.detectionMethod === 'mixed') {
-        detectionMethod = 'both';
-      } else {
-        detectionMethod = currentGroup.detectionMethod;
-      }
-
+      const dm: 'same_title' | 'embedding' | 'both' =
+        currentGroup.detectionMethod === 'mixed' ? 'both' : currentGroup.detectionMethod;
       const result = await dismissDuplicateGroup(
         currentGroup.lessonIds,
-        detectionMethod,
+        dm,
         'Dismissed via Keep All action'
       );
-
       if (!result.success) {
         setSubmitError(result.error || 'Failed to dismiss group');
         return;
       }
-
-      // Save resolved group to sessionStorage
       addResolvedGroupToStorage(currentGroup);
-
-      // Navigate to next group or back to list
-      // Calculate next group ID BEFORE updating state to avoid race condition
-      const nextGroupId =
-        currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1].groupId : null;
-
-      // Remove current group from state
+      setHasChanges(false);
+      const nextId = nextGroup?.groupId ?? null;
       setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
-
-      if (nextGroupId) {
-        navigateToGroup(nextGroupId);
+      if (nextId) {
+        navigate(`/admin/duplicates/${nextId}`);
       } else {
         navigateToList(
           `Kept all ${currentGroup.lessons.length} lessons as non-duplicates`,
@@ -246,73 +208,42 @@ export function AdminDuplicateReview() {
       setIsSubmitting(false);
       setSubmittingAction(null);
     }
-  }, [currentGroup, currentIndex, allGroups, navigateToGroup, navigateToList]);
+  }, [currentGroup, nextGroup, navigate, navigateToList]);
 
-  // Handle Skip (go to next without saving)
-  const handleSkip = useCallback(() => {
-    const nextGroupId =
-      currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1].groupId : null;
-
-    if (nextGroupId) {
-      navigateToGroup(nextGroupId);
-    } else {
-      navigateToList();
-    }
-  }, [currentIndex, allGroups, navigateToGroup, navigateToList]);
-
-  // Handle Save & Next (resolve and continue)
-  const handleSaveAndNext = useCallback(async () => {
+  const handleResolve = useCallback(async () => {
     if (!currentGroup || !hasValidSelection) return;
-
+    // If nothing is being archived, fall through to dismiss (same semantics)
+    if (archivedLessons.length === 0) {
+      await handleDismiss();
+      return;
+    }
     setIsSubmitting(true);
-    setSubmittingAction('saveAndNext');
+    setSubmittingAction('resolve');
     setSubmitError(null);
-
     try {
-      // Build resolution from selections
-      const resolutions: LessonResolution[] = currentGroup.lessons.map((lesson) => {
-        const sel = selections.get(lesson.lesson_id)!;
+      const resolutions: LessonResolution[] = currentGroup.lessons.map((l) => {
+        const sel = selections.get(l.lesson_id);
+        if (!sel) throw new Error(`Missing selection for lesson ${l.lesson_id}`);
         if (sel.action === 'keep') {
-          return { lessonId: lesson.lesson_id, action: 'keep' };
-        } else {
-          return { lessonId: lesson.lesson_id, action: 'archive', archiveTo: sel.archiveTo };
+          return { lessonId: l.lesson_id, action: 'keep' };
         }
+        return { lessonId: l.lesson_id, action: 'archive', archiveTo: sel.archiveTo };
       });
-
-      // Check if any are actually being archived
-      const hasArchives = resolutions.some((r) => r.action === 'archive');
-
-      if (!hasArchives) {
-        // All are kept - treat as Keep All
-        await handleKeepAll();
-        return;
-      }
-
       const result = await resolveDuplicateGroup({
         groupId: currentGroup.groupId,
         resolutions,
       });
-
       if (!result.success) {
         setSubmitError(result.error || 'Failed to resolve group');
         return;
       }
-
-      // Save resolved group to sessionStorage
       addResolvedGroupToStorage(currentGroup);
-
-      // Navigate to next group or back to list
+      setHasChanges(false);
       const message = `Resolved group: kept ${result.keptCount}, archived ${result.archivedCount}`;
-
-      // Calculate next group ID BEFORE updating state to avoid race condition
-      const nextGroupId =
-        currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1].groupId : null;
-
-      // Remove current group from state
+      const nextId = nextGroup?.groupId ?? null;
       setAllGroups((prev) => prev.filter((g) => g.groupId !== currentGroup.groupId));
-
-      if (nextGroupId) {
-        navigateToGroup(nextGroupId);
+      if (nextId) {
+        navigate(`/admin/duplicates/${nextId}`);
       } else {
         navigateToList(message, currentGroup);
       }
@@ -326,23 +257,22 @@ export function AdminDuplicateReview() {
   }, [
     currentGroup,
     hasValidSelection,
+    archivedLessons.length,
+    handleDismiss,
     selections,
-    currentIndex,
-    allGroups,
-    handleKeepAll,
-    navigateToGroup,
+    nextGroup,
+    navigate,
     navigateToList,
   ]);
 
-  // Check user permissions
   const isAdmin =
     user?.role === 'admin' || user?.role === 'reviewer' || user?.role === 'super_admin';
 
   if (!isAdmin) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">You need admin privileges to access this page.</p>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">You don't have permission to view this page.</p>
         </div>
       </div>
     );
@@ -350,10 +280,9 @@ export function AdminDuplicateReview() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <span className="ml-3 text-gray-600">Loading duplicate group...</span>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <p className="adm-section-desc">Loading duplicate group…</p>
         </div>
       </div>
     );
@@ -361,18 +290,14 @@ export function AdminDuplicateReview() {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-            <p className="text-red-800">Error: {error}</p>
-          </div>
-          <button
-            onClick={loadGroups}
-            className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-          >
-            Try Again
-          </button>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <IntAlert variant="error" title="Couldn't load duplicate groups">
+            {error}{' '}
+            <button type="button" className="adm-link" onClick={() => loadGroups()}>
+              Try again
+            </button>
+          </IntAlert>
         </div>
       </div>
     );
@@ -380,72 +305,183 @@ export function AdminDuplicateReview() {
 
   if (!currentGroup) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">Group not found or already resolved.</p>
-          <button
-            onClick={() => navigateToList()}
-            className="mt-2 text-sm text-yellow-700 hover:text-yellow-900 underline"
-          >
-            Back to list
-          </button>
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <IntAlert variant="info" title="Group not found">
+            This duplicate group may have already been resolved. Go back to the queue to pick
+            another.{' '}
+            <button
+              type="button"
+              className="adm-link"
+              onClick={() => navigate('/admin/duplicates')}
+            >
+              Back to queue
+            </button>
+          </IntAlert>
         </div>
       </div>
     );
   }
 
+  const n = currentGroup.lessons.length;
+  const pct = Math.round((currentGroup.avgSimilarity ?? 0) * 100);
+  const keptLesson = keptLessons[0];
+  const archivedCount = archivedLessons.length;
+
+  const summaryNode = isSubmitting ? (
+    <>Submitting…</>
+  ) : archivedCount === 0 ? (
+    <>All {n} lessons will be kept (no change).</>
+  ) : (
+    <>
+      Will keep <span className="canonical-name">{keptLesson?.title ?? '—'}</span> as canonical and
+      archive <strong>{archivedCount}</strong> lesson{archivedCount === 1 ? '' : 's'}. Each archived
+      lesson is soft-deleted and its redirect target is stored on{' '}
+      <code
+        style={{
+          fontSize: 11,
+          background: 'var(--color-esy-paper-alt)',
+          padding: '1px 4px',
+          borderRadius: 3,
+        }}
+      >
+        lessons.canonical_id
+      </code>
+      ; the group decision is recorded in{' '}
+      <code
+        style={{
+          fontSize: 11,
+          background: 'var(--color-esy-paper-alt)',
+          padding: '1px 4px',
+          borderRadius: 3,
+        }}
+      >
+        duplicate_resolutions
+      </code>
+      .
+    </>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto p-6 pb-24">
-      {/* Header with back link and progress */}
-      <DuplicateReviewHeader
-        group={currentGroup}
-        currentIndex={currentIndex}
-        totalGroups={allGroups.length}
-      />
+    <div className="int-shell-root">
+      <div className="adm-page">
+        <IntPageHeader
+          title={currentGroup.lessons[0].title}
+          description={`Cluster of ${n} lessons · ${currentGroup.pairCount} flagged pair${
+            currentGroup.pairCount === 1 ? '' : 's'
+          }. Pick the canonical lesson; the rest will be archived and linked to it. If this isn't a true duplicate, dismiss — lessons stay untouched and the detector won't re-flag them.`}
+          back={{ label: 'Back to queue', onClick: () => navigate('/admin/duplicates') }}
+        />
 
-      {/* Instructions */}
-      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
-          <strong>Instructions:</strong> Review the lessons below and decide which to keep. Click a
-          card to quickly select it as the only one to keep, or use the dropdowns for more control.
-          Archived lessons will be linked to the lesson they're archived to.
-        </p>
-      </div>
+        <div className="adm-group-progress">
+          <span className="adm-group-progress-counter">
+            Group <strong>{currentIndex + 1}</strong> of {allGroups.length}
+          </span>
+          <div className="adm-group-progress-meta">
+            <code
+              style={{
+                fontSize: 11,
+                color: 'var(--color-esy-ink-50)',
+                background: 'var(--color-esy-paper-alt)',
+                padding: '1px 6px',
+                borderRadius: 3,
+              }}
+            >
+              {currentGroup.groupId}
+            </code>
+            <span className="sep">·</span>
+            <span>
+              Avg similarity <strong style={{ color: 'var(--color-esy-ink)' }}>{pct}%</strong>
+            </span>
+            <span className="sep">·</span>
+            <IntConfidencePill confidence={currentGroup.confidence as IntConfidence} />
+            <span className="sep">·</span>
+            <IntDetectionMethodChip method={currentGroup.detectionMethod as IntDetectionMethod} />
+          </div>
+          <div className="adm-group-progress-nav">
+            <button
+              type="button"
+              className={`adm-btn adm-btn--sm${prevGroup ? '' : ' adm-btn--disabled'}`}
+              onClick={() => prevGroup && navigate(`/admin/duplicates/${prevGroup.groupId}`)}
+              disabled={!prevGroup}
+              aria-label="Previous group"
+            >
+              <ChevronLeft size={12} aria-hidden="true" /> Prev
+            </button>
+            <button
+              type="button"
+              className={`adm-btn adm-btn--sm${nextGroup ? '' : ' adm-btn--disabled'}`}
+              onClick={() => nextGroup && navigate(`/admin/duplicates/${nextGroup.groupId}`)}
+              disabled={!nextGroup}
+              aria-label="Next group"
+            >
+              Next <ChevronRight size={12} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
 
-      {/* Lesson grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {currentGroup.lessons.map((lesson) => (
-          <LessonReviewCard
-            key={lesson.lesson_id}
-            lesson={lesson}
-            selection={selections.get(lesson.lesson_id) || { action: 'keep' }}
-            keptLessons={keptLessons}
-            onSelectionChange={(sel) => handleSelectionChange(lesson.lesson_id, sel)}
-            onQuickKeep={() => handleQuickKeep(lesson.lesson_id)}
+        <section style={{ marginBottom: 18 }}>
+          <header className="adm-section-head">
+            <h2>Lessons in this group</h2>
+            <span className="adm-section-head-meta">
+              Pick canonical · {n} lesson{n === 1 ? '' : 's'}
+            </span>
+          </header>
+          <IntSpecRail pair={n === 2}>
+            {currentGroup.lessons.map((l) => {
+              const sel = selections.get(l.lesson_id);
+              return (
+                <IntLessonSpecCard
+                  key={l.lesson_id}
+                  lesson={l}
+                  groupLessons={currentGroup.lessons}
+                  isCanonical={sel?.action === 'keep'}
+                  locked={isSubmitting}
+                  onKeep={() => handleQuickKeep(l.lesson_id)}
+                  archiveTargetId={sel?.action === 'archive' ? sel.archiveTo : undefined}
+                  onArchiveTargetChange={(targetId) =>
+                    handleArchiveTargetChange(l.lesson_id, targetId)
+                  }
+                  groupId={currentGroup.groupId}
+                />
+              );
+            })}
+          </IntSpecRail>
+        </section>
+
+        <section style={{ marginBottom: 18 }}>
+          <header className="adm-section-head">
+            <h2>Metadata comparison</h2>
+            <span className="adm-section-head-meta">
+              {n} lesson{n === 1 ? '' : 's'} compared
+            </span>
+          </header>
+          <IntMetadataDiff
+            items={currentGroup.lessons}
+            fields={LESSON_DIFF_FIELDS}
+            mode={diffMode}
+            onModeChange={setDiffMode}
+            isCanonical={(l) => selections.get(l.lesson_id)?.action === 'keep'}
           />
-        ))}
-      </div>
+        </section>
 
-      {/* Selection summary */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <p className="text-sm text-gray-700">
-          <strong>Selection:</strong>{' '}
-          {keptLessons.length === currentGroup.lessons.length
-            ? 'All lessons will be kept'
-            : `${keptLessons.length} kept, ${currentGroup.lessons.length - keptLessons.length} will be archived`}
-        </p>
+        <IntGroupReviewBar
+          summary={summaryNode}
+          primaryLabel={
+            archivedCount === 0
+              ? 'Keep all (no change)'
+              : `Resolve (keep ${keptLessons.length}, archive ${archivedCount})`
+          }
+          dismissLabel="Dismiss group"
+          onResolve={handleResolve}
+          onDismiss={handleDismiss}
+          resolveDisabled={!hasValidSelection}
+          dismissDisabled={false}
+          isSubmitting={isSubmitting}
+          submittingAction={submittingAction}
+          error={submitError}
+        />
       </div>
-
-      {/* Fixed bottom action bar */}
-      <ResolutionActions
-        onKeepAll={handleKeepAll}
-        onSkip={handleSkip}
-        onSaveAndNext={handleSaveAndNext}
-        isSubmitting={isSubmitting}
-        submittingAction={submittingAction}
-        hasValidSelection={hasValidSelection}
-        error={submitError}
-      />
     </div>
   );
 }
