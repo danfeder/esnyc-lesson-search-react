@@ -13,6 +13,7 @@ export { IntListRow, intActivityLabel, intGradesLabel } from './IntListRow';
 export { IntMobileFilterButton } from './IntMobileFilterButton';
 export { IntMobileFilterDrawer } from './IntMobileFilterDrawer';
 export { IntPageHeader } from './IntPageHeader';
+export { IntQueueRow } from './IntQueueRow';
 export { IntRoleBadge } from './IntRoleBadge';
 export type { IntRole } from './IntRoleBadge';
 export { IntSidebar } from './IntSidebar';
