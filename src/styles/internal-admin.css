@@ -2305,7 +2305,7 @@
   background: currentColor;
 }
 .adm-confidence-pill--high { color: var(--esy-red); }
-.adm-confidence-pill--medium { color: #B8860B; }
+.adm-confidence-pill--medium { color: var(--esy-amber-review); }
 .adm-confidence-pill--low { color: var(--esy-ink-50); }
 
 /* --- Detection-method chip --------------------------------------------- */
@@ -2410,7 +2410,7 @@
   background: var(--esy-green);
 }
 .adm-confidence-bar--high .adm-confidence-bar-track::after { background: var(--esy-red); }
-.adm-confidence-bar--medium .adm-confidence-bar-track::after { background: #B8860B; }
+.adm-confidence-bar--medium .adm-confidence-bar-track::after { background: var(--esy-amber-review); }
 .adm-confidence-bar--low .adm-confidence-bar-track::after { background: var(--esy-ink-50); }
 .adm-confidence-bar-value {
   font-family: var(--esy-font-display);
@@ -2909,6 +2909,7 @@
   border: 1px solid #F2C6C3;
   border-radius: 4px;
 }
+.adm-reviewbar-error svg { margin-right: 6px; vertical-align: middle; }
 
 /* --- Queue-level bulk-dismiss strip ----------------------------------- */
 .adm-bulkbar {

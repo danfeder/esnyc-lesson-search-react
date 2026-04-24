@@ -471,7 +471,6 @@ export function AdminDuplicateReview() {
             fields={LESSON_DIFF_FIELDS}
             mode={diffMode}
             onModeChange={setDiffMode}
-            isCanonical={(l) => selections.get(l.lesson_id)?.action === 'keep'}
           />
         </section>
 

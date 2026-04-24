@@ -33,7 +33,7 @@ export function IntGroupReviewBar({
     <div className={cn('adm-reviewbar', className)}>
       {error && (
         <div className="adm-reviewbar-error" role="alert">
-          <AlertCircle size={12} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          <AlertCircle size={12} aria-hidden="true" />
           {error}
         </div>
       )}

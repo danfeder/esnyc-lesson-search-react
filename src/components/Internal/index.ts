@@ -71,6 +71,6 @@ export type { IntStatRowProps } from './IntStatRow';
 export { IntStatusBadge } from './IntStatusBadge';
 export type { IntStatus } from './IntStatusBadge';
 export { IntTabs } from './IntTabs';
-export type { IntTab } from './IntTabs';
+export type { IntTab, IntTabsProps } from './IntTabs';
 export { IntToolbar } from './IntToolbar';
 export { IntViewSwitcher } from './IntViewSwitcher';

@@ -17,7 +17,6 @@ export interface IntMetadataDiffProps<T> {
 
   onModeChange?: (mode: IntDiffMode) => void;
 
-  isCanonical?: (item: T) => boolean;
   className?: string;
 }
 
@@ -91,6 +90,7 @@ export function IntMetadataDiff<T>({
                 className={cn('adm-pill', mode === 'all' && 'active')}
                 onClick={() => onModeChange('all')}
                 type="button"
+                aria-pressed={mode === 'all'}
               >
                 All fields
               </button>
@@ -98,6 +98,7 @@ export function IntMetadataDiff<T>({
                 className={cn('adm-pill', mode === 'only-differing' && 'active')}
                 onClick={() => onModeChange('only-differing')}
                 type="button"
+                aria-pressed={mode === 'only-differing'}
               >
                 Only differing
               </button>

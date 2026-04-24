@@ -7,7 +7,7 @@ export interface IntTab {
   disabled?: boolean;
 }
 
-interface IntTabsProps {
+export interface IntTabsProps {
   tabs: IntTab[];
   activeKey: string;
   onChange: (key: string) => void;
