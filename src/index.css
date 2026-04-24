@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./styles/fonts.css";
 @import "./styles/internal.css";
+@import "./styles/internal-admin.css";
 
 @theme {
   --color-primary-50: #f0f9f1;
@@ -45,6 +46,12 @@
   --color-esy-ink-10: #E6E6E6;
   --color-esy-paper: #FAF8F3;
   --color-esy-paper-alt: #F2EEE4;
+
+  /* Status accents (warm ochre + sienna) used by .adm-status--review and
+     .adm-status--revision in internal-admin.css. Not in the Phase 1 palette;
+     added in Phase 3 for admin/review status eyebrows. */
+  --color-esy-amber-review: #B8860B;
+  --color-esy-orange-revision: #C97A2A;
 
   --font-display: 'Intro Caps', 'Intro', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'Intro', 'Helvetica Neue', Arial, sans-serif;

@@ -53,6 +53,7 @@ export default [
         clearTimeout: 'readonly',
         HTMLInputElement: 'readonly',
         HTMLDivElement: 'readonly',
+        HTMLButtonElement: 'readonly',
         MouseEvent: 'readonly',
         Event: 'readonly',
         Node: 'readonly',
