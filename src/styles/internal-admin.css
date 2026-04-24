@@ -214,6 +214,8 @@
 .adm-status--revision  { color: var(--esy-orange-revision); }
 .adm-status--active    { color: var(--esy-green); }
 .adm-status--inactive  { color: var(--esy-ink-50); }
+.adm-status--pending   { color: var(--esy-amber-review); }
+.adm-status--expired   { color: var(--esy-red); }
 
 /* Role eyebrow — same type, no dot */
 .adm-role {
@@ -1682,3 +1684,413 @@
   font-size: 13px;
   color: var(--esy-ink-70);
 }
+
+/* =========================================================================
+   Phase 4 Group B — admin user-management pages
+   Avatar / alert / activity timeline / danger zone / secondary tabs /
+   radio cards / key-value list / etc.
+   ========================================================================= */
+
+/* --- Avatar (initials) ------------------------------------------------ */
+.adm-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--esy-paper-alt);
+  color: var(--esy-ink-70);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+.adm-avatar--lg { width: 56px; height: 56px; font-size: 16px; letter-spacing: 0.06em; }
+.adm-avatar--xl { width: 72px; height: 72px; font-size: 20px; letter-spacing: 0.06em; }
+.adm-avatar--green { background: var(--esy-green); color: var(--esy-white); }
+.adm-avatar--ink   { background: var(--esy-ink);   color: var(--esy-white); }
+
+/* --- User dossier header (AdminUserDetail) ---------------------------- */
+.adm-user-head {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 20px 24px;
+  background: var(--esy-white);
+  border: 1px solid var(--esy-ink-10);
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+.adm-user-head-main h2 {
+  font-family: var(--esy-font-body);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--esy-ink);
+  margin: 0 0 4px;
+  line-height: 1.15;
+}
+.adm-user-head-main .adm-user-head-meta {
+  font-size: 13px;
+  color: var(--esy-ink-70);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.adm-user-head-main .adm-user-head-meta-sep { color: var(--esy-ink-30); }
+.adm-user-head-extras {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+.adm-user-head-extras dl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  text-align: right;
+}
+.adm-user-head-extras dt {
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 9px;
+  color: var(--esy-ink-50);
+}
+.adm-user-head-extras dd {
+  margin: 0;
+  color: var(--esy-ink);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+@media (max-width: 720px) {
+  .adm-user-head { grid-template-columns: 56px minmax(0, 1fr); }
+  .adm-user-head-extras { grid-column: 1 / -1; justify-content: flex-start; flex-wrap: wrap; }
+  .adm-user-head-extras dl { text-align: left; }
+}
+
+/* --- Key/value list (sidebar panels) ---------------------------------- */
+.adm-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  margin: 0;
+}
+.adm-kv-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+.adm-kv-row dt {
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 10px;
+  color: var(--esy-ink-50);
+  margin: 0;
+}
+.adm-kv-row dd {
+  margin: 0;
+  color: var(--esy-ink);
+  word-break: break-word;
+}
+.adm-kv-row dd.adm-kv-mono {
+  font-family: 'SF Mono', 'Consolas', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--esy-ink-70);
+}
+
+/* --- IntAlert (page-level alert banner) ------------------------------- */
+/* Uses compound selectors so the legacy `.adm-alert--error` one-liner in
+   ReviewDetail (which lacks the base `.adm-alert` class) stays unaffected. */
+.adm-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+.adm-alert-icon { flex-shrink: 0; margin-top: 1px; display: inline-flex; }
+.adm-alert-body { min-width: 0; }
+.adm-alert-body strong { font-weight: 500; display: block; margin-bottom: 2px; }
+.adm-alert.adm-alert--error   { background: #FBECEB; border-color: #F2C6C3; color: #8A1610; }
+.adm-alert.adm-alert--warn    { background: #FBF4E0; border-color: #E8D9A7; color: #6B4E0F; }
+.adm-alert.adm-alert--info    { background: #EEF4F8; border-color: #C7DCE7; color: #1F4761; }
+.adm-alert.adm-alert--success { background: #E9F4EE; border-color: #B5D8C2; color: var(--esy-green-deep); }
+
+/* --- IntActivityTimeline ---------------------------------------------- */
+.adm-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-timeline-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 12px 0;
+  position: relative;
+}
+.adm-timeline-item + .adm-timeline-item { border-top: 1px dashed var(--esy-ink-10); }
+.adm-timeline-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--esy-paper-alt);
+  color: var(--esy-ink-70);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.adm-timeline-dot--green  { background: #E6F2EB; color: var(--esy-green); }
+.adm-timeline-dot--red    { background: #FBECEB; color: var(--esy-red); }
+.adm-timeline-dot--blue   { background: #E7F0F6; color: #1F6B8E; }
+.adm-timeline-dot--indigo { background: #ECE8F5; color: var(--esy-purple); }
+.adm-timeline-dot--ochre  { background: #FAF0DC; color: var(--esy-amber-review); }
+.adm-timeline-body {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--esy-ink);
+}
+.adm-timeline-actor  { font-weight: 500; color: var(--esy-ink); }
+.adm-timeline-action { color: var(--esy-ink-70); }
+.adm-timeline-target { font-weight: 500; color: var(--esy-ink); }
+.adm-timeline-when {
+  font-size: 11px;
+  color: var(--esy-ink-50);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+.adm-timeline-diff {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  font-family: 'SF Mono', 'Consolas', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--esy-ink-70);
+}
+.adm-timeline-diff-chip {
+  background: var(--esy-paper-alt);
+  border: 1px solid var(--esy-ink-10);
+  border-radius: 3px;
+  padding: 1px 6px;
+  line-height: 1.5;
+}
+.adm-timeline-diff-chip--key {
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  color: var(--esy-ink-50);
+}
+.adm-timeline-diff-chip--old { color: var(--esy-red); text-decoration: line-through; }
+.adm-timeline-diff-chip--new { color: var(--esy-green); }
+.adm-timeline-empty {
+  padding: 28px 0;
+  text-align: center;
+  color: var(--esy-ink-50);
+  font-size: 13px;
+}
+
+/* --- Danger zone (AdminUserDetail Access tab) ------------------------- */
+.adm-danger-zone {
+  background: #FBECEB;
+  border: 1px solid #F2C6C3;
+  border-radius: 6px;
+  padding: 18px 20px;
+}
+.adm-danger-zone h3 {
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: #8A1610;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.adm-danger-zone p {
+  font-size: 12px;
+  color: #6B231E;
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+.adm-danger-zone-actions { display: flex; flex-direction: column; gap: 8px; }
+.adm-danger-zone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #F2C6C3;
+  font-size: 12px;
+  color: #6B231E;
+}
+.adm-danger-zone-row:first-child { border-top: 0; }
+.adm-danger-zone-row-title {
+  color: #8A1610;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+/* --- Filter bar + big empty state ------------------------------------- */
+.adm-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.adm-empty--large { padding: 72px 24px; }
+.adm-empty--large p {
+  max-width: 40ch;
+  margin: 6px auto 16px;
+  font-size: 13px;
+  color: var(--esy-ink-70);
+  line-height: 1.5;
+}
+
+/* --- Radio-card (role picker on Invite form) -------------------------- */
+.adm-radio-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+.adm-radio-card {
+  position: relative;
+  padding: 14px;
+  border: 1px solid var(--esy-ink-30);
+  border-radius: 5px;
+  cursor: pointer;
+  background: var(--esy-white);
+  transition: border-color 100ms, background 100ms;
+}
+.adm-radio-card:hover { border-color: var(--esy-ink); }
+.adm-radio-card:focus-within { border-color: var(--esy-green); outline: 2px solid rgba(0, 132, 61, 0.2); outline-offset: 1px; }
+.adm-radio-card.is-selected {
+  border-color: var(--esy-green);
+  background: #F1F8F3;
+}
+.adm-radio-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.adm-radio-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.adm-radio-card p {
+  font-size: 12px;
+  color: var(--esy-ink-70);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* --- Inline secondary tabs (AdminUserDetail Activity/Access/Profile) -- */
+.adm-tabs-inline {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--esy-ink-10);
+  margin-bottom: 20px;
+}
+.adm-tabs-inline button {
+  background: none;
+  border: 0;
+  padding: 10px 14px;
+  font-family: var(--esy-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: var(--esy-ink-70);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.adm-tabs-inline button:hover { color: var(--esy-ink); }
+.adm-tabs-inline button.is-active { color: var(--esy-ink); border-bottom-color: var(--esy-green); }
+.adm-tabs-inline .adm-tabs-inline-count {
+  background: var(--esy-paper-alt);
+  color: var(--esy-ink-70);
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-family: var(--esy-font-body);
+  font-size: 10px;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+/* --- Inline info strip (invite form helper) --------------------------- */
+.adm-info-strip {
+  background: var(--esy-paper);
+  border: 1px solid var(--esy-ink-10);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--esy-ink-70);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.45;
+}
+.adm-info-strip-icon { color: var(--esy-ink-50); flex-shrink: 0; margin-top: 1px; }
+.adm-info-strip strong { color: var(--esy-ink); font-weight: 500; }
+
+/* --- Inline-width select (inside cards) ------------------------------- */
+.adm-select--inline {
+  max-width: 200px;
+  display: inline-block;
+  width: auto;
+}
+
+/* --- Row action icon buttons (table per-row actions) ------------------ */
+.adm-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.adm-icon-btn {
+  background: none;
+  border: 0;
+  padding: 6px;
+  color: var(--esy-ink-50);
+  cursor: pointer;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.adm-icon-btn:hover { background: var(--esy-paper-alt); color: var(--esy-ink); }
+.adm-icon-btn:focus-visible { outline: 2px solid var(--esy-green); outline-offset: 1px; }
+.adm-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.adm-icon-btn--danger:hover  { color: var(--esy-red);   background: #FBECEB; }
+.adm-icon-btn--primary:hover { color: var(--esy-green); background: #E6F2EB; }

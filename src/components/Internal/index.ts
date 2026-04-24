@@ -1,4 +1,8 @@
 export { IntActivePills } from './IntActivePills';
+export { IntActivityTimeline } from './IntActivityTimeline';
+export type { IntActivityTimelineProps } from './IntActivityTimeline';
+export { IntAlert } from './IntAlert';
+export type { IntAlertProps, IntAlertVariant } from './IntAlert';
 export { IntAuthShell } from './IntAuthShell';
 export type { IntAuthShellProps } from './IntAuthShell';
 export { IntButton } from './IntButton';

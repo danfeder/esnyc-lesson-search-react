@@ -7,7 +7,9 @@ export type IntStatus =
   | 'approved'
   | 'rejected'
   | 'active'
-  | 'inactive';
+  | 'inactive'
+  | 'pending'
+  | 'expired';
 
 const DEFAULT_LABELS: Record<IntStatus, string> = {
   submitted: 'Submitted',
@@ -17,6 +19,8 @@ const DEFAULT_LABELS: Record<IntStatus, string> = {
   rejected: 'Rejected',
   active: 'Active',
   inactive: 'Inactive',
+  pending: 'Pending',
+  expired: 'Expired',
 };
 
 interface IntStatusBadgeProps {

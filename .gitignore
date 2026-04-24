@@ -165,3 +165,6 @@ scripts/sync-from-production.mjs
 
 # Local Netlify folder
 .netlify
+
+# Design handoff bundles (gzipped tarballs, not source)
+cache/
