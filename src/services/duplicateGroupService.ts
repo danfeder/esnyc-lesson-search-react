@@ -282,20 +282,28 @@ export async function fetchDuplicateGroups(
 
   const lessonMap = new Map(lessonDetails.map((l) => [l.lesson_id, l]));
 
+  // Pre-collect each group's lesson IDs and sort all groups by a stable key
+  // (sorted lesson IDs joined). The Map's iteration order reflects pair
+  // insertion order, which depends on SQL row order — without this sort,
+  // `group_N` IDs can shift between fetches even when the underlying data
+  // is unchanged, breaking hard-refreshes on `/admin/duplicates/:groupId`.
+  const sortedGroupEntries = Array.from(groupedPairs.values())
+    .map((pairsInGroup) => {
+      const lessonIdSet = new Set<string>();
+      for (const pair of pairsInGroup) {
+        lessonIdSet.add(pair.id1);
+        lessonIdSet.add(pair.id2);
+      }
+      const lessonIdArray = [...lessonIdSet].sort();
+      return { pairsInGroup, lessonIdArray, stableKey: lessonIdArray.join(',') };
+    })
+    .sort((a, b) => (a.stableKey < b.stableKey ? -1 : a.stableKey > b.stableKey ? 1 : 0));
+
   // Build groups
   const groups: DuplicateGroupForReview[] = [];
   let groupIndex = 1;
 
-  for (const pairsInGroup of groupedPairs.values()) {
-    // Get unique lesson IDs in this group
-    const lessonIds = new Set<string>();
-    for (const pair of pairsInGroup) {
-      lessonIds.add(pair.id1);
-      lessonIds.add(pair.id2);
-    }
-
-    const lessonIdArray = Array.from(lessonIds);
-
+  for (const { pairsInGroup, lessonIdArray } of sortedGroupEntries) {
     // Check if already dismissed (in-memory check, no DB call)
     if (!includeResolved && isGroupDismissed(lessonIdArray, dismissedKeys)) {
       continue;
