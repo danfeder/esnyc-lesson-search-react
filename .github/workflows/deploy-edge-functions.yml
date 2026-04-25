@@ -1,0 +1,377 @@
+name: Deploy Edge Functions
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge-functions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge-functions.yml'
+  # Manual dispatch is intentionally allowed to target `production` directly
+  # (e.g. emergency single-function redeploy). The `production` GitHub
+  # Environment still requires manual approval, but the TEST step does NOT
+  # run first when dispatching to production.
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (production deploys skip TEST — manual approval still applies)'
+        type: choice
+        options: [test, production]
+        default: test
+        required: true
+      function:
+        description: "Function name, or 'all' to deploy every function"
+        type: string
+        default: all
+        required: true
+
+concurrency:
+  group: deploy-edge-functions-${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('dispatch-{0}', inputs.environment) }}
+  cancel-in-progress: false
+
+jobs:
+  detect-changes:
+    name: Detect Deploy Target
+    runs-on: ubuntu-latest
+    outputs:
+      target: ${{ steps.plan.outputs.target }}
+      functions: ${{ steps.plan.outputs.functions }}
+      has_work: ${{ steps.plan.outputs.has_work }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          # Full history needed so the PR three-dot diff
+          # (origin/<base>...HEAD) can resolve its merge base on PRs
+          # with more than two commits since branching.
+          fetch-depth: 0
+
+      - name: Plan deployment
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_ENV: ${{ inputs.environment }}
+          DISPATCH_FUNC: ${{ inputs.function }}
+          BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # Initialize FUNCS up-front so the post-case length check is safe
+          # regardless of which event branch ran (defensive under set -u).
+          FUNCS=()
+
+          # Discover deployable functions from the filesystem so adding a new
+          # function under supabase/functions/<name>/ doesn't require editing
+          # this workflow. The `_*` filter excludes `_shared` and any future
+          # underscore-prefixed support directories.
+          mapfile -t ALL_FUNCTIONS < <(
+            find supabase/functions -mindepth 1 -maxdepth 1 -type d \
+              -not -name '_*' -printf '%f\n' | sort
+          )
+
+          if [ "${#ALL_FUNCTIONS[@]}" -eq 0 ]; then
+            echo "::error::No edge functions discovered under supabase/functions/"
+            exit 1
+          fi
+          echo "Discovered functions: ${ALL_FUNCTIONS[*]}"
+
+          is_valid_function() {
+            local name="$1"
+            for f in "${ALL_FUNCTIONS[@]}"; do
+              [ "$f" = "$name" ] && return 0
+            done
+            return 1
+          }
+
+          case "$EVENT_NAME" in
+            workflow_dispatch)
+              TARGET="$DISPATCH_ENV"
+              if [ "$DISPATCH_FUNC" = "all" ]; then
+                FUNCS=("${ALL_FUNCTIONS[@]}")
+              else
+                if ! is_valid_function "$DISPATCH_FUNC"; then
+                  echo "::error::Unknown function name: $DISPATCH_FUNC"
+                  echo "Valid: ${ALL_FUNCTIONS[*]}"
+                  exit 1
+                fi
+                FUNCS=("$DISPATCH_FUNC")
+              fi
+              ;;
+            pull_request)
+              TARGET="test"
+              # Unshallow fetch of base so the three-dot merge base resolves
+              # even if main has advanced since the PR branched.
+              git fetch origin "$BASE_REF"
+              CHANGED=$(git diff --name-only "origin/$BASE_REF...HEAD" -- supabase/functions/ || true)
+              ;;
+            push)
+              TARGET="production"
+              # github.event.before is the SHA before the push, so it covers
+              # the entire batch when multiple commits land at once. HEAD~1
+              # would only see the last commit's diff and miss earlier ones.
+              if [[ "$PUSH_BEFORE" =~ ^0+$ ]]; then
+                # Initial push or force-push that orphans history; history is
+                # unrecoverable, so deploy everything as the safe recovery.
+                echo "::warning::Push has no usable 'before' SHA (initial or force-push); deploying all functions."
+                FUNCS=("${ALL_FUNCTIONS[@]}")
+              else
+                CHANGED=$(git diff --name-only "$PUSH_BEFORE" HEAD -- supabase/functions/ || true)
+              fi
+              ;;
+            *)
+              echo "::error::Unsupported event: $EVENT_NAME"
+              exit 1
+              ;;
+          esac
+
+          # Process CHANGED only when a branch above set it. Skip when FUNCS
+          # is already populated (workflow_dispatch, or the orphan-history
+          # full-suite recovery in the push branch).
+          if [ "${#FUNCS[@]}" -eq 0 ]; then
+            if echo "${CHANGED:-}" | grep -q '^supabase/functions/_shared/'; then
+              echo "Shared code changed — deploying all functions."
+              FUNCS=("${ALL_FUNCTIONS[@]}")
+            else
+              mapfile -t FUNC_DIRS < <(
+                echo "${CHANGED:-}" \
+                  | sed -n 's|^supabase/functions/\([^/]*\)/.*|\1|p' \
+                  | sort -u
+              )
+              for name in "${FUNC_DIRS[@]}"; do
+                if is_valid_function "$name"; then
+                  FUNCS+=("$name")
+                fi
+              done
+            fi
+          fi
+
+          if [ "${#FUNCS[@]}" -eq 0 ]; then
+            echo "No functions to deploy."
+            echo "has_work=false" >> "$GITHUB_OUTPUT"
+            echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+            echo 'functions=[]' >> "$GITHUB_OUTPUT"
+            {
+              echo "## Edge Function Deploy — no-op"
+              echo ""
+              echo "No functions changed, nothing to deploy."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          JSON=$(printf '%s\n' "${FUNCS[@]}" | jq -R . | jq -cs .)
+          echo "has_work=true" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "functions=$JSON" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Edge Function Deploy Plan"
+            echo ""
+            echo "- **Event:** \`$EVENT_NAME\`"
+            echo "- **Target:** \`$TARGET\`"
+            echo "- **Functions (${#FUNCS[@]}):**"
+            for f in "${FUNCS[@]}"; do
+              echo "  - \`$f\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-test:
+    name: Deploy to TEST — ${{ matrix.function }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'test'
+    runs-on: ubuntu-latest
+    # Typical deploy is ~30s; cap at 10 min so a hung CLI / network stall
+    # surfaces quickly instead of consuming the GH Actions 360-min default.
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy ${{ matrix.function }} to TEST
+        # --no-verify-jwt: the Supabase edge runtime doesn't enforce a JWT
+        # on inbound requests; each function authenticates internally
+        # (anon key context, service-role admin client, or webhook signature
+        # as appropriate). Keep this aligned with the legacy deploy script.
+        #
+        # FUNCTION_NAME is passed via env (not template-substituted into the
+        # run script) per GitHub's published guidance for handling values
+        # that originate from workflow inputs / API outputs.
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy "$FUNCTION_NAME" \
+            --project-ref rxgajgmphciuaqzvwmox \
+            --no-verify-jwt
+
+  # Single approval gate for the whole PROD deploy. Without this, every
+  # matrix-expanded `deploy-prod` job would request its own approval —
+  # up to one click per function, which is bad UX for full-suite deploys
+  # (e.g. _shared/** changes). The gate runs once, then the matrix runs
+  # without per-job approval.
+  gate-prod:
+    # The job display name shows up in the "Review pending deployments"
+    # approval prompt. Surfacing the trigger here so the approver can see
+    # at a glance whether this is a normal main-push deploy or a manual
+    # dispatch that bypassed the TEST stage.
+    name: ${{ github.event_name == 'workflow_dispatch' && 'Approve PROD Deploy ⚠️ manual dispatch — TEST bypassed' || 'Approve PROD Deploy' }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://supabase.com/dashboard/project/jxlxtzkmicfhchkhiojz/functions
+    steps:
+      - name: Record approval
+        env:
+          FUNCTIONS: ${{ needs.detect-changes.outputs.functions }}
+          TRIGGER: ${{ github.event_name }}
+        run: |
+          {
+            echo "## ✅ PROD Deploy Approved"
+            echo ""
+            echo "- **Trigger:** \`$TRIGGER\`"
+            if [ "$TRIGGER" = "workflow_dispatch" ]; then
+              echo "- ⚠️ Manual dispatch — these functions did not auto-deploy to TEST first."
+            fi
+            echo "- **Functions:** \`$FUNCTIONS\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-prod:
+    name: Deploy to PROD — ${{ matrix.function }}
+    needs: [detect-changes, gate-prod]
+    if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy ${{ matrix.function }} to PROD
+        # See deploy-test for --no-verify-jwt + env-passing rationale.
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy "$FUNCTION_NAME" \
+            --project-ref jxlxtzkmicfhchkhiojz \
+            --no-verify-jwt
+
+  report:
+    name: Post Deploy Summary
+    needs: [detect-changes, deploy-test, deploy-prod]
+    if: always() && needs.detect-changes.outputs.has_work == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Compute status
+        id: status
+        env:
+          TEST_RESULT: ${{ needs.deploy-test.result }}
+          PROD_RESULT: ${{ needs.deploy-prod.result }}
+          TARGET: ${{ needs.detect-changes.outputs.target }}
+        run: |
+          if [ "$TARGET" = "test" ]; then
+            RESULT="$TEST_RESULT"
+          else
+            RESULT="$PROD_RESULT"
+          fi
+          case "$RESULT" in
+            success) ICON="✅"; STATUS="succeeded" ;;
+            skipped) ICON="⏭️"; STATUS="skipped (awaiting approval?)" ;;
+            *)       ICON="❌"; STATUS="failed or cancelled" ;;
+          esac
+          echo "icon=$ICON" >> "$GITHUB_OUTPUT"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Write job summary
+        env:
+          ICON: ${{ steps.status.outputs.icon }}
+          STATUS: ${{ steps.status.outputs.status }}
+          TARGET: ${{ needs.detect-changes.outputs.target }}
+          FUNCTIONS: ${{ needs.detect-changes.outputs.functions }}
+        run: |
+          {
+            echo "## Edge Function Deploy — $ICON $STATUS"
+            echo ""
+            echo "- **Target:** \`$TARGET\`"
+            echo "- **Functions:** \`$FUNCTIONS\`"
+            echo ""
+            echo "See the individual matrix job logs above for per-function output."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post or update PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          ICON: ${{ steps.status.outputs.icon }}
+          STATUS: ${{ steps.status.outputs.status }}
+          TARGET: ${{ needs.detect-changes.outputs.target }}
+          FUNCTIONS: ${{ needs.detect-changes.outputs.functions }}
+        with:
+          script: |
+            const { ICON, STATUS, TARGET, FUNCTIONS } = process.env;
+            const funcs = JSON.parse(FUNCTIONS);
+            const marker = '<!-- deploy-edge-functions-comment -->';
+            const body = [
+              marker,
+              `### Edge Function Deploy — ${ICON} ${STATUS}`,
+              ``,
+              `- **Target:** \`${TARGET}\``,
+              `- **Functions (${funcs.length}):**`,
+              ...funcs.map(f => `  - \`${f}\``),
+              ``,
+              `<sub>Last run: commit ${context.payload.pull_request.head.sha.slice(0, 7)} via \`deploy-edge-functions.yml\`</sub>`,
+            ].join('\n');
+
+            const existing = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                per_page: 100,
+              },
+            );
+            const prior = existing.find(c => c.body && c.body.includes(marker));
+
+            if (prior) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: prior.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
