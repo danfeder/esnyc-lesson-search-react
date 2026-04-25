@@ -156,4 +156,22 @@ test.describe('Responsive Design', () => {
       }
     }
   });
+
+  test('toolbar view and density toggles meet touch target minimum on mobile', async ({ page }) => {
+    await page.setViewportSize(VIEWPORT.MOBILE);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const toggles = page.locator('[role="radiogroup"] button[role="radio"]:visible');
+    const count = await toggles.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let i = 0; i < count; i++) {
+      const box = await toggles.nth(i).boundingBox();
+      if (box) {
+        expect(box.height).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_SIZE);
+        expect(box.width).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_SIZE);
+      }
+    }
+  });
 });

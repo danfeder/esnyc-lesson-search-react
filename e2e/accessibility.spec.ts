@@ -137,6 +137,14 @@ test.describe('Screen Reader Compatibility', () => {
     expect(h1Count).toBeGreaterThanOrEqual(1);
   });
 
+  test('search page h1 has an accessible name', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const h1Text = (await page.locator('h1').first().textContent()) ?? '';
+    expect(h1Text.trim().length).toBeGreaterThan(0);
+  });
+
   test('form inputs are properly labeled', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');

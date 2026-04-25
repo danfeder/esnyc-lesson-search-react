@@ -77,6 +77,7 @@ export const SearchPage: React.FC = () => {
         <IntSidebar counts={counts} />
 
         <main id="main-content" className="int-main" tabIndex={-1}>
+          <h1 className="sr-only">ESYNYC Lesson Library</h1>
           <IntToolbar
             count={totalCount}
             query={filters.query}
