@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Check, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { LessonForReview } from '@/services/duplicateGroupService';
@@ -27,14 +28,16 @@ export function IntLessonSpecCard({
   onArchiveTargetChange,
   groupId,
 }: IntLessonSpecCardProps) {
-  const titleByLessonId = new Map(groupLessons.map((l) => [l.lesson_id, l.title]));
-  const siblings = Object.entries(lesson.similarities || {})
-    .map(([id, sim]) => ({
-      id,
-      sim,
-      title: titleByLessonId.get(id) || id,
-    }))
-    .sort((a, b) => b.sim - a.sim);
+  const siblings = useMemo(() => {
+    const titleByLessonId = new Map(groupLessons.map((l) => [l.lesson_id, l.title]));
+    return Object.entries(lesson.similarities || {})
+      .map(([id, sim]) => ({
+        id,
+        sim,
+        title: titleByLessonId.get(id) || id,
+      }))
+      .sort((a, b) => b.sim - a.sim);
+  }, [groupLessons, lesson.similarities]);
 
   const cardClasses = cn(
     'adm-spec-card',

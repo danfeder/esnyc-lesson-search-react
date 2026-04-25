@@ -266,7 +266,10 @@ export function AdminInvitations() {
     () => invitations.filter((inv) => selectedKeys.includes(inv.id)),
     [invitations, selectedKeys]
   );
-  const selectedResendable = selectedInvitations.filter((inv) => !inv.accepted_at);
+  const selectedResendable = useMemo(
+    () => selectedInvitations.filter((inv) => !inv.accepted_at),
+    [selectedInvitations]
+  );
 
   const handleBulkResend = async () => {
     if (selectedResendable.length === 0) return;

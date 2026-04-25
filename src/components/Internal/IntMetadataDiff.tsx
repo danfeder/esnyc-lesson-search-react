@@ -41,7 +41,7 @@ function renderValue(value: unknown, kind: IntDiffFieldKind) {
     return (
       <div className="adm-metadiff-cell-pills">
         {arr.map((v, i) => (
-          <span key={i} className="adm-metadiff-cell-pill">
+          <span key={`${String(v)}-${i}`} className="adm-metadiff-cell-pill">
             {String(v)}
           </span>
         ))}
