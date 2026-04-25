@@ -171,7 +171,7 @@ export function AdminDuplicates() {
     return byConfidence;
   }, [pendingGroups]);
 
-  const counts_tabs = useMemo(
+  const tabCounts = useMemo(
     () => ({
       pending: pendingGroups.length,
       resolved: resolvedGroups.length,
@@ -183,7 +183,7 @@ export function AdminDuplicates() {
   const tabs = TAB_ORDER.map((key) => ({
     key,
     label: TAB_LABEL[key],
-    count: counts_tabs[key],
+    count: tabCounts[key],
   }));
 
   // Only show primaryTeacher column if at least one row has it

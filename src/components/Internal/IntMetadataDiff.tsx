@@ -52,17 +52,7 @@ function renderValue(value: unknown, kind: IntDiffFieldKind) {
     return <span className="adm-metadiff-cell-pill">{value ? 'Yes' : 'No'}</span>;
   }
   if (kind === 'number') {
-    return (
-      <span
-        style={{
-          fontFamily: "'SF Mono', 'Consolas', ui-monospace, monospace",
-          fontSize: 12,
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {Number(value).toLocaleString()}
-      </span>
-    );
+    return <span className="adm-metadiff-num">{Number(value).toLocaleString()}</span>;
   }
   return <span>{String(value)}</span>;
 }

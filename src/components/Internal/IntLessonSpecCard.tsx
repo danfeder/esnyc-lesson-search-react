@@ -12,7 +12,7 @@ export interface IntLessonSpecCardProps {
   onKeep: () => void;
   archiveTargetId?: string;
 
-  onArchiveTargetChange?: (lessonId: string) => void;
+  onArchiveTargetChange?: (targetId: string) => void;
   groupId: string;
 }
 

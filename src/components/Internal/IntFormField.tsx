@@ -1,4 +1,4 @@
-import { useId, type ReactElement, cloneElement, isValidElement } from 'react';
+import { useId, type ReactNode, cloneElement, isValidElement } from 'react';
 import { cn } from '@/utils/cn';
 
 interface IntFormFieldProps {
@@ -9,8 +9,9 @@ interface IntFormFieldProps {
   /** Optional explicit id; otherwise auto-generated and applied to the child input. */
   htmlFor?: string;
   /** The input/textarea/select. If a single element is passed and it lacks an id,
-      the field's id is wired in for label association. */
-  children: ReactElement | ReactElement[];
+      the field's id is wired in for label association. Strings, fragments, and
+      arrays are rendered as-is. */
+  children: ReactNode;
 }
 
 export function IntFormField({
@@ -27,7 +28,7 @@ export function IntFormField({
   // If children is a single element without an id, inject our fieldId so the
   // <label htmlFor> wires up correctly for screen readers.
   let renderedChild = children;
-  if (isValidElement(children) && !Array.isArray(children)) {
+  if (isValidElement(children)) {
     const childProps = children.props as { id?: string };
     if (!childProps.id) {
       renderedChild = cloneElement(children, { id: fieldId } as Partial<typeof childProps>);
