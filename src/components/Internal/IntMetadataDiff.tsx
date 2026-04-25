@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { cn } from '@/utils/cn';
 
 export type IntDiffFieldKind = 'pills' | 'bool' | 'number' | 'text';
@@ -73,11 +74,18 @@ export function IntMetadataDiff<T>({
   onModeChange,
   className,
 }: IntMetadataDiffProps<T>) {
-  const annotated = fields.map((f) => ({
-    ...f,
-    state: diffState(items, f.key) as 'agree' | 'differ',
-  }));
-  const visible = annotated.filter((f) => mode === 'all' || f.state === 'differ');
+  const annotated = useMemo(
+    () =>
+      fields.map((f) => ({
+        ...f,
+        state: diffState(items, f.key) as 'agree' | 'differ',
+      })),
+    [fields, items]
+  );
+  const visible = useMemo(
+    () => annotated.filter((f) => mode === 'all' || f.state === 'differ'),
+    [annotated, mode]
+  );
 
   const modeToggle = onModeChange ? (
     <div className="adm-metadiff-mode-toggle">

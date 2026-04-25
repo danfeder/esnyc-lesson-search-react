@@ -27,11 +27,12 @@ export function IntLessonSpecCard({
   onArchiveTargetChange,
   groupId,
 }: IntLessonSpecCardProps) {
+  const titleByLessonId = new Map(groupLessons.map((l) => [l.lesson_id, l.title]));
   const siblings = Object.entries(lesson.similarities || {})
     .map(([id, sim]) => ({
       id,
       sim,
-      title: groupLessons.find((l) => l.lesson_id === id)?.title || id,
+      title: titleByLessonId.get(id) || id,
     }))
     .sort((a, b) => b.sim - a.sim);
 

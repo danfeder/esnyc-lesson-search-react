@@ -62,10 +62,19 @@ export function AdminDuplicateReview() {
     () => allGroups.findIndex((g) => g.groupId === groupId),
     [allGroups, groupId]
   );
-  const currentGroup = currentIndex >= 0 ? allGroups[currentIndex] : null;
-  const prevGroup = currentIndex > 0 ? allGroups[currentIndex - 1] : null;
-  const nextGroup =
-    currentIndex >= 0 && currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1] : null;
+  const currentGroup = useMemo(
+    () => (currentIndex >= 0 ? allGroups[currentIndex] : null),
+    [allGroups, currentIndex]
+  );
+  const prevGroup = useMemo(
+    () => (currentIndex > 0 ? allGroups[currentIndex - 1] : null),
+    [allGroups, currentIndex]
+  );
+  const nextGroup = useMemo(
+    () =>
+      currentIndex >= 0 && currentIndex < allGroups.length - 1 ? allGroups[currentIndex + 1] : null,
+    [allGroups, currentIndex]
+  );
 
   const loadGroups = useCallback(async () => {
     try {

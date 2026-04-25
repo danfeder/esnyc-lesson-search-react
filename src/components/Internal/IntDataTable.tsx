@@ -42,13 +42,15 @@ export function IntDataTable<T>({
   getSelectRowLabel,
 }: IntDataTableProps<T>) {
   const allKeys = rows.map(getRowKey);
-  const allSelected = allKeys.length > 0 && allKeys.every((k) => selectedKeys.includes(k));
-  const someSelected = !allSelected && allKeys.some((k) => selectedKeys.includes(k));
+  const selectedSet = new Set(selectedKeys);
+  const visibleKeySet = new Set(allKeys);
+  const allSelected = allKeys.length > 0 && allKeys.every((k) => selectedSet.has(k));
+  const someSelected = !allSelected && allKeys.some((k) => selectedSet.has(k));
 
   const toggleAll = () => {
     if (!onSelectionChange) return;
     if (allSelected) {
-      onSelectionChange(selectedKeys.filter((k) => !allKeys.includes(k)));
+      onSelectionChange(selectedKeys.filter((k) => !visibleKeySet.has(k)));
     } else {
       const merged = new Set(selectedKeys);
       allKeys.forEach((k) => merged.add(k));
@@ -59,7 +61,7 @@ export function IntDataTable<T>({
   const toggleRow = (key: string) => {
     if (!onSelectionChange) return;
     onSelectionChange(
-      selectedKeys.includes(key) ? selectedKeys.filter((k) => k !== key) : [...selectedKeys, key]
+      selectedSet.has(key) ? selectedKeys.filter((k) => k !== key) : [...selectedKeys, key]
     );
   };
 
@@ -109,7 +111,7 @@ export function IntDataTable<T>({
           ) : (
             rows.map((row) => {
               const key = getRowKey(row);
-              const isSelected = selectedKeys.includes(key);
+              const isSelected = selectedSet.has(key);
               return (
                 <tr
                   key={key}
