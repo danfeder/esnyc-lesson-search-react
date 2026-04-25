@@ -37,6 +37,10 @@ export function IntTabs({ tabs, activeKey, onChange, ariaLabel }: IntTabsProps) 
     }
   };
 
+  // Automatic-activation tablist: arrow keys both move focus AND activate the
+  // tab (per WAI-ARIA APG "Tabs with Automatic Activation"). All current
+  // consumers swap cheap local state on tab change; do not adopt this primitive
+  // for tabs whose activation triggers expensive fetches.
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     switch (e.key) {
       case 'ArrowRight':

@@ -32,7 +32,6 @@ export function IntCard({ lesson, selected, onClick }: IntCardProps) {
     <article
       role="button"
       tabIndex={0}
-      aria-pressed={selected}
       className={cn('int-card', selected && 'selected')}
       onClick={() => onClick(lesson)}
       onKeyDown={handleKeyDown}

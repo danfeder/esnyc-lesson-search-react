@@ -129,7 +129,6 @@ export function IntDataTable<T>({
                       : undefined
                   }
                   tabIndex={onRowClick ? 0 : undefined}
-                  role={onRowClick ? 'button' : undefined}
                   style={onRowClick ? { cursor: 'pointer' } : undefined}
                 >
                   {selectable && (

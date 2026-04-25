@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 
 interface IntFilterSectionProps {
@@ -15,6 +15,7 @@ export function IntFilterSection({
   children,
 }: IntFilterSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const bodyId = useId();
   return (
     <div className={cn('int-filter', open && 'open')}>
       <button
@@ -22,6 +23,7 @@ export function IntFilterSection({
         className="int-filter-head"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
+        aria-controls={bodyId}
       >
         <span className="int-filter-head-left">
           <span>{label}</span>
@@ -40,7 +42,11 @@ export function IntFilterSection({
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </button>
-      {open && <div className="int-filter-body">{children}</div>}
+      {open && (
+        <div id={bodyId} className="int-filter-body">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

@@ -65,7 +65,6 @@ export function IntListRow({ lesson, selected, onClick }: IntListRowProps) {
     <div
       role="button"
       tabIndex={0}
-      aria-pressed={selected}
       className={cn('int-list-row', selected && 'selected')}
       onClick={() => onClick(lesson)}
       onKeyDown={handleKeyDown}
