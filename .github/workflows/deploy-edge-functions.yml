@@ -224,7 +224,11 @@ jobs:
   # (e.g. _shared/** changes). The gate runs once, then the matrix runs
   # without per-job approval.
   gate-prod:
-    name: Approve PROD Deploy
+    # The job display name shows up in the "Review pending deployments"
+    # approval prompt. Surfacing the trigger here so the approver can see
+    # at a glance whether this is a normal main-push deploy or a manual
+    # dispatch that bypassed the TEST stage.
+    name: ${{ github.event_name == 'workflow_dispatch' && 'Approve PROD Deploy ⚠️ manual dispatch — TEST bypassed' || 'Approve PROD Deploy' }}
     needs: detect-changes
     if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'production'
     runs-on: ubuntu-latest
@@ -235,11 +239,16 @@ jobs:
       - name: Record approval
         env:
           FUNCTIONS: ${{ needs.detect-changes.outputs.functions }}
+          TRIGGER: ${{ github.event_name }}
         run: |
           {
             echo "## ✅ PROD Deploy Approved"
             echo ""
-            echo "Functions queued for deploy: \`$FUNCTIONS\`"
+            echo "- **Trigger:** \`$TRIGGER\`"
+            if [ "$TRIGGER" = "workflow_dispatch" ]; then
+              echo "- ⚠️ Manual dispatch — these functions did not auto-deploy to TEST first."
+            fi
+            echo "- **Functions:** \`$FUNCTIONS\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
   deploy-prod:
