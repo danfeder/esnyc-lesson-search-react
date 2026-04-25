@@ -2791,6 +2791,7 @@
 }
 .adm-metadiff-head .legend .agree .swatch { background: var(--esy-ink-10); }
 .adm-metadiff-head .legend .differ .swatch { background: #F0D68C; border: 1px solid #E0B850; }
+.adm-metadiff-mode-toggle { display: flex; gap: 4px; }
 .adm-metadiff-table {
   display: grid;
   font-size: 13px;

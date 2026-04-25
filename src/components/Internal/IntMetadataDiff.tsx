@@ -79,31 +79,33 @@ export function IntMetadataDiff<T>({
   }));
   const visible = annotated.filter((f) => mode === 'all' || f.state === 'differ');
 
+  const modeToggle = onModeChange ? (
+    <div className="adm-metadiff-mode-toggle">
+      <button
+        className={cn('adm-pill', mode === 'all' && 'active')}
+        onClick={() => onModeChange('all')}
+        type="button"
+        aria-pressed={mode === 'all'}
+      >
+        All fields
+      </button>
+      <button
+        className={cn('adm-pill', mode === 'only-differing' && 'active')}
+        onClick={() => onModeChange('only-differing')}
+        type="button"
+        aria-pressed={mode === 'only-differing'}
+      >
+        Only differing
+      </button>
+    </div>
+  ) : null;
+
   if (visible.length === 0) {
     return (
       <div className={cn('adm-metadiff', className)}>
         <div className="adm-metadiff-head">
           <span>No differing metadata across these lessons.</span>
-          {onModeChange && (
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button
-                className={cn('adm-pill', mode === 'all' && 'active')}
-                onClick={() => onModeChange('all')}
-                type="button"
-                aria-pressed={mode === 'all'}
-              >
-                All fields
-              </button>
-              <button
-                className={cn('adm-pill', mode === 'only-differing' && 'active')}
-                onClick={() => onModeChange('only-differing')}
-                type="button"
-                aria-pressed={mode === 'only-differing'}
-              >
-                Only differing
-              </button>
-            </div>
-          )}
+          {modeToggle}
         </div>
       </div>
     );
@@ -113,9 +115,9 @@ export function IntMetadataDiff<T>({
     <div className={cn('adm-metadiff', className)}>
       <div className="adm-metadiff-head">
         <span>
-          {visible.length} field{visible.length === 1 ? '' : 's'} ·{' '}
-          {mode === 'all' ? 'showing all' : 'showing only differing'}
+          {visible.length} field{visible.length === 1 ? '' : 's'}
         </span>
+        {modeToggle}
         <span className="legend">
           <span className="agree">
             <span className="swatch" />
