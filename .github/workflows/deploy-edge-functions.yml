@@ -254,7 +254,7 @@ jobs:
             echo "See the individual matrix job logs above for per-function output."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Post PR comment
+      - name: Post or update PR comment
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         env:
@@ -266,19 +266,41 @@ jobs:
           script: |
             const { ICON, STATUS, TARGET, FUNCTIONS } = process.env;
             const funcs = JSON.parse(FUNCTIONS);
-            const lines = [
+            const marker = '<!-- deploy-edge-functions-comment -->';
+            const body = [
+              marker,
               `### Edge Function Deploy — ${ICON} ${STATUS}`,
               ``,
               `- **Target:** \`${TARGET}\``,
               `- **Functions (${funcs.length}):**`,
               ...funcs.map(f => `  - \`${f}\``),
               ``,
-              `<sub>Deployed from ${context.payload.pull_request.head.sha.slice(0, 7)} via \`deploy-edge-functions.yml\`</sub>`,
+              `<sub>Last run: commit ${context.payload.pull_request.head.sha.slice(0, 7)} via \`deploy-edge-functions.yml\`</sub>`,
             ].join('\n');
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: lines,
-            });
+            const existing = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                per_page: 100,
+              },
+            );
+            const prior = existing.find(c => c.body && c.body.includes(marker));
+
+            if (prior) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: prior.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
