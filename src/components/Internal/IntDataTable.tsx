@@ -86,6 +86,7 @@ export function IntDataTable<T>({
             {columns.map((col) => (
               <th
                 key={col.key}
+                scope="col"
                 className={cn(col.numeric && 'num')}
                 style={{
                   width: col.width,

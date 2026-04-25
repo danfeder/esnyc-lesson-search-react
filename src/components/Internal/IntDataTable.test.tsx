@@ -48,6 +48,13 @@ describe('IntDataTable', () => {
       expect(screen.getByRole('table', { name: 'Test users' })).toBeInTheDocument();
     });
 
+    it('exposes scope="col" on every column header for screen readers', () => {
+      render(<IntDataTable columns={baseColumns} rows={baseRows} getRowKey={(r) => r.id} />);
+      const headers = screen.getAllByRole('columnheader');
+      expect(headers).toHaveLength(2);
+      headers.forEach((h) => expect(h).toHaveAttribute('scope', 'col'));
+    });
+
     it('applies density attribute to wrapper', () => {
       const { container } = render(
         <IntDataTable

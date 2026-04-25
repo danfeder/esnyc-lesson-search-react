@@ -186,6 +186,7 @@
 .adm-btn--sm { padding: 5px 10px; font-size: 10px; }
 .adm-btn--block { width: 100%; justify-content: center; }
 .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.adm-btn:focus-visible { outline: 2px solid var(--esy-green); outline-offset: 1px; }
 
 /* --- Status eyebrow (quiet variant) --------------------------------- */
 .adm-status {
@@ -474,6 +475,10 @@
   font-family: var(--esy-font-body);
   font-size: 13px;
   color: var(--esy-ink);
+}
+.adm-toolbar-search:focus-within {
+  border-color: var(--esy-green);
+  box-shadow: 0 0 0 1px var(--esy-green);
 }
 .adm-toolbar .adm-select { width: auto; min-width: 140px; }
 
