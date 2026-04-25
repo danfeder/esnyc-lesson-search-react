@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment'
+        description: 'Target environment (production deploys skip TEST — manual approval still applies)'
         type: choice
         options: [test, production]
         default: test
