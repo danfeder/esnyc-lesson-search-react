@@ -28,8 +28,8 @@ const CULTURE_LABELS = buildCultureLabelMap();
 function labelFor(key: FilterKey, value: string): string {
   if (key === 'gradeLevels') return `Grade ${value}`;
   if (key === 'culturalHeritage') return CULTURE_LABELS[value] ?? value;
-  const cfg = FILTER_CONFIGS[key as string];
-  if (!cfg) return value;
+  if (!(key in FILTER_CONFIGS)) return value;
+  const cfg = FILTER_CONFIGS[key as keyof typeof FILTER_CONFIGS];
   const match = cfg.options.find((o) => o.value === value);
   return match?.label ?? value;
 }

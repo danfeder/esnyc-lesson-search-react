@@ -125,7 +125,12 @@ export function IntSidebar({ counts }: IntSidebarProps) {
                   type="radio"
                   name="lessonFormat"
                   checked={checked}
-                  onChange={() => setFilters({ lessonFormat: checked ? '' : opt.value })}
+                  onChange={() => setFilters({ lessonFormat: opt.value })}
+                  // onChange does not fire when re-clicking an already-selected
+                  // radio (value didn't change), so wire deselect via onClick.
+                  onClick={() => {
+                    if (checked) setFilters({ lessonFormat: '' });
+                  }}
                 />
                 <span className="int-check-box" />
                 <span className="int-check-label">{opt.label}</span>

@@ -117,6 +117,10 @@ export function AdminDuplicateReview() {
     const handleBeforeUnload = (e: Event) => {
       if (hasChanges) {
         e.preventDefault();
+        // Chrome/Edge before 119 still need returnValue set; preventDefault
+        // alone is enough on Firefox + modern Chromium. Belt-and-suspenders
+        // for older browsers seen in admin client logs.
+        (e as unknown as { returnValue: string }).returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
