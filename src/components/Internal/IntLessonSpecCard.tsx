@@ -46,7 +46,7 @@ export function IntLessonSpecCard({
   const showArchivePicker = !isCanonical && !locked && archiveOptions.length > 1;
 
   return (
-    <article className={cardClasses}>
+    <article className={cardClasses} aria-label={lesson.title}>
       <div className="adm-spec-card-head">
         <div style={{ minWidth: 0 }}>
           <h3 className="adm-spec-card-title">{lesson.title}</h3>
