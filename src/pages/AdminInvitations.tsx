@@ -142,7 +142,6 @@ export function AdminInvitations() {
           accepted_at: inv.accepted_at || undefined,
           school_name: inv.school_name || undefined,
           school_borough: inv.school_borough || undefined,
-          message: (inv as { message?: string }).message || undefined,
           metadata: (inv.metadata as UserInvitation['metadata']) || undefined,
         }))
       );
@@ -168,86 +167,98 @@ export function AdminInvitations() {
 
   // --- Single-invite helpers (also reused by bulk paths) ------------------
 
-  const resendOne = async (inv: UserInvitation): Promise<void> => {
-    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const resendOne = useCallback(
+    async (inv: UserInvitation): Promise<void> => {
+      const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { error: updateError } = await supabase
-      .from('user_invitations')
-      .update({ expires_at: newExpiresAt })
-      .eq('id', inv.id);
-    if (updateError) throw updateError;
+      const { error: updateError } = await supabase
+        .from('user_invitations')
+        .update({ expires_at: newExpiresAt })
+        .eq('id', inv.id);
+      if (updateError) throw updateError;
 
-    if (user) {
-      await supabase.from('user_management_audit').insert({
-        actor_id: user.id,
-        action: 'invite_resent',
-        target_email: inv.email,
-      });
-
-      try {
-        const inviterProfile = await supabase
-          .from('user_profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'invitation',
-            to: inv.email,
-            data: {
-              invitationId: inv.id,
-              token: inv.token,
-              inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
-              role: inv.role,
-              permissions: getPermissionsForRole(inv.role),
-              expiresAt: newExpiresAt,
-            },
-          },
+      if (user) {
+        await supabase.from('user_management_audit').insert({
+          actor_id: user.id,
+          action: 'invite_resent',
+          target_email: inv.email,
         });
-      } catch (emailError) {
-        logger.error('Failed to resend invitation email:', emailError);
-        throw emailError;
-      }
-    }
-  };
 
-  const cancelOne = async (inv: UserInvitation): Promise<void> => {
-    const { error } = await supabase.from('user_invitations').delete().eq('id', inv.id);
-    if (error) throw error;
-    if (user) {
-      await supabase.from('user_management_audit').insert({
-        actor_id: user.id,
-        action: 'invite_cancelled',
-        target_email: inv.email,
-      });
-    }
-  };
+        try {
+          const inviterProfile = await supabase
+            .from('user_profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'invitation',
+              to: inv.email,
+              data: {
+                invitationId: inv.id,
+                token: inv.token,
+                inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
+                role: inv.role,
+                permissions: getPermissionsForRole(inv.role),
+                expiresAt: newExpiresAt,
+              },
+            },
+          });
+        } catch (emailError) {
+          logger.error('Failed to resend invitation email:', emailError);
+          throw emailError;
+        }
+      }
+    },
+    [user]
+  );
+
+  const cancelOne = useCallback(
+    async (inv: UserInvitation): Promise<void> => {
+      const { error } = await supabase.from('user_invitations').delete().eq('id', inv.id);
+      if (error) throw error;
+      if (user) {
+        await supabase.from('user_management_audit').insert({
+          actor_id: user.id,
+          action: 'invite_cancelled',
+          target_email: inv.email,
+        });
+      }
+    },
+    [user]
+  );
 
   // --- Single-row handlers ------------------------------------------------
 
-  const handleResend = async (inv: UserInvitation) => {
-    try {
-      await resendOne(inv);
-      await loadInvitations();
-      setToast({ kind: 'success', msg: `Invitation resent to ${inv.email}` });
-    } catch (err) {
-      logger.error('Error resending invitation:', err);
-      setToast({ kind: 'error', msg: `Failed to resend to ${inv.email}` });
-    }
-  };
+  const handleResend = useCallback(
+    async (inv: UserInvitation) => {
+      try {
+        await resendOne(inv);
+        await loadInvitations();
+        setToast({ kind: 'success', msg: `Invitation resent to ${inv.email}` });
+      } catch (err) {
+        logger.error('Error resending invitation:', err);
+        setToast({ kind: 'error', msg: `Failed to resend to ${inv.email}` });
+      }
+    },
+    [resendOne, loadInvitations]
+  );
 
-  const handleCancel = async (inv: UserInvitation) => {
-    if (!window.confirm(`Cancel the invitation to ${inv.email}?`)) return;
-    try {
-      await cancelOne(inv);
-      setInvitations((list) => list.filter((i) => i.id !== inv.id));
-      setSelectedKeys((keys) => keys.filter((k) => k !== inv.id));
-      setToast({ kind: 'info', msg: `Invitation to ${inv.email} cancelled` });
-    } catch (err) {
-      logger.error('Error cancelling invitation:', err);
-      setToast({ kind: 'error', msg: `Failed to cancel invite for ${inv.email}` });
-    }
-  };
+  const handleCancel = useCallback(
+    async (inv: UserInvitation) => {
+      if (!window.confirm(`Cancel the invitation to ${inv.email}?`)) return;
+      try {
+        await cancelOne(inv);
+        setInvitations((list) => list.filter((i) => i.id !== inv.id));
+        setSelectedKeys((keys) => keys.filter((k) => k !== inv.id));
+        setToast({ kind: 'info', msg: `Invitation to ${inv.email} cancelled` });
+      } catch (err) {
+        logger.error('Error cancelling invitation:', err);
+        setToast({ kind: 'error', msg: `Failed to cancel invite for ${inv.email}` });
+      }
+    },
+    [cancelOne]
+  );
 
   // --- Bulk handlers ------------------------------------------------------
 
@@ -382,11 +393,7 @@ export function AdminInvitations() {
         render: (inv) => (
           <div>
             <div style={{ fontWeight: 500, color: 'var(--color-esy-ink)' }}>{inv.email}</div>
-            {(inv.metadata?.message || (inv as { message?: string }).message) && (
-              <div className="adm-inv-message">
-                {(inv.metadata?.message || (inv as { message?: string }).message) as string}
-              </div>
-            )}
+            {inv.metadata?.message && <div className="adm-inv-message">{inv.metadata.message}</div>}
           </div>
         ),
       },
@@ -467,8 +474,7 @@ export function AdminInvitations() {
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [handleResend, handleCancel]
   );
 
   // --- Tabs -------------------------------------------------------------
