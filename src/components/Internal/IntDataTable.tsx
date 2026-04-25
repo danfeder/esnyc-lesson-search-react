@@ -71,7 +71,7 @@ export function IntDataTable<T>({
         <thead>
           <tr>
             {selectable && (
-              <th style={{ width: 36 }}>
+              <th scope="col" style={{ width: 36 }}>
                 <input
                   type="checkbox"
                   aria-label="Select all rows"

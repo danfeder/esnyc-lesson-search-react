@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { hasAdminOrReviewerAccess } from '@/utils/authHelpers';
+import { cn } from '@/utils/cn';
 import { logger } from '@/utils/logger';
 import {
   dismissDuplicateGroup,
@@ -393,7 +394,7 @@ export function AdminDuplicateReview() {
           <div className="adm-group-progress-nav">
             <button
               type="button"
-              className={`adm-btn adm-btn--sm${prevGroup ? '' : ' adm-btn--disabled'}`}
+              className={cn('adm-btn adm-btn--sm', !prevGroup && 'adm-btn--disabled')}
               onClick={() => prevGroup && navigate(`/admin/duplicates/${prevGroup.groupId}`)}
               disabled={!prevGroup}
               aria-label="Previous group"
@@ -402,7 +403,7 @@ export function AdminDuplicateReview() {
             </button>
             <button
               type="button"
-              className={`adm-btn adm-btn--sm${nextGroup ? '' : ' adm-btn--disabled'}`}
+              className={cn('adm-btn adm-btn--sm', !nextGroup && 'adm-btn--disabled')}
               onClick={() => nextGroup && navigate(`/admin/duplicates/${nextGroup.groupId}`)}
               disabled={!nextGroup}
               aria-label="Next group"

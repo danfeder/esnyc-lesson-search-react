@@ -55,6 +55,22 @@ describe('IntDataTable', () => {
       headers.forEach((h) => expect(h).toHaveAttribute('scope', 'col'));
     });
 
+    it('exposes scope="col" on the select-all column when selectable', () => {
+      render(
+        <IntDataTable
+          columns={baseColumns}
+          rows={baseRows}
+          getRowKey={(r) => r.id}
+          selectable
+          selectedKeys={[]}
+          onSelectionChange={() => {}}
+        />
+      );
+      const headers = screen.getAllByRole('columnheader');
+      expect(headers).toHaveLength(3);
+      headers.forEach((h) => expect(h).toHaveAttribute('scope', 'col'));
+    });
+
     it('applies density attribute to wrapper', () => {
       const { container } = render(
         <IntDataTable

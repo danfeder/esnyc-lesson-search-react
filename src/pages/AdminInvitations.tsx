@@ -350,6 +350,14 @@ export function AdminInvitations() {
   // --- Export -----------------------------------------------------------
 
   const exportToCSV = () => {
+    // Defend against CSV injection: prefix cells beginning with =/+/-/@ (and
+    // tab/CR which Excel also treats as formula starts) with a single quote so
+    // Excel/Sheets render them as literal text. Also double up embedded `"` per
+    // RFC 4180 so values containing quotes don't break the CSV format.
+    const escapeCell = (raw: string): string => {
+      const value = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+      return `"${value.replace(/"/g, '""')}"`;
+    };
     const csv = [
       [
         'Email',
@@ -374,7 +382,7 @@ export function AdminInvitations() {
         inv.accepted_at ? format(new Date(inv.accepted_at), 'yyyy-MM-dd HH:mm') : '',
       ]),
     ]
-      .map((row) => row.map((cell) => `"${cell}"`).join(','))
+      .map((row) => row.map(escapeCell).join(','))
       .join('\n');
 
     const blob = new window.Blob([csv], { type: 'text/csv' });
