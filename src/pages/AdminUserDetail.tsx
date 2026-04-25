@@ -598,6 +598,7 @@ export function AdminUserDetail() {
                     }}
                     type="button"
                     role="tab"
+                    id={`adm-tab-${t.key}`}
                     aria-selected={isActive}
                     aria-controls={`adm-tab-panel-${t.key}`}
                     tabIndex={isActive ? 0 : -1}
@@ -617,7 +618,12 @@ export function AdminUserDetail() {
         })()}
 
         {tab === 'activity' && (
-          <div id="adm-tab-panel-activity" role="tabpanel" className="adm-split adm-split--2-1">
+          <div
+            id="adm-tab-panel-activity"
+            role="tabpanel"
+            aria-labelledby="adm-tab-activity"
+            className="adm-split adm-split--2-1"
+          >
             <div className="adm-card">
               <div className="adm-section-eyebrow">
                 Activity · {audit.length} event{audit.length === 1 ? '' : 's'}
@@ -691,7 +697,12 @@ export function AdminUserDetail() {
         )}
 
         {tab === 'access' && (
-          <div id="adm-tab-panel-access" role="tabpanel" className="adm-split adm-split--2-1">
+          <div
+            id="adm-tab-panel-access"
+            role="tabpanel"
+            aria-labelledby="adm-tab-access"
+            className="adm-split adm-split--2-1"
+          >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="adm-card">
                 <div className="adm-card-head">
@@ -872,7 +883,12 @@ export function AdminUserDetail() {
         )}
 
         {tab === 'profile' && (
-          <div id="adm-tab-panel-profile" role="tabpanel" className="adm-split adm-split--2-1">
+          <div
+            id="adm-tab-panel-profile"
+            role="tabpanel"
+            aria-labelledby="adm-tab-profile"
+            className="adm-split adm-split--2-1"
+          >
             <div className="adm-card">
               <div className="adm-card-head">
                 <div className="adm-section-eyebrow" style={{ margin: 0 }}>

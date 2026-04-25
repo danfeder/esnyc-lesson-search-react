@@ -25,6 +25,18 @@ describe('IntAlert', () => {
     });
   });
 
+  describe('aria-live announcement strength', () => {
+    it.each([
+      ['error', 'assertive'],
+      ['warn', 'assertive'],
+      ['info', 'polite'],
+      ['success', 'polite'],
+    ] as const)('sets aria-live for %s variant', (variant, expected) => {
+      const { container } = render(<IntAlert variant={variant}>msg</IntAlert>);
+      expect(container.querySelector('.adm-alert')!.getAttribute('aria-live')).toBe(expected);
+    });
+  });
+
   it('renders title before children when both are provided', () => {
     const { container } = render(
       <IntAlert variant="info" title="Heads up">

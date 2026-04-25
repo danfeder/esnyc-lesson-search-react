@@ -26,9 +26,23 @@ const ROLE: Record<IntAlertVariant, 'alert' | 'status'> = {
   success: 'status',
 };
 
+// Some assistive technologies don't always honor implicit live-region
+// semantics for conditionally-mounted role="alert"/"status" elements.
+// Set aria-live explicitly for robust announcements.
+const ARIA_LIVE: Record<IntAlertVariant, 'assertive' | 'polite'> = {
+  error: 'assertive',
+  warn: 'assertive',
+  info: 'polite',
+  success: 'polite',
+};
+
 export function IntAlert({ variant, title, children, icon, className }: IntAlertProps) {
   return (
-    <div role={ROLE[variant]} className={cn('adm-alert', `adm-alert--${variant}`, className)}>
+    <div
+      role={ROLE[variant]}
+      aria-live={ARIA_LIVE[variant]}
+      className={cn('adm-alert', `adm-alert--${variant}`, className)}
+    >
       <span className="adm-alert-icon">{icon ?? DEFAULT_ICON[variant]}</span>
       <div className="adm-alert-body">
         {title && <strong>{title}</strong>}

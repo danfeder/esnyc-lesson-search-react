@@ -168,7 +168,7 @@ export function AdminInvitations() {
   // --- Single-invite helpers (also reused by bulk paths) ------------------
 
   const resendOne = useCallback(
-    async (inv: UserInvitation): Promise<void> => {
+    async (inv: UserInvitation): Promise<{ emailDelivered: boolean }> => {
       const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const { error: updateError } = await supabase
@@ -177,37 +177,42 @@ export function AdminInvitations() {
         .eq('id', inv.id);
       if (updateError) throw updateError;
 
-      if (user) {
-        await supabase.from('user_management_audit').insert({
-          actor_id: user.id,
-          action: 'invite_resent',
-          target_email: inv.email,
-        });
+      if (!user) return { emailDelivered: false };
 
-        try {
-          const inviterProfile = await supabase
-            .from('user_profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .single();
-          await supabase.functions.invoke('send-email', {
-            body: {
-              type: 'invitation',
-              to: inv.email,
-              data: {
-                invitationId: inv.id,
-                token: inv.token,
-                inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
-                role: inv.role,
-                permissions: getPermissionsForRole(inv.role),
-                expiresAt: newExpiresAt,
-              },
+      await supabase.from('user_management_audit').insert({
+        actor_id: user.id,
+        action: 'invite_resent',
+        target_email: inv.email,
+      });
+
+      // Email delivery failures are reported but don't unwind the DB update —
+      // re-throwing here would make the caller show "Failed to resend" and
+      // prompt a retry that double-extends expires_at + writes a duplicate
+      // audit row. The caller surfaces a softer warning instead.
+      try {
+        const inviterProfile = await supabase
+          .from('user_profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'invitation',
+            to: inv.email,
+            data: {
+              invitationId: inv.id,
+              token: inv.token,
+              inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
+              role: inv.role,
+              permissions: getPermissionsForRole(inv.role),
+              expiresAt: newExpiresAt,
             },
-          });
-        } catch (emailError) {
-          logger.error('Failed to resend invitation email:', emailError);
-          throw emailError;
-        }
+          },
+        });
+        return { emailDelivered: true };
+      } catch (emailError) {
+        logger.error('Failed to resend invitation email:', emailError);
+        return { emailDelivered: false };
       }
     },
     [user]
@@ -233,9 +238,16 @@ export function AdminInvitations() {
   const handleResend = useCallback(
     async (inv: UserInvitation) => {
       try {
-        await resendOne(inv);
+        const { emailDelivered } = await resendOne(inv);
         await loadInvitations();
-        setToast({ kind: 'success', msg: `Invitation resent to ${inv.email}` });
+        setToast(
+          emailDelivered
+            ? { kind: 'success', msg: `Invitation resent to ${inv.email}` }
+            : {
+                kind: 'info',
+                msg: `Invitation extended for ${inv.email} — email delivery may be delayed.`,
+              }
+        );
       } catch (err) {
         logger.error('Error resending invitation:', err);
         setToast({ kind: 'error', msg: `Failed to resend to ${inv.email}` });
@@ -277,16 +289,29 @@ export function AdminInvitations() {
     try {
       const results = await Promise.allSettled(selectedResendable.map((inv) => resendOne(inv)));
       const failed = results.filter((r) => r.status === 'rejected').length;
-      const ok = results.length - failed;
+      const fulfilled = results.filter(
+        (r): r is PromiseFulfilledResult<{ emailDelivered: boolean }> => r.status === 'fulfilled'
+      );
+      const delivered = fulfilled.filter((r) => r.value.emailDelivered).length;
+      const delayed = fulfilled.length - delivered;
       await loadInvitations();
       setSelectedKeys([]);
-      setToast({
-        kind: failed > 0 ? 'error' : 'success',
-        msg:
-          failed > 0
-            ? `${ok} resent, ${failed} failed`
-            : `${ok} invitation${ok === 1 ? '' : 's'} resent`,
-      });
+      let msg: string;
+      let kind: Toast['kind'];
+      if (failed > 0) {
+        kind = 'error';
+        msg =
+          delayed > 0
+            ? `${delivered} resent, ${delayed} extended without email, ${failed} failed`
+            : `${delivered + delayed} resent, ${failed} failed`;
+      } else if (delayed > 0) {
+        kind = 'info';
+        msg = `${delivered} resent, ${delayed} extended without email — delivery may be delayed.`;
+      } else {
+        kind = 'success';
+        msg = `${delivered} invitation${delivered === 1 ? '' : 's'} resent`;
+      }
+      setToast({ kind, msg });
     } finally {
       setBulkRunning(false);
     }
