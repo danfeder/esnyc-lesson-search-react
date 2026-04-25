@@ -11,6 +11,10 @@ on:
     paths:
       - 'supabase/functions/**'
       - '.github/workflows/deploy-edge-functions.yml'
+  # Manual dispatch is intentionally allowed to target `production` directly
+  # (e.g. emergency single-function redeploy). The `production` GitHub
+  # Environment still requires manual approval, but the TEST step does NOT
+  # run first when dispatching to production.
   workflow_dispatch:
     inputs:
       environment:
@@ -41,7 +45,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2
+          # Full history needed so the PR three-dot diff
+          # (origin/<base>...HEAD) can resolve its merge base on PRs
+          # with more than two commits since branching.
+          fetch-depth: 0
 
       - name: Plan deployment
         id: plan
@@ -53,20 +60,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          ALL_FUNCTIONS=(
-            detect-duplicates
-            extract-google-doc
-            generate-embeddings
-            generate-gemini-embeddings
-            import-lessons
-            invitation-management
-            password-reset
-            process-submission
-            search-lessons
-            send-email
-            smart-search
-            user-management
+          # Discover deployable functions from the filesystem so adding a new
+          # function under supabase/functions/<name>/ doesn't require editing
+          # this workflow. The `_*` filter excludes `_shared` and any future
+          # underscore-prefixed support directories.
+          mapfile -t ALL_FUNCTIONS < <(
+            find supabase/functions -mindepth 1 -maxdepth 1 -type d \
+              -not -name '_*' -printf '%f\n' | sort
           )
+
+          if [ "${#ALL_FUNCTIONS[@]}" -eq 0 ]; then
+            echo "::error::No edge functions discovered under supabase/functions/"
+            exit 1
+          fi
+          echo "Discovered functions: ${ALL_FUNCTIONS[*]}"
 
           is_valid_function() {
             local name="$1"
@@ -92,7 +99,9 @@ jobs:
               ;;
             pull_request)
               TARGET="test"
-              git fetch origin "$BASE_REF" --depth=1
+              # Unshallow fetch of base so the three-dot merge base resolves
+              # even if main has advanced since the PR branched.
+              git fetch origin "$BASE_REF"
               CHANGED=$(git diff --name-only "origin/$BASE_REF...HEAD" -- supabase/functions/ || true)
               ;;
             push)

@@ -26,6 +26,8 @@ gh workflow run deploy-edge-functions.yml \
   --field function=send-email
 ```
 
+**Workflow secret:** the workflow uses `SUPABASE_ACCESS_TOKEN` (a single repo secret) to deploy to both TEST and PROD. The token must be issued from a Supabase account that has access to both project refs (`rxgajgmphciuaqzvwmox` and `jxlxtzkmicfhchkhiojz`). Same token is already shared by `migrate-production.yml` and `e2e.yml`.
+
 **Break-glass fallback: `./scripts/deploy-edge-functions.sh`.**
 
 The script still exists but prompts for confirmation and deploys straight to PROD from your laptop, skipping TEST. Only use it when CI is unavailable. For one-off manual work, this is equivalent:
