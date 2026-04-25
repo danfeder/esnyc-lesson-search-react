@@ -29,21 +29,29 @@ if ! command -v supabase &> /dev/null; then
     exit 1
 fi
 
-# List of all edge functions to deploy
-FUNCTIONS=(
-    "detect-duplicates"
-    "extract-google-doc"
-    "generate-embeddings"
-    "generate-gemini-embeddings"
-    "import-lessons"
-    "invitation-management"
-    "password-reset"
-    "process-submission"
-    "search-lessons"
-    "send-email"
-    "smart-search"
-    "user-management"
-)
+# Discover deployable functions from the filesystem so this script can't drift
+# from the workflow's filesystem-based discovery. Pure-bash glob so it works on
+# macOS (bash 3.2) without depending on GNU find or `mapfile`.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FUNCTIONS_DIR="$SCRIPT_DIR/../supabase/functions"
+if [ ! -d "$FUNCTIONS_DIR" ]; then
+    echo "❌ Could not locate supabase/functions/ relative to this script."
+    exit 1
+fi
+
+FUNCTIONS=()
+for dir in "$FUNCTIONS_DIR"/*/; do
+    name="$(basename "$dir")"
+    case "$name" in
+        _*) ;;  # skip _shared and other underscore-prefixed support dirs
+        *) FUNCTIONS+=("$name") ;;
+    esac
+done
+
+if [ "${#FUNCTIONS[@]}" -eq 0 ]; then
+    echo "❌ No edge functions discovered under $FUNCTIONS_DIR"
+    exit 1
+fi
 
 # Deploy each function
 for func in "${FUNCTIONS[@]}"; do

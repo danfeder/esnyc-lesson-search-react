@@ -60,6 +60,10 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Initialize FUNCS up-front so the post-case length check is safe
+          # regardless of which event branch ran (defensive under set -u).
+          FUNCS=()
+
           # Discover deployable functions from the filesystem so adding a new
           # function under supabase/functions/<name>/ doesn't require editing
           # this workflow. The `_*` filter excludes `_shared` and any future
@@ -189,14 +193,35 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-  deploy-prod:
-    name: Deploy to PROD — ${{ matrix.function }}
+  # Single approval gate for the whole PROD deploy. Without this, every
+  # matrix-expanded `deploy-prod` job would request its own approval —
+  # up to one click per function, which is bad UX for full-suite deploys
+  # (e.g. _shared/** changes). The gate runs once, then the matrix runs
+  # without per-job approval.
+  gate-prod:
+    name: Approve PROD Deploy
     needs: detect-changes
     if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'production'
     runs-on: ubuntu-latest
     environment:
       name: production
       url: https://supabase.com/dashboard/project/jxlxtzkmicfhchkhiojz/functions
+    steps:
+      - name: Record approval
+        env:
+          FUNCTIONS: ${{ needs.detect-changes.outputs.functions }}
+        run: |
+          {
+            echo "## ✅ PROD Deploy Approved"
+            echo ""
+            echo "Functions queued for deploy: \`$FUNCTIONS\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-prod:
+    name: Deploy to PROD — ${{ matrix.function }}
+    needs: [detect-changes, gate-prod]
+    if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'production'
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       max-parallel: 4
