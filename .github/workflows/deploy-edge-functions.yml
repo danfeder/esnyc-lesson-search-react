@@ -171,6 +171,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'test'
     runs-on: ubuntu-latest
+    # Typical deploy is ~30s; cap at 10 min so a hung CLI / network stall
+    # surfaces quickly instead of consuming the GH Actions 360-min default.
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -186,6 +189,10 @@ jobs:
           version: latest
 
       - name: Deploy ${{ matrix.function }} to TEST
+        # --no-verify-jwt: the Supabase edge runtime doesn't enforce a JWT
+        # on inbound requests; each function authenticates internally
+        # (anon key context, service-role admin client, or webhook signature
+        # as appropriate). Keep this aligned with the legacy deploy script.
         run: |
           supabase functions deploy "${{ matrix.function }}" \
             --project-ref rxgajgmphciuaqzvwmox \
@@ -222,6 +229,7 @@ jobs:
     needs: [detect-changes, gate-prod]
     if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'production'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -237,6 +245,7 @@ jobs:
           version: latest
 
       - name: Deploy ${{ matrix.function }} to PROD
+        # --no-verify-jwt: see the deploy-test job above for rationale.
         run: |
           supabase functions deploy "${{ matrix.function }}" \
             --project-ref jxlxtzkmicfhchkhiojz \
