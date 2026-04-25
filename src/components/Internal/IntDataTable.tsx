@@ -103,6 +103,7 @@ export function IntDataTable<T>({
             <tr>
               <td
                 colSpan={columns.length + (selectable ? 1 : 0)}
+                role="status"
                 className="muted"
                 style={{ textAlign: 'center', padding: '24px 16px' }}
               >

@@ -36,6 +36,18 @@ describe('IntDataTable', () => {
       expect(screen.getByText('Nothing here yet')).toBeInTheDocument();
     });
 
+    it('announces empty state via role=status', () => {
+      render(
+        <IntDataTable
+          columns={baseColumns}
+          rows={[]}
+          getRowKey={(r) => r.id}
+          emptyMessage="Nothing here yet"
+        />
+      );
+      expect(screen.getByRole('status')).toHaveTextContent('Nothing here yet');
+    });
+
     it('passes ariaLabel to the table', () => {
       render(
         <IntDataTable
