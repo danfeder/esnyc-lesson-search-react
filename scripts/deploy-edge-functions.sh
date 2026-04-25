@@ -40,6 +40,9 @@ if [ ! -d "$FUNCTIONS_DIR" ]; then
 fi
 
 FUNCTIONS=()
+# nullglob so an empty directory expands to nothing instead of leaving the
+# literal `*/` pattern in the loop variable (which would add `*` to FUNCTIONS).
+shopt -s nullglob
 for dir in "$FUNCTIONS_DIR"/*/; do
     name="$(basename "$dir")"
     case "$name" in
@@ -47,6 +50,7 @@ for dir in "$FUNCTIONS_DIR"/*/; do
         *) FUNCTIONS+=("$name") ;;
     esac
 done
+shopt -u nullglob
 
 if [ "${#FUNCTIONS[@]}" -eq 0 ]; then
     echo "❌ No edge functions discovered under $FUNCTIONS_DIR"

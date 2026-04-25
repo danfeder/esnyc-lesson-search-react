@@ -57,6 +57,7 @@ jobs:
           DISPATCH_ENV: ${{ inputs.environment }}
           DISPATCH_FUNC: ${{ inputs.function }}
           BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
 
@@ -110,7 +111,17 @@ jobs:
               ;;
             push)
               TARGET="production"
-              CHANGED=$(git diff --name-only HEAD~1 HEAD -- supabase/functions/ || true)
+              # github.event.before is the SHA before the push, so it covers
+              # the entire batch when multiple commits land at once. HEAD~1
+              # would only see the last commit's diff and miss earlier ones.
+              if [[ "$PUSH_BEFORE" =~ ^0+$ ]]; then
+                # Initial push or force-push that orphans history; history is
+                # unrecoverable, so deploy everything as the safe recovery.
+                echo "::warning::Push has no usable 'before' SHA (initial or force-push); deploying all functions."
+                FUNCS=("${ALL_FUNCTIONS[@]}")
+              else
+                CHANGED=$(git diff --name-only "$PUSH_BEFORE" HEAD -- supabase/functions/ || true)
+              fi
               ;;
             *)
               echo "::error::Unsupported event: $EVENT_NAME"
@@ -118,17 +129,19 @@ jobs:
               ;;
           esac
 
-          if [ "$EVENT_NAME" != "workflow_dispatch" ]; then
-            if echo "$CHANGED" | grep -q '^supabase/functions/_shared/'; then
+          # Process CHANGED only when a branch above set it. Skip when FUNCS
+          # is already populated (workflow_dispatch, or the orphan-history
+          # full-suite recovery in the push branch).
+          if [ "${#FUNCS[@]}" -eq 0 ]; then
+            if echo "${CHANGED:-}" | grep -q '^supabase/functions/_shared/'; then
               echo "Shared code changed — deploying all functions."
               FUNCS=("${ALL_FUNCTIONS[@]}")
             else
               mapfile -t FUNC_DIRS < <(
-                echo "$CHANGED" \
+                echo "${CHANGED:-}" \
                   | sed -n 's|^supabase/functions/\([^/]*\)/.*|\1|p' \
                   | sort -u
               )
-              FUNCS=()
               for name in "${FUNC_DIRS[@]}"; do
                 if is_valid_function "$name"; then
                   FUNCS+=("$name")
