@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
@@ -107,6 +107,7 @@ export function AdminUserDetail() {
   );
 
   const [tab, setTab] = useState<Tab>('activity');
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [roleEditing, setRoleEditing] = useState(false);
   const [schoolsEditing, setSchoolsEditing] = useState(false);
   const [notesEditing, setNotesEditing] = useState(false);
@@ -164,7 +165,7 @@ export function AdminUserDetail() {
       } else if (profile.email) {
         setEmail(profile.email);
       } else {
-        setEmail('test-user@example.com (Test Account)');
+        setEmail('Email unavailable');
       }
 
       if (!schoolsRes.error && schoolsRes.data) {
@@ -545,39 +546,75 @@ export function AdminUserDetail() {
           </IntAlert>
         )}
 
-        <div className="adm-tabs-inline" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'activity'}
-            aria-controls="adm-tab-panel-activity"
-            className={cn(tab === 'activity' && 'is-active')}
-            onClick={() => setTab('activity')}
-          >
-            <Clock className="w-3 h-3" aria-hidden="true" /> Activity
-            <span className="adm-tabs-inline-count">{audit.length}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'access'}
-            aria-controls="adm-tab-panel-access"
-            className={cn(tab === 'access' && 'is-active')}
-            onClick={() => setTab('access')}
-          >
-            <User className="w-3 h-3" aria-hidden="true" /> Access
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'profile'}
-            aria-controls="adm-tab-panel-profile"
-            className={cn(tab === 'profile' && 'is-active')}
-            onClick={() => setTab('profile')}
-          >
-            <FileText className="w-3 h-3" aria-hidden="true" /> Profile
-          </button>
-        </div>
+        {(() => {
+          const TAB_DEFS: { key: Tab; label: string; icon: typeof Clock; count?: number }[] = [
+            { key: 'activity', label: 'Activity', icon: Clock, count: audit.length },
+            { key: 'access', label: 'Access', icon: User },
+            { key: 'profile', label: 'Profile', icon: FileText },
+          ];
+          const focusTabAt = (i: number) => {
+            const total = TAB_DEFS.length;
+            const idx = ((i % total) + total) % total;
+            const node = tabRefs.current[idx];
+            if (node) {
+              node.focus();
+              setTab(TAB_DEFS[idx].key);
+            }
+          };
+          const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+            switch (e.key) {
+              case 'ArrowRight':
+              case 'ArrowDown':
+                e.preventDefault();
+                focusTabAt(i + 1);
+                break;
+              case 'ArrowLeft':
+              case 'ArrowUp':
+                e.preventDefault();
+                focusTabAt(i - 1);
+                break;
+              case 'Home':
+                e.preventDefault();
+                focusTabAt(0);
+                break;
+              case 'End':
+                e.preventDefault();
+                focusTabAt(TAB_DEFS.length - 1);
+                break;
+              default:
+                break;
+            }
+          };
+          return (
+            <div className="adm-tabs-inline" role="tablist">
+              {TAB_DEFS.map((t, i) => {
+                const Icon = t.icon;
+                const isActive = tab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    ref={(el) => {
+                      tabRefs.current[i] = el;
+                    }}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-controls={`adm-tab-panel-${t.key}`}
+                    tabIndex={isActive ? 0 : -1}
+                    className={cn(isActive && 'is-active')}
+                    onClick={() => setTab(t.key)}
+                    onKeyDown={(e) => onTabKeyDown(e, i)}
+                  >
+                    <Icon className="w-3 h-3" aria-hidden="true" /> {t.label}
+                    {typeof t.count === 'number' && (
+                      <span className="adm-tabs-inline-count">{t.count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {tab === 'activity' && (
           <div id="adm-tab-panel-activity" role="tabpanel" className="adm-split adm-split--2-1">

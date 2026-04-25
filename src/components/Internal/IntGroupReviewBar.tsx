@@ -44,6 +44,7 @@ export function IntGroupReviewBar({
           className="adm-btn adm-btn--ghost"
           onClick={onDismiss}
           disabled={dismissDisabled || isSubmitting}
+          aria-busy={isSubmitting && submittingAction === 'dismiss'}
         >
           {submittingAction === 'dismiss' ? 'Dismissing…' : dismissLabel}
         </button>
@@ -52,6 +53,7 @@ export function IntGroupReviewBar({
           className="adm-btn adm-btn--primary"
           onClick={onResolve}
           disabled={resolveDisabled || isSubmitting}
+          aria-busy={isSubmitting && submittingAction === 'resolve'}
         >
           {submittingAction === 'resolve' ? 'Resolving…' : primaryLabel}
         </button>
