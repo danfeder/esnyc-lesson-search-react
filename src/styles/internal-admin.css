@@ -2507,6 +2507,17 @@
 .adm-group-progress-meta .sep { color: var(--esy-ink-30); }
 .adm-group-progress-nav { display: inline-flex; gap: 6px; }
 
+/* Inline code/identifier chips re-used by the review summary + group meta. */
+.adm-code-token {
+  font-size: 11px;
+  background: var(--esy-paper-alt);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.adm-code-token--muted { color: var(--esy-ink-50); padding: 1px 6px; }
+.adm-group-progress-meta .adm-code-token { padding: 1px 6px; }
+.adm-emphasis-ink { color: var(--esy-ink); }
+
 /* --- Spec rail (horizontally-scrolling row of lesson cards) ----------- */
 .adm-spec-rail {
   display: grid;

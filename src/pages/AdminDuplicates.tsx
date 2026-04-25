@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, Search } from 'lucide-react';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { hasAdminOrReviewerAccess } from '@/utils/authHelpers';
 import { logger } from '@/utils/logger';
 import {
   fetchDuplicateGroups,
@@ -128,8 +129,7 @@ export function AdminDuplicates() {
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  const isAdmin =
-    user?.role === 'admin' || user?.role === 'reviewer' || user?.role === 'super_admin';
+  const isAdmin = hasAdminOrReviewerAccess(user?.role);
 
   const resolvedGroupKeys = useMemo(
     () => new Set(resolvedGroups.map((g) => getGroupKey(g.lessonIds))),

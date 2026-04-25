@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { hasAdminOrReviewerAccess } from '@/utils/authHelpers';
 import { logger } from '@/utils/logger';
 import {
   dismissDuplicateGroup,
@@ -116,7 +117,6 @@ export function AdminDuplicateReview() {
     const handleBeforeUnload = (e: Event) => {
       if (hasChanges) {
         e.preventDefault();
-        (e as unknown as { returnValue: string }).returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -274,8 +274,7 @@ export function AdminDuplicateReview() {
     navigateToList,
   ]);
 
-  const isAdmin =
-    user?.role === 'admin' || user?.role === 'reviewer' || user?.role === 'super_admin';
+  const isAdmin = hasAdminOrReviewerAccess(user?.role);
 
   if (authLoading) {
     return (
@@ -356,28 +355,8 @@ export function AdminDuplicateReview() {
       Will keep <span className="canonical-name">{keptLesson?.title ?? '—'}</span> as canonical and
       archive <strong>{archivedCount}</strong> lesson{archivedCount === 1 ? '' : 's'}. Each archived
       lesson is soft-deleted and its redirect target is stored on{' '}
-      <code
-        style={{
-          fontSize: 11,
-          background: 'var(--color-esy-paper-alt)',
-          padding: '1px 4px',
-          borderRadius: 3,
-        }}
-      >
-        lessons.canonical_id
-      </code>
-      ; the group decision is recorded in{' '}
-      <code
-        style={{
-          fontSize: 11,
-          background: 'var(--color-esy-paper-alt)',
-          padding: '1px 4px',
-          borderRadius: 3,
-        }}
-      >
-        duplicate_resolutions
-      </code>
-      .
+      <code className="adm-code-token">lessons.canonical_id</code>; the group decision is recorded
+      in <code className="adm-code-token">duplicate_resolutions</code>.
     </>
   );
 
@@ -397,20 +376,10 @@ export function AdminDuplicateReview() {
             Group <strong>{currentIndex + 1}</strong> of {allGroups.length}
           </span>
           <div className="adm-group-progress-meta">
-            <code
-              style={{
-                fontSize: 11,
-                color: 'var(--color-esy-ink-50)',
-                background: 'var(--color-esy-paper-alt)',
-                padding: '1px 6px',
-                borderRadius: 3,
-              }}
-            >
-              {currentGroup.groupId}
-            </code>
+            <code className="adm-code-token adm-code-token--muted">{currentGroup.groupId}</code>
             <span className="sep">·</span>
             <span>
-              Avg similarity <strong style={{ color: 'var(--color-esy-ink)' }}>{pct}%</strong>
+              Avg similarity <strong className="adm-emphasis-ink">{pct}%</strong>
             </span>
             <span className="sep">·</span>
             <IntConfidencePill confidence={currentGroup.confidence as IntConfidence} />
