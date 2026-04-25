@@ -1,0 +1,284 @@
+name: Deploy Edge Functions
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge-functions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge-functions.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        type: choice
+        options: [test, production]
+        default: test
+        required: true
+      function:
+        description: "Function name, or 'all' to deploy every function"
+        type: string
+        default: all
+        required: true
+
+concurrency:
+  group: deploy-edge-functions-${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('dispatch-{0}', inputs.environment) }}
+  cancel-in-progress: false
+
+jobs:
+  detect-changes:
+    name: Detect Deploy Target
+    runs-on: ubuntu-latest
+    outputs:
+      target: ${{ steps.plan.outputs.target }}
+      functions: ${{ steps.plan.outputs.functions }}
+      has_work: ${{ steps.plan.outputs.has_work }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Plan deployment
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_ENV: ${{ inputs.environment }}
+          DISPATCH_FUNC: ${{ inputs.function }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+
+          ALL_FUNCTIONS=(
+            detect-duplicates
+            extract-google-doc
+            generate-embeddings
+            generate-gemini-embeddings
+            import-lessons
+            invitation-management
+            password-reset
+            process-submission
+            search-lessons
+            send-email
+            smart-search
+            user-management
+          )
+
+          is_valid_function() {
+            local name="$1"
+            for f in "${ALL_FUNCTIONS[@]}"; do
+              [ "$f" = "$name" ] && return 0
+            done
+            return 1
+          }
+
+          case "$EVENT_NAME" in
+            workflow_dispatch)
+              TARGET="$DISPATCH_ENV"
+              if [ "$DISPATCH_FUNC" = "all" ]; then
+                FUNCS=("${ALL_FUNCTIONS[@]}")
+              else
+                if ! is_valid_function "$DISPATCH_FUNC"; then
+                  echo "::error::Unknown function name: $DISPATCH_FUNC"
+                  echo "Valid: ${ALL_FUNCTIONS[*]}"
+                  exit 1
+                fi
+                FUNCS=("$DISPATCH_FUNC")
+              fi
+              ;;
+            pull_request)
+              TARGET="test"
+              git fetch origin "$BASE_REF" --depth=1
+              CHANGED=$(git diff --name-only "origin/$BASE_REF...HEAD" -- supabase/functions/ || true)
+              ;;
+            push)
+              TARGET="production"
+              CHANGED=$(git diff --name-only HEAD~1 HEAD -- supabase/functions/ || true)
+              ;;
+            *)
+              echo "::error::Unsupported event: $EVENT_NAME"
+              exit 1
+              ;;
+          esac
+
+          if [ "$EVENT_NAME" != "workflow_dispatch" ]; then
+            if echo "$CHANGED" | grep -q '^supabase/functions/_shared/'; then
+              echo "Shared code changed — deploying all functions."
+              FUNCS=("${ALL_FUNCTIONS[@]}")
+            else
+              mapfile -t FUNC_DIRS < <(
+                echo "$CHANGED" \
+                  | sed -n 's|^supabase/functions/\([^/]*\)/.*|\1|p' \
+                  | sort -u
+              )
+              FUNCS=()
+              for name in "${FUNC_DIRS[@]}"; do
+                if is_valid_function "$name"; then
+                  FUNCS+=("$name")
+                fi
+              done
+            fi
+          fi
+
+          if [ "${#FUNCS[@]}" -eq 0 ]; then
+            echo "No functions to deploy."
+            echo "has_work=false" >> "$GITHUB_OUTPUT"
+            echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+            echo 'functions=[]' >> "$GITHUB_OUTPUT"
+            {
+              echo "## Edge Function Deploy — no-op"
+              echo ""
+              echo "No functions changed, nothing to deploy."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          JSON=$(printf '%s\n' "${FUNCS[@]}" | jq -R . | jq -cs .)
+          echo "has_work=true" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "functions=$JSON" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Edge Function Deploy Plan"
+            echo ""
+            echo "- **Event:** \`$EVENT_NAME\`"
+            echo "- **Target:** \`$TARGET\`"
+            echo "- **Functions (${#FUNCS[@]}):**"
+            for f in "${FUNCS[@]}"; do
+              echo "  - \`$f\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-test:
+    name: Deploy to TEST — ${{ matrix.function }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'test'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy ${{ matrix.function }} to TEST
+        run: |
+          supabase functions deploy "${{ matrix.function }}" \
+            --project-ref rxgajgmphciuaqzvwmox \
+            --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  deploy-prod:
+    name: Deploy to PROD — ${{ matrix.function }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_work == 'true' && needs.detect-changes.outputs.target == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://supabase.com/dashboard/project/jxlxtzkmicfhchkhiojz/functions
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy ${{ matrix.function }} to PROD
+        run: |
+          supabase functions deploy "${{ matrix.function }}" \
+            --project-ref jxlxtzkmicfhchkhiojz \
+            --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  report:
+    name: Post Deploy Summary
+    needs: [detect-changes, deploy-test, deploy-prod]
+    if: always() && needs.detect-changes.outputs.has_work == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Compute status
+        id: status
+        env:
+          TEST_RESULT: ${{ needs.deploy-test.result }}
+          PROD_RESULT: ${{ needs.deploy-prod.result }}
+          TARGET: ${{ needs.detect-changes.outputs.target }}
+        run: |
+          if [ "$TARGET" = "test" ]; then
+            RESULT="$TEST_RESULT"
+          else
+            RESULT="$PROD_RESULT"
+          fi
+          case "$RESULT" in
+            success) ICON="✅"; STATUS="succeeded" ;;
+            skipped) ICON="⏭️"; STATUS="skipped (awaiting approval?)" ;;
+            *)       ICON="❌"; STATUS="failed or cancelled" ;;
+          esac
+          echo "icon=$ICON" >> "$GITHUB_OUTPUT"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Write job summary
+        env:
+          ICON: ${{ steps.status.outputs.icon }}
+          STATUS: ${{ steps.status.outputs.status }}
+          TARGET: ${{ needs.detect-changes.outputs.target }}
+          FUNCTIONS: ${{ needs.detect-changes.outputs.functions }}
+        run: |
+          {
+            echo "## Edge Function Deploy — $ICON $STATUS"
+            echo ""
+            echo "- **Target:** \`$TARGET\`"
+            echo "- **Functions:** \`$FUNCTIONS\`"
+            echo ""
+            echo "See the individual matrix job logs above for per-function output."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          ICON: ${{ steps.status.outputs.icon }}
+          STATUS: ${{ steps.status.outputs.status }}
+          TARGET: ${{ needs.detect-changes.outputs.target }}
+          FUNCTIONS: ${{ needs.detect-changes.outputs.functions }}
+        with:
+          script: |
+            const { ICON, STATUS, TARGET, FUNCTIONS } = process.env;
+            const funcs = JSON.parse(FUNCTIONS);
+            const lines = [
+              `### Edge Function Deploy — ${ICON} ${STATUS}`,
+              ``,
+              `- **Target:** \`${TARGET}\``,
+              `- **Functions (${funcs.length}):**`,
+              ...funcs.map(f => `  - \`${f}\``),
+              ``,
+              `<sub>Deployed from ${context.payload.pull_request.head.sha.slice(0, 7)} via \`deploy-edge-functions.yml\`</sub>`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: lines,
+            });

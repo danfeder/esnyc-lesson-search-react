@@ -8,21 +8,36 @@ The 500 error when sending invitations occurs because the edge function is eithe
 
 ### 1. Deploy Edge Functions
 
-Run the deployment script:
+**Primary path: the `deploy-edge-functions.yml` GitHub workflow.**
+
+- PRs that touch `supabase/functions/**` auto-deploy the changed functions to the TEST project (`rxgajgmphciuaqzvwmox`) and leave a comment on the PR.
+- Pushes to `main` that touch `supabase/functions/**` deploy to PROD (`jxlxtzkmicfhchkhiojz`), gated by the `production` GitHub Environment for manual approval (same pattern as `migrate-production.yml`).
+- Manual runs (e.g. re-deploying a single function or backfilling TEST) use `workflow_dispatch`:
+
 ```bash
-./scripts/deploy-edge-functions.sh
+# Deploy every function to TEST
+gh workflow run deploy-edge-functions.yml \
+  --field environment=test \
+  --field function=all
+
+# Redeploy a single function to PROD (prompts approval in the Actions UI)
+gh workflow run deploy-edge-functions.yml \
+  --field environment=production \
+  --field function=send-email
 ```
 
-Or deploy manually using Supabase CLI:
+**Break-glass fallback: `./scripts/deploy-edge-functions.sh`.**
+
+The script still exists but prompts for confirmation and deploys straight to PROD from your laptop, skipping TEST. Only use it when CI is unavailable. For one-off manual work, this is equivalent:
+
 ```bash
 # Install Supabase CLI if not already installed
 brew install supabase/tap/supabase
 
-# Link your project (you'll need your project ID)
-supabase link --project-ref jxlxtzkmicfhchkhiojz
-
-# Deploy the send-email function
-supabase functions deploy send-email --no-verify-jwt
+# Deploy a single function (no `supabase link` needed)
+supabase functions deploy send-email \
+  --project-ref jxlxtzkmicfhchkhiojz \
+  --no-verify-jwt
 ```
 
 ### 2. Set Environment Variables

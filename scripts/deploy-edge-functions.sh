@@ -1,9 +1,24 @@
 #!/bin/bash
 
-# Deploy Edge Functions to Supabase
-# This script deploys all edge functions to your Supabase project
+# Deploy Edge Functions to Supabase (manual / break-glass)
+#
+# Prefer the GitHub workflow for routine deploys — it deploys to TEST on PRs
+# and to PROD from main with manual approval, so code never skips the test
+# environment the way this script does.
 
 set -e
+
+echo "⚠️  This script bypasses CI and deploys directly to PROD from your laptop."
+echo "   Prefer the GitHub workflow for routine deploys:"
+echo "     gh workflow run deploy-edge-functions.yml --field environment=test"
+echo "     gh workflow run deploy-edge-functions.yml --field environment=production"
+echo ""
+read -r -p "Continue with manual deploy? (y/N) " reply
+echo
+case "$reply" in
+    [yY]|[yY][eE][sS]) ;;
+    *) echo "Aborted."; exit 1 ;;
+esac
 
 echo "🚀 Deploying Edge Functions to Supabase..."
 
