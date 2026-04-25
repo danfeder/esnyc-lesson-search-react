@@ -206,12 +206,17 @@ jobs:
         # on inbound requests; each function authenticates internally
         # (anon key context, service-role admin client, or webhook signature
         # as appropriate). Keep this aligned with the legacy deploy script.
+        #
+        # FUNCTION_NAME is passed via env (not template-substituted into the
+        # run script) per GitHub's published guidance for handling values
+        # that originate from workflow inputs / API outputs.
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          supabase functions deploy "${{ matrix.function }}" \
+          supabase functions deploy "$FUNCTION_NAME" \
             --project-ref rxgajgmphciuaqzvwmox \
             --no-verify-jwt
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   # Single approval gate for the whole PROD deploy. Without this, every
   # matrix-expanded `deploy-prod` job would request its own approval —
@@ -258,13 +263,14 @@ jobs:
           version: latest
 
       - name: Deploy ${{ matrix.function }} to PROD
-        # --no-verify-jwt: see the deploy-test job above for rationale.
+        # See deploy-test for --no-verify-jwt + env-passing rationale.
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          supabase functions deploy "${{ matrix.function }}" \
+          supabase functions deploy "$FUNCTION_NAME" \
             --project-ref jxlxtzkmicfhchkhiojz \
             --no-verify-jwt
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   report:
     name: Post Deploy Summary
