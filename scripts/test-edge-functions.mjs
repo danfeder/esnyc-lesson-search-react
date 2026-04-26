@@ -1,162 +1,207 @@
 #!/usr/bin/env node
 
-// Test Edge Functions for Lesson Submission Pipeline
-// Usage: node scripts/test-edge-functions.mjs
+/**
+ * Daily smoke test for all 12 deployed edge functions.
+ *
+ * Two tiers:
+ *   1. Full smoke (4 fns) — POST a real payload and assert response shape.
+ *      Catches business-logic regressions on top of deploy regressions.
+ *      Functions: smart-search, search-lessons, detect-duplicates,
+ *      generate-embeddings.
+ *   2. Health check (8 fns) — OPTIONS preflight, expect non-404 / non-5xx.
+ *      Catches "function not deployed" (404) and module-load crashes (5xx)
+ *      without exercising side-effecting code paths. Does NOT catch latent
+ *      runtime failures inside the function body — e.g. a missing secret
+ *      that only blows up when its non-null assertion is dereferenced
+ *      inside a POST handler. Tradeoff is intentional: the side-effecting
+ *      paths (DB writes, real emails, admin actions, Google Doc fetch)
+ *      aren't safe to exercise on PROD on a daily cron.
+ *
+ * Side-effect safety:
+ *   - detect-duplicates writes to submission_similarities only when both
+ *     `submissionId` AND `duplicates.length > 0` are truthy (see
+ *     supabase/functions/detect-duplicates/index.ts:382). Omitting
+ *     submissionId from our payload guarantees no write.
+ *   - generate-embeddings makes an OpenAI text-embedding-3-small call;
+ *     ~5 input tokens × $0.02/M = ~$0.0000001 per smoke run. Negligible.
+ *
+ * Env vars (CI provides via repo secrets; local dev loads from .env):
+ *   SUPABASE_URL          (default: VITE_SUPABASE_URL)
+ *   SUPABASE_ANON_KEY     (default: VITE_SUPABASE_ANON_KEY)
+ *   SMOKE_TARGET          informational label, e.g. "prod" or "test"
+ *
+ * Exit codes:
+ *   0 — all checks passed
+ *   1 — at least one check failed
+ *   2 — misconfiguration (missing env vars)
+ */
 
-import dotenv from 'dotenv';
-dotenv.config();
+// dotenv is convenient for local runs but isn't required in CI where
+// env vars are injected directly. Skip silently if it's not installed.
+try {
+  const dotenv = await import('dotenv');
+  dotenv.default.config();
+} catch {
+  // ignore — env vars expected to be set externally.
+}
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const SMOKE_TARGET = process.env.SMOKE_TARGET || 'unknown';
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('❌ Missing environment variables. Please check your .env file.');
-  process.exit(1);
+  console.error(
+    'Missing SUPABASE_URL / SUPABASE_ANON_KEY (or VITE_ prefixed equivalents).'
+  );
+  process.exit(2);
 }
 
-// Test Google Docs extraction
-async function testExtractGoogleDoc() {
-  console.log('\n📄 Testing Google Docs Extraction...');
-  
-  const testUrls = [
-    'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
-    'https://docs.google.com/document/d/invalid-doc-id/edit'
-  ];
+const HEADERS = {
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+};
 
-  for (const url of testUrls) {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/extract-google-doc`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ url })
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log(`✅ Successfully extracted from: ${url}`);
-        console.log(`   Title: ${data.title || 'N/A'}`);
-        console.log(`   Content length: ${data.content?.length || 0} characters`);
-      } else {
-        console.log(`❌ Failed to extract from: ${url}`);
-        console.log(`   Error: ${data.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error(`❌ Network error for ${url}:`, error.message);
-    }
-  }
-}
-
-// Test duplicate detection
-async function testDetectDuplicates() {
-  console.log('\n🔍 Testing Duplicate Detection...');
-  
-  const testContents = [
-    {
-      title: 'Pizza Making Workshop',
-      content: 'Students will learn to make pizza from scratch, exploring fractions through measuring ingredients.',
-      contentHash: 'test-hash-pizza-1'
+const FULL_SMOKE = [
+  {
+    name: 'smart-search',
+    payload: { query: 'garden', limit: 5, page: 1 },
+    assert: (json) => {
+      if (!Array.isArray(json.lessons)) throw new Error('lessons not an array');
+      if (typeof json.totalCount !== 'number') throw new Error('totalCount not a number');
+      if (json.totalCount <= 0) throw new Error(`totalCount=${json.totalCount}, expected > 0`);
     },
-    {
-      title: 'Garden Composting Basics',
-      content: 'Learn how to create nutrient-rich compost for your school garden.',
-      contentHash: 'test-hash-compost-1'
-    }
-  ];
-
-  for (const test of testContents) {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/detect-duplicates`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify(test)
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log(`✅ Duplicate detection for: "${test.title}"`);
-        console.log(`   Found ${data.similarities?.length || 0} potential duplicates`);
-        if (data.similarities?.length > 0) {
-          console.log('   Top matches:');
-          data.similarities.slice(0, 3).forEach(sim => {
-            console.log(`   - ${sim.lesson.title} (${Math.round(sim.combined_score * 100)}%)`);
-          });
-        }
-      } else {
-        console.log(`❌ Failed duplicate detection for: "${test.title}"`);
-        console.log(`   Error: ${data.error || 'Unknown error'}`);
+  },
+  {
+    name: 'search-lessons',
+    payload: { query: 'garden', limit: 5, page: 1 },
+    assert: (json) => {
+      if (!Array.isArray(json.lessons)) throw new Error('lessons not an array');
+      if (typeof json.totalCount !== 'number') throw new Error('totalCount not a number');
+      if (json.totalCount <= 0) throw new Error(`totalCount=${json.totalCount}, expected > 0`);
+    },
+  },
+  {
+    name: 'detect-duplicates',
+    payload: {
+      // submissionId omitted on purpose — see file header.
+      content: 'Edge function smoke test content. Students plant seeds in the garden.',
+      title: 'Smoke test lesson',
+      metadata: { gradeLevels: ['3'] },
+    },
+    assert: (json) => {
+      if (json.success !== true) throw new Error(`success=${json.success}`);
+      if (typeof json.data?.contentHash !== 'string') throw new Error('contentHash missing');
+      if (json.data.contentHash.length !== 64) {
+        throw new Error(`contentHash length=${json.data.contentHash.length}, expected 64`);
       }
-    } catch (error) {
-      console.error(`❌ Network error:`, error.message);
-    }
+    },
+  },
+  {
+    name: 'generate-embeddings',
+    payload: { text: 'edge function smoke test' },
+    assert: (json) => {
+      if (!Array.isArray(json.embedding)) throw new Error('embedding not an array');
+      if (json.embedding.length !== 1536) {
+        throw new Error(`embedding length=${json.embedding.length}, expected 1536`);
+      }
+    },
+  },
+];
+
+const HEALTH_CHECK = [
+  'extract-google-doc',
+  'process-submission',
+  'send-email',
+  'password-reset',
+  'import-lessons',
+  'invitation-management',
+  'user-management',
+  'generate-gemini-embeddings',
+];
+
+async function fullSmoke({ name, payload, assert }) {
+  const url = `${SUPABASE_URL}/functions/v1/${name}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: HEADERS,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '<unreadable>');
+    throw new Error(`HTTP ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const json = await res.json();
+  assert(json);
+  return { name, kind: 'smoke', status: res.status };
+}
+
+async function healthCheck(name) {
+  const url = `${SUPABASE_URL}/functions/v1/${name}`;
+  const res = await fetch(url, {
+    method: 'OPTIONS',
+    headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+  });
+  if (res.status === 404) {
+    throw new Error('HTTP 404 — function not deployed');
+  }
+  if (res.status >= 500) {
+    throw new Error(`HTTP ${res.status} — runtime error at startup`);
+  }
+  return { name, kind: 'health', status: res.status };
+}
+
+async function runOne(label, fn) {
+  const start = Date.now();
+  try {
+    const result = await fn();
+    return { ...result, ok: true, ms: Date.now() - start };
+  } catch (err) {
+    return { name: label, ok: false, error: err.message, ms: Date.now() - start };
   }
 }
 
-// Test full submission processing
-async function testProcessSubmission() {
-  console.log('\n🚀 Testing Full Submission Processing...');
-  
-  // Note: This requires authentication
-  console.log('⚠️  Note: Full submission processing requires user authentication.');
-  console.log('   Please test this through the web interface with a logged-in teacher account.');
-  
-  // You can add code here to test with a service account or test token if available
-}
-
-// Check Edge Function health
-async function checkEdgeFunctionHealth() {
-  console.log('\n💚 Checking Edge Function Health...');
-  
-  const functions = [
-    'extract-google-doc',
-    'detect-duplicates',
-    'process-submission'
-  ];
-
-  for (const func of functions) {
+async function main() {
+  const host = (() => {
     try {
-      // Try OPTIONS request to check if function exists
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/${func}`, {
-        method: 'OPTIONS',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-        }
-      });
-
-      if (response.ok || response.status === 400) {
-        console.log(`✅ ${func}: Deployed and responding`);
-      } else {
-        console.log(`❌ ${func}: Not responding (Status: ${response.status})`);
-      }
-    } catch (error) {
-      console.log(`❌ ${func}: Network error - ${error.message}`);
+      return new URL(SUPABASE_URL).hostname;
+    } catch {
+      return SUPABASE_URL;
     }
+  })();
+  console.log(`Edge function smoke (target=${SMOKE_TARGET}, host=${host})`);
+  console.log('');
+
+  // Sequential so log output reads top-to-bottom in cron logs. Total wall
+  // time is ~5–10 s for 12 functions; parallelism would buy little and
+  // muddle the output.
+  const results = [];
+  for (const spec of FULL_SMOKE) {
+    const r = await runOne(spec.name, () => fullSmoke(spec));
+    results.push(r);
+    const icon = r.ok ? 'PASS' : 'FAIL';
+    console.log(`${icon}  ${spec.name.padEnd(28)} smoke   ${r.ms}ms${r.ok ? '' : '   ' + r.error}`);
+  }
+  for (const name of HEALTH_CHECK) {
+    const r = await runOne(name, () => healthCheck(name));
+    results.push(r);
+    const icon = r.ok ? 'PASS' : 'FAIL';
+    console.log(`${icon}  ${name.padEnd(28)} health  ${r.ms}ms${r.ok ? '' : '   ' + r.error}`);
+  }
+
+  const failures = results.filter((r) => !r.ok);
+  console.log('');
+  console.log(`Result: ${results.length - failures.length}/${results.length} passing`);
+  if (failures.length > 0) {
+    console.log('');
+    console.log('Failures:');
+    for (const f of failures) {
+      console.log(`  - ${f.name}: ${f.error}`);
+    }
+    process.exit(1);
   }
 }
 
-// Run all tests
-async function runAllTests() {
-  console.log('🧪 Testing Lesson Submission Pipeline Edge Functions');
-  console.log('='.repeat(50));
-  
-  await checkEdgeFunctionHealth();
-  await testExtractGoogleDoc();
-  await testDetectDuplicates();
-  await testProcessSubmission();
-  
-  console.log('\n✨ Testing complete!');
-  console.log('\nNext steps:');
-  console.log('1. Create test user accounts (teacher@example.com, reviewer@example.com)');
-  console.log('2. Run scripts/setup-test-users.sql in Supabase');
-  console.log('3. Test the full workflow through the web interface');
-}
-
-// Run tests
-runAllTests().catch(console.error);
+main().catch((err) => {
+  console.error('Unexpected error:', err);
+  process.exit(1);
+});
