@@ -339,17 +339,14 @@ async function main() {
     process.exit(1);
   }
 
-  // Snapshot the auto-batch lesson rows (full row_to_json equivalent via select *).
+  // Fetch full lesson rows for the auto-batch and run preflight before any
+  // file is written. Preflight failures should not leave a snapshot file on
+  // disk — the artifact/SQL files don't get written either, and a stranded
+  // snapshot would just be cruft.
   const fullLessons = await fetchFullLessonsRows(selected.map((r) => r.target_lesson_id));
-  fs.writeFileSync(snapshotPath, JSON.stringify({
-    generated_at: generatedAt.toISOString(),
-    target: target.target,
-    rows: fullLessons,
-  }, null, 2));
-  console.log(`  Snapshot written: ${path.relative(process.cwd(), snapshotPath)} (${fullLessons.length} rows)`);
 
   if (fullLessons.length !== selected.length) {
-    console.error(`Snapshot row count (${fullLessons.length}) does not match selected count (${selected.length}). Aborting.`);
+    console.error(`Pre-flight failed: fetched ${fullLessons.length} lessons rows but selected ${selected.length}. Some target_lesson_ids do not resolve.`);
     process.exit(1);
   }
   for (const lesson of fullLessons) {
@@ -360,6 +357,14 @@ async function main() {
       process.exit(1);
     }
   }
+
+  // Preflight passed; safe to persist the snapshot.
+  fs.writeFileSync(snapshotPath, JSON.stringify({
+    generated_at: generatedAt.toISOString(),
+    target: target.target,
+    rows: fullLessons,
+  }, null, 2));
+  console.log(`  Snapshot written: ${path.relative(process.cwd(), snapshotPath)} (${fullLessons.length} rows)`);
 
   const skippedReasons = skipped.reduce<Record<string, number>>((acc, s) => {
     acc[s.reason] = (acc[s.reason] ?? 0) + 1;
