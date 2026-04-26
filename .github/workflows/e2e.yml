@@ -22,7 +22,7 @@ jobs:
 
       - name: Check for migration changes
         id: migration-check
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             migrations:
