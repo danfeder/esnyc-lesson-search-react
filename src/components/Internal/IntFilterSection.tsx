@@ -42,11 +42,11 @@ export function IntFilterSection({
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </button>
-      {open && (
-        <div id={bodyId} className="int-filter-body">
-          {children}
-        </div>
-      )}
+      {/* Always render the body so aria-controls={bodyId} resolves; toggle
+          visibility via the `hidden` attribute (which also hides from AT). */}
+      <div id={bodyId} className="int-filter-body" hidden={!open}>
+        {children}
+      </div>
     </div>
   );
 }

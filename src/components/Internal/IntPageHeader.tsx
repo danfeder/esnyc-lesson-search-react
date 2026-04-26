@@ -13,7 +13,8 @@ export function IntPageHeader({ title, description, actions, back }: IntPageHead
       <div>
         {back && (
           <button type="button" className="adm-back" onClick={back.onClick}>
-            ← {back.label}
+            <span aria-hidden="true">← </span>
+            {back.label}
           </button>
         )}
         <h1>{title}</h1>

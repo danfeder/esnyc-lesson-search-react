@@ -71,16 +71,12 @@ export function IntQueueRow({ submission, onSelect }: IntQueueRowProps) {
         ) : null}
       </div>
 
-      <button
-        type="button"
-        className="adm-btn adm-btn--primary adm-btn--sm"
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(submission.id);
-        }}
-      >
+      {/* Visual CTA only — the entire row is the clickable surface (the outer
+          div has role="button"). A nested <button> here would be invalid HTML
+          (interactive-inside-interactive). */}
+      <span className="adm-btn adm-btn--primary adm-btn--sm" aria-hidden="true">
         Review
-      </button>
+      </span>
     </div>
   );
 }

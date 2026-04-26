@@ -196,6 +196,7 @@
   padding: 4px 16px 12px;
   display: flex; flex-direction: column; gap: 2px;
 }
+.int-filter-body[hidden] { display: none; }
 .int-check {
   display: flex; align-items: center; gap: 8px;
   padding: 4px 0;
