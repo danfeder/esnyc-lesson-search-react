@@ -50,6 +50,11 @@ describe('extractMetadataFromContent', () => {
       );
       expect(sketch.gradeLevels).toEqual(['PK']);
     });
+
+    it('parses 3K from labeled list', () => {
+      const sketch = extractMetadataFromContent('Grade Levels: 3K, PK');
+      expect(sketch.gradeLevels?.sort()).toEqual(['3K', 'PK']);
+    });
   });
 
   describe('seasons', () => {
@@ -140,6 +145,15 @@ describe('extractMetadataFromContent', () => {
       const sketch = extractMetadataFromContent('Activity Type: Academic Only');
       expect(sketch.activityType).toBe('academic-only');
     });
+
+    it('emits "both" from frequency inference when both signals are strong', () => {
+      const content =
+        'Students cook a recipe in the kitchen using a stovetop. ' +
+        'They harvest tomatoes from the garden after planting seedlings, ' +
+        'then add compost to the soil bed.';
+      const sketch = extractMetadataFromContent(content);
+      expect(sketch.activityType).toBe('both');
+    });
   });
 
   describe('cultural heritage', () => {
@@ -174,6 +188,13 @@ describe('extractMetadataFromContent', () => {
     it('matches "baking" → Oven', () => {
       const sketch = extractMetadataFromContent('Students will be baking bread.');
       expect(sketch.cookingMethods).toContain('Oven');
+    });
+
+    it('matches "Basic prep" → Basic prep only', () => {
+      const sketch = extractMetadataFromContent(
+        'No heat required — basic prep with knife skills.'
+      );
+      expect(sketch.cookingMethods).toContain('Basic prep only');
     });
 
     it('omits when no cooking-method keyword', () => {
