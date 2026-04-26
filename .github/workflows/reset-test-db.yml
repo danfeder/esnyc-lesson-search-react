@@ -22,10 +22,31 @@ on:
         description: 'Type "RESET" to confirm'
         required: true
         type: string
+  # Weekly auto-sync of TEST data from PROD. Sunday 04:00 UTC is well off
+  # the Monday 10:00 UTC backup cron (no shared rate-limit risk on the same
+  # Supabase project), and runs while the team is unlikely to be using TEST
+  # for active dev. Always uses reset_type=full so TEST tracks PROD data.
+  schedule:
+    - cron: '0 4 * * 0'
+
+# Avoid two reset jobs writing to TEST at the same time (e.g. cron firing
+# during an in-flight manual reset).
+concurrency:
+  group: reset-test-db
+  cancel-in-progress: false
+
+permissions:
+  # `issues: write` is used by the on-failure step to file a GitHub issue
+  # if the cron run fails — silent cron failures would let TEST drift from
+  # PROD indefinitely without anyone noticing.
+  issues: write
 
 jobs:
   validate:
     name: Validate Reset Request
+    # Cron has no `inputs.confirm` to type-check; the schedule itself is
+    # the authorization gate. Only require the typed-RESET on manual runs.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Check confirmation
@@ -37,7 +58,8 @@ jobs:
   reset-migrations:
     name: Reset Migrations
     needs: validate
-    if: inputs.reset_type == 'migrations'
+    # Only the manual `migrations` mode runs here — cron always runs full.
+    if: github.event_name == 'workflow_dispatch' && inputs.reset_type == 'migrations'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -97,7 +119,13 @@ jobs:
   reset-full:
     name: Full Reset (Schema + Data)
     needs: validate
-    if: inputs.reset_type == 'full'
+    # Run when the manual user picks `full`, OR when the weekly cron fires.
+    # `always() && needs.validate.result != 'failure'` lets this proceed when
+    # validate is skipped on the cron path (skip-on-needs-skipped is the
+    # default behavior we're explicitly overriding here).
+    if: |
+      always() && needs.validate.result != 'failure' && needs.validate.result != 'cancelled' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.reset_type == 'full') || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -162,3 +190,39 @@ jobs:
             -t -c "SELECT COUNT(*) FROM lessons;" 2>/dev/null || echo "unknown")
 
           echo "Lesson count in test DB: $LESSON_COUNT" >> $GITHUB_STEP_SUMMARY
+
+  report-cron-failure:
+    name: Report Cron Failure
+    needs: reset-full
+    # Only file an issue when the WEEKLY CRON fails. Manual runs surface
+    # failures directly to the user who triggered them; cron failures go
+    # silent without an explicit notification.
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: File GitHub issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const title = `⚠️ Weekly TEST DB sync failed (${new Date().toISOString().slice(0, 10)})`;
+            const body = [
+              `The weekly TEST DB auto-sync (\`reset-test-db.yml --reset_type=full\` via cron) failed.`,
+              ``,
+              `- Workflow run: ${runUrl}`,
+              `- Trigger: \`${context.eventName}\``,
+              ``,
+              `Until this is fixed, the TEST database may drift from PROD —`,
+              `manual edits or migrations applied via PR will accumulate without`,
+              `the expected weekly resync. Investigate the run logs, then re-run`,
+              `the workflow manually with \`reset_type=full\` once fixed.`,
+              ``,
+              `Close this issue once a successful sync has run.`,
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['data-integrity', 'monitoring'],
+            });
