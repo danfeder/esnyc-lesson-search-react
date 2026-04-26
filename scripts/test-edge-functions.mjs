@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Daily smoke test for all 12 deployed edge functions.
+ * Daily smoke test for all 11 deployed edge functions.
  *
  * Two tiers:
  *   1. Full smoke (4 fns) — POST a real payload and assert response shape.
  *      Catches business-logic regressions on top of deploy regressions.
  *      Functions: smart-search, search-lessons, detect-duplicates,
  *      generate-embeddings.
- *   2. Health check (8 fns) — OPTIONS preflight, expect non-404 / non-5xx.
+ *   2. Health check (7 fns) — OPTIONS preflight, expect non-404 / non-5xx.
  *      Catches "function not deployed" (404) and module-load crashes (5xx)
  *      without exercising side-effecting code paths. Does NOT catch latent
  *      runtime failures inside the function body — e.g. a missing secret
@@ -113,7 +113,6 @@ const HEALTH_CHECK = [
   'process-submission',
   'send-email',
   'password-reset',
-  'import-lessons',
   'invitation-management',
   'user-management',
   'generate-gemini-embeddings',
@@ -121,8 +120,8 @@ const HEALTH_CHECK = [
 
 // Per-request timeout. Sequential execution means one hung endpoint would
 // otherwise block every subsequent check until the job-level 5-min cap
-// killed the run with no per-function visibility. 15 s × 12 = 3 min worst
-// case, still under the cap.
+// killed the run with no per-function visibility. 15 s × 11 ≈ 2.75 min
+// worst case, still under the cap.
 const FETCH_TIMEOUT_MS = 15_000;
 
 async function fullSmoke({ name, payload, assert }) {
@@ -180,7 +179,7 @@ async function main() {
   console.log('');
 
   // Sequential so log output reads top-to-bottom in cron logs. Total wall
-  // time is ~5–10 s for 12 functions; parallelism would buy little and
+  // time is ~5–10 s for 11 functions; parallelism would buy little and
   // muddle the output.
   const results = [];
   for (const spec of FULL_SMOKE) {
