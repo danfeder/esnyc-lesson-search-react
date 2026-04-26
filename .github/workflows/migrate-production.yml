@@ -191,6 +191,11 @@ jobs:
         # there. Approver gets a notification on that PR; reviewing the diff
         # next to the migrations is faster than digging through workflow logs.
         # Default if-success() means this only runs when dry-run produced output.
+        # continue-on-error: a transient GitHub API hiccup (rate limit,
+        # listPullRequests flake) must NOT block apply-migrations downstream.
+        # The dry-run is already in the workflow step summary; the PR comment
+        # is purely a convenience surface.
+        continue-on-error: true
         env:
           # Pass migration_files via env (not template interpolation) so any
           # special characters in filenames can't break the JS parser. Same
