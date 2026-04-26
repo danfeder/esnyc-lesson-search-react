@@ -1,0 +1,11 @@
+# Snapshots and dry-run artifacts contain teacher-submitted lesson content
+# (extracted_content, file_links, full lessons rows). Local-only by design.
+# Do NOT commit these. If you need to share a snapshot for review, copy it
+# to a private location (e.g., a private repo or local-only directory).
+
+snapshots/*
+dryrun-artifacts/*
+
+# Keep the directories themselves tracked so the structure exists in fresh clones:
+!snapshots/.gitkeep
+!dryrun-artifacts/.gitkeep
