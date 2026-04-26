@@ -1,0 +1,92 @@
+name: Edge function smoke tests
+
+# Daily smoke against PROD edge functions. The deploy workflow's TEST step
+# verifies functions deploy cleanly on each PR; this catches regressions
+# that ship to PROD anyway (or break post-deploy due to a runtime secret
+# rotation, schema change, OpenAI/Resend outage, etc.) within 24h.
+#
+# Per-function strategy lives in scripts/test-edge-functions.mjs.
+
+on:
+  schedule:
+    # Daily 04:00 UTC. Off the Monday 10:00 UTC backup-production window.
+    # Overlaps the Sunday 04:00 UTC reset-test-db cron in wall time, but
+    # targets a different system (PROD edge functions vs TEST DB) and runs
+    # in its own concurrency group — no functional conflict.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+# Only one smoke run in flight at a time so a long-tail run can't overlap
+# the next day's start. Don't cancel an in-flight run if a manual dispatch
+# lands during one.
+concurrency:
+  group: edge-function-smoke
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # `issues: write` for the on-failure issue (matches backup-production.yml).
+  issues: write
+
+jobs:
+  smoke:
+    name: Smoke 12 PROD edge functions
+    runs-on: ubuntu-latest
+    # Local script runs in ~10 s; cap generously to absorb cold-start +
+    # GitHub-side variance. Network stalls or a hung CLI surface fast.
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # `--omit=dev` skips Playwright + lint/test tooling, leaving just
+        # what scripts/test-edge-functions.mjs needs (dotenv). Cuts install
+        # from ~60 s to ~15 s.
+        run: npm ci --omit=dev
+
+      - name: Run smoke against PROD
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SMOKE_TARGET: prod
+        run: node scripts/test-edge-functions.mjs
+
+      - name: File issue on failure
+        # GitHub's default email-on-failure depends on per-account settings —
+        # not reliable. A tracked issue is. No dedup: one fresh issue per
+        # failing day surfaces a regression that hasn't been addressed.
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const title = `⚠️ Edge function smoke failed (${new Date().toISOString().slice(0, 10)})`;
+            const body = [
+              `The daily edge function smoke test failed against PROD.`,
+              ``,
+              `- Workflow run: ${runUrl}`,
+              `- Trigger: \`${context.eventName}\``,
+              `- Commit: ${context.sha}`,
+              ``,
+              `One or more deployed edge functions are broken or returning unexpected responses.`,
+              `Check the run log for the per-function PASS/FAIL output, then either fix the`,
+              `function or update the smoke assertion in \`scripts/test-edge-functions.mjs\` if`,
+              `the response shape changed intentionally.`,
+              ``,
+              `Close this issue once smoke passes again.`,
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['monitoring'],
+            });
