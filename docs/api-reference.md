@@ -270,30 +270,6 @@ Authorization: Bearer <supabase-jwt-token>
 }
 ```
 
-### 10. Import Lessons
-
-**Endpoint:** `/import-lessons`  
-**Method:** POST  
-**Description:** Bulk import lessons (admin only)
-
-#### Request Body
-```typescript
-{
-  lessons: Lesson[];             // Array of lesson objects
-  mode?: 'append' | 'replace';   // Default: 'append'
-}
-```
-
-#### Response
-```typescript
-{
-  success: boolean;
-  imported: number;
-  failed: number;
-  errors?: string[];
-}
-```
-
 ## Error Responses
 
 All endpoints return errors in this format:
