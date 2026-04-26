@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import type { MetadataSketch } from '../_shared/google-docs-parser.ts';
 
 interface ProcessSubmissionRequest {
   googleDocUrl?: string;
@@ -129,6 +130,7 @@ serve(async (req) => {
     let submission;
     let title: string;
     let content: string;
+    let metadataSketch: MetadataSketch = {};
 
     // Handle regenerating embeddings for existing submissions
     if (regenerateEmbedding && submissionId) {
@@ -202,6 +204,7 @@ serve(async (req) => {
 
       title = extractResult.data.title;
       content = extractResult.data.content;
+      metadataSketch = extractResult.data.metadataSketch ?? {};
 
       // Step 3: Update submission with extracted content and title
       const { error: updateError } = await supabaseAdmin
@@ -295,7 +298,7 @@ serve(async (req) => {
           submissionId: submission.id,
           content,
           title,
-          metadata: {}, // Would extract from content in production
+          metadata: metadataSketch,
           embedding: contentEmbedding,
         }),
       });

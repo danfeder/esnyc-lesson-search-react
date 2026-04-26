@@ -119,6 +119,7 @@ serve(async (req) => {
 
         const doc = await docResponse.json();
         const content = extractTextFromGoogleDoc(doc);
+        const metadataSketch = extractMetadataFromContent(content);
 
         return new Response(
           JSON.stringify({
@@ -132,6 +133,7 @@ serve(async (req) => {
                 extractionMethod: 'google-api',
                 hasImages: doc.inlineObjects ? Object.keys(doc.inlineObjects).length > 0 : false,
               },
+              metadataSketch,
               extractedAt: new Date().toISOString(),
             },
           }),
@@ -248,6 +250,7 @@ Always consult adults before using herbs medicinally. Some plants can cause alle
         hasImages: false,
         warning: 'Using mock data - Google service account not configured',
       },
+      metadataSketch: extractMetadataFromContent(mockLesson.content),
     };
 
     return new Response(
