@@ -119,12 +119,19 @@ const HEALTH_CHECK = [
   'generate-gemini-embeddings',
 ];
 
+// Per-request timeout. Sequential execution means one hung endpoint would
+// otherwise block every subsequent check until the job-level 5-min cap
+// killed the run with no per-function visibility. 15 s × 12 = 3 min worst
+// case, still under the cap.
+const FETCH_TIMEOUT_MS = 15_000;
+
 async function fullSmoke({ name, payload, assert }) {
   const url = `${SUPABASE_URL}/functions/v1/${name}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: HEADERS,
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '<unreadable>');
@@ -140,6 +147,7 @@ async function healthCheck(name) {
   const res = await fetch(url, {
     method: 'OPTIONS',
     headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (res.status === 404) {
     throw new Error('HTTP 404 — function not deployed');
