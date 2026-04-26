@@ -319,7 +319,18 @@ export function AdminInvitations() {
 
   const handleBulkCancel = async () => {
     if (selectedResendable.length === 0) return;
-    if (!window.confirm(`Cancel ${selectedResendable.length} invitation(s)?`)) return;
+    // On the 'all' tab the user can select accepted invitations alongside
+    // pending/expired ones. Accepted invitations can't be cancelled, so they
+    // get silently filtered out via selectedResendable. Spell that out in the
+    // confirm dialog so the count doesn't look mysteriously off.
+    const skipped = selectedInvitations.length - selectedResendable.length;
+    const confirmMsg =
+      skipped > 0
+        ? `Cancel ${selectedResendable.length} invitation(s)? (${skipped} accepted invitation${
+            skipped === 1 ? '' : 's'
+          } in your selection will be skipped.)`
+        : `Cancel ${selectedResendable.length} invitation(s)?`;
+    if (!window.confirm(confirmMsg)) return;
     setBulkRunning(true);
     try {
       const results = await Promise.allSettled(selectedResendable.map((inv) => cancelOne(inv)));
