@@ -80,7 +80,9 @@ const ORDINAL_GRADE_PATTERNS: Array<[RegExp, string]> = [
   [/\b(?:6th|sixth)\s+grade\b/i, '6'],
   [/\b(?:7th|seventh)\s+grade\b/i, '7'],
   [/\b(?:8th|eighth)\s+grade\b/i, '8'],
-  [/\bkindergarten\b/i, 'K'],
+  // Negative lookbehind so "Pre-Kindergarten" / "prekindergarten" don't also
+  // emit 'K' alongside 'PK' from the next pattern.
+  [/\b(?<!pre-?)kindergarten\b/i, 'K'],
   [/\bpre-?kindergarten\b/i, 'PK'],
 ];
 

@@ -29,6 +29,27 @@ describe('extractMetadataFromContent', () => {
       const sketch = extractMetadataFromContent('A lesson about apples.');
       expect(sketch.gradeLevels).toBeUndefined();
     });
+
+    it('emits only K for bare "Kindergarten" in prose', () => {
+      const sketch = extractMetadataFromContent(
+        'Designed for Kindergarten students.'
+      );
+      expect(sketch.gradeLevels).toEqual(['K']);
+    });
+
+    it('emits only PK for "Pre-Kindergarten" in prose (no K spillover)', () => {
+      const sketch = extractMetadataFromContent(
+        'Designed for Pre-Kindergarten students.'
+      );
+      expect(sketch.gradeLevels).toEqual(['PK']);
+    });
+
+    it('emits only PK for "prekindergarten" (no hyphen, no K spillover)', () => {
+      const sketch = extractMetadataFromContent(
+        'A prekindergarten lesson.'
+      );
+      expect(sketch.gradeLevels).toEqual(['PK']);
+    });
   });
 
   describe('seasons', () => {
