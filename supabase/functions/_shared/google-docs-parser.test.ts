@@ -135,6 +135,11 @@ describe('extractMetadataFromContent', () => {
       );
       expect(sketch.activityType).toBeUndefined();
     });
+
+    it('emits "academic-only" from labeled header', () => {
+      const sketch = extractMetadataFromContent('Activity Type: Academic Only');
+      expect(sketch.activityType).toBe('academic-only');
+    });
   });
 
   describe('cultural heritage', () => {

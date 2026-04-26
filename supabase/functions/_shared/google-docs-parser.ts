@@ -96,9 +96,12 @@ const THEMATIC_CATEGORIES = [
   'Food Justice',
 ];
 
-// Order matters: most specific (multi-word) first so a doc mentioning
-// "East Asian" emits both 'east-asian' and 'asian' (parent membership matches
-// the hierarchical filter semantics in filterDefinitions.ts).
+// Parent categories ('asian', 'african', 'european') fire on the same text
+// that matched a child ('east-asian', etc.) because the child phrase
+// contains the parent word as a substring — extractMatches tests every
+// pattern independently, so order is irrelevant. This double-emit is
+// intentional and matches the hierarchical filter semantics in
+// filterDefinitions.ts (parent selection includes children).
 const CULTURAL_PATTERNS: Array<[RegExp, string]> = [
   [/\beast\s+asian\b/i, 'east-asian'],
   [/\bsoutheast\s+asian\b/i, 'southeast-asian'],

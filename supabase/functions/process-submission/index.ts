@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import type { MetadataSketch } from '../_shared/google-docs-parser.ts';
 
 interface ProcessSubmissionRequest {
   googleDocUrl?: string;
@@ -129,7 +130,7 @@ serve(async (req) => {
     let submission;
     let title: string;
     let content: string;
-    let metadataSketch: Record<string, unknown> = {};
+    let metadataSketch: MetadataSketch = {};
 
     // Handle regenerating embeddings for existing submissions
     if (regenerateEmbedding && submissionId) {
