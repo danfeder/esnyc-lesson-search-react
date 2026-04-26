@@ -101,7 +101,8 @@ interface Artifact {
   artifact_hash?: string;
 }
 
-const ts = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, 'Z');
+const generatedAt = new Date();
+const ts = generatedAt.toISOString().replace(/[:.]/g, '-');
 const outDir = path.join(__dirname, 'dryrun-artifacts');
 const snapshotDir = path.join(__dirname, 'snapshots');
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -315,10 +316,33 @@ async function main() {
     console.log(`    - [${s.reason}] ${s.sub_title ?? '(no title)'} — ${s.detail}`);
   }
 
+  // Sanity check: no two orphans should target the same lessons row. Each
+  // orphan was already classified `multi_match` (and held out) if its doc-id
+  // resolved to >1 lessons rows; the converse — two orphans pointing at the
+  // same single lesson — would mean two submissions are claiming the same
+  // library entry. The IS NULL guard would still keep the DB safe (only the
+  // first UPDATE wins), but the artifact's selected_rows would have a
+  // contradiction. Detect explicitly so the operator gets a clear message.
+  const targetCounts = new Map<string, string[]>();
+  for (const row of selected) {
+    const list = targetCounts.get(row.target_lesson_id) ?? [];
+    list.push(row.submission_id);
+    targetCounts.set(row.target_lesson_id, list);
+  }
+  const collisions = [...targetCounts.entries()].filter(([, subs]) => subs.length > 1);
+  if (collisions.length > 0) {
+    console.error('Duplicate target_lesson_id detected — two or more orphans claim the same library row:');
+    for (const [lessonId, subs] of collisions) {
+      console.error(`  lesson_id=${lessonId} <- submission_ids=[${subs.join(', ')}]`);
+    }
+    console.error('Resolve manually before re-running plan-mode.');
+    process.exit(1);
+  }
+
   // Snapshot the auto-batch lesson rows (full row_to_json equivalent via select *).
   const fullLessons = await fetchFullLessonsRows(selected.map((r) => r.target_lesson_id));
   fs.writeFileSync(snapshotPath, JSON.stringify({
-    generated_at: new Date().toISOString(),
+    generated_at: generatedAt.toISOString(),
     target: target.target,
     rows: fullLessons,
   }, null, 2));
@@ -344,7 +368,7 @@ async function main() {
 
   const artifactWithoutHash: Omit<Artifact, 'artifact_hash'> = {
     phase: 'phase-2-category-a',
-    generated_at: new Date().toISOString(),
+    generated_at: generatedAt.toISOString(),
     git_sha: gitSha(),
     target,
     selected_rows: selected,
