@@ -216,7 +216,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'ESYNYC Lesson Library <df@esynyc.org>',
+        from: 'ESYNYC Lesson Library <onboarding@resend.dev>',
         to: [to],
         subject,
         html: emailHtml,
