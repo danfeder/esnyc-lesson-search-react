@@ -231,10 +231,10 @@ serve(async (req) => {
     try {
       const { data: subRow } = await serviceClient
         .from('lesson_submissions')
-        .select('lesson_title, teacher_id, user_profiles!inner(email)')
+        .select('extracted_title, teacher_id, user_profiles!inner(email)')
         .eq('id', submissionId)
         .single<{
-          lesson_title: string;
+          extracted_title: string | null;
           teacher_id: string;
           user_profiles: { email: string };
         }>();
@@ -261,7 +261,7 @@ serve(async (req) => {
 
         if (emailType) {
           const emailData: Record<string, unknown> = {
-            lessonTitle: subRow.lesson_title,
+            lessonTitle: subRow.extracted_title ?? 'your submission',
           };
           if (emailType === 'submission-needs-revision' && notes) {
             emailData.reviewerNotes = notes;

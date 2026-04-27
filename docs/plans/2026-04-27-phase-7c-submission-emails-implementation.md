@@ -337,10 +337,10 @@ Replace those 3 comment lines with this implementation (insert AFTER the RPC err
     try {
       const { data: subRow } = await serviceClient
         .from('lesson_submissions')
-        .select('lesson_title, teacher_id, user_profiles!inner(email)')
+        .select('extracted_title, teacher_id, user_profiles!inner(email)')
         .eq('id', submissionId)
         .single<{
-          lesson_title: string;
+          extracted_title: string;
           teacher_id: string;
           user_profiles: { email: string };
         }>();
@@ -367,7 +367,7 @@ Replace those 3 comment lines with this implementation (insert AFTER the RPC err
 
         if (emailType) {
           const emailData: Record<string, unknown> = {
-            lessonTitle: subRow.lesson_title,
+            lessonTitle: subRow.extracted_title,
           };
           if (emailType === 'submission-needs-revision' && notes) {
             emailData.reviewerNotes = notes;
@@ -511,7 +511,7 @@ SELECT id, email FROM user_profiles WHERE role = 'teacher' LIMIT 1;
 
 -- Insert a test submission attributed to that teacher
 INSERT INTO lesson_submissions (
-  id, teacher_id, lesson_title, status, submission_type,
+  id, teacher_id, extracted_title, status, submission_type,
   google_doc_url, google_doc_id, content_text
 ) VALUES (
   gen_random_uuid(), '<teacher-uuid>', 'Phase 7c smoke test lesson',
