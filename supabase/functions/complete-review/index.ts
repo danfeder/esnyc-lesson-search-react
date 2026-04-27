@@ -279,20 +279,30 @@ serve(async (req) => {
             emailData.reviewerNotes = notes;
           }
 
-          const { error: emailErr } = await serviceClient.functions.invoke(
-            'send-email',
-            {
-              body: {
-                type: emailType,
-                to: teacherEmail,
-                data: emailData,
-              },
-            }
-          );
-          if (emailErr) {
+          // Direct fetch instead of supabase.functions.invoke. The SDK's
+          // invoke from inside a deployed edge function with a service-role
+          // client silently fails (auth-header propagation quirk verified
+          // empirically: SDK invoke fired but Resend never received the
+          // request; raw fetch works). Same pattern used for the OpenAI
+          // embedding call earlier in this file.
+          const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              apikey: supabaseServiceKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: emailType,
+              to: teacherEmail,
+              data: emailData,
+            }),
+          });
+          if (!emailRes.ok) {
+            const errText = await emailRes.text().catch(() => '<unreadable>');
             console.error(
-              `Phase 7c: send-email returned error for submission ${submissionId}:`,
-              emailErr
+              `Phase 7c: send-email failed (${emailRes.status}) for submission ${submissionId}:`,
+              errText.substring(0, 500)
             );
           }
         }
