@@ -14,9 +14,13 @@ interface EmailRequest {
     | 'password-changed'
     | 'role-changed'
     | 'account-deactivated'
-    | 'account-reactivated';
+    | 'account-reactivated'
+    | 'submission-approved'
+    | 'submission-needs-revision'
+    | 'submission-rejected';
   to: string;
   data: {
+    // existing fields untouched
     invitationId?: string;
     token?: string;
     inviterName?: string;
@@ -32,6 +36,11 @@ interface EmailRequest {
     deactivatedBy?: string;
     reactivatedBy?: string;
     reason?: string;
+    // Phase 7c additions
+    lessonTitle?: string;
+    reviewerNotes?: string;
+    profileUrl?: string;
+    contactEmail?: string;
   };
 }
 
@@ -81,7 +90,10 @@ serve(async (req) => {
       type !== 'password-reset' &&
       type !== 'role-changed' &&
       type !== 'account-deactivated' &&
-      type !== 'account-reactivated'
+      type !== 'account-reactivated' &&
+      type !== 'submission-approved' &&
+      type !== 'submission-needs-revision' &&
+      type !== 'submission-rejected'
     ) {
       // Verify the request is authenticated
       const authHeader = req.headers.get('Authorization');
@@ -175,6 +187,21 @@ serve(async (req) => {
       case 'account-reactivated':
         subject = 'Your ESYNYC Lesson Library Account Has Been Reactivated';
         emailHtml = generateAccountReactivatedEmail(data, to);
+        break;
+
+      case 'submission-approved':
+        subject = `Your ESYNYC lesson '${data.lessonTitle ?? 'submission'}' was approved`;
+        emailHtml = generateSubmissionApprovedEmail(data, to);
+        break;
+
+      case 'submission-needs-revision':
+        subject = `Your ESYNYC lesson '${data.lessonTitle ?? 'submission'}' needs revision`;
+        emailHtml = generateSubmissionNeedsRevisionEmail(data, to);
+        break;
+
+      case 'submission-rejected':
+        subject = `Your ESYNYC lesson '${data.lessonTitle ?? 'submission'}' was not selected for publication`;
+        emailHtml = generateSubmissionRejectedEmail(data, to);
         break;
 
       default:
@@ -639,6 +666,153 @@ function generateAccountReactivatedEmail(data: any, email: string): string {
           <div class="footer">
             <p>© ${new Date().getFullYear()} Edible Schoolyard NYC. All rights reserved.</p>
             <p>This is an automated notification about your account status.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateSubmissionApprovedEmail(data: any, _email: string): string {
+  const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
+  const profileUrl = data.profileUrl || `${baseUrl}/profile`;
+  const lessonTitle = data.lessonTitle || 'Your lesson';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Lesson Approved</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #22c55e; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background-color: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+          .button:hover { background-color: #16a34a; }
+          .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Lesson Approved!</h1>
+          </div>
+          <div class="content">
+            <p>Hi there,</p>
+            <p>Great news — your lesson <strong>${lessonTitle}</strong> has been approved and is now part of the ESYNYC Lesson Library.</p>
+            <p>Thank you for sharing your work with the community of educators.</p>
+            <div style="text-align: center;">
+              <a href="${profileUrl}" class="button">View your submissions</a>
+            </div>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} Edible Schoolyard NYC. All rights reserved.</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateSubmissionNeedsRevisionEmail(data: any, _email: string): string {
+  const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
+  const profileUrl = data.profileUrl || `${baseUrl}/profile`;
+  const lessonTitle = data.lessonTitle || 'Your lesson';
+  const reviewerNotes = data.reviewerNotes || '';
+
+  // Reviewer notes are rendered verbatim. Escape HTML to prevent injection;
+  // notes come from a trusted reviewer but are still untrusted from an
+  // email-template perspective (no HTML rendering).
+  const escapedNotes = reviewerNotes
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, '<br>');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Submission Needs Revision</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #22c55e; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button { display: inline-block; background-color: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+          .button:hover { background-color: #16a34a; }
+          .notes-box { background-color: white; padding: 20px; border-left: 4px solid #22c55e; border-radius: 6px; margin: 20px 0; }
+          .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Reviewer Feedback on Your Submission</h1>
+          </div>
+          <div class="content">
+            <p>Hi there,</p>
+            <p>A reviewer has left feedback on your lesson <strong>${lessonTitle}</strong>. Please review their notes and revise as needed.</p>
+            ${escapedNotes ? `
+            <div class="notes-box">
+              <p><strong>Reviewer notes:</strong></p>
+              <p>${escapedNotes}</p>
+            </div>` : ''}
+            <p>You can view and update your submission from your profile page:</p>
+            <div style="text-align: center;">
+              <a href="${profileUrl}" class="button">View your submissions</a>
+            </div>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} Edible Schoolyard NYC. All rights reserved.</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateSubmissionRejectedEmail(data: any, _email: string): string {
+  const lessonTitle = data.lessonTitle || 'your submission';
+  const contactEmail = data.contactEmail || 'admin@esynyc.org';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Submission Status Update</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #6b7280; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Submission Status Update</h1>
+          </div>
+          <div class="content">
+            <p>Hi there,</p>
+            <p>Thank you for submitting <strong>${lessonTitle}</strong> to the ESYNYC Lesson Library. After review, we are not able to publish this lesson at this time.</p>
+            <p>If you'd like to discuss this decision, please reach out to <a href="mailto:${contactEmail}">${contactEmail}</a>.</p>
+            <p>We appreciate your interest in contributing to the library.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} Edible Schoolyard NYC. All rights reserved.</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
           </div>
         </div>
       </body>
