@@ -346,6 +346,10 @@ export function ReviewDetail() {
   const handleMetadataChange = useCallback(
     <K extends keyof ReviewMetadata>(filterKey: K, value: ReviewMetadata[K]) => {
       setMetadata((prev) => ({ ...prev, [filterKey]: value }));
+      // Stale "save failed" banner becomes confusing the moment the
+      // reviewer changes anything — they're clearly preparing a fresh
+      // attempt. Clear on any meaningful state change.
+      setSaveError(null);
     },
     []
   );
@@ -893,11 +897,12 @@ export function ReviewDetail() {
                           matchType: normalizeMatchType(d.match_type),
                         }}
                         selected={selectedDuplicate === d.lesson_id}
-                        onSelect={() =>
+                        onSelect={() => {
                           setSelectedDuplicate(
                             selectedDuplicate === d.lesson_id ? null : d.lesson_id
-                          )
-                        }
+                          );
+                          setSaveError(null);
+                        }}
                       />
                     );
                   })}
@@ -915,7 +920,10 @@ export function ReviewDetail() {
                     name="decision"
                     value="approve_new"
                     checked={decision === 'approve_new'}
-                    onChange={() => setDecision('approve_new')}
+                    onChange={() => {
+                      setDecision('approve_new');
+                      setSaveError(null);
+                    }}
                   />
                   Approve &amp; publish
                 </label>
@@ -929,7 +937,10 @@ export function ReviewDetail() {
                     value="approve_update"
                     disabled={!selectedDuplicate}
                     checked={decision === 'approve_update'}
-                    onChange={() => setDecision('approve_update')}
+                    onChange={() => {
+                      setDecision('approve_update');
+                      setSaveError(null);
+                    }}
                   />
                   Merge into existing
                   {!selectedDuplicate && ' (select a duplicate first)'}
@@ -940,7 +951,10 @@ export function ReviewDetail() {
                     name="decision"
                     value="needs_revision"
                     checked={decision === 'needs_revision'}
-                    onChange={() => setDecision('needs_revision')}
+                    onChange={() => {
+                      setDecision('needs_revision');
+                      setSaveError(null);
+                    }}
                   />
                   Request revisions
                 </label>
@@ -955,7 +969,10 @@ export function ReviewDetail() {
                 className="adm-textarea"
                 rows={4}
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e) => {
+                  setNotes(e.target.value);
+                  setSaveError(null);
+                }}
                 placeholder="Optional. Will be emailed to the teacher along with the decision."
               />
             </div>
