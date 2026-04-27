@@ -226,9 +226,75 @@ serve(async (req) => {
       );
     }
 
-    // Phase 7c hook: send-email trigger lands here. Today no-op so reject /
-    // needs_revision / approve_* don't accidentally email teachers about
-    // 2025 submissions during recovery.
+    // Phase 7c: post-RPC email notification. Fail-open — errors are logged
+    // but do not roll back the approval. The RPC has already committed.
+    try {
+      const { data: subRow } = await serviceClient
+        .from('lesson_submissions')
+        .select('lesson_title, teacher_id, user_profiles!inner(email)')
+        .eq('id', submissionId)
+        .single<{
+          lesson_title: string;
+          teacher_id: string;
+          user_profiles: { email: string };
+        }>();
+
+      const teacherEmail = subRow?.user_profiles?.email;
+
+      if (teacherEmail) {
+        // Map RPC decision to email type. RPC returns the new status, but
+        // here we map directly from the reviewer's decision since
+        // approve_new and approve_update both result in 'approved'.
+        let emailType:
+          | 'submission-approved'
+          | 'submission-needs-revision'
+          | 'submission-rejected'
+          | null = null;
+
+        if (decision === 'approve_new' || decision === 'approve_update') {
+          emailType = 'submission-approved';
+        } else if (decision === 'needs_revision') {
+          emailType = 'submission-needs-revision';
+        } else if (decision === 'reject') {
+          emailType = 'submission-rejected';
+        }
+
+        if (emailType) {
+          const emailData: Record<string, unknown> = {
+            lessonTitle: subRow.lesson_title,
+          };
+          if (emailType === 'submission-needs-revision' && notes) {
+            emailData.reviewerNotes = notes;
+          }
+
+          const { error: emailErr } = await serviceClient.functions.invoke(
+            'send-email',
+            {
+              body: {
+                type: emailType,
+                to: teacherEmail,
+                data: emailData,
+              },
+            }
+          );
+          if (emailErr) {
+            console.error(
+              `Phase 7c: send-email returned error for submission ${submissionId}:`,
+              emailErr
+            );
+          }
+        }
+      } else {
+        console.warn(
+          `Phase 7c: no teacher email found for submission ${submissionId}; skipping notification`
+        );
+      }
+    } catch (err) {
+      console.error(
+        `Phase 7c: email notification failed for submission ${submissionId}:`,
+        err
+      );
+    }
 
     return jsonResponse(
       {
