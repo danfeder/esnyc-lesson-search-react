@@ -229,7 +229,7 @@ serve(async (req) => {
     // Phase 7c: post-RPC email notification. Fail-open — errors are logged
     // but do not roll back the approval. The RPC has already committed.
     try {
-      const { data: subRow } = await serviceClient
+      const { data: subRow, error: subErr } = await serviceClient
         .from('lesson_submissions')
         .select('extracted_title, teacher_id, user_profiles!inner(email)')
         .eq('id', submissionId)
@@ -238,6 +238,13 @@ serve(async (req) => {
           teacher_id: string;
           user_profiles: { email: string };
         }>();
+
+      if (subErr) {
+        console.error(
+          `Phase 7c: failed to fetch teacher email for submission ${submissionId}:`,
+          subErr
+        );
+      }
 
       const teacherEmail = subRow?.user_profiles?.email;
 

@@ -20,7 +20,6 @@ interface EmailRequest {
     | 'submission-rejected';
   to: string;
   data: {
-    // existing fields untouched
     invitationId?: string;
     token?: string;
     inviterName?: string;
@@ -36,11 +35,8 @@ interface EmailRequest {
     deactivatedBy?: string;
     reactivatedBy?: string;
     reason?: string;
-    // Phase 7c additions
     lessonTitle?: string;
     reviewerNotes?: string;
-    profileUrl?: string;
-    contactEmail?: string;
   };
 }
 
@@ -675,7 +671,7 @@ function generateAccountReactivatedEmail(data: any, email: string): string {
 
 function generateSubmissionApprovedEmail(data: any, _email: string): string {
   const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
-  const profileUrl = data.profileUrl || `${baseUrl}/profile`;
+  const profileUrl = `${baseUrl}/profile`;
   const lessonTitle = (data.lessonTitle || 'Your lesson')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -724,7 +720,7 @@ function generateSubmissionApprovedEmail(data: any, _email: string): string {
 
 function generateSubmissionNeedsRevisionEmail(data: any, _email: string): string {
   const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
-  const profileUrl = data.profileUrl || `${baseUrl}/profile`;
+  const profileUrl = `${baseUrl}/profile`;
   const lessonTitle = (data.lessonTitle || 'Your lesson')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -794,7 +790,7 @@ function generateSubmissionRejectedEmail(data: any, _email: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-  const contactEmail = data.contactEmail || 'admin@esynyc.org';
+  const contactEmail = 'admin@esynyc.org';
 
   return `
     <!DOCTYPE html>
