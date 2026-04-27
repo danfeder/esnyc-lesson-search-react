@@ -676,7 +676,11 @@ function generateAccountReactivatedEmail(data: any, email: string): string {
 function generateSubmissionApprovedEmail(data: any, _email: string): string {
   const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
   const profileUrl = data.profileUrl || `${baseUrl}/profile`;
-  const lessonTitle = data.lessonTitle || 'Your lesson';
+  const lessonTitle = (data.lessonTitle || 'Your lesson')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
   return `
     <!DOCTYPE html>
@@ -721,7 +725,11 @@ function generateSubmissionApprovedEmail(data: any, _email: string): string {
 function generateSubmissionNeedsRevisionEmail(data: any, _email: string): string {
   const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://app.esynyc.org';
   const profileUrl = data.profileUrl || `${baseUrl}/profile`;
-  const lessonTitle = data.lessonTitle || 'Your lesson';
+  const lessonTitle = (data.lessonTitle || 'Your lesson')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
   const reviewerNotes = data.reviewerNotes || '';
 
   // Reviewer notes are rendered verbatim. Escape HTML to prevent injection;
@@ -781,7 +789,11 @@ function generateSubmissionNeedsRevisionEmail(data: any, _email: string): string
 }
 
 function generateSubmissionRejectedEmail(data: any, _email: string): string {
-  const lessonTitle = data.lessonTitle || 'your submission';
+  const lessonTitle = (data.lessonTitle || 'your submission')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
   const contactEmail = data.contactEmail || 'admin@esynyc.org';
 
   return `
