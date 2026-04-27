@@ -8,7 +8,6 @@ import { logger } from '@/utils/logger';
 import { sanitizeContent } from '@/utils/sanitize';
 import { FEATURES } from '@/utils/featureFlags';
 import type { ReviewMetadata } from '@/types';
-import type { Json, Database } from '@/types/database.types';
 import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
@@ -25,16 +24,10 @@ import {
   type IntDuplicateMatchType,
 } from '@/components/Internal';
 
-type LessonInsert = Database['public']['Tables']['lessons']['Insert'];
-type LessonUpdate = Database['public']['Tables']['lessons']['Update'];
-
-/**
- * The DB CHECK constraint on lesson_submissions.status only allows
- * 'submitted' | 'in_review' | 'needs_revision' | 'approved' — see
- * `utils/submissionStatus.ts`. This slice deliberately drops the Reject
- * decision because the legacy 'reject' path silently failed at the status
- * update step.
- */
+// As of Phase 4 (complete-review edge function + complete_review_atomic
+// RPC), the DB-side CHECK on lesson_submissions.status accepts 'rejected'
+// too. The UI here still only renders three decisions — Phase 8a will add
+// the reject radio. The four-decision union is reserved for that flip.
 type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
 
 interface SimilarityWithLesson {
@@ -48,24 +41,6 @@ interface SimilarityWithLesson {
     grade_levels: string[] | null;
     thematic_categories: string[] | null;
   };
-}
-
-interface LessonMetadataJson {
-  activityType?: string | string[];
-  thematicCategories?: string[];
-  seasonTiming?: string[];
-  coreCompetencies?: string[];
-  culturalHeritage?: string[];
-  locationRequirements?: string[];
-  lessonFormat?: string[];
-  academicIntegration?: string[];
-  socialEmotionalLearning?: string[];
-  cookingMethods?: string[];
-  mainIngredients?: string[];
-  gardenSkills?: string[];
-  cookingSkills?: string[];
-  observancesHolidays?: string[];
-  culturalResponsivenessFeatures?: string[];
 }
 
 interface SubmissionDetail {
@@ -147,6 +122,7 @@ export function ReviewDetail() {
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [legacyDecisionWarning, setLegacyDecisionWarning] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
 
@@ -384,201 +360,45 @@ export function ReviewDetail() {
       return;
     }
     setValidationErrors([]);
+    setSaveError(null);
     setSaving(true);
 
     try {
-      const currentUser = (await supabase.auth.getUser()).data.user;
-      if (!currentUser) throw new Error('Not authenticated');
-
-      const { error: reviewError } = await supabase
-        .from('submission_reviews')
-        .insert({
-          submission_id: submission.id,
-          reviewer_id: currentUser.id,
+      // Phase 4: the entire save flow goes through the complete-review edge
+      // function, which auths the JWT, ensures the submission embedding is
+      // fresh enough for the decision, and calls complete_review_atomic.
+      // The RPC wraps submission_reviews + lesson_submissions + lessons +
+      // lesson_versions writes in one transaction, closing the orphan-
+      // creation pathway that the Tier-1 work is recovering from.
+      const { data, error: invokeError } = await supabase.functions.invoke('complete-review', {
+        body: {
+          submissionId: submission.id,
           decision,
+          metadata,
           notes,
-          tagged_metadata: metadata as Json,
-        })
-        .select()
-        .single();
-      if (reviewError) throw reviewError;
+          selectedLessonId: decision === 'approve_update' ? selectedDuplicate : null,
+        },
+      });
 
-      const newStatus: SubmissionStatus =
-        decision === 'approve_new' || decision === 'approve_update' ? 'approved' : 'needs_revision';
-
-      const { error: updateError } = await supabase
-        .from('lesson_submissions')
-        .update({
-          status: newStatus,
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: currentUser.id,
-        })
-        .eq('id', submission.id);
-      if (updateError) throw updateError;
-
-      if (decision === 'approve_new') {
-        const lessonData = parsedContent;
-        const baseTitle = submission.extracted_title || lessonData.title;
-
-        const newLesson: LessonInsert = {
-          lesson_id: `lesson_${crypto.randomUUID()}`,
-          title: baseTitle || 'Untitled Lesson',
-          summary: lessonData.summary || '',
-          file_link: submission.google_doc_url,
-          grade_levels: metadata.gradeLevels || [],
-          activity_type: metadata.activityType ? [metadata.activityType] : [],
-          thematic_categories: metadata.themes || [],
-          season_timing: metadata.season || [],
-          core_competencies: metadata.coreCompetencies || [],
-          cultural_heritage: metadata.culturalHeritage || [],
-          location_requirements: metadata.location ? [metadata.location] : [],
-          lesson_format: metadata.lessonFormat || null,
-          academic_integration: metadata.academicIntegration || [],
-          social_emotional_learning: metadata.socialEmotionalLearning || [],
-          cooking_methods: metadata.cookingMethods || [],
-          main_ingredients: metadata.mainIngredients || [],
-          garden_skills: metadata.gardenSkills || [],
-          cooking_skills: metadata.cookingSkills || [],
-          observances_holidays: metadata.observancesHolidays || [],
-          cultural_responsiveness_features: metadata.culturalResponsivenessFeatures || [],
-          metadata: {
-            thematicCategories: metadata.themes || [],
-            seasonTiming: metadata.season || [],
-            coreCompetencies: metadata.coreCompetencies || [],
-            culturalHeritage: metadata.culturalHeritage || [],
-            locationRequirements: metadata.location ? [metadata.location] : [],
-            lessonFormat: metadata.lessonFormat ? [metadata.lessonFormat] : [],
-            academicIntegration: metadata.academicIntegration || [],
-            socialEmotionalLearning: metadata.socialEmotionalLearning || [],
-            cookingMethods: metadata.cookingMethods || [],
-            mainIngredients: metadata.mainIngredients || [],
-            gardenSkills: metadata.gardenSkills || [],
-            cookingSkills: metadata.cookingSkills || [],
-            observancesHolidays: metadata.observancesHolidays || [],
-            culturalResponsivenessFeatures: metadata.culturalResponsivenessFeatures || [],
-          },
-          content_text: submission.extracted_content,
-          content_hash: submission.content_hash,
-          original_submission_id: submission.id,
-          processing_notes: metadata.processingNotes || '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        if (submission.content_embedding && typeof submission.content_embedding === 'string') {
-          try {
-            const parsed = JSON.parse(submission.content_embedding);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              newLesson.content_embedding = submission.content_embedding;
-            }
-          } catch (error) {
-            logger.warn('Failed to validate embedding for submission:', submission.id, error);
-          }
-        }
-
-        const { error: lessonError } = await supabase.from('lessons').insert(newLesson);
-        if (lessonError) throw lessonError;
-      } else if (decision === 'approve_update' && selectedDuplicate) {
-        const { data: existingLesson, error: fetchError } = await supabase
-          .from('lessons_with_metadata')
-          .select('*')
-          .eq('lesson_id', selectedDuplicate)
-          .single();
-        if (fetchError) throw fetchError;
-
-        const { error: archiveError } = await supabase.from('lesson_versions').insert({
-          lesson_id: selectedDuplicate,
-          version_number: existingLesson.version_number || 1,
-          title: existingLesson.title || '',
-          summary: existingLesson.summary || '',
-          file_link: existingLesson.file_link || '',
-          grade_levels: existingLesson.grade_levels || [],
-          metadata: existingLesson.metadata,
-          content_text: existingLesson.content_text,
-          archived_from_submission_id: submission.id,
-          archived_by: currentUser.id,
-          archive_reason: 'Content update from new submission',
-        });
-        if (archiveError) throw archiveError;
-
-        const lessonData = parsedContent;
-        const metadataObj = existingLesson.metadata as LessonMetadataJson | null;
-        const existingActivityType =
-          metadataObj && typeof metadataObj === 'object' && !Array.isArray(metadataObj)
-            ? metadataObj.activityType
-            : undefined;
-
-        const updateData: LessonUpdate = {
-          title: lessonData.title || existingLesson.title || undefined,
-          summary: lessonData.summary || existingLesson.summary || undefined,
-          file_link: submission.google_doc_url,
-          grade_levels: metadata.gradeLevels || existingLesson.grade_levels || [],
-          activity_type: metadata.activityType
-            ? [metadata.activityType]
-            : Array.isArray(existingActivityType)
-              ? existingActivityType
-              : existingActivityType
-                ? [existingActivityType]
-                : [],
-          thematic_categories: metadata.themes || existingLesson.thematic_categories || [],
-          season_timing: metadata.season || existingLesson.season_timing || [],
-          core_competencies: metadata.coreCompetencies || existingLesson.core_competencies || [],
-          cultural_heritage: metadata.culturalHeritage || existingLesson.cultural_heritage || [],
-          location_requirements:
-            (metadata.location ? [metadata.location] : null) ||
-            existingLesson.location_requirements ||
-            [],
-          lesson_format: metadata.lessonFormat || existingLesson.lesson_format || null,
-          academic_integration:
-            metadata.academicIntegration || existingLesson.academic_integration || [],
-          social_emotional_learning:
-            metadata.socialEmotionalLearning || existingLesson.social_emotional_learning || [],
-          cooking_methods: metadata.cookingMethods || existingLesson.cooking_methods || [],
-          main_ingredients: metadata.mainIngredients || existingLesson.main_ingredients || [],
-          garden_skills: metadata.gardenSkills || existingLesson.garden_skills || [],
-          cooking_skills: metadata.cookingSkills || existingLesson.cooking_skills || [],
-          observances_holidays:
-            metadata.observancesHolidays || existingLesson.observances_holidays || [],
-          cultural_responsiveness_features:
-            metadata.culturalResponsivenessFeatures ||
-            existingLesson.cultural_responsiveness_features ||
-            [],
-        };
-
-        const { error: updateLessonError } = await supabase
-          .from('lessons')
-          .update({
-            ...updateData,
-            metadata: {
-              thematicCategories: metadata.themes || [],
-              seasonTiming: metadata.season || [],
-              coreCompetencies: metadata.coreCompetencies || [],
-              culturalHeritage: metadata.culturalHeritage || [],
-              locationRequirements: metadata.location ? [metadata.location] : [],
-              lessonFormat: metadata.lessonFormat ? [metadata.lessonFormat] : [],
-              academicIntegration: metadata.academicIntegration || [],
-              socialEmotionalLearning: metadata.socialEmotionalLearning || [],
-              cookingMethods: metadata.cookingMethods || [],
-              mainIngredients: metadata.mainIngredients || [],
-              gardenSkills: metadata.gardenSkills || [],
-              cookingSkills: metadata.cookingSkills || [],
-              observancesHolidays: metadata.observancesHolidays || [],
-              culturalResponsivenessFeatures: metadata.culturalResponsivenessFeatures || [],
-            },
-            content_text: submission.extracted_content,
-            content_hash: submission.content_hash,
-            version_number: (existingLesson.version_number || 1) + 1,
-            has_versions: true,
-            processing_notes: metadata.processingNotes || '',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('lesson_id', selectedDuplicate);
-        if (updateLessonError) throw updateLessonError;
+      if (invokeError) throw invokeError;
+      if (data && typeof data === 'object' && 'error' in data && data.error) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'complete-review failed');
       }
 
       navigate('/review');
     } catch (error) {
-      logger.error('Error saving review:', parseDbError(error));
+      const parsed = parseDbError(error);
+      logger.error('Error saving review:', parsed);
+      // Atomicity is the whole point of Phase 4 — when the RPC rolls back,
+      // the reviewer must SEE that nothing happened. The pre-existing
+      // silent-catch left them clicking again with no feedback.
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : typeof parsed === 'string'
+            ? parsed
+            : 'Save failed. Please try again or check the console for details.';
+      setSaveError(message);
     } finally {
       setSaving(false);
     }
@@ -1139,6 +959,12 @@ export function ReviewDetail() {
                 placeholder="Optional. Will be emailed to the teacher along with the decision."
               />
             </div>
+
+            {saveError && (
+              <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
+                Save failed — nothing was written. {saveError}
+              </div>
+            )}
 
             <IntDecisionBar
               eyebrow="Metadata"
