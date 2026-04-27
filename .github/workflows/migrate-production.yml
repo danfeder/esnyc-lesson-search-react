@@ -167,6 +167,10 @@ jobs:
       - name: Show pending migrations (dry-run)
         id: dry-run
         run: |
+          # pipefail: a failing `supabase db push --dry-run` must NOT be
+          # masked by `tee` returning 0 — otherwise the workflow paints
+          # itself green while the underlying command failed.
+          set -o pipefail
           mkdir -p /tmp/migration-report
           echo "## 🔍 Pending Migrations for PRODUCTION" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -298,6 +302,12 @@ jobs:
 
       - name: Apply migrations to PRODUCTION
         run: |
+          # pipefail: a failing `supabase db push` must NOT be masked by
+          # `tee` returning 0. Without this, an auth/connection failure
+          # paints the workflow green while no migration actually applied
+          # (incident on 2026-04-27 — orphan-recovery migration was
+          # silently skipped on first attempt).
+          set -o pipefail
           echo "## ✅ Applying Migrations to PRODUCTION" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
@@ -308,6 +318,10 @@ jobs:
 
       - name: Verify migration success
         run: |
+          # pipefail: same reasoning as the Apply step. A failing
+          # `supabase migration list` is diagnostic-worthy; don't let
+          # tee swallow its exit code.
+          set -o pipefail
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📋 Current Migration Status" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
