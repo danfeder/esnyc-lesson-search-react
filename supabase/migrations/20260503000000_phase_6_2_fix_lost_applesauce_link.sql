@@ -13,17 +13,13 @@
 --     - `1hwLrvv9...` (canonical, lesson_id == doc_id, predates the
 --       submission system, original_submission_id NULL).
 --     - `lesson_79f89def...` (synthetic, created by an older import
---       path; original_submission_id = `68ce56c5...`, content_hash
---       `ce5c371320...`, content_len 6796).
+--       path; original_submission_id = `68ce56c5...`).
 --
 --   2025-08-19: teacher submits Applesauce → published to the synthetic
---     row `lesson_79f89def...` (matched the doc to the synth row's path).
+--     row `lesson_79f89def...`.
 --   2025-09-09: same/another teacher submits Applesauce again →
 --     approved as `approve_new` but never published; entered the orphan
---     set as `ea271d13-78db-437c-aa9f-594ce567f90c`. The dedup pipeline
---     correctly flagged the cosine 0.9999 match against the synth row
---     (recorded in `submission_similarities`) but the reviewer approved
---     as new anyway.
+--     set as `ea271d13-78db-437c-aa9f-594ce567f90c`.
 --   2026-04-27: Phase 6.2 (PR #466) treated `ea271d13` as a B-UPDATE to
 --     the canonical `1hwLrvv9...` row (§4A archive + §4B UPDATE), then
 --     §4D deleted the synthetic duplicate `lesson_79f89def...`. The
@@ -31,95 +27,76 @@
 --     across 9 tables (all zero) but did NOT check the synth row's own
 --     `lessons.original_submission_id` (which was `68ce56c5...`). Result:
 --     `68ce56c5` lost its publication-history FK link. The post-Phase-6.2
---     PROD verification probe found `true_unrecovered_orphans = 1` —
---     `68ce56c5`, the lone unaccounted approved submission.
+--     PROD verification probe found `true_unrecovered_orphans = 1`.
 --
--- Why a sibling archive row instead of restoring the synthetic row:
---   - The synthetic row was a true duplicate of the canonical (same doc,
---     near-identical content). Restoring it would reverse Phase 6.2's
---     dup-cleanup intent. The library should have ONE Applesauce row
---     for this doc, not two.
---   - The submission record itself (`lesson_submissions.id =
---     68ce56c5...`) still exists with full content, hash, embedding,
---     and tagged_metadata — no teacher work is lost.
---   - The right framing: BOTH `68ce56c5` and `ea271d13` are effectively
---     B-update submissions to the canonical `1hwLrvv9...` row (re-uploads
---     of the same Google Doc 3 weeks apart). Phase 6.2 §4 captured
---     `ea271d13` correctly; this fix captures `68ce56c5` symmetrically.
---   - Both submissions saw the SAME pre-merge state of the canonical
---     row (the OLD short content, content_hash `07c415ad...`, 2556
---     chars), because nothing else updated the canonical row between
---     2025-08-19 and 2026-04-27. So this fix legitimately mirrors
---     `ea271d13`'s archive row — same pre-state, different
---     `archived_from_submission_id`.
+-- Why submission_reviews.canonical_lesson_id (this migration):
+--   The first draft of this fix-up tried to mirror Phase 6.2's §4A
+--   archive pattern by inserting a sibling `lesson_versions` row for
+--   `68ce56c5` with the same content snapshot. That approach hit a
+--   `UNIQUE (lesson_id, version_number)` constraint violation on
+--   `lesson_versions_lesson_id_version_number_key` — both archive rows
+--   would have shared `(lesson_id='1hwLrvv9...', version_number=1)`,
+--   which the table design forbids. The constraint enforces "one
+--   archive per lesson_id per version_number," correctly assuming each
+--   archive corresponds to a specific version transition. Two
+--   submissions consolidating into a single transition doesn't fit.
+--   (Bot review on PR #467 caught this pre-merge.)
+--
+--   `submission_reviews.canonical_lesson_id` (text, no FK constraint)
+--   is purpose-built for this: it's the field that tracks "which
+--   library lesson is this submission's canonical published target."
+--   Currently NULL for all 113 historical reviews; setting it for
+--   `68ce56c5` documents the consolidation without inventing a new
+--   tracking pattern. The content snapshot is already preserved in
+--   `lesson_versions` via the `ea271d13` archive row; we don't need
+--   to duplicate it.
 --
 -- Effect after apply:
---   - `lesson_versions` gains one new row: `lesson_id =
---     1hwLrvv9...`, `archived_from_submission_id = 68ce56c5...`,
---     `archive_reason = 'historical_b_update_recovery_2026_04'`,
---     content_text + metadata + title + summary + grade_levels +
---     file_link copied from the existing `ea271d13` archive row
---     (i.e., the BEFORE state of `1hwLrvv9...` immediately prior
---     to Phase 6.2 §4B).
---   - `true_unrecovered_orphans` count goes 1 → 0.
---   - 113/113 approved submissions now have either a lesson row
---     (via `original_submission_id`) OR a recovery archive row
---     (via `archived_from_submission_id`). The orphan-recovery
---     sub-initiative is fully closed.
+--   - `submission_reviews` row for submission `68ce56c5` gets
+--     `canonical_lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8'`.
+--   - The submission is now traceable to its published canonical row
+--     via `submission_reviews.canonical_lesson_id`.
+--   - For the orphan-recovery completeness probe to return 0
+--     unaccounted submissions, the probe must also check the
+--     canonical_lesson_id path (in addition to the existing
+--     `lessons.original_submission_id` and
+--     `lesson_versions.archived_from_submission_id` paths).
+--   - The synthetic row stays deleted (it was a true duplicate;
+--     restoring it would reverse Phase 6.2's dup cleanup).
+--   - The submission record itself (`lesson_submissions.id =
+--     68ce56c5...`) is unchanged; full content, embedding, and
+--     `tagged_metadata` were never affected by Phase 6.2.
 --
--- Source-row handling:
---   The migration COPIES from the existing `ea271d13` archive row
---   rather than re-deriving the BEFORE state from scratch — that
---   row IS the canonical record of the BEFORE state and is the
---   single source of truth. If the `ea271d13` archive row is
---   somehow missing (impossible per Phase 6.2's idempotency
---   guarantees + PROD verification, but defensible to guard for),
---   this migration is a 0-row no-op rather than failing or
---   inserting partial data.
---
--- Idempotency: per-row `NOT EXISTS` guard on the new
--- `archived_from_submission_id`. Re-application is a 0-row no-op.
+-- Idempotency: WHERE clause guards on `canonical_lesson_id IS NULL`,
+-- so re-application is a 0-row no-op once the field is set. Defensive
+-- non-null AND check against the target lesson_id catches the case
+-- where someone manually set it to a different value (we wouldn't
+-- overwrite their decision).
 --
 -- Rollback (single statement):
---   DELETE FROM lesson_versions
---   WHERE lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8'
---     AND archived_from_submission_id = '68ce56c5-e3f0-40be-be07-35e9f3be84eb'::uuid
---     AND archive_reason = 'historical_b_update_recovery_2026_04';
+--   UPDATE submission_reviews
+--   SET canonical_lesson_id = NULL
+--   WHERE submission_id = '68ce56c5-e3f0-40be-be07-35e9f3be84eb'::uuid
+--     AND canonical_lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8';
 --
 -- Process learning (added to MEMORY.md "Open hygiene follow-ups"):
 --   When deleting a lesson row, also check
 --   `lessons.original_submission_id` ON the row being deleted, not
---   just FK refs INTO it. Phase 6.2 §4D's pre-delete clearance
---   missed this direction.
+--   just FK refs INTO it.
 
 -- =====================================================
 -- CHANGES
 -- =====================================================
 
-INSERT INTO lesson_versions (
-  lesson_id, title, summary, file_link, grade_levels, metadata, content_text,
-  version_number, archived_from_submission_id, archive_reason
-)
-SELECT
-  lv.lesson_id, lv.title, lv.summary, lv.file_link, lv.grade_levels, lv.metadata, lv.content_text,
-  lv.version_number,
-  '68ce56c5-e3f0-40be-be07-35e9f3be84eb'::uuid,
-  'historical_b_update_recovery_2026_04'
-FROM lesson_versions lv
-WHERE lv.lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8'
-  AND lv.archived_from_submission_id = 'ea271d13-78db-437c-aa9f-594ce567f90c'::uuid
-  AND lv.archive_reason = 'historical_b_update_recovery_2026_04'
-  AND NOT EXISTS (
-    SELECT 1 FROM lesson_versions
-    WHERE lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8'
-      AND archived_from_submission_id = '68ce56c5-e3f0-40be-be07-35e9f3be84eb'::uuid
-      AND archive_reason = 'historical_b_update_recovery_2026_04'
-  );
+UPDATE submission_reviews
+SET canonical_lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8'
+WHERE submission_id = '68ce56c5-e3f0-40be-be07-35e9f3be84eb'::uuid
+  AND canonical_lesson_id IS NULL;
 
 -- =====================================================
 -- ROLLBACK (keep as comments)
 -- =====================================================
--- DELETE FROM lesson_versions
--- WHERE lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8'
---   AND archived_from_submission_id = '68ce56c5-e3f0-40be-be07-35e9f3be84eb'::uuid
---   AND archive_reason = 'historical_b_update_recovery_2026_04';
+-- UPDATE submission_reviews
+-- SET canonical_lesson_id = NULL
+-- WHERE submission_id = '68ce56c5-e3f0-40be-be07-35e9f3be84eb'::uuid
+--   AND canonical_lesson_id = '1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8';
