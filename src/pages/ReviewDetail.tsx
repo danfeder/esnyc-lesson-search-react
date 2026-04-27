@@ -287,7 +287,9 @@ export function ReviewDetail() {
       const { data: reviews } = await supabase
         .from('submission_reviews')
         .select('*')
-        .eq('submission_id', id!);
+        .eq('submission_id', id!)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       const { data: profile } = await supabase
         .from('user_profiles')
