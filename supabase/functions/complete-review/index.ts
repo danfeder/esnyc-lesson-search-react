@@ -64,10 +64,11 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    const token = authHeader.replace('Bearer ', '');
     const {
       data: { user },
       error: userErr,
-    } = await userClient.auth.getUser();
+    } = await userClient.auth.getUser(token);
     if (userErr || !user) {
       return jsonResponse({ error: 'Invalid or expired token' }, 401, corsHeaders);
     }
@@ -226,9 +227,92 @@ serve(async (req) => {
       );
     }
 
-    // Phase 7c hook: send-email trigger lands here. Today no-op so reject /
-    // needs_revision / approve_* don't accidentally email teachers about
-    // 2025 submissions during recovery.
+    // Phase 7c: post-RPC email notification. Fail-open — errors are logged
+    // but do not roll back the approval. The RPC has already committed.
+    try {
+      const { data: subRow, error: subErr } = await serviceClient
+        .from('lesson_submissions')
+        .select('extracted_title, teacher_id, user_profiles!inner(email)')
+        .eq('id', submissionId)
+        .single<{
+          extracted_title: string | null;
+          teacher_id: string;
+          user_profiles: { email: string };
+        }>();
+
+      if (subErr) {
+        // DB error fetching teacher email — log and skip the send. Don't
+        // also fall through to the missing-email warning below; the two
+        // logs would be misleading (DB error vs deleted teacher).
+        console.error(
+          `Phase 7c: failed to fetch teacher email for submission ${submissionId}:`,
+          subErr
+        );
+      } else if (!subRow?.user_profiles?.email) {
+        console.warn(
+          `Phase 7c: no teacher email found for submission ${submissionId}; skipping notification`
+        );
+      } else {
+        const teacherEmail = subRow.user_profiles.email;
+        // Map RPC decision to email type. RPC returns the new status, but
+        // here we map directly from the reviewer's decision since
+        // approve_new and approve_update both result in 'approved'.
+        let emailType:
+          | 'submission-approved'
+          | 'submission-needs-revision'
+          | 'submission-rejected'
+          | null = null;
+
+        if (decision === 'approve_new' || decision === 'approve_update') {
+          emailType = 'submission-approved';
+        } else if (decision === 'needs_revision') {
+          emailType = 'submission-needs-revision';
+        } else if (decision === 'reject') {
+          emailType = 'submission-rejected';
+        }
+
+        if (emailType) {
+          const emailData: Record<string, unknown> = {
+            lessonTitle: subRow.extracted_title ?? 'your submission',
+          };
+          if (emailType === 'submission-needs-revision' && notes) {
+            emailData.reviewerNotes = notes;
+          }
+
+          // Direct fetch instead of supabase.functions.invoke. The SDK's
+          // invoke from inside a deployed edge function with a service-role
+          // client silently fails (auth-header propagation quirk verified
+          // empirically: SDK invoke fired but Resend never received the
+          // request; raw fetch works). Same pattern used for the OpenAI
+          // embedding call earlier in this file.
+          const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              apikey: supabaseServiceKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: emailType,
+              to: teacherEmail,
+              data: emailData,
+            }),
+          });
+          if (!emailRes.ok) {
+            const errText = await emailRes.text().catch(() => '<unreadable>');
+            console.error(
+              `Phase 7c: send-email failed (${emailRes.status}) for submission ${submissionId}:`,
+              errText.substring(0, 500)
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error(
+        `Phase 7c: email notification failed for submission ${submissionId}:`,
+        err
+      );
+    }
 
     return jsonResponse(
       {

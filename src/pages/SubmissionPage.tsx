@@ -393,7 +393,7 @@ export function SubmissionPage() {
             <li>· Include grade levels, objectives, and materials needed.</li>
             <li>· Add step-by-step instructions for activities.</li>
             <li>· Submissions are reviewed within 2–3 business days.</li>
-            <li>· Track your submission's status from your profile.</li>
+            <li>· You'll receive an email when your submission is reviewed.</li>
           </ul>
         </div>
       </div>
