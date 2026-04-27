@@ -241,15 +241,19 @@ serve(async (req) => {
         }>();
 
       if (subErr) {
+        // DB error fetching teacher email — log and skip the send. Don't
+        // also fall through to the missing-email warning below; the two
+        // logs would be misleading (DB error vs deleted teacher).
         console.error(
           `Phase 7c: failed to fetch teacher email for submission ${submissionId}:`,
           subErr
         );
-      }
-
-      const teacherEmail = subRow?.user_profiles?.email;
-
-      if (teacherEmail) {
+      } else if (!subRow?.user_profiles?.email) {
+        console.warn(
+          `Phase 7c: no teacher email found for submission ${submissionId}; skipping notification`
+        );
+      } else {
+        const teacherEmail = subRow.user_profiles.email;
         // Map RPC decision to email type. RPC returns the new status, but
         // here we map directly from the reviewer's decision since
         // approve_new and approve_update both result in 'approved'.
@@ -292,10 +296,6 @@ serve(async (req) => {
             );
           }
         }
-      } else {
-        console.warn(
-          `Phase 7c: no teacher email found for submission ${submissionId}; skipping notification`
-        );
       }
     } catch (err) {
       console.error(
