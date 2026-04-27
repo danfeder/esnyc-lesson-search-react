@@ -64,10 +64,11 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    const token = authHeader.replace('Bearer ', '');
     const {
       data: { user },
       error: userErr,
-    } = await userClient.auth.getUser();
+    } = await userClient.auth.getUser(token);
     if (userErr || !user) {
       return jsonResponse({ error: 'Invalid or expired token' }, 401, corsHeaders);
     }
