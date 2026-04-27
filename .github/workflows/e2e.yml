@@ -46,6 +46,10 @@ jobs:
       - name: Show pending migrations (dry-run)
         if: steps.migration-check.outputs.migrations == 'true'
         run: |
+          # pipefail: a failing `supabase db push --dry-run` must NOT be
+          # masked by `tee` returning 0 (see migrate-production.yml for
+          # the incident this prevents).
+          set -o pipefail
           mkdir -p /tmp/migration-report
           echo "## 🔍 Pending Migrations for TEST Database" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
