@@ -34,11 +34,14 @@ export function LessonSearchPicker({
   const [isLoading, setIsLoading] = useState(false);
   const [hasQueried, setHasQueried] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
   const runSearch = useCallback(async (q: string) => {
+    const myRequestId = ++requestIdRef.current;
     if (!q.trim()) {
       setResults([]);
       setHasQueried(false);
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
@@ -49,15 +52,19 @@ export function LessonSearchPicker({
         .ilike('title', `%${q}%`)
         .order('title', { ascending: true })
         .limit(MAX_RESULTS);
+      if (myRequestId !== requestIdRef.current) return;
       if (error) throw error;
       setResults((data ?? []) as LessonSearchResult[]);
       setHasQueried(true);
     } catch (err) {
+      if (myRequestId !== requestIdRef.current) return;
       logger.debug('LessonSearchPicker query failed:', err);
       setResults([]);
       setHasQueried(true);
     } finally {
-      setIsLoading(false);
+      if (myRequestId === requestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

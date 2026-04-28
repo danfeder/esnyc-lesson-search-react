@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LessonSearchPicker } from '@/components/LessonSearchPicker';
 
@@ -164,6 +164,64 @@ describe('LessonSearchPicker', () => {
       />
     );
     expect(screen.queryByText(/can't find it/i)).not.toBeInTheDocument();
+  });
+
+  it('discards stale response when input is cleared mid-flight', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    let resolveSearch!: (value: {
+      data: Array<{
+        lesson_id: string;
+        title: string;
+        grade_levels: string[];
+        season_timing: string[];
+      }>;
+      error: null;
+    }) => void;
+    const searchPromise = new Promise<{
+      data: Array<{
+        lesson_id: string;
+        title: string;
+        grade_levels: string[];
+        season_timing: string[];
+      }>;
+      error: null;
+    }>((resolve) => {
+      resolveSearch = resolve;
+    });
+
+    (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnValue(searchPromise),
+    }));
+
+    const user = userEvent.setup();
+    render(<LessonSearchPicker selected={null} onSelect={vi.fn()} onClear={vi.fn()} />);
+
+    const input = screen.getByPlaceholderText(/search by lesson title/i);
+    await user.type(input, 'apple');
+    await waitFor(() => expect(supabase.from).toHaveBeenCalled(), { timeout: 1000 });
+
+    await user.clear(input);
+
+    await act(async () => {
+      resolveSearch({
+        data: [
+          {
+            lesson_id: 'lesson_1',
+            title: 'Apple Crisp Lesson',
+            grade_levels: ['3'],
+            season_timing: ['Fall'],
+          },
+        ],
+        error: null,
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Apple Crisp Lesson')).not.toBeInTheDocument();
+    });
   });
 
   it("does not render can't-find option when cantFindOption=false", async () => {
