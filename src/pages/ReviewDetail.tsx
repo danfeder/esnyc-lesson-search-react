@@ -487,6 +487,63 @@ export function ReviewDetail() {
     [submission?.similarities]
   );
 
+  // Phase 8b: unified card list for the decision panel. Each entry is
+  // already in IntDuplicateCard `dup` prop shape (id, title, meta,
+  // similarity, matchType, optional matchLabel for "Submitter's choice"
+  // badge). NOT raw SimilarityWithLesson — that mapping happens here.
+  // Three cases: submitter target IS in dup list → hoist + label;
+  // submitter target is OFF-list → prepend synthetic card from Task 3.1's
+  // off-list lookup; no submitter target → return dup list as-is.
+  const candidateCards = useMemo(() => {
+    if (!submission) return [];
+
+    const fromDups = topDuplicates.map((d) => {
+      const grades = d.lesson.grade_levels?.length
+        ? `Grades ${d.lesson.grade_levels.join(', ')}`
+        : 'Grades —';
+      return {
+        id: d.lesson_id,
+        title: d.lesson.title || 'Untitled',
+        meta: `${grades} · ${d.lesson_id}`,
+        similarity: d.combined_score ?? 0,
+        matchType: normalizeMatchType(d.match_type),
+        matchLabel: undefined as string | undefined,
+      };
+    });
+
+    const submitterTargetId = submission.original_lesson_id ?? null;
+    if (!submitterTargetId) return fromDups;
+
+    // Case 1: target IS in the dup list — hoist + label.
+    const inListIdx = fromDups.findIndex((c) => c.id === submitterTargetId);
+    if (inListIdx >= 0) {
+      const hoisted = { ...fromDups[inListIdx], matchLabel: "Submitter's choice" };
+      return [hoisted, ...fromDups.filter((_, i) => i !== inListIdx)];
+    }
+
+    // Case 2: target is OFF-list — prepend synthetic card from the off-list
+    // lookup (loaded by Task 3.1 into submission.submitterTargetLesson).
+    const off = submission.submitterTargetLesson;
+    if (off) {
+      const grades = off.grade_levels?.length
+        ? `Grades ${off.grade_levels.join(', ')}`
+        : 'Grades —';
+      return [
+        {
+          id: off.lesson_id,
+          title: off.title || 'Untitled',
+          meta: `${grades} · ${off.lesson_id}`,
+          similarity: 0,
+          matchType: null as IntDuplicateMatchType | null,
+          matchLabel: "Submitter's choice" as string | undefined,
+        },
+        ...fromDups,
+      ];
+    }
+
+    return fromDups;
+  }, [submission, topDuplicates]);
+
   // parseExtractedContent is pure but a few hundred lines of regex; memoize once.
   const parsedContent = useMemo(
     () =>
@@ -948,37 +1005,35 @@ export function ReviewDetail() {
 
           {/* RIGHT — duplicates + decision */}
           <div>
-            {topDuplicates.length > 0 && (
+            {candidateCards.length > 0 && (
               <div className="adm-card">
-                <div className="adm-section-eyebrow">Possible duplicates</div>
+                <div className="adm-section-eyebrow">
+                  {candidateCards[0]?.matchLabel === "Submitter's choice"
+                    ? 'Candidate matches'
+                    : 'Possible duplicates'}
+                </div>
                 <p className="adm-section-desc">
                   Select one to merge into instead of publishing new.
                 </p>
                 <div className="adm-dup-list">
-                  {topDuplicates.map((d) => {
-                    const grades = d.lesson.grade_levels?.length
-                      ? `Grades ${d.lesson.grade_levels.join(', ')}`
-                      : 'Grades —';
-                    return (
-                      <IntDuplicateCard
-                        key={d.lesson_id}
-                        dup={{
-                          id: d.lesson_id,
-                          title: d.lesson.title || 'Untitled',
-                          meta: `${grades} · ${d.lesson_id}`,
-                          similarity: d.combined_score ?? 0,
-                          matchType: normalizeMatchType(d.match_type),
-                        }}
-                        selected={selectedDuplicate === d.lesson_id}
-                        onSelect={() => {
-                          setSelectedDuplicate(
-                            selectedDuplicate === d.lesson_id ? null : d.lesson_id
-                          );
-                          setSaveError(null);
-                        }}
-                      />
-                    );
-                  })}
+                  {candidateCards.map((c) => (
+                    <IntDuplicateCard
+                      key={c.id}
+                      dup={{
+                        id: c.id,
+                        title: c.title,
+                        meta: c.meta,
+                        similarity: c.similarity,
+                        matchType: c.matchType,
+                        matchLabel: c.matchLabel,
+                      }}
+                      selected={selectedDuplicate === c.id}
+                      onSelect={() => {
+                        setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
+                        setSaveError(null);
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
             )}
