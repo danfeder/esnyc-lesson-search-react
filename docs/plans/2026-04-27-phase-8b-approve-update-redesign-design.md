@@ -256,6 +256,8 @@ Alternatives considered and rejected:
 - *Ship PR 2 and PR 3 in tight sequence with reviewer activity paused*: relies on humans not making the mistake during a rushed window
 - *Feature-flag `/submit/revising` until PR 3 is deployed*: adds env-var ceremony and "we forgot to flip the flag" risk; submitter UI ships partially-functional during the gap
 - *Combine PR 2 and PR 3 into a single mega-PR*: sacrifices per-PR-ritual + rollback granularity for atomicity
+- *Add a confirmation modal in PR 2 that fires when reviewer clicks Approve on `(update, *)` with `decision='approve_new'`*: would actually block the failure (banner is just a sign), but adds ~30 lines of PR 2 state + JSX that PR 3 must keep or refactor. Rejected because the reviewer team is 3 people internal-only and the gap window is hours-to-days, not weeks; banner is judged sufficient signal for that operating context. Reconsider this if the team grows or PRs ship slowly.
+- *Disable the approve_new radio in PR 2 for `(update, *)` rows*: most aggressive variant — reviewer must explicitly re-enable to override. Rejected as paternalistic for an internal tool with a small team that already has the banner.
 
 ### TEST DB rehearsal
 
