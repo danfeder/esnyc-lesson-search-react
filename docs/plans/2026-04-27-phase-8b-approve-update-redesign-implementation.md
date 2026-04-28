@@ -17,11 +17,14 @@
 - `database-migrations` — before touching any file in `supabase/migrations/`
 
 **Per-PR ritual (mandatory, every PR):**
-1. Pre-push self-review: `git diff main...HEAD` and read every change
-2. Push → dispatch your own `feature-dev:code-reviewer` agent BEFORE bot reviews land
-3. Investigate every bot finding (don't auto-accept; per `feedback_bot_review_investigation.md`)
-4. Consolidated fix-up commits (don't amend pushed commits)
-5. **Round-cap after 2 rounds** of bot review — if there's a 3rd round, stop, document open issues, ship anyway
+1. Pre-push review: **dispatch** a `feature-dev:code-reviewer` agent on `git diff main...HEAD` — the agent does the line-by-line read, not you (you cannot impartially review your own work). Investigate findings per `feedback_bot_review_investigation.md`; apply fix-up commits or amend BEFORE push.
+2. `npm run type-check && npm run lint` (mandatory pre-PR per CLAUDE.md), then push and open the PR with `gh pr create`.
+3. **Wait for external bot reviews** (CodeRabbit, Claude Review, etc.) — they ARE the second-pass review. Do NOT dispatch another `feature-dev:code-reviewer` agent here; that's redundant.
+4. **Collect findings from ALL FOUR PR surfaces** (per `feedback_pr_comment_surfaces.md` — querying only one silently misses bot reviews on the others): (a) `gh pr view <PR> --comments` (issue-comments), (b) `gh api .../pulls/<PR>/reviews` (review summaries), (c) `gh api .../pulls/<PR>/comments` (line-attached comments), (d) `gh pr checks <PR>` + `gh run view --log-failed` (CI). "0 findings" is a claim requiring evidence from all four.
+5. **Investigate and triage every finding** (you do this inline; spawn a subagent only if a specific finding needs deeper code verification). Write a rebuttal for EVERY finding including "minor" (per `feedback_bot_review_investigation.md`); default-reject hardening / chrome that fails the "user-visible bug or DB safety" bar (per `feedback_pr_bot_review_workflow.md`). Surface accept/reject recommendations to the user with rationale before fixing.
+6. Apply accepted findings as consolidated fix-up commits (don't amend pushed commits).
+7. **Re-verify TEST DB after each round** (if the round changed DB-applied state). For any PR carrying a migration, after fix-up commits land and CI re-applies the migration, re-run the same `mcp__supabase-test__execute_sql` verification you did at PR open. Per `feedback_per_round_test_db_verification.md`. Skip if the round produced doc/UI/non-schema changes only.
+8. **Round-cap after 2 rounds** of bot review — if there's a 3rd round, stop, document open issues, ship anyway.
 
 **Beads is broken** (per `project_beads_broken.md`): use `TaskCreate`, NOT `bd`. Every PR also runs `npm run type-check && npm run lint` before push (per CLAUDE.md mandatory pre-PR checklist).
 
