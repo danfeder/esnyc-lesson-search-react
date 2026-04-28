@@ -1,10 +1,10 @@
 # Phase 8b Execution Status
 
-**Last updated:** 2026-04-28 03:35 UTC by Session 1
-**Current PR:** PR 1 — Schema (single FK migration) — **MERGED**
-**Current task:** PR 1 step 5 — await user PROD migration approval, then verify on PROD via MCP
-**Branch:** main (synced with origin/main via rebase post-merge)
-**Last commit on branch:** `9a6b09e` — feat(db): Phase 8b — FK on lesson_submissions.original_lesson_id ON DELETE SET NULL (#468)
+**Last updated:** 2026-04-28 03:50 UTC by Session 1
+**Current PR:** PR 1 — Schema (single FK migration) — **SHIPPED (merged + PROD-applied + verified)**
+**Current task:** PR 1 done. Next session starts PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner. First task: 2.1 (TDD `titlesAreSimilar` utility).
+**Branch:** main (synced with origin/main via rebase post-merge; 1 commit ahead locally with session-1 doc updates not yet pushed)
+**Last commit on branch:** `9a6b09e` on origin/main; `2e52507` is the local session-1 doc-update commit
 
 ## Done
 
@@ -18,19 +18,11 @@
 - ✅ **Bot triage on PR #468** — 3 findings from `claude-review`, all 3 rejected with documented rationale (BEGIN/COMMIT wrapper rejected as post-push edit hazard + Supabase auto-wraps; NOT VALID lock pattern rejected as low-traffic non-issue and bot itself flagged non-blocking; docs-drift advice rejected as already covered by ritual)
 - ✅ **TEST DB verification** via `mcp__supabase-test__execute_sql`: `confdeltype = 'n'`, `ON DELETE SET NULL` confirmed on TEST
 - ✅ **PR #468 merged** via rebase as `9a6b09e` (preserves the 9 doc-commit history alongside the migration)
+- ✅ **PROD apply** — first attempt failed with documented SASL Apply-step flake (run `25032406625`); rerun via `gh run rerun --failed` succeeded after second approval. PROD verified via `mcp__supabase-remote__execute_sql`: `confdeltype = 'n'`, def shows `ON DELETE SET NULL`.
 
 ## In flight
 
-- **Awaiting user PROD migration approval** in `migrate-production.yml` GitHub Actions. After user approves and PROD apply runs:
-  - Verify FK on PROD via `mcp__supabase-remote__execute_sql`:
-    ```sql
-    SELECT conname, confdeltype, pg_get_constraintdef(oid) AS def
-    FROM pg_constraint
-    WHERE conname = 'lesson_submissions_original_lesson_id_fkey';
-    ```
-    Expected: `confdeltype = 'n'`, def contains `ON DELETE SET NULL`.
-  - **MANDATORY** per `feedback_data_safety_top_priority.md` — MCP verification is the source of truth (the migrate-production.yml Verify step has known SASL flakes).
-- **Post-PROD verification**: PR 1 closes; move to PR 2 (Submitter flow + LessonSearchPicker + reviewer-side safety banner). First task: 2.1 (TDD `titlesAreSimilar` utility).
+- (none — PR 1 fully shipped end-to-end)
 
 ## Blocked
 
@@ -44,6 +36,7 @@
 - **Pre-push agent finding rejected** (rollback-block sub-comment) — chrome below the user-visible-bug-or-DB-safety bar.
 - **Wasted second-agent dispatch on PR #468** before bots: cost ~90s. Wrong finding (date-prefix "further than necessary") rejected. No code changes from it. Future PRs follow corrected ritual.
 - **PR #468 merge strategy = rebase, not squash.** Repo convention is squash-merge, but PR carried 9 valuable doc commits from prior sessions plus the migration; rebase preserved each commit's individual message rather than collapsing the doc-iteration history into a single squash.
+- **PROD apply hit the SASL Apply-step flake on first attempt.** Run `25032406625` failed with `failed SASL auth (invalid SCRAM server-final-message)` at the "Connecting to remote database..." step (the Apply step's second pooler handshake within ~2s of "Initialising login role..."). Verified PROD was unchanged via MCP (`confdeltype = 'a'` pre-rerun); confirmed clean failure with no partial state. `gh run rerun --failed` succeeded on second approval. Memory entry updated to capture the Apply-step variant of the flake (was previously documented only for Verify-step) and the rerun mitigation pattern.
 
 ## Out-of-scope follow-ups captured here
 
@@ -51,7 +44,7 @@
 
 ## Session log
 
-### Session 1 — 2026-04-28 03:09 UTC start, 03:35 UTC end — PR 1 shipped (pending PROD)
+### Session 1 — 2026-04-28 03:09 UTC start, 03:50 UTC end — PR 1 shipped end-to-end
 
 Major events:
 - Read kickoff prompt, design doc end-to-end, implementation plan through Task 2.2.
@@ -66,13 +59,9 @@ Major events:
 - Verified TEST DB: `confdeltype = 'n'`, `ON DELETE SET NULL` correct.
 - User instruction: merge PR + idle while user approves PROD. Merged via rebase (preserves doc-commit history) as `9a6b09e`.
 - User FYI: re-verify TEST DB each round that produces DB-affecting fix-ups, not just once. Created `feedback_per_round_test_db_verification.md`; updated kickoff + impl plan rituals.
+- PROD apply attempt 1 failed with SASL flake (run `25032406625`); diagnosed as the Apply-step variant of the documented pattern; recommended + queued `gh run rerun --failed`; updated MEMORY.md SASL entry to cover Apply-step variant.
+- PROD apply attempt 2 succeeded after re-approval. Verified via `mcp__supabase-remote__execute_sql`: `confdeltype = 'n'`, def `ON DELETE SET NULL`. PR 1 fully shipped.
 
 ### Next session picks up at
 
-**If user has approved PROD migration:**
-1. Verify FK on PROD via `mcp__supabase-remote__execute_sql` (query above).
-2. PR 1 done — move to PR 2 (Submitter flow + LessonSearchPicker + reviewer-side safety banner). First task: 2.1 (TDD `titlesAreSimilar` utility, ~20 lines + 10 test cases).
-
-**If user has NOT approved PROD migration yet:**
-1. Hold — PR 1 is structurally done but not "shipped" until PROD verified.
-2. PR 2 work is independent of PROD apply (no schema dependency on the FK alter for PR 2's frontend/edge function changes), so PR 2 can technically start. But the kickoff's "ONE task per session" + "stop at natural commit boundaries" suggests pausing here is right.
+PR 1 done end-to-end. Move to **PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner**. First task: 2.1 (TDD `titlesAreSimilar` utility, ~20 lines + 10 test cases). Branch: `feat/phase-8b-intent-first-submitter-flow`. Pre-flight reads listed in implementation plan PR 2 section.
