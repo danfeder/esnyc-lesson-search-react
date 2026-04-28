@@ -111,18 +111,52 @@ MIGRATION DISCIPLINE:
   digits < underscore, so `20260504000000_x` sorts BEFORE `20260504_x`.
 
 PER-PR RITUAL (every PR, every time):
-1. Pre-push self-review: read every line of `git diff main...HEAD`.
+1. Pre-push review: DISPATCH a feature-dev:code-reviewer agent on
+   `git diff main...HEAD`. The agent does the line-by-line read, not you —
+   you cannot impartially review your own work. Investigate every finding
+   per feedback_bot_review_investigation.md (verify against actual code,
+   push back where the agent is wrong). Apply fix-up commits BEFORE push
+   (or amend, since the work isn't pushed yet).
 2. Run `npm run type-check && npm run lint` (mandatory pre-PR per CLAUDE.md).
 3. Push the feature branch.
 4. Open the PR with `gh pr create`.
-5. Dispatch your own feature-dev:code-reviewer agent on the PR BEFORE bot
-   reviews arrive. Investigate findings; verify each against actual code
-   before fixing. Push back where the bot is wrong (per
-   feedback_bot_review_investigation.md).
-6. Consolidated fix-up commits (do NOT amend pushed commits).
-7. ROUND-CAP AFTER 2 ROUNDS of bot review. If a 3rd round comes in, fix
-   only critical bugs, document the rest, ship. Diminishing returns hits
-   fast on iteration.
+5. Wait for external bot reviewers to land (CodeRabbit, Claude Review,
+   etc.) — they ARE the second pass; do NOT dispatch a redundant
+   feature-dev:code-reviewer here.
+6. COLLECT findings from ALL FOUR PR surfaces — querying only one is a
+   verification failure (per feedback_pr_comment_surfaces.md). Run all
+   four every time:
+     a. `gh pr view <PR> --comments` (issue-comments — where bots
+        typically post their full report)
+     b. `gh api repos/<owner>/<repo>/pulls/<PR>/reviews --jq '.[] |
+        {user: .user.login, state, body}'` (review summaries)
+     c. `gh api repos/<owner>/<repo>/pulls/<PR>/comments --jq '.[] |
+        {user: .user.login, path, line, body}'` (line-attached review
+        comments)
+     d. `gh pr checks <PR>` + `gh run view <id> --log-failed` for any
+        failing check (CI / test output)
+   "0 findings" is a CLAIM that requires evidence from all four. Don't
+   skip any.
+7. INVESTIGATE & TRIAGE each finding (you do this; spawn a subagent only
+   if a specific finding requires deeper code verification you can't do
+   inline). Per feedback_bot_review_investigation.md: write a rebuttal
+   pass for EVERY finding (including "minor" / "easy fix"). Per
+   feedback_pr_bot_review_workflow.md: default-reject hardening /
+   defense-in-depth / chrome that fails the "would absence produce a
+   user-visible bug or risk DB damage" bar. Surface accept/reject
+   recommendations to the user with rationale BEFORE applying.
+8. Apply accepted findings as consolidated fix-up commits (do NOT amend
+   pushed commits).
+9. RE-VERIFY TEST DB after each round (if the round changed DB-applied
+   state). For any PR carrying a migration: if the fix-up commits modified
+   the migration, RLS, function source, or anything CI re-applies to TEST,
+   re-run `mcp__supabase-test__execute_sql` for the same shape you
+   verified at PR open. One-time verification is NOT sufficient — every
+   round that touches DB-applied state needs its own evidence. Per
+   feedback_per_round_test_db_verification.md.
+10. ROUND-CAP AFTER 2 ROUNDS of bot review. If a 3rd round comes in, fix
+    only critical bugs, document the rest, ship. Diminishing returns hits
+    fast on iteration.
 
 WHAT NEVER TO DO WITHOUT EXPLICIT USER INSTRUCTION:
 - `git push` to main (commits go through PRs only)
