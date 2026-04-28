@@ -11,6 +11,7 @@ import type { ReviewMetadata } from '@/types';
 import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
+import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
 import {
   IntButton,
   IntDecisionBar,
@@ -143,6 +144,12 @@ export function ReviewDetail() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [legacyDecisionWarning, setLegacyDecisionWarning] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Phase 8b Task 3.6: search escape hatch — collapsible LessonSearchPicker
+  // for reviewers to override the submitter's pick or find a target the
+  // submitter couldn't. selectedSearchLesson must be declared BEFORE the
+  // candidateCards useMemo (which reads it via deps).
+  const [selectedSearchLesson, setSelectedSearchLesson] = useState<LessonSearchResult | null>(null);
+  const [showSearch, setShowSearch] = useState<boolean>(false);
 
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
 
@@ -490,10 +497,13 @@ export function ReviewDetail() {
   // Phase 8b: unified card list for the decision panel. Each entry is
   // already in IntDuplicateCard `dup` prop shape (id, title, meta,
   // similarity, matchType, optional matchLabel for "Submitter's choice"
-  // badge). NOT raw SimilarityWithLesson — that mapping happens here.
-  // Three cases: submitter target IS in dup list → hoist + label;
-  // submitter target is OFF-list → prepend synthetic card from Task 3.1's
-  // off-list lookup; no submitter target → return dup list as-is.
+  // / "Reviewer searched" badges). NOT raw SimilarityWithLesson — that
+  // mapping happens here. Four cases composed as base + optional tail:
+  // (1) submitter target IS in dup list → hoist + "Submitter's choice";
+  // (2) submitter target is OFF-list → prepend synthetic card from
+  // Task 3.1's off-list lookup; (3) no submitter target → dup list as-is.
+  // (4) Task 3.6: if reviewer searched and picked a lesson not already
+  // present, append it with "Reviewer searched" badge.
   const candidateCards = useMemo(() => {
     if (!submission) return [];
 
@@ -512,37 +522,84 @@ export function ReviewDetail() {
     });
 
     const submitterTargetId = submission.original_lesson_id ?? null;
-    if (!submitterTargetId) return fromDups;
+    let base: typeof fromDups;
 
-    // Case 1: target IS in the dup list — hoist + label.
-    const inListIdx = fromDups.findIndex((c) => c.id === submitterTargetId);
-    if (inListIdx >= 0) {
-      const hoisted = { ...fromDups[inListIdx], matchLabel: "Submitter's choice" };
-      return [hoisted, ...fromDups.filter((_, i) => i !== inListIdx)];
+    if (!submitterTargetId) {
+      base = fromDups;
+    } else {
+      // Case 1: target IS in the dup list — hoist + label.
+      const inListIdx = fromDups.findIndex((c) => c.id === submitterTargetId);
+      if (inListIdx >= 0) {
+        const hoisted = { ...fromDups[inListIdx], matchLabel: "Submitter's choice" };
+        base = [hoisted, ...fromDups.filter((_, i) => i !== inListIdx)];
+      } else {
+        // Case 2: target is OFF-list — prepend synthetic card from off-list
+        // lookup (loaded by Task 3.1 into submission.submitterTargetLesson).
+        const off = submission.submitterTargetLesson;
+        if (off) {
+          const grades = off.grade_levels?.length
+            ? `Grades ${off.grade_levels.join(', ')}`
+            : 'Grades —';
+          base = [
+            {
+              id: off.lesson_id,
+              title: off.title || 'Untitled',
+              meta: `${grades} · ${off.lesson_id}`,
+              similarity: 0,
+              matchType: null as IntDuplicateMatchType | null,
+              matchLabel: "Submitter's choice" as string | undefined,
+            },
+            ...fromDups,
+          ];
+        } else {
+          base = fromDups;
+        }
+      }
     }
 
-    // Case 2: target is OFF-list — prepend synthetic card from the off-list
-    // lookup (loaded by Task 3.1 into submission.submitterTargetLesson).
-    const off = submission.submitterTargetLesson;
-    if (off) {
-      const grades = off.grade_levels?.length
-        ? `Grades ${off.grade_levels.join(', ')}`
+    // Case 4 (Task 3.6): append reviewer's search-picked lesson if not
+    // already present in base.
+    if (selectedSearchLesson && !base.some((c) => c.id === selectedSearchLesson.lesson_id)) {
+      const grades = selectedSearchLesson.grade_levels?.length
+        ? `Grades ${selectedSearchLesson.grade_levels.join(', ')}`
         : 'Grades —';
       return [
+        ...base,
         {
-          id: off.lesson_id,
-          title: off.title || 'Untitled',
-          meta: `${grades} · ${off.lesson_id}`,
+          id: selectedSearchLesson.lesson_id,
+          title: selectedSearchLesson.title,
+          meta: `${grades} · ${selectedSearchLesson.lesson_id}`,
           similarity: 0,
           matchType: null as IntDuplicateMatchType | null,
-          matchLabel: "Submitter's choice" as string | undefined,
+          matchLabel: 'Reviewer searched' as string | undefined,
         },
-        ...fromDups,
       ];
     }
 
-    return fromDups;
-  }, [submission, topDuplicates]);
+    return base;
+  }, [submission, topDuplicates, selectedSearchLesson]);
+
+  // Phase 8b Task 3.6: derived plain values for the search escape hatch.
+  // Computed during render — not hooks. Read by the useEffect below to
+  // auto-expand the picker, and by the JSX to choose contextual help text.
+  const needsSearch = submission?.submission_type === 'update' && !submission?.original_lesson_id;
+  const noDups = candidateCards.length === 0;
+  const searchHelpText = needsSearch
+    ? "Use this to find the lesson the submitter couldn't"
+    : submission?.original_lesson_id
+      ? "Use this if you disagree with the submitter's pick"
+      : 'Use this when no card above is the right match';
+
+  // Auto-expand the search picker when the submitter couldn't find a target
+  // ((update, null)) or there are no candidate cards to choose from.
+  useEffect(() => {
+    setShowSearch(needsSearch || noDups);
+  }, [needsSearch, noDups]);
+
+  // Reset the search picker when navigating to a different submission.
+  useEffect(() => {
+    setSelectedSearchLesson(null);
+  }, [submission?.id]);
 
   // parseExtractedContent is pure but a few hundred lines of regex; memoize once.
   const parsedContent = useMemo(
@@ -1037,6 +1094,43 @@ export function ReviewDetail() {
                 </div>
               </div>
             )}
+
+            {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
+                auto-expanded for (update, null) and zero-candidate cases. */}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setShowSearch((v) => !v)}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                {showSearch
+                  ? '− Hide library search'
+                  : '+ Search the library for a different lesson'}
+              </button>
+              {showSearch && (
+                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-2">{searchHelpText}</p>
+                  <LessonSearchPicker
+                    selected={selectedSearchLesson}
+                    onSelect={(l) => {
+                      setSelectedSearchLesson(l);
+                      setSelectedDuplicate(l.lesson_id);
+                      setSaveError(null);
+                    }}
+                    onClear={() => {
+                      // Capture the cleared id BEFORE resetting state to avoid
+                      // a stale-read race between the two setters.
+                      const clearedId = selectedSearchLesson?.lesson_id ?? null;
+                      setSelectedSearchLesson(null);
+                      if (clearedId && selectedDuplicate === clearedId) {
+                        setSelectedDuplicate(null);
+                      }
+                    }}
+                    cantFindOption={false}
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Phase 8b: binding-intent banner */}
             {(() => {
