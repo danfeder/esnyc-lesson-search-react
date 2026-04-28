@@ -141,14 +141,14 @@ Direct-link to either branch works (no forced redirect through intent picker). B
 
 ## 6. Section 3 — Reviewer flow
 
-### 6.1 Color-coded banner at top of decision panel
+### 6.1 Banner at top of decision panel
 
 Always visible:
-- (new) → **green**: "Submitter says: New lesson"
-- (update, X) → **blue**: "Submitter says: Updating **[X title]**" with link/preview
-- (update, null) → **yellow ⚠**: "Submitter says: Updating, but couldn't find target — please search to identify"
+- (new) → green wrapper: "Submitter says: New lesson"
+- (update, X) → blue wrapper: "Submitter says: Updating **[X title]**" with link/preview
+- (update, null) → yellow wrapper + ⚠ icon: "Submitter says: Updating, but couldn't find target — please search to identify"
 
-Color is load-bearing for muscle memory (peripheral vision catches state change).
+Color reinforces the text + icon (which carry the state semantics). Color alone is never the only signal — every state has explicit text and the yellow state pairs with `AlertTriangle`. Reviewers using high-contrast modes or with color-vision differences still see the state via copy and icon.
 
 ### 6.2 Pre-selection logic
 
@@ -157,6 +157,8 @@ Color is load-bearing for muscle memory (peripheral vision catches state change)
 | (new) | `approve_new` | none |
 | (update, X) | `approve_update` | X (auto-fetched if not in dup list) |
 | (update, null) | `approve_update` | none — reviewer must pick via search |
+
+**State preservation:** pre-selection only fires when there is no existing review row (`submission.review === undefined`). If the submission already has a review (e.g., reviewer flipped from `needs_revision` back to `submitted`, or is mid-edit and refreshed), the existing decision/target/notes are preserved exactly as stored. We never overwrite reviewer-in-progress work with submitter intent — the submitter intent banner still renders, but pre-selection is a no-op when prior reviewer state exists.
 
 ### 6.3 Fixed enable/disable logic (CRITICAL)
 
@@ -199,13 +201,13 @@ When the picked target's title differs significantly from the extracted submissi
 
 In `ReviewDashboard.tsx` queue cards (via `IntQueueRow.tsx`):
 
-| Badge | Color | Tooltip |
+| Badge | Color | Inline text shown next to badge |
 |---|---|---|
-| NEW | green | (none / extracted title) |
-| UPDATE | blue | Target lesson title |
-| UPDATE? | yellow | "Submitter is updating but couldn't find target — needs reviewer search" |
+| NEW | green | (none) |
+| UPDATE | blue | Target lesson title (visible, truncated to ~40 chars; full title in `title` attribute for accessibility) |
+| UPDATE? | yellow | "needs reviewer search" |
 
-Lets reviewers triage the queue (batch the easy ones, focus on the work-required ones).
+Target title is **visible inline next to the UPDATE badge**, not hidden in a tooltip — tooltips are unreliable on mobile/touch and slow for queue scanning. Truncation handles long titles without breaking row height. Lets reviewers triage the queue (batch the easy ones, focus on the work-required ones).
 
 ### 6.8 Override-tracking (deferred)
 
@@ -229,8 +231,21 @@ Three sequential PRs:
 | # | PR | Contains | Notes |
 |---|---|---|---|
 | 1 | **Schema** | Section 1's 2 items: FK alter + RPC guard | Defensive only. Forward-rollback migration ready before merge. Idempotent (`DROP CONSTRAINT IF EXISTS`, `CREATE OR REPLACE FUNCTION`). |
-| 2 | **Submitter flow + LessonSearchPicker** | Section 2: rewrite `SubmissionPage.tsx`, add `/submit/new` and `/submit/revising` routes, new `LessonSearchPicker` + `NewSubmissionForm` + `RevisingSubmissionForm`, `process-submission` pre-INSERT validation | Picker created here since Section 2 is its first consumer. Forward-compatible with old reviewer UI. |
-| 3 | **Reviewer flow** | Section 3: `ReviewDetail.tsx` rewrites, `ReviewDashboard.tsx` + `IntQueueRow.tsx` 3-state badge, reuse `LessonSearchPicker` | Lands once new submitters are producing binding-intent data. Old-shape submissions still display correctly. |
+| 2 | **Submitter flow + LessonSearchPicker + reviewer-side safety banner** | Section 2: rewrite `SubmissionPage.tsx`, add `/submit/new` and `/submit/revising` routes, new `LessonSearchPicker` + `NewSubmissionForm` + `RevisingSubmissionForm`, `process-submission` pre-INSERT validation. PLUS minimal reviewer safety banner (see "Gap risk between PR 2 and PR 3" below). | Picker created here since Section 2 is its first consumer. Safety banner closes the gap-window where new (update, X) and (update, null) submissions would reach the old reviewer UI before PR 3 ships. |
+| 3 | **Reviewer flow (full)** | Section 3: `ReviewDetail.tsx` full banner (replaces PR 2's minimal version), pre-selection, fixed enable/disable, unified card list, search escape hatch, mismatch helper, `ReviewDashboard.tsx` + `IntQueueRow.tsx` 3-state badge, reuse `LessonSearchPicker` | Enriches PR 2's safety banner into the full state-aware UX. Old-shape submissions still display correctly. |
+
+### Gap risk between PR 2 and PR 3 (and the safety banner)
+
+Once PR 2 ships, `/submit/revising` can produce `(update, X)` and `(update, null)` rows. The pre-PR-3 reviewer UI ignores `original_lesson_id` and the `submission_type` field, so during the deploy gap a reviewer could approve such a submission as new — recreating the exact orphan-producing failure mode this redesign is meant to prevent.
+
+**Mitigation: ship a minimal reviewer safety banner as part of PR 2.** When `submission_type === 'update'`, render a yellow banner above the decision panel that reads "Submitter says: Update of an existing lesson — verify before approving as new" with the raw `original_lesson_id` (or "could not find target" for `(update, null)`). It does NOT lookup the target title (that's PR 3's job) and does NOT change the radio/submit button behavior. ~12 lines of code.
+
+This is **progressive enhancement, not throwaway**: PR 3's full Section 6.1 banner replaces this minimal version with target-title lookup, color-coding by intent state, and pre-selection. The PR 2 banner is the gap-window safety net — strict superset of the danger sign needed during the gap, strict subset of what Section 3 ultimately ships.
+
+Alternatives considered and rejected:
+- *Ship PR 2 and PR 3 in tight sequence with reviewer activity paused*: relies on humans not making the mistake during a rushed window
+- *Feature-flag `/submit/revising` until PR 3 is deployed*: adds env-var ceremony and "we forgot to flip the flag" risk; submitter UI ships partially-functional during the gap
+- *Combine PR 2 and PR 3 into a single mega-PR*: sacrifices per-PR-ritual + rollback granularity for atomicity
 
 ### TEST DB rehearsal
 
