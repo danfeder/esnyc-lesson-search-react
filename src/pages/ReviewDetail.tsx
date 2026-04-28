@@ -379,6 +379,23 @@ export function ReviewDetail() {
         }
         setNotes(review.notes || '');
       }
+
+      // Phase 8b: pre-select decision + target from submitter intent — but
+      // only when no existing review row. The block above already restored
+      // decision/notes/metadata from reviews?.[0] when present; pre-selecting
+      // here would clobber that restoration. (selectedDuplicate is not
+      // restored from a prior review — pre-existing limitation, out of 8b
+      // scope.)
+      if (!reviews || reviews.length === 0) {
+        if (submissionData?.submission_type === 'update') {
+          setDecision('approve_update');
+          if (submissionData.original_lesson_id) {
+            setSelectedDuplicate(submissionData.original_lesson_id);
+          }
+        } else {
+          setDecision('approve_new');
+        }
+      }
     } catch (error) {
       logger.error('Error loading submission:', parseDbError(error));
     } finally {
@@ -1048,15 +1065,11 @@ export function ReviewDetail() {
                   />
                   Approve &amp; publish
                 </label>
-                <label
-                  className="adm-radio"
-                  style={!selectedDuplicate ? { opacity: 0.5 } : undefined}
-                >
+                <label className="adm-radio">
                   <input
                     type="radio"
                     name="decision"
                     value="approve_update"
-                    disabled={!selectedDuplicate}
                     checked={decision === 'approve_update'}
                     onChange={() => {
                       setDecision('approve_update');
@@ -1064,7 +1077,6 @@ export function ReviewDetail() {
                     }}
                   />
                   Merge into existing
-                  {!selectedDuplicate && ' (select a duplicate first)'}
                 </label>
                 <label className="adm-radio">
                   <input
@@ -1129,6 +1141,12 @@ export function ReviewDetail() {
                 </IntButton>
               )}
             </IntDecisionBar>
+
+            {decision === 'approve_update' && !selectedDuplicate && (
+              <p className="text-sm text-gray-600 mt-2">
+                Pick a target lesson to merge into, or change to Approve as new.
+              </p>
+            )}
           </div>
         </div>
       </div>
