@@ -35,7 +35,12 @@ Lesson Search v2. Three sequential PRs:
 
 - docs/plans/2026-04-27-phase-8b-approve-update-redesign-implementation.md
   The WHAT. Source of truth for the next task: exact file paths, code snippets,
-  test commands, commit messages. Follow it. Don't improvise.
+  test commands, commit messages. Follow it for product scope and task order.
+  Verify every snippet against the current code before applying it — line
+  numbers, imports, types, prop names, and APIs may have drifted since the
+  plan was written. Small repo-conformance adaptations are allowed; product
+  or design changes are not. If a needed adaptation changes behavior or
+  scope, stop and ask.
 
 - docs/plans/2026-04-27-phase-8b-execution-status.md
   Source of truth for WHERE we are. Survives /clear because it's on disk +
@@ -50,11 +55,18 @@ Lesson Search v2. Three sequential PRs:
    (see "LOCKED" below).
 4. Read the implementation plan from the task you're about to start through
    the next 1-2 tasks (don't read it all unless useful).
-5. `git status && git log --oneline -10` — confirm git matches the status
-   file. If they diverge, trust git.
-6. `npm run type-check && npm run lint` — confirm a clean baseline. If
-   either fails, the first task is to fix that, not to push forward.
-7. Tell me where you are and what task is next. Don't start coding until
+5. `git status --short --branch && git branch --show-current && git log --oneline -10`
+   — confirm git matches the status file. If they diverge, trust git, then
+   update the status file to match reality before proceeding.
+6. If the worktree is dirty, identify whether the changes are part of
+   Phase 8b before touching them. Never revert or overwrite unrelated user
+   changes. If unsure, ask.
+7. `npm run type-check && npm run lint` — confirm a clean baseline.
+   If either fails, diagnose first. If the failure is unrelated to the
+   current Phase 8b branch/task, report it and ask before changing
+   unrelated files. If it is caused by current branch work, fix it before
+   proceeding.
+8. Tell me where you are and what task is next. Don't start coding until
    I confirm orientation.
 
 # LOCKED DECISIONS — do NOT re-debate
@@ -175,8 +187,8 @@ might cover.
 
 # EXECUTION STATUS FILE TEMPLATE (create on Session 1)
 
-If docs/plans/2026-04-27-phase-8b-execution-status.md doesn't exist, create
-it with this content:
+If docs/plans/2026-04-27-phase-8b-execution-status.md does not exist yet,
+create it with the content shown below:
 
 ---
 # Phase 8b Execution Status
