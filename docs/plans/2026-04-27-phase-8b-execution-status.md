@@ -1,10 +1,10 @@
 # Phase 8b Execution Status
 
-**Last updated:** 2026-04-28 15:35 UTC by Session 7
-**Current PR:** PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner — **MERGED to main + TEST verified, PROD edge function deploy PENDING USER APPROVAL** on workflow run `25061950611` (Deploy Edge Functions on main, triggered by merge push of `898545e`). After user approves: verify PROD edge function source via `mcp__supabase-remote__get_edge_function process-submission` (Phase 7c silent-no-op pattern check).
-**Current task:** Wait for user to approve `25061950611` → verify PROD edge function source has new normalize-aware code → mark PR 2 fully PROD-shipped → then PR 3.
-**Branch:** `main` (1 commit ahead of `origin/main` — Session 7 status update `58608e5`; PR 2's 14 commits merged via rebase)
-**Last commit on branch:** `58608e5` (Session 7 status update)
+**Last updated:** 2026-04-28 15:40 UTC by Session 7
+**Current PR:** PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner — **SHIPPED to PROD + verified live** ✅. Run `25061950611` approved + completed (success); PROD `process-submission` v29 verified via `mcp__supabase-remote__get_edge_function` — has `normalizeSubmissionInputs` import + pre-INSERT FK check + sibling helper file; ezbr_sha256 (`9e6968bcfd...`) matches TEST exactly. No Phase 7c silent-no-op pattern.
+**Current task:** PR 2 done end-to-end. Next session starts **PR 3** — full reviewer-flow redesign. First task: 3.1 (per implementation plan §"PR 3 — Reviewer flow", line 1522 onward). Branch from `main`: `feat/phase-8b-reviewer-flow`.
+**Branch:** `main` (3 local commits ahead of `origin/main` — Session 7 status updates `58608e5`, `a8f7592`, plus the to-be-committed final update; PR 2's 14 commits merged via rebase already on origin)
+**Last commit on branch:** (will be the final session 7 update committing this header change + the PROD-verified Done entry)
 
 ## Done
 
@@ -184,6 +184,7 @@ Major events:
     - **Path 3 — `/submit/revising` + "can't find it"** → row `submission_type='update', original_lesson_id=NULL` ✓
   - Edge function 400s on fake URLs (extraction fails, expected) but INSERT happens BEFORE extraction so row shape is verifiable. Live DOM `role="alert"` attribute confirmed on error div from snapshot (round 1 fix working in production).
 - **Merge** — user confirmed rebase strategy (PR 2 has 14 commits including 5 docs that benefit from preservation). Merged via `gh pr merge 469 --rebase` as `898545e`. Local main reset to `origin/main` (after verifying `git diff` showed only the pre-PR-2 baseline) so the 2 local-only session-1 doc commits (whose rebased equivalents now live on origin) get discarded as duplicates. Feat branch deleted locally.
+- **PROD edge function deploy** — initially overlooked the manual approval gate (deploy-edge-functions workflow on `main` push `898545e` waited for ~10 min before user noticed). User approved run `25061950611`; deploy completed success in ~30s. Verified live via `mcp__supabase-remote__get_edge_function process-submission`: v29 deployed, ezbr_sha256 `9e6968bcfdab044dfd89d9f203ccb7178b60dde3508789854a5d6a303e2531b3` MATCHES TEST exactly (Phase 7c silent-no-op pattern would have produced different shas; identical shas mean both environments running same compiled artifact). Source includes `normalizeSubmissionInputs` import on line 5, the Phase 8b normalize call, the pre-INSERT FK existence check returning 400 with "Original lesson not found", and INSERT using `normalizedSubmissionType`/`normalizedOriginalLessonId`. Sibling helper `normalizeSubmissionInputs.ts` also deployed.
 
 ### Next session picks up at
 
