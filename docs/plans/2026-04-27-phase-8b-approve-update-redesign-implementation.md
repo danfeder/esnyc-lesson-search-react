@@ -1132,19 +1132,26 @@ Expected: line ~173.
 Insert this code block immediately AFTER line 171 (`const googleDocId = docIdMatch[1];`) and BEFORE line 173 (`// Step 1: Create submission record`):
 
 ```typescript
-      // Phase 8b: normalize originalLessonId — treat undefined/null/empty
-      // string/whitespace-only as NULL. Without this, an empty string
-      // would skip the truthy check below but then fail the FK at INSERT
-      // with a less-helpful error than a clean 400.
+      // Phase 8b: normalize BOTH submissionType and originalLessonId
+      // together. Without coupled normalization, a caller sending
+      // submissionType='new' with a non-empty originalLessonId would
+      // persist an internally-inconsistent row (new lesson with a
+      // pointer to an "updated" lesson). Defense in depth — the legitimate
+      // PR 2 UI never sends this combination, but other callers (future
+      // edge functions, scripts, manual API calls) might.
+      const normalizedSubmissionType =
+        submissionType === 'update' ? 'update' : 'new';
       const normalizedOriginalLessonId =
-        typeof originalLessonId === 'string' && originalLessonId.trim().length > 0
+        normalizedSubmissionType === 'update' &&
+        typeof originalLessonId === 'string' &&
+        originalLessonId.trim().length > 0
           ? originalLessonId.trim()
           : null;
 
       // Phase 8b: validate originalLessonId BEFORE INSERT to avoid orphan
       // rows on the error path. The DB-level FK serves as the TOCTOU
       // backstop; this check provides fast user feedback.
-      if (submissionType === 'update' && normalizedOriginalLessonId) {
+      if (normalizedSubmissionType === 'update' && normalizedOriginalLessonId) {
         const { count: lessonCount, error: lessonCheckError } = await supabaseAdmin
           .from('lessons')
           .select('lesson_id', { count: 'exact', head: true })
@@ -1164,7 +1171,11 @@ Insert this code block immediately AFTER line 171 (`const googleDocId = docIdMat
       }
 ```
 
-Then in the existing INSERT (line 174-185), replace `original_lesson_id: originalLessonId` with `original_lesson_id: normalizedOriginalLessonId` so the normalized value is what's persisted.
+Then in the existing INSERT (line 174-185), replace BOTH:
+- `submission_type: submissionType || 'new'` → `submission_type: normalizedSubmissionType`
+- `original_lesson_id: originalLessonId` → `original_lesson_id: normalizedOriginalLessonId`
+
+so the normalized values are what's persisted. This guarantees the row's `submission_type` and `original_lesson_id` are always internally consistent: if type is `'new'`, original_lesson_id is always NULL; if type is `'update'`, original_lesson_id is either a validated existing lesson_id or NULL (the can't-find-it state).
 
 **Step 3: Local verification (via UI, not curl)**
 
@@ -1478,6 +1489,7 @@ Find and delete the Task 2.7.5 banner block (the `submission?.submission_type ==
     || topDuplicates.find((d) => d.lesson_id === targetId)?.lesson?.title
     || null;
 
+  // (update, X, title-known) — happy path
   if (type === 'update' && targetId && targetTitle) {
     return (
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
@@ -1486,6 +1498,25 @@ Find and delete the Task 2.7.5 banner block (the `submission?.submission_type ==
       </div>
     );
   }
+  // (update, X, title lookup FAILED) — degraded but still update intent.
+  // CRITICAL: must NOT fall through to the green "new" banner; that's the
+  // worst-possible misrender (reviewer thinks it's new when submitter
+  // declared an update). Render yellow with the raw lesson_id and a
+  // "verify before approving" prompt.
+  if (type === 'update' && targetId && !targetTitle) {
+    return (
+      <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
+        <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
+        <div>
+          <span className="font-medium text-amber-900">Submitter says:</span>{' '}
+          <span className="text-amber-900">
+            Updating lesson <code>{targetId}</code> — but its title couldn't be loaded. Please search the library to confirm the right merge target before approving.
+          </span>
+        </div>
+      </div>
+    );
+  }
+  // (update, null) — explicit can't-find-it
   if (type === 'update' && !targetId) {
     return (
       <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
@@ -1497,6 +1528,7 @@ Find and delete the Task 2.7.5 banner block (the `submission?.submission_type ==
       </div>
     );
   }
+  // (new) — only fall here when type is genuinely 'new'
   return (
     <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
       <span className="font-medium text-emerald-900">Submitter says:</span>{' '}
@@ -1535,17 +1567,22 @@ These are tightly coupled — do them in one step.
 
 **Step 1: Pre-select decision and target after `loadSubmission` resolves — but ONLY when no existing reviewer state exists**
 
-Inside `loadSubmission`, after `setSubmission(...)`, add:
+The existing prior-review restoration logic lives at `ReviewDetail.tsx:302-325` and uses the **separately-fetched `reviews` array**, not the assembled `fullSubmission` object. The raw `submissionData` row from the DB query has no `.review` field. So the guard MUST check `reviews?.length`, not `submissionData?.review`.
+
+What the existing code already restores from `reviews?.[0]`:
+- `decision` (via `setDecision`)
+- `notes` (via `setNotes`)
+- `metadata` (via `setMetadata`)
+- **NOT `selectedDuplicate`** — the prior merge target is *not* restored from the prior review (pre-existing gap; the `submission_reviews` table doesn't store the chosen lesson_id in a column the RPC writes — it lives in `lessons.original_submission_id` for `approve_new` or `lesson_versions.archived_from_submission_id` for `approve_update`). **Restoring the prior target is OUT OF 8B SCOPE** — this is a known pre-existing limitation, captured as a follow-up. Phase 8b's pre-selection just needs to not clobber the existing decision restoration.
+
+Inside `loadSubmission`, after the existing block at `ReviewDetail.tsx:302-325` (the `if (reviews && reviews.length > 0) { ... }` that restores decision/notes/metadata), add an `else` branch:
 
 ```typescript
-// Phase 8b: pre-select decision + target based on submitter intent.
-// CRITICAL: only fire when there's no existing review row. Otherwise we'd
-// clobber a reviewer's in-progress decision (e.g., they flipped from
-// needs_revision back to submitted, or they refreshed mid-edit). The
-// banner still renders for these cases — only the auto-pre-select
-// fires conditionally.
-const hasExistingReview = !!submissionData?.review;
-if (!hasExistingReview) {
+// Phase 8b: pre-select decision + target from submitter intent — but
+// ONLY when no existing review row. The existing block above already
+// restored decision/notes/metadata from reviews?.[0] when present;
+// pre-selecting from submitter intent now would clobber that.
+if (!reviews || reviews.length === 0) {
   if (submissionData?.submission_type === 'update') {
     setDecision('approve_update');
     if (submissionData.original_lesson_id) {
@@ -1555,13 +1592,11 @@ if (!hasExistingReview) {
     setDecision('approve_new');
   }
 }
-// If hasExistingReview is true, the existing setSubmission(...) call
-// already restored decision/notes/metadata from submissionData.review
-// (verify this in the existing loadSubmission flow; if not, ensure it
-// does — pre-existing behavior, not new in 8b).
 ```
 
-(Confirm `setDecision` is the existing setter; if not, name-match to whatever the file calls it.)
+(`setDecision` and `setSelectedDuplicate` are the existing setters — verify against current code.)
+
+**Note for the implementation agent:** if the existing prior-review block at lines 302-325 doesn't already restore `setSelectedDuplicate` from any source (and per pre-flight reading it does NOT), the prior-target gap remains. That's fine — Phase 8b is not introducing the gap and is not on the hook to fix it. A future task can JOIN through `lesson_versions.archived_from_submission_id` to restore the prior target.
 
 **Step 2: Find the existing `disabled={!selectedDuplicate}` on the approve_update radio (line 938)**
 
@@ -1690,27 +1725,44 @@ const candidateCards = useMemo(() => {
 }, [submission, topDuplicates]);
 ```
 
-**Step 4: Replace the existing `topDuplicates.map(...)` block at `src/pages/ReviewDetail.tsx:885-908` with a `candidateCards.map(...)` block**
+**Step 4: Replace the existing `topDuplicates.map(...)` block at `src/pages/ReviewDetail.tsx:885-908` with a `candidateCards.map(...)` block — AND update the wrapper condition**
+
+The existing wrapper at line 878 reads `{topDuplicates.length > 0 && (...)}`. Under Phase 8b, an `(update, X)` submission where X is off-list AND zero dup-detection results would have `topDuplicates.length === 0` but `candidateCards.length === 1` (the prepended off-list submitter target). The existing wrapper would hide the entire section — reviewer sees no card and can't pick a target via the cards UI.
+
+**Update both the wrapper condition AND the section header copy:**
 
 ```tsx
-{candidateCards.map((c) => (
-  <IntDuplicateCard
-    key={c.id}
-    dup={{
-      id: c.id,
-      title: c.title,
-      meta: c.meta,
-      similarity: c.similarity,
-      matchType: c.matchType,
-      matchLabel: c.matchLabel,
-    }}
-    selected={selectedDuplicate === c.id}
-    onSelect={() => {
-      setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
-      setSaveError(null);
-    }}
-  />
-))}
+{candidateCards.length > 0 && (
+  <div className="adm-card">
+    <div className="adm-section-eyebrow">
+      {/* Header copy adapts to whether we have submitter's choice, dup matches, or both */}
+      {candidateCards[0]?.matchLabel === "Submitter's choice"
+        ? "Candidate matches"
+        : "Possible duplicates"}
+    </div>
+    <p className="adm-section-desc">Select one to merge into instead of publishing new.</p>
+    <div className="adm-dup-list">
+      {candidateCards.map((c) => (
+        <IntDuplicateCard
+          key={c.id}
+          dup={{
+            id: c.id,
+            title: c.title,
+            meta: c.meta,
+            similarity: c.similarity,
+            matchType: c.matchType,
+            matchLabel: c.matchLabel,
+          }}
+          selected={selectedDuplicate === c.id}
+          onSelect={() => {
+            setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
+            setSaveError(null);
+          }}
+        />
+      ))}
+    </div>
+  </div>
+)}
 ```
 
 (If the actual `IntDuplicateCard` prop name for the badge isn't `matchLabel`, update accordingly per Step 1's verification.)
@@ -1740,18 +1792,30 @@ selects."
 **Step 1: Add hook state at the TOP of the `ReviewDetail` component (with the other `useState` calls, NOT inside an IIFE — React rules of hooks)**
 
 ```typescript
-// Phase 8b: search escape hatch toggle. Default-open when reviewer must
-// search (update with no target) or when there are no dup matches at all.
+import type { LessonSearchResult } from '@/components/LessonSearchPicker';
+
+// Phase 8b: search escape hatch. Two pieces of state:
+//   - showSearch: disclosure open/closed
+//   - selectedSearchLesson: the lesson the reviewer picked via search
+//     (kept as a separate state so the picker shows a chip and the
+//     candidate-cards list can render a "Reviewer searched" entry; without
+//     this, picking a search result quietly sets selectedDuplicate but
+//     leaves the reviewer with no visible confirmation of what they chose)
 const needsSearch =
   submission?.submission_type === 'update' && !submission?.original_lesson_id;
 const noDups = candidateCards.length === 0;
 const [showSearch, setShowSearch] = useState<boolean>(false);
+const [selectedSearchLesson, setSelectedSearchLesson] = useState<LessonSearchResult | null>(null);
 useEffect(() => {
   setShowSearch(needsSearch || noDups);
 }, [needsSearch, noDups]);
+// Reset search picker when navigating to a different submission.
+useEffect(() => {
+  setSelectedSearchLesson(null);
+}, [submission?.id]);
 ```
 
-(Order these AFTER `submission` state and AFTER `candidateCards` `useMemo` so they read fresh values. Note: `candidateCards` from Task 3.5 is a derived `useMemo`, so it can be referenced in this `useEffect`'s deps.)
+(Order these AFTER `submission` state and AFTER `candidateCards` `useMemo`.)
 
 **Step 2: Compute `helpText` as a derived value (not a hook)**
 
@@ -1765,7 +1829,32 @@ const searchHelpText = needsSearch
     : "Use this when no card above is the right match";
 ```
 
-**Step 3: Render the disclosure JSX**
+**Step 3: Extend `candidateCards` to include the search-picked target (so it appears as a card with a "Reviewer searched" badge)**
+
+Update the `candidateCards` `useMemo` from Task 3.5 to also append the search-picked lesson when present and not already in the list:
+
+```typescript
+const candidateCards = useMemo(() => {
+  // ... existing logic from Task 3.5 ...
+  // After computing the dup-list-with-submitter-pick result (call it `base`):
+  if (selectedSearchLesson && !base.some((c) => c.id === selectedSearchLesson.lesson_id)) {
+    return [
+      ...base,
+      {
+        id: selectedSearchLesson.lesson_id,
+        title: selectedSearchLesson.title,
+        meta: '(found via library search)',
+        similarity: 0,
+        matchType: null,
+        matchLabel: 'Reviewer searched',
+      },
+    ];
+  }
+  return base;
+}, [submission, topDuplicates, selectedSearchLesson]);
+```
+
+**Step 4: Render the disclosure JSX**
 
 Place this in the decision-panel render below the candidate-matches list:
 
@@ -1783,9 +1872,19 @@ Place this in the decision-panel render below the candidate-matches list:
     <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
       <p className="text-xs text-gray-600 mb-2">{searchHelpText}</p>
       <LessonSearchPicker
-        selected={null}
-        onSelect={(l) => setSelectedDuplicate(l.lesson_id)}
-        onClear={() => {}}
+        selected={selectedSearchLesson}
+        onSelect={(l) => {
+          setSelectedSearchLesson(l);
+          setSelectedDuplicate(l.lesson_id);
+          setSaveError(null);
+        }}
+        onClear={() => {
+          setSelectedSearchLesson(null);
+          // Also clear selectedDuplicate if it was the search-picked one
+          if (selectedDuplicate === selectedSearchLesson?.lesson_id) {
+            setSelectedDuplicate(null);
+          }
+        }}
         cantFindOption={false}
       />
     </div>
@@ -1793,7 +1892,7 @@ Place this in the decision-panel render below the candidate-matches list:
 </div>
 ```
 
-No IIFE, no hooks-in-callback. JSX uses values computed by hooks at the top of the component.
+No IIFE, no hooks-in-callback. The search-picked lesson appears both as a chip inside the picker AND as a card with "Reviewer searched" badge in the candidate-matches list — so reviewer always sees what's selected.
 
 **Step 2: Add the import**
 
@@ -1823,13 +1922,25 @@ update-no-target, override mode, or generic 'no match above.'"
 
 `import { titlesAreSimilar } from '@/utils/titleSimilarity';`
 
-**Step 2: Track which targets are "auto-picked" vs "manual"**
+**Step 2: Determine "auto-pick vs manual" via state derivation (no ref needed)**
 
-The mismatch warning only fires on auto-picks (submitter binding or dup detector). Reviewer manual picks are deliberate.
+The mismatch warning only fires on auto-picks (submitter binding or dup-detector pick). Reviewer manual picks via the search escape hatch are deliberate confirmations and suppress the warning.
 
-Add a `manualPickRef = useRef(false)` near the top of the component. Set `manualPickRef.current = true` inside the `LessonSearchPicker.onSelect` handler and inside any dup-card click handler. Reset to `false` on `loadSubmission`.
+Use the testable helper from Task 3.9:
 
-(Or simpler: derive from `selectedDuplicate` vs `submission.original_lesson_id`: if they match, it's a binding pick; if `selectedDuplicate` matches a top-N dup card, it's a dup-detector pick; otherwise manual. Pick whichever is cleaner against the existing state machine.)
+```typescript
+import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
+
+// Derived in render — no extra state.
+const showMismatch = shouldShowMismatchWarning({
+  selectedTarget: selectedDuplicate,
+  submitterTargetId: submission?.original_lesson_id ?? null,
+  topDuplicateIds: topDuplicates.map((d) => d.lesson_id),
+  searchPickedId: selectedSearchLesson?.lesson_id ?? null,
+});
+```
+
+This is cleaner than a `useRef`-based "manualPickRef" approach because it's pure (testable as a function), survives re-renders without race conditions, and consistently classifies the search-picked target as "manual" via the `selectedSearchLesson` state from Task 3.6.
 
 **Step 3: Render the mismatch warning when applicable**
 
@@ -1837,7 +1948,7 @@ Below the candidate-matches list, before the search escape hatch:
 
 ```tsx
 {(() => {
-  if (!selectedDuplicate || manualPickRef.current) return null;
+  if (!showMismatch) return null;
   const targetTitle =
     candidateCards.find((c) => c.id === selectedDuplicate)?.title ?? '';
   const submissionTitle = submission?.extracted_title ?? '';
@@ -1955,14 +2066,15 @@ search). Lets reviewers triage the queue — UPDATE? rows need the
 extra work."
 ```
 
-### Task 3.9: Add tests for pre-selection + mismatch helper
+### Task 3.9: Add tests for pre-selection + mismatch-helper integration
 
 **Files:**
-- Create: `src/pages/__tests__/ReviewDetail.preselect.test.tsx`
+- Create: `src/pages/reviewPreselect.ts`
+- Create: `src/pages/__tests__/reviewPreselect.test.ts`
+- Create: `src/pages/__tests__/reviewMismatch.test.ts`
 
-**Step 1: Write a focused test** (mocking `loadSubmission` is tricky given the file size; consider testing a hypothetical pure helper or extracting the pre-selection logic to a small function for testability)
+**Step 1: Pre-selection tests (extracting `computePreselection` for testability)**
 
-If extraction is appropriate, create:
 ```typescript
 // src/pages/__tests__/reviewPreselect.test.ts
 import { describe, it, expect } from 'vitest';
@@ -1988,21 +2100,85 @@ describe('computePreselection', () => {
 });
 ```
 
-Then extract `computePreselection` to its own file `src/pages/reviewPreselect.ts` and import it from `ReviewDetail.tsx`.
+Then extract `computePreselection` to its own file and import it from `ReviewDetail.tsx`.
 
-**Step 2: Run tests, verify pass**
+**Step 2: Mismatch-helper integration tests** (tests that the helper from Task 3.7 is consumed correctly — fires only on auto-picks, suppressed on reviewer manual picks)
 
-Run: `npx vitest run src/pages/__tests__/reviewPreselect.test.ts`
-Expected: 4/4 pass.
+The `manualPickRef` (or equivalent state-derivation) logic from Task 3.7 should be tested independently. Extract that decision into a pure helper for testability:
 
-**Step 3: Commit**
+```typescript
+// src/pages/reviewMismatch.ts
+export function shouldShowMismatchWarning(args: {
+  selectedTarget: string | null;
+  submitterTargetId: string | null;
+  topDuplicateIds: string[];
+  searchPickedId: string | null;
+}): boolean {
+  const { selectedTarget, submitterTargetId, topDuplicateIds, searchPickedId } = args;
+  if (!selectedTarget) return false;
+  // Auto-pick: target was bound by submitter or surfaced by dup detector.
+  const isSubmitterPick = selectedTarget === submitterTargetId;
+  const isDupDetectorPick = topDuplicateIds.includes(selectedTarget);
+  // Manual: target was picked via the search escape hatch.
+  const isManualPick = selectedTarget === searchPickedId;
+  // Manual picks are deliberate confirmations — suppress.
+  if (isManualPick) return false;
+  // Otherwise, if it's an auto-pick, signal the caller to compute Jaccard.
+  return isSubmitterPick || isDupDetectorPick;
+}
+```
+
+```typescript
+// src/pages/__tests__/reviewMismatch.test.ts
+import { describe, it, expect } from 'vitest';
+import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
+
+describe('shouldShowMismatchWarning', () => {
+  it('returns false when nothing selected', () => {
+    expect(shouldShowMismatchWarning({
+      selectedTarget: null, submitterTargetId: 'lesson_1', topDuplicateIds: [], searchPickedId: null,
+    })).toBe(false);
+  });
+  it('returns true when submitter-bound target is selected', () => {
+    expect(shouldShowMismatchWarning({
+      selectedTarget: 'lesson_1', submitterTargetId: 'lesson_1', topDuplicateIds: [], searchPickedId: null,
+    })).toBe(true);
+  });
+  it('returns true when dup-detector target is selected', () => {
+    expect(shouldShowMismatchWarning({
+      selectedTarget: 'lesson_2', submitterTargetId: null, topDuplicateIds: ['lesson_2', 'lesson_3'], searchPickedId: null,
+    })).toBe(true);
+  });
+  it('returns false when reviewer manually search-picked the target', () => {
+    expect(shouldShowMismatchWarning({
+      selectedTarget: 'lesson_5', submitterTargetId: null, topDuplicateIds: [], searchPickedId: 'lesson_5',
+    })).toBe(false);
+  });
+  it('returns false when reviewer search-picked AND that lesson happens to also be a dup-detector hit (defer to deliberate confirmation)', () => {
+    expect(shouldShowMismatchWarning({
+      selectedTarget: 'lesson_5', submitterTargetId: null, topDuplicateIds: ['lesson_5'], searchPickedId: 'lesson_5',
+    })).toBe(false);
+  });
+});
+```
+
+Then in Task 3.7's render code, gate the actual mismatch banner on `shouldShowMismatchWarning(...) && !titlesAreSimilar(targetTitle, submissionTitle)`.
+
+**Step 3: Run tests, verify pass**
+
+Run: `npx vitest run src/pages/__tests__/reviewPreselect.test.ts src/pages/__tests__/reviewMismatch.test.ts`
+Expected: 4 + 5 = 9/9 pass.
+
+**Step 4: Commit**
 
 ```bash
-git add src/pages/reviewPreselect.ts src/pages/__tests__/reviewPreselect.test.ts src/pages/ReviewDetail.tsx
-git commit -m "test(review): unit tests for pre-selection logic
+git add src/pages/reviewPreselect.ts src/pages/reviewMismatch.ts src/pages/__tests__/reviewPreselect.test.ts src/pages/__tests__/reviewMismatch.test.ts src/pages/ReviewDetail.tsx
+git commit -m "test(review): unit tests for pre-selection + mismatch-helper logic
 
-Extract computePreselection to its own file for testability. Covers
-all three intent states + legacy/undefined fallback."
+Extract computePreselection and shouldShowMismatchWarning to their own
+files for testability. Covers all three intent states for preselect
+and the four trigger states for mismatch (no selection, submitter-bound,
+dup-detector, reviewer-manual)."
 ```
 
 ### Task 3.10: E2E tests for reviewer flows

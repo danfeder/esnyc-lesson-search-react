@@ -45,15 +45,15 @@ Three alternatives were considered and rejected:
 | **Hybrid-of-hybrid** (search bar + "skip — it's new" link) | Same backend mechanics as intent-first but with a "skip" link as a UI smell. The search-bar-as-default implies "you should search," which the new-case user must actively dismiss. Intent-first asks the right question (intent) without that cognitive load. |
 | **Original Option C** (single form: URL + radio + typeahead picker, hint-not-binding) | Cheapest fix (~1.5 days) but preserves the structural smell of "submitter declares but it's just a hint." Per workflows-not-sacred, the right move is to invest in a real redesign once. |
 
-## 4. Section 1 — Schema (2 small migrations)
+## 4. Section 1 — Schema (1 migration)
 
-Three things change at the database layer. None require RLS additions, status enum changes, or a cron job.
+Two things change at the database layer in scope; one was already done. None require RLS additions, status enum changes, or a cron job.
 
-1. **FK `lesson_submissions.original_lesson_id` → `ON DELETE SET NULL`.**
+1. **FK `lesson_submissions.original_lesson_id` → `ON DELETE SET NULL`.** (NEW migration in PR 1)
    *Why:* if a reviewer deletes the lesson a submitter linked to (rare but possible), the submission row should survive with its intent neutralized rather than cascade-deleting. Defense in depth.
 
-2. **Status guard in `complete_review_atomic` RPC.**
-   *Why:* defends against double-submit races. If a reviewer's session writes succeed but the row was already approved by another concurrent reviewer, the second write should fail loudly rather than silently overwriting. Adds at the top of the RPC: `IF status NOT IN ('submitted', 'in_review') THEN RAISE EXCEPTION ...`
+2. **Status guard in `complete_review_atomic` RPC.** (Already shipped in Phase 4 — `supabase/migrations/20260428000008_phase_4_status_guard.sql`)
+   The shipped guard refuses re-entry on terminal statuses (`approved`, `rejected`) and *intentionally* allows `needs_revision` flip-back through the UPSERT path. The earlier draft of this design proposed `IF status NOT IN ('submitted', 'in_review') THEN RAISE EXCEPTION` which would have blocked the legitimate "reviewer flips needs_revision back to approve_new" flow. The Phase 4 predicate is the correct one. **No new migration needed for this item.**
 
 3. **(NO new CHECK constraint.)** The earlier draft proposed `submission_type != 'update' OR original_lesson_id IS NOT NULL`. Dropped because the redesign needs to support `(submission_type='update', original_lesson_id=NULL)` as a valid state — "submitter said update but couldn't find target." Application-level validation in the `process-submission` edge function covers the case where a non-null `original_lesson_id` references a non-existent lesson.
 
@@ -211,7 +211,15 @@ Target title is **visible inline next to the UPDATE badge**, not hidden in a too
 
 ### 6.8 Override-tracking (deferred)
 
-A future admin query joining `lesson_submissions` ↔ `submission_reviews` to surface "submissions where reviewer overrode submitter intent" is worth building if patterns emerge. **No new schema needed** — derived from existing `original_lesson_id` and `published_lesson_id`. Out of 8b scope; captured as follow-up.
+A future admin query to surface "submissions where reviewer overrode submitter intent" is worth building if patterns emerge. **No new schema needed**, but the derivation is a JOIN, not a column comparison: the published lesson ID isn't stored on `submission_reviews` directly (the `canonical_lesson_id` column exists on that table but is NOT populated by the current `complete_review_atomic` RPC — it's a leftover from earlier infrastructure). The right derivation is:
+
+- For `approve_new`: `lessons.original_submission_id = submission.id` gives the published lesson_id
+- For `approve_update`: `lesson_versions.archived_from_submission_id = submission.id` gives the lesson_id whose old version was archived (the merge target)
+- Compare either of those to `lesson_submissions.original_lesson_id` (submitter intent) to flag overrides
+
+Alternatively (cheaper but requires a one-line RPC change): modify `complete_review_atomic` to write `canonical_lesson_id` on `submission_reviews` when decision is `approve_new` or `approve_update`. Then the comparison becomes `original_lesson_id` (submitter) vs `submission_reviews.canonical_lesson_id` (reviewer) — much simpler, but bumps the scope past pure follow-up.
+
+Out of 8b scope; captured as follow-up.
 
 ### 6.9 Race condition (acknowledged, deferred)
 
@@ -321,7 +329,7 @@ Per `feedback_pr_bot_review_workflow.md`:
 - Past-submissions-first revising flow (UX agent alternative — show user's own published lessons before library-wide search)
 - Brand-new branch safety check (similarity check before submit)
 - Submission "claim" mechanism (status → `in_review` on reviewer open) to prevent concurrent-edit collisions
-- Override-tracking admin view (compare `original_lesson_id` to `published_lesson_id` for audit signal)
+- Override-tracking admin view (JOIN through `lessons.original_submission_id` + `lesson_versions.archived_from_submission_id` to derive reviewer's chosen lesson; compare to submitter's `original_lesson_id`. Or land a one-line RPC change to write `submission_reviews.canonical_lesson_id` and use a direct column compare.)
 - Snapshot of lesson title at picker-time (for v2 if title-edit-during-review patterns emerge)
 - Title mismatch via DB trigram (if v1's in-browser Jaccard proves insufficient)
 - Separate queue lane for UPDATE-NO-TARGET (if volume warrants focused review surface)
