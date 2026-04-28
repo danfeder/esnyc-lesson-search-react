@@ -966,37 +966,70 @@ export function ReviewDetail() {
               </div>
             )}
 
-            {/* Phase 8b PR 2 — minimal safety banner. Replaced + enriched by PR 3
-                full Section 6.1 banner (color-coded, target-title lookup,
-                pre-selection). Lives here in PR 2 to close the deploy-gap window
-                where /submit/revising produces (update, X) and (update, null) rows
-                before the reviewer UI knows how to consume them. */}
-            {submission?.submission_type === 'update' && (
-              <div
-                className="adm-card"
-                style={{ borderColor: '#fbbf24', background: '#fffbeb', marginBottom: 12 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <AlertTriangle
-                    size={16}
-                    style={{ color: '#b45309', marginTop: 2, flexShrink: 0 }}
-                  />
-                  <div>
-                    <strong style={{ color: '#92400e' }}>
-                      Submitter says: Update of an existing lesson.
-                    </strong>{' '}
-                    <span style={{ color: '#92400e' }}>
-                      {submission.original_lesson_id
-                        ? `Submitter linked to lesson ID ${submission.original_lesson_id}.`
-                        : 'Submitter could not find the target lesson in the picker.'}
-                    </span>{' '}
-                    <span style={{ color: '#92400e' }}>
-                      Please verify before approving — do not approve as new without checking.
+            {/* Phase 8b: binding-intent banner */}
+            {(() => {
+              const type = submission?.submission_type;
+              const targetId = submission?.original_lesson_id;
+              // SimilarityWithLesson has lesson_id at top level, lesson.title nested.
+              // submitterTargetLesson (off-list fetch) has title at top level.
+              const targetTitle =
+                submission?.submitterTargetLesson?.title ||
+                topDuplicates.find((d) => d.lesson_id === targetId)?.lesson?.title ||
+                null;
+
+              // (update, X, title-known) — happy path
+              if (type === 'update' && targetId && targetTitle) {
+                return (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                    <span className="font-medium text-blue-900">Submitter says:</span>{' '}
+                    <span className="text-blue-900">
+                      Updating <strong>{targetTitle}</strong>
                     </span>
                   </div>
+                );
+              }
+              // (update, X, title lookup FAILED) — degraded but still update intent.
+              // CRITICAL: must NOT fall through to the green "new" banner; that's the
+              // worst-possible misrender (reviewer thinks it's new when submitter
+              // declared an update). Render yellow with the raw lesson_id and a
+              // "verify before approving" prompt.
+              if (type === 'update' && targetId && !targetTitle) {
+                return (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
+                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
+                      <span className="text-amber-900">
+                        Updating lesson <code>{targetId}</code> — but its title couldn&apos;t be
+                        loaded. Please search the library to confirm the right merge target before
+                        approving.
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              // (update, null) — explicit can't-find-it
+              if (type === 'update' && !targetId) {
+                return (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
+                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
+                      <span className="text-amber-900">
+                        Updating, but couldn&apos;t find target — please search to identify.
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              // (new) — only fall here when type is genuinely 'new'
+              return (
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+                  <span className="font-medium text-emerald-900">Submitter says:</span>{' '}
+                  <span className="text-emerald-900">New lesson</span>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="adm-card">
               <div className="adm-section-eyebrow">Decision</div>
