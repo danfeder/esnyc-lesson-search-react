@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
 import type { MetadataSketch } from '../_shared/google-docs-parser.ts';
+import { normalizeSubmissionInputs } from './normalizeSubmissionInputs.ts';
 
 interface ProcessSubmissionRequest {
   googleDocUrl?: string;
@@ -170,6 +171,35 @@ serve(async (req) => {
       }
       const googleDocId = docIdMatch[1];
 
+      // Phase 8b: normalize submissionType + originalLessonId together so
+      // the persisted row is internally consistent. Defense in depth — the
+      // PR 2 UI never sends inconsistent combinations, but other callers
+      // (future edge functions, scripts, manual API) might.
+      const { normalizedSubmissionType, normalizedOriginalLessonId } =
+        normalizeSubmissionInputs({ submissionType, originalLessonId });
+
+      // Phase 8b: validate originalLessonId BEFORE INSERT to avoid orphan
+      // rows on the error path. The DB-level FK serves as the TOCTOU
+      // backstop; this check provides fast user feedback.
+      if (normalizedSubmissionType === 'update' && normalizedOriginalLessonId) {
+        const { count: lessonCount, error: lessonCheckError } = await supabaseAdmin
+          .from('lessons')
+          .select('lesson_id', { count: 'exact', head: true })
+          .eq('lesson_id', normalizedOriginalLessonId);
+        if (lessonCheckError) {
+          throw lessonCheckError;
+        }
+        if ((lessonCount ?? 0) === 0) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Original lesson not found: ${normalizedOriginalLessonId}`,
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
       // Step 1: Create submission record
       const { data: newSubmission, error: submissionError } = await supabaseClient
         .from('lesson_submissions')
@@ -177,8 +207,8 @@ serve(async (req) => {
           teacher_id: user.id,
           google_doc_url: googleDocUrl,
           google_doc_id: googleDocId,
-          submission_type: submissionType || 'new',
-          original_lesson_id: originalLessonId,
+          submission_type: normalizedSubmissionType,
+          original_lesson_id: normalizedOriginalLessonId,
           status: 'submitted',
         })
         .select()
