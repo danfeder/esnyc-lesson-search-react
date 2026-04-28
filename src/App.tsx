@@ -20,6 +20,12 @@ import { logger } from '@/utils/logger';
 const SubmissionPage = lazy(() =>
   import('@/pages/SubmissionPage').then((m) => ({ default: m.SubmissionPage }))
 );
+const NewSubmissionForm = lazy(() =>
+  import('@/pages/NewSubmissionForm').then((m) => ({ default: m.NewSubmissionForm }))
+);
+const RevisingSubmissionForm = lazy(() =>
+  import('@/pages/RevisingSubmissionForm').then((m) => ({ default: m.RevisingSubmissionForm }))
+);
 const ReviewDashboard = lazy(() =>
   import('@/pages/ReviewDashboard').then((m) => ({ default: m.ReviewDashboard }))
 );
@@ -90,6 +96,8 @@ function AppContent() {
                 <Route path="/" element={<SearchPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/submit" element={<SubmissionPage />} />
+                <Route path="/submit/new" element={<NewSubmissionForm />} />
+                <Route path="/submit/revising" element={<RevisingSubmissionForm />} />
                 <Route path="/accept-invitation" element={<AcceptInvitation />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route
