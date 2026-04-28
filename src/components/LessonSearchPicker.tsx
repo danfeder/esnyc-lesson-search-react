@@ -107,6 +107,12 @@ export function LessonSearchPicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by lesson title"
+          aria-label="Search lessons by title"
+          role="combobox"
+          aria-expanded={results.length > 0}
+          aria-controls="lesson-picker-results"
+          aria-autocomplete="list"
+          aria-haspopup="listbox"
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isLoading && (
@@ -119,16 +125,21 @@ export function LessonSearchPicker({
       <p className="mt-1 text-xs text-gray-500">e.g., 'Three Sisters' or 'Apple Crisp'</p>
 
       {results.length > 0 && (
-        <ul className="mt-2 border border-gray-200 rounded-lg divide-y divide-gray-100">
+        <ul
+          id="lesson-picker-results"
+          role="listbox"
+          aria-label="Lesson results"
+          className="mt-2 border border-gray-200 rounded-lg divide-y divide-gray-100"
+        >
           {results.map((r) => (
-            <li key={r.lesson_id}>
+            <li key={r.lesson_id} role="option" aria-selected={false}>
               <button
                 type="button"
                 onClick={() => onSelect(r)}
                 className="w-full text-left px-3 py-2 hover:bg-gray-50 focus:bg-gray-100 focus:outline-none"
               >
                 <div className="font-medium text-gray-900">{r.title}</div>
-                {(r.grade_levels?.length || r.season_timing?.length) && (
+                {(!!r.grade_levels?.length || !!r.season_timing?.length) && (
                   <div className="text-xs text-gray-500 mt-0.5">
                     {r.grade_levels?.length ? `Grades ${r.grade_levels.join(', ')}` : ''}
                     {r.grade_levels?.length && r.season_timing?.length ? ' · ' : ''}
