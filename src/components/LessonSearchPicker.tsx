@@ -108,11 +108,6 @@ export function LessonSearchPicker({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by lesson title"
           aria-label="Search lessons by title"
-          role="combobox"
-          aria-expanded={results.length > 0}
-          aria-controls="lesson-picker-results"
-          aria-autocomplete="list"
-          aria-haspopup="listbox"
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isLoading && (
@@ -125,14 +120,9 @@ export function LessonSearchPicker({
       <p className="mt-1 text-xs text-gray-500">e.g., 'Three Sisters' or 'Apple Crisp'</p>
 
       {results.length > 0 && (
-        <ul
-          id="lesson-picker-results"
-          role="listbox"
-          aria-label="Lesson results"
-          className="mt-2 border border-gray-200 rounded-lg divide-y divide-gray-100"
-        >
+        <ul className="mt-2 border border-gray-200 rounded-lg divide-y divide-gray-100">
           {results.map((r) => (
-            <li key={r.lesson_id} role="option" aria-selected={false}>
+            <li key={r.lesson_id}>
               <button
                 type="button"
                 onClick={() => onSelect(r)}
