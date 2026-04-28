@@ -37,18 +37,19 @@
 
 ### Task 1.1: Create the FK alter migration
 
-**Sub-skill:** `database-migrations`
+**Sub-skill:** `database-migrations` (mandatory before touching anything in `supabase/migrations/`)
 
 **Files:**
-- Create: `supabase/migrations/20260428000009_phase_8b_fk_on_delete_set_null.sql`
+- Create: `supabase/migrations/20260504000000_phase_8b_fk_on_delete_set_null.sql`
 
-**Why this filename:** must sort AFTER `20260428000008_phase_4_status_guard.sql` and before `20260429000000_phase_5_b_new_publish.sql`. Using the next sequential same-day timestamp is correct here (the Phase 4 sub-migrations established `20260428000NNN` as the pattern for this date).
+**Why this filename:** must sort AFTER the latest existing migration. Run `ls supabase/migrations/ | sort | tail -3` to confirm the latest before naming. As of design time, the latest is `20260503000000_phase_6_2_fix_lost_applesauce_link.sql`, so `20260504000000_*` is the next safe slot. **Do not** insert a migration with a smaller numeric prefix than any existing migration — it would not run on TEST/PROD where the older-but-higher-numbered files are already applied (per `supabase/migrations/CLAUDE.md` and the user's auto-memory note about ASCII ordering of timestamp prefixes).
 
 **Step 1: Write the migration**
 
 ```sql
 -- =====================================================
--- Migration: 20260428000009_phase_8b_fk_on_delete_set_null.sql
+-- Migration: 20260504000000_phase_8b_fk_on_delete_set_null.sql
+-- (verify the date prefix beats the latest existing migration before creating!)
 -- =====================================================
 -- Description: Phase 8b Section 1 — re-create the FK on
 -- lesson_submissions.original_lesson_id with ON DELETE SET NULL.
@@ -111,7 +112,7 @@ Expected: all tests pass; no new failures.
 **Step 5: Commit**
 
 ```bash
-git add supabase/migrations/20260428000009_phase_8b_fk_on_delete_set_null.sql
+git add supabase/migrations/20260504000000_phase_8b_fk_on_delete_set_null.sql
 git commit -m "feat(db): Phase 8b — FK on lesson_submissions.original_lesson_id ON DELETE SET NULL
 
 Section 1 of the Phase 8b design. Re-creates the FK so deleting a
@@ -807,15 +808,17 @@ export function NewSubmissionForm() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('process-submission', {
+      const { data: response, error: invokeError } = await supabase.functions.invoke('process-submission', {
         body: { googleDocUrl, submissionType: 'new', originalLessonId: null },
       });
       if (invokeError) throw invokeError;
-      if (!data?.success) throw new Error(data?.error ?? 'Submission failed.');
+      if (!response?.success) throw new Error(response?.error ?? 'Submission failed.');
+      // process-submission returns { success, data: { submissionId, status, extractedTitle, ... } }
+      const payload = response.data;
       setSubmissionResult({
-        submissionId: data.submissionId,
-        extractedTitle: data.extractedTitle,
-        status: data.status,
+        submissionId: payload.submissionId,
+        extractedTitle: payload.extractedTitle,
+        status: payload.status,
       });
     } catch (err) {
       logger.debug('NewSubmissionForm submit failed:', err);
@@ -857,13 +860,16 @@ export function NewSubmissionForm() {
       <IntPageHeader title="Add a new lesson" />
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <IntFormField
-          label="Google Doc URL"
-          value={googleDocUrl}
-          onChange={setGoogleDocUrl}
-          placeholder="https://docs.google.com/document/d/..."
-          required
-        />
+        <IntFormField label="Google Doc URL" required>
+          <input
+            type="url"
+            value={googleDocUrl}
+            onChange={(e) => setGoogleDocUrl(e.target.value)}
+            placeholder="https://docs.google.com/document/d/..."
+            required
+            className="adm-input"
+          />
+        </IntFormField>
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-start">
             <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
@@ -952,7 +958,7 @@ export function RevisingSubmissionForm() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('process-submission', {
+      const { data: response, error: invokeError } = await supabase.functions.invoke('process-submission', {
         body: {
           googleDocUrl,
           submissionType: 'update',
@@ -960,11 +966,13 @@ export function RevisingSubmissionForm() {
         },
       });
       if (invokeError) throw invokeError;
-      if (!data?.success) throw new Error(data?.error ?? 'Submission failed.');
+      if (!response?.success) throw new Error(response?.error ?? 'Submission failed.');
+      // process-submission returns { success, data: { submissionId, status, extractedTitle, ... } }
+      const payload = response.data;
       setSubmissionResult({
-        submissionId: data.submissionId,
-        extractedTitle: data.extractedTitle,
-        status: data.status,
+        submissionId: payload.submissionId,
+        extractedTitle: payload.extractedTitle,
+        status: payload.status,
         targetTitle: selectedLesson?.title ?? null,
       });
     } catch (err) {
@@ -1040,16 +1048,17 @@ export function RevisingSubmissionForm() {
         </div>
 
         <div className={targetReady ? '' : 'opacity-50 pointer-events-none'}>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
-            Step 2 · Paste your Google Doc link
-          </label>
-          <IntFormField
-            label=""
-            value={googleDocUrl}
-            onChange={setGoogleDocUrl}
-            placeholder="https://docs.google.com/document/d/..."
-            disabled={!targetReady}
-          />
+          <IntFormField label="Step 2 · Paste your Google Doc link" required>
+            <input
+              type="url"
+              className="adm-input"
+              value={googleDocUrl}
+              onChange={(e) => setGoogleDocUrl(e.target.value)}
+              placeholder="https://docs.google.com/document/d/..."
+              disabled={!targetReady}
+              required
+            />
+          </IntFormField>
         </div>
 
         {error && (
@@ -1123,14 +1132,23 @@ Expected: line ~173.
 Insert this code block immediately AFTER line 171 (`const googleDocId = docIdMatch[1];`) and BEFORE line 173 (`// Step 1: Create submission record`):
 
 ```typescript
+      // Phase 8b: normalize originalLessonId — treat undefined/null/empty
+      // string/whitespace-only as NULL. Without this, an empty string
+      // would skip the truthy check below but then fail the FK at INSERT
+      // with a less-helpful error than a clean 400.
+      const normalizedOriginalLessonId =
+        typeof originalLessonId === 'string' && originalLessonId.trim().length > 0
+          ? originalLessonId.trim()
+          : null;
+
       // Phase 8b: validate originalLessonId BEFORE INSERT to avoid orphan
       // rows on the error path. The DB-level FK serves as the TOCTOU
       // backstop; this check provides fast user feedback.
-      if (submissionType === 'update' && originalLessonId) {
+      if (submissionType === 'update' && normalizedOriginalLessonId) {
         const { count: lessonCount, error: lessonCheckError } = await supabaseAdmin
           .from('lessons')
           .select('lesson_id', { count: 'exact', head: true })
-          .eq('lesson_id', originalLessonId);
+          .eq('lesson_id', normalizedOriginalLessonId);
         if (lessonCheckError) {
           throw lessonCheckError;
         }
@@ -1138,7 +1156,7 @@ Insert this code block immediately AFTER line 171 (`const googleDocId = docIdMat
           return new Response(
             JSON.stringify({
               success: false,
-              error: `Original lesson not found: ${originalLessonId}`,
+              error: `Original lesson not found: ${normalizedOriginalLessonId}`,
             }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
@@ -1146,27 +1164,26 @@ Insert this code block immediately AFTER line 171 (`const googleDocId = docIdMat
       }
 ```
 
-**Step 3: Local test**
+Then in the existing INSERT (line 174-185), replace `original_lesson_id: originalLessonId` with `original_lesson_id: normalizedOriginalLessonId` so the normalized value is what's persisted.
 
-Start the function locally:
+**Step 3: Local verification (via UI, not curl)**
+
+A direct curl against the locally-served function would fail because the non-`regenerateEmbedding` path calls `auth.getUser(token)` which requires a real user JWT, not a service-role token (verified at `process-submission/index.ts:106-127`). Test through the UI instead:
+
 ```bash
-supabase functions serve process-submission --no-verify-jwt
+# Terminal 1
+supabase start
+supabase db reset
+npm run dev
 ```
 
-Send a test request with an invalid `originalLessonId` from a separate terminal:
-```bash
-curl -X POST 'http://localhost:54321/functions/v1/process-submission' \
-  -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer $(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d= -f2 | tr -d '"')" \
-  -d '{"googleDocUrl":"https://docs.google.com/document/d/abc/edit","submissionType":"update","originalLessonId":"lesson_nonsense_uuid"}'
-```
-Expected: HTTP 400 with `{"success":false,"error":"Original lesson not found: lesson_nonsense_uuid"}`. Verify NO row was inserted:
-```bash
-psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "
-  SELECT count(*) FROM lesson_submissions WHERE google_doc_url LIKE '%abc/edit%';
-"
-```
-Expected: `0`.
+Then in browser at `http://localhost:5173/submit/revising`:
+1. Sign in as `admin@test.com` / `password123` (per `reference_test_credentials.md`)
+2. In DevTools console, simulate the submit with a known-bad target by patching the request via the network tab (or briefly hardcode `originalLessonId='lesson_nonsense_uuid'` in `RevisingSubmissionForm.tsx` for the test, then revert)
+3. Expect a red error banner: "Original lesson not found: lesson_nonsense_uuid"
+4. Verify no row was inserted: `psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "SELECT count(*) FROM lesson_submissions WHERE google_doc_url LIKE '%nonsense%';"` → `0`
+
+Optional: write a Vitest integration test against the edge function module — see existing tests in `supabase/functions/__tests__/` if any (run `find supabase/functions -name "*.test.*"` to confirm).
 
 **Step 4: Commit**
 
@@ -1179,6 +1196,63 @@ the target lesson exists BEFORE inserting the submission row. Returns
 400 on missing target without inserting; the existing FK constraint
 remains the TOCTOU backstop. Allows (update, null) — that's the
 'submitter said update but couldn't find target' state from PR 2."
+```
+
+### Task 2.7.5: Minimal reviewer safety banner (gap-window mitigation)
+
+**Why:** once PR 2 ships, `/submit/revising` can produce `(update, X)` and `(update, null)` rows. The pre-PR-3 reviewer UI ignores `submission_type` and `original_lesson_id`, so during the deploy gap a reviewer could approve such a submission as new — recreating the orphan-producing failure mode. This minimal banner is a danger sign that PR 3's full Section 6.1 banner enriches with target-title lookup, color coding, and pre-selection. **Strict superset of the gap-window safety net; strict subset of what Section 3 ships.** No throwaway code.
+
+**Files:**
+- Modify: `src/pages/ReviewDetail.tsx` (one small JSX block above the existing decision panel)
+
+**Step 1: Add the banner JSX**
+
+Find the decision panel area in `ReviewDetail.tsx` (around line 913-920 — the `<div className="adm-card">` that wraps the decision UI). Insert this block IMMEDIATELY ABOVE that wrapper:
+
+```tsx
+{/* Phase 8b PR 2 — minimal safety banner. Replaced + enriched by PR 3
+    full Section 6.1 banner (color-coded, target-title lookup,
+    pre-selection). Lives here in PR 2 to close the deploy-gap window
+    where /submit/revising produces (update, X) and (update, null) rows
+    before the reviewer UI knows how to consume them. */}
+{submission?.submission_type === 'update' && (
+  <div className="adm-card" style={{ borderColor: '#fbbf24', background: '#fffbeb', marginBottom: 12 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+      <AlertTriangle size={16} style={{ color: '#b45309', marginTop: 2, flexShrink: 0 }} />
+      <div>
+        <strong style={{ color: '#92400e' }}>Submitter says: Update of an existing lesson.</strong>{' '}
+        <span style={{ color: '#92400e' }}>
+          {submission.original_lesson_id
+            ? `Submitter linked to lesson ID ${submission.original_lesson_id}.`
+            : 'Submitter could not find the target lesson in the picker.'}
+        </span>{' '}
+        <span style={{ color: '#92400e' }}>
+          Please verify before approving — do not approve as new without checking.
+        </span>
+      </div>
+    </div>
+  </div>
+)}
+```
+
+(Make sure `AlertTriangle` is imported from `lucide-react` at the top of the file if it's not already; check the existing imports.)
+
+**Step 2: Type-check + visual smoke**
+
+Run: `npm run type-check`
+Then start dev server and open a submission with `submission_type='update'` (manually edit a row in local DB if needed). Verify the yellow banner renders above the decision panel with the correct copy for both `(update, X)` and `(update, null)` cases.
+
+**Step 3: Commit**
+
+```bash
+git add src/pages/ReviewDetail.tsx
+git commit -m "feat(review): minimal safety banner for Phase 8b gap window
+
+Until PR 3 ships the full Section 6.1 banner with target-title lookup
+and pre-selection, this minimal yellow banner ensures reviewers can't
+silently approve (update, X) or (update, null) submissions as new
+during the PR 2 -> PR 3 deploy gap. Progressive enhancement, not
+throwaway: PR 3 enriches this banner rather than replacing it."
 ```
 
 ### Task 2.8: E2E tests for the three submitter paths
@@ -1263,8 +1337,9 @@ gh pr create --title "feat: Phase 8b — intent-first submitter flow + LessonSea
 - Adds `/submit/new` and `/submit/revising` routes
 - New `LessonSearchPicker` component (reused by PR 3 reviewer flow)
 - New `titlesAreSimilar` utility (consumed by PR 3)
-- `process-submission` edge function pre-INSERT validation of `originalLessonId`
+- `process-submission` edge function pre-INSERT validation of `originalLessonId` (with empty-string normalization)
 - Drops the post-submit duplicates panel (per design)
+- Minimal reviewer safety banner — gap-window mitigation; enriched by PR 3 into the full Section 6.1 banner
 
 ## Phase 8b context
 This is PR 2 of 3. PR 1 (the FK migration) is already merged. PR 3 (reviewer flow) lands after this. See `docs/plans/2026-04-27-phase-8b-approve-update-redesign-design.md` for full context.
@@ -1317,35 +1392,55 @@ Use `mcp__supabase-test__execute_sql` to verify each of the three submission pat
 
 **Why:** if the submitter bound to lesson X but X doesn't appear in `submission_similarities`, the unified card list (Task 3.5) needs X's metadata to render the "Submitter's choice" card.
 
-**Step 1: Find the spot in `loadSubmission` where similarities-with-lessons are assembled**
+**Step 1: Re-read the actual `SimilarityWithLesson` type at `src/pages/ReviewDetail.tsx:33-44`**
+
+```typescript
+interface SimilarityWithLesson {
+  lesson_id: string;            // top-level — this is the lesson's ID
+  combined_score: number | null;
+  match_type: string | null;
+  title_similarity: number | null;
+  content_similarity: number | null;
+  lesson: {
+    title: string | null;       // nested only carries display fields
+    grade_levels: string[] | null;
+    thematic_categories: string[] | null;
+  };
+}
+```
+
+`lesson_id` is at the **top level** of each similarity row, not under `.lesson`. The nested `.lesson` only carries display fields.
+
+**Step 2: Find the spot in `loadSubmission` where similarities-with-lessons are assembled**
 
 Run: `grep -n "similaritiesWithLessons\|lessons_with_metadata" src/pages/ReviewDetail.tsx`
 Expected: a few lines around the join logic (likely 240-280).
 
-**Step 2: After the existing similarities-with-lessons assembly, add this block**
+**Step 3: After the existing similarities-with-lessons assembly, add this block**
 
 ```typescript
 // Phase 8b: if submitter bound to a lesson that's NOT in the dup list,
 // fetch it separately so the unified card list can render it as
-// "Submitter's choice."
+// "Submitter's choice." Note: SimilarityWithLesson has lesson_id at TOP
+// level, not nested under .lesson — see type definition above.
 const submitterTargetId = submissionData?.original_lesson_id ?? null;
 const targetInDupList = submitterTargetId
-  ? similaritiesWithLessons.some((s) => s.lesson?.lesson_id === submitterTargetId)
+  ? similaritiesWithLessons.some((s) => s.lesson_id === submitterTargetId)
   : false;
-let submitterTargetLesson: any = null;
+let submitterTargetLesson: { lesson_id: string; title: string; summary?: string; grade_levels?: string[] | null; thematic_categories?: string[] | null } | null = null;
 if (submitterTargetId && !targetInDupList) {
   const { data: targetData, error: targetErr } = await supabase
     .from('lessons_with_metadata')
     .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
     .eq('lesson_id', submitterTargetId)
     .single();
-  if (!targetErr) {
+  if (!targetErr && targetData) {
     submitterTargetLesson = targetData;
   }
 }
 ```
 
-Then attach `submitterTargetLesson` to the `setSubmission(...)` payload (extend the type as needed).
+Then attach `submitterTargetLesson` to the `setSubmission(...)` payload (extend the `SubmissionDetail` interface to include `submitterTargetLesson?: typeof submitterTargetLesson` so consumers downstream can read it).
 
 **Step 3: Verify type-check passes**
 
@@ -1363,22 +1458,24 @@ the dup-detection list, fetch it from lessons_with_metadata so the
 upcoming unified card list can render it as 'Submitter's choice.'"
 ```
 
-### Task 3.2: Add color-coded binding-intent banner
+### Task 3.2: Replace the PR 2 minimal safety banner with the full color-coded version
 
 **Files:**
-- Modify: `src/pages/ReviewDetail.tsx` (top of decision panel — find the wrapper around the decision radio set, likely around line 920-940; add a new block ABOVE the existing decision UI)
+- Modify: `src/pages/ReviewDetail.tsx` (REPLACE the Task 2.7.5 minimal yellow banner with the richer three-state version)
 
-**Step 1: Add the banner component logic**
+**Step 1: Replace the existing minimal banner block with this full-state version**
 
-Inside the render function, near the top of the decision panel area, add:
+Find and delete the Task 2.7.5 banner block (the `submission?.submission_type === 'update' && (...)` JSX inside the inline-styled `.adm-card`). Replace it with:
 
 ```tsx
 {/* Phase 8b: binding-intent banner */}
 {(() => {
   const type = submission?.submission_type;
   const targetId = submission?.original_lesson_id;
-  const targetTitle = submitterTargetLesson?.title
-    || topDuplicates.find((d) => d.id === targetId)?.title
+  // SimilarityWithLesson has lesson_id at top level, lesson.title nested.
+  // submitterTargetLesson (off-list fetch) has title at top level.
+  const targetTitle = submission?.submitterTargetLesson?.title
+    || topDuplicates.find((d) => d.lesson_id === targetId)?.lesson?.title
     || null;
 
   if (type === 'update' && targetId && targetTitle) {
@@ -1420,10 +1517,13 @@ Then `npm run dev` and open a sample submission to confirm the banner renders. V
 
 ```bash
 git add src/pages/ReviewDetail.tsx
-git commit -m "feat(review): Phase 8b binding-intent banner with three colored states
+git commit -m "feat(review): Phase 8b full binding-intent banner (three colored states)
 
-Green (new), blue (update with target), yellow ⚠ (update without target).
-Color is load-bearing for muscle memory."
+Replaces PR 2's minimal safety banner with the richer three-state
+version: green (new), blue (update with target), yellow ⚠ (update
+without target). Color reinforces text + icon — every state is
+distinguishable without color (relevant for high-contrast modes and
+color-vision differences)."
 ```
 
 ### Task 3.3 + 3.4: Pre-selection logic + fixed enable/disable
@@ -1433,22 +1533,32 @@ Color is load-bearing for muscle memory."
 
 These are tightly coupled — do them in one step.
 
-**Step 1: Pre-select decision and target after `loadSubmission` resolves**
+**Step 1: Pre-select decision and target after `loadSubmission` resolves — but ONLY when no existing reviewer state exists**
 
 Inside `loadSubmission`, after `setSubmission(...)`, add:
 
 ```typescript
 // Phase 8b: pre-select decision + target based on submitter intent.
-// Both setState calls batch in React 19 so the radio renders enabled
-// on first paint when target is set.
-if (submissionData?.submission_type === 'update') {
-  setDecision('approve_update');
-  if (submissionData.original_lesson_id) {
-    setSelectedDuplicate(submissionData.original_lesson_id);
+// CRITICAL: only fire when there's no existing review row. Otherwise we'd
+// clobber a reviewer's in-progress decision (e.g., they flipped from
+// needs_revision back to submitted, or they refreshed mid-edit). The
+// banner still renders for these cases — only the auto-pre-select
+// fires conditionally.
+const hasExistingReview = !!submissionData?.review;
+if (!hasExistingReview) {
+  if (submissionData?.submission_type === 'update') {
+    setDecision('approve_update');
+    if (submissionData.original_lesson_id) {
+      setSelectedDuplicate(submissionData.original_lesson_id);
+    }
+  } else {
+    setDecision('approve_new');
   }
-} else {
-  setDecision('approve_new');
 }
+// If hasExistingReview is true, the existing setSubmission(...) call
+// already restored decision/notes/metadata from submissionData.review
+// (verify this in the existing loadSubmission flow; if not, ensure it
+// does — pre-existing behavior, not new in 8b).
 ```
 
 (Confirm `setDecision` is the existing setter; if not, name-match to whatever the file calls it.)
@@ -1513,45 +1623,97 @@ mode for the (update, null) state."
 
 **Step 1: Verify `IntDuplicateCard` supports `matchLabel`**
 
-Run: `grep -n "matchLabel" src/components/IntDuplicateCard.tsx`
-Expected: prop already exists per agent verification.
+Run: `grep -n "matchLabel\|export interface\|export type" src/components/IntDuplicateCard.tsx`
+Confirm the prop name (the prior agent review reported it exists; double-check the actual prop name — it might be `matchLabel`, `badge`, or similar).
 
-**Step 2: Build a unified `candidateMatches` array**
+**Step 2: Re-read the existing `topDuplicates.map` rendering at `src/pages/ReviewDetail.tsx:885-908`**
 
-Around the existing `topDuplicates` derivation (line ~412-415), add:
+The existing code already maps `SimilarityWithLesson` → `IntDuplicateCard`'s `dup` prop shape `{ id, title, meta, similarity, matchType }`. Phase 8b needs to extend this to:
+- accept an optional pre-built "submitter's choice" card that's not derived from a similarity row
+- hoist or prepend that card with a label
+
+**Step 3: Build a `candidateCards` array (a list of `dup`-prop-ready objects, NOT raw `SimilarityWithLesson` rows)**
+
+Place this `useMemo` near the existing `topDuplicates` declaration (around `src/pages/ReviewDetail.tsx:412`):
 
 ```typescript
-// Phase 8b: unified candidate-matches list — submitter's pick at top
-// (with "Submitter's choice" badge), then dup-detection results.
-const candidateMatches = useMemo(() => {
+// Phase 8b: unified card list for the decision panel.
+// Each entry is already in IntDuplicateCard `dup` prop shape (id, title,
+// meta, similarity, matchType, optional matchLabel for "Submitter's
+// choice" badge). NOT raw SimilarityWithLesson — that mapping happens here.
+const candidateCards = useMemo(() => {
   if (!submission) return [];
-  const dupList = topDuplicates ?? [];
-  const submitterTargetId = submission.original_lesson_id ?? null;
-  if (!submitterTargetId) return dupList;
 
-  // If submitter target is in the dup list, hoist it to the top and label.
-  const inListIdx = dupList.findIndex((d) => d.id === submitterTargetId);
-  if (inListIdx >= 0) {
-    const hoisted = { ...dupList[inListIdx], matchLabel: 'Submitter\'s choice' };
-    return [hoisted, ...dupList.filter((_, i) => i !== inListIdx)];
-  }
-  // Otherwise prepend the off-list submitter target as a synthetic card.
-  if (submitterTargetLesson) {
-    const synthetic = {
-      id: submitterTargetLesson.lesson_id,
-      title: submitterTargetLesson.title,
-      summary: submitterTargetLesson.summary ?? '',
-      similarityScore: 0,
-      matchType: 'submitter',
-      matchLabel: 'Submitter\'s choice',
+  const fromDups = topDuplicates.map((d) => {
+    const grades = d.lesson.grade_levels?.length
+      ? `Grades ${d.lesson.grade_levels.join(', ')}`
+      : 'Grades —';
+    return {
+      id: d.lesson_id,
+      title: d.lesson.title || 'Untitled',
+      meta: `${grades} · ${d.lesson_id}`,
+      similarity: d.combined_score ?? 0,
+      matchType: normalizeMatchType(d.match_type),
+      matchLabel: undefined as string | undefined,
     };
-    return [synthetic, ...dupList];
+  });
+
+  const submitterTargetId = submission.original_lesson_id ?? null;
+  if (!submitterTargetId) return fromDups;
+
+  // Case 1: target IS in the dup list — hoist + label.
+  const inListIdx = fromDups.findIndex((c) => c.id === submitterTargetId);
+  if (inListIdx >= 0) {
+    const hoisted = { ...fromDups[inListIdx], matchLabel: "Submitter's choice" };
+    return [hoisted, ...fromDups.filter((_, i) => i !== inListIdx)];
   }
-  return dupList;
-}, [submission, topDuplicates, submitterTargetLesson]);
+
+  // Case 2: target is OFF-list — prepend a synthetic card from the
+  // off-list lookup (loaded by Task 3.1 into submission.submitterTargetLesson).
+  const off = submission.submitterTargetLesson;
+  if (off) {
+    const grades = off.grade_levels?.length ? `Grades ${off.grade_levels.join(', ')}` : 'Grades —';
+    return [
+      {
+        id: off.lesson_id,
+        title: off.title || 'Untitled',
+        meta: `${grades} · ${off.lesson_id}`,
+        similarity: 0,
+        matchType: null,
+        matchLabel: "Submitter's choice",
+      },
+      ...fromDups,
+    ];
+  }
+
+  return fromDups;
+}, [submission, topDuplicates]);
 ```
 
-**Step 3: Replace the rendering of `topDuplicates` with `candidateMatches`** in the duplicate cards section (around line 876-911).
+**Step 4: Replace the existing `topDuplicates.map(...)` block at `src/pages/ReviewDetail.tsx:885-908` with a `candidateCards.map(...)` block**
+
+```tsx
+{candidateCards.map((c) => (
+  <IntDuplicateCard
+    key={c.id}
+    dup={{
+      id: c.id,
+      title: c.title,
+      meta: c.meta,
+      similarity: c.similarity,
+      matchType: c.matchType,
+      matchLabel: c.matchLabel,
+    }}
+    selected={selectedDuplicate === c.id}
+    onSelect={() => {
+      setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
+      setSaveError(null);
+    }}
+  />
+))}
+```
+
+(If the actual `IntDuplicateCard` prop name for the badge isn't `matchLabel`, update accordingly per Step 1's verification.)
 
 **Step 4: Type-check + visual smoke**
 
@@ -1575,54 +1737,63 @@ selects."
 **Files:**
 - Modify: `src/pages/ReviewDetail.tsx`
 
-**Step 1: Add disclosure UI below the candidate-matches list**
+**Step 1: Add hook state at the TOP of the `ReviewDetail` component (with the other `useState` calls, NOT inside an IIFE — React rules of hooks)**
 
-Find the spot just below the cards (still within the decision panel). Add:
+```typescript
+// Phase 8b: search escape hatch toggle. Default-open when reviewer must
+// search (update with no target) or when there are no dup matches at all.
+const needsSearch =
+  submission?.submission_type === 'update' && !submission?.original_lesson_id;
+const noDups = candidateCards.length === 0;
+const [showSearch, setShowSearch] = useState<boolean>(false);
+useEffect(() => {
+  setShowSearch(needsSearch || noDups);
+}, [needsSearch, noDups]);
+```
+
+(Order these AFTER `submission` state and AFTER `candidateCards` `useMemo` so they read fresh values. Note: `candidateCards` from Task 3.5 is a derived `useMemo`, so it can be referenced in this `useEffect`'s deps.)
+
+**Step 2: Compute `helpText` as a derived value (not a hook)**
+
+Just below the hooks above:
+
+```typescript
+const searchHelpText = needsSearch
+  ? "Use this to find the lesson the submitter couldn't"
+  : submission?.original_lesson_id
+    ? "Use this if you disagree with the submitter's pick"
+    : "Use this when no card above is the right match";
+```
+
+**Step 3: Render the disclosure JSX**
+
+Place this in the decision-panel render below the candidate-matches list:
 
 ```tsx
 {/* Phase 8b: search escape hatch */}
-{(() => {
-  const needsSearch = submission?.submission_type === 'update' && !submission?.original_lesson_id;
-  const noDups = candidateMatches.length === 0;
-  const [showSearch, setShowSearch] = React.useState(needsSearch || noDups);
-  // When intent changes (rare), keep the toggle in sync
-  React.useEffect(() => {
-    setShowSearch(needsSearch || noDups);
-  }, [needsSearch, noDups]);
-
-  const helpText =
-    needsSearch
-      ? "Use this to find the lesson the submitter couldn't"
-      : submission?.original_lesson_id
-        ? "Use this if you disagree with the submitter's pick"
-        : "Use this when no card above is the right match";
-
-  return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setShowSearch((v) => !v)}
-        className="text-sm text-blue-600 hover:text-blue-800 underline"
-      >
-        {showSearch ? '− Hide library search' : '+ Search the library for a different lesson'}
-      </button>
-      {showSearch && (
-        <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-xs text-gray-600 mb-2">{helpText}</p>
-          <LessonSearchPicker
-            selected={null}
-            onSelect={(l) => setSelectedDuplicate(l.lesson_id)}
-            onClear={() => {}}
-            cantFindOption={false}
-          />
-        </div>
-      )}
+<div className="mt-3">
+  <button
+    type="button"
+    onClick={() => setShowSearch((v) => !v)}
+    className="text-sm text-blue-600 hover:text-blue-800 underline"
+  >
+    {showSearch ? '− Hide library search' : '+ Search the library for a different lesson'}
+  </button>
+  {showSearch && (
+    <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+      <p className="text-xs text-gray-600 mb-2">{searchHelpText}</p>
+      <LessonSearchPicker
+        selected={null}
+        onSelect={(l) => setSelectedDuplicate(l.lesson_id)}
+        onClear={() => {}}
+        cantFindOption={false}
+      />
     </div>
-  );
-})()}
+  )}
+</div>
 ```
 
-(Hoist the `useState` and `useEffect` to the component body if linting rejects them inside the IIFE; the IIFE is just for readability of the design spec.)
+No IIFE, no hooks-in-callback. JSX uses values computed by hooks at the top of the component.
 
 **Step 2: Add the import**
 
@@ -1668,7 +1839,7 @@ Below the candidate-matches list, before the search escape hatch:
 {(() => {
   if (!selectedDuplicate || manualPickRef.current) return null;
   const targetTitle =
-    candidateMatches.find((c) => c.id === selectedDuplicate)?.title ?? '';
+    candidateCards.find((c) => c.id === selectedDuplicate)?.title ?? '';
   const submissionTitle = submission?.extracted_title ?? '';
   if (!targetTitle || !submissionTitle) return null;
   if (titlesAreSimilar(targetTitle, submissionTitle)) return null;
@@ -1718,21 +1889,34 @@ Inside the row render, add badge logic (replacing or supplementing the existing 
     return <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">NEW</span>;
   }
   if (submission.originalLessonId) {
+    // Visible target title, truncated. Full title in title attr for a11y / hover.
+    const fullTitle = submission.originalLessonTitle ?? '';
+    const truncated =
+      fullTitle.length > 40 ? `${fullTitle.slice(0, 40).trim()}…` : fullTitle;
     return (
-      <span
-        className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded"
-        title={submission.originalLessonTitle ?? ''}
-      >
-        UPDATE
+      <span className="inline-flex items-center gap-1 max-w-full">
+        <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded shrink-0">
+          UPDATE
+        </span>
+        <span
+          className="text-xs text-gray-700 truncate"
+          title={fullTitle}
+          aria-label={`Updating lesson: ${fullTitle}`}
+        >
+          {truncated || '(target unknown)'}
+        </span>
       </span>
     );
   }
   return (
-    <span
-      className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded"
-      title="Submitter is updating but couldn't find target — needs reviewer search"
-    >
-      UPDATE?
+    <span className="inline-flex items-center gap-1">
+      <span
+        className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded"
+        aria-label="Submitter is updating but couldn't find target — needs reviewer search"
+      >
+        UPDATE?
+      </span>
+      <span className="text-xs text-amber-700">needs reviewer search</span>
     </span>
   );
 })()}
