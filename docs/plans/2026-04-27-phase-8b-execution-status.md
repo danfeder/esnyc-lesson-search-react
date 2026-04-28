@@ -1,10 +1,10 @@
 # Phase 8b Execution Status
 
-**Last updated:** 2026-04-28 15:30 UTC by Session 7
-**Current PR:** PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner — **SHIPPED (merged via rebase as `898545e`)**. Branch deleted locally; local `main` synced with origin via `git reset --hard`.
-**Current task:** PR 2 done. Next session starts **PR 3** — full reviewer-flow redesign. First task: 3.1 (per implementation plan §"PR 3 — Reviewer flow", line 1522 onward). Branch from `main`: `feat/phase-8b-reviewer-flow`.
-**Branch:** `main` (synced with `origin/main`; PR 2's 14 commits merged in via rebase)
-**Last commit on branch:** `898545e` (round 2 fix-up — regressions from round 1)
+**Last updated:** 2026-04-28 15:35 UTC by Session 7
+**Current PR:** PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner — **MERGED to main + TEST verified, PROD edge function deploy PENDING USER APPROVAL** on workflow run `25061950611` (Deploy Edge Functions on main, triggered by merge push of `898545e`). After user approves: verify PROD edge function source via `mcp__supabase-remote__get_edge_function process-submission` (Phase 7c silent-no-op pattern check).
+**Current task:** Wait for user to approve `25061950611` → verify PROD edge function source has new normalize-aware code → mark PR 2 fully PROD-shipped → then PR 3.
+**Branch:** `main` (1 commit ahead of `origin/main` — Session 7 status update `58608e5`; PR 2's 14 commits merged via rebase)
+**Last commit on branch:** `58608e5` (Session 7 status update)
 
 ## Done
 
