@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, AlertCircle, CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -37,6 +37,8 @@ export function RevisingSubmissionForm() {
   } | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const pendingSubmitRef = useRef(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -46,6 +48,13 @@ export function RevisingSubmissionForm() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user && pendingSubmitRef.current) {
+      pendingSubmitRef.current = false;
+      formRef.current?.requestSubmit();
+    }
+  }, [user]);
+
   const targetReady = Boolean(selectedLesson) || cantFind;
   const canSubmit =
     targetReady && /\/document\/d\/([a-zA-Z0-9-_]+)/.test(googleDocUrl) && !isSubmitting;
@@ -53,6 +62,7 @@ export function RevisingSubmissionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
+      pendingSubmitRef.current = true;
       setShowAuthModal(true);
       return;
     }
@@ -138,7 +148,7 @@ export function RevisingSubmissionForm() {
       </Link>
       <IntPageHeader title="Update an existing lesson" />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-2">
             Step 1 · Find the lesson you're revising
@@ -185,7 +195,10 @@ export function RevisingSubmissionForm() {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-start">
+          <div
+            role="alert"
+            className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-start"
+          >
             <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -212,7 +225,10 @@ export function RevisingSubmissionForm() {
 
       <AuthModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+        onClose={() => {
+          setShowAuthModal(false);
+          pendingSubmitRef.current = false;
+        }}
         onSuccess={() => setShowAuthModal(false)}
       />
     </div>

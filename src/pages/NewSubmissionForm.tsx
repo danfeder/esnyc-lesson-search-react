@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, AlertCircle, CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -33,6 +33,8 @@ export function NewSubmissionForm() {
   } | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const pendingSubmitRef = useRef(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -42,9 +44,17 @@ export function NewSubmissionForm() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user && pendingSubmitRef.current) {
+      pendingSubmitRef.current = false;
+      formRef.current?.requestSubmit();
+    }
+  }, [user]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
+      pendingSubmitRef.current = true;
       setShowAuthModal(true);
       return;
     }
@@ -113,7 +123,7 @@ export function NewSubmissionForm() {
       </Link>
       <IntPageHeader title="Add a new lesson" />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         <IntFormField label="Google Doc URL" required>
           <input
             type="url"
@@ -125,7 +135,10 @@ export function NewSubmissionForm() {
           />
         </IntFormField>
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-start">
+          <div
+            role="alert"
+            className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-start"
+          >
             <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -144,7 +157,10 @@ export function NewSubmissionForm() {
 
       <AuthModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+        onClose={() => {
+          setShowAuthModal(false);
+          pendingSubmitRef.current = false;
+        }}
         onSuccess={() => setShowAuthModal(false)}
       />
     </div>
