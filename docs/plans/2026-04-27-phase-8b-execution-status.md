@@ -1,10 +1,10 @@
 # Phase 8b Execution Status
 
-**Last updated:** 2026-04-28 09:50 UTC by Session 2
-**Current PR:** PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner — IN PROGRESS (1 of ~9 tasks done; branch local-only, not yet pushed)
-**Current task:** Task 2.1 done. Next session picks up at Task 2.2 — TDD `LessonSearchPicker` component (the meatiest piece in PR 2).
-**Branch:** `feat/phase-8b-intent-first-submitter-flow` (off local `main`; carries 2 session-1 doc commits + 1 task-2.1 commit; not yet pushed)
-**Last commit on branch:** `edbc48a` (Task 2.1 — titlesAreSimilar)
+**Last updated:** 2026-04-28 10:05 UTC by Session 3
+**Current PR:** PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner — IN PROGRESS (2 of ~9 tasks done; branch local-only, not yet pushed)
+**Current task:** Task 2.2 done. Next session picks up at Task 2.3 — add `/submit/new` and `/submit/revising` routes to `App.tsx` (deferred commit until Tasks 2.5/2.6 create the form components).
+**Branch:** `feat/phase-8b-intent-first-submitter-flow` (off local `main`; carries 2 session-1 doc commits + Task 2.1 commit + Task 2.2 commit; not yet pushed)
+**Last commit on branch:** `887449b` (Task 2.2 — LessonSearchPicker)
 
 ## Done
 
@@ -20,10 +20,11 @@
 - ✅ **PR #468 merged** via rebase as `9a6b09e` (preserves the 9 doc-commit history alongside the migration)
 - ✅ **PROD apply** — first attempt failed with documented SASL Apply-step flake (run `25032406625`); rerun via `gh run rerun --failed` succeeded after second approval. PROD verified via `mcp__supabase-remote__execute_sql`: `confdeltype = 'n'`, def shows `ON DELETE SET NULL`.
 - ✅ **Task 2.1 (Session 2)** — created `src/utils/titleSimilarity.ts` + co-located test (`src/utils/titleSimilarity.test.ts`). TDD cycle followed: 10/10 failing → implement → 10/10 passing. Commit `edbc48a`.
+- ✅ **Task 2.2 (Session 3)** — created `src/components/LessonSearchPicker.tsx` + co-located test (`src/components/LessonSearchPicker.test.tsx`). TDD cycle: RED (module not found) → implement → first run 7/8 (test pollution: test 5's `mockImplementation` leaked into test 6 because `vi.clearAllMocks()` only clears call history, not implementations) → fixed `beforeEach` to restore default mock → 8/8 passing. Type-check + lint clean (lint:fix removed an unused eslint-disable directive on the `onSelect` prop — see decisions). Commit `887449b`.
 
 ## In flight
 
-- **PR 2 — Submitter flow + LessonSearchPicker** — branch `feat/phase-8b-intent-first-submitter-flow` created off local `main` (carries 2 session-1 doc commits + Task 2.1 commit). Branch not yet pushed. Next: Task 2.2.
+- **PR 2 — Submitter flow + LessonSearchPicker** — branch `feat/phase-8b-intent-first-submitter-flow` carries 2 session-1 doc commits + Task 2.1 + Task 2.2 commits. Branch not yet pushed. Next: Task 2.3 (App.tsx routes).
 
 ## Blocked
 
@@ -39,6 +40,8 @@
 - **Wasted second-agent dispatch on PR #468** before bots: cost ~90s. Wrong finding (date-prefix "further than necessary") rejected. No code changes from it. Future PRs follow corrected ritual.
 - **PR #468 merge strategy = rebase, not squash.** Repo convention is squash-merge, but PR carried 9 valuable doc commits from prior sessions plus the migration; rebase preserved each commit's individual message rather than collapsing the doc-iteration history into a single squash.
 - **PROD apply hit the SASL Apply-step flake on first attempt.** Run `25032406625` failed with `failed SASL auth (invalid SCRAM server-final-message)` at the "Connecting to remote database..." step (the Apply step's second pooler handshake within ~2s of "Initialising login role..."). Verified PROD was unchanged via MCP (`confdeltype = 'a'` pre-rerun); confirmed clean failure with no partial state. `gh run rerun --failed` succeeded on second approval. Memory entry updated to capture the Apply-step variant of the flake (was previously documented only for Verify-step) and the rerun mitigation pattern.
+- **Test pollution on first GREEN run (Task 2.2, Session 3).** First test pass returned 7/8 — the test that overrides `supabase.from.mockImplementation` to return empty data (zero-results case) leaked into the next test (irrelevant-non-zero case), which expects the default Apple Crisp + Pumpkin Pie data. Root cause: `vi.clearAllMocks()` in `beforeEach` clears call history but NOT implementations. Fix: explicitly re-set the default `from` implementation in `beforeEach` (re-import the mocked module + `mockImplementation(...)`). Pattern worth remembering for future component tests that mutate the supabase mock per-test.
+- **`eslint-disable-next-line no-unused-vars` on prop callbacks not needed in this repo.** CLAUDE.md and `src/components/CLAUDE.md` show the disable directive on callback props (e.g., `onChange`). On Task 2.2's `onSelect` prop, `npm run lint:fix` flagged the directive as unused (`no-unused-vars` doesn't actually fire on the param) and removed it. Lint+type-check stay clean without it. Not changing the documented pattern (consistent style across legacy code), but new components don't need the directive.
 
 ## Out-of-scope follow-ups captured here
 
@@ -76,6 +79,20 @@ Major events:
 - Type-check + lint both clean. Committed as `edbc48a`.
 - User had pre-authorized one task; ended here rather than continue into Task 2.2 (substantive ~150 LOC component) per kickoff session-scope rules.
 
+### Session 3 — 2026-04-28 09:55 UTC start, 10:05 UTC end — Task 2.2 shipped
+
+Major events:
+- Read kickoff, design doc, status file, implementation plan from Task 2.2 through Task 2.3.
+- Confirmed baseline clean (`type-check` + `lint`); worktree noise (`M .beads/.gitignore`, `?? .claude/scheduled_tasks.lock`) confirmed unrelated to Phase 8b — left alone.
+- Verified vitest config + supabase export shape + lack of existing `src/components/*.test.tsx` precedent (decision held: co-located per Session 2 precedent rather than under a new `__tests__/` subdir).
+- Invoked `superpowers:test-driven-development` skill.
+- Wrote test (8 `it` blocks; plan said "6/6" but had 8 — plan typo). Confirmed RED: "Failed to resolve import" — module not found, exactly as expected.
+- Implemented `LessonSearchPicker.tsx` (~150 LOC) following plan: debounced 300ms `ilike` query, results list, chip+clear when bound, `cantFindOption` affordance gated on `hasQueried`.
+- First GREEN run: 7/8 (test pollution issue — see decisions).
+- Fixed `beforeEach` to re-set default `supabase.from` implementation. Re-ran: 8/8 passing.
+- `npm run lint` flagged 7 prettier formatting errors + 1 unused-eslint-disable warning. `lint:fix` cleaned all. Re-verify: lint clean, type-check clean, 8/8 still passing.
+- Committed as `887449b`. Single-task session per kickoff scope rules — Task 2.3 (App.tsx routes) deferred to next session.
+
 ### Next session picks up at
 
-**Task 2.2 — TDD `LessonSearchPicker` component.** ~150 LOC + 7 test cases. Files: `src/components/LessonSearchPicker.tsx` + co-located `src/components/LessonSearchPicker.test.tsx` (NOT in a `__tests__/` subdir — follow Session 2's repo-conformance precedent). Implementation plan lines 288-648 has full spec including mock-supabase test setup. Reusable shape: takes `selected | onSelect | onClear | cantFindOption | onCantFind`. Used by both submitter (PR 2) and reviewer (PR 3). After 2.2, Task 2.3 adds the new routes to `App.tsx`. Branch is `feat/phase-8b-intent-first-submitter-flow`, currently local-only.
+**Task 2.3 — Add `/submit/new` and `/submit/revising` routes to `App.tsx`** (implementation plan lines 650-686). Small route addition + two lazy imports. Plan recommends staging the route additions but deferring the commit until after Task 2.6 so we never have a broken commit (refers to missing `NewSubmissionForm` / `RevisingSubmissionForm` modules). Reasonable to do Task 2.3 + 2.4 + 2.5 + 2.6 as a grouped session if cycles allow, or split. Branch is `feat/phase-8b-intent-first-submitter-flow`, currently local-only.
