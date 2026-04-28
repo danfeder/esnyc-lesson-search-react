@@ -70,6 +70,10 @@ export function RevisingSubmissionForm() {
       setError('Pick a lesson or use the "can\'t find it" option first.');
       return;
     }
+    if (!/\/document\/d\/([a-zA-Z0-9-_]+)/.test(googleDocUrl)) {
+      setError('Please paste a valid Google Doc URL.');
+      return;
+    }
     setError(null);
     setIsSubmitting(true);
     try {
