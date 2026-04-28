@@ -372,7 +372,7 @@ describe('LessonSearchPicker', () => {
     expect(onClear).toHaveBeenCalled();
   });
 
-  it('renders can\'t-find option when cantFindOption=true and query has no results', async () => {
+  it('renders can\'t-find affordance after any query when cantFindOption=true (zero-results case)', async () => {
     // Override mock to return empty
     const { supabase } = await import('@/lib/supabase');
     (supabase.from as any).mockImplementation(() => ({
@@ -398,6 +398,44 @@ describe('LessonSearchPicker', () => {
     await waitFor(() => screen.getByText(/can't find it/i));
     await user.click(screen.getByText(/can't find it/i));
     expect(onCantFind).toHaveBeenCalled();
+  });
+
+  it('renders can\'t-find affordance after a query that returns irrelevant matches (non-zero results)', async () => {
+    // Default mock returns Apple Crisp + Pumpkin Pie — irrelevant to "soil"
+    const user = userEvent.setup();
+    const onCantFind = vi.fn();
+    render(
+      <LessonSearchPicker
+        selected={null}
+        onSelect={vi.fn()}
+        onClear={vi.fn()}
+        cantFindOption
+        onCantFind={onCantFind}
+      />
+    );
+
+    await user.type(screen.getByPlaceholderText(/search by lesson title/i), 'soil');
+    // Wait for results to render
+    await waitFor(() => screen.getByText('Apple Crisp Lesson'));
+    // Can't-find link should be available even with non-empty results
+    await waitFor(() => screen.getByText(/can't find it/i));
+    await user.click(screen.getByText(/can't find it/i));
+    expect(onCantFind).toHaveBeenCalled();
+  });
+
+  it('does not render can\'t-find affordance before any query (initial state)', async () => {
+    const onCantFind = vi.fn();
+    render(
+      <LessonSearchPicker
+        selected={null}
+        onSelect={vi.fn()}
+        onClear={vi.fn()}
+        cantFindOption
+        onCantFind={onCantFind}
+      />
+    );
+    // Without any query typed, the affordance should not show
+    expect(screen.queryByText(/can't find it/i)).not.toBeInTheDocument();
   });
 
   it('does not render can\'t-find option when cantFindOption=false', async () => {
@@ -565,15 +603,23 @@ export function LessonSearchPicker({
       {hasQueried && results.length === 0 && !isLoading && (
         <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
           No matches found.
-          {cantFindOption && onCantFind && (
-            <button
-              type="button"
-              onClick={onCantFind}
-              className="ml-2 text-blue-600 hover:text-blue-800 underline"
-            >
-              I'm updating but can't find it — let a reviewer help
-            </button>
-          )}
+        </div>
+      )}
+
+      {/* Phase 8b: can't-find affordance is available whenever the
+          submitter has queried (even with irrelevant results), not
+          only on zero-results. Otherwise a teacher with title-similar
+          but content-different matches has no escape into the
+          binding-intent-no-target state. */}
+      {cantFindOption && onCantFind && hasQueried && (
+        <div className="mt-2 text-sm text-gray-700">
+          <button
+            type="button"
+            onClick={onCantFind}
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            None of these is right — I'm updating but can't find it
+          </button>
         </div>
       )}
     </div>
@@ -1117,10 +1163,89 @@ title (or the can't-find fallback message)."
 
 ### Task 2.7: Add pre-INSERT validation to `process-submission`
 
-**Sub-skill:** `superpowers:test-driven-development` (integration test)
+**Sub-skill:** `superpowers:test-driven-development` (real unit test on the extracted helper)
 
 **Files:**
-- Modify: `supabase/functions/process-submission/index.ts` (insert before line 174)
+- Create: `supabase/functions/process-submission/normalizeSubmissionInputs.ts`
+- Create: `supabase/functions/process-submission/__tests__/normalizeSubmissionInputs.test.ts`
+- Modify: `supabase/functions/process-submission/index.ts` (import + call the helper before line 174)
+
+**Step 0: Extract normalization helper for testability**
+
+The validation logic is the data-safety boundary. It deserves a real automated test, not just manual UI verification. Extract the pure normalization into its own file:
+
+```typescript
+// supabase/functions/process-submission/normalizeSubmissionInputs.ts
+export interface RawSubmissionInputs {
+  submissionType?: 'new' | 'update' | string | undefined;
+  originalLessonId?: string | null | undefined;
+}
+
+export interface NormalizedSubmissionInputs {
+  normalizedSubmissionType: 'new' | 'update';
+  normalizedOriginalLessonId: string | null;
+}
+
+/**
+ * Normalize submission_type and original_lesson_id together so the
+ * persisted row is always internally consistent:
+ *   - type='new' → original_lesson_id is always NULL
+ *   - type='update' → original_lesson_id is either non-empty trimmed
+ *     string or NULL ("submitter said update but couldn't find target")
+ *
+ * Empty strings, whitespace-only strings, undefined, and null all
+ * collapse to NULL — so a sloppy caller that sends '' instead of null
+ * doesn't trip a downstream FK violation with a less-helpful error.
+ */
+export function normalizeSubmissionInputs(input: RawSubmissionInputs): NormalizedSubmissionInputs {
+  const normalizedSubmissionType: 'new' | 'update' =
+    input.submissionType === 'update' ? 'update' : 'new';
+  const normalizedOriginalLessonId =
+    normalizedSubmissionType === 'update' &&
+    typeof input.originalLessonId === 'string' &&
+    input.originalLessonId.trim().length > 0
+      ? input.originalLessonId.trim()
+      : null;
+  return { normalizedSubmissionType, normalizedOriginalLessonId };
+}
+```
+
+Test it (Vitest):
+
+```typescript
+// supabase/functions/process-submission/__tests__/normalizeSubmissionInputs.test.ts
+import { describe, it, expect } from 'vitest';
+import { normalizeSubmissionInputs } from '../normalizeSubmissionInputs';
+
+describe('normalizeSubmissionInputs', () => {
+  it.each([
+    // [input, expected]
+    [{ submissionType: 'new', originalLessonId: null },
+     { normalizedSubmissionType: 'new', normalizedOriginalLessonId: null }],
+    [{ submissionType: 'new', originalLessonId: 'lesson_abc' }, // inconsistent input
+     { normalizedSubmissionType: 'new', normalizedOriginalLessonId: null }], // dropped
+    [{ submissionType: 'update', originalLessonId: 'lesson_abc' },
+     { normalizedSubmissionType: 'update', normalizedOriginalLessonId: 'lesson_abc' }],
+    [{ submissionType: 'update', originalLessonId: '  lesson_abc  ' }, // whitespace
+     { normalizedSubmissionType: 'update', normalizedOriginalLessonId: 'lesson_abc' }],
+    [{ submissionType: 'update', originalLessonId: '' }, // empty string
+     { normalizedSubmissionType: 'update', normalizedOriginalLessonId: null }],
+    [{ submissionType: 'update', originalLessonId: '   ' }, // whitespace-only
+     { normalizedSubmissionType: 'update', normalizedOriginalLessonId: null }],
+    [{ submissionType: 'update', originalLessonId: undefined }, // undefined
+     { normalizedSubmissionType: 'update', normalizedOriginalLessonId: null }],
+    [{ submissionType: undefined, originalLessonId: 'lesson_abc' }, // type missing
+     { normalizedSubmissionType: 'new', normalizedOriginalLessonId: null }],
+    [{ submissionType: 'bogus' as any, originalLessonId: 'lesson_abc' }, // unknown type
+     { normalizedSubmissionType: 'new', normalizedOriginalLessonId: null }],
+  ])('normalizeSubmissionInputs(%j) === %j', (input, expected) => {
+    expect(normalizeSubmissionInputs(input)).toEqual(expected);
+  });
+});
+```
+
+Run: `npx vitest run supabase/functions/process-submission/__tests__/normalizeSubmissionInputs.test.ts`
+Expected: 9/9 pass.
 
 **Step 1: Read the current INSERT region** (line 173-187 confirmed earlier; verify line numbers haven't drifted)
 
@@ -1129,24 +1254,23 @@ Expected: line ~173.
 
 **Step 2: Insert the pre-INSERT validation block before line 174**
 
+Add the import at the top of `process-submission/index.ts`:
+```typescript
+import { normalizeSubmissionInputs } from './normalizeSubmissionInputs.ts';
+```
+
 Insert this code block immediately AFTER line 171 (`const googleDocId = docIdMatch[1];`) and BEFORE line 173 (`// Step 1: Create submission record`):
 
 ```typescript
       // Phase 8b: normalize BOTH submissionType and originalLessonId
-      // together. Without coupled normalization, a caller sending
-      // submissionType='new' with a non-empty originalLessonId would
-      // persist an internally-inconsistent row (new lesson with a
-      // pointer to an "updated" lesson). Defense in depth — the legitimate
-      // PR 2 UI never sends this combination, but other callers (future
-      // edge functions, scripts, manual API calls) might.
-      const normalizedSubmissionType =
-        submissionType === 'update' ? 'update' : 'new';
-      const normalizedOriginalLessonId =
-        normalizedSubmissionType === 'update' &&
-        typeof originalLessonId === 'string' &&
-        originalLessonId.trim().length > 0
-          ? originalLessonId.trim()
-          : null;
+      // together (extracted helper, unit-tested in Step 0). Without
+      // coupled normalization, a caller sending submissionType='new'
+      // with a non-empty originalLessonId would persist an
+      // internally-inconsistent row. Defense in depth — the legitimate
+      // PR 2 UI never sends this combination, but other callers
+      // (future edge functions, scripts, manual API calls) might.
+      const { normalizedSubmissionType, normalizedOriginalLessonId } =
+        normalizeSubmissionInputs({ submissionType, originalLessonId });
 
       // Phase 8b: validate originalLessonId BEFORE INSERT to avoid orphan
       // rows on the error path. The DB-level FK serves as the TOCTOU
@@ -1199,14 +1323,24 @@ Optional: write a Vitest integration test against the edge function module — s
 **Step 4: Commit**
 
 ```bash
-git add supabase/functions/process-submission/index.ts
-git commit -m "feat(edge-fn): Phase 8b — pre-INSERT validation of originalLessonId
+git add supabase/functions/process-submission/index.ts \
+        supabase/functions/process-submission/normalizeSubmissionInputs.ts \
+        supabase/functions/process-submission/__tests__/normalizeSubmissionInputs.test.ts
+git commit -m "feat(edge-fn): Phase 8b — normalize + pre-INSERT validation of submission inputs
 
-When submissionType='update' and originalLessonId is non-null, verify
-the target lesson exists BEFORE inserting the submission row. Returns
-400 on missing target without inserting; the existing FK constraint
-remains the TOCTOU backstop. Allows (update, null) — that's the
-'submitter said update but couldn't find target' state from PR 2."
+Extracts coupled-normalization of submissionType + originalLessonId
+into a pure helper with 9 unit tests covering:
+- type='new' coerces originalLessonId to NULL even if caller sent one
+- type='update' with valid id passes through (trimmed)
+- type='update' with empty/whitespace/null/undefined → NULL
+- unknown/missing type → 'new'
+
+Validation runs BEFORE the INSERT — when type='update' AND
+originalLessonId is non-null after normalization, verify the target
+lesson exists; return 400 on missing without inserting. The existing
+FK constraint remains the TOCTOU backstop. Allows (update, null) —
+that's the 'submitter said update but couldn't find target' state
+from PR 2."
 ```
 
 ### Task 2.7.5: Minimal reviewer safety banner (gap-window mitigation)
@@ -1391,8 +1525,8 @@ Use `mcp__supabase-test__execute_sql` to verify each of the three submission pat
 **Pre-flight: read these files first to internalize shape:**
 - `src/pages/ReviewDetail.tsx` (entire — 1016 lines; focus on `selectedDuplicate` state at line 122, `loadSubmission` near line 200-300, decision-bar at line 990-1010, duplicate cards at line 876-911, approve_update radio at line 938)
 - `src/pages/ReviewDashboard.tsx` (line 109 query; line 165 status cast; lines 257-266 `IntQueueRow` instantiation)
-- `src/components/IntQueueRow.tsx` (current props shape)
-- `src/components/IntDuplicateCard.tsx` (matchLabel prop; this is what powers the "Submitter's choice" badge)
+- `src/components/Internal/IntQueueRow.tsx` (current props shape)
+- `src/components/Internal/IntDuplicateCard.tsx` (matchLabel prop; this is what powers the "Submitter's choice" badge)
 - `src/components/LessonSearchPicker.tsx` (created in PR 2)
 - `src/utils/titleSimilarity.ts` (created in PR 2)
 
@@ -1433,7 +1567,13 @@ Expected: a few lines around the join logic (likely 240-280).
 // Phase 8b: shape of the off-list submitter-target lookup. Used both
 // as the local-variable type in loadSubmission and as the optional
 // field on SubmissionDetail so the rendering code (banner + unified
-// card list) can read it.
+// card list) can read it. lesson_id and title are non-null here
+// because we coalesce/guard at the construction site (loadSubmission)
+// before assigning — even though the underlying lessons_with_metadata
+// view types both as nullable. If either is null in the row, the
+// off-list lookup is treated as failed (submitterTargetLesson stays
+// null) and the banner falls into the "update with id but title
+// couldn't be loaded" yellow state.
 interface SubmitterTargetLesson {
   lesson_id: string;
   title: string;
@@ -1452,23 +1592,40 @@ submitterTargetLesson?: SubmitterTargetLesson | null;
 **Step 4: After the existing similarities-with-lessons assembly, add this block**
 
 ```typescript
-// Phase 8b: if submitter bound to a lesson that's NOT in the dup list,
-// fetch it separately so the unified card list can render it as
-// "Submitter's choice." Note: SimilarityWithLesson has lesson_id at TOP
-// level, not nested under .lesson — see type definition above.
+// Phase 8b: if submitter bound to a lesson that's NOT in the rendered
+// top-5 dup cards, fetch it separately so the unified card list can
+// render it as "Submitter's choice." CRITICAL: check against the SLICED
+// top-5 (not the full similarities array). The render path uses
+// `topDuplicates = submission.similarities.slice(0, 5)` (line 412), so
+// if the submitter target sits at rank 6+ of dup detection results, it
+// is NOT visible in the cards UI — same effective state as off-list.
+// Without this slice, we'd silently skip the off-list fetch for those
+// rank-6+ targets and the reviewer would see selectedDuplicate set to
+// an invisible target with no card showing it.
 const submitterTargetId = submissionData?.original_lesson_id ?? null;
-const targetInDupList = submitterTargetId
-  ? similaritiesWithLessons.some((s) => s.lesson_id === submitterTargetId)
+const renderedTopFive = (similaritiesWithLessons ?? []).slice(0, 5);
+const targetInRenderedTopFive = submitterTargetId
+  ? renderedTopFive.some((s) => s.lesson_id === submitterTargetId)
   : false;
 let submitterTargetLesson: SubmitterTargetLesson | null = null;
-if (submitterTargetId && !targetInDupList) {
+if (submitterTargetId && !targetInRenderedTopFive) {
   const { data: targetData, error: targetErr } = await supabase
     .from('lessons_with_metadata')
     .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
     .eq('lesson_id', submitterTargetId)
     .single();
-  if (!targetErr && targetData) {
-    submitterTargetLesson = targetData;
+  // Coalesce nullable view fields. lessons_with_metadata is typed with
+  // nullable lesson_id and title (Supabase view nullability) — guard
+  // before constructing the SubmitterTargetLesson which requires both.
+  if (!targetErr && targetData && targetData.lesson_id && targetData.title) {
+    submitterTargetLesson = {
+      lesson_id: targetData.lesson_id,
+      title: targetData.title,
+      summary: targetData.summary,
+      file_link: targetData.file_link,
+      grade_levels: targetData.grade_levels,
+      thematic_categories: targetData.thematic_categories,
+    };
   }
 }
 ```
@@ -1676,11 +1833,11 @@ mode for the (update, null) state."
 
 **Files:**
 - Modify: `src/pages/ReviewDetail.tsx`
-- (Possibly) modify: `src/components/IntDuplicateCard.tsx` if it doesn't already accept a custom `matchLabel`
+- (Possibly) modify: `src/components/Internal/IntDuplicateCard.tsx` if it doesn't already accept a custom `matchLabel`
 
 **Step 1: Verify `IntDuplicateCard` supports `matchLabel`**
 
-Run: `grep -n "matchLabel\|export interface\|export type" src/components/IntDuplicateCard.tsx`
+Run: `grep -n "matchLabel\|export interface\|export type" src/components/Internal/IntDuplicateCard.tsx`
 Confirm the prop name (the prior agent review reported it exists; double-check the actual prop name — it might be `matchLabel`, `badge`, or similar).
 
 **Step 2: Re-read the existing `topDuplicates.map` rendering at `src/pages/ReviewDetail.tsx:885-908`**
@@ -1777,7 +1934,14 @@ The existing wrapper at line 878 reads `{topDuplicates.length > 0 && (...)}`. Un
           }}
           selected={selectedDuplicate === c.id}
           onSelect={() => {
-            setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
+            const next = selectedDuplicate === c.id ? null : c.id;
+            setSelectedDuplicate(next);
+            // Phase 8b: keep selectedSearchLesson in sync. If reviewer
+            // picks a non-search card, the picker chip should not show
+            // the previously-searched lesson as still selected.
+            if (selectedSearchLesson && next !== selectedSearchLesson.lesson_id) {
+              setSelectedSearchLesson(null);
+            }
             setSaveError(null);
           }}
         />
@@ -2014,7 +2178,7 @@ suppress the warning."
 
 **Files:**
 - Modify: `src/pages/ReviewDashboard.tsx` (around the `IntQueueRow` instantiation at lines 257-266)
-- Modify: `src/components/IntQueueRow.tsx` (extend props + render the badge)
+- Modify: `src/components/Internal/IntQueueRow.tsx` (extend props + render the badge)
 
 **Step 1: Extend `IntQueueRow` props**
 
@@ -2088,7 +2252,7 @@ Verify the queue shows three different badge colors for the three states.
 **Step 4: Commit**
 
 ```bash
-git add src/pages/ReviewDashboard.tsx src/components/IntQueueRow.tsx
+git add src/pages/ReviewDashboard.tsx src/components/Internal/IntQueueRow.tsx
 git commit -m "feat(review): three-state queue badge (NEW / UPDATE / UPDATE?)
 
 Green NEW for submission_type='new', blue UPDATE for type='update'
