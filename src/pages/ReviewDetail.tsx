@@ -43,6 +43,25 @@ interface SimilarityWithLesson {
   };
 }
 
+// Phase 8b: shape of the off-list submitter-target lookup. Used both as
+// the local-variable type in loadSubmission and as the optional field on
+// SubmissionDetail so the rendering code (banner + unified card list)
+// can read it. lesson_id and title are non-null here because we
+// coalesce/guard at the construction site (loadSubmission) before
+// assigning — even though the underlying lessons_with_metadata view
+// types both as nullable. If either is null in the row, the off-list
+// lookup is treated as failed (submitterTargetLesson stays null) and
+// the banner falls into the "update with id but title couldn't be
+// loaded" yellow state.
+interface SubmitterTargetLesson {
+  lesson_id: string;
+  title: string;
+  summary?: string | null;
+  file_link?: string | null;
+  grade_levels?: string[] | null;
+  thematic_categories?: string[] | null;
+}
+
 interface SubmissionDetail {
   id: string;
   created_at: string;
@@ -57,6 +76,7 @@ interface SubmissionDetail {
   content_embedding?: string;
   teacher: { email: string; full_name?: string };
   similarities?: SimilarityWithLesson[];
+  submitterTargetLesson?: SubmitterTargetLesson | null;
   review?: { metadata: ReviewMetadata; decision: string; notes: string };
 }
 
@@ -260,6 +280,41 @@ export function ReviewDetail() {
         }
       }
 
+      // Phase 8b: if submitter bound to a lesson that's NOT in the rendered
+      // top-5 dup cards, fetch it separately so the unified card list can
+      // render it as "Submitter's choice." CRITICAL: check against the
+      // SLICED top-5 (not the full similarities array) — the render path
+      // uses topDuplicates = submission.similarities.slice(0, 5), so a
+      // submitter target sitting at rank 6+ of dup detection is not
+      // visible in the cards UI and needs the same off-list treatment.
+      const submitterTargetId = submissionData?.original_lesson_id ?? null;
+      const renderedTopFive = similaritiesWithLessons.slice(0, 5);
+      const targetInRenderedTopFive = submitterTargetId
+        ? renderedTopFive.some((s) => s.lesson_id === submitterTargetId)
+        : false;
+      let submitterTargetLesson: SubmitterTargetLesson | null = null;
+      if (submitterTargetId && !targetInRenderedTopFive) {
+        const { data: targetData, error: targetErr } = await supabase
+          .from('lessons_with_metadata')
+          .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
+          .eq('lesson_id', submitterTargetId)
+          .single();
+        // Coalesce nullable view fields. lessons_with_metadata is typed
+        // with nullable lesson_id and title (Supabase view nullability)
+        // — guard before constructing the SubmitterTargetLesson which
+        // requires both.
+        if (!targetErr && targetData && targetData.lesson_id && targetData.title) {
+          submitterTargetLesson = {
+            lesson_id: targetData.lesson_id,
+            title: targetData.title,
+            summary: targetData.summary,
+            file_link: targetData.file_link,
+            grade_levels: targetData.grade_levels,
+            thematic_categories: targetData.thematic_categories,
+          };
+        }
+      }
+
       const { data: reviews } = await supabase
         .from('submission_reviews')
         .select('*')
@@ -284,6 +339,7 @@ export function ReviewDetail() {
         original_lesson_id: submissionData.original_lesson_id ?? undefined,
         content_embedding: submissionData.content_embedding ?? undefined,
         similarities: similaritiesWithLessons,
+        submitterTargetLesson,
         review: reviews?.[0]
           ? {
               metadata: (reviews[0].tagged_metadata as ReviewMetadata) || {},
