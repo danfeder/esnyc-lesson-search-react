@@ -1,7 +1,7 @@
 import { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
-import { ExternalLink } from 'lucide-react';
+import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
 import { logger } from '@/utils/logger';
@@ -906,6 +906,38 @@ export function ReviewDetail() {
                       />
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Phase 8b PR 2 — minimal safety banner. Replaced + enriched by PR 3
+                full Section 6.1 banner (color-coded, target-title lookup,
+                pre-selection). Lives here in PR 2 to close the deploy-gap window
+                where /submit/revising produces (update, X) and (update, null) rows
+                before the reviewer UI knows how to consume them. */}
+            {submission?.submission_type === 'update' && (
+              <div
+                className="adm-card"
+                style={{ borderColor: '#fbbf24', background: '#fffbeb', marginBottom: 12 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <AlertTriangle
+                    size={16}
+                    style={{ color: '#b45309', marginTop: 2, flexShrink: 0 }}
+                  />
+                  <div>
+                    <strong style={{ color: '#92400e' }}>
+                      Submitter says: Update of an existing lesson.
+                    </strong>{' '}
+                    <span style={{ color: '#92400e' }}>
+                      {submission.original_lesson_id
+                        ? `Submitter linked to lesson ID ${submission.original_lesson_id}.`
+                        : 'Submitter could not find the target lesson in the picker.'}
+                    </span>{' '}
+                    <span style={{ color: '#92400e' }}>
+                      Please verify before approving — do not approve as new without checking.
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
