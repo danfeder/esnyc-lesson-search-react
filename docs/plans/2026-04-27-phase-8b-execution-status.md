@@ -1,10 +1,10 @@
 # Phase 8b Execution Status
 
-**Last updated:** 2026-04-28 03:50 UTC by Session 1
-**Current PR:** PR 1 — Schema (single FK migration) — **SHIPPED (merged + PROD-applied + verified)**
-**Current task:** PR 1 done. Next session starts PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner. First task: 2.1 (TDD `titlesAreSimilar` utility).
-**Branch:** main (synced with origin/main via rebase post-merge; 1 commit ahead locally with session-1 doc updates not yet pushed)
-**Last commit on branch:** `9a6b09e` on origin/main; `2e52507` is the local session-1 doc-update commit
+**Last updated:** 2026-04-28 09:50 UTC by Session 2
+**Current PR:** PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner — IN PROGRESS (1 of ~9 tasks done; branch local-only, not yet pushed)
+**Current task:** Task 2.1 done. Next session picks up at Task 2.2 — TDD `LessonSearchPicker` component (the meatiest piece in PR 2).
+**Branch:** `feat/phase-8b-intent-first-submitter-flow` (off local `main`; carries 2 session-1 doc commits + 1 task-2.1 commit; not yet pushed)
+**Last commit on branch:** `edbc48a` (Task 2.1 — titlesAreSimilar)
 
 ## Done
 
@@ -19,10 +19,11 @@
 - ✅ **TEST DB verification** via `mcp__supabase-test__execute_sql`: `confdeltype = 'n'`, `ON DELETE SET NULL` confirmed on TEST
 - ✅ **PR #468 merged** via rebase as `9a6b09e` (preserves the 9 doc-commit history alongside the migration)
 - ✅ **PROD apply** — first attempt failed with documented SASL Apply-step flake (run `25032406625`); rerun via `gh run rerun --failed` succeeded after second approval. PROD verified via `mcp__supabase-remote__execute_sql`: `confdeltype = 'n'`, def shows `ON DELETE SET NULL`.
+- ✅ **Task 2.1 (Session 2)** — created `src/utils/titleSimilarity.ts` + co-located test (`src/utils/titleSimilarity.test.ts`). TDD cycle followed: 10/10 failing → implement → 10/10 passing. Commit `edbc48a`.
 
 ## In flight
 
-- (none — PR 1 fully shipped end-to-end)
+- **PR 2 — Submitter flow + LessonSearchPicker** — branch `feat/phase-8b-intent-first-submitter-flow` created off local `main` (carries 2 session-1 doc commits + Task 2.1 commit). Branch not yet pushed. Next: Task 2.2.
 
 ## Blocked
 
@@ -30,6 +31,7 @@
 
 ## Decisions made during execution
 
+- **Test-file path = co-located, not `__tests__/` subdir** (Task 2.1, Session 2). Implementation plan specified `src/utils/__tests__/titleSimilarity.test.ts` but the repo convention is `src/utils/titleSimilarity.test.ts` (alongside source — see `duplicateDetection.test.ts`, `facetCounts.test.ts`, `logger.test.ts`). Adapted as a small repo-conformance change. Same will apply to Task 2.2 (`src/components/LessonSearchPicker.test.tsx`, not under a `__tests__/` subdir).
 - **Per-PR ritual corrected mid-session.** Original kickoff phrased step 1 as "Pre-push self-review: read every line of `git diff main...HEAD`" — implying I do the read myself. User clarified: pre-push review = agent dispatch (the agent does the line-by-line read; you cannot impartially review your own work). User further clarified: the second `feature-dev:code-reviewer` dispatch I'd added between push and external bots is redundant — external bots ARE the second pass; my role post-bot is investigation/triage with accept/reject recommendations, optionally spawning a subagent for deeper verification. Updated kickoff prompt + implementation plan accordingly.
 - **PR comment surfaces — must check ALL of them.** I missed the `claude-review` substantive review on PR #468 by querying only `gh api .../pulls/468/comments` (line-attached comments, returned `[]`). User pushed back: "did you read the bot's comment?" The bot's full report was an issue-comment surfaced via `gh pr view --comments`. New feedback memory created: `feedback_pr_comment_surfaces.md`. Kickoff + impl plan updated with the four-surface checklist (issue-comments, review summaries, line-comments, CI/check failures).
 - **TEST DB re-verification is per-round, not one-time.** User FYI: any post-PR round that produces DB-affecting fix-up commits requires re-running the TEST DB MCP verification after CI re-applies the migration. New feedback memory: `feedback_per_round_test_db_verification.md`. Kickoff + impl plan rituals extended with this step.
@@ -62,6 +64,18 @@ Major events:
 - PROD apply attempt 1 failed with SASL flake (run `25032406625`); diagnosed as the Apply-step variant of the documented pattern; recommended + queued `gh run rerun --failed`; updated MEMORY.md SASL entry to cover Apply-step variant.
 - PROD apply attempt 2 succeeded after re-approval. Verified via `mcp__supabase-remote__execute_sql`: `confdeltype = 'n'`, def `ON DELETE SET NULL`. PR 1 fully shipped.
 
+### Session 2 — 2026-04-28 09:35 UTC start, 09:50 UTC end — Task 2.1 shipped
+
+Major events:
+- Read kickoff, design doc, status file, implementation plan from Task 2.1 through Task 2.2.
+- Confirmed baseline clean (`type-check` + `lint`).
+- Branched `feat/phase-8b-intent-first-submitter-flow` off local `main` (which had 2 unpushed session-1 doc commits — they ride along in PR 2 per user OK).
+- Invoked `superpowers:test-driven-development` skill.
+- TDD cycle for `titlesAreSimilar`: wrote test (10 cases via `it.each`), confirmed RED (module-not-found), implemented in `src/utils/titleSimilarity.ts` (~20 LOC), confirmed GREEN (10/10 pass).
+- Adapted test path to repo convention: co-located alongside source rather than under `__tests__/` (see decisions above).
+- Type-check + lint both clean. Committed as `edbc48a`.
+- User had pre-authorized one task; ended here rather than continue into Task 2.2 (substantive ~150 LOC component) per kickoff session-scope rules.
+
 ### Next session picks up at
 
-PR 1 done end-to-end. Move to **PR 2 — Submitter flow + LessonSearchPicker + reviewer-side safety banner**. First task: 2.1 (TDD `titlesAreSimilar` utility, ~20 lines + 10 test cases). Branch: `feat/phase-8b-intent-first-submitter-flow`. Pre-flight reads listed in implementation plan PR 2 section.
+**Task 2.2 — TDD `LessonSearchPicker` component.** ~150 LOC + 7 test cases. Files: `src/components/LessonSearchPicker.tsx` + co-located `src/components/LessonSearchPicker.test.tsx` (NOT in a `__tests__/` subdir — follow Session 2's repo-conformance precedent). Implementation plan lines 288-648 has full spec including mock-supabase test setup. Reusable shape: takes `selected | onSelect | onClear | cantFindOption | onCantFind`. Used by both submitter (PR 2) and reviewer (PR 3). After 2.2, Task 2.3 adds the new routes to `App.tsx`. Branch is `feat/phase-8b-intent-first-submitter-flow`, currently local-only.
