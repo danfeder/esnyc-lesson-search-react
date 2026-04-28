@@ -231,7 +231,7 @@ Section 4's RPC status guard catches concurrent reviewers at commit time. Pre-ex
 
 - `src/pages/ReviewDetail.tsx` — banner, pre-select logic, fixed enable/disable, unified card list, search escape hatch, mismatch helper, `loadSubmission` modification for off-list submitter target
 - `src/pages/ReviewDashboard.tsx` — pass `originalLessonId` and badge state into row props
-- `src/components/IntQueueRow.tsx` — accept new prop, render three-state badge
+- `src/components/Internal/IntQueueRow.tsx` — accept new prop, render three-state badge
 - Reuses `LessonSearchPicker` from Section 2
 
 ## 7. Section 4 — Migration / shipping strategy
