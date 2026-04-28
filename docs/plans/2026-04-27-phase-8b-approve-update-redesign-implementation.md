@@ -527,7 +527,7 @@ export function LessonSearchPicker({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by lesson title or topic"
+          placeholder="Search by lesson title"
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isLoading && (
@@ -537,7 +537,7 @@ export function LessonSearchPicker({
           />
         )}
       </div>
-      <p className="mt-1 text-xs text-gray-500">e.g., 'Three Sisters' or 'composting'</p>
+      <p className="mt-1 text-xs text-gray-500">e.g., 'Three Sisters' or 'Apple Crisp'</p>
 
       {results.length > 0 && (
         <ul className="mt-2 border border-gray-200 rounded-lg divide-y divide-gray-100">
@@ -1427,7 +1427,29 @@ interface SimilarityWithLesson {
 Run: `grep -n "similaritiesWithLessons\|lessons_with_metadata" src/pages/ReviewDetail.tsx`
 Expected: a few lines around the join logic (likely 240-280).
 
-**Step 3: After the existing similarities-with-lessons assembly, add this block**
+**Step 3: First, define a named `SubmitterTargetLesson` interface near `SimilarityWithLesson` (around line 33-44 of `ReviewDetail.tsx`)**
+
+```typescript
+// Phase 8b: shape of the off-list submitter-target lookup. Used both
+// as the local-variable type in loadSubmission and as the optional
+// field on SubmissionDetail so the rendering code (banner + unified
+// card list) can read it.
+interface SubmitterTargetLesson {
+  lesson_id: string;
+  title: string;
+  summary?: string | null;
+  file_link?: string | null;
+  grade_levels?: string[] | null;
+  thematic_categories?: string[] | null;
+}
+```
+
+Then extend `SubmissionDetail` with:
+```typescript
+submitterTargetLesson?: SubmitterTargetLesson | null;
+```
+
+**Step 4: After the existing similarities-with-lessons assembly, add this block**
 
 ```typescript
 // Phase 8b: if submitter bound to a lesson that's NOT in the dup list,
@@ -1438,7 +1460,7 @@ const submitterTargetId = submissionData?.original_lesson_id ?? null;
 const targetInDupList = submitterTargetId
   ? similaritiesWithLessons.some((s) => s.lesson_id === submitterTargetId)
   : false;
-let submitterTargetLesson: { lesson_id: string; title: string; summary?: string; grade_levels?: string[] | null; thematic_categories?: string[] | null } | null = null;
+let submitterTargetLesson: SubmitterTargetLesson | null = null;
 if (submitterTargetId && !targetInDupList) {
   const { data: targetData, error: targetErr } = await supabase
     .from('lessons_with_metadata')
@@ -1451,7 +1473,7 @@ if (submitterTargetId && !targetInDupList) {
 }
 ```
 
-Then attach `submitterTargetLesson` to the `setSubmission(...)` payload (extend the `SubmissionDetail` interface to include `submitterTargetLesson?: typeof submitterTargetLesson` so consumers downstream can read it).
+Then attach `submitterTargetLesson` to the `setSubmission(...)` payload — the typed field on `SubmissionDetail` (defined in Step 3) is what consumers downstream read.
 
 **Step 3: Verify type-check passes**
 
@@ -1789,33 +1811,43 @@ selects."
 **Files:**
 - Modify: `src/pages/ReviewDetail.tsx`
 
-**Step 1: Add hook state at the TOP of the `ReviewDetail` component (with the other `useState` calls, NOT inside an IIFE — React rules of hooks)**
+**Step 1: Add hook state in the correct order — `selectedSearchLesson` MUST be declared BEFORE `candidateCards` (Task 3.5) because `candidateCards` consumes `selectedSearchLesson` in its `useMemo` deps.**
+
+The correct ordering inside the `ReviewDetail` component body, top to bottom:
 
 ```typescript
 import type { LessonSearchResult } from '@/components/LessonSearchPicker';
 
-// Phase 8b: search escape hatch. Two pieces of state:
-//   - showSearch: disclosure open/closed
-//   - selectedSearchLesson: the lesson the reviewer picked via search
-//     (kept as a separate state so the picker shows a chip and the
-//     candidate-cards list can render a "Reviewer searched" entry; without
-//     this, picking a search result quietly sets selectedDuplicate but
-//     leaves the reviewer with no visible confirmation of what they chose)
+// 1. State hooks (with the other useState calls, near the top of the component)
+const [selectedSearchLesson, setSelectedSearchLesson] = useState<LessonSearchResult | null>(null);
+const [showSearch, setShowSearch] = useState<boolean>(false);
+//    ... other existing useState declarations ...
+
+// 2. Memoized derivations (the candidateCards useMemo from Task 3.5 reads
+//    selectedSearchLesson from above; safe because the value is captured
+//    at render time)
+const candidateCards = useMemo(() => {
+  // ... see Task 3.5 for full body ...
+  // deps: [submission, topDuplicates, selectedSearchLesson]
+}, [submission, topDuplicates, selectedSearchLesson]);
+
+// 3. Derived plain values (computed during render — not hooks)
 const needsSearch =
   submission?.submission_type === 'update' && !submission?.original_lesson_id;
 const noDups = candidateCards.length === 0;
-const [showSearch, setShowSearch] = useState<boolean>(false);
-const [selectedSearchLesson, setSelectedSearchLesson] = useState<LessonSearchResult | null>(null);
+
+// 4. Effects that depend on (3)
 useEffect(() => {
   setShowSearch(needsSearch || noDups);
 }, [needsSearch, noDups]);
+
 // Reset search picker when navigating to a different submission.
 useEffect(() => {
   setSelectedSearchLesson(null);
 }, [submission?.id]);
 ```
 
-(Order these AFTER `submission` state and AFTER `candidateCards` `useMemo`.)
+**Why ordering matters:** React's "rules of hooks" forbid conditional/looped hook calls but don't forbid this kind of dependency between hooks (later hooks can read values produced by earlier hooks). The risk is purely *referential* — if `candidateCards` is declared before `selectedSearchLesson`, you get `ReferenceError: Cannot access 'selectedSearchLesson' before initialization` at runtime. Declaring state hooks first, then memoized derivations, then effects keeps everything in dependency-correct order.
 
 **Step 2: Compute `helpText` as a derived value (not a hook)**
 
