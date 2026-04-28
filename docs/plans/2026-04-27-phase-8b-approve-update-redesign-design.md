@@ -93,7 +93,7 @@ Direct-link to either branch works (no forced redirect through intent picker). B
 
 - Debounced ~300ms text input
 - Direct `.from('lessons').select('lesson_id, title, grade_levels, season').ilike('title', '%${query}%').limit(10)` against existing `idx_lessons_title_trgm` GIN index. (Do not reuse `search_lessons` RPC — it has 14 params and uses `to_tsquery` which can throw on partial words.)
-- Empty state: placeholder "Search by lesson title or topic" + example "e.g., 'Three Sisters' or 'composting'"
+- Empty state: placeholder "Search by lesson title" + example "e.g., 'Three Sisters' or 'Apple Crisp'" (query is title-only via `.ilike('title', ...)`; do NOT advertise topic/keyword search in copy)
 - Mid-debounce: keep prior results visible with subtle spinner (don't blank out)
 - Zero results / "Don't see your lesson?": **"I'm updating but can't find it — let a reviewer help"** (binding intent, no target — closes the orphan regression hole)
 - Selected target: chip above input with × clear; sticky on mobile
@@ -158,7 +158,9 @@ Color reinforces the text + icon (which carry the state semantics). Color alone 
 | (update, X) | `approve_update` | X (auto-fetched if not in dup list) |
 | (update, null) | `approve_update` | none — reviewer must pick via search |
 
-**State preservation:** pre-selection only fires when there is no existing review row (`submission.review === undefined`). If the submission already has a review (e.g., reviewer flipped from `needs_revision` back to `submitted`, or is mid-edit and refreshed), the existing decision/target/notes are preserved exactly as stored. We never overwrite reviewer-in-progress work with submitter intent — the submitter intent banner still renders, but pre-selection is a no-op when prior reviewer state exists.
+**State preservation:** pre-selection only fires when there is no existing review row (the implementation guard is `reviews?.length === 0`). If a review exists, the **existing prior-review restoration logic at `ReviewDetail.tsx:302-325` already restores `decision`, `notes`, and `metadata`** — Phase 8b just adds the guard so its new pre-selection block does NOT clobber those restored values. The submitter intent banner still renders.
+
+Known pre-existing limitation (out of Phase 8b scope): the prior **merge target** (`selectedDuplicate`) is not restored from the prior review row. The Phase 4 RPC does not write `submission_reviews.canonical_lesson_id`, so deriving the previous target requires a JOIN through `lesson_versions.archived_from_submission_id` (for `approve_update`) or `lessons.original_submission_id` (for `approve_new`) — captured as a follow-up in Section 9. A reviewer who refreshes mid-edit on an `(update, X)` submission will see decision=`approve_update` restored but target=null (they re-pick from cards). This is not new in 8b; it's a current limitation of the review-restoration code that 8b does not regress.
 
 ### 6.3 Fixed enable/disable logic (CRITICAL)
 
@@ -238,7 +240,7 @@ Three sequential PRs:
 
 | # | PR | Contains | Notes |
 |---|---|---|---|
-| 1 | **Schema** | Section 1's 2 items: FK alter + RPC guard | Defensive only. Forward-rollback migration ready before merge. Idempotent (`DROP CONSTRAINT IF EXISTS`, `CREATE OR REPLACE FUNCTION`). |
+| 1 | **Schema** | Section 1's only NEW item: FK alter (`lesson_submissions.original_lesson_id` → `ON DELETE SET NULL`). The RPC status guard from Section 1 item 2 is **already shipped** in Phase 4 (`20260428000008_phase_4_status_guard.sql`); PR 1 only verifies it, does not modify it. | Defensive only. Forward-rollback migration ready before merge. Idempotent (`DROP CONSTRAINT IF EXISTS`). |
 | 2 | **Submitter flow + LessonSearchPicker + reviewer-side safety banner** | Section 2: rewrite `SubmissionPage.tsx`, add `/submit/new` and `/submit/revising` routes, new `LessonSearchPicker` + `NewSubmissionForm` + `RevisingSubmissionForm`, `process-submission` pre-INSERT validation. PLUS minimal reviewer safety banner (see "Gap risk between PR 2 and PR 3" below). | Picker created here since Section 2 is its first consumer. Safety banner closes the gap-window where new (update, X) and (update, null) submissions would reach the old reviewer UI before PR 3 ships. |
 | 3 | **Reviewer flow (full)** | Section 3: `ReviewDetail.tsx` full banner (replaces PR 2's minimal version), pre-selection, fixed enable/disable, unified card list, search escape hatch, mismatch helper, `ReviewDashboard.tsx` + `IntQueueRow.tsx` 3-state badge, reuse `LessonSearchPicker` | Enriches PR 2's safety banner into the full state-aware UX. Old-shape submissions still display correctly. |
 
@@ -257,12 +259,12 @@ Alternatives considered and rejected:
 
 ### TEST DB rehearsal
 
-- PR 1: CI applies migration to TEST. Verify with `mcp__supabase-test__execute_sql`: confirm FK definition shows `ON DELETE SET NULL`; confirm RPC source contains the status guard.
+- PR 1: CI applies the FK migration to TEST. Verify with `mcp__supabase-test__execute_sql`: `SELECT confdeltype FROM pg_constraint WHERE conname = 'lesson_submissions_original_lesson_id_fkey'` returns `n` (SET NULL). Optionally re-confirm the Phase-4 RPC guard is still in place — but do NOT modify it as part of PR 1.
 - PR 2/3: no schema, no rehearsal needed beyond Netlify deploy preview + manual smoke.
 
 ### Rollback paths
 
-- PR 1: forward-rollback migration that reverts FK to `NO ACTION` and removes the RPC status guard. Idempotent.
+- PR 1: forward-rollback migration that reverts ONLY the FK to `NO ACTION` (drop and re-add without `ON DELETE SET NULL`). Idempotent. **Do NOT touch the Phase-4 RPC status guard during rollback** — it predates Phase 8b and is load-bearing for unrelated double-submit safety.
 - PR 2/3: standard frontend git revert. No data side effects to reverse.
 
 ### Per-PR ritual
