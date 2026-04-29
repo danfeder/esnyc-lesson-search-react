@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task.
 
-**Goal:** Repair the column-vs-metadata drift that makes most filter clicks return wrong counts (sometimes zero, often undercounting by 10–90%). Ship across three sequential PRs (column-based RPC → writer fix + column hygiene + trigger → canonical vocabulary). PR 4 (cultural heritage canonicalization) is deferred, gated on stakeholder input.
+**Goal:** Repair the column-vs-metadata drift that makes most filter clicks return wrong counts (sometimes zero, often undercounting by 10–90%). **Two active PRs** (PR-1 column-based RPC → PR-2 writer fix + column hygiene + trigger). **Two deferred PRs** (PR-3 canonical vocabulary; PR-4 cultural heritage redesign). PR-3 is deferred because its taxonomy/vocabulary decisions might be revisited if a future re-classification effort runs against the corpus with a current-generation AI model — the user's explicit call 2026-04-29. PR-4 stays gated on stakeholder input as before. The active PRs commit to nothing PR-3 / PR-4 would undo.
 
-**Architecture:** The normalized text-array/text columns become the **filter source of truth**. `search_lessons` is rewritten to filter on the columns and reconstruct each result row's `metadata` from the columns (per-field COALESCE overlay) so frontend facet counts can't drift from RPC filter behavior. `complete_review_atomic` is rewritten to write canonical-shape metadata + columns. A `lessons_normalize_write` trigger arrives last, after the table is fully canonical, to enforce column⇄metadata sync (column wins) on every future write.
+**Architecture:** The normalized text-array/text columns become the **filter source of truth**. `search_lessons` is rewritten to filter on the columns and reconstruct each result row's `metadata` from the columns (per-field COALESCE overlay) so frontend facet counts can't drift from RPC filter behavior. `complete_review_atomic` is rewritten to write canonical-shape metadata + columns. A `lessons_normalize_write` trigger arrives last, after the table is fully canonical, to enforce column⇄metadata sync (column wins) on every future write. **Rich `academicIntegration.concepts` content is preserved** to a sibling top-level key `academicConcepts` during PR-2 M2 — 690 rows have non-empty concept dictionaries that the bare design-doc unwrap would have destroyed.
 
 **Tech Stack:** PostgreSQL (Supabase), Edge Functions on Deno (only `complete_review_atomic` is touched directly via SQL), React 19 + TypeScript + Vite for the small `useLessonSearch.ts` and `filterDefinitions.ts` updates, Vitest for unit tests, Playwright for E2E smoke.
 
@@ -41,7 +41,7 @@
 |---|---|---|---|
 | 1 | **Column-based RPC + alias tolerance** | 1 migration: column-based `search_lessons`, partial metadata reconstruction with per-field COALESCE, alias helpers, `DROP/CREATE/GRANT/NOTIFY pgrst` mechanics, regenerated `database.types.ts`. Plus a 5-line `normalizeMetadata` fix in `useLessonSearch.ts` for object-shape `academicIntegration`. | Defensive only; widens matches, never narrows. RPC change only, no data side effects. |
 | 2 | **Writer fix + column hygiene + trigger** | 4 migrations sequenced to prevent drift gaps (writer fix → backfill → column hygiene → install + enable trigger). Plus writer-roundtrip TEST DB verification matrix. | Data-touching but each migration is idempotent. Trigger is soft-coerce-with-NOTICE. Coordinated approval pause for PROD apply. |
-| 3 | **Canonical vocabulary** | 3 migrations (data canonicalization; RPC alias-helper removal for lf/at/cm only — heritage alias stays for PR-4; trigger vocab-canonicalization stage) + `filterDefinitions.ts` rewrite + `facetCounts.ts` cleanup. | Coordinated frontend+backend change. Atomic at merge, sequenced at rollout via Netlify-first gate (Task 3.6 step 8). Each migration idempotent. |
+| 3 | **Canonical vocabulary** — **DEFERRED** (user decision 2026-04-29) | Same as planned: 3 migrations (data canonicalization; RPC alias-helper removal for lf/at/cm only — heritage alias stays for PR-4; trigger vocab-canonicalization stage) + `filterDefinitions.ts` rewrite + `facetCounts.ts` cleanup. Documentation kept intact below for when work resumes. | Deferred pending broader metadata-quality review. PR-3 commits to specific spellings (Title Case lessonFormat, bare-noun activity_type, lowercase cooking_methods) and changes the frontend wire-protocol; if a re-classification effort revisits the taxonomy, PR-3 decisions get redone. |
 | 4 | **Heritage redesign** | TBD — gated on stakeholder. Not in this plan. | Deferred. |
 
 ---
@@ -138,6 +138,21 @@ Structure (top to bottom):
 - Alias-tolerance details for each filter — design doc §4 Changes step 3.
 - Metadata reconstruction block — design doc §3 (the exact `original_metadata || jsonb_strip_nulls(jsonb_build_object(...))` snippet).
 
+**ADDITION to the design doc §3 reconstruction block — preserve `academicIntegration.concepts`.** Production probe 2026-04-29 shows 693 rows with object-shape `academicIntegration` containing both `selected` (filter values) AND `concepts` (rich per-subject content like `{"Science": ["plant parts", "life cycles"]}`). The design doc undercounted this cohort as ~14 rows; actual is 690 rows with non-empty concepts data. The bare design doc §3 reconstruction overlays `academicIntegration` with the column-derived flat array, which silently drops the concepts data from result rows. Add a sibling-key promotion line so result-row metadata preserves it:
+
+```sql
+-- Insert this CASE into the jsonb_build_object(...) alongside the other filter-relevant keys,
+-- BEFORE the academicIntegration overlay (order doesn't actually matter inside build_object,
+-- but reading-order matters for review):
+'academicConcepts', CASE
+  WHEN jsonb_typeof(l.metadata->'academicIntegration') = 'object'
+    AND l.metadata->'academicIntegration' ? 'concepts'
+  THEN l.metadata->'academicIntegration'->'concepts'
+END,
+```
+
+This adds a NEW top-level key `academicConcepts` to result rows (verified absent in current corpus via probe 1, no collision). When the original is object-shape with concepts, the CASE returns the concepts dict; otherwise NULL → `jsonb_strip_nulls` drops the key → no `academicConcepts` in result. The downstream `academicIntegration` overlay still flattens to the column-derived array as designed; concepts survives at the sibling key. After PR-2 M2 lands and rescues concepts at rest, this CASE keeps firing on the (then-zero) object-shape rows — defensive, harmless. Frontend doesn't currently consume `academicConcepts` (verified the React app reads `academicIntegration.selected` only); the field is preserved for future use, not active rendering.
+
 **Critical mechanics:**
 - `_alias_*` helpers: declare `IMMUTABLE PARALLEL SAFE` so they can inline.
 - `_match_cooking_methods`: use `EXISTS (SELECT 1 FROM unnest(...) c WHERE lower(c) = ANY(...))` per design doc §4. **Never use `lower(text[]::text)::text[]`** — Postgres array-literal syntax breaks on commas/quotes.
@@ -201,7 +216,7 @@ git commit -m "feat(db): filter-drift PR-1 — column-based search_lessons + ali
 Rewrites search_lessons to filter on normalized columns instead of
 JSONB metadata paths. Adds _alias_lesson_format / _alias_activity_type
 / _alias_cultural_heritage / _match_cooking_methods helpers as
-transitional alias tolerance (removed in PR-3). Result rows now have
+alias tolerance (intended for removal in the deferred PR-3). Result rows now have
 metadata reconstructed per-field from the columns via COALESCE overlay
 so frontend facet counts can't drift from RPC behavior. Signature
 change: filter_cooking_method text → text[]. See design doc §3-§4."
@@ -435,14 +450,14 @@ git push -u origin feat/filter-drift-pr1-column-rpc
 gh pr create --title "feat: filter-drift PR-1 — column-based search_lessons + alias tolerance" --body "$(cat <<'EOF'
 ## Summary
 - Rewrites `search_lessons` to filter on normalized columns instead of JSONB metadata paths
-- Per-field COALESCE metadata reconstruction so frontend facet counts can't drift from RPC behavior
-- Transitional alias helpers (`_alias_lesson_format`, `_alias_activity_type`, `_alias_cultural_heritage`, `_match_cooking_methods`) — removed in PR-3
+- Per-field COALESCE metadata reconstruction so frontend facet counts can't drift from RPC behavior; preserves `academicIntegration.concepts` to a sibling result-row key `academicConcepts`
+- Alias helpers (`_alias_lesson_format`, `_alias_activity_type`, `_alias_cultural_heritage`, `_match_cooking_methods`) installed; **stay in place indefinitely** — vocabulary canonicalization (the deferred PR-3) was intended to remove them, but PR-3 is on hold pending broader metadata-quality review (user decision 2026-04-29)
 - Signature change: `filter_cooking_method text → text[]` (DROP/CREATE/GRANT/NOTIFY)
 - 5-line `useLessonSearch.ts:normalizeMetadata` fix for the 5 NULL-AI-column object-shape rows
 - Regenerated `database.types.ts`
 
 ## Why this matters
-This is PR 1 of 3 in the filter metadata drift repair (see design doc). It widens matches read-side without touching write paths or data shape. PR 2 will fix the writer (`complete_review_atomic`) and backfill historical drift; PR 3 canonicalizes vocabulary.
+This is PR 1 of the active 2-PR filter metadata drift repair (PR-3 vocabulary canonicalization deferred; PR-4 heritage redesign deferred — see design doc). It widens matches read-side without touching write paths or data shape. PR-2 will fix the writer (`complete_review_atomic`), backfill historical drift, and install a normalization trigger.
 
 Most filters go from "0 hits" or "drastically undercounting" to correct counts in this single merge.
 
@@ -550,13 +565,53 @@ The migration is a single `CREATE OR REPLACE FUNCTION public.complete_review_ato
 - `lessonFormat` BEFORE → AFTER (array → scalar)
 - `academicIntegration` BEFORE → AFTER (pass-through → typeof-aware unwrap)
 
-Use the verbatim "AFTER" snippet from design doc §5.
+Use the design doc §5 "AFTER" snippet AS A STARTING POINT, then **add an `academicConcepts` rescue line** so the writer doesn't drop concepts on future submissions (PR-2 M2 only preserves concepts that exist *now*; without writer-side rescue, every approval that arrives with object-shape `{selected, concepts}` p_metadata loses concepts on the way to storage). Updated builder excerpt:
+
+```sql
+-- v_legacy_meta builder (extended from design doc §5 with academicConcepts rescue)
+v_legacy_meta := jsonb_build_object(
+  -- ... (other keys unchanged) ...
+  'lessonFormat',
+    CASE WHEN v_meta ? 'lessonFormat' AND COALESCE(v_meta->>'lessonFormat', '') <> ''
+         THEN to_jsonb(v_meta->>'lessonFormat')
+         ELSE 'null'::jsonb END,
+  'academicIntegration',
+    CASE jsonb_typeof(v_meta->'academicIntegration')
+      WHEN 'array'  THEN v_meta->'academicIntegration'
+      WHEN 'object' THEN COALESCE(v_meta->'academicIntegration'->'selected', '[]'::jsonb)
+      ELSE '[]'::jsonb
+    END,
+  -- ... (other keys unchanged) ...
+);
+
+-- Then add academicConcepts as a sibling key, only when concepts is present
+-- and non-empty (matches PR-2 M2 rescue convention — no empty-{} placeholders).
+-- Use jsonb_set with create_missing=TRUE so this works whether or not
+-- academicConcepts already exists in v_legacy_meta.
+IF jsonb_typeof(v_meta->'academicIntegration') = 'object'
+   AND jsonb_typeof(v_meta->'academicIntegration'->'concepts') = 'object'
+   AND v_meta->'academicIntegration'->'concepts' <> '{}'::jsonb
+THEN
+  v_legacy_meta := v_legacy_meta
+    || jsonb_build_object('academicConcepts', v_meta->'academicIntegration'->'concepts');
+END IF;
+
+-- If the caller passed academicConcepts directly (sibling-shape submission,
+-- forward-compatible), preserve that too — overrides the rescue if both present.
+IF v_meta ? 'academicConcepts'
+   AND jsonb_typeof(v_meta->'academicConcepts') = 'object'
+   AND v_meta->'academicConcepts' <> '{}'::jsonb
+THEN
+  v_legacy_meta := v_legacy_meta
+    || jsonb_build_object('academicConcepts', v_meta->'academicConcepts');
+END IF;
+```
 
 **Change B — column derivation for `academic_integration`.** Per design doc §5 Migration 1 "Column derivation":
 - BEFORE: `_phase4_jsonb_text_array(v_meta->'academicIntegration')` (broken on object input)
 - AFTER: `_phase4_jsonb_text_array(CASE jsonb_typeof(...) WHEN 'object' THEN COALESCE(...->'selected', '[]'::jsonb) ELSE ... END)`
 
-Apply BOTH branches (INSERT for approve_new, UPDATE for approve_update) — the column derivation appears separately in each.
+Apply BOTH branches (INSERT for approve_new, UPDATE for approve_update) — the column derivation appears separately in each. The Change A `v_legacy_meta` builder runs once before both branches and feeds them.
 
 **Pre-flight inside the migration**: `CREATE OR REPLACE FUNCTION` preserves grants. Signature unchanged → no DROP needed.
 
@@ -609,12 +664,14 @@ After Task 2.2 lands, with `supabase db reset` applied (M1 is the latest migrati
 
 For each shape:
 
-| Test | Input `v_meta.academicIntegration` | Expected `metadata.academicIntegration` | Expected `academic_integration` column |
-|---|---|---|---|
-| 1 | `["Math", "Science"]` | `["Math", "Science"]` | `ARRAY['Math', 'Science']` |
-| 2 | `{"selected": ["Math"]}` | `["Math"]` | `ARRAY['Math']` |
-| 3 | `null` or omitted | `[]` or absent | `ARRAY[]::text[]` |
-| 4 | `{"selected": []}` | `[]` | `ARRAY[]::text[]` |
+| Test | Input `v_meta.academicIntegration` | Expected `metadata.academicIntegration` | Expected `metadata.academicConcepts` | Expected `academic_integration` column |
+|---|---|---|---|---|
+| 1 | `["Math", "Science"]` | `["Math", "Science"]` | (key absent) | `ARRAY['Math', 'Science']` |
+| 2 | `{"selected": ["Math"]}` | `["Math"]` | (key absent — no concepts) | `ARRAY['Math']` |
+| 3 | `null` or omitted | `[]` or absent | (key absent) | `ARRAY[]::text[]` |
+| 4 | `{"selected": []}` | `[]` | (key absent) | `ARRAY[]::text[]` |
+| 5 | `{"selected": ["Math"], "concepts": {"Math": ["fractions"]}}` | `["Math"]` | `{"Math": ["fractions"]}` | `ARRAY['Math']` |
+| 6 | `{"selected": ["Math"], "concepts": {}}` | `["Math"]` | (key absent — empty concepts not preserved) | `ARRAY['Math']` |
 
 Plus: lessonFormat `'Single period'` input → metadata `"Single period"` (scalar, not array) and column `'Single period'`.
 
@@ -664,12 +721,13 @@ INSERT INTO lesson_submissions (
 );
 
 -- Call complete_review_atomic with the matrix shape passed EXPLICITLY as p_metadata.
--- Each row of the test matrix (1-5) requires one such call with a different p_metadata payload:
---   Row 1 — flat array AI:    '{"academicIntegration": ["Math", "Science"], "lessonFormat": "Single period"}'::jsonb
---   Row 2 — object-shape AI:  '{"academicIntegration": {"selected": ["Math"]}, "lessonFormat": "Single period"}'::jsonb
---   Row 3 — null AI:          '{"lessonFormat": "Single period"}'::jsonb (academicIntegration omitted)
---   Row 4 — empty-object AI:  '{"academicIntegration": {"selected": []}, "lessonFormat": "Single period"}'::jsonb
---   Row 5 — lessonFormat focus (any AI shape works; the assertion is on lessonFormat scalar shape)
+-- Each row of the test matrix requires one such call with a different p_metadata payload:
+--   Row 1 — flat array AI:        '{"academicIntegration": ["Math", "Science"], "lessonFormat": "Single period"}'::jsonb
+--   Row 2 — object-shape AI:      '{"academicIntegration": {"selected": ["Math"]}, "lessonFormat": "Single period"}'::jsonb
+--   Row 3 — null AI:              '{"lessonFormat": "Single period"}'::jsonb (academicIntegration omitted)
+--   Row 4 — empty-object AI:      '{"academicIntegration": {"selected": []}, "lessonFormat": "Single period"}'::jsonb
+--   Row 5 — concepts rescue:      '{"academicIntegration": {"selected": ["Math"], "concepts": {"Math": ["fractions"]}}, "lessonFormat": "Single period"}'::jsonb
+--   Row 6 — empty concepts:       '{"academicIntegration": {"selected": ["Math"], "concepts": {}}, "lessonFormat": "Single period"}'::jsonb
 SELECT complete_review_atomic(
   p_submission_id      := '00000000-aaaa-bbbb-cccc-000000000001',
   p_reviewer_id        := '<reviewer_id from above>'::uuid,
@@ -679,31 +737,34 @@ SELECT complete_review_atomic(
   p_selected_lesson_id := NULL  -- approve_new doesn't use this
 );
 
--- Inspect the published lesson
+-- Inspect the published lesson — including academicConcepts to verify Row 5 rescue and Row 6 absence
 SELECT
   lesson_id,
   metadata->'academicIntegration' AS ai_meta,
-  metadata->'lessonFormat' AS lf_meta,
-  academic_integration AS ai_col,
-  lesson_format AS lf_col
+  metadata->'academicConcepts'    AS ac_meta,  -- expected NULL for rows 1-4 + 6, populated for row 5
+  metadata ? 'academicConcepts'   AS ac_key_present,  -- explicit key-presence check
+  metadata->'lessonFormat'        AS lf_meta,
+  academic_integration            AS ai_col,
+  lesson_format                   AS lf_col
 FROM lessons
 WHERE original_submission_id = '00000000-aaaa-bbbb-cccc-000000000001';
 ```
 
-Repeat with each of the 5 matrix shapes — increment the synthetic submission UUID (`...0001` → `...0002` → ...) and pass the corresponding `p_metadata` payload. Confirm each shape produces the expected metadata + column per the table above. Only `p_metadata` drives the writer logic under test; the synthetic `lesson_submissions` row is just the function input handle (the function loads the row by `p_submission_id` for FK validity / status guard, but doesn't read shape from it).
+Repeat with each of the 6 matrix shapes — increment the synthetic submission UUID (`...0001` → `...0002` → ... → `...0006`) and pass the corresponding `p_metadata` payload. Confirm each shape produces the expected metadata + column per the table above, including: Row 5 has `ac_key_present = true` and `ac_meta = {"Math": ["fractions"]}`; Rows 1-4 + 6 have `ac_key_present = false`. Only `p_metadata` drives the writer logic under test; the synthetic `lesson_submissions` row is just the function input handle (the function loads the row by `p_submission_id` for FK validity / status guard, but doesn't read shape from it).
 
 **Cleanup (local) — UUID-safe + FK-safe.** `original_submission_id` and `lesson_submissions.id` are `uuid` columns; `LIKE` against them errors without `::text` cast. `submission_reviews.submission_id` and `submission_similarities.submission_id` have FKs to `lesson_submissions.id` that will block the lesson_submissions DELETE. Use an explicit UUID list and FK-safe order:
 
 ```sql
 -- Track each synthetic UUID you used in the matrix runs above.
--- Example with 5 IDs (one per matrix row); adapt to your actual count.
+-- 6 IDs (one per matrix row); adapt if you add/remove rows.
 WITH synth AS (
   SELECT unnest(ARRAY[
     '00000000-aaaa-bbbb-cccc-000000000001',
     '00000000-aaaa-bbbb-cccc-000000000002',
     '00000000-aaaa-bbbb-cccc-000000000003',
     '00000000-aaaa-bbbb-cccc-000000000004',
-    '00000000-aaaa-bbbb-cccc-000000000005'
+    '00000000-aaaa-bbbb-cccc-000000000005',
+    '00000000-aaaa-bbbb-cccc-000000000006'
   ]::uuid[]) AS id
 )
 DELETE FROM lessons WHERE original_submission_id IN (SELECT id FROM synth);
@@ -714,7 +775,8 @@ WITH synth AS (
     '00000000-aaaa-bbbb-cccc-000000000002',
     '00000000-aaaa-bbbb-cccc-000000000003',
     '00000000-aaaa-bbbb-cccc-000000000004',
-    '00000000-aaaa-bbbb-cccc-000000000005'
+    '00000000-aaaa-bbbb-cccc-000000000005',
+    '00000000-aaaa-bbbb-cccc-000000000006'
   ]::uuid[]) AS id
 )
 DELETE FROM submission_reviews WHERE submission_id IN (SELECT id FROM synth);
@@ -727,7 +789,8 @@ WITH synth AS (
     '00000000-aaaa-bbbb-cccc-000000000002',
     '00000000-aaaa-bbbb-cccc-000000000003',
     '00000000-aaaa-bbbb-cccc-000000000004',
-    '00000000-aaaa-bbbb-cccc-000000000005'
+    '00000000-aaaa-bbbb-cccc-000000000005',
+    '00000000-aaaa-bbbb-cccc-000000000006'
   ]::uuid[]) AS id
 )
 DELETE FROM submission_similarities WHERE submission_id IN (SELECT id FROM synth);
@@ -738,7 +801,8 @@ WITH synth AS (
     '00000000-aaaa-bbbb-cccc-000000000002',
     '00000000-aaaa-bbbb-cccc-000000000003',
     '00000000-aaaa-bbbb-cccc-000000000004',
-    '00000000-aaaa-bbbb-cccc-000000000005'
+    '00000000-aaaa-bbbb-cccc-000000000005',
+    '00000000-aaaa-bbbb-cccc-000000000006'
   ]::uuid[]) AS id
 )
 DELETE FROM lesson_submissions WHERE id IN (SELECT id FROM synth);
@@ -754,7 +818,7 @@ Use the same synthetic SQL from Step 1, but against TEST DB's seeded reviewer (p
 
 **Step 3: Capture results**
 
-Document the local matrix outcomes (Step 1) in your scratch space; document the TEST DB integrated-flow outcomes (Step 2) in the PR description (4 rows + 1 lessonFormat row, all expected/actual aligning).
+Document the local matrix outcomes (Step 1) in your scratch space; document the TEST DB integrated-flow outcomes (Step 2) in the PR description. Expected evidence: all 6 academicIntegration rows from Step 1's table — including the new Row 5 (concepts rescue: `academicConcepts` populated as `{"Math":["fractions"]}`) and Row 6 (empty concepts: `academicConcepts` key absent) — plus the lessonFormat scalar-shape assertion.
 
 **Step 4: No commit** — verification is in-session evidence.
 
@@ -765,37 +829,104 @@ Document the local matrix outcomes (Step 1) in your scratch space; document the 
 **Files:**
 - Create: `supabase/migrations/<DATE_PREFIX>_filter_drift_pr2_m2_backfill.sql`
 
+**Step 0: Pre-flight probe — confirm AI cohort scope and absence of unknown inner keys**
+
+The design doc §5 estimated ~14 object-shape rows; PROD probe 2026-04-29 showed **693**. Re-run before drafting M2 to confirm scope hasn't shifted further AND to confirm only `selected` and `concepts` keys exist inside the object (no unknown keys to handle):
+
+```sql
+-- Run via mcp__supabase-remote__execute_sql.
+-- Note: the "unknown inner keys" probe uses an explicit AS keys(key) alias
+-- because `FROM jsonb_object_keys(...) k WHERE k IN (...)` relies on Postgres
+-- treating the table alias as a scalar column and is fragile across versions.
+SELECT
+  COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'academicIntegration') = 'object')                                                    AS object_rows,
+  COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'academicIntegration') = 'object' AND metadata->'academicIntegration' ? 'concepts')   AS rows_with_concepts,
+  COUNT(*) FILTER (
+    WHERE jsonb_typeof(metadata->'academicIntegration') = 'object'
+      AND jsonb_typeof(metadata->'academicIntegration'->'concepts') = 'object'
+      AND metadata->'academicIntegration'->'concepts' <> '{}'::jsonb
+  ) AS rows_with_nonempty_concepts,
+  COUNT(*) FILTER (
+    WHERE jsonb_typeof(metadata->'academicIntegration') = 'object'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_object_keys(metadata->'academicIntegration') AS keys(key)
+        WHERE key NOT IN ('selected', 'concepts')
+      )
+  ) AS rows_with_unknown_inner_keys,
+  COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'academicIntegration') = 'array')                                                     AS already_canonical_array_rows
+FROM lessons;
+```
+
+Expected: `rows_with_unknown_inner_keys = 0`. If non-zero, **stop and surface** — the M2 unwrap below would silently drop those keys. Either expand the rescue to additional sibling keys, or (more likely) escalate the broader question of "what other rich data is hiding in metadata?" Capture `rows_with_nonempty_concepts` as the expected post-M2 verification target (Step 4).
+
 **Step 1: Verify next filename**
 
 Run: `ls supabase/migrations/ | sort | tail -3`. Use a prefix > Migration 1's.
 
 **Step 2: Draft the migration**
 
-Three idempotent UPDATE statements per design doc §5 Migration 2:
+Three idempotent UPDATE statements per design doc §5 Migration 2 — but the AI unwrap is **MODIFIED** from the design doc to rescue `concepts`:
 
 1. **Long-form key promotion** — promotes `themes`/`season`/`location` to `thematicCategories`/`seasonTiming`/`locationRequirements` with scalar→array coercion. Verbatim from design doc §5 Migration 2.
-2. **academicIntegration object-shape unwrap** — `{selected: [...]}` → flat array. Verbatim from design doc §5 Migration 2.
+
+2. **academicIntegration object-shape unwrap, with concepts rescue (REVISED — supersedes design doc snippet).** The design doc's UPDATE used `jsonb_set(... '{academicIntegration}', ->'selected')` which silently destroys `concepts` on all 690 rows that have non-empty concepts data. Replace with the snippet below — using `jsonb_strip_nulls` so empty/missing concepts produces NO `academicConcepts` key (rather than an empty `{}` placeholder; matches the writer-fix M1 convention so the post-M1 + post-M2 corpus has uniform "key present iff data present" semantics):
+
+   ```sql
+   -- Rescue concepts to a sibling top-level key, then unwrap academicIntegration
+   -- to the canonical flat array. Idempotent: re-running on already-unwrapped rows
+   -- is a no-op (WHERE clause gates on object-shape input only).
+   UPDATE lessons
+   SET metadata = (metadata - 'academicIntegration')
+     || jsonb_strip_nulls(jsonb_build_object(
+          'academicIntegration',
+            COALESCE(metadata->'academicIntegration'->'selected', '[]'::jsonb),
+          'academicConcepts',
+            CASE
+              WHEN jsonb_typeof(metadata->'academicIntegration'->'concepts') = 'object'
+                AND metadata->'academicIntegration'->'concepts' <> '{}'::jsonb
+              THEN metadata->'academicIntegration'->'concepts'
+              -- ELSE NULL → jsonb_strip_nulls drops the key
+            END
+        ))
+   WHERE jsonb_typeof(metadata->'academicIntegration') = 'object';
+   ```
+
+   Notes:
+   - `(metadata - 'academicIntegration')` removes the old object-shape key first; `||` then adds back the flat-array form plus (when applicable) the new `academicConcepts` sibling. Avoids the `jsonb_set` shape-coercion edge cases.
+   - `jsonb_strip_nulls` on the build_object only drops keys whose VALUE is JSON `null`. The `academicIntegration` value is `COALESCE(..., '[]'::jsonb)` which is never null, so it always stays. The `academicConcepts` CASE returns SQL NULL when concepts is missing/empty → `jsonb_build_object` lifts that to JSON `null` → `jsonb_strip_nulls` removes the key. The 3 of 693 rows with empty/missing concepts end up with NO `academicConcepts` key (cleaner than empty placeholder).
+   - The new `academicConcepts` key is inert at filter time — no RPC reads it, no PR-2 trigger touches it (only the writer M1 propagates it on future approvals), frontend doesn't currently consume it. Pure preservation for future use.
+   - Verified `academicConcepts` is not an existing top-level key in production (probe 1, 2026-04-29) — no collision.
+
 3. **lessonFormat array unwrap** — `["x"]` → `"x"` for the 1 array-shape outlier. Verbatim from design doc §5 Migration 2.
 
-**ROLLBACK note:** these UPDATEs are one-way (the original short-key data is gone after promotion). If rollback is needed, the `lesson_versions` archive holds the pre-Phase-4 historical content but reconstructing the exact pre-backfill metadata shape would require consulting the lesson_versions table per row. ROLLBACK section as comments documents this caveat.
+**ROLLBACK note:** these UPDATEs are one-way (the original short-key data is gone after promotion; the original object-shape AI is replaced by flat-array + sibling-key form). The `concepts` data IS preserved at `metadata.academicConcepts` even after rollback, so the only true loss is the structural `{selected, concepts}` co-location. If a future system wants the legacy shape back, it can reconstruct from `academicIntegration` + `academicConcepts` cheaply. ROLLBACK section as comments documents this.
 
 **Step 3: Apply locally** (after Migration 1 is also applied — they're sequential)
 
 Run: `supabase db reset`. Expected: no errors.
 
-**Step 4: Verification on local**
+**Step 4: Verification on local + concepts preservation check**
 
 Run via `mcp__supabase__execute_sql`:
 ```sql
 SELECT
   COUNT(*) FILTER (WHERE metadata ?| ARRAY['themes', 'season', 'location'])           AS short_keys_remaining,
   COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'academicIntegration') = 'object')    AS object_shape_remaining,
-  COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'lessonFormat') = 'array')            AS array_lesson_format_remaining
+  COUNT(*) FILTER (WHERE jsonb_typeof(metadata->'lessonFormat') = 'array')            AS array_lesson_format_remaining,
+  -- Concepts preservation check: count rows where academicConcepts is populated
+  -- AND non-empty (matches the M2 UPDATE's "only preserve when non-empty" rule).
+  -- Should equal the pre-flight `rows_with_nonempty_concepts` count on TEST DB.
+  -- Local DB may have 0 rows here if seeded data doesn't include object-shape AI.
+  COUNT(*) FILTER (
+    WHERE jsonb_typeof(metadata->'academicConcepts') = 'object'
+      AND metadata->'academicConcepts' <> '{}'::jsonb
+  )                                                                                   AS concepts_preserved_count
 FROM lessons;
 ```
-Expected: 0, 0, 0.
+Expected: 0, 0, 0, and `concepts_preserved_count` matching the pre-flight `rows_with_nonempty_concepts` count exactly (locally: 0 unless seed data includes object-shape AI; on TEST DB after CI: ≈690 against PROD-equivalent data, exactly equal to whatever the pre-flight probe captured).
 
-(Local DB may not have all the drift shapes that PROD has — focus on "no NEW drift introduced." TEST DB verification post-CI is where we check the drift counts go to zero against real corpus.)
+(Local DB may not have all the drift shapes that PROD has — focus on "no NEW drift introduced." TEST DB verification post-CI is where we check the drift counts go to zero against real corpus AND confirm concepts count survives.)
 
 **Step 5: Commit**
 
@@ -807,11 +938,17 @@ Three idempotent UPDATEs:
 - Promote short-form keys (themes/season/location) to long-form
   (thematicCategories/seasonTiming/locationRequirements) with
   scalar→array coercion. ~81 rows.
-- Unwrap object-shape academicIntegration to flat array. ~14+ rows.
+- Unwrap object-shape academicIntegration to flat array, RESCUING
+  the inner 'concepts' dict to a new sibling key 'academicConcepts'
+  so per-subject concept data (e.g. {Science: [plant parts, ...]})
+  is preserved. 690 rows have non-empty concepts data; design doc
+  §5 estimated only ~14, so this differs from the design doc's
+  unwrap snippet — see Task 2.4 step 2 for the full SQL.
 - Unwrap single-element array lessonFormat to scalar. 1 row.
 
 Sequential after M1 (writer fix) so no new drift is being written
-during backfill. See design doc §5 Migration 2."
+during backfill. See design doc §5 Migration 2 (with academicConcepts
+rescue addendum)."
 ```
 
 ### Task 2.5: Investigate the 17 `activity_type` location-leak rows
@@ -1012,8 +1149,29 @@ For each filter-relevant field:
 - **lesson_format (text):** if `NEW.lesson_format` is non-NULL/non-empty → ensure `NEW.metadata->'lessonFormat'` is the same scalar (coerce array `["x"]`→`"x"` if needed; replace whatever's there). If `NEW.lesson_format` is NULL/empty AND metadata has a usable scalar → derive column.
 - **activity_type (text[]):** if `NEW.activity_type` non-empty → set `NEW.metadata->'activityType'` to `to_jsonb(NEW.activity_type)`. If column empty AND metadata has array/scalar → derive column.
 - **cooking_methods (text[]):** same as activity_type.
-- **academic_integration (text[]):** if `NEW.academic_integration` non-empty → set `NEW.metadata->'academicIntegration'` to flat-array `to_jsonb(NEW.academic_integration)`. If column empty AND metadata has array (or `{selected: [...]}` object) → flatten/derive.
-- **thematic_categories, season_timing, location_requirements, core_competencies, cultural_heritage, social_emotional_learning** — same column⇄metadata sync pattern.
+- **academic_integration (text[]) — with concepts rescue (matches M1 + M2 contract):**
+  - **Concepts rescue runs FIRST, before the column⇄metadata sync below.** If incoming `NEW.metadata->'academicIntegration'` is object-shape with non-empty `concepts`, AND `NEW.metadata->'academicConcepts'` is not already populated, copy concepts to `NEW.metadata->'academicConcepts'` so the subsequent flatten doesn't destroy it. Skeleton SQL inside the trigger:
+    ```sql
+    IF jsonb_typeof(NEW.metadata->'academicIntegration') = 'object'
+       AND jsonb_typeof(NEW.metadata->'academicIntegration'->'concepts') = 'object'
+       AND NEW.metadata->'academicIntegration'->'concepts' <> '{}'::jsonb
+       AND NOT (
+         NEW.metadata ? 'academicConcepts'
+         AND jsonb_typeof(NEW.metadata->'academicConcepts') = 'object'
+         AND NEW.metadata->'academicConcepts' <> '{}'::jsonb
+       )
+    THEN
+      NEW.metadata := jsonb_set(
+        COALESCE(NEW.metadata, '{}'::jsonb),
+        '{academicConcepts}',
+        NEW.metadata->'academicIntegration'->'concepts'
+      );
+      RAISE NOTICE 'lessons_normalize_write rescued academicConcepts from object-shape AI; lesson_id=%', NEW.lesson_id;
+    END IF;
+    ```
+  - **Then the column⇄metadata sync** (existing logic): if `NEW.academic_integration` non-empty → set `NEW.metadata->'academicIntegration'` to flat-array `to_jsonb(NEW.academic_integration)`. If column empty AND metadata has array (or `{selected: [...]}` object) → flatten/derive from `selected` (or array directly).
+  - **Idempotency:** the rescue's `NOT (... already populated and non-empty ...)` guard means re-running on a row that already had `academicConcepts` from PR-2 M2 is a no-op. The flatten is also idempotent — array input stays array.
+- **thematic_categories, season_timing, location_requirements, core_competencies, cultural_heritage, social_emotional_learning** — same column⇄metadata sync pattern (no concepts-style rescue needed; probe 4 confirmed these keys are array-only across all 788 rows).
 
 **`RAISE NOTICE` on every coercion.** Format:
 ```sql
@@ -1023,11 +1181,12 @@ RAISE NOTICE 'lessons_normalize_write coerced field=% before_shape=% after_shape
 
 Logs go to Supabase log streams. (No audit table in this PR — design doc §10 captured an audit table as a possible PR-2-round-2 follow-up if log-only proves insufficient.)
 
-**Step 3: Apply locally + smoke**
+**Step 3: Apply locally + smoke (3 cases — array shape, AI flatten, concepts rescue)**
 
-Run: `supabase db reset`. Then test the trigger:
+Run: `supabase db reset`. Then test the trigger across all coercion paths:
+
 ```sql
--- Insert a deliberately drifted row (array-shape lessonFormat) directly via SQL
+-- Smoke 1: array-shape lessonFormat → scalar
 INSERT INTO lessons (
   lesson_id, title, summary, file_link, grade_levels, metadata
 ) VALUES (
@@ -1035,16 +1194,46 @@ INSERT INTO lessons (
   ARRAY['3'], '{"lessonFormat": ["Single period"]}'::jsonb
 );
 
--- Inspect the row
 SELECT lesson_format, metadata->'lessonFormat' AS lf_meta
 FROM lessons WHERE lesson_id = 'test_trigger_smoke_1';
 -- Expected: lesson_format='Single period' (text), lf_meta='"Single period"' (jsonb scalar).
 
+-- Smoke 2: object-shape AI WITH concepts → rescue + flatten
+INSERT INTO lessons (
+  lesson_id, title, summary, file_link, grade_levels, metadata
+) VALUES (
+  'test_trigger_smoke_2', 'AI concepts rescue smoke', 'test', 'https://example.com',
+  ARRAY['3'],
+  '{"academicIntegration": {"selected": ["Math"], "concepts": {"Math": ["fractions"]}}}'::jsonb
+);
+
+SELECT
+  academic_integration                 AS ai_col,
+  metadata->'academicIntegration'      AS ai_meta,         -- expected: ["Math"]
+  metadata->'academicConcepts'         AS ac_meta,         -- expected: {"Math": ["fractions"]}
+  metadata ? 'academicConcepts'        AS ac_key_present
+FROM lessons WHERE lesson_id = 'test_trigger_smoke_2';
+-- Expected: ai_col=ARRAY['Math'], ai_meta=["Math"] (flat), ac_meta={"Math":["fractions"]}, ac_key_present=true.
+
+-- Smoke 3: object-shape AI WITHOUT concepts → flatten only, no rescue
+INSERT INTO lessons (
+  lesson_id, title, summary, file_link, grade_levels, metadata
+) VALUES (
+  'test_trigger_smoke_3', 'AI no-concepts smoke', 'test', 'https://example.com',
+  ARRAY['3'],
+  '{"academicIntegration": {"selected": ["Science"], "concepts": {}}}'::jsonb
+);
+
+SELECT
+  metadata->'academicIntegration'      AS ai_meta,         -- expected: ["Science"]
+  metadata ? 'academicConcepts'        AS ac_key_present   -- expected: false (empty concepts not rescued)
+FROM lessons WHERE lesson_id = 'test_trigger_smoke_3';
+
 -- Cleanup
-DELETE FROM lessons WHERE lesson_id = 'test_trigger_smoke_1';
+DELETE FROM lessons WHERE lesson_id IN ('test_trigger_smoke_1', 'test_trigger_smoke_2', 'test_trigger_smoke_3');
 ```
 
-(Check the Supabase logs panel locally — should show the `RAISE NOTICE` line.)
+(Check the Supabase logs panel locally — should show 2-3 `RAISE NOTICE` lines: one for lessonFormat coercion, one for the academicConcepts rescue on smoke 2, one for the AI flatten on smokes 2 + 3.)
 
 **Step 4: Commit**
 
@@ -1087,28 +1276,31 @@ git push -u origin feat/filter-drift-pr2-writer-fix-trigger
 gh pr create --title "feat: filter-drift PR-2 — writer fix + column hygiene + trigger" --body "$(cat <<'EOF'
 ## Summary
 - Migration 1: writer fix in `complete_review_atomic` (lessonFormat array→scalar; academicIntegration object→array)
-- Migration 2: backfill historical drift rows (~95 rows)
+- Migration 2: backfill historical drift rows (~775 rows touched: ~81 short-key promotion + 693 academicIntegration object-shape unwrap with concepts rescue + 1 lessonFormat array unwrap)
 - Migration 3: column-data hygiene (17 activity_type location-leaks + ~5 AI mismatches)
 - Migration 4: install + enable `lessons_normalize_write` trigger
 - Sequenced so writer fix lands first → no drift gaps between migrations
+- **Preserves rich `academicIntegration.concepts` data** to a new sibling key `metadata.academicConcepts` (per-subject concept dictionaries, e.g. `{"Science": ["plant parts", "life cycles"]}` on 690 rows). Inert at filter time; preserved for future use.
 
 ## Why this matters
-This is PR 2 of 3. PR 1 (column-based RPC) is already merged. After this, every future write to lessons goes through canonical-shape enforcement. Drift growth stops.
+This is PR 2 of the active 2-PR filter metadata drift repair (PR-3 vocabulary canonicalization deferred 2026-04-29; PR-4 heritage redesign deferred — see design doc). PR 1 (column-based RPC + alias tolerance) is already merged. After this PR, every future write to lessons goes through canonical-shape enforcement, drift growth stops, and rich `academicIntegration.concepts` content is preserved as a sibling top-level metadata key (`academicConcepts`) for future use.
 
 ## PROD coordination needed (~5 min)
 The writer fix migration needs a brief approval pause to eliminate the ~few-second window during apply where a `complete_review_atomic` call could land on the OLD writer. Notify reviewers in advance; resume approvals once the post-deploy drift query is clean.
 
 ## Test plan
 - [ ] Local `supabase db reset` succeeds (4 migrations apply in order)
-- [ ] Writer-roundtrip test matrix on local (4 AI shapes + 1 lessonFormat) — all pass
-- [ ] Trigger smoke (deliberately drifted INSERT coerces with NOTICE)
+- [ ] Writer-roundtrip test matrix on local — all 6 academicIntegration cases (including Row 5 concepts-rescue and Row 6 empty-concepts-not-rescued) plus 1 lessonFormat assertion pass
+- [ ] Trigger smoke — 3 cases: array-shape lessonFormat → scalar; object-shape AI with concepts → flatten + rescue; object-shape AI with empty concepts → flatten only, no rescue. NOTICE entries captured.
 - [ ] Shape-residue verification on TEST DB after CI: `array_lesson_format=0`, `object_ai=0`, `short_keys=0`
+- [ ] **Concepts preservation check on TEST DB:** `concepts_preserved_count` exactly matches pre-flight `rows_with_nonempty_concepts` count (≈690 on PROD-equivalent data). Empty/missing concepts intentionally do NOT create an `academicConcepts` key — by design, matches M1 + M2 + M4 "key present iff data present" convention.
 - [ ] Writer-roundtrip matrix re-run on TEST DB
 - [ ] `npm run test:rls` clean
 - [ ] `npm run type-check && npm run lint` clean
 
 ## Verification (TEST DB — paste post-CI results here)
 - Shape residue counts: …
+- Concepts preservation count (academicConcepts present): …
 - Writer roundtrip matrix: …
 - Trigger NOTICE log capture: …
 
@@ -1123,7 +1315,7 @@ EOF
 
 After CI applies all 4 migrations to TEST DB:
 1. Run shape-residue query (expected 0/0/0).
-2. Run writer-roundtrip matrix (synthetic call to `complete_review_atomic` with each of the 4 AI shapes + 1 lessonFormat shape).
+2. Run writer-roundtrip matrix — 6 academicIntegration cases (4 base shapes + 2 concepts cases: rescue and empty-not-rescued) plus 1 lessonFormat scalar-shape assertion. See Task 2.3 step 1's table.
 3. Insert + delete a deliberately-drifted lesson row directly via SQL; capture the `RAISE NOTICE` from Supabase logs.
 
 **Step 7: Re-verify TEST DB after each round** that produces DB-affecting fix-ups.
@@ -1148,7 +1340,17 @@ Before approving the PROD migration in `migrate-production.yml`:
 
 ---
 
-## PR 3 — Canonical vocabulary
+## PR 3 — Canonical vocabulary — **DEFERRED**
+
+> **Status (2026-04-29): DEFERRED indefinitely.** User decision: PR-3 locks in specific spellings (Title Case lessonFormat, bare-noun activity_type, lowercase cooking_methods) and rewrites the frontend wire-protocol. If a future re-classification effort runs against the corpus with a current-generation AI model — which the user is interested in — that work would likely revisit the taxonomy/vocabulary itself. Cheaper to defer PR-3 and let any taxonomy decisions live inside the bigger redesign work whenever it happens.
+>
+> **What this means for the active plan:**
+> - PR-1 + PR-2 ship as planned. They don't commit to anything PR-3 would undo.
+> - The PR-1 alias helpers (`_alias_lesson_format`, `_alias_activity_type`, `_match_cooking_methods`, `_alias_cultural_heritage`) stay in the database indefinitely. The "remove in PR-3" comments on them stop being load-bearing — slightly stale but harmless.
+> - The post-PR-2 corpus has consistent SHAPE (all rows canonical-shape per the trigger contract) but mixed VOCABULARY (slug-form + Title-Case mixed) on lf/at/cm. The aliases keep filters working in mixed-vocabulary state.
+> - The `academicConcepts` sibling key from PR-2 M2 is preserved — re-classification work could read concepts data verbatim and decide what to do with it.
+>
+> **The full PR-3 spec is preserved below** for whenever work resumes. Don't execute these tasks without confirming with the user that PR-3 is being re-activated.
 
 **Branch:** `feat/filter-drift-pr3-canonical-vocab`
 
@@ -1620,7 +1822,7 @@ After PR-3 merges + smoke-passes on PROD:
 
 ### TEST DB SQL (the authoritative semantics layer)
 - **PR 1**: 9-row search_lessons test matrix mirroring 2026-04-28 production verification. After PR-1, all return non-zero hits matching documented true counts (~483, ~299, ~177, ~189, ~67). Spot-check result-row metadata is column-derived.
-- **PR 2**: shape-residue queries (`array_lesson_format=0`, `object_ai=0`, `short_keys=0`). Writer-roundtrip matrix on synthetic `complete_review_atomic` calls (4 AI shapes + 1 lessonFormat). Trigger NOTICE log capture from a deliberately-drifted INSERT.
+- **PR 2**: shape-residue queries (`array_lesson_format=0`, `object_ai=0`, `short_keys=0`) + `concepts_preserved_count` matching pre-flight `rows_with_nonempty_concepts`. Writer-roundtrip matrix on synthetic `complete_review_atomic` calls (6 AI shapes — 4 base + 2 concepts — plus 1 lessonFormat assertion). Trigger smoke from 3 deliberately-drifted INSERTs (lessonFormat array; AI with concepts; AI with empty concepts).
 - **PR 3**: distinct-values check (only canonical values in lesson_format / activity_type / cooking_methods columns). Re-run PR-1's 9-row matrix (counts align). Trigger vocab-stage smoke from a slug-form INSERT.
 
 ### E2E

@@ -38,10 +38,20 @@ canonical-shape metadata + columns. A `lessons_normalize_write` BEFORE-trigger
 arrives last to enforce column⇄metadata sync (column wins) on every future
 write.
 
-3 sequential PRs (PR 4 deferred):
-  PR 1: Column-based RPC + alias tolerance (1 migration + 5-line frontend fix)
-  PR 2: Writer fix + column hygiene + trigger (4 migrations in one PR)
-  PR 3: Canonical vocabulary (1 data migration + RPC + filterDefinitions.ts + trigger update + facetCounts.ts hardening)
+2 active PRs + 2 deferred (user decision 2026-04-29):
+  PR 1: Column-based RPC + alias tolerance (1 migration + 5-line frontend fix) — ACTIVE
+  PR 2: Writer fix + column hygiene + trigger (4 migrations in one PR) — ACTIVE
+       PR-2 M2 includes a CONCEPTS RESCUE: 690 rows have rich
+       `metadata.academicIntegration.concepts` (per-subject content like
+       `{Science: [plant parts, life cycles]}`). M2 unwraps the object to
+       a flat array AND moves concepts to a sibling key
+       `metadata.academicConcepts` to preserve it. The rescue is in the
+       impl plan Task 2.4; do NOT use the bare design-doc §5 unwrap
+       snippet (it destroys concepts).
+  PR 3: Canonical vocabulary — DEFERRED indefinitely. Reason: user is
+       considering a future re-classification effort with a current-gen
+       AI; PR-3 locks in spellings + frontend wire-protocol that the
+       redesign would likely revisit.
   PR 4: Cultural heritage redesign — DEFERRED, gated on stakeholder
 
 # WHERE THINGS LIVE
@@ -113,14 +123,19 @@ arguments cannot.
   arrives last to a fully-canonical table.
 - **PR-2 PROD apply needs a brief approval pause (~5 min).** Coordinate
   via reviewer notification. NOT a grant/revoke dance (Path B rejected).
-- **PR-3 coordinated vocabulary change** (data migration + RPC alias removal
-  for lessonFormat/activityType/cookingMethods + filterDefinitions.ts +
-  trigger vocab stage + facetCounts hardening, all in one PR). Atomic at
-  the merge level (one PR, one commit, one set of files); sequenced at
-  the rollout level via the Netlify-first gate (frontend deploy must be
-  live BEFORE the DB migration is approved). The gate, not pure atomicity,
-  is what prevents the zero-results window. Heritage alias stays in for
-  PR-4.
+- **PR-3 is DEFERRED** (user decision 2026-04-29). Documentation kept
+  intact in the impl plan for when work resumes. Don't execute PR-3
+  tasks without explicit user confirmation that PR-3 is reactivating.
+  The PR-1 alias helpers stay in the database indefinitely; their
+  "remove in PR-3" comments stop being load-bearing. Post-PR-2 corpus
+  has canonical SHAPE but mixed VOCABULARY for lf/at/cm — that's fine,
+  aliases keep filters working in mixed state.
+- **academicConcepts sibling key preservation** (PR-2 M2). 690 rows have
+  rich object-shape `academicIntegration` with both `selected` (filter
+  values) and `concepts` (per-subject content). M2 rescues concepts to
+  `metadata.academicConcepts` before unwrapping. Do NOT use the bare
+  design-doc §5 unwrap snippet that drops concepts — see Task 2.4 step 2
+  for the corrected SQL.
 - **Canonical-form decisions (locked, with caveats):**
   - `lesson_format` → Title-Case-with-spaces (corpus dominance).
   - `activity_type` → bare nouns (`cooking`, `garden`, `academic`, `both`).
@@ -165,17 +180,11 @@ DATA SAFETY (top priority — supersedes velocity):
   apply.** Notify in advance, apply migrations, run drift-residue + writer
   shape checks, then notify reviewers they may resume. Don't skip the
   notification.
-- **PR-3 specifically requires a Netlify-first ordering gate for the PROD
-  apply.** PR-3 simultaneously removes RPC alias helpers for lessonFormat /
-  activityType / cookingMethods (DB stops accepting drift-era values for
-  those three fields; heritage alias stays for PR-4) and updates
-  filterDefinitions.ts so the UI sends canonical values. Both must go live,
-  in that order on the user side: Netlify deploy must be ready BEFORE the
-  migration is approved. If the migration applies first, browsers serving
-  the old bundle send drift values for lf/at/cm to the canonical-only DB
-  and those filters return zero. Verify deploy ready via
-  `netlify deploys --status=ready --json` and a DevTools bundle hash check
-  before approving. See impl plan Task 3.6 step 8.
+- **PR-3 Netlify-first gate is DEFERRED with PR-3.** When PR-3 reactivates,
+  re-read this rule (preserved in impl plan Task 3.6 step 8). For the
+  active scope (PR-1 + PR-2), no frontend-vs-DB ordering hazard exists:
+  PR-1 widens read-side matches without touching the wire protocol, and
+  PR-2 only changes write-path + storage shape (no frontend implication).
 
 MIGRATION DISCIPLINE:
 - Before touching any file in supabase/migrations/, invoke the
