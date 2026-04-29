@@ -1,11 +1,11 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — Session 5 (PR-2 M1 drafted + applied locally + matrix verified; branch live, not yet pushed)
-**Current PR:** (none — branch `feat/filter-drift-pr2-writer-fix-trigger` is local; M1 committed but no PR open yet)
-**Next PR:** PR-2 — Writer fix + column hygiene + trigger (M1 committed, M2/M3/M4 still to draft)
-**Current task:** Session 6 picks up at **PR-2 Task 2.4** — Migration 2 (backfill historical drift rows)
-**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` (2 commits ahead of `origin/main`: Session 4 docs ride-along + Session 5 M1 work)
-**Last commit on branch:** `9e5b245 fix(db): filter-drift PR-2 M1 — writer fix in complete_review_atomic`
+**Last updated:** 2026-04-29 — Session 6 (PR-2 M2 drafted + applied locally + verified; branch local, not yet pushed)
+**Current PR:** (none — branch `feat/filter-drift-pr2-writer-fix-trigger` is local; M1+M2 committed but no PR open yet)
+**Next PR:** PR-2 — Writer fix + column hygiene + trigger (M1+M2 committed, M3/M4 still to draft)
+**Current task:** Session 7 picks up at **PR-2 Task 2.5** — investigate the 17 `activity_type` location-leak rows on PROD (info-gathering + present findings to user; do NOT draft M3 in same session)
+**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` (4 commits ahead of `origin/main`: Session 4 docs ride-along + Session 5 M1 + Session 5 docs + Session 6 M2; Session 6 docs pending)
+**Last commit on branch:** `c582ad6 fix(db): filter-drift PR-2 M2 — backfill historical drift rows`
 
 ## Done
 
@@ -22,10 +22,11 @@
 - **PR-2 Task 2.1 (pre-flight verification of `complete_review_atomic`)** — Session 5 — no commit (info-gathering); deployed PROD source confirmed byte-equivalent to `20260428000008_phase_4_status_guard.sql` (status guard + both expected bugs present); no Phase 5+ migration mutates the function (verified via grep — Phase 5/6/6.2 only mention it in comments); PROD cohort snapshot 2026-04-29 matches design doc baseline (1 array_lf / 693 object_ai / 81 short_keys / 690 rich_concepts / 3 empty_concepts / 788 total)
 - **PR-2 Task 2.2 (Migration 1 — writer fix)** — Session 5 — `9e5b245` — drafted `20260506000000_filter_drift_pr2_m1_writer_fix.sql` (403 lines, full function body via `CREATE OR REPLACE`): Bug A `lessonFormat` array→scalar (`to_jsonb(text)` not `jsonb_build_array(text)`), Bug B `academic_integration` typeof-aware unwrap in v_legacy_meta + both INSERT and UPDATE branches' column derivation, plus `academicConcepts` rescue with "key present iff data present" semantic + forward-compat sibling-key path. Local apply via `supabase db reset` clean (61 migrations). Function source verified live via `pg_get_functiondef`: `to_jsonb(v_meta->>'lessonFormat')` present, `jsonb_typeof(v_meta->'academicIntegration')` present, `jsonb_build_array(v_meta->>'lessonFormat')` GONE, `academicConcepts` present, signature unchanged.
 - **PR-2 Task 2.3 (local writer-roundtrip matrix — M1-only writer-isolation)** — Session 5 — no commit (in-session evidence) — 6-row matrix executed locally via service-role MCP against fresh `complete_review_atomic` calls; all 6 rows match design-doc expectations exactly (results table below); cleanup via FK-safe deletion order returned all 4 counts to 0.
+- **PR-2 Task 2.4 (Migration 2 — backfill historical drift rows)** — Session 6 — `c582ad6` — drafted `20260507000000_filter_drift_pr2_m2_backfill.sql` (209 lines) with 4 idempotent UPDATEs: (1) long-form key promotion themes/season/location → thematicCategories/seasonTiming/locationRequirements with scalar→array coercion; (2) academicIntegration object-shape unwrap WITH concepts rescue (revised vs design doc — uses `(metadata - 'academicIntegration') || jsonb_strip_nulls(jsonb_build_object(...))` to preserve concepts at sibling top-level `academicConcepts`); (3) lessonFormat array→scalar unwrap; (4) location_requirements casing canonicalization in BOTH column AND metadata for 95 lowercase rows (extension per Session 3 OOS finding). Pre-flight PROD probes confirmed clean to proceed: 0 unknown inner keys in AI objects, 0 collision on existing `academicConcepts` top-level key, 0 null subject values inside concepts (jsonb_strip_nulls recursion safe). Local apply via `supabase db reset` clean (62 migrations including M2). All 6 drift counters at 0 locally (concepts_preserved_count = 0 expected; local seed has no object-shape AI). type-check + lint clean. Real semantic verification runs against TEST DB after CI apply.
 
 ## In flight
 
-(none — clean stopping point: M1 committed locally, matrix verified, no PR open. Session 6 starts at Task 2.4.)
+(none — clean stopping point: M1+M2 committed locally, no PR open. Session 7 starts at Task 2.5 — info-gathering on the 17 activity_type location-leak rows.)
 
 ## Blocked
 
@@ -250,3 +251,35 @@ Next session (Session 6): pick up at **PR-2 Task 2.4 — Migration 2 (backfill h
 2. Per impl plan Task 2.4: backfill the 81 short-key rows (`themes`/`season`/`location` → long-form keys) + 693 object-shape AI rows (unwrap `{selected: [...]}` → `[...]` while RESCUING concepts to sibling `academicConcepts` key) + 1 array-shape `lessonFormat` outlier (unwrap to scalar). **Extended scope per Session 3 OOS items**: also canonicalize `location_requirements` column casing (92 lowercase rows → Title-Case) AND skip empty-`{}` concepts when moving to top-level `academicConcepts` (3 PROD rows).
 3. Idempotent SQL. Local apply + verification probe (zero short_keys / zero object_ai / zero array_lf remaining); then commit. Plus handle the location-casing extension correctly (corpus is mixed-case; 414 Title-Case + 43 lowercase `Indoor`/`indoor` etc.).
 4. Don't tackle Task 2.5 (17 activity_type location-leak investigation) in the same session — that's a discrete user-decision step that's a natural session boundary.
+
+### Session 6 — 2026-04-29 — PR-2 M2 drafted, applied locally, verified
+
+Major events:
+- Session-start orientation: read kickoff + status + design doc Migration 2 spec + impl plan Task 2.4. `type-check` + `lint` clean baseline; usual `.beads/*` + `.claude/scheduled_tasks.lock` worktree dirt (unrelated).
+- **Task 2.4 pre-flight probes (PROD)**:
+  - **AI cohort + unknown-keys probe**: 693 object_rows / 690 rows_with_nonempty_concepts / **0 rows_with_unknown_inner_keys** / 87 already_canonical_array / 81 short_keys / 1 array_lf / 788 total — matches Session 5 baseline; safe to proceed (no unknown inner keys to handle).
+  - **Location casing probe**: Title-Case Indoor 421 / Both 188 / Outdoor 82 + lowercase indoor 46 / outdoor 27 / both 22 = **95 lowercase rows** (Session 3 saw 92; +3 drift over 4 days, expected since writer fix isn't yet on PROD).
+  - **academicConcepts collision probe**: 0 rows have an existing top-level `academicConcepts` key — no collision.
+  - **Concepts internal-null probe (NEW this session)**: 1284 subject pairs across 690 rows; 100% array-shape values; 0 nulls. Confirms `jsonb_strip_nulls` recursion is safe (no internal subject-value nulls to incidentally strip).
+- **Task 2.4 (M2 migration)** — drafted `supabase/migrations/20260507000000_filter_drift_pr2_m2_backfill.sql` (209 lines) with 4 idempotent UPDATEs:
+  - **(1)** Long-form key promotion (themes/season/location → thematicCategories/seasonTiming/locationRequirements; scalar→array via `jsonb_build_array`; COALESCE preserves any existing long-form key). Verbatim from design doc §5 Migration 2.
+  - **(2)** academicIntegration object-shape unwrap WITH concepts rescue. Pattern: `(metadata - 'academicIntegration') || jsonb_strip_nulls(jsonb_build_object('academicIntegration', COALESCE(...->'selected', '[]'::jsonb), 'academicConcepts', CASE WHEN concepts is non-empty object THEN concepts ELSE NULL END))`. The `jsonb_strip_nulls` drops the `academicConcepts` key when source is missing/empty (so the 3 empty-`{}` rows do NOT get a placeholder; matches M1 writer-fix "key present iff data present" semantic). REVISED vs design doc §5 — see Task 2.4 step 2 for rescue rationale.
+  - **(3)** lessonFormat array unwrap to scalar (`["x"]` → `"x"`). Verbatim from design doc.
+  - **(4)** location_requirements casing canonicalization in BOTH column AND metadata. Two sub-statements: (4a) text[] column with `unnest` + CASE; (4b) jsonb array with `jsonb_set` + `jsonb_agg(CASE...)`. Order: (4) runs after (1) so it catches any lowercase values newly promoted by (1). Extension beyond design doc §5 — Session 3 OOS finding.
+  - **ROLLBACK note** as comments at file end: one-way migration, but concepts data IS preserved at top-level `academicConcepts` (legacy shape reconstructable cheaply).
+- **Local apply** via `supabase db reset`: clean (62 migrations including new M2). All other migrations unchanged (the `bed61a4...branch not found` warning is from the broken beads pre-commit hook, not from supabase or the migration — see `project_beads_broken.md`).
+- **Local verification probe** returns all 6 drift counters at 0: `short_keys_remaining` 0, `object_shape_remaining` 0, `array_lf_remaining` 0, `concepts_preserved_count` 0 (expected — local seed has no object-shape AI), `lowercase_location_col_remaining` 0, `lowercase_location_meta_remaining` 0. `total_rows = 5` (local seed). Real semantic verification runs against TEST DB after CI apply on PR open.
+- **Pre-commit baseline still clean**: `npm run type-check` ✓ `npm run lint` ✓ (SQL-only commit, no TS impact). Commit `c582ad6`.
+
+Decisions made this session (no surprises):
+- Migration prefix `20260507000000_*` — next-available HHMMSS-padded slot after M1's `20260506000000_*`. Consistent with PR-1/M1 pattern.
+- Added internal-null probe for concepts BEFORE drafting (defensive): `jsonb_strip_nulls` recurses, and the impl plan didn't address whether internal subject-value nulls could be incidentally stripped. PROD probe confirmed 0 internal nulls — safe to use the impl plan's recommended `jsonb_strip_nulls` pattern. Captured as a probe step for future similar work.
+- Combined both column-side (4a) and metadata-side (4b) location-casing into the same M2 file (rather than splitting into a separate M3-precursor). Order is deliberate: (1) promotion happens first (could create new lowercase metadata.locationRequirements); (4) canonicalization happens last to catch both pre-existing lowercase AND newly-promoted lowercase. Idempotent in either order due to WHERE-clause guarding, but the chosen order is the clearer mental model.
+- Did NOT roll Task 2.5 (17 activity_type location-leak rows) into this session — that investigation needs user decision before drafting M3, which is a discrete session-boundary step (matches kickoff guidance).
+
+Next session (Session 7): pick up at **PR-2 Task 2.5 — investigate the 17 activity_type location-leak rows on PROD**.
+
+1. Branch already on `feat/filter-drift-pr2-writer-fix-trigger`. M2 commit `c582ad6` and Session 6 docs commit (pending) on local.
+2. Per impl plan Task 2.5: query the 17 rows on PROD via `mcp__supabase-remote__execute_sql` (filter `activity_type IN (ARRAY['indoor'], ARRAY['outdoor']) OR ...`), categorize each row by what `metadata->>'activityType'`, `location_requirements`, and `title`/summary suggest the correct value should be (`cooking`, `garden`, `academic`, `both`, or NULL/empty), and **surface findings to the user as a question table with a recommendation**. Wait for user decision on each row category before proceeding to Task 2.6 (Migration 3).
+3. Investigation only — no commit, no migration drafting in this session. The user-decision step IS the natural session boundary.
+4. **In a subsequent session**, draft Task 2.6 Migration 3 (column-data hygiene) using the user's mapping decisions. Then Task 2.7 Migration 4 (trigger install + enable). Then Task 2.8 (per-PR ritual + PROD coordination).
