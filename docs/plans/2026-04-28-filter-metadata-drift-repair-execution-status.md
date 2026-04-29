@@ -1,10 +1,10 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — Session 1 (PR-1 Tasks 1.1 → 1.5 complete; ready to push + open PR)
-**Current PR:** PR 1 — Column-based RPC + alias tolerance (branched, 3 code commits, NOT pushed)
-**Current task:** Task 1.6 (push + open PR + per-PR ritual) — not yet started
-**Branch:** `feat/filter-drift-pr1-column-rpc`
-**Last commit on branch:** `b39eb92 chore(types): patch database.types.ts for column-based search_lessons`
+**Last updated:** 2026-04-29 — Session 2 (PR-1 pushed + PR #471 opened; awaiting CI + bot reviews)
+**Current PR:** [PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471) — Column-based RPC + alias tolerance (open)
+**Current task:** Task 1.6 Step 5+ (waiting on CI apply to TEST DB + external bot reviews)
+**Branch:** `feat/filter-drift-pr1-column-rpc` (pushed)
+**Last commit on branch:** `faf732c docs(filter-drift): session 1 — PR-1 Tasks 1.1-1.5 complete`
 
 ## Done
 
@@ -13,10 +13,11 @@
 - **PR-1 Task 1.3 (TDD normalizeMetadata fix)** — Session 1 — `22a4814`
 - **PR-1 Task 1.4 (database.types.ts patch)** — Session 1 — `b39eb92`
 - **PR-1 Task 1.5 (local verification matrix)** — Session 1 — no commit (results captured below)
+- **PR-1 Task 1.6 Steps 1-4 (pre-PR check + reviewer dispatch + push + open PR)** — Session 2 — no commit (PR #471 opened on GitHub)
 
 ## In flight
 
-(none — Session 2 picks up at Task 1.6)
+- **PR-1 Task 1.6 Step 5+** — waiting on CI to apply migration to TEST DB; waiting on external bot reviews (CodeRabbit, Claude Review). Session 3 picks up here.
 
 ## Blocked
 
@@ -62,6 +63,12 @@ Other notable scaffolding-time choices (full audit trail in commit `15ac4d7`):
 
   Spot-check on metadata reconstruction confirmed `lessonFormat` returns as JSON STRING (scalar), `academicIntegration` returns as JSON ARRAY, `academicConcepts` key absent when no concepts data — all per design. (Note: local seed has weird data in `lesson_format` column — values like `'{"Full Lesson"}'` text-literals — but this is seed quirk, not a migration bug.) Real semantic validation runs against TEST DB after Session 2's CI apply.
 
+### Session 2 (2026-04-29) decisions
+
+- **Pre-push reviewer agent dispatched on `git diff main...HEAD`.** `feature-dev:code-reviewer` returned 1 Should-fix + 1 Nit. Both REJECTED after triage:
+  - **Should-fix: add `IF EXISTS` to `DROP FUNCTION search_lessons(...)`.** Reviewer cited the project guideline at `supabase/migrations/CLAUDE.md:88` ("Use `IF NOT EXISTS` / `IF EXISTS` for safety"). Rejected per `feedback_pr_bot_review_workflow.md` "default-reject hardening that fails the 'user-visible bug or DB damage' bar." The migration's `NO CASCADE` already preserves the dependency-failure intent; absence of `IF EXISTS` is deliberate per the inline comment ("fail loudly — intended"). The realistic re-apply scenarios (`supabase db reset`, CI, PROD apply) all run from baseline forward where the function exists; no actual user-visible bug or DB damage from omitting. May revisit if external bots flag the same with stronger argument.
+  - **Nit: `_match_cooking_methods` Args order swapped in `database.types.ts`.** Reviewer claimed `{ p_filter_methods, p_l_methods }` doesn't match SQL definition order `(p_l_methods, p_filter_methods)`. Rejected: Supabase auto-gen orders Args ALPHABETICALLY, not by source order (verified via surrounding `archive_duplicate_lesson` entry which is alphabetical c→l). The current order IS canonical CLI output (Task 1.4 status note already verified surgical patch matches CLI 2.95.4 output via grep). Changing it would create drift on the next regen. PostgREST uses named-parameter object syntax where property order doesn't matter at runtime anyway.
+
 - **Helper function smoke tests (against local DB):**
   - `_alias_lesson_format('single-period')` → `['single-period', 'Single period']` ✓
   - `_alias_activity_type(['cooking-only', 'both'])` → `['cooking-only', 'both', 'cooking']` ✓
@@ -103,14 +110,27 @@ Major events:
 - **Task 1.5 (local verification matrix):** 9-row filter matrix on local-with-5-seeded-lessons captured (mostly compiles-and-runs evidence; `academicIntegration=Math` returns 2 hits confirming column-based filter works). Spot-check confirmed metadata reconstruction: `lessonFormat` is JSON string (scalar), `academicIntegration` is JSON array, `academicConcepts` key absent when no concepts data. Real semantic validation deferred to Task 1.6 step 6 post-CI on TEST DB. No commit (verification is in-session evidence).
 - 3 code commits on `feat/filter-drift-pr1-column-rpc`, NOT pushed: `c791df2` (migration), `22a4814` (TS fix + tests), `b39eb92` (types patch). Branch is 7 commits ahead of `origin/main` (4 docs from Session 0 + 3 code from Session 1).
 
-Next session (Session 2): start at **Task 1.6** — the per-PR ritual. Specifically:
-1. Run mandatory pre-PR check: `npm run type-check && npm run lint`.
-2. Dispatch `feature-dev:code-reviewer` agent on `git diff main...HEAD` (the diff covers the migration + TS fix + types patch + test file). Investigate findings per `feedback_bot_review_investigation.md`. Apply consolidated fix-up commits BEFORE push.
-3. Push: `git push -u origin feat/filter-drift-pr1-column-rpc`.
-4. Open PR via `gh pr create` with the body template from impl plan Task 1.6 step 4. Include the local verification matrix above in the PR body, plus a "TEST DB verification — pending CI apply" placeholder for the post-CI 9-row matrix.
-5. After CI applies migration to TEST DB:
-   a. Re-run the 9-row matrix via `mcp__supabase-test__execute_sql`. Compare counts to the design doc §1 production-evidence table. Document actual counts in the PR body. Spot-check metadata reconstruction on a returned row.
+### Session 2 — 2026-04-29 — PR-1 pushed + PR #471 opened
+
+Major events:
+- Session-start orientation: read kickoff + status + design doc + impl plan Task 1.6. Confirmed clean baseline (`type-check` ✓ `lint` ✓; worktree dirt is unrelated `.beads/*` + `.claude/scheduled_tasks.lock`).
+- **Task 1.6 Step 1**: pre-PR check passed (`npm run type-check && npm run lint`).
+- **Task 1.6 Step 2**: dispatched `feature-dev:code-reviewer` agent on `git diff main...HEAD`. 1 Should-fix + 1 Nit reported, both rejected after rebuttal-pass triage (rationale captured in "Decisions made during execution" above). No fix-up commits.
+- **Task 1.6 Step 3**: pushed branch → `origin/feat/filter-drift-pr1-column-rpc`.
+- **Task 1.6 Step 4**: opened **[PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471)** with body from impl plan template, including local 9-row matrix + helper smoke tests + TEST DB verification placeholder.
+- Session ended pre-bot-review per natural session boundary (bot reviews land async, fresh-session triage is the established workflow).
+
+Next session (Session 3): start at **Task 1.6 Steps 5-8**:
+1. Check PR-1 CI status via `gh pr checks 471` and `gh run view <id> --log` for the migrate-test-db workflow. Watch for SASL Apply-step flake — rerun if hit (per MEMORY.md SASL flake entry).
+2. After CI applies migration to TEST DB:
+   a. Re-run the 9-row matrix via `mcp__supabase-test__execute_sql`. Compare counts to design doc §1 production-evidence table (~483 / ~299 / ~177 / ~189 / ~67). Document actual counts in PR #471 body via `gh pr edit 471 --body`. Spot-check metadata reconstruction on a returned row.
    b. Sanity-check regen: `npx supabase gen types typescript --project-id rxgajgmphciuaqzvwmox > /tmp/types_from_test.ts && diff /tmp/types_from_test.ts src/types/database.types.ts`. Expected: empty (apart from CLI-version differences). If drift, commit a fresh patch.
-6. Wait for external bot reviewers (CodeRabbit, Claude Review, etc.). Collect findings from ALL FOUR PR surfaces (per `feedback_pr_comment_surfaces.md`). Investigate and triage every finding (rebuttal pass per `feedback_bot_review_investigation.md`). Apply consolidated fix-up commits per round.
-7. Per-round TEST DB re-verification for any DB-affecting fix-up.
-8. Round-cap after 2 rounds.
+3. Wait for external bot reviewers (CodeRabbit, Claude Review, etc.). Collect findings from ALL FOUR PR surfaces (per `feedback_pr_comment_surfaces.md`):
+   - `gh pr view 471 --comments` (issue-comments)
+   - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/471/reviews --jq '.[] | {user: .user.login, state, body}'` (review summaries)
+   - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/471/comments --jq '.[] | {user: .user.login, path, line, body}'` (line-attached review comments)
+   - `gh pr checks 471` + `gh run view <id> --log-failed` for any failing check
+4. Investigate and triage every finding (rebuttal pass per `feedback_bot_review_investigation.md`). Surface accept/reject recommendations to user with rationale BEFORE applying. Apply consolidated fix-up commits per round.
+5. Per-round TEST DB re-verification for any DB-affecting fix-up (per `feedback_per_round_test_db_verification.md`).
+6. Round-cap after 2 rounds.
+7. After approval + merge: PROD migration runs after manual approval in `migrate-production.yml`. Verify via `mcp__supabase-remote__execute_sql` (same 9-row matrix). Watch for SASL Apply-step flake (PR-1 has only 1 migration so the rerun pattern is straightforward).
