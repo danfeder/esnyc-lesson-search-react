@@ -1,11 +1,11 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — Session 6 (PR-2 M2 drafted + applied locally + verified; branch local, not yet pushed)
+**Last updated:** 2026-04-29 — Session 7 (Task 2.5 investigation complete; user decision captured; M3 draft deferred to Session 8)
 **Current PR:** (none — branch `feat/filter-drift-pr2-writer-fix-trigger` is local; M1+M2 committed but no PR open yet)
 **Next PR:** PR-2 — Writer fix + column hygiene + trigger (M1+M2 committed, M3/M4 still to draft)
-**Current task:** Session 7 picks up at **PR-2 Task 2.5** — investigate the 17 `activity_type` location-leak rows on PROD (info-gathering + present findings to user; do NOT draft M3 in same session)
-**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` (4 commits ahead of `origin/main`: Session 4 docs ride-along + Session 5 M1 + Session 5 docs + Session 6 M2; Session 6 docs pending)
-**Last commit on branch:** `c582ad6 fix(db): filter-drift PR-2 M2 — backfill historical drift rows`
+**Current task:** Session 8 picks up at **PR-2 Task 2.6** — draft Migration 3 (column-data hygiene) using Session 7's 17-row mapping (captured below in "Session 7 decisions")
+**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` (5 commits ahead of `origin/main` after Session 7 docs commit lands: Session 4 docs ride-along + Session 5 M1 + Session 5 docs + Session 6 M2 + Session 6 docs + Session 7 docs)
+**Last commit on branch (pre-Session-7-docs):** `87ed843 docs(filter-drift): session 6 — PR-2 M2 drafted, applied locally, verified`
 
 ## Done
 
@@ -23,10 +23,11 @@
 - **PR-2 Task 2.2 (Migration 1 — writer fix)** — Session 5 — `9e5b245` — drafted `20260506000000_filter_drift_pr2_m1_writer_fix.sql` (403 lines, full function body via `CREATE OR REPLACE`): Bug A `lessonFormat` array→scalar (`to_jsonb(text)` not `jsonb_build_array(text)`), Bug B `academic_integration` typeof-aware unwrap in v_legacy_meta + both INSERT and UPDATE branches' column derivation, plus `academicConcepts` rescue with "key present iff data present" semantic + forward-compat sibling-key path. Local apply via `supabase db reset` clean (61 migrations). Function source verified live via `pg_get_functiondef`: `to_jsonb(v_meta->>'lessonFormat')` present, `jsonb_typeof(v_meta->'academicIntegration')` present, `jsonb_build_array(v_meta->>'lessonFormat')` GONE, `academicConcepts` present, signature unchanged.
 - **PR-2 Task 2.3 (local writer-roundtrip matrix — M1-only writer-isolation)** — Session 5 — no commit (in-session evidence) — 6-row matrix executed locally via service-role MCP against fresh `complete_review_atomic` calls; all 6 rows match design-doc expectations exactly (results table below); cleanup via FK-safe deletion order returned all 4 counts to 0.
 - **PR-2 Task 2.4 (Migration 2 — backfill historical drift rows)** — Session 6 — `c582ad6` — drafted `20260507000000_filter_drift_pr2_m2_backfill.sql` (209 lines) with 4 idempotent UPDATEs: (1) long-form key promotion themes/season/location → thematicCategories/seasonTiming/locationRequirements with scalar→array coercion; (2) academicIntegration object-shape unwrap WITH concepts rescue (revised vs design doc — uses `(metadata - 'academicIntegration') || jsonb_strip_nulls(jsonb_build_object(...))` to preserve concepts at sibling top-level `academicConcepts`); (3) lessonFormat array→scalar unwrap; (4) location_requirements casing canonicalization in BOTH column AND metadata for 95 lowercase rows (extension per Session 3 OOS finding). Pre-flight PROD probes confirmed clean to proceed: 0 unknown inner keys in AI objects, 0 collision on existing `academicConcepts` top-level key, 0 null subject values inside concepts (jsonb_strip_nulls recursion safe). Local apply via `supabase db reset` clean (62 migrations including M2). All 6 drift counters at 0 locally (concepts_preserved_count = 0 expected; local seed has no object-shape AI). type-check + lint clean. Real semantic verification runs against TEST DB after CI apply.
+- **PR-2 Task 2.5 (investigate the 17 activity_type location-leak rows on PROD)** — Session 7 — no commit (info-gathering + user decision; full 17-row mapping captured below in "Session 7 decisions" for Session 8's M3 draft); 4 PROD probes total — (1) 17-row inventory with title/summary, (2) existing activity_type vocabulary distribution (cooking 299 / garden 278 / both 137 / academic 57 + leaked indoor 14 / outdoor 3), (3) 3-row deeper context probe on the "Unknown / Error processing" rows (column metadata DID extract for them despite title/summary failure: thematic_categories/academic_integration populated; cooking_methods/garden_skills empty), (4) corpus-wide deterministic-classifier validation showing cooking_methods + garden_skills columns predict activity_type with 97-99.7% precision per ESYNYC convention (`both` strictly = "Cooking + Garden", NOT "cooking + academic"). Documentation grep surfaced canonical semantic in `filterDefinitions.ts:23-32` (UI labels: `cooking-only`="Cooking Only", `garden-only`="Garden Only", `both`="Cooking + Garden", `academic-only`="Academic Only") and `LESSON_SUBMISSION_SPECS.md:718` ("Activity Type - Single-select (Cooking/Garden/Both/Academic)"). User-decision step IS the natural session boundary; M3 draft deferred to Session 8.
 
 ## In flight
 
-(none — clean stopping point: M1+M2 committed locally, no PR open. Session 7 starts at Task 2.5 — info-gathering on the 17 activity_type location-leak rows.)
+(none — clean stopping point: M1+M2 committed locally, Task 2.5 investigation complete with user decision captured. Session 8 starts at Task 2.6 — draft Migration 3 column-data hygiene using the 17-row mapping.)
 
 ## Blocked
 
@@ -88,6 +89,40 @@ Other notable scaffolding-time choices (full audit trail in commit `15ac4d7`):
   - `expand_cultural_heritage(_alias_cultural_heritage(['asian']))` → `['asian', 'Asian', 'Korean', 'Japanese', 'Chinese']` (full pipeline) ✓
 
 - **Task 1.3 RED→GREEN.** Initial test run (3/6 fail): legacy object `{selected: ['Math']}` returned `['[object Object]']` instead of `['Math']`; `{selected: []}` returned `['[object Object]']` instead of `[]`; scalar `'Math'` returned `['Math']` instead of `[]`. After the IIFE replacement: 6/6 pass. Full vitest suite 473/473 (up from 467; 6 new tests added).
+
+### Session 7 (2026-04-29) decisions
+
+**Task 2.5 — 17 activity_type location-leak rows.** All 17 rows had the same shape on PROD: `activity_type` column equals `location_requirements` value (`['indoor']` or `['outdoor']`), `metadata->>'activityType'` was NULL/missing — strong import-bug signal where location field got copied into activity_type field by a pre-Phase-4 import path.
+
+**Documentation discovery (re-calibration of first-pass recommendations).** Initial text-based classification from title/summary suggested `both` for many cooking-with-academic-content lessons (e.g., "read an article, then cook"). Grep through `src/utils/filterDefinitions.ts:23-32` and `docs/LESSON_SUBMISSION_SPECS.md:718` revealed the canonical UI labels: `both` = "**Cooking + Garden**" (NOT cooking + academic). Corpus-wide validation probe confirmed the semantic with 97-99.7% precision: `cooking_methods` populated + `garden_skills` empty → `cooking`; `garden_skills` populated + `cooking_methods` empty → `garden`; BOTH populated → `both`; NEITHER populated → `academic`. Re-classified all 17 rows using `cooking_methods` + `garden_skills` columns as the deterministic classifier (these columns DID extract correctly even on the 3 "Error processing" rows where title/summary failed).
+
+**User decision (2026-04-29):** approved Decision 1 (the 14 unambiguous rows per the deterministic classifier) + Decision 2 option B (clear the 3 "Unknown / Error processing" rows to `ARRAY[]::text[]`; let `complete_review_atomic` populate them on next reviewer touch).
+
+**Final 17-row mapping for Session 8's M3 draft:**
+
+| # | lesson_id | title | leaked column | → final value (column AND metadata) |
+|---:|---|---|:---:|:---:|
+| 1 | `1aqSoaGDAVFvSWjZJeKAEIkHvPdrWKsxq` | Black Bean Burgers | `['indoor']` | `cooking` |
+| 2 | `1cCe0ugBM572aGRojx1RfR6wE5FuBA3CjFetD8NKffvs` | Pesticides | `['outdoor']` | `garden` |
+| 3 | `1iwA2l4QPsqXJqu5lP8Ix5BarlTjIhxTQ` | Winter After School - Session 2 | `['indoor']` | `cooking` |
+| 4 | `1l9KH63QBe2xhyH0zp6VIavtj0uKSRZtd` | Unknown (Error) | `['indoor']` | `ARRAY[]::text[]` (clear) |
+| 5 | `1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU` | Unknown (Error) | `['indoor']` | `ARRAY[]::text[]` (clear) |
+| 6 | `1lGcRDLkd7n5-CulckQb-rt1M5Q7SeA3K` | Making Potting Soil | `['indoor']` | `garden` |
+| 7 | `1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg` | Who's Who in the Food System | `['indoor']` | `academic` |
+| 8 | `1nFbpkwlujk8fIO8RkeIcDoO2fuO83Iil2Srf8t5iqm8` | Unknown (Error) | `['indoor']` | `ARRAY[]::text[]` (clear) |
+| 9 | `1nzZC51049bxqfXYRxWX5Z-TwEL-8uS4H1nbWX7cgPFk` | Five Senses Scavenger Hunt | `['outdoor']` | `garden` |
+| 10 | `1P8fqhHyo7FIzysTkrh628cbOfkpYAQw1` | Plant Part Stir Fry | `['indoor']` | `both` |
+| 11 | `1sHwSvaFaZC9wpHOqr-dQBMEl-paf6zZV` | Cajun Black Eyed Peas sliders | `['indoor']` | `cooking` |
+| 12 | `1sn_6veDzL8P0fyHIrGIRRpD5BPp86ZuOB2CR7wnDF6Q` | Mixed Greens and Cornbread | `['indoor']` | `both` |
+| 13 | `1v7aPRuAM9q1jdffDr1IqgxZUKqTZ7By-` | Biodiversity | `['outdoor']` | `garden` |
+| 14 | `1V7feFPt6bZc0b695g_3Qe_U4AAE-xO5s` | Sri Lankan Curry | `['indoor']` | `cooking` |
+| 15 | `1vDebvrcoPdDcoooLnpF64P3ade4l8ZRqVkfSlEAyYts` | Fattoush | `['indoor']` | `cooking` |
+| 16 | `1xwTiqazvuLxwYiNB-y6xLaRRVFkDkvOgYroXPstQLjE` | African American Food Traditions | `['indoor']` | `cooking` |
+| 17 | `1YeRlyncgM-gMS-Aica2Fk7wjBsRN9-K6` | Fattoush (dup of #15) | `['indoor']` | `cooking` |
+
+**Distribution: 7 `cooking`, 4 `garden`, 2 `both`, 1 `academic`, 3 cleared.** Session 8 M3 draft uses these as the `lesson_id IN (...) → CASE` mapping; per Task 2.6 step 1, M3 must update BOTH `activity_type` column AND `metadata.activityType` (canonical shape: JSON array `["<value>"]` for the 14 set rows; `metadata - 'activityType'` to delete the key for the 3 cleared rows — column gets `ARRAY[]::text[]`).
+
+**Side observation (out-of-scope for M3, captured for follow-up):** rows #15 and #17 are byte-duplicates ("Fattoush" with identical title + summary). Worth flagging for a future content-dedup pass (separate from M3 leak fix).
 
 ## Out-of-scope follow-ups captured here
 
@@ -283,3 +318,34 @@ Next session (Session 7): pick up at **PR-2 Task 2.5 — investigate the 17 acti
 2. Per impl plan Task 2.5: query the 17 rows on PROD via `mcp__supabase-remote__execute_sql` (filter `activity_type IN (ARRAY['indoor'], ARRAY['outdoor']) OR ...`), categorize each row by what `metadata->>'activityType'`, `location_requirements`, and `title`/summary suggest the correct value should be (`cooking`, `garden`, `academic`, `both`, or NULL/empty), and **surface findings to the user as a question table with a recommendation**. Wait for user decision on each row category before proceeding to Task 2.6 (Migration 3).
 3. Investigation only — no commit, no migration drafting in this session. The user-decision step IS the natural session boundary.
 4. **In a subsequent session**, draft Task 2.6 Migration 3 (column-data hygiene) using the user's mapping decisions. Then Task 2.7 Migration 4 (trigger install + enable). Then Task 2.8 (per-PR ritual + PROD coordination).
+
+### Session 7 — 2026-04-29 — Task 2.5 investigation complete; user decision captured for M3
+
+Major events:
+- Session-start orientation: read kickoff + status + design doc + impl plan Task 2.5–2.6. `type-check` + `lint` clean baseline; usual `.beads/*` + `.claude/scheduled_tasks.lock` worktree dirt (unrelated).
+- **Task 2.5 Step 1 (PROD probe — 17-row inventory).** Query against `lessons` filtered by `activity_type IN (ARRAY['indoor'], ARRAY['outdoor']) OR ...` returned exactly 17 rows (14 `['indoor']` + 3 `['outdoor']`) matching design doc §5 baseline. All 17 rows show `metadata->>'activityType' = NULL` and `activity_type` column equals `location_requirements` value — strong import-bug signal.
+- **First-pass text-based recommendation built** from titles + summary excerpts: 7 `both` / 5 `garden` / 3 `academic` / 2 `cooking`. Surfaced to user.
+- **User asked: "is there documentation in the project around what should be cooking, gardening, academic, or both?"** → triggered re-investigation:
+  - **Doc grep finding 1**: `src/utils/filterDefinitions.ts:23-32` defines the canonical UI labels: `cooking-only`="Cooking Only", `garden-only`="Garden Only", **`both`="Cooking + Garden"** (NOT cooking + academic), `academic-only`="Academic Only".
+  - **Doc grep finding 2**: `docs/LESSON_SUBMISSION_SPECS.md:718` confirms the 4-category schema "Activity Type - Single-select (Cooking/Garden/Both/Academic)".
+  - **Corpus validation probe** confirmed the semantic with 97-99.7% precision: among the 771 non-leaked rows, `cooking_methods`+`garden_skills` columns deterministically classify activity_type — `cooking` rows have cooking_methods/no garden_skills (298/299 = 99.7%), `garden` rows have garden_skills/no cooking_methods (276/278 = 99.3%), `both` rows have BOTH populated (133/137 = 97%), `academic` rows have NEITHER populated (57/57 = 100%).
+- **Re-classification pass** using the deterministic classifier on all 17 leaked rows. The `cooking_methods` and `garden_skills` columns DID extract correctly even on the 3 "Error processing lesson" rows where title/summary failed (those 3 had empty cooking_methods + empty garden_skills + thematic_categories=["Garden Basics"] + academic_integration=["Science"]).
+- **Revised recommendation surfaced**: 7 `cooking` / 4 `garden` / 4 `academic` / 2 `both`. Explained re-calibration vs first pass; highlighted that 7 rows initially called `both` are actually `cooking` (cooking-with-academic-context, no garden activity).
+- **User-requested clarification ("what specifically are you asking me to decide?")** → restructured to two crisp decisions: (1) approve the 14 unambiguous rows; (2) for the 3 "Unknown / Error processing" rows (#4, #5, #8) choose between `academic` per the rule OR clear to `ARRAY[]::text[]`.
+- **User decision (2026-04-29)**: approved Decision 1 + Decision 2 option B (clear the 3 Unknown rows entirely). Final mapping captured in "Session 7 (2026-04-29) decisions" above for Session 8's M3 draft.
+- 4 PROD probes total this session, all read-only (explicitly authorized in kickoff). No commit until session-end docs commit.
+
+Decisions made this session (already in "Decisions made during execution" above):
+- Used corpus's own deterministic classifier (`cooking_methods` + `garden_skills` columns) over text-based interpretation of title/summary. The classifier matches ESYNYC convention with 97-99.7% precision per corpus statistics.
+- Cleared the 3 import-error rows entirely (option B) per user choice — `complete_review_atomic` will populate them correctly on next reviewer touch. Preferred over inferring `academic` from empty-empty signal given the import-error context.
+- Did NOT draft M3 in this session — user-decision step IS the natural session boundary per kickoff guidance.
+
+Next session (Session 8): pick up at **PR-2 Task 2.6 — Migration 3 (column-data hygiene)**.
+
+1. Branch already on `feat/filter-drift-pr2-writer-fix-trigger`. M1 (`9e5b245`) + M2 (`c582ad6`) + Session 7 docs commit on local.
+2. Per impl plan Task 2.6: draft `supabase/migrations/<DATE_PREFIX>_filter_drift_pr2_m3_column_hygiene.sql` using the 17-row mapping in "Session 7 (2026-04-29) decisions" above. Migration prefix `20260508000000_*` — next-available HHMMSS-padded slot after M2's `20260507000000_*`.
+3. Two cleanups in M3 per design doc §5 Migration 3 + Task 2.6:
+   - **(A) `activity_type` location-leak fix** (17 rows). MUST update both `activity_type` column AND `metadata.activityType`. Canonical metadata shape: JSON array `["<value>"]` for the 14 set rows; for the 3 cleared rows, column = `ARRAY[]::text[]` and metadata uses `metadata - 'activityType'` to delete the key entirely. Use a single UPDATE with `CASE lesson_id` mapping for both surfaces.
+   - **(B) `academic_integration` column-vs-meta mismatches (~7 rows)**. Re-derive `academic_integration` column from `metadata->'academicIntegration'` (now canonical flat array post-M2) where the column is null but meta has data. Pre-flight probe: count current mismatches on PROD post-M1 (M1 fixes future writes; M2 already canonicalized metadata; B catches pre-existing column-empty-but-meta-populated rows).
+4. Idempotent SQL. Local apply via `supabase db reset` should be clean. Verification probe: 0 rows where `array_length(activity_type, 1) = 0 AND metadata ? 'activityType'`; 0 rows in the 17-row leak set with old `['indoor']`/`['outdoor']` values; counts of `cooking`/`garden`/`both`/`academic` increase by the expected amounts (7/4/2/1).
+5. Then Task 2.7 (Migration 4 — install + enable trigger). Then Task 2.8 (per-PR ritual + PROD coordination including the brief reviewer-approval pause per locked decision).
