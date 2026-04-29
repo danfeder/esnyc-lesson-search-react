@@ -607,6 +607,19 @@ export function ReviewDetail() {
     searchPickedId: selectedSearchLesson?.lesson_id ?? null,
   });
 
+  // Reset the search picker when navigating to a different submission.
+  // Reset showSearch too so the auto-expand effect makes the open/closed
+  // decision fresh per submission rather than carrying manual-toggle state
+  // across navigation. Declared FIRST so its setShowSearch(false) lands
+  // before the auto-expand effect's setShowSearch(true) on navigation —
+  // React batches setState calls from effects in the same flush, last
+  // writer wins; we want auto-expand to be the last writer when its
+  // condition is met.
+  useEffect(() => {
+    setSelectedSearchLesson(null);
+    setShowSearch(false);
+  }, [submission?.id]);
+
   // Auto-expand the search picker when the submitter couldn't find a target
   // ((update, null)) or there are no candidate cards to choose from. One-
   // directional: only opens, never closes — closing while the reviewer is
@@ -616,15 +629,6 @@ export function ReviewDetail() {
   useEffect(() => {
     if (needsSearch || noDups) setShowSearch(true);
   }, [needsSearch, noDups]);
-
-  // Reset the search picker when navigating to a different submission.
-  // Reset showSearch too so the auto-expand effect makes the open/closed
-  // decision fresh per submission rather than carrying manual-toggle state
-  // across navigation.
-  useEffect(() => {
-    setSelectedSearchLesson(null);
-    setShowSearch(false);
-  }, [submission?.id]);
 
   // parseExtractedContent is pure but a few hundred lines of regex; memoize once.
   const parsedContent = useMemo(
