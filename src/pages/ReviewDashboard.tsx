@@ -33,6 +33,7 @@ interface Submission {
   teacher?: { full_name?: string };
   similarities?: Similarity[];
   extractedTitle?: string;
+  originalLessonTitle?: string | null;
 }
 
 const FILTER_KEYS = ['all', 'submitted', 'in_review', 'needs_revision', 'approved'] as const;
@@ -125,8 +126,11 @@ export function ReviewDashboard() {
 
       const submissionIds = data.map((s) => s.id);
       const teacherIds = [...new Set(data.map((s) => s.teacher_id))].filter(Boolean) as string[];
+      const targetLessonIds = [
+        ...new Set(data.map((s) => s.original_lesson_id).filter(Boolean)),
+      ] as string[];
 
-      const [profilesResult, similaritiesResult] = await Promise.all([
+      const [profilesResult, similaritiesResult, lessonsResult] = await Promise.all([
         teacherIds.length
           ? supabase.from('user_profiles').select('id, full_name').in('id', teacherIds)
           : Promise.resolve({ data: [] }),
@@ -135,10 +139,20 @@ export function ReviewDashboard() {
           .select('submission_id, lesson_id, combined_score, match_type')
           .in('submission_id', submissionIds)
           .order('combined_score', { ascending: false }),
+        targetLessonIds.length
+          ? supabase.from('lessons').select('lesson_id, title').in('lesson_id', targetLessonIds)
+          : Promise.resolve({ data: [] }),
       ]);
 
       const profiles = profilesResult.data ?? [];
       const allSimilarities = similaritiesResult.data ?? [];
+      const lessonTitleMap: Record<string, string> = (lessonsResult.data ?? []).reduce(
+        (acc, l) => {
+          if (l.lesson_id && l.title) acc[l.lesson_id] = l.title;
+          return acc;
+        },
+        {} as Record<string, string>
+      );
 
       const similaritiesBySubmission = allSimilarities.reduce(
         (acc, sim) => {
@@ -166,6 +180,9 @@ export function ReviewDashboard() {
             extracted_content: submission.extracted_content || undefined,
             teacher: { full_name: profile?.full_name || 'Unknown teacher' },
             similarities: similaritiesBySubmission[submission.id] ?? [],
+            originalLessonTitle: submission.original_lesson_id
+              ? (lessonTitleMap[submission.original_lesson_id] ?? null)
+              : null,
           };
         })
       );
@@ -261,6 +278,8 @@ export function ReviewDashboard() {
                   status: STATUS_TO_BADGE[submission.status],
                   submittedAt: submission.created_at,
                   type: submission.submission_type,
+                  originalLessonId: submission.original_lesson_id ?? null,
+                  originalLessonTitle: submission.originalLessonTitle ?? null,
                   duplicateCount: submission.similarities?.length ?? 0,
                   topMatchType: submission.similarities?.[0]?.match_type,
                 }}
