@@ -14,6 +14,23 @@ describe('normalizeMetadata academicIntegration', () => {
     ).toEqual(['Math']);
   });
 
+  it('legacy object {selected: [...]} preserves multi-value array', () => {
+    expect(
+      normalizeMetadata({ academicIntegration: { selected: ['Math', 'Science'] } })
+        .academicIntegration
+    ).toEqual(['Math', 'Science']);
+  });
+
+  it('object with concepts but no selected (rich corpus shape) → empty array', () => {
+    expect(
+      normalizeMetadata({
+        academicIntegration: {
+          concepts: { Science: ['plant parts', 'life cycles'] },
+        } as unknown as string[],
+      }).academicIntegration
+    ).toEqual([]);
+  });
+
   it('object with empty selected → empty array', () => {
     expect(
       normalizeMetadata({ academicIntegration: { selected: [] } }).academicIntegration
