@@ -1234,6 +1234,22 @@ export type Database = {
       };
     };
     Functions: {
+      _alias_activity_type: {
+        Args: { p_values: string[] };
+        Returns: string[];
+      };
+      _alias_cultural_heritage: {
+        Args: { p_values: string[] };
+        Returns: string[];
+      };
+      _alias_lesson_format: {
+        Args: { p_value: string };
+        Returns: string[];
+      };
+      _match_cooking_methods: {
+        Args: { p_filter_methods: string[]; p_l_methods: string[] };
+        Returns: boolean;
+      };
       archive_duplicate_lesson: {
         Args: { p_canonical_id: string; p_lesson_id: string };
         Returns: Json;
@@ -1410,7 +1426,7 @@ export type Database = {
           filter_academic?: string[];
           filter_activity_type?: string[];
           filter_competencies?: string[];
-          filter_cooking_method?: string;
+          filter_cooking_method?: string[];
           filter_cultures?: string[];
           filter_grade_levels?: string[];
           filter_lesson_format?: string;
