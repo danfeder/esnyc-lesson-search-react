@@ -33,7 +33,9 @@ interface PageResult {
   totalCount: number;
 }
 
-function normalizeMetadata(meta: Record<string, unknown> | null | undefined): LessonMetadata {
+export function normalizeMetadata(
+  meta: Record<string, unknown> | null | undefined
+): LessonMetadata {
   const m = meta || {};
   const asArray = (v: unknown): string[] => (Array.isArray(v) ? v : v ? [String(v)] : []);
   const asString = (v: unknown): string => (typeof v === 'string' ? v : v ? String(v) : '');
@@ -55,7 +57,14 @@ function normalizeMetadata(meta: Record<string, unknown> | null | undefined): Le
     cookingSkills: asArray(m.cookingSkills),
     cookingMethods: asArray(m.cookingMethods),
     observancesHolidays: asArray(m.observancesHolidays),
-    academicIntegration: asArray(m.academicIntegration),
+    academicIntegration: (() => {
+      const ai = m.academicIntegration;
+      if (Array.isArray(ai)) return ai as string[];
+      if (ai && typeof ai === 'object' && Array.isArray((ai as { selected?: unknown }).selected)) {
+        return (ai as { selected: string[] }).selected;
+      }
+      return [];
+    })(),
     socialEmotionalLearning: asArray(m.socialEmotionalLearning),
     culturalResponsivenessFeatures: asArray(m.culturalResponsivenessFeatures),
   } as LessonMetadata;
