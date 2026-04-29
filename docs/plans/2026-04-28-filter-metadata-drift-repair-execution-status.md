@@ -1,22 +1,26 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — scaffolding rounds 1-7 + PR-3 deferral + concepts-rescue (still no execution)
-**Current PR:** PR 1 — Column-based RPC + alias tolerance (not yet branched)
-**Current task:** Task 1.1 (Pre-flight — dependency inventory + line-number verification) — not yet started
-**Branch:** main (not yet branched for PR 1)
-**Last commit on branch:** (none on a feature branch; main has 3 docs commits ahead of `origin/main`: `21fb747` design doc v2.2 + `10e2650` initial scaffold + `15ac4d7` deferral + concepts rescue. Holding local per user instruction — push when ready to ship.)
+**Last updated:** 2026-04-29 — Session 1 (PR-1 Tasks 1.1 → 1.5 complete; ready to push + open PR)
+**Current PR:** PR 1 — Column-based RPC + alias tolerance (branched, 3 code commits, NOT pushed)
+**Current task:** Task 1.6 (push + open PR + per-PR ritual) — not yet started
+**Branch:** `feat/filter-drift-pr1-column-rpc`
+**Last commit on branch:** `b39eb92 chore(types): patch database.types.ts for column-based search_lessons`
 
 ## Done
 
-(empty — fill as work completes)
+- **PR-1 Task 1.1 (pre-flight)** — Session 1 — no commit (info-gathering)
+- **PR-1 Task 1.2 (column-based search_lessons migration)** — Session 1 — `c791df2`
+- **PR-1 Task 1.3 (TDD normalizeMetadata fix)** — Session 1 — `22a4814`
+- **PR-1 Task 1.4 (database.types.ts patch)** — Session 1 — `b39eb92`
+- **PR-1 Task 1.5 (local verification matrix)** — Session 1 — no commit (results captured below)
 
 ## In flight
 
-(none yet — Session 1 will branch `feat/filter-drift-pr1-column-rpc` and start with Task 1.1)
+(none — Session 2 picks up at Task 1.6)
 
 ## Blocked
 
-(none — Session 1 can begin immediately)
+(none)
 
 ## Decisions made during execution
 
@@ -31,6 +35,43 @@ Other notable scaffolding-time choices (full audit trail in commit `15ac4d7`):
 - Writer-roundtrip matrix expanded from 4 to 6 academicIntegration cases (added Row 5 concepts-rescue, Row 6 empty-concepts-not-rescued).
 - Trigger smoke expanded from 1 to 3 cases (lessonFormat array; AI with concepts; AI with empty concepts).
 - M2 cleanup SQL uses explicit `::uuid[]` casts + FK-safe deletion order (lessons → submission_reviews → submission_similarities → lesson_submissions) rather than `LIKE`-against-uuid (broken).
+
+### Session 1 (2026-04-29) decisions
+
+- **Cultural-heritage alias must run BEFORE `expand_cultural_heritage`, not after.** Probe (TEST DB, 2026-04-29): `expand_cultural_heritage(['asian'])` returns `['asian']` alone — no children expansion. `expand_cultural_heritage(['Asian'])` returns 8 children (`Filipino`, `Chinese`, `Thai`, `Asian`, `Korean`, `Japanese`, `Indian`, `Vietnamese`). The `cultural_heritage_hierarchy` table is keyed on Title-Case parents only. So the alias must inject the Title-Case parent BEFORE expansion: `expand_cultural_heritage(_alias_cultural_heritage(filter_cultures))`. Design doc §4 was ambiguous on order; this is the only ordering that makes the hierarchy work end-to-end. Locked into PR-1 migration `20260505000000_*`.
+
+- **`_match_cooking_methods` includes a slug↔phrase alias for `'Basic prep only'`.** Pure case-insensitive (per design doc §4) handles `Stovetop`/`Oven` → `stovetop`/`oven`, but UI's `Basic prep only` does NOT lowercase-match column values `basic-prep` or `basic-prep-only` (hyphens + missing `only` suffix variant). Added explicit alias `'basic prep only' → ['basic prep only', 'basic-prep', 'basic-prep-only']` inside `_match_cooking_methods`. Without this, the `Basic prep only` filter would have shipped with 0 hits despite ~189 corpus rows having that data. (`filterDefinitions.ts` is not changed in PR-1, per locked decisions.)
+
+- **Pre-flight (Task 1.1) confirmed clean baseline.** Deployed `search_lessons` source matches `20251001_production_baseline_snapshot.sql:1198-1357` byte-for-byte (modulo identifier-quoting style). `grep -ln search_lessons supabase/migrations/` returns only the baseline. `pg_depend` returned empty — `DROP FUNCTION` without `CASCADE` is safe. Verbatim signature captured in the migration file.
+
+- **Task 1.4 surgical patch instead of full regen.** Locally-installed Supabase CLI 2.95.4 produces a different file shape (no `__InternalSupabase` field, adds `graphql_public` schema, no semicolons) than what's on disk. Those are CLI-version differences unrelated to PR-1's migration. Per impl plan Task 1.4's "stop and surface unrelated diffs" guidance, applied only the migration's actual impact: `filter_cooking_method? string → string[]` + 4 helper-function entries. Verified surgical patch matches CLI 2.95.4 output via grep.
+
+- **Local verification matrix (Task 1.5) results.** Local DB has only 5 seeded lessons so the matrix mostly proves "compiles + runs" rather than validating filter semantics:
+
+  | Test                                  | Hits |
+  |---------------------------------------|-----:|
+  | baseline (no filters)                 |    5 |
+  | lessonFormat=single-period (slug)     |    0 |
+  | lessonFormat=Single period (Title)    |    0 |
+  | activityType=cooking-only (slug)      |    0 |
+  | activityType=cooking (bare)           |    0 |
+  | cookingMethods=stovetop (lower)       |    0 |
+  | cookingMethods=Stovetop (Title)       |    0 |
+  | academicIntegration=Math              |    2 |
+  | culturalHeritage=asian (slug)         |    0 |
+
+  Spot-check on metadata reconstruction confirmed `lessonFormat` returns as JSON STRING (scalar), `academicIntegration` returns as JSON ARRAY, `academicConcepts` key absent when no concepts data — all per design. (Note: local seed has weird data in `lesson_format` column — values like `'{"Full Lesson"}'` text-literals — but this is seed quirk, not a migration bug.) Real semantic validation runs against TEST DB after Session 2's CI apply.
+
+- **Helper function smoke tests (against local DB):**
+  - `_alias_lesson_format('single-period')` → `['single-period', 'Single period']` ✓
+  - `_alias_activity_type(['cooking-only', 'both'])` → `['cooking-only', 'both', 'cooking']` ✓
+  - `_alias_cultural_heritage(['asian', 'east-asian'])` → `['east-asian', 'East Asian', 'asian', 'Asian']` ✓
+  - `_match_cooking_methods(['stovetop'], ['Stovetop'])` → `true` (case-insensitive) ✓
+  - `_match_cooking_methods(['basic-prep'], ['Basic prep only'])` → `true` (slug alias) ✓
+  - `_match_cooking_methods(['stovetop'], ['Oven'])` → `false` (no false positives) ✓
+  - `expand_cultural_heritage(_alias_cultural_heritage(['asian']))` → `['asian', 'Asian', 'Korean', 'Japanese', 'Chinese']` (full pipeline) ✓
+
+- **Task 1.3 RED→GREEN.** Initial test run (3/6 fail): legacy object `{selected: ['Math']}` returned `['[object Object]']` instead of `['Math']`; `{selected: []}` returned `['[object Object]']` instead of `[]`; scalar `'Math'` returned `['Math']` instead of `[]`. After the IIFE replacement: 6/6 pass. Full vitest suite 473/473 (up from 467; 6 new tests added).
 
 ## Out-of-scope follow-ups captured here
 
@@ -51,4 +92,25 @@ Major events:
 - **Round 7 cleanups:** stale "PR 1 of 3" framings, "4 AI shapes" references, `rows_with_concepts` vs `rows_with_nonempty_concepts` metric mismatch.
 - 3 commits on local main, NOT pushed: `21fb747` (design doc v2.2), `10e2650` (initial 4-file scaffold), `15ac4d7` (deferral + concepts rescue).
 
-Next session (Session 1): paste the kickoff prompt, run the session-start ritual, and begin with Task 1.1 (pre-flight dependency inventory of the deployed `search_lessons` function). PR-1 might fit in 2–3 sessions total; PR-2 will need 4–6 sessions because of the investigation step (Task 2.5 — 17 activity_type rows) and the writer-roundtrip matrix (Task 2.3 — 6 AI shapes + 1 lessonFormat). The kickoff briefs you on the PR-3 deferral and the concepts-rescue requirement; do not use the bare design doc §5 snippets that predate those decisions.
+### Session 1 — 2026-04-29 — PR-1 Tasks 1.1 → 1.5 done locally
+
+Major events:
+- Branched off `main` to `feat/filter-drift-pr1-column-rpc`.
+- **Task 1.1 (pre-flight):** Probed deployed `search_lessons` against TEST DB. Source matches baseline byte-for-byte; `pg_depend` empty; verbatim signature captured. No drift, baseline is source of truth. No commit.
+- **Task 1.2 (column-based migration):** Drafted `supabase/migrations/20260505000000_filter_drift_pr1_column_based_search_lessons.sql` (430 lines): 4 alias helpers + new `search_lessons` body + per-field COALESCE metadata reconstruction + `academicConcepts` sibling-key rescue + `DROP/CREATE/GRANT/NOTIFY pgrst` mechanics. Cultural-heritage alias ordered BEFORE `expand_cultural_heritage` (probe-driven decision; see "Decisions" above). `_match_cooking_methods` extended with `Basic prep only` slug↔phrase alias beyond the design doc's case-insensitive-only spec. Local apply via `supabase db reset` clean (61 migrations including mine). Helper smoke + RPC smoke + RLS clean (2 pre-existing `archive_duplicate_lesson` failures expected per Phase 8b memory). Commit `c791df2`.
+- **Task 1.3 (TDD normalizeMetadata fix):** Created `src/hooks/useLessonSearch.test.ts` (6 tests covering flat array / object-with-selected / empty selected / null / missing key / scalar). Added `export` to `normalizeMetadata` (visibility-only). RED confirmed (3/6 fail on legacy-object, empty-selected, scalar). Applied IIFE replacement of the `academicIntegration: asArray(...)` line (6 lines TS). GREEN: 6/6 pass; full vitest suite 473/473. Lint auto-fix reformatted the function signature (prettier). Commit `22a4814`.
+- **Task 1.4 (types patch):** Surgical patch (rather than full regen) because local CLI 2.95.4 produces a different file shape than what's on disk (CLI-version differences unrelated to migration). Patched only the migration's actual impact: `filter_cooking_method? string → string[]` + 4 helper Function entries. Verified against `/tmp/database.types.ts.new` from full regen. Type-check + lint clean. Commit `b39eb92`.
+- **Task 1.5 (local verification matrix):** 9-row filter matrix on local-with-5-seeded-lessons captured (mostly compiles-and-runs evidence; `academicIntegration=Math` returns 2 hits confirming column-based filter works). Spot-check confirmed metadata reconstruction: `lessonFormat` is JSON string (scalar), `academicIntegration` is JSON array, `academicConcepts` key absent when no concepts data. Real semantic validation deferred to Task 1.6 step 6 post-CI on TEST DB. No commit (verification is in-session evidence).
+- 3 code commits on `feat/filter-drift-pr1-column-rpc`, NOT pushed: `c791df2` (migration), `22a4814` (TS fix + tests), `b39eb92` (types patch). Branch is 7 commits ahead of `origin/main` (4 docs from Session 0 + 3 code from Session 1).
+
+Next session (Session 2): start at **Task 1.6** — the per-PR ritual. Specifically:
+1. Run mandatory pre-PR check: `npm run type-check && npm run lint`.
+2. Dispatch `feature-dev:code-reviewer` agent on `git diff main...HEAD` (the diff covers the migration + TS fix + types patch + test file). Investigate findings per `feedback_bot_review_investigation.md`. Apply consolidated fix-up commits BEFORE push.
+3. Push: `git push -u origin feat/filter-drift-pr1-column-rpc`.
+4. Open PR via `gh pr create` with the body template from impl plan Task 1.6 step 4. Include the local verification matrix above in the PR body, plus a "TEST DB verification — pending CI apply" placeholder for the post-CI 9-row matrix.
+5. After CI applies migration to TEST DB:
+   a. Re-run the 9-row matrix via `mcp__supabase-test__execute_sql`. Compare counts to the design doc §1 production-evidence table. Document actual counts in the PR body. Spot-check metadata reconstruction on a returned row.
+   b. Sanity-check regen: `npx supabase gen types typescript --project-id rxgajgmphciuaqzvwmox > /tmp/types_from_test.ts && diff /tmp/types_from_test.ts src/types/database.types.ts`. Expected: empty (apart from CLI-version differences). If drift, commit a fresh patch.
+6. Wait for external bot reviewers (CodeRabbit, Claude Review, etc.). Collect findings from ALL FOUR PR surfaces (per `feedback_pr_comment_surfaces.md`). Investigate and triage every finding (rebuttal pass per `feedback_bot_review_investigation.md`). Apply consolidated fix-up commits per round.
+7. Per-round TEST DB re-verification for any DB-affecting fix-up.
+8. Round-cap after 2 rounds.
