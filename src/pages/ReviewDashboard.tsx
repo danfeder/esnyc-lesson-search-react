@@ -141,11 +141,18 @@ export function ReviewDashboard() {
           .order('combined_score', { ascending: false }),
         targetLessonIds.length
           ? supabase.from('lessons').select('lesson_id, title').in('lesson_id', targetLessonIds)
-          : Promise.resolve({ data: [] }),
+          : Promise.resolve({ data: [], error: null }),
       ]);
 
       const profiles = profilesResult.data ?? [];
       const allSimilarities = similaritiesResult.data ?? [];
+      // Surface lessonsResult errors — silent failure here makes every UPDATE
+      // row in the queue render as the amber UPDATE? badge with no log signal.
+      // (profilesResult/similaritiesResult swallow errors the same way; tracked
+      // as a separate pre-existing follow-up.)
+      if (lessonsResult.error) {
+        logger.error('Failed to fetch lesson titles for queue badges:', lessonsResult.error);
+      }
       const lessonTitleMap: Record<string, string> = (lessonsResult.data ?? []).reduce(
         (acc, l) => {
           if (l.lesson_id && l.title) acc[l.lesson_id] = l.title;
