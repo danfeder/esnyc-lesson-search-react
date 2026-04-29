@@ -12,6 +12,8 @@ import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions'
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
 import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
+import { titlesAreSimilar } from '@/utils/titleSimilarity';
+import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import {
   IntButton,
   IntDecisionBar,
@@ -590,6 +592,17 @@ export function ReviewDetail() {
       ? "Use this if you disagree with the submitter's pick"
       : 'Use this when no card above is the right match';
 
+  // Phase 8b Task 3.7: gate for the title-mismatch warning. Pure derivation —
+  // returns true only when the merge target was auto-picked (submitter-bound
+  // or surfaced by the dup detector). Reviewer manual picks via the search
+  // escape hatch are deliberate confirmations and are suppressed.
+  const showMismatch = shouldShowMismatchWarning({
+    selectedTarget: selectedDuplicate,
+    submitterTargetId: submission?.original_lesson_id ?? null,
+    topDuplicateIds: topDuplicates.map((d) => d.lesson_id),
+    searchPickedId: selectedSearchLesson?.lesson_id ?? null,
+  });
+
   // Auto-expand the search picker when the submitter couldn't find a target
   // ((update, null)) or there are no candidate cards to choose from.
   useEffect(() => {
@@ -1094,6 +1107,28 @@ export function ReviewDetail() {
                 </div>
               </div>
             )}
+
+            {/* Phase 8b Task 3.7: title-mismatch warning. Fires only when the
+                target was auto-picked (submitter-bound or dup-detector hit)
+                AND the target's title diverges from the submission's
+                extracted title (word-set Jaccard < 0.3). Suppressed for
+                reviewer manual picks via the search escape hatch. */}
+            {(() => {
+              if (!showMismatch) return null;
+              const targetTitle =
+                candidateCards.find((c) => c.id === selectedDuplicate)?.title ?? '';
+              const submissionTitle = submission?.extracted_title ?? '';
+              if (!targetTitle || !submissionTitle) return null;
+              if (titlesAreSimilar(targetTitle, submissionTitle)) return null;
+              return (
+                <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900">
+                  Heads up: submitter linked to <strong>&ldquo;{targetTitle}&rdquo;</strong> but
+                  submission&apos;s extracted title is{' '}
+                  <strong>&ldquo;{submissionTitle}&rdquo;</strong> — confirm this is the right merge
+                  target.
+                </div>
+              );
+            })()}
 
             {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
                 auto-expanded for (update, null) and zero-candidate cases. */}
