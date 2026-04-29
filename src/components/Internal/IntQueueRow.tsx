@@ -8,6 +8,8 @@ interface IntQueueRowSubmission {
   status: IntStatus;
   submittedAt: string; // ISO
   type: 'new' | 'update';
+  originalLessonId?: string | null;
+  originalLessonTitle?: string | null;
   duplicateCount?: number;
   topMatchType?: 'exact' | 'high' | 'medium' | 'low';
 }
@@ -62,7 +64,43 @@ export function IntQueueRow({ submission, onSelect }: IntQueueRowProps) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-        <span className="adm-pill">{submission.type === 'new' ? 'New lesson' : 'Update'}</span>
+        {(() => {
+          if (submission.type === 'new') {
+            return (
+              <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">NEW</span>
+            );
+          }
+          if (submission.originalLessonId) {
+            const fullTitle = submission.originalLessonTitle ?? '';
+            const truncated =
+              fullTitle.length > 40 ? `${fullTitle.slice(0, 40).trim()}…` : fullTitle;
+            return (
+              <span className="inline-flex items-center gap-1 max-w-full">
+                <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded shrink-0">
+                  UPDATE
+                </span>
+                <span
+                  className="text-xs text-gray-700 truncate"
+                  title={fullTitle}
+                  aria-label={fullTitle ? `Updating lesson: ${fullTitle}` : 'Updating lesson'}
+                >
+                  {truncated || '(target unknown)'}
+                </span>
+              </span>
+            );
+          }
+          return (
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded"
+                aria-label="Submitter is updating but couldn't find target — needs reviewer search"
+              >
+                UPDATE?
+              </span>
+              <span className="text-xs text-amber-700">needs reviewer search</span>
+            </span>
+          );
+        })()}
         {submission.duplicateCount ? (
           <span className="adm-queue-warn">
             {submission.duplicateCount} {submission.duplicateCount === 1 ? 'match' : 'matches'}
