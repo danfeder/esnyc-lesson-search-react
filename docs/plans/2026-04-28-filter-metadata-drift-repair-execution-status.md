@@ -1,10 +1,10 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — Session 2 (PR-1 pushed + PR #471 opened; awaiting CI + bot reviews)
-**Current PR:** [PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471) — Column-based RPC + alias tolerance (open)
-**Current task:** Task 1.6 Step 5+ (waiting on CI apply to TEST DB + external bot reviews)
-**Branch:** `feat/filter-drift-pr1-column-rpc` (pushed)
-**Last commit on branch:** `faf732c docs(filter-drift): session 1 — PR-1 Tasks 1.1-1.5 complete`
+**Last updated:** 2026-04-29 — Session 3 (PR-1 round-capped after 2 bot-review rounds; ready for merge approval)
+**Current PR:** [PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471) — Column-based RPC + alias tolerance (open, round-capped, awaiting human merge)
+**Current task:** Task 1.6 Step 7 (post-merge PROD migration apply + verification)
+**Branch:** `feat/filter-drift-pr1-column-rpc` (pushed; 3 commits ahead of origin/main on top of Session 2's commits)
+**Last commit on branch:** `2c3c8ff fix(filter-drift): PR-1 round-2 R2-2 — narrow duration/groupSize types`
 
 ## Done
 
@@ -14,10 +14,13 @@
 - **PR-1 Task 1.4 (database.types.ts patch)** — Session 1 — `b39eb92`
 - **PR-1 Task 1.5 (local verification matrix)** — Session 1 — no commit (results captured below)
 - **PR-1 Task 1.6 Steps 1-4 (pre-PR check + reviewer dispatch + push + open PR)** — Session 2 — no commit (PR #471 opened on GitHub)
+- **PR-1 Task 1.6 Steps 5-6 (CI verification + round-1 bot triage + round-1 fix-ups)** — Session 3 — `5a26a13` (TS-1+TS-3 tests + M-1 GIN index)
+- **PR-1 Task 1.6 Step 7a (round-2 bot triage + round-2 fix-up + round-cap)** — Session 3 — `2c3c8ff` (R2-2 typeof narrowing on duration/groupSize)
+- **PR-1 Task 1.6 Step 7b (PR body verification matrix update + round-1+round-2 acknowledgment comment)** — Session 3 — no commit (GitHub UI updates)
 
 ## In flight
 
-- **PR-1 Task 1.6 Step 5+** — waiting on CI to apply migration to TEST DB; waiting on external bot reviews (CodeRabbit, Claude Review). Session 3 picks up here.
+(none — Session 3 round-capped PR #471. Awaiting human merge approval, then PROD migration apply via `migrate-production.yml`, then PROD MCP verification.)
 
 ## Blocked
 
@@ -84,6 +87,9 @@ Other notable scaffolding-time choices (full audit trail in commit `15ac4d7`):
 
 - **`facetCounts.ts:55` array-shape hardening** — was scoped into PR-3 Task 3.5; with PR-3 deferred, this stays open in the `MEMORY.md` "Open hygiene follow-ups" list. Don't address inside PR-1 or PR-2.
 - **17 `activity_type` location-leak rows** — investigation step gated inside PR-2 Task 2.5. The investigation produces the input mapping for M3 (Task 2.6); session that hits Task 2.5 must surface findings to user and wait for decision before drafting M3.
+- **`location_requirements` casing drift (NEW, Session 3)** — TEST DB V-4 verification surfaced 92 rows (12% of corpus) with lowercase values: `indoor` 43, `outdoor` 27, `both` 22 (alongside Title-Case `Indoor` 414, `Outdoor` 82, `Both` 183). UI sends Title-Case from `filterDefinitions.ts:location` so these 92 rows are silently missed by the Indoor/Outdoor/Both filters. **User decision 2026-04-29: option B** — defer to PR-2 M2 (column hygiene) which canonicalizes column values across the corpus, rather than expanding PR-1 with a `_alias_location` helper. **PR-2 M2 must be extended** to canonicalize `location_requirements` to Title-Case alongside lf/at/cm. Not in design doc; capture this in M2 task spec when PR-2 starts.
+- **3 rows with `metadata.academicIntegration.concepts = {}` empty-object (NEW, Session 3)** — PR-1's rescue clause would surface these as `academicConcepts: {}` (slight divergence from the locked "key present iff data present" semantic). User-visible impact: ~3 rows show an empty-object key. PR-2 M2 backfill should either skip empty `{}` concepts when moving to top-level `academicConcepts`, or PR-1's rescue could be tightened with `AND l.metadata->'academicIntegration'->'concepts' <> '{}'::jsonb`. Defer to PR-2.
+- **`gradeLevel`/`gradeLevels` key mismatch in `useLessonSearch.ts:normalizeMetadata` (PRE-EXISTING, Session 3)** — function returns key `gradeLevel` (singular) but `LessonMetadata` interface declares `gradeLevels` (plural). The `as LessonMetadata` cast hides this. R2-2 round-2 fix kept the cast for this reason. Cleanup in a future hygiene PR — rename the key (likely safe, since `Lesson.gradeLevels` is set separately by `mapRowToLesson` from `row.grade_levels` column anyway, and `Lesson.metadata.gradeLevels` is duplicate info). Capture as a `useLessonSearch.ts` follow-up.
 
 ## Session log
 
@@ -120,17 +126,50 @@ Major events:
 - **Task 1.6 Step 4**: opened **[PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471)** with body from impl plan template, including local 9-row matrix + helper smoke tests + TEST DB verification placeholder.
 - Session ended pre-bot-review per natural session boundary (bot reviews land async, fresh-session triage is the established workflow).
 
-Next session (Session 3): start at **Task 1.6 Steps 5-8**:
-1. Check PR-1 CI status via `gh pr checks 471` and `gh run view <id> --log` for the migrate-test-db workflow. Watch for SASL Apply-step flake — rerun if hit (per MEMORY.md SASL flake entry).
-2. After CI applies migration to TEST DB:
-   a. Re-run the 9-row matrix via `mcp__supabase-test__execute_sql`. Compare counts to design doc §1 production-evidence table (~483 / ~299 / ~177 / ~189 / ~67). Document actual counts in PR #471 body via `gh pr edit 471 --body`. Spot-check metadata reconstruction on a returned row.
-   b. Sanity-check regen: `npx supabase gen types typescript --project-id rxgajgmphciuaqzvwmox > /tmp/types_from_test.ts && diff /tmp/types_from_test.ts src/types/database.types.ts`. Expected: empty (apart from CLI-version differences). If drift, commit a fresh patch.
-3. Wait for external bot reviewers (CodeRabbit, Claude Review, etc.). Collect findings from ALL FOUR PR surfaces (per `feedback_pr_comment_surfaces.md`):
-   - `gh pr view 471 --comments` (issue-comments)
-   - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/471/reviews --jq '.[] | {user: .user.login, state, body}'` (review summaries)
-   - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/471/comments --jq '.[] | {user: .user.login, path, line, body}'` (line-attached review comments)
-   - `gh pr checks 471` + `gh run view <id> --log-failed` for any failing check
-4. Investigate and triage every finding (rebuttal pass per `feedback_bot_review_investigation.md`). Surface accept/reject recommendations to user with rationale BEFORE applying. Apply consolidated fix-up commits per round.
-5. Per-round TEST DB re-verification for any DB-affecting fix-up (per `feedback_per_round_test_db_verification.md`).
-6. Round-cap after 2 rounds.
-7. After approval + merge: PROD migration runs after manual approval in `migrate-production.yml`. Verify via `mcp__supabase-remote__execute_sql` (same 9-row matrix). Watch for SASL Apply-step flake (PR-1 has only 1 migration so the rerun pattern is straightforward).
+### Session 3 — 2026-04-29 — PR-1 round-capped (round-1 + round-2 review iterations) + ready to merge
+
+Major events:
+- Session-start orientation: read kickoff + status + git state. `type-check` + `lint` clean baseline.
+- **Round-1 CI completion**: polled until all checks resolved. Security Audit fail is the pre-existing `@lhci/cli` hygiene followup (not from PR-1). E2E Tests passed (CI applied `20260505000000_*` to TEST DB cleanly). 4 `claude[bot]` review summaries + 9 line comments landed.
+- **Round-1 triage** (4 ACCEPT, 12 REJECT): rebuttal pass per `feedback_bot_review_investigation.md`. Highlights:
+  - **Verified M-1 (GIN index gap)**: TEST DB index inventory confirmed `idx_lessons_activity_type` is btree on `((metadata ->> 'activityType'))` — dead under PR-1's column query. New `idx_lessons_activity_type_col` GIN required.
+  - **Rejected M-3 (anon grant on `_alias_*`)**: bot was technically wrong — `search_lessons` has no `SECURITY DEFINER` keyword, runs as INVOKER, helpers need anon grant or function breaks. Verified by reading migration source.
+  - **Rejected F-1 / accepted R2-2 instead**: round-1 F-1 ("`as` → `satisfies`") was rejected because dropping the cast would surface unrelated `gradeLevel`/`gradeLevels` mismatch. Round-2 came back with the targeted typeof-guard fix on `m.duration: unknown` / `m.groupSize: unknown` — accepted.
+- **Round-1 fix-up `5a26a13`**: TS-1 + TS-3 normalizeMetadata tests + new GIN index migration `20260505010000_filter_drift_pr1_activity_type_gin_index.sql` (additive, idempotent). Local `supabase db reset` clean; tests 8/8.
+- **Round-2 CI completion**: polled. All Claude reviews + E2E + semgrep + perf checks passed. M-1 GIN index confirmed live on TEST DB. Activity_type counts unchanged post-index (slug=293, bare=293; garden_slug=275, garden_bare=275) — correctness preserved.
+- **Round-2 triage** (1 ACCEPT, 15 REJECT): R2-2 typeof guards on duration/groupSize (concrete fix, low risk). Cast retained because dropping reveals unrelated `gradeLevel`/`gradeLevels` key mismatch — captured as out-of-scope follow-up.
+- **Round-2 fix-up `2c3c8ff`**: 2-line typeof narrowing. Tests 8/8, type-check ✓, lint ✓.
+- **TEST DB verification matrix executed** (`mcp__supabase-test__execute_sql`, 13 rows including V-4 themes/seasons/location):
+
+  | # | Test | Hits |
+  |---|---|---:|
+  | 1 | baseline (no filters) | 772 |
+  | 2 | lessonFormat=`single-period` (slug) | 471 |
+  | 3 | lessonFormat=`Single period` (Title) | 471 |
+  | 4 | activityType=`[cooking-only]` (slug) | 293 |
+  | 5 | activityType=`[cooking]` (bare) | 293 |
+  | 6 | cookingMethods=`[stovetop]` (lower) | 174 |
+  | 7 | cookingMethods=`[Stovetop]` (Title) | 174 |
+  | 8 | cookingMethods=`[Basic prep only]` | 195 |
+  | 9 | academicIntegration=`[Math]` | 99 |
+  | 10 | culturalHeritage=`[asian]` (slug) | 67 |
+  | 11 | filter_themes=`[Seed to Table]` | 416 |
+  | 12 | filter_seasons=`[Fall]` | 440 |
+  | 13 | filter_location=`[Indoor]` | 414 (⚠️ misses 43 lowercase) |
+
+  All 5 documented production drift mismatches resolve correctly. Numbers within design-doc §1 tolerance. Metadata reconstruction shapes verified on real corpus rows: `lessonFormat`=string, `academicIntegration`=array, `academicConcepts`=present-iff-data.
+
+- **PR body updated** with full TEST DB matrix + V-4 location drift finding + M-1 GIN status.
+- **Acknowledgment comment posted** ([issuecomment-4347198219](https://github.com/danfeder/esnyc-lesson-search-react/pull/471#issuecomment-4347198219)) summarizing all round-1 + round-2 triage decisions per `feedback_bot_review_investigation.md` rebuttal-pass discipline.
+- **Round-cap declared** (per "round-cap after 2 rounds" workflow). PR ready for human merge approval.
+
+Next session (Session 4): start at **Task 1.6 Step 7 — post-merge PROD apply**.
+1. Confirm PR #471 merged to main (user action).
+2. `migrate-production.yml` workflow triggers automatically on merge.
+3. After human approval in GitHub Actions: PROD migration applies. Watch for SASL Apply-step flake (PR-1 has 2 migrations now — `20260505000000` already verified pattern works, `20260505010000` is a tiny additive index, retryable). If Apply step fails: `gh run rerun --failed <run_id>`. Idempotent (`CREATE INDEX IF NOT EXISTS`), safe to retry.
+4. Verify via `mcp__supabase-remote__execute_sql`:
+   - 13-row matrix (same shape as TEST verification — counts will differ since PROD has 831 vs TEST's 772)
+   - `idx_lessons_activity_type_col` GIN index present
+   - search_lessons signature has `filter_cooking_method text[]`
+5. Update status file (Session 4 entry).
+6. Then start PR-2: **Task 2.1** (writer-fix `complete_review_atomic`) per impl plan. Note that PR-2 M2 must extend its column-hygiene scope to canonicalize `location_requirements` casing (12% blind spot finding from Session 3) and handle empty-`{}` concepts edge case (3 rows).
