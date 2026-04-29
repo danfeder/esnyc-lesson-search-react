@@ -309,6 +309,9 @@ export function ReviewDetail() {
           .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
           .eq('lesson_id', submitterTargetId)
           .single();
+        if (targetErr) {
+          logger.error('Failed to fetch off-list submitter target:', targetErr);
+        }
         // Coalesce nullable view fields. lessons_with_metadata is typed
         // with nullable lesson_id and title (Supabase view nullability)
         // — guard before constructing the SubmitterTargetLesson which
@@ -605,14 +608,22 @@ export function ReviewDetail() {
   });
 
   // Auto-expand the search picker when the submitter couldn't find a target
-  // ((update, null)) or there are no candidate cards to choose from.
+  // ((update, null)) or there are no candidate cards to choose from. One-
+  // directional: only opens, never closes — closing while the reviewer is
+  // mid-pick (candidateCards gains a Case-4 card → noDups flips false →
+  // setShowSearch(false)) was the round-1 bug. Manual close via the toggle
+  // button stays sticky because deps don't change on a user-initiated close.
   useEffect(() => {
-    setShowSearch(needsSearch || noDups);
+    if (needsSearch || noDups) setShowSearch(true);
   }, [needsSearch, noDups]);
 
   // Reset the search picker when navigating to a different submission.
+  // Reset showSearch too so the auto-expand effect makes the open/closed
+  // decision fresh per submission rather than carrying manual-toggle state
+  // across navigation.
   useEffect(() => {
     setSelectedSearchLesson(null);
+    setShowSearch(false);
   }, [submission?.id]);
 
   // parseExtractedContent is pure but a few hundred lines of regex; memoize once.
@@ -1076,6 +1087,76 @@ export function ReviewDetail() {
 
           {/* RIGHT — duplicates + decision */}
           <div>
+            {/* Phase 8b: binding-intent banner. Rendered FIRST so the reviewer
+                reads what the submitter declared BEFORE the candidate cards,
+                mismatch warning, and search escape hatch — all of which
+                depend on or react to that declared intent. */}
+            {(() => {
+              const type = submission?.submission_type;
+              const targetId = submission?.original_lesson_id;
+              // SimilarityWithLesson has lesson_id at top level, lesson.title nested.
+              // submitterTargetLesson (off-list fetch) has title at top level.
+              // Use ?? so empty-string titles from corrupt rows don't fall
+              // through to the next lookup (?? coalesces only on null|undefined).
+              const targetTitle =
+                submission?.submitterTargetLesson?.title ??
+                topDuplicates.find((d) => d.lesson_id === targetId)?.lesson?.title ??
+                null;
+
+              // (update, X, title-known) — happy path
+              if (type === 'update' && targetId && targetTitle) {
+                return (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                    <span className="font-medium text-blue-900">Submitter says:</span>{' '}
+                    <span className="text-blue-900">
+                      Updating <strong>{targetTitle}</strong>
+                    </span>
+                  </div>
+                );
+              }
+              // (update, X, title lookup FAILED) — degraded but still update intent.
+              // CRITICAL: must NOT fall through to the green "new" banner; that's the
+              // worst-possible misrender (reviewer thinks it's new when submitter
+              // declared an update). Render yellow with the raw lesson_id and a
+              // "verify before approving" prompt.
+              if (type === 'update' && targetId && !targetTitle) {
+                return (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
+                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
+                      <span className="text-amber-900">
+                        Updating lesson <code>{targetId}</code> — but its title couldn&apos;t be
+                        loaded. Please search the library to confirm the right merge target before
+                        approving.
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              // (update, null) — explicit can't-find-it
+              if (type === 'update' && !targetId) {
+                return (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
+                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
+                      <span className="text-amber-900">
+                        Updating, but couldn&apos;t find target — please search to identify.
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              // (new) — only fall here when type is genuinely 'new'
+              return (
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+                  <span className="font-medium text-emerald-900">Submitter says:</span>{' '}
+                  <span className="text-emerald-900">New lesson</span>
+                </div>
+              );
+            })()}
+
             {candidateCards.length > 0 && (
               <div className="adm-card">
                 <div className="adm-section-eyebrow">
@@ -1167,71 +1248,6 @@ export function ReviewDetail() {
                 </div>
               )}
             </div>
-
-            {/* Phase 8b: binding-intent banner */}
-            {(() => {
-              const type = submission?.submission_type;
-              const targetId = submission?.original_lesson_id;
-              // SimilarityWithLesson has lesson_id at top level, lesson.title nested.
-              // submitterTargetLesson (off-list fetch) has title at top level.
-              const targetTitle =
-                submission?.submitterTargetLesson?.title ||
-                topDuplicates.find((d) => d.lesson_id === targetId)?.lesson?.title ||
-                null;
-
-              // (update, X, title-known) — happy path
-              if (type === 'update' && targetId && targetTitle) {
-                return (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                    <span className="font-medium text-blue-900">Submitter says:</span>{' '}
-                    <span className="text-blue-900">
-                      Updating <strong>{targetTitle}</strong>
-                    </span>
-                  </div>
-                );
-              }
-              // (update, X, title lookup FAILED) — degraded but still update intent.
-              // CRITICAL: must NOT fall through to the green "new" banner; that's the
-              // worst-possible misrender (reviewer thinks it's new when submitter
-              // declared an update). Render yellow with the raw lesson_id and a
-              // "verify before approving" prompt.
-              if (type === 'update' && targetId && !targetTitle) {
-                return (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
-                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
-                      <span className="text-amber-900">
-                        Updating lesson <code>{targetId}</code> — but its title couldn&apos;t be
-                        loaded. Please search the library to confirm the right merge target before
-                        approving.
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              // (update, null) — explicit can't-find-it
-              if (type === 'update' && !targetId) {
-                return (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
-                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
-                      <span className="text-amber-900">
-                        Updating, but couldn&apos;t find target — please search to identify.
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              // (new) — only fall here when type is genuinely 'new'
-              return (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
-                  <span className="font-medium text-emerald-900">Submitter says:</span>{' '}
-                  <span className="text-emerald-900">New lesson</span>
-                </div>
-              );
-            })()}
 
             <div className="adm-card">
               <div className="adm-section-eyebrow">Decision</div>

@@ -74,15 +74,24 @@ export function IntQueueRow({ submission, onSelect }: IntQueueRowProps) {
             const fullTitle = submission.originalLessonTitle ?? '';
             const truncated =
               fullTitle.length > 40 ? `${fullTitle.slice(0, 40).trim()}…` : fullTitle;
+            // aria-label on the outer wrapper + aria-hidden on inner spans so
+            // AT users hear one cohesive label rather than chip-text +
+            // overridden title-span text as two separate announcements.
             return (
-              <span className="inline-flex items-center gap-1 max-w-full">
-                <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded shrink-0">
+              <span
+                className="inline-flex items-center gap-1 max-w-full"
+                aria-label={fullTitle ? `Updating lesson: ${fullTitle}` : 'Update (target unknown)'}
+              >
+                <span
+                  className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded shrink-0"
+                  aria-hidden="true"
+                >
                   UPDATE
                 </span>
                 <span
                   className="text-xs text-gray-700 truncate"
                   title={fullTitle}
-                  aria-label={fullTitle ? `Updating lesson: ${fullTitle}` : 'Updating lesson'}
+                  aria-hidden="true"
                 >
                   {truncated || '(target unknown)'}
                 </span>
@@ -90,14 +99,19 @@ export function IntQueueRow({ submission, onSelect }: IntQueueRowProps) {
             );
           }
           return (
-            <span className="inline-flex items-center gap-1">
+            <span
+              className="inline-flex items-center gap-1"
+              aria-label="Submitter is updating but couldn't find target — needs reviewer search"
+            >
               <span
                 className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded"
-                aria-label="Submitter is updating but couldn't find target — needs reviewer search"
+                aria-hidden="true"
               >
                 UPDATE?
               </span>
-              <span className="text-xs text-amber-700">needs reviewer search</span>
+              <span className="text-xs text-amber-700" aria-hidden="true">
+                needs reviewer search
+              </span>
             </span>
           );
         })()}
