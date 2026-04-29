@@ -14,6 +14,7 @@ import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
 import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { titlesAreSimilar } from '@/utils/titleSimilarity';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
+import { computePreselection } from '@/pages/reviewPreselect';
 import {
   IntButton,
   IntDecisionBar,
@@ -396,13 +397,13 @@ export function ReviewDetail() {
       // restored from a prior review — pre-existing limitation, out of 8b
       // scope.)
       if (!reviews || reviews.length === 0) {
-        if (submissionData?.submission_type === 'update') {
-          setDecision('approve_update');
-          if (submissionData.original_lesson_id) {
-            setSelectedDuplicate(submissionData.original_lesson_id);
-          }
-        } else {
-          setDecision('approve_new');
+        const preselection = computePreselection({
+          submission_type: submissionData?.submission_type,
+          original_lesson_id: submissionData?.original_lesson_id,
+        });
+        setDecision(preselection.decision);
+        if (preselection.target) {
+          setSelectedDuplicate(preselection.target);
         }
       }
     } catch (error) {
