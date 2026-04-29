@@ -1,11 +1,11 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — Session 4 (PR-1 MERGED + PROD-applied + verified; PR-2 ready to start)
-**Current PR:** (none — [PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471) MERGED 2026-04-29 20:24:49Z via rebase, 9 commits onto main)
-**Next PR:** PR-2 — Writer fix + column hygiene + trigger (not yet branched)
-**Current task:** Session 5 picks up at PR-2 Task 2.1 (writer-fix `complete_review_atomic`)
-**Branch:** `main` (synced to origin; PR-1 work complete; feature branch deleted)
-**Last commit on main:** `db98914 docs(filter-drift): session 3 — round-3 verification pass`
+**Last updated:** 2026-04-29 — Session 5 (PR-2 M1 drafted + applied locally + matrix verified; branch live, not yet pushed)
+**Current PR:** (none — branch `feat/filter-drift-pr2-writer-fix-trigger` is local; M1 committed but no PR open yet)
+**Next PR:** PR-2 — Writer fix + column hygiene + trigger (M1 committed, M2/M3/M4 still to draft)
+**Current task:** Session 6 picks up at **PR-2 Task 2.4** — Migration 2 (backfill historical drift rows)
+**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` (2 commits ahead of `origin/main`: Session 4 docs ride-along + Session 5 M1 work)
+**Last commit on branch:** `9e5b245 fix(db): filter-drift PR-2 M1 — writer fix in complete_review_atomic`
 
 ## Done
 
@@ -19,10 +19,13 @@
 - **PR-1 Task 1.6 Step 7a (round-2 bot triage + round-2 fix-up + round-cap)** — Session 3 — `2c3c8ff` (R2-2 typeof narrowing on duration/groupSize)
 - **PR-1 Task 1.6 Step 7b (PR body verification matrix update + round-1+round-2 acknowledgment comment)** — Session 3 — no commit (GitHub UI updates)
 - **PR-1 Task 1.6 Step 7 (merge + PROD apply + PROD verification)** — Session 4 — merged via `gh pr merge 471 --rebase --delete-branch` (rebased SHAs `b8d09e7`–`db98914`); PROD apply via `migrate-production.yml` run `25131961626` (4/4 jobs success, no SASL flake); 13-row PROD matrix + 4 structural checks + 5-row metadata-shape spot-check all pass
+- **PR-2 Task 2.1 (pre-flight verification of `complete_review_atomic`)** — Session 5 — no commit (info-gathering); deployed PROD source confirmed byte-equivalent to `20260428000008_phase_4_status_guard.sql` (status guard + both expected bugs present); no Phase 5+ migration mutates the function (verified via grep — Phase 5/6/6.2 only mention it in comments); PROD cohort snapshot 2026-04-29 matches design doc baseline (1 array_lf / 693 object_ai / 81 short_keys / 690 rich_concepts / 3 empty_concepts / 788 total)
+- **PR-2 Task 2.2 (Migration 1 — writer fix)** — Session 5 — `9e5b245` — drafted `20260506000000_filter_drift_pr2_m1_writer_fix.sql` (403 lines, full function body via `CREATE OR REPLACE`): Bug A `lessonFormat` array→scalar (`to_jsonb(text)` not `jsonb_build_array(text)`), Bug B `academic_integration` typeof-aware unwrap in v_legacy_meta + both INSERT and UPDATE branches' column derivation, plus `academicConcepts` rescue with "key present iff data present" semantic + forward-compat sibling-key path. Local apply via `supabase db reset` clean (61 migrations). Function source verified live via `pg_get_functiondef`: `to_jsonb(v_meta->>'lessonFormat')` present, `jsonb_typeof(v_meta->'academicIntegration')` present, `jsonb_build_array(v_meta->>'lessonFormat')` GONE, `academicConcepts` present, signature unchanged.
+- **PR-2 Task 2.3 (local writer-roundtrip matrix — M1-only writer-isolation)** — Session 5 — no commit (in-session evidence) — 6-row matrix executed locally via service-role MCP against fresh `complete_review_atomic` calls; all 6 rows match design-doc expectations exactly (results table below); cleanup via FK-safe deletion order returned all 4 counts to 0.
 
 ## In flight
 
-(none — PR-1 fully shipped: merged + PROD-applied + verified end-to-end. Session 5 starts PR-2 Task 2.1.)
+(none — clean stopping point: M1 committed locally, matrix verified, no PR open. Session 6 starts at Task 2.4.)
 
 ## Blocked
 
@@ -212,3 +215,38 @@ Next session (Session 5): start at **PR-2 Task 2.1 — writer-fix `complete_revi
 3. Then sequence per locked decision: M1 writer fix → M2 backfill (extend scope to canonicalize `location_requirements` casing per Session 3 V-4 finding + handle empty-`{}` concepts per Session 3 finding) → M3 column hygiene (gated on Task 2.5 investigation of 17 activity_type location-leak rows; surface findings to user before drafting) → M4 trigger install + enable.
 4. Writer-roundtrip test matrix (Task 2.3): 6 academicIntegration cases + 1 lessonFormat scalar — fixtures from impl plan Task 2.3 step 1, NOT design-doc older 4-row version. Synthetic submissions via service-role MCP; clean up via UUID-safe + FK-safe SQL block in Task 2.3.
 5. PR-2 PROD apply needs the brief reviewer-approval pause coordination per locked decision (notify in advance, apply, run drift-residue + writer-shape checks, notify reviewers to resume).
+
+### Session 5 — 2026-04-29 — PR-2 M1 drafted, applied locally, matrix verified
+
+Major events:
+- Session-start orientation: read kickoff + status + design doc + impl plan Task 2.1–2.3. `type-check` + `lint` clean baseline; worktree dirt is the usual `.beads/*` + `.claude/scheduled_tasks.lock` (unrelated).
+- **Branched** `feat/filter-drift-pr2-writer-fix-trigger` off `main` (which carries PR-1 + Session 4 docs `dae77e8` riding along).
+- **Task 2.1 (pre-flight)** — PROD `complete_review_atomic` confirmed byte-equivalent to `20260428000008` via `pg_get_functiondef` position-checks: both expected bugs present (`jsonb_build_array(v_meta->>'lessonFormat')` ✓, `COALESCE(v_meta->'academicIntegration', '[]'::jsonb)` ✓), status guard present, signature unchanged. `grep` of all post-Phase-4 migrations (Phase 5, 6, 6.2) confirms only comment references — no `CREATE OR REPLACE FUNCTION complete_review_atomic` after `20260428000008`. PROD cohort snapshot 2026-04-29 matches design doc baseline (1/693/81/690/3/788). Design doc §5 snippets apply directly.
+- **Task 2.2 (M1 migration)** — drafted `supabase/migrations/20260506000000_filter_drift_pr2_m1_writer_fix.sql` as a full `CREATE OR REPLACE FUNCTION` body (signature unchanged → no DROP). Two body changes: Bug A `lessonFormat` builder → `to_jsonb(scalar)`, Bug B `academicIntegration` typeof-aware CASE in v_legacy_meta + INSERT branch (`_phase4_jsonb_text_array(...)`) + UPDATE branch (`_phase4_jsonb_text_array_or_null(...)` wrapped in `COALESCE`). Plus `academicConcepts` rescue (object-shape AI with non-empty `concepts` → top-level sibling key) + forward-compat sibling-key path (caller passes `academicConcepts` directly). Empty-`{}` concepts intentionally NOT rescued (matches PR-2 M2 backfill convention). ROLLBACK comment block at file end. Local apply via `supabase db reset` clean. Function source verified live via `pg_get_functiondef` position-checks: BOTH old bugs GONE, BOTH fixes present, `academicConcepts` present, signature `(p_submission_id uuid, p_reviewer_id uuid, p_decision text, p_metadata jsonb, p_notes text, p_selected_lesson_id text)` unchanged. Source length 11577 → 13749 (concepts rescue + comments). Commit `9e5b245`.
+- **Task 2.3 (local writer-roundtrip matrix)** — 6 synthetic `lesson_submissions` rows inserted at UUIDs `00000000-aaaa-bbbb-cccc-00000000000{1..6}` with `teacher_id = 11111111-1111-1111-1111-111111111111` (canonical local seed) + `status = 'submitted'`. Then 6 `complete_review_atomic(p_decision := 'approve_new', p_reviewer_id := <reviewer@test.com>, p_metadata := <matrix row>, ...)` calls via `UNION ALL` in one MCP call (PG executes in arbitrary order but each row is independent). All 6 calls returned fresh `lesson_*` IDs. Inspection query confirms ALL 6 rows match the expected matrix exactly:
+
+  | Row | Input `academicIntegration` | `metadata.academicIntegration` | `metadata.academicConcepts` | `academic_integration` col | `metadata.lessonFormat` | `lesson_format` col |
+  |---:|---|---|---|---|---|---|
+  | 1 | `["Math","Science"]` | `["Math","Science"]` (array) | (key absent) | `["Math","Science"]` | `"Single period"` (string) | `Single period` |
+  | 2 | `{"selected":["Math"]}` | `["Math"]` (array) | (key absent) | `["Math"]` | `"Single period"` (string) | `Single period` |
+  | 3 | omitted | `[]` (array) | (key absent) | `[]` | `"Single period"` (string) | `Single period` |
+  | 4 | `{"selected":[]}` | `[]` (array) | (key absent) | `[]` | `"Single period"` (string) | `Single period` |
+  | 5 | `{"selected":["Math"],"concepts":{"Math":["fractions"]}}` | `["Math"]` (array) | `{"Math":["fractions"]}` | `["Math"]` | `"Single period"` (string) | `Single period` |
+  | 6 | `{"selected":["Math"],"concepts":{}}` | `["Math"]` (array) | (key absent) | `["Math"]` | `"Single period"` (string) | `Single period` |
+
+  **Bug A closed** (`lf_meta_type = "string"` for all 6 rows — never `"array"`). **Bug B closed** (`ai_col` is a proper text[] for all rows, including object-shape inputs at rows 2/4/5/6 — no stringified-JSON elements). **Concepts rescue WORKS** (row 5 only). **Empty-`{}` concepts NOT rescued** (row 6 absent — matches "key present iff data present" semantic). UUID-safe + FK-safe cleanup deleted from `lessons` → `submission_reviews` → `submission_similarities` → `lesson_submissions`; all 4 post-cleanup counts = 0.
+
+- **Pre-commit baseline still clean** post-Session-5 changes: `npm run type-check` ✓ `npm run lint` ✓ (SQL-only commit, no TS impact expected and confirmed).
+
+Decisions made this session (no surprises):
+- Migration prefix `20260506000000_*` — next-available HHMMSS-padded slot after PR-1's `20260505010000_*`. Consistent with PR-1's pattern.
+- Used canonical local seed `11111111-1111-1111-1111-111111111111` for `teacher_id` per impl plan Task 2.3 convention. The FK is to `auth.users.id` only; the chosen UUID happens to map to admin@test.com locally but the writer doesn't care (function takes `teacher_id` as an FK reference, not a role check).
+- `UNION ALL` of 6 function calls in one MCP call — efficient and correct because each call references a distinct submission_id (no read-after-write within the statement).
+- Did NOT exercise the `approve_update` branch in this matrix. Per impl plan §2.3, the approve_new matrix is sufficient: v_legacy_meta builder is shared between branches; Change B is structurally symmetric (`_phase4_jsonb_text_array_or_null` wrapped in COALESCE on UPDATE side, `_phase4_jsonb_text_array` on INSERT side — same CASE expression). Approve_update gets an integrated test in Task 2.3 Step 2 (post-CI TEST DB integrated-flow).
+
+Next session (Session 6): pick up at **PR-2 Task 2.4 — Migration 2 (backfill historical drift rows)**.
+
+1. Branch is already on `feat/filter-drift-pr2-writer-fix-trigger`. M1 commit `9e5b245` still local; status doc commit will land alongside.
+2. Per impl plan Task 2.4: backfill the 81 short-key rows (`themes`/`season`/`location` → long-form keys) + 693 object-shape AI rows (unwrap `{selected: [...]}` → `[...]` while RESCUING concepts to sibling `academicConcepts` key) + 1 array-shape `lessonFormat` outlier (unwrap to scalar). **Extended scope per Session 3 OOS items**: also canonicalize `location_requirements` column casing (92 lowercase rows → Title-Case) AND skip empty-`{}` concepts when moving to top-level `academicConcepts` (3 PROD rows).
+3. Idempotent SQL. Local apply + verification probe (zero short_keys / zero object_ai / zero array_lf remaining); then commit. Plus handle the location-casing extension correctly (corpus is mixed-case; 414 Title-Case + 43 lowercase `Indoor`/`indoor` etc.).
+4. Don't tackle Task 2.5 (17 activity_type location-leak investigation) in the same session — that's a discrete user-decision step that's a natural session boundary.
