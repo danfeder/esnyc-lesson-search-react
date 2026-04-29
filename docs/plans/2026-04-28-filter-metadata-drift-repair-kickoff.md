@@ -114,9 +114,11 @@ arguments cannot.
   `to_jsonb(NULL::text[])` produces JSON `null` and naive overlay would
   erase valid `original.x` values. Per-field CASE inside
   `jsonb_strip_nulls` solves this.
-- **Three sequential PRs in the order above.** NOT a mega-PR. NOT writer-fix
-  before column-based RPC (read-side widening must land first to mitigate
-  the live drift cohort during PR-1→PR-2 gap).
+- **Two active sequential PRs (PR-1 then PR-2)** + two deferred (PR-3 + PR-4).
+  NOT a mega-PR combining PR-1 and PR-2. NOT writer-fix before column-based RPC
+  (read-side widening must land first to mitigate the live drift cohort during
+  the PR-1 → PR-2 gap). Don't reactivate PR-3 / PR-4 without explicit user
+  confirmation.
 - **PR-2 ordering: writer fix → backfill → column hygiene → install + enable
   trigger.** This eliminates the drift-during-deploy concern. NO
   `DISABLE`/`session_replication_role = 'replica'` dance — the trigger
@@ -136,15 +138,18 @@ arguments cannot.
   `metadata.academicConcepts` before unwrapping. Do NOT use the bare
   design-doc §5 unwrap snippet that drops concepts — see Task 2.4 step 2
   for the corrected SQL.
-- **Canonical-form decisions (locked, with caveats):**
+- **Canonical-form decisions (locked but UNUSED while PR-3 is deferred).**
+  These spellings are what PR-3 would lock in IF reactivated. The active
+  scope (PR-1 + PR-2) does NOT canonicalize vocabulary — corpus stays
+  mixed-case post-PR-2; alias helpers keep filters working in mixed state.
   - `lesson_format` → Title-Case-with-spaces (corpus dominance).
   - `activity_type` → bare nouns (`cooking`, `garden`, `academic`, `both`).
   - `cooking_methods` → lowercase + outlier mapping for `Sautéing`/`Steam` etc.
-  - `cultural_heritage` → DEFERRED to PR-4. PR-3 leaves heritage values
-    untouched. The `_alias_cultural_heritage` helper installed in PR-1
-    survives PR-3 (the only cross-PR alias).
-- **PR-4 (heritage redesign) is deferred and gated.** Don't scope-creep
-  into PR-3.
+  - `cultural_heritage` → would be redesigned in PR-4 (also deferred); all
+    four `_alias_*` helpers from PR-1 stay in the database indefinitely.
+- **PR-4 (heritage redesign) is deferred and gated** on stakeholder input.
+  Independent of the PR-3 deferral. Don't scope-creep heritage work into
+  PR-2 (heritage values are not touched by the active migrations).
 
 Out of scope (captured as follow-ups in the design doc, do NOT scope-creep
 into this initiative):
@@ -202,11 +207,14 @@ INVESTIGATION-BEFORE-DRAFTING (specific to this initiative):
   PROD, categorize each, then surface findings to the user with a
   recommendation. Wait for user decision on each row before drafting
   Migration 3. The design doc deliberately deferred this; don't guess.
-- **Task 2.3 (writer-roundtrip test matrix)**: 4 AI shapes + 1 lessonFormat
-  shape. The matrix data isn't in the design doc as fully-formed test
-  fixtures — you'll need to construct synthetic submissions and call
-  `complete_review_atomic` via service-role MCP. Surface fixture
-  construction questions if anything's ambiguous.
+- **Task 2.3 (writer-roundtrip test matrix)**: 6 academicIntegration cases
+  (4 base shapes + 2 concepts cases — rescue path and empty-not-rescued)
+  plus 1 lessonFormat scalar-shape assertion. Full p_metadata fixtures
+  are in impl plan Task 2.3 step 1 (table + per-row payload mapping).
+  Use those verbatim; the design doc has older 4-row fixtures that
+  predate the concepts-rescue work. Synthetic submissions go through
+  service-role MCP; clean up via the UUID-safe + FK-safe SQL block in
+  Task 2.3.
 
 PER-PR RITUAL (every PR, every time):
 1. Pre-push review: DISPATCH a feature-dev:code-reviewer agent on
@@ -342,12 +350,21 @@ Two memory entries are particularly relevant to this initiative:
 - `project_lesson_format_conflated.md` — the conflation issue is OUT OF
   SCOPE here but contextual.
 - The `MEMORY.md` "facetCounts.ts:55 hardening" hygiene-follow-up entry
-  is addressed in PR-3 Task 3.5; mark it done after PR-3 ships.
+  was scoped into PR-3 Task 3.5; with PR-3 deferred, it stays open as
+  a hygiene item under the active scope. Don't address it in PR-1 or
+  PR-2 (out of scope).
 
-# EXECUTION STATUS FILE TEMPLATE (create on Session 1)
+# EXECUTION STATUS FILE TEMPLATE (fallback only)
 
-If docs/plans/2026-04-28-filter-metadata-drift-repair-execution-status.md
-does not exist yet, create it with the content shown below:
+The real status file ALREADY EXISTS at
+`docs/plans/2026-04-28-filter-metadata-drift-repair-execution-status.md`
+with richer scaffolding — including a Session 0 audit trail of the PR-3
+deferral and concepts-rescue decisions. **Read that file first** as part
+of the session-start ritual; it has the context Session 1 needs.
+
+The bare template below is a fallback only — use it if the real file
+somehow disappeared (git-worktree mishap, accidental deletion, etc.).
+Don't use this template to overwrite the real one.
 
 ---
 # Filter Metadata Drift Repair — Execution Status
