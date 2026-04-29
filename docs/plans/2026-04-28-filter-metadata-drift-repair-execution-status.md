@@ -1,10 +1,11 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — Session 3 (PR-1 round-capped after 2 bot-review rounds; ready for merge approval)
-**Current PR:** [PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471) — Column-based RPC + alias tolerance (open, round-capped, awaiting human merge)
-**Current task:** Task 1.6 Step 7 (post-merge PROD migration apply + verification)
-**Branch:** `feat/filter-drift-pr1-column-rpc` (pushed; 3 commits ahead of origin/main on top of Session 2's commits)
-**Last commit on branch:** `2c3c8ff fix(filter-drift): PR-1 round-2 R2-2 — narrow duration/groupSize types`
+**Last updated:** 2026-04-29 — Session 4 (PR-1 MERGED + PROD-applied + verified; PR-2 ready to start)
+**Current PR:** (none — [PR #471](https://github.com/danfeder/esnyc-lesson-search-react/pull/471) MERGED 2026-04-29 20:24:49Z via rebase, 9 commits onto main)
+**Next PR:** PR-2 — Writer fix + column hygiene + trigger (not yet branched)
+**Current task:** Session 5 picks up at PR-2 Task 2.1 (writer-fix `complete_review_atomic`)
+**Branch:** `main` (synced to origin; PR-1 work complete; feature branch deleted)
+**Last commit on main:** `db98914 docs(filter-drift): session 3 — round-3 verification pass`
 
 ## Done
 
@@ -17,10 +18,11 @@
 - **PR-1 Task 1.6 Steps 5-6 (CI verification + round-1 bot triage + round-1 fix-ups)** — Session 3 — `5a26a13` (TS-1+TS-3 tests + M-1 GIN index)
 - **PR-1 Task 1.6 Step 7a (round-2 bot triage + round-2 fix-up + round-cap)** — Session 3 — `2c3c8ff` (R2-2 typeof narrowing on duration/groupSize)
 - **PR-1 Task 1.6 Step 7b (PR body verification matrix update + round-1+round-2 acknowledgment comment)** — Session 3 — no commit (GitHub UI updates)
+- **PR-1 Task 1.6 Step 7 (merge + PROD apply + PROD verification)** — Session 4 — merged via `gh pr merge 471 --rebase --delete-branch` (rebased SHAs `b8d09e7`–`db98914`); PROD apply via `migrate-production.yml` run `25131961626` (4/4 jobs success, no SASL flake); 13-row PROD matrix + 4 structural checks + 5-row metadata-shape spot-check all pass
 
 ## In flight
 
-(none — Session 3 round-capped PR #471. Awaiting human merge approval, then PROD migration apply via `migrate-production.yml`, then PROD MCP verification.)
+(none — PR-1 fully shipped: merged + PROD-applied + verified end-to-end. Session 5 starts PR-2 Task 2.1.)
 
 ## Blocked
 
@@ -168,13 +170,45 @@ Major events:
   - All other round-3 findings are restatements of round-1/round-2 already-triaged items (WHERE-clause-dup, IIFE, arg order, academicConcepts modeling, alias long-tail, dead-JSONB-index hygiene).
   - **Follow-up comment posted** ([issuecomment-4347241763](https://github.com/danfeder/esnyc-lesson-search-react/pull/471#issuecomment-4347241763)) documenting the round-3 verification + reaffirming round-cap.
 
-Next session (Session 4): start at **Task 1.6 Step 7 — post-merge PROD apply**.
-1. Confirm PR #471 merged to main (user action).
-2. `migrate-production.yml` workflow triggers automatically on merge.
-3. After human approval in GitHub Actions: PROD migration applies. Watch for SASL Apply-step flake (PR-1 has 2 migrations now — `20260505000000` already verified pattern works, `20260505010000` is a tiny additive index, retryable). If Apply step fails: `gh run rerun --failed <run_id>`. Idempotent (`CREATE INDEX IF NOT EXISTS`), safe to retry.
-4. Verify via `mcp__supabase-remote__execute_sql`:
-   - 13-row matrix (same shape as TEST verification — counts will differ since PROD has 831 vs TEST's 772)
-   - `idx_lessons_activity_type_col` GIN index present
-   - search_lessons signature has `filter_cooking_method text[]`
-5. Update status file (Session 4 entry).
-6. Then start PR-2: **Task 2.1** (writer-fix `complete_review_atomic`) per impl plan. Note that PR-2 M2 must extend its column-hygiene scope to canonicalize `location_requirements` casing (12% blind spot finding from Session 3) and handle empty-`{}` concepts edge case (3 rows).
+### Session 4 — 2026-04-29 — PR-1 merged + PROD-applied + PROD-verified end-to-end
+
+Major events:
+- Session-start orientation: read kickoff + status + git state. `type-check` + `lint` clean baseline. Worktree dirt unrelated (`.beads/*` + `.claude/scheduled_tasks.lock`). Confirmed PR #471 still OPEN, `mergeStateStatus: UNSTABLE`, `reviewDecision: CHANGES_REQUESTED` (round-3 already triaged + documented in Session 3). Reported orientation; user authorized merge.
+- **PR-1 merge.** Project convention is rebase-merge (verified via 5 most recent merged PRs — no merge-commit titles). `gh pr merge 471 --rebase --delete-branch` succeeded. All 9 commits (4 docs ancestors from Session 0 scaffolding that intentionally rode along + 5 PR-1 work commits) rebased cleanly onto origin/main. New SHAs `b8d09e7` (migration) → `db98914` (Session 3 docs). Feature branch deleted on origin + locally.
+- **`migrate-production.yml` run `25131961626` triggered on merge push.** All 4 jobs success after user's manual production-environment approval: Check Migration Changes ✓, Migration Dry Run ✓, Verify Recent Backup ✓, Apply to Production ✓. **NO SASL Apply-step flake this run** — both migrations applied cleanly first try (pattern was `20260505000000_filter_drift_pr1_column_based_search_lessons` then `20260505010000_filter_drift_pr1_activity_type_gin_index`).
+- **Structural verification on PROD** (`mcp__supabase-remote__execute_sql`):
+  - **Migration list**: both `20260505000000` and `20260505010000` present at the head of `supabase_migrations.schema_migrations` ✓
+  - **`search_lessons` signature**: `filter_cooking_method text[]` (was `text` in baseline), `filter_lesson_format text` scalar (correct, single-select per design) ✓
+  - **`idx_lessons_activity_type_col` GIN index** on `activity_type` column present ✓
+    - Note: old btree `idx_lessons_activity_type` on `((metadata->>'activityType'))` still exists. Dead under PR-1 column query (filter no longer reads metadata for activityType); kept for hygiene-PR cleanup later. Not a correctness issue, just dead bytes.
+  - **All 4 alias helpers deployed** with correct signatures: `_alias_activity_type(p_values text[])`, `_alias_cultural_heritage(p_values text[])`, `_alias_lesson_format(p_value text)`, `_match_cooking_methods(p_l_methods text[], p_filter_methods text[])` ✓
+- **13-row PROD verification matrix** (same shape as Session 3's TEST DB matrix; PROD corpus 788 vs TEST 772):
+
+  | # | Test | TEST | PROD | Notes |
+  |---|---|---:|---:|---|
+  | 1 | baseline (no filters) | 772 | 788 | corpus drift (TEST is reset weekly) |
+  | 2 | lessonFormat=`single-period` (slug) | 471 | 481 | matches Title (alias works) ✓ |
+  | 3 | lessonFormat=`Single period` (Title) | 471 | 481 | matches slug ✓ |
+  | 4 | activityType=`[cooking-only]` (slug) | 293 | 299 | matches bare (alias works) ✓ |
+  | 5 | activityType=`[cooking]` (bare) | 293 | 299 | matches slug ✓ |
+  | 6 | cookingMethods=`[stovetop]` (lower) | 174 | 178 | matches Title (case-insensitive) ✓ |
+  | 7 | cookingMethods=`[Stovetop]` (Title) | 174 | 178 | matches lower ✓ |
+  | 8 | cookingMethods=`[Basic prep only]` | 195 | 201 | slug↔phrase alias ✓ |
+  | 9 | academicIntegration=`[Math]` | 99 | 104 | column-based filter unblock ✓ |
+  | 10 | culturalHeritage=`[asian]` (slug) | 67 | 68 | alias→expand pipeline ✓ |
+  | 11 | filter_themes=`[Seed to Table]` | 416 | 424 | unchanged (column-based) ✓ |
+  | 12 | filter_seasons=`[Fall]` | 440 | 446 | unchanged (column-based) ✓ |
+  | 13 | filter_location=`[Indoor]` | 414 | 421 | ⚠️ ~12% undercount, deferred to PR-2 M2 |
+
+  All 5 documented production drift mismatches resolve correctly on PROD. Tests 2≡3, 4≡5, 6≡7 all match (slug-vs-Title alias works on real corpus). Test 8 (Basic prep only slug↔phrase) at 201 within expected range. Test 9 (Math) at 104 — column-based filter is unblocking what was undercounted by the JSONB filter. Test 10 (asian → expand) at 68 — full alias→`expand_cultural_heritage` pipeline works.
+
+- **Metadata reconstruction shapes verified on 5 real PROD rows** (filtered to academicIntegration=Math): all 5 returned `lessonFormat` as JSON string (scalar per design), `academicIntegration` as JSON array (per design), `academicConcepts` key present as object — concepts rescue working on real corpus ✓
+- **PR-1 fully shipped.** Code merged, PROD-applied, verified end-to-end. UI behavior on PROD search filters now matches the design intent (mostly — V-4 location finding remains as the planned PR-2 M2 fix).
+
+Next session (Session 5): start at **PR-2 Task 2.1 — writer-fix `complete_review_atomic`** per impl plan §2 + design doc §5.
+
+1. Branch: `git checkout -b feat/filter-drift-pr2-writer-column-trigger` off `main` (which already has PR-1 commits as of `db98914`).
+2. Pre-flight investigation: probe `process-submission` v29 PROD writer shape baseline (TS source path) before drafting M1 writer changes — capture what the current writer produces vs what canonical-shape requires.
+3. Then sequence per locked decision: M1 writer fix → M2 backfill (extend scope to canonicalize `location_requirements` casing per Session 3 V-4 finding + handle empty-`{}` concepts per Session 3 finding) → M3 column hygiene (gated on Task 2.5 investigation of 17 activity_type location-leak rows; surface findings to user before drafting) → M4 trigger install + enable.
+4. Writer-roundtrip test matrix (Task 2.3): 6 academicIntegration cases + 1 lessonFormat scalar — fixtures from impl plan Task 2.3 step 1, NOT design-doc older 4-row version. Synthetic submissions via service-role MCP; clean up via UUID-safe + FK-safe SQL block in Task 2.3.
+5. PR-2 PROD apply needs the brief reviewer-approval pause coordination per locked decision (notify in advance, apply, run drift-residue + writer-shape checks, notify reviewers to resume).
