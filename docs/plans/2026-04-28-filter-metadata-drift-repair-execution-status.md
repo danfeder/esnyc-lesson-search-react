@@ -1,11 +1,10 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-29 — Session 9 (Task 2.7 Migration 4 lessons_normalize_write trigger drafted, applied locally, 5 smokes verified; M4 commit `9192228` local)
-**Current PR:** (none — branch `feat/filter-drift-pr2-writer-fix-trigger` is local; M1+M2+M3+M4 all committed but no PR open yet)
-**Next PR:** PR-2 — Writer fix + column hygiene + trigger (M1+M2+M3+M4 ALL drafted; remaining work is Task 2.8 per-PR ritual)
-**Current task:** Session 10 picks up at **PR-2 Task 2.8** — pre-push reviewer dispatch + push + open PR + bot review iteration + TEST DB integrated-flow matrix incl. `approve_update` branch + PROD apply with brief reviewer-approval pause
-**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` (10 commits ahead of `origin/main` after Session 9 docs commit lands: Session 4 docs ride-along + Session 5 M1 + Session 5 docs + Session 6 M2 + Session 6 docs + Session 7 docs + Session 8 M3 + Session 8 docs + Session 9 M4 + Session 9 docs)
-**Last commit on branch:** `9192228 feat(db): filter-drift PR-2 M4 — install lessons_normalize_write trigger`
+**Last updated:** 2026-04-29 — Session 10 (Task 2.8 Steps 1-4 done — pre-PR check + pre-push reviewer dispatch zero-findings + push + PR #472 opened; CI running)
+**Current PR:** **[PR #472](https://github.com/danfeder/esnyc-lesson-search-react/pull/472)** — OPEN, CI in flight
+**Current task:** Session 11 picks up at **PR-2 Task 2.8 Steps 5-6** — wait for CI completion, four-surface bot-review triage (round 1), TEST DB integrated-flow matrix incl. `approve_update` branch + drift-residue + trigger-coerces-drift smoke + concepts-preservation count
+**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` PUSHED to origin (10 code+docs commits across Sessions 4-9 + Session 10 docs commit)
+**Last commit on branch:** `9192228 feat(db): filter-drift PR-2 M4 — install lessons_normalize_write trigger` (latest code; Session 10 docs commit will follow)
 
 ## Done
 
@@ -28,9 +27,11 @@
 
 - **PR-2 Task 2.6 (Migration 3 — column-data hygiene)** — Session 8 — `56bb59a` — drafted `supabase/migrations/20260508000000_filter_drift_pr2_m3_column_hygiene.sql` (186 lines) with two cleanups: (A) activity_type location-leak fix using a CTE-driven `WITH leak_mapping(lesson_id, new_activity_type, new_metadata_value) AS (VALUES ...)` mapping for the 17 rows + single UPDATE writing both column AND metadata.activityType (canonical array shape `["cooking"]` etc. for 14 set rows; `metadata - 'activityType'` to delete the key for 3 cleared rows so PR-1 reconstruction's empty-column fallback doesn't leak); (B) academic_integration column-vs-meta hygiene with two UPDATEs — Pop A derives column from post-M2 canonical array via `array_agg(value FROM jsonb_array_elements_text(metadata->'academicIntegration'))`, Pop B forces metadata to match column via `jsonb_set(... '{academicIntegration}', to_jsonb(academic_integration))` with ordered `array_agg(value ORDER BY value)` set-comparison. All three UPDATEs idempotent. Pre-flight PROD probes (4 queries) confirmed 17 leak rows still match Session 7 mapping exactly + Pop A=2 PROD rows (lower than design doc's "~5" estimate; both NULL-column object-shape AI rows that M2 unwraps) + Pop B=4 PROD rows (matches design doc; all 4 column ⊃ meta.selected, concepts preserved on subset). Local apply via `supabase db reset` clean (63 migrations including M3). type-check + lint clean.
 
+- **PR-2 Task 2.8 Steps 1-4 (pre-PR check + pre-push reviewer dispatch + push + open PR)** — Session 10 — no commit (Session 10 docs commit pending) — `npm run type-check && npm run lint` ✓ ✓; `feature-dev:code-reviewer` (Sonnet, default) dispatched on `git diff main...HEAD` against full 4-migration body — agent self-rebutted 10 candidate findings during trace and reported **zero genuine issues above the 80-confidence threshold** (Findings 1-10 all withdrawn after walk-through; theoretical NULL-element edge case in `_meta_array_matches_column` and theoretical empty-string lessonFormat element noted as Nit/below-bar with zero practical exposure per pre-flight probes). No fix-up commits. `git push -u origin feat/filter-drift-pr2-writer-fix-trigger` clean (single new branch on origin, tracking set up). **PR [#472](https://github.com/danfeder/esnyc-lesson-search-react/pull/472) opened** with adapted body (4-migration summary + Why-this-matters + PROD coordination + 9-line Test plan with [x]/[ ] markers + local pre-flight evidence table for M1 6-row matrix + M4 5-smoke summary).
+
 ## In flight
 
-(none — clean stopping point: M1+M2+M3+M4 committed locally; Session 10 starts at Task 2.8 — per-PR ritual + PROD coordination.)
+PR #472 — CI running as of session-end. All 13 checks pending; Dependency Review is the only check that has resolved (passed). Bot reviews (`claude-review`, `claude-database-review`) not yet landed. Netlify deploy preview not yet built; E2E gates on TEST DB CI apply.
 
 ## Blocked
 
@@ -454,3 +455,48 @@ Next session (Session 10): pick up at **PR-2 Task 2.8 — push, coordinate appro
    - **Step 6 (TEST DB integrated-flow matrix)**: per impl plan Task 2.3 step 2 — same 6 academicIntegration cases + 1 lessonFormat assertion as Session 5's local matrix, but THIS round include the `approve_update` branch (skipped in Session 5 because Phase-4 changes had already shipped via PR-1). Plus drift-residue checks on TEST DB: `array_lf_remaining=0`, `object_ai_remaining=0`, `short_keys_remaining=0`. Plus trigger-coerces-deliberate-drift check (insert deliberately-drifted row direct via SQL on TEST; expect coerce + 1 RAISE NOTICE). Plus concepts-preservation count check: `concepts_preserved_count` matches pre-flight `rows_with_nonempty_concepts` (≈690).
    - **Step 7 (PROD coordination)**: notify reviewers in advance of the brief approval pause (~5 min). Approve PROD migration via `migrate-production.yml`. After apply, run drift-residue + writer-shape verification via `mcp__supabase-remote__execute_sql`. Notify reviewers they may resume. Verify trigger attached on PROD via `pg_trigger` query.
 3. Task 2.8 is substantial — full per-PR ritual + bot-review iteration + TEST DB integrated matrix + PROD coordination is multi-session by nature (PR open ⇒ end session ⇒ next session for round-1 triage ⇒ next session for round-2 triage if any ⇒ next session for merge + PROD apply + verify). Don't try to ship the whole PR in one session.
+
+### Session 10 — 2026-04-29 — PR-2 pushed, **PR #472 opened**, CI running
+
+Major events:
+- Session-start orientation: read kickoff + status + git state. `type-check` + `lint` clean baseline; usual `.beads/*` + `.claude/scheduled_tasks.lock` worktree dirt (unrelated). Confirmed branch state matches Session 9's "Next session" expectation: M1+M2+M3+M4 + 5 docs commits all local, 10 commits ahead of `origin/main`, latest code commit `9192228`.
+- **Task 2.8 Step 1 (mandatory pre-PR check)**: `npm run type-check && npm run lint` ✓ ✓ (both clean).
+- **Task 2.8 Step 2 (pre-push reviewer agent)**: dispatched `feature-dev:code-reviewer` (default Sonnet) on `git diff main...HEAD` with detailed brief covering 7 priority focus areas (M2 data safety, M1 typeof correctness, M4 trigger correctness, M3 17-row mapping integrity, concepts-rescue alignment across all paths, idempotency, row-context safety) plus locked-decisions list and skip-list (don't redebate locked decisions, don't waste cycles on hardening that fails the user-visible-bug-or-DB-damage bar). Agent traced through every requested code path and self-rebutted 10 candidate findings during the walk-through:
+  - M2 `||` operator pattern correctness — verified preserves all non-target top-level keys.
+  - M1 typeof CASE all-five-cases (array / object-with-selected / object-with-empty-selected / object-missing-selected / object-with-jsonb-null-selected) — all produce correct non-NULL flat arrays.
+  - M4 section A (concepts rescue) ordering vs section C (AI flatten) — confirmed A-before-C is required and correct.
+  - M4 `_meta_array_matches_column` NULL-element edge case — theoretical only, zero corpus exposure per probes.
+  - M4 section B/C `v_meta_value` stale-read risk — traced reassignment paths, no stale reads.
+  - M3 17-row CTE mapping — counted 7+4+2+1+3=17 distinct IDs, idempotent JOIN semantic, NULL-marker handles cleared rows correctly.
+  - M2 Update 3 empty-string lessonFormat element — below bar, the 1 PROD outlier is `["standalone"]` (non-empty).
+  - M3 Pop B `to_jsonb(text[])` NULL-element handling — column populated by `_phase4_jsonb_text_array` which filters nulls; below bar.
+  - M1 forward-compat `academicConcepts` override — intentional behavior.
+  - M4 second NOTICE on object-shape AI input — slightly misleading log text, no data issue.
+  - **Final verdict: zero findings above 80 confidence threshold.** Agent quote: "The four migrations are functionally correct, idempotent, FK-safe, and the concept-rescue semantics are consistent across all four write paths. The code is ready to push."
+- **Task 2.8 Step 3 (push)**: `git push -u origin feat/filter-drift-pr2-writer-fix-trigger` clean — single new branch created on origin, upstream tracking set. No fix-up commits between Step 2 and Step 3 (zero findings).
+- **Task 2.8 Step 4 (open PR)**: `gh pr create` opened **[PR #472](https://github.com/danfeder/esnyc-lesson-search-react/pull/472)**. Body adapted from impl plan Task 2.8 step 4 template — kept the same shape (Summary / Why this matters / PROD coordination needed / Test plan / Verification placeholder) but updated migration counts to actual probe-confirmed numbers (M2: added 95 location-casing rows beyond template's 775; M3: replaced template's "~5 AI mismatches" with split 2 Pop A + 4 Pop B; both INSERT and UPDATE branches called out for M1 academicConcepts rescue). Added local pre-flight evidence table (M1 6-row matrix from Session 5 + M4 5-smoke summary from Session 9). Test-plan checkboxes marked [x] for completed local verification, [ ] for pending TEST DB integrated work.
+- **CI status as of session-end**: 13 of 14 checks pending; Dependency Review the only resolved check (passed). E2E Tests pending (gates on TEST DB CI apply); Netlify deploy preview pending; both `claude-review` and `claude-database-review` bot reviewers pending. Did NOT poll for completion; CI is async work that should not consume session cycles.
+
+Decisions made this session (no surprises):
+- Dispatched the pre-push reviewer with default Sonnet model (matching PR-1's pre-push pattern). Considered overriding to Opus given PR-2's larger surface area + data-fix migrations, but Sonnet was adequate on PR-1 and the local rehearsal evidence (5 trigger smokes + 6-row writer matrix + 4 PROD pre-flight probes per migration) is the primary correctness story. If a future PR has heavier algorithmic complexity, may want Opus.
+- Adapted PR body numbers to probe-confirmed actuals rather than template estimates. Reasoning: the template was written before pre-flight PROD probes, and accurate numbers improve the public-facing record. Specifically: M2 added 95 location-casing rows (Session 6 OOS extension), M3 replaced the "~5 AI mismatches" with the actual 2+4 split.
+- Did NOT poll for CI completion at session-end. Per kickoff "Steps 5–7 (CI + bot iteration + TEST DB matrix + PROD apply) run on bot/CI cadence... those land in Session 11+." This is the natural session boundary.
+- Did NOT immediately run TEST DB matrix even though CI started. Reason: matrix needs to run AFTER CI applies migrations to TEST DB (which is gated by Test & Build → migrate → E2E sequence). Polling cycles + CI wait is itself the session's idle time.
+
+Next session (Session 11): pick up at **PR-2 Task 2.8 Steps 5-6 (round 1 bot triage + TEST DB integrated-flow matrix)**.
+
+1. Branch state: `feat/filter-drift-pr2-writer-fix-trigger` pushed; PR #472 open. By the time Session 11 starts, CI should have completed (~10-20 min from Session 10 push) and bot reviews should have landed.
+2. Per impl plan Task 2.8 step 5: **all-four-surface bot review query** (per `feedback_pr_comment_surfaces.md`):
+   - `gh pr view 472 --comments` (issue-comments — bot full reports)
+   - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/472/reviews` (review summaries)
+   - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/472/comments` (line comments)
+   - `gh pr checks 472` + any `gh run view <id> --log-failed` for failed CI checks
+3. Triage findings per `feedback_bot_review_investigation.md` rebuttal-pass discipline. Default-reject hardening that fails the user-visible-bug-or-DB-damage bar; surface accept/reject recommendations to user with rationale BEFORE applying any fix-ups.
+4. **Step 6 (TEST DB integrated-flow matrix)**: confirm CI applied M1+M2+M3+M4 to TEST DB (check `mcp__supabase-test__execute_sql` against `supabase_migrations.schema_migrations` for the 4 new prefixes). Then run via `mcp__supabase-test__execute_sql`:
+   - 4-counter shape-residue query: `array_lf_remaining=0`, `object_ai_remaining=0`, `short_keys_remaining=0`, `lowercase_location_remaining=0`. (Plus 17-row activity_type leak count = 0 as 5th counter.)
+   - Concepts-preservation count: rows with non-empty `metadata.academicConcepts` should match pre-flight `rows_with_nonempty_concepts` (PROD baseline 690; TEST may differ if reset weekly).
+   - 6-row writer-roundtrip matrix on `complete_review_atomic`, this time including the `approve_update` branch — fresh synthetic submissions via service-role MCP, expect same 6 outcomes as Session 5 local matrix. Clean up via UUID-safe + FK-safe deletion sequence.
+   - Trigger-coerces-deliberate-drift smoke: insert (or UPDATE) a row with deliberately drifted shape direct via SQL; expect column⇄meta coercion + RAISE NOTICE captured in logs.
+5. If round-1 fix-ups touch any DB-applied state (migration body, RLS, function source), re-verify TEST DB after the fix-up CI re-applies — per `feedback_per_round_test_db_verification.md`.
+6. Round-cap after 2 rounds. Apply only critical bug fixes in round 3+; document the rest.
+7. Steps 7 (PROD apply coordination + brief reviewer-approval pause + drift-residue verification on PROD + trigger attached verification + reviewer notification of resume) lands in Session 12+, gated on round-cap + user merge approval.
