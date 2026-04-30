@@ -1,10 +1,10 @@
 # Filter Metadata Drift Repair — Execution Status
 
-**Last updated:** 2026-04-30 — Session 11 (Task 2.8 Steps 5-6 done — round-1 four-surface triage all-reject + TEST DB integrated-flow verification all-pass + PR body updated + round-1 ack comment posted)
-**Current PR:** **[PR #472](https://github.com/danfeder/esnyc-lesson-search-react/pull/472)** — OPEN, awaiting human merge approval (no fix-up commits needed; round-cap pre-empted by zero-finding round 1)
-**Current task:** Session 12 picks up at **merge approval + PROD apply coordination** (Task 2.8 Step 8) — notify reviewers of ~5 min approval pause, merge PR via rebase, watch for SASL Apply-step flake on `migrate-production.yml`, run drift-residue + post-deploy safety query against PROD via `mcp__supabase-remote__execute_sql`, notify reviewers approvals may resume.
-**Branch:** `feat/filter-drift-pr2-writer-fix-trigger` PUSHED to origin (10 code+docs commits across Sessions 4-10 + Session 11 docs commit pending push)
-**Last commit on branch:** `cafd092 docs(filter-drift): session 10 — PR-2 pushed, PR #472 opened, CI running` (Session 11 docs commit will follow)
+**Last updated:** 2026-04-30 — Session 12 (PR-2 MERGED + PROD-applied + PROD-verified end-to-end; **PR-1 + PR-2 fully shipped — initiative active scope COMPLETE**)
+**Current PR:** (none — [PR #472](https://github.com/danfeder/esnyc-lesson-search-react/pull/472) MERGED 2026-04-30 02:26:21Z via rebase, 13 commits onto main; merge SHA `4479bee`)
+**Status:** ✅ INITIATIVE ACTIVE SCOPE COMPLETE — both active PRs shipped; PR-3 + PR-4 deferred per locked decisions
+**Branch:** `main` (synced to origin; PR-2 work complete; feature branch deleted)
+**Last commit on main:** `4479bee docs(filter-drift): session 12 — PR-2 round-2 triage zero-fix-ups + academicConcepts carry-forward follow-up`
 
 ## Done
 
@@ -31,9 +31,11 @@
 
 - **PR-2 Task 2.8 Steps 5-6 (round-1 four-surface bot review triage + TEST DB integrated-flow verification)** — Session 11 — no code commit (Session 11 docs commit pending) — CI completed, all 17 checks green except known pre-existing `Security Audit` (`@lhci/cli` chain). Four-surface query produced 1 substantive review (`claude-review`, 9879 bytes, 4 awareness items — all rejected per `feedback_pr_bot_review_workflow.md` user-visible-bug-or-DB-damage bar; rationale captured in Session 11 log + posted as round-1 ack [issuecomment-4349219607](https://github.com/danfeder/esnyc-lesson-search-react/pull/472#issuecomment-4349219607)). `claude-database-review` ran clean but did NOT post a comment (different from PR-1 pattern; surfaced for transparency). 0 line-attached comments, 0 GitHub reviews. **No fix-up commits warranted.** TEST DB verification via `mcp__supabase-test__execute_sql` ALL PASS: 6-counter shape-residue all 0 (short keys / object AI / array LF / lowercase location col / lowercase location meta / activity_type leak); concepts preservation 677/772 (matches PROD pre-flight 690/788 ratio); 7-row writer matrix (6 approve_new + 1 approve_update against row 1's lesson) all match expected — Bug A + Bug B + concepts rescue confirmed in BOTH approve_new AND approve_update branches; row 7 archived row 1's pre-update state to lesson_versions ✓; 3 trigger drift smokes via direct SQL all canonicalize correctly (array→scalar lf, object→flat AI with concepts rescue, empty-concepts skip); RLS 5/7 pass with same 2 pre-existing `archive_duplicate_lesson` failures as PR-1 baseline (Phase 8b legacy). PR body Verification section updated with full evidence including 7-row matrix table + 3-row trigger smoke table + cleanup verification.
 
+- **PR-2 Task 2.8 Steps 7-8 (round-2 four-surface triage + merge + PROD apply + PROD verification)** — Session 12 — `1b8c955` rebased to `4479bee` on main — Round-2 CI cycle on commit `2f3e205` (triggered by Session 11 docs push) produced 1 new `claude-review` (6303 bytes, [issuecomment-4349240876](https://github.com/danfeder/esnyc-lesson-search-react/pull/472#issuecomment-4349240876)) with 4 findings: F1+F2 restatements of round-1 (already triaged), F3+F4 informational/by-design. Bot's own bottom line: "Approve with note to track." All rejected per round-cap; no fix-up commits. F1 (`approve_update` silently drops `academicConcepts` on full metadata replace — PR-2 *creates* this surface, ~690 affected rows) captured as out-of-scope follow-up entry + mirrored to `MEMORY.md` Open hygiene per user instruction. Docs commit `1b8c955` pushed; `gh pr merge 472 --rebase --delete-branch` succeeded (origin/main `db98914 → 4479bee`, 13 commits rebased, branch deleted). `migrate-production.yml` run `25144171788` (4/4 jobs success, **NO SASL flake**, Apply step 19s 02:29:23-02:29:42 UTC). PROD verification via `mcp__supabase-remote__execute_sql` (6 parallel queries): 4/4 migrations applied; 8 drift-residue counters all 0 (incl. post-deploy safety with `created_at >= 02:29:23 UTC` filter); concepts preserved exactly **690 rows** matching pre-flight; `complete_review_atomic` Bug A + Bug B + concepts rescue all present, `jsonb_build_array(v_meta->>'lessonFormat')` gone, signature unchanged, source 13749 bytes; `lessons_normalize_write_trg` enabled `BEFORE INSERT OR UPDATE FOR EACH ROW`; `_meta_array_matches_column` STABLE INVOKER; `lessons_normalize_write` VOLATILE INVOKER. **PR-1 + PR-2 fully shipped end-to-end.**
+
 ## In flight
 
-PR #472 — round-1 triage complete (zero fix-ups), TEST DB verification all-pass. Awaiting human merge approval. Effective round-cap pre-empted by zero-finding round 1 (round-cap rule kicks in after round 2; if no further bot rounds land, this is the final state).
+(none — **PR-2 fully shipped: merged + PROD-applied + verified end-to-end. Initiative active scope COMPLETE.** Both active PRs (PR-1, PR-2) merged. PR-3 + PR-4 deferred indefinitely per locked decisions.)
 
 ## Blocked
 
@@ -553,3 +555,66 @@ Next session (Session 12): pick up at **PR-2 merge approval + PROD apply coordin
    - Spot-check trigger installation via `pg_trigger` — confirm `lessons_normalize_write_trg` exists, `tgenabled='O'`, BEFORE INSERT OR UPDATE.
 6. **Post-deploy resume notification:** notify reviewers approvals may resume.
 7. **Out-of-scope cleanup hooks for the future** (don't close until done): the session 10 docs commit `cafd092` will land in this session's push along with the Session 11 docs commit; both cosmetic, no DB impact.
+
+### Session 12 — 2026-04-30 — PR-2 round-2 triage + MERGE + PROD apply + PROD verification (initiative active scope complete)
+
+Major events:
+- Session-start orientation: read kickoff + status + design doc + impl plan Task 2.8 Step 8. `npm run type-check && npm run lint` clean. Worktree dirt unrelated (`.beads/*` + `.claude/scheduled_tasks.lock`). Confirmed PR #472 OPEN MERGEABLE awaiting merge approval.
+- **Discovered fresh CI cycle on Session 11's docs commit push** (`2f3e205` → run `25143881543`, started 02:15:26Z) — separate from Session 11's earlier triage which was on Session 10's push (`cafd092`, run `25143321255`). User asked me to wait for completion before merge.
+- **Task 2.8 Step 5b (round-2 four-surface bot review triage)** per `feedback_pr_comment_surfaces.md`:
+  - **Surface 1 (issue-comments):** 1 NEW `claude-review` (6303 bytes, [issuecomment-4349240876](https://github.com/danfeder/esnyc-lesson-search-react/pull/472#issuecomment-4349240876), posted 02:18:09 UTC). 4 findings:
+    1. **`approve_update` silently drops `academicConcepts` on full metadata replace** [Informational] — restatement of round-1 #2 with deeper analysis. PR-2 *creates* the surface (pre-PR-2, key didn't exist; post-PR-2, ~690 rows). Recoverable from `lesson_versions` archive but live row UI loses data. Bot's own recommendation: "Approve with note to track."
+    2. **`_meta_array_matches_column` returns false on NULL column — contract not signaled** [Minor] — restatement of round-1 #4. Bot acknowledges "Not a bug, just a readability improvement." Suggested `STRICT` would change semantics; risk-of-regression > benefit.
+    3. **M3 hardcoded lesson_ids are PROD-specific** [Informational] — pure informational; bot says "That's correct behavior."
+    4. **M2 Update (3) lessonFormat fix handles only length-1 arrays** [Informational, by design] — bot agrees PROD probe confirmed only 1 such row; correct for actual data.
+  - **Surfaces 2-4:** 0 GitHub reviews, 0 line-attached comments, all 17 CI checks green except pre-existing `Security Audit` (`@lhci/cli` chain).
+  - **All 4 rejected.** F1+F2 already triaged round-1 (bot agreed in round-2). F3+F4 purely informational. Per `feedback_pr_bot_review_workflow.md` user-visible-bug-or-DB-damage bar: F1 has a real concern but bot itself agrees out-of-scope; tracked as follow-up rather than fix-up. F2 dead-code in production paths (all 9 call sites guard via `COALESCE`). F3+F4 informational only. Per kickoff round-cap rule: round-2 in, no round-3 fixes warranted.
+- **Surfaced findings + recommendations to user** before any actions. **User authorized:** (a) skip ack comment (save GitHub UI churn), (b) capture F1 follow-up in status doc out-of-scope + `MEMORY.md` hygiene, (c) merge.
+- **Status doc + MEMORY.md update** (Edit calls in parallel): `approve_update` academicConcepts carry-forward follow-up entry added to status doc out-of-scope section + mirrored to `MEMORY.md` Open hygiene follow-ups list. Cross-references PR #472 round-2 issuecomment + bot recommendation. Fix options documented (carry forward `v_existing.metadata->'academicConcepts'` in `complete_review_atomic` `approve_update`, OR have `complete-review` edge function always include it in input).
+- **Docs commit `1b8c955` pushed** to feature branch (`2f3e205 → 1b8c955`). Standard `branch not found` warning from broken beads pre-commit hook (per `project_beads_broken.md`), unrelated.
+- **PR-2 merge** via `gh pr merge 472 --rebase --delete-branch`: succeeded on origin (origin/main `db98914 → 4479bee`, 13 commits rebased, feature branch deleted on origin). Project convention is rebase-merge per Session 4 PR-1 verification — confirmed via project's last 5 merged PR titles being non-merge-commit.
+- **Local main dangling-commit incident** (worth knowing for future merges): local main was at `dae77e8` (Session 4 docs commit, never pushed); after `gh pr merge`, gh tried to fast-forward local main to origin/main and failed because local had `dae77e8` ahead of `db98914` while origin/main moved to `4479bee` (which contains `dae77e8`'s content as rebased SHA `3b7a072`). Resolution: verified content equivalence via `git diff dae77e8 3b7a072 --stat` (empty diff), then `git reset --hard origin/main` to discard the redundant local commit. **Future-session hazard captured as a working preference:** any committing-directly-to-local-main during a merge session will create the same dangling pattern when the next PR rebases. Pattern to avoid: don't commit Session-N docs directly to local main during merge sessions; either commit to feature branch (rides into rebase) or push the branch to a tiny docs PR.
+- **`migrate-production.yml` run `25144171788`** triggered automatically on merge push to main (head SHA `4479bee`, started 02:26:24Z, status `waiting` for manual approval). User approved.
+- **PROD apply success — 4/4 jobs, NO SASL flake.** Times: Check Migration Changes 02:26:32-32:35 (3s), Verify Recent Backup 02:26:44-26:46 (2s), Migration Dry Run 02:26:37-26:49 (12s), Apply to Production **02:29:23-29:42 (19s)**. All 4 PR-2 migrations applied first try. (The kickoff-flagged Apply-step SASL flake — confirmed pattern from PR #468 + PR #446 — did not manifest this run.)
+- **PROD verification via `mcp__supabase-remote__execute_sql` — 6 queries dispatched in parallel, ALL PASS:**
+
+  **Query 1 — Migration list:** `20260506000000`, `20260507000000`, `20260508000000`, `20260509000000` all present at head ✓
+
+  **Query 2 — 8-counter shape-residue + post-deploy safety (full corpus, 788 rows):**
+  - `short_keys_remaining=0` ✓ (M2 promoted themes/season/location)
+  - `object_shape_ai_remaining=0` ✓ (M2 unwrapped 693 → flat array)
+  - `array_lesson_format_remaining=0` ✓ (M2 unwrapped 1 outlier)
+  - `lowercase_location_col_remaining=0` ✓ (M2 canonicalized 95 lowercase)
+  - `lowercase_location_meta_remaining=0` ✓ (M2 canonicalized metadata side)
+  - `activity_type_leak_remaining=0` ✓ (M3 cleaned up 17 leak rows)
+  - `post_deploy_array_lf=0` ✓ (no drift-shape rows created since 02:29:23 UTC)
+  - `post_deploy_object_ai=0` ✓ (no drift-shape rows created since 02:29:23 UTC)
+
+  **Query 3 — Concepts preservation:** `rows_with_nonempty_concepts=690` exactly matches pre-flight 690 — **zero data loss across 690 rich object-shape AI rows.** All 690 rows of per-subject concept dictionaries preserved at top-level `metadata.academicConcepts`.
+
+  **Query 4 — `complete_review_atomic` source spot-check:** `bug_a_fix_present=true`, `bug_b_fix_present=true`, `concepts_rescue_present=true`, `old_bug_a_gone=true`, signature `(p_submission_id uuid, p_reviewer_id uuid, p_decision text, p_metadata jsonb, p_notes text, p_selected_lesson_id text)` unchanged, source length 13749 (matches Session 5 + local).
+
+  **Query 5 — Trigger installation:** `lessons_normalize_write_trg` enabled (`tgenabled='O'`), full def `CREATE TRIGGER lessons_normalize_write_trg BEFORE INSERT OR UPDATE ON public.lessons FOR EACH ROW EXECUTE FUNCTION lessons_normalize_write()` ✓.
+
+  **Query 6 — Helper + trigger function:** `_meta_array_matches_column(p_meta jsonb, p_col text[])` STABLE INVOKER ✓; `lessons_normalize_write()` VOLATILE INVOKER ✓.
+
+- **PR-1 + PR-2 fully shipped end-to-end.** Filter metadata drift repair active scope is **COMPLETE**.
+
+Decisions made this session (no surprises beyond the dangling-commit lesson):
+- **Round-2 triage discipline applied.** Same rebuttal-pass approach as round-1 + Session 10 pre-push; round-2's 4 findings are 2 restatements + 2 informational. Default-reject the hardening per `feedback_pr_bot_review_workflow.md` user-visible-bug-or-DB-damage bar; F1's real-but-out-of-scope concern captured as follow-up tracking entry rather than fix-up. Bot's own recommendation aligned ("Approve with note to track").
+- **Skipped round-2 ack comment per user instruction.** Save the GitHub UI churn; the triage rationale is captured in status doc + MEMORY.md follow-up entry.
+- **Local main reset to origin/main via `git reset --hard`** after content-equivalence verification (`git diff dae77e8 3b7a072 --stat` empty). This is the destructive operation kickoff guidance flags; here it's safe because `dae77e8`'s content is byte-identical to origin's rebased `3b7a072` (verified before the reset). Captured as a future-session hazard pattern.
+- **Did NOT push the Session 12 narrative docs to main.** Pushing to main is gated per kickoff "WHAT NEVER TO DO WITHOUT EXPLICIT USER INSTRUCTION." Surfacing to user at session-end whether to push directly to main, open a tiny docs PR, or leave local-only.
+
+Next session (post-PR-2 — initiative active scope is COMPLETE):
+
+The active scope of the filter metadata drift repair is DONE. PR-1 + PR-2 shipped + PROD-verified end-to-end. PR-3 + PR-4 are deferred indefinitely per locked decisions. There is no Session 13 in this initiative.
+
+If the user re-activates PR-3 or PR-4 later, this kickoff prompt + design doc + impl plan are the artifacts to use; the impl plan preserves the PR-3 spec intact.
+
+**Open follow-ups captured during the initiative** (in `MEMORY.md` Open hygiene + status doc out-of-scope) that may warrant their own work:
+- **`approve_update` academicConcepts carry-forward** (NEW Session 12 — fix is straightforward, ~1 migration to `complete_review_atomic`)
+- **`facetCounts.ts:55` array-shape hardening** (Session 0 — not urgent, no current array-shape rows)
+- **`gradeLevel`/`gradeLevels` key mismatch in `normalizeMetadata`** (Session 3 — pre-existing, no runtime impact)
+- **3 rows with `metadata.academicIntegration.concepts = {}`** (Session 3 — already handled by M2 backfill via `jsonb_strip_nulls`)
+- **Hygiene: dead btree `idx_lessons_activity_type` on `metadata->>'activityType'`** (Session 4 — replaced by GIN index, btree can be dropped in a hygiene PR)
