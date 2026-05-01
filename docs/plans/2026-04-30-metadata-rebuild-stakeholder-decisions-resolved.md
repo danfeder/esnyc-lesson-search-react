@@ -443,4 +443,4 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 **Commits:**
 - `137ca31` — `docs(metadata-rebuild): walkthrough session 2 — D1 meta layer + Stage 1 methodology`
 - `21b5d34` — `docs(metadata-rebuild): backfill session 2 commit hash`
-- _(this session-end commit landing D2 pre-walkthrough context)_
+- `6a90dfe` — `docs(metadata-rebuild): session 2 wrap — D2 pre-walkthrough context`
