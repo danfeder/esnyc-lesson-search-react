@@ -10,8 +10,11 @@ You're picking up the metadata rebuild stakeholder-decisions walkthrough. The us
 
 ## Required reading, in order
 
+**0. PICKUP CHECK FIRST:** if `docs/plans/2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md` exists, read its `## Walkthrough state — pickup checkpoint` header (top of file, right after the scaffold table). That tells you progress, next decision in queue, blockers, and any open questions waiting on the user. Then skim the most recent `### Session N` entry under `## Session log` (bottom of file) for the immediate carry-forward context. If the resolved doc doesn't exist, skip to step 1 — this is the first walkthrough session.
+
 1. `~/.claude/projects/-Users-danfeder-cCode-esynyc-lessonsearch-v2/memory/project_metadata_rebuild_initiative.md` — initiative state. The bottom dated sections (starting at "2026-04-30 evening — feedback round 1 applied" and "2026-04-30 evening — stakeholder decisions document drafted") are most current. If newer dated sections exist below those, those represent more-recent state and override.
 2. `docs/plans/2026-04-30-metadata-rebuild-stakeholder-decisions.md` — the artifact under walkthrough. 10 decision cards (Decision 0 through Decision 9) plus a how-decisions-interact map.
+3. `docs/plans/2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md` — the status doc + decision journal. Already read for state in step 0; read the per-card sections (Decision N — Status / Decision / Reasoning blocks) for any cards already touched, so you don't relitigate settled calls.
 
 ## Reference — don't read end-to-end; query as needed
 
@@ -21,10 +24,9 @@ You're picking up the metadata rebuild stakeholder-decisions walkthrough. The us
 
 ## Check for prior-session progress before responding
 
-If sessions have happened since this kickoff was written:
-- Run `git log --oneline -10` to see recent commits — captured decisions may have been committed.
-- Look in `docs/plans/` for a file like `2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md` (or similar). If it exists, read it; pick up from where the prior session left off.
-- If `project_metadata_rebuild_initiative.md` has dated sections newer than 2026-04-30 evening, those represent more-recent state.
+The Walkthrough state header in the resolved doc (step 0 above) is the canonical source. Belt-and-braces:
+- Run `git log --oneline -10` to see recent commits — captured decisions land as `docs(metadata-rebuild): walkthrough session N` style commits.
+- If `project_metadata_rebuild_initiative.md` has dated sections newer than 2026-04-30 evening, those represent more-recent state and may indicate the initiative has moved past the walkthrough phase entirely (e.g., into implementation).
 
 ## The mode for each decision
 
@@ -56,7 +58,9 @@ Commit captured decisions at the end of each session block.
 
 ## First action
 
-Read the two required files (initiative memory + decisions doc), check for prior-session progress, then surface to the user:
+**If pickup check (step 0) found a resolved doc with prior-session work:** the mode + capture-format + walkthrough-order questions below are already settled — don't re-ask them. State-of-play summary in 1 paragraph, then go directly to the "Next in queue" decision named in the Walkthrough state header. Re-read the most recent Session log entry for any carry-forward context.
+
+**If no resolved doc exists (first walkthrough session):** read the required files, then surface to the user:
 
 1. A 1-paragraph state-of-play summary so they can confirm you're grounded.
 2. The capture-format question above (inline vs. separate resolved doc).
@@ -67,3 +71,12 @@ Read the two required files (initiative memory + decisions doc), check for prior
 4. Whether this is a preliminary pass before stakeholders, or the user making calls directly. Affects how aggressively you push back vs. just laying out tradeoffs.
 
 Don't redo any research. Memory + the four docs are the canonical inputs.
+
+## At session end (for whoever's running the session)
+
+Before saying "done" or stopping for the day:
+1. Update the Walkthrough state header at top of resolved doc (Last session date, Progress count, Next in queue, Open questions).
+2. Add a `### Session N — YYYY-MM-DD` entry to the Session log at bottom of resolved doc (Covered / Calls landed / Key insights / Commit / Carry-forward).
+3. Commit. Style: `docs(metadata-rebuild): walkthrough session N — <decisions touched>`.
+4. If significant new state worth surfacing for non-walkthrough sessions, also update `~/.claude/projects/-Users-danfeder-cCode-esynyc-lessonsearch-v2/memory/project_metadata_rebuild_initiative.md`.
+5. Push only if user asks.

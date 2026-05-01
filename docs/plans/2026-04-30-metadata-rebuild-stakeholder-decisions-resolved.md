@@ -4,7 +4,26 @@
 **Companion to:** `2026-04-30-metadata-rebuild-stakeholder-decisions.md` (the pristine 10-card doc)
 **Mode:** Walkthrough order is interaction-aware (0 → 4 → rest in doc order). User is the decision-driver; this doc is a journal of calls + reasoning, not a contract — entries can be reopened.
 
-Each card below tracks: **Status** · **Decision** · **Reasoning** · **Deferred sub-questions** · **Downstream implications**.
+**This file's role across the four-file scaffold:** acts as both *decision journal* (per-card Status/Decision/Reasoning blocks) AND *status tracker* (Walkthrough state header + Session log). When picking up post-`/clear`, read the Walkthrough state header first.
+
+| Scaffold role | File |
+|---|---|
+| Design (what + why) | `2026-04-30-metadata-rebuild-foundational-report.md` (+ stakeholder brief + decisions doc) |
+| Kickoff prompt | `2026-04-30-metadata-rebuild-stakeholder-decisions-kickoff.md` |
+| Status doc + decision journal | **this file** |
+| Implementation plan | TBD — to be scaffolded via `/kickoff-feature` once walkthrough completes |
+
+---
+
+## Walkthrough state — pickup checkpoint
+
+**Last session:** 2026-04-30 (session 1) · committed as `0233d11`
+**Progress:** **4 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅ committed. **6 cards remain** (D1, D2, D3, D5, D6, D7, D9 + D8 phase-2 sub-questions).
+**Next in queue:** **Decision 1 — cultural heritage taxonomy.**
+**Walkthrough order remaining:** 1 → 2 → 3 → 5 → 6 → 7 → 8 (revisit deferred sub-questions only) → 9.
+**Open questions waiting on user:** None.
+**Blockers / pending confirmations:** None.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing.
 
 ---
 
@@ -206,9 +225,22 @@ The gap between stages is intentional. Stage 1 is high-leverage and time-sensiti
 
 ---
 
-## Sequence log
+## Session log
 
-1. **2026-04-30** — D0 = hybrid. Refine ruled out first; rebuild-vs-hybrid unlocked by D8 partial call.
-2. **2026-04-30** — D8 (substance) = stay teacher-zero. Decided in service of D0 because hybrid required knowing whether the schema needed to encode submitter-authorship distinctions. Captured as **partial** — phase-2 reviewer-tooling sub-questions remain.
-3. **2026-04-30** — D4 = full canonicalization in foundation phase, all fields, Title Case, Claude-drafts-and-reviewers-validate methodology with v3 taxonomy as baseline. Reviewer attention sequenced lists-first.
-4. **2026-04-30** — Cross-cutting Scope 3 commit (confirmed): full corpus re-tag with Opus will happen at some point after taxonomy validates — maybe not immediately after Stage 1, but yes. Drove the lists-first sequencing on D4. Stage gap is intentional, with flex on Stage 2 timing.
+Each entry is one walkthrough session. Captures: what was covered, what landed, key insights or reframings, the commit if one was made.
+
+### Session 1 — 2026-04-30
+
+**Covered:** D0, then D4 (with D8 substance + Cross-cutting Scope 3 emerging mid-walkthrough).
+
+**Calls landed (in order):**
+1. D0 = **hybrid**. Refine ruled out first; rebuild-vs-hybrid unlocked by D8 partial call.
+2. D8 (substance, partial) = **stay teacher-zero**. Decided in service of D0 because hybrid required knowing whether the schema needed to encode submitter-authorship distinctions. Phase-2 reviewer-tooling sub-questions deferred.
+3. D4 = **full canonicalization in foundation phase**, all fields, Title Case, Claude-drafts-and-reviewers-validate methodology with v3 taxonomy as baseline. Reviewer attention sequenced lists-first.
+4. Cross-cutting **Scope 3 commit** (confirmed): full corpus re-tag with Opus will happen at some point after taxonomy validates — maybe not immediately after Stage 1, but yes. Stage gap is intentional, with flex on Stage 2 timing.
+
+**Key reframing:** 3 parallel opus subagents explored the prior tagging projects (`/Users/danfeder/cCode/tagging`, `tagging_fresh_start`, `taggingv3`). Surfaced that the vocabulary drift in current PROD was **born in v3's July 2025 GPT-4.1 single-session tagging run**, not accumulated post-hoc from submitter UIs or reviewer error. v3's `esynyc-taxonomy-schema-v2.md` is therefore the most-iterated stakeholder-derived taxonomy in the project's lineage and the right baseline for canonicalization (rather than from-scratch drafting or corpus-frequency-only).
+
+**Commit:** `0233d11` — `docs(metadata-rebuild): walkthrough session 1 — D0+D4+D8 + Scope 3 captured`
+
+**Carry-forward to next session:** None. Walkthrough state is clean for Decision 1.
