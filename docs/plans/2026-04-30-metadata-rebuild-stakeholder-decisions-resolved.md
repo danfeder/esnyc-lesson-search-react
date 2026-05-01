@@ -1,0 +1,214 @@
+# Metadata rebuild — decisions resolved
+
+**Date opened:** 2026-04-30
+**Companion to:** `2026-04-30-metadata-rebuild-stakeholder-decisions.md` (the pristine 10-card doc)
+**Mode:** Walkthrough order is interaction-aware (0 → 4 → rest in doc order). User is the decision-driver; this doc is a journal of calls + reasoning, not a contract — entries can be reopened.
+
+Each card below tracks: **Status** · **Decision** · **Reasoning** · **Deferred sub-questions** · **Downstream implications**.
+
+---
+
+## Decision 0 — Refine vs. rebuild vs. hybrid
+
+**Status:** DECIDED 2026-04-30
+
+**Decision:** **Hybrid.** Foundation phase: schema + vocabulary + three-regimes unification + new fields, designed as one coherent layer. Phase 2 (later): reviewer UX redesign + any submitter-side changes (constrained by the partial D8 call below).
+
+**Reasoning:**
+- Refine was ruled out first — the user assessed it as not in the running. Pain is interlocking (three regimes + cross-field vocabulary drift + lessonFormat conflation), not local; refining piecemeal would migrate the corpus multiple times as later decisions land.
+- Rebuild vs. hybrid hinged on whether D8 (teacher contribution) needed to be co-designed with the schema. With D8 partial-decided as teacher-zero (see below), the schema doesn't need to encode submitter-authorship distinctions. That removes the schema-coupling that would otherwise force a single window.
+- 2-reviewer expert pool makes phase 2 reviewer UX redesign cheap to iterate (actual users in the room) — strengthens the case for splitting risk across two phases of different shapes.
+
+**Deferred sub-questions:**
+- Phase 1 ships a Frankensteined ReviewDetail.tsx (old 1361-line layout + new field pickers tacked on) as the steady state between phases. Acceptable for the 2 reviewers but worth scoping at phase 1 design time (e.g., how long is the gap; is there a phase-1.5 cleanup that adds basic guidance text to the new pickers).
+- Decision 9 (CRF) UI/surfacing may land in phase 1 or phase 2 depending on the D9 call.
+- D5 (academic concepts) UI promotion — if the call is "promote to filter," that UI work lands in phase 1; if "derived index" or "drop," foundation only.
+
+**Downstream implications:**
+- All foundation-phase work (Decisions 1-7 + structural parts of 9) gets designed as one coherent schema + vocabulary, not as a sequence of independent migrations.
+- Phase 2 reviewer UX redesign is **load-bearing for the data-quality payoff** under teacher-zero — see D8.
+- D8 needs only a partial walkthrough when its turn comes (substance is settled; phase-2 sub-questions remain).
+
+---
+
+## Decision 4 — Vocabulary canonicalization
+
+**Status:** DECIDED 2026-04-30
+
+**Decision:**
+- **Scope:** all ~10 vocabulary-bearing fields are in scope for canonicalization in foundation phase. No targeted/partial cleanup.
+- **Case convention:** Title Case normalized across all fields (replaces today's Title Case + kebab-lowercase mix).
+- **Methodology:** Claude-synthesized + curriculum-team-validated. Claude drafts per-field canonical worksheets using `/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md` as baseline + a corpus audit (Counter-style) showing PROD-actual values vs canonicals. The 2 expert reviewers + user validate / amend / reject the worksheets.
+- **Reviewer attention sequencing:** lists upfront get the deeper attention (auditable, leverage point, taxonomy-decisions are short and complete). Per-lesson re-tag QA gets spot-check attention later.
+- **Per-field reduction philosophy:** case-by-case. Some fields tolerate aggressive collapse (cooking_methods has 8-10 real concepts max); others preserve distinctions where they're pedagogically meaningful (heritage values like Lenape vs. Indigenous — preservation candidate per the discussion).
+
+**Reasoning:**
+- Three prior tagging projects (`/Users/danfeder/cCode/tagging`, `tagging_fresh_start`, `taggingv3`) revealed that the drift in current PROD was *born* in v3's July 2025 GPT-4.1 tagging run, not accumulated post-hoc. v3's `esynyc-taxonomy-schema-v2.md` is therefore the most-iterated stakeholder-derived taxonomy in the project's lineage and the right starting point — not from-scratch drafting, not corpus-frequency-only.
+- v3 enforced enums on only 3 of 17 fields (Pydantic). The other 14 were `List[str]` with prompt-only constraints — explaining the drift. Foundation-phase rebuild needs strict per-field validation regardless of Title Case decisions.
+- Reviewer attention is highest-leverage on the lists (~10 worksheets, abstract/structural) rather than individual lessons (~700+ tagging decisions). 2 expert reviewers mean taxonomy-validation is feasible; lesson-level review at scale isn't.
+
+**Deferred sub-questions:**
+- Per-field reduction calls (Lenape stays distinct vs. folds into Indigenous; `Mixing` vs. `Stirring` vs. `Mixing/stirring` canonical winner; etc.) — these land during the per-field worksheet drafting + reviewer validation, not as part of Decision 4 closure.
+- The cookingSkills schema layout fix (group-headings-as-values bug from v3) — needs structural re-organization in the foundation-phase schema so headings can't be confused for emittable values. Implementation detail for foundation phase.
+- mainIngredients was a v3-designed field (grouped categories with search-time expansion) that didn't survive into PROD — decide whether to revive in foundation-phase scope.
+- Closed-vs-open enforcement policy per field (which fields stay closed enums vs. allow free-text additions, and what mechanism gates additions).
+
+**Downstream implications:**
+- Decisions 1, 2, 3, 5, 7 all consume the canonical vocabulary outputs — their own card walkthroughs will reference D4's per-field worksheets when relevant.
+- The cross-cutting "foundation-phase corpus refresh" decision (Scope 1 / 2 / 3 — see below) determines how the canonical vocabulary gets applied to the corpus (mechanical translation vs. full re-tag).
+
+---
+
+## Decision 1 — Cultural heritage taxonomy
+
+**Status:** OPEN
+
+**Decision:** _(pending)_
+
+**Reasoning:** _(pending)_
+
+**Deferred sub-questions:**
+
+**Downstream implications:**
+
+---
+
+## Decision 2 — Activity type categories
+
+**Status:** OPEN
+
+**Decision:** _(pending)_
+
+**Reasoning:** _(pending)_
+
+**Deferred sub-questions:**
+
+**Downstream implications:**
+
+---
+
+## Decision 3 — Lesson format split
+
+**Status:** OPEN
+
+**Decision:** _(pending)_
+
+**Reasoning:** _(pending)_
+
+**Deferred sub-questions:**
+
+**Downstream implications:**
+
+---
+
+## Decision 5 — Academic concepts positioning
+
+**Status:** OPEN
+
+**Decision:** _(pending)_
+
+**Reasoning:** _(pending)_
+
+**Deferred sub-questions:**
+
+**Downstream implications:**
+
+---
+
+## Decision 6 — Curriculum sequences
+
+**Status:** OPEN
+
+**Decision:** _(pending)_
+
+**Reasoning:** _(pending)_
+
+**Deferred sub-questions:**
+
+**Downstream implications:**
+
+---
+
+## Decision 7 — Lesson variants and adaptations
+
+**Status:** OPEN
+
+**Decision:** _(pending)_
+
+**Reasoning:** _(pending)_
+
+**Deferred sub-questions:**
+
+**Downstream implications:**
+
+---
+
+## Decision 8 — Teacher contribution at submission
+
+**Status:** PARTIAL 2026-04-30 — substance decided in service of D0; phase-2 sub-questions still open.
+
+**Decision (substance):** **Stay teacher-zero.** Reviewers remain sole authority for all metadata classification.
+
+**Reasoning:**
+- 2 expert reviewers on staff for curriculum; user wants consistency to live with that pairing.
+- Teacher-side tagging would risk introducing inconsistency (the audit's own classification problems are reviewer-judgment calls — adding teacher input would compound them, not fix them).
+
+**Deferred sub-questions (load-bearing for phase 2):**
+- The audit's classification-inconsistency findings (cosmetics-craft tagged "cooking", grades 3K-8 on a stovetop lesson, immigration-stories on an African American foodways lesson) are reviewer judgment calls. Under teacher-zero, the only mechanism to fix them is reviewer tooling. Phase 2 reviewer UX redesign needs to address this — specific mechanisms TBD: guided pickers, per-field guidance text, paired-review prompts for novel cases, validation rules, audit/diff views before commit, etc.
+
+**Downstream implications:**
+- Schema design in foundation phase is reviewer-canonical only — no submitter-suggestions sidecar fields needed.
+- D5, D6, D7 decisions unaffected by D8 — none of them require teacher input.
+- D8's full walkthrough turn can confirm the substance call and focus on phase-2 reviewer-tooling sub-questions.
+
+---
+
+## Decision 9 — CRF redesign
+
+**Status:** OPEN
+
+**Decision:** _(pending)_
+
+**Reasoning:** _(pending)_
+
+**Deferred sub-questions:**
+
+**Downstream implications:**
+
+---
+
+## Cross-cutting: foundation-phase corpus refresh strategy
+
+**Status:** COMMITTED 2026-04-30
+
+**Decision:** **Scope 3 — full re-tag with Opus, sequenced after taxonomy validation.** Two stages, with flex on the gap between them:
+1. **Stage 1 — Taxonomy build-out.** Per-field canonical worksheets drafted by Claude using v3 schema as baseline; reviewers + user validate. Schema structural decisions (Decisions 1-7 + parts of 9) settle in parallel. **This is the urgent stage.**
+2. **Stage 2 — Corpus re-tag.** At some point after Stage 1 lands — *maybe not immediately, but yes* — re-tag all ~772 lessons with Opus reading raw lesson text against the validated canonical schema. Pydantic-validated for ALL fields this time (not just 3 of 17 like v3). Reviewers spot-check ~50-100 sampled lessons; flagged patterns or specific lessons get full review.
+
+The gap between stages is intentional. Stage 1 is high-leverage and time-sensitive (everything downstream depends on it). Stage 2 is the comprehensive corpus refresh that captures the highest payoff from the taxonomy work, but doesn't have to ship immediately after Stage 1 — could be a separate sub-phase, could slip if other priorities take precedence.
+
+**Reasoning:**
+- The audit-found judgment errors in PROD (cosmetics-craft tagged "cooking", grades 3K-8 on stovetop, immigration-stories on African American foodways, CRF rubber-stamping with verbatim-identical 7-element lists across 5 lessons) are GPT-4.1's judgment errors, not vocabulary drift. Mechanical drift→canonical translation (Scope 1) doesn't fix them.
+- Opus's calibration + judgment + edge-case handling materially exceed GPT-4.1's. The model upgrade is the highest-leverage fix for judgment errors.
+- Cost is small (~$200-300 for 772 lessons + 1-2 sessions of pipeline engineering). v3's existing Batch API + validation infrastructure adapts.
+- Sequencing taxonomy-first is correct: Opus needs validated canonical vocabulary to tag against. Trying to re-tag while vocabulary is still being decided would produce another v3-style drift run.
+
+**Deferred sub-questions:**
+- Spot-check sample size + selection method (random? stratified by activity type? targeted at the audit-found problem lessons?). Decide at foundation-phase implementation time.
+- Re-tagging pipeline: adapt v3's Python infrastructure (`/Users/danfeder/cCode/taggingv3/gpt_tagger/`) or build fresh via Claude Agent SDK / batch API? v3 had Pydantic + Batch API + reference-batch-as-prompt-example — those patterns are reusable; the pipeline rebuild is mostly swapping OpenAI for Anthropic + extending validators to all fields.
+- What happens to PROD's existing tags during re-tag — staged migration with versioning? Direct replacement? Diff-and-review?
+- Whether to spot-check via re-tag DIFF (what changed) or fresh-tag review (was the new tag right). Different reviewer experiences.
+
+**Downstream implications:**
+- D2 (activity type), D3 (lesson format), D5 (academic concepts), D9 (CRF) all benefit from the re-tag as well — judgment errors in those fields also get a fresh look.
+- Foundation-phase scope expands to include the re-tag pipeline + spot-check protocol, not just schema migrations.
+- Phase 2 (reviewer UX redesign) inherits a cleanly re-tagged corpus, which makes the reviewer's job more about validating new submissions vs. the existing corpus — relevant for Decision 8's deferred phase-2 sub-questions.
+
+---
+
+## Sequence log
+
+1. **2026-04-30** — D0 = hybrid. Refine ruled out first; rebuild-vs-hybrid unlocked by D8 partial call.
+2. **2026-04-30** — D8 (substance) = stay teacher-zero. Decided in service of D0 because hybrid required knowing whether the schema needed to encode submitter-authorship distinctions. Captured as **partial** — phase-2 reviewer-tooling sub-questions remain.
+3. **2026-04-30** — D4 = full canonicalization in foundation phase, all fields, Title Case, Claude-drafts-and-reviewers-validate methodology with v3 taxonomy as baseline. Reviewer attention sequenced lists-first.
+4. **2026-04-30** — Cross-cutting Scope 3 commit (confirmed): full corpus re-tag with Opus will happen at some point after taxonomy validates — maybe not immediately after Stage 1, but yes. Drove the lists-first sequencing on D4. Stage gap is intentional, with flex on Stage 2 timing.
