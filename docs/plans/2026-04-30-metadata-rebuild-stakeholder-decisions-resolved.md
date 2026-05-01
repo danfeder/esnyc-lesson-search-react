@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-04-30 (session 1) · commits: `0233d11` (D0+D4+D8+Scope 3), `3ef170c` (status-tracking infra), + a third commit landing pre-walkthrough context for D1.
-**Progress:** **4 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅ committed. **6 cards remain** (D1, D2, D3, D5, D6, D7, D9 + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 1 — cultural heritage taxonomy.** Pre-walkthrough context is captured in the D1 card below — read it as your starting point. The first thing to dig into is whether **Indigenous** is a peer to Asian/Americas/etc. or a sub-grouping under Americas (v3 was ambiguous; needs curriculum take).
-**Walkthrough order remaining:** 1 → 2 → 3 → 5 → 6 → 7 → 8 (revisit deferred sub-questions only) → 9.
-**Open questions waiting on user:** None (D1 walkthrough hasn't started in earnest — pre-walkthrough context is opener material, not a question).
+**Last session:** 2026-05-01 (session 2) · commits: `da1adae` (S1 wrap — D1 pre-walkthrough context), + this session's D1 meta layer + Stage 1 methodology cross-cutting.
+**Progress:** **6 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, **D1 meta layer ⚪ partial (NEW)**, **Cross-cutting Stage 1 worksheet methodology ✅ (NEW)**. **5 walkthrough cards remain** (D2, D3, D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
+**Next in queue:** **Decision 2 — activity type categories.** D2 likely has the same Path 3 partial-call shape as D1 — meta layer settles in walkthrough (does the 4-bucket scheme need restructuring? scope of activity-type changes? interaction with lesson_format conflation per D3?), content layer (specific bucket definitions / canonical values) defers to worksheet round.
+**Walkthrough order remaining:** 2 → 3 → 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
+**Open questions waiting on user:** None.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; expect to apply per-card.
 
 ---
 
@@ -80,50 +80,69 @@
 
 ## Decision 1 — Cultural heritage taxonomy
 
-**Status:** OPEN — pre-walkthrough context captured 2026-04-30 (session 1 wrap); walkthrough proper begins next session with user response to opener positions below.
+**Status:** PARTIAL 2026-05-01 — meta layer decided; content-layer sub-questions deferred to the heritage worksheet round under the new cross-cutting Stage 1 methodology (see below).
 
-**Pre-walkthrough context** (opener positions, NOT settled calls — push back is expected next session):
+**Decision (meta layer, 4 calls):**
 
-*v3 schema reference:* `/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md:73-131` defines a 4-level hierarchy (Asian → regional groupings → countries). This tree was preserved verbatim into current PROD's `src/utils/filterDefinitions.ts` — so unlike most fields, the cultural-heritage *structure* is intact. The brokenness is around the structure, not in it.
+1. **Schema-vs-filter-UI = decoupled.** Schema stores granular cultural identities (Mexican, Lenape, Yemeni, Honduran are first-class storage values). Filter UI is a separate design layer that picks which leaves get sidebar visibility, with parent rollup for browsing (existing PROD mechanism — selecting "Asian" auto-includes children) and keyword search for the long tail. Storage stability is the headline benefit: a lesson tagged `Lenape` survives sidebar redesigns; promote-later is UI-only, no re-tag.
 
-*Empirical findings from v3 corpus audit (subagent extraction in session 1):*
-- **78 distinct heritage values in PROD** vs. ~50 leaves enumerated in v3 schema → ~28 values emerged in tagging that aren't in the schema.
-- **Drift variants:** "Indigenous" (28×) vs. "Indigenous/Native American" (schema canonical) vs. "Native American" (6×) — three forms across ~34 lessons. "African American" (35×) vs. "African American diaspora" (3×, schema canonical).
-- **Empirical additions worth considering for first-class status:** Honduran, Brazilian, Peruvian, Cuban, Yemeni, Sri Lankan, Egyptian (each 2-3×), Aztec (2×), Lenape (7×).
-- **Filter UI gap:** Mexican 41×, Italian 26×, African American 25-35×, Mediterranean 42×, Indigenous 24-28×, Lenape 7× — most NOT browsable filters today; live in metadata only.
-- **Validation gap:** v3 enforced `culturalHeritage` as `List[str]` (no enum), one of 14 fields without per-field Pydantic validation — explains the drift.
+2. **Inclusion threshold for empirical long-tail = ≥2 lessons + content-centered test.** Numeric floor filters out one-off tags ("probably wrong"); content-evidence test (from the worksheet round's Opus-corpus-read) handles ambiguity that frequency alone misses (a 2× value can be highly significant if both lessons center the culture; a 5× value can be noise if all 5 just mention the culture in passing).
 
-*Three sub-questions to interrogate:*
+3. **v3 baseline zero-usage values = keep.** Filipino, Malaysian, Thai, Bengali, Pakistani, Uzbek, Cajun/Creole, Russian/Ukrainian, Polish, French, Palestinian, Lebanese, Syrian, Jordanian, Israeli, etc. — preserved as valid-future-tags even if a value turns out to have zero current PROD usage. v3 represents stakeholder-curated curriculum intent; pruning loses signal about which cultures the program is set up to receive. (Empirical-evidence note: user expects most/all v3 values likely have ≥1-2 corpus instances; worksheet round verifies. If verification finds true-zeros, the call still holds.)
 
-**A. Canonical taxonomy SOURCE.** Two candidates:
-- v3's hierarchy as-is (already in PROD's `filterDefinitions.ts`).
-- **Empirical-augmented v3** — start with v3 baseline, evaluate empirically-emerged long-tail values per-value for inclusion. Threshold question: ≥2 lessons? ≥3? ≥5?
+4. **Sidebar-visibility for high-frequency values = yes for all three.** Indigenous (24-28×), African American diaspora (25-35×), and Mediterranean (42×) — all become sidebar-visible. Mediterranean already is in PROD; Indigenous and African American diaspora are the actual additions (currently in v3 schema under Americas → North American but dropped when PROD's filter tree was trimmed to level 3). Frequency justifies for all three; without sidebar surfaces, ~13% of the corpus has no parent-checkbox match.
 
-**B. Hierarchy depth.** v3 has 4 levels. Open calls:
-- Lenape: 5th level under Indigenous → North American → Lenape, OR a peer at level 3?
-- Mediterranean (42 lessons): peer of European, or sub-grouping (it cuts across continents in real geography)?
-- City/regional-within-country values (e.g., Sicilian vs. Italian) — likely too granular, but worth confirming as an explicit "no."
+5. **Heritage worksheet brief = locked.** See "Heritage worksheet brief" below.
 
-**C. Long-tail filterability — promote vs. tier vs. hide.** The doc's central question:
-- **Promote.** Every leaf with ≥N lessons becomes a filter option. ~50-60 filter options total. Sidebar gets crowded; reviewer burden up.
-- **Tier the filter UI.** Sidebar shows top-level regional parents; click-to-expand reveals child picker. Cleaner UI; preserves long-tail accessibility.
-- **Don't promote.** Long-tail stays in metadata; search-by-keyword finds them; sidebar stays focused on parents only.
+**Reasoning:**
 
-*Opener provisional read (push back if wrong):*
-- Source = empirical-augmented v3; per-value validation by user/reviewers.
-- Depth = current 4 levels (no 5th level for Lenape; treat as peer at level 3 if promoted).
-- Long-tail = tier the filter UI (sidebar shows parents, click-expand for child picker).
-- **Most uncertain on:** whether **Indigenous** belongs as a peer to Asian/Americas/African/European/Middle Eastern, OR as a sub-grouping under Americas. v3 had it ambiguous. Curriculum take needed — this is the first thing to dig into.
+- **Path 3 hybrid shape** (meta-now, content-later) emerged when the Position 1 call (Opus-corpus-read integrated into worksheet drafting — see Cross-cutting: Stage 1 worksheet methodology) was made. Asking the user to pre-decide content placements (Mediterranean peer-vs-sub, Indigenous peer-vs-nested) before any worksheet exists would invert the workflow. D1 splits cleanly into (a) meta layer that doesn't need lesson-content evidence — settled in walkthrough — and (b) content layer that does — deferred to worksheet round + reviewer validation. Mirrors D8's partial-call shape.
+- **Decoupling rationale:** storage stability + long-tail accessibility + cheap UI iteration. A lesson tagged `Lenape` in the metadata is still discoverable via "Indigenous Peoples" sidebar checkbox (parent rollup). Promote-later for any leaf is UI-only. Stage 2 corpus re-tag produces granular data once; sidebar can iterate without re-tagging. Small ongoing maintenance cost (two surfaces to keep in sync) is mitigated by build-time errors when filter values don't match schema leaves.
+- **Threshold rationale:** the curriculum is small (~772 lessons total). Legitimate-but-rare cultural identities exist genuinely at low counts. ≥2 floor prevents pure tag-noise; content-centered test prevents calcifying mentions-in-passing. Worksheet round produces the evidence verdict per candidate.
+- **v3-baseline keep rationale:** v3 = stakeholder-iterated taxonomy (per session 1's reframing — most-iterated lineage). Empirical additions go through threshold; v3 baseline grandfathered.
+- **Sidebar-visibility rationale:** frequency-driven, not content-evidence-driven. ~13% of corpus otherwise unreachable via parent-checkbox is a UX failure, not a curated choice.
 
----
+**Deferred sub-questions (content layer, to worksheet round):**
 
-**Decision:** _(pending)_
+- **Indigenous structural placement** — peer of Asian/Americas/etc., or nested under Americas (v3 default)? Needs Opus-corpus-read evidence on whether the 24-28 lessons read as exclusively-Americas-focused or pan-continental.
+- **African American diaspora structural placement + cluster shape** — nested where (v3 has it under Americas → North American)? Do the 25-35 lessons cluster cohesively under one node, or split (Soul Food vs. West African diaspora connections vs. broader Black culinary history)?
+- **Mediterranean structural placement** — peer of European or under-European (v3 default)? Do the 42 lessons read as one shared-Mediterranean-foodways unit or as country-specific clusters (Italian / Greek / Lebanese / Egyptian)?
+- **Lenape** — nested 5th-level leaf under Indigenous (v3 default) or promoted? Do the 7 lessons read pedagogically distinct from generic Indigenous treatment, justifying separate sidebar surface in NYC context?
+- **The 28 empirical long-tail candidates** — which pass ≥2 floor + content-centered test (Honduran, Brazilian, Peruvian, Cuban, Yemeni, Sri Lankan, Egyptian, Aztec, etc.).
+- **Tier-0 vs Tier-1 sidebar placement** for each promoted value (always-visible parent peer vs. click-expand under existing parent). Driven by content patterns + sidebar-bloat trade-offs.
+- **Per-leaf sidebar visibility under each parent** — for high-frequency child leaves (Mexican 41×, Italian 26×), do they get Tier-1 checkbox treatment or stay metadata-only with parent-rollup access?
+- **Canonical surface labels** — decide preferred form (e.g., "Indigenous Peoples" vs. v3's awkward "Indigenous/Native American" vs. just "Indigenous") for each value. Storage key separates from label so this is purely a UI decision.
 
-**Reasoning:** _(pending)_
+**Heritage worksheet brief (the Stage 1 deliverable):**
 
-**Deferred sub-questions:**
+*Per-value entry shape:*
+- Canonical schema key + surface label.
+- Alias list — every variant form found in the corpus that maps to this canonical (doubles as Stage 2 migration map; exhaustive — no skipping).
+- Schema position in the hierarchy.
+- Filter-UI tier (Tier-0 always-visible / Tier-1 click-expand / metadata-only).
+- Corpus frequency.
+- Content-evidence verdict (centered / mentioned-in-passing / mixed) with representative excerpts.
+
+*Questions the Opus-corpus-read must specifically answer:*
+1. Apply ≥2 floor + content-centered test to the ~28 empirical long-tail candidates — which pass.
+2. Indigenous: pan-continental vs. Americas-only in the corpus content?
+3. African American diaspora: cohesive single cluster vs. multi-cluster split?
+4. Mediterranean: shared-foodways vs. country-specific clusters?
+5. Lenape: pedagogically distinct from generic Indigenous?
+6. Per-leaf sidebar visibility evidence under each parent (Mexican, Italian, etc.).
+7. v3 baseline spot-check: are existing tags on low-usage v3 leaves correctly applied?
+
+*Methodology constraints:*
+- Per-value sample size: read every lesson if N ≤ 10; stratified sample of N=10 (axis TBD at implementation time) if N > 10. Bounds total work.
+- Variant-form capture: exhaustive (every form in the corpus → alias list).
+- Plus the cross-cutting **novelty pass** — see Cross-cutting: Stage 1 worksheet methodology.
 
 **Downstream implications:**
+
+- **Path 3 shape applies to all worksheet-bearing fields.** D2 (activity type), D3 (lesson format), D5 (academic concepts), D9 (CRF) all split the same way: meta layer in walkthrough, content layer in worksheet round + reviewer validation. D6 (sequences) and D7 (variants) are modeling questions, not vocabulary questions — likely land fully in walkthrough.
+- **Heritage worksheet is the first of ~10 such worksheets.** Stage 1 is going to take real time and tokens (heritage alone ≈ 78 values × sample reads = potentially 300-500 lesson reads + the novelty pass). Worth knowing as you scope phase 1.
+- **Schema-to-filter mapping is a worksheet deliverable** — not a separate decision later. The mapping comes out of the worksheet round alongside the canonical-key list.
+- **Filter UI label flexibility** — sidebar can read "Indigenous Peoples" while storage key is `indigenous`. Reduces awkwardness in label naming as a separate constraint.
 
 ---
 
@@ -231,6 +250,41 @@
 
 ---
 
+## Cross-cutting: Stage 1 worksheet methodology
+
+**Status:** DECIDED 2026-05-01 — surfaced during D1 walkthrough; applies to all worksheet-bearing fields.
+
+**Decision (3 calls):**
+
+1. **Position 1 — Opus-corpus-read integrated into worksheet drafting.** Each per-field worksheet has two inputs: (a) v3 schema as baseline, (b) Opus-derived qualitative analysis of N sample lessons in that field. Worksheets include a "what we found in lessons" evidence column per candidate value. Per-field judgment on whether Opus-corpus-reads are needed: cultural heritage / academic concepts / lesson format → yes (content-heavy); cooking_methods / grade_levels → probably no (vocabulary is short and shape-stable). Stays as one Stage 1, no separate stress-test stage.
+
+2. **Implementation logistics deferred to worksheet round.** Whether the Opus-corpus-reads happen as a discrete batch-step (job spec → batch API → assemble worksheet from output) or integrated (Claude reads lessons directly in-session and drafts as it goes) is pure implementation logistics — both produce the same brief output and same final worksheet. Settle at the start of the worksheet round when actual scope is known.
+
+3. **Novelty pass added to Stage 1.** Beyond per-value sampling (which is positive-only — only reads lessons already tagged with each value), a stratified sample of the *whole corpus* (regardless of current tags) — proposed scope ~50-100 lessons across submission date / activity type — gets read by Opus with the question "what cultural identity / activity type / academic concept / etc. does this lesson center, if any?" Catches **missing values** (cultural identities or other concepts present in lesson content but never tagged) and **systematic mistagging** (e.g., "lessons tagged 'African' read as more specifically West African" → suggests Tier-1 expansion under African) **before** the schema locks. Eliminates the "schema lock-in then Stage 2 surprises us" failure mode.
+
+**Reasoning:**
+
+- **Position 1 over Position 2 (separate Stage 1.5):** integrating Opus reads with worksheet drafting keeps evidence next to the canonical-value proposal. Position 2's separate stress-test stage adds sequencing overhead without enough payoff — the Opus reads would just be re-read in the worksheet phase anyway.
+- **Position 1 over Position 3 (no Opus reads in Stage 1):** Position 3 finalizes schema from v3 + tag-frequency + reviewer judgment alone. Risk: Stage 2 re-tag reveals the schema doesn't fit content reality, forcing a re-validate / re-tag loop. Cost of avoiding this loop is small (a few hundred Opus reads) vs. cost of paying it (re-doing thousands of re-tags).
+- **Per-field judgment on whether Opus reads are needed:** cooking_methods has ~8-10 real concepts; reading lessons doesn't add much beyond what the v3 schema + frequency tally already tell us. Heritage / concepts / format are content-heavy with structural questions that frequency alone can't answer.
+- **Novelty pass rationale:** the "read every lesson if N ≤ 10; stratified sample if N > 10" rule is positive-only — it samples from existing tags. Doesn't catch (a) cultures present in content but never tagged, or (b) false-negatives on existing values (lessons that should be tagged X but aren't). The audit explicitly found false-negative-style errors (cosmetics-craft tagged "cooking", grades 3K-8 on stovetop). Stage 2 will catch these eventually but only after the schema is locked. Bounded cost (~50-100 reads) for a meaningful failure-mode elimination.
+
+**Deferred sub-questions:**
+
+- **Discrete-vs-integrated implementation logistics** — settle at start of worksheet round.
+- **Stratification axis** for the per-value N>10 sampling — submission date? activity type? something else? Settle at worksheet implementation time per field.
+- **Novelty pass scope** — 50? 100? more? Tradeoff between coverage and read-budget. Settle when implementing.
+- **Novelty pass schedule per field** — done once across all fields (one read produces evidence for all) or once per field? Settle when implementing.
+- **Per-field judgment on Opus-reads-needed** — explicit list. Surface at the start of each field's walkthrough card.
+
+**Downstream implications:**
+
+- D1 + D2 + D3 + D5 + D9 walkthrough cards all explicitly land "meta layer here, content layer to worksheet round" partial-call shapes.
+- Stage 1 work scope is larger than initially framed — heritage alone is ~300-500 lesson reads + novelty pass; 4-5 content-heavy fields means low thousands of reads. Real time + tokens.
+- Stage 2 (Scope 3 corpus re-tag) inherits a schema that has been content-validated, not just frequency-validated. Reduces re-validation risk.
+
+---
+
 ## Cross-cutting: foundation-phase corpus refresh strategy
 
 **Status:** COMMITTED 2026-04-30
@@ -286,3 +340,29 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 - (third commit landing this session-end capture)
 
 **Carry-forward to next session:** Pre-walkthrough context for D1 is in the D1 card; opener position will likely get pushback on the "Indigenous as peer vs. sub-grouping under Americas" question. User will clear before next session.
+
+### Session 2 — 2026-05-01
+
+**Covered:** D1 walkthrough — opener correction (v3 actually nests Indigenous under Americas/North American with 5th-level Lenape leaf; not "ambiguous" as session 1 framed it), then a structural pivot to the Path 3 hybrid shape, then the four meta-layer calls. Cross-cutting Stage 1 methodology emerged in the middle when user surfaced the "where does Opus reading lessons fit in the process" question.
+
+**Calls landed (in order):**
+
+1. **Position 1** (Cross-cutting Stage 1 methodology): Opus-corpus-read integrated into worksheet drafting. Per-field judgment on whether Opus reads are needed (heritage / concepts / format yes; cooking_methods / grade_levels probably no). User accepted directly when surfaced.
+2. **Path 3 hybrid for D1** (and likely D2/D3/D5/D9): meta layer in walkthrough, content layer in worksheet round + reviewer validation. Mirrors D8's partial-call shape. Emerged when user pointed out Path 1/2 were a false binary — Path 3 was the natural consequence of Position 1 + D8 precedent.
+3. **D1 meta-1 = decoupled.** Schema-vs-filter-UI separated. Schema stores granular values; filter UI is a separate design layer with parent rollup + keyword search for long tail.
+4. **D1 meta-2 = ≥2 floor + content-centered test.** Numeric floor + qualitative evidence test for empirical long-tail candidates. v3 baseline zero-usage values kept (preserved as valid-future-tags; user expects most have ≥1-2 corpus instances anyway).
+5. **D1 meta-3 = sidebar-visible yes for Indigenous + African American diaspora + Mediterranean.** Frequency-driven (24-28×, 25-35×, 42× respectively); ~13% of corpus would otherwise have no parent-checkbox match.
+6. **D1 meta-4 = heritage worksheet brief locked.** Per-value deliverable shape + 7 questions for the Opus-corpus-read + methodology constraints (sample size rule, exhaustive variant capture).
+7. **Novelty pass added to Stage 1.** Stratified sample of whole corpus (regardless of current tags) catches missing-cultures and false-negatives before schema locks. Added to cross-cutting Stage 1 methodology.
+
+**Key reframing:** Path 3 shape (meta-now-content-later) is the natural consequence of Position 1. Rather than walkthrough deciding everything, walkthrough lands the *meta scaffolding that briefs the worksheet round*. Content-layer taxonomy decisions happen in the worksheet round + reviewer validation, where the Opus-corpus-read evidence lives. This applies to D2/D3/D5/D9 as well; D6/D7 are modeling questions not vocabulary questions and likely land fully in walkthrough.
+
+**Empirical correction to session 1 notes:** session 1's pre-walkthrough context for D1 framed v3 as having Indigenous "ambiguous" between peer and nested. v3 (`taggingv3/esynyc-taxonomy-schema-v2.md:73-131`) is actually unambiguous — Indigenous nested under Americas → North American with 5th-level leaves (Lenape, Three Sisters traditions). PROD's `filterDefinitions.ts:115-161` is a *trimmed* version stopping at level 3, which explains why Indigenous + African American diaspora + leaf countries don't appear as filters. Gap is between v3 schema and PROD filter UI, not within v3 itself.
+
+**Carry-forward to next session:**
+
+- D2 (activity type) is next. Likely follows the same Path 3 split — meta layer (does the 4-bucket scheme need restructuring? scope of activity-type changes? interaction with lesson_format per D3?) settles in walkthrough; content layer (specific bucket definitions, canonical values) goes to worksheet round.
+- Pre-walkthrough D2 prep worth considering: corpus audit of the 4 current activity-type buckets (cooking / garden / academic / academic-cooking) — how many lessons in each, what's the cluster shape inside each bucket, are there obvious mistagging patterns. Could be a session-end research dispatch if user wants to set up the next session efficiently.
+- Heritage worksheet round is the first concrete Stage 1 deliverable once walkthrough wraps. Scope: ~78 values × per-value sample reads + novelty pass. Real time + tokens.
+
+**Commits:** _(this session-end capture)_
