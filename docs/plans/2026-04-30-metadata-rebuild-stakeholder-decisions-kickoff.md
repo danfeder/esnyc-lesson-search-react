@@ -77,6 +77,7 @@ Don't redo any research. Memory + the four docs are the canonical inputs.
 Before saying "done" or stopping for the day:
 1. Update the Walkthrough state header at top of resolved doc (Last session date, Progress count, Next in queue, Open questions).
 2. Add a `### Session N — YYYY-MM-DD` entry to the Session log at bottom of resolved doc (Covered / Calls landed / Key insights / Commit / Carry-forward).
-3. Commit. Style: `docs(metadata-rebuild): walkthrough session N — <decisions touched>`.
-4. If significant new state worth surfacing for non-walkthrough sessions, also update `~/.claude/projects/-Users-danfeder-cCode-esynyc-lessonsearch-v2/memory/project_metadata_rebuild_initiative.md`.
-5. Push only if user asks.
+3. **If the next walkthrough card has research that surfaced this session** (e.g., subagent findings, audit numbers, framing, candidate options) — capture it as a `**Pre-walkthrough context**` subsection inside that card BEFORE clearing. Mark provisional positions clearly as openers, not settled calls. This avoids the next session re-running expensive research or opening with a thinner evidence base. See Decision 1's pre-walkthrough context for the pattern.
+4. Commit. Style: `docs(metadata-rebuild): walkthrough session N — <decisions touched>`.
+5. If significant new state worth surfacing for non-walkthrough sessions, also update `~/.claude/projects/-Users-danfeder-cCode-esynyc-lessonsearch-v2/memory/project_metadata_rebuild_initiative.md`.
+6. Push only if user asks.

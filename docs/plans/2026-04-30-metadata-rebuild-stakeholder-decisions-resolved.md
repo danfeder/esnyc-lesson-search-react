@@ -17,11 +17,11 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-04-30 (session 1) · committed as `0233d11`
+**Last session:** 2026-04-30 (session 1) · commits: `0233d11` (D0+D4+D8+Scope 3), `3ef170c` (status-tracking infra), + a third commit landing pre-walkthrough context for D1.
 **Progress:** **4 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅ committed. **6 cards remain** (D1, D2, D3, D5, D6, D7, D9 + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 1 — cultural heritage taxonomy.**
+**Next in queue:** **Decision 1 — cultural heritage taxonomy.** Pre-walkthrough context is captured in the D1 card below — read it as your starting point. The first thing to dig into is whether **Indigenous** is a peer to Asian/Americas/etc. or a sub-grouping under Americas (v3 was ambiguous; needs curriculum take).
 **Walkthrough order remaining:** 1 → 2 → 3 → 5 → 6 → 7 → 8 (revisit deferred sub-questions only) → 9.
-**Open questions waiting on user:** None.
+**Open questions waiting on user:** None (D1 walkthrough hasn't started in earnest — pre-walkthrough context is opener material, not a question).
 **Blockers / pending confirmations:** None.
 **Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing.
 
@@ -80,7 +80,42 @@
 
 ## Decision 1 — Cultural heritage taxonomy
 
-**Status:** OPEN
+**Status:** OPEN — pre-walkthrough context captured 2026-04-30 (session 1 wrap); walkthrough proper begins next session with user response to opener positions below.
+
+**Pre-walkthrough context** (opener positions, NOT settled calls — push back is expected next session):
+
+*v3 schema reference:* `/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md:73-131` defines a 4-level hierarchy (Asian → regional groupings → countries). This tree was preserved verbatim into current PROD's `src/utils/filterDefinitions.ts` — so unlike most fields, the cultural-heritage *structure* is intact. The brokenness is around the structure, not in it.
+
+*Empirical findings from v3 corpus audit (subagent extraction in session 1):*
+- **78 distinct heritage values in PROD** vs. ~50 leaves enumerated in v3 schema → ~28 values emerged in tagging that aren't in the schema.
+- **Drift variants:** "Indigenous" (28×) vs. "Indigenous/Native American" (schema canonical) vs. "Native American" (6×) — three forms across ~34 lessons. "African American" (35×) vs. "African American diaspora" (3×, schema canonical).
+- **Empirical additions worth considering for first-class status:** Honduran, Brazilian, Peruvian, Cuban, Yemeni, Sri Lankan, Egyptian (each 2-3×), Aztec (2×), Lenape (7×).
+- **Filter UI gap:** Mexican 41×, Italian 26×, African American 25-35×, Mediterranean 42×, Indigenous 24-28×, Lenape 7× — most NOT browsable filters today; live in metadata only.
+- **Validation gap:** v3 enforced `culturalHeritage` as `List[str]` (no enum), one of 14 fields without per-field Pydantic validation — explains the drift.
+
+*Three sub-questions to interrogate:*
+
+**A. Canonical taxonomy SOURCE.** Two candidates:
+- v3's hierarchy as-is (already in PROD's `filterDefinitions.ts`).
+- **Empirical-augmented v3** — start with v3 baseline, evaluate empirically-emerged long-tail values per-value for inclusion. Threshold question: ≥2 lessons? ≥3? ≥5?
+
+**B. Hierarchy depth.** v3 has 4 levels. Open calls:
+- Lenape: 5th level under Indigenous → North American → Lenape, OR a peer at level 3?
+- Mediterranean (42 lessons): peer of European, or sub-grouping (it cuts across continents in real geography)?
+- City/regional-within-country values (e.g., Sicilian vs. Italian) — likely too granular, but worth confirming as an explicit "no."
+
+**C. Long-tail filterability — promote vs. tier vs. hide.** The doc's central question:
+- **Promote.** Every leaf with ≥N lessons becomes a filter option. ~50-60 filter options total. Sidebar gets crowded; reviewer burden up.
+- **Tier the filter UI.** Sidebar shows top-level regional parents; click-to-expand reveals child picker. Cleaner UI; preserves long-tail accessibility.
+- **Don't promote.** Long-tail stays in metadata; search-by-keyword finds them; sidebar stays focused on parents only.
+
+*Opener provisional read (push back if wrong):*
+- Source = empirical-augmented v3; per-value validation by user/reviewers.
+- Depth = current 4 levels (no 5th level for Lenape; treat as peer at level 3 if promoted).
+- Long-tail = tier the filter UI (sidebar shows parents, click-expand for child picker).
+- **Most uncertain on:** whether **Indigenous** belongs as a peer to Asian/Americas/African/European/Middle Eastern, OR as a sub-grouping under Americas. v3 had it ambiguous. Curriculum take needed — this is the first thing to dig into.
+
+---
 
 **Decision:** _(pending)_
 
@@ -231,7 +266,7 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 
 ### Session 1 — 2026-04-30
 
-**Covered:** D0, then D4 (with D8 substance + Cross-cutting Scope 3 emerging mid-walkthrough).
+**Covered:** D0, then D4 (with D8 substance + Cross-cutting Scope 3 emerging mid-walkthrough). After the decision-capture commit, also built status-tracking infra into the scaffold and captured pre-walkthrough context for Decision 1 to set up the next session.
 
 **Calls landed (in order):**
 1. D0 = **hybrid**. Refine ruled out first; rebuild-vs-hybrid unlocked by D8 partial call.
@@ -241,6 +276,13 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 
 **Key reframing:** 3 parallel opus subagents explored the prior tagging projects (`/Users/danfeder/cCode/tagging`, `tagging_fresh_start`, `taggingv3`). Surfaced that the vocabulary drift in current PROD was **born in v3's July 2025 GPT-4.1 single-session tagging run**, not accumulated post-hoc from submitter UIs or reviewer error. v3's `esynyc-taxonomy-schema-v2.md` is therefore the most-iterated stakeholder-derived taxonomy in the project's lineage and the right baseline for canonicalization (rather than from-scratch drafting or corpus-frequency-only).
 
-**Commit:** `0233d11` — `docs(metadata-rebuild): walkthrough session 1 — D0+D4+D8 + Scope 3 captured`
+**Scaffold infra added (post-D4):** Walkthrough state header + Session log structure on resolved doc; pickup-check step + at-session-end checklist on kickoff prompt. Also normalized the "capture pre-walkthrough context before clearing if research surfaced" pattern (kickoff step 3 in the at-session-end checklist).
 
-**Carry-forward to next session:** None. Walkthrough state is clean for Decision 1.
+**Pre-walkthrough context captured for D1:** v3 schema reference + corpus audit findings (78 distinct values, drift variants, candidate empirical additions) + three sub-questions to interrogate (source / depth / long-tail filterability) + opener provisional read. Marked as opener positions, not settled calls.
+
+**Commits:**
+- `0233d11` — `docs(metadata-rebuild): walkthrough session 1 — D0+D4+D8 + Scope 3 captured`
+- `3ef170c` — `docs(metadata-rebuild): walkthrough scaffold — status-tracking infra`
+- (third commit landing this session-end capture)
+
+**Carry-forward to next session:** Pre-walkthrough context for D1 is in the D1 card; opener position will likely get pushback on the "Indigenous as peer vs. sub-grouping under Americas" question. User will clear before next session.
