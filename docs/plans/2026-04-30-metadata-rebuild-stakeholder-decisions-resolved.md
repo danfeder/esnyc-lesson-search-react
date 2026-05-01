@@ -365,4 +365,5 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 - Pre-walkthrough D2 prep worth considering: corpus audit of the 4 current activity-type buckets (cooking / garden / academic / academic-cooking) — how many lessons in each, what's the cluster shape inside each bucket, are there obvious mistagging patterns. Could be a session-end research dispatch if user wants to set up the next session efficiently.
 - Heritage worksheet round is the first concrete Stage 1 deliverable once walkthrough wraps. Scope: ~78 values × per-value sample reads + novelty pass. Real time + tokens.
 
-**Commits:** _(this session-end capture)_
+**Commits:**
+- `137ca31` — `docs(metadata-rebuild): walkthrough session 2 — D1 meta layer + Stage 1 methodology`
