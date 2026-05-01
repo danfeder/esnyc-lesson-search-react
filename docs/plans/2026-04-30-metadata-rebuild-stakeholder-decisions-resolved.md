@@ -17,11 +17,11 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-01 (session 2) · commits: `da1adae` (S1 wrap — D1 pre-walkthrough context), + this session's D1 meta layer + Stage 1 methodology cross-cutting.
-**Progress:** **6 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, **D1 meta layer ⚪ partial (NEW)**, **Cross-cutting Stage 1 worksheet methodology ✅ (NEW)**. **5 walkthrough cards remain** (D2, D3, D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 2 — activity type categories.** D2 likely has the same Path 3 partial-call shape as D1 — meta layer settles in walkthrough (does the 4-bucket scheme need restructuring? scope of activity-type changes? interaction with lesson_format conflation per D3?), content layer (specific bucket definitions / canonical values) defers to worksheet round.
-**Walkthrough order remaining:** 2 → 3 → 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
-**Open questions waiting on user:** None.
+**Last session:** 2026-05-01 (session 2) · commits: `137ca31` (D1 meta layer + Stage 1 methodology), `21b5d34` (commit-hash backfill), + the session-2-wrap commit landing D2 pre-walkthrough context.
+**Progress:** **6 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅. **5 walkthrough cards remain** (D2, D3, D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
+**Next in queue:** **Decision 2 — activity type categories.** Pre-walkthrough context is captured in the D2 card below — read it as your starting point. **Major reframing surfaced by research:** activityType has NO taxonomy ancestor in v1/v2/v3 — the 4-bucket scheme exists only in `filterDefinitions.ts`, and v3's lineage treats activity classification as derived from skills. Plus a schema-data mismatch (`academic-cooking` slug vs `both` data, where `both` semantically = garden+cooking). The "Replace with derived classification" option is much more attractive than the decisions doc framed it. **Also flagged: D2-D3 are more deeply linked than doc ordering suggests** — several Q5 expansion candidates (mobile, special-pop, orientation) belong in D3's deconflation, not D2. Consider walkthrough order swap to D3-then-D2, or paired walkthrough.
+**Walkthrough order remaining:** 2 → 3 → 5 → 6 → 7 → 8 (deferred sub-questions only) → 9 — **OR** 3 → 2 (paired) if D2-D3 ordering swap is taken; raise this at session start.
+**Open questions waiting on user:** D2-D3 walkthrough order (default doc order = 2 then 3; consider swap given D2's expansion candidates partially belong in D3). Raise at session start.
 **Blockers / pending confirmations:** None.
 **Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; expect to apply per-card.
 
@@ -148,7 +148,72 @@
 
 ## Decision 2 — Activity type categories
 
-**Status:** OPEN
+**Status:** OPEN — pre-walkthrough context captured 2026-05-01 (session 2 wrap); walkthrough proper begins next session.
+
+**Pre-walkthrough context** (opener positions + reframings, NOT settled calls — pushback expected next session):
+
+*Major reframing surfaced by research dispatch:* **activityType has no taxonomy ancestor.** v3 schema (`/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md`), v2 (`tagging_fresh_start/esynyc-taxonomy-schema-v2.md`), and v1 (`tagging/esynyc-taxonomy-schema-v2.md`) are byte-identical and **none define `activityType`**. v3's `Metadata` Pydantic model (`taggingv3/gpt_tagger/models.py:39-111`) has no `activityType` field at all — instead, a `validate_required_skills` model_validator requires at least one of `cookingSkills` / `gardenSkills` / `academicIntegration.selected` to be populated. **v3's lineage treats activity classification as an emergent property of which skills bucket gets populated, not as its own field.**
+
+The 4-bucket activityType scheme exists ONLY in `src/utils/filterDefinitions.ts:23-32` (frontend application layer). It has no taxonomy ancestor — the drift wasn't born in v3 for this field, it was born in the frontend.
+
+*Empirical findings from TEST DB corpus audit (n=772):*
+
+- **Storage:** the authoritative column is `lessons.activity_type` (text[], 769/772 populated; legacy `metadata->>'activityType'` exists in only 90/772 rows and is fully redundant where present).
+- **Bucket counts:**
+  - `cooking` 298 (38.6%)
+  - `garden` 278 (36.0%)
+  - `both` 135 (17.5%)
+  - `academic` 58 (7.5%)
+  - empty 3 (0.4%)
+- **Schema-vs-data mismatch:** `filterDefinitions.ts` declares `academic-cooking` but DB stores `both` (zero rows use `academic-cooking`). And `both` semantically means **"garden+cooking"** in the data — NOT "academic+cooking" as the schema label `academic-cooking` would suggest. Filter labeling and data are misaligned.
+- **Multi-select capability exists but is never used.** The column is `text[]` but is single-element on 769/769 populated rows. Zero size>1.
+- **Card-level activity pill is computed from skills count, NOT from `metadata.activityType`** (foundational report L131) — implicit acknowledgment that the column is not authoritative for display.
+
+*Mistagging signals from spot-check:*
+
+- **Cosmetics-craft tagged `cooking`:** 3 confirmed (`Dr. Carver Lotion-Making`, `Lotion & Agar Soap - K`, `Lotion & Agar Soap - MS`); broader craft cluster ~6+ (dyeing, clay models, mural painting tagged `garden`).
+- **STEM/science-experiments scattered across all 4 buckets** — no bucket coherently captures them. ~12+ titled "experiment" or "science"; mostly garden, some academic, some cooking.
+- **Mobile/off-site lessons:** ~10-12 explicitly titled `(Mobile Education)`, all bucketed as cooking or both — but already tracked in `lesson_format` (`mobile-education` n=12). So "mobile" is delivery-mode duplication, not an activityType gap.
+- **Orientation/intro cluster:** ~12+ matching `orientation|intro|welcome`, mostly `garden`-bucketed.
+- **Advocacy/food-justice cluster:** ~9 lessons fragmented (6 academic + 2 cooking + 1 garden).
+- **Same-title-different-bucket:** `Our Garden Community` appears in BOTH `garden` AND `academic` rows — same lesson concept, different reviewer judgment.
+
+*D2-D3 interaction worth flagging now:*
+
+The foundational report's Q5 expansion candidates (craft / orientation / STEM / mobile / special-pop / nutrition-unit) split between two axes:
+- **Delivery-mode (belongs in D3 lesson format):** mobile-education, special-population (pull-out groups), arguably orientation.
+- **Activity-type-of-doing (belongs in D2):** craft, STEM-engineering, nutrition-unit.
+
+Per memory `project_lesson_format_conflated.md`, lessonFormat already conflates 3 axes (time-structure × delivery-mode × context-independence) and `mobile-education` is in delivery-mode. **D2 should not absorb candidates that D3's deconflation would already cover.**
+
+*Three sub-questions to interrogate:*
+
+**A. Keep, expand, multi-select, or derive?** The decisions doc D2 card frames four options:
+- **Keep as-is** (4 buckets) — accept the "leaky" patterns as acceptable approximations.
+- **Expand to 6-8** — first-class status for craft / STEM-engineering / nutrition-unit (the genuinely D2-shaped candidates after D3-overlap removal).
+- **Make multi-select** — the column is already `text[]`; allow `[cooking, academic]` for cooking-with-strong-academic-tie. Cheap to enable since storage exists.
+- **Replace with derived classification** — drop the column; classify by reading skills bucket + content. v3's lineage already does this implicitly. Card UI already uses skills count, not activityType.
+
+**B. Schema-data mismatch fix.** `academic-cooking` (filter) vs `both` (data) needs reconciliation regardless of which option in (A) wins. Three sub-paths:
+- Rename the slug in `filterDefinitions.ts` to match data (`both` or `garden-cooking`).
+- Migrate data to match the slug (`academic-cooking` — but this loses meaning since data `both` is garden+cooking, not academic+cooking).
+- Drop the slug entirely if (A) chooses derive-or-multi-select.
+
+**C. Where does "academic+cooking" actually live?** If the data label `both` = garden+cooking, where do "Pizza Math" type lessons (cooking with strong academic integration) get classified? Today: probably `cooking` with `academicIntegration` populated. Question: is that the correct shape, or does it need a first-class bucket?
+
+*Opener provisional read (push back if wrong):*
+
+- **The "Replace with derived classification" option (Replace) is more attractive than initially framed.** Five reasons:
+  1. v3 lineage already does this implicitly (skills validation drives classification).
+  2. Card UI already computes the activity pill from skills count, not activityType.
+  3. The field has zero schema ancestry — nothing being preserved.
+  4. The schema-data mismatch (`academic-cooking` slug vs `both` data) is itself evidence the manually-maintained classification is fragile.
+  5. Under Path 3, the worksheet round can produce derivation rules (skills-bucket → activityType label) as a deliverable rather than canonicalizing a vocabulary that has no canonical source.
+- **If Replace doesn't land:** Multi-select is the next-strongest option. Storage already supports it; it elegantly handles the STEM-cooking and craft-cooking edge cases without needing new buckets. Expand-to-6-8 is the weakest because every new bucket adds a curation burden on a field that's already not authoritative.
+- **D3 deconflation is load-bearing for D2.** Several Q5 candidates (mobile, special-pop, orientation) belong in D3, not D2. D2 walkthrough should happen WITH D3 in scope — they're more deeply linked than the doc's ordering suggests. Worth considering walkthrough order swap to D3-then-D2, or paired walkthrough.
+- **Most uncertain on:** whether the "Replace" option is sound or hides complexity. Specifically: does deriving activityType from skills handle the `academic` bucket (58 lessons)? Those lessons probably populate `academicIntegration.selected` but not `cookingSkills` / `gardenSkills` — the derivation rule would be "if academicIntegration is the only populated skills bucket, activityType = academic." Needs verification.
+
+---
 
 **Decision:** _(pending)_
 
@@ -359,11 +424,23 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 
 **Empirical correction to session 1 notes:** session 1's pre-walkthrough context for D1 framed v3 as having Indigenous "ambiguous" between peer and nested. v3 (`taggingv3/esynyc-taxonomy-schema-v2.md:73-131`) is actually unambiguous — Indigenous nested under Americas → North American with 5th-level leaves (Lenape, Three Sisters traditions). PROD's `filterDefinitions.ts:115-161` is a *trimmed* version stopping at level 3, which explains why Indigenous + African American diaspora + leaf countries don't appear as filters. Gap is between v3 schema and PROD filter UI, not within v3 itself.
 
+**Pre-walkthrough D2 research dispatched (session 2 wrap):** two parallel opus agents — (1) TEST DB corpus audit of activityType, (2) v3/v2/v1 schema-lineage + foundational report Q5 + D2 card framing + D3 interaction analysis. Both reported back in the same session; findings synthesized into the D2 card's pre-walkthrough context block above.
+
+**Major reframings from D2 research:**
+1. **No taxonomy ancestor.** activityType is not in v1/v2/v3 schemas at all. The 4-bucket scheme exists only in `filterDefinitions.ts:23-32`. v3 treats activity classification as emergent from which skills bucket gets populated.
+2. **Schema-data mismatch.** `filterDefinitions.ts` declares `academic-cooking`; DB stores `both` (zero rows use `academic-cooking`); `both` semantically means garden+cooking, NOT academic+cooking.
+3. **Multi-select capability exists in storage but is never used** (text[] column, single-element on 769/769 populated rows).
+4. **Card UI computes activity pill from skills count, not from activityType** — field is already not authoritative for display.
+5. **D2-D3 interaction is deeper than the doc suggests.** Several Q5 expansion candidates (mobile / special-pop / orientation) belong in D3's lessonFormat deconflation, not D2. Genuine D2-shaped candidates: craft, STEM-engineering, nutrition-unit.
+6. **"Replace with derived classification" option is much more attractive than initially framed** (5 reasons surfaced in D2 card; needs verification on whether `academic`-bucket lessons derive cleanly).
+
 **Carry-forward to next session:**
 
-- D2 (activity type) is next. Likely follows the same Path 3 split — meta layer (does the 4-bucket scheme need restructuring? scope of activity-type changes? interaction with lesson_format per D3?) settles in walkthrough; content layer (specific bucket definitions, canonical values) goes to worksheet round.
-- Pre-walkthrough D2 prep worth considering: corpus audit of the 4 current activity-type buckets (cooking / garden / academic / academic-cooking) — how many lessons in each, what's the cluster shape inside each bucket, are there obvious mistagging patterns. Could be a session-end research dispatch if user wants to set up the next session efficiently.
+- D2 walkthrough opens with the no-taxonomy-ancestor reframing as the central reframe; opener provisional read leans toward Replace-with-derived option but flags the academic-bucket derivation question as needing verification.
+- D2-D3 ordering: raise at session start whether to swap to D3-first or pair them.
 - Heritage worksheet round is the first concrete Stage 1 deliverable once walkthrough wraps. Scope: ~78 values × per-value sample reads + novelty pass. Real time + tokens.
 
 **Commits:**
 - `137ca31` — `docs(metadata-rebuild): walkthrough session 2 — D1 meta layer + Stage 1 methodology`
+- `21b5d34` — `docs(metadata-rebuild): backfill session 2 commit hash`
+- _(this session-end commit landing D2 pre-walkthrough context)_
