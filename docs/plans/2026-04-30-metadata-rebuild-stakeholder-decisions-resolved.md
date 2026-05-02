@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-01 (session 3) · commits: `2828563` (D3 capture + D2 scope updated + Walkthrough state header refresh + Session 3 log entry), backfill commit for hash.
-**Progress:** **7 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, **D3 ✅ (fully decided — drop entirely, no replacement)**. **5 walkthrough cards remain** (D2, D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 2 — activity type categories.** Pre-walkthrough context is captured in the D2 card below — read it as your starting point. **D3 ordering swap was taken (D3 first, D2 next).** Post-D3-drop, D2's scope shifted: mobile candidate fully resolved (title convention handles it), but orientation and special-pop candidates are now **homeless** after D3 dropped delivery-mode entirely — they become D2's problem to absorb, treat as descriptive-only, or route to a new field (e.g., `audience_population`). **Major D2 reframings still in play from session 2:** activityType has NO taxonomy ancestor in v1/v2/v3 (4-bucket scheme exists only in `filterDefinitions.ts`); schema-data mismatch (`academic-cooking` slug vs `both` data); v3 lineage already treats activity as derived from skills; "Replace with derived classification" is much more attractive than the decisions doc framed.
-**Walkthrough order remaining:** 2 → 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
-**Open questions waiting on user:** None pending — D2 has full pre-walkthrough context including the post-D3 homeless-candidate addition.
+**Last session:** 2026-05-01 (session 4) · commits: TBD (D2 capture + Walkthrough state header refresh + Session 4 log entry).
+**Progress:** **8 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, **D2 ✅ (fully decided — expand vocab to 5 + use `tags` for orientation)**. **4 walkthrough cards remain** (D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
+**Next in queue:** **Decision 5 — academic concepts positioning.** No pre-walkthrough context captured this session (D5 wasn't researched). Per Path 3, D5 likely splits meta-layer-in-walkthrough vs. content-layer-in-worksheet-round (D5 is a vocabulary-bearing decision per the Path 3 framing established in session 2). The decisions doc D5 card is the starting framing.
+**Walkthrough order remaining:** 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
+**Open questions waiting on user:** None pending.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D2, D5, D9). Note: D3 turned out to be a fully-decided structural drop, not a Path 3 split — Path 3 doesn't auto-apply to every card.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D5, D9 still pending). Note: D3 turned out to be a fully-decided structural drop, not a Path 3 split; D2 turned out to be a single-session structural call with reviewer-curated stored field — Path 3 doesn't auto-apply to every card.
 
 ---
 
@@ -148,85 +148,49 @@
 
 ## Decision 2 — Activity type categories
 
-**Status:** OPEN — pre-walkthrough context captured 2026-05-01 (session 2 wrap); walkthrough proper begins next session.
+**Status:** DECIDED 2026-05-01 (session 4)
 
-**Pre-walkthrough context** (opener positions + reframings, NOT settled calls — pushback expected next session):
+**Decision: Expand activity_type vocabulary to 5 values (keep stored, no Replace) + use existing `tags` column for the orientation cluster.**
 
-*Major reframing surfaced by research dispatch:* **activityType has no taxonomy ancestor.** v3 schema (`/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md`), v2 (`tagging_fresh_start/esynyc-taxonomy-schema-v2.md`), and v1 (`tagging/esynyc-taxonomy-schema-v2.md`) are byte-identical and **none define `activityType`**. v3's `Metadata` Pydantic model (`taggingv3/gpt_tagger/models.py:39-111`) has no `activityType` field at all — instead, a `validate_required_skills` model_validator requires at least one of `cookingSkills` / `gardenSkills` / `academicIntegration.selected` to be populated. **v3's lineage treats activity classification as an emergent property of which skills bucket gets populated, not as its own field.**
+- **Activity_type schema:** keep `lessons.activity_type` stored as `text[]`; field stays reviewer-curated, not derived. Expand vocabulary to 5 values: `cooking / garden / both / academic / craft`. Schema-data mismatch (`academic-cooking` filter slug ↔ `both` data) gets cleaned up as part of Stage 1 vocabulary worksheet for activity_type.
+- **Multi-select rejected.** Field stays single-element. The Dr. Carver Lotion-Making edge case (genuinely both food + craft) accepted as one mis-classification rather than redesigning storage shape for one lesson.
+- **Replace-with-derived rejected.** Was attractive at 98.8% derivation cleanliness, but **craft can't be derived from skills** — the cosmetics lessons have `cooking_skills` tagged (Measuring, Mixing) because they physically use those techniques even though the lesson is craft, not cooking. Keeping the field stored is the honest accommodation.
+- **Orientation cluster:** use the existing `lessons.tags` array column (currently unused, almost every row null/empty). ~15-30 program-orientation lessons get `tags = ["orientation"]`. Filter UI exposes a "Lesson Type" sidebar checkbox functionally identical to a boolean from the user's perspective. Tags allowed values defined as a closed enum in code, **starting with just `["orientation"]`**; add new values only when Stage 1 novelty pass surfaces evidence (e.g., `unit_intro`).
+- **Special-pop cluster:** descriptive-only / FTS. N=1 (Atole, not in TEST DB; from PROD audit). Not worth a tag yet.
+- **STEM/engineering cluster:** no first-class status. Current buckets fit cleanly — garden-systems experiments → `garden`; domain-agnostic physical science → `academic`; one engineering-design outlier (Seed Dispersal mis-tagged `both`) is an individual classification fix, not a category problem. Pedagogical method (experiment / recipe / observation / design-build) ruled out as a likely teacher search axis.
 
-The 4-bucket activityType scheme exists ONLY in `src/utils/filterDefinitions.ts:23-32` (frontend application layer). It has no taxonomy ancestor — the drift wasn't born in v3 for this field, it was born in the frontend.
+**Reasoning:**
 
-*Empirical findings from TEST DB corpus audit (n=772):*
-
-- **Storage:** the authoritative column is `lessons.activity_type` (text[], 769/772 populated; legacy `metadata->>'activityType'` exists in only 90/772 rows and is fully redundant where present).
-- **Bucket counts:**
-  - `cooking` 298 (38.6%)
-  - `garden` 278 (36.0%)
-  - `both` 135 (17.5%)
-  - `academic` 58 (7.5%)
-  - empty 3 (0.4%)
-- **Schema-vs-data mismatch:** `filterDefinitions.ts` declares `academic-cooking` but DB stores `both` (zero rows use `academic-cooking`). And `both` semantically means **"garden+cooking"** in the data — NOT "academic+cooking" as the schema label `academic-cooking` would suggest. Filter labeling and data are misaligned.
-- **Multi-select capability exists but is never used.** The column is `text[]` but is single-element on 769/769 populated rows. Zero size>1.
-- **Card-level activity pill is computed from skills count, NOT from `metadata.activityType`** (foundational report L131) — implicit acknowledgment that the column is not authoritative for display.
-
-*Mistagging signals from spot-check:*
-
-- **Cosmetics-craft tagged `cooking`:** 3 confirmed (`Dr. Carver Lotion-Making`, `Lotion & Agar Soap - K`, `Lotion & Agar Soap - MS`); broader craft cluster ~6+ (dyeing, clay models, mural painting tagged `garden`).
-- **STEM/science-experiments scattered across all 4 buckets** — no bucket coherently captures them. ~12+ titled "experiment" or "science"; mostly garden, some academic, some cooking.
-- **Mobile/off-site lessons:** ~10-12 explicitly titled `(Mobile Education)`, all bucketed as cooking or both — but already tracked in `lesson_format` (`mobile-education` n=12). So "mobile" is delivery-mode duplication, not an activityType gap.
-- **Orientation/intro cluster:** ~12+ matching `orientation|intro|welcome`, mostly `garden`-bucketed.
-- **Advocacy/food-justice cluster:** ~9 lessons fragmented (6 academic + 2 cooking + 1 garden).
-- **Same-title-different-bucket:** `Our Garden Community` appears in BOTH `garden` AND `academic` rows — same lesson concept, different reviewer judgment.
-
-*D2-D3 interaction — UPDATED post-D3 resolution (2026-05-01 session 3):*
-
-D3 was decided first (Option D-pure: drop the field entirely, no replacement, no derivation). That reshapes D2's scope:
-
-- **Mobile candidate is fully resolved.** D3's curatorial title convention ("Mobile" must appear in title for primarily-mobile lessons) handles mobile-education filtering via title-search. D2 doesn't need to absorb mobile as a bucket.
-- **Orientation and special-population are now homeless.** D3 chose to drop delivery-mode entirely rather than expand it. The orientation candidate (Green Room Scavenger) and special-pop candidate (Atole pull-out for speech services) had been flagged for D3's delivery-mode axis at session 2 wrap; with D3 gone, they become D2's problem. Three routing options:
-  - (a) **Absorb as new D2 buckets** (orientation as 5th, special-pop as 6th — but special-pop is more "who's the audience" than "what kind of activity").
-  - (b) **Treat as descriptive-content-only** — no metadata field tracks them; teachers find them via FTS/title.
-  - (c) **Route to a new field altogether** — e.g., `audience_population` for special-pop, `lesson_function` for orientation.
-- **Genuinely D2-shaped candidates** (unchanged from session 2): craft, STEM-engineering, nutrition-unit.
-
-So D2's walkthrough now thinks about 5 candidate categories — craft, STEM-engineering, nutrition-unit, orientation, special-pop — plus the meta question of keep/expand/multi-select/derive on the existing 4 buckets. Per memory `project_lesson_format_conflated.md`, the original D3 conflation framing is now historical; D3's resolution is captured fully in this doc above.
-
-*Three sub-questions to interrogate:*
-
-**A. Keep, expand, multi-select, or derive?** The decisions doc D2 card frames four options:
-- **Keep as-is** (4 buckets) — accept the "leaky" patterns as acceptable approximations.
-- **Expand to 6-8** — first-class status for craft / STEM-engineering / nutrition-unit (the genuinely D2-shaped candidates after D3-overlap removal).
-- **Make multi-select** — the column is already `text[]`; allow `[cooking, academic]` for cooking-with-strong-academic-tie. Cheap to enable since storage exists.
-- **Replace with derived classification** — drop the column; classify by reading skills bucket + content. v3's lineage already does this implicitly. Card UI already uses skills count, not activityType.
-
-**B. Schema-data mismatch fix.** `academic-cooking` (filter) vs `both` (data) needs reconciliation regardless of which option in (A) wins. Three sub-paths:
-- Rename the slug in `filterDefinitions.ts` to match data (`both` or `garden-cooking`).
-- Migrate data to match the slug (`academic-cooking` — but this loses meaning since data `both` is garden+cooking, not academic+cooking).
-- Drop the slug entirely if (A) chooses derive-or-multi-select.
-
-**C. Where does "academic+cooking" actually live?** If the data label `both` = garden+cooking, where do "Pizza Math" type lessons (cooking with strong academic integration) get classified? Today: probably `cooking` with `academicIntegration` populated. Question: is that the correct shape, or does it need a first-class bucket?
-
-*Opener provisional read (push back if wrong):*
-
-- **The "Replace with derived classification" option (Replace) is more attractive than initially framed.** Five reasons:
-  1. v3 lineage already does this implicitly (skills validation drives classification).
-  2. Card UI already computes the activity pill from skills count, not activityType.
-  3. The field has zero schema ancestry — nothing being preserved.
-  4. The schema-data mismatch (`academic-cooking` slug vs `both` data) is itself evidence the manually-maintained classification is fragile.
-  5. Under Path 3, the worksheet round can produce derivation rules (skills-bucket → activityType label) as a deliverable rather than canonicalizing a vocabulary that has no canonical source.
-- **If Replace doesn't land:** Multi-select is the next-strongest option. Storage already supports it; it elegantly handles the STEM-cooking and craft-cooking edge cases without needing new buckets. Expand-to-6-8 is the weakest because every new bucket adds a curation burden on a field that's already not authoritative.
-- **D3 deconflation is load-bearing for D2.** Several Q5 candidates (mobile, special-pop, orientation) belong in D3, not D2. D2 walkthrough should happen WITH D3 in scope — they're more deeply linked than the doc's ordering suggests. Worth considering walkthrough order swap to D3-then-D2, or paired walkthrough.
-- **Most uncertain on:** whether the "Replace" option is sound or hides complexity. Specifically: does deriving activityType from skills handle the `academic` bucket (58 lessons)? Those lessons probably populate `academicIntegration.selected` but not `cookingSkills` / `gardenSkills` — the derivation rule would be "if academicIntegration is the only populated skills bucket, activityType = academic." Needs verification.
-
----
-
-**Decision:** _(pending)_
-
-**Reasoning:** _(pending)_
+- **Database verification (12 SQL queries) showed derivation rule cleanliness is 98.8%** (763/772 stored=derived). For the 58 academic-bucket lessons specifically, derivation is bulletproof: zero have `cooking_skills` or `garden_skills`, 57/58 have `academic_integration` populated, and the 1 truly-empty row is a broken legacy record (titled "---"). 4 of the 9 disagreements are broken legacy rows with summary "Error processing lesson" — data-quality cleanup, not a metadata-design problem.
+- **3 parallel agent reads of ~25 actual lesson Google Docs surfaced four patterns:**
+  1. **The audit's "doesn't fit" framing was partially wrong.** Most cited lessons fit existing buckets fine. The real issues are reviewer-judgment errors — specifically, **tasting being conflated with cooking** (Farm Workers & Pesticides, Plant Families, Roots tagged `both` because of a closing tasting attached to garden work) and **cosmetics tagged cooking** (lotion lessons get `cooking` because measuring/mixing skills are tagged).
+  2. **Craft IS a real cluster.** ~5 cosmetics lessons (Lotion & Agar Soap K, Lotion & Agar Soap MS, Calendula Salve, Dr. Carver Lotion-Making's lotion half) are pure DIY personal-care, explicitly "NOT for eating." Not derivable from skills; needs first-class vocabulary value.
+  3. **Orientation IS a real cluster but orthogonal to activity_type.** ~15-30 lessons share recognizable structural features (opening ritual, norms intro, low-stakes engagement, community-building, SEL emphasis). But "garden orientation" isn't a hybrid of garden+orientation — it's a garden lesson with an orientation purpose. Doesn't fit as a 6th bucket; needs a separate filter axis.
+  4. **STEM/experiment is NOT a homeless cluster.** Splits into 3 sub-types that already classify naturally: garden-systems experiments (Decomposition, Photosynthesis) → `garden` (experiment is the *method*, garden literacy is the *content*); domain-agnostic physical science (Sink-or-Float, Thermal Energy) → `academic`; engineering-design (Seed Dispersal) → individual mis-classification, not a category problem.
+- **Why expand-with-craft over pure Replace:** craft is real but can't be derived (cosmetics lessons share skills with cooking). Replace would either lose craft visibility (~5 mis-derived lessons) or require complex content-detection rules. Keeping the field stored handles the ~5 outliers explicitly via reviewer authority; the architectural cost of keeping the column is small since it's already there.
+- **Why tags-not-field for orientation:** "adding a whole field for ~20 lessons is clutter" was the right intuition. The `tags` column exists, is currently unused, and provides identical filter UX to a typed boolean from the user's perspective. Closed-enum governance prevents junk-drawer accumulation. Reversible if patterns multiply later.
+- **Why no `lesson_function` general field:** beyond orientation, the only plausibly-useful values were `unit_intro` and `intro-to-skill`, both unverified. The other speculative candidates (assessment, review, demo, substitute-friendly, pedagogy/method values) didn't survive scrutiny — either don't appear to be ESYNYC patterns or aren't typical teacher search axes. Designing a multi-value field for one confirmed value is over-engineering.
 
 **Deferred sub-questions:**
 
+- **Per-bucket canonical vocabulary** (the 5 values' exact spelling, capitalization, slug form, label text) — Stage 1 vocabulary worksheet for activity_type.
+- **Schema-data mismatch resolution** — Stage 1 deliverable: rename filter slug, migrate data, or both. Option will fall out of vocabulary work.
+- **Reviewer guidance: tasting ≠ cooking.** Phase-2 reviewer UX needs explicit rule — tasting alone shouldn't earn `both` or `cooking`. Affects ≥3 confirmed mis-tags + likely more across the corpus. Surfaces in phase-2 reviewer UX redesign.
+- **Reviewer guidance: cosmetics → craft.** The ~5 lotion/soap/salve lessons need explicit re-classification to `craft` in Stage 2 corpus re-tag (or earlier as targeted cleanup).
+- **Tags closed-enum governance** — define allowed values in code (start with `["orientation"]`); reviewers can't add free-text. Add new values only when Stage 1 novelty pass surfaces evidence. Implementation detail for foundation phase.
+- **Dr. Carver Lotion-Making edge case** — genuinely both cooking + craft (Hoppin' John burger half + lotion-making half). Single-element classification picks one; accept the partial mis-classification or revisit if multi-select pressure builds.
+- **Same-titled-different-bucket inconsistency** (Seed Dispersal x3 across `both`/`garden`/`garden`) — flagged as reviewer-judgment inconsistency. Stage 2 corpus re-tag should produce consistent classification across same-title-different-grade variants. May also intersect with D7 (variants and adaptations).
+- **Stage 1 novelty pass for `lesson_function` patterns.** When the cross-cutting Stage 1 round runs the novelty pass, include "what role does this lesson serve in instruction?" as one of the questions. Confirms or refutes the unit_intro / intro-to-skill speculation; if patterns emerge, they can join the tags closed-enum.
+
 **Downstream implications:**
+
+- **Stage 1 vocabulary worksheet for activity_type is small** (5 values vs. ~78 for heritage) but needs to address: schema-data mismatch fix, the cosmetics → craft re-classification list, and the tasting=cooking reviewer-guidance rule. Probably no Opus-corpus-read needed — vocab is short and shape-stable, content patterns already surfaced in this walkthrough.
+- **Stage 2 corpus re-tag should flag known mis-classifications:** ~5 cosmetics lessons (cooking → craft), the 3 `both`-tagged-garden-only outliers (both → garden, due to tasting conflation), the Seed Dispersal versions (consistent classification across grade-band variants).
+- **Phase-2 reviewer UX:** explicit guidance for tasting=cooking conflation, cosmetics=craft, distinguishing program-orientation from intro-to-skill / unit-intro / project-launch (Agent 2 found "intro" overloads title — only ~half the "intro" lessons are program-orientation).
+- **D6 (sequences):** unrelated to D2's resolution; the unit_intro tag question is deferred to Stage 1 novelty pass — if patterns surface there, can be added to tags closed-enum.
+- **D7 (variants):** the Seed Dispersal x3 case is partially a D7 problem (same lesson, three rows, different grade bands). D2 doesn't fix this; D7 walkthrough needs to reckon with it.
+- **Filter UI:** sidebar gets a 5-value Activity Type checkbox group + a separate "Lesson Type" tag-based filter section, starting at orientation only.
+- **Cross-cutting reviewer-judgment finding:** the tasting-conflation pattern is the kind of cross-cutting reviewer-judgment error that Stage 2 re-tag should catch broadly, not just for activity_type. Stage 2 quality-check protocol should explicitly include "verify tag accuracy at the lesson-content level," not just "verify vocabulary cleanliness."
 
 ---
 
@@ -511,3 +475,48 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 
 **Commits:**
 - `2828563` — `docs(metadata-rebuild): walkthrough session 3 — D3 dropped entirely + D2 scope updated`
+
+### Session 4 — 2026-05-01
+
+**Covered:** D2 walkthrough — opened with no-taxonomy-ancestor reframing + Replace lean from session 2 wrap. Ran 12 SQL queries against TEST DB to verify derivation cleanliness (98.8% match, academic-bucket bulletproof). Dispatched 3 parallel agents reading ~25 actual lesson Google Docs (audit-cited "doesn't fit" cases, orientation cluster cohesion, STEM/experiment cluster cohesion). Agents surfaced four major reframings; user iterated through P1/P2/P3 packages, landed on a tightened P2 with `tags`-based orientation rather than a new `lesson_function` field after weighing schema-clutter cost.
+
+**Calls landed (in order):**
+
+1. **Activity_type field stays stored, NOT derived.** Replace was attractive at 98.8% derivation cleanliness but partially incompatible with surfacing craft (cosmetics lessons share skills with cooking — not derivable). Honest accommodation is to keep the field reviewer-curated.
+2. **Vocabulary expanded from 4 to 5 values: cooking / garden / both / academic / craft.** Craft confirmed as a real cluster (~5 cosmetics/personal-care lessons — Lotion & Agar Soap K, Lotion & Agar Soap MS, Calendula Salve, Dr. Carver Lotion-Making lotion-half) by Agent 1 reading the actual docs.
+3. **Multi-select rejected.** Field stays single-element. Dr. Carver Lotion-Making edge case (Hoppin' John burger + lotion craft) accepted as one mis-classification rather than redesigning storage shape for one lesson.
+4. **Orientation handled via existing `tags` array column** (not a new field, not a 5th activity_type bucket). Closed-enum starting with `["orientation"]`; ~15-30 lessons get the tag. Filter UI exposes a "Lesson Type" sidebar checkbox functionally identical to a typed boolean.
+5. **No `lesson_function` general field.** Beyond orientation, only plausibly-useful values were unverified (unit_intro, intro-to-skill); the rest didn't survive scrutiny. Designing a multi-value field for one confirmed value is over-engineering.
+6. **Special-pop = descriptive-only.** N=1 (Atole), not worth a tag yet.
+7. **STEM/experiment = no first-class status.** Splits naturally into existing buckets; not a homeless cluster as the audit framed.
+
+**Key reframings / insights:**
+
+- **The audit's "doesn't fit the 4 buckets" framing was partially wrong.** Most cited lessons fit existing buckets fine; the real issues are reviewer-judgment errors. Reading actual Google Docs flipped the framing from "schema needs more buckets" to "vocabulary needs cleanup + reviewer-guidance fixes."
+- **"Tasting" is being conflated with "cooking" in reviewer judgment.** The 3 `both`-tagged-garden-only outliers (Farm Workers & Pesticides, Plant Families, Roots) and Seed Dispersal v1 all get `both` because of a closing tasting attached to garden work. This is a cross-cutting reviewer-judgment finding — Stage 2 corpus re-tag should catch it broadly; Phase-2 reviewer UX needs explicit guidance.
+- **Same-titled lessons taught at different grade bands inherit different activity buckets** (Seed Dispersal x3 across `both`/`garden`/`garden`). Reviewer-judgment inconsistency, not content drift. Partial D7 (variants) problem.
+- **Replace's elegance was nice-to-have, not load-bearing.** Once we accept that craft can't be derived, the architectural argument for Replace evaporates — the field already works as reviewer-curated; cleaning the vocabulary doesn't require dropping the storage.
+- **The `lessons.tags` array column is essentially unused** and provides identical filter UX to a typed boolean. Lighter than adding a new field for a single confirmed pattern; closed-enum governance prevents junk-drawer accumulation; reversible to a structured field if patterns multiply.
+
+**Database verification (TEST DB, 12 queries):**
+
+- Cross-tab of `activity_type` × skills-bucket population showed derivation rule (cooking-only → cooking; garden-only → garden; both → both; neither but academic_integration → academic) matches stored value 98.8% (763/772).
+- 58 `academic`-bucket lessons: 0 have cooking_skills, 0 have garden_skills, 57 have academic_integration (1 truly empty record is a broken row titled "---"). The verification gating Replace's viability is fully clean.
+- 9 disagreements: 4 broken legacy rows ("Unknown" + "---" with summary "Error processing lesson"); 3 `both`-tagged-garden-only lessons (Farm Workers, Plant Families, Roots — tasting conflation); 1 garden+cooking-skill cross ("The Seasons: Fall"); 1 garden-no-skills row.
+- Atole NOT in TEST DB; audit cited it from PROD or from a prior state.
+
+**Doc reading findings (3 parallel agents, ~25 lessons):**
+
+- Agent 1 (audit-cited "doesn't fit" cases): craft is real and first-class-worthy; the 3 `both`-tagged outliers are tasting-conflation mis-tags; Seed Dispersal x3 are same-lesson-different-grade-bands with inconsistent classification; recommendation = Replace + add craft.
+- Agent 2 (orientation cluster cohesion): orientation IS coherent (4-6 of 9 read are real welcome-to-program); but orthogonal to activity_type ("garden orientation" isn't a hybrid); recommendation = new `lesson_function` field. (User pushed back on schema clutter; landed on `tags` column instead.)
+- Agent 3 (STEM/experiment cluster cohesion): STEM/experiment NOT homeless; splits into 3 sub-types (garden-systems experiments → garden; domain-agnostic physical science → academic; engineering-design = 1 outlier); recommendation = no new bucket, optionally a `pedagogy` field. (User implicitly rejected pedagogy — not a typical teacher search axis.)
+
+**Carry-forward to next session:**
+
+- D5 (academic concepts) is next in queue. No pre-walkthrough research dispatched this session. D5 is a vocabulary-bearing decision per the Path 3 framing, so likely splits meta-layer-in-walkthrough vs. content-layer-in-worksheet-round.
+- The tasting=cooking conflation finding is a cross-cutting reviewer-judgment pattern — should be flagged when D8 phase-2 sub-questions come up, and built into Stage 2 corpus re-tag quality protocol.
+- Heritage worksheet remains the first concrete Stage 1 deliverable once walkthrough wraps. D2's vocabulary worksheet is much smaller (5 values) and likely doesn't need an Opus-corpus-read — content patterns already surfaced in this session.
+- Closed-enum tags governance is a foundation-phase implementation detail (define allowed values in code; reviewers can't add free-text); when the `lesson_function` novelty pass happens during Stage 1, surfaced patterns can be added.
+
+**Commits:**
+- TBD — `docs(metadata-rebuild): walkthrough session 4 — D2 capture (expand vocab to 5 + tags for orientation)`
