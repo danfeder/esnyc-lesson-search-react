@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-01 (session 2) · commits: `137ca31` (D1 meta layer + Stage 1 methodology), `21b5d34` (commit-hash backfill), + the session-2-wrap commit landing D2 pre-walkthrough context.
-**Progress:** **6 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅. **5 walkthrough cards remain** (D2, D3, D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 2 — activity type categories.** Pre-walkthrough context is captured in the D2 card below — read it as your starting point. **Major reframing surfaced by research:** activityType has NO taxonomy ancestor in v1/v2/v3 — the 4-bucket scheme exists only in `filterDefinitions.ts`, and v3's lineage treats activity classification as derived from skills. Plus a schema-data mismatch (`academic-cooking` slug vs `both` data, where `both` semantically = garden+cooking). The "Replace with derived classification" option is much more attractive than the decisions doc framed it. **Also flagged: D2-D3 are more deeply linked than doc ordering suggests** — several Q5 expansion candidates (mobile, special-pop, orientation) belong in D3's deconflation, not D2. Consider walkthrough order swap to D3-then-D2, or paired walkthrough.
-**Walkthrough order remaining:** 2 → 3 → 5 → 6 → 7 → 8 (deferred sub-questions only) → 9 — **OR** 3 → 2 (paired) if D2-D3 ordering swap is taken; raise this at session start.
-**Open questions waiting on user:** D2-D3 walkthrough order (default doc order = 2 then 3; consider swap given D2's expansion candidates partially belong in D3). Raise at session start.
+**Last session:** 2026-05-01 (session 3) · commits: TBD at session-end (D3 capture).
+**Progress:** **7 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, **D3 ✅ (fully decided — drop entirely, no replacement)**. **5 walkthrough cards remain** (D2, D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
+**Next in queue:** **Decision 2 — activity type categories.** Pre-walkthrough context is captured in the D2 card below — read it as your starting point. **D3 ordering swap was taken (D3 first, D2 next).** Post-D3-drop, D2's scope shifted: mobile candidate fully resolved (title convention handles it), but orientation and special-pop candidates are now **homeless** after D3 dropped delivery-mode entirely — they become D2's problem to absorb, treat as descriptive-only, or route to a new field (e.g., `audience_population`). **Major D2 reframings still in play from session 2:** activityType has NO taxonomy ancestor in v1/v2/v3 (4-bucket scheme exists only in `filterDefinitions.ts`); schema-data mismatch (`academic-cooking` slug vs `both` data); v3 lineage already treats activity as derived from skills; "Replace with derived classification" is much more attractive than the decisions doc framed.
+**Walkthrough order remaining:** 2 → 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
+**Open questions waiting on user:** None pending — D2 has full pre-walkthrough context including the post-D3 homeless-candidate addition.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; expect to apply per-card.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D2, D5, D9). Note: D3 turned out to be a fully-decided structural drop, not a Path 3 split — Path 3 doesn't auto-apply to every card.
 
 ---
 
@@ -178,13 +178,18 @@ The 4-bucket activityType scheme exists ONLY in `src/utils/filterDefinitions.ts:
 - **Advocacy/food-justice cluster:** ~9 lessons fragmented (6 academic + 2 cooking + 1 garden).
 - **Same-title-different-bucket:** `Our Garden Community` appears in BOTH `garden` AND `academic` rows — same lesson concept, different reviewer judgment.
 
-*D2-D3 interaction worth flagging now:*
+*D2-D3 interaction — UPDATED post-D3 resolution (2026-05-01 session 3):*
 
-The foundational report's Q5 expansion candidates (craft / orientation / STEM / mobile / special-pop / nutrition-unit) split between two axes:
-- **Delivery-mode (belongs in D3 lesson format):** mobile-education, special-population (pull-out groups), arguably orientation.
-- **Activity-type-of-doing (belongs in D2):** craft, STEM-engineering, nutrition-unit.
+D3 was decided first (Option D-pure: drop the field entirely, no replacement, no derivation). That reshapes D2's scope:
 
-Per memory `project_lesson_format_conflated.md`, lessonFormat already conflates 3 axes (time-structure × delivery-mode × context-independence) and `mobile-education` is in delivery-mode. **D2 should not absorb candidates that D3's deconflation would already cover.**
+- **Mobile candidate is fully resolved.** D3's curatorial title convention ("Mobile" must appear in title for primarily-mobile lessons) handles mobile-education filtering via title-search. D2 doesn't need to absorb mobile as a bucket.
+- **Orientation and special-population are now homeless.** D3 chose to drop delivery-mode entirely rather than expand it. The orientation candidate (Green Room Scavenger) and special-pop candidate (Atole pull-out for speech services) had been flagged for D3's delivery-mode axis at session 2 wrap; with D3 gone, they become D2's problem. Three routing options:
+  - (a) **Absorb as new D2 buckets** (orientation as 5th, special-pop as 6th — but special-pop is more "who's the audience" than "what kind of activity").
+  - (b) **Treat as descriptive-content-only** — no metadata field tracks them; teachers find them via FTS/title.
+  - (c) **Route to a new field altogether** — e.g., `audience_population` for special-pop, `lesson_function` for orientation.
+- **Genuinely D2-shaped candidates** (unchanged from session 2): craft, STEM-engineering, nutrition-unit.
+
+So D2's walkthrough now thinks about 5 candidate categories — craft, STEM-engineering, nutrition-unit, orientation, special-pop — plus the meta question of keep/expand/multi-select/derive on the existing 4 buckets. Per memory `project_lesson_format_conflated.md`, the original D3 conflation framing is now historical; D3's resolution is captured fully in this doc above.
 
 *Three sub-questions to interrogate:*
 
@@ -227,15 +232,46 @@ Per memory `project_lesson_format_conflated.md`, lessonFormat already conflates 
 
 ## Decision 3 — Lesson format split
 
-**Status:** OPEN
+**Status:** DECIDED 2026-05-01
 
-**Decision:** _(pending)_
+**Decision: Drop the `lessonFormat` field entirely. Option D-pure — drop, no replacement, no derivation.**
 
-**Reasoning:** _(pending)_
+- **Schema:** drop `lessons.lesson_format` column, drop `metadata.lessonFormat` JSONB key, remove `lessonFormat` from `filterDefinitions.ts`, remove `_alias_lesson_format` runtime helper, drop the 9 JSON-path indexes referencing `lessonFormat`.
+- **Time-structure axis:** dropped, no derivation. Used to matter as a search dimension; staff have moved away from it.
+- **Standalone-vs-unit axis:** dropped, no replacement at lesson level. Unit-tying becomes D6's modeling problem (relationship between lessons, not attribute of one lesson). D6 is framed as "later, not soon"; no foundation-phase dependency.
+- **Mobile delivery-mode:** dropped from metadata; replaced by curatorial title convention adopted this past year ("lessons specifically for mobile education must have 'Mobile' in the title"). Mobile-education filtering = title-search only.
+- **Sidebar UI:** option (a) — no `Lesson Format` filter section in the redesigned sidebar. Mobile lessons findable via search box + title FTS. No replacement Mobile-Education sidebar checkbox (would duplicate a search-box function).
+
+**Reasoning:**
+
+- All three axes `lessonFormat` was conflating lost their case independently:
+  - **Standalone-vs-unit** (213 lessons currently tagged "Standalone"): not how teachers search; the vast majority of lessons are genuinely standalone, making the tag low-signal anyway. Tag count is also probably inflated by reviewer-noise (reviewers picking "Standalone" because it was the only context-shaped value in a single-select that conflated 3 axes). D6's eventual sequence modeling handles unit-tying naturally as a relationship.
+  - **Time-structure** (522 lessons tagged single/double/multi-session): used to matter but staff have moved away from it as a search dimension recently. Even derivation from richer body content (explicit minute breakdowns like "5+30+5") wouldn't add value if staff aren't filtering on duration anymore.
+  - **Mobile delivery-mode** (12 lessons currently tagged): the title-must-contain-Mobile convention adopted this past year makes the title the source of truth. Search box covers the use case naturally; a sidebar checkbox filtering on `title ILIKE '%mobile%'` would just duplicate a search-box function with no added capability.
+- TEST DB spot-check (2026-05-01) validated that the new title-based convention is *more accurate* than the current tag. Of 12 currently-tagged-mobile lessons:
+  - **9 conform** (titled "(Mobile Education)" or `(mobile)` and tagged Mobile).
+  - **3 are tag-only false positives** — Breakfast Banana Splits, Crunchy Noodle and Tofu Salad, Garden on a Cracker. Currently mobile-tagged but title doesn't contain "mobile."
+  - **1 is title-only false negative** — "Mobile Education: Mexican Street Corn Salad (Esquites)" is correctly titled but mis-tagged as `standalone`.
+  - True mobile count under the new convention = 10, not 12. **The migration is the cleanup**: column drop strips the 3 false positives automatically; title-search naturally picks up the false negative. No pre-migration data work needed.
+- Migration is unusually clean: drop column + JSONB key + filter UI section + alias helper + indexes. ~750 rows lose a tag and gain nothing in its place. Nothing material depends on the field (card UI's activity pill is computed from skills count not from `lessonFormat` per foundational report L420; the drawer / `IntLessonDetail` doesn't render `lessonFormat` per L424; FTS already indexes title + body; `_alias_lesson_format` becomes dead code; the 9 JSON-path indexes referencing `lessonFormat` become safe to drop).
+- Reviewer UX is net better under teacher-zero D8 — one less classification field to fill at review time.
 
 **Deferred sub-questions:**
 
+- **New-submission flow detail.** When a teacher submits a Mobile Education lesson going forward, who/what enforces the "title contains Mobile" convention? Three possibilities: (a) reviewer renames at review time if needed, (b) submission form prompt asks "is this a mobile-education lesson? if yes, ensure 'Mobile' is in the title," (c) post-acceptance auto-prompt for the reviewer. Phase-2 reviewer UX implementation detail; not foundation-phase blocking.
+- **Foundation-phase implementation sweep.** Confirm during implementation that no other UI surface depends on `lessonFormat` beyond what the foundational report enumerated — `IntCard` activity pill (already skills-derived), drawer (already omits it), card-meta-strip-last-position (per Lifecycle table L137: "Card meta strip last, list" — verify this is actually rendered or whether the foundational report flagged it as cosmetic). Cosmetic finding L595 already says: `lessonFormat` not rendered in `IntLessonDetail` despite being on every card.
+
 **Downstream implications:**
+
+- **D2 (activity type) walkthrough scope expands slightly.** D2's pre-walkthrough research had flagged D3-then-D2 as cleaner ordering because mobile/special-pop/orientation candidates needed routing. Post-D3-drop:
+  - **Mobile is fully resolved** (title convention; D2 doesn't need to absorb it).
+  - **Special-pop and orientation are now homeless** if they're not D2-shaped. They become D2's problem to either absorb as new buckets, accept as descriptive-content-only, or route to a different field (e.g., `audience_population` for special-pop, no-field-at-all for orientation).
+  - Net: D2 walkthrough now has one less candidate (mobile) but two newly-orphaned candidates (orientation, special-pop) to think about. See D2 pre-walkthrough context update flagging this.
+- **D6 (sequences) inherits the unit-tying question** that standalone-vs-unit was a partial proxy for. Flag at D6 walkthrough: this drop creates a downstream dependency. If D6 doesn't deliver some form of "lessons that belong together" modeling, that information is genuinely lost from the metadata system (though it remains in lesson body content as sequence references). Currently framed as "later, not soon" — fine, but worth not losing track of.
+- **Phase-2 reviewer UX work loses one field to redesign.** Phase-2 scope shrinks slightly.
+- **Foundation-phase migration** for D3 is one of the cleaner drops in the rebuild — no data migration needed, just schema removal + UI cleanup. Use as a low-risk leading migration if migration sequencing matters.
+- **The PR-2 `lessonFormat` array-shape writer bug fix** (`20260506000000_filter_drift_pr2_m1_writer_fix.sql`) becomes moot post-drop — field doesn't exist, no shape can drift.
+- **Path 3 hybrid shape was framed as applying to D3** in session 2's notes, but D3 turned out to be a fully-decided structural drop, not a meta-now-content-later split. Path 3 still applies to D2 / D5 / D9 (the vocabulary-bearing decisions); D3 was structurally simpler than initially framed.
 
 ---
 
@@ -444,3 +480,34 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 - `137ca31` — `docs(metadata-rebuild): walkthrough session 2 — D1 meta layer + Stage 1 methodology`
 - `21b5d34` — `docs(metadata-rebuild): backfill session 2 commit hash`
 - `6a90dfe` — `docs(metadata-rebuild): session 2 wrap — D2 pre-walkthrough context`
+
+### Session 3 — 2026-05-01
+
+**Covered:** D3 walkthrough — opened with the D2-D3 ordering question (chose D3-first because D3's structural deconflation establishes routing for mobile/special-pop/orientation candidates that D2 was carrying); walked the 4 framed options (3 fields / 2 fields / multi-select / drop-and-derive) plus a workflow-level Option D variant; user landed on Option D-pure (drop entirely, no replacement, no derivation) when each axis lost its case independently. TEST DB spot-check confirmed the new mobile title convention is more accurate than the current tag.
+
+**Calls landed (in order):**
+
+1. **D3 ordering swap accepted.** D3-first instead of doc-order D2-first. Reason: D3's structural deconflation establishes where mobile / special-pop / orientation candidates live, simplifying D2.
+2. **D3 standalone-vs-unit axis = drop, no replacement.** Not how teachers search; majority of lessons are genuinely standalone anyway; tag count is probably inflated by reviewers picking "Standalone" because it was the only context-shaped value in a single-select that conflated 3 axes. Unit-tying becomes D6's modeling problem ("later, not soon" framing remains).
+3. **D3 time-structure axis = drop, no derivation.** Used to matter; staff have moved away from it as a search dimension recently. Even body-content derivation (richer minute breakdowns) wouldn't add value if staff aren't filtering on duration.
+4. **D3 delivery-mode (mobile) = drop the metadata field; rely on curatorial title convention adopted this past year.** "Mobile" in title is the source of truth. Search box covers the use case naturally.
+5. **Sidebar option (a) — no Lesson Format filter section.** Sidebar checkbox would just duplicate a search-box function with no added capability. Mobile lessons findable via search box + title FTS.
+
+**Key reframings / insights:**
+
+- **Path 3 (meta-now-content-later) framing from session 2 doesn't auto-apply to every card.** D3 turned out to be a fully-decided structural drop, not a meta-then-content split. Path 3 still applies to D2 / D5 / D9 (the vocabulary-bearing decisions); D6 / D7 are modeling questions; D3 was structurally simpler than initially framed.
+- **TEST DB spot-check of mobile-tagged lessons** (2026-05-01) validated that the new title-based convention is *more accurate* than the current tag: of 12 currently-tagged-mobile lessons, **9 conform** (titled `(Mobile Education)` or `(mobile)` and tagged Mobile), **3 are tag-only false positives** (Breakfast Banana Splits, Crunchy Noodle and Tofu Salad, Garden on a Cracker — currently mobile-tagged but title doesn't contain mobile), and **1 is a title-only false negative** ("Mobile Education: Mexican Street Corn Salad (Esquites)" is correctly titled but mis-tagged as `standalone`). True mobile count under convention = 10, not 12. **Migration is the cleanup** — column drop strips the false positives automatically; title-search picks up the false negative. No pre-migration data work needed.
+- **Migration is unusually simple.** ~750 rows lose a tag and gain nothing in its place. Nothing material depends on the field: card UI uses skills count for the activity pill (foundational report L420), drawer/`IntLessonDetail` doesn't render `lessonFormat` (L424 + cosmetic L595), FTS already indexes title + body, alias helper becomes dead code, the 9 JSON-path indexes referencing `lessonFormat` become safe to drop. Reviewer UX is net better under teacher-zero D8 — one less classification field at review time.
+- **D2 scope shifted post-D3.** Mobile candidate fully resolved (title convention handles it); orientation (Green Room Scavenger) and special-pop (Atole speech-services pull-out) now homeless after D3 dropped delivery-mode entirely. D2's walkthrough now thinks about 5 candidate categories instead of 3 (craft, STEM-engineering, nutrition-unit + orphans orientation, special-pop) plus the meta keep/expand/multi-select/derive question on the existing 4 buckets.
+- **The PR-2 `lessonFormat` array-shape writer bug fix** (`20260506000000_filter_drift_pr2_m1_writer_fix.sql`) becomes moot post-drop — field doesn't exist, no shape can drift.
+
+**Pre-walkthrough updates for D2 (in-place, captured before clearing):** D2's pre-walkthrough context block updated to reflect post-D3 resolution. Mobile candidate marked "fully resolved." Orientation + special-pop flagged as newly homeless with three routing options (absorb as new D2 buckets / treat as descriptive-content-only / route to a new field like `audience_population` or `lesson_function`). Genuinely D2-shaped candidates unchanged (craft, STEM-engineering, nutrition-unit).
+
+**Carry-forward to next session:**
+
+- D2 walkthrough opens with the no-taxonomy-ancestor reframing as central; opener provisional read still leans toward Replace-with-derived but flags the academic-bucket derivation question as needing verification (does deriving `activityType` from skills handle the 58 academic-bucket lessons cleanly? probably populates `academicIntegration` only).
+- D2 walkthrough now also routes orientation + special-pop, post-D3.
+- Heritage worksheet round remains the first concrete Stage 1 deliverable once walkthrough wraps. Scope unchanged: ~78 values × per-value sample reads + novelty pass.
+
+**Commits:**
+- (commit landing this session-end capture — TBD after edit completes)
