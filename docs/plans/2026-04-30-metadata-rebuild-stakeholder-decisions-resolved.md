@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-01 (session 4) · commits: `5bdcbfc` (D2 capture + Walkthrough state header refresh + Session 4 log entry).
-**Progress:** **8 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, **D2 ✅ (fully decided — expand vocab to 5 + use `tags` for orientation)**. **4 walkthrough cards remain** (D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 5 — academic concepts positioning.** No pre-walkthrough context captured this session (D5 wasn't researched). Per Path 3, D5 likely splits meta-layer-in-walkthrough vs. content-layer-in-worksheet-round (D5 is a vocabulary-bearing decision per the Path 3 framing established in session 2). The decisions doc D5 card is the starting framing.
-**Walkthrough order remaining:** 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
+**Last session:** 2026-05-01 (session 5) · commits: pending (D5 capture + Walkthrough state header refresh + Session 5 log entry + plain-language feedback memory).
+**Progress:** **9 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, **D5 ✅ (fully decided — keep silently for search + Stage 2 re-tag in both vocabularies + populate `search_synonyms` + submission-time LLM auto-tag for ongoing population)**. **3 walkthrough cards remain** (D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
+**Next in queue:** **Decision 6 — curriculum sequences.** No pre-walkthrough context captured this session (D6 wasn't researched). D6 is a modeling question (not vocabulary-bearing), so per session-2 framing it likely lands fully in walkthrough rather than splitting Path-3-style. The decisions doc D6 card is the starting framing — also worth pulling foundational report §13 (hidden curriculum / sequences / variants) and §14e (Decomposition + Photosynthesis sequenced-pairs case study) at session open. D6 inherits the unit-tying question that D3's drop deferred ("if D6 doesn't deliver some form of 'lessons that belong together' modeling, that information is genuinely lost from the metadata system").
+**Walkthrough order remaining:** 6 → 7 → 8 (deferred sub-questions only) → 9.
 **Open questions waiting on user:** None pending.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D5, D9 still pending). Note: D3 turned out to be a fully-decided structural drop, not a Path 3 split; D2 turned out to be a single-session structural call with reviewer-curated stored field — Path 3 doesn't auto-apply to every card.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text** (saved 2026-05-01 mid-session 5 as `feedback_plain_language.md`). **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D9 still pending). Note: D3 turned out to be a fully-decided structural drop, not a Path 3 split; D2 was a single-session structural call with reviewer-curated stored field; D5 followed Path 3 cleanly with the user-surfaced ongoing-tagging extension. Path 3 doesn't auto-apply to every card.
 
 ---
 
@@ -241,15 +241,48 @@
 
 ## Decision 5 — Academic concepts positioning
 
-**Status:** OPEN
+**Status:** DECIDED 2026-05-01 (session 5)
 
-**Decision:** _(pending)_
+**Decision: Keep silently for search (option 2) + Stage 2 re-tag in both framework AND everyday vocabularies + populate `search_synonyms` from concept tags + LLM auto-tag at submission time for ongoing population.**
 
-**Reasoning:** _(pending)_
+- **Schema:** `metadata.academicConcepts` stays. Object-shape preserved (`{Subject: [concept, ...]}`).
+- **UI surfacing:** none in foundation phase. No sidebar filter, no card rendering, no detail-view rendering. Concepts remain invisible to end users; reviewers gain a concepts editor in Phase 2.
+- **Search booster:** add `academicConcepts` to `search_vector` (so full-text search reads concept tags as content) and to the corpus-side embedding generation prompt (`scripts/generate-embeddings.mjs` currently includes themes / heritage / skills / ingredients but not concepts — adding here makes them visible to embedding-based search too).
+- **Stage 2 re-tag prompt:** Opus tags lessons in framework AND everyday language for each concept. Bounded to "framework word + 2–5 common teacher synonyms per concept" to prevent vocabulary explosion.
+- **Synonym table population:** the resulting concept tags get fed into `search_synonyms` so query expansion bridges teacher↔framework vocabulary automatically (a teacher search for "decompose" expands to also match "decomposition").
+- **Ongoing population for new submissions:** LLM auto-tagging runs at submission time as part of the existing async submission processing pipeline (`process-submission` edge function). Concepts are pre-drafted by the time the lesson lands in the reviewer queue. Reviewer validates / edits / replaces concepts in the Phase-2 reviewer concepts editor — one more field in their existing review pass, not a new stage.
+
+**Reasoning:**
+
+- **The framework vocabulary has no value to ESYNYC except making lessons searchable.** Confirmed with user — not curriculum-alignment, not reviewer workflow, not pedagogical framework. Its only job is search.
+- **Teachers search using a mix of framework AND everyday vocabularies.** So the answer can't optimize for one and ignore the other.
+- **Concepts do real (invisible) work for lessons that teach a concept without naming it** — a Plant Part Salad lesson teaching plant anatomy without using the word "anatomy"; a soup lesson teaching cultural geography without saying "geography." User confirmed this happens a decent amount. Body-text FTS alone would miss these; dropping concepts would cost real findability.
+- **211 distinct values is genuinely too many for clean sidebar UX**, even with subject-level hierarchy and typeahead-search-within-filter. Filter route effectively ruled out.
+- **Re-tag-in-both-vocabularies + synonym-table-population solve the vocab-mix-search problem from both ends.** Tag-side coverage (a query for "decompose" hits the literal tag) + synonym-side coverage (a query for any everyday word expands to also match the framework word for body-text matches).
+- **Submission-time auto-tagging is the lower-burden timing for option-3 validation.** Concepts pre-populated → reviewer validates inline as one more field in existing pass. Approval-time tagging would either lose validation entirely (collapses to option 2) or require a second review pass (real extra stage). Re-uses the same Opus pipeline + canonical vocabulary as Stage 2; cost ~$0.05–0.30 per submission × ~10/year is trivial; latency adds 30–60s to async processing (teacher doesn't see).
 
 **Deferred sub-questions:**
 
+- **Per-concept canonicalization, hierarchy structure, subject groupings** — Stage 1 worksheet for concepts. Likely the biggest worksheet of the rebuild (211 values across 6 subjects + per-concept everyday-vocab synonym mapping).
+- **Smart-search vs DB synonyms drift resolution.** The system has two synonym sources today: DB-driven (`search_synonyms` → `expand_search_with_synonyms`, drives result list) and TS-hardcoded (in `smart-search/index.ts` lines 18–75, drives suggestions chip). They don't sync. Foundation-phase implementation has to either populate both layers OR rip out the TS layer and have smart-search read from the DB table. Decide at implementation time.
+- **Stage 2 re-tag prompt engineering** — exact "framework word + N synonyms" cap, validation rules, spot-check protocol. Same prompt design serves the per-submission auto-tag (so this work is shared between Stage 2 and ongoing).
+- **16-archive-only-concepts recovery migration.** Small one-shot copy migration: `lesson_versions.metadata.academicIntegration.concepts` → `lessons.metadata.academicConcepts` for the 7 specific archive rows. Schedule pre-Stage-2 (so re-tag operates on complete data).
+- **Per-field judgment on whether concepts needs an Opus-corpus-read in Stage 1.** Likely YES (content-heavy field with structural questions, similar to heritage). Confirm when worksheet round opens.
+- **Concepts-vs-themes redundancy check.** Stage 1 worksheet for concepts should examine `thematic_categories` side-by-side — some concept values likely duplicate theme values ("ecosystems" might be both a concept and a theme). Decide whether to consolidate or accept the parallel layers.
+- **Foundation-phase → Phase-2 transition gap handling.** Auto-tagging runs even before the reviewer concepts editor lands in Phase 2 — same pattern as today (reviewers can't see concepts, but they exist), now extended to new lessons. Confirm this is the intended sequencing at implementation time.
+- **Reviewer-side concepts editor design (Phase 2).** Clearing semantics needs deliberate design (PR #473 carry-forward issue documented in `20260510000000_approve_update_concepts_carry_forward.sql`). Validation flow for the LLM-drafted tags — accept/edit/replace UI patterns. Phase-2 reviewer UX implementation detail.
+- **Teacher-vocab validation honesty.** The everyday-vocab side of re-tag (and per-submission auto-tag) is Opus's judgment, not stakeholder-validated against a pre-existing teacher vocabulary corpus. Spot-check during Stage 2 review and via reviewer validation for new submissions; accept lower vocabulary-cleanliness guarantees on the everyday side than the framework side.
+
 **Downstream implications:**
+
+- **Stage 1 worksheet for concepts is the biggest worksheet** (211 values vs heritage's 78). Plan accordingly when scoping foundation-phase work.
+- **Stage 2 re-tag prompt design needs both-vocabularies generation + capping** — non-trivial prompt engineering vs single-vocabulary tagging. Design serves both Stage 2 and per-submission auto-tag.
+- **Foundation-phase migration list adds:** `search_vector` rebuild (include concepts), `search_synonyms` population from concepts, 16-concept archive recovery migration. ~3 migrations + 1 script change for embedding regeneration.
+- **`process-submission` edge function expands** to include the per-submission concept-tagging step. Permanent infrastructure (an edge-function call inside the existing async pipeline), not a one-shot batch script. Foundation-phase scope.
+- **`smart-search` edge function may need rewrite** — depending on the smart-search-vs-DB-synonyms drift resolution. Either update the TS hardcoded synonyms list to mirror the DB layer, OR refactor smart-search to read from `search_synonyms`. Foundation-phase scope.
+- **Phase 2 reviewer UX work expands:** in addition to the concepts editor itself, needs to wire up the LLM-draft display + accept/edit/reject validation flow.
+- **D9 (CRF) gets a precedent.** Keep-silently-for-search is now a viable shape D9 could adopt. If D9 ends up "drop," we'll articulate why concepts has keep-worthy search value while CRF doesn't (likely: concepts capture ideas not in body text; CRF is rubber-stamped framework theater without search-side payoff). Decide D9 independently when its turn comes.
+- **Path 3 shape (meta-now-content-later) continues to apply for vocabulary-bearing decisions** — D5 just landed the meta layer; content layer (the 211-concept canonicalization + subject groupings + teacher-synonym mapping) defers to worksheet round + Stage 2 re-tag.
 
 ---
 
@@ -520,3 +553,37 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 
 **Commits:**
 - `5bdcbfc` — `docs(metadata-rebuild): walkthrough session 4 — D2 capture (expand vocab to 5 + tags for orientation)`
+
+### Session 5 — 2026-05-01
+
+**Covered:** D5 walkthrough — opened with no pre-walkthrough research, pulled foundational report Q6 + §8 + §9 + §14a + §14f for grounding. User answered the two key questions (framework vocab has no real ESYNYC value beyond search; teachers search using a mix of framework + everyday vocabularies) which collapsed the option space cleanly. Synthesis emerged combining option 2 (silent search booster) with the two workflow-alternative vocab bridges (re-tag in both vocabs + synonym table population). User then surfaced the gap re: ongoing tagging for new submissions, which led to a fourth piece (LLM auto-tag at submission time + Phase-2 reviewer validation UI). User confirmed the full synthesis after reviewing the literal capture draft.
+
+**Calls landed (in order):**
+
+1. **Filter route ruled out** (option 1 / option 4). 211 distinct values is too many for clean sidebar UX; framework vocab has no curriculum value to anchor the UX investment.
+2. **D5 = keep silently for search.** Add `academicConcepts` to `search_vector` + corpus-side embedding generation prompt. No UI surfacing in foundation phase.
+3. **Stage 2 re-tag in both vocabularies.** Opus tags lessons with framework word + 2–5 common teacher synonyms per concept. Bounded to prevent vocabulary explosion.
+4. **Synonym table population.** Concept tags feed `search_synonyms` so query expansion bridges teacher↔framework automatically. Bridges body-text matches in addition to tag matches.
+5. **Submission-time LLM auto-tagging for ongoing population.** Re-uses the Stage-2 Opus pipeline; runs in `process-submission` async pipeline; concepts pre-drafted by the time the lesson lands in reviewer queue.
+6. **Phase-2 reviewer concepts editor with validation flow.** Reviewer validates/edits/replaces LLM draft as one more field in existing review pass — not a new stage.
+
+**Key reframings / insights:**
+
+- **Framework-vocab-has-no-real-value-beyond-search collapsed the option space hard.** Once the framework vocabulary lost its standalone value, options 1 and 4 (sidebar filter / mix → eventual filter) lost their case. Remaining choice was option 2 (silent search) vs option 3 (drop) — load-bearing question became "do lessons exist that teach concepts without naming them," which user confirmed they do.
+- **The "two synonym sources don't sync" gotcha is real.** DB-driven `search_synonyms` (drives result list) vs TS-hardcoded synonyms in `smart-search/index.ts` lines 18–75 (drives suggestions chip). D5's call commits to populating the DB layer; if smart-search TS layer isn't synced, half the search experience won't see the bridge. Foundation-phase implementation has to address.
+- **Submission-time vs approval-time confusion clarified mid-session.** User initially leaned approval-time but worried about "extra stage." Walked through both timings concretely; submission-time is actually the LOWER-burden timing for option-3 validation (concepts pre-populated → reviewer validates inline as one more field). Approval-time would either lose validation entirely (collapses to option 2) or require a real second review pass.
+- **Per-submission auto-tagging makes the Opus tagging pipeline permanent infrastructure**, not a one-shot Stage 2 batch. Same prompt design + canonical vocabulary; just invoked per-submission inside the existing async processing. Foundation-phase scope expands slightly.
+- **D9 (CRF) precedent set.** Keep-silently-for-search is now a viable shape D9 could adopt or reject. Distinguishing question for D9: does CRF capture ideas not in body text (like concepts does), or is it purely rubber-stamped framework theater? If the latter, drop. If the former, keep silently.
+- **Plain-language preference captured to memory mid-session** (`feedback_plain_language.md` + MEMORY.md update). User asked for the D5 opening to be redone in simpler terms — request shouldn't change *what* is being conveyed, only *how*. Applied for the rest of the session.
+
+**Pre-walkthrough context for D6 (none dispatched this session):** D6 is a modeling question (sequences, parts, sibling lessons), not vocabulary-bearing. Per session 2 framing, modeling questions likely land fully in walkthrough rather than splitting Path-3-style. D6 inherits the unit-tying question that D3's drop deferred. Foundational-report grounding to pull at session open: §13 (hidden curriculum / sequences / variants), §14e (Decomposition + Photosynthesis sequenced pairs case study), and the project memory file `project_dedup_third_state.md` (Decomposition Pt 1+2 case where identical metadata + designed-companion-lesson confounds dedup).
+
+**Carry-forward to next session:**
+
+- D6 walkthrough is next. ~25 lessons (3.2%) have real curriculum-sequence dependencies in body text; ~5 lesson series total in the corpus (Decomposition Pt 1+2, Photosynthesis Pt 1+2, Knife Cuts Part 2, Will It Decompose Part II, Winter After School Sessions, Food System Advocates 1+2, Lunar New Year units).
+- The unit-tying question D3 deferred lands here — if D6 doesn't deliver some form of "lessons that belong together" modeling, that information is genuinely lost from the metadata system.
+- Heritage worksheet remains the first concrete Stage 1 deliverable once walkthrough wraps. After D5's call, **concepts worksheet is now the second-largest deliverable** (211 values across 6 subjects + per-concept everyday-vocab synonyms).
+
+**Commits:**
+
+- (pending — backfill next session)
