@@ -17,7 +17,7 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-01 (session 3) · commits: TBD at session-end (D3 capture).
+**Last session:** 2026-05-01 (session 3) · commits: `2828563` (D3 capture + D2 scope updated + Walkthrough state header refresh + Session 3 log entry), backfill commit for hash.
 **Progress:** **7 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, **D3 ✅ (fully decided — drop entirely, no replacement)**. **5 walkthrough cards remain** (D2, D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
 **Next in queue:** **Decision 2 — activity type categories.** Pre-walkthrough context is captured in the D2 card below — read it as your starting point. **D3 ordering swap was taken (D3 first, D2 next).** Post-D3-drop, D2's scope shifted: mobile candidate fully resolved (title convention handles it), but orientation and special-pop candidates are now **homeless** after D3 dropped delivery-mode entirely — they become D2's problem to absorb, treat as descriptive-only, or route to a new field (e.g., `audience_population`). **Major D2 reframings still in play from session 2:** activityType has NO taxonomy ancestor in v1/v2/v3 (4-bucket scheme exists only in `filterDefinitions.ts`); schema-data mismatch (`academic-cooking` slug vs `both` data); v3 lineage already treats activity as derived from skills; "Replace with derived classification" is much more attractive than the decisions doc framed.
 **Walkthrough order remaining:** 2 → 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
@@ -510,4 +510,4 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 - Heritage worksheet round remains the first concrete Stage 1 deliverable once walkthrough wraps. Scope unchanged: ~78 values × per-value sample reads + novelty pass.
 
 **Commits:**
-- (commit landing this session-end capture — TBD after edit completes)
+- `2828563` — `docs(metadata-rebuild): walkthrough session 3 — D3 dropped entirely + D2 scope updated`
