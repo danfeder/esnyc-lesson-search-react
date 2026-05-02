@@ -17,7 +17,7 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-01 (session 4) · commits: TBD (D2 capture + Walkthrough state header refresh + Session 4 log entry).
+**Last session:** 2026-05-01 (session 4) · commits: `5bdcbfc` (D2 capture + Walkthrough state header refresh + Session 4 log entry).
 **Progress:** **8 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, **D2 ✅ (fully decided — expand vocab to 5 + use `tags` for orientation)**. **4 walkthrough cards remain** (D5, D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
 **Next in queue:** **Decision 5 — academic concepts positioning.** No pre-walkthrough context captured this session (D5 wasn't researched). Per Path 3, D5 likely splits meta-layer-in-walkthrough vs. content-layer-in-worksheet-round (D5 is a vocabulary-bearing decision per the Path 3 framing established in session 2). The decisions doc D5 card is the starting framing.
 **Walkthrough order remaining:** 5 → 6 → 7 → 8 (deferred sub-questions only) → 9.
@@ -519,4 +519,4 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 - Closed-enum tags governance is a foundation-phase implementation detail (define allowed values in code; reviewers can't add free-text); when the `lesson_function` novelty pass happens during Stage 1, surfaced patterns can be added.
 
 **Commits:**
-- TBD — `docs(metadata-rebuild): walkthrough session 4 — D2 capture (expand vocab to 5 + tags for orientation)`
+- `5bdcbfc` — `docs(metadata-rebuild): walkthrough session 4 — D2 capture (expand vocab to 5 + tags for orientation)`
