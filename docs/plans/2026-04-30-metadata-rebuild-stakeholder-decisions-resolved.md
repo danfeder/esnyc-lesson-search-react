@@ -803,4 +803,4 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 
 **Commits:**
 
-- (pending) — `docs(metadata-rebuild): walkthrough session 7 — D7 (no new modeling across all 5 sub-patterns)`
+- `79a3d06` — `docs(metadata-rebuild): walkthrough session 7 — D7 (no new modeling across all 5 sub-patterns)`
