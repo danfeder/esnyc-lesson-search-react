@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-01 (session 5) · commits: pending (D5 capture + Walkthrough state header refresh + Session 5 log entry + plain-language feedback memory).
-**Progress:** **9 calls captured** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, **D5 ✅ (fully decided — keep silently for search + Stage 2 re-tag in both vocabularies + populate `search_synonyms` + submission-time LLM auto-tag for ongoing population)**. **3 walkthrough cards remain** (D6, D7, D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 6 — curriculum sequences.** No pre-walkthrough context captured this session (D6 wasn't researched). D6 is a modeling question (not vocabulary-bearing), so per session-2 framing it likely lands fully in walkthrough rather than splitting Path-3-style. The decisions doc D6 card is the starting framing — also worth pulling foundational report §13 (hidden curriculum / sequences / variants) and §14e (Decomposition + Photosynthesis sequenced-pairs case study) at session open. D6 inherits the unit-tying question that D3's drop deferred ("if D6 doesn't deliver some form of 'lessons that belong together' modeling, that information is genuinely lost from the metadata system").
-**Walkthrough order remaining:** 6 → 7 → 8 (deferred sub-questions only) → 9.
+**Last session:** 2026-05-02 (session 6) · commits: pending (D6 capture + N1 capture + import-drop list capture + D7 pre-walkthrough context + Walkthrough state header refresh + Session 6 log entry + new memory file `project_imported_non_esynyc_drops.md`).
+**Progress:** **10 calls captured + 1 cleanup track flagged** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, **D6 ✅ (option 1 minimal — `series_id` + `part_number`, foundation-phase metadata only, UI deferred to Phase 2)**, **N1 ✅ (multi-lesson-per-doc packing — Food System Advocates retitle, Winter After School Session 2 leave as-is, no schema column, imports out of N1 scope)**, **Cross-cutting import drops ✅ identified (23 wholesale third-party imports flagged for cleanup-track removal; full list in `project_imported_non_esynyc_drops.md`)**. **2 walkthrough cards remain** (D7 + D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
+**Next in queue:** **Decision 7 — lesson variants and adaptations.** Substantial pre-walkthrough context captured this session (see D7 card below). Headline: D7 doesn't collapse into one schema move — it decomposes into per-sub-pattern decisions, several of which fold to "drop the framing" or "no schema needed" given empirical reality. The walkthrough should open by confirming the decomposition shape, then walk site-specific (probably `school_id` candidate) + Mobile Education (3 sub-patterns, real call needed) as the two sub-decisions that need real walkthrough; Plan A/B + bilingual + sibling-Fattoush can land quickly given pre-walkthrough framing.
+**Walkthrough order remaining:** 7 → 8 (deferred sub-questions only) → 9.
 **Open questions waiting on user:** None pending.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text** (saved 2026-05-01 mid-session 5 as `feedback_plain_language.md`). **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D9 still pending). Note: D3 turned out to be a fully-decided structural drop, not a Path 3 split; D2 was a single-session structural call with reviewer-curated stored field; D5 followed Path 3 cleanly with the user-surfaced ongoing-tagging extension. Path 3 doesn't auto-apply to every card.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text**. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D9 still pending). Path 3 doesn't auto-apply to every card. Session-6 specific: D6 was a fully-decided modeling call (no Path-3 split); N1 + import-drop captures emerged from D6 prep research and got handled inline as cross-cutting decisions rather than separate walkthrough turns.
 
 ---
 
@@ -288,21 +288,77 @@
 
 ## Decision 6 — Curriculum sequences
 
-**Status:** OPEN
+**Status:** DECIDED 2026-05-02 (session 6)
 
-**Decision:** _(pending)_
+**Decision: Option 1 minimal — model sequenced lessons with `series_id` + `part_number` foundation-phase metadata fields. UI work (badges, "next in series" links, sequence-aware lesson-detail rendering) deferred to Phase 2.**
 
-**Reasoning:** _(pending)_
+- **Schema:** add `lessons.series_id text` (nullable, default NULL) + `lessons.part_number int` (nullable, default NULL). Both indexed for join/filter use.
+- **Backfill scope:** ~7 sequenced series, ~14 lessons. Confirmed series from session-6 sweep: Decomposition Experiment Pt 1+2 (and 2nd Grade Decomposition Pt 1+2), Photosynthesis Light Experiment Pt 1+2, Knife Cuts Part 2, Will It Decompose Part II, Indoor Sprouts trio (1/2/3), Plant Part Salad multi-part. Some series have a missing partner row — backfill assigns `series_id` to the row that exists; the dangling reference is accepted, not synthesized.
+- **Dedup interaction:** dedup pipeline reads `series_id` and skips comparison within the same series. This is the primary near-term payoff — stops embedding-similarity from flagging Decomposition Pt 1+2 as duplicates because their metadata is identical (per `project_dedup_third_state.md`).
+- **UI (Phase 2):** "Pt 1" / "Pt 2" badges on lesson detail, "next in series" linking, sequence-aware search-result chips. Foundation phase ships the metadata only.
+
+**Reasoning:**
+
+- **The data confirms ~7 series / ~14 lessons.** Empirical sweep (session 6 Opus agents): 11 title-marker hits, unpacking to ~7 distinct series. Tight, bounded, well below 2% of corpus.
+- **Two distinct payoffs have different cost structures, and the schema decision can be smaller than the framing implies:**
+  - *Dedup-fix* (negative signal — stop flagging) is solved by metadata alone. Tiny field, immediate value.
+  - *Teacher-discovery* (positive signal — surface "Pt 1 first" hint) requires UI work. Defer to Phase 2 per D0's hybrid sequencing — UI redesign is Phase 2 territory anyway.
+- **Body-text references are asymmetric and inconsistent across series** (per session-6 body-text reads). Decomposition Pt 2 hyperlinks Pt 1 in Background section (gold-standard cross-reference); Photosynthesis Pt 1 is silent on Pt 2 (only Pt 2 acknowledges itself as a sequel); Sprouts trio numbers but doesn't hyperlink. **Schema can't rely on body-text scraping for the relationship** — stored fields are the right move.
+- **Hand-curate ruled out.** A spreadsheet outside the DB is invisible to the dedup pipeline — leaves the misflag intact. Hand-curate would solve teacher-discovery weakly while leaving the dedup payoff on the table.
+- **Drop ruled out.** D3's drop already deferred the "lessons that belong together" question here. If D6 ships nothing, that signal is genuinely lost — the metadata system has zero notion of relationships between lessons. Cost-of-modeling is too small to skip.
 
 **Deferred sub-questions:**
 
+- **Phase-2 UI design** — badge style, lesson-detail "next in series" treatment, search-result chip behavior. Phase-2 reviewer/teacher UX redesign scope.
+- **`series_id` value space** — slug-based (e.g., `decomposition-experiment`) vs UUID vs incrementing integer. Implementation detail at foundation phase. Slug-based has the readability advantage; UUID has the no-collision advantage.
+- **Submission-time sequence detection** — when a teacher submits "Decomposition Part 3" in 2027, does anything auto-link it to the existing series? Probably manual (reviewer assigns `series_id` at review time). Phase-2 reviewer UX detail.
+- **Backfill of grade-band sibling families** — Cajun Sliders 3K-2/3-5/6-8 trio and similar (12 lessons) are NOT sequences (they're parallel grade-band variants), so they don't get `series_id`. They're D7 territory; flagged here so backfill doesn't accidentally include them.
+
 **Downstream implications:**
+
+- **N1 (multi-lesson-per-doc packing) inherits the "missing partner row" question.** Winter After School Session 2 is intentionally one row containing 4 sub-lessons; the `series_id` for "Winter After School" series can't link to those 4 sub-lessons because they're not separate rows. Acceptable — see N1 capture below.
+- **Dedup pipeline foundation-phase work expands slightly** — needs `series_id`-aware comparison logic. Implementation detail, not a separate decision.
+- **D7 (variants) inherits a different relationship-modeling shape.** D7 patterns aren't sequences; per-pattern handling diverges from D6. See D7 pre-walkthrough context.
 
 ---
 
 ## Decision 7 — Lesson variants and adaptations
 
-**Status:** OPEN
+**Status:** OPEN — pre-walkthrough context locked 2026-05-02 (session 6)
+
+**Pre-walkthrough context (session 6):** Empirical sweep + body-text reads (4 Opus parallel agents) surfaced that **D7 doesn't collapse into one schema move alongside D6** — it decomposes into several smaller decisions, several of which fold to "drop the framing" or "no schema needed" given the data.
+
+*The five named D7 patterns vs reality:*
+
+| Pattern | Empirical count | Reality vs framing |
+|---|---|---|
+| Plan A/B contingencies | 1 cross-row pair (PS 109 Garden Jobs ↔ Leaf Rubbing Cards) + 12 within-row "rain plan" paragraphs | Framing assumed multiple cross-row pairs; reality is 1 case. The other 12 are within-lesson contingency paragraphs that don't need schema. |
+| Mobile Education adaptations | 14 lessons across **3 sub-patterns** (inline-single-site, inline-multi-site, externalized-to-separate-doc) | Heterogeneous — schema move has to handle all three or pick one. |
+| Bilingual variants | 6 lessons | **None are parallel Spanish lesson plans.** All are Canva handout/recipe-card links inside English lessons. The framing assumed sibling rows; reality is in-lesson handout support. |
+| Site-specific authorship | **35 lessons (4.5%, dominant pattern)**. PS 216 leads (11 lessons + 33 with "For 216:" template prompt embedded). | Title-encoded almost exclusively (body rarely names the school); not a relationship — a per-row attribute. Suggests `school_id` field territory. |
+| Same-dish-different-lesson (Fattoush-class) | 5–15 true Fattoush-class pairs estimated; 33 same-title-different-body pairs total in dedup queue territory | Dedup pipeline territory — already covered by `project_dedup_third_state.md`. Distinguishing from re-export duplicates needs human review. |
+
+*Two patterns the framing didn't name (surfaced in body-text reads):*
+
+- **Multi-lesson-per-doc collection (N1)** — 4 corpus rows are actually multiple distinct lessons packed into one doc. Captured separately below as N1 cross-cutting decision.
+- **Imported third-party curriculum** — 23 corpus rows are wholesale third-party imports in non-ESYNYC format. Captured separately below as cross-cutting drop track.
+
+*Two strong signals about how authors actually solve the multi-version problem:*
+
+- **Within-row grade-band variations (43 lessons / 5.6%)** — "For younger students... / For older students..." inside one lesson body. **Dominant authoring strategy** that sidesteps siblings entirely.
+- **Cross-row grade-band sibling families (12 lessons)** — Cajun Sliders 3K-2/3-5/6-8 trio is the cleanest case. Far less common than within-row.
+
+*Critical caveat about the data:* `content_text` extraction strips most hyperlinks. Only 11 of 772 rows have raw `docs.google.com/document/d/` URLs in `content_text`. The Decomposition Pt 2 → Pt 1 link IS in the live Google Doc but probably isn't in stored content_text. **Any future cross-reference detection needs to run against live docs or re-extracted markdown, not stored content_text.**
+
+*Lesson-to-lesson textual cross-references essentially don't exist in the corpus* — 1–2 actual cross-references in entire 772 rows. ESYNYC lessons are a flat collection.
+
+**Implication for D7 walkthrough shape:** the four-options-as-written in the decisions doc (model fully / partially / hand-curate / drop) doesn't map cleanly to the data. D7 should be restructured into per-sub-pattern decisions:
+
+- **Site-specific** → likely separate small decision (`school_id` field, 35 lessons, mostly title-encoded already, zero metadata coverage today). Probably the easiest win.
+- **Plan A/B contingencies** → don't model. 1 case (PS 109). Hand-curate the title-encoded relationship or accept the lossiness.
+- **Mobile Education** → real decision needed. 14 lessons, 3 sub-patterns. Options: (a) `mobile_ed_adaptation` boolean on the lesson, (b) `parent_lesson_id` + `relationship_kind` for the externalized-doc cases only, (c) hand-curate.
+- **Bilingual handouts** → not a relationship. Either small `bilingual_handouts` boolean field or nothing (6 lessons below most thresholds).
+- **Same-dish-sibling (Fattoush-class)** → dedup pipeline territory, not metadata. Already covered by third-state work in `project_dedup_third_state.md`.
 
 **Decision:** _(pending)_
 
@@ -345,6 +401,86 @@
 **Deferred sub-questions:**
 
 **Downstream implications:**
+
+---
+
+## Cross-cutting: N1 multi-lesson-per-doc packing
+
+**Status:** DECIDED 2026-05-02 (session 6) — surfaced from D6 prep research; handled inline as cross-cutting decision.
+
+**Decision: Bespoke per-case triage, no new schema column. 2 cases handled differently; the 2 third-party-curriculum-package N1 cases excluded from N1 scope and folded into the import-drop track.**
+
+- **Food System Advocates (Part 1 & 2)** (`1iqGFHrQ0rWfyoLo4R4n8FO9N-S7LW1ZpalaLNF5_Tmk`) — **retitle to drop "& 2", treat as one lesson.** Pt 2 is byte-identical to Pt 1 except for one different worksheet link; no real Pt 2 content to preserve. Cleaner than splitting into two rows (which would create a junk Pt 2 row with no unique content). Foundation-phase work: ~10 minutes.
+- **Winter After School Session 2** (`1iwA2l4QPsqXJqu5lP8Ix5BarlTjIhxTQ`) — **leave as-is.** 4 distinct lessons (Eat the Rainbow / Alternative Protein Sources / Sugar Busters / Healthy Fats) packed into one row. Coherent ESYNYC-authored teaching arc; "Session 2" framing implies the 4 classes are designed as a unit. Splitting would second-guess curriculum-design intent.
+- **No `is_multi_lesson_pack` schema column.** 2 cases is too rare to justify a column. Foundation-phase scope keeps it out.
+
+**Excluded from N1 (handled separately):**
+
+- **COLONIAL AND REVOLUTIONARY PERIOD NEW YORK** (`0BzjqiKCWBLWeYVlta0lkVXJfajg`) — wholesale 4th-Grade Social Studies unit imported from NYC DOE.
+- **Children's Aid Society: Food Justice Program** (`15T4wU94xT3r-dRx-WJq9XD2-ySg2HKaz`) — full CAS multi-lesson curriculum imported.
+
+These (plus 21 other imports) are folded into the cross-cutting import-drop track below — they're not ESYNYC-format multi-lesson packs, they're third-party curriculum imports.
+
+**Reasoning:**
+
+- **Empirical sweep classified 4 confirmed N1 cases + 19 false-positives** (within-lesson Day/Part agenda items, marker hits in unrelated contexts, long lessons with appendices). Sioux Chef, Farm Workers & Pesticides, Mr. Anthony's Spring Trees Unit are all NOT N1 — single lessons with multi-day or multi-activity body structure.
+- **The 4 N1 cases split cleanly into 3 categories** by character: 1 artifact (Food System Advocates), 1 intentional ESYNYC unit (Winter After School Session 2), 2 third-party imports. User decided imports drop out of N1 scope — they're cleanup-track removals, not packing-shape decisions.
+- **Food System Advocates retitle is smaller and safer than splitting.** Re-read confirmed Pt 2 is byte-identical to Pt 1 minus one worksheet link change — same Summary, Objectives, CRF/SEL boilerplate, Agenda, Engaging Activity (same Abuela Grillo video, same FlipGrid task), Closing, Materials. Pt 2 has zero unique pedagogical content. Splitting creates a near-duplicate ghost row that fails dedup or looks like junk to teachers.
+- **Winter After School Session 2 stays packed.** Topical coherence (all 4 are nutrition-themed ~45-min mini-lessons) + "Session" framing suggests intentional teaching unit. Authors deliberately packaged it; reorganizing the corpus to disagree is a curriculum-design call we're not in the room to make.
+
+**Deferred sub-questions:**
+
+- **N1 surveillance for new submissions** — if a teacher submits a multi-lesson packed doc in 2027, does the system detect it? Probably reviewer-side at review time (one of the things reviewer UX should flag). Phase-2 reviewer UX detail.
+
+**Downstream implications:**
+
+- **Foundation-phase N1 work: ~10 minutes** (Food System Advocates retitle). Trivial.
+- **D6 series_id has no application here.** Winter After School Session 2's 4 sub-lessons don't get separate rows, so they can't share a `series_id`. Acceptable — they're packaged as one row by intent.
+- **Re-discovery of N1 patterns is expected as the corpus grows.** Foundation phase doesn't need a permanent mechanism; reviewer UX in Phase 2 handles new cases.
+
+---
+
+## Cross-cutting: imported non-ESYNYC-format curriculum drops
+
+**Status:** CAPTURED 2026-05-02 (session 6) — drop list identified during session 6 sweep; deletion scheduling is a separate cleanup track sequenced after the walkthrough wraps.
+
+**Decision direction (user, session 6):** **Imported curricula not in ESYNYC lesson-plan format should be dropped from the corpus.** They don't belong alongside ESYNYC-authored lessons. **23 wholesale third-party curriculum imports identified** (~3.0% of 772-row corpus). Deletion timing + soft-vs-hard delete are separate cleanup-track decisions; scope is locked here so foundation-phase work (Stage 1 worksheets, Stage 2 re-tag) operates on the post-drop corpus of ~749 lessons.
+
+**Drop list, by source cluster:**
+
+- **Project Food, Land & People (PFLP), 2003 vintage — 5 lessons, ~178KB**: Breads Around the World, What Piece of the Pie?, Amazing Grazing, Seasons Through the Year, The Plant and Me. PFLP template (`LEVEL: Grades / SUBJECTS / SKILLS / SUPPORTING INFORMATION`); explicit `©2003 Project Food, Land & People` copyright lines.
+- **FoodCorps, 2017 vintage — 11 lessons, ~70KB**: 8 with explicit `Copyright © 2017 FoodCorps` (Plant Part Mystery!, Tortilla Time!, If Our Class Were a Soup..., What the World Eats, Rainbow Grain Salad, Choose-Your-Own Flavor Popcorn, Summer Sun Risin', Teas around the World [stub, 971 chars]); 3 template-match without explicit copyright (Green Sauce Around the World, Stone Soup, Our Food Traditions). FoodCorps template (`THEME / ESSENTIAL QUESTION / LEARNING OBJECTIVES / PREPARATION / ACTION STEPS`).
+- **One-off imports — 7 lessons, ~93KB**:
+  - Children's Aid Society: Food Justice Program (full multi-lesson curriculum, ~50KB)
+  - COLONIAL AND REVOLUTIONARY PERIOD NEW YORK (NYC DOE 4th-Grade Social Studies unit, ~17KB)
+  - Botanical Artists (City Blossoms — `HARVEST / GROUNDWORK / WORD BIN / TOOL SHED` template, ~11KB)
+  - What is a Watershed? (NYC Dept. of Environmental Protection, ~9KB)
+  - Leaves We Eat (Oregon Dept. of Education — `OR. Dept. of Ed. Key Standards` template, ~7KB)
+
+Full list with lesson_ids + per-row evidence: `~/.claude/projects/-Users-danfeder-cCode-esynyc-lessonsearch-v2/memory/project_imported_non_esynyc_drops.md`.
+
+**Reasoning:**
+
+- **The clean drop signature is structural, not attribution-based.** Combination of: (no Cultural Responsiveness / Social-Emotional boilerplate fingerprint) + (no ESYNYC template — no Aim / Question of the Day / "in the Kitchen" headers) + (recognizable external-org template structure with template-specific section names).
+- **The "Adapted from" pool is NOT the import pool.** Of 19 lessons citing external sources, 18 are ESYNYC-authored adaptations (they cite Peter Burke, ESYNOLA, Life Lab, Teacher's College, etc., as content sources but use ESYNYC's own template). Only Botanical Artists (City Blossoms) is a wholesale import. Attribution-language alone is a poor drop signal.
+- **Authorship metadata is unfilterable for this** — `metadata->>'author'` / `authoredBy` is NULL across all 181 lessons that don't have CR/SEL fingerprint. Can't filter by author field.
+- **PFLP and FoodCorps are time-clustered import blocs** (2003 and 2017 respectively) — look like one-shot corpus seeds, not ongoing acquisitions. The 6 one-off imports look incidental.
+
+**Deferred sub-questions:**
+
+- **Soft-delete (archive) vs hard-delete.** PROD has FK relationships (bookmarks, dismissals, etc.); even imports may have user state attached. Likely soft-delete via status flag or archive table; confirm at cleanup-track design time.
+- **Cleanup-track sequencing.** Pre-Stage-1, mid-Stage-1, or pre-Stage-2? Probably pre-Stage-2 so re-tag operates on a clean corpus, but not blocking foundation-phase schema work.
+- **Search/UI hiding before deletion.** If users have bookmarked any of these 23 imports, deletion breaks user state. Pre-deletion: hide from search results, surface "this lesson is being retired" in any UI surface that finds them via direct link.
+- **Whether to preserve content for archival.** The 23 lessons total ~341KB content. Drop the database rows but maybe keep the Google Docs in a Drive archive folder if the curricula have any historical reference value.
+- **The Teas around the World stub** (971 chars, FoodCorps template skeleton) — drops either way; flagged here as a content stub rather than a real lesson.
+
+**Downstream implications:**
+
+- **Foundation-phase corpus shrinks from 772 to ~749 lessons** after drops apply. Stage 1 worksheets and Stage 2 re-tag operate on the smaller set.
+- **Stage 2 re-tag scope shrinks slightly** — 23 fewer lessons to re-tag. Trivial cost reduction.
+- **Memory:** see `project_imported_non_esynyc_drops.md` for the full drop list with lesson_ids and per-row evidence.
+- **Cleanup-track design** is a separate decision document; this capture flags the list for future scheduling.
+- **Future-import surveillance.** If ESYNYC adopts another third-party curriculum after foundation phase, the drop signature here gives reviewers a checklist for whether to import the lesson plans verbatim (likely re-drop later) vs. re-author into ESYNYC format (keep). Phase-2 reviewer UX detail.
 
 ---
 
@@ -583,6 +719,41 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 - D6 walkthrough is next. ~25 lessons (3.2%) have real curriculum-sequence dependencies in body text; ~5 lesson series total in the corpus (Decomposition Pt 1+2, Photosynthesis Pt 1+2, Knife Cuts Part 2, Will It Decompose Part II, Winter After School Sessions, Food System Advocates 1+2, Lunar New Year units).
 - The unit-tying question D3 deferred lands here — if D6 doesn't deliver some form of "lessons that belong together" modeling, that information is genuinely lost from the metadata system.
 - Heritage worksheet remains the first concrete Stage 1 deliverable once walkthrough wraps. After D5's call, **concepts worksheet is now the second-largest deliverable** (211 values across 6 subjects + per-concept everyday-vocab synonyms).
+
+**Commits:**
+
+- `968912f` — `docs(metadata-rebuild): walkthrough session 5 — D5 capture (keep silently for search + both-vocab re-tag + synonyms + submission-time auto-tag)`
+
+### Session 6 — 2026-05-02
+
+**Covered:** D6 walkthrough (option 1 minimal — `series_id` + `part_number`, foundation-only metadata, UI deferred to Phase 2). Plus two cross-cutting captures that surfaced from D6 prep research: N1 multi-lesson-per-doc packing triage (Food System Advocates retitle, Winter After School Session 2 leave-as-is, no schema column) and the imported non-ESYNYC-format curriculum drop list (23 candidates identified for cleanup-track removal). Plus D7 pre-walkthrough context locked. Mode: walkthrough → empirical research dispatched (4 Opus parallel agents across 3 sub-tasks: D7-territory pattern quantification, body-text relationship cues read, Food System Advocates re-read + N1 sweep, imported-curriculum sweep) → re-synthesis → user calls captured.
+
+**Calls landed (in order):**
+
+1. **D6 = option 1 minimal.** `series_id` + `part_number` foundation-phase fields, ~7 series / ~14 lessons backfill. Solves both payoffs (dedup-skip via metadata + future teacher-discovery via Phase-2 UI). Hand-curate ruled out (doesn't fix dedup); drop ruled out (loses the "lessons that belong together" signal D3's drop deferred here).
+2. **N1 = bespoke triage, no schema.** Food System Advocates retitle (artifact — Pt 2 byte-identical to Pt 1 except one worksheet link). Winter After School Session 2 leave-as-is (intentional ESYNYC unit — 4 nutrition-themed sub-lessons). Plus 2 newly-discovered curriculum-package N1 cases (COLONIAL NY + CAS Food Justice) excluded from N1 scope, folded into import-drop track instead.
+3. **Cross-cutting: imported non-ESYNYC-format curricula = drop track.** 23 wholesale third-party imports identified across PFLP (5, 2003 vintage), FoodCorps (11, 2017 vintage), and 7 one-off imports (CAS, NYC DOE, City Blossoms, NYC DEP, Oregon DOE, plus 1 stub). Cleanup-track removal scheduling deferred; full drop list with lesson_ids captured to memory at `project_imported_non_esynyc_drops.md`.
+4. **D7 pre-walkthrough context locked.** D7's 4-options-as-written framing doesn't map to data. D7 decomposes into per-sub-pattern decisions: site-specific (separate `school_id` field call), Plan A/B (1 case, don't model), Mobile Education (3 sub-patterns, real call needed), bilingual handouts (not a relationship, small flag or nothing), same-dish-sibling (dedup territory, not metadata).
+
+**Key reframings / insights:**
+
+- **D7 collapses-vs-stays-separate question answered empirically.** Collapsing D6+D7 into one `parent_lesson_id` + `relationship_kind` field was attractive in walkthrough framing but doesn't hold against data — D7 patterns have heterogeneous structural shapes (relationship vs attribute vs handout vs dedup), not a unified relationship-modeling problem. D6 stays clean as-is; D7 decomposes.
+- **The "Adapted from" pool is NOT the import pool.** 18 of 19 "adapted from" lessons are ESYNYC-authored adaptations citing external sources for content/inspiration — they use ESYNYC's own template. Only Botanical Artists (City Blossoms) is a wholesale import. Attribution-language alone is a poor drop signal.
+- **Authorship metadata is unfilterable.** `metadata->>'author'` / `authoredBy` is NULL across all 181 lessons without CR/SEL fingerprint. The clean drop signature is structural (no CR/SEL boilerplate + no ESYNYC template + recognizable external-org template).
+- **Body-text-only relationships are real and invisible to SQL.** `content_text` extraction strips most hyperlinks (only 11 of 772 rows have raw doc URLs in stored content). Decomposition Pt 2 → Pt 1 link IS in the live doc but probably isn't in stored content_text. Future cross-reference detection needs live docs or re-extracted markdown.
+- **Lesson-to-lesson textual cross-references essentially don't exist** (1–2 in entire corpus). ESYNYC lessons are a flat collection. D6/D7 modeling concerns get smaller in light of this.
+- **PFLP and FoodCorps are time-clustered import blocs** (2003 and 2017). Look like one-shot corpus seeds, not ongoing acquisitions. The 6 one-off imports look incidental.
+- **The "intentional vs artifact" distinction was load-bearing for N1.** Food System Advocates was identified as artifact via byte-level comparison (Pt 2 = Pt 1 + one different worksheet link). Winter After School Session 2 was identified as intentional via topical coherence + "Session" framing. The split would have been wrong if either case had been mis-read.
+- **A 4th Opus agent run was the right move on N1.** Original quantification estimated 3-4 N1 cases; expanded sweep found 4 (with 2 newly-discovered being third-party-curriculum-packages, which the user then routed to a different track). Without the second sweep, those 2 imports would have been mis-treated as "intentional teaching units" and stayed in the corpus.
+
+**Pre-walkthrough context for D7 (captured directly into D7 card above):** Major sub-decisions named, per-pattern empirical numbers locked, reframing applied (4-options-as-written doesn't map to data; D7 decomposes per sub-pattern). D7 walkthrough should open by confirming the decomposition shape, then walk site-specific (probably `school_id` field) + Mobile Education (3 sub-patterns, real call) as the two sub-decisions that need real walkthrough; the others (Plan A/B, bilingual, sibling-Fattoush) can land quickly given pre-walkthrough framing.
+
+**Carry-forward to next session:**
+
+- D7 walkthrough is next. Recommended shape: confirm per-sub-pattern decomposition, then walk site-specific (probably `school_id` field) + Mobile Education (3 sub-patterns, real call) as the two sub-decisions that need real walkthrough; the others (Plan A/B, bilingual, sibling-Fattoush) can land quickly given pre-walkthrough framing.
+- D9 (CRF) follows D7. Path 3 still applies (vocabulary-bearing decision); meta layer in walkthrough, content layer in worksheet round.
+- D8 phase-2 sub-questions need a brief revisit — but mostly absorbed into Phase-2 reviewer UX scope; not a heavy walkthrough.
+- Heritage worksheet remains the first concrete Stage 1 deliverable once walkthrough wraps. Concepts worksheet remains the second-largest. Cleanup-track work (23-import-drop list + Food System Advocates retitle) sequences in alongside.
 
 **Commits:**
 
