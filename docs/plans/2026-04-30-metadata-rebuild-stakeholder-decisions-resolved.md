@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-03 (session 7) · commit pending (D7 capture across all 5 sub-patterns + Walkthrough state header refresh + Session 7 log entry).
-**Progress:** **11 calls captured + 1 cleanup track flagged** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, D6 ✅, **D7 ✅ (5 sub-patterns: 4 don't-model + 1 tag addition for bilingual_handouts; net = corpus stays flat, no new cross-row relationship modeling)**, N1 ✅, Cross-cutting import drops ✅. **1 walkthrough card remains** (D9 + D8 phase-2 sub-questions revisit + D1 content layer in worksheet round).
-**Next in queue:** **Decision 9 — CRF redesign.** Last vocabulary-bearing card. Path 3 likely applies (meta layer in walkthrough, content layer in worksheet round) — same shape as D1/D5. Distinguishing question (per session-5 closing note): does CRF capture ideas that aren't in the body text (like concepts does → keep silently for search), or is it purely rubber-stamped framework theater (drop)? Decide independently when D9's turn comes. D8 phase-2 sub-questions revisit can fold into D9 session or land separately as a brief.
-**Walkthrough order remaining:** 9 → 8 (deferred sub-questions only).
+**Last session:** 2026-05-03 (session 8) · commit pending (D9 capture + Walkthrough state header refresh + Session 8 log entry + CRF stamp-theater memory update + initiative memory + MEMORY.md update).
+**Progress:** **12 calls captured + 1 cleanup track flagged — main walkthrough COMPLETE** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, D6 ✅, D7 ✅, **D9 ✅ (CRF stays as 7-feature master-list closed-enum `text[]` + LLM-extract-from-body at submission + reviewer-validate with lenient inference scope + leave older legacy as-is + re-tag modern-template lessons + `crf_confirmed` backend-only marker)**, N1 ✅, Cross-cutting import drops ✅. **Remaining work:** D8 phase-2 sub-questions revisit (separate brief at user direction); D1 content layer (worksheet round, after walkthrough wraps).
+**Next in queue:** **D8 phase-2 sub-questions revisit (user-directed separate session).** Substance is settled (stay teacher-zero); open part is reviewer-tooling mechanisms — guided pickers, paired-review prompts, validation rules, audit/diff views, per-field guidance text. Different shape from main walkthrough cards; lighter-weight. **After D8 phase-2:** foundation-phase implementation plan scaffolding via `/kickoff-feature` per the multi-session execution preference.
+**Walkthrough order remaining:** D8 phase-2 (separate brief).
 **Open questions waiting on user:** None pending.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text**. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D9 still pending). Path 3 doesn't auto-apply to every card. **D7 took the empirical-decomposition route** (session-6 pre-walkthrough framing held under walkthrough): 4-options-as-written → per-sub-pattern decomposition → 4 don't-model + 1 small tag addition. Pattern likely applicable to any future card whose framing doesn't survive empirical contact. **The "valid variations" principle emerged from D7.4** — lessons that share content with site/version variation are valid standalone lessons; the variation itself doesn't need metadata encoding. Default for any future "lessons share content but aren't duplicates" finding is: don't model the relationship; rely on dedup-pipeline memory for cross-version flagging.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text**. **Path 3 shape (meta-now / content-later)** applies to D1/D5; **D9 didn't need it** — the established Brown CR framework (master list at `~/Downloads/Cultural Responsiveness Guidelines.md`) provided the canonical vocabulary directly; no fresh stakeholder exercise required. **Empirical-decomposition route** (used in D7) — pattern available when a card's framing doesn't survive empirical contact. **The "valid variations" principle (D7.4)** — default for any future "lessons share content but aren't duplicates" finding is don't model; rely on dedup-pipeline memory for cross-version flagging. **LLM-as-extractor-not-author pattern (D9)** — when LLM is operating against teacher-zero/reviewer-authority, scope LLM to extracting-only-what-is-in-body, with closed-enum mapping as the heaviest judgment it makes; reviewer overlay is lenient (framework-grounded inference allowed without body-span citation).
 
 ---
 
@@ -404,15 +404,75 @@
 
 ## Decision 9 — CRF redesign
 
-**Status:** OPEN
+**Status:** DECIDED 2026-05-03
 
-**Decision:** _(pending)_
+**Decision: Keep CRF as structured `text[]` of the 7 master-list features + LLM-extract-from-body at submission time + reviewer-validate with lenient inference scope + leave older legacy data as-is + re-tag modern-template lessons + `crf_confirmed` backend-only marker.** Reviewer remains sole authority. Storage stays at feature granularity (the 7 framework features); example practices serve as LLM/reviewer guidance, not stored data. Submission UI does NOT surface the guideline doc to teachers (deferred; teachers consult the guideline on their own).
 
-**Reasoning:** _(pending)_
+### Components
 
-**Deferred sub-questions:**
+1. **Vocabulary = the 7 master-list CRF features** (closed enum, derived from Brown University Education Alliance "Teaching Diverse Learners" framework via `~/Downloads/Cultural Responsiveness Guidelines.md`):
+   - Promotes positive perspectives on parents and families
+   - Communicates high expectations
+   - Encourages learning within the context of culture
+   - Promotes student-centered instruction
+   - Incorporates different individual and cultural learning styles
+   - Reshapes curriculum
+   - Positions teacher as facilitator
 
-**Downstream implications:**
+   Each feature has ~5 example practices in the master list (35 total) that serve as **diagnostic guidance** — what counts as embodying that feature.
+
+2. **Storage = `text[]` at feature level** (current PROD shape preserved). Example practices NOT stored. Validation against the closed enum at submission/review time.
+
+3. **Submission flow:** at submission time, LLM reads body CR section → matches body content against the ~35 example practices → drafts tags for the corresponding features. Reviewer validates/edits at review time. Mirrors D5's submission-time auto-tag pattern; reuses the same Opus tagging infrastructure.
+
+4. **Reviewer authority + lenient overlay scope.** Reviewer is sole authority; **lenient mode** means reviewer can add tags based on framework-grounded inference, no body-span citation required. Hypothesis 2 (normalization across uneven teacher prose) is the dominant rationale — reviewer fills gaps in body content using framework expertise.
+
+5. **No teacher-facing submission UI for the guideline doc in foundation phase.** Teachers consult the guideline doc on their own when writing the body CR section. Could be added down the road; not foundation-phase scope.
+
+6. **Existing rows split-treatment:**
+   - **Older-template lessons** (no body CR section, ~45% of corpus): leave existing tags as-is. No re-tag effort.
+   - **Modern-template lessons** (body CR section, ~55% of corpus): re-tag with new LLM-extract + reviewer-validate workflow to confirm legacy.
+
+7. **`crf_confirmed boolean`** added as DB column. Marks rows that went through the new workflow. **No UI surfacing to end users in foundation phase.** Reviewer-facing usage (e.g., "this CRF is from pre-rebuild tagging" indicator) deferred to Phase 2 reviewer UX redesign if it earns its keep.
+
+8. **UI surfacing of CRF tags to end users:** still open in foundation phase. The `crf_confirmed` marker enables a forward path of "surface confirmed-only rows" if the call later is to surface CRF in user-facing UI. Deferred.
+
+### Reasoning
+
+- **CRF is real signal, not theater.** User reframing: cultural responsiveness understanding is nuanced and requires real training. Teachers are supposed to consult the guideline when writing the body CR section. The 7-feature framework is established (Brown University Education Alliance) and the master list defines both the canonical features AND ~35 diagnostic example practices. The "stamp" framing from the foundational report was overstated — the bar for each feature is relatively low ("incorporating movement" earns Reshapes curriculum), and many ESYNYC lessons may legitimately exhibit all 7. The verbatim 7-element pattern in the data is **"unknown reliability,"** not "assumed wrong."
+
+- **Master list as canonical vocabulary collapsed the closed-enum question.** The 7 features ARE the canonical CRF list. No fresh stakeholder-defined vocabulary needed; the framework provides it. Storage stays `text[]`. **Path 3 doesn't apply here** — unlike D1/D5/D2 where vocabulary canonicalization required a multi-step worksheet exercise, D9's vocabulary is settled by the existing master list.
+
+- **LLM-as-extractor-not-author is the LLM-appropriateness call.** User stated the LLM should only operate where the teacher explicitly wrote CRF in the body; LLM doesn't infer CRF from a lesson without a body CR section. With the master list available, "extraction" becomes mapping body language to closed enum via the example practices — mechanical-ish but not zero-judgment (e.g., "we honored student voice" → maps to "Promotes student-centered instruction"). LLM never claims framework expertise it shouldn't have; reviewer is the authority.
+
+- **Reviewer overlay = lenient, not strict.** Strict mode (only body-supported tags) would constrain reviewer to mechanical extraction — but the user's rationale for keeping reviewer in the loop is exactly that they bring framework-grounded expertise (hypothesis 3 + normalization in hypothesis 2). Lenient mode lets the reviewer fill gaps in uneven teacher prose using framework knowledge. Trade: more reviewer judgment, but reviewer judgment grounded in canonical framework is what the user wanted.
+
+- **Leave-as-is for older lessons + re-tag modern lessons** is the empirical match to the data. Older-template lessons don't have body CR content; without body content, neither LLM nor reviewer can do extraction-style work. Re-tagging would require independent assessment (judgment-only, no body anchor) — exactly the pattern the user wanted to avoid. Better to accept the legacy state honestly than to fabricate confidence.
+
+- **Storage at feature level (option A) over practice-level (B) or paired (C).** Feature level matches what filtering actually wants (broad CR axes); reviewer burden stays at picking from 7 vs 35; complexity stays low for a first-shipped version. Paired option C's "audit story" (queryable "tagged feature without supporting practice") is real but premature — adds reviewer UX complexity for an audit use case that may not earn the keep. Forward path open: example-practice-level richness can be added later as a JSONB sidecar if a use case emerges.
+
+- **`crf_confirmed` backend-only.** End-users shouldn't see "data quality vintages" — undermines trust ("which tags should I believe?"). Reviewer-facing usage in Phase 2 is the more interesting use case but doesn't have to be designed now. Backend column = forward path without commitment.
+
+- **No submission-time guideline UI in foundation phase.** User opted out: teachers already consult the guideline doc on their own when writing lesson plans. Could be revisited as a Phase 2 enhancement if body CR quality is a problem.
+
+### Deferred sub-questions
+
+- **UI surfacing of CRF tags to end users.** Whether to add CRF as a sidebar filter, lesson-detail badge, both, or neither (keep silently for search). Foundation-phase deferred; revisit when reviewer UX redesign starts. With `crf_confirmed`, can surface only the trusted subset later.
+- **Reviewer-facing `crf_confirmed` indicator.** Whether reviewer dashboard should show "this CRF is from pre-rebuild tagging" prompts. Phase 2 reviewer UX detail.
+- **Submission UI for guideline doc.** User opted out for foundation phase; possibly add down the road if body CR quality is found to be a problem.
+- **Audit mechanism for legacy CRF tags.** If user later wants to know which legacy tags are evidence-supported vs stamp, would require a re-read pass. Not foundation-phase scope.
+- **Re-tag workflow logistics.** Reviewer time required to re-tag ~55% of corpus (modern-template lessons) = real cost; needs scoping at foundation-phase planning time. Probable shape: batch-process LLM drafts in Stage 2, then reviewer revisits per-lesson in a focused review pass.
+- **Example-practice-level richness as later optional layer.** If displayed metadata ever wants "this lesson Reshapes curriculum via 'incorporating movement'" precision, could add as a JSONB sidecar field.
+- **Mark-and-segregate vs honest-acceptance for the two-population search behavior.** `crf_confirmed` enables mark-and-segregate; whether to actually use it for surfacing decisions is the Phase 2 / UI surfacing question above.
+
+### Downstream implications
+
+- **Foundation-phase schema:** stays `cultural_responsiveness_features text[]`; add `crf_confirmed boolean default false`. Closed-enum validation in code (the 7 master-list features).
+- **Foundation-phase pipeline:** add LLM-extract step to submission processing edge function (mirrors D5 academicConcepts auto-tag pattern). Same Opus model + infrastructure, different prompt targeting CRF master list.
+- **Stage 2 corpus re-tag scope adds:** ~55% modern-template subset gets CRF re-tag (LLM draft + reviewer validate). Older 45% skipped entirely. Significant reviewer time — needs scoping at foundation-phase planning.
+- **D5 + D9 share the same submission-time LLM auto-tag infrastructure.** Both add canonical-vocabulary tags drafted by Opus from body content; both validated by reviewer at review time. Plan as one infrastructure piece, two prompts.
+- **Phase 2 reviewer UX:** reviewer-facing CRF picker should expose the 7 features + ~5 example practices each inline (per-feature collapse expandable to show practices) for guided tagging. Reviewer-facing `crf_confirmed` indicator can be added at this time if it earns its keep.
+- **`project_crf_stamp_theater.md` memory file should be updated** to reflect the master-list reframing: not theater, but verbatim-pattern is "unknown reliability" (not "assumed wrong"). Updated 2026-05-03 alongside D9 capture.
 
 ---
 
@@ -804,3 +864,48 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 **Commits:**
 
 - `79a3d06` — `docs(metadata-rebuild): walkthrough session 7 — D7 (no new modeling across all 5 sub-patterns)`
+
+### Session 8 — 2026-05-03
+
+**Covered:** D9 (CRF redesign) walkthrough — full call landed in single session. Mode: opener pushback from user (CRF is real signal, not theater) reframed the option space; user dropped a major piece of evidence mid-walkthrough (the master list at `~/Downloads/Cultural Responsiveness Guidelines.md`) which collapsed the canonical-vocabulary question and recast the verbatim-stamp finding. Three sub-decisions walked through (storage granularity / submission UI / reviewer overlay); user landed all three. D8 phase-2 sub-questions revisit deferred to a separate session at user direction.
+
+**Calls landed (in order):**
+
+1. **CRF reframing accepted (meta call).** CRF is real signal worth investing in, not theater. Drop (option 1) ruled out. Reviewer remains sole authority even though teachers also write CR in lesson body.
+2. **D9 = keep structured `text[]` of 7 master-list features.** Closed enum derived from Brown University Education Alliance "Teaching Diverse Learners" framework via the master list document. No fresh stakeholder vocabulary exercise needed; framework provides it.
+3. **Submission-time LLM auto-tag.** LLM reads body CR section → matches against ~35 example practices in master list → drafts tags for matched features. Mirrors D5's submission-time auto-tag pattern; reuses same Opus infrastructure.
+4. **Reviewer overlay = lenient mode.** Reviewer can add tags based on framework-grounded inference, no body-span citation required. Hypothesis 2 (normalization across uneven teacher prose) is the dominant rationale.
+5. **No teacher-facing submission UI for the guideline doc** (sub-decision 2). Teachers already consult the guideline doc on their own when writing the body CR section. Could be added down the road; not foundation-phase scope.
+6. **Storage at feature level, not practice level** (sub-decision 1, option A). 7-value enum stays current PROD shape. Example practices stay as LLM/reviewer guidance, not stored data. Practice-level richness can be added later as a JSONB sidecar if a use case emerges.
+7. **Existing rows split-treatment.** Older-template lessons (no body CR section, ~45% of corpus) — leave existing tags as-is. Modern-template lessons (body CR section, ~55% of corpus) — re-tag with new LLM-extract + reviewer-validate workflow.
+8. **`crf_confirmed boolean` backend-only column.** Marks rows that went through the new workflow. NO end-user UI surfacing in foundation phase. Reviewer-facing usage deferred to Phase 2 if it earns its keep.
+
+**Net D9 outcome:**
+
+CRF design fully scoped. Foundation-phase schema = existing `cultural_responsiveness_features text[]` (preserved) + new `crf_confirmed boolean default false`. Foundation-phase pipeline = add LLM-extract step to submission processing edge function (mirrors D5 pattern; same Opus infrastructure, different prompt). Stage 2 corpus re-tag adds: ~55% modern-template subset re-tag (LLM draft + reviewer validate). Older 45% skipped entirely.
+
+**Key reframings / insights:**
+
+- **CRF reframing was load-bearing.** User pushed back on opener's "theater" framing immediately: cultural responsiveness understanding is nuanced and requires real training; the field's invisibility-rate doesn't mean it's stamp work. This recast the option space — drop is off the table; the question is "how do we get the structured metadata to do diagnostic work" not "keep or drop."
+- **The master list collapsed the canonical-vocabulary question.** When user shared `~/Downloads/Cultural Responsiveness Guidelines.md` mid-walkthrough, the closed enum (7 features) became settled instantly; no Stage 1 worksheet needed for D9 unlike D1/D5/D2. **Path 3 doesn't apply to D9** — the 7 features are the canonical vocabulary directly. The example practices (~35 total) become diagnostic guidance for LLM/reviewer, not storage values.
+- **The verbatim-stamp finding got recontextualized.** "5 lessons share the verbatim 7-element list" was framed in the foundational report as smoking-gun for theater. Under the master list, the example-practice bar for each feature is relatively low ("incorporating movement" earns Reshapes curriculum); many ESYNYC lessons may legitimately exhibit all 7. The verbatim pattern is now "**unknown reliability**," not "assumed wrong." The agents' "Reshapes curriculum has no concrete textual anchor" finding was based on a stricter standard than the framework actually applies.
+- **LLM-as-extractor-not-author pattern.** User's framing: LLM should only operate where teacher explicitly wrote CRF in body; LLM doesn't infer from absent body content. With master list, "extraction" becomes mapping body language to closed enum via example-practice matching — mechanical-ish but not zero-judgment. LLM never claims framework expertise it shouldn't have. This is a useful design pattern beyond D9 — applicable wherever LLM must operate against teacher-zero/reviewer-authority constraints.
+- **Reviewer overlay = lenient was the load-bearing call** for the workflow shape. Strict mode (only body-supported tags) would constrain reviewer to mechanical extraction — defeating the purpose of having reviewer in the loop. Lenient lets reviewer normalize across uneven teacher prose using framework knowledge.
+- **Leave-as-is for older lessons is a deliberate "don't fabricate confidence" stance.** Without body CR content, neither LLM nor reviewer can do extraction-style work; re-tagging would require independent assessment (judgment-only, no body anchor) — exactly what user wanted to avoid. Better to accept legacy state honestly than fabricate confidence.
+- **Storage at feature-level was a "ship lean now, add richness if earned" call.** Option C (paired feature + practice + evidence span JSONB) was the most diagnostically useful but premature; option A (feature-level only) matches what filtering wants and keeps reviewer burden low. Forward path open via JSONB sidecar later.
+- **`crf_confirmed` backend-only is the "don't show data quality vintages to end-users" call.** End-users shouldn't have to think about which tags are reliable; either trust all displayed tags or trust none of them. Reviewer-facing usage in Phase 2 is the more interesting use case; doesn't have to be designed now.
+- **Two-population search behavior is honest-acceptance by default.** Older stamped legacy + newer confirmed tags coexist in search/filter; `crf_confirmed` enables future segregation if a Phase 2 / UI surfacing decision wants it.
+- **D9 is the cleanest "ship-lean shape" of the walkthrough.** Single session, one schema column added (boolean), reuses D5's submission pipeline infrastructure. The vocabulary work is essentially zero (master list is the canonical). Foundation-phase implementation cost for D9 is mostly the LLM prompt + closed-enum validation + the 55% modern-subset re-tag effort.
+
+**Carry-forward to next session:**
+
+- **D8 phase-2 sub-questions revisit is the only remaining walkthrough work** — separate brief at user direction. Substance settled (stay teacher-zero); open part is reviewer-tooling mechanisms (guided pickers, paired-review prompts, validation rules, audit/diff views, per-field guidance text). Lighter-weight than main walkthrough cards.
+- **D1 content layer remains for the worksheet round** (Indigenous structural placement, African American diaspora cluster shape, Mediterranean placement, Lenape promote/nest, 28 empirical long-tail candidates threshold-pass, Tier-0 vs Tier-1 placements, per-leaf sidebar visibility, canonical surface labels). All defer to Stage 1 worksheet round + reviewer validation.
+- **After D8 phase-2:** scaffold foundation-phase implementation plan via `/kickoff-feature` per the multi-session execution preference. Foundation-phase corpus = 772 → ~749 after import-drops apply.
+- **Master-list-as-canonical-vocabulary shortcut** is the new reusable pattern: when an established framework already provides the canonical vocabulary, the closed-enum question collapses (no fresh stakeholder exercise needed). Worth flagging for future cards/audits.
+- **CRF stamp-theater memory file** updated 2026-05-03 to reflect the master-list reframing.
+- **No pre-walkthrough research dispatched this session** — D9 walkthrough was self-contained on the foundational report + decisions doc + CRF stamp-theater memory. The master list was the new piece of evidence that surfaced mid-walkthrough.
+
+**Commits:**
+
+- (commit pending)
