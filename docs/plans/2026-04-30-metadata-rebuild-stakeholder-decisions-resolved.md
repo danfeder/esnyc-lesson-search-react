@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-02 (session 6) · commits: pending (D6 capture + N1 capture + import-drop list capture + D7 pre-walkthrough context + Walkthrough state header refresh + Session 6 log entry + new memory file `project_imported_non_esynyc_drops.md`).
-**Progress:** **10 calls captured + 1 cleanup track flagged** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, **D6 ✅ (option 1 minimal — `series_id` + `part_number`, foundation-phase metadata only, UI deferred to Phase 2)**, **N1 ✅ (multi-lesson-per-doc packing — Food System Advocates retitle, Winter After School Session 2 leave as-is, no schema column, imports out of N1 scope)**, **Cross-cutting import drops ✅ identified (23 wholesale third-party imports flagged for cleanup-track removal; full list in `project_imported_non_esynyc_drops.md`)**. **2 walkthrough cards remain** (D7 + D9 + D1 content layer in worksheet round + D8 phase-2 sub-questions).
-**Next in queue:** **Decision 7 — lesson variants and adaptations.** Substantial pre-walkthrough context captured this session (see D7 card below). Headline: D7 doesn't collapse into one schema move — it decomposes into per-sub-pattern decisions, several of which fold to "drop the framing" or "no schema needed" given empirical reality. The walkthrough should open by confirming the decomposition shape, then walk site-specific (probably `school_id` candidate) + Mobile Education (3 sub-patterns, real call needed) as the two sub-decisions that need real walkthrough; Plan A/B + bilingual + sibling-Fattoush can land quickly given pre-walkthrough framing.
-**Walkthrough order remaining:** 7 → 8 (deferred sub-questions only) → 9.
+**Last session:** 2026-05-03 (session 7) · commit pending (D7 capture across all 5 sub-patterns + Walkthrough state header refresh + Session 7 log entry).
+**Progress:** **11 calls captured + 1 cleanup track flagged** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, D6 ✅, **D7 ✅ (5 sub-patterns: 4 don't-model + 1 tag addition for bilingual_handouts; net = corpus stays flat, no new cross-row relationship modeling)**, N1 ✅, Cross-cutting import drops ✅. **1 walkthrough card remains** (D9 + D8 phase-2 sub-questions revisit + D1 content layer in worksheet round).
+**Next in queue:** **Decision 9 — CRF redesign.** Last vocabulary-bearing card. Path 3 likely applies (meta layer in walkthrough, content layer in worksheet round) — same shape as D1/D5. Distinguishing question (per session-5 closing note): does CRF capture ideas that aren't in the body text (like concepts does → keep silently for search), or is it purely rubber-stamped framework theater (drop)? Decide independently when D9's turn comes. D8 phase-2 sub-questions revisit can fold into D9 session or land separately as a brief.
+**Walkthrough order remaining:** 9 → 8 (deferred sub-questions only).
 **Open questions waiting on user:** None pending.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text**. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D9 still pending). Path 3 doesn't auto-apply to every card. Session-6 specific: D6 was a fully-decided modeling call (no Path-3 split); N1 + import-drop captures emerged from D6 prep research and got handled inline as cross-cutting decisions rather than separate walkthrough turns.
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text**. **Path 3 shape established** — meta layer in walkthrough, content layer in worksheet round; applies to vocabulary-bearing decisions (D9 still pending). Path 3 doesn't auto-apply to every card. **D7 took the empirical-decomposition route** (session-6 pre-walkthrough framing held under walkthrough): 4-options-as-written → per-sub-pattern decomposition → 4 don't-model + 1 small tag addition. Pattern likely applicable to any future card whose framing doesn't survive empirical contact. **The "valid variations" principle emerged from D7.4** — lessons that share content with site/version variation are valid standalone lessons; the variation itself doesn't need metadata encoding. Default for any future "lessons share content but aren't duplicates" finding is: don't model the relationship; rely on dedup-pipeline memory for cross-version flagging.
 
 ---
 
@@ -324,49 +324,61 @@
 
 ## Decision 7 — Lesson variants and adaptations
 
-**Status:** OPEN — pre-walkthrough context locked 2026-05-02 (session 6)
+**Status:** DECIDED 2026-05-03 (session 7)
 
-**Pre-walkthrough context (session 6):** Empirical sweep + body-text reads (4 Opus parallel agents) surfaced that **D7 doesn't collapse into one schema move alongside D6** — it decomposes into several smaller decisions, several of which fold to "drop the framing" or "no schema needed" given the data.
+**Decision:** **Decompose D7 into 5 per-sub-pattern decisions; net outcome is "no new modeling" across all 5** (with one tiny exception for bilingual handouts via the existing tags column).
 
-*The five named D7 patterns vs reality:*
-
-| Pattern | Empirical count | Reality vs framing |
+| Sub-pattern | Call | Mechanism |
 |---|---|---|
-| Plan A/B contingencies | 1 cross-row pair (PS 109 Garden Jobs ↔ Leaf Rubbing Cards) + 12 within-row "rain plan" paragraphs | Framing assumed multiple cross-row pairs; reality is 1 case. The other 12 are within-lesson contingency paragraphs that don't need schema. |
-| Mobile Education adaptations | 14 lessons across **3 sub-patterns** (inline-single-site, inline-multi-site, externalized-to-separate-doc) | Heterogeneous — schema move has to handle all three or pick one. |
-| Bilingual variants | 6 lessons | **None are parallel Spanish lesson plans.** All are Canva handout/recipe-card links inside English lessons. The framing assumed sibling rows; reality is in-lesson handout support. |
-| Site-specific authorship | **35 lessons (4.5%, dominant pattern)**. PS 216 leads (11 lessons + 33 with "For 216:" template prompt embedded). | Title-encoded almost exclusively (body rarely names the school); not a relationship — a per-row attribute. Suggests `school_id` field territory. |
-| Same-dish-different-lesson (Fattoush-class) | 5–15 true Fattoush-class pairs estimated; 33 same-title-different-body pairs total in dedup queue territory | Dedup pipeline territory — already covered by `project_dedup_third_state.md`. Distinguishing from re-export duplicates needs human review. |
+| **Plan A/B contingencies** | Don't model | N=1 cross-row case (PS 109 Garden Jobs ↔ Leaf Rubbing Cards); 12 within-row "rain plan" paragraphs stay in body prose |
+| **Bilingual variants** | Tag with `["bilingual_handouts"]` | Reuses tags column; D2 closed enum grows from `["orientation"]` to `["orientation", "bilingual_handouts"]`. Surface label "Has Spanish handouts" (not "Bilingual lesson") — the lessons are English with Spanish handouts, not parallel Spanish lesson plans |
+| **Same-dish-sibling (Fattoush-class)** | Defer to dedup pipeline | Third-state memory mechanism in dedup pipeline; not metadata. See `project_dedup_third_state.md` |
+| **Site-specific authorship** | Don't model | "Valid variations of base lessons" reframing — site identity is incidental and stays in title; no `school_id` column, no `schools` table |
+| **Mobile Ed externalized adaptations** | Don't model | Title convention (per D3) + dedup-pipeline third-state for cross-version dedup. Inline single/multi-site Mobile Ed is body-text prose, also no metadata |
 
-*Two patterns the framing didn't name (surfaced in body-text reads):*
+**Net D7 outcome:** corpus stays flat. Zero new cross-row relationship modeling. The only schema move from D7 is the bilingual_handouts tag addition. Combined with D6 (`series_id` + `part_number`), foundation-phase structural relationship modeling is **two small additions to lesson rows** — no new tables, no FK relationships between lessons except the loose `series_id` grouping.
 
-- **Multi-lesson-per-doc collection (N1)** — 4 corpus rows are actually multiple distinct lessons packed into one doc. Captured separately below as N1 cross-cutting decision.
-- **Imported third-party curriculum** — 23 corpus rows are wholesale third-party imports in non-ESYNYC format. Captured separately below as cross-cutting drop track.
+**Reasoning:**
 
-*Two strong signals about how authors actually solve the multi-version problem:*
+- **Empirical decomposition was load-bearing.** The original 4-options-as-written framing in the decisions doc (model fully / partially / hand-curate / drop) didn't survive contact with the data. The session-6 4-Opus-agent empirical sweep showed that the 5 named D7 patterns have heterogeneous structural shapes — each needs its own call, not one architectural choice across all 5. Walkthrough opened by confirming the decomposition as a meta call before walking sub-patterns; user accepted, easy-then-hard order chosen.
 
-- **Within-row grade-band variations (43 lessons / 5.6%)** — "For younger students... / For older students..." inside one lesson body. **Dominant authoring strategy** that sidesteps siblings entirely.
-- **Cross-row grade-band sibling families (12 lessons)** — Cajun Sliders 3K-2/3-5/6-8 trio is the cleanest case. Far less common than within-row.
+- **D7.1 Plan A/B (don't model):** N=1 cross-row case (PS 109 Garden Jobs ↔ Leaf Rubbing Cards) doesn't justify schema. The 12 within-row "rain plan" paragraphs are already body-text prose and need no metadata. Bloating the orientation-only tags closed enum for 1 case was rejected on the same schema-clutter grounds the user pushed back on at D2.
 
-*Critical caveat about the data:* `content_text` extraction strips most hyperlinks. Only 11 of 772 rows have raw `docs.google.com/document/d/` URLs in `content_text`. The Decomposition Pt 2 → Pt 1 link IS in the live Google Doc but probably isn't in stored content_text. **Any future cross-reference detection needs to run against live docs or re-extracted markdown, not stored content_text.**
+- **D7.2 Bilingual (tag, not boolean column):** 6 lessons. Important reframing — none are parallel Spanish lesson plans; all are English lessons with Canva handout/recipe-card links to bilingual versions embedded in body. So this is a per-row attribute ("has bilingual handouts") not a sibling-row relationship. Tag chosen over boolean column because (a) reuses existing tags column we already committed to in D2, (b) bilingual classroom teacher discoverability is a real user pattern, (c) extensible if pattern grows (Spanish handouts seem like the kind of thing teachers would add more of over time). Boolean column rejected for same "schema for small N is clutter" reason orientation went to tags. Surface label should be "Has Spanish handouts" (not "Bilingual lesson") — the lesson body is English; only the handouts are Spanish, and mislabeling would set wrong expectations.
 
-*Lesson-to-lesson textual cross-references essentially don't exist in the corpus* — 1–2 actual cross-references in entire 772 rows. ESYNYC lessons are a flat collection.
+- **D7.3 Same-dish-sibling (defer to dedup):** The pattern (different dish-teaching lessons sharing a central dish, e.g., two Fattoush lessons) is structurally a dedup-pipeline problem — the missing piece is a *memory* mechanism so dedup remembers a reviewer's "not duplicate" decision and doesn't re-flag the pair. Adding a `dish_canonical` field would repeat data already in title + ingredients without solving the actual problem (pipeline forgetfulness). Compare to D6's `series_id` which solves a real metadata problem (sequenced companion lessons need to be skipped from comparison entirely because they're designed-as-pair) — Fattoush-class is the opposite (random lessons that landed on the same dish by coincidence; no design relationship to encode).
 
-**Implication for D7 walkthrough shape:** the four-options-as-written in the decisions doc (model fully / partially / hand-curate / drop) doesn't map cleanly to the data. D7 should be restructured into per-sub-pattern decisions:
+- **D7.4 Site-specific (don't model):** User reframing was significant — "valid variations on the same lesson that differentiates them, it doesn't actually matter which school the lesson is tied to." Both candidate use cases were ruled out: teacher discoverability is not a real ESYNYC need (teachers at PS 109 don't filter the library by school), and staff school-by-school reporting is not either. The schools dimension doesn't earn its keep elsewhere in the system (no user-account-to-school linkage, no submission-source analytics, no program-level dashboards). A `school_id` column would solve a problem nobody has. Site-specific lessons live in the corpus as standalone lessons; school identity stays in the title where it already is. The 33 lessons with "For 216:" inline customization prompts are body-text prose under the same logic (within-row variation, not metadata).
 
-- **Site-specific** → likely separate small decision (`school_id` field, 35 lessons, mostly title-encoded already, zero metadata coverage today). Probably the easiest win.
-- **Plan A/B contingencies** → don't model. 1 case (PS 109). Hand-curate the title-encoded relationship or accept the lossiness.
-- **Mobile Education** → real decision needed. 14 lessons, 3 sub-patterns. Options: (a) `mobile_ed_adaptation` boolean on the lesson, (b) `parent_lesson_id` + `relationship_kind` for the externalized-doc cases only, (c) hand-curate.
-- **Bilingual handouts** → not a relationship. Either small `bilingual_handouts` boolean field or nothing (6 lessons below most thresholds).
-- **Same-dish-sibling (Fattoush-class)** → dedup pipeline territory, not metadata. Already covered by third-state work in `project_dedup_third_state.md`.
+- **D7.5 Mobile Ed externalized (don't model):** 14 lessons across 3 sub-patterns, but only the externalized-to-separate-doc sub-pattern has a real cross-row metadata question (the inline single-site and inline multi-site sub-patterns are body-text prose, same shape as Plan A/B's within-row contingencies). For externalized siblings, three forces collapsed to don't-model: (a) D3 already settled "Mobile Ed isn't a filterable axis" — title convention is the handle, so a `mobile_ed_adaptation` boolean would have nothing in the UI consuming it; (b) D7.4 just settled "valid variations don't need relationship modeling" — Mobile-adapted siblings are structurally the same kind of valid variation as site-specific lessons; (c) bidirectional-navigation use cases are weak — Mobile Educators don't need to jump to classroom parents (they're teaching the Mobile version), classroom teachers don't need to jump to Mobile siblings (they're teaching the classroom version), and the rare cases where someone needs both versions are covered by title search.
 
-**Decision:** _(pending)_
-
-**Reasoning:** _(pending)_
+- **Why "we could model it" doesn't equal "we should":** D6's `series_id` earned its keep because it solves a real dedup problem (sequenced companion lessons getting flagged as duplicates because they have identical metadata). None of D7's sub-patterns have a comparable "without metadata, this breaks" justification. The closest is externalized Mobile Ed siblings, but even there, the dedup-pipeline third-state mechanism (already deferred to in D7.3) handles the cross-version flagging concern. The "valid variations" framing emerged as a load-bearing principle for foundation-phase modeling — lessons that share content with site/version variation are valid standalone lessons; the variation itself doesn't need metadata encoding.
 
 **Deferred sub-questions:**
 
+- **Tags closed-enum governance** — closed enum is now `["orientation", "bilingual_handouts"]`. New values still gate on Stage 1 novelty pass evidence (per D2's governance rule); D7.2's bilingual_handouts addition was an exception because empirical evidence was already in hand from the session-6 sweep.
+- **Phase-2 reviewer-UX: "For [school]:" inline customization** — should reviewers be encouraged or discouraged from baking school-specific adaptation prompts into otherwise-generic lessons going forward? Probably encouraged for adaptability; worth a guidance line in reviewer training.
+- **Phase-2 reviewer-UX: title-encoding convention for any future contingency pairs** — if Plan A/Plan B pairs recur, a "[School]: Plan A — Title" / "[School]: Plan B — Title" naming convention would be the lightweight handle. Document as guideline; revisit if pairs accumulate.
+- **Bilingual_handouts surface label confirmation** — "Has Spanish handouts" is the working label per the call. Confirm at filter UI design time; could become more nuanced if non-Spanish bilingual handouts emerge (none in current corpus).
+- **Mobile Ed title convention enforcement** — D3 deferred this. When a teacher submits a Mobile Education lesson, who/what enforces the title convention? Phase-2 reviewer UX detail.
+
 **Downstream implications:**
+
+- **Dedup pipeline third-state has bigger surface area than originally framed.** It now needs to handle:
+  - Same-dish-different-lesson (Fattoush-class) — D7.3
+  - Cross-site variants (PS 216 vs PS 109 Garden Tour) — D7.4 implication
+  - Cross-version siblings (Classroom vs Mobile Garden Tour) — D7.5 implication
+  - Plus the existing duplicate-detection cases
+  - Plus D6's `series_id`-driven skip-comparison logic (different mechanism but same coordinator)
+  Worth scoping as a single coherent dedup-pipeline rework rather than incremental patches. Own work track, scheduled separately from foundation phase.
+
+- **Foundation-phase structural modeling is now fully scoped.** D6 added `series_id` + `part_number` (per-row); D7 added `bilingual_handouts` to tags closed enum. No new tables, no FK relationships, no `parent_lesson_id` / `relationship_kind` / `school_id` / `mobile_ed_adaptation` / `dish_canonical`. The corpus stays a flat collection, structurally consistent with the empirical finding that lesson-to-lesson textual cross-references essentially don't exist (1–2 in 772 rows).
+
+- **Filter UI gets one more "Lesson Type" tag-based checkbox** — bilingual_handouts joins orientation. Sidebar UX spec for the tag-based filter section now has 2 values planned.
+
+- **Phase-2 reviewer-UX scope grows by accumulated guidance items** (see Deferred above). All low-cost additions to reviewer training/guidance text; none require new pickers or workflow changes.
+
+- **The "valid variations" framing is now a load-bearing principle for foundation-phase modeling.** Same logic applies if any future audit surfaces other "lessons that share content but aren't duplicates" patterns: default is "don't model the relationship; let them live as standalone lessons; rely on dedup-pipeline memory for cross-version flagging." This is a deliberate design stance, not just an absence of decision.
 
 ---
 
@@ -758,3 +770,37 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 **Commits:**
 
 - `5b31cda` — `docs(metadata-rebuild): walkthrough session 6 — D6 (sequences = option 1 minimal) + N1 + import-drop list + D7 pre-context`
+
+### Session 7 — 2026-05-03
+
+**Covered:** D7 walkthrough across all 5 sub-patterns. Mode: decomposition confirmation as meta call → easy-then-hard ordering through Plan A/B → bilingual → Fattoush-sibling → site-specific → Mobile Ed.
+
+**Calls landed (in order):**
+
+1. **D7 decomposition accepted (meta call).** D7 splits into per-sub-pattern decisions; original 4-options-as-written framing retired. Easy-then-hard order chosen for the sub-pattern walkthrough.
+2. **D7.1 Plan A/B = don't model.** N=1 cross-row case (PS 109); within-row contingencies stay in body prose. Bloating the orientation-only tags closed enum for 1 case rejected.
+3. **D7.2 Bilingual = tag with `["bilingual_handouts"]`.** Reuses tags column; closed enum grows from `["orientation"]` to `["orientation", "bilingual_handouts"]`. Surface label "Has Spanish handouts" (not "Bilingual lesson"). Reframed as per-row attribute, not sibling-row relationship — the 6 lessons are English with Spanish Canva handouts, not parallel Spanish lesson plans.
+4. **D7.3 Same-dish-sibling = defer to dedup pipeline.** Dedup-pipeline third-state memory mechanism handles "we already decided these aren't duplicates"; metadata not the right place. Mid-walkthrough plain-language re-explanation requested + delivered (Fattoush worked example built from scratch).
+5. **D7.4 Site-specific = don't model.** User reframing: "valid variations on the same lesson that differentiates them, it doesn't actually matter which school the lesson is tied to." Both candidate use cases (teacher discoverability + staff reporting) are not real ESYNYC needs. Schools dimension doesn't earn its keep elsewhere. No `school_id` column, no `schools` table. Site-specific lessons live as standalone lessons; identity stays in title.
+6. **D7.5 Mobile Ed externalized = don't model.** Only externalized-to-separate-doc sub-pattern has a real cross-row question (other 2 inline sub-patterns are body-text prose). Three forces collapsed it: D3's prior "Mobile Ed not filterable" call, D7.4's "valid variations don't need modeling" precedent, weak bidirectional-navigation use cases. Title convention + dedup-pipeline third-state covers it.
+
+**Net D7 outcome:** corpus stays flat. Zero new cross-row relationship modeling. Only schema move from D7 is the bilingual_handouts tag addition. Combined with D6 (`series_id` + `part_number`), foundation-phase structural modeling = two small additions to lesson rows; no new tables, no FK relationships beyond the loose `series_id` grouping.
+
+**Key reframings / insights:**
+
+- **The "valid variations" principle emerged as load-bearing for foundation-phase modeling.** Site-specific (D7.4) was the call that crystallized it: lessons that share content with site/version variation are valid standalone lessons; the variation itself doesn't need metadata encoding. Same logic propagated to D7.5 (Mobile Ed externalized siblings = valid variations of classroom parents). Future cards or audits surfacing similar "lessons share content but aren't duplicates" patterns should default to this principle unless there's a specific workflow that breaks without modeling.
+- **Dedup pipeline third-state surface area expanded.** Originally framed (`project_dedup_third_state.md`) as just Fattoush-class + sequenced pairs. Now also includes cross-site variants (D7.4) and cross-version siblings (D7.5). Worth scoping the dedup-pipeline rework as a single coherent track rather than incremental patches.
+- **Decomposition of D7 as a walkthrough technique was load-bearing.** The original 4-options framing wouldn't have surfaced the per-sub-pattern heterogeneity. The session-6 empirical sweep enabled the decomposition; the session-7 walkthrough confirmed each sub-pattern decisively. Pattern: when a card's options-as-written don't survive empirical reality, decompose first then walk per sub-pattern.
+- **D7.2's bilingual reframing (per-row attribute, not sibling row) was a small but meaningful empirical correction.** The decisions doc framing (variants/adaptations) suggested cross-row Spanish lesson plans. Reality is in-lesson Canva handouts. Saved a wrong walkthrough direction.
+- **The plain-language preference (captured session 5) was exercised mid-session 7.** Fattoush-class explanation got asked-for-simpler; re-delivered with built-from-scratch framing (background → specific example → generalization). Worked well; the user got the concept faster on the second pass.
+
+**Carry-forward to next session:**
+
+- **D9 (CRF redesign) is next.** Last vocabulary-bearing card. Likely Path 3 (meta-now / content-later split). Distinguishing question per session-5 closing note: does CRF capture ideas not in body text (like concepts does → keep silently for search), or is it purely rubber-stamped framework theater (drop)?
+- **D8 phase-2 sub-questions revisit** can fold into D9 session or land separately as a brief.
+- **Heritage worksheet remains the first concrete Stage 1 deliverable** once walkthrough wraps. Concepts worksheet remains the second-largest. Cleanup-track work (23-import-drop list + Food System Advocates retitle + dedup-pipeline third-state design) sequences in alongside.
+- **No pre-walkthrough research dispatched this session** — D7 walkthrough was self-contained on the session-6 pre-walkthrough context.
+
+**Commits:**
+
+- (pending) — `docs(metadata-rebuild): walkthrough session 7 — D7 (no new modeling across all 5 sub-patterns)`
