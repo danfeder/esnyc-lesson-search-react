@@ -757,4 +757,4 @@ Each entry is one walkthrough session. Captures: what was covered, what landed, 
 
 **Commits:**
 
-- (pending — backfill next session)
+- `5b31cda` — `docs(metadata-rebuild): walkthrough session 6 — D6 (sequences = option 1 minimal) + N1 + import-drop list + D7 pre-context`
