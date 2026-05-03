@@ -17,7 +17,7 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-03 (session 8) · commit pending (D9 capture + Walkthrough state header refresh + Session 8 log entry + CRF stamp-theater memory update + initiative memory + MEMORY.md update).
+**Last session:** 2026-05-03 (session 8) · `c0baa85` (D9 capture + Walkthrough state header refresh + Session 8 log entry + CRF stamp-theater memory update + initiative memory + MEMORY.md update).
 **Progress:** **12 calls captured + 1 cleanup track flagged — main walkthrough COMPLETE** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, D6 ✅, D7 ✅, **D9 ✅ (CRF stays as 7-feature master-list closed-enum `text[]` + LLM-extract-from-body at submission + reviewer-validate with lenient inference scope + leave older legacy as-is + re-tag modern-template lessons + `crf_confirmed` backend-only marker)**, N1 ✅, Cross-cutting import drops ✅. **Remaining work:** D8 phase-2 sub-questions revisit (separate brief at user direction); D1 content layer (worksheet round, after walkthrough wraps).
 **Next in queue:** **D8 phase-2 sub-questions revisit (user-directed separate session).** Substance is settled (stay teacher-zero); open part is reviewer-tooling mechanisms — guided pickers, paired-review prompts, validation rules, audit/diff views, per-field guidance text. Different shape from main walkthrough cards; lighter-weight. **After D8 phase-2:** foundation-phase implementation plan scaffolding via `/kickoff-feature` per the multi-session execution preference.
 **Walkthrough order remaining:** D8 phase-2 (separate brief).
@@ -908,4 +908,4 @@ CRF design fully scoped. Foundation-phase schema = existing `cultural_responsive
 
 **Commits:**
 
-- (commit pending)
+- `c0baa85` — `docs(metadata-rebuild): walkthrough session 8 — D9 (CRF kept under master-list framing; main walkthrough complete)`
