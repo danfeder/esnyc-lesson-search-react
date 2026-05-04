@@ -26,14 +26,20 @@ This is D0's hybrid frame: foundation-now / reviewer-UX-later. Per session 9,
 foundation phase deliberately does NOT redesign reviewer UX or build new
 pickers — those defer to Phase 2.
 
-Estimated 6+ sequential PRs (final count TBD; some PRs gate on Stage 1
-worksheet outputs from the parallel curriculum-team track):
-  PR 1: Structural schema (D2 enum, D3 drop, D6 series_id+part_number, D7 tags, D9 crf_confirmed, filter UI)
-  PR 2: Submission-time LLM auto-tag pipeline (D5 + D9 + ~8 high-fit fields with per-prompt eval gates)
-  PR 3: Search infrastructure (search_vector + search_synonyms + embeddings + smart-search drift fix)
-  PR 4: Corpus drops (23 third-party imports) + N1 retitle (FSA "& 2" drop)
+**Pre-PR-1 Gates (run before PR 1 branches; investigation/decision tasks):**
+  Gate A: lessonFormat dependency sweep (verify ~95-surface inventory in current repo)
+  Gate B: Validator architecture decision + Zod canonical scaffold
+  Gate C: Per-prompt readiness audit (~6 candidate fields → vocab-locked / Stage-1-gated / dropped)
+
+**Estimated 6+ sequential PRs (final count TBD; some PRs gate on Stage 1
+worksheet outputs from the parallel curriculum-team track):**
+  PR 1: Structural schema + lessonFormat dependency sweep (D2 enum, D3 coordinated removal, D6 series_id+part_number, D7 tags, D9 crf_confirmed, filter UI, Zod canonical scaffolding from Gate B)
+  PR 2: Submission-time LLM auto-tag — vocab-locked prompts only (CRF + activity_type + tags + Gate-C-classified vocab-locked); Stage-1-gated prompts (academicConcepts, cultural_heritage, ...) deploy after worksheets
+  PR 3a: Search infra now (search_vector + embeddings + smart-search drift fix; independent of Stage 1)
+  PR 3b: Search synonym population (depends on Stage 2 re-tag outputs; folds into PR 6+)
+  PR 4: Corpus drops (23 third-party imports) + archive-concepts recovery + N1 retitle (FSA "& 2" drop)
   PR 5+: D4 vocab canonicalization (depends on Stage 1 worksheet outputs)
-  PR 6+: Stage 2 corpus re-tag (depends on PR 5 + Stage 1 closure; flexible timing)
+  PR 6+: Stage 2 corpus re-tag + reviewer validation flow (depends on PR 5 + Stage 1 closure + Stage 2 reviewer-validation UX walk; flexible timing)
 
 # WHERE THINGS LIVE
 
@@ -104,9 +110,24 @@ be better" arguments cannot. Per-card rationale lives in the decision journal.
 - **23-lesson import-drop list** — locked (5 PFLP + 11 FoodCorps + 7 one-offs); foundation-phase corpus shrinks 772 → ~749.
 
 **Pipeline:**
-- **D5** — submission-time LLM auto-tag for `academicConcepts`; both-vocab re-tag (framework + everyday); populate `search_synonyms` from concepts; add concepts to `search_vector` and embedding script.
+- **D5** — submission-time LLM auto-tag for `academicConcepts`; both-vocab re-tag (framework + everyday); populate `search_synonyms` from concepts (in PR 3b after Stage 2); add concepts to `search_vector` and embedding script (in PR 3a, independent of Stage 1).
 - **D9 (pipeline)** — CRF submission-time LLM auto-tag at submission; reviewer-validate-lenient; leave older legacy lessons as-is; re-tag modern-template lessons only.
-- **Extension to ~10 high-fit fields** — submission-time Opus tagging for ~10 reviewer-supplied fields ride on D5 + D9 infra; per-prompt eval gates before each ships.
+- **Extension to ~10 high-fit fields** — submission-time Opus tagging rides on D5 + D9 infra; per-prompt eval gates before each ships.
+
+**Per-prompt readiness gating (per session 9 + reviewer feedback):**
+- **Vocab-locked (ships in PR 2):** CRF, activity_type, tags + any Gate-C-classified vocab-locked.
+- **Stage-1-gated (deploys after corresponding worksheet lands, NOT in PR 2):** academicConcepts (concepts worksheet), cultural_heritage (heritage worksheet) + any Gate-C-classified Stage-1-gated.
+- **Operational gating choice:** Stage-1-gated prompts do NOT deploy with v3-baseline vocabulary. Pre-canonical drift creates Stage 2 cleanup cost; the prompts wait for their worksheets.
+
+**Validator architecture (per design doc §5, Option B confirmed):**
+- TS/Zod canonical source (`src/types/lessonMetadata.zod.ts`); closed enums live here.
+- Pydantic mirrors enums for Stage 2 batch via generated `enums.json`; CI tests Zod ↔ Pydantic equivalence.
+- SQL CHECK + trigger value-validation hand-synced from Zod source.
+- Today's coverage: 1 SQL CHECK, 1 shape-only trigger covering 10/17, 0 Zod, 5/17 Pydantic in v3. Foundation phase establishes all four artifacts.
+
+**Stage 2 reviewer model — two layers:**
+- **Locked QC floor (Cross-cutting Scope 3):** spot-check 50-100 sampled lessons; flagged patterns escalate.
+- **Deferred Stage 2 reviewer-validation UX walk (session 9):** whether Stage 2 needs broader per-field reviewer validation across ~700 unreviewed lessons, and what that flow looks like. Walked during foundation-phase implementation planning when LLM-draft-validation flow becomes the active design surface (likely just before PR 6+).
 
 **Architectural / process:**
 - **D0** — hybrid frame (foundation phase + Phase 2 reviewer UX redesign).
@@ -275,5 +296,11 @@ does not exist yet, create it using the existing scaffold at that path
 Read this prompt → read design doc → read implementation plan from current
 task → read status file → run baseline checks → tell me where you are and
 what's next. Don't start coding until I confirm.
+
+**For Sessions 1-3 (pre-PR-1):** the first three sessions execute Gates A
+(lessonFormat dependency sweep verification), B (validator architecture
+decision + Zod canonical scaffold), and C (per-prompt readiness audit).
+None of these is a code-bearing PR — they produce inputs that PR 1 / PR 2
+consume. Gate B's scaffold lands as Task 1.0 of PR 1.
 
 <!-- ===== END OF KICKOFF BODY ===== -->

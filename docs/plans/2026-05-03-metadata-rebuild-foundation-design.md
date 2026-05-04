@@ -92,8 +92,10 @@ All schema changes ship in the structural-schema PR. **D4 vocabulary canonicaliz
 **Drop columns / keys:**
 - `lessons.lesson_format` column — D3
 - `metadata.lessonFormat` JSONB key (data migration / rewrite metadata column) — D3
-- 9 JSON-path indexes referencing `lessonFormat` — D3
+- 1 JSON-path index `idx_lessons_format` (on `metadata->>'lessonFormat'`) + 1 column-based index `idx_lessons_lesson_format` — D3
 - `_alias_lesson_format` runtime helper (becomes dead code) — D3
+
+**lessonFormat removal — coordinated cross-surface sweep required.** Dropping the column without coordinated changes to dependent surfaces breaks the runtime. The PR-1 migration must coordinate with: `lessons_with_metadata` view (CREATE OR REPLACE — otherwise smart-search 5xx's); 4 RPCs that reference the column (`search_lessons`, `complete_review_atomic`, `get_lesson_details_for_review`, `archive_duplicate_lesson`); `lessons_normalize_write_trg` trigger (rewrite to drop column⇄metadata sync for lessonFormat); `_alias_lesson_format` helper drop; `_shared/search-helpers.ts` (3 references); ~30 TypeScript surfaces (`LessonMetadata.lessonFormat` and `SearchFilters.lessonFormat` are non-optional); duplicate-review subsystem (separate column appearance via duplicate-detection RPC); `lesson_archive.lesson_format` column decision (keep historical vs drop); `supabase/seed.sql`; `database.types.ts` regen; ~6 test fixture files. See implementation plan PR 1 for per-surface task breakdown; the comprehensive sweep is **pre-PR-1 Gate A**.
 
 **Vocabulary expansions (closed-enum changes in code; data left unchanged at this stage):**
 - `activity_type` enum: 4 → 5 values (`cooking / garden / both / academic / craft`) — D2
@@ -131,7 +133,14 @@ All schema changes ship in the structural-schema PR. **D4 vocabulary canonicaliz
 
 **Per-field reduction philosophy:** case-by-case at worksheet time. Some fields tolerate aggressive collapse (cooking_methods has 8-10 real concepts max); others preserve pedagogically meaningful distinctions (heritage values like Lenape vs. Indigenous).
 
-**Pydantic enforcement on all 17 fields** — replaces v3's 3-of-17 enforcement. Closed enums in code; submission/review/migration writes validated against them.
+**Validator architecture (cross-runtime).** v3 enforced ~5 of 17 closed-vocabulary enums in one runtime (Python/Pydantic). Foundation phase enforces all 17 across four runtimes (Deno edge functions, browser TypeScript, PLPGSQL RPC + trigger, Python batch) via three coordinated artifacts derived from one canonical source. **Option B (TS/Zod canonical)** chosen for the codebase's TS bias:
+
+- **Canonical source:** TypeScript Zod schema (`src/types/lessonMetadata.zod.ts` or similar). Closed-enum lists live here; Stage 1 worksheet outputs land in this file.
+- **TS-runtime enforcement:** Zod schema imported by `complete-review` edge function, `process-submission` edge function, browser save in `ReviewDetail.tsx`, and Node-run TS scripts. Single `schema.parse(input)` call on every metadata write.
+- **Python-runtime enforcement:** Pydantic models for the Stage 2 batch pipeline (and any other Python tooling). Mirror enum lists from a generated `enums.json` constants file emitted from the Zod schema; tests assert Zod ↔ Pydantic enum-list equivalence.
+- **SQL-runtime enforcement:** SQL CHECK constraints (column-level, where types permit — e.g., `text[]`) + value-validation extensions to the existing `lessons_normalize_write_trg` trigger covering JSONB-embedded enum keys. Hand-synced from the canonical Zod source; equivalence is tested in CI.
+
+Today's actual coverage: 1 SQL CHECK on values (`valid_seasons`); 1 shape-only trigger covering 10 of 17 fields; 0 Zod schemas; 5-of-17 Pydantic in v3. Foundation phase establishes all four artifacts. Validator-architecture scaffolding is **pre-PR-1 Gate B**.
 
 **Worksheet round sequence (curriculum-team track):** heritage (~78 values, first), concepts (~211 values, biggest), then ~8 smaller fields. Stage 1 estimated at low-thousands of Opus reads + reviewer/user validation hours over weeks-to-months.
 
@@ -139,32 +148,51 @@ All schema changes ship in the structural-schema PR. **D4 vocabulary canonicaliz
 
 **D5 + D9 + ~10 high-fit fields share one Opus tagging infrastructure** layered into `process-submission` edge function. One model + one base prompt design + N field-specific prompts; per-prompt eval gates before launch.
 
-**Foundation-phase prompt set** (~10 high-fit reviewer-supplied fields):
-- `academicConcepts` — D5 — both framework + everyday vocab; capped at "framework word + 2-5 common teacher synonyms per concept"
-- `cultural_responsiveness_features` — D9 — extract from body CR section; matches body content against 35 master-list example practices to draft tags for the 7 features; older lessons (no body CR section, ~45% of corpus) skipped
-- ~8 additional fields TBD at implementation planning time — high-fit = closed vocab from D4 + body signal present (per session 9; **not** marginal fields like `grade_levels` / `location` which defer to Phase 2)
+**Per-prompt readiness gates.** Each prompt's vocabulary must be locked before the prompt ships. Three readiness categories:
+
+- **Vocab-locked (ships in PR 2 once eval gate passes):** fields whose canonical vocabulary is settled by foundation-phase walkthrough decisions, independent of Stage 1 worksheets.
+  - `cultural_responsiveness_features` — D9 — vocab is the 7 master-list Brown CR features + 35 example practices for body-text mapping; older lessons (no body CR section, ~45% of corpus) skipped.
+  - `activity_type` — D2 — vocab locked at 5 values (`cooking / garden / both / academic / craft`).
+  - `tags` — D2 + D7 — vocab locked at `["orientation", "bilingual_handouts"]`.
+
+- **Stage-1-gated (deploys after corresponding worksheet lands):** fields whose canonical vocabulary depends on the Stage 1 worksheet round.
+  - `academicConcepts` — D5 — depends on Stage 1 concepts worksheet (~211 values + everyday-vocab synonym mapping).
+  - `cultural_heritage` — depends on Stage 1 heritage worksheet (~78 values + structural placement decisions).
+
+- **Per-field audit pending:** ~6 remaining candidate fields (high-fit = closed vocab + body signal present; **not** marginal fields like `grade_levels` / `location`, which defer to Phase 2). Each undergoes a per-field readiness audit at implementation planning time before being committed to either category. Audit asks: is the canonical vocabulary settled today (vocab-locked) or worksheet-pending (Stage-1-gated)? The list of which ~6 is decided at impl-plan time, **not in this design doc** — over-locking field commitments before the per-field audit is itself a failure mode. This audit is **pre-PR-1 Gate C**.
+
+**Operational gating choice:** prompts in the Stage-1-gated category do **not** deploy with v3-baseline vocabulary. Per session 9 + reviewer feedback, deploying pre-canonical prompts creates submission rows that Stage 2 then has to clean up — that cost outweighs the benefit of earlier auto-tagging on those fields. Each prompt waits for its corresponding worksheet.
 
 **Eval gate per prompt:** before any prompt ships to PROD, run a labeled hold-out evaluation against a curriculum-team-validated sample. Drop or rewrite any prompt that doesn't clear the gate.
 
 **Reviewer flow:** reviewer validates / edits / replaces LLM drafts at review time as one more field in their existing review pass. The picker-UI redesign for editing drafts is **Phase 2** — foundation phase ships LLM tagging that pre-populates the existing reviewer surfaces; reviewers see drafted values in current ReviewDetail.tsx and edit via current controls. Frankenstein UX between foundation and Phase 2 is acceptable per D0 (2 expert reviewers, scoped at phase-1 design time).
 
-**Search infrastructure consequence (D5):**
-- Add `academicConcepts` to `search_vector` (FTS reads concept tags as content)
-- Add `academicConcepts` to corpus-side embedding generation (`scripts/generate-embeddings.mjs`; currently includes themes / heritage / skills / ingredients but not concepts)
-- Populate `search_synonyms` from concept tags (everyday + framework vocab pairs from Stage 2 re-tag); resolve smart-search-vs-DB-synonyms drift (TS hardcoded list in `smart-search/index.ts:18-75` vs DB table) at implementation time
+**Search infrastructure consequence (D5).** Splits into two phases by data dependency:
+
+- **Ships in PR 3a (independent of Stage 1):**
+  - Add `academicConcepts` to `search_vector` (FTS reads concept tags as content)
+  - Add `academicConcepts` to corpus-side embedding generation (`scripts/generate-embeddings.mjs`; currently includes themes / heritage / skills / ingredients but not concepts)
+  - Resolve smart-search-vs-DB-synonyms drift (TS hardcoded list in `smart-search/index.ts:18-75` vs DB table)
+
+- **Ships in PR 3b (depends on Stage 2 re-tag outputs):**
+  - Populate `search_synonyms` with everyday ↔ framework vocab pairs produced by Stage 2 re-tag prompts. Folds into the PR 6+ Stage 2 work track since it consumes Stage 2 output.
 
 ## 7. Corpus refresh (Stage 2)
 
 **Scope 3 — full re-tag with Opus, sequenced after Stage 1 worksheet validation.** Pydantic-validated for ALL 17 fields (not just 3 of 17 like v3).
 
-- Adapts v3's existing Batch API + validation infrastructure (`/Users/danfeder/cCode/taggingv3/gpt_tagger/`); swaps OpenAI for Anthropic + extends validators to all fields.
+- Adapts v3's existing Batch API + validation infrastructure (`/Users/danfeder/cCode/taggingv3/gpt_tagger/`); swaps OpenAI for Anthropic + extends validators (Pydantic, mirroring the canonical Zod source per §5) to all 17 fields.
 - Operates on post-drop corpus of ~749 lessons (after import drops apply).
-- Reviewers spot-check ~50-100 sampled lessons; flagged patterns or specific lessons get full review.
 - Cost ~$200-300; 1-2 sessions of pipeline engineering.
 - Stage 2 timing intentionally flexible: not blocking on Stage 1 closure; can be scheduled separately.
 - CRF re-tag scope = ~55% of corpus (modern-template lessons with body CR section); older 45% (legacy template, no body CR section) skipped entirely. D9.
 
-**Spot-check protocol** TBD at foundation-phase implementation time: random vs. stratified-by-activity-type vs. targeted-at-audit-found-lessons; re-tag DIFF view vs. fresh-tag review.
+**Stage 2 reviewer model — two layers:**
+
+1. **Locked QC floor (Cross-cutting Scope 3, session 1):** reviewers spot-check ~50-100 sampled lessons; flagged patterns or specific lessons get full review. Sampling protocol (random / stratified-by-activity-type / targeted-at-audit-found-lessons) and review surface (re-tag DIFF view vs. fresh-tag review) TBD at implementation time.
+2. **Stage 2 reviewer-validation UX walk (deferred — not yet decided):** whether Stage 2 also requires broader per-field reviewer validation across the ~700 unreviewed lessons (beyond the spot-check QC floor) — and what that flow looks like (which fields, batch vs per-lesson, accept/edit/reject UX, prioritization, escalation rules) — is the **deferred Stage 2 reviewer-validation UX walk** per session 9. Walked during foundation-phase implementation planning when the LLM-draft-validation flow becomes the active design surface (likely just before PR 6+ scopes). The mechanism inventory archived from D8 phase-2 (guided pickers, validation rules, audit/diff views, paired-review prompts, per-field guidance text) serves as candidate inputs for the walk.
+
+Both layers belong to Stage 2; the walk decides whether the floor is sufficient or whether broader reviewer validation is needed across the corpus.
 
 ## 8. Cleanup tracks (foundation-phase scope)
 
@@ -175,6 +203,8 @@ All schema changes ship in the structural-schema PR. **D4 vocabulary canonicaliz
 
 Soft-vs-hard-delete + cleanup-track sequencing TBD at implementation time. Pre-Stage-2 sequencing preferred so re-tag operates on a clean corpus. Consider hide-from-search before delete (preserve linked user state — bookmarks).
 
+**Archive-only `academicConcepts` recovery** (per decision journal D5 deferred sub-question, line 269): a small one-shot copy migration from `lesson_versions.metadata.academicIntegration.concepts` → `lessons.metadata.academicConcepts` for the rows where the live `lessons` row lost concepts but the archive preserves them. Schedule pre-Stage-2 so re-tag operates on complete data. Row count needs TEST DB verification at task time — decision journal says "7 archive rows," project memory's `project_metadata_cleanup_candidates.md` references "16 concepts surviving only in `lesson_versions` archive"; clarify before migrating.
+
 **N1 cleanup** (per `project_imported_non_esynyc_drops.md` cross-cutting):
 - **Food System Advocates retitle** — drop "& 2"; Pt 2 is byte-identical to Pt 1 minus one worksheet link. ~10 minutes of foundation-phase work.
 - **Winter After School Session 2** — leave as-is (intentional ESYNYC unit).
@@ -183,20 +213,29 @@ Soft-vs-hard-delete + cleanup-track sequencing TBD at implementation time. Pre-S
 
 PR breakdown is the **proposed** sequencing; final scoping happens at implementation-plan time when current code shape is verified. Schema-first, then pipeline, then cleanup, then vocab+corpus refresh.
 
+**Pre-PR-1 gates (no PR; investigation/decision tasks before PR 1 starts):**
+
+| Gate | What it produces | Notes |
+|---|---|---|
+| **A — lessonFormat dependency sweep** | Per-surface task list folded into PR 1's task breakdown | Initial sweep ~95 surfaces (verified by Opus agent); confirm against current repo before PR 1 ships. |
+| **B — Validator architecture decision** | Zod canonical scaffold (`src/types/lessonMetadata.zod.ts` or similar); decide where the `enums.json` mirror lives for Pydantic; decide cross-runtime equivalence test approach | Confirms Option B (TS/Zod canonical, per §5); affects every write surface in PR 1+. |
+| **C — Per-prompt readiness audit** | Each ~6 candidate-field beyond the locked 3 + gated 2 classified as vocab-locked, Stage-1-gated, or dropped from foundation-phase scope | Affects PR 2 scope; do NOT pre-commit field list in design doc — audit decides. |
+
 | # | PR (proposed) | Contains | Notes |
 |---|---|---|---|
-| 1 | **Structural schema** | D2 enum + D3 column drop + D6 series_id/part_number + D7 tags enum + D9 crf_confirmed + filter UI sidebar updates | Largest blast radius; ships first because pipeline depends on column existence. Idempotent migration. Forward-rollback ready. |
-| 2 | **Submission-time LLM auto-tag (D5 + D9 + ~10 high-fit prompts)** | `process-submission` edge function expansion; eval-gate harness; ~10 field prompts | Independent prompt batches per field; per-prompt eval gates before each goes live. |
-| 3 | **Search infra (D5)** | `search_vector` rebuild including `academicConcepts`; `search_synonyms` population; `scripts/generate-embeddings.mjs` update; smart-search-vs-DB-synonyms drift resolution | Independent of PRs 4-N. |
-| 4 | **Corpus drops + N1 retitle** | 23 imports retired (soft-delete approach TBD); FSA retitle | Pre-Stage-2 sequencing so re-tag operates on clean corpus. |
-| 5+ | **D4 vocab canonicalization migration** (depends on Stage 1 worksheet outputs) | Per-field canonical translation migrations; Pydantic validators tightened in code | <!-- TBD: split per-field or all-at-once based on worksheet timing --> |
-| 6+ | **Stage 2 corpus re-tag** (depends on PR 5 + Stage 1) | Opus re-tag pipeline; Pydantic on all 17 fields; corpus run; spot-check protocol | Flexible timing; doesn't have to immediately follow PR 5. |
+| 1 | **Structural schema + lessonFormat dependency sweep** | D2 enum + D3 full column drop coordinated across 4 RPCs + view + trigger + helper + ~30 TS surfaces + D6 series_id/part_number + D7 tags enum + D9 crf_confirmed + filter UI sidebar updates + Zod canonical scaffolding (Gate B output) | Largest blast radius. Multi-task PR; per-surface tasks per Gate A output. Idempotent migration. Forward-rollback ready. |
+| 2 | **Submission-time LLM auto-tag — vocab-locked prompts** | `process-submission` edge function expansion; eval-gate harness; CRF + activity_type + tags prompts (and any additional fields classified vocab-locked by Gate C) | Per-prompt eval gates before each goes live. Stage-1-gated prompts (academicConcepts, cultural_heritage, etc.) deploy after their corresponding worksheets land — separate post-foundation deploys, not new PRs unless infrastructure changes. |
+| 3a | **Search infra now (D5 — independent of Stage 1)** | `search_vector` rebuild including `academicConcepts`; `scripts/generate-embeddings.mjs` update; smart-search-vs-DB-synonyms drift resolution | Independent of PR 4+. |
+| 3b | **Search synonym population (depends on Stage 2 re-tag outputs)** | Populate `search_synonyms` with everyday↔framework vocab pairs produced by Stage 2 re-tag | Folds into PR 6+ Stage 2 work track. |
+| 4 | **Corpus drops + archive-concepts recovery + N1 retitle** | 23 imports retired (soft-delete approach TBD); archive `academicConcepts` recovery migration (per §8); FSA retitle | Pre-Stage-2 sequencing so re-tag operates on clean+complete corpus. |
+| 5+ | **D4 vocab canonicalization migration** (depends on Stage 1 worksheet outputs) | Per-field canonical translation migrations; Zod canonical source extended with worksheet outputs; Pydantic enums refreshed; SQL CHECK / trigger value-validation tightened | <!-- TBD: split per-field or all-at-once based on worksheet timing --> |
+| 6+ | **Stage 2 corpus re-tag + reviewer validation flow** (depends on PR 5 + Stage 1 + Stage 2 reviewer-validation UX walk) | Opus re-tag pipeline; Pydantic on all 17 fields mirroring Zod; corpus run; QC floor (50-100 spot-check); broader reviewer-validation flow per the walk | Flexible timing; doesn't have to immediately follow PR 5. |
 
 ### Gap risk between PRs
 
 - **PR 1 → PR 2 gap.** Once column drops land but submission-time auto-tag isn't wired up, new submissions land without LLM-drafted tags (same as today; no regression). Acceptable.
-- **PR 2 → PR 5+ gap.** Submission-time auto-tag generates pre-canonicalization tags between PR 2 and PR 5. Two options: (a) deploy auto-tag prompts using v3 baseline vocab and accept that pre-PR-5 submissions need re-tag at PR 5; (b) hold PR 2 deploy until at least heritage + concepts worksheets land. <!-- TBD at impl-plan time -->.
-- **PR 5+ vs Stage 2 gap.** Foundation-phase corpus refresh has post-Stage-1 catch-up: lessons submitted between PR 1 and Stage 2 use v3-baseline auto-tag drafts → reviewer validates with v3 baseline knowledge → Stage 2 re-tags everything against canonical D4. Net: Stage 2 catches them up. No separate mitigation needed.
+- **PR 2 → Stage-1-gated prompt deploys.** Vocab-locked prompts (CRF / activity_type / tags / Gate-C-classified) ship in PR 2; Stage-1-gated prompts (academicConcepts / cultural_heritage / Gate-C-classified) deploy after their corresponding worksheets land. Submissions between PR 2 and the Stage-1-gated deploys auto-tag only the vocab-locked fields; Stage-1-gated fields remain reviewer-supplied (same as today). Stage 2 catches up at re-tag time. No separate mitigation needed.
+- **PR 5+ vs Stage 2 gap.** Foundation-phase corpus refresh has catch-up built in: lessons submitted between PR 1 and Stage 2 → Stage 2 re-tags everything against canonical D4 vocab. Stage 2 catches them up; no pre-canonical drift to clean up because Stage-1-gated prompts never deployed with v3 baseline.
 
 ### TEST DB rehearsal
 
@@ -262,9 +301,11 @@ Per `feedback_pr_bot_review_workflow.md`:
 
 ## 11. Out of scope (captured for Phase 2 / later tracks)
 
+**Deferred to foundation-phase implementation planning** (walked when LLM-draft-validation flow becomes the active design surface, likely just before PR 6+ scopes):
+- **Stage 2 reviewer-validation UX walk** — whether Stage 2 needs broader per-field reviewer validation across the ~700 unreviewed lessons beyond the locked QC floor (§7); what fields, batch vs per-lesson, accept/edit/reject UX, prioritization, escalation rules. Mechanism inventory archived from D8 phase-2 (guided pickers, validation rules, audit/diff views, paired-review prompts, per-field guidance text) serves as candidate inputs.
+
 **Phase 2 (separate window, after foundation lands):**
-- Reviewer UX redesign — guided pickers, validation rules, audit/diff views, paired-review prompts, per-field guidance text. Mechanism inventory archived as candidate inputs (per D8 phase-2 drop, session 9).
-- **Stage 2 reviewer-validation UX walk** — load-bearing reviewer question for batch-validating LLM-drafted re-tags across ~700 unreviewed lessons. To be walked during foundation-phase implementation planning when LLM-draft-validation flow is the active design surface.
+- Reviewer UX redesign — guided pickers, validation rules, audit/diff views, paired-review prompts, per-field guidance text. Note overlap with the foundation-phase implementation walk above; some of this may land in foundation phase if the walk decides so.
 - Reviewer concepts editor (clearing semantics + LLM-draft accept/edit/replace UI patterns).
 - CRF UI surfacing to end users (sidebar / badge / silent).
 - Reviewer-facing `crf_confirmed` indicator.
