@@ -4,8 +4,8 @@
 **Current PR:** PR 1 in flight (multi-task; opens after Task 1.6 lands)
 **Current task:** PR 1 Task 1.1 — Pre-migration corpus verification (TEST DB) — Gate A integration
 **Branch:** `feat/metadata-foundation-schema` (local, not pushed)
-**Last commit on feature branch:** `6b46db4` — feat(metadata-foundation): Zod canonical scaffold + review/lesson mappers (Gate B)
-**Last commit on main:** `4e93541` — docs(metadata-foundation): kickoff session-reminders + auto-memory updates
+**Last commit on feature branch:** `6b46db4` — feat(metadata-foundation): Zod canonical scaffold + review/lesson mappers (Gate B). Followed by status-doc merge commit `07fc452` (brings `3b7ab8d` from main onto feature branch so the doc tracks reality on whichever branch a future session checks out).
+**Last commit on main:** `3b7ab8d` — docs(metadata-foundation): session 4 — PR 1 Task 1.0 (Zod canonical scaffold) shipped
 
 ## Done
 
