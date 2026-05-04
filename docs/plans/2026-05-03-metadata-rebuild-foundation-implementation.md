@@ -344,18 +344,78 @@ Coordinated with the SQL migration: removes ~30 frontend/edge surfaces
 referencing lessonFormat. See Gate A inventory."
 ```
 
-### Task 1.4: Filter UI updates (Activity Type expand + Lesson Type tag filter)
+### Task 1.4 — Filter UI updates (split into 1.4a + 1.4b after Session 9 investigation)
 
-**Files:**
-- Edit: `src/utils/filterDefinitions.ts` — expand Activity Type to 5 values; add new "Lesson Type" tag-based filter section starting with `["orientation", "bilingual_handouts"]`; rename/migrate `academic-cooking` slug.
-- Edit: any sidebar component impacted by the new tag filter section.
-- Edit: `src/components/CLAUDE.md` if filter category guidance needs updating.
+Session 9's code-explorer agent verified that the Activity Type filter pipeline has a server-side translator (`_alias_activity_type`) bridging the slug-vs-corpus mismatch, AND that `search_lessons` does not currently accept any tags-related filter parameter. Both findings expand Task 1.4's scope beyond the original "frontend-only" framing — both UI changes need coordinated SQL migrations to function end-to-end. Split into two tasks accordingly. Two impl-plan items dropped: the `academic-cooking` slug doesn't exist in current code (verified Session 9), and `src/components/CLAUDE.md` needs no change.
 
 (lessonFormat removal already done in Task 1.3b.)
 
-**Verify:** `npm run type-check && npm run lint`; manual smoke: Activity Type shows 5 values; Lesson Type filter visible with 2 tags.
+#### Task 1.4a: Activity Type filter — expand to 5 values (add `craft-only`)
 
-**Commit:** consolidated frontend filter updates.
+**Sub-skill:** `database-migrations` (mandatory for the new SQL migration file)
+
+**Why a SQL migration is needed.** The sidebar slug `'cooking-only'` doesn't match the corpus value `'cooking'`. The server-side translator function `_alias_activity_type` (defined at `supabase/migrations/20260505000000_filter_drift_pr1_column_based_search_lessons.sql:72-91`) bridges the difference: `'cooking-only'` expands to match either `'cooking-only'` or `'cooking'`. Adding `craft` as a fifth corpus value requires both a new filter slug AND a new translator branch — they have to ship together or the filter is silently broken for craft lessons.
+
+**Files:**
+- Create: `supabase/migrations/<YYYYMMDDHHMMSS>_alias_activity_type_add_craft.sql` — `CREATE OR REPLACE FUNCTION _alias_activity_type(text[])` with new CASE branch `WHEN 'craft-only' THEN ARRAY['craft-only', 'craft']`. Signature unchanged → no DROP needed; CREATE OR REPLACE is idempotent. Filename follows the one-day-forward convention used in this initiative (latest: `20260512000000_drop_lesson_format.sql` → next: `20260513000000_*`).
+- Edit: `src/utils/filterDefinitions.ts:26-31` — add `{ value: 'craft-only', label: 'Craft Only' }` as the 5th entry in `FILTER_CONFIGS.activityType.options`.
+
+**Out of scope for 1.4a (captured as tracked follow-ups):**
+- Activity Type **facet count badge bug** (the "(43)" number next to each filter checkbox is always 0). Pre-existing: `facetCounts.ts` groups by corpus value (`cooking`) while the lookup at `IntSidebar.tsx:91` keys by filter slug (`cooking-only`); the bucket key never matches. Captured in execution status doc's "Out-of-scope follow-ups" section as per Session 9 user direction.
+- **Card-side Activity Type label** (`intActivityLabel` in `IntListRow.tsx:13-20`) is computed from cookingSkills/gardenSkills, not the `activity_type` column. Adding `craft` to the filter will not produce a "Craft" badge on cards. Outside the impl plan's stated scope; not handled here.
+- **`academic-cooking` slug rename** — verified absent from current code in Session 9. No work needed.
+
+**Verify locally:**
+```bash
+supabase db reset
+# Verify the helper accepts craft-only:
+psql "$LOCAL_DB" -c "SELECT _alias_activity_type(ARRAY['craft-only']::text[]);"  # expect {craft-only,craft}
+# Confirm existing branches still work:
+psql "$LOCAL_DB" -c "SELECT _alias_activity_type(ARRAY['cooking-only']::text[]);"  # expect {cooking-only,cooking}
+```
+
+**Verify via TEST DB MCP (after CI applies the migration):**
+```
+mcp__supabase-test__execute_sql: SELECT _alias_activity_type(ARRAY['craft-only']::text[]);  -- expect {craft-only,craft}
+```
+
+**Commit:** single commit covering migration + filterDefinitions edit.
+
+#### Task 1.4b: Lesson Type filter — new tag-based sidebar section
+
+**Sub-skill:** `database-migrations`
+
+**Why a SQL migration is needed.** The `search_lessons` RPC has 14 filter parameters today; none cover `lessons.tags`. To make the new sidebar section actually filter, we add a new `filter_tags text[] DEFAULT NULL` parameter. Adding a parameter to a Postgres function requires DROP+CREATE (CREATE OR REPLACE forbids signature changes). Same pattern as the `filter_cooking_method text → text[]` change at `20260505000000_filter_drift_pr1_column_based_search_lessons.sql:193-208`.
+
+**Files:**
+- Create: `supabase/migrations/<YYYYMMDDHHMMSS>_search_lessons_filter_tags.sql` — `DROP FUNCTION IF EXISTS public.search_lessons(...)` (current 14-param signature) + `CREATE FUNCTION public.search_lessons(...)` with `filter_tags text[] DEFAULT NULL` appended. Body adds WHERE-clause `AND (filter_tags IS NULL OR array_length(filter_tags, 1) IS NULL OR l.tags && filter_tags)` to both the count query and the RETURN QUERY. Re-issue `GRANT EXECUTE ON FUNCTION public.search_lessons(...) TO anon, authenticated, service_role`. Final `NOTIFY pgrst, 'reload schema'` to pick up signature change.
+- Edit: `src/types/index.ts` — add `tags?: string[]` to `SearchFilters` interface.
+- Edit: `src/stores/searchStore.ts` — add `tags: []` to `initialFilters` (preserves "filters reset to clean state" pattern).
+- Edit: `src/utils/filterDefinitions.ts` — add new `tags` entry to `FILTER_CONFIGS` (between `activityType` and `location` keeps sidebar order coherent): `{ label: 'Lesson Type', type: 'multiple', options: [{ value: 'orientation', label: 'Orientation' }, { value: 'bilingual_handouts', label: 'Bilingual Handouts' }] }`.
+- Edit: `src/utils/facetCounts.ts` — extend `FacetFilterKey` union, `EMPTY_COUNTS`, `valuesForKey` switch, `KEYS` array to include `tags`. (Note: avoids the slug-vs-corpus axis mismatch from 1.4a's facet bug because the new section's slugs ARE the corpus values — `orientation` / `bilingual_handouts` directly.)
+- Edit: `src/utils/filterUtils.ts` — extend display name + icon maps for `tags`.
+- Edit: `src/hooks/useLessonSearch.ts` — add `filter_tags: filters.tags?.length ? filters.tags : undefined` to the `searchParams` block.
+- Edit: `src/components/Common/ScreenReaderAnnouncer.tsx` if per-filter a11y announcement entries are required (mirror the existing pattern).
+- Edit: `src/components/Internal/IntSidebar.tsx` only if the multi-select pattern doesn't pick up the new filter automatically; the type-`multiple` path should "just work."
+
+**Verify locally:**
+```bash
+supabase db reset
+# Confirm new param accepted:
+psql "$LOCAL_DB" -c "SELECT * FROM search_lessons(filter_tags := ARRAY['orientation']::text[]) LIMIT 1;"
+# Confirm signature includes filter_tags:
+psql "$LOCAL_DB" -c "SELECT pg_get_function_identity_arguments('public.search_lessons'::regproc);"  # expect ... filter_tags text[]
+```
+
+**Verify via TEST DB MCP (after CI applies):**
+```
+mcp__supabase-test__execute_sql: SELECT pg_get_function_identity_arguments('public.search_lessons'::regproc) ~ 'filter_tags';  -- expect true
+mcp__supabase-test__execute_sql: SELECT count(*) FROM search_lessons(filter_tags := ARRAY['orientation']::text[]);  -- expect 0 today (tags empty in PROD); >0 after PR 2 LLM auto-tag ships
+```
+
+**Manual smoke (deploy preview):** sidebar shows new "Lesson Type" section with two checkboxes between Activity Type and Location; selecting a tag filters results (no matches today since tags column is empty in TEST/PROD; will activate when PR 2's LLM auto-tag pipeline lands).
+
+**Commit:** single commit covering the migration + ~7 frontend file edits.
 
 ### Task 1.5: Wire Zod schemas to write surfaces
 
