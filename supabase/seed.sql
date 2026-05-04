@@ -68,7 +68,7 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO lessons (
   lesson_id, title, summary, file_link, grade_levels,
   activity_type, location_requirements, thematic_categories, season_timing,
-  core_competencies, cultural_heritage, lesson_format,
+  core_competencies, cultural_heritage,
   academic_integration, social_emotional_learning, cooking_methods
 )
 VALUES
@@ -84,7 +84,6 @@ VALUES
     ARRAY['Spring', 'Summer'],
     ARRAY['Teamwork', 'Following Instructions'],
     ARRAY['Italian', 'Mexican'],
-    ARRAY['Full Lesson'],
     ARRAY['Science', 'Math'],
     ARRAY['Patience', 'Responsibility'],
     ARRAY['Raw/No Cook']
@@ -101,7 +100,6 @@ VALUES
     ARRAY['Fall', 'Winter', 'Spring', 'Summer'],
     ARRAY['Measuring', 'Following Instructions'],
     ARRAY['European'],
-    ARRAY['Full Lesson'],
     ARRAY['Science', 'Math'],
     ARRAY['Patience'],
     ARRAY['Baking']
@@ -118,7 +116,6 @@ VALUES
     ARRAY['Fall', 'Spring'],
     ARRAY['Observation', 'Teamwork'],
     ARRAY[]::text[],
-    ARRAY['Activity'],
     ARRAY['Science'],
     ARRAY['Environmental Awareness'],
     ARRAY[]::text[]
@@ -135,7 +132,6 @@ VALUES
     ARRAY['Summer', 'Fall'],
     ARRAY['Knife Skills', 'Following Recipes'],
     ARRAY['Mexican', 'Latin American'],
-    ARRAY['Full Lesson'],
     ARRAY['Social Studies', 'Health'],
     ARRAY['Cultural Appreciation'],
     ARRAY['Raw/No Cook', 'Chopping/Mixing']
@@ -152,7 +148,6 @@ VALUES
     ARRAY['Spring'],
     ARRAY['Fine Motor Skills', 'Observation'],
     ARRAY[]::text[],
-    ARRAY['Activity'],
     ARRAY['Science'],
     ARRAY['Patience', 'Wonder'],
     ARRAY[]::text[]
