@@ -133,14 +133,22 @@ All schema changes ship in the structural-schema PR. **D4 vocabulary canonicaliz
 
 **Per-field reduction philosophy:** case-by-case at worksheet time. Some fields tolerate aggressive collapse (cooking_methods has 8-10 real concepts max); others preserve pedagogically meaningful distinctions (heritage values like Lenape vs. Indigenous).
 
-**Validator architecture (cross-runtime).** v3 enforced ~5 of 17 closed-vocabulary enums in one runtime (Python/Pydantic). Foundation phase enforces all 17 across four runtimes (Deno edge functions, browser TypeScript, PLPGSQL RPC + trigger, Python batch) via three coordinated artifacts derived from one canonical source. **Option B (TS/Zod canonical)** chosen for the codebase's TS bias:
+**Validator architecture (cross-runtime).** v3 enforced ~5 of 17 closed-vocabulary enums in one runtime (Python/Pydantic). Foundation phase enforces all 17 across four runtimes (Deno edge functions, browser TypeScript, PLPGSQL RPC + trigger, Python batch) via coordinated artifacts derived from canonical source(s). **Option B (TS/Zod canonical)** chosen for the codebase's TS bias.
 
-- **Canonical source:** TypeScript Zod schema (`src/types/lessonMetadata.zod.ts` or similar). Closed-enum lists live here; Stage 1 worksheet outputs land in this file.
-- **TS-runtime enforcement:** Zod schema imported by `complete-review` edge function, `process-submission` edge function, browser save in `ReviewDetail.tsx`, and Node-run TS scripts. Single `schema.parse(input)` call on every metadata write.
-- **Python-runtime enforcement:** Pydantic models for the Stage 2 batch pipeline (and any other Python tooling). Mirror enum lists from a generated `enums.json` constants file emitted from the Zod schema; tests assert Zod ↔ Pydantic enum-list equivalence.
-- **SQL-runtime enforcement:** SQL CHECK constraints (column-level, where types permit — e.g., `text[]`) + value-validation extensions to the existing `lessons_normalize_write_trg` trigger covering JSONB-embedded enum keys. Hand-synced from the canonical Zod source; equivalence is tested in CI.
+**Two TS schemas, not one** (per reviewer round 2 — `LessonMetadata` and `ReviewMetadata` genuinely diverge: review-form uses `themes`/`season`/`location:string`; canonical uses `thematicCategories`/`seasonTiming`/`locationRequirements:string[]`. Translation today happens server-side inside `complete_review_atomic`. Foundation phase mirrors the contract in TS):
 
-Today's actual coverage: 1 SQL CHECK on values (`valid_seasons`); 1 shape-only trigger covering 10 of 17 fields; 0 Zod schemas; 5-of-17 Pydantic in v3. Foundation phase establishes all four artifacts. Validator-architecture scaffolding is **pre-PR-1 Gate B**.
+- **`src/types/lessonMetadata.zod.ts`** — canonical lesson shape (matches `LessonMetadata` interface, array values). Imported by `process-submission` (LLM-draft writer), data-import scripts, Stage 2 batch.
+- **`src/types/reviewFormPayload.zod.ts`** — review-form shape (matches `ReviewMetadata` interface, single-select strings + `themes`/`season`/`location` keys). Imported by `complete-review` edge function and `ReviewDetail.tsx`.
+- **`src/utils/{reviewToLesson,lessonToReview}Mapper.ts`** — bidirectional pure-function mappers mirroring the SQL translation in `complete_review_atomic`. Tested with property-based round-trips.
+
+**Cross-runtime enforcement:**
+- **TS-runtime enforcement:** appropriate schema imported by every TS write surface. `schema.parse(input)` on every metadata write (edge function entry, ReviewDetail save, scripts). Edge functions resolve `zod` via `supabase/functions/deno.json` (`"imports": { "zod": "npm:zod@3" }`); fallback option is `https://esm.sh/zod@3` URL imports if the npm: specifier isn't supported.
+- **Python-runtime enforcement:** Pydantic models for the Stage 2 batch pipeline. Mirror enum lists from a generated `enums.json` constants file emitted from the canonical Zod schema; CI asserts Zod ↔ Pydantic enum-list equivalence.
+- **SQL-runtime enforcement:** SQL CHECK constraints (column-level, where types permit — e.g., `text[]`) + value-validation extensions to the existing `lessons_normalize_write_trg` trigger covering JSONB-embedded enum keys. Hand-synced from the canonical Zod source.
+
+Today's actual coverage: 1 SQL CHECK on values (`valid_seasons`); 1 shape-only trigger covering 10 of 17 fields; 0 Zod schemas; 5-of-17 Pydantic in v3. Foundation phase establishes all artifacts. Validator-architecture scaffolding is **pre-PR-1 Gate B**.
+
+**Rollout-compatibility pattern (PR 1).** PostgREST returns hard `PGRST202` 404 on unknown RPC parameters. Netlify caches JS bundles for 1 year (immutable, hash-keyed); TanStack Query staleTime is 5 min — so stale browser tabs can keep emitting old RPC parameters after a column drop. **Pattern: keep deprecated parameters with `DEFAULT NULL` for one release; drop in a follow-up migration ≥24-48h after frontend deploys.** Applies to PR 1's `filter_lesson_format` parameter and the `lessons_with_metadata` view's `lesson_format` projection.
 
 **Worksheet round sequence (curriculum-team track):** heritage (~78 values, first), concepts (~211 values, biggest), then ~8 smaller fields. Stage 1 estimated at low-thousands of Opus reads + reviewer/user validation hours over weeks-to-months.
 

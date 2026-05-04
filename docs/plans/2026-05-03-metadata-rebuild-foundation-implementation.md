@@ -117,9 +117,9 @@ Per design doc §6: ~6 candidate fields beyond the locked 3 + gated 2 need per-f
 
 **Branch:** `feat/metadata-foundation-schema`
 
-**What ships:** Schema migration adding `series_id` + `part_number` + `crf_confirmed` columns; dropping `lesson_format` column + 9 JSON-path indexes; rewriting `metadata` JSONB to remove `lessonFormat` key; expanding `activity_type` enum (in code) to 5 values including `craft`; expanding `tags` closed enum (in code) to `["orientation", "bilingual_handouts"]`; locking `cultural_responsiveness_features` enum to the 7 master-list features. Filter UI sidebar updated: lessonFormat section removed; "Lesson Type" tag-based filter added; Activity Type 5-value list.
+**What ships:** Schema migration adding `series_id` + `part_number` + `crf_confirmed` columns; dropping `lesson_format` column + 1 JSON-path index (`idx_lessons_format`) + 1 column-based index (`idx_lessons_lesson_format`); rewriting `metadata` JSONB to remove `lessonFormat` key; **keeping `filter_lesson_format text DEFAULT NULL` parameter on `search_lessons` RPC for one-release compatibility bridge** (drops in a follow-up migration after stale-tab window closes); expanding `activity_type` enum (in code) to 5 values including `craft`; expanding `tags` closed enum (in code) to `["orientation", "bilingual_handouts"]`; locking `cultural_responsiveness_features` enum to the 7 master-list features. Filter UI sidebar updated: lessonFormat section removed; "Lesson Type" tag-based filter added; Activity Type 5-value list.
 
-**Why this is its own PR:** Schema-only change. Largest blast radius (touches 9 JSON-path indexes + JSONB rewrite). Pipeline (PR 2) and search infra (PR 3) depend on these columns existing. Forward-rollback migration ready before merge.
+**Why this is its own PR:** Schema-only change. Largest blast radius (touches the JSONB rewrite + 4 RPCs + view + trigger + ~30 TS surfaces). Pipeline (PR 2) and search infra (PR 3) depend on these columns existing. Forward-rollback migration ready before merge.
 
 **Pre-flight: read these files first to verify current shape (line numbers may have drifted):**
 - `supabase/migrations/CLAUDE.md` (entire — migration discipline)
@@ -132,27 +132,49 @@ Per design doc §6: ~6 candidate fields beyond the locked 3 + gated 2 need per-f
 
 **Sub-skill:** none (scaffolding)
 
+**Two schemas, not one** — `LessonMetadata` (canonical, array shapes) and `ReviewMetadata` (review-form, single-select strings + key renames `themes`/`season`/`location`) genuinely diverge. The translation today happens server-side inside `complete_review_atomic`. Foundation phase ships explicit TS-side artifacts to mirror the contract: two Zod schemas + one bidirectional mapper. (Per Gate B; reviewer feedback round 2.)
+
 **Files:**
-- Create: `src/types/lessonMetadata.zod.ts` (or location chosen by Gate B)
+- Create: `src/types/lessonMetadata.zod.ts` — canonical lesson shape (matches `LessonMetadata` interface). Imported by `process-submission` (LLM-draft writer; canonical keys), data-import scripts, Stage 2 batch.
+- Create: `src/types/reviewFormPayload.zod.ts` — review-form shape (matches `ReviewMetadata` interface; `themes`/`season`/`location:string`). Imported by `complete-review` edge function and `ReviewDetail.tsx`.
+- Create: `src/utils/reviewToLessonMapper.ts` — pure function `reviewToLesson(input: ReviewMetadata): LessonMetadata` mirroring the SQL translation in `complete_review_atomic` (themes→thematicCategories, season→seasonTiming, location string→locationRequirements array, activityType string→activity_type array). Tested with property-based round-trips.
+- Create: `src/utils/lessonToReviewMapper.ts` — inverse mapper for the read site (used by ReviewDetail.tsx to display LLM drafts that arrive in canonical keys).
 - Create: `src/types/generated/enums.json` (initial placeholder; populated by the generation script)
-- Create: `scripts/generate-enums-json.ts` (reads Zod schema → emits enums.json)
-- Edit: `package.json` to add the npm script + a CI check
-- Create: `docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md` (Gate B output)
+- Create: `scripts/generate-enums-json.ts` (reads canonical Zod schema → emits enums.json)
+- Edit: `package.json` — `npm install zod@^3.24.0` (frontend + scripts); add `npm run generate:enums` script; add CI step asserting enums.json is up-to-date.
+- Create: `supabase/functions/deno.json` with `"imports": { "zod": "npm:zod@3.24.0" }` so edge functions resolve `zod` to the same npm package. (Verify Supabase Edge Runtime supports `npm:` specifier at task time; fallback option is `https://esm.sh/zod@3.24.0` URL imports inside edge function code, kept private to those files.)
+- Create: `docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md` (Gate B output — captures the two-schema split, mapper contract, edge-function dependency strategy, equivalence-test approach).
 
 **Initial Zod content:** start with the closed enums that PR 1 expands or locks (activity_type 5 values, tags 2 values, CRF 7 master-list features, season_timing existing 4 values). Mark all other 13 fields as `z.array(z.string())` placeholders for now — they get tightened to closed enums as Stage 1 worksheets land (per PR 5+).
 
-**Verify:** `npm run generate:enums` produces `enums.json` matching the Zod schema; `npm run type-check && npm run lint` clean.
+**Mapper smoke tests** (in `src/utils/reviewToLessonMapper.test.ts`):
+- Empty payload → empty canonical
+- All-fields-populated review payload → matching canonical (assert key renames + array wraps)
+- Round-trip: `lessonToReview(reviewToLesson(x)) === x` for representative fixtures
+- Mirror the SQL test at `complete_review_atomic` line 142-167 to ensure the TS mapper stays honest.
+
+**Verify:**
+- `npm run generate:enums` produces `enums.json` matching the canonical Zod schema.
+- `npm run type-check && npm run lint && npm run test -- reviewToLessonMapper` clean.
+- Edge function loads zod: `supabase functions serve process-submission` boots without import errors (smoke locally).
 
 **Commit:**
 ```bash
-git add src/types/lessonMetadata.zod.ts src/types/generated/enums.json scripts/generate-enums-json.ts package.json docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md
-git commit -m "feat(metadata-foundation): Zod canonical scaffold (Gate B)
+git add src/types/lessonMetadata.zod.ts src/types/reviewFormPayload.zod.ts src/utils/reviewToLessonMapper.ts src/utils/lessonToReviewMapper.ts src/utils/reviewToLessonMapper.test.ts src/types/generated/enums.json scripts/generate-enums-json.ts package.json package-lock.json supabase/functions/deno.json docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md
+git commit -m "feat(metadata-foundation): Zod canonical scaffold + review/lesson mappers (Gate B)
 
-Three-artifact validator architecture per design doc §5: TS/Zod canonical
-+ enums.json mirror for Pydantic + SQL CHECK/trigger value-validation
-hand-synced. Initial closed-enum scope: activity_type (5), tags (2),
+Two-schema architecture per design doc §5 (revised after reviewer round 2):
+- src/types/lessonMetadata.zod.ts — canonical lesson shape (array values,
+  thematicCategories/seasonTiming/locationRequirements keys)
+- src/types/reviewFormPayload.zod.ts — review-form shape (single-select
+  strings, themes/season/location keys)
+- src/utils/{reviewToLesson,lessonToReview}Mapper.ts — bidirectional TS
+  mirrors of the SQL translation in complete_review_atomic.
+
+Initial closed-enum scope: activity_type (5), tags (2),
 cultural_responsiveness_features (7), season_timing (4); rest stay open
-text[] until Stage 1 worksheets land."
+text[] until Stage 1 worksheets land. supabase/functions/deno.json adds
+zod resolution for edge-function imports."
 ```
 
 ### Task 1.1: Pre-migration corpus verification (TEST DB) — Gate A integration
@@ -213,33 +235,49 @@ See docs/plans/2026-05-03-metadata-rebuild-foundation-design.md §4."
 
 **Approach:** the migration is multi-stage and order-sensitive. Each step must succeed before the next runs (use a transaction).
 
-1. **Recreate `lessons_with_metadata` view** — `CREATE OR REPLACE VIEW lessons_with_metadata AS SELECT ...` excluding `lesson_format`. The view is consumed by smart-search and search-lessons edge functions.
-2. **Redefine 4 RPCs** — `search_lessons` (drop `filter_lesson_format text` parameter + the `l.lesson_format = ANY(...)` filter clause); `complete_review_atomic` (drop INSERT/UPDATE references to `lesson_format` column + `v_meta->>'lessonFormat'`); `get_lesson_details_for_review` (drop `lesson_format TEXT` from RETURNS TABLE + the SELECT projection); `archive_duplicate_lesson` (drop `lesson_format` from copy targets).
+1. **Recreate `lessons_with_metadata` view** — `CREATE OR REPLACE VIEW lessons_with_metadata AS SELECT ..., NULL::text AS lesson_format, ...` for one release. **Keeping `lesson_format` as a NULL projection** so any stale edge-function bundles or other consumers reading the view don't break. Drops in the same follow-up migration that drops the deprecated RPC parameters (after stale-tab window closes).
+2. **Redefine 4 RPCs** — order matters per parameter-bridge concern (PostgREST returns hard `PGRST202` 404 for unknown params; old browser-cached clients can still send `filter_lesson_format`):
+   - `search_lessons` — **KEEP `filter_lesson_format text DEFAULT NULL` parameter** for one-release compatibility bridge. Remove only the `l.lesson_format = ANY(_alias_lesson_format(filter_lesson_format))` WHERE clause; old clients send the param → it's accepted → ignored. New clients omit it → DEFAULT NULL kicks in → also ignored. (Also keep `_alias_lesson_format` helper for one release; drops with the parameter.)
+   - `complete_review_atomic` (drop INSERT/UPDATE references to `lesson_format` column + `v_meta->>'lessonFormat'`)
+   - `get_lesson_details_for_review` (drop `lesson_format TEXT` from RETURNS TABLE + the SELECT projection)
+   - `archive_duplicate_lesson` (drop `lesson_format` from copy targets)
 3. **Rewrite `lessons_normalize_write_trg`** — drop the column⇄metadata sync logic for `lessonFormat` (kept for the other 9 fields it covers).
-4. **Drop `_alias_lesson_format`** SQL helper function.
-5. **Drop indexes** — `DROP INDEX IF EXISTS idx_lessons_format` (JSON-path) + `DROP INDEX IF EXISTS idx_lessons_lesson_format` (column-based). Expect 2 indexes per Task 1.1 snapshot.
-6. **Strip JSONB key** — `UPDATE lessons SET metadata = metadata - 'lessonFormat'`.
-7. **Drop column** — `ALTER TABLE lessons DROP COLUMN IF EXISTS lesson_format`.
-8. **Drop legacy `handle_lessons_metadata_write` trigger** if still attached (verify via `pg_trigger`); the M4 normalize trigger replaced it but legacy paths may still bind.
-9. **`lesson_archive.lesson_format` decision per Gate A** — keep historical archive (default); add migration comment documenting the decision.
+4. **Drop indexes** — `DROP INDEX IF EXISTS idx_lessons_format` (JSON-path) + `DROP INDEX IF EXISTS idx_lessons_lesson_format` (column-based). Expect 2 indexes per Task 1.1 snapshot.
+5. **Strip JSONB key** — `UPDATE lessons SET metadata = metadata - 'lessonFormat'`.
+6. **Drop column** — `ALTER TABLE lessons DROP COLUMN IF EXISTS lesson_format`.
+7. **Drop legacy `handle_lessons_metadata_write` trigger** if still attached (verify via `pg_trigger`); the M4 normalize trigger replaced it but legacy paths may still bind.
+8. **`lesson_archive.lesson_format` decision per Gate A** — keep historical archive (default); add migration comment documenting the decision.
+
+**Audit smart-search edge function** before committing the migration. The `lessons_with_metadata` view + `search-helpers.ts` cover the main path, but `supabase/functions/smart-search/index.ts` may also reference `lesson_format` directly. Grep `supabase/functions/smart-search/` for `lesson_format`/`lessonFormat`. If references exist, fold them into Task 1.3b's frontend+edge sweep — same pattern as `useLessonSearch.ts`.
 
 **Forward-rollback migration** prepared as a sibling `.sql.rollback` file: re-add column nullable; re-create indexes; restore RPC/view/trigger definitions. Metadata key restoration not feasible without snapshot — accepted.
 
-**Verify locally:**
+**Verify locally (psql/local SQL after `supabase db reset`):**
 ```bash
-supabase db reset
+supabase db reset  # applies all migrations including this one to local DB
 # Confirm column dropped:
-mcp__supabase-test__execute_sql: SELECT count(*) FROM information_schema.columns WHERE table_name='lessons' AND column_name='lesson_format';  -- expect 0
+psql "$LOCAL_DB" -c "SELECT count(*) FROM information_schema.columns WHERE table_name='lessons' AND column_name='lesson_format';"  # expect 0
 # Confirm JSONB key stripped:
-mcp__supabase-test__execute_sql: SELECT count(*) FROM lessons WHERE metadata ? 'lessonFormat';  -- expect 0
-# Confirm view recreated without column:
-mcp__supabase-test__execute_sql: SELECT column_name FROM information_schema.columns WHERE table_name='lessons_with_metadata' AND column_name='lesson_format';  -- expect 0 rows
-# Confirm RPCs recreated:
-mcp__supabase-test__execute_sql: SELECT pg_get_function_identity_arguments('public.search_lessons'::regproc);  -- expect no filter_lesson_format
-mcp__supabase-test__execute_sql: SELECT pg_get_functiondef('public.complete_review_atomic'::regproc) ~ 'lesson_format';  -- expect false
+psql "$LOCAL_DB" -c "SELECT count(*) FROM lessons WHERE metadata ? 'lessonFormat';"  # expect 0
+# Confirm view recreated WITH lesson_format as NULL (compat bridge):
+psql "$LOCAL_DB" -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='lessons_with_metadata' AND column_name='lesson_format';"  # expect 1 row, data_type=text (NULL projection)
+# Confirm search_lessons KEEPS filter_lesson_format param (compat bridge):
+psql "$LOCAL_DB" -c "SELECT pg_get_function_identity_arguments('public.search_lessons'::regproc) ~ 'filter_lesson_format';"  # expect true
+# Confirm complete_review_atomic dropped its reference:
+psql "$LOCAL_DB" -c "SELECT pg_get_functiondef('public.complete_review_atomic'::regproc) ~ 'lesson_format';"  # expect false
 # Confirm legacy trigger detached:
-mcp__supabase-test__execute_sql: SELECT count(*) FROM pg_trigger WHERE tgname ~ 'lesson_format' OR tgname = 'handle_lessons_metadata_write_trg';
+psql "$LOCAL_DB" -c "SELECT count(*) FROM pg_trigger WHERE tgname ~ 'lesson_format' OR tgname = 'handle_lessons_metadata_write_trg';"
 # Confirm indexes dropped:
+psql "$LOCAL_DB" -c "SELECT count(*) FROM pg_indexes WHERE indexname IN ('idx_lessons_format','idx_lessons_lesson_format');"  # expect 0
+```
+
+**Verify via TEST DB MCP (after CI applies the migration to TEST):**
+```
+mcp__supabase-test__execute_sql: SELECT count(*) FROM information_schema.columns WHERE table_name='lessons' AND column_name='lesson_format';  -- expect 0
+mcp__supabase-test__execute_sql: SELECT count(*) FROM lessons WHERE metadata ? 'lessonFormat';  -- expect 0
+mcp__supabase-test__execute_sql: SELECT column_name FROM information_schema.columns WHERE table_name='lessons_with_metadata' AND column_name='lesson_format';  -- expect 1 row (compat bridge)
+mcp__supabase-test__execute_sql: SELECT pg_get_function_identity_arguments('public.search_lessons'::regproc) ~ 'filter_lesson_format';  -- expect true (compat bridge)
+mcp__supabase-test__execute_sql: SELECT pg_get_functiondef('public.complete_review_atomic'::regproc) ~ 'lesson_format';  -- expect false
 mcp__supabase-test__execute_sql: SELECT count(*) FROM pg_indexes WHERE indexname IN ('idx_lessons_format','idx_lessons_lesson_format');  -- expect 0
 ```
 
@@ -249,13 +287,28 @@ git add supabase/migrations/*_drop_lesson_format.sql
 git commit -m "feat(metadata-foundation): drop lesson_format coordinated removal
 
 D3 — drop the lessonFormat field entirely. Coordinated removal:
-view recreate (lessons_with_metadata), 4 RPCs redefined (search_lessons,
-complete_review_atomic, get_lesson_details_for_review, archive_duplicate_lesson),
-normalize trigger rewritten, _alias_lesson_format helper dropped, 2 indexes
-dropped (idx_lessons_format JSON-path + idx_lessons_lesson_format column-based),
-JSONB key stripped, column dropped. lesson_archive.lesson_format kept for
-historical archive per Gate A decision. See design doc §4."
+view recreate (lessons_with_metadata, lesson_format kept as NULL projection
+for one-release compatibility bridge), 4 RPCs redefined (search_lessons
+keeps filter_lesson_format text DEFAULT NULL parameter for one-release
+bridge per PostgREST PGRST202 risk; complete_review_atomic /
+get_lesson_details_for_review / archive_duplicate_lesson drop column refs),
+normalize trigger rewritten, _alias_lesson_format helper kept (drops with
+the parameter in follow-up migration), 2 indexes dropped (idx_lessons_format
+JSON-path + idx_lessons_lesson_format column-based), JSONB key stripped,
+column dropped. lesson_archive.lesson_format kept for historical archive
+per Gate A decision. See design doc §4."
 ```
+
+### Task 1.3a (deferred to next release): drop deprecated parameters
+
+A follow-up migration ships in the next foundation-phase PR (or any PR ≥1 release after this one merges). Specifically:
+- Drop `filter_lesson_format` parameter from `search_lessons` (full DROP+CREATE; mirror the PR-1 pattern at `20260505000000:193-208`).
+- Drop `_alias_lesson_format` SQL helper.
+- Drop `lesson_format` projection from `lessons_with_metadata` view.
+
+**Why deferred:** Stale browser tabs (Netlify 1-year asset cache + 5-min TanStack Query staleTime) can keep emitting `filter_lesson_format` after the column drop. PostgREST returns hard `PGRST202` 404 on unknown RPC params. Bridge for one release; drop after a short cooldown (24-48h after frontend deploy ships).
+
+**Verify (TEST DB):** parameter is gone; smoke search-page navigation; smoke smart-search.
 
 ### Task 1.3b: lessonFormat removal — frontend + edge function sweep
 
@@ -304,16 +357,24 @@ referencing lessonFormat. See Gate A inventory."
 
 **Commit:** consolidated frontend filter updates.
 
-### Task 1.5: Closed-enum constants — extend Zod canonical (Task 1.0 scaffold)
+### Task 1.5: Wire Zod schemas to write surfaces
 
-**Files:**
-- Edit: `src/types/lessonMetadata.zod.ts` — confirm activity_type 5 values, tags 2 values, CRF 7 master-list features are present (should already be in Task 1.0 initial Zod content).
-- Run: `npm run generate:enums` to regenerate `enums.json`.
-- Verify: Zod schema imported by every TS write path (initial: `process-submission`, `complete-review`, `ReviewDetail.tsx`, scripts that write metadata). Each write callsite gets `schema.parse(input)` added.
+Each surface gets the *correct* schema based on which keys it operates in (per Task 1.0's two-schema split):
 
-**Verify:** type errors surface for any value not in the enum at every write surface; runtime errors surface from `schema.parse()` for invalid runtime values.
+**Files (review-form-keys side, `reviewFormPayload.zod.ts`):**
+- Edit: `supabase/functions/complete-review/index.ts` — at the top, parse incoming body with `reviewFormPayloadSchema.parse(body)` before passing `metadata` to `complete_review_atomic`. Catch ZodError → return 400 with field-level errors. Mirrors the existing `decision`/`submissionId` validation pattern.
+- Edit: `src/pages/ReviewDetail.tsx` — at save time, validate the form state against `reviewFormPayloadSchema` before calling the edge function. Surface validation errors inline.
 
-**Commit:** consolidated.
+**Files (canonical-keys side, `lessonMetadata.zod.ts`):**
+- Edit: `supabase/functions/process-submission/index.ts` — when PR 2 lands LLM-draft writes (Task 2.3+), each draft is `lessonMetadataSchema.parse()`d before write. Foundation-phase Task 1.5 only ships the import wiring; the actual `parse()` calls land per-prompt in PR 2.
+- Edit: any TS scripts that directly insert/update `lessons` rows (`scripts/identify-and-restore-missing-lessons.ts:184`, `scripts/migrate-metadata-to-columns.mjs`, etc.) — wrap inserts with `lessonMetadataSchema.parse(metadata)`.
+
+**Verify:**
+- `npm run type-check && npm run lint` clean.
+- Manual smoke: submit a malformed review payload to `complete-review` (e.g., `themes: "string-not-array"`) → expect 400 with Zod field-level error.
+- Edge function deploy works: `supabase functions deploy complete-review` boots without import errors. Confirm `deno.json` resolves `zod` correctly.
+
+**Commit:** consolidated. Includes both edge functions + ReviewDetail + scripts.
 
 ### Task 1.6: SQL CHECK + trigger value-validation (per Gate B sketch)
 
@@ -343,7 +404,11 @@ Per the kickoff prompt's PER-PR RITUAL. After bot-review rounds settle, merge �
 
 **Branch:** `feat/metadata-foundation-llm-tagging`
 
-**What ships:** `process-submission` edge function expanded with an Opus-based async tagging step. **Vocab-locked prompts only:** CRF (D9), activity_type (D2), tags (D2 + D7), plus any additional fields classified vocab-locked by Gate C. **Stage-1-gated prompts (academicConcepts, cultural_heritage, etc.) do NOT ship in PR 2** — they deploy after their corresponding worksheets land. Per-prompt eval-gate harness with labeled hold-out evaluation. Drafts populate canonical fields on the submission row; reviewer surfaces them in existing ReviewDetail.tsx (Phase 2 redesigns the picker UI).
+**What ships:** `process-submission` edge function expanded with an Opus-based async tagging step. **Vocab-locked prompts only:** CRF (D9), activity_type (D2), tags (D2 + D7), plus any additional fields classified vocab-locked by Gate C. **Stage-1-gated prompts (academicConcepts, cultural_heritage, etc.) do NOT ship in PR 2** — they deploy after their corresponding worksheets land. Per-prompt eval-gate harness with labeled hold-out evaluation.
+
+**Storage contract for LLM drafts** (resolved per reviewer feedback round 2): drafts written to a new column `lesson_submissions.ai_draft_metadata jsonb` (with companion `ai_draft_generated_at timestamp` and `ai_draft_model text` for provenance). Drafts stored in **canonical-keys shape** (matches `lessons.metadata`); `ReviewDetail.tsx` reads them at form-init time and applies `lessonToReviewMapper` (from Task 1.0) for display. `complete_review_atomic` does NOT change — reviewer's saved metadata is the final answer; the draft is read only at form-init time. Audit trail (LLM-draft vs final-review diff) preserved for free.
+
+**Why not pre-create a draft `submission_reviews` row:** `submission_reviews` has UNIQUE(submission_id) + NOT NULL `reviewer_id` FK to `auth.users`. Adding a sentinel "AI tagger" auth user pollutes audit logs; relaxing the FK is an architectural regression. Rejected.
 
 **Pre-flight:**
 - Read `supabase/functions/process-submission/index.ts` (entire) — current async submission processing.
@@ -361,6 +426,38 @@ Gate C produces the per-field classification table. Task 2.1 integrates that out
 
 **Output:** field-by-field list with vocabulary source, expected body-signal, sample-size estimate for the eval gate, and the Zod schema version that locks the canonical vocab. Folded into Tasks 2.3+ task list.
 
+### Task 2.2a: Migration adding `lesson_submissions.ai_draft_metadata` columns
+
+**Sub-skill:** `database-migrations`
+
+**Files:**
+- Create: `supabase/migrations/<YYYYMMDDHHMMSS>_lesson_submissions_ai_draft_metadata.sql`
+
+**Approach:**
+1. `ALTER TABLE lesson_submissions ADD COLUMN IF NOT EXISTS ai_draft_metadata jsonb DEFAULT NULL`.
+2. `ALTER TABLE lesson_submissions ADD COLUMN IF NOT EXISTS ai_draft_generated_at timestamptz DEFAULT NULL`.
+3. `ALTER TABLE lesson_submissions ADD COLUMN IF NOT EXISTS ai_draft_model text DEFAULT NULL`.
+4. Comment columns with intent + the "canonical-keys shape" invariant.
+5. Idempotent.
+
+**RLS:** the columns inherit `lesson_submissions` table RLS — no new policies. Service-role write from `process-submission` is unchanged from the existing pattern.
+
+**Verify (TEST DB, after CI applies):**
+```
+mcp__supabase-test__execute_sql: SELECT column_name FROM information_schema.columns WHERE table_name='lesson_submissions' AND column_name LIKE 'ai_draft_%';  -- expect 3 rows
+```
+
+**Commit:** consolidated.
+
+### Task 2.2b: ReviewDetail.tsx — read AI drafts at form init
+
+**Files:**
+- Edit: `src/pages/ReviewDetail.tsx` — at the existing `if (!reviews || reviews.length === 0)` branch (around lines 402-411), add: when no reviews row exists yet AND `submissionData.ai_draft_metadata` is non-null, populate initial `metadata` state via `lessonToReviewMapper(submissionData.ai_draft_metadata)`. When a `reviews` row already exists (reviewer has touched the submission), use `tagged_metadata` as today (drafts ignored — reviewer's authority).
+
+**Verify:** unit test for the read-site logic (existing test setup if available; otherwise add `ReviewDetail.aiDraft.test.tsx`). Manual smoke: load a submission with `ai_draft_metadata` set + no review row → form pre-populates with mapped values; load one with a review row → drafts ignored.
+
+**Commit:** consolidated.
+
 ### Task 2.2: Eval-gate harness
 
 **Goal:** Build a labeled hold-out evaluation harness that runs per prompt before the prompt ships. Drop or rewrite any prompt that doesn't clear the gate.
@@ -375,7 +472,7 @@ Gate C produces the per-field classification table. Task 2.1 integrates that out
 **Goal:** Ship the CRF prompt as the canonical reference implementation; remaining vocab-locked prompts mirror its shape. CRF chosen as first because vocab is fully locked (7 master-list features + 35 example practices) and the body-signal source (body CR section) is well-defined.
 
 **Files:**
-- Edit: `supabase/functions/process-submission/index.ts` — add Opus call, prompt, Zod validation against `lessonMetadata.zod.ts`, write to submission row. Set `crf_confirmed = false` on draft (reviewer flips to true at validate time).
+- Edit: `supabase/functions/process-submission/index.ts` — add Opus call, prompt, Zod validation against `lessonMetadata.zod.ts` (canonical-keys shape — `cultural_responsiveness_features` is `text[]` of the 7 features). Write the validated draft into `lesson_submissions.ai_draft_metadata` (merge with whatever other prompt outputs land in the same submission flow); set `ai_draft_generated_at = now()`; set `ai_draft_model = 'opus-4-7'` (or current model). The `crf_confirmed` boolean stays `false` until the reviewer validates (reviewer flips it via the existing review save flow; foundation-phase ReviewDetail does not yet expose a CRF picker — Phase 2).
 - Create: prompt file (location: `supabase/functions/process-submission/prompts/cultural-responsiveness-features.md` or similar).
 
 **Eval gate:** run on labeled hold-out. If metrics clear threshold, deploy. Otherwise iterate on prompt and re-run.
@@ -393,7 +490,7 @@ skipped. Eval-gate metrics: <gate output>. See design doc §6."
 
 ### Task 2.4: Second prompt (activity_type — D2)
 
-Same shape as 2.3. Vocab is the 5-value enum locked in PR 1 (`cooking / garden / both / academic / craft`). Body-signal source: lesson summary + skills lists + agenda. Pick the single best fit; reviewer can override.
+Same shape as 2.3. Vocab is the 5-value enum locked in PR 1 (`cooking / garden / both / academic / craft`). Body-signal source: lesson summary + skills lists + agenda. Pick the single best fit; **draft emits canonical-keys shape `["cooking"]`** (single-element array), NOT review-form shape `"cooking"` (string) — because `ai_draft_metadata` lives in canonical keys; the read-site mapper handles the array→string translation for display.
 
 ### Task 2.5: Third prompt (tags — D2 + D7)
 
@@ -526,7 +623,7 @@ operates on complete data."
 ### Task 4.5: FSA retitle
 
 **Files:**
-- Migration: `UPDATE lessons SET title = '<new title>' WHERE id = '<FSA lesson_id>'`. Read decision journal N1 lines 495-528 for current vs target title.
+- Migration: `UPDATE lessons SET title = '<new title>' WHERE lesson_id = '<FSA lesson_id_text>'`. The `lessons` table has both an `id uuid` PK and a separate `lesson_id text` UNIQUE column; FSA's identifier is the Google Doc ID (text), keyed via `lesson_id` (consistent with how every other surface in the codebase keys lessons — `process-submission/index.ts:185-188`, `complete_review_atomic` line 177, `ReviewDashboard.tsx:143`). Read decision journal N1 lines 495-528 for current vs target title; FSA's `lesson_id` per `1iqGFHrQ0rWfyoLo4R4n8FO9N-S7LW1ZpalaLNF5_Tmk`.
 
 ### Task 4.6: PR ritual
 
@@ -567,22 +664,24 @@ Standard. PROD MCP verification mandatory after every applied migration.
 - Filter definition updates — sidebar renders 5-value Activity Type, tag-based Lesson Type filter, no lessonFormat section.
 
 ### Integration
-- `process-submission` edge function — submit lesson with full body content → LLM auto-tag drafts populate ~10 fields; reviewer queue surfaces them.
+- `process-submission` edge function — submit lesson with full body content → LLM auto-tag drafts populate vocab-locked fields in `lesson_submissions.ai_draft_metadata`; reviewer queue surfaces them via `lessonToReviewMapper`.
 - Eval-gate harness — labeled hold-out runs per prompt; pass/fail logged.
-- `search_vector` regeneration — FTS query for known concept hits matching rows.
-- `search_synonyms` query expansion — `smart-search` returns expanded synonym matches.
+- `search_vector` regeneration (PR 3a) — FTS query for known concept hits matching rows.
+- `search_synonyms` query expansion (PR 3b / PR 6+, NOT PR 3a) — `smart-search` returns expanded synonym matches. **Do not verify in PR 3a** — `search_synonyms` is not populated until Stage 2 re-tag outputs land.
 
 ### E2E
-- Submit lesson → reviewer queue → reviewer sees LLM-drafted tags → reviewer validates → publish.
+- Submit lesson → reviewer queue → reviewer sees LLM-drafted tags (mapped from canonical to review-form keys) → reviewer validates → publish.
 - Filter sidebar: Activity Type 5-value selection; Lesson Type tag filter (orientation, bilingual_handouts); lessonFormat filter absent.
-- Series-aware dedup (post-PR 1, dedup pipeline reads `series_id`): submit a Pt 2 lesson with metadata identical to existing Pt 1; confirm dedup does NOT flag (skip-comparison logic).
+- (Series-aware dedup E2E removed: PR 1 adds `series_id` and `part_number` columns, but teaching the dedup pipeline to skip comparison within a series belongs to the **dedup-pipeline third-state work track** which is explicitly out of scope per design doc §11. The series_id columns are scaffolding for that future work track; functional dedup behavior is verified there, not here.)
 
 ### RLS
 - No RLS changes in foundation phase; `npm run test:rls` must pass unchanged.
 
 ### Manual smoke checklist (per `superpowers:verification-before-completion`)
-- After PR 1: TEST DB column shapes verified via MCP; deploy preview filter UI verified; lesson detail renders without lessonFormat. PROD verification after migration approval.
-- After PR 2: TEST submission writes drafted tags; reviewer queue surfaces them; eval-gate logs persist. PROD verification of edge function deploy via `mcp__supabase-remote__get_edge_function`.
-- After PR 3: smart-search query in TEST returns expanded synonym results; embedding regeneration confirmed.
-- After PR 4: 23 imports + FSA retitle verified in TEST; FK references handled; PROD verification after merge.
+- After PR 1: TEST DB column shapes verified via MCP; deploy preview filter UI verified; lesson detail renders without lessonFormat; `search_lessons` RPC still accepts `filter_lesson_format` param (compat bridge); `lessons_with_metadata` view still projects `lesson_format` as NULL (compat bridge). PROD verification after migration approval.
+- After PR 1's follow-up (Task 1.3a, ≥1 release later): deprecated parameters removed from `search_lessons` and `lessons_with_metadata` view; smoke search-page navigation; smoke smart-search.
+- After PR 2: TEST submission writes drafted tags into `lesson_submissions.ai_draft_metadata`; ReviewDetail.tsx surfaces them via `lessonToReviewMapper` for an unclaimed submission; eval-gate logs persist. PROD verification of edge function deploy via `mcp__supabase-remote__get_edge_function`.
+- After PR 3a: `search_vector` includes academicConcepts (FTS query verifies); embedding regeneration confirmed; smart-search drift fix verified per Task 3a.1's chosen option. **Do NOT verify synonym expansion** — that's PR 3b / PR 6+.
+- After PR 3b / PR 6+: smart-search query in TEST returns expanded synonym results.
+- After PR 4: 23 imports + archive concepts recovery + FSA retitle verified in TEST; FK references handled; PROD verification after merge.
 - After PR 5+ / 6+: spec'd at implementation time per dependent worksheet round.

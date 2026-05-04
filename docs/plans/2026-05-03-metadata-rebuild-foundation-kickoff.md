@@ -119,11 +119,27 @@ be better" arguments cannot. Per-card rationale lives in the decision journal.
 - **Stage-1-gated (deploys after corresponding worksheet lands, NOT in PR 2):** academicConcepts (concepts worksheet), cultural_heritage (heritage worksheet) + any Gate-C-classified Stage-1-gated.
 - **Operational gating choice:** Stage-1-gated prompts do NOT deploy with v3-baseline vocabulary. Pre-canonical drift creates Stage 2 cleanup cost; the prompts wait for their worksheets.
 
-**Validator architecture (per design doc §5, Option B confirmed):**
-- TS/Zod canonical source (`src/types/lessonMetadata.zod.ts`); closed enums live here.
+**Validator architecture (per design doc §5, Option B confirmed; refined round 2):**
+- **Two TS schemas, not one** (LessonMetadata and ReviewMetadata genuinely diverge):
+  - `src/types/lessonMetadata.zod.ts` — canonical (array values, thematicCategories/seasonTiming/locationRequirements keys). Imported by `process-submission`, data-import scripts, Stage 2 batch.
+  - `src/types/reviewFormPayload.zod.ts` — review-form (single-select strings, themes/season/location keys). Imported by `complete-review` edge function and `ReviewDetail.tsx`.
+  - `src/utils/{reviewToLesson,lessonToReview}Mapper.ts` — bidirectional pure-function mappers mirroring the SQL translation in `complete_review_atomic`.
+- Edge functions resolve `zod` via `supabase/functions/deno.json` (`"imports": { "zod": "npm:zod@3" }`); fallback to `https://esm.sh/zod@3` URL imports if needed.
 - Pydantic mirrors enums for Stage 2 batch via generated `enums.json`; CI tests Zod ↔ Pydantic equivalence.
-- SQL CHECK + trigger value-validation hand-synced from Zod source.
-- Today's coverage: 1 SQL CHECK, 1 shape-only trigger covering 10/17, 0 Zod, 5/17 Pydantic in v3. Foundation phase establishes all four artifacts.
+- SQL CHECK + trigger value-validation hand-synced from canonical Zod source.
+- Today's coverage: 1 SQL CHECK, 1 shape-only trigger covering 10/17, 0 Zod, 5/17 Pydantic in v3. Foundation phase establishes all artifacts.
+
+**Rollout-compatibility pattern (PR 1):**
+- PostgREST returns hard `PGRST202` 404 on unknown RPC parameters; Netlify caches JS bundles 1 year (hash-immutable); TanStack Query staleTime 5 min. Stale browser tabs can emit old RPC params after column drops.
+- **Pattern:** keep deprecated parameters/projections with `DEFAULT NULL` for one release; drop in a follow-up migration ≥24-48h after frontend deploys.
+- Applies to PR 1: `search_lessons.filter_lesson_format` parameter + `lessons_with_metadata` view's `lesson_format` projection both kept for one release; dropped in Task 1.3a follow-up migration.
+
+**LLM draft storage contract (PR 2):**
+- Drafts live in new column `lesson_submissions.ai_draft_metadata jsonb` (+ `ai_draft_generated_at` + `ai_draft_model`).
+- Stored in **canonical-keys shape** (matches `lessons.metadata`, not `submission_reviews.tagged_metadata`).
+- ReviewDetail.tsx reads `ai_draft_metadata` at form-init (when no review row exists yet) and applies `lessonToReviewMapper` for display.
+- `complete_review_atomic` does NOT change — reviewer's saved metadata is the final answer; draft is read-only display.
+- Why not pre-create a `submission_reviews` row: UNIQUE(submission_id) + NOT NULL `reviewer_id` FK to `auth.users` make sentinel-reviewer infeasible.
 
 **Stage 2 reviewer model — two layers:**
 - **Locked QC floor (Cross-cutting Scope 3):** spot-check 50-100 sampled lessons; flagged patterns escalate.
