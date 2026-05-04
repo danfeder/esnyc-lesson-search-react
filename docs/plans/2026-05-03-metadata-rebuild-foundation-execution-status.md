@@ -1,20 +1,22 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-03 — Session 3 complete (Gate C done; all 3 pre-PR-1 gates closed)
-**Current PR:** PR 1 next (Pre-PR-1 Gates A/B/C all closed)
-**Current task:** PR 1 Task 1.0 — land the Zod canonical scaffold (Gate B output) on a feature branch
-**Branch:** main (not yet branched for PR 1)
-**Last commit on branch:** `d9bacd0` — docs(metadata-foundation): session 3 — Gate C per-prompt readiness audit complete
+**Last updated:** 2026-05-03 — Session 4 complete (PR 1 Task 1.0 — Zod canonical scaffold landed on feat/metadata-foundation-schema)
+**Current PR:** PR 1 in flight (multi-task; opens after Task 1.6 lands)
+**Current task:** PR 1 Task 1.1 — Pre-migration corpus verification (TEST DB) — Gate A integration
+**Branch:** `feat/metadata-foundation-schema` (local, not pushed)
+**Last commit on feature branch:** `6b46db4` — feat(metadata-foundation): Zod canonical scaffold + review/lesson mappers (Gate B)
+**Last commit on main:** `4e93541` — docs(metadata-foundation): kickoff session-reminders + auto-memory updates
 
 ## Done
 
 - **Gate A — lessonFormat dependency sweep verified.** Per-surface task list produced (see "Gate A output" below). Three reviewer-cited refs confirmed; smart-search audit complete (no refs in smart-search/index.ts); 5th RPC discovered (`resolve_duplicate_group`); `lesson_archive.lesson_format` keep-historical decision documented.
 - **Gate B — validator architecture decisions captured.** Output doc at `docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md` (179 lines). 7 decisions + CI gate summary + 3 open TBDs. Decisions: (1) Option B locked (TS/Zod canonical) — codebase TS-bias rationale; (2) two-schema split locked (LessonMetadata canonical / ReviewMetadata review-form) with bidirectional mapper contract mirroring `complete_review_atomic` SQL translation; (3) file locations recommended (`src/types/lessonMetadata.zod.ts`, `src/types/reviewFormPayload.zod.ts`, `src/types/generated/enums.json`, `scripts/generate-enums-json.ts`, `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`, `supabase/functions/deno.json`); (4) edge function deps via `deno.json` `npm:zod@3.24.0` with esm.sh URL fallback; (5) Vitest enum-equivalence test approach (Zod source ↔ committed enums.json), Python equivalence deferred to Stage 2 host repo (consumes enums.json regardless); (6) SQL CHECK on three text[] columns (activity_type, tags, CRF) + extend trigger to RAISE EXCEPTION on bad enum values, hand-synced from enums.json with `-- SOURCE: enums.json["<key>"]` comment markers + Vitest sync test; (7) initial closed-enum coverage = activity_type/tags/CRF/season_timing only, rest stay open `z.array(z.string())` until Stage 1 worksheets tighten them.
 - **Gate C — per-prompt readiness audit complete.** 10 fields classified (8 impl-plan-listed + 2 obvious-gap candidates added during audit). **Net: 5 vocab-locked / 5 Stage-1-gated / 0 dropped.** Full table + worksheet-round assignment + net PR-2 prompt scope below at "Gate C output". Combined with design-doc-locked classifications, **PR 2 vocab-locked prompt scope is now 8 prompts** (CRF + activity_type + tags + thematic_categories + social_emotional_learning + cooking_methods + season_timing + core_competencies); **Stage-1-gated prompt scope is 6 distinct prompts post-bundling** (academicConcepts+academic_integration bundled / cultural_heritage / garden_skills / cooking_skills / main_ingredients / observances_holidays).
+- **PR 1 Task 1.0 — Zod canonical scaffold landed on `feat/metadata-foundation-schema` (commit `6b46db4`, 11 files / +761 lines).** Two-schema architecture (canonical lesson + review-form payload) plus bidirectional pure-function mappers mirroring the SQL translation in `complete_review_atomic`. Initial closed-enum coverage = activity_type (5) / tags (2) / season_timing (4) / cultural_responsiveness_features (7); rest stay `z.array(z.string())` until Stage 1 closes them. CRF master-list cross-validated against TEST DB top-7 distribution. Generator script + committed `enums.json` + Vitest equivalence test (replaces a separate "is enums.json fresh" CI step). `supabase/functions/deno.json` resolves zod for edge functions (`npm:zod@3.24.0`). Verification: `type-check` + `lint` clean; full `vitest --run` 508/508 across 37 files (33 new — 28 mapper + 5 enum equivalence); generator idempotent. Branch is local (not pushed); PR 1 opens after Task 1.6 lands.
 
 ## In flight
 
-(none — Session 3 wrapped Gate C; all three pre-PR-1 gates are closed; next session starts PR 1 Task 1.0)
+(none — Session 4 wrapped Task 1.0; next session opens Task 1.1)
 
 ## Blocked
 
@@ -30,6 +32,8 @@
   - **LLM draft storage contract.** New columns `lesson_submissions.{ai_draft_metadata jsonb, ai_draft_generated_at timestamptz, ai_draft_model text}` (Option A; Option B rejected because `submission_reviews.reviewer_id` FK NOT NULL to `auth.users` blocks sentinel reviewer). Drafts stored in canonical-keys shape; ReviewDetail.tsx reads at form-init via `lessonToReviewMapper`. `complete_review_atomic` unchanged.
 - **2026-05-03 (factual fix):** PR 4 Task 4.5 (FSA retitle) used `WHERE id = '<lesson_id>'` — wrong because `lessons` has both `id uuid` PK and separate `lesson_id text` UNIQUE column; FSA's identifier is the Google Doc ID (text). Frontend keys lessons by `lesson_id` everywhere. Corrected to `WHERE lesson_id = '<FSA lesson_id_text>'`.
 - **2026-05-03 (test plan corrections):** Synonym-expansion verification moved from PR 3a manual smoke (where `search_synonyms` is not populated) to PR 3b / PR 6+. Series-aware dedup E2E test removed entirely — design doc §11 explicitly puts dedup-pipeline third-state redesign in a separate work track; series_id columns are scaffolding for that future track, not exercised in foundation phase.
+- **2026-05-03 (Session 4 / Task 1.0):** LessonMetadata Zod schema is fully optional (matches runtime usage of partial drafts / legacy rows). Existing `src/types/index.ts` interfaces (some required fields) NOT touched — consumers using the schema get the Zod-inferred type (`LessonMetadataValidated`), consumers using existing interfaces are unaffected. The eventual canonical-source migration (Zod replaces interfaces) is a Phase-2 / out-of-scope decision per validator-architecture doc TBD #2.
+- **2026-05-03 (Session 4 / Task 1.0):** Zod resolved at `^3.25.76` from `npm install zod@^3.24.0` (newest 3.x; specifier in deno.json keeps `npm:zod@3.24.0` as the documented baseline since edge runtime resolves loosely). Edge-function smoke verification (`supabase functions serve` boots without zod import errors) deferred to Task 1.5 — no edge function imports zod yet, so deno.json zod resolution isn't exercised until Task 1.5 wires `complete-review` and `process-submission` to the schemas.
 
 ## Out-of-scope follow-ups captured here
 
@@ -339,3 +343,34 @@ Major events:
 - No code changes this session; status doc updated; investigation-only.
 
 Next session: PR 1 Task 1.0 — land the Zod canonical scaffold (Gate B output) on a new feature branch `feat/metadata-foundation-schema`. Per impl plan §1.0: create two Zod schemas + bidirectional mappers + mapper tests + enums.json + generator script + `npm install zod@^3.24.0` + `supabase/functions/deno.json`. Initial closed-enum coverage = activity_type (5) / tags (2) / cultural_responsiveness_features (7) / season_timing (4); rest stay `z.array(z.string())` placeholders. Verify edge function imports zod via deno.json `npm:zod@3` (esm.sh fallback in reserve). Commit message template in impl plan §1.0.
+
+### Session 4 — 2026-05-03 — PR 1 Task 1.0 (Zod canonical scaffold landed)
+
+Major events:
+- **Branch `feat/metadata-foundation-schema` created off main; commit `6b46db4` — 11 files / +761 lines / -3 lines.** Local only (not pushed; PR opens after Task 1.6 lands per multi-task PR plan).
+- **Two-schema architecture scaffolded** per Gate B output:
+  - `src/types/lessonMetadata.zod.ts` — canonical lesson schema. Closed enums on activity_type (5) / tags (2) / season_timing (4) / cultural_responsiveness_features (7); rest stay `z.array(z.string())` placeholders for PR 5+. All fields optional (matches runtime usage of partial drafts / legacy rows).
+  - `src/types/reviewFormPayload.zod.ts` — review-form schema (themes/season/location keys, single-select activityType/location strings). Imports closed-enum types from canonical.
+  - `src/utils/reviewToLessonMapper.ts` + `src/utils/lessonToReviewMapper.ts` — bidirectional pure-function TS mirrors of the SQL translation in `complete_review_atomic` (migration `20260428000003` lines 142-167). Translation rules: activityType string→[string], location string→locationRequirements [string], themes→thematicCategories rename, season→seasonTiming rename, all other arrays passed through.
+  - `src/utils/reviewToLessonMapper.test.ts` — 28 tests covering empty payload, every translation rule, mixed payload acceptance fixture, 5 round-trip review→canonical→review fixtures (all lossless), 5 round-trip canonical→review→canonical fixtures (lossless when activityType/locationRequirements ≤1 element), and one explicit asymmetry test (multi-element activityType is lossy on canonical→review→canonical, documented as design intent).
+  - `src/types/generated/enums.json` — committed JSON mirror of closed-enum lists (`{ activity_type, tags, season_timing, cultural_responsiveness_features }`). Pydantic + SQL CHECK constraints will hand-sync from this file with `-- SOURCE: enums.json["<key>"]` comment markers.
+  - `src/types/generated/enums.json.test.ts` — 5-test Vitest equivalence test asserting committed JSON matches the canonical Zod source per closed-enum key. Replaces a separate "is enums.json fresh" CI step (validator-arch §5).
+  - `scripts/generate-enums-json.ts` — single writer of `enums.json`. Wired up via `npm run generate:enums`. Verified idempotent (md5 unchanged after re-running).
+  - `supabase/functions/deno.json` — `{"imports":{"zod":"npm:zod@3.24.0"}}` for edge-function zod resolution. Deferred edge-function smoke verification (`supabase functions serve` import smoke) to Task 1.5 since no edge function imports zod yet.
+  - `package.json` + `package-lock.json` — `zod@^3.25.76` resolved (latest 3.x). Specifier in deno.json keeps `npm:zod@3.24.0` as documented baseline since edge runtime resolves loosely.
+- **Cultural-responsiveness-features 7 master-list values verified** by querying TEST DB (`mcp__supabase-test__execute_sql`). Top 7 PROD distribution exactly matches v3 taxonomy `esynyc-taxonomy-schema-v2.md` §12 ordering. One stray "Communication of high expectations" (cnt=1) is drift to ignore. Locked order in `lessonMetadata.zod.ts` mirrors v3 taxonomy order for predictability.
+- **Verification clean (per `superpowers:verification-before-completion`):**
+  - `npm run type-check` → green.
+  - `npm run lint` → green after one round of `lint:fix` (8 prettier formatting issues across 5 files; auto-corrected).
+  - `npm run test --run` → 508/508 across 37 files. Of those, 33 are new (28 mapper + 5 enum equivalence). No regressions in other suites.
+  - `npm run generate:enums` → idempotent (md5 unchanged after re-run).
+  - `git diff --stat` confirmed only the 11 expected files changed; tooling state files (.beads/, .claude/scheduled_tasks.lock) NOT staged.
+- **Decisions captured during execution:**
+  - Zod schema kept fully optional rather than mirroring the strict `LessonMetadata`/`ReviewMetadata` interface required-fields. Reasoning: foundation-phase schema validates partial LLM drafts (PR 2) and legacy rows; runtime strictness lives in the closed-enum CONTENTS, not field PRESENCE. Existing TS interfaces NOT touched — consumers using either can co-exist. Migration to Zod-as-canonical-type-source deferred per validator-arch TBD #2.
+  - `lessonFormat` retained in canonical schema as `z.string().optional()` even though Task 1.3 will drop it. Scaffold matches CURRENT TS interfaces; field disappears with the column drop.
+  - `tags` deliberately NOT added to `reviewFormPayload.zod.ts` — review form doesn't expose a tags picker today; tags arrive via canonical-keys path (PR 2 LLM draft) only. If reviewer surface ever exposes tags, add to review-form schema at that time.
+  - `academicConcepts` (D5 new key) added as `z.record(z.string(), z.array(z.string()))` placeholder in canonical schema; closed-enum vocab waits for concepts worksheet (Stage-1-gated).
+  - Mapper output excludes empty arrays / undefined fields (matches SQL `''` → `[]` collapse); `lessonToReview` empty-array suppression keeps the round-trip `lessonToReview(reviewToLesson({}))` === `{}`.
+- **No PR opened.** PR 1 is multi-task per impl plan; opens after Task 1.6 (SQL CHECK + trigger value-validation) lands.
+
+Next session: PR 1 Task 1.1 — Pre-migration corpus verification (TEST DB). Per impl plan §1.1: read-only `mcp__supabase-test__execute_sql` queries to baseline corpus shape before writing the structural-schema migration. Six queries in the Gate A output ("TEST DB verification queue logged" section above): (1) legacy `handle_lessons_metadata_write_trg` attachment status via pg_trigger; (2) lessonFormat-referencing index inventory (expect 2: `idx_lessons_format` JSON-path + `idx_lessons_lesson_format` column-based); (3) lessonFormat key population count on `lessons.metadata`; (4) activity_type distribution to confirm no rows currently use 'craft'; (5) tags column unused/null; (6) cultural_responsiveness_features distribution + drift evidence. Also re-verify Gate A surface inventory still matches current code (no drift since Session 1 sweep). Investigation only — no commit.
