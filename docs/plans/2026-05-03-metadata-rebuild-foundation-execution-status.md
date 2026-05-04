@@ -1,18 +1,19 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-03 — Session 1 complete (Gate A done)
+**Last updated:** 2026-05-03 — Session 2 complete (Gate B done)
 **Current PR:** Pre-PR-1 Gates A/B/C (no PR; investigation/decision tasks first)
-**Current task:** Gate B — Validator architecture decision + Zod canonical scaffold
+**Current task:** Gate C — Per-prompt readiness audit (next session)
 **Branch:** main (not yet branched for PR 1)
 **Last commit on branch:** (TBD this session)
 
 ## Done
 
 - **Gate A — lessonFormat dependency sweep verified.** Per-surface task list produced (see "Gate A output" below). Three reviewer-cited refs confirmed; smart-search audit complete (no refs in smart-search/index.ts); 5th RPC discovered (`resolve_duplicate_group`); `lesson_archive.lesson_format` keep-historical decision documented.
+- **Gate B — validator architecture decisions captured.** Output doc at `docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md` (179 lines). 7 decisions + CI gate summary + 3 open TBDs. Decisions: (1) Option B locked (TS/Zod canonical) — codebase TS-bias rationale; (2) two-schema split locked (LessonMetadata canonical / ReviewMetadata review-form) with bidirectional mapper contract mirroring `complete_review_atomic` SQL translation; (3) file locations recommended (`src/types/lessonMetadata.zod.ts`, `src/types/reviewFormPayload.zod.ts`, `src/types/generated/enums.json`, `scripts/generate-enums-json.ts`, `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`, `supabase/functions/deno.json`); (4) edge function deps via `deno.json` `npm:zod@3.24.0` with esm.sh URL fallback; (5) Vitest enum-equivalence test approach (Zod source ↔ committed enums.json), Python equivalence deferred to Stage 2 host repo (consumes enums.json regardless); (6) SQL CHECK on three text[] columns (activity_type, tags, CRF) + extend trigger to RAISE EXCEPTION on bad enum values, hand-synced from enums.json with `-- SOURCE: enums.json["<key>"]` comment markers + Vitest sync test; (7) initial closed-enum coverage = activity_type/tags/CRF/season_timing only, rest stay open `z.array(z.string())` until Stage 1 worksheets tighten them.
 
 ## In flight
 
-(none — Session 1 wrapped Gate A; next session starts Gate B)
+(none — Session 2 wrapped Gate B; next session starts Gate C)
 
 ## Blocked
 
@@ -210,3 +211,31 @@ Major events:
 - No code changes this session; status doc updated.
 
 Next session: Gate B (validator architecture decision + Zod canonical scaffold). Per impl plan, Gate B produces `docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md` (≤200 lines) capturing the two-schema split, mapper contract, edge-function dependency strategy, and equivalence-test approach. The actual scaffold code lands in PR 1 as Task 1.0.
+
+### Session 2 — 2026-05-03 — Gate B (validator architecture decision)
+
+Major events:
+- **Gate B output committed at `docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md`** (179 lines, under the ≤200 cap). Captures 7 decisions + CI gate summary + 3 open TBDs.
+- **Verified current-state baseline before drafting:**
+  - `package.json`: zod NOT installed (confirmed; PR 1 Task 1.0 adds `zod@^3.24.0` to dependencies).
+  - `supabase/functions/`: 12 functions, NO existing `deno.json` or `import_map.json` at function-dir level (PR 1 Task 1.0 creates `deno.json`).
+  - `src/types/index.ts:28-49` (LessonMetadata) and `:103-121` (ReviewMetadata): two-schema divergence confirmed — `activityType` (array vs string), key renames `themes ↔ thematicCategories` / `season ↔ seasonTiming` / `location string ↔ locationRequirements array`.
+  - `/Users/danfeder/cCode/taggingv3/gpt_tagger/models.py`: 5 strict-enum fields in `Metadata` class (gradeLevel, thematicCategories, locationRequirements, socialEmotionalLearning, lessonFormat) + 2 lenient in `MetadataO4Mini` subclass (observancesHolidays, culturalResponsivenessFeatures with auto-correct/silent-drop). Matches design doc's "5 of 17" framing.
+  - `valid_seasons` CHECK exists in baseline (text[] `<@` set-containment idiom — precedent for new CHECK constraints).
+  - `lessons_normalize_write_trg` (baseline `20260509000000`): shape-only column⇄metadata sync covering 10 fields (concepts rescue + B–K). Pattern is `RAISE NOTICE` on coercion. Foundation phase extends to value-validation with `RAISE EXCEPTION` (hard-fail).
+- **7 decisions captured:**
+  1. Option B (TS/Zod canonical) confirmed — codebase TS-bias rationale.
+  2. Two-schema architecture (LessonMetadata + ReviewMetadata) with bidirectional pure-function mappers mirroring `complete_review_atomic` SQL translation; round-trip property tests.
+  3. File locations: `src/types/lessonMetadata.zod.ts`, `src/types/reviewFormPayload.zod.ts`, `src/types/generated/enums.json`, `scripts/generate-enums-json.ts`, `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`, `supabase/functions/deno.json`.
+  4. Edge function deps via `deno.json` `npm:zod@3.24.0` with `esm.sh` URL fallback documented.
+  5. Vitest enum-equivalence test (Zod source ↔ committed enums.json) replaces a separate "is enums.json fresh" CI step. Python equivalence deferred to Stage 2 batch host repo (TBD); enums.json is the contract regardless.
+  6. SQL CHECK on three text[] columns (activity_type 5-value, tags 2-value, cultural_responsiveness_features 7-value) following `valid_seasons` precedent + extend trigger to RAISE EXCEPTION on bad JSONB-embedded enum values. Hand-synced from enums.json with `-- SOURCE: enums.json["<key>"]` comment markers + Vitest string-match sync test.
+  7. Initial closed-enum coverage in PR 1 scaffold = activity_type / tags / CRF / season_timing; remaining 12 fields stay `z.array(z.string())` placeholders until Stage 1 worksheets land in PR 5+.
+- **3 TBDs documented as deferred (not blocking PR 1):**
+  - Stage 2 batch host repo location (in-repo vs sibling-repo) — affects Pydantic equivalence test location, decided at PR 6+ scope.
+  - Whether to migrate `complete_review_atomic` SQL translation to TS-side mappers as the source of truth — Phase 2 reviewer-UX decision; foundation phase keeps both with mapper round-trip tests as drift protection.
+  - Pydantic auto-generation from enums.json (`Literal[*VALUES]` with json-load at module import) — recommended at PR 6+ time to eliminate hand-mirror step.
+- **No code changes this session.** Gate B is investigation/decision only; the scaffold code lands as PR 1 Task 1.0 per impl plan §1.0 (two Zod schemas + two mappers + mapper tests + enums.json + generator + package.json zod install + deno.json + Vitest equivalence tests).
+- Baseline checks clean throughout: `npm run type-check && npm run lint` both green.
+
+Next session: Gate C (per-prompt readiness audit). Per impl plan §Gate C, audits ~6 candidate fields beyond the locked-3 (CRF / activity_type / tags) + Stage-1-gated-2 (academicConcepts / cultural_heritage). Possible candidates listed: `thematicCategories`, `socialEmotionalLearning`, `cookingMethods`, `cookingSkills`, `gardenSkills`, `seasonTiming`, `observancesHolidays`, `mainIngredients`. Each gets classified vocab-locked (ships in PR 2) / Stage-1-gated (deploys after worksheet) / dropped (out of foundation scope). Output is a per-prompt classification table folded into PR 2 task list. No commit; investigation only.
