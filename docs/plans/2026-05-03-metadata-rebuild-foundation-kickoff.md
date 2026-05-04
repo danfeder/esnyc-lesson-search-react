@@ -294,12 +294,52 @@ Your auto-loaded MEMORY.md references include:
 - `feedback_data_safety_top_priority.md`
 - `feedback_user_relearning.md`
 - `feedback_workflows_not_sacred.md`
-- `feedback_plain_language.md`
+- `feedback_plain_language.md` (especially relevant when asking the user decision questions — see Session 3 / Gate C reinforcement)
+- `feedback_opus_subagents.md` (use Opus when dispatching subagents via the Agent tool)
 - `project_metadata_rebuild_initiative.md` (initiative pointer)
 - `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 - Plus the SASL-flake / edge-function-deploy-verification / pre-delete-checklist hygiene notes
 
 They apply throughout. Re-read them if a question comes up that they might cover.
+
+# SESSION REMINDERS (re-read each session)
+
+These three working patterns surfaced during the early sessions of this
+initiative. They apply throughout the foundation phase:
+
+1. **Use Supabase MCP tools and skills proactively, not only for the
+   mandatory verification checkpoints.** This initiative is supabase-heavy.
+   For any DB-touching investigation (corpus distribution audits, schema
+   shape checks, drift-pattern queries, before-and-after metadata
+   comparisons), `mcp__supabase-test__execute_sql` and
+   `mcp__supabase-test__list_tables` are usually the right first move over
+   reading SQL files or guessing from memory. PROD reads via
+   `mcp__supabase-remote__execute_sql` are fine for read-only audits — be
+   careful only when writing. Before any migration file work, invoke the
+   `database-migrations` skill via the Skill tool (kickoff §HARD RULES says
+   this is mandatory). The `supabase:supabase` and
+   `supabase:supabase-postgres-best-practices` skills are also available —
+   invoke them when their triggers fit (RLS work, edge functions, query
+   tuning, etc.).
+
+2. **When dispatching subagents via the Agent tool, use Opus.** Pass
+   `model: "opus"` explicitly for substantive work — code review, codebase
+   exploration / explanation, design analysis, multi-step research,
+   subagent-driven development, plan execution. Agent definitions may
+   default to Sonnet; override the model parameter. Mechanical lookups
+   (single-file grep, exact-string find) can use defaults. When in doubt,
+   Opus. See `feedback_opus_subagents.md`.
+
+3. **Plain language when asking the user decision questions.** Lead with
+   what the field/concept IS in the world, then layer the technical name on
+   second pass. Don't stack project-internal shorthand ("vocab-locked,"
+   "Stage-1-gated," "Path 3," phase numbers, walkthrough card IDs) without
+   bridging to plain English. The user is making a real call from your
+   framing — they shouldn't have to translate. This applies to decision
+   questions specifically, not internal commits / status doc entries / agent
+   prompts. See `feedback_plain_language.md` (reinforced 2026-05-03 Gate C
+   session — first version of the three-question summary stacked too much
+   internal vocab and had to be redone).
 
 # EXECUTION STATUS FILE TEMPLATE (create on Session 1)
 
