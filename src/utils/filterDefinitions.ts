@@ -28,6 +28,7 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'garden-only', label: 'Garden Only' },
       { value: 'both', label: 'Cooking + Garden' },
       { value: 'academic-only', label: 'Academic Only' },
+      { value: 'craft-only', label: 'Craft Only' },
     ],
   },
 
