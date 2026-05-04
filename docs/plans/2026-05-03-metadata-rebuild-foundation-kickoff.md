@@ -100,7 +100,7 @@ be better" arguments cannot. Per-card rationale lives in the decision journal.
 **Schema-affecting:**
 - **D2** — `activity_type` vocabulary expanded to 5 values (`cooking / garden / both / academic / craft`); single-select stays; orientation handled via existing `tags` array column (closed enum, starting `["orientation"]`); no `lesson_function` general field; no multi-select.
 - **D3** — `lessonFormat` dropped entirely. No replacement, no derivation. Three axes (time-structure / standalone-vs-unit / mobile-delivery) lost their case independently.
-- **D6** — `series_id` (text) + `part_number` (int) added; ~7 series, ~14 lessons backfill; dedup pipeline reads series_id and skips comparison within a series.
+- **D6** — `series_id` (text) + `part_number` (int) columns added in PR 1; ~7 series, ~14 lessons backfilled in PR 1. **Dedup pipeline rework that reads series_id and skips comparison within a series is OUT OF SCOPE for foundation phase** — that lives in the dedup-pipeline third-state work track per design §11. Foundation phase ships the column scaffolding only.
 - **D7** — `bilingual_handouts` joins tags closed enum (now `["orientation", "bilingual_handouts"]`); "valid variations" principle (no other cross-row modeling — no school_id, no mobile_ed_adaptation, no dish_canonical, no parent_lesson_id).
 - **D9** — `cultural_responsiveness_features` stays `text[]` of the 7 master-list features (Brown CR framework); add `crf_confirmed boolean default false` backend marker.
 
