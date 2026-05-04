@@ -1,19 +1,20 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-03 — Session 2 complete (Gate B done)
-**Current PR:** Pre-PR-1 Gates A/B/C (no PR; investigation/decision tasks first)
-**Current task:** Gate C — Per-prompt readiness audit (next session)
+**Last updated:** 2026-05-03 — Session 3 complete (Gate C done; all 3 pre-PR-1 gates closed)
+**Current PR:** PR 1 next (Pre-PR-1 Gates A/B/C all closed)
+**Current task:** PR 1 Task 1.0 — land the Zod canonical scaffold (Gate B output) on a feature branch
 **Branch:** main (not yet branched for PR 1)
-**Last commit on branch:** (TBD this session)
+**Last commit on branch:** `453bb6b` — docs(metadata-foundation): session 3 — Gate C per-prompt readiness audit complete
 
 ## Done
 
 - **Gate A — lessonFormat dependency sweep verified.** Per-surface task list produced (see "Gate A output" below). Three reviewer-cited refs confirmed; smart-search audit complete (no refs in smart-search/index.ts); 5th RPC discovered (`resolve_duplicate_group`); `lesson_archive.lesson_format` keep-historical decision documented.
 - **Gate B — validator architecture decisions captured.** Output doc at `docs/plans/2026-05-03-metadata-rebuild-foundation-validator-architecture.md` (179 lines). 7 decisions + CI gate summary + 3 open TBDs. Decisions: (1) Option B locked (TS/Zod canonical) — codebase TS-bias rationale; (2) two-schema split locked (LessonMetadata canonical / ReviewMetadata review-form) with bidirectional mapper contract mirroring `complete_review_atomic` SQL translation; (3) file locations recommended (`src/types/lessonMetadata.zod.ts`, `src/types/reviewFormPayload.zod.ts`, `src/types/generated/enums.json`, `scripts/generate-enums-json.ts`, `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`, `supabase/functions/deno.json`); (4) edge function deps via `deno.json` `npm:zod@3.24.0` with esm.sh URL fallback; (5) Vitest enum-equivalence test approach (Zod source ↔ committed enums.json), Python equivalence deferred to Stage 2 host repo (consumes enums.json regardless); (6) SQL CHECK on three text[] columns (activity_type, tags, CRF) + extend trigger to RAISE EXCEPTION on bad enum values, hand-synced from enums.json with `-- SOURCE: enums.json["<key>"]` comment markers + Vitest sync test; (7) initial closed-enum coverage = activity_type/tags/CRF/season_timing only, rest stay open `z.array(z.string())` until Stage 1 worksheets tighten them.
+- **Gate C — per-prompt readiness audit complete.** 10 fields classified (8 impl-plan-listed + 2 obvious-gap candidates added during audit). **Net: 5 vocab-locked / 5 Stage-1-gated / 0 dropped.** Full table + worksheet-round assignment + net PR-2 prompt scope below at "Gate C output". Combined with design-doc-locked classifications, **PR 2 vocab-locked prompt scope is now 8 prompts** (CRF + activity_type + tags + thematic_categories + social_emotional_learning + cooking_methods + season_timing + core_competencies); **Stage-1-gated prompt scope is 6 distinct prompts post-bundling** (academicConcepts+academic_integration bundled / cultural_heritage / garden_skills / cooking_skills / main_ingredients / observances_holidays).
 
 ## In flight
 
-(none — Session 2 wrapped Gate B; next session starts Gate C)
+(none — Session 3 wrapped Gate C; all three pre-PR-1 gates are closed; next session starts PR 1 Task 1.0)
 
 ## Blocked
 
@@ -179,6 +180,87 @@ Before writing the migration:
 5. `mcp__supabase-test__execute_sql`: `SELECT count(*) FROM lessons WHERE tags IS NOT NULL AND array_length(tags, 1) > 0;` — confirm tags column is empty/null on (almost) every row.
 6. `mcp__supabase-test__execute_sql`: `SELECT cultural_responsiveness_features, count(*) FROM lessons WHERE cultural_responsiveness_features IS NOT NULL AND array_length(cultural_responsiveness_features, 1) > 0 GROUP BY cultural_responsiveness_features ORDER BY count(*) DESC LIMIT 20;` — distribution + drift evidence for D9 prep.
 
+## Gate C output — Per-prompt readiness audit (Session 3, 2026-05-03)
+
+### Verdict
+
+10 candidate fields evaluated. **5 vocab-locked / 5 Stage-1-gated / 0 dropped.** Combined with design-doc-locked classifications (CRF / activity_type / tags vocab-locked + academicConcepts / cultural_heritage Stage-1-gated), the **PR 2 vocab-locked prompt scope is 8 prompts**; **Stage-1-gated prompt scope is 6 distinct prompts** (post-bundling of academicConcepts+academic_integration into one consolidated subject+concepts prompt per user decision Q2).
+
+Two obvious-gap candidates surfaced during audit and added to the list per user direction:
+- **`core_competencies`** — same structural shape as `social_emotional_learning` / `thematic_categories` (closed Title-Case enum + kebab dupes); was missed from impl plan §Gate C list. User confirmed addition (vocab-locked).
+- **`academic_integration` (top-level subjects)** — clean 6-value v3 enum + kebab dupes. Mechanically vocab-locked, BUT operationally tied to `academicConcepts` (D5 locked Stage-1-gated). User confirmed bundling: one consolidated submission-time prompt does a single body-read and outputs both top-level subjects AND nested concepts; the bundled prompt waits for the concepts worksheet.
+
+### Method
+
+- TEST DB queried via `mcp__supabase-test__execute_sql` (corpus = 772 lessons; matches PROD shape per `project_metadata_three_regimes.md`).
+- Each field's distinct-value count, total appearances, top-N values, and case-mix indicators read out.
+- Compared against v3 baseline at `/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md` and drift signals at `project_vocabulary_drift_scope.md`.
+- Classification framework: **vocab-locked** = vocabulary is unambiguous today (matches v3, no novel concepts the corpus surfaces beyond minor case-drift dupes); **Stage-1-gated** = vocabulary needs ontology decisions (novel concepts beyond v3 / category-headers tagged as values / group-vs-specific granularity ambiguity) requiring curriculum-team validation in a worksheet round; **dropped** = out of foundation-phase scope.
+
+### Classification table
+
+| # | Field | Distinct | Total | Verdict | Worksheet round | Notes |
+|---|---|---:|---:|---|---|---|
+| **Pre-locked from design doc §6:** ||||||
+| — | `cultural_responsiveness_features` | (7-locked) | — | **vocab-locked** | n/a (D9 master list) | Ships PR 2 |
+| — | `activity_type` | (5-locked) | — | **vocab-locked** | n/a (D2) | Ships PR 2 |
+| — | `tags` | (2-locked) | — | **vocab-locked** | n/a (D2+D7) | Ships PR 2 |
+| — | `academicConcepts` | (~211 v3 baseline) | — | **Stage-1-gated** | concepts | D5 — bundled w/ academic_integration top-level per Q2 |
+| — | `cultural_heritage` | 78 | 939 | **Stage-1-gated** | heritage | Stage-1 round 1 |
+| **Gate C audit:** ||||||
+| 1 | `thematic_categories` | 14 | 1602 | **vocab-locked** | n/a | 7 v3 + 7 kebab dupes; no novel concepts |
+| 2 | `social_emotional_learning` | 10 | 1824 | **vocab-locked** | n/a | 5 CASEL + 5 kebab dupes |
+| 3 | `cooking_methods` | 5 | 475 | **vocab-locked** | n/a | All-kebab today; 4 v3 concepts + basic-prep / basic-prep-only collapse |
+| 4 | `season_timing` | 4 | 1433 | **vocab-locked** | n/a | Pure Title-Case zero drift; only Fall / Winter / Spring / Summer used (v3's other 3 unused) |
+| 5 | `core_competencies` | 13 | 1777 | **vocab-locked** | n/a | 6 ESYNYC + 6 kebab dupes + 1 rogue "Food Justice" cnt=2; **added per Q1** |
+| 6 | `garden_skills` | 46 | 887 | **Stage-1-gated** | smaller-fields | 16 v3 + ~30 novel corpus concepts (sensory-exploration / seed-starting / transplanting / pollinator-observation / "Feeding worms" / "Digging") + kebab dupes |
+| 7 | `cooking_skills` | 123 | 1748 | **Stage-1-gated** | smaller-fields | Biggest cleanup. v3 **category headers** ("Cutting Skills" 127 / "Basic Skills" 24 / "Cooking Techniques" 28 / "Presentation" 6) tagged as if skills; ontology overlaps (Mixing 181 vs Mixing/stirring 4 vs Stirring 14; Sautéing 35 vs Sauteing 10) |
+| 8 | `main_ingredients` | 227 | 1819 | **Stage-1-gated** | smaller-fields | Biggest expansion. Group headers (Alliums 190 / Leafy greens 93 / "Herbs & Aromatics" 52) mixed with specifics (Cilantro 49 / Mint 11 / Bell peppers 14) + non-v3 additions (Eggs 26 / Dairy 21 / Honey 16 / Oats 19 / Yogurt 17 / Butter 10) |
+| 9 | `observances_holidays` | 17 | 129 (sparse — 17% of corpus) | **Stage-1-gated** | smaller-fields (small) | 10 v3 + 5 sensible corpus additions (Juneteenth 4 / Eid 3 / Earth month 2 / Pride 1 / New Year 1); **chose Stage-1-gated for discipline per Q3** (downgrade to vocab-locked acceptable if curriculum team waves it through quickly) |
+| 10 | `academic_integration` (top-level subjects) | 12 | 1369 | **Stage-1-gated** (BUNDLED) | concepts | 6 v3 subjects + 6 kebab dupes; **bundled with `academicConcepts` per Q2** — single consolidated submission-time prompt, one body-read, two outputs (subjects array + concepts object). Top-level technically vocab-locked today, but operational efficiency wins. |
+
+### Net PR 2 prompt scope (post-Gate-C)
+
+**Vocab-locked (8 prompts, ship in PR 2 once eval gate passes for each):**
+1. `cultural_responsiveness_features` (D9; 7 master-list features)
+2. `activity_type` (D2; 5 values)
+3. `tags` (D2+D7; 2 values)
+4. `thematic_categories` (Gate C; 7 values)
+5. `social_emotional_learning` (Gate C; 5 CASEL values)
+6. `cooking_methods` (Gate C; 4 values)
+7. `season_timing` (Gate C; 4 values)
+8. `core_competencies` (Gate C; 6 ESYNYC values)
+
+**Stage-1-gated (6 distinct prompts, deploy after corresponding worksheet lands):**
+
+| Worksheet round | Prompts gated by it |
+|---|---|
+| **heritage** | `cultural_heritage` (1 prompt) |
+| **concepts** | `academicConcepts` + `academic_integration` BUNDLED (1 consolidated prompt) |
+| **smaller-fields** | `garden_skills`, `cooking_skills`, `main_ingredients`, `observances_holidays` (4 prompts) |
+
+Total post-bundling: **6 distinct Stage-1-gated prompts** rather than the 7 a fully-split design would have implied.
+
+### Decisions captured (Gate C)
+
+- **Q1 — `core_competencies` added.** Pattern matches `social_emotional_learning` exactly: 6 ESYNYC official Title-Case values + 6 kebab dupes + 1 rogue value; mechanical canonicalization. Was missed from impl plan §Gate C list.
+- **Q2 — academic_integration top-level + academicConcepts bundled.** Single consolidated submission-time prompt: one LLM body-read, two outputs (subjects array + nested concepts object). Avoids the 2× LLM call cost of splitting them. Bundle waits for the concepts worksheet (Stage-1-gated category dominates).
+- **Q3 — `observances_holidays` Stage-1-gated, not vocab-locked.** Mostly canonical today + 5 sensible corpus additions; could have shipped vocab-locked with the corpus list. Chose Stage-1-gated for "every vocab gets curriculum-validated" discipline. Downgrade to vocab-locked is acceptable if curriculum team rubber-stamps the additions quickly.
+
+### TEST DB verification at PR 2 task time (forward-looking)
+
+Before each Stage-1-gated prompt deploys post-worksheet, re-query the corpus to confirm:
+1. Worksheet output (canonical vocab + alias list) covers every distinct value currently in the field.
+2. Any drift introduced between PR 2 ship and worksheet land is captured in alias map for Stage 2 re-tag mapping.
+3. For `academic_integration` BUNDLED prompt: subjects + concepts arrive consistently in canonical-keys shape; mapper tests cover the bundle.
+
+### Notes for PR 2 implementation planner
+
+- Per the operational gating choice (kickoff §LOCKED): vocab-locked prompts ship in PR 2 only after their per-prompt eval gate passes. Plan 8 eval-gate runs in PR 2 task list, not 3.
+- Per `academicConcepts` bundling: PR 2's prompt-design doc should include one consolidated `academic_integration` prompt spec (subjects + concepts), not two; the bundled prompt's vocabulary scope is gated by the concepts worksheet outputs.
+- The 6 `cooking_skills` v3 category headers ("Cutting Skills", "Basic Skills", "Cooking Techniques", "Presentation", "Cutting Skills" sub-categories) being tagged as if they're skill values is itself a worksheet input — surfaces the question "do we expose v3 categories as skills, collapse them, or split into a 2-level taxonomy?"
+- The 5 corpus observances additions (Juneteenth / Eid / Earth month / Pride / New Year) are pre-staged inputs for the smaller-fields worksheet — they're already in PROD-ish data, the worksheet just blesses-or-trims.
+
 ## Session log
 
 ### Session 0 — 2026-05-03 — kickoff scaffolding + reviewer-feedback round (pre-execution)
@@ -239,3 +321,21 @@ Major events:
 - Baseline checks clean throughout: `npm run type-check && npm run lint` both green.
 
 Next session: Gate C (per-prompt readiness audit). Per impl plan §Gate C, audits ~6 candidate fields beyond the locked-3 (CRF / activity_type / tags) + Stage-1-gated-2 (academicConcepts / cultural_heritage). Possible candidates listed: `thematicCategories`, `socialEmotionalLearning`, `cookingMethods`, `cookingSkills`, `gardenSkills`, `seasonTiming`, `observancesHolidays`, `mainIngredients`. Each gets classified vocab-locked (ships in PR 2) / Stage-1-gated (deploys after worksheet) / dropped (out of foundation scope). Output is a per-prompt classification table folded into PR 2 task list. No commit; investigation only.
+
+### Session 3 — 2026-05-03 — Gate C (per-prompt readiness audit)
+
+Major events:
+- **Gate C complete.** Full classification table at "Gate C output" above. **5 vocab-locked / 5 Stage-1-gated / 0 dropped** across the 8 impl-plan-listed candidates + 2 obvious-gap candidates added during audit.
+- **Confirmed via TEST DB queries that all 8 impl-plan-listed candidates are typed ARRAY columns** (Phase B migration moved them out of `metadata` JSONB; Gate C audit re-uses the column shape). Distinct-value counts: thematic_categories=14, social_emotional_learning=10, cooking_methods=5, season_timing=4, garden_skills=46, cooking_skills=123, main_ingredients=227, observances_holidays=17. Lesson count 772.
+- **Two obvious-gap candidates surfaced and added per user direction:**
+  - **`core_competencies`** — 13 distinct (6 ESYNYC + 6 kebab dupes + 1 rogue "Food Justice" cnt=2); same shape as social_emotional_learning. Was missed from impl plan §Gate C list. Added as **vocab-locked** per Q1.
+  - **`academic_integration` (top-level subjects)** — 12 distinct (6 v3 subjects + 6 kebab dupes); mechanically vocab-locked but operationally tied to `academicConcepts` (locked Stage-1-gated). Added per Q2 as **Stage-1-gated, BUNDLED** with academicConcepts under one consolidated submission-time prompt (single body-read, two outputs).
+- **`observances_holidays` decision:** chose Stage-1-gated per Q3 for "every vocab gets curriculum-validated" discipline; downgrade to vocab-locked acceptable if curriculum team rubber-stamps the 5 corpus additions (Juneteenth / Eid / Earth month / Pride / New Year) quickly.
+- **Worksheet-round assignment for the 5 Stage-1-gated fields:** heritage (cultural_heritage) / concepts (academicConcepts+academic_integration BUNDLED) / smaller-fields (garden_skills, cooking_skills, main_ingredients, observances_holidays).
+- **Net PR 2 vocab-locked prompt scope is now 8 prompts** (CRF + activity_type + tags + thematic_categories + social_emotional_learning + cooking_methods + season_timing + core_competencies). PR 2 task list (impl plan §2.1) needs to plan 8 eval-gate runs, not 3.
+- **Net Stage-1-gated prompt scope is 6 distinct prompts** post-bundling (heritage / academicConcepts+academic_integration / garden_skills / cooking_skills / main_ingredients / observances_holidays).
+- **Three notes captured for PR 2 implementation planner:** (1) eval-gate count = 8 not 3; (2) academicConcepts prompt spec must include subjects bundling, not two prompts; (3) cooking_skills v3 category headers being tagged as if they're skills is itself a worksheet-input question (expose categories / collapse / split 2-level).
+- Baseline checks clean throughout: `npm run type-check && npm run lint` both green.
+- No code changes this session; status doc updated; investigation-only.
+
+Next session: PR 1 Task 1.0 — land the Zod canonical scaffold (Gate B output) on a new feature branch `feat/metadata-foundation-schema`. Per impl plan §1.0: create two Zod schemas + bidirectional mappers + mapper tests + enums.json + generator script + `npm install zod@^3.24.0` + `supabase/functions/deno.json`. Initial closed-enum coverage = activity_type (5) / tags (2) / cultural_responsiveness_features (7) / season_timing (4); rest stay `z.array(z.string())` placeholders. Verify edge function imports zod via deno.json `npm:zod@3` (esm.sh fallback in reserve). Commit message template in impl plan §1.0.
