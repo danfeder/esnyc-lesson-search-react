@@ -4,7 +4,7 @@
 **Current PR:** PR 1 next (Pre-PR-1 Gates A/B/C all closed)
 **Current task:** PR 1 Task 1.0 — land the Zod canonical scaffold (Gate B output) on a feature branch
 **Branch:** main (not yet branched for PR 1)
-**Last commit on branch:** `453bb6b` — docs(metadata-foundation): session 3 — Gate C per-prompt readiness audit complete
+**Last commit on branch:** `d9bacd0` — docs(metadata-foundation): session 3 — Gate C per-prompt readiness audit complete
 
 ## Done
 
