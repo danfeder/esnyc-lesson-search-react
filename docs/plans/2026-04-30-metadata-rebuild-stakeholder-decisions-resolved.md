@@ -17,7 +17,7 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-03 (session 9) · commit pending (D8 phase-2 dropped after empirical investigation; Stage 2 reviewer-validation UX walk added as deferred follow-up to land during foundation-phase implementation planning).
+**Last session:** 2026-05-03 (session 9) · `e167832` (D8 phase-2 dropped after empirical investigation; Stage 2 reviewer-validation UX walk added as deferred follow-up to land during foundation-phase implementation planning).
 **Progress:** **13 calls captured + 1 cleanup track flagged — walkthrough FULLY WRAPPED** — D0 ✅, D4 ✅, D8 substance ✅, D8 phase-2 ✅ (dropped, replaced by Stage 2 reviewer-validation UX deferred walk), Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial (content layer = worksheet round), Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, D6 ✅, D7 ✅, D9 ✅, N1 ✅, Cross-cutting import drops ✅. **Remaining work:** D1 content layer (Stage 1 heritage worksheet round, after foundation-phase implementation begins); Stage 2 reviewer-validation UX (deferred walk during foundation-phase implementation planning).
 **Next in queue:** **`/kickoff-feature` foundation-phase implementation plan scaffolding** per the multi-session execution preference. Stage 2 reviewer-validation UX walk lands during that planning when the LLM-draft-validation flow is the active design surface.
 **Walkthrough order remaining:** None — main walkthrough complete. Foundation-phase implementation + Stage 2 reviewer-validation UX walk + Stage 1 worksheet rounds (heritage first, concepts second-largest) sequence in alongside implementation.
@@ -972,4 +972,4 @@ Empirical query of TEST DB against the audit-cited examples + corpus-level prove
 
 **Commits:**
 
-- `<pending>` — `docs(metadata-rebuild): walkthrough session 9 — D8 phase-2 dropped (audit-cited errors are v3-inheritance, not reviewer judgment) + Stage 2 reviewer-validation UX added as deferred walk`
+- `e167832` — `docs(metadata-rebuild): walkthrough session 9 — D8 phase-2 dropped (audit-cited errors are v3-inheritance, not reviewer judgment) + Stage 2 reviewer-validation UX added as deferred walk`
