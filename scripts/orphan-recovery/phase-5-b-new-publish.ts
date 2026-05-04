@@ -1,5 +1,12 @@
 #!/usr/bin/env npx tsx
 /**
+ * HISTORICAL SCRIPT — preserved for audit, not for re-run.
+ * The `lessons.lesson_format` column and `metadata.lessonFormat` JSONB key
+ * referenced below were dropped in foundation-phase PR 1 (2026-05). This
+ * script ran once during Phase 5b orphan recovery and is not expected to
+ * re-execute; references are left as-is so the audit record matches the
+ * exact SQL that ran against PROD at the time.
+ *
  * Phase 5 — Category B-new publish (lesson submission Tier-1 recovery).
  *
  * Publishes 5 approved orphan submissions whose Google Doc is NOT already in

@@ -69,12 +69,10 @@ describe('reviewToLesson', () => {
   it('preserves same-key strings', () => {
     expect(
       reviewToLesson({
-        lessonFormat: 'Standalone',
         processingNotes: 'Reviewed by admin',
         summary: 'A lesson about plants',
       })
     ).toEqual({
-      lessonFormat: 'Standalone',
       processingNotes: 'Reviewed by admin',
       summary: 'A lesson about plants',
     });
@@ -95,7 +93,6 @@ describe('reviewToLesson', () => {
     const review: ReviewFormPayloadValidated = {
       activityType: 'cooking',
       location: 'Indoor',
-      lessonFormat: 'Standalone',
       themes: ['Food Systems'],
       season: ['Fall'],
       gradeLevels: ['3', '4', '5'],
@@ -116,7 +113,6 @@ describe('reviewToLesson', () => {
     expect(reviewToLesson(review)).toEqual({
       activityType: ['cooking'],
       locationRequirements: ['Indoor'],
-      lessonFormat: 'Standalone',
       thematicCategories: ['Food Systems'],
       seasonTiming: ['Fall'],
       gradeLevels: ['3', '4', '5'],
@@ -212,7 +208,6 @@ describe('mapper round-trip property', () => {
         'Communicates high expectations',
         'Promotes student-centered instruction',
       ],
-      lessonFormat: 'Standalone',
       processingNotes: 'OK',
     },
   ];
@@ -236,7 +231,6 @@ describe('mapper round-trip property', () => {
       thematicCategories: ['Food Justice'],
       seasonTiming: ['Spring', 'Summer'],
       culturalResponsivenessFeatures: ['Reshapes curriculum'],
-      lessonFormat: 'Single period',
     },
   ];
 

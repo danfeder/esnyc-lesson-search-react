@@ -13,7 +13,6 @@ export type FacetFilterKey =
   | 'seasonTiming'
   | 'coreCompetencies'
   | 'culturalHeritage'
-  | 'lessonFormat'
   | 'academicIntegration'
   | 'socialEmotionalLearning'
   | 'cookingMethods';
@@ -28,7 +27,6 @@ const EMPTY_COUNTS = (): FacetCounts => ({
   seasonTiming: {},
   coreCompetencies: {},
   culturalHeritage: {},
-  lessonFormat: {},
   academicIntegration: {},
   socialEmotionalLearning: {},
   cookingMethods: {},
@@ -51,8 +49,6 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
       return meta.coreCompetencies ?? [];
     case 'culturalHeritage':
       return meta.culturalHeritage ?? [];
-    case 'lessonFormat':
-      return meta.lessonFormat ? [meta.lessonFormat] : [];
     case 'academicIntegration': {
       const ai = meta.academicIntegration;
       if (!ai) return [];
@@ -74,7 +70,6 @@ const KEYS: readonly FacetFilterKey[] = [
   'seasonTiming',
   'coreCompetencies',
   'culturalHeritage',
-  'lessonFormat',
   'academicIntegration',
   'socialEmotionalLearning',
   'cookingMethods',

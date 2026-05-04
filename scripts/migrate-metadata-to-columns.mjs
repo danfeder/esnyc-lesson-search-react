@@ -68,13 +68,10 @@ async function migrateMetadata() {
             core_competencies: Array.isArray(metadata.coreCompetencies) ? metadata.coreCompetencies : [],
             
             // For academic integration, flatten the selected array
-            academic_integration: Array.isArray(metadata.academicIntegration?.selected) 
-              ? metadata.academicIntegration.selected 
+            academic_integration: Array.isArray(metadata.academicIntegration?.selected)
+              ? metadata.academicIntegration.selected
               : [],
-            
-            // Single value fields
-            lesson_format: metadata.lessonFormat || null,
-            
+
             // Fields from top-level lesson object (if passed)
             flagged_for_review: lesson.flagged_for_review || false,
             review_notes: lesson.review_notes || null,
@@ -108,7 +105,7 @@ async function migrateMetadata() {
     // Check a sample lesson
     const { data: sample } = await supabase
       .from('lessons')
-      .select('lesson_id, title, thematic_categories, main_ingredients, lesson_format')
+      .select('lesson_id, title, thematic_categories, main_ingredients')
       .limit(1)
       .single();
 
@@ -117,7 +114,6 @@ async function migrateMetadata() {
       console.log(`  Title: ${sample.title}`);
       console.log(`  Thematic Categories: ${sample.thematic_categories?.join(', ') || 'None'}`);
       console.log(`  Main Ingredients: ${sample.main_ingredients?.join(', ') || 'None'}`);
-      console.log(`  Lesson Format: ${sample.lesson_format || 'None'}`);
     }
 
     // Count lessons with populated new columns

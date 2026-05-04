@@ -35,7 +35,7 @@ export const useStoreName = create<StoreState>()(
 
 | Type | Examples |
 |------|----------|
-| Single-select (`string`) | `lessonFormat`, `cookingMethods` |
+| Single-select (`string`) | `cookingMethods` |
 | Multi-select (`string[]`) | `gradeLevels`, `coreCompetencies` |
 
 ## Current Store: searchStore.ts

@@ -32,7 +32,6 @@ export interface LessonMetadata {
   culturalHeritage: string[];
   locationRequirements?: string[];
   activityType: string[];
-  lessonFormat: string;
   mainIngredients?: string[];
   skills?: string[];
   equipment?: string[];
@@ -58,7 +57,6 @@ export interface SearchFilters {
   culturalHeritage: string[];
   location: string[];
   activityType: string[];
-  lessonFormat: string; // Single-select dropdown
   academicIntegration: string[];
   socialEmotionalLearning: string[];
   cookingMethods: string[]; // Multi-select
@@ -113,7 +111,6 @@ export interface ReviewMetadata {
   gardenSkills?: string[];
   cookingSkills?: string[];
   culturalHeritage?: string[];
-  lessonFormat?: string; // Single select for review
   academicIntegration?: string[];
   observancesHolidays?: string[];
   culturalResponsivenessFeatures?: string[];

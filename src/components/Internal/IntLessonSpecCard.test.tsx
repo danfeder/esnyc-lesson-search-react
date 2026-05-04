@@ -18,7 +18,6 @@ const lessonA: LessonForReview = {
   season_timing: ['Fall'],
   cultural_heritage: null,
   core_competencies: ['knife_skills'],
-  lesson_format: 'lesson',
   updated_at: '2026-04-20T10:00:00Z',
   teacher_name: 'Ms Garcia',
   similarities: { b: 0.9, c: 0.7 },

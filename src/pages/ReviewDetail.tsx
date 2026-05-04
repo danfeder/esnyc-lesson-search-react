@@ -975,16 +975,6 @@ export function ReviewDetail() {
                   Additional
                 </div>
 
-                <IntFormField label="Lesson format">
-                  <IntPillGroup
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.lessonFormat)}
-                    {...singleProps(metadata.lessonFormat, (v) =>
-                      handleMetadataChange('lessonFormat', v)
-                    )}
-                    ariaLabel="Lesson format"
-                  />
-                </IntFormField>
-
                 <div className="adm-field">
                   <label className="adm-label" htmlFor={inputIds.observances}>
                     Observances &amp; holidays

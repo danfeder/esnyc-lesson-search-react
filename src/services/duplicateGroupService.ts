@@ -36,7 +36,6 @@ export interface LessonForReview {
   season_timing: string[] | null;
   cultural_heritage: string[] | null;
   core_competencies: string[] | null;
-  lesson_format: string | null;
   updated_at: string | null;
   teacher_name: string | null;
   similarities?: Record<string, number>;

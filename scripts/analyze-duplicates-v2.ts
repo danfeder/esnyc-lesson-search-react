@@ -372,7 +372,6 @@ function calculateMetadataCompleteness(lesson: Lesson): number {
     'culturalHeritage',
     'locationRequirements',
     'activityType',
-    'lessonFormat',
     'mainIngredients',
     'skills',
     'academicIntegration',
@@ -415,7 +414,6 @@ function calculateCanonicalScore(lesson: Lesson): number {
     'culturalHeritage',
     'locationRequirements',
     'activityType',
-    'lessonFormat',
     'mainIngredients',
     'skills',
   ];

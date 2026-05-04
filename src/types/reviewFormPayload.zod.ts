@@ -34,7 +34,6 @@ export const reviewFormPayloadSchema = z.object({
   // Single-select strings (review-form shape).
   activityType: ActivityTypeEnum.optional(),
   location: z.string().optional(),
-  lessonFormat: z.string().optional(),
 
   // Closed-enum array fields.
   season: z.array(SeasonTimingEnum).optional(),

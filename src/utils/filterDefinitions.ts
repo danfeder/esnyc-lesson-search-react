@@ -160,20 +160,6 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     ],
   },
 
-  lessonFormat: {
-    label: 'Lesson Format',
-    type: 'single',
-    options: [
-      { value: 'standalone', label: 'Standalone' },
-      { value: 'multi-session', label: 'Multi-session unit' },
-      { value: 'double-period', label: 'Double period' },
-      { value: 'single-period', label: 'Single period' },
-      { value: 'co-taught', label: 'Co-taught' },
-      { value: 'remote-virtual', label: 'Remote/virtual adapted' },
-      { value: 'mobile-education', label: 'Mobile education format' },
-    ],
-  },
-
   academicIntegration: {
     label: 'Academic Integration',
     type: 'multiple',

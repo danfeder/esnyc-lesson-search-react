@@ -78,9 +78,6 @@ export function reviewToLesson(input: ReviewFormPayloadValidated): LessonMetadat
   }
 
   // Same-key strings (preserved when non-empty).
-  if (input.lessonFormat) {
-    out.lessonFormat = input.lessonFormat;
-  }
   if (input.processingNotes) {
     out.processingNotes = input.processingNotes;
   }

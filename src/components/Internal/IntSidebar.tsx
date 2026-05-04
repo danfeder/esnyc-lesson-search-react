@@ -8,9 +8,7 @@ import { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
 
 /**
  * Filter categories rendered as a simple checkbox list, in order.
- * `gradeLevels` and `culturalHeritage` get bespoke sections; `lessonFormat`
- * is handled as a radio-style checklist because the store stores a single
- * string, not an array.
+ * `gradeLevels` and `culturalHeritage` get bespoke sections.
  */
 const CHECKBOX_KEYS: readonly FacetFilterKey[] = [
   'activityType',
@@ -30,7 +28,6 @@ interface IntSidebarProps {
 export function IntSidebar({ counts }: IntSidebarProps) {
   const filters = useSearchStore((s) => s.filters);
   const toggleFilter = useSearchStore((s) => s.toggleFilter);
-  const setFilters = useSearchStore((s) => s.setFilters);
   const clearFilters = useSearchStore((s) => s.clearFilters);
 
   const activeCountFor = (key: keyof SearchFilters): number => {
@@ -110,36 +107,6 @@ export function IntSidebar({ counts }: IntSidebarProps) {
       })}
 
       <IntCulturalHeritageSection counts={counts} />
-
-      {FILTER_CONFIGS.lessonFormat && (
-        <IntFilterSection
-          label={FILTER_CONFIGS.lessonFormat.label}
-          count={filters.lessonFormat ? 1 : 0}
-        >
-          {FILTER_CONFIGS.lessonFormat.options.map((opt) => {
-            const checked = filters.lessonFormat === opt.value;
-            const count = counts.lessonFormat[opt.value] ?? 0;
-            return (
-              <label key={opt.value} className="int-check">
-                <input
-                  type="radio"
-                  name="lessonFormat"
-                  checked={checked}
-                  onChange={() => setFilters({ lessonFormat: opt.value })}
-                  // onChange does not fire when re-clicking an already-selected
-                  // radio (value didn't change), so wire deselect via onClick.
-                  onClick={() => {
-                    if (checked) setFilters({ lessonFormat: '' });
-                  }}
-                />
-                <span className="int-check-box" />
-                <span className="int-check-label">{opt.label}</span>
-                <span className="int-check-count">{count || ''}</span>
-              </label>
-            );
-          })}
-        </IntFilterSection>
-      )}
     </aside>
   );
 }

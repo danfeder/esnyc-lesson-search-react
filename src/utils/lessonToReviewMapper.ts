@@ -90,9 +90,6 @@ export function lessonToReview(input: LessonMetadataValidated): ReviewFormPayloa
   }
 
   // Same-key strings.
-  if (input.lessonFormat) {
-    out.lessonFormat = input.lessonFormat;
-  }
   if (input.processingNotes) {
     out.processingNotes = input.processingNotes;
   }

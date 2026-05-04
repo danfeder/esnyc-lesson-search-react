@@ -107,10 +107,7 @@ export const lessonMetadataSchema = z.object({
   academicIntegration: academicIntegrationSchema.optional(),
   academicConcepts: z.record(z.string(), z.array(z.string())).optional(),
 
-  // Single-string fields. lessonFormat drops in PR 1 Task 1.3 (D3); included
-  // here only so the scaffold matches current TS interfaces and downstream
-  // consumers don't break before Task 1.3 lands.
-  lessonFormat: z.string().optional(),
+  // Single-string fields.
   duration: z.string().optional(),
   groupSize: z.string().optional(),
   processingNotes: z.string().optional(),

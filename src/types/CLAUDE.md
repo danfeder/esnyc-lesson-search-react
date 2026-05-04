@@ -22,7 +22,6 @@ lessonId, createdAt, gradeLevels
 
 ```typescript
 // Single-select: string
-lessonFormat: string;
 cookingMethods: string;
 
 // Multi-select: string[]

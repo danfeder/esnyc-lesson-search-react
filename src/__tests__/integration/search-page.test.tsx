@@ -47,7 +47,6 @@ function createTestLesson(overrides: Partial<ReturnType<typeof makeRpcRow>> = {}
       coreCompetencies: ['Food Systems'],
       culturalHeritage: [],
       activityType: ['cooking-only'],
-      lessonFormat: 'Standard',
       locationRequirements: ['Kitchen'],
       cookingMethods: [],
       academicIntegration: [],
