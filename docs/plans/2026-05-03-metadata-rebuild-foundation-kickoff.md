@@ -1,0 +1,279 @@
+<!--
+  KICKOFF PROMPT — paste at session start (after /clear) for foundation-phase
+  metadata rebuild execution. Body is everything between the START and END
+  markers.
+-->
+
+<!-- ===== START OF KICKOFF BODY (paste from here onward) ===== -->
+
+You are continuing execution of the **metadata-rebuild foundation phase**.
+This prompt will be pasted at the start of every session in this work — assume
+no prior conversation context. Treat what's on disk + git history + the
+execution status file as your only source of truth.
+
+# WHAT YOU'RE BUILDING
+
+The foundation phase of the lesson-corpus metadata rebuild. The corpus has 3
+metadata regimes (legacy ~684 / submission-era ~78 / post-B-update ~7) with
+~4,920 row-appearances of vocabulary drift across 10 fields, a `lessonFormat`
+field that conflates 3 orthogonal axes, and 87% of tags inherited from a
+2025-07-10 v3 GPT-4.1 batch run that no human reviewer ever validated.
+Foundation phase rebuilds the substrate (schema + canonical vocabulary +
+LLM-at-submission pipeline + corpus refresh) so downstream work — Stage 1
+worksheets, Stage 2 re-tag, Phase 2 reviewer UX — operates on clean ground.
+
+This is D0's hybrid frame: foundation-now / reviewer-UX-later. Per session 9,
+foundation phase deliberately does NOT redesign reviewer UX or build new
+pickers — those defer to Phase 2.
+
+Estimated 6+ sequential PRs (final count TBD; some PRs gate on Stage 1
+worksheet outputs from the parallel curriculum-team track):
+  PR 1: Structural schema (D2 enum, D3 drop, D6 series_id+part_number, D7 tags, D9 crf_confirmed, filter UI)
+  PR 2: Submission-time LLM auto-tag pipeline (D5 + D9 + ~8 high-fit fields with per-prompt eval gates)
+  PR 3: Search infrastructure (search_vector + search_synonyms + embeddings + smart-search drift fix)
+  PR 4: Corpus drops (23 third-party imports) + N1 retitle (FSA "& 2" drop)
+  PR 5+: D4 vocab canonicalization (depends on Stage 1 worksheet outputs)
+  PR 6+: Stage 2 corpus re-tag (depends on PR 5 + Stage 1 closure; flexible timing)
+
+# WHERE THINGS LIVE
+
+- `/Users/danfeder/cCode/esynyc-lessonsearch-v2/docs/plans/2026-05-03-metadata-rebuild-foundation-design.md`
+  The WHY behind every locked decision (compressed). Read once at session
+  start. Return when a "why are we doing it this way" question comes up.
+
+- `/Users/danfeder/cCode/esynyc-lessonsearch-v2/docs/plans/2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md`
+  The full decision journal — per-card "Decision" + "Reasoning" + "Downstream
+  implications" blocks across 13 walkthrough calls + cross-cutting tracks.
+  Authoritative source for any locked decision's rationale (the design doc
+  references this for full detail). Read the Walkthrough state header first
+  if pickup is ambiguous; per-card blocks for any specific decision.
+
+- `/Users/danfeder/cCode/esynyc-lessonsearch-v2/docs/plans/2026-05-03-metadata-rebuild-foundation-implementation.md`
+  The WHAT. Source of truth for the next task: exact file paths, code
+  snippets, test commands, commit messages. Follow it for product scope and
+  task order. Verify every snippet against the current code before applying
+  it — line numbers, imports, types, prop names, and APIs may have drifted
+  since the plan was written. Small repo-conformance adaptations are allowed;
+  product or design changes are not. If a needed adaptation changes behavior
+  or scope, stop and ask. Tasks marked **TBD** depend on Stage 1 worksheet
+  outputs or implementation-time decisions; expand them when the dependency
+  lands.
+
+- `/Users/danfeder/cCode/esynyc-lessonsearch-v2/docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md`
+  Source of truth for WHERE we are. Survives /clear because it's on disk +
+  in git. If it doesn't exist, you're starting Session 1 — create it using
+  the template at the bottom of this prompt.
+
+# SESSION-START RITUAL (do this FIRST, every session)
+
+1. Read this whole prompt.
+2. Read the execution status file (or note it needs creating).
+3. Read the design doc end-to-end. Settled decisions are NOT debatable
+   (see "LOCKED" below).
+4. Read the implementation plan from the task you're about to start through
+   the next 1-2 tasks (don't read it all unless useful).
+5. `git status --short --branch && git branch --show-current && git log --oneline -10`
+   — confirm git matches the status file. If they diverge, trust git, then
+   update the status file to match reality before proceeding.
+6. If the worktree is dirty, identify whether the changes are part of the
+   metadata-rebuild foundation phase before touching them. Never revert or
+   overwrite unrelated user changes. If unsure, ask.
+7. `npm run type-check && npm run lint` — confirm a clean baseline.
+   If it fails, diagnose first. If the failure is unrelated to the current
+   branch/task, report it and ask before changing unrelated files. If it
+   is caused by current branch work, fix it before proceeding.
+8. Tell me where you are and what task is next. Don't start coding until
+   I confirm orientation.
+
+# LOCKED DECISIONS — do NOT re-debate
+
+These were settled across 9 walkthrough sessions covering 13 calls + cross-
+cutting tracks. New concrete evidence can re-open them; generic "this could
+be better" arguments cannot. Per-card rationale lives in the decision journal.
+
+**Schema-affecting:**
+- **D2** — `activity_type` vocabulary expanded to 5 values (`cooking / garden / both / academic / craft`); single-select stays; orientation handled via existing `tags` array column (closed enum, starting `["orientation"]`); no `lesson_function` general field; no multi-select.
+- **D3** — `lessonFormat` dropped entirely. No replacement, no derivation. Three axes (time-structure / standalone-vs-unit / mobile-delivery) lost their case independently.
+- **D6** — `series_id` (text) + `part_number` (int) added; ~7 series, ~14 lessons backfill; dedup pipeline reads series_id and skips comparison within a series.
+- **D7** — `bilingual_handouts` joins tags closed enum (now `["orientation", "bilingual_handouts"]`); "valid variations" principle (no other cross-row modeling — no school_id, no mobile_ed_adaptation, no dish_canonical, no parent_lesson_id).
+- **D9** — `cultural_responsiveness_features` stays `text[]` of the 7 master-list features (Brown CR framework); add `crf_confirmed boolean default false` backend marker.
+
+**Vocab / data:**
+- **D4** — Title Case canonical across all ~10 vocabulary-bearing fields; v3 baseline + curriculum-team-validated worksheets; Pydantic on all 17 fields (replaces v3's 3-of-17 enforcement).
+- **Cross-cutting Scope 3** — full corpus re-tag with Opus, two stages (Stage 1 worksheet validation, Stage 2 corpus re-tag); flexible Stage 2 timing.
+- **23-lesson import-drop list** — locked (5 PFLP + 11 FoodCorps + 7 one-offs); foundation-phase corpus shrinks 772 → ~749.
+
+**Pipeline:**
+- **D5** — submission-time LLM auto-tag for `academicConcepts`; both-vocab re-tag (framework + everyday); populate `search_synonyms` from concepts; add concepts to `search_vector` and embedding script.
+- **D9 (pipeline)** — CRF submission-time LLM auto-tag at submission; reviewer-validate-lenient; leave older legacy lessons as-is; re-tag modern-template lessons only.
+- **Extension to ~10 high-fit fields** — submission-time Opus tagging for ~10 reviewer-supplied fields ride on D5 + D9 infra; per-prompt eval gates before each ships.
+
+**Architectural / process:**
+- **D0** — hybrid frame (foundation phase + Phase 2 reviewer UX redesign).
+- **D1 meta layer** — schema decoupled from filter UI; content layer = heritage worksheet round, deferred to curriculum-team track (parallel, foundation-gating).
+- **D8 substance** — teacher-zero (reviewers remain sole metadata authority); D8 phase-2 reviewer-tooling questions dropped at session 9 after audit-attribution check.
+- **N1** — FSA retitle (drop "& 2"); Winter After School Session 2 leave-as-is.
+- **Stage 1 worksheet methodology** — Position 1 (Opus-corpus-read integrated into worksheet drafting); per-field judgment on whether Opus reads needed; novelty pass added.
+
+**Out of scope (Phase 2 / separate work tracks — do NOT scope-creep):**
+- Marginal-field LLM prompts (`grade_levels`, `location`)
+- Reviewer-validate UI redesign (the picker UI for editing LLM drafts)
+- Stage 2 reviewer-validation UX walk (deferred walk to land during foundation-phase implementation planning when the LLM-draft-validation flow is the active design surface)
+- General reviewer UX redesign (guided pickers, validation rules, audit/diff views, paired-review prompts, per-field guidance text — mechanism inventory archived as candidate inputs for future Stage 2 walk)
+- Dedup-pipeline third-state redesign (separate work track; handles same-dish-sibling, cross-site variants, cross-version siblings, series_id-driven skip-comparison)
+- CRF UI surfacing to end users (sidebar / badge / silent)
+
+**NOT out-of-scope (parallel foundation-phase track, gating to D4 + Stage 2):**
+- Stage 1 heritage / concepts / ~8 smaller-field worksheet rounds — curriculum-team-driven; output gates D4 vocab migration timing + Stage 2 re-tag prompt design.
+
+If you find yourself wanting to "improve" the design or plan mid-execution,
+STOP and surface it to the user. Don't unilaterally rewrite the spec.
+
+# HARD RULES (enforce every action)
+
+DATA SAFETY (top priority — supersedes velocity):
+- Schema changes ONLY through migration files. Never apply schema directly
+  to production via `mcp__supabase-remote__apply_migration` / direct SQL.
+- Before merging any DB-touching PR: wait for CI to apply migration to TEST,
+  then verify via `mcp__supabase-test__execute_sql`.
+- After PROD migration applies: verify via `mcp__supabase-remote__execute_sql`.
+  Mandatory — CI's verify step has known SASL flakes (per memory), so MCP
+  verification is the source of truth.
+- After PROD edge-function deploy: verify via
+  `mcp__supabase-remote__get_edge_function <slug>` (compare ezbr_sha256 or
+  grep for known new code line) — Supabase CLI's "Deployed Functions" log
+  line is NOT a guarantee deployment took.
+- When in doubt about touching prod data, ask first.
+- Pre-delete checklist (per memory's hygiene-follow-ups note from Phase 6.2):
+  for any DELETE FROM lessons, check (1) FK refs INTO the row from
+  bookmarks / canonical_lessons / duplicate_resolutions / lesson_archive /
+  lesson_submissions / lesson_versions / collections+dismissals arrays /
+  submission_reviews+_archive / submission_similarities; (2) FK ref OUT FROM
+  the row via `lessons.original_submission_id`. Document mitigation per row.
+
+MIGRATION DISCIPLINE:
+- Before touching any file in `supabase/migrations/`, invoke the
+  `database-migrations` skill via the Skill tool.
+- Verify the new migration's date prefix sorts AFTER the latest existing
+  one. Run `ls supabase/migrations | sort | tail -3` first. ASCII gotcha
+  (per memory): files like `20260208140000_*` sort BEFORE `20260208_*`
+  because digits < underscore. When adding same-day migrations alongside
+  an existing `YYYYMMDD_` file, use the NEXT day's date with a timestamp
+  to ensure correct sort order.
+
+PER-PR RITUAL (every PR, every time):
+1. Pre-push review: DISPATCH a code-reviewer agent (e.g.
+   `feature-dev:code-reviewer` or `superpowers:code-reviewer`) on
+   `git diff main...HEAD`. The agent does the line-by-line read, not you —
+   you cannot impartially review your own work. Investigate every finding
+   per `feedback_bot_review_investigation.md` (verify against actual code,
+   push back where the agent is wrong). Apply fix-up commits BEFORE push
+   (or amend, since the work isn't pushed yet). Re-dispatch a fresh review
+   on every push that follows, not just the initial PR open.
+2. Run `npm run type-check && npm run lint` (mandatory pre-PR).
+3. Push the feature branch.
+4. Open the PR with `gh pr create`.
+5. Wait for external bot reviewers to land (CodeRabbit, Claude Review,
+   etc.) — they ARE the second pass; do NOT dispatch a redundant
+   code-reviewer agent here.
+6. COLLECT findings from ALL FOUR PR surfaces — querying only one is a
+   verification failure (per `feedback_pr_comment_surfaces.md`):
+     a. `gh pr view <PR> --comments` (issue-comments, where bots typically post their full report)
+     b. `gh api repos/<owner>/<repo>/pulls/<PR>/reviews --jq '.[] | {user: .user.login, state, body}'`
+     c. `gh api repos/<owner>/<repo>/pulls/<PR>/comments --jq '.[] | {user: .user.login, path, line, body}'`
+     d. `gh pr checks <PR>` + `gh run view <id> --log-failed` for any failing check
+   "0 findings" is a CLAIM that requires evidence from all four.
+7. INVESTIGATE & TRIAGE each finding (rebuttal pass per
+   `feedback_bot_review_investigation.md`; default-reject hardening per
+   `feedback_pr_bot_review_workflow.md`). Surface accept/reject
+   recommendations with rationale BEFORE applying.
+8. Apply accepted findings as consolidated fix-up commits (do NOT amend
+   pushed commits).
+9. RE-VERIFY TEST DB after each round (per
+   `feedback_per_round_test_db_verification.md`). Every round that touches
+   DB-applied state needs its own evidence — one-time verification at PR
+   open is NOT sufficient.
+10. ROUND-CAP AFTER 2 ROUNDS of bot review. If a 3rd round comes in, fix
+    only critical bugs, document the rest, ship.
+
+WHAT NEVER TO DO WITHOUT EXPLICIT USER INSTRUCTION:
+- `git push` to main (commits go through PRs only)
+- Merge a PR
+- Approve a PROD migration in CI/CD
+- `git push --force` on any branch
+- Re-write design doc or implementation plan to "improve" mid-execution
+- `bd` commands — beads is broken (per memory `project_beads_broken.md`); use TodoWrite/TaskCreate alternatives or in-conversation tracking
+
+WHAT'S OK without asking:
+- `git push -u origin feat/metadata-foundation-...` for the current feature branch
+- `git commit` on the feature branch (often, small)
+- `gh pr create` for the current branch
+- Reading anything, running tests, running baseline checks
+- Dispatching review agents via the Agent tool
+
+VERIFICATION BEFORE COMPLETION:
+- Before claiming a task done, run the verification commands in that task's
+  spec. Evidence before assertions. Invoke the
+  `superpowers:verification-before-completion` skill if unclear.
+- "Tests pass" requires that you ran them and saw the green output, not
+  that the diff looks like it should pass.
+
+TDD WHERE APPROPRIATE:
+- The implementation plan flags TDD tasks. Follow the failing-test-first →
+  implement → green → commit loop. Don't skip the failing-test step.
+- Invoke `superpowers:test-driven-development` for these tasks.
+
+# SESSION SCOPE
+
+Default: ONE task per session, or a small group of trivially-related tasks.
+Stop at natural commit boundaries. Don't try to ship an entire PR in one
+session unless it's tiny.
+
+If you finish a task with cycles to spare and the next task is small +
+independent, do it. If the next task is substantive, end the session.
+
+# SESSION-END RITUAL (do this LAST, every session)
+
+1. `npm run type-check && npm run lint` — must pass.
+2. `git status && git log --oneline -5 origin/main..HEAD` — confirm what
+   landed.
+3. Update the execution status file:
+   - What got done this session (commit hashes + task IDs)
+   - Where the next session picks up (specific task ID + any setup needed)
+   - Any blockers, surprises, or decisions made
+   - Current branch + what's pushed vs. local
+4. Commit the status file.
+5. Tell me in 2-3 sentences what got done and what the next session picks
+   up. End there.
+
+# AUTO-LOADED MEMORY (already in your context, don't duplicate)
+
+Your auto-loaded MEMORY.md references include:
+- `feedback_multi_session_execution.md` (the rule-level memory for this pattern)
+- `feedback_pr_bot_review_workflow.md`
+- `feedback_bot_review_investigation.md`
+- `feedback_pr_comment_surfaces.md`
+- `feedback_per_round_test_db_verification.md`
+- `feedback_data_safety_top_priority.md`
+- `feedback_user_relearning.md`
+- `feedback_workflows_not_sacred.md`
+- `feedback_plain_language.md`
+- `project_metadata_rebuild_initiative.md` (initiative pointer)
+- `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
+- Plus the SASL-flake / edge-function-deploy-verification / pre-delete-checklist hygiene notes
+
+They apply throughout. Re-read them if a question comes up that they might cover.
+
+# EXECUTION STATUS FILE TEMPLATE (create on Session 1)
+
+If `docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md`
+does not exist yet, create it using the existing scaffold at that path
+(the `/kickoff-feature` skill seeded it).
+
+# RIGHT NOW
+
+Read this prompt → read design doc → read implementation plan from current
+task → read status file → run baseline checks → tell me where you are and
+what's next. Don't start coding until I confirm.
+
+<!-- ===== END OF KICKOFF BODY ===== -->
