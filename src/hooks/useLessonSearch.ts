@@ -38,7 +38,6 @@ export function normalizeMetadata(
 ): LessonMetadata {
   const m = meta || {};
   const asArray = (v: unknown): string[] => (Array.isArray(v) ? v : v ? [String(v)] : []);
-  const asString = (v: unknown): string => (typeof v === 'string' ? v : v ? String(v) : '');
   return {
     thematicCategories: asArray(m.thematicCategories),
     seasonTiming: asArray(m.seasonTiming),
@@ -46,7 +45,6 @@ export function normalizeMetadata(
     culturalHeritage: asArray(m.culturalHeritage),
     locationRequirements: asArray(m.locationRequirements),
     activityType: asArray(m.activityType),
-    lessonFormat: asString(m.lessonFormat),
     mainIngredients: asArray(m.mainIngredients),
     skills: asArray(m.skills),
     equipment: asArray(m.equipment),
@@ -112,7 +110,10 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
         filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : undefined,
         filter_location: filters.location?.length ? filters.location : undefined,
         filter_activity_type: filters.activityType?.length ? filters.activityType : undefined,
-        filter_lesson_format: filters.lessonFormat || undefined,
+        // PR 1 compat bridge: keep until Task 1.3a follow-up drops the RPC param.
+        // TODO(Task 1.3a): see docs/plans/2026-05-03-metadata-rebuild-foundation-implementation.md
+        // → "Task 1.3a (deferred to next release): drop deprecated parameters".
+        filter_lesson_format: undefined,
         filter_academic: filters.academicIntegration?.length
           ? filters.academicIntegration
           : undefined,
@@ -120,6 +121,7 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
           ? filters.socialEmotionalLearning
           : undefined,
         filter_cooking_method: filters.cookingMethods?.length ? filters.cookingMethods : undefined,
+        filter_tags: filters.tags?.length ? filters.tags : undefined,
         page_size: pageSize,
         page_offset: currentPage * pageSize,
       };

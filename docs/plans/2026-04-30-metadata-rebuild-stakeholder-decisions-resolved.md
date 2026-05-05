@@ -17,13 +17,13 @@
 
 ## Walkthrough state — pickup checkpoint
 
-**Last session:** 2026-05-03 (session 8) · `c0baa85` (D9 capture + Walkthrough state header refresh + Session 8 log entry + CRF stamp-theater memory update + initiative memory + MEMORY.md update).
-**Progress:** **12 calls captured + 1 cleanup track flagged — main walkthrough COMPLETE** — D0 ✅, D4 ✅, D8 substance ⚪ partial, Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial, Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, D6 ✅, D7 ✅, **D9 ✅ (CRF stays as 7-feature master-list closed-enum `text[]` + LLM-extract-from-body at submission + reviewer-validate with lenient inference scope + leave older legacy as-is + re-tag modern-template lessons + `crf_confirmed` backend-only marker)**, N1 ✅, Cross-cutting import drops ✅. **Remaining work:** D8 phase-2 sub-questions revisit (separate brief at user direction); D1 content layer (worksheet round, after walkthrough wraps).
-**Next in queue:** **D8 phase-2 sub-questions revisit (user-directed separate session).** Substance is settled (stay teacher-zero); open part is reviewer-tooling mechanisms — guided pickers, paired-review prompts, validation rules, audit/diff views, per-field guidance text. Different shape from main walkthrough cards; lighter-weight. **After D8 phase-2:** foundation-phase implementation plan scaffolding via `/kickoff-feature` per the multi-session execution preference.
-**Walkthrough order remaining:** D8 phase-2 (separate brief).
+**Last session:** 2026-05-03 (session 9) · `e167832` (D8 phase-2 dropped after empirical investigation; Stage 2 reviewer-validation UX walk added as deferred follow-up to land during foundation-phase implementation planning).
+**Progress:** **13 calls captured + 1 cleanup track flagged — walkthrough FULLY WRAPPED** — D0 ✅, D4 ✅, D8 substance ✅, D8 phase-2 ✅ (dropped, replaced by Stage 2 reviewer-validation UX deferred walk), Cross-cutting Scope 3 ✅, D1 meta layer ⚪ partial (content layer = worksheet round), Cross-cutting Stage 1 worksheet methodology ✅, D3 ✅, D2 ✅, D5 ✅, D6 ✅, D7 ✅, D9 ✅, N1 ✅, Cross-cutting import drops ✅. **Remaining work:** D1 content layer (Stage 1 heritage worksheet round, after foundation-phase implementation begins); Stage 2 reviewer-validation UX (deferred walk during foundation-phase implementation planning).
+**Next in queue:** **`/kickoff-feature` foundation-phase implementation plan scaffolding** per the multi-session execution preference. Stage 2 reviewer-validation UX walk lands during that planning when the LLM-draft-validation flow is the active design surface.
+**Walkthrough order remaining:** None — main walkthrough complete. Foundation-phase implementation + Stage 2 reviewer-validation UX walk + Stage 1 worksheet rounds (heritage first, concepts second-largest) sequence in alongside implementation.
 **Open questions waiting on user:** None pending.
 **Blockers / pending confirmations:** None.
-**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text**. **Path 3 shape (meta-now / content-later)** applies to D1/D5; **D9 didn't need it** — the established Brown CR framework (master list at `~/Downloads/Cultural Responsiveness Guidelines.md`) provided the canonical vocabulary directly; no fresh stakeholder exercise required. **Empirical-decomposition route** (used in D7) — pattern available when a card's framing doesn't survive empirical contact. **The "valid variations" principle (D7.4)** — default for any future "lessons share content but aren't duplicates" finding is don't model; rely on dedup-pipeline memory for cross-version flagging. **LLM-as-extractor-not-author pattern (D9)** — when LLM is operating against teacher-zero/reviewer-authority, scope LLM to extracting-only-what-is-in-body, with closed-enum mapping as the heaviest judgment it makes; reviewer overlay is lenient (framework-grounded inference allowed without body-span citation).
+**Mode reminders:** User is decision-driver (no separate stakeholder pass). Pushback expected — push back as much as needed. Capture lands in this file. Working preferences: explain why not just what; workflows are not sacred; data safety top priority; investigate before agreeing; **plain language preferred for explanatory text**. **Path 3 shape (meta-now / content-later)** applies to D1/D5; **D9 didn't need it** — the established Brown CR framework (master list at `~/Downloads/Cultural Responsiveness Guidelines.md`) provided the canonical vocabulary directly; no fresh stakeholder exercise required. **Empirical-decomposition route** (used in D7) — pattern available when a card's framing doesn't survive empirical contact. **The "valid variations" principle (D7.4)** — default for any future "lessons share content but aren't duplicates" finding is don't model; rely on dedup-pipeline memory for cross-version flagging. **LLM-as-extractor-not-author pattern (D9)** — when LLM is operating against teacher-zero/reviewer-authority, scope LLM to extracting-only-what-is-in-body, with closed-enum mapping as the heaviest judgment it makes; reviewer overlay is lenient (framework-grounded inference allowed without body-span citation). **Audit-attribution check pattern (D8 phase-2 / session 9)** — when an audit cites errors as "reviewer judgment problems," verify provenance before designing reviewer tooling. The 2026-05-03 investigation found 87% of corpus tags came from the v3 GPT-4.1 batch, never reviewer-validated. Audit-cited errors should be classified by source (vocab inadequacy / inconsistent batch tagging / never-reviewed-inheritance / actual reviewer judgment) before mechanisms are designed.
 
 ---
 
@@ -384,21 +384,37 @@
 
 ## Decision 8 — Teacher contribution at submission
 
-**Status:** PARTIAL 2026-04-30 — substance decided in service of D0; phase-2 sub-questions still open.
+**Status:** **RESOLVED 2026-05-03 (session 9)** — substance settled at session 1 in service of D0 (stay teacher-zero); phase-2 reviewer-tooling sub-questions **dropped at session 9** after empirical investigation showed the audit-cited "reviewer errors" are v3 GPT-4.1 tagging artifacts on lessons no human reviewer has ever validated, not reviewer judgment errors. Replaced by a deferred Stage 2 reviewer-validation UX walk to land during foundation-phase implementation planning.
 
-**Decision (substance):** **Stay teacher-zero.** Reviewers remain sole authority for all metadata classification.
+**Decision (substance, settled 2026-04-30):** **Stay teacher-zero.** Reviewers remain sole authority for all metadata classification.
 
-**Reasoning:**
+**Reasoning (substance):**
 - 2 expert reviewers on staff for curriculum; user wants consistency to live with that pairing.
-- Teacher-side tagging would risk introducing inconsistency (the audit's own classification problems are reviewer-judgment calls — adding teacher input would compound them, not fix them).
+- Teacher-side tagging would risk introducing inconsistency (the audit's own classification problems were initially framed as reviewer-judgment calls — adding teacher input would compound them, not fix them).
 
-**Deferred sub-questions (load-bearing for phase 2):**
-- The audit's classification-inconsistency findings (cosmetics-craft tagged "cooking", grades 3K-8 on a stovetop lesson, immigration-stories on an African American foodways lesson) are reviewer judgment calls. Under teacher-zero, the only mechanism to fix them is reviewer tooling. Phase 2 reviewer UX redesign needs to address this — specific mechanisms TBD: guided pickers, per-field guidance text, paired-review prompts for novel cases, validation rules, audit/diff views before commit, etc.
+**Decision (phase-2 sub-questions, settled 2026-05-03):** **Dropped.** The audit's "reviewer judgment errors" framing didn't survive empirical investigation — the cited errors are inherited v3 GPT-4.1 tagging on never-reviewed lessons, not reviewer-authored errors. The mechanism inventory (guided pickers, validation rules, audit/diff views, paired-review prompts, per-field guidance text) was solving a problem that hasn't been verified to exist. Foundation-phase corpus refresh (Stage 2 re-tag with canonical D4 vocab + D2 enum expansion + D5/D9 LLM submission-time auto-tag) automatically fixes the audit-cited cases. Reviewer-tooling design defers until empirical evidence of actual reviewer pain surfaces under the new flow.
+
+**Reasoning (phase-2 drop):**
+- **Corpus-level provenance:** 670 of 772 lessons (87%) are imported, never went through teacher → reviewer pipeline. The 2025-07-10 v3 GPT-4.1 batch tagging run is the source of those tags.
+- **Per-lesson investigation of the 6 audit-cited examples:**
+  - **Lotion & Agar Soap K & MS** (cooking-tagged-craft): v3 import, never reviewed. v3's `activityType` enum had no `craft` option, so `cooking` was the closest available value. **Vocab inadequacy, not error.** D2's craft expansion (session 4) fixes on re-tag.
+  - **African American Food Traditions** (immigration-stories-tagged): second-wave import 2025-08-07, never reviewed. Tag is in `academicConcepts.Social Studies`, not thematic_categories. Other African American foodways lessons in the corpus (Cornbread/Greens, Museum Tour) only have "cultural traditions" — v3 was inconsistent. D5 canonical vocab + Stage 2 re-tag fixes.
+  - **Mashama Bailey** (3K-8 stovetop): v3 import, only post-import metadata edit is the Phase 6 automated metadata-correction archive (2026-04-27), not reviewer judgment.
+  - **Plant Families, Seed Dispersal × 3** (tasting conflation, cross-grade-band inconsistency): all v3 imports, none reviewer-touched.
+  - **Farm Workers & Pesticides** (the only reviewer-touched audit-cited case): reviewer's `tagged_metadata` set `activityType: "garden"` correctly; the lesson now shows `["both"]`, meaning the reviewer's call was right and was overwritten downstream — **NOT** a reviewer judgment error.
+- **Net:** zero of the audit-cited "reviewer judgment errors" are actually reviewer-authored errors on reviewer-authored lessons.
+- **Consequence:** designing reviewer-tooling mechanisms preemptively against an unverified problem risks over-engineering. Most cited errors evaporate under foundation-phase work; the remainder (e.g., Mashama's grade range) are corpus-refresh + better-prompt territory, not reviewer-tooling territory.
+- **Right time to surface reviewer-tooling questions** is when foundation-phase implementation + Stage 2 re-tag is underway and we have empirical evidence of what reviewers actually find painful in the new flow.
+
+**Pivot — Stage 2 reviewer-validation UX walk-later:**
+
+The load-bearing reviewer question that displaces D8 phase-2 is: **how does the reviewer interface support Stage 2 batch validation of LLM-drafted re-tags across the ~700 unreviewed lessons?** That's the real reviewer load — hundreds of hours spread across months — and its UX matters far more than the ~10/year ongoing-submission flow. To be walked as a separate question once foundation-phase implementation planning starts via `/kickoff-feature`. The D8 phase-2 mechanism inventory (guided pickers, validation rules, audit/diff views, paired-review prompts, per-field guidance text) is **archived as candidate inputs** for that future walk, not discarded.
 
 **Downstream implications:**
-- Schema design in foundation phase is reviewer-canonical only — no submitter-suggestions sidecar fields needed.
-- D5, D6, D7 decisions unaffected by D8 — none of them require teacher input.
-- D8's full walkthrough turn can confirm the substance call and focus on phase-2 reviewer-tooling sub-questions.
+- Schema design in foundation phase is reviewer-canonical only — no submitter-suggestions sidecar fields needed (unchanged).
+- D5, D6, D7 decisions unaffected (unchanged).
+- **The "extend LLM-first-pass to more fields" workflow direction (proposed at session 9 opening) still travels forward.** Submission-time Opus tagging for ~10 high-fit reviewer-supplied fields drafts both Stage 2 re-tags AND ongoing submissions. Foundation-phase scope add: ~10 field-specific prompts riding on the D5 + D9 Opus pipeline; per-prompt eval gates before launch. **Disciplined scope** — high-fit fields only (those with closed vocab from D4 + body signal); marginal fields (`grade_levels`, `location`) and reviewer-validate UI redesign defer to Phase 2.
+- **Walkthrough is fully wrapped** — D8 phase-2 was the only remaining question. Next step is `/kickoff-feature` foundation-phase implementation plan scaffolding.
 
 ---
 
@@ -909,3 +925,51 @@ CRF design fully scoped. Foundation-phase schema = existing `cultural_responsive
 **Commits:**
 
 - `c0baa85` — `docs(metadata-rebuild): walkthrough session 8 — D9 (CRF kept under master-list framing; main walkthrough complete)`
+
+### Session 9 — 2026-05-03
+
+**Covered:** D8 phase-2 walkthrough — opened with workflow-first framing across the three workflow options (LLM-first-pass extended / pair every review / split content-vs-classification review). User pushed back on the audit's "reviewer judgment errors" framing — hypothesizing the cited errors were inherited GPT-4.1 v3 tagging or messy/inconsistent vocabulary, not reviewer judgment. Investigation dispatched against TEST DB; hypothesis confirmed empirically. D8 phase-2 dropped + Stage 2 reviewer-validation UX walk added as deferred follow-up.
+
+**Calls landed (in order):**
+
+1. **Workflow-first walkthrough mode accepted (meta call).** User chose to settle workflow shape before iterating mechanism inventory. Open to pulling pieces forward into foundation phase if helpful, with the discipline of "systematically, not off track, not overengineering."
+2. **D8 phase-2 sub-questions = dropped.** The audit's "reviewer judgment errors" framing didn't survive empirical investigation. Mechanism inventory archived as candidate inputs for the deferred Stage 2 reviewer-validation UX walk; not committed to foundation phase.
+3. **Pivot — Stage 2 reviewer-validation UX walk-later.** The actually-large reviewer load isn't the ~10/year ongoing-submission flow; it's batch-validating LLM-drafted re-tags across ~700 unreviewed lessons during Stage 2. To be walked as a separate question once foundation-phase implementation planning starts via `/kickoff-feature`.
+4. **"Extend LLM-first-pass to more fields" workflow direction kept alive.** Submission-time Opus tagging extended to ~10 high-fit reviewer-supplied fields (closed vocab from D4 + body signal). Foundation-phase scope add: ~10 field-specific prompts riding on D5 + D9 Opus pipeline; per-prompt eval gates before launch. Marginal fields (`grade_levels`, `location`) and reviewer-validate UI redesign defer to Phase 2.
+
+**Net D8 phase-2 outcome:**
+
+D8 fully closed. Substance: stay teacher-zero (settled session 1, unchanged). Phase-2 mechanisms: dropped — not designing them preemptively against an unverified problem. Foundation-phase reviewer-tooling work narrows to the LLM-draft-extension above; everything else defers to the Stage 2 reviewer-validation UX walk during foundation-phase implementation planning.
+
+**Investigation findings (the load-bearing piece of the session):**
+
+Empirical query of TEST DB against the audit-cited examples + corpus-level provenance:
+
+- **Corpus-level:** 670 of 772 lessons (87%) imported, never went through teacher → reviewer pipeline. Import waves: 2025-07-10 (669, the v3 GPT-4.1 batch tagging run) / 2025-07-24 + 2025-08-07 (19, smaller imports) / 2025-09-01 (78, submission-era cohort, all reviewer-touched) / 2026-04-27 (6, Phase 7c).
+- **Per-lesson investigation:**
+  - Lotion & Agar Soap K & MS (cooking-tagged-craft): v3 import, never reviewed; v3 enum had no `craft` option, so `cooking` was the closest available value. **Vocab inadequacy, not error.** D2's craft expansion fixes on re-tag.
+  - African American Food Traditions (immigration-stories-tagged): second-wave import 2025-08-07, never reviewed. Tag is in `academicConcepts.Social Studies`, not thematic_categories. Other African American foodways lessons in corpus only have "cultural traditions" — v3 inconsistency. D5 + Stage 2 re-tag fixes.
+  - Mashama Bailey (3K-8 stovetop): v3 import, only post-import edit is the Phase 6 automated metadata-correction archive (2026-04-27), not reviewer judgment.
+  - Plant Families, Seed Dispersal × 3 (tasting conflation, multi-grade-band inconsistency): all v3 imports, none reviewer-touched.
+  - Farm Workers & Pesticides (the one reviewer-touched audit-cited case): reviewer's `tagged_metadata` set `activityType: "garden"` correctly; lesson now shows `["both"]`, meaning reviewer's call was right and was overwritten downstream — **NOT** a reviewer judgment error.
+- **Net:** zero of the audit-cited "reviewer judgment errors" are reviewer-authored errors on reviewer-authored lessons. The cited errors are inherited v3 GPT-4.1 tagging on never-reviewed lessons, plus one vocab inadequacy.
+
+**Key reframings / insights:**
+
+- **Audit-attribution check pattern.** When an audit cites errors as "reviewer judgment problems," verify provenance before designing reviewer tooling. Today's investigation found the framing was off by ~100% — every cited "judgment error" was actually inherited v3 GPT tagging. Future audits or design conversations that lean on "reviewers are getting X wrong" should run the same provenance check first. Worth surfacing as a reusable pattern beyond this initiative.
+- **The audit's signal value isn't "reviewers need tooling" — it's "v3 GPT tags need re-tagging."** Foundation-phase corpus refresh + canonical D4 vocab + D2 enum expansion + D5/D9 LLM submission-time auto-tag does the heavy lifting automatically. Reviewer tooling design isn't load-bearing for foundation phase.
+- **The "ship lean" instinct (D9 precedent) extended further.** D9 shipped lean by deferring rich practice-level storage to Phase 2. D8 phase-2 ships even leaner: the mechanism inventory wasn't just deferred, it was dropped because the problem it was solving turned out to not be the actual problem. "Don't design for an unverified problem" is the principle.
+- **The actually-large reviewer load is Stage 2, not ongoing submissions.** ~700 lessons × LLM-drafted re-tags + reviewer validation = hundreds of hours over months. The reviewer UX for THAT flow matters far more than the ~10/year flow. The Stage 2 reviewer-validation UX walk should land when foundation-phase implementation makes that flow concrete.
+- **The "extend LLM-first-pass" workflow direction survives the reframing.** It was the right move regardless of whether reviewers had judgment errors at scale — D5 + D9 already commit the infra; extending to more fields drafts both Stage 2 batch re-tags AND ongoing submissions. Same prompt design, applied per-field, with per-field eval gates. Disciplined scope: ~10 high-fit fields foundation-phase, marginal + UI to Phase 2.
+- **Plain-language preference exercised mid-session.** User asked for the workflow-options walk re-explained in simpler terms after the initial walk; re-delivered with no jargon. Same substance, less friction. Continues the pattern from session 5.
+
+**Carry-forward to next session:**
+
+- **`/kickoff-feature` foundation-phase implementation plan scaffolding** is next. Per multi-session execution preference, scaffolds the four-file pattern (design + implementation plan + kickoff prompt + status doc).
+- **Stage 2 reviewer-validation UX walk lands during foundation-phase implementation planning** — when the LLM-draft-validation flow becomes the active design surface, walk reviewer-tooling mechanisms (the archived D8 phase-2 candidate inventory) against the concrete Stage 2 flow. Different shape than main walkthrough cards.
+- **D1 content layer remains for the Stage 1 heritage worksheet round** (unchanged from session 8 carry-forward).
+- **Cleanup-track work** (23-import-drop list + Food System Advocates retitle + dedup-pipeline third-state design) sequences alongside foundation-phase implementation.
+
+**Commits:**
+
+- `e167832` — `docs(metadata-rebuild): walkthrough session 9 — D8 phase-2 dropped (audit-cited errors are v3-inheritance, not reviewer judgment) + Stage 2 reviewer-validation UX added as deferred walk`

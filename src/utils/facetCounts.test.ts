@@ -13,7 +13,6 @@ function makeLesson(overrides: Partial<Lesson> & { id: string }): Lesson {
       coreCompetencies: [],
       culturalHeritage: [],
       activityType: [],
-      lessonFormat: '',
       ...(overrides.metadata ?? {}),
     },
     confidence: { overall: 1, title: 1, summary: 1, gradeLevels: 1 },
@@ -26,7 +25,6 @@ describe('computeFacetCounts', () => {
     expect(counts.gradeLevels).toEqual({});
     expect(counts.activityType).toEqual({});
     expect(counts.culturalHeritage).toEqual({});
-    expect(counts.lessonFormat).toEqual({});
   });
 
   it('counts top-level gradeLevels', () => {
@@ -46,7 +44,6 @@ describe('computeFacetCounts', () => {
           coreCompetencies: ['garden'],
           culturalHeritage: ['east-asian'],
           activityType: ['cooking-only'],
-          lessonFormat: 'single-period',
           locationRequirements: ['Indoor'],
           thematicCategories: ['Garden Basics'],
           seasonTiming: ['Fall'],
@@ -60,7 +57,6 @@ describe('computeFacetCounts', () => {
           coreCompetencies: ['garden', 'kitchen'],
           culturalHeritage: [],
           activityType: ['both'],
-          lessonFormat: 'multi-session',
           locationRequirements: ['Indoor', 'Outdoor'],
         },
       }),
@@ -69,7 +65,6 @@ describe('computeFacetCounts', () => {
     expect(counts.coreCompetencies).toEqual({ garden: 2, kitchen: 1 });
     expect(counts.activityType).toEqual({ 'cooking-only': 1, both: 1 });
     expect(counts.location).toEqual({ Indoor: 2, Outdoor: 1 });
-    expect(counts.lessonFormat).toEqual({ 'single-period': 1, 'multi-session': 1 });
     expect(counts.thematicCategories).toEqual({ 'Garden Basics': 1 });
     expect(counts.culturalHeritage).toEqual({ 'east-asian': 1 });
     expect(counts.seasonTiming).toEqual({ Fall: 1 });
@@ -85,7 +80,6 @@ describe('computeFacetCounts', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: '',
           academicIntegration: ['Math', 'Science'],
         },
       }),
@@ -95,7 +89,6 @@ describe('computeFacetCounts', () => {
           coreCompetencies: [],
           culturalHeritage: [],
           activityType: [],
-          lessonFormat: '',
           academicIntegration: { concepts: {}, selected: ['Science', 'Health'] },
         },
       }),

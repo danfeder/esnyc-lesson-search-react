@@ -10,6 +10,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import { reviewFormPayloadSchema } from '../_shared/metadataSchemas.ts';
 
 type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision' | 'reject';
 
@@ -106,6 +107,27 @@ serve(async (req) => {
         400,
         corsHeaders
       );
+    }
+
+    // Zod-validate metadata when present. PR 1 Task 1.5: defense-in-depth
+    // against stale frontend bundles or direct API hits sending malformed
+    // shapes. The schema mirrors src/types/reviewFormPayload.zod.ts (review-
+    // form keys: themes/season/location single-select); the RPC translates
+    // to canonical keys downstream.
+    if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+      const result = reviewFormPayloadSchema.safeParse(metadata);
+      if (!result.success) {
+        const flat = result.error.flatten();
+        return jsonResponse(
+          {
+            error: 'Invalid metadata shape',
+            fieldErrors: flat.fieldErrors,
+            formErrors: flat.formErrors,
+          },
+          400,
+          corsHeaders
+        );
+      }
     }
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);

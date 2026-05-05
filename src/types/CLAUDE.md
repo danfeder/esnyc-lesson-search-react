@@ -21,13 +21,10 @@ lessonId, createdAt, gradeLevels
 ## Filter Types
 
 ```typescript
-// Single-select: string
-lessonFormat: string;
-cookingMethods: string;
-
 // Multi-select: string[]
 gradeLevels: string[];
 coreCompetencies: string[];
+cookingMethods: string[];
 ```
 
 ## Key Patterns

@@ -1,12 +1,7 @@
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
-import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { cn } from '@/utils/cn';
 import { intActivityLabel, intGradesLabel } from './IntListRow';
-
-function lessonFormatLabel(value: string): string {
-  return FILTER_CONFIGS.lessonFormat.options.find((o) => o.value === value)?.label ?? value;
-}
 
 interface IntCardProps {
   lesson: Lesson;
@@ -19,7 +14,6 @@ export function IntCard({ lesson, selected, onClick }: IntCardProps) {
   const meta = lesson.metadata;
   const season = meta.seasonTiming?.[0];
   const theme = meta.thematicCategories?.[0];
-  const format = meta.lessonFormat;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -44,11 +38,10 @@ export function IntCard({ lesson, selected, onClick }: IntCardProps) {
       </div>
       <h3 className="int-card-title">{lesson.title}</h3>
       <p className="int-card-summary">{lesson.summary}</p>
-      {(season || theme || format) && (
+      {(season || theme) && (
         <div className="int-card-meta">
           {season && <span>{season}</span>}
           {theme && <span>{theme}</span>}
-          {format && <span>{lessonFormatLabel(format)}</span>}
         </div>
       )}
     </article>

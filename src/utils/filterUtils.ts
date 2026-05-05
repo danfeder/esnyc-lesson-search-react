@@ -8,12 +8,12 @@
 export const formatCategoryName = (category: string): string => {
   const categoryNames: Record<string, string> = {
     gradeLevels: 'Grade',
+    tags: 'Lesson Type',
     activityType: 'Activity',
     seasonTiming: 'Season',
     thematicCategories: 'Theme',
     culturalHeritage: 'Culture',
     coreCompetencies: 'Competency',
-    lessonFormat: 'Format',
     cookingMethods: 'Method',
     academicIntegration: 'Subject',
     socialEmotionalLearning: 'SEL',
@@ -28,12 +28,12 @@ export const formatCategoryName = (category: string): string => {
 export const getCategoryIcon = (category: string): string => {
   const categoryIcons: Record<string, string> = {
     gradeLevels: '📚',
+    tags: '🏷️',
     activityType: '🎯',
     seasonTiming: '🍂',
     thematicCategories: '🌿',
     culturalHeritage: '🌍',
     coreCompetencies: '⭐',
-    lessonFormat: '📋',
     cookingMethods: '🍳',
     academicIntegration: '📚',
     socialEmotionalLearning: '💛',

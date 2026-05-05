@@ -38,7 +38,6 @@ const LESSON_DIFF_FIELDS: IntDiffField<LessonForReview>[] = [
   { key: 'season_timing', label: 'Season / timing', kind: 'pills' },
   { key: 'cultural_heritage', label: 'Cultural heritage', kind: 'pills' },
   { key: 'core_competencies', label: 'Core competencies', kind: 'pills' },
-  { key: 'lesson_format', label: 'Lesson format', kind: 'text' },
   { key: 'content_length', label: 'Content length', kind: 'number' },
   { key: 'has_table_format', label: 'Has table format', kind: 'bool' },
 ];

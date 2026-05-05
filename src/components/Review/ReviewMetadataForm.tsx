@@ -213,7 +213,6 @@ export function ReviewMetadataForm({
               'culturalResponsivenessFeatures',
               ALL_FIELD_CONFIGS.culturalResponsivenessFeatures
             )}
-            {renderField('lessonFormat', ALL_FIELD_CONFIGS.lessonFormat)}
           </div>
         </div>
 

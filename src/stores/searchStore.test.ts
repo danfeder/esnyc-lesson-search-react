@@ -339,29 +339,6 @@ describe('searchStore', () => {
       expect(result.current.filters.location).toEqual(['Indoor']);
     });
 
-    it('should handle single-select dropdown filters', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setFilters({
-          lessonFormat: 'single-period',
-          cookingMethods: ['no-cook'],
-        });
-      });
-
-      expect(result.current.filters.lessonFormat).toBe('single-period');
-      expect(result.current.filters.cookingMethods).toEqual(['no-cook']);
-
-      // Should overwrite, not append
-      act(() => {
-        result.current.setFilters({
-          lessonFormat: 'multi-session',
-        });
-      });
-
-      expect(result.current.filters.lessonFormat).toBe('multi-session');
-    });
-
     it('should maintain filter integrity across operations', () => {
       const { result } = renderHook(() => useSearchStore());
 

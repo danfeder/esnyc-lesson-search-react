@@ -76,7 +76,6 @@ function convertToDbFormat(lesson: any) {
     season_timing: lesson.metadata?.seasonTiming || [],
     core_competencies: lesson.metadata?.coreCompetencies || [],
     cultural_heritage: lesson.metadata?.culturalHeritage || [],
-    lesson_format: lesson.metadata?.lessonFormat || null,
     academic_integration: lesson.metadata?.academicIntegration?.selected || [],
     social_emotional_learning: lesson.metadata?.socialEmotionalLearning || [],
     cooking_methods: cookingMethods,

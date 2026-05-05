@@ -18,7 +18,7 @@ export interface SearchFilters {
   culturalHeritage?: string[];
   location?: string[];
   activityType?: string[];
-  lessonFormat?: string;
+  tags?: string[];
   includeAllSeasons?: boolean;
 }
 
@@ -70,8 +70,8 @@ export function applyFilters(
     q = q.overlaps('metadata->activityType', filters.activityType);
   }
 
-  if (filters.lessonFormat) {
-    q = q.eq('metadata->>lessonFormat', filters.lessonFormat);
+  if (filters.tags?.length) {
+    q = q.overlaps('tags', filters.tags);
   }
 
   return q;
@@ -127,7 +127,6 @@ export function transformRow(row: any) {
       culturalHeritage: row.cultural_heritage || row.metadata?.culturalHeritage || [],
       locationRequirements: row.location_requirements || row.metadata?.locationRequirements || [],
       activityType: row.activity_type || row.metadata?.activityType || [],
-      lessonFormat: row.lesson_format || row.metadata?.lessonFormat || '',
       mainIngredients: row.main_ingredients || row.metadata?.mainIngredients || [],
       skills: row.metadata?.skills || [],
       equipment: row.metadata?.equipment || [],

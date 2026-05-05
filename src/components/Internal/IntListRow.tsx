@@ -35,10 +35,6 @@ function culturalLabel(value: string): string {
   return value;
 }
 
-function lessonFormatLabel(value: string): string {
-  return FILTER_CONFIGS.lessonFormat.options.find((o) => o.value === value)?.label ?? value;
-}
-
 interface IntListRowProps {
   lesson: Lesson;
   selected: boolean;
@@ -52,7 +48,6 @@ export function IntListRow({ lesson, selected, onClick }: IntListRowProps) {
   const season = meta.seasonTiming?.[0];
   const theme = meta.thematicCategories?.[0];
   const heritage = meta.culturalHeritage?.[0];
-  const format = meta.lessonFormat;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -91,12 +86,6 @@ export function IntListRow({ lesson, selected, onClick }: IntListRowProps) {
             <>
               <span className="dot">·</span>
               <span>{culturalLabel(heritage)}</span>
-            </>
-          )}
-          {format && (
-            <>
-              <span className="dot">·</span>
-              <span>{lessonFormatLabel(format)}</span>
             </>
           )}
         </div>

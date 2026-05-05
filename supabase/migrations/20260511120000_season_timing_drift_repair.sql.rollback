@@ -1,0 +1,7 @@
+-- Inert by extension. supabase CLI ignores files that do not match
+-- "<timestamp>_name.sql" (per CLI's rejected-file logging on PR-open
+-- dry-run). Sibling rollback notes for 20260511120000_season_timing_drift_repair.sql.
+--
+-- The forward migration is forward-only — original seasonTiming drift
+-- values are lost after the key strip. See header comment in the .sql
+-- forward file for the lesson_id+value pairs that were stripped.

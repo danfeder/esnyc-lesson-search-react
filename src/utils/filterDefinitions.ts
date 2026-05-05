@@ -20,6 +20,15 @@ export interface FilterConfig {
 // Filter configurations for filters used in search
 // IMPORTANT: Consult stakeholders before adding or removing filter categories
 export const FILTER_CONFIGS: Record<string, FilterConfig> = {
+  tags: {
+    label: 'Lesson Type',
+    type: 'multiple',
+    options: [
+      { value: 'orientation', label: 'Orientation' },
+      { value: 'bilingual_handouts', label: 'Bilingual Handouts' },
+    ],
+  },
+
   activityType: {
     label: 'Activity Type',
     type: 'single',
@@ -28,6 +37,7 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'garden-only', label: 'Garden Only' },
       { value: 'both', label: 'Cooking + Garden' },
       { value: 'academic-only', label: 'Academic Only' },
+      { value: 'craft-only', label: 'Craft Only' },
     ],
   },
 
@@ -157,20 +167,6 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
         label: 'Middle Eastern',
         children: [{ value: 'levantine', label: 'Levantine' }],
       },
-    ],
-  },
-
-  lessonFormat: {
-    label: 'Lesson Format',
-    type: 'single',
-    options: [
-      { value: 'standalone', label: 'Standalone' },
-      { value: 'multi-session', label: 'Multi-session unit' },
-      { value: 'double-period', label: 'Double period' },
-      { value: 'single-period', label: 'Single period' },
-      { value: 'co-taught', label: 'Co-taught' },
-      { value: 'remote-virtual', label: 'Remote/virtual adapted' },
-      { value: 'mobile-education', label: 'Mobile education format' },
     ],
   },
 

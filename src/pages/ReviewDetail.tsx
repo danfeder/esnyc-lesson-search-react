@@ -1,5 +1,6 @@
 import { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -8,6 +9,7 @@ import { logger } from '@/utils/logger';
 import { sanitizeContent } from '@/utils/sanitize';
 import { FEATURES } from '@/utils/featureFlags';
 import type { ReviewMetadata } from '@/types';
+import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
@@ -82,6 +84,47 @@ interface SubmissionDetail {
   similarities?: SimilarityWithLesson[];
   submitterTargetLesson?: SubmitterTargetLesson | null;
   review?: { metadata: ReviewMetadata; decision: string; notes: string };
+}
+
+// Map review-form Zod field keys to the human labels used in the
+// validation banner + per-IntFormField error states. Kept in sync with
+// reviewFormPayloadSchema (src/types/reviewFormPayload.zod.ts) and the
+// existing required-fields labels so a Zod failure highlights the same
+// IntFormField as a missing-required failure would.
+const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, string> = {
+  activityType: 'Activity Type',
+  location: 'Location',
+  season: 'Season & Timing',
+  themes: 'Thematic Categories',
+  gradeLevels: 'Grade Levels',
+  coreCompetencies: 'Core Competencies',
+  socialEmotionalLearning: 'Social-Emotional Learning',
+  cookingMethods: 'Cooking Methods',
+  mainIngredients: 'Main Ingredients',
+  gardenSkills: 'Garden Skills',
+  cookingSkills: 'Cooking Skills',
+  culturalHeritage: 'Cultural Heritage',
+  academicIntegration: 'Academic Integration',
+  observancesHolidays: 'Observances & Holidays',
+  culturalResponsivenessFeatures: 'Cultural Responsiveness Features',
+  processingNotes: 'Processing Notes',
+  summary: 'Summary',
+};
+
+// Mirror of the save-path activityType strip in handleSaveReview. The
+// IntPillGroup option values are slugs (`cooking-only`/`garden-only`/
+// `academic-only`/`craft-only`); the canonical Zod enum + DB CHECK
+// installed in PR 1 store `cooking`/`garden`/`academic`/`craft` (suffix
+// stripped on save). Without re-adding the suffix when loading an
+// existing review, a pill the reviewer previously selected appears
+// unselected on reopen — the form looks blank even though the value
+// is present and validates fine. `both` and any legacy already-suffixed
+// values pass through unchanged.
+function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
+  const v = raw.activityType;
+  if (typeof v !== 'string' || v.length === 0) return raw;
+  if (v === 'both' || v.endsWith('-only')) return raw;
+  return { ...raw, activityType: `${v}-only` as ReviewMetadata['activityType'] };
 }
 
 function parseExtractedContent(content: string): { title: string; summary: string } {
@@ -370,7 +413,7 @@ export function ReviewDetail() {
 
       if (reviews && reviews.length > 0) {
         const review = reviews[0];
-        setMetadata((review.tagged_metadata as ReviewMetadata) || {});
+        setMetadata(reAddActivityTypeSuffix((review.tagged_metadata as ReviewMetadata) || {}));
         const existingDecision = review.decision as string;
         if (
           existingDecision === 'approve_new' ||
@@ -451,6 +494,38 @@ export function ReviewDetail() {
     }
     setValidationErrors([]);
     setSaveError(null);
+
+    // activityType UI option values end in `-only` (cooking-only / garden-only
+    // / etc.); canonical Zod enum + DB CHECK reject the suffix. Strip on the
+    // save path only — keeping form state in UI-slug form lets IntPillGroup
+    // match the stored value back to its slug option (otherwise the freshly-
+    // clicked pill visually deselects on next render).
+    const payload: ReviewMetadata = {
+      ...metadata,
+      activityType:
+        typeof metadata.activityType === 'string'
+          ? (metadata.activityType.replace(/-only$/, '') as ReviewMetadata['activityType'])
+          : metadata.activityType,
+    };
+
+    // PR 1 Task 1.5: defense-in-depth Zod validation against the same
+    // reviewFormPayloadSchema the complete-review edge function enforces.
+    // Required-fields above already covers the common UX case; this catches
+    // shape drift (e.g., a future bug that sends a wrong type for a closed-
+    // enum field) before the network round-trip.
+    const parseResult = reviewFormPayloadSchema.safeParse(payload);
+    if (!parseResult.success) {
+      const fieldErrors = parseResult.error.flatten().fieldErrors;
+      const invalidLabels = Object.keys(fieldErrors).map(
+        (key) => ZOD_FIELD_TO_LABEL[key as keyof typeof ZOD_FIELD_TO_LABEL] ?? key
+      );
+      setValidationErrors(invalidLabels);
+      setSaveError('Some fields have invalid values — see highlighted fields above.');
+      logger.error('Review form Zod validation failed:', fieldErrors);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -464,7 +539,7 @@ export function ReviewDetail() {
         body: {
           submissionId: submission.id,
           decision,
-          metadata,
+          metadata: payload,
           notes,
           selectedLessonId: decision === 'approve_update' ? selectedDuplicate : null,
         },
@@ -975,16 +1050,6 @@ export function ReviewDetail() {
                   Additional
                 </div>
 
-                <IntFormField label="Lesson format">
-                  <IntPillGroup
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.lessonFormat)}
-                    {...singleProps(metadata.lessonFormat, (v) =>
-                      handleMetadataChange('lessonFormat', v)
-                    )}
-                    ariaLabel="Lesson format"
-                  />
-                </IntFormField>
-
                 <div className="adm-field">
                   <label className="adm-label" htmlFor={inputIds.observances}>
                     Observances &amp; holidays
@@ -1011,7 +1076,11 @@ export function ReviewDetail() {
                   <label className="adm-label" htmlFor={inputIds.culturalResponsiveness}>
                     Cultural responsiveness features
                   </label>
-                  <CreatableSelect
+                  {/* Non-creatable Select: CRF is a closed enum (7 Brown CR */}
+                  {/* master-list features) enforced by Zod + SQL CHECK in PR 1. */}
+                  {/* CreatableSelect would invite reviewer-typed values that */}
+                  {/* the save path silently rejects. */}
+                  <Select
                     inputId={inputIds.culturalResponsiveness}
                     classNamePrefix="adm-rs"
                     isMulti

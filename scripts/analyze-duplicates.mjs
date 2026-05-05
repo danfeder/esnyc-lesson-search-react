@@ -207,7 +207,7 @@ function calculateCanonicalScore(lesson, group) {
   const metadataFields = [
     'thematicCategories', 'seasonTiming', 'coreCompetencies',
     'culturalHeritage', 'locationRequirements', 'activityType',
-    'lessonFormat', 'mainIngredients', 'skills'
+    'mainIngredients', 'skills'
   ];
   
   const completeness = metadataFields.reduce((acc, field) => {
@@ -273,10 +273,10 @@ function calculateCanonicalScores(groups) {
 // Calculate metadata completeness percentage
 function calculateMetadataCompleteness(lesson) {
   const fields = [
-    'title', 'summary', 'objectives', 
+    'title', 'summary', 'objectives',
     'thematicCategories', 'seasonTiming', 'coreCompetencies',
     'culturalHeritage', 'locationRequirements', 'activityType',
-    'lessonFormat', 'mainIngredients', 'skills',
+    'mainIngredients', 'skills',
     'academicIntegration', 'socialEmotionalLearning', 'cookingMethods'
   ];
 

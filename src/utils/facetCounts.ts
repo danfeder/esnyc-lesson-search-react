@@ -7,13 +7,13 @@ import type { Lesson, LessonMetadata } from '@/types';
  */
 export type FacetFilterKey =
   | 'gradeLevels'
+  | 'tags'
   | 'activityType'
   | 'location'
   | 'thematicCategories'
   | 'seasonTiming'
   | 'coreCompetencies'
   | 'culturalHeritage'
-  | 'lessonFormat'
   | 'academicIntegration'
   | 'socialEmotionalLearning'
   | 'cookingMethods';
@@ -22,13 +22,13 @@ export type FacetCounts = Record<FacetFilterKey, Record<string, number>>;
 
 const EMPTY_COUNTS = (): FacetCounts => ({
   gradeLevels: {},
+  tags: {},
   activityType: {},
   location: {},
   thematicCategories: {},
   seasonTiming: {},
   coreCompetencies: {},
   culturalHeritage: {},
-  lessonFormat: {},
   academicIntegration: {},
   socialEmotionalLearning: {},
   cookingMethods: {},
@@ -39,6 +39,15 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
   switch (key) {
     case 'gradeLevels':
       return lesson.gradeLevels ?? [];
+    case 'tags':
+      // `tags` is a top-level lessons column not currently exposed by the
+      // search_lessons RPC RETURNS TABLE, so we have no per-row signal here.
+      // Filter still works (RPC applies WHERE clause); badge counts stay 0
+      // until a follow-up exposes tags in the result shape. Mirrors the
+      // pre-existing Activity Type facet badge limitation.
+      // TODO: tracked in docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md
+      // → "Out-of-scope follow-ups captured here" → "Lesson Type (tags) facet count badge always shows 0".
+      return [];
     case 'activityType':
       return meta.activityType ?? [];
     case 'location':
@@ -51,8 +60,6 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
       return meta.coreCompetencies ?? [];
     case 'culturalHeritage':
       return meta.culturalHeritage ?? [];
-    case 'lessonFormat':
-      return meta.lessonFormat ? [meta.lessonFormat] : [];
     case 'academicIntegration': {
       const ai = meta.academicIntegration;
       if (!ai) return [];
@@ -68,13 +75,13 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
 
 const KEYS: readonly FacetFilterKey[] = [
   'gradeLevels',
+  'tags',
   'activityType',
   'location',
   'thematicCategories',
   'seasonTiming',
   'coreCompetencies',
   'culturalHeritage',
-  'lessonFormat',
   'academicIntegration',
   'socialEmotionalLearning',
   'cookingMethods',
