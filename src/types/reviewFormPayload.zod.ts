@@ -11,7 +11,7 @@
  *
  * The translation between this schema and the canonical schema is performed
  * in two places that must stay in sync:
- *   - SQL: `complete_review_atomic` (migration 20260428000003 lines 142-167)
+ *   - SQL: the `complete_review_atomic` RPC (grep migrations for the current definition)
  *   - TS: `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`
  *
  * Closed-enum scope mirrors `lessonMetadata.zod.ts`: activityType (single

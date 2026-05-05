@@ -40,9 +40,9 @@ export const TAG_VALUES = ['orientation', 'bilingual_handouts'] as const;
 
 export const SEASON_TIMING_VALUES = ['Fall', 'Winter', 'Spring', 'Summer'] as const;
 
-// 7 master-list features from the Brown CR framework, per v3 taxonomy
-// (see /Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md §12 and
-// ~/Downloads/Cultural Responsiveness Guidelines.md). Order mirrors v3.
+// 7 master-list features from the Brown CR framework, per v3 taxonomy.
+// See docs/plans/2026-05-03-metadata-rebuild-foundation-design.md §4 (D9).
+// Order mirrors v3.
 export const CULTURAL_RESPONSIVENESS_FEATURE_VALUES = [
   'Promotes positive perspectives on parents and families',
   'Communicates high expectations',

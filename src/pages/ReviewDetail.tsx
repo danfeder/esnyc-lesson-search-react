@@ -457,7 +457,13 @@ export function ReviewDetail() {
 
   const handleMetadataChange = useCallback(
     <K extends keyof ReviewMetadata>(filterKey: K, value: ReviewMetadata[K]) => {
-      setMetadata((prev) => ({ ...prev, [filterKey]: value }));
+      // activityType UI options end in `-only` (cooking-only/garden-only/etc.);
+      // canonical Zod enum + DB CHECK reject the suffix. Strip on the save path.
+      const normalized =
+        filterKey === 'activityType' && typeof value === 'string' && value !== 'both'
+          ? ((value as string).replace(/-only$/, '') as ReviewMetadata[K])
+          : value;
+      setMetadata((prev) => ({ ...prev, [filterKey]: normalized }));
       // Stale "save failed" banner becomes confusing the moment the
       // reviewer changes anything — they're clearly preparing a fresh
       // attempt. Clear on any meaningful state change.

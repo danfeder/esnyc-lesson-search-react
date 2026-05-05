@@ -2,8 +2,9 @@
  * Maps a review-form payload (review-form keys, single-select strings) into
  * canonical lesson metadata (canonical keys, array values).
  *
- * Mirrors the SQL translation in `complete_review_atomic` (migration
- * 20260428000003 lines 142-167). The TS mapper exists so the read site
+ * Mirrors the SQL translation in the `complete_review_atomic` RPC
+ * (defined in supabase/migrations/, grep that name to find the current
+ * definition). The TS mapper exists so the read site
  * (ReviewDetail.tsx form-init when AI drafts arrive in canonical keys, per
  * PR 2 Task 2.2) and the LLM-draft writer (process-submission, per PR 2)
  * can transform without round-tripping through SQL.
