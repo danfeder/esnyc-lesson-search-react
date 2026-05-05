@@ -18,6 +18,7 @@ export interface SearchFilters {
   culturalHeritage?: string[];
   location?: string[];
   activityType?: string[];
+  tags?: string[];
   includeAllSeasons?: boolean;
 }
 
@@ -67,6 +68,10 @@ export function applyFilters(
 
   if (filters.activityType?.length) {
     q = q.overlaps('metadata->activityType', filters.activityType);
+  }
+
+  if (filters.tags?.length) {
+    q = q.overlaps('tags', filters.tags);
   }
 
   return q;

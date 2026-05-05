@@ -18,6 +18,7 @@ export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({ to
       activeFilters.push(`${filters.gradeLevels.length} grade levels`);
     if (filters.activityType.length)
       activeFilters.push(`${filters.activityType.length} activity types`);
+    if (filters.tags.length) activeFilters.push(`${filters.tags.length} lesson types`);
     if (filters.seasonTiming.length) activeFilters.push(`${filters.seasonTiming.length} seasons`);
     if (filters.location.length) activeFilters.push(`${filters.location.length} locations`);
     if (filters.thematicCategories.length)

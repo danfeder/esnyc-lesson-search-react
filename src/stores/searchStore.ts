@@ -59,6 +59,7 @@ const initialFilters: SearchFilters = {
   culturalHeritage: [],
   location: [],
   activityType: [],
+  tags: [], // Multi-select, empty array = all (backed by lessons.tags column)
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: [], // Multi-select, empty array = all

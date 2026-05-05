@@ -20,6 +20,15 @@ export interface FilterConfig {
 // Filter configurations for filters used in search
 // IMPORTANT: Consult stakeholders before adding or removing filter categories
 export const FILTER_CONFIGS: Record<string, FilterConfig> = {
+  tags: {
+    label: 'Lesson Type',
+    type: 'multiple',
+    options: [
+      { value: 'orientation', label: 'Orientation' },
+      { value: 'bilingual_handouts', label: 'Bilingual Handouts' },
+    ],
+  },
+
   activityType: {
     label: 'Activity Type',
     type: 'single',

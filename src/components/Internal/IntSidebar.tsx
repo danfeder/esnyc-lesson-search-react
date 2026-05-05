@@ -11,6 +11,7 @@ import { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
  * `gradeLevels` and `culturalHeritage` get bespoke sections.
  */
 const CHECKBOX_KEYS: readonly FacetFilterKey[] = [
+  'tags',
   'activityType',
   'location',
   'thematicCategories',
@@ -78,7 +79,7 @@ export function IntSidebar({ counts }: IntSidebarProps) {
         const cfg = FILTER_CONFIGS[key];
         if (!cfg) return null;
         const selected = (filters[key] ?? []) as string[];
-        const defaultOpen = key === 'activityType' || key === 'seasonTiming';
+        const defaultOpen = key === 'tags' || key === 'activityType' || key === 'seasonTiming';
         return (
           <IntFilterSection
             key={key}

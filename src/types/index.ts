@@ -57,6 +57,7 @@ export interface SearchFilters {
   culturalHeritage: string[];
   location: string[];
   activityType: string[];
+  tags: string[]; // Multi-select; backed by lessons.tags top-level column
   academicIntegration: string[];
   socialEmotionalLearning: string[];
   cookingMethods: string[]; // Multi-select

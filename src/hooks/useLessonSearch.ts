@@ -119,6 +119,7 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
           ? filters.socialEmotionalLearning
           : undefined,
         filter_cooking_method: filters.cookingMethods?.length ? filters.cookingMethods : undefined,
+        filter_tags: filters.tags?.length ? filters.tags : undefined,
         page_size: pageSize,
         page_offset: currentPage * pageSize,
       };

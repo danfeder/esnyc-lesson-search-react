@@ -7,6 +7,7 @@ import type { Lesson, LessonMetadata } from '@/types';
  */
 export type FacetFilterKey =
   | 'gradeLevels'
+  | 'tags'
   | 'activityType'
   | 'location'
   | 'thematicCategories'
@@ -21,6 +22,7 @@ export type FacetCounts = Record<FacetFilterKey, Record<string, number>>;
 
 const EMPTY_COUNTS = (): FacetCounts => ({
   gradeLevels: {},
+  tags: {},
   activityType: {},
   location: {},
   thematicCategories: {},
@@ -37,6 +39,13 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
   switch (key) {
     case 'gradeLevels':
       return lesson.gradeLevels ?? [];
+    case 'tags':
+      // `tags` is a top-level lessons column not currently exposed by the
+      // search_lessons RPC RETURNS TABLE, so we have no per-row signal here.
+      // Filter still works (RPC applies WHERE clause); badge counts stay 0
+      // until a follow-up exposes tags in the result shape. Mirrors the
+      // pre-existing Activity Type facet badge limitation.
+      return [];
     case 'activityType':
       return meta.activityType ?? [];
     case 'location':
@@ -64,6 +73,7 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
 
 const KEYS: readonly FacetFilterKey[] = [
   'gradeLevels',
+  'tags',
   'activityType',
   'location',
   'thematicCategories',
