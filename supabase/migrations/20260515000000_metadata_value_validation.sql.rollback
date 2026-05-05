@@ -1,0 +1,38 @@
+-- =====================================================
+-- ROLLBACK: 20260515000000_metadata_value_validation.sql
+-- =====================================================
+-- The .sql.rollback extension keeps this file inert under `supabase db push`
+-- (the CLI only picks up .sql files). To roll back manually, run the
+-- statements below via psql or `mcp__supabase-*__execute_sql`.
+--
+-- NOTE: The CRF drift cleanup UPDATE in (1) of the forward migration
+-- ('Communication of high expectations' → 'Communicates high expectations')
+-- is monotonic data-correction; not reversed here. Accept as a one-way
+-- change since the previous value was a typo of the canonical value.
+
+-- =====================================================
+-- (1) Drop CHECK constraints
+-- =====================================================
+ALTER TABLE public.lessons DROP CONSTRAINT IF EXISTS valid_activity_type;
+ALTER TABLE public.lessons DROP CONSTRAINT IF EXISTS valid_tags;
+ALTER TABLE public.lessons DROP CONSTRAINT IF EXISTS valid_cultural_responsiveness_features;
+
+-- =====================================================
+-- (2) Restore lessons_normalize_write to pre-Task-1.6 body
+-- =====================================================
+-- Easiest path: re-apply 20260512000000_drop_lesson_format.sql which has the
+-- pre-Task-1.6 CREATE OR REPLACE for the function body. Either re-run that
+-- migration's relevant block, or drop and recreate by sourcing the body from
+-- that file (`git show 35cac25:supabase/migrations/20260512000000_drop_lesson_format.sql`).
+--
+-- Manually: replace the (V) block + restore COMMENT to the 20260512000000 wording.
+
+-- =====================================================
+-- (3) Drop helper function
+-- =====================================================
+DROP FUNCTION IF EXISTS public._validate_meta_enum_values(jsonb, text, text[], text);
+
+-- =====================================================
+-- (4) NOTIFY pgrst
+-- =====================================================
+NOTIFY pgrst, 'reload schema';
