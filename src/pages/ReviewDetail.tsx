@@ -111,6 +111,22 @@ const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, str
   summary: 'Summary',
 };
 
+// Mirror of the save-path activityType strip in handleSaveReview. The
+// IntPillGroup option values are slugs (`cooking-only`/`garden-only`/
+// `academic-only`/`craft-only`); the canonical Zod enum + DB CHECK
+// installed in PR 1 store `cooking`/`garden`/`academic`/`craft` (suffix
+// stripped on save). Without re-adding the suffix when loading an
+// existing review, a pill the reviewer previously selected appears
+// unselected on reopen — the form looks blank even though the value
+// is present and validates fine. `both` and any legacy already-suffixed
+// values pass through unchanged.
+function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
+  const v = raw.activityType;
+  if (typeof v !== 'string' || v.length === 0) return raw;
+  if (v === 'both' || v.endsWith('-only')) return raw;
+  return { ...raw, activityType: `${v}-only` as ReviewMetadata['activityType'] };
+}
+
 function parseExtractedContent(content: string): { title: string; summary: string } {
   const lines = content.split('\n').filter((line) => line.trim());
   let title = '';
@@ -397,7 +413,7 @@ export function ReviewDetail() {
 
       if (reviews && reviews.length > 0) {
         const review = reviews[0];
-        setMetadata((review.tagged_metadata as ReviewMetadata) || {});
+        setMetadata(reAddActivityTypeSuffix((review.tagged_metadata as ReviewMetadata) || {}));
         const existingDecision = review.decision as string;
         if (
           existingDecision === 'approve_new' ||
