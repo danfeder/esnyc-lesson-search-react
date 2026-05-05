@@ -8,6 +8,7 @@ import { logger } from '@/utils/logger';
 import { sanitizeContent } from '@/utils/sanitize';
 import { FEATURES } from '@/utils/featureFlags';
 import type { ReviewMetadata } from '@/types';
+import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
@@ -83,6 +84,31 @@ interface SubmissionDetail {
   submitterTargetLesson?: SubmitterTargetLesson | null;
   review?: { metadata: ReviewMetadata; decision: string; notes: string };
 }
+
+// Map review-form Zod field keys to the human labels used in the
+// validation banner + per-IntFormField error states. Kept in sync with
+// reviewFormPayloadSchema (src/types/reviewFormPayload.zod.ts) and the
+// existing required-fields labels so a Zod failure highlights the same
+// IntFormField as a missing-required failure would.
+const ZOD_FIELD_TO_LABEL: Record<string, string> = {
+  activityType: 'Activity Type',
+  location: 'Location',
+  season: 'Season & Timing',
+  themes: 'Thematic Categories',
+  gradeLevels: 'Grade Levels',
+  coreCompetencies: 'Core Competencies',
+  socialEmotionalLearning: 'Social-Emotional Learning',
+  cookingMethods: 'Cooking Methods',
+  mainIngredients: 'Main Ingredients',
+  gardenSkills: 'Garden Skills',
+  cookingSkills: 'Cooking Skills',
+  culturalHeritage: 'Cultural Heritage',
+  academicIntegration: 'Academic Integration',
+  observancesHolidays: 'Observances & Holidays',
+  culturalResponsivenessFeatures: 'Cultural Responsiveness Features',
+  processingNotes: 'Processing Notes',
+  summary: 'Summary',
+};
 
 function parseExtractedContent(content: string): { title: string; summary: string } {
   const lines = content.split('\n').filter((line) => line.trim());
@@ -451,6 +477,26 @@ export function ReviewDetail() {
     }
     setValidationErrors([]);
     setSaveError(null);
+
+    // PR 1 Task 1.5: defense-in-depth Zod validation against the same
+    // reviewFormPayloadSchema the complete-review edge function enforces.
+    // Required-fields above already covers the common UX case; this catches
+    // shape drift (e.g., a future bug that sends a wrong type for a closed-
+    // enum field) before the network round-trip.
+    const parseResult = reviewFormPayloadSchema.safeParse(metadata);
+    if (!parseResult.success) {
+      const fieldErrors = parseResult.error.flatten().fieldErrors;
+      const invalidLabels = Object.keys(fieldErrors).map((key) => ZOD_FIELD_TO_LABEL[key] ?? key);
+      setValidationErrors(invalidLabels);
+      const detailLines = Object.entries(fieldErrors).map(
+        ([key, msgs]) => `${ZOD_FIELD_TO_LABEL[key] ?? key}: ${(msgs ?? []).join('; ')}`
+      );
+      setSaveError(`Some fields have invalid values:\n${detailLines.join('\n')}`);
+      logger.error('Review form Zod validation failed:', fieldErrors);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setSaving(true);
 
     try {
