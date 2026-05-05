@@ -45,6 +45,8 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
       // Filter still works (RPC applies WHERE clause); badge counts stay 0
       // until a follow-up exposes tags in the result shape. Mirrors the
       // pre-existing Activity Type facet badge limitation.
+      // TODO: tracked in docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md
+      // → "Out-of-scope follow-ups captured here" → "Lesson Type (tags) facet count badge always shows 0".
       return [];
     case 'activityType':
       return meta.activityType ?? [];

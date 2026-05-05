@@ -111,6 +111,8 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
         filter_location: filters.location?.length ? filters.location : undefined,
         filter_activity_type: filters.activityType?.length ? filters.activityType : undefined,
         // PR 1 compat bridge: keep until Task 1.3a follow-up drops the RPC param.
+        // TODO(Task 1.3a): see docs/plans/2026-05-03-metadata-rebuild-foundation-implementation.md
+        // → "Task 1.3a (deferred to next release): drop deprecated parameters".
         filter_lesson_format: undefined,
         filter_academic: filters.academicIntegration?.length
           ? filters.academicIntegration
