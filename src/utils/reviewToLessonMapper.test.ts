@@ -216,9 +216,13 @@ describe('mapper round-trip property', () => {
     expect(lessonToReview(reviewToLesson(review))).toEqual(review);
   });
 
-  // Canonical → review → canonical is lossless ONLY when activityType and
-  // locationRequirements have ≤ 1 element (the SQL invariant). Any
-  // multi-element array on either field would lose its tail in lessonToReview.
+  // Canonical → review → canonical is lossless ONLY when:
+  //   1. activityType and locationRequirements have ≤ 1 element (SQL invariant
+  //      — lessonToReview picks first element of each).
+  //   2. The canonical input has no canonical-only fields. Review form has a
+  //      smaller surface than canonical; fields that drop on round-trip:
+  //      duration, groupSize, skills, equipment, academicConcepts, tags.
+  // Each asymmetry is documented as a focused test below.
 
   const canonicalFixturesSafe: LessonMetadataValidated[] = [
     {},
@@ -248,5 +252,19 @@ describe('mapper round-trip property', () => {
     expect(reviewToLesson(lessonToReview(lossy))).toEqual({
       activityType: ['cooking'],
     });
+  });
+
+  it('is intentionally lossy for canonical-only fields (documented asymmetry)', () => {
+    // Fields present in canonical but absent from the review form. Round-trip
+    // drops them because lessonToReview has nowhere to carry them.
+    const canonicalOnly: LessonMetadataValidated = {
+      duration: '30 min',
+      groupSize: 'Small group',
+      skills: ['Skill1'],
+      equipment: ['Bowl'],
+      academicConcepts: { Math: ['Fractions'] },
+      tags: ['orientation'],
+    };
+    expect(reviewToLesson(lessonToReview(canonicalOnly))).toEqual({});
   });
 });

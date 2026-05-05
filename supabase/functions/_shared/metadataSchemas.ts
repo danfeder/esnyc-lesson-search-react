@@ -8,7 +8,7 @@
  * deploy versions, and `_shared/` is the established cross-function utility
  * pattern (see _shared/cors.ts, _shared/search-helpers.ts).
  *
- * Drift protection: src/__tests__/edge-shared-schemas-equivalence.test.ts
+ * Drift protection: src/types/edgeSharedSchemas.equivalence.test.ts
  * imports both this file and the canonical schemas, runs identical fixtures
  * through both, and asserts behavioural equivalence. CI fails if they drift.
  *

@@ -45,6 +45,9 @@ CREATE INDEX IF NOT EXISTS lessons_part_number_idx
   ON lessons(part_number)
   WHERE part_number IS NOT NULL;
 
+-- Refresh PostgREST schema cache so the new columns are exposed via REST.
+NOTIFY pgrst, 'reload schema';
+
 -- =====================================================
 -- ROLLBACK (keep as comments)
 -- =====================================================

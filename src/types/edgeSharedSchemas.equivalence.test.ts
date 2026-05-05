@@ -61,6 +61,34 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
           selected: ['Math'],
         },
       },
+      // All-fields-populated fixture — drift protection. If a future edit drops
+      // any key from the deno-runtime mirror, the c.data === s.data assertion
+      // catches it because the missing key would be absent from s.data.
+      {
+        activityType: ['cooking'],
+        tags: ['orientation'],
+        seasonTiming: ['Fall'],
+        culturalResponsivenessFeatures: ['Reshapes curriculum'],
+        thematicCategories: ['Plants'],
+        coreCompetencies: ['Cooking'],
+        culturalHeritage: ['Mexican'],
+        locationRequirements: ['Indoor'],
+        mainIngredients: ['Tomatoes'],
+        gradeLevels: ['3'],
+        gardenSkills: ['Planting'],
+        cookingSkills: ['Mixing'],
+        cookingMethods: ['Stovetop'],
+        observancesHolidays: ['Lunar New Year'],
+        socialEmotionalLearning: ['Self-management'],
+        academicIntegration: ['Math'],
+        academicConcepts: { Math: ['Fractions'] },
+        duration: '30 min',
+        groupSize: 'Small group',
+        processingNotes: 'Note',
+        summary: 'Summary',
+        skills: ['Skill1'],
+        equipment: ['Bowl'],
+      },
     ];
     it.each(valid)('accepts %j', (fixture) => {
       const c = canonicalLessonSchema.safeParse(fixture);
@@ -101,6 +129,27 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
         themes: ['Plants'],
         gradeLevels: ['3', '4', '5'],
         coreCompetencies: ['Cooking', 'Gardening'],
+      },
+      // All-fields-populated fixture — drift protection. See lessonMetadata
+      // counterpart above for rationale.
+      {
+        activityType: 'cooking',
+        location: 'Indoor',
+        season: ['Fall'],
+        culturalResponsivenessFeatures: ['Reshapes curriculum'],
+        themes: ['Plants'],
+        gradeLevels: ['3'],
+        coreCompetencies: ['Cooking'],
+        socialEmotionalLearning: ['Self-management'],
+        cookingMethods: ['Stovetop'],
+        mainIngredients: ['Tomatoes'],
+        gardenSkills: ['Planting'],
+        cookingSkills: ['Mixing'],
+        culturalHeritage: ['Mexican'],
+        academicIntegration: ['Math'],
+        observancesHolidays: ['Lunar New Year'],
+        processingNotes: 'Note',
+        summary: 'Summary',
       },
     ];
     it.each(valid)('accepts %j', (fixture) => {
