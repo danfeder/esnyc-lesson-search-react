@@ -17,6 +17,7 @@ import { LessonSearchPicker, type LessonSearchResult } from '@/components/Lesson
 import { titlesAreSimilar } from '@/utils/titleSimilarity';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import { computePreselection } from '@/pages/reviewPreselect';
+import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
 import {
   IntButton,
   IntDecisionBar,
@@ -464,6 +465,11 @@ export function ReviewDetail() {
         setDecision(preselection.decision);
         if (preselection.target) {
           setSelectedDuplicate(preselection.target);
+        }
+
+        const draft = computeInitialMetadataFromAiDraft(submissionData.ai_draft_metadata);
+        if (draft) {
+          setMetadata(reAddActivityTypeSuffix(draft));
         }
       }
     } catch (error) {
