@@ -1,22 +1,22 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 28 (PR 1b Task 1b.1 shipped on `feat/metadata-foundation-activity-type-multi`; 1 commit `54124a5` ahead of `origin/main`).
+**Last updated:** 2026-05-06 — Session 29 (PR 1b Task 1b.2 shipped on `feat/metadata-foundation-activity-type-multi`; 2 commits ahead of `origin/main` — `54124a5` (Task 1b.1) + `af023d4` (Task 1b.2)).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-17 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (965+ lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi` exists (created off `8497752` Session 28); 1 commit ahead of `origin/main` plus a forthcoming docs sync commit. Task 1b.1 shipped this session as `54124a5`; ~7 sub-tasks remain (1b.2 through 1b.8).
+**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi` exists (created off `8497752` Session 28); 2 commits ahead of `origin/main` (`54124a5` Task 1b.1 + `af023d4` Task 1b.2). Tasks 1b.3 through 1b.8 remain (~6 sub-tasks).
 
 **Why PR 1b interrupts PR 2:** mid-Task-2.4 ground-truth resolution surfaced concrete evidence that D2's single-select decision was made on n=1 (Dr. Carver Lotion-Making) but actual rate is ~5/26 = 19% multi-axis lessons — extrapolates to ~30+ in the 772-row corpus. User decided to retire `'both'` and switch to true multi-element array. See decision journal D2.1 for full rationale.
 
-**PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. PR 2's `complete_review_atomic` extension (Task 2.2c, migration `20260517000000_*`) touched `tags`, not `activityType`. **Caveat:** PR 1b Task 1b.2 will modify the same `complete_review_atomic` RPC body (array passthrough for activityType) — a rebase conflict on PR 2's `20260517000000_*` migration is therefore expected and worth a heads-up when PR 2 resumes.
+**PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. PR 2's `complete_review_atomic` extension (Task 2.2c, migration `20260517000000_*`) touched `tags`, not `activityType`. **Rebase conflict expected:** PR 1b Task 1b.2 (`20260518100000_*`) and PR 2's Task 2.2c (`20260517000000_*`) both `CREATE OR REPLACE` `complete_review_atomic`. Order matters — PR 2's `20260517` will sort before PR 1b's `20260518100000`, so the post-merge function body ends up at PR 1b's version (which is correct — it carries the array passthrough). PR 2's `tags` side-channel must be re-folded into PR 1b's body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
 
-**Current task:** Session 29 picks up **Task 1b.2 — `complete_review_atomic` migration for array passthrough.** New migration at `supabase/migrations/20260518100000_*` (or `20260519000000_*`) that replaces `ARRAY[v_meta->>'activityType']` in the RPC's INSERT (approve_new) + UPDATE (approve_update) clauses with `_phase4_jsonb_text_array_or_null(v_meta->'activityType')`.
+**Current task:** Session 30 picks up **Task 1b.3 — Zod schemas + Deno mirror + types.** Edit `src/types/reviewFormPayload.zod.ts:35` `activityType: ActivityTypeEnum.optional()` → `activityType: z.array(ActivityTypeEnum).optional()`; mirror in `supabase/functions/_shared/metadataSchemas.ts` (lines ~25/70/107); update `src/types/index.ts:103` `ReviewMetadata.activityType?: string` → `string[]`; update `src/types/edgeSharedSchemas.equivalence.test.ts` fixtures (currently 2 failing — see below). Pure TS-only task; no migration. Verify `npm run type-check` clean + `npm test -- equivalence` passes.
 
-**Pre-Task-1b.2 verification (load-bearing for next session):** impl plan §Task 1b.2 cites line numbers from `20260517000000_complete_review_atomic_tags_side_channel.sql` — that migration is on PR 2 branch only, NOT on PR 1b's main. The actual source for `complete_review_atomic` on PR 1b's main is `20260512000000_drop_lesson_format.sql` plus subsequent carry-forward migrations. **First step Task 1b.2:** query TEST DB via `mcp__supabase-test__execute_sql` for `pg_get_functiondef('public.complete_review_atomic'::regproc::oid)` (or read the latest applicable migration on main directly). Find the activityType INSERT + UPDATE references, plan the fix. Do NOT trust impl plan's line numbers verbatim — they reference PR 2 branch state.
+**No pre-Task-1b.3 verification needed** — task is TypeScript-only; the schema source-of-truth files are unambiguous. Verify line numbers in impl plan against current files before applying (kickoff "verify every snippet" rule), but no DB / migration / RPC moves.
 
-**Known unit-test breakage on PR 1b branch (will be fixed in Task 1b.3):** `src/types/edgeSharedSchemas.equivalence.test.ts` has 2 failing assertions (`activity_type values match` + the review-form `{ activityType: 'both' }` valid fixture). Cause: Deno mirror still has `'both'` in `ACTIVITY_TYPE_VALUES` (`supabase/functions/_shared/metadataSchemas.ts:25`); canonical Zod doesn't. Task 1b.3 syncs the mirror + updates fixtures. `npm run type-check` and `npm run lint` are green (Task 1b.1 commit included a 1-line fix on `reviewToLessonMapper.test.ts:201` to satisfy the narrowed literal union — `'both'` → `'cooking'` in the all-fields-populated round-trip fixture).
+**Known unit-test breakage on PR 1b branch (target: Task 1b.3):** `src/types/edgeSharedSchemas.equivalence.test.ts` has 2 failing assertions (`activity_type values match` + the review-form `{ activityType: 'both' }` valid fixture). Cause: Deno mirror still has `'both'` in `ACTIVITY_TYPE_VALUES` (`supabase/functions/_shared/metadataSchemas.ts:25`); canonical Zod doesn't. Task 1b.3 syncs the mirror + updates fixtures + retypes review-form `activityType` to array shape. `npm run type-check` and `npm run lint` are green (Task 1b.1 commit included a 1-line fix on `reviewToLessonMapper.test.ts:201` to satisfy the narrowed literal union — `'both'` → `'cooking'` in the all-fields-populated round-trip fixture).
 
 **Done in Session 27 (planning + docs only — no code commits beyond this docs commit):**
 - Investigated activity_type ground-truth source candidates: 113 reviewer-tagged submissions on TEST/PROD (avg body 5.5K chars, distribution garden 67 / cooking 33 / academic 11 / both 2 / craft 0).
@@ -36,19 +36,14 @@
   4. Execution status: this Current State header replaced; Session 27 entry below.
 - Worksheet v1 (26 candidates) preserved on disk with deprecation banner at top; not deleted per user instruction.
 
-**Sub-skill notes for Task 1b.1+:**
-- Per database-migrations skill: invoke before touching any file in `supabase/migrations/`.
-- Migration date prefix needs `ls supabase/migrations | sort | tail -3` check; latest is likely `20260517000000_complete_review_atomic_tags_side_channel.sql` (PR 2 branch's migration). New PR 1b migrations branch off main, so the latest on main is `20260516000000_lesson_submissions_ai_draft_metadata.sql` or earlier — verify on the actual main branch.
-- Per ASCII-sort gotcha (memory note): if same-day timestamp prefix conflicts arise, use next day's date.
-
 **Branches:**
-- `main` is at `8497752` (PR 1 squash merge). Latest as of Session 26.
-- `feat/metadata-foundation-llm-tagging` (PR 2 branch) — 19 commits ahead. Paused until PR 1b ships.
-- `feat/metadata-foundation-activity-type-multi` (PR 1b branch) — to be created Session 28 off main.
+- `main` is at `8497752` (PR 1 squash merge).
+- `feat/metadata-foundation-activity-type-multi` (PR 1b branch) — 2 commits ahead of main: `54124a5` (Task 1b.1 — retire `'both'` value + repoint data) + `af023d4` (Task 1b.2 — `complete_review_atomic` array passthrough). Branch is local-only (no upstream pushed yet); CI on TEST DB has not applied PR 1b migrations.
+- `feat/metadata-foundation-llm-tagging` (PR 2 branch) — 20 commits ahead. Paused until PR 1b ships.
 - `feat/metadata-foundation-schema` (PR 1's now-merged branch) — can be deleted at convenience.
 
 **Foundation-phase substrate now live on PROD (unchanged from Session 26):**
-- Schema: `lesson_format` dropped, `series_id` + `part_number` + `crf_confirmed` columns added, `activity_type` enum at 5 values incl. `'both'` (retiring in PR 1b), `tags` array column with closed enum, `cultural_responsiveness_features` closed to 7 Brown CR features.
+- Schema: `lesson_format` dropped, `series_id` + `part_number` + `crf_confirmed` columns added, `activity_type` enum at 5 values incl. `'both'` (PR 1b retires `'both'` locally + via PROD-apply post-merge — Tasks 1b.1 + 1b.2 done locally as of Session 29), `tags` array column with closed enum, `cultural_responsiveness_features` closed to 7 Brown CR features.
 - 3 CHECK constraints + trigger value-validation helper, all `<@` containment (length-agnostic).
 - Zod canonical schemas + bidirectional mappers + Deno mirror + `enums.json` cross-runtime artifact + freshness CI test.
 - Filter UI: `lessonFormat` removed, "Lesson Type" sidebar filter backed by tags column.
@@ -203,6 +198,42 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 29 — 2026-05-06 — PR 1b Task 1b.2 shipped (commit `af023d4`)
+
+**Done (commit `af023d4`):**
+
+- **Wrote migration `20260518100000_complete_review_atomic_activity_type_multi.sql` (~325 LOC) + sibling `.rollback`.** CREATE OR REPLACE on `complete_review_atomic` carrying the full RPC body from the source-of-truth baseline (`20260512000000_drop_lesson_format.sql` lines 319-643). Two activityType expressions changed; ~325 surrounding lines copy verbatim because PostgreSQL functions are CREATE OR REPLACE-only.
+
+- **Pre-task verification followed Session 28's process note:** queried TEST DB via `mcp__supabase-test__execute_sql pg_get_functiondef('public.complete_review_atomic'::regproc::oid)` to confirm the live state matches `20260512000000_*`. Did NOT trust impl plan §Task 1b.2's stale line refs (which point to `20260517000000_*` on PR 2 branch). Cross-referenced against the local migration file via `grep -n activityType` to find the actual two spots that needed changing.
+
+- **Repo-conformance adaptation vs impl plan spec:**
+  - Impl plan suggested `_phase4_jsonb_text_array_or_null(v_meta->'activityType')` for **both** INSERT and UPDATE.
+  - Adopted: `_phase4_jsonb_text_array(v_meta->'activityType')` for INSERT (matches sibling-field convention — `gradeLevels` line 470, `themes` line 474, `season` line 475 etc. all use the no-null version, returning `[]` on absent input).
+  - Kept: `COALESCE(_phase4_jsonb_text_array_or_null(v_meta->'activityType'), v_existing.activity_type, ARRAY[]::text[])` for UPDATE (matches `gradeLevels` 548-552, `thematicCategories` 558-562, etc., COALESCE chain that preserves existing column when reviewer doesn't supply).
+  - Rationale: closer to "small repo-conformance adaptation" per kickoff guidance than impl plan's literal text. Behaviorally equivalent at column write level for `[]` vs NULL → trigger normalize_write would coerce both to same shape; the COALESCE-vs-direct-call structure matters for whether existing column survives reviewer non-supply.
+
+- **Local verification — all 6 transactional probes PASS** via `mcp__supabase__execute_sql` DO blocks with terminal `RAISE EXCEPTION` for rollback (auto-commit at MCP layer + RAISE EXCEPTION at DO block level produces clean transactional rollback per probe; result surfaces via the exception message which MCP returns as error.message):
+  - **Probe A:** approve_new INSERT with `["cooking","garden"]` → column `{cooking,garden}` ✓ (THE bug fix — previously stringified to `["cooking","garden"]` as a single-element).
+  - **Probe B:** approve_new INSERT with `["cooking"]` → `{cooking}` ✓ (back-compat).
+  - **Probe C:** approve_new INSERT with absent activityType key → `{}` ✓ (matches sibling-field empty-array default).
+  - **Probe D:** approve_new INSERT with scalar `"cooking"` → `{cooking}` ✓ (legacy back-compat via helper's scalar branch — wraps single string into single-element array).
+  - **Probe E:** approve_update on LESSON-002 with `["cooking","garden"]` → column updated to `{cooking,garden}` ✓ (overwrites prior `{cooking}`).
+  - **Probe F:** approve_update on LESSON-002 with absent key → existing `{cooking}` preserved ✓ (COALESCE chain falls through to v_existing.activity_type).
+
+- **`npm run type-check && npm run lint` clean.** Migration-only change; no TS surfaces touched. The 2 known equivalence-test failures from Task 1b.1 carry forward into Task 1b.3.
+
+- **Branch is local-only (no upstream).** No CI run; TEST DB has NOT received the new migration yet. Plan-aligned: TEST DB verification deferred to Task 1b.8 PR push + CI apply.
+
+**Process notes for Session 30+:**
+
+- **`RAISE EXCEPTION` as a result-surfacing primitive in MCP-driven plpgsql probes.** MCP's `execute_sql` does not surface `RAISE NOTICE` messages (verified via probe). DO blocks don't return result sets. Workaround: `RAISE EXCEPTION 'PROBE-X pass=% actual=%', ..., ...` returns the formatted message via the response's `error.message` field. Side benefit: aborts the transaction, rolling back any setup INSERTs / RPC calls — leaves the local DB clean. Pattern applies anywhere we want plpgsql-level assertions over `mcp__supabase__execute_sql` without writing real test fixtures.
+
+- **The `lesson_submissions` table requires `google_doc_id` (NOT NULL) for any test fixture INSERT.** First probe pass missed this; six errors all returned `null value in column "google_doc_id" of relation "lesson_submissions" violates not-null constraint`. Use any unique string per probe (`'doc-probeA'`, etc.) — uniqueness is FK-irrelevant for a transactional rollback probe, just non-null.
+
+- **Rebase-conflict heads-up for PR 2** (carried into the Current State header): PR 2's `20260517000000_complete_review_atomic_tags_side_channel.sql` and PR 1b's `20260518100000_complete_review_atomic_activity_type_multi.sql` both `CREATE OR REPLACE` the RPC. After PR 1b merges, PR 2's rebase will need to re-fold the `tags` side-channel logic into PR 1b's body (or apply both as separate migrations and ensure end-state has both code paths).
+
+- **Impl plan §Task 1b.2 line refs were stale** (cited `20260517000000_*` lines 218-220 INSERT + 300-304 UPDATE — that file is on PR 2 branch only). Did NOT update the impl plan: kickoff says "don't unilaterally rewrite the spec." Future Session 30+ working Task 1b.3 should also verify line refs against current files before applying.
 
 ### Session 28 — 2026-05-06 — PR 1b Task 1b.1 shipped (commit `54124a5` + docs sync forward)
 
