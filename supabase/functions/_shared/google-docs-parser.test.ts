@@ -117,21 +117,21 @@ describe('extractMetadataFromContent', () => {
   });
 
   describe('activity type', () => {
-    it('emits "both" when labeled with cooking + garden', () => {
+    it('emits ["cooking", "garden"] when labeled with cooking + garden', () => {
       const sketch = extractMetadataFromContent('Activity Type: Cooking + Garden');
-      expect(sketch.activityType).toBe('both');
+      expect(sketch.activityType).toEqual(['cooking', 'garden']);
     });
 
-    it('emits "cooking-only" from labeled header', () => {
+    it('emits ["cooking"] from labeled header', () => {
       const sketch = extractMetadataFromContent('Activity Type: Cooking Only');
-      expect(sketch.activityType).toBe('cooking-only');
+      expect(sketch.activityType).toEqual(['cooking']);
     });
 
-    it('emits "garden-only" from frequency when threshold met and no cooking', () => {
+    it('emits ["garden"] from frequency when threshold met and no cooking', () => {
       const content =
         'Students will be planting seeds in the garden. They will harvest and observe seedlings. Add compost to the garden bed.';
       const sketch = extractMetadataFromContent(content);
-      expect(sketch.activityType).toBe('garden-only');
+      expect(sketch.activityType).toEqual(['garden']);
     });
 
     it('does NOT emit when below frequency threshold', () => {
@@ -141,18 +141,18 @@ describe('extractMetadataFromContent', () => {
       expect(sketch.activityType).toBeUndefined();
     });
 
-    it('emits "academic-only" from labeled header', () => {
+    it('emits ["academic"] from labeled header', () => {
       const sketch = extractMetadataFromContent('Activity Type: Academic Only');
-      expect(sketch.activityType).toBe('academic-only');
+      expect(sketch.activityType).toEqual(['academic']);
     });
 
-    it('emits "both" from frequency inference when both signals are strong', () => {
+    it('emits ["cooking", "garden"] from frequency inference when both signals are strong', () => {
       const content =
         'Students cook a recipe in the kitchen using a stovetop. ' +
         'They harvest tomatoes from the garden after planting seedlings, ' +
         'then add compost to the soil bed.';
       const sketch = extractMetadataFromContent(content);
-      expect(sketch.activityType).toBe('both');
+      expect(sketch.activityType).toEqual(['cooking', 'garden']);
     });
   });
 
@@ -228,7 +228,7 @@ They will be planting and harvesting seeds. Compost is added.
       expect(sketch.gradeLevels?.sort()).toEqual(['3', '4', '5']);
       expect(sketch.thematicCategories).toEqual(['Plant Growth']);
       expect(sketch.seasonTiming).toEqual(['Fall']);
-      expect(sketch.activityType).toBe('garden-only');
+      expect(sketch.activityType).toEqual(['garden']);
     });
   });
 });
