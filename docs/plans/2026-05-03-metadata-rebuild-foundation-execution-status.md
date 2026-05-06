@@ -1,12 +1,12 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 31 (PR 1b Tasks 1b.6 + 1b.7 shipped on `feat/metadata-foundation-activity-type-multi`; 8 commits ahead of `origin/main`).
+**Last updated:** 2026-05-06 — Session 32 (PR 1b visual smoke + pre-push code-review fix-up shipped on `feat/metadata-foundation-activity-type-multi`; 13 commits ahead of `origin/main`).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-17 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (965+ lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **8 commits ahead of `origin/main`** (excluding the 2 docs commits Session 30 and the PR-cycle archival, total 10 commits ahead):
+**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **13 commits ahead of `origin/main`** (8 code + 5 docs):
 1. `54124a5` Task 1b.1 — retire `'both'` value + repoint data
 2. `af023d4` Task 1b.2 — `complete_review_atomic` array passthrough
 3. `7537ac7` Task 1b.3 — Zod review-form activityType array shape
@@ -14,25 +14,28 @@
 5. `a4fffbc` Task 1b.5 (code) — ReviewDetail multi-select activity_type picker + ReviewMetadataForm dead-code conformance
 6. `69ed67d` Task 1b.6 — filterDefinitions.ts multi-select + drop 'both' chip
 7. `af4910a` Task 1b.7 — google-docs-parser extractActivityType returns canonical array
+8. `be406c3` Task 1b.8 fix-up — activityType empty-array required-validation (caught by pre-push code-reviewer agent)
 
-Tasks 1b.5-visual-smoke + 1b.8 remain (~2 sub-tasks; both gated on PR push).
+Task 1b.5-visual-smoke COMPLETE (3 chrome-devtools-mcp screenshots in `.tmp/`; covers public-search filter + ReviewDetail picker + conditional-section logic across `[cooking]` / `[garden]` / `[cooking, garden]` / `[craft, garden]` / all-OFF). Task 1b.8 partially complete: pre-push code-reviewer agent (Opus, `feature-dev:code-reviewer`) ran and produced 1 critical finding (validateRequiredFields + fieldProgress treated `[]` as truthy → reviewer could clear all pills and bypass the required-field error); fix landed as `be406c3`. Push + PR open + bot review rounds remain.
 
 **Why PR 1b interrupts PR 2:** mid-Task-2.4 ground-truth resolution surfaced concrete evidence that D2's single-select decision was made on n=1 (Dr. Carver Lotion-Making) but actual rate is ~5/26 = 19% multi-axis lessons — extrapolates to ~30+ in the 772-row corpus. User decided to retire `'both'` and switch to true multi-element array. See decision journal D2.1.
 
 **PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. **Rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's `tags` side-channel must be re-folded into PR 1b's array-passthrough body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
 
 **Next session picks up:**
-- **Task 1b.8 — PR push ritual.** Per kickoff PER-PR RITUAL: pre-push code-reviewer agent (Opus) on `git diff main...HEAD`; investigate every finding; apply fix-up commits BEFORE push; `npm run type-check && npm run lint && npm test` must pass; push branch; open PR; wait for external bots; 4-surface comment triage; bot review cycles (round-cap after 2 rounds); per-round TEST DB verification via `mcp__supabase-test__execute_sql`. PR-1b-specific verification once CI applies migrations to TEST DB: re-run Task 1b.2 transactional probes A-F; confirm 135-row `'both'` migration was idempotent (already verified locally Session 28; re-confirm on TEST); verify Zod review-form schema rejects scalar at runtime; confirm sidebar Activity Type filter behaves correctly (4 chips, multi-select).
-- **Task 1b.5 visual smoke** can fold into Task 1b.8's pre-push verification (chrome-devtools-mcp against local dev server — not gated on TEST DB migrations) OR run after CI applies migrations. Local-dev-server option is faster and lets reviewer pre-verify before bot rounds. Cover: multi-pill selection on activity_type; conditional cooking/garden sections render correctly across `[cooking]` / `[garden]` / `[cooking, garden]` / `[craft, garden]` etc.; save round-trip preserves array shape.
-- **Post-merge:** rebase `feat/metadata-foundation-llm-tagging` (PR 2) onto new main; expected conflict on `complete_review_atomic` (both PRs `CREATE OR REPLACE`); re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body during rebase. Verify via `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply that both code paths survive.
+- **Push branch + open PR.** Per kickoff: `git push -u origin feat/metadata-foundation-activity-type-multi` then `gh pr create`. Pre-push code-reviewer agent already ran this session; visual smoke covered the post-fix state (0/7 at all-OFF, was 1/7 pre-fix); no further pre-push work needed.
+- **Bot review rounds (round-cap after 2 per kickoff).** Wait for CodeRabbit / Claude Review / Codex; 4-surface comment triage per `feedback_pr_comment_surfaces.md`. PR 1b is small (one bug-class confined to one component + 2 migrations + Zod/mapper passthrough) — bot rounds likely thinner than PR 1's 5 rounds.
+- **Per-round TEST DB verification.** PR-1b-specific verification once CI applies migrations to TEST DB: re-run Task 1b.2 transactional probes A-F; confirm 135-row `'both'` migration was idempotent (already verified locally Session 28; re-confirm on TEST); verify Zod review-form schema rejects scalar at runtime; confirm sidebar Activity Type filter shows 4 chips with multi-select.
+- **PROD apply.** `migrate-production.yml` workflow_dispatch + `deploy-edge-functions.yml` for `complete-review` (only edge fn touched in PR 1b). 3-signal verification via `mcp__supabase-remote__get_edge_function complete-review` per MEMORY.md hygiene-follow-ups.
+- **Post-merge rebase.** PR 2 (`feat/metadata-foundation-llm-tagging`) onto new main; expected conflict on `complete_review_atomic` (both PRs `CREATE OR REPLACE`); re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body during rebase. Verify via `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply that both code paths survive.
 
-**Pre-task verification:** Task 1b.8's verification is intrinsic to the PER-PR RITUAL — no pre-task work. Verify line numbers in impl plan against current files only if any fix-up rounds modify code (kickoff "verify every snippet" rule).
+**Pre-task verification:** none for the push step itself. Bot-round fix-ups (if any) need impl-plan line-number re-verify per kickoff "verify every snippet" rule.
 
-**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip.** 546/546 unit tests passing (38 files, including 33 google-docs-parser tests post-Task-1b.7).
+**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip post-fix.** 546/546 unit tests passing (38 files; same suite count post-fix because the fix is a 2-line behavior tweak, not a new code path).
 
 **Branches:**
 - `main` at `8497752` (PR 1 squash merge).
-- `feat/metadata-foundation-activity-type-multi` (PR 1b) — 6 commits ahead, local-only, no upstream pushed yet; CI on TEST DB has not applied PR 1b migrations.
+- `feat/metadata-foundation-activity-type-multi` (PR 1b) — 13 commits ahead, local-only, no upstream pushed yet; CI on TEST DB has not applied PR 1b migrations.
 - `feat/metadata-foundation-llm-tagging` (PR 2) — 20 commits ahead, paused.
 - `feat/metadata-foundation-schema` (PR 1's merged branch) — deletable at convenience.
 
@@ -70,6 +73,7 @@ These flowed out of the PR 1 ritual (Sessions 13-17). General patterns are captu
 - **`database.types.ts` is hand-patched** since Session 13's PR 1 fix-up. Next full regen via `supabase gen types typescript --local` would silently drop the manual patches (semicolons + framing differences). Worth a dedicated cleanup PR when the cosmetic regen IS the point.
 - **`react-select` Select / CreatableSelect dual import** — both are used on `ReviewDetail.tsx`. Bundle Analysis CI passed; treeshaking handles it. Verify in any future bundle audit.
 - **Pre-fill display of slug-valued pills.** Canonical metadata loaded from DB pre-Session 16 didn't highlight slug-valued pills (pill `value`s are slugs like `cooking-only`; DB stores canonical `cooking`). Session 16 added `reAddActivityTypeSuffix` at the load site so this is now wired correctly — leaving here for visibility / regression-tracking.
+- **Missing unit-test coverage for `validateRequiredFields` + `fieldProgress` in ReviewDetail.tsx.** Surfaced by PR 1b round-0 code-reviewer agent + bug-fix `be406c3` (Session 32). The 2-line truthy-check regression on the activityType field went undetected by the test suite because no test exercises the validators with empty-array fixtures. Cleanest path: refactor the validators into pure utility functions (e.g., `src/utils/reviewValidation.ts`) and add unit tests covering "Activity Type required when array is empty" + sibling cases. Out of scope for the PR 1b fix-up (kickoff: "A bug fix doesn't need surrounding cleanup"); worth a focused hygiene PR. The other 17 metadata fields use the same `?.length` pattern so a single test file would cover the regression surface for all required fields.
 
 ## Pointers to durable context
 
@@ -86,6 +90,40 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 32 — 2026-05-06 — PR 1b Task 1b.5 visual smoke + 1b.8 pre-push (commit `be406c3`)
+
+**Done (1 commit):**
+
+- **Visual smoke complete** via chrome-devtools-mcp against local dev server (no TEST DB needed; migrations applied to local Supabase via prior `supabase db reset`). Screenshots saved to `.tmp/pr1b-smoke-{01-search-page,02-login-page,03-craft-garden}.png`.
+  - **Public-search side (Task 1b.6 verification):** sidebar Activity Type filter renders 4 chips (Cooking Only / Garden Only / Academic Only / Craft Only); no `'both'` chip. Click Cooking Only → 5 → 3 results. Add Garden Only → 5 results (cooking-only + garden-only + multi-axis); both chips render simultaneously with Remove buttons; "Activity Type 2" badge increments correctly; live announcement says "2 activity types".
+  - **ReviewDetail picker (Task 1b.5 verification):** 4 activity-type buttons render. `[cooking]` → COOKING DETAILS section appears (3 sub-fields), required count 7→10. `[cooking, garden]` → both buttons `pressed` simultaneously, both COOKING + GARDEN DETAILS sections render, required 11. `[garden]` (toggle off cooking) → COOKING DETAILS disappears, GARDEN DETAILS stays, required 11→8. `[craft, garden]` → no extra craft section, GARDEN DETAILS stays, required 8. All toggled OFF → both conditional sections disappear, required back to 7.
+  - **Console clean** during all interactions.
+
+- **Pre-push code-reviewer agent dispatched** via `Agent({ subagent_type: 'feature-dev:code-reviewer', model: 'opus' })` per `feedback_opus_subagents.md`. Run in background while visual smoke proceeded in foreground (parallelization win — agent took ~9 min wall clock). Prompt briefed agent on scope + locked-decisions list + don't-flag items + reference docs + output format.
+
+- **One critical finding from agent + fix landed as `be406c3`:** `validateRequiredFields:242` and `fieldProgress:262` in `ReviewDetail.tsx` both used truthy-check semantics that worked for `string | undefined` but silently broke when D2.1 flipped activityType to `string[] | undefined`. Empty array `[]` is truthy; empty string `''` is falsy; `undefined` is falsy in both regimes. So a reviewer who clicks then deselects every pill would (a) bypass the "Activity Type required" error before Publish and (b) see "1/7 required filled" in the progress bar instead of 0/7.
+  - **Fix:** match the surrounding sibling-field pattern — `?.length` for the validation arm, `(... ?.length ?? 0) > 0` for the progress arm. 2-line change, no other call sites of `metadata.activityType` rely on the buggy truthy-on-`[]` semantics (verified via grep — line 232/234/236/238 use `?? []` then `.includes()`, line 500 uses `?.map()`, line 842 uses `?? []`).
+  - **Visual smoke independently caught the same bug:** at all-pills-OFF I observed "1/7 required filled" instead of expected 0/7. Pre-fix → bug present (see `pr1b-smoke-03-craft-garden.png`). Post-fix → correctly 0/7 (verified via reload + click-on-then-off cycle in browser).
+  - **Skipped adding unit-test coverage** for the validators per kickoff "A bug fix doesn't need surrounding cleanup" — refactoring `validateRequiredFields` out of ReviewDetail.tsx into a pure utility module is scope-creep. Added to Out-of-scope follow-ups for a future hygiene PR. The other 17 metadata fields use the same `?.length` pattern so the regression surface for any sibling field is the same shape.
+
+**Decisions made:**
+
+- **Skipped adding unit test for `validateRequiredFields` even though agent suggested it.** Per kickoff "A bug fix doesn't need surrounding cleanup" + "Don't add features, refactor, or introduce abstractions beyond what the task requires." `validateRequiredFields` lives inline as a useCallback in ReviewDetail.tsx; testing it requires either (a) extracting to a pure function (refactor scope creep) or (b) full RTL render of the page (heavyweight, no precedent in `src/pages/*.test.ts`). Documented as Out-of-scope follow-up instead. Worth flagging a future hygiene PR that extracts both validators to `src/utils/reviewValidation.ts` and adds tests covering all required fields' `?.length` semantics — single file would cover the entire regression surface.
+
+- **Visual smoke done against local dev server, NOT TEST DB.** Local Supabase already has both PR 1b migrations applied (verified via `supabase migration list --local` showing `20260518000000` + `20260518100000`). TEST DB has not received them yet (branch is local-only). This was the right call: no need to wait for CI apply on a branch that hasn't been pushed.
+
+- **Cross-validation pattern noted:** code-reviewer agent's deductive finding (lines 242 + 262 truthy semantics broken) and visual smoke's empirical observation ("1/7" instead of expected 0/7 at all-OFF) independently surfaced the same bug. Worth recognizing — when both modes flag the same issue from different angles, confidence is high without additional rebuttal-pass work.
+
+**Process notes for Session 33+:**
+
+- **Push + open PR is a clean session start.** `git push -u origin feat/metadata-foundation-activity-type-multi` then `gh pr create` with a concise body referencing the D2.1 decision + scope. Wait for CI to apply migrations to TEST DB before re-running the Task 1b.2 transactional probes A-F via `mcp__supabase-test__execute_sql`.
+
+- **Bot review rounds expected lighter than PR 1.** PR 1b touches one bug class (single-select → multi-select) confined to one component (ReviewDetail.tsx) + 2 SQL migrations + Zod schema/mappers passthrough. Compared to PR 1's foundation-phase substrate change touching ~30 TS surfaces + 4 RPCs + view + trigger + helper, the surface area is small. Round-cap of 2 still applies; expect 0-3 findings per round, mostly defensive/confidence-style.
+
+- **Bot voice convergence as P1 signal applies again** (per `feedback_pr_bot_review_workflow.md`). If 3 independent bots flag the same finding, it's almost certainly real.
+
+- **PR-cycle archival kicks in NEXT PR.** When PR 2 work resumes, the Session 28-32 entries from this active file move to the archive at the start of the new PR. No mid-PR archival.
 
 ### Session 31 — 2026-05-06 — PR 1b Tasks 1b.6 + 1b.7 shipped (commits `69ed67d` + `af4910a`)
 
