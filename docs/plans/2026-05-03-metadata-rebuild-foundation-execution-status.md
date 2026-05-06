@@ -1,33 +1,34 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 30 (PR 1b Tasks 1b.3 + 1b.4 + 1b.5-code shipped on `feat/metadata-foundation-activity-type-multi`; 6 commits ahead of `origin/main`).
+**Last updated:** 2026-05-06 — Session 31 (PR 1b Tasks 1b.6 + 1b.7 shipped on `feat/metadata-foundation-activity-type-multi`; 8 commits ahead of `origin/main`).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-17 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (965+ lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **6 commits ahead of `origin/main`**:
+**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **8 commits ahead of `origin/main`** (excluding the 2 docs commits Session 30 and the PR-cycle archival, total 10 commits ahead):
 1. `54124a5` Task 1b.1 — retire `'both'` value + repoint data
 2. `af023d4` Task 1b.2 — `complete_review_atomic` array passthrough
-3. `751c812` Session 29 docs sync
-4. `7537ac7` Task 1b.3 — Zod review-form activityType array shape
-5. `71fc3ba` Task 1b.4 — activity_type mappers pass-through array
-6. `a4fffbc` Task 1b.5 (code) — ReviewDetail multi-select activity_type picker + ReviewMetadataForm dead-code conformance
+3. `7537ac7` Task 1b.3 — Zod review-form activityType array shape
+4. `71fc3ba` Task 1b.4 — activity_type mappers pass-through array
+5. `a4fffbc` Task 1b.5 (code) — ReviewDetail multi-select activity_type picker + ReviewMetadataForm dead-code conformance
+6. `69ed67d` Task 1b.6 — filterDefinitions.ts multi-select + drop 'both' chip
+7. `af4910a` Task 1b.7 — google-docs-parser extractActivityType returns canonical array
 
-Tasks 1b.6 + 1b.7 + 1b.5-visual-smoke + 1b.8 remain (~4 sub-tasks).
+Tasks 1b.5-visual-smoke + 1b.8 remain (~2 sub-tasks; both gated on PR push).
 
 **Why PR 1b interrupts PR 2:** mid-Task-2.4 ground-truth resolution surfaced concrete evidence that D2's single-select decision was made on n=1 (Dr. Carver Lotion-Making) but actual rate is ~5/26 = 19% multi-axis lessons — extrapolates to ~30+ in the 772-row corpus. User decided to retire `'both'` and switch to true multi-element array. See decision journal D2.1.
 
 **PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. **Rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's `tags` side-channel must be re-folded into PR 1b's array-passthrough body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
 
 **Next session picks up:**
-- **Task 1b.5 visual smoke** (chrome-devtools-mcp on TEST DB once branch is pushed in Task 1b.8) — verify reviewer can select multiple activity_type pills; cooking/garden conditional sections render correctly across `[cooking]`, `[garden]`, `[cooking, garden]`, `[craft, garden]`, etc.; save round-trip preserves array shape. Currently the branch is local-only, so smoke must wait until Task 1b.8 push.
-- **Task 1b.6** — `src/utils/filterDefinitions.ts:32-42` — `type: 'single'` → `type: 'multiple'`; remove the `{ value: 'both', label: 'Cooking + Garden' }` chip option.
-- **Task 1b.7** — `supabase/functions/_shared/google-docs-parser.ts:232-258` — `extractActivityType` returns `string[]` (was `string | undefined`); hybrid-mode + frequency-based cases both emit array shape; update `MetadataSketch.activityType` type. Update `google-docs-parser.test.ts` fixtures.
+- **Task 1b.8 — PR push ritual.** Per kickoff PER-PR RITUAL: pre-push code-reviewer agent (Opus) on `git diff main...HEAD`; investigate every finding; apply fix-up commits BEFORE push; `npm run type-check && npm run lint && npm test` must pass; push branch; open PR; wait for external bots; 4-surface comment triage; bot review cycles (round-cap after 2 rounds); per-round TEST DB verification via `mcp__supabase-test__execute_sql`. PR-1b-specific verification once CI applies migrations to TEST DB: re-run Task 1b.2 transactional probes A-F; confirm 135-row `'both'` migration was idempotent (already verified locally Session 28; re-confirm on TEST); verify Zod review-form schema rejects scalar at runtime; confirm sidebar Activity Type filter behaves correctly (4 chips, multi-select).
+- **Task 1b.5 visual smoke** can fold into Task 1b.8's pre-push verification (chrome-devtools-mcp against local dev server — not gated on TEST DB migrations) OR run after CI applies migrations. Local-dev-server option is faster and lets reviewer pre-verify before bot rounds. Cover: multi-pill selection on activity_type; conditional cooking/garden sections render correctly across `[cooking]` / `[garden]` / `[cooking, garden]` / `[craft, garden]` etc.; save round-trip preserves array shape.
+- **Post-merge:** rebase `feat/metadata-foundation-llm-tagging` (PR 2) onto new main; expected conflict on `complete_review_atomic` (both PRs `CREATE OR REPLACE`); re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body during rebase. Verify via `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply that both code paths survive.
 
-**Pre-task verification:** None for 1b.6 / 1b.7 (pure TS, no DB). Verify line numbers in impl plan against current files before editing (kickoff "verify every snippet" rule).
+**Pre-task verification:** Task 1b.8's verification is intrinsic to the PER-PR RITUAL — no pre-task work. Verify line numbers in impl plan against current files only if any fix-up rounds modify code (kickoff "verify every snippet" rule).
 
-**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip.** 546/546 unit tests passing.
+**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip.** 546/546 unit tests passing (38 files, including 33 google-docs-parser tests post-Task-1b.7).
 
 **Branches:**
 - `main` at `8497752` (PR 1 squash merge).
@@ -85,6 +86,35 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 31 — 2026-05-06 — PR 1b Tasks 1b.6 + 1b.7 shipped (commits `69ed67d` + `af4910a`)
+
+**Done (2 commits):**
+
+- **Commit `69ed67d` — Task 1b.6 (filterDefinitions.ts multi-select):** `src/utils/filterDefinitions.ts:32-42` — `type: 'single'` → `'multiple'`; dropped the `{ value: 'both', label: 'Cooking + Garden' }` chip option. 4 chips remain (cooking-only / garden-only / academic-only / craft-only). Pre-edit grep confirmed `filters.activityType` is already typed as array at consumer sites (`useLessonSearch.ts:112` `filters.activityType?.length`; `ScreenReaderAnnouncer.tsx:19` `filters.activityType.length`; `useLessonSuggestions.ts:30,56`), so the `type: 'single'` → `'multiple'` flip propagated cleanly without downstream type-check breakage.
+
+- **Commit `af4910a` — Task 1b.7 (google-docs-parser canonical array shape):** `supabase/functions/_shared/google-docs-parser.ts` — `extractActivityType` return type `string | undefined` → `string[] | undefined`; all 7 return paths emit canonical column shape (`['cooking']`, `['garden']`, `['academic']`, `['cooking', 'garden']`) instead of slugs (`'cooking-only'`, `'garden-only'`, `'both'`, etc.). Updated `MetadataSketch.activityType?: string` → `string[]` at line 66; updated file-level value-shape comment to clarify activityType uses column-canonical values while other fields still use filter-slug values. Updated 6 unit-test fixtures in `google-docs-parser.test.ts` (lines 122/127/134/146/155/231) from `.toBe('slug')` to `.toEqual(['canonical'])`; rewrote test names to match. The "below frequency threshold" `toBeUndefined()` test at line 141 was correctly preserved unchanged — `if (activity) sketch.activityType = activity` at line 305 still skips assignment for `undefined` returns. 33/33 google-docs-parser tests pass; 546/546 full suite green.
+
+**Decisions made:**
+
+- **Canonical-vs-slug emission decision for Task 1b.7.** Impl plan only explicitly addressed the hybrid-mode `'both'` case → `['cooking', 'garden']` (canonical). For singletons (cooking-only / garden-only / academic-only), the impl plan said only "similar fix" without specifying. Chose canonical (`['cooking']` etc.) for ALL return paths, not slug-form (`['cooking-only']`):
+  - **Internal consistency** with the explicitly-canonical hybrid case.
+  - **Matches `lessons.activity_type` column shape** post-D2.1 (canonical 4-value enum: cooking / garden / academic / craft).
+  - **Bug-fix bundled.** detect-duplicates' `calculateJaccardSimilarity` `normalize()` is just `String(item).toLowerCase().trim()` — no slug→canonical translation. Pre-PR-1b parser slug emission (`'cooking-only'` → `['cooking-only']` after auto-wrap at `detect-duplicates/index.ts:188`) vs canonical column (`['cooking']`) → the activityType arm of `calculateMetadataOverlap` was scoring 0% match on most submissions. Canonical emission fixes this incidentally; impl plan's verify clause "Jaccard scoring still works on submissions" was technically true but understated — slug-vs-canonical mismatch already affected scoring. The fix is bundled in-scope per kickoff's "small repo-conformance adaptations are allowed" rule.
+
+- **File-level comment on `MetadataSketch` updated** to be accurate post-D2.1: "values match what's stored on the lessons side: activityType uses canonical column values (cooking, garden, academic, craft); other fields use filter values from src/utils/filterDefinitions.ts." Avoids the previous phrasing "values match the canonical filter values defined in filterDefinitions.ts" which was now inaccurate for activityType.
+
+- **Stale impl plan reference: line 141 of test file (`toBeUndefined()` for below-frequency case) was listed in impl plan's "lines to update" but didn't actually need updating** — the function still returns `undefined` for the no-signal case, and `if (activity) sketch.activityType = activity` at line 305 still skips assignment, so the existing `expect(sketch.activityType).toBeUndefined()` passes unchanged. Did NOT update the impl plan (kickoff "don't unilaterally rewrite the spec" rule); for Session 32+ working subsequent tasks, just trust current-code state and run tests over impl plan line-by-line.
+
+**Process notes for Session 32+:**
+
+- **Task 1b.8 PR ritual** is the only remaining task. Pre-push code-reviewer agent (Opus per `feedback_opus_subagents.md`) on `git diff main...HEAD` — investigate every finding per `feedback_bot_review_investigation.md`. PR push, then external bot reviews (CodeRabbit / Claude Review / Codex per recent observed bot-set), 4-surface comment triage per `feedback_pr_comment_surfaces.md`, per-round TEST DB verification per `feedback_per_round_test_db_verification.md`, round-cap after 2 rounds per kickoff.
+
+- **Task 1b.5 visual smoke can fold into Task 1b.8 pre-push verification** — chrome-devtools-mcp against local dev server (not TEST DB) verifies the reviewer-side UI logic without needing TEST DB migrations applied. Faster than waiting for CI apply + Netlify deploy preview. Cover: multi-pill selection on activity_type; conditional cooking/garden sections render across `[cooking]` / `[garden]` / `[cooking, garden]` / `[craft, garden]`; save round-trip preserves array shape via mappers.
+
+- **Post-merge rebase of PR 2 onto new main** — expected conflict on `complete_review_atomic` (both PR 1b's `20260518100000_*` and PR 2's `20260517000000_*` `CREATE OR REPLACE` the RPC). Re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body during conflict resolution. Verify via `mcp__supabase-test__execute_sql pg_get_functiondef(...)` post-rebase that both code paths survive.
+
+- **Type-coupled cluster awareness — opposite of Session 30.** Tasks 1b.6 + 1b.7 were truly independent (different files, different runtimes, no shared types). Bundling them in one session was clean — neither task's verify clause depended on the other. Compare to Session 30's 1b.3+1b.4+1b.5-code cluster which had to ship together because the schema-shape change cascaded. Future-session calculus: bundle independent tasks freely; cluster type-coupled tasks with explicit "tsc-break expected mid-session" framing.
 
 ### Session 30 — 2026-05-06 — PR 1b Tasks 1b.3 + 1b.4 + 1b.5-code shipped (commits `7537ac7` + `71fc3ba` + `a4fffbc`)
 
