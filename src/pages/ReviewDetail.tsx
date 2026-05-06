@@ -239,7 +239,7 @@ export function ReviewDetail() {
 
   const validateRequiredFields = useCallback(() => {
     const errors: string[] = [];
-    if (!metadata.activityType) errors.push('Activity Type');
+    if (!metadata.activityType?.length) errors.push('Activity Type');
     if (!metadata.location) errors.push('Location');
     if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
     if (!metadata.themes?.length) errors.push('Thematic Categories');
@@ -259,7 +259,7 @@ export function ReviewDetail() {
 
   const fieldProgress = useMemo(() => {
     const required: { label: string; filled: boolean }[] = [
-      { label: 'Activity Type', filled: !!metadata.activityType },
+      { label: 'Activity Type', filled: (metadata.activityType?.length ?? 0) > 0 },
       { label: 'Location', filled: !!metadata.location },
       { label: 'Grade Levels', filled: (metadata.gradeLevels?.length ?? 0) > 0 },
       { label: 'Thematic Categories', filled: (metadata.themes?.length ?? 0) > 0 },
