@@ -101,6 +101,7 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
     const invalid = [
       { activityType: ['indoor'] },
       { activityType: ['unknown'] },
+      { activityType: ['both'] }, // 'both' retired (D2.1)
       { tags: ['unknown_tag'] },
       { seasonTiming: ['fall'] },
       { culturalResponsivenessFeatures: ['Communication of high expectations'] },
@@ -117,13 +118,14 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
   describe('reviewFormPayloadSchema parses identically across both modules', () => {
     const valid = [
       {},
-      { activityType: 'cooking' },
-      { activityType: 'craft', location: 'Indoor' },
+      { activityType: ['cooking'] },
+      { activityType: ['craft'], location: 'Indoor' },
+      { activityType: ['cooking', 'garden'] },
       { season: ['Spring', 'Summer'] },
       { themes: ['Plants', 'Cycles'] },
       { culturalResponsivenessFeatures: ['Reshapes curriculum'] },
       {
-        activityType: 'both',
+        activityType: ['cooking', 'garden'],
         location: 'Both',
         season: ['Fall'],
         themes: ['Plants'],
@@ -133,7 +135,7 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       // All-fields-populated fixture — drift protection. See lessonMetadata
       // counterpart above for rationale.
       {
-        activityType: 'cooking',
+        activityType: ['cooking'],
         location: 'Indoor',
         season: ['Fall'],
         culturalResponsivenessFeatures: ['Reshapes curriculum'],
@@ -161,8 +163,9 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
     });
 
     const invalid = [
-      { activityType: ['cooking'] }, // canonical-keys array; review-form expects single
-      { activityType: 'unknown' },
+      { activityType: 'cooking' }, // scalar string rejected (D2.1: review-form is array-shape)
+      { activityType: ['unknown'] },
+      { activityType: ['both'] }, // 'both' retired (D2.1)
       { season: 'Spring' }, // string instead of array
       { season: ['fall'] }, // wrong case
     ];

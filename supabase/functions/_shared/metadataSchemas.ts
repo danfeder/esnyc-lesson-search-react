@@ -22,7 +22,7 @@ import { z } from 'zod';
 // Closed-enum value lists — MUST match src/types/lessonMetadata.zod.ts.
 // =============================================================================
 
-export const ACTIVITY_TYPE_VALUES = ['cooking', 'garden', 'both', 'academic', 'craft'] as const;
+export const ACTIVITY_TYPE_VALUES = ['cooking', 'garden', 'academic', 'craft'] as const;
 
 export const TAG_VALUES = ['orientation', 'bilingual_handouts'] as const;
 
@@ -98,13 +98,13 @@ export const lessonMetadataSchema = z.object({
 // =============================================================================
 // Review-form payload schema.
 // Mirrors reviewFormPayloadSchema in src/types/reviewFormPayload.zod.ts.
-// Diverges from canonical: activityType is single-select string;
-// location is single-select string (canonical: locationRequirements: string[]);
-// themes/season keys (canonical: thematicCategories/seasonTiming).
+// Diverges from canonical: location is single-select string (canonical:
+// locationRequirements: string[]); themes/season keys (canonical:
+// thematicCategories/seasonTiming).
 // =============================================================================
 
 export const reviewFormPayloadSchema = z.object({
-  activityType: ActivityTypeEnum.optional(),
+  activityType: z.array(ActivityTypeEnum).optional(),
   location: z.string().optional(),
 
   season: z.array(SeasonTimingEnum).optional(),

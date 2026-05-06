@@ -3,9 +3,8 @@
  *
  * Validates what the `complete-review` edge function accepts and what
  * `ReviewDetail.tsx` saves. Diverges from the canonical `lessonMetadata.zod.ts`
- * in three load-bearing ways (per validator architecture doc Decision 2):
+ * in two load-bearing ways (per validator architecture doc Decision 2):
  *
- *   - `activityType` is a single-select string (canonical: `string[]`)
  *   - `location` key is a single-select string (canonical: `locationRequirements: string[]`)
  *   - `themes` / `season` keys (canonical: `thematicCategories` / `seasonTiming`)
  *
@@ -14,9 +13,9 @@
  *   - SQL: the `complete_review_atomic` RPC (grep migrations for the current definition)
  *   - TS: `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`
  *
- * Closed-enum scope mirrors `lessonMetadata.zod.ts`: activityType (single
- * value), season (array), culturalResponsivenessFeatures (array). Other
- * vocabulary fields stay open until Stage 1 worksheets close them.
+ * Closed-enum scope mirrors `lessonMetadata.zod.ts`: activityType (array),
+ * season (array), culturalResponsivenessFeatures (array). Other vocabulary
+ * fields stay open until Stage 1 worksheets close them.
  *
  * Note: `tags` (orientation / bilingual_handouts) is not currently exposed
  * in the review form — those values come from the LLM-draft canonical-keys
@@ -31,8 +30,8 @@ import {
 } from './lessonMetadata.zod';
 
 export const reviewFormPayloadSchema = z.object({
-  // Single-select strings (review-form shape).
-  activityType: ActivityTypeEnum.optional(),
+  // Multi-select activity_type; single-select location.
+  activityType: z.array(ActivityTypeEnum).optional(),
   location: z.string().optional(),
 
   // Closed-enum array fields.
