@@ -1,106 +1,48 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 29 (PR 1b Task 1b.2 shipped on `feat/metadata-foundation-activity-type-multi`; 2 commits ahead of `origin/main` — `54124a5` (Task 1b.1) + `af023d4` (Task 1b.2)).
+**Last updated:** 2026-05-06 — Session 30 (PR 1b Tasks 1b.3 + 1b.4 + 1b.5-code shipped on `feat/metadata-foundation-activity-type-multi`; 6 commits ahead of `origin/main`).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-17 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (965+ lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi` exists (created off `8497752` Session 28); 2 commits ahead of `origin/main` (`54124a5` Task 1b.1 + `af023d4` Task 1b.2). Tasks 1b.3 through 1b.8 remain (~6 sub-tasks).
+**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **6 commits ahead of `origin/main`**:
+1. `54124a5` Task 1b.1 — retire `'both'` value + repoint data
+2. `af023d4` Task 1b.2 — `complete_review_atomic` array passthrough
+3. `751c812` Session 29 docs sync
+4. `7537ac7` Task 1b.3 — Zod review-form activityType array shape
+5. `71fc3ba` Task 1b.4 — activity_type mappers pass-through array
+6. `a4fffbc` Task 1b.5 (code) — ReviewDetail multi-select activity_type picker + ReviewMetadataForm dead-code conformance
 
-**Why PR 1b interrupts PR 2:** mid-Task-2.4 ground-truth resolution surfaced concrete evidence that D2's single-select decision was made on n=1 (Dr. Carver Lotion-Making) but actual rate is ~5/26 = 19% multi-axis lessons — extrapolates to ~30+ in the 772-row corpus. User decided to retire `'both'` and switch to true multi-element array. See decision journal D2.1 for full rationale.
+Tasks 1b.6 + 1b.7 + 1b.5-visual-smoke + 1b.8 remain (~4 sub-tasks).
 
-**PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. PR 2's `complete_review_atomic` extension (Task 2.2c, migration `20260517000000_*`) touched `tags`, not `activityType`. **Rebase conflict expected:** PR 1b Task 1b.2 (`20260518100000_*`) and PR 2's Task 2.2c (`20260517000000_*`) both `CREATE OR REPLACE` `complete_review_atomic`. Order matters — PR 2's `20260517` will sort before PR 1b's `20260518100000`, so the post-merge function body ends up at PR 1b's version (which is correct — it carries the array passthrough). PR 2's `tags` side-channel must be re-folded into PR 1b's body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
+**Why PR 1b interrupts PR 2:** mid-Task-2.4 ground-truth resolution surfaced concrete evidence that D2's single-select decision was made on n=1 (Dr. Carver Lotion-Making) but actual rate is ~5/26 = 19% multi-axis lessons — extrapolates to ~30+ in the 772-row corpus. User decided to retire `'both'` and switch to true multi-element array. See decision journal D2.1.
 
-**Current task:** Session 30 picks up **Task 1b.3 — Zod schemas + Deno mirror + types.** Edit `src/types/reviewFormPayload.zod.ts:35` `activityType: ActivityTypeEnum.optional()` → `activityType: z.array(ActivityTypeEnum).optional()`; mirror in `supabase/functions/_shared/metadataSchemas.ts` (lines ~25/70/107); update `src/types/index.ts:103` `ReviewMetadata.activityType?: string` → `string[]`; update `src/types/edgeSharedSchemas.equivalence.test.ts` fixtures (currently 2 failing — see below). Pure TS-only task; no migration. Verify `npm run type-check` clean + `npm test -- equivalence` passes.
+**PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. **Rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's `tags` side-channel must be re-folded into PR 1b's array-passthrough body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
 
-**No pre-Task-1b.3 verification needed** — task is TypeScript-only; the schema source-of-truth files are unambiguous. Verify line numbers in impl plan against current files before applying (kickoff "verify every snippet" rule), but no DB / migration / RPC moves.
+**Next session picks up:**
+- **Task 1b.5 visual smoke** (chrome-devtools-mcp on TEST DB once branch is pushed in Task 1b.8) — verify reviewer can select multiple activity_type pills; cooking/garden conditional sections render correctly across `[cooking]`, `[garden]`, `[cooking, garden]`, `[craft, garden]`, etc.; save round-trip preserves array shape. Currently the branch is local-only, so smoke must wait until Task 1b.8 push.
+- **Task 1b.6** — `src/utils/filterDefinitions.ts:32-42` — `type: 'single'` → `type: 'multiple'`; remove the `{ value: 'both', label: 'Cooking + Garden' }` chip option.
+- **Task 1b.7** — `supabase/functions/_shared/google-docs-parser.ts:232-258` — `extractActivityType` returns `string[]` (was `string | undefined`); hybrid-mode + frequency-based cases both emit array shape; update `MetadataSketch.activityType` type. Update `google-docs-parser.test.ts` fixtures.
 
-**Known unit-test breakage on PR 1b branch (target: Task 1b.3):** `src/types/edgeSharedSchemas.equivalence.test.ts` has 2 failing assertions (`activity_type values match` + the review-form `{ activityType: 'both' }` valid fixture). Cause: Deno mirror still has `'both'` in `ACTIVITY_TYPE_VALUES` (`supabase/functions/_shared/metadataSchemas.ts:25`); canonical Zod doesn't. Task 1b.3 syncs the mirror + updates fixtures + retypes review-form `activityType` to array shape. `npm run type-check` and `npm run lint` are green (Task 1b.1 commit included a 1-line fix on `reviewToLessonMapper.test.ts:201` to satisfy the narrowed literal union — `'both'` → `'cooking'` in the all-fields-populated round-trip fixture).
+**Pre-task verification:** None for 1b.6 / 1b.7 (pure TS, no DB). Verify line numbers in impl plan against current files before editing (kickoff "verify every snippet" rule).
 
-**Done in Session 27 (planning + docs only — no code commits beyond this docs commit):**
-- Investigated activity_type ground-truth source candidates: 113 reviewer-tagged submissions on TEST/PROD (avg body 5.5K chars, distribution garden 67 / cooking 33 / academic 11 / both 2 / craft 0).
-- Built v1 worksheet at 26 craft-suspect candidates × single-label.
-- User identified the missing-value problem: `craft` was new in PR 1, no reviewer queue activity since, so 113 reviewer labels were forced into the old 4-value vocab. Empirical check confirmed 5+ multi-axis lessons mis-labeled.
-- User-driven D2 re-open after evidence accumulated. User chose Option B (true multi-select) over A (rename `both` → `multi`) over C (status quo with caveat).
-- User chose B-1 (retire `both` entirely) over B-2 (keep as legacy synonym). Rationale: cleaner semantic surface; mechanical migration.
-- I dispatched Opus code-explorer dependency sweep across 15 categories. Result: ~70 surfaces, ~12 high-risk, 8 in PR 1b scope. Substrate already array-shaped (column `text[]`, CHECK `<@`, trigger validation array-tolerant).
-- I investigated three NEEDS-HUMAN-REVIEW flags from sweep:
-  - **N1: `ReviewMetadataForm.tsx` is dead code** (zero external imports). Cleanup queued as separate hygiene follow-up; NOT in PR 1b.
-  - **N2: filter state is NOT URL-synced** (Zustand+localStorage only). E2E test `e2e/filters.spec.ts:27-42` is deceptive (only checks URL string preservation). No URL handling changes needed. Cleanup queued.
-  - **N3: `generate-content-hashes.mjs` is dormant** (last touched in safety-wrap PR #435 to PREVENT prod runs). No update needed.
-- Wrote 4 doc updates as one coherent commit:
-  1. Decision journal: full D2.1 entry with reasoning + downstream implications + cleanup-follow-ups.
-  2. Design doc: D2 line annotated to 4-value multi-select with D2.1 reference at lines 101 + 108 + 163.
-  3. Implementation plan: new "PR 1b — D2 multi-select refinement" section inserted between PR 1 and PR 2 with 8 sub-tasks (1b.1-1b.8); Task 2.4 spec updated to multi-label + worksheet v2 framing.
-  4. Execution status: this Current State header replaced; Session 27 entry below.
-- Worksheet v1 (26 candidates) preserved on disk with deprecation banner at top; not deleted per user instruction.
+**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip.** 546/546 unit tests passing.
 
 **Branches:**
-- `main` is at `8497752` (PR 1 squash merge).
-- `feat/metadata-foundation-activity-type-multi` (PR 1b branch) — 2 commits ahead of main: `54124a5` (Task 1b.1 — retire `'both'` value + repoint data) + `af023d4` (Task 1b.2 — `complete_review_atomic` array passthrough). Branch is local-only (no upstream pushed yet); CI on TEST DB has not applied PR 1b migrations.
-- `feat/metadata-foundation-llm-tagging` (PR 2 branch) — 20 commits ahead. Paused until PR 1b ships.
-- `feat/metadata-foundation-schema` (PR 1's now-merged branch) — can be deleted at convenience.
+- `main` at `8497752` (PR 1 squash merge).
+- `feat/metadata-foundation-activity-type-multi` (PR 1b) — 6 commits ahead, local-only, no upstream pushed yet; CI on TEST DB has not applied PR 1b migrations.
+- `feat/metadata-foundation-llm-tagging` (PR 2) — 20 commits ahead, paused.
+- `feat/metadata-foundation-schema` (PR 1's merged branch) — deletable at convenience.
 
-**Foundation-phase substrate now live on PROD (unchanged from Session 26):**
-- Schema: `lesson_format` dropped, `series_id` + `part_number` + `crf_confirmed` columns added, `activity_type` enum at 5 values incl. `'both'` (PR 1b retires `'both'` locally + via PROD-apply post-merge — Tasks 1b.1 + 1b.2 done locally as of Session 29), `tags` array column with closed enum, `cultural_responsiveness_features` closed to 7 Brown CR features.
-- 3 CHECK constraints + trigger value-validation helper, all `<@` containment (length-agnostic).
-- Zod canonical schemas + bidirectional mappers + Deno mirror + `enums.json` cross-runtime artifact + freshness CI test.
-- Filter UI: `lessonFormat` removed, "Lesson Type" sidebar filter backed by tags column.
-- `complete-review` edge function wired to Zod safeParse; CRF prompt wired into `process-submission` (Session 26).
+**Foundation-phase substrate now live on PROD (post-PR-1):**
+- Schema: `lesson_format` dropped, `series_id` + `part_number` + `crf_confirmed` columns added, `activity_type` enum at 5 values incl. `'both'` (PR 1b retires `'both'` post-merge — Tasks 1b.1+1b.2 done locally), `tags` array column with closed enum, `cultural_responsiveness_features` closed to 7 Brown CR features.
+- 3 CHECK constraints (`<@` containment, length-agnostic) + trigger value-validation helper.
+- Zod canonical + bidirectional mappers + Deno mirror + `enums.json` + freshness CI test.
+- Filter UI: `lessonFormat` removed; "Lesson Type" sidebar filter backed by `tags` column (count badge shows `(0)` until tags is added to `search_lessons` RETURNS TABLE — see follow-ups).
+- Edge functions: `complete-review` wired to Zod safeParse; `process-submission` has CRF prompt wired in (Session 26).
 
-**Done in Session 26 (commit `5dce6f2`):**
-- **Step 4.5 — CRF auto-tag wired into `process-submission/index.ts`** between embedding (Step 4) and duplicate detection (Step 5). Anthropic SDK constructed lazily with `Deno.env.get('ANTHROPIC_API_KEY')`; `claude-opus-4-7` invoked with system prompt + tool `submit_tags` schema (forced via `tool_choice: {type: 'tool'}`); response's `tool_use` block parsed for `selected_values`; Zod-validated against `lessonMetadataSchema` (canonical-keys camelCase `culturalResponsivenessFeatures`); written to `lesson_submissions.ai_draft_metadata` alongside `ai_draft_generated_at = now()` and `ai_draft_model = 'claude-opus-4-7'`. `crf_confirmed` stays `false` per D9 (Phase 2 reviewer UX flips it).
-- **Skip detection** via `/cultural\s+responsiveness/i.test(content)` — Session 23 audit showed 580/772 (75%) PROD lessons match; modern-template reliably matches, legacy ~25% doesn't (D9-aligned). Also skip on `regenerateEmbedding=true` flow and when `ANTHROPIC_API_KEY` env var unset (graceful degradation in local dev / pre-secret-deploy).
-- **Failure path is non-blocking** — try/catch logs the error, submission flow continues. Mirrors the existing embedding-error pattern.
-- **`@anthropic-ai/sdk@^0.95.0` added** to `supabase/functions/deno.json` (npm: pattern, mirroring PR 1's `npm:zod@^3.24.0` resolution).
-- **Prompt loading**: lazy + module-scope cached via `Deno.readTextFile(new URL('./prompts/cultural-responsiveness-features.md', import.meta.url))`. Warm-start cost saving across submissions in the same edge worker.
-- **Caching mirrors harness**: `cache_control: ephemeral` on system + tool blocks. The harness saw `cache_read=0` due to CLIProxyAPI cloaking; the edge function calls Console API directly so caching should work normally (verify on TEST DB).
-- `npm run type-check && npm run lint` clean. `supabase/functions/**` is excluded from both per project tooling — strict TS for the edge function is best-effort; runtime verification at TEST DB deploy.
-
-**Done in Session 25 (commit `ceb8234`):**
-- **Full 353-sample CRF eval-gate run cleared.** Macro F1=0.937 / Micro F1=0.945 / per-feature P=0.87-0.99 R=0.83-0.99 F1=0.88-0.98 across all 7 master-list features. Output JSON at `/tmp/crf-eval-full-353.json` (run-local; not committed). Final cost $30.23.
-- **CLIProxyAPI v6.10.8 stood up locally** (`~/.local/bin/cli-proxy-api`, config `~/.cli-proxy-api/config.yaml`, OAuth credentials `~/.cli-proxy-api/claude-mail@danfeder.org.json`). Bills against user's Claude Max extra-usage credits. Backgrounded server on `127.0.0.1:8317`. Tool-use forced output works through proxy on `claude-opus-4-7`.
-- **Harness gained `--base-url` flag** (~10 LOC). Falls back to `ANTHROPIC_BASE_URL` env var. Help text documents the CLIProxyAPI usage pattern with the trailing-`/v1` gotcha.
-- **`scripts/eval-data/crf-thresholds.json`** created with starting gates (`macroF1: 0.7`, `minRecallPerValue: 0.5`).
-- **Sequenced verification**: 5-sample warmup (5/5 perfect, $0.40) → 20-sample baseline (19/20 perfect, $1.76, macroF1=0.981) → full 353 (passed, $30.23, macroF1=0.937).
-
-**Done in Session 24 (commit `5be10f2`):** Task 2.3 steps 1+2 — sample assembly + prompt drafting. Re-verified Session 23's column⊆body filter on TEST DB (353 / 90+68+83+112 distribution unchanged). Pulled all 353 rows via MCP (response was 1.4M chars → saved to tool-result file); extracted via Node regex anchored on `\n<untrusted-data-...>\n` fence to avoid in-prose mentions of the same tag. Wrote `scripts/eval-data/crf-samples.json` (1.35MB, 353 entries shaped `{id, body, truth}`). Validated truth labels exactly match the 7 canonical Title-Case strings in `src/types/generated/enums.json:cultural_responsiveness_features`. Wrote `scripts/eval-data/crf-vocab.json` (multi-label, 7 values). Wrote `crf-samples.README.md` with regeneration SQL + per-feature coverage table (range 14% → 62% — all 7 features have ≥48 rows, plenty for per-value precision/recall). Wrote `cultural-responsiveness-features.md` prompt: 7 master-list features verbatim with definitions + ~30 example practices + selection rules (canonical strings only / Title Case / extract from CR cell when present / infer when absent / **conservative bias — empty array when nothing clearly demonstrated**). Smoke-tested the harness against new fixtures via dry-run: synthetic-pass case (predictions=truth) → exit 0 + macros all 1.000; synthetic-fail case (predictions=[]) → exit 1 + named per-feature recall failures + macro F1 NaN. File plumbing verified end-to-end without API spend.
-
-**Decisions baked in Session 24 (recorded for downstream):**
-- **Sample `body` = full lesson `content_text`** (mirrors prod call-site shape — `process-submission` will pass full body; prompt parses CR cell internally). Median body 3226 chars / p95 5525 / max 20477. Cost ~$2-5 per 353-sample iteration with prompt cache; budget for 5-10 iterations is ~$25-50, acceptable.
-- **No stamp-stripped held-out slice in v1.** Defer to a future iteration if reviewers want inference-quality signal beyond bulk extraction. Rationale: simpler v1; if extraction-on-bulk-353 clears the gate, that's the canonical-reference proof; held-out is informational, not gating.
-- **Truth labels are canonical Title-Case verbatim from `enums.json`** — no case translation needed at eval time; the prompt instructs Opus to emit the exact strings.
-- **File order is alphabetic by `lesson_id`** (no stratified ordering). `--limit N` slices the alphabetic prefix, not a stratified sample. Documented in README.
-
-**Done in Session 23 (no code commits — investigation + decision only):** Resolved the open question carried out of Session 22: where do labeled hold-out samples for CRF come from. Decision: stamps-as-truth (defer to existing curriculum work where it exists); legacy lessons without stamps stay out of scope per D9 (user can revisit later). Investigation: lesson bodies live in `lessons.content_text` (all 772 populated); body CRF stamps split into 3 formats (Format A old-template question ~20 / Format B prose stamp ~117 / Format C comma-list ~475); only Format C aligns with column data — Formats B+A have v3 GPT-4.1 augmented columns. Programmatic filter (`every column feature appears as case-insensitive substring in body's CRF cell`) yields **353 clean rows** (90 with 1 feature / 68 with 2 / 83 with 3 / 112 with 4+). Filter automatically excludes v3-augmented rows. Spot-check on 30 random samples confirmed the cross-check filter beats the regex-only filter (regex had ~63% precision; cross-check is ~100% by construction). Ready for Session 24 to assemble the eval-gate input file + draft the prompt + run dry baseline.
-
-**Done in Session 22 (commit `8fddfcd`):** Task 2.2 — eval-gate harness. Three files added: `scripts/eval-llm-tagging-prompt.ts` (CLI + Anthropic tool-use forced-output + prompt caching on system + tool blocks + concurrency limiter + token-usage rollup); `scripts/lib/evalMetrics.ts` (pure metric computation — multi-label internal model, per-value TP/FP/FN with null-safe semantics for values with no support, macro + micro averages, threshold evaluation); `scripts/lib/evalMetrics.test.ts` (17 unit tests covering edge cases). TDD discipline followed: RED verified (test failed on missing-import) before GREEN. CLI flags: `--prompt --samples --vocab --threshold-config --output --dry-run-with-predictions --concurrency --limit --model`. Exit 0/1 vs threshold. Smoke-tested via `/tmp` fixtures (pass case = exit 0, fail case = exit 1 with named threshold failures). Adds `@anthropic-ai/sdk@^0.95.0` dep + `eval:llm-tagging` npm script alias. **Note for Session 23+:** the harness is input-agnostic; sourcing labeled hold-out samples for CRF / activity_type / tags is each prompt task's concern (curriculum-team-validated rows or reviewer-touched submissions are the candidate sources). Default model is `claude-opus-4-7`; ANTHROPIC_API_KEY required in `.env.local` for non-dry-run runs (user will add).
-
-**Done in Session 21 (commit `a1870fb`):** Task 2.2c — `complete_review_atomic` extended with tags side-channel. `v_ai_draft jsonb` declared, plucked from `lesson_submissions.ai_draft_metadata`; `tags` added to `approve_new` INSERT (value `_phase4_jsonb_text_array_or_null(v_ai_draft->'tags')`); `approve_update` UPDATE SET extended with carry-forward `tags = COALESCE(NULLIF(v_existing.tags, ARRAY[]::text[]), _phase4_jsonb_text_array_or_null(v_ai_draft->'tags'), v_existing.tags, ARRAY[]::text[])`. Mirrors academicConcepts carry-forward pattern. 4/4 local probes via transactional `DO ... RAISE EXCEPTION` rollback PASS.
-
-**Done in Session 20 (commit `1d2da52`):** Task 2.2b — ReviewDetail.tsx reads `submissionData.ai_draft_metadata` at form init (no-review-row branch only), parses against `lessonMetadataSchema`, maps canonical → review-form via `lessonToReview`, applies `reAddActivityTypeSuffix`, calls `setMetadata`. Pure helper at `src/pages/reviewMetadataInit.ts` mirroring `reviewPreselect.ts` pattern; 6 unit tests.
-
-**Done in Session 19 (commits `2b046a4` + `574c8a4`):** Task 2.2a migration — 3 `ai_draft_*` columns added to `lesson_submissions`. Impl plan updated for Task 2.2c insertion + Task 2.5 framing trim.
-
-**Branches:**
-- `main` is at `8497752` (PR 1 squash merge).
-- `feat/metadata-foundation-llm-tagging` is the active PR 2 branch (11 commits ahead).
-- `feat/metadata-foundation-schema` (PR 1's now-merged branch) can be deleted at convenience.
-
-**Foundation-phase substrate now live on PROD:**
-- Schema: `lesson_format` dropped (column + JSONB key from all rows), 3 new columns added (`series_id` text / `part_number` int / `crf_confirmed` bool), `activity_type` enum expanded to 5 values (`cooking / garden / both / academic / craft`), `tags` array column with closed enum (`orientation / bilingual_handouts`), `cultural_responsiveness_features` closed to the 7 Brown CR master-list features.
-- 3 CHECK constraints installed: `valid_activity_type` / `valid_tags` / `valid_cultural_responsiveness_features` (all `<@` contained-by on the column-level array).
-- Trigger value-validation via `_validate_meta_enum_values(jsonb, key, allowed[], lesson_id)` helper invoked from `lessons_normalize_write` for the same 3 keys.
-- Zod canonical schemas + bidirectional mappers + Deno mirror with CI equivalence test + `enums.json` cross-runtime artifact + freshness CI test.
-- Filter UI: `lessonFormat` removed from definitions / sidebar / URL params / facet counts. New "Lesson Type" sidebar filter backed by `tags` array column (count badge always shows `(0)` until tags is added to RPC RETURNS TABLE — see follow-ups).
-- Edge function `complete-review` wired to `safeParse` on metadata payload (defense-in-depth before invoking `complete_review_atomic` RPC).
-
-**Last-applied verification (post-PROD-apply, 2026-05-05):**
-- 15-point MCP audit: TEST + PROD both 15/15 PASS — schema columns / drops / CHECKs / helper / trigger / CRF drift cleanup / both seasonTiming repair rows scrubbed.
-- `complete-review` deploy verified via `mcp__supabase-remote__get_edge_function`: version=3, ezbr_sha256=`9115a1d9261d2fb1352e709fb3d0b1a44efa94908dae502c100da6c7a6047c39`, source contains the new Zod safeParse block + `_shared/metadataSchemas.ts` mirror.
-- Migration apply succeeded on first try (no SASL flake on this run).
-- 1 of 12 edge fn deploys (`invitation-management`) failed initially on transient `esm.sh` 522 CDN flake; rerun via `gh run rerun --failed 25385024748` succeeded on second attempt. PR 1 didn't change `invitation-management/index.ts`; failure was unrelated.
+**Last-applied verification (post-PROD-apply, 2026-05-05):** 15-point MCP audit on TEST + PROD both 15/15 PASS. `complete-review` deploy verified via `mcp__supabase-remote__get_edge_function`: version=3, ezbr_sha256=`9115a1d9261d2fb1352e709fb3d0b1a44efa94908dae502c100da6c7a6047c39`, source contains the new Zod safeParse block + `_shared/metadataSchemas.ts` mirror. Migration apply succeeded on first try; 1 of 12 edge fn deploys (`invitation-management`) failed on `esm.sh` 522 CDN flake, rerun via `gh run rerun --failed 25385024748` succeeded on second attempt. PR 1 didn't change `invitation-management/index.ts`; failure was unrelated.
 
 ## PR 2 design — verification complete + Option A picked (Session 18, 2026-05-05)
 
@@ -198,6 +140,28 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 30 — 2026-05-06 — PR 1b Tasks 1b.3 + 1b.4 + 1b.5-code shipped (commits `7537ac7` + `71fc3ba` + `a4fffbc`)
+
+**Done (3 commits):**
+
+- **Commit `7537ac7` — Task 1b.3 (Zod review-form activityType array shape):** changed `reviewFormPayloadSchema.activityType` from `ActivityTypeEnum.optional()` (single string) to `z.array(ActivityTypeEnum).optional()` (multi-element). Synced the Deno mirror at `supabase/functions/_shared/metadataSchemas.ts` (line 25 + 107) including the leftover `'both'` removal that Task 1b.1 missed. Updated `ReviewMetadata.activityType?: string` → `string[]` in `src/types/index.ts:103`. Equivalence test fixtures updated (32 → 35 tests; both prior failing assertions now green): added `{ activityType: ['both'] }` invalid for both schemas (D2.1 retirement); rewrote review-form valid fixtures from scalar to array; removed the now-stale `{ activityType: ['cooking'] }` invalid case (now valid for review-form too); added scalar-rejection invalid cases.
+
+- **Commit `71fc3ba` — Task 1b.4 (mappers passthrough):** dropped the single-string ↔ single-element-array translation for activityType in both `reviewToLesson` and `lessonToReview` (now passthrough — both schemas use array shape post-1b.3). Narrowed `lessonToReviewMapper.ts` docstring asymmetry note to mention only `location` (the activityType branch is no longer asymmetric); trimmed `reviewToLessonMapper.ts` translation rules. Mapper tests: renamed "wraps single-select" / "extracts first element" tests to "passes activityType array through" (single + multi variants per direction); added multi-element fixtures to round-trip property; DROPPED the "intentionally lossy for canonical with multi-element activityType" test (no longer lossy); acceptance fixture retyped to array shape.
+
+- **Commit `a4fffbc` — Task 1b.5 (code) + ReviewMetadataForm dead-code conformance:** wired the four ReviewDetail.tsx activityType touchpoints to `string[]` shape — `reAddActivityTypeSuffix` maps over array; `showCookingFields` / `showGardenFields` use `.includes()`-on-array; save-path strip uses `metadata.activityType?.map(s => s.replace(/-only$/, ''))`; IntPillGroup invocation switches to native `selected={... ?? []}` + `onChange` (default `mode='multi'`). The `singleProps` adapter stays — still used for `location`. ReviewMetadataForm.tsx (zero external imports per Session 27 N1 audit; deletion still queued separately) gets the same `.includes()`-on-array pattern for type-conformance to keep tsc green at branch tip. Bundled small follow-up: `reviewToLessonMapper.test.ts` round-trip-property comment narrowed + prettier auto-format from `npm run lint:fix`.
+
+**Process notes:**
+
+- **Impl plan flaw surfaced + path-1 path chosen.** Impl plan's Task 1b.3 verify clause says `npm run type-check` clean, but the schema-shape change inherently breaks every downstream consumer (`reviewToLessonMapper.ts:32`, `lessonToReviewMapper.ts:34`, `ReviewDetail.tsx` 12 errors at lines 125-851, `ReviewMetadataForm.tsx` 6 errors at lines 26-36). Per kickoff "small repo-conformance adaptations are allowed" + "session-end ritual: tsc must pass," bundled 1b.3 + 1b.4 + 1b.5-code + ReviewMetadataForm conformance into one session as 3 commits. User approved path 1.
+
+- **ReviewMetadataForm.tsx scope adjustment.** Status doc Session 27 N1 said deletion "NOT in PR 1b" (queued for separate hygiene PR). The schema-shape change forced a type-conformance update on the dead-code component (`===` → `.includes()`-on-array on lines 26-36) to keep tsc green at branch tip. This is a small adaptation, not the deletion that's queued separately — a-okay per scope boundaries.
+
+- **`npm run lint:fix` auto-formatted prettier issues** in `reviewToLessonMapper.test.ts` after Task 1b.4's commit. The fix-up + comment narrowing got bundled into the Task 1b.5 commit rather than amending 1b.4 (per kickoff "Prefer to create a new commit rather than amending an existing commit"). Mildly off-theme but in the same chain of changes.
+
+- **Visual smoke deferred.** Task 1b.5 verify clause includes chrome-devtools-mcp visual smoke (multi-pill selection, conditional sections, save round-trip). Code-only landing this session; visual smoke moved to Session 31's pre-Task-1b.6 verification or Task 1b.8 PR ritual. Branch is local-only — TEST DB has not received the migrations yet, so visual smoke is gated on PR 1b push.
+
+- **Verify-clause vs reality gap (process learning, candidate for `feedback_*` if it recurs).** When a schema-type change touches multiple consumer files, decompose-by-file impl plans need a "type-coupled cluster" framing — all consumers ship together OR session-end ritual bends. Future similar work: bundle consumer-cluster from the start in the impl plan, OR explicitly note "intermediate tsc-break expected; cluster ships together" in the verify clause.
 
 ### Session 29 — 2026-05-06 — PR 1b Task 1b.2 shipped (commit `af023d4`)
 
