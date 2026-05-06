@@ -1,0 +1,13 @@
+{
+  "name": "cultural_responsiveness_features",
+  "mode": "multi-label",
+  "values": [
+    "Promotes positive perspectives on parents and families",
+    "Communicates high expectations",
+    "Encourages learning within the context of culture",
+    "Promotes student-centered instruction",
+    "Incorporates different individual and cultural learning styles",
+    "Reshapes curriculum",
+    "Positions teacher as facilitator"
+  ]
+}
