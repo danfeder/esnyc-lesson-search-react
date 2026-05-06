@@ -12,7 +12,7 @@
  * `complete_review_atomic` (see migration 20260428000003 lines 142-167).
  *
  * Closed-enum coverage in this scaffold:
- *   - activity_type (D2 — 5 values)
+ *   - activity_type (D2 — 4 values; D2.1 retired 'both' 2026-05-06)
  *   - tags (D2 + D7 — 2 values)
  *   - season_timing (existing valid_seasons CHECK — 4 values)
  *   - cultural_responsiveness_features (D9 — 7 master-list features)
@@ -34,7 +34,7 @@ import { z } from 'zod';
 // mirrors).
 // =============================================================================
 
-export const ACTIVITY_TYPE_VALUES = ['cooking', 'garden', 'both', 'academic', 'craft'] as const;
+export const ACTIVITY_TYPE_VALUES = ['cooking', 'garden', 'academic', 'craft'] as const;
 
 export const TAG_VALUES = ['orientation', 'bilingual_handouts'] as const;
 

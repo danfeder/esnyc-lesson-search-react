@@ -198,7 +198,7 @@ describe('mapper round-trip property', () => {
     { location: 'Outdoor' },
     { themes: ['Garden Basics'], season: ['Summer'] },
     {
-      activityType: 'both',
+      activityType: 'cooking',
       location: 'Indoor',
       themes: ['Food Systems'],
       season: ['Fall', 'Winter'],
