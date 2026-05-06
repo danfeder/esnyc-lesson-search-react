@@ -1,8 +1,23 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import Anthropic from '@anthropic-ai/sdk';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
 import type { MetadataSketch } from '../_shared/google-docs-parser.ts';
+import {
+  CULTURAL_RESPONSIVENESS_FEATURE_VALUES,
+  lessonMetadataSchema,
+} from '../_shared/metadataSchemas.ts';
 import { normalizeSubmissionInputs } from './normalizeSubmissionInputs.ts';
+
+const CRF_MODEL = 'claude-opus-4-7';
+const CRF_PROMPT_URL = new URL('./prompts/cultural-responsiveness-features.md', import.meta.url);
+let crfPromptCache: string | null = null;
+async function loadCrfPrompt(): Promise<string> {
+  if (crfPromptCache === null) {
+    crfPromptCache = await Deno.readTextFile(CRF_PROMPT_URL);
+  }
+  return crfPromptCache;
+}
 
 interface ProcessSubmissionRequest {
   googleDocUrl?: string;
@@ -313,6 +328,102 @@ serve(async (req) => {
         submissionId: submission.id,
       });
       // Continue without embedding
+    }
+
+    // Step 4.5: LLM auto-tag — Cultural Responsiveness Features (D9). Skip
+    // when body has no "Cultural Responsiveness" header (older legacy
+    // template, ~45% of corpus) and on regenerate-embedding-only flow.
+    // Output is canonical-keys shape per `lessonMetadataSchema`. Reviewer
+    // flips `lessons.crf_confirmed` true via the existing review save flow
+    // when the draft is accepted (Phase 2 picker UI redesign deferred).
+    if (!regenerateEmbedding && /cultural\s+responsiveness/i.test(content)) {
+      try {
+        const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+        if (!anthropicKey) {
+          console.warn('[CRF auto-tag] ANTHROPIC_API_KEY not configured, skipping');
+        } else {
+          const crfPrompt = await loadCrfPrompt();
+          const anthropic = new Anthropic({ apiKey: anthropicKey });
+          console.log('[CRF auto-tag] Generating draft for submission:', submission.id);
+          const startTime = Date.now();
+
+          const response = await anthropic.messages.create({
+            model: CRF_MODEL,
+            max_tokens: 1024,
+            system: [
+              { type: 'text', text: crfPrompt, cache_control: { type: 'ephemeral' } },
+            ],
+            tools: [
+              {
+                name: 'submit_tags',
+                description:
+                  'Submit the selected cultural_responsiveness_features value(s) for the lesson.',
+                input_schema: {
+                  type: 'object',
+                  properties: {
+                    selected_values: {
+                      type: 'array',
+                      items: {
+                        type: 'string',
+                        enum: [...CULTURAL_RESPONSIVENESS_FEATURE_VALUES],
+                      },
+                      uniqueItems: true,
+                    },
+                  },
+                  required: ['selected_values'],
+                },
+                cache_control: { type: 'ephemeral' },
+              },
+            ],
+            tool_choice: { type: 'tool', name: 'submit_tags' },
+            messages: [{ role: 'user', content }],
+          });
+
+          const responseTime = Date.now() - startTime;
+
+          let predicted: unknown[] = [];
+          for (const block of response.content) {
+            if (block.type === 'tool_use' && block.name === 'submit_tags') {
+              const input = block.input as Record<string, unknown>;
+              if (Array.isArray(input.selected_values)) {
+                predicted = input.selected_values;
+              }
+              break;
+            }
+          }
+
+          const draft = { culturalResponsivenessFeatures: predicted };
+          const parsed = lessonMetadataSchema.safeParse(draft);
+          if (!parsed.success) {
+            console.error(
+              '[CRF auto-tag] Zod validation failed:',
+              JSON.stringify(parsed.error.issues)
+            );
+          } else {
+            const features = parsed.data.culturalResponsivenessFeatures ?? [];
+            const { error: draftUpdateError } = await supabaseAdmin
+              .from('lesson_submissions')
+              .update({
+                ai_draft_metadata: parsed.data,
+                ai_draft_generated_at: new Date().toISOString(),
+                ai_draft_model: CRF_MODEL,
+              })
+              .eq('id', submission.id);
+            if (draftUpdateError) {
+              console.error('[CRF auto-tag] Failed to write draft:', draftUpdateError);
+            } else {
+              console.log(
+                `[CRF auto-tag] Draft written in ${responseTime}ms — ${features.length} feature(s)`
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[CRF auto-tag] Failed:', {
+          error: error instanceof Error ? error.message : String(error),
+          submissionId: submission.id,
+        });
+      }
     }
 
     // Skip duplicate detection if we're just regenerating embeddings
