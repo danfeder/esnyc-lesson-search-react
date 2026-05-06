@@ -194,6 +194,69 @@
 
 ---
 
+## Decision 2.1 — Multi-select refinement
+
+**Status:** DECIDED 2026-05-06 (foundation phase Session 27, mid-PR-2 ground-truth resolution)
+
+**Decision: Switch `activity_type` from de-facto single-element to true multi-element array. Retire `both` value entirely.**
+
+- **Storage:** `lessons.activity_type text[]` stays array-shaped (was already). CHECK constraint stays `<@` containment (was already length-agnostic). Trigger validation already array-tolerant.
+- **Vocabulary:** 5 → 4 values (`cooking / garden / academic / craft`). `both` retired.
+- **Existing data:** 135 `[both]` rows on PROD (133 on TEST per migration 20260505000000 header) → `[cooking, garden]`.
+- **Reviewer UI:** `ReviewDetail.tsx` single-select pill → multi-select pill/checkbox. Conditional cooking/garden field rendering uses `.includes()` instead of `'both'` match.
+- **Filter UI:** `filterDefinitions.ts` `type: 'single'` → `'multiple'`; "Cooking + Garden" filter chip removed (a teacher who wants the cooking+garden combo selects both `cooking-only` and `garden-only` chips). OR semantics matches the other multi-select filters (grade levels, themes, etc.).
+- **Validators:** `reviewFormPayloadSchema.activityType` Zod field flips from scalar string to `z.array(ActivityTypeEnum).optional()`. Deno mirror in lock-step. Canonical schema unchanged (already array). `ReviewMetadata.activityType` TS type flips scalar→array.
+- **Mappers:** `reviewToLessonMapper` and `lessonToReviewMapper` pass through array; remove the explicit wrap (`[input.activityType]`) and tail-loss (`input.activityType[0]`) code paths. Comment in `lessonToReviewMapper.ts:12-21` predicting "Stage 2 multi-element activity_type would lose tail elements here" gets removed — the moment it predicted has arrived.
+- **Heuristics:** `google-docs-parser.ts:extractActivityType` returns `string[]` instead of `'both' | -only-slug | undefined`. Submission-time fuzzy duplicate scoring (`detect-duplicates`) stays Jaccard-array-tolerant.
+- **No changes:** column shape, GIN index, `_alias_activity_type` SQL function, `_validate_meta_enum_values` trigger helper, `search_lessons` RPC filter clause (uses `&&` overlap which is multi-element-tolerant), facet count helpers, `IntSidebar` UI (already renders all options as checkboxes regardless of `FilterConfig.type`), Zustand `searchStore` filter state shape, embedding generation, smart-search.
+
+**Reasoning:**
+
+D2 made the single-select call on n=1 evidence (Dr. Carver Lotion-Making, the only known multi-axis lesson at the time of the walkthrough). Foundation-phase Task 2.4 ground-truth resolution surfaced 5+ multi-axis lessons in just 26 reviewed candidates from the 113-row reviewer-validated subset:
+
+- **Sun Printing / Sun Printing/Cyanotype** (×2 variants of the same lesson plan): collect garden materials → arrange → cyanotype-print. Spine is the printmaking craft; garden is the material source. Reviewer-labeled `garden` because `craft` didn't exist; under the new vocab, `[craft, garden]`.
+- **Mural Painting 101: Beautifying the Garden**: lesson is about painting a community-art mural in the garden space. Reviewer-labeled `garden`; should be `[craft, garden]`.
+- **Edible Flower Collages & Salad**: collect petals/leaves → make Phenology Portrait collage → make edible flower salad. Reviewer-labeled `both` (the closest-fit option under the old 4-value vocab). Under new vocab, `[craft, cooking]` or `[craft, cooking, garden]` depending on how the garden-collection block weighs.
+- **Bug Camouflage**: students paint plastic animals to match background environments. Reviewer-labeled `garden`; should be `[craft, garden]`.
+- **Three Sisters Puppet Show**: students watch a teacher-performed puppet show + draw their own 3-sisters garden. Reviewer-labeled `garden`; debatable, but at least mixed-axis if not pure craft.
+
+Extrapolated to the 772-row corpus, this conservative count of 5/26 = 19% rate suggests ~30+ multi-axis lessons that single-select cannot represent without loss. Cost/benefit flipped from D2's original framing.
+
+Concrete evidence — not generic "this could be better" framing — meets the kickoff's "concrete evidence can re-open" threshold for revisiting locked decisions.
+
+**Why retire `both` rather than keep it as a legacy synonym (option B-1 over B-2 in user-facing framing):**
+
+Two equivalent expressions (`[both]` and `[cooking, garden]`) means every consumer has to handle both forever. Migration is mechanical (135 rows). Cleaner semantic surface: there is exactly one way to say "cooking + garden" — `[cooking, garden]`. User chose B-1 explicitly.
+
+**Why not redefine `both` to mean "any multi-axis combination" (rejected option A in user-facing framing):**
+
+Information loss — `[multi]` doesn't say WHICH axes. A teacher who wants "garden lessons" loses lessons tagged `[multi]`-with-garden-component. Multi-select preserves the per-axis information cleanly.
+
+**Why not redo storage to JSON shape change instead of just relaxing the application-layer length-1 enforcement:**
+
+The column was `text[]` from PR 1's substrate; only the application layer enforced length-1. The substrate was always array-shaped; PR 1b's role is removing the application-level enforcement, not changing storage. Local-dev `seed.sql:70-72` already has `ARRAY['garden', 'cooking']` exercising the multi-element trigger path today.
+
+**Downstream implications:**
+
+- **PR 1b — D2 multi-select refinement** ships before PR 2 continues. Branches `feat/metadata-foundation-activity-type-multi` off main. ~8 sub-tasks; estimated 2-4 sessions. PR 2 (`feat/metadata-foundation-llm-tagging`, 19 commits ahead of main) stays untouched until PR 1b lands; then rebases onto the new main.
+- **Task 2.4 (activity_type LLM prompt) becomes multi-label.** Worksheet v1 (26 craft-suspect candidates × single-label) is superseded by worksheet v2 (113 reviewer-tagged rows × multi-label). User fill time goes from ~30-60 min to ~2-3 hours; cleaner ground truth. Eval gate harness already supports multi-label mode (proved with CRF in Session 25).
+- **Stage 2 corpus re-tag (PR 6+) outputs multi-label format.** Re-tag prompt instructs "select all applicable activity types" instead of "select single most representative."
+- **Phase 2 reviewer UX redesign inherits multi-select picker pattern** for activity_type. Other multi-select fields in the reviewer form (themes, grade levels, heritage, etc.) are precedent.
+- **Cross-cutting reviewer-judgment finding from D2 still holds:** tasting-conflated-with-cooking is the kind of error Stage 2 should catch broadly. Multi-select widens the judgment surface (a tasting-only lesson can still be `[garden]`, not forced to `[both]`).
+- **PR 1b does NOT require Stage 1 worksheet output** (which is gating other vocab-canonicalization work). Vocab is locked at 4 values; this refinement is just removing the length-1 constraint and migrating data. Independent of curriculum-team track.
+
+**Deferred (cleanup follow-ups, NOT in PR 1b scope):**
+
+- Delete `src/components/Review/ReviewMetadataForm.tsx` + barrel export from `src/components/Review/index.ts:5`. Confirmed dead code (Session 27 grep — zero external imports).
+- Replace deceptive E2E test `e2e/filters.spec.ts:27-42` ("filter state can be applied via URL") with one that verifies actual filter application. Test currently only checks URL string preservation; passes regardless of whether filters are URL-synced (they're not — filters live in Zustand+localStorage).
+- `_alias_activity_type` SQL function's `'both'` ELSE-branch handling — review whether explicit removal is cleaner than letting it stay harmless once data migration completes. Migration `20260513000000_alias_activity_type_add_craft.sql:37-57` falls through ELSE for `both` so it's already a no-op post-data-migration; safe to defer.
+
+**Surface inventory (Session 27 dependency sweep, ~70 surfaces across 15 categories):**
+
+8 high-risk in PR 1b scope: `complete_review_atomic` RPC, `reviewFormPayloadSchema.activityType` + Deno mirror, `reviewToLesson`/`lessonToReview` mappers, `ReviewDetail.tsx` (multiple touchpoints), `filterDefinitions.ts` config, `ReviewMetadata` TS type, `complete-review` edge function Zod gate, `google-docs-parser.ts:extractActivityType`. Substantial array-tolerant surfaces (CHECK constraint, GIN index, `_alias_activity_type`, `search_lessons` RPC, `_validate_meta_enum_values`, facet counts, IntSidebar, Zustand store, canonical Zod) require zero changes — substrate was always array-shaped. Full inventory archived in Session 27 status entry.
+
+---
+
 ## Decision 3 — Lesson format split
 
 **Status:** DECIDED 2026-05-01

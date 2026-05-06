@@ -460,6 +460,112 @@ Per the kickoff prompt's PER-PR RITUAL. After bot-review rounds settle, merge �
 
 ---
 
+## PR 1b — D2 multi-select refinement (interim follow-up to PR 1)
+
+**Branch:** `feat/metadata-foundation-activity-type-multi` (off main, NOT off PR 2's branch)
+
+**What ships:** retire single-element-array enforcement on `activity_type`. The column was always `text[]`; only the application layer enforced length-1. PR 1b removes that enforcement, retires `'both'` value (data migration: 135 `[both]` rows → `[cooking, garden]`), and updates the reviewer/filter UI surfaces accordingly. See decision-journal D2.1 (2026-05-06) for rationale.
+
+**Pre-flight (done in Session 27):**
+- Surface inventory via Opus code-explorer dependency sweep across 15 categories: ~70 surfaces, ~12 high-risk; column substrate already array-shaped; CHECK is `<@` containment; trigger validation already accepts array shape.
+- Resolved investigation flags: `ReviewMetadataForm.tsx` is dead code (queue cleanup follow-up, not in PR 1b); filter URL state does not exist (Zustand+localStorage only — no URL handling changes); `generate-content-hashes.mjs` is dormant (no script update).
+- 8 high-risk surfaces identified in PR 1b scope: `complete_review_atomic` RPC, `reviewFormPayloadSchema.activityType` + Deno mirror, `reviewToLesson`/`lessonToReview` mappers, `ReviewDetail.tsx`, `filterDefinitions.ts`, `ReviewMetadata` TS type, `complete-review` edge function Zod gate, `google-docs-parser.ts:extractActivityType`.
+
+**Sequencing rationale:** PR 2's branch (`feat/metadata-foundation-llm-tagging`) is 19 commits ahead of main with focused theme "LLM auto-tag pipeline." Bundling D2 refinement into PR 2 would add ~300 LOC of off-theme work (migration + Zod + UI + filter + mapper edits), confuse the bot review story, and bloat the diff. Shipping PR 1b independently preserves PR 2's theme; rebase is mechanical (PR 2's `complete_review_atomic` extension touches `tags`, not `activityType`).
+
+### Task 1b.1: Migration — retire `'both'` value + repoint data
+
+**Sub-skill:** `database-migrations`.
+
+**Files:**
+- Create: `supabase/migrations/2026MMDDhhmmss_activity_type_multi_select.sql` — UPDATE `lessons` rows where `activity_type = ARRAY['both']::text[]` → `ARRAY['cooking','garden']`. UPDATE matching `lessons.metadata->>'activity_type'` JSONB key (whichever key shape is in use; verify both `activityType` camelCase and `activity_type` snake_case via TEST DB query first). Drop `'both'` from `valid_activity_type` CHECK allowed-values list (DROP + recreate, idempotent). Drop `'both'` from `_validate_meta_enum_values` allowed array for the activity_type entry.
+- Edit: `src/types/lessonMetadata.zod.ts:37` — drop `'both'` from `ACTIVITY_TYPE_VALUES` array.
+- Run: `npm run gen:enums` (or whatever the alias is) to regenerate `src/types/generated/enums.json`.
+
+**Verify (TEST DB, via `mcp__supabase-test__execute_sql`):** post-migration `SELECT activity_type, count(*) FROM lessons GROUP BY 1` shows zero `[both]` rows; new submissions accepting `[cooking, garden]` pass CHECK; new submissions attempting `[both]` fail with constraint violation message; `enums.json` contains 4 values.
+
+**Commit:** `feat(metadata-foundation): retire 'both' value + repoint data (D2.1 step 1)`
+
+### Task 1b.2: `complete_review_atomic` migration — array passthrough
+
+**Sub-skill:** `database-migrations`.
+
+**Files:**
+- Create: `supabase/migrations/2026MMDDhhmmss_complete_review_atomic_activity_type_multi.sql` — CREATE OR REPLACE the RPC. Replace `ARRAY[v_meta->>'activityType']` (lines 218-220 of `20260517000000_*` for INSERT and lines 300-304 for UPDATE) with `_phase4_jsonb_text_array_or_null(v_meta->'activityType')`. The helper handles JSON array → `text[]` translation already; same pattern as other multi-element columns in the RPC.
+
+**Verify (TEST DB):** transactional `DO ... RAISE EXCEPTION` rollback probe — INSERT/UPDATE with `activityType: ['cooking', 'garden']` writes correctly to `lessons.activity_type` column; INSERT with single-element `['cooking']` still works (back-compat).
+
+**Commit:** `feat(metadata-foundation): complete_review_atomic accepts multi-element activityType (D2.1 step 2)`
+
+### Task 1b.3: Zod schemas + Deno mirror + types
+
+**Files:**
+- Edit: `src/types/reviewFormPayload.zod.ts:35` — `activityType: ActivityTypeEnum.optional()` → `activityType: z.array(ActivityTypeEnum).optional()`.
+- Edit: `supabase/functions/_shared/metadataSchemas.ts` (lines 25, 70, 107) — same edits in Deno mirror to keep equivalence test green.
+- Edit: `src/types/index.ts:103` — `ReviewMetadata.activityType?: string` → `activityType?: string[]`.
+- Edit: `src/types/edgeSharedSchemas.equivalence.test.ts` — update fixtures for review-form array shape; add multi-element test case.
+
+**Verify:** `npm run type-check` clean; `npm test -- equivalence` passes; review-form schema rejects scalar string at runtime.
+
+**Commit:** `feat(metadata-foundation): Zod review-form activityType array shape (D2.1 step 3)`
+
+### Task 1b.4: Mappers — remove wrap and tail-loss
+
+**Files:**
+- Edit: `src/utils/reviewToLessonMapper.ts:31-33` — `out.activityType = [input.activityType]` → `out.activityType = input.activityType` (passthrough; types align after Task 1b.3).
+- Edit: `src/utils/lessonToReviewMapper.ts:32-34` — `out.activityType = input.activityType[0]` → `out.activityType = input.activityType` (passthrough; types align). Remove the prescient comment lines 12-21 that predicted this change.
+- Edit: corresponding `*.test.ts` files to use multi-element fixtures and round-trip multi-element correctly.
+
+**Verify:** unit tests pass; round-trip tests confirm `[cooking, garden]` survives both directions cleanly; no array index access remains for activityType in mapper code.
+
+**Commit:** `refactor(metadata-foundation): activity_type mappers pass-through array (D2.1 step 4)`
+
+### Task 1b.5: ReviewDetail.tsx — multi-select picker + conditional cleanup
+
+**Files:**
+- Edit: `src/pages/ReviewDetail.tsx` — multiple touchpoints:
+  - Line 124-129: update `reAddActivityTypeSuffix` to handle `string[]` input (map over each element); remove `'both'` passthrough special-case.
+  - Lines 233-244: `showCookingFields = metadata.activityType?.includes('cooking') || metadata.activityType?.includes('cooking-only')` (and same for garden); remove `'both'` hardcoded match.
+  - Lines 502-515: save-path strip — `replace(/-only$/, '')` becomes `array.map(s => s.replace(/-only$/, ''))`.
+  - Lines 853-862: `IntPillGroup` invocation — switch from `singleProps(metadata.activityType, ...)` to `multiProps(metadata.activityType ?? [], ...)` equivalent. Confirm `IntPillGroup` already supports multi-select prop variant.
+
+**Verify:** visual smoke test on TEST DB via chrome-devtools-mcp — reviewer can select multiple checkboxes; cooking/garden conditional sections render correctly for `[cooking]`, `[garden]`, `[cooking, garden]`, `[craft, garden]`, etc.; save round-trip preserves array shape.
+
+**Commit:** `feat(metadata-foundation): ReviewDetail multi-select activity_type picker (D2.1 step 5)`
+
+### Task 1b.6: filterDefinitions.ts — type and option update
+
+**Files:**
+- Edit: `src/utils/filterDefinitions.ts:32-42` — `type: 'single'` → `type: 'multiple'`; remove the `{ value: 'both', label: 'Cooking + Garden' }` option from the options array.
+
+**Verify:** sidebar filter shows 4 chips (cooking-only, garden-only, academic-only, craft-only); selecting cooking + garden simultaneously produces the same result set as the old `'both'` chip used to.
+
+**Commit:** `feat(metadata-foundation): activity_type filter UI multi-select (D2.1 step 6)`
+
+### Task 1b.7: google-docs-parser.ts — extractActivityType returns array
+
+**Files:**
+- Edit: `supabase/functions/_shared/google-docs-parser.ts:232-258` — change return type `string | undefined` → `string[]`. The hybrid-mode case (line 239: `if (cooking && garden) return 'both'`) returns `['cooking', 'garden']` instead of `'both'`. Frequency-based case (line 255) similar fix. Update `MetadataSketch.activityType?: string` → `string[]` at line 66 + line 305.
+- Edit: `supabase/functions/_shared/google-docs-parser.test.ts` (lines 122, 127, 134, 141, 146, 155, 231) — update fixtures expecting `'both'` and `-only` slug returns to expect array shape.
+
+**Verify:** parser unit tests pass; `detect-duplicates` Jaccard scoring still works on submissions (already array-tolerant per surface inventory).
+
+**Commit:** `refactor(metadata-foundation): google-docs-parser extractActivityType returns array (D2.1 step 7)`
+
+### Task 1b.8: PR ritual
+
+Per the kickoff prompt's PER-PR RITUAL.
+
+**Pre-push:** dispatch a code-reviewer agent (Opus) on the full diff. Investigate every finding per `feedback_bot_review_investigation.md`. `npm run type-check && npm run lint && npm test` must pass.
+
+**Push and open PR.** TEST DB verification via `mcp__supabase-test__execute_sql`: re-run sample insert/update probes; confirm 135 row migration was idempotent; confirm sidebar filter behaves correctly; confirm Zod review-form schema rejects scalar at runtime. Bot review cycle (round-cap after 2 rounds per kickoff). PROD apply via `migrate-production.yml` workflow_dispatch (migrations) + `deploy-edge-functions.yml` if any edge function changed (only `complete-review` should change in PR 1b — verify deploy via `mcp__supabase-remote__get_edge_function complete-review` per the 3-signal pattern in MEMORY.md hygiene-follow-ups).
+
+**Post-merge:** rebase `feat/metadata-foundation-llm-tagging` onto new main; resolve any conflicts (most likely none — PR 2's `complete_review_atomic` extension touched `tags`, not `activityType`); re-run baseline checks on PR 2 branch; resume PR 2 work.
+
+**Commit:** `chore(metadata-foundation): PR 1b ritual + verification (D2.1 step 8)`
+
+---
+
 ## PR 2 — Submission-time LLM auto-tag — vocab-locked prompts
 
 **Branch:** `feat/metadata-foundation-llm-tagging`
@@ -518,6 +624,46 @@ mcp__supabase-test__execute_sql: SELECT column_name FROM information_schema.colu
 
 **Commit:** consolidated.
 
+### Task 2.2c: Extend `complete_review_atomic` with orphaned-column side-channel (Option A)
+
+**Sub-skill:** `database-migrations`
+
+**Why:** Of the 4 columns added in PR 1 (`tags`, `series_id`, `part_number`, `crf_confirmed`), only `tags` is in PR 2's LLM-draft scope, and none of the 4 flow through the existing review-form mapper / `complete_review_atomic` surfaces (review-form schema doesn't model them; the RPC's INSERT/UPDATE doesn't write them). For 3 of the 4 (`series_id` / `part_number` / `crf_confirmed`) that's intentional — manual / structural / backend-set. For `tags` it's a gap: without a flow path, LLM-drafted tags would land in `ai_draft_metadata` and never reach `lessons.tags`. Session 18 picked **Option A** (side-channel inside the RPC, no review-form wiring, no Phase-2 picker UI). Full alternatives comparison + rationale: execution status doc §"PR 2 design — verification complete + Option A picked".
+
+**Files:**
+- Create: `supabase/migrations/<YYYYMMDDHHMMSS>_complete_review_atomic_tags_side_channel.sql`
+
+**Pattern reference:** mirrors `supabase/migrations/20260510000000_approve_update_concepts_carry_forward.sql`. Latest `complete_review_atomic` definition lives at `supabase/migrations/20260512000000_drop_lesson_format.sql:319-644` — extend that source.
+
+**Approach:**
+1. `CREATE OR REPLACE FUNCTION complete_review_atomic(...)` keeping the current signature.
+2. Add a SELECT pulling `lesson_submissions.ai_draft_metadata` for `p_submission_id` into a local `v_ai_draft jsonb`. Place alongside the existing `lesson_submissions` lookup so the row is read once. Must tolerate NULL — submissions without an AI draft (today's case) continue to work.
+3. **`approve_new` INSERT branch** (around lines 455-503 of current source): add `tags` to the column list; value `_phase4_jsonb_text_array_or_null(v_ai_draft->'tags')`. The helper at `supabase/migrations/20260428000002_phase_4_helper_jsonb_text_array_or_null.sql` returns NULL for missing/null inputs (column defaults to empty `text[]`), a `text[]` for populated JSON arrays, and a single-element `text[]` for JSON-string inputs.
+4. **`approve_update` UPDATE branch** (around lines 544-637 of current source): add `tags = COALESCE(NULLIF(v_existing.tags, ARRAY[]::text[]), _phase4_jsonb_text_array_or_null(v_ai_draft->'tags'), v_existing.tags, ARRAY[]::text[])` to the SET clause. Carry-forward semantics: if `v_existing.tags` is non-empty → preserve it (reviewer / earlier flow already populated); else take LLM draft; else existing-value fallback (NULL → empty); else literal empty array. Mirrors the concepts-carry-forward semantics for the other carry-forward column.
+5. Idempotent. Same RPC signature; no client changes needed. ~30-50 LOC delta.
+
+**Verify (TEST DB, after CI applies):**
+1. `mcp__supabase-test__execute_sql` — function definition references the helper inside the side-channel:
+   ```sql
+   SELECT pg_get_functiondef('complete_review_atomic(uuid,uuid,text,jsonb,text)'::regprocedure)
+     ILIKE '%_phase4_jsonb_text_array_or_null(v_ai_draft%' AS has_side_channel;
+   ```
+2. Transactional probes via `DO $$ ... RAISE EXCEPTION 'rollback' $$`:
+   - **approve_new + AI draft set:** insert fake submission with `ai_draft_metadata = '{"tags": ["orientation"]}'::jsonb`; call RPC `approve_new`; assert resulting `lessons.tags = {orientation}`.
+   - **approve_update + existing non-empty tags:** assert preservation (existing wins).
+   - **approve_update + existing empty tags + AI draft set:** assert LLM draft applied.
+3. Same probe shape on PROD post-apply via `mcp__supabase-remote__execute_sql` (wrap in `DO` with `RAISE EXCEPTION` to roll back).
+
+**Commit:**
+```bash
+git commit -m "feat(metadata-foundation): tags side-channel via complete_review_atomic (Option A)
+
+PR 2 wires LLM-draft tags from lesson_submissions.ai_draft_metadata into
+lessons.tags directly inside complete_review_atomic, skipping the review-form
+layer (no tags picker in PR 2 scope). Carry-forward semantics on approve_update
+preserve existing non-empty tags. See exec status doc Session 18 + design doc §6."
+```
+
 ### Task 2.2: Eval-gate harness
 
 **Goal:** Build a labeled hold-out evaluation harness that runs per prompt before the prompt ships. Drop or rewrite any prompt that doesn't clear the gate.
@@ -548,13 +694,19 @@ example practices to draft 7-feature enum. Older lessons (no body CR section)
 skipped. Eval-gate metrics: <gate output>. See design doc §6."
 ```
 
-### Task 2.4: Second prompt (activity_type — D2)
+### Task 2.4: Second prompt (activity_type — D2 + D2.1)
 
-Same shape as 2.3. Vocab is the 5-value enum locked in PR 1 (`cooking / garden / both / academic / craft`). Body-signal source: lesson summary + skills lists + agenda. Pick the single best fit; **draft emits canonical-keys shape `["cooking"]`** (single-element array), NOT review-form shape `"cooking"` (string) — because `ai_draft_metadata` lives in canonical keys; the read-site mapper handles the array→string translation for display.
+Same shape as 2.3 except for the output cardinality. Vocab is the 4-value enum (`cooking / garden / academic / craft`) post-PR-1b — `'both'` retired. Body-signal source: lesson summary + skills lists + agenda. **Multi-label** output per D2.1 — prompt instructs Opus to "select all applicable activity types"; output is a 1-or-more-element array `["cooking"]`, `["cooking","garden"]`, `["craft","garden"]`, etc. Eval gate uses harness multi-label mode (CRF Session 25 reference — same threshold-config schema with `macroF1` + `minRecallPerValue` floors).
+
+**Worksheet v2** (post-PR-1b): all 113 reviewer-tagged submissions × multi-label format. User reviews each row, picks all applicable values from 4-value vocab. Estimated ~2-3 hours user time. Worksheet v1 (26 craft-suspect candidates × single-label) at `scripts/eval-data/activity-type-relabel-worksheet.md` is deprecated; kept on disk as historical reference for the v1→v2 reasoning trail.
+
+**Eval gate caveat:** zero `craft` samples in the 113-row reviewer-tagged subset (the 5-value vocab is post-PR-1, no fresh reviews since). Per-value craft recall is unmeasurable; eval gate uses craft-prediction-rate guardrail instead (e.g., flag if >X% of 113 non-craft samples get a craft prediction). Stage 2 batch re-tag against multi-label vocab will surface true craft labels corpus-wide for future eval iterations.
+
+**Output write path:** draft writes to `lesson_submissions.ai_draft_metadata.activityType` as canonical-keys array shape. Reviewer's saved metadata flows through `complete_review_atomic` (post-PR-1b) which now accepts arrays directly via `_phase4_jsonb_text_array_or_null`. Reviewer picker is multi-select (post-PR-1b Task 1b.5).
 
 ### Task 2.5: Third prompt (tags — D2 + D7)
 
-Same shape as 2.3. Vocab is the 2-value enum (`orientation`, `bilingual_handouts`). Body-signal source for orientation: opening-ritual / norms-intro / community-building patterns. Body-signal source for bilingual_handouts: presence of Canva handout/recipe-card links flagged as bilingual in the body. Tags are additive (lesson can have both); reviewer validates.
+Same shape as 2.3 except for the write path. Vocab is the 2-value enum (`orientation`, `bilingual_handouts`). Body-signal source for orientation: opening-ritual / norms-intro / community-building patterns. Body-signal source for bilingual_handouts: presence of Canva handout/recipe-card links flagged as bilingual in the body. Tags are additive (lesson can have both). Per **Task 2.2c**, the LLM draft writes through to `lessons.tags` directly via `complete_review_atomic`'s side-channel — reviewer does NOT see/edit tags in PR 2 scope; the tags picker UI defers to Phase 2. Eval-gate threshold is the only gate against bad drafts at submission time; Stage 2 batch re-tag (PR 6+) is the corpus-wide cleanup path.
 
 ### Tasks 2.6 - 2.N: Additional vocab-locked prompts (per Gate C)
 
