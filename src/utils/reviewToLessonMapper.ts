@@ -1,6 +1,6 @@
 /**
- * Maps a review-form payload (review-form keys, single-select strings) into
- * canonical lesson metadata (canonical keys, array values).
+ * Maps a review-form payload (review-form keys) into canonical lesson
+ * metadata (canonical keys).
  *
  * Mirrors the SQL translation in the `complete_review_atomic` RPC
  * (defined in supabase/migrations/, grep that name to find the current
@@ -10,7 +10,6 @@
  * can transform without round-tripping through SQL.
  *
  * Translation rules:
- *   - activityType: string (single-select) → [string] (single-element array)
  *   - location: string → locationRequirements: [string]
  *   - themes → thematicCategories (key rename, array preserved)
  *   - season → seasonTiming (key rename, array preserved)
@@ -27,9 +26,8 @@ import type { ReviewFormPayloadValidated } from '@/types/reviewFormPayload.zod';
 export function reviewToLesson(input: ReviewFormPayloadValidated): LessonMetadataValidated {
   const out: LessonMetadataValidated = {};
 
-  // Single-select string → single-element array (mirrors SQL ARRAY[...] wrap).
-  if (input.activityType) {
-    out.activityType = [input.activityType];
+  if (input.activityType && input.activityType.length > 0) {
+    out.activityType = input.activityType;
   }
   if (input.location) {
     out.locationRequirements = [input.location];
