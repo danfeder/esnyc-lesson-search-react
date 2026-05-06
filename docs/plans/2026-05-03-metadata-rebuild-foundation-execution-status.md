@@ -1,12 +1,12 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 32 (PR 1b visual smoke + pre-push code-review fix-up shipped on `feat/metadata-foundation-activity-type-multi`; 13 commits ahead of `origin/main`).
+**Last updated:** 2026-05-06 — Session 33 (PR 1b pushed + opened as #476 on `feat/metadata-foundation-activity-type-multi`; 13 commits ahead of `origin/main`; CI checks pending; awaiting bot review rounds).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-17 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (965+ lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Active PR:** **PR 1b — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **13 commits ahead of `origin/main`** (8 code + 5 docs):
+**Active PR:** **[PR #476](https://github.com/danfeder/esnyc-lesson-search-react/pull/476) — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi` pushed Session 33; **13 commits ahead of `origin/main`** (8 code + 5 docs); CI running (18 checks pending — Test & Build, E2E, Netlify deploy preview, claude-database-review, claude-review, claude-component-review, performance-review, CodeQL, Security Audit, Lighthouse, etc.); awaiting first bot review round.
 1. `54124a5` Task 1b.1 — retire `'both'` value + repoint data
 2. `af023d4` Task 1b.2 — `complete_review_atomic` array passthrough
 3. `7537ac7` Task 1b.3 — Zod review-form activityType array shape
@@ -16,26 +16,27 @@
 7. `af4910a` Task 1b.7 — google-docs-parser extractActivityType returns canonical array
 8. `be406c3` Task 1b.8 fix-up — activityType empty-array required-validation (caught by pre-push code-reviewer agent)
 
-Task 1b.5-visual-smoke COMPLETE (3 chrome-devtools-mcp screenshots in `.tmp/`; covers public-search filter + ReviewDetail picker + conditional-section logic across `[cooking]` / `[garden]` / `[cooking, garden]` / `[craft, garden]` / all-OFF). Task 1b.8 partially complete: pre-push code-reviewer agent (Opus, `feature-dev:code-reviewer`) ran and produced 1 critical finding (validateRequiredFields + fieldProgress treated `[]` as truthy → reviewer could clear all pills and bypass the required-field error); fix landed as `be406c3`. Push + PR open + bot review rounds remain.
+Task 1b.8 push step DONE Session 33: branch pushed with upstream tracking; PR #476 opened with summary + migration recap + 8-item test plan. Pre-push code-reviewer agent (Session 32) caught 1 critical finding pre-push, fix landed as `be406c3`. Visual smoke covered post-fix state Session 32 (the `.tmp/` screenshots are session-local artifacts, since cleaned up — not part of the PR). Bot review rounds + per-round TEST DB verification + PROD apply remain.
 
 **Why PR 1b interrupts PR 2:** mid-Task-2.4 ground-truth resolution surfaced concrete evidence that D2's single-select decision was made on n=1 (Dr. Carver Lotion-Making) but actual rate is ~5/26 = 19% multi-axis lessons — extrapolates to ~30+ in the 772-row corpus. User decided to retire `'both'` and switch to true multi-element array. See decision journal D2.1.
 
 **PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. **Rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's `tags` side-channel must be re-folded into PR 1b's array-passthrough body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
 
 **Next session picks up:**
-- **Push branch + open PR.** Per kickoff: `git push -u origin feat/metadata-foundation-activity-type-multi` then `gh pr create`. Pre-push code-reviewer agent already ran this session; visual smoke covered the post-fix state (0/7 at all-OFF, was 1/7 pre-fix); no further pre-push work needed.
-- **Bot review rounds (round-cap after 2 per kickoff).** Wait for CodeRabbit / Claude Review / Codex; 4-surface comment triage per `feedback_pr_comment_surfaces.md`. PR 1b is small (one bug-class confined to one component + 2 migrations + Zod/mapper passthrough) — bot rounds likely thinner than PR 1's 5 rounds.
-- **Per-round TEST DB verification.** PR-1b-specific verification once CI applies migrations to TEST DB: re-run Task 1b.2 transactional probes A-F; confirm 135-row `'both'` migration was idempotent (already verified locally Session 28; re-confirm on TEST); verify Zod review-form schema rejects scalar at runtime; confirm sidebar Activity Type filter shows 4 chips with multi-select.
-- **PROD apply.** `migrate-production.yml` workflow_dispatch + `deploy-edge-functions.yml` for `complete-review` (only edge fn touched in PR 1b). 3-signal verification via `mcp__supabase-remote__get_edge_function complete-review` per MEMORY.md hygiene-follow-ups.
+- **CI status check.** `gh pr checks 476` to see what landed since Session 33's push. Test & Build / E2E / Netlify preview / Lighthouse / Security Audit / CodeQL / Bundle Analysis must all be green; if any failed, `gh run view <id> --log-failed` to diagnose.
+- **Per-round TEST DB verification (priority over bot triage).** Once CI applies migrations to TEST DB, re-run Task 1b.2 transactional probes A-F via `mcp__supabase-test__execute_sql`: multi-element INSERT (`["cooking","garden"]` → column `{cooking,garden}`), single-element back-compat, absent-key default `[]`, scalar legacy back-compat, multi-element UPDATE overwrite, absent-key carry-forward. Plus: confirm 135-row `'both'` migration on TEST DB matches Session 28's local verification; verify Zod review-form schema rejects scalar at runtime; confirm sidebar Activity Type filter shows 4 chips with multi-select on the Netlify deploy preview.
+- **Bot review triage (round-cap after 2 per kickoff).** 4-surface comment collection per `feedback_pr_comment_surfaces.md`: `gh pr view 476 --comments` (issue-comments — bots typically post their full report here), `gh api repos/danfeder/esnyc-lesson-search-react/pulls/476/reviews`, `gh api repos/danfeder/esnyc-lesson-search-react/pulls/476/comments` (line-comments), `gh pr checks 476`. Investigation pass per `feedback_bot_review_investigation.md` for every finding. Default-reject hardening per `feedback_pr_bot_review_workflow.md`. PR 1b surface area is small (one bug-class + 2 migrations + Zod/mapper passthrough) so bot rounds likely thinner than PR 1's 5 rounds; expect 0-3 findings per round.
+- **Fix-up commit folding.** When bundling fix-ups, also push the Session 33 status-doc commit (it's local-only per `feedback_no_docs_push_during_pr.md` — bundle with next push to save a CI cycle).
+- **PROD apply** when bot rounds settle: `migrate-production.yml` workflow_dispatch (migrations) + `deploy-edge-functions.yml` for `complete-review`. 3-signal verification on edge fn via `mcp__supabase-remote__get_edge_function complete-review` per MEMORY.md hygiene-follow-ups (version + ezbr_sha256 + source-content grep).
 - **Post-merge rebase.** PR 2 (`feat/metadata-foundation-llm-tagging`) onto new main; expected conflict on `complete_review_atomic` (both PRs `CREATE OR REPLACE`); re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body during rebase. Verify via `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply that both code paths survive.
 
-**Pre-task verification:** none for the push step itself. Bot-round fix-ups (if any) need impl-plan line-number re-verify per kickoff "verify every snippet" rule.
+**Pre-task verification:** Bot-round fix-ups (if any) need impl-plan line-number re-verify per kickoff "verify every snippet" rule. The Task 1b.2 stale impl-plan line refs (Sessions 28-29 noted impl plan cited PR 2's `20260517` lines; PR 1b uses `20260518100000_*`) still apply — reference the actual file under PR 1b's branch when investigating any complete_review_atomic finding.
 
 **`npm run type-check` + `npm run lint` + `npm test` all green at branch tip post-fix.** 546/546 unit tests passing (38 files; same suite count post-fix because the fix is a 2-line behavior tweak, not a new code path).
 
 **Branches:**
 - `main` at `8497752` (PR 1 squash merge).
-- `feat/metadata-foundation-activity-type-multi` (PR 1b) — 13 commits ahead, local-only, no upstream pushed yet; CI on TEST DB has not applied PR 1b migrations.
+- `feat/metadata-foundation-activity-type-multi` (PR #476) — 13 commits ahead, **pushed with upstream Session 33**; CI applies migrations on TEST DB via the standard PR pipeline.
 - `feat/metadata-foundation-llm-tagging` (PR 2) — 20 commits ahead, paused.
 - `feat/metadata-foundation-schema` (PR 1's merged branch) — deletable at convenience.
 
@@ -90,6 +91,32 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 33 — 2026-05-06 — PR 1b push + open PR #476 (no new code commits)
+
+**Done (no new code commits; PR opened):**
+
+- **Pushed branch with upstream tracking.** `git push -u origin feat/metadata-foundation-activity-type-multi`. 13 commits delivered to remote (8 code + 5 docs). Branch now tracks `origin/feat/metadata-foundation-activity-type-multi`.
+
+- **Opened [PR #476](https://github.com/danfeder/esnyc-lesson-search-react/pull/476)** via `gh pr create` with title `feat(metadata-foundation): activity_type multi-select (D2.1)`. Body covers: 3-bullet Summary (retire `'both'` + repoint 135 rows; flip end-to-end to multi-element array; `validateRequiredFields` empty-array fix), Why-this-interrupts-PR-2 paragraph (n=1 evidence), Migrations recap (`20260518000000` data + CHECK + trigger; `20260518100000` complete_review_atomic with 6 transactional probes A-F passing locally), 8-item Test plan checklist (TEST DB probe re-run, Zod scalar reject, sidebar filter chip count, ReviewDetail picker matrix, all-OFF required-field error, PROD apply via 2 workflows, 3-signal edge fn verification), References pointers.
+
+- **CI fired:** 18 checks pending at PR open: Test & Build (20.x), E2E Tests, Netlify deploy preview + 3 sub-checks (Header rules / Pages changed / Redirect rules), Lighthouse CI, Bundle Analysis, Security Audit, CodeQL Analysis, Dependency Review, Detect Deploy Target, Test Coverage, Performance Review, Semgrep Cloud Platform scan, claude-component-review, claude-database-review, claude-review.
+
+**Decisions made:**
+
+- **Status doc commit committed locally but not pushed** — per `feedback_no_docs_push_during_pr.md`: bundle docs commits with the next fix-up push to avoid wasting a full CI cycle on docs-only changes. Session 33 status entry will travel with whatever fix-up Session 34+ produces (or as a no-op push if zero bot findings — to be decided then).
+
+- **PR-cycle archival deferred to start of NEXT PR cycle** per kickoff session-end ritual. Sessions 28-33 stay in active file until PR 2 work resumes; that's when the audit-and-move pass happens.
+
+**Process notes for Session 34+:**
+
+- **Per-round TEST DB verification before bot triage.** Per `feedback_per_round_test_db_verification.md`: any DB-touching PR re-runs verification on TEST after EACH round, not just at PR open. Right now CI applies the migrations as part of the deploy-preview pipeline; once the deploy preview is live, the migrations will already be on TEST DB. Run Task 1b.2 transactional probes A-F via `mcp__supabase-test__execute_sql`. The 6 probes are listed in the Session 29 entry below; copy-paste from there if helpful.
+
+- **4-surface bot comment collection rule applies.** Per `feedback_pr_comment_surfaces.md`: `gh pr view 476 --comments` is NOT enough on its own. Always check all 4 (issues/comments + reviews + pulls/comments + checks). "0 findings" requires evidence from all 4.
+
+- **`.tmp/` screenshots from Session 32 are gone.** Visual smoke artifacts were session-local; they're not in git, not in the PR. The PR's verification claim "ReviewDetail picker — multi-pill selection + conditional sections render correctly" rests on Session 32's notes + the Session 32 status doc entry. If a bot reviewer asks for re-verification, re-run smoke locally on the live deploy preview rather than expecting saved artifacts.
+
+- **PR push warning re: 4 uncommitted changes** is the beads/scheduled-task lock files (`.beads/dolt-access.lock`, `.beads/dolt/`, `.beads/export-state/`, `.claude/scheduled_tasks.lock`). Unrelated to metadata-rebuild; ignore.
 
 ### Session 32 — 2026-05-06 — PR 1b Task 1b.5 visual smoke + 1b.8 pre-push (commit `be406c3`)
 
