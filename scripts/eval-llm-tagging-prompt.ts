@@ -64,6 +64,7 @@ interface Args {
   concurrency: number;
   limit?: number;
   model: string;
+  baseUrl?: string;
   help: boolean;
 }
 
@@ -107,6 +108,10 @@ function parseArgs(argv: string[]): Args {
         break;
       case '--model':
         a.model = next;
+        i++;
+        break;
+      case '--base-url':
+        a.baseUrl = next;
         i++;
         break;
       case '--help':
@@ -283,7 +288,8 @@ Usage:
     [--dry-run-with-predictions <path/to/predictions.json>] \\
     [--concurrency <int=5>] \\
     [--limit <int>] \\
-    [--model <id=claude-opus-4-7>]
+    [--model <id=claude-opus-4-7>] \\
+    [--base-url <url>]
 
 Inputs:
   --prompt           system prompt (plain text or markdown)
@@ -296,10 +302,15 @@ Inputs:
   --concurrency      parallel API calls (default 5)
   --limit            only process first N samples
   --model            Anthropic model ID (default claude-opus-4-7)
+  --base-url         override Anthropic SDK baseURL (e.g. http://127.0.0.1:8317/api/provider/anthropic
+                     when routing through CLIProxyAPI to bill against Claude Max extra usage).
+                     Do NOT include the trailing "/v1" — SDK appends "/v1/messages" itself.
+                     Falls back to ANTHROPIC_BASE_URL env var if unset.
 
 Exit code: 0 if eval gate passes; 1 if it fails or input is invalid.
 
 Env: ANTHROPIC_API_KEY required (loaded from .env.local; not needed for --dry-run-with-predictions).
+     When --base-url targets a local proxy, the key is the proxy-side API key (not the Console key).
 `;
 
 // ---- Main ----
@@ -357,9 +368,12 @@ async function main(): Promise<number> {
         'ANTHROPIC_API_KEY is required (set in .env.local) or pass --dry-run-with-predictions'
       );
     }
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const client = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      ...(args.baseUrl ? { baseURL: args.baseUrl } : {}),
+    });
     console.log(
-      `Calling ${args.model} for ${limited.length} samples (concurrency ${args.concurrency})...`
+      `Calling ${args.model} for ${limited.length} samples (concurrency ${args.concurrency})${args.baseUrl ? ` via ${args.baseUrl}` : ''}...`
     );
 
     totalUsage = {
