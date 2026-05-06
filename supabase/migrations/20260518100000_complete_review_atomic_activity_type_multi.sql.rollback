@@ -1,0 +1,34 @@
+-- =====================================================
+-- ROLLBACK: 20260518100000_complete_review_atomic_activity_type_multi.sql
+-- =====================================================
+-- The .sql.rollback extension keeps this file inert under `supabase db push`
+-- (the CLI only picks up .sql files). To roll back manually, run the
+-- statements below via psql or `mcp__supabase-*__execute_sql`.
+--
+-- NOTE: Rolling back this RPC change is data-safe (no rows touched). However,
+-- if any approve_new / approve_update reviews ran AFTER this migration and
+-- supplied multi-element activityType arrays, those lessons.activity_type
+-- columns now contain values like {cooking,garden}. The pre-D2.1 RPC body
+-- only writes single-element arrays — restoring it does NOT clobber the
+-- existing column data, but FUTURE writes via the rolled-back RPC would
+-- start dropping 2nd+ elements again.
+
+-- =====================================================
+-- (1) Restore complete_review_atomic to its pre-D2.1-step-2 body.
+-- =====================================================
+-- Re-apply the CREATE OR REPLACE FUNCTION block from
+-- supabase/migrations/20260512000000_drop_lesson_format.sql (lines 319-643).
+-- That block contains the prior CASE WHEN ARRAY[v_meta->>'activityType'] ELSE
+-- ARRAY[]::text[] END pattern in approve_new INSERT and the CASE WHEN ...
+-- ELSE COALESCE(v_existing.activity_type, ARRAY[]::text[]) END pattern in
+-- approve_update UPDATE.
+--
+-- Sourcing path:
+--   `git show 8497752:supabase/migrations/20260512000000_drop_lesson_format.sql`
+-- and apply only the CREATE OR REPLACE FUNCTION public.complete_review_atomic
+-- block (start at line 319, end at the closing $$; on line 644).
+
+-- =====================================================
+-- (2) NOTIFY pgrst
+-- =====================================================
+NOTIFY pgrst, 'reload schema';
