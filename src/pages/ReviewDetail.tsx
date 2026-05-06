@@ -118,13 +118,14 @@ const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, str
 // stripped on save). Without re-adding the suffix when loading an
 // existing review, a pill the reviewer previously selected appears
 // unselected on reopen — the form looks blank even though the value
-// is present and validates fine. `both` and any legacy already-suffixed
-// values pass through unchanged.
+// is present and validates fine.
 function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
   const v = raw.activityType;
-  if (typeof v !== 'string' || v.length === 0) return raw;
-  if (v === 'both' || v.endsWith('-only')) return raw;
-  return { ...raw, activityType: `${v}-only` as ReviewMetadata['activityType'] };
+  if (!v || v.length === 0) return raw;
+  return {
+    ...raw,
+    activityType: v.map((s) => (s.endsWith('-only') ? s : `${s}-only`)),
+  };
 }
 
 function parseExtractedContent(content: string): { title: string; summary: string } {
@@ -227,20 +228,14 @@ export function ReviewDetail() {
     }
   }, []);
 
-  const showCookingFields = useMemo(
-    () =>
-      metadata.activityType === 'cooking-only' ||
-      metadata.activityType === 'both' ||
-      metadata.activityType === 'cooking',
-    [metadata.activityType]
-  );
-  const showGardenFields = useMemo(
-    () =>
-      metadata.activityType === 'garden-only' ||
-      metadata.activityType === 'both' ||
-      metadata.activityType === 'garden',
-    [metadata.activityType]
-  );
+  const showCookingFields = useMemo(() => {
+    const types = metadata.activityType ?? [];
+    return types.includes('cooking') || types.includes('cooking-only');
+  }, [metadata.activityType]);
+  const showGardenFields = useMemo(() => {
+    const types = metadata.activityType ?? [];
+    return types.includes('garden') || types.includes('garden-only');
+  }, [metadata.activityType]);
 
   const validateRequiredFields = useCallback(() => {
     const errors: string[] = [];
@@ -502,10 +497,7 @@ export function ReviewDetail() {
     // clicked pill visually deselects on next render).
     const payload: ReviewMetadata = {
       ...metadata,
-      activityType:
-        typeof metadata.activityType === 'string'
-          ? (metadata.activityType.replace(/-only$/, '') as ReviewMetadata['activityType'])
-          : metadata.activityType,
+      activityType: metadata.activityType?.map((s) => s.replace(/-only$/, '')),
     };
 
     // PR 1 Task 1.5: defense-in-depth Zod validation against the same
@@ -847,9 +839,8 @@ export function ReviewDetail() {
                 <IntFormField label="Activity type" required error={fieldError('Activity Type')}>
                   <IntPillGroup
                     options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.activityType)}
-                    {...singleProps(metadata.activityType, (v) =>
-                      handleMetadataChange('activityType', v)
-                    )}
+                    selected={metadata.activityType ?? []}
+                    onChange={(v) => handleMetadataChange('activityType', v)}
                     ariaLabel="Activity type"
                   />
                 </IntFormField>

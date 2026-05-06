@@ -201,8 +201,8 @@ describe('lessonToReview', () => {
 
 describe('mapper round-trip property', () => {
   // Round-trip on the review-form side is lossless for every valid review
-  // payload, because the canonical writer only ever produces single-element
-  // activityType / locationRequirements arrays.
+  // payload — activityType is array-shape in both schemas; the canonical
+  // writer keeps locationRequirements single-element.
 
   const reviewFixtures: ReviewFormPayloadValidated[] = [
     {},
@@ -252,12 +252,9 @@ describe('mapper round-trip property', () => {
     },
   ];
 
-  it.each(canonicalFixturesSafe)(
-    'reviewToLesson(lessonToReview(x)) === x for %j',
-    (canonical) => {
-      expect(reviewToLesson(lessonToReview(canonical))).toEqual(canonical);
-    }
-  );
+  it.each(canonicalFixturesSafe)('reviewToLesson(lessonToReview(x)) === x for %j', (canonical) => {
+    expect(reviewToLesson(lessonToReview(canonical))).toEqual(canonical);
+  });
 
   it('is intentionally lossy for canonical-only fields (documented asymmetry)', () => {
     // Fields present in canonical but absent from the review form. Round-trip

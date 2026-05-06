@@ -22,19 +22,13 @@ export function ReviewMetadataForm({
 }: ReviewMetadataFormProps) {
   // Helper functions for conditional field visibility
   const showCookingFields = useMemo(() => {
-    return (
-      metadata.activityType === 'cooking-only' ||
-      metadata.activityType === 'both' ||
-      metadata.activityType === 'cooking' // Legacy support
-    );
+    const types = metadata.activityType ?? [];
+    return types.includes('cooking') || types.includes('cooking-only');
   }, [metadata.activityType]);
 
   const showGardenFields = useMemo(() => {
-    return (
-      metadata.activityType === 'garden-only' ||
-      metadata.activityType === 'both' ||
-      metadata.activityType === 'garden' // Legacy support
-    );
+    const types = metadata.activityType ?? [];
+    return types.includes('garden') || types.includes('garden-only');
   }, [metadata.activityType]);
 
   const renderField = (key: string, config: FilterConfig) => {
