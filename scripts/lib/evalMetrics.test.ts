@@ -168,4 +168,46 @@ describe('evaluateThresholds', () => {
     expect(r.passed).toBe(false);
     expect(r.failures.some((f) => f.includes('B'))).toBe(true);
   });
+
+  describe('maxPredictionRateForAbsentValues', () => {
+    it('fails when an absent-from-truth value is predicted above the ceiling', () => {
+      // 'craft' never in truth; predicted on 2 of 4 samples = 0.5
+      const result = computeMetrics(
+        [['cooking'], ['cooking', 'craft'], ['garden'], ['craft']],
+        [['cooking'], ['cooking'], ['garden'], ['cooking']],
+        ['cooking', 'garden', 'craft']
+      );
+      const r = evaluateThresholds(result, { maxPredictionRateForAbsentValues: 0.1 });
+      expect(r.passed).toBe(false);
+      expect(r.failures.some((f) => f.includes('craft'))).toBe(true);
+      expect(r.failures.some((f) => /2 of 4/i.test(f))).toBe(true);
+    });
+
+    it('passes when an absent-from-truth value is predicted at or below the ceiling', () => {
+      // 'craft' never in truth; predicted on 1 of 10 samples = 0.1, equals ceiling
+      const truth = Array.from({ length: 10 }, () => ['cooking']);
+      const preds = Array.from({ length: 10 }, (_, i) => (i === 0 ? ['craft'] : ['cooking']));
+      const result = computeMetrics(preds, truth, ['cooking', 'craft']);
+      const r = evaluateThresholds(result, { maxPredictionRateForAbsentValues: 0.1 });
+      expect(r.passed).toBe(true);
+    });
+
+    it('does not apply when the value has truth-set support (regular precision/recall apply)', () => {
+      // 'craft' has truth support; predicted twice, both correct.
+      // Ceiling of 0.01 would fire if the rule mistakenly applied to truth-supported values.
+      const result = computeMetrics(
+        [['craft'], ['craft'], ['cooking']],
+        [['craft'], ['craft'], ['cooking']],
+        ['cooking', 'craft']
+      );
+      const r = evaluateThresholds(result, { maxPredictionRateForAbsentValues: 0.01 });
+      expect(r.passed).toBe(true);
+    });
+
+    it('does not divide by zero on empty input', () => {
+      const result = computeMetrics([], [], ['craft']);
+      const r = evaluateThresholds(result, { maxPredictionRateForAbsentValues: 0.1 });
+      expect(r.passed).toBe(true);
+    });
+  });
 });

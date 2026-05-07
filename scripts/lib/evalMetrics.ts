@@ -123,6 +123,11 @@ export interface ThresholdConfig {
   microF1?: number;
   minRecallPerValue?: number;
   minPrecisionPerValue?: number;
+  // Ceiling on predictionCount / sampleCount for any vocabulary value with
+  // truthCount === 0. Used when a sample set lacks ground-truth coverage of a
+  // value (e.g. activity_type's `craft` against the pre-PR-1b 113-row set):
+  // recall is undefined, but a runaway false-positive rate is still a fail.
+  maxPredictionRateForAbsentValues?: number;
 }
 
 export interface ThresholdResult {
@@ -161,6 +166,19 @@ export function evaluateThresholds(
     for (const pv of result.perValue) {
       if (pv.precision !== null && pv.precision < floor) {
         failures.push(`precision ${pv.precision.toFixed(3)} for "${pv.value}" below floor ${floor}`);
+      }
+    }
+  }
+  if (thresholds.maxPredictionRateForAbsentValues !== undefined) {
+    const ceiling = thresholds.maxPredictionRateForAbsentValues;
+    for (const pv of result.perValue) {
+      if (pv.truthCount === 0 && result.sampleCount > 0) {
+        const rate = pv.predictionCount / result.sampleCount;
+        if (rate > ceiling) {
+          failures.push(
+            `prediction rate ${rate.toFixed(3)} for "${pv.value}" exceeds ceiling ${ceiling} when value is absent from truth (${pv.predictionCount} of ${result.sampleCount} samples)`
+          );
+        }
       }
     }
   }

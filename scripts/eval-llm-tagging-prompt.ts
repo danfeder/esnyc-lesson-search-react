@@ -44,6 +44,7 @@ const thresholdSchema = z.object({
   microF1: z.number().optional(),
   minRecallPerValue: z.number().optional(),
   minPrecisionPerValue: z.number().optional(),
+  maxPredictionRateForAbsentValues: z.number().optional(),
 });
 
 const predictionSchema = z.object({
@@ -295,7 +296,8 @@ Inputs:
   --prompt           system prompt (plain text or markdown)
   --samples          JSON array of { id, body, truth } objects
   --vocab            JSON { name, mode: "multi-label"|"single-label", values: [...] }
-  --threshold-config JSON { macroF1?, microF1?, minRecallPerValue?, minPrecisionPerValue? }
+  --threshold-config JSON { macroF1?, microF1?, minRecallPerValue?, minPrecisionPerValue?,
+                                  maxPredictionRateForAbsentValues? }
   --output           path to write metrics JSON
   --dry-run-with-predictions
                      JSON [{ id, predicted }] — skip Anthropic call (math sanity check)
