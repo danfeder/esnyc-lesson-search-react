@@ -119,13 +119,32 @@ const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, str
 // existing review, a pill the reviewer previously selected appears
 // unselected on reopen — the form looks blank even though the value
 // is present and validates fine.
+//
+// Shape-tolerant by design: pre-D2.1 reviews stored `activityType` as a
+// scalar string (113 PROD rows as of 2026-05-06). The `as ReviewMetadata`
+// cast at the call site is a runtime lie for those rows. Calling `v.map`
+// on a scalar throws `is not a function`, which surfaces in
+// `ReviewErrorBoundary` instead of the review UI. Widen to `unknown`
+// and handle scalar input so reopening any approved submission stays
+// safe; legacy `'both'` fans out to multi-pill `[cooking-only, garden-only]`.
 function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
-  const v = raw.activityType;
-  if (!v || v.length === 0) return raw;
-  return {
-    ...raw,
-    activityType: v.map((s) => (s.endsWith('-only') ? s : `${s}-only`)),
-  };
+  const v: unknown = raw.activityType;
+  if (v == null) return raw;
+
+  if (typeof v === 'string') {
+    if (v === '') return raw;
+    if (v === 'both') return { ...raw, activityType: ['cooking-only', 'garden-only'] };
+    return { ...raw, activityType: [v.endsWith('-only') ? v : `${v}-only`] };
+  }
+
+  if (Array.isArray(v) && v.length > 0) {
+    return {
+      ...raw,
+      activityType: (v as string[]).map((s) => (s.endsWith('-only') ? s : `${s}-only`)),
+    };
+  }
+
+  return raw;
 }
 
 function parseExtractedContent(content: string): { title: string; summary: string } {
