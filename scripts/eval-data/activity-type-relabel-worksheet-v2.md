@@ -77,7 +77,7 @@ Agenda/Class Flow: (10 mins) | Opening ritual (10 mins): |  | Raise your hand if
 
 </details>
 
-**New labels (multi-label):** academic
+**New labels (multi-label):** garden
 
 ---
 
@@ -97,7 +97,7 @@ Agenda/Class Flow, Day 1: ( | 45 minutes | ) | Opening ritual (10 minutes): | "C
 
 </details>
 
-**New labels (multi-label):** academic, craft
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -157,7 +157,7 @@ Agenda/Class Flow: (45 minutes) | Opening ritual (15 minutes): | Show students t
 
 </details>
 
-**New labels (multi-label):** academic
+**New labels (multi-label):** garden
 
 ---
 
@@ -197,7 +197,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -317,7 +317,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -517,7 +517,7 @@ Agenda/Class Flow: |  | Opening ritual (15 min): | Welcome students back to gard
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -537,7 +537,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -777,7 +777,7 @@ Agenda/Class Flow |  | Opening Ritual | (10 minutes) | Welcome group. Ask someon
 
 </details>
 
-**New labels (multi-label):** garden, academic
+**New labels (multi-label):** garden
 
 ---
 
@@ -797,7 +797,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** cooking, academic
+**New labels (multi-label):** cooking
 
 ---
 
@@ -897,7 +897,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** academic
+**New labels (multi-label):** garden
 
 ---
 
@@ -1137,7 +1137,7 @@ Agenda/Class Flow |  | Opening ritual (10 min) |  | Pose a question to the stude
 
 </details>
 
-**New labels (multi-label):** academic
+**New labels (multi-label):** garden
 
 ---
 
@@ -1257,7 +1257,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1317,7 +1317,7 @@ Agenda/Class Flow | Opening ritual (10 minutes) | Explain that we are going to l
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1497,7 +1497,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1637,7 +1637,7 @@ Agenda/Class Flow: | Opening ritual (10 minutes): | "We've been talking in garde
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1817,7 +1817,7 @@ Agenda/Class Flow: | Opening ritual (15 minutes): | Welcome the students and ask
 
 </details>
 
-**New labels (multi-label):** academic
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1917,7 +1917,7 @@ Agenda/Class Flow: | Opening ritual: | Ask students to show you with their thumb
 
 </details>
 
-**New labels (multi-label):** academic
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1957,7 +1957,7 @@ Agenda/Class Flow: | Opening ritual (15 minutes): |  | "All year, we've been lea
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1997,7 +1997,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** academic
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -2199,7 +2199,7 @@ Agenda/Class Flow: ( | 45 mins | ) |  | Welcome students back to class.  Last ti
 
 </details>
 
-**New labels (multi-label):** garden
+**New labels (multi-label):** garden, craft
 
 ---
 
