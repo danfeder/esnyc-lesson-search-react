@@ -1,69 +1,48 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 35 (PR 1b round 2 bot triage + fix-up `7773ff5` shipped; round-2 cleanup deletes unused `ReviewMetadataForm.tsx`; awaiting round 3 or round-cap critical-only).
+**Last updated:** 2026-05-07 — Session 36 (PR 1b SHIPPED + PROD-applied; squash-merged as `bd9d6e4`; 6/6 migration signals + 3-signal edge fn check verified; detect-duplicates CDN flake reran clean; PR 2 rebase next).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-17 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (965+ lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Active PR:** **[PR #476](https://github.com/danfeder/esnyc-lesson-search-react/pull/476) — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **18 commits ahead of `origin/main`** (10 code + 8 docs); 2 commits ahead of remote tracking branch (round-2 fix-up `7773ff5` + Session 35 docs commit). Round 2 bot triage complete + fix-up shipped locally; awaiting push + round 3 (round-cap rule: critical-only fix-ups, document the rest, ship).
+**PR #476 (PR 1b — D2.1 activity_type multi-select) SHIPPED + PROD-applied 2026-05-07.** Squash merge `bd9d6e4` on main. Both PROD workflows fired automatically on merge: `Production Database Migration` (run `25469722160`, all 4 jobs SUCCESS first attempt) + `Deploy Edge Functions` (run `25469722181`, 11/12 SUCCESS first attempt — only `complete-review` was modified by this PR; it succeeded). The 12th slot (`detect-duplicates`) failed on the documented `esm.sh` CDN 522 flake and reran clean via `gh run rerun --failed 25469722181`.
 
-Code commits (chronological):
-1. `54124a5` Task 1b.1 — retire `'both'` value + repoint data
-2. `af023d4` Task 1b.2 — `complete_review_atomic` array passthrough
-3. `7537ac7` Task 1b.3 — Zod review-form activityType array shape
-4. `71fc3ba` Task 1b.4 — activity_type mappers pass-through array
-5. `a4fffbc` Task 1b.5 (code) — ReviewDetail multi-select activity_type picker + ReviewMetadataForm dead-code conformance
-6. `69ed67d` Task 1b.6 — filterDefinitions.ts multi-select + drop 'both' chip
-7. `af4910a` Task 1b.7 — google-docs-parser extractActivityType returns canonical array
-8. `be406c3` Task 1b.8 fix-up — activityType empty-array required-validation (caught by pre-push code-reviewer agent)
-9. `131168b` PR 1b round 1 fix-up — shape-tolerant `tagged_metadata` loader + drop "Only" from activity_type chip labels (Session 34)
-10. **`7773ff5` PR 1b round 2 fix-up** — delete unused `ReviewMetadataForm.tsx` dead code + barrel export line (Session 35)
+Round-3 bot review fired automatically on the round-2 fix-up's CI completion (3 voices: claude long-form constructive, claude[bot] state `COMMENTED` not `CHANGES_REQUESTED` with 4 follow-up findings, user's own Codex explicit "no blockers"). Round-cap critical-only rule applied; nothing met the bar; ship was correct.
 
-**Round 2 outcome (Session 35):** CI all green at HEAD `1dac977` (no Security Audit failure visible in current `gh pr checks`; either cleared or no longer in summary). 4-surface bot triage on the round-1 fix-up surface caught 7 distinct findings across 3 voices (claude long-form re-review CHANGES_REQUESTED, claude[bot] formal review CHANGES_REQUESTED with 3 "blocking" + 3 non-blocking, user's own Codex follow-up = NO new blockers, recommends ship). Investigation pass accepted 1, rejected 6 (default-reject hardening pattern; tighter than round 1 because round-1 fix-up reduced surface area):
+**PROD MCP verification — 6/6 migration signals + 3-signal edge fn check, all green (Session 36):**
+- Both migrations in `list_migrations`: `20260518000000_activity_type_multi_select` + `20260518100000_complete_review_atomic_activity_type_multi`.
+- CHECK tightened: `CHECK (((activity_type IS NULL) OR (activity_type <@ ARRAY['cooking'::text, 'garden'::text, 'academic'::text, 'craft'::text])))`.
+- 0 rows with `'both'`; 139 cooking+garden hybrid rows on PROD (TEST=135, ~3% PROD-fresher data drift, expected).
+- `complete_review_atomic` source has UPDATE passthrough body; `lessons_normalize_write` trigger has `'both'` removed from allowed list (only in retirement comment).
+- `complete-review` edge fn: version=4 (was 3), ezbr_sha256=`3fafd997ae454d17f0a8a8bf311f4ce4fc699818d357f9090386bb253603c4ba`, source contains the new Zod `safeParse` block + `reviewFormPayloadSchema` import + array-shape `activityType` enum in `_shared/metadataSchemas.ts`.
 
-- **Accepted:** Delete unused `ReviewMetadataForm.tsx` (dispatches 3 of claude[bot]'s "blocking" findings: not-imported, `CreatableSelect` on closed-enum, `fieldProgress.percentage` prop-shape mismatch — all 3 are problems IN the file, hypothetical until wired in but ongoing maintenance burden because every D2.1+ session paid a type-conformance tax to keep tsc green at branch tip). Verified zero callers four ways: Session 27 N1 audit, Session 30 grep, claude[bot] inline `rg`, fresh grep this session. Barrel export at `src/components/Review/index.ts:5` removed alongside.
-
-- **Rejected:** dual-check `'cooking' || 'cooking-only'` in `showCookingFields`/`showGardenFields` (Codex confirmed harmless defensive code: "do not create a user-visible regression"); `reAddActivityTypeSuffix` no unit tests (already captured as Out-of-scope follow-up — same testability shape problem as Session 32's `validateRequiredFields`; needs refactor to extractable utility before testable; bundling as a single hygiene PR per existing capture); `reviewToLessonMapper.test.ts` no `[]` empty-array case (defensive test gap; verified empirically via mapper round-trip property; same hygiene PR slot); google-docs-parser frequency inference gap (pre-existing, unrelated to D2.1); craft undetectable in parser (pre-existing, reviewer-assigned); `CreatableSelect` + `fieldProgress.percentage` (now resolved by file deletion).
-
-**Round 1 outcome (Session 34):** CI fully green except Security Audit (pre-existing `@lhci/cli` baseline; no `package*.json` diff in PR — MEMORY.md hygiene-follow-up). 4-surface bot triage caught 14 distinct findings across 3 voices (claude long-form, claude[bot] CHANGES_REQUESTED, user's own Codex pass). Investigation pass accepted 2 P0, rejected 10 (default-reject hardening pattern):
-
-- **Accepted:** (1) `reAddActivityTypeSuffix` shape-tolerance — Codex P2 #1 understated reach: claimed 2 'both' rows; **TEST + PROD probe shows 113 scalar rows ALL crash** (67 garden / 33 cooking / 11 academic / 2 both, identical TEST=PROD). Crash path: `if (!v || v.length === 0)` passes scalar `"garden"` (length 4), then `v.map(...)` throws — surfaces in `ReviewErrorBoundary` on every approved-review reopen; reachable via `ReviewDashboard.tsx:39` 'approved'/'all' filter. (2) Codex P2 #2 — drop "Only" from chip labels since post-D2.1 SQL predicate is array-overlap and selecting "Cooking Only" silently includes hybrids.
-
-- **Rejected:** hardcoded teacher@example.com (pre-existing), ReviewMetadataForm dead code (Session 27 queued separately), suffix scattered/centralize/dual-check (LOW-priority hardening), IIFE blocks, missing aria-expanded, craft parser gap (pre-existing), empty-array carry-forward doc, suffix-mismatch comment, rollback CI gate, naming nit.
-
-**TEST DB verification — 6/6 PASS (Session 34):** 2/2 PR 1b migrations applied; 0 rows with `'both'` in column; 135 cooking+garden hybrids (matches Task 1b.1 migration count); 0 metadata `'both'` shape (any form); CHECK constraint actively rejects `ARRAY[both]` (DO-block probe); `lessons_normalize_write` trigger has `'both'` removed from allowed list (only mentioned in retirement-comment line); `complete_review_atomic` source has both INSERT (no-null helper) + UPDATE (or-null helper) array passthrough paths.
-
-**Visual smoke (Session 34) — chrome-devtools-mcp against local dev server:** Sidebar chips render new labels (Cooking / Garden / Academic / Craft, no "Only"); Cooking filter narrows 5→3 lessons; multi-select Cooking + Garden → 5 results, two pills, "Activity Type 2" badge, "2 activity types" live announcement. Scalar `"garden"` fixture in submission_reviews → page loads without error, Garden pill `pressed`, GARDEN DETAILS section rendered, no console errors. Scalar `"both"` fixture → both Cooking + Garden pressed, COOKING + GARDEN DETAILS both render, required count 7→11. Local fixture cleaned up post-verify.
-
-**Why PR 1b interrupts PR 2:** mid-Task-2.4 ground-truth resolution surfaced concrete evidence that D2's single-select decision was made on n=1 (Dr. Carver Lotion-Making) but actual rate is ~5/26 = 19% multi-axis lessons — extrapolates to ~30+ in the 772-row corpus. User decided to retire `'both'` and switch to true multi-element array. See decision journal D2.1.
-
-**PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. **Rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's `tags` side-channel must be re-folded into PR 1b's array-passthrough body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
-
-**Next session picks up:**
-- **Push round-2 fix-up + bundled docs.** `git push` — sends round-2 fix-up `7773ff5` + Session 35 docs commit. Saves 1 CI cycle per `feedback_no_docs_push_during_pr.md`.
-- **Wait for round 3 bots** (round-cap rule applies — fix only critical bugs, document the rest, ship). Round 3 should be lighter than round 2 because the round-2 fix-up removes the source of 3+ findings (deleted dead file = no more "this file is not imported" / "CreatableSelect closed-enum" / "fieldProgress.percentage prop mismatch" complaints).
-- **4-surface re-triage** if round 3 fires per `feedback_pr_comment_surfaces.md`: `gh pr view 476 --comments` + `pulls/476/reviews` + `pulls/476/comments` + `gh pr checks 476`. Investigation pass per `feedback_bot_review_investigation.md`. Round-cap rule: critical-only fix-ups beyond round 2.
-- **Per-round TEST DB re-verification** is NOT needed for round 2's fix-up — `7773ff5` is a TS-only deletion with no schema/migration/RPC change. The Session 34 TEST DB verification remains valid; Session 33 PR-open TEST verification remains valid.
-- **PROD apply** when bot rounds settle: `migrate-production.yml` workflow_dispatch (migrations) + `deploy-edge-functions.yml` for `complete-review`. 3-signal verification on edge fn via `mcp__supabase-remote__get_edge_function complete-review` per MEMORY.md hygiene-follow-ups (version + ezbr_sha256 + source-content grep).
-- **Post-merge rebase.** PR 2 (`feat/metadata-foundation-llm-tagging`) onto new main; expected conflict on `complete_review_atomic` (both PRs `CREATE OR REPLACE`); re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body during rebase.
-
-**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip post-round-2.** 546/546 unit tests passing (38 files; round-2 fix-up didn't change test count — file deletion only, no new test surface).
+Pre-merge TEST DB verification (Session 34) — 6/6 PASS — and chrome-devtools-mcp visual smoke covering sidebar chips, multi-select pill behavior, ReviewDetail picker on scalar/array/multi-element fixtures all stand without re-verification (round-2 fix-up `7773ff5` was TS-only deletion; round-3 brought no DB-affecting changes).
 
 **Branches:**
-- `main` at `8497752` (PR 1 squash merge).
-- `feat/metadata-foundation-activity-type-multi` (PR #476) — 18 commits ahead of main, 2 ahead of remote (push pending Session 35 end).
-- `feat/metadata-foundation-llm-tagging` (PR 2) — 20 commits ahead, paused.
-- `feat/metadata-foundation-schema` (PR 1's merged branch) — deletable at convenience.
+- `main` at `bd9d6e4` (PR 1b squash merge).
+- `feat/metadata-foundation-activity-type-multi` (PR #476's merged branch) — deletable at convenience.
+- `feat/metadata-foundation-llm-tagging` (PR 2) — 20 commits ahead of OLD main; needs rebase onto `bd9d6e4` next session. Paused.
+- `feat/metadata-foundation-schema` (PR 1's merged branch) — also deletable at convenience.
+- `docs/session-36-pr1b-shipped` (this session's docs commit) — local-only, unpushed; carrier choice deferred to Session 37 (bundle into PR 2 rebase OR open small standalone docs PR).
 
-**Foundation-phase substrate now live on PROD (post-PR-1):**
-- Schema: `lesson_format` dropped, `series_id` + `part_number` + `crf_confirmed` columns added, `activity_type` enum at 5 values incl. `'both'` (PR 1b retires `'both'` post-merge — Tasks 1b.1+1b.2 done locally), `tags` array column with closed enum, `cultural_responsiveness_features` closed to 7 Brown CR features.
+**Foundation-phase substrate now live on PROD (post-PR-1 + PR-1b):**
+- Schema: `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns added; `activity_type` array-shape multi-select with closed enum at 4 values (`cooking / garden / academic / craft`); `tags` array column with closed enum; `cultural_responsiveness_features` closed to 7 Brown CR features.
 - 3 CHECK constraints (`<@` containment, length-agnostic) + trigger value-validation helper.
 - Zod canonical + bidirectional mappers + Deno mirror + `enums.json` + freshness CI test.
-- Filter UI: `lessonFormat` removed; "Lesson Type" sidebar filter backed by `tags` column (count badge shows `(0)` until tags is added to `search_lessons` RETURNS TABLE — see follow-ups).
-- Edge functions: `complete-review` wired to Zod safeParse; `process-submission` has CRF prompt wired in (Session 26).
+- Filter UI: `lessonFormat` removed; "Lesson Type" sidebar filter backed by `tags` (count badge `(0)` until tags added to `search_lessons` RETURNS TABLE — see follow-ups). Activity Type: 4-value multi-select chips, no `'both'`, no "Only" suffix.
+- Edge functions: `complete-review` wired to Zod safeParse + array-shape `activityType`; `process-submission` has CRF prompt wired in (Session 26).
 
-**Last-applied verification (post-PROD-apply, 2026-05-05):** 15-point MCP audit on TEST + PROD both 15/15 PASS. `complete-review` deploy verified via `mcp__supabase-remote__get_edge_function`: version=3, ezbr_sha256=`9115a1d9261d2fb1352e709fb3d0b1a44efa94908dae502c100da6c7a6047c39`, source contains the new Zod safeParse block + `_shared/metadataSchemas.ts` mirror. Migration apply succeeded on first try; 1 of 12 edge fn deploys (`invitation-management`) failed on `esm.sh` 522 CDN flake, rerun via `gh run rerun --failed 25385024748` succeeded on second attempt. PR 1 didn't change `invitation-management/index.ts`; failure was unrelated.
+**Why PR 1b interrupted PR 2:** mid-Task-2.4 ground-truth resolution surfaced n=5/26 (~19%) multi-axis lessons; D2's original single-select was made on n=1 (Dr. Carver Lotion-Making). User retired `'both'` and switched to multi-element array. Decision journal D2.1.
+
+**PR 2 rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's `tags` side-channel must be re-folded into PR 1b's array-passthrough body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef('complete_review_atomic'::regproc)` post-rebase to verify both code paths survive.
+
+**Next session picks up:**
+- **PR 2 rebase** onto `bd9d6e4`. `git checkout feat/metadata-foundation-llm-tagging && git rebase main`. Conflict resolution per above. Verify via TEST MCP.
+- **Bundle Session 36 docs commit.** Cherry-pick `docs/session-36-pr1b-shipped` onto rebased PR 2 branch, OR open a small standalone docs PR. Next-session call.
+- **PR-cycle archival.** Per kickoff: at start of next PR cycle, move Sessions 28-36 from active file into archive file. Audit each entry for promotion to `feedback_*.md` files OR hygiene follow-ups worth promoting to MEMORY.md. Candidates this cycle: stale-doc-header pattern (3-occurrence confirmation across Sessions 33-36), empirical-evidence-escalates-low-confidence pattern (Session 34 Codex-2-rows → 113-rows-actually-crashing), type-coupled cluster impl-plan flaw (Session 30).
+
+**`npm run type-check` + `npm run lint` green at main `bd9d6e4`.** 546/546 unit tests passing.
 
 ## Recent decisions worth carrying forward (PR 1 → PR 2)
 
@@ -109,6 +88,38 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 36 — 2026-05-07 — PR 1b SHIPPED + PROD-applied + verified (squash merge `bd9d6e4`)
+
+**Done (PR merge + 2 PROD workflows + MCP verification + 1 docs commit on `docs/session-36-pr1b-shipped`):**
+
+- **Orientation surfaced stale Current State header (third occurrence).** Status doc claimed "2 commits ahead of remote tracking branch + awaiting push + round 3"; `git log @{u}..HEAD` returned empty + PR review state showed round 3 had already fired at 2026-05-07T00:44:39Z. Per kickoff "trust git, then update the status file": Session 36 status update reflects current reality (PR shipped, PROD-applied, Sessions 28-35 + Session 36 entries on disk).
+
+- **Round-3 bot triage** per `feedback_pr_comment_surfaces.md` 4-surface rule. Three voices on the round-2 fix-up surface: claude long-form constructive (started with "What's correct" section affirming the fix-up); claude[bot] formal review state `COMMENTED` not `CHANGES_REQUESTED` (softer than rounds 1+2) with 4 follow-up findings: array-shape `'both'` defensive (#1), `showCookingFields` bare-string dead code (#2 — already in Out-of-scope), craft parser gap (#3 — pre-existing), empty-array test fixture (#4 — already in Out-of-scope); user's own Codex explicit "I do **not** have a new blocking code finding." Round-cap critical-only rule applied; nothing met the bar.
+
+- **Squash-merge of PR #476** via `gh pr merge 476 --squash --subject "feat(metadata-foundation): PR 1b — activity_type multi-select (D2.1) (#476)" --body-file /tmp/pr476-merge-body.md`. Resulting merge commit on main: `bd9d6e4`. Branch `feat/metadata-foundation-activity-type-multi` left intact (deletable at convenience per past pattern; PR 1's branch was also left).
+
+- **Both PROD workflows fired automatically on merge.** `Production Database Migration` (run `25469722160`) — all 4 jobs SUCCESS first attempt (Check Migration Changes / Verify Recent Backup / Migration Dry Run / Apply to Production). `Deploy Edge Functions` (run `25469722181`) — 11/12 SUCCESS first attempt; only `complete-review` was modified by PR 1b (it succeeded). `detect-duplicates` failed on the documented `esm.sh` CDN 522 flake (pattern parallel to PR 1's `invitation-management` 2026-05-05 — now confirmed recurring on every push to main); reran via `gh run rerun --failed 25469722181`, succeeded second attempt.
+
+- **PROD MCP verification — 6/6 migration signals + 3-signal edge fn check, all green.** Both migrations in `list_migrations`. CHECK constraint tightened to `cooking | garden | academic | craft` (no `'both'`). 0 rows with `'both'` in column. 139 cooking+garden hybrids on PROD (TEST=135, ~3% PROD-fresher data drift, expected). `complete_review_atomic` has UPDATE passthrough body. `lessons_normalize_write` trigger: `'both'` only in retirement comment, not in allowed list (verified via tighter regex check after initial over-broad probe falsely flagged the comment line as "in array list" — reinforces the "match-with-context" pattern for source-text probes). `complete-review` edge fn: version=4 (was 3), ezbr_sha256=`3fafd997ae454d17f0a8a8bf311f4ce4fc699818d357f9090386bb253603c4ba`, source contains the new Zod safeParse block + `reviewFormPayloadSchema` import + array-shape `activityType` enum in `_shared/metadataSchemas.ts`.
+
+- **Session 36 docs commit on `docs/session-36-pr1b-shipped` branch** (this entry + Current State refresh). Local-only, unpushed. Carrier choice deferred to Session 37 (bundle into PR 2 rebase OR open small standalone docs PR).
+
+**Decisions made:**
+
+- **Option 1 over Option 3 for session boundary.** PR 2 rebase has known conflict resolution work (`complete_review_atomic` `CREATE OR REPLACE` collision + PR 2's `tags` side-channel re-fold) that deserves a fresh session, not the tail of a ship-and-verify session. Per kickoff "Default: ONE task per session, or a small group of trivially-related tasks." Shipping PR 1b is the major task of this session; PR 2 rebase is independent next-session work.
+
+- **Branch retention pattern continues.** PR 1b's `feat/metadata-foundation-activity-type-multi` left intact post-merge per past PR 1 + foundation-phase precedent ("deletable at convenience"). Auto-deletion on merge is unconfigured for this repo; manual cleanup by user.
+
+- **detect-duplicates CDN flake mitigation worked exactly as documented in MEMORY.md hygiene-follow-up.** `gh run rerun --failed <run_id>` re-ran only the failed slot; succeeded peers stayed untouched; approval gate did NOT re-fire (gate already SUCCESS). Pattern confirmed across 2 PROD deploys (PR 1 `invitation-management` 2026-05-05 + PR 1b `detect-duplicates` 2026-05-07). Workflow-level mitigation (rewrite to skip esm.sh, pin Supabase CLI) NOT pursued — rerun-on-failure remains the working pattern at the cost of one minor CI rerun per PROD push.
+
+**Process notes for Session 37+:**
+
+- **Stale-doc-header pattern hit for the THIRD time** (Sessions 33 → 34 → 35 → 36). Now confirmed as a standing pattern: every PR-cycle session-start finds the prior session's status doc reflecting "before push" or "before round N" state because the prior session's docs commit was authored just before the next CI cycle's events fired. Mitigation continues to work (trust git, refresh inline at session-start). Worth a brief promotion to a `feedback_*.md` note during Session 37's archival pass — the pattern is durable and operationally annoying but not high-cost; an explicit "always check PR review state on the active PR at orientation" rule would short-circuit the rediscovery cost.
+
+- **PR 2 rebase plan.** `git checkout feat/metadata-foundation-llm-tagging && git rebase main` (main at `bd9d6e4`). Conflict on `complete_review_atomic` — PR 2's `20260517000000_*` `CREATE OR REPLACE` collides with PR 1b's `20260518100000_*` `CREATE OR REPLACE`. Resolution: keep PR 1b's body (array passthrough for `activity_type`) AND re-fold PR 2's `tags` side-channel (write surface for the LLM-drafted `tags` array) into the same body. Verify via `mcp__supabase-test__execute_sql pg_get_functiondef('complete_review_atomic'::regproc)` post-rebase to confirm BOTH code paths survive. Then continue PR 2 work (Tasks 2.4+2.5 eval gates, etc.).
+
+- **PR-cycle archival.** At start of PR 2 work, move Sessions 28-36 from active file into archive file. Per kickoff: "Audit each entry as you move it for any process learnings worth promoting to `~/.claude/projects/.../memory/feedback_*.md` files OR hygiene follow-ups worth promoting to MEMORY.md." Candidates this cycle (collected during Session 36): stale-doc-header pattern (3-occurrence confirmation; possibly worth a `feedback_*.md`), empirical-evidence-escalates-low-confidence-finding pattern (Session 34 Codex P2 #1 → 113 rows actually crashing; good `feedback_pr_bot_review_workflow.md` candidate addition), type-coupled cluster impl-plan flaw (Session 30 — when schema-shape changes touch multiple consumer files, decompose-by-file impl plans break tsc invariants mid-session; worth a feedback note about cluster framing).
 
 ### Session 35 — 2026-05-06 — PR 1b round 2 bot triage + fix-up shipped (commit `7773ff5`)
 
