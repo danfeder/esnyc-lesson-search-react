@@ -1,12 +1,12 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 34 (PR 1b round 1 bot triage + fix-up `131168b` shipped; 16 commits ahead of `origin/main`; awaiting round 2 or round-cap).
+**Last updated:** 2026-05-06 — Session 35 (PR 1b round 2 bot triage + fix-up `7773ff5` shipped; round-2 cleanup deletes unused `ReviewMetadataForm.tsx`; awaiting round 3 or round-cap critical-only).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-17 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (965+ lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Active PR:** **[PR #476](https://github.com/danfeder/esnyc-lesson-search-react/pull/476) — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **16 commits ahead of `origin/main`** (9 code + 7 docs); 3 commits ahead of remote tracking branch (Session 33 docs `5eca6bc` + round-1 fix-up `131168b` + Session 34 docs commit). Round 1 bot triage complete + fix-up shipped locally; awaiting push + round 2.
+**Active PR:** **[PR #476](https://github.com/danfeder/esnyc-lesson-search-react/pull/476) — D2 multi-select refinement.** Branch `feat/metadata-foundation-activity-type-multi`; **18 commits ahead of `origin/main`** (10 code + 8 docs); 2 commits ahead of remote tracking branch (round-2 fix-up `7773ff5` + Session 35 docs commit). Round 2 bot triage complete + fix-up shipped locally; awaiting push + round 3 (round-cap rule: critical-only fix-ups, document the rest, ship).
 
 Code commits (chronological):
 1. `54124a5` Task 1b.1 — retire `'both'` value + repoint data
@@ -17,7 +17,14 @@ Code commits (chronological):
 6. `69ed67d` Task 1b.6 — filterDefinitions.ts multi-select + drop 'both' chip
 7. `af4910a` Task 1b.7 — google-docs-parser extractActivityType returns canonical array
 8. `be406c3` Task 1b.8 fix-up — activityType empty-array required-validation (caught by pre-push code-reviewer agent)
-9. **`131168b` PR 1b round 1 fix-up** — shape-tolerant `tagged_metadata` loader + drop "Only" from activity_type chip labels (Session 34)
+9. `131168b` PR 1b round 1 fix-up — shape-tolerant `tagged_metadata` loader + drop "Only" from activity_type chip labels (Session 34)
+10. **`7773ff5` PR 1b round 2 fix-up** — delete unused `ReviewMetadataForm.tsx` dead code + barrel export line (Session 35)
+
+**Round 2 outcome (Session 35):** CI all green at HEAD `1dac977` (no Security Audit failure visible in current `gh pr checks`; either cleared or no longer in summary). 4-surface bot triage on the round-1 fix-up surface caught 7 distinct findings across 3 voices (claude long-form re-review CHANGES_REQUESTED, claude[bot] formal review CHANGES_REQUESTED with 3 "blocking" + 3 non-blocking, user's own Codex follow-up = NO new blockers, recommends ship). Investigation pass accepted 1, rejected 6 (default-reject hardening pattern; tighter than round 1 because round-1 fix-up reduced surface area):
+
+- **Accepted:** Delete unused `ReviewMetadataForm.tsx` (dispatches 3 of claude[bot]'s "blocking" findings: not-imported, `CreatableSelect` on closed-enum, `fieldProgress.percentage` prop-shape mismatch — all 3 are problems IN the file, hypothetical until wired in but ongoing maintenance burden because every D2.1+ session paid a type-conformance tax to keep tsc green at branch tip). Verified zero callers four ways: Session 27 N1 audit, Session 30 grep, claude[bot] inline `rg`, fresh grep this session. Barrel export at `src/components/Review/index.ts:5` removed alongside.
+
+- **Rejected:** dual-check `'cooking' || 'cooking-only'` in `showCookingFields`/`showGardenFields` (Codex confirmed harmless defensive code: "do not create a user-visible regression"); `reAddActivityTypeSuffix` no unit tests (already captured as Out-of-scope follow-up — same testability shape problem as Session 32's `validateRequiredFields`; needs refactor to extractable utility before testable; bundling as a single hygiene PR per existing capture); `reviewToLessonMapper.test.ts` no `[]` empty-array case (defensive test gap; verified empirically via mapper round-trip property; same hygiene PR slot); google-docs-parser frequency inference gap (pre-existing, unrelated to D2.1); craft undetectable in parser (pre-existing, reviewer-assigned); `CreatableSelect` + `fieldProgress.percentage` (now resolved by file deletion).
 
 **Round 1 outcome (Session 34):** CI fully green except Security Audit (pre-existing `@lhci/cli` baseline; no `package*.json` diff in PR — MEMORY.md hygiene-follow-up). 4-surface bot triage caught 14 distinct findings across 3 voices (claude long-form, claude[bot] CHANGES_REQUESTED, user's own Codex pass). Investigation pass accepted 2 P0, rejected 10 (default-reject hardening pattern):
 
@@ -34,18 +41,18 @@ Code commits (chronological):
 **PR 2 branch state (paused):** `feat/metadata-foundation-llm-tagging` is 20 commits ahead of `origin/main` (Sessions 18-27). Untouched until PR 1b merges; then rebases onto new main. **Rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's `tags` side-channel must be re-folded into PR 1b's array-passthrough body during rebase. Use `mcp__supabase-test__execute_sql pg_get_functiondef(...)` after rebase apply to verify both code paths survive.
 
 **Next session picks up:**
-- **Push round-1 fix-ups + bundled docs.** `git push` — sends Session 33 docs `5eca6bc` + round-1 fix-up `131168b` + Session 34 docs (this commit). Saves 2 CI cycles per `feedback_no_docs_push_during_pr.md`.
-- **Wait for round 2 bots** (CodeRabbit / Claude Review / Codex pattern). Round-cap of 2 per kickoff means if round 2 brings critical-only fixes we ship; cosmetic-only → fix what's worth it, document the rest, ship.
-- **4-surface re-triage** if round 2 fires per `feedback_pr_comment_surfaces.md`: `gh pr view 476 --comments` + `pulls/476/reviews` + `pulls/476/comments` + `gh pr checks 476`. Investigation pass per `feedback_bot_review_investigation.md` for every finding.
-- **Per-round TEST DB re-verification** if round 2 produces DB-affecting commits per `feedback_per_round_test_db_verification.md`. Round 1 was code-only so the original PR-open verification remains valid.
+- **Push round-2 fix-up + bundled docs.** `git push` — sends round-2 fix-up `7773ff5` + Session 35 docs commit. Saves 1 CI cycle per `feedback_no_docs_push_during_pr.md`.
+- **Wait for round 3 bots** (round-cap rule applies — fix only critical bugs, document the rest, ship). Round 3 should be lighter than round 2 because the round-2 fix-up removes the source of 3+ findings (deleted dead file = no more "this file is not imported" / "CreatableSelect closed-enum" / "fieldProgress.percentage prop mismatch" complaints).
+- **4-surface re-triage** if round 3 fires per `feedback_pr_comment_surfaces.md`: `gh pr view 476 --comments` + `pulls/476/reviews` + `pulls/476/comments` + `gh pr checks 476`. Investigation pass per `feedback_bot_review_investigation.md`. Round-cap rule: critical-only fix-ups beyond round 2.
+- **Per-round TEST DB re-verification** is NOT needed for round 2's fix-up — `7773ff5` is a TS-only deletion with no schema/migration/RPC change. The Session 34 TEST DB verification remains valid; Session 33 PR-open TEST verification remains valid.
 - **PROD apply** when bot rounds settle: `migrate-production.yml` workflow_dispatch (migrations) + `deploy-edge-functions.yml` for `complete-review`. 3-signal verification on edge fn via `mcp__supabase-remote__get_edge_function complete-review` per MEMORY.md hygiene-follow-ups (version + ezbr_sha256 + source-content grep).
 - **Post-merge rebase.** PR 2 (`feat/metadata-foundation-llm-tagging`) onto new main; expected conflict on `complete_review_atomic` (both PRs `CREATE OR REPLACE`); re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body during rebase.
 
-**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip post-round-1.** 546/546 unit tests passing (38 files; round-1 fix-up didn't add new tests — `reAddActivityTypeSuffix` validator-test coverage captured as Out-of-scope follow-up alongside the Session 32 `validateRequiredFields` follow-up; same root cause: inline-utility extraction needed before testability).
+**`npm run type-check` + `npm run lint` + `npm test` all green at branch tip post-round-2.** 546/546 unit tests passing (38 files; round-2 fix-up didn't change test count — file deletion only, no new test surface).
 
 **Branches:**
 - `main` at `8497752` (PR 1 squash merge).
-- `feat/metadata-foundation-activity-type-multi` (PR #476) — 16 commits ahead of main, 3 ahead of remote (push pending Session 35 start).
+- `feat/metadata-foundation-activity-type-multi` (PR #476) — 18 commits ahead of main, 2 ahead of remote (push pending Session 35 end).
 - `feat/metadata-foundation-llm-tagging` (PR 2) — 20 commits ahead, paused.
 - `feat/metadata-foundation-schema` (PR 1's merged branch) — deletable at convenience.
 
@@ -103,7 +110,43 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 
 ## Recent session log
 
-### Session 34 — 2026-05-06 — PR 1b round 1 bot triage + fix-up shipped (commit `131168b`)
+### Session 35 — 2026-05-06 — PR 1b round 2 bot triage + fix-up shipped (commit `7773ff5`)
+
+**Done (1 commit + 1 docs commit pending):**
+
+- **Orientation surfaced stale Current State header.** Status doc claimed 3 unpushed commits at session start; `git fetch origin` + `git log @{u}..HEAD` returned 0. Round 2 had already fired between Session 34 close and Session 35 start (no idle-poll cron, but the push from Session 33 + automatic trigger of bot reviews on the round-1 fix-up's CI completion produced reviews dated 2026-05-07T00:17:30Z = ~5h after Session 34's local commit but before Session 35 began). Per kickoff "trust git, then update the status file": session-end status update reflects current reality (18 commits ahead of main, 2 ahead of remote post-fix-up).
+
+- **4-surface bot review collection** per `feedback_pr_comment_surfaces.md`: `gh pr view 476 --comments` (issue-comments — 4 entries new this round + 2 inherited round 1), `gh api repos/.../pulls/476/reviews` (2 reviews total — round 1 + round 2 both CHANGES_REQUESTED from claude[bot]), `gh api repos/.../pulls/476/comments` (7 line-comments from claude[bot]), `gh pr checks 476` (all green; no Security Audit row this time). Three independent voices for round 2: claude long-form re-review (CHANGES_REQUESTED, 4 cleanup items), claude[bot] formal review (CHANGES_REQUESTED, 3 "blocking" + 3 non-blocking), user's own Codex follow-up (status: none, "I do **not** have a new blocking code finding on the current head" — recommends ship). 7 distinct findings after dedup.
+
+- **Investigation pass per `feedback_bot_review_investigation.md`** — every finding got a rebuttal pass. Default-reject hardening per `feedback_pr_bot_review_workflow.md`. Triage matrix surfaced to user with accept/reject recommendations + plain-language framing per `feedback_plain_language.md`. User confirmed: do Option 2 (delete dead code), skip Option 3 (test additions). Outcome: 1 accepted, 6 rejected.
+
+- **3 of claude[bot]'s "blocking" findings dispatched at the source** by deletion. Findings (1) `ReviewMetadataForm.tsx` not imported, (2) `CreatableSelect` for closed-enum activityType in `ReviewMetadataForm.tsx`, (3) `fieldProgress.percentage` prop-shape mismatch with `ReviewDetail.tsx`'s `{completed, total}` shape — all 3 are hypothetical (problems IF the file gets wired in, but it isn't). Removing the file removes the source of all 3 cleanly. Verified zero callers four ways: Session 27 N1 audit, Session 30 grep, claude[bot] inline `rg`, fresh grep this session.
+
+- **Round-2 fix-up commit `7773ff5`** is a 2-file change: `D src/components/Review/ReviewMetadataForm.tsx` (228 LOC deleted) + `M src/components/Review/index.ts` (1 line removed: `export { ReviewMetadataForm } from './ReviewMetadataForm';`). Net: -228 lines.
+
+- **`npm run type-check` + `npm run lint` + `npm test` all clean post-deletion.** 546/546 unit tests pass (38 files); same count as Session 34 baseline because file deletion didn't add or remove test surface — `ReviewMetadataForm.tsx` had zero direct test coverage to begin with (it was dead code).
+
+**Decisions made:**
+
+- **Skipped Option 3 (test additions for `reviewToLessonMapper` empty-array case + `reAddActivityTypeSuffix` shape coverage).** The empty-array mapper test alone is half-cover; the suffix test requires a refactor (extract from inline `ReviewDetail.tsx` to `src/utils/reviewMetadataLoaders.ts` to make testable, same shape as Session 32's `validateRequiredFields` problem). Captured as a single Out-of-scope hygiene PR for both — better to do the refactor + tests all-at-once than piecemeal across multiple PRs. The fix is already verified empirically (Session 34's TEST DB probe across 113 historical scalar rows + visual smoke with scalar fixtures + chip-rename smoke). Low regression risk in the meantime.
+
+- **Default-reject hardening pattern held strong, tighter than round 1.** Round 1 accepted 2 of 14, round 2 accepted 1 of 7 — the round-1 fix-up reduced surface area, so round-2 findings concentrated in narrower territory (mostly cleanup of an unimported file plus pre-existing parser issues). Pattern: when bot voice convergence is ABSENT (Codex says ship; only one or two voices flag a finding) AND the finding is about code that's already verified working empirically, default-reject and document. Convergence pattern for accept: 3 voices agree OR empirical evidence escalates a 1-voice finding (Round 1 Codex P2 #1 = 113 rows actually crashing; this round had no equivalent escalation).
+
+- **Round-cap-of-2 rule activated for round 3+.** Per kickoff: "If a 3rd round comes in, fix only critical bugs, document the rest, ship." Round 3 should be lighter because the round-2 fix-up removed the source of 3+ findings; remaining live concerns from round 2 (dual-check, frequency inference, craft parser gap) are all confirmed harmless or pre-existing.
+
+- **Bundled docs commit with the next push** per `feedback_no_docs_push_during_pr.md`. Session 35 status doc travels with `7773ff5`; the push will be 2 commits at once.
+
+**Process notes for Session 36+:**
+
+- **Session-1-of-PR-cycle stale-doc-header pattern.** When a session opens and `Current State` claims unpushed commits but `git log @{u}..HEAD` returns empty, it usually means a prior session ended without pushing the doc commit (auto-push hooks don't run on every commit). Trust git, refresh the header inline, document the discrepancy in the new session entry. Not worth a process change — this is hygiene that flows naturally from the session-start ritual.
+
+- **Round-2-already-fired-by-orientation pattern.** Session 35 didn't need to push round-1 fix-up first — it was already on origin, CI had already run, bots had already reviewed. Direct path: pull bot output, triage, ship round-2 fix-up. When orienting, always check PR review state on the active PR to detect this (the push step in "Next session picks up" can quietly become a no-op if the prior session pushed without committing the doc).
+
+- **Plain-language framing on stakeholder-touching decisions** per `feedback_plain_language.md`. The Option 2 vs Option 3 framing led with concrete cost/benefit: Option 2 = "remove a file nothing uses" (cheap, dispatches 3 findings), Option 3 = "add tests for code already verified working" (uneven half-coverage without a refactor). User picked 2-only immediately. Reinforces the lead-with-impact-then-technical-detail pattern from prior sessions.
+
+- **Round 3 expectation.** Round 3 will fire on the round-2 fix-up's CI completion. Likely lighter — bot can't complain about a deleted file. Remaining surfaces for round-3 critique: the 3 still-rejected round-2 findings (dual-check, frequency inference, craft parser) plus anything new the deletion exposes (e.g., if the barrel-export removal touches an unexpected import path). If round 3 brings critical-only, fix-up + ship; if cosmetic-only, document + ship per round-cap rule.
+
+
 
 **Done (1 commit + 1 docs commit pending):**
 
