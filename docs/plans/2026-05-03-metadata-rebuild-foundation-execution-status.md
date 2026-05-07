@@ -1,47 +1,48 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-07 — Session 37 (PR-cycle archival: Sessions 28-36 moved to archive; 2 patterns promoted to `feedback_pr_bot_review_workflow.md` — empirical-evidence-escalates and active-PR-session-orientation; PR 2 rebase remains next-session work).
+**Last updated:** 2026-05-08 — Session 38 (PR 2 rebased onto PR 1b ship `bd9d6e4` via cherry-pick approach; migration `20260517000000_*` renamed → `20260519000000_*` with body re-folded for both tags side-channel + activity_type array passthrough; Sessions 36+37 docs bundled into PR 2; local DB + 6/6 RPC body signals verified clean).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-36 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (~1600 lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR #476 (PR 1b — D2.1 activity_type multi-select) SHIPPED + PROD-applied 2026-05-07.** Squash merge `bd9d6e4` on main. Both PROD workflows fired automatically on merge: `Production Database Migration` (run `25469722160`, all 4 jobs SUCCESS first attempt) + `Deploy Edge Functions` (run `25469722181`, 11/12 SUCCESS first attempt — only `complete-review` was modified by this PR; it succeeded). The 12th slot (`detect-duplicates`) failed on the documented `esm.sh` CDN 522 flake and reran clean via `gh run rerun --failed 25469722181`.
+**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — REBASED + IN PROGRESS.** Branch `feat/metadata-foundation-llm-tagging` rebased onto `bd9d6e4` (main with PR 1b shipped) via cherry-pick approach Session 38. 10 commits ahead of main: 7 code (Tasks 2.1-2.3 done) + 2 docs cherry-picked from `docs/session-36-pr1b-shipped` (Sessions 36+37) + this session's docs commit. PR 2 not yet pushed; no PR open.
 
-Round-3 bot review fired automatically on the round-2 fix-up's CI completion (3 voices: claude long-form constructive, claude[bot] state `COMMENTED` not `CHANGES_REQUESTED` with 4 follow-up findings, user's own Codex explicit "no blockers"). Round-cap critical-only rule applied; nothing met the bar; ship was correct.
+**Rebase resolved the `complete_review_atomic` `CREATE OR REPLACE` collision** between PR 2's `20260517000000_complete_review_atomic_tags_side_channel.sql` (tags side-channel) and main's `20260518100000_complete_review_atomic_activity_type_multi.sql` (activity_type array passthrough, PR 1b). Renamed PR 2's migration to `20260519000000_*` so it sorts last + re-folded the body to carry both features (declare `v_ai_draft jsonb` + pluck from `v_submission.ai_draft_metadata` + array passthrough for activity_type in INSERT and UPDATE + `tags` write in INSERT + `tags` carry-forward in UPDATE).
 
-**PROD MCP verification — 6/6 migration signals + 3-signal edge fn check, all green (Session 36):**
-- Both migrations in `list_migrations`: `20260518000000_activity_type_multi_select` + `20260518100000_complete_review_atomic_activity_type_multi`.
-- CHECK tightened: `CHECK (((activity_type IS NULL) OR (activity_type <@ ARRAY['cooking'::text, 'garden'::text, 'academic'::text, 'craft'::text])))`.
-- 0 rows with `'both'`; 139 cooking+garden hybrid rows on PROD (TEST=135, ~3% PROD-fresher data drift, expected).
-- `complete_review_atomic` source has UPDATE passthrough body; `lessons_normalize_write` trigger has `'both'` removed from allowed list (only in retirement comment).
-- `complete-review` edge fn: version=4 (was 3), ezbr_sha256=`3fafd997ae454d17f0a8a8bf311f4ce4fc699818d357f9090386bb253603c4ba`, source contains the new Zod `safeParse` block + `reviewFormPayloadSchema` import + array-shape `activityType` enum in `_shared/metadataSchemas.ts`.
+**Local verification — 6/6 RPC body signals via `mcp__supabase__execute_sql pg_get_functiondef('complete_review_atomic'::regproc)`:**
+- `declares_v_ai_draft`: YES
+- `plucks_ai_draft`: YES (`v_ai_draft := v_submission.ai_draft_metadata`)
+- `insert_activity_type_array_passthrough`: YES (`_phase4_jsonb_text_array(v_meta->'activityType')`)
+- `update_activity_type_array_passthrough`: YES (`_phase4_jsonb_text_array_or_null(v_meta->'activityType')`)
+- `writes_tags_from_ai_draft`: YES (`_phase4_jsonb_text_array_or_null(v_ai_draft->'tags')`)
+- `update_tags_carry_forward`: YES (`NULLIF(v_existing.tags, ARRAY[]::text[])`)
 
-Pre-merge TEST DB verification (Session 34) — 6/6 PASS — and chrome-devtools-mcp visual smoke covering sidebar chips, multi-select pill behavior, ReviewDetail picker on scalar/array/multi-element fixtures all stand without re-verification (round-2 fix-up `7773ff5` was TS-only deletion; round-3 brought no DB-affecting changes).
+Plus schema check: `lesson_submissions.ai_draft_metadata` jsonb / `lessons.tags` ARRAY / `lessons.activity_type` ARRAY / `lessons.lesson_format` dropped. Migration sort: `20260516000000` → `20260518000000` → `20260518100000` → `20260519000000` (orphan `20260517000000_*` no longer exists). `npm run type-check` + `lint` clean. 569/569 tests passing (up from main's 546 — +23 from PR 2's new test files: reviewMetadataInit + evalMetrics).
 
 **Branches:**
 - `main` at `bd9d6e4` (PR 1b squash merge).
+- `feat/metadata-foundation-llm-tagging` (PR 2, rebased) — 10 commits ahead of main; not yet pushed; no PR open yet.
+- `backup/feat-metadata-foundation-llm-tagging-pre-rebase` — pre-rebase state of PR 2 (before this session's `git reset --hard main`); allows recovery if rebase needs to be undone. Deletable after PR 2 ships.
+- `docs/session-36-pr1b-shipped` — Sessions 36+37 docs commits; now bundled into PR 2 (cherry-picked); branch is redundant and can be deleted at convenience.
 - `feat/metadata-foundation-activity-type-multi` (PR #476's merged branch) — deletable at convenience.
-- `feat/metadata-foundation-llm-tagging` (PR 2) — 20 commits ahead of OLD main; needs rebase onto `bd9d6e4` next session. Paused.
-- `feat/metadata-foundation-schema` (PR 1's merged branch) — also deletable at convenience.
-- `docs/session-36-pr1b-shipped` (Session 36 status doc + Session 37 archival commit) — local-only, unpushed; carrier choice deferred to Session 38 (bundle into PR 2 rebase OR open small standalone docs PR).
+- `feat/metadata-foundation-schema` (PR 1's merged branch) — deletable at convenience.
 
-**Foundation-phase substrate now live on PROD (post-PR-1 + PR-1b):**
+**Foundation-phase substrate live on PROD (post-PR-1 + PR-1b, unchanged this session):**
 - Schema: `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns added; `activity_type` array-shape multi-select with closed enum at 4 values (`cooking / garden / academic / craft`); `tags` array column with closed enum; `cultural_responsiveness_features` closed to 7 Brown CR features.
 - 3 CHECK constraints (`<@` containment, length-agnostic) + trigger value-validation helper.
 - Zod canonical + bidirectional mappers + Deno mirror + `enums.json` + freshness CI test.
-- Filter UI: `lessonFormat` removed; "Lesson Type" sidebar filter backed by `tags` (count badge `(0)` until tags added to `search_lessons` RETURNS TABLE — see follow-ups). Activity Type: 4-value multi-select chips, no `'both'`, no "Only" suffix.
-- Edge functions: `complete-review` wired to Zod safeParse + array-shape `activityType`; `process-submission` has CRF prompt wired in (Session 26).
+- Filter UI: `lessonFormat` removed; "Lesson Type" sidebar filter backed by `tags`. Activity Type: 4-value multi-select chips, no `'both'`, no "Only" suffix.
+- Edge functions: `complete-review` Zod-validated; `process-submission` has CRF prompt wired in.
 
-**Why PR 1b interrupted PR 2:** mid-Task-2.4 ground-truth resolution surfaced n=5/26 (~19%) multi-axis lessons; D2's original single-select was made on n=1 (Dr. Carver Lotion-Making). User retired `'both'` and switched to multi-element array. Decision journal D2.1.
-
-**PR 2 rebase conflict expected:** PR 2's `20260517000000_*` and PR 1b's `20260518100000_*` both `CREATE OR REPLACE complete_review_atomic`; PR 2's older timestamp would apply BEFORE PR 1b's and get overwritten on a clean rebase. Resolution: rename PR 2's migration to a newer timestamp than `20260518100000_*` (e.g., `20260519000000_*`) AND re-fold PR 2's `tags` side-channel into PR 1b's array-passthrough body so the final RPC has both code paths. Verify post-rebase via `mcp__supabase-test__execute_sql pg_get_functiondef('complete_review_atomic'::regproc)`.
+**On PR 2 branch (local-only, NOT yet on PROD):**
+- Tasks 2.1-2.3 done: per-prompt readiness audit (Gate C); `lesson_submissions.ai_draft_metadata` columns migration; ReviewDetail reads AI drafts at form init; eval-gate harness + canonical run; CRF prompt wired into `process-submission` edge fn; tags side-channel via merged-body migration `20260519000000_*`.
+- Tasks 2.4-2.5 pending: activity_type prompt + tags prompt with their respective eval-gate canonical runs. Both vocab-locked per Gate C output.
 
 **Next session picks up:**
-- **PR 2 rebase** onto `bd9d6e4`. `git checkout feat/metadata-foundation-llm-tagging && git rebase main`. Conflict resolution per above. Verify via TEST MCP.
-- **Bundle Sessions 36 + 37 docs commits.** Cherry-pick from `docs/session-36-pr1b-shipped` onto rebased PR 2 branch, OR open a small standalone docs PR. Deferred from this session.
-
-**`npm run type-check` + `npm run lint` green at main `bd9d6e4`.** 546/546 unit tests passing.
+- **Task 2.4 (activity_type prompt)** per impl plan §697-706. Watch the type-coupled cluster pattern (Session 30 PR 1b learning): if Task 2.4 introduces type-shape changes touching multiple consumer files (Zod + mappers + edge fn + tests), plan to ship them as a cluster commit rather than decomposed by file.
+- After Tasks 2.4 + 2.5 ship: PR 2 push + open + per-PR ritual (pre-push code-reviewer agent → push → external bot reviewers → 4-surface triage → fix-up → round-cap).
+- **TEST DB verification deferred until PR 2 push** — CI applies new migrations + edge fn updates when PR opens; per-round verification rule applies starting from round 0 (initial PR review).
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -58,6 +59,7 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 - **`mcp__supabase-remote__get_edge_function` 3-signal verification** — version increment + ezbr_sha256 match + source-content grep for known new code. CLI's "Deployed Functions" log line is NOT a guarantee. (Captured in MEMORY.md hygiene-follow-ups.)
 - **esm.sh CDN 522 flakes are recurring on `deploy-edge-functions.yml`** — same per-job transient pattern as the migrate-production SASL flake. `gh run rerun --failed` is the working mitigation. (Captured in MEMORY.md hygiene-follow-ups.)
 - **Type-coupled cluster impl-plan flaw (single-occurrence — watch for recurrence).** When a schema-shape change touches multiple consumer files, decompose-by-file impl plans break tsc invariants mid-session. Session 30 surfaced this in PR 1b: Tasks 1b.3 (Zod array shape) + 1b.4 (mappers) + 1b.5 (ReviewDetail consumer) had to ship as one cluster because the type narrowing cascaded across all three. Future similar work should bundle consumer-cluster from impl-plan time, OR explicitly note "intermediate tsc-break expected; cluster ships together" in the verify clauses. Stays as candidate (single occurrence) — promote to `feedback_*.md` if it recurs.
+- **Cherry-pick approach over `git rebase` when stale-docs would generate multi-commit conflicts (single-occurrence — watch for recurrence).** Session 38 surfaced this on the PR 2 rebase: vanilla `git rebase main` would have triggered ~13 separate docs conflicts (one per PR 2 docs commit, since main's docs reflect Session 37's archive split while PR 2's stale docs were on Session 17-27 pre-split layout). Resolved by `git reset --hard main` + cherry-picking only the 7 code commits + re-bundling docs fresh (Sessions 36+37 cherry-picked from `docs/session-36-pr1b-shipped` + Session 38 written from scratch). Per-session docs commit history from PR 2 is lost (preserved in `backup/feat-metadata-foundation-llm-tagging-pre-rebase` for traceability), but session log entries are reconstructed in active status doc + archive. Tradeoff: cleaner code-only PR 2 commit chain (squash-merge friendly), but does need the docs reconstruction. Generalizable: identify the substantive (code/feature) commits vs the housekeeping (docs/status) commits; cherry-pick only the substantive set; re-run docs work fresh at the end.
 
 ## Out-of-scope follow-ups (tracked here for PR 5+ / Phase 2 / future hygiene)
 
@@ -123,6 +125,42 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 
 - **Watch the type-coupled cluster pattern.** PR 2's Task 2.4-2.5 will write to columns + Zod + mappers + edge function (LLM auto-tag wires across all four surfaces). If the impl plan has decompose-by-file ordering and any task introduces a type-shape change, expect tsc-break invariants to require cluster shipping like Session 30. Better to plan cluster commits up front than rediscover the pattern.
 
+### Session 38 — 2026-05-08 — PR 2 rebase onto PR 1b (main `bd9d6e4`) + Sessions 36+37 docs bundled
+
+**Done (10 commits on `feat/metadata-foundation-llm-tagging` after rebase, accumulating with this session-end docs commit):**
+
+- **Rebased PR 2 onto `bd9d6e4`** (main with PR 1b shipped) via cherry-pick approach. `git reset --hard main` + cherry-picked 7 code commits in chronological order (the 13 stale docs commits from PR 2 dropped). New SHAs: `66ad77d` (Task 2.2a — ai_draft_metadata columns) → `97c35ab` (Task 2.2b — ReviewDetail reads draft, autosquashed test fix-up included) → `1e9fa8a` (Task 2.2c — tags side-channel migration RENAMED + body merged) → `7cd2a3f` (Task 2.2 — eval-gate harness) → `5eeaf47` (Task 2.3 partial — CRF eval inputs) → `efefcff` (Task 2.3 ship — CRF canonical run) → `67a3cd7` (Task 2.3 step 5 — CRF auto-tag in process-submission edge fn).
+
+- **Migration rename + body merge** (commit `1e9fa8a`). Renamed `20260517000000_complete_review_atomic_tags_side_channel.sql` → `20260519000000_*` so it sorts AFTER PR 1b's `20260518100000_complete_review_atomic_activity_type_multi.sql`. Body re-folded to carry both: PR 1b's array-passthrough for `activityType` (INSERT site uses `_phase4_jsonb_text_array(v_meta->'activityType')`; UPDATE site uses `_phase4_jsonb_text_array_or_null(v_meta->'activityType')` + COALESCE chain) AND PR 2's tags side-channel (declare `v_ai_draft jsonb`, pluck from `v_submission.ai_draft_metadata`, write `tags` column in INSERT, carry-forward `tags` in UPDATE). Header comment documents the rebase + rename context for future readers; rollback comment updated to point at PR 1b's body as the revert target. ROUND of CREATE OR REPLACE preserved grants; signature unchanged.
+
+- **Test fix-up for `reviewMetadataInit.test.ts`** (autosquashed into `97c35ab`). PR 2's original test expected `activityType: 'cooking'` (scalar) per merge-base `lessonToReview` mapper signature; PR 1b changed `lessonToReview` to return arrays, so the test had to update to `activityType: ['cooking']`. Auto-squashed via `git commit --fixup=<sha>` + `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash bd9d6e4` so the per-commit invariant "every commit's tests pass" holds for git bisect. Other 5 tests in `reviewMetadataInit.test.ts` (null/undefined inputs, schema-failure cases, empty draft) all unchanged.
+
+- **Bundled Sessions 36 + 37 docs into PR 2.** Cherry-picked `c6b68f7` (Session 36 — PR 1b SHIPPED + PROD-applied + verified) + `af431f8` (Session 37 — PR-cycle archival + 2 feedback promotions) onto rebased PR 2 branch. Both applied cleanly (status doc + archive only; no code overlap). Carrier choice resolved per Session 37's deferred decision: bundle into PR 2 over standalone docs PR.
+
+- **Local DB rebuild verified.** `supabase db reset` ran cleanly (all migrations applied; seed complete: 5 lessons + 3 users). Final `complete_review_atomic` body inspected via `mcp__supabase__execute_sql pg_get_functiondef` — 6/6 verification signals YES (declare + pluck + INSERT array passthrough + UPDATE array passthrough + INSERT tags from draft + UPDATE tags carry-forward). Schema check confirms `lesson_submissions.ai_draft_metadata jsonb` / `lessons.tags ARRAY` / `lessons.activity_type ARRAY` / `lessons.lesson_format` dropped. Migration list shows `20260516000000` → `20260518000000` → `20260518100000` → `20260519000000` (correct order; orphan `20260517000000_*` is gone). 569/569 tests passing.
+
+- **Backup branch `backup/feat-metadata-foundation-llm-tagging-pre-rebase` created** before `git reset --hard main`. Allows recovery of the original 20-commit PR 2 branch if rebase needs to be undone. Deletable after PR 2 ships.
+
+**Decisions made:**
+
+- **Cherry-pick approach instead of `git rebase main`** (captured as new bullet in "Recent decisions worth carrying forward"). Vanilla rebase would have hit ~13 separate docs conflicts (one per docs commit since main's docs are now PR 1b's Session 37 archival state vs PR 2's older Session 17-27 layout). Cherry-picking only the 7 code commits bypassed all docs conflicts; docs re-bundled cleanly via fresh cherry-picks + this session-end docs commit.
+
+- **Migration sort-key `20260519000000`** chosen to sort cleanly after PR 1b's `20260518100000_*`. Convention: when same-day or adjacent migrations conflict, advance one full UTC day to dodge the digits-vs-underscore ASCII gotcha (per MEMORY.md migration-naming note). Today's actual date is 2026-05-08; `20260519` is purely a sort key.
+
+- **Bundle Sessions 36 + 37 docs into PR 2** (carrier choice resolved per Session 37's deferred decision). Cherry-picked into rebased PR 2 branch directly; standalone docs PR rejected as overhead-heavy for what was effectively PR 1b's session-end housekeeping. Matches `feedback_no_docs_push_during_pr.md` spirit — no separate CI cycle for docs-only changes.
+
+- **Test fix-up auto-squashed instead of standalone fix-up commit.** Per-commit "tests pass" invariant matters for git bisect; the test was correct vs the merge-base mapper but wrong against the rebased mapper, so it semantically belongs IN the cherry-picked Task 2.2b commit, not as a follow-up.
+
+- **Did NOT delete merged feature branches or `docs/session-36-pr1b-shipped` this session.** Per past PR 1 + PR 1b precedent ("deletable at convenience"), branch retention is user-side cleanup. Leaving them in place avoids any risk of deleting work that hasn't fully replicated forward; user can `git branch -D` at any time.
+
+**Process notes for Session 39+:**
+
+- **Vanilla `git rebase` is rarely the right primitive when stale-docs commits are involved.** The cherry-pick approach generalizes: identify the substantive (code/feature) commits vs the housekeeping (docs/status) commits; cherry-pick only the substantive set; re-run docs work fresh at the end. Watch for recurrence of this pattern; promote to feedback memory if it happens again on a future rebase.
+
+- **Watch the type-coupled cluster pattern in Task 2.4.** PR 1b's Session 30 learning: when a task's schema-shape change touches Zod + mappers + consumer files + tests, ship as one cluster commit, not decomposed by file. Task 2.4 (activity_type prompt) is more contained than PR 1b's Task 1b.3-1b.5 cluster, but if it adds new vocab keys or field shapes, watch for the pattern.
+
+- **TEST DB verification deferred until PR 2 push.** Rebase substrate work is local-only this session; TEST DB will get the new migrations + edge fn updates when PR 2 opens (CI applies). Per-round verification rule applies to PR rounds (round 0 = initial open), not pre-PR sessions. The 6/6 RPC body signals + schema check via local MCP at session-end give high confidence that TEST will be clean on first apply.
+
 ### Sessions 18-36 — archived
 
-PR 2's earlier session entries (Sessions 18-27) and PR 1b's full implementation cycle (Sessions 28-36) live in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md`. Read on demand via `grep -n "Session N" archive.md` or targeted Read with offset/limit. Audit performed during the move surfaced 2 promotions to `feedback_pr_bot_review_workflow.md` (empirical-evidence-escalates pattern + active-PR session-orientation rule) and 1 watch-pattern preserved in Recent decisions (type-coupled cluster impl-plan flaw, single occurrence).
+PR 2's earlier session entries (Sessions 18-27) and PR 1b's full implementation cycle (Sessions 28-36) live in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md`. Read on demand via `grep -n "Session N" archive.md` or targeted Read with offset/limit. Audit performed during the move (Session 37) surfaced 2 promotions to `feedback_pr_bot_review_workflow.md` (empirical-evidence-escalates pattern + active-PR session-orientation rule) and 1 watch-pattern preserved in Recent decisions (type-coupled cluster impl-plan flaw, single occurrence).
