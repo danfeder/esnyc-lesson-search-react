@@ -1,0 +1,10 @@
+{
+  "name": "activity_type",
+  "mode": "multi-label",
+  "values": [
+    "cooking",
+    "garden",
+    "academic",
+    "craft"
+  ]
+}

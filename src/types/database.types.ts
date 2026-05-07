@@ -399,6 +399,9 @@ export type Database = {
       };
       lesson_submissions: {
         Row: {
+          ai_draft_generated_at: string | null;
+          ai_draft_metadata: Json | null;
+          ai_draft_model: string | null;
           content_embedding: string | null;
           content_hash: string | null;
           created_at: string | null;
@@ -421,6 +424,9 @@ export type Database = {
           updated_at: string | null;
         };
         Insert: {
+          ai_draft_generated_at?: string | null;
+          ai_draft_metadata?: Json | null;
+          ai_draft_model?: string | null;
           content_embedding?: string | null;
           content_hash?: string | null;
           created_at?: string | null;
@@ -443,6 +449,9 @@ export type Database = {
           updated_at?: string | null;
         };
         Update: {
+          ai_draft_generated_at?: string | null;
+          ai_draft_metadata?: Json | null;
+          ai_draft_model?: string | null;
           content_embedding?: string | null;
           content_hash?: string | null;
           created_at?: string | null;

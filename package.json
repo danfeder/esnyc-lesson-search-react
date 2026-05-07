@@ -25,6 +25,7 @@
     "db:reset": "supabase db reset --local",
     "db:push": "supabase db push --include-all",
     "test:openai": "npx tsx scripts/test-openai-api.ts",
+    "eval:llm-tagging": "npx tsx scripts/eval-llm-tagging-prompt.ts",
     "backfill:embeddings": "npx tsx scripts/backfill-embeddings.ts",
     "auto-resolve-duplicates": "npx tsx scripts/auto-resolve-duplicates.ts",
     "analyze-duplicates-v2": "npx tsx scripts/analyze-duplicates-v2.ts",
@@ -72,6 +73,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.95.0",
     "@eslint/js": "^9.33.0",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.58.2",
