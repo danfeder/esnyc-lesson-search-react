@@ -401,15 +401,17 @@ BEGIN
       -- tags carry-forward from LLM draft (this migration).
       -- Preserve existing non-empty tags (reviewer / earlier flow already
       -- populated); else take the LLM draft from ai_draft_metadata; else
-      -- fall through to v_existing.tags (possibly NULL → empty array).
+      -- fall through to v_existing.tags (NULL preserved — matches the INSERT
+      -- path on line 263, which uses _phase4_jsonb_text_array_or_null and
+      -- returns NULL when v_ai_draft.tags is absent). The valid_tags CHECK
+      -- accepts NULL (see 20260515000000_metadata_value_validation.sql).
       -- Mirrors academicConcepts carry-forward but operates on the column
       -- directly (not metadata blob) since tags is canonical-on-column
       -- post-PR-1.
       tags = COALESCE(
         NULLIF(v_existing.tags, ARRAY[]::text[]),
         _phase4_jsonb_text_array_or_null(v_ai_draft->'tags'),
-        v_existing.tags,
-        ARRAY[]::text[]
+        v_existing.tags
       ),
       metadata = v_legacy_meta,
       content_text = COALESCE(v_submission.extracted_content, ''),

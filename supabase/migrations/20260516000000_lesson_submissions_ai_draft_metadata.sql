@@ -36,3 +36,10 @@ COMMENT ON COLUMN lesson_submissions.ai_draft_generated_at IS
 
 COMMENT ON COLUMN lesson_submissions.ai_draft_model IS
   'Model identifier used to generate ai_draft_metadata (e.g., "claude-opus-4-7"). Provenance for audit / regression diffs. NULL until the LLM tagging step runs.';
+
+-- =====================================================
+-- ROLLBACK (keep as comments)
+-- =====================================================
+-- ALTER TABLE lesson_submissions DROP COLUMN IF EXISTS ai_draft_model;
+-- ALTER TABLE lesson_submissions DROP COLUMN IF EXISTS ai_draft_generated_at;
+-- ALTER TABLE lesson_submissions DROP COLUMN IF EXISTS ai_draft_metadata;
