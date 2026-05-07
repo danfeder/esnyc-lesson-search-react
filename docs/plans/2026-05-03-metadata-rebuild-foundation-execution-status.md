@@ -1,43 +1,42 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-07 — Session 45 (PR 2 round 2 triage + 1 accept committed locally — CRF test coverage added; round-cap activated per PER-PR RITUAL; 1 code commit ahead of origin + this session-end docs commit will bundle).
+**Last updated:** 2026-05-07 — Session 46 (PR 2 SHIPPED + PROD-applied + verified; squash commit `cf2aad4` on main; PR 2 cycle is closed; this session-end docs commit lands on the merged branch and gets bundled into the next PR per Session 36 → 38 precedent).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-36 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (~1600 lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR #477 (PR 2 — lesson-submission LLM auto-tag, CRF + activity_type only; tags LLM deferred to follow-up) — OPEN, round 2 triage complete, 1 accept committed locally, round-cap activated.** Branch `feat/metadata-foundation-llm-tagging` at `c92b94c`, **1 code commit ahead of origin** (Session 45 CRF test fix-up `c92b94c`) + this session's docs commit pending. Origin head `6596782` from Session 44's push (which pushed all 4 prior unpushed commits between sessions). E2E + CodeQL turned green on origin push; only Security Audit still failing (pre-existing `@lhci/cli` chain per MEMORY hygiene-follow-ups, not introduced by this PR).
+**PR #477 (PR 2 — lesson-submission LLM auto-tag, CRF + activity_type) — SHIPPED + PROD-applied + verified 2026-05-07.** Squash commit `cf2aad4` on main at 21:34:06 UTC. Both PROD migrations (`20260518200000_lesson_submissions_ai_draft_metadata` + `20260519000000_complete_review_atomic_tags_side_channel`) applied. PROD `process-submission` edge fn at version 31 (was 30 pre-deploy); ezbr_sha256 matches TEST exactly. 4/4 PROD MCP probes confirm the substrate. No SASL flake on the migration apply, no esm.sh CDN 522 flake on the edge fn deploy.
 
-**Session 45 actions (this session):**
-- Active-PR session-orientation: status doc claimed "4 commits ahead of origin awaiting push" but `git log @{u}..HEAD` was empty — push happened post-Session 44 docs commit. CI ran clean; round-2 bot review came in on `6596782` with 7 findings (3 P2 + 4 P3) — `claude` `CHANGES_REQUESTED` at 16:14 UTC. User's Codex round-2 pass at 19:18 UTC recommended 1 accept + round-cap.
-- 4-surface PR comment query confirmed: claude single-voice across reviews + inline comments; GHAS CodeQL alerts on `scripts/build-activity-type-samples.ts` are stale (Session 44's fix-up cleared them, alerts persist as comment artifacts but check is PASS).
-- Rebuttal pass on all 7 round-2 findings: 1 accept + 6 reject. Accept = P2 missing CRF test in `reviewMetadataInit.test.ts`. Rejects: P2 `any` types (pre-existing from `2c14ff04` 2025-08-06, ~9 months pre-PR-2 per `git blame`); P2 TOCTOU race (no concurrent-write path — both LLM steps run sequentially in one edge invocation); P3 `as ReviewMetadata` cast (load-bearing — bridges Zod-inferred `ReviewFormPayloadValidated` to legacy `ReviewMetadata` interface, design-aligned per Gate B); P3 CRF Select `label: v` (verified all 7 master-list features have `value === label` in `filterDefinitions.ts:67-86` — byte-identical output); P3 no content truncation (production must match eval harness — `eval-llm-tagging-prompt.ts:191` sends full `body`); P3 `evalMetrics.ts` Array.includes (~10K ops/run at current scale, harness is one-shot project-internal infra). Round-1 carried-overs (`ai_draft_model` last-writer-wins, merged JSONB re-validation, two Anthropic clients, no LLM call timeout, ReviewDetail form-init guard) all rebutted in same pass.
-- Fix-up commit `c92b94c` — added 2 tests to `src/pages/reviewMetadataInit.test.ts`: valid CRF passthrough (`'Communicates high expectations'`) + invalid CRF returns null. Used actual master-list value per Codex round-2 guidance (Claude's sample value `'Windows-mirrors-and-sliding-doors'` is not a real CR feature). vitest 8/8 green; type-check + lint clean.
-- 3 new out-of-scope follow-ups added (see "Out-of-scope follow-ups"): `any` types pre-PR-2 cleanup PR; per-field `_models` provenance for future model divergence; explicit Anthropic call timeout for resilience.
-- **Round-cap activated** per kickoff PER-PR RITUAL ("round-cap after 2 rounds"). Round 1 = Session 44 fix-ups (back-sort + regex). Round 2 = Session 45 fix-up (CRF test). Any round 3 fixes critical bugs only and ships.
+**Foundation-phase substrate live on PROD now includes:**
+- All PR 1 substrate (lesson_format dropped + series_id + part_number + crf_confirmed + activity_type/tags multi-select array shape with closed enums + cultural_responsiveness_features array of 7 Brown CR features + 3 CHECK constraints + trigger value-validation + Zod canonical + Deno mirror + freshness CI test + filter UI + complete-review Zod-validated)
+- All PR 1b substrate (`activity_type` array passthrough end-to-end via `complete_review_atomic`; retired the synthetic `both` value; repointed [both] → [cooking, garden] on PROD)
+- **PR 2 substrate (NEW):** `lesson_submissions.ai_draft_metadata` JSONB + `ai_draft_generated_at` + `ai_draft_model`; submission-time CRF + activity_type LLM auto-tag in `process-submission` (Opus 4.7, eval-gated macroF1=0.937 / 0.887); `complete_review_atomic` reads `v_ai_draft` and writes tags to lessons.tags column on approve_new + 3-tier carry-forward chain on approve_update (`tags = COALESCE(NULLIF(v_existing.tags, ARRAY[]::text[]), _phase4_jsonb_text_array_or_null(v_ai_draft->'tags'), v_existing.tags)`); ReviewDetail pre-fills form from ai_draft on first review (when no existing review row).
 
-**Foundation-phase substrate live on PROD (unchanged since Session 36):** `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns; `activity_type` + `tags` array-shape multi-select with closed enums; `cultural_responsiveness_features` closed to 7 Brown CR features; 3 CHECK constraints + trigger value-validation; Zod canonical + bidirectional mappers + Deno mirror + freshness CI test; filter UI Lesson Type backed by `tags`, Activity Type 4-value multi-select chips; `complete-review` Zod-validated. **`process-submission`** has CRF prompt wired in **on PROD**; activity_type wire-up is in PR 2's branch and lands on PROD only after PR 2 ships.
+**Eval-gate state (unchanged since Session 41):** CRF macroF1=0.937 (cleared Session 25); activity_type macroF1=0.887 (cleared Session 41 with Rule Y hybrid garden semantics); per-value F1 cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852; macro recall 0.956; `academic` truth count = 1 (Lorax binary); `maxPredictionRateForAbsentValues=0.10` guardrail dormant.
 
-**Eval-gate state (unchanged since Session 41):** activity_type macroF1=0.887 cleared; per-value F1 cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852; macro recall 0.956; `academic` truth count = 1 (Lorax binary); `maxPredictionRateForAbsentValues=0.10` guardrail dormant.
+**Tasks deferred to follow-up PR:** Task 2.5 — tags LLM prompt + eval — sample-set methodology decision pending (tags column is PR-1-new with no historical reviewer-labeling so the eval-gate methodology that anchored CRF and activity_type doesn't apply). Decision shape: synthetic worksheet (manually authored sample set) vs. organic post-deploy data (collect after enough reviewer-tagged submissions arrive) vs. defer until Stage 2 worksheet round.
 
-**Tasks (CRF + activity_type complete in branch; tags deferred):** 2.1-2.3 (CRF) + 2.4 step 1-4 (activity_type prompt + samples + canonical eval + edge-fn wire-up) all done. **Task 2.4 step 5 — TEST DB verification — was effectively covered by Session 44's push:** E2E suite passed (50 passed / 3 skipped per Codex round-2 report), `db push --dry-run` listed both renamed migrations cleanly + apply step ran. Session 45's fix-up is test-only (no DB-affecting change), so no fresh per-round verification needed. Task 2.5 — tags prompt + eval — deferred to a separate post-PR-2 follow-up PR (sample-set methodology decision pending).
+**Branches:**
+- `main` at `cf2aad4` (PR 2 squash-merge); origin matches
+- `feat/metadata-foundation-llm-tagging` (merged; deletable at convenience; this session's docs commit lands on it)
+- `backup/feat-metadata-foundation-llm-tagging-pre-rebase` (created Session 38 pre-rebase; deletable now PR 2 has shipped)
+- `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` (all deletable at convenience)
 
-**Branches:** `main` at `bd9d6e4` (PR 1b squash). `feat/metadata-foundation-llm-tagging` 1 code commit ahead of origin (Session 45 fix-up `c92b94c` + pending docs commit). `backup/feat-metadata-foundation-llm-tagging-pre-rebase` (deletable post-PR-2 ship). `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` (deletable at convenience).
-
-**Next session picks up — push + watch CI + (if no round 3) ready to ship:**
+**Next session picks up — choose the next PR (user-decision):**
 
 ```bash
-git log @{u}..HEAD                                         # confirm 1 code commit + 1 docs commit unpushed
-git push                                                   # bundle CRF test fix-up + Session 45 docs
-gh pr checks 477                                           # confirm checks remain green (Security Audit pre-existing)
-gh pr view 477 --json reviews,comments,state,mergeable     # check for round-3 bot voice
+git checkout main && git pull origin main
+git status --short --branch && git log --oneline -5
+npm run type-check && npm run lint
 ```
 
-**If no round-3 bot voice within ~1 hour of CI completing:** PR is ready to ship per round-cap. User decides squash-merge vs hold.
+**Three options for the next PR:**
+1. **PR 3a — search infra** (search_vector + embeddings + smart-search drift fix; independent of Stage 1 outputs; impl-plan ready in `…-foundation-implementation.md`)
+2. **PR 4 — corpus drops** (23 third-party imports + concept recovery + N1 retitle; independent of Stage 1; pre-delete checklist matters per Phase 6.2 §4D learning — verify FK refs INTO each row + `lessons.original_submission_id` OUT FROM each row before deleting)
+3. **Post-PR-2 tags-LLM follow-up PR** (sample-set methodology decision required first; smaller scope than 3a or 4; rides the same `submit_tags` tool-call infra PR 2 just shipped)
 
-**If round-3 bot voice arrives:** per kickoff "ROUND-CAP AFTER 2 ROUNDS — fix only critical bugs, document the rest, ship." Triage threshold is "real production bug" — design preferences, perf nits, pre-existing issues all auto-defer. Convergence across multiple bot voices is the only signal that warrants opening a third fix-up cycle.
-
-**No fresh TEST DB verification needed for Session 45's commit** (test-only change, no DB-applied state changed). The 6/6 RPC body signal probe + edge-function 3-signal verification can wait until pre-PROD-deploy.
+**PR-cycle archival fires at session-1 of whichever PR is next.** Sessions 37-46 (currently in this active file) move to the archive at that time per kickoff session-end ritual step 5.
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -284,6 +283,50 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - **My API cost estimates were ~3× over actuals.** Across smoke + v1 + v2 + v3, my projected cost per call was 2.7-3.5× the actual. Likely my chars-per-token assumption (3.5) was too low, OR Anthropic's billing has a discount I'm unaware of, OR there's a workspace-credit subsidy. For future projections, anchor on user-observed actuals not my pricing math; my math is consistently overestimating.
 
 - **Single-truth-row eval values are stringent.** Academic now has 1 truth row in the 113-sample set. Per-value academic recall is binary: 1.000 if the LLM correctly tags Lorax, 0.000 if it doesn't. Future canonical re-runs need to keep producing this 1/1 to maintain the per-value floor. If the 1-row category becomes a flake risk, options: (a) add 2-3 more academic-only lessons to the sample set (would need to find/invent), (b) drop the per-value floor for academic only via threshold-config exemption, (c) accept the binary signal as load-bearing — a regression on Lorax tells us the prompt has shifted academic interpretation away from the rule.
+
+### Session 46 — 2026-05-07 — PR 2 SHIPPED + PROD-applied + verified (CRF + activity_type LLM auto-tag)
+
+**Done (1 squash-merge to main + this session-end docs commit on the merged feature branch):**
+
+- **Active-PR session-orientation correction** (6th occurrence of the "stale unpushed claim" pattern; rule already captured in `feedback_pr_bot_review_workflow.md`): status doc claimed "1 code commit ahead of origin + docs commit pending" but `git log @{u}..HEAD` was empty at session start — Session 45's CRF test fix-up `c92b94c` AND Session 45's docs commit `8d645c0` had both already pushed. CI ran on `8d645c0` between Session 45 and Session 46.
+
+- **Round-3 bot voice triaged (4-surface query per `feedback_pr_comment_surfaces.md`).** Round-3 fired on `8d645c0`: claude formal review COMMENTED ("No P0/P1 findings. Four P3 observations inline; none block merge") + claude long-form issue comment + 4 inline P3 comments + Codex round-3 reviewer pass at 21:20 UTC ("**No new blocking P1/P2 findings**"; recommends ship). **Both bot voices converged on ship.** Triage shape: 1 P1 (no Anthropic call timeout — already in OOS follow-ups), 2 P2 (`ai_draft_model` last-writer-wins — already in OOS follow-ups; missing test for "existing review row" — `!existingReview` guard at `ReviewDetail.tsx:460` is correct by construction), 5 P3 nits (4 carry-overs from rounds 1-2 + 1 new `evalMetrics.averageDefined` NaN typing nit — callers handle correctly per claude's own admission). Per round-cap rule "fix only critical bugs" — no critical bugs surfaced.
+
+- **Pre-PROD-apply MCP body-signal probe on TEST DB** (added belt-and-braces hygiene step prompted by user mid-session: "did we already do that?"). Status doc claim was that Session 45's commit was test-only so no fresh per-round verification needed; that's true at the round level. But the *pre-PROD-apply* TEST DB body-signal probe via MCP had not been run for PR 2 specifically (only via CI auto-apply + E2E green). Ran the probe; 6/6 green — all 3 ai_draft_* columns present + both PR 2 migrations (`20260518200000`, `20260519000000`) applied + `complete_review_atomic` body has `v_ai_draft` + reads `ai_draft_metadata` + INSERT writes tags from draft + UPDATE has 3-tier COALESCE chain reading `v_ai_draft` (`tags = COALESCE(NULLIF(v_existing.tags, ARRAY[]::text[]), _phase4_jsonb_text_array_or_null(v_ai_draft->'tags'), v_existing.tags)`) + edge fn TEST version 9 has Anthropic SDK + CRF prompt + activity_type prompt with RMW merge. False alarm on initial regex (looked for `_phase4_..(v_ai_draft` as the FIRST arg of COALESCE, but it's the SECOND arg behind `NULLIF(v_existing.tags...)` — chain order is "existing wins, then LLM draft, then preserve NULL").
+
+- **PR #477 squash-merged via `gh pr merge 477 --squash`** at 2026-05-07T21:34:06Z. Squash commit `cf2aad4` on main. PR was MERGEABLE (UNSTABLE mergeStateStatus only because of pre-existing Security Audit failure on `@lhci/cli` chain, not blocking).
+
+- **PROD migrate + edge-function deploy approved by user; both succeeded on first approval.** `migrate-production.yml` run `25523339957` + `deploy-edge-functions.yml` run `25523339945` — no SASL handshake flake on Apply step, no esm.sh CDN 522 flake on edge fn deploy. Order followed kickoff Recent decisions ("migrations-first, edge-functions-second when both PROD workflows queue together").
+
+- **Post-PROD-apply MCP verification ALL GREEN (4 surfaces, 3-signal pattern):**
+  - `lesson_submissions.ai_draft_*` columns: 3/3 present (jsonb + timestamptz + text, all nullable)
+  - `schema_migrations`: both PR 2 migrations applied (`20260518200000` + `20260519000000`)
+  - `complete_review_atomic` body: 4/4 signals (`v_ai_draft` declared, reads `ai_draft_metadata`, array passthrough for v_ai_draft, `tags = COALESCE(NULLIF(v_existing.tags...` chain present); body_length 14,900 == TEST exactly
+  - `process-submission` edge fn: version 30 → **31** (signal 1: version increment ✓); ezbr_sha256 `94e8bb71...` IDENTICAL to TEST's deploy of same merge commit (signal 2: cross-environment match ✓); source has `import Anthropic`, CRF prompt block, activity_type prompt block with RMW merge into `ai_draft_metadata` (signal 3: source-content grep for new code ✓).
+
+- **PR 2 SHIPPED.** Foundation-phase substrate now includes submission-time Opus 4.7 LLM auto-tag for two fields: cultural_responsiveness_features (gated on body containing "cultural responsiveness" header text — older legacy template ~45% of corpus skipped) + activity_type (always-on, multi-label per Rule Y hybrid garden semantics).
+
+**Decisions made:**
+
+- **User-mid-session intercept on TEST DB verification surfaced an axis gap.** Per-round verification covers the "round changed DB-applied state?" axis, but pre-PROD-apply verification covers the "is TEST DB confirmed in expected post-merge state via MCP?" axis. Both axes apply. Session 45's status-doc claim "no fresh verification needed" was correct at the per-round axis but didn't trip the pre-PROD-apply axis. The 2-min MCP body-signal probe is high-leverage and should fire pre-PROD-apply regardless of per-round-verification status. Worth promoting to the per-round verification feedback memory or kickoff PER-PR RITUAL — see Process notes for Session 47+.
+
+- **`gh pr merge --squash` without `--delete-branch`.** Per past PR 1 + PR 1b precedent, branch retention is user-side cleanup ("deletable at convenience"). Auto-deletion would foreclose any need to recover the per-task hashes from the feature branch.
+
+- **Stay on the merged feature branch for this session's docs commit** (vs. checkout main + create `docs/session-46-pr2-shipped`). Session 36's pattern was the latter, but Session 46's docs are short (~150 lines append + Current State refresh) and the next-PR session can cherry-pick from any branch. Lower-friction path: commit on `feat/metadata-foundation-llm-tagging` (already deletable). If user prefers the dedicated docs branch, easy to recreate later.
+
+- **No new out-of-scope follow-ups added this session.** Session 45's three (any-types cleanup, per-field models provenance, Anthropic call timeout) cover the round-3 substantive findings; round-3's only NEW item was the `evalMetrics.averageDefined` NaN typing nit which is too minor to track.
+
+**Process notes for Session 47+:**
+
+- **PR-cycle archival fires at the START of the next PR (Session 47 if it opens a fresh branch).** Sessions 37-46 in the active file move to the archive at that time per kickoff session-end ritual step 5.
+
+- **Branch cleanup deferrable.** All 5 metadata-foundation feature/backup/docs branches are deletable at user convenience. No urgency.
+
+- **Foundation-phase next-PR options.** Three branches the user can pick (see Current State for command-line first steps). PR 3a (search infra) and PR 4 (corpus drops) are independent of Stage 1; the post-PR-2 tags-LLM follow-up needs its sample-set methodology decision before any code work begins.
+
+- **No v-tag yet.** Per Recent decisions "v-tag deferred to end-of-foundation-phase" — PR 2 is the third foundation-phase PR; tagging mid-phase is premature.
+
+- **Pre-PROD-apply MCP probe pattern is high-leverage — promote to feedback memory.** This session's user-prompted "did we already do that?" check turned a routine 2-min step into a confirmed-green pre-flight check that would have caught any TEST-DB-not-actually-applied case before PROD apply triggered. Candidate: append a bullet to `feedback_per_round_test_db_verification.md` distinguishing "per-round verification" (round changed DB-state?) from "pre-PROD-apply verification" (TEST DB confirmed in expected post-merge state?), making both fire independently. Or fold into kickoff PER-PR RITUAL step 9 explicitly. Decide on Session 47.
 
 ### Session 45 — 2026-05-07 — PR 2 round 2 triage + 1 accept (CRF test coverage); round-cap activated
 
