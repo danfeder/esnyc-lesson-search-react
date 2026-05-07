@@ -1,20 +1,22 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-07 — Session 42 (PR 2 Task 2.4 step 4 shipped local: activity_type prompt wired into `process-submission/index.ts` with read-modify-write merge into `ai_draft_metadata` to preserve CRF keys; 17 commits ahead of main; Task 2.5 / PR 2 push next).
+**Last updated:** 2026-05-07 — Session 43 (PR 2 OPEN as PR #477 with CRF + activity_type only — tags LLM deferred to follow-up after sample-set methodology decision; pre-push code-reviewer agent surfaced 0 P0/P1 + 2 accepted P2 fix-ups; awaiting bot reviewers + CI).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-36 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (~1600 lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — IN PROGRESS, activity_type fully wired into edge function. Task 2.5 next (or PR 2 push if user prefers to ship CRF + activity_type alone first).** Branch `feat/metadata-foundation-llm-tagging` is 17 commits ahead of `main` (`bd9d6e4`) after this session's code commit (18 with the pending docs commit): 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 1 code (Task 2.4 step 3) + 1 code (Task 2.4 step 4) + 6 docs (Sessions 36 + 37 + 38 + 40 + 41 + 42-pending). PR 2 not yet pushed; no PR open.
+**PR 2 (lesson-submission LLM auto-tag — CRF + activity_type only; tags LLM DEFERRED) — OPEN as PR #477.** Branch `feat/metadata-foundation-llm-tagging` is 19 commits ahead of `main` (`bd9d6e4`) after this session's pre-push fix-up + push: 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 1 code (Task 2.4 step 3) + 1 code (Task 2.4 step 4) + 1 code (pre-push fix-up `233dfd3`) + 7 docs (Sessions 36 + 37 + 38 + 40 + 41 + 42 + 43-pending). Pushed; PR open at https://github.com/danfeder/esnyc-lesson-search-react/pull/477.
 
-**Task 2.4 step 4 shipped local-only this session (`5c6b7ea`):**
-- 129-line addition to `supabase/functions/process-submission/index.ts`: module-level loader (`ACTIVITY_TYPE_MODEL` + `ACTIVITY_TYPE_PROMPT_URL` + `loadActivityTypePrompt()`) + a Step 4.6 wire-up block after the CRF block.
-- Tool: `submit_tags` with `selected_values` array enum-restricted to `ACTIVITY_TYPE_VALUES` (4 values) + `uniqueItems: true`. Multi-label per D2.1.
-- Skip predicate: `!regenerateEmbedding` only. Activity_type works on summary + agenda + skills which every ESYNYC submission carries — no body-content preflight needed (unlike CRF's "Cultural Responsiveness" header check).
-- Output flow: predict → Zod-validate against `lessonMetadataSchema` → SELECT existing `ai_draft_metadata` → spread + overlay `activityType` key → UPDATE row.
-- Read-modify-write rationale: CRF's writer at lines 404-411 of the merge-base does a plain UPDATE on the JSONB column (overwrites, not merges). A second writer using the same pattern would drop CRF's `culturalResponsivenessFeatures` key. RMW preserves CRF's data; sequential within the request, no race. Same pattern extends to Task 2.5 (tags) and any future Gate-C-classified vocab-locked writers.
-- Failure paths log + continue (matches CRF). The ai_draft_generated_at + ai_draft_model columns are bumped on each successful write — when both prompts fire, the model column reflects the last writer (both currently `claude-opus-4-7`, so identical).
+**Session 43 actions (this session):**
+- **PR-scope decision settled.** User confirmed recommendation to push PR 2 with CRF + activity_type only and defer tags to a separate follow-up PR. Reasoning: tags has no historical reviewer truth (column is brand-new from PR 1), so the eval-gate methodology that anchored the prior two prompts (CRF on 353 reviewer-tagged rows, activity_type on 113 reviewer-tagged rows) doesn't apply. Three options for the tags sample-set methodology — synthetic worksheet (~1-2 hr user time) / smoke-test only / defer until organic reviewer activity produces data — get their own PR after the question is answered.
+- **Pre-push code-reviewer agent dispatched** (`feature-dev:code-reviewer`, opus model) on `git diff main...HEAD` (~9,125 insertions across 27 files). Agent reviewed the two migrations + edge function LLM blocks + Zod mirror + ReviewDetail draft-init + mappers + helpers + eval-gate harness. **Findings: 0 P0/P1, 3 P2, 3 P3.**
+- **Triage applied: 2 P2 accepted as fix-ups (commit `233dfd3`); 4 findings rejected as pre-existing PR-1 code or non-issues.** Accepted:
+  - **P2-1 — rollback comment block** added to `20260516000000_lesson_submissions_ai_draft_metadata.sql` per `supabase/migrations/CLAUDE.md` template (sibling migration already had the trailer).
+  - **P2-2 — `NULL → []` flip on tags column** for legacy lessons during approve_update fixed by dropping the final `ARRAY[]::text[]` arm from the COALESCE chain. UPDATE path now matches INSERT path: when no tags writer is wired (and none ships in this PR), both paths return NULL. Inline comment updated.
+- Rejected: P2-3 (Zod result.data discard in complete-review) + P3-1 (CRF block comment phrasing) + P3-2 (CRF regex header-vs-anywhere) + P3-3 (agent itself flagged as not-real-issue). All pre-existing PR-1/Task-2.3 surface area; revisit as future hygiene if needed.
+- **Pre-push verification clean:** type-check + lint, supabase db reset (all migrations apply), tests 573/573 passing.
+- **Pushed + PR opened at #477** with full description covering scope / deferred-work / pre-push findings + 12-item Test plan checklist.
 
 **Eval-gate guardrail state (unchanged from Session 41 — gate cleared at macroF1=0.887):**
 - Per-value F1: cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852. Macro recall 0.956.
@@ -29,34 +31,54 @@
 - Filter UI: `lessonFormat` removed; "Lesson Type" sidebar filter backed by `tags`. Activity Type: 4-value multi-select chips, no `'both'`, no "Only" suffix.
 - Edge functions: `complete-review` Zod-validated; `process-submission` has CRF prompt wired in.
 
-**On PR 2 branch (local-only, NOT yet on PROD):**
+**Tasks done (CRF + activity_type complete; tags deferred):**
 - Tasks 2.1-2.3 done (CRF auto-tag).
 - Task 2.4 step 1 done (Session 39 — activity_type scaffolding).
 - Task 2.4 step 2 done (Session 40 — samples.json built).
 - Task 2.4 step 3 done (Session 41 — canonical eval cleared at macroF1=0.887 with Rule Y).
-- Task 2.4 step 4 done (this session — activity_type prompt wired into edge function with RMW merge).
-- **Task 2.4 step 5 pending**: deploy to TEST. Fires when PR 2 opens; verify via `mcp__supabase-test__get_edge_function process-submission` that the activity_type prompt + multi-label call site landed; submit a TEST lesson and confirm `ai_draft_metadata.activityType` populates as array AND `culturalResponsivenessFeatures` is preserved.
-- Task 2.5 pending: tags prompt + eval (vocab-locked, 2-value enum `orientation / bilingual_handouts`; write path goes through PR 1b's `complete_review_atomic` tags side-channel rather than the review-form mapper). Same RMW pattern as activity_type when wired into the edge function.
+- Task 2.4 step 4 done (Session 42 — activity_type prompt wired into edge function with RMW merge).
+- **Task 2.4 step 5 — TEST DB verification — fires when CI applies.** Use the PR's Test plan checklist. 6/6 RPC body signals + edge fn 3-signal pattern + 4-case submission smoke matrix.
+- **Task 2.5 — tags prompt + eval — DEFERRED to a separate post-PR-2 follow-up PR** after the sample-set methodology decision is made. Tags side-channel scaffolding ships in PR 2 to make the future LLM writer drop in cleanly without further migrations.
 
-**Branches (unchanged from Session 41 except commit count):**
+**Branches (after push):**
 - `main` at `bd9d6e4` (PR 1b squash merge).
-- `feat/metadata-foundation-llm-tagging` — 17 commits ahead of main (18 with pending docs commit); not yet pushed; no PR open yet.
+- `feat/metadata-foundation-llm-tagging` — 19 commits, pushed to origin, tracking. PR #477 OPEN.
 - `backup/feat-metadata-foundation-llm-tagging-pre-rebase` — pre-Session-38-rebase backup; deletable after PR 2 ships.
 - `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — deletable at convenience.
 
-**Next session picks up:**
-- **Task 2.5 — tags prompt + eval (vocab-locked, 2-value enum).** Same shape as Task 2.4 except:
-  - Vocab: `orientation` / `bilingual_handouts` (closed enum at `TAG_VALUES`).
-  - Body-signal source for orientation: opening-ritual / norms-intro / community-building patterns. Body-signal source for bilingual_handouts: presence of Canva handout/recipe-card links flagged as bilingual.
-  - **Eval-gate sample-set decision required upfront.** Activity_type used the 113 reviewer-tagged submissions; tags hasn't been reviewer-tagged historically (the column is brand-new from PR 1). Options: (a) reviewer-tag a small synthetic worksheet (e.g., 30-50 lessons hand-selected for orientation + bilingual_handouts + neither), (b) skip canonical eval and ship a smoke-test only; (c) defer Task 2.5 entirely until reviewers organically tag a useful set. Surface to user at session start.
-  - Write path: per Task 2.2c, the LLM draft writes through to `lessons.tags` directly via `complete_review_atomic`'s side-channel — reviewer does NOT see/edit tags in PR 2 scope; the tags picker UI defers to Phase 2. Eval-gate threshold is the only gate against bad drafts at submission time.
-  - Edge-function wire-up will use same RMW pattern as activity_type: the third writer reads the merged-after-CRF-and-activity_type JSONB and overlays the `tags` key.
-- **Alternative path: PR 2 push now** (skipping Task 2.5 from this PR's scope). User option — CRF + activity_type are complete; tags can ship as a follow-up PR after Task 2.5's sample-set question is answered. Trades scope-completeness for shorter time-to-deploy on the two prompts that ARE eval-gated and ready.
+**Next session picks up — PR 2 round 0 / 1 review cycle:**
 
-**Pre-push gating reminder before opening PR 2:**
-- The `complete_review_atomic` migration `20260519000000_*` (Task 2.2c, rebased Session 38) merges activity_type array passthrough + tags side-channel; verify on TEST DB that `pg_get_functiondef('complete_review_atomic'::regprocedure)` matches local 6/6 RPC body signals after CI applies.
-- The `process-submission` edge function deploy needs both `ANTHROPIC_API_KEY` set on TEST and **two prompt files** present (`prompts/cultural-responsiveness-features.md` + `prompts/activity-type.md`). Deploy verification via 3-signal pattern: version increment + ezbr_sha256 match + grep `'submit_tags'` in deployed source confirms both prompts are wired.
-- TEST submission verification needs to cover all four cases of (CRF fires Y/N) × (activity_type fires Y/N): submission with "Cultural Responsiveness" section + agenda → both prompts fire, both keys in draft; submission without CR section + with agenda → only activity_type fires; submission empty body → neither (or both fire with empty/noisy outputs); regenerate-embedding flow → neither fires.
+Apply the active-PR session-orientation rule (per `feedback_pr_bot_review_workflow.md`): the prior session's status doc is stale because bot reviews fire between sessions. Before any other work, run:
+
+```bash
+git log @{u}..HEAD                                         # confirm no unpushed commits
+gh pr view 477 --json reviews,comments,state,mergeable     # live PR state
+gh pr checks 477                                           # CI status
+```
+
+Then collect findings from ALL FOUR PR surfaces (per `feedback_pr_comment_surfaces.md` — querying only one is a verification failure):
+
+```bash
+gh pr view 477 --comments                                                                          # issue-comments (where bots usually post)
+gh api repos/danfeder/esnyc-lesson-search-react/pulls/477/reviews --jq '.[] | {user: .user.login, state, body}'    # PR reviews
+gh api repos/danfeder/esnyc-lesson-search-react/pulls/477/comments --jq '.[] | {user: .user.login, path, line, body}'  # line-comments
+gh run view <failing-run-id> --log-failed                  # any failing CI check details
+```
+
+Then **TEST DB verification (the kickoff PER-PR RITUAL step 9 — re-verify after each round, not just round 0):**
+- `mcp__supabase-test__execute_sql pg_get_functiondef('complete_review_atomic'::regprocedure)` → 6/6 RPC body signals: declare `v_ai_draft jsonb` + pluck from `lesson_submissions.ai_draft_metadata` + INSERT array passthrough for `activityType` + UPDATE array passthrough for `activityType` + INSERT tags from draft + UPDATE tags carry-forward (NULL preserved — the P2-2 fix).
+- `mcp__supabase-test__execute_sql` to confirm tags column distribution unchanged on legacy rows (no NULL → [] flip on existing rows; CI's apply-migration step doesn't fire complete_review_atomic on legacy rows).
+- `mcp__supabase-test__get_edge_function process-submission` → 3-signal pattern (version + ezbr_sha256 + source-grep for `loadCrfPrompt` AND `loadActivityTypePrompt` AND both `submit_tags` tool definitions).
+- 4-case submission smoke matrix once `ANTHROPIC_API_KEY` is set on TEST: with-CR + agenda → both fire; without-CR + agenda → only activity_type fires; empty body → noisy/empty outputs; regenerate-embedding → neither fires.
+
+**Triage rules for any findings:**
+- Investigate every finding (rebuttal pass per `feedback_bot_review_investigation.md`).
+- Bot voice convergence (3 independent voices agree) is P1 signal; absence of convergence correlates with absence of P1 (per `feedback_pr_bot_review_workflow.md`).
+- Empirical evidence (TEST/PROD MCP probes) can escalate single-voice low-confidence findings — for any "N rows historical" claim, run the corresponding MCP probe before triaging.
+- Round-cap after 2 rounds of bot review (kickoff PER-PR RITUAL step 10).
+- Surface accept/reject recommendations to user with rationale BEFORE applying.
+
+**Carrier choice for Session 43's docs commit:** session-end docs commit lands locally only this session (per `feedback_no_docs_push_during_pr.md` — bundles with the next fix-up push to avoid a docs-only CI cycle on PR #477). Next session bundles it with the first fix-up commit (or a final docs roll-up if no fix-ups are needed before ship).
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -295,6 +317,48 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - **My API cost estimates were ~3× over actuals.** Across smoke + v1 + v2 + v3, my projected cost per call was 2.7-3.5× the actual. Likely my chars-per-token assumption (3.5) was too low, OR Anthropic's billing has a discount I'm unaware of, OR there's a workspace-credit subsidy. For future projections, anchor on user-observed actuals not my pricing math; my math is consistently overestimating.
 
 - **Single-truth-row eval values are stringent.** Academic now has 1 truth row in the 113-sample set. Per-value academic recall is binary: 1.000 if the LLM correctly tags Lorax, 0.000 if it doesn't. Future canonical re-runs need to keep producing this 1/1 to maintain the per-value floor. If the 1-row category becomes a flake risk, options: (a) add 2-3 more academic-only lessons to the sample set (would need to find/invent), (b) drop the per-value floor for academic only via threshold-config exemption, (c) accept the binary signal as load-bearing — a regression on Lorax tells us the prompt has shifted academic interpretation away from the rule.
+
+### Session 43 — 2026-05-07 — PR 2 PUSHED + OPENED as #477 (CRF + activity_type only; tags LLM deferred)
+
+**Done (1 fix-up code commit `233dfd3` + this session-end docs commit pending — local only per `feedback_no_docs_push_during_pr.md`):**
+
+- **PR-scope decision settled.** Recommended (and user confirmed) shipping PR 2 with CRF + activity_type only and deferring tags LLM to a follow-up PR. Reasoning: tags column is brand-new from PR 1 with no historical reviewer-labeling, so the eval-gate methodology that anchored the prior two prompts (CRF on 353 reviewer-tagged rows, activity_type on 113 reviewer-tagged rows) doesn't apply. Tags sample-set decision (synthetic worksheet vs. organic post-deploy data vs. defer until reviewers tag enough lessons) gets its own PR after the question is answered. Trades scope-completeness in one PR for shorter time-to-deploy on the two prompts that ARE eval-gated and ready, plus avoids a half-eval-gated middle path for tags.
+
+- **Pre-push code-reviewer agent dispatched** (`feature-dev:code-reviewer`, model=opus per `feedback_opus_subagents.md`) on `git diff main...HEAD` (~9,125 insertions / 224 deletions across 27 files). Prompt covered: PR scope + what's deferred + key files for special attention (CRF + activity_type LLM blocks, the dual-purpose `complete_review_atomic` migration, the `ai_draft_metadata` column-add migration, ReviewDetail draft-init reader, Zod canonical + Deno mirror equivalence) + what to look for (correctness, data-safety, logical inconsistency, scope creep) + what to de-prioritize (hardening, style, test-coverage). **Findings: 0 P0/P1, 3 P2, 3 P3.**
+
+- **Triage applied (rebuttal pass per `feedback_bot_review_investigation.md`):**
+  - **ACCEPTED P2-1 — rollback comment block** added to `20260516000000_lesson_submissions_ai_draft_metadata.sql`. Sibling migration already had the trailer; `supabase/migrations/CLAUDE.md` template specifies it as required. Pure compliance.
+  - **ACCEPTED P2-2 — `NULL → []` flip on tags column** during approve_update for legacy lessons. The pre-fix COALESCE chain ended in `ARRAY[]::text[]`, flipping `v_existing.tags = NULL` to `[]` on every approve_update even though no tags writer ships in this PR. The INSERT path on line 263 uses `_phase4_jsonb_text_array_or_null` (returns NULL) — UPDATE was asymmetric. Fix: drop final `ARRAY[]::text[]` arm; COALESCE returns NULL when all three arms are NULL; `valid_tags` CHECK accepts NULL. UPDATE now matches INSERT.
+  - **REJECTED P2-3** (Zod result.data discard in complete-review): pre-existing PR-1 code; per kickoff "don't refactor beyond task." Defense-in-depth value half-realized but not in scope.
+  - **REJECTED P3-1** (CRF block comment phrasing on RMW direction): the comment is on the activity_type block (Step 4.6, labeled as such); reads fine in context. Agent's "ambiguity" call doesn't hold up against the surrounding cues.
+  - **REJECTED P3-2** (CRF regex `header` vs `anywhere`): pre-existing CRF code from Task 2.3 step 5 (`67a3cd7`). Same scope-creep argument as P2-3.
+  - **REJECTED P3-3**: agent itself flagged "not a real issue" — activity_type's lack of content gate is intentional (activity_type works on any submission body; CRF skip is pre-D9-template specific).
+
+- **Pre-push verification clean:** `npm run type-check` + `npm run lint` + `npm run test` (573/573 passing) + `supabase db reset` (all migrations apply with the new COALESCE chain).
+
+- **PR opened** at https://github.com/danfeder/esnyc-lesson-search-react/pull/477 with full description: scope summary (CRF + activity_type with eval gate metrics), what's deliberately deferred (tags LLM + Stage-1-gated prompts + reviewer picker UI), pre-push review summary (0 P0/P1, 2 P2 fix-ups applied, 4 rejected with rationale), 12-item Test plan checklist covering CI apply + complete_review_atomic body signals + edge function deploy verification + 4-case submission smoke matrix + round-cap rule.
+
+**Decisions made:**
+
+- **Cherry-pick approach NOT needed for this push** (unlike Session 38's PR 2 rebase). Branch was rebased clean against `bd9d6e4` in Session 38; no further rebase work needed before push.
+
+- **Read-modify-write pattern accepted as-is** (not refactored to single-write-at-end). Reviewer agent dismissed this proactively per kickoff de-prioritization. Worth noting: pattern stays viable for Task 2.5 (tags) when it eventually ships — third writer reads merged-after-CRF-and-activity_type JSONB and overlays tags key. If 4+ writers eventually exist, refactor to accumulator-pattern; until then, RMW is fine.
+
+- **Single fix-up commit** for both P2 changes (rather than amending each into the original commit). Nothing was pushed when the agent reviewed; amending was an option. Picked fix-up for transparency in local git log + traceability of "what was changed in review." Squash-merge collapses to one commit on main anyway.
+
+- **Session-end docs commit lands locally only.** Per `feedback_no_docs_push_during_pr.md`: don't push session-end docs commits when a PR is open. Bundle with next fix-up push (or final pre-merge docs roll-up if no fix-ups needed). Avoids burning a CI cycle on docs-only changes.
+
+**Process notes for Session 44+:**
+
+- **Active-PR session-orientation rule applies** at session start. Status doc at session-end says "PR #477 open, awaiting bot reviews" — that's stale by next session because bots reviewed in the gap. Run `git log @{u}..HEAD` + `gh pr view 477 --json reviews,comments,state,mergeable` + `gh pr checks 477` BEFORE any other work. The four-surface query (`gh pr view --comments` + `gh api .../reviews` + `gh api .../comments` + `gh run view --log-failed`) is mandatory for "0 findings" claims (per `feedback_pr_comment_surfaces.md`).
+
+- **TEST DB verification per-round.** First verification fires when CI applies the migrations (round 0 = PR open). Per `feedback_per_round_test_db_verification.md`, every subsequent round that produces DB-affecting fix-up commits needs its own re-verification — not just one-time at PR open. The 6-signal RPC body check + tags-column-distribution check + edge function 3-signal check are the load-bearing probes.
+
+- **`ANTHROPIC_API_KEY` secret on TEST** is the gating prerequisite for any submission smoke testing. Without it, the LLM blocks gracefully skip and the smoke can only verify "no crash on missing key," not "drafts populate correctly." Confirm secret is set BEFORE running submission tests. Same will apply for PROD deploy.
+
+- **Watch for the SASL flake** at the Apply step of `migrate-production.yml` AND the esm.sh CDN 522 flake at `deploy-edge-functions.yml` (per MEMORY.md hygiene-follow-ups). Both are recurring transient patterns; mitigation is `gh run rerun --failed <run_id>`. Approval gate behavior differs: SASL re-fires the gate (CLI re-handshakes), CDN doesn't (matrix slot has its own re-run path).
+
+- **No code changes anticipated next session** unless bot rounds surface real findings. Prepare for: (a) zero-findings ship path (TEST DB verify → user PROD-merge approval → PROD verify), (b) 1-2 round fix-up cycle (re-dispatch fresh review per kickoff "every push that follows" rule, NOT just round 0).
 
 ### Session 42 — 2026-05-07 — PR 2 Task 2.4 step 4: activity_type prompt wired into process-submission edge function
 
