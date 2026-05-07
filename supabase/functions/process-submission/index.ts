@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
 import type { MetadataSketch } from '../_shared/google-docs-parser.ts';
 import {
+  ACTIVITY_TYPE_VALUES,
   CULTURAL_RESPONSIVENESS_FEATURE_VALUES,
   lessonMetadataSchema,
 } from '../_shared/metadataSchemas.ts';
@@ -17,6 +18,16 @@ async function loadCrfPrompt(): Promise<string> {
     crfPromptCache = await Deno.readTextFile(CRF_PROMPT_URL);
   }
   return crfPromptCache;
+}
+
+const ACTIVITY_TYPE_MODEL = 'claude-opus-4-7';
+const ACTIVITY_TYPE_PROMPT_URL = new URL('./prompts/activity-type.md', import.meta.url);
+let activityTypePromptCache: string | null = null;
+async function loadActivityTypePrompt(): Promise<string> {
+  if (activityTypePromptCache === null) {
+    activityTypePromptCache = await Deno.readTextFile(ACTIVITY_TYPE_PROMPT_URL);
+  }
+  return activityTypePromptCache;
 }
 
 interface ProcessSubmissionRequest {
@@ -420,6 +431,124 @@ serve(async (req) => {
         }
       } catch (error) {
         console.error('[CRF auto-tag] Failed:', {
+          error: error instanceof Error ? error.message : String(error),
+          submissionId: submission.id,
+        });
+      }
+    }
+
+    // Step 4.6: LLM auto-tag — Activity Type (D2). Multi-label output (1-or-more
+    // of cooking/garden/academic/craft) per Rule Y hybrid garden semantics.
+    // Skip on regenerate-embedding-only flow. Output is canonical-keys shape
+    // per `lessonMetadataSchema`. Reviewer edits via the existing multi-select
+    // picker (post-PR-1b Task 1b.5).
+    //
+    // Read-modify-write into ai_draft_metadata: preserves any keys written by
+    // earlier auto-tag passes (e.g., culturalResponsivenessFeatures from CRF)
+    // since the CRF writer overwrites the JSONB column.
+    if (!regenerateEmbedding) {
+      try {
+        const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+        if (!anthropicKey) {
+          console.warn('[Activity-type auto-tag] ANTHROPIC_API_KEY not configured, skipping');
+        } else {
+          const activityTypePrompt = await loadActivityTypePrompt();
+          const anthropic = new Anthropic({ apiKey: anthropicKey });
+          console.log('[Activity-type auto-tag] Generating draft for submission:', submission.id);
+          const startTime = Date.now();
+
+          const response = await anthropic.messages.create({
+            model: ACTIVITY_TYPE_MODEL,
+            max_tokens: 1024,
+            system: [
+              { type: 'text', text: activityTypePrompt, cache_control: { type: 'ephemeral' } },
+            ],
+            tools: [
+              {
+                name: 'submit_tags',
+                description: 'Submit the selected activityType value(s) for the lesson.',
+                input_schema: {
+                  type: 'object',
+                  properties: {
+                    selected_values: {
+                      type: 'array',
+                      items: {
+                        type: 'string',
+                        enum: [...ACTIVITY_TYPE_VALUES],
+                      },
+                      uniqueItems: true,
+                    },
+                  },
+                  required: ['selected_values'],
+                },
+                cache_control: { type: 'ephemeral' },
+              },
+            ],
+            tool_choice: { type: 'tool', name: 'submit_tags' },
+            messages: [{ role: 'user', content }],
+          });
+
+          const responseTime = Date.now() - startTime;
+
+          let predicted: unknown[] = [];
+          for (const block of response.content) {
+            if (block.type === 'tool_use' && block.name === 'submit_tags') {
+              const input = block.input as Record<string, unknown>;
+              if (Array.isArray(input.selected_values)) {
+                predicted = input.selected_values;
+              }
+              break;
+            }
+          }
+
+          const draft = { activityType: predicted };
+          const parsed = lessonMetadataSchema.safeParse(draft);
+          if (!parsed.success) {
+            console.error(
+              '[Activity-type auto-tag] Zod validation failed:',
+              JSON.stringify(parsed.error.issues)
+            );
+          } else {
+            const activityTypes = parsed.data.activityType ?? [];
+            // Read existing ai_draft_metadata so we merge instead of overwrite
+            // (CRF writes culturalResponsivenessFeatures earlier in this flow).
+            const { data: currentSubmission, error: readError } = await supabaseAdmin
+              .from('lesson_submissions')
+              .select('ai_draft_metadata')
+              .eq('id', submission.id)
+              .single();
+            if (readError) {
+              console.error(
+                '[Activity-type auto-tag] Failed to read existing draft:',
+                readError
+              );
+            } else {
+              const existingDraft =
+                (currentSubmission?.ai_draft_metadata as Record<string, unknown> | null) ?? {};
+              const merged = { ...existingDraft, activityType: parsed.data.activityType };
+              const { error: draftUpdateError } = await supabaseAdmin
+                .from('lesson_submissions')
+                .update({
+                  ai_draft_metadata: merged,
+                  ai_draft_generated_at: new Date().toISOString(),
+                  ai_draft_model: ACTIVITY_TYPE_MODEL,
+                })
+                .eq('id', submission.id);
+              if (draftUpdateError) {
+                console.error(
+                  '[Activity-type auto-tag] Failed to write draft:',
+                  draftUpdateError
+                );
+              } else {
+                console.log(
+                  `[Activity-type auto-tag] Draft written in ${responseTime}ms — ${activityTypes.length} value(s): ${activityTypes.join(',')}`
+                );
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[Activity-type auto-tag] Failed:', {
           error: error instanceof Error ? error.message : String(error),
           submissionId: submission.id,
         });
