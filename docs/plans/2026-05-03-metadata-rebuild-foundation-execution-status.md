@@ -1,31 +1,26 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-07 — Session 41 (PR 2 Task 2.4 step 3 shipped local: activity_type eval gate cleared at macroF1=0.887 after Rule Y prompt rewrite + 17 truth retags; Console API direct billing actually ~$2 per run vs $7 projected; 15 commits ahead of main; Task 2.4 step 4 next).
+**Last updated:** 2026-05-07 — Session 42 (PR 2 Task 2.4 step 4 shipped local: activity_type prompt wired into `process-submission/index.ts` with read-modify-write merge into `ai_draft_metadata` to preserve CRF keys; 17 commits ahead of main; Task 2.5 / PR 2 push next).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-36 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (~1600 lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — IN PROGRESS, activity_type eval gate cleared. Task 2.4 step 4 next.** Branch `feat/metadata-foundation-llm-tagging` is 15 commits ahead of `main` (`bd9d6e4`) after this session's code commit (16 with the pending docs commit): 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 1 code (Task 2.4 step 3) + 5 docs (Sessions 36 + 37 + 38 + 40 + 41-pending). PR 2 not yet pushed; no PR open.
+**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — IN PROGRESS, activity_type fully wired into edge function. Task 2.5 next (or PR 2 push if user prefers to ship CRF + activity_type alone first).** Branch `feat/metadata-foundation-llm-tagging` is 17 commits ahead of `main` (`bd9d6e4`) after this session's code commit (18 with the pending docs commit): 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 1 code (Task 2.4 step 3) + 1 code (Task 2.4 step 4) + 6 docs (Sessions 36 + 37 + 38 + 40 + 41 + 42-pending). PR 2 not yet pushed; no PR open.
 
-**Task 2.4 step 3 shipped local-only this session (`5e25431`):**
-- Canonical eval gate **cleared at macroF1=0.887** (gate floor 0.700) on the post-Rule-Y truth set.
-- Per-value F1: cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852. Macro recall 0.956 — high recall is the desired direction for the draft-validate reviewer workflow.
-- Iteration trajectory:
-  - v1 baseline (permissive academic): macroF1 0.605 — failed (academic FPs 72 of 113).
-  - v2 mode-exclusive academic: macroF1 0.670 — failed (academic FPs dropped 72→6, but garden FNs grew 19→23 via garden→craft confusion).
-  - **v3 Rule Y (hybrid garden + 17 truth retags): macroF1 0.887 — passed.**
-- Rule Y design call (Session 41): `garden` is a hybrid tag firing for both hands-on activity AND food/agriculture/garden topical content; `academic` becomes mode-exclusive and narrow (in 113-row sample, only "The Lorax Debate" qualifies). User authored this rule mid-session after seeing v2's garden→craft confusion pattern revealed garden was being used both topically and activity-based by reviewers.
-- 17 truth retags applied via `/tmp/apply-retags.mjs` (one-off helper, not committed):
-  - 7 `[academic]` → `[garden]` or `[garden, craft]` (food/agriculture topical)
-  - 10 `[garden]` → `[garden, craft]` (added craft for substantial activity blocks)
-- Final truth distribution: garden 76 / cooking 34 / academic 1 / craft 26; 23 of 113 rows multi-label (was 10 pre-retag).
-- Cost actuals: Console API direct ~$2 per full 113-sample run (vs $7 projection; vs $30 via CLIProxyAPI proxy). Total session spend ~$6 of $9 budget across smoke + v1 + v2 + v3 runs.
+**Task 2.4 step 4 shipped local-only this session (`5c6b7ea`):**
+- 129-line addition to `supabase/functions/process-submission/index.ts`: module-level loader (`ACTIVITY_TYPE_MODEL` + `ACTIVITY_TYPE_PROMPT_URL` + `loadActivityTypePrompt()`) + a Step 4.6 wire-up block after the CRF block.
+- Tool: `submit_tags` with `selected_values` array enum-restricted to `ACTIVITY_TYPE_VALUES` (4 values) + `uniqueItems: true`. Multi-label per D2.1.
+- Skip predicate: `!regenerateEmbedding` only. Activity_type works on summary + agenda + skills which every ESYNYC submission carries — no body-content preflight needed (unlike CRF's "Cultural Responsiveness" header check).
+- Output flow: predict → Zod-validate against `lessonMetadataSchema` → SELECT existing `ai_draft_metadata` → spread + overlay `activityType` key → UPDATE row.
+- Read-modify-write rationale: CRF's writer at lines 404-411 of the merge-base does a plain UPDATE on the JSONB column (overwrites, not merges). A second writer using the same pattern would drop CRF's `culturalResponsivenessFeatures` key. RMW preserves CRF's data; sequential within the request, no race. Same pattern extends to Task 2.5 (tags) and any future Gate-C-classified vocab-locked writers.
+- Failure paths log + continue (matches CRF). The ai_draft_generated_at + ai_draft_model columns are bumped on each successful write — when both prompts fire, the model column reflects the last writer (both currently `claude-opus-4-7`, so identical).
 
-**Eval-gate guardrail state after Rule Y retag:**
-- `academic` truth count = 1 (just "The Lorax Debate"). Per-value academic recall is binary on this sample set: either 1.000 or 0.000. v3 prompt correctly tagged it; future canonical re-runs need to keep producing 1/1 to maintain the per-value floor.
+**Eval-gate guardrail state (unchanged from Session 41 — gate cleared at macroF1=0.887):**
+- Per-value F1: cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852. Macro recall 0.956.
+- `academic` truth count = 1 ("The Lorax Debate"). Per-value academic recall is binary on this sample set; future canonical re-runs need to keep producing 1/1 to maintain the per-value floor.
 - All other vocab values have non-zero truth labels; `maxPredictionRateForAbsentValues=0.10` guardrail is dormant.
-- Active thresholds: `macroF1 >= 0.7` (cleared at 0.887) + `minRecallPerValue >= 0.5` (cleared on all four values; lowest was garden 0.679 precision but recall was perfect at 1.000).
+- Active thresholds: `macroF1 >= 0.7` (cleared at 0.887) + `minRecallPerValue >= 0.5` (cleared on all four values).
 
 **Foundation-phase substrate live on PROD (post-PR-1 + PR-1b, unchanged this session):**
 - Schema: `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns added; `activity_type` array-shape multi-select with closed enum at 4 values; `tags` array column with closed enum; `cultural_responsiveness_features` closed to 7 Brown CR features.
@@ -38,30 +33,30 @@
 - Tasks 2.1-2.3 done (CRF auto-tag).
 - Task 2.4 step 1 done (Session 39 — activity_type scaffolding).
 - Task 2.4 step 2 done (Session 40 — samples.json built).
-- Task 2.4 step 3 done (this session — canonical eval cleared at macroF1=0.887 with Rule Y).
-- **Tasks 2.4 steps 4-5 pending**: wire prompt into `process-submission/index.ts` → deploy to TEST.
-- Task 2.5 pending: tags prompt + eval (vocab-locked, 2-value enum `orientation / bilingual_handouts`; write path goes through PR 1b's `complete_review_atomic` tags side-channel rather than the review-form mapper).
+- Task 2.4 step 3 done (Session 41 — canonical eval cleared at macroF1=0.887 with Rule Y).
+- Task 2.4 step 4 done (this session — activity_type prompt wired into edge function with RMW merge).
+- **Task 2.4 step 5 pending**: deploy to TEST. Fires when PR 2 opens; verify via `mcp__supabase-test__get_edge_function process-submission` that the activity_type prompt + multi-label call site landed; submit a TEST lesson and confirm `ai_draft_metadata.activityType` populates as array AND `culturalResponsivenessFeatures` is preserved.
+- Task 2.5 pending: tags prompt + eval (vocab-locked, 2-value enum `orientation / bilingual_handouts`; write path goes through PR 1b's `complete_review_atomic` tags side-channel rather than the review-form mapper). Same RMW pattern as activity_type when wired into the edge function.
 
-**Branches (unchanged from Session 38 except commit count):**
+**Branches (unchanged from Session 41 except commit count):**
 - `main` at `bd9d6e4` (PR 1b squash merge).
-- `feat/metadata-foundation-llm-tagging` — 15 commits ahead of main (16 with pending docs commit); not yet pushed; no PR open yet.
+- `feat/metadata-foundation-llm-tagging` — 17 commits ahead of main (18 with pending docs commit); not yet pushed; no PR open yet.
 - `backup/feat-metadata-foundation-llm-tagging-pre-rebase` — pre-Session-38-rebase backup; deletable after PR 2 ships.
 - `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — deletable at convenience.
 
 **Next session picks up:**
-- **Task 2.4 step 4 — wire activity_type prompt into `process-submission/index.ts` edge function.** Structurally parallel to CRF wire-up (commit `67a3cd7`, Task 2.3 step 5):
-  - Load `activity-type.md` prompt at module scope alongside the CRF prompt loader.
-  - Call Anthropic with `submit_tags` multi-label tool (NOT `submit_tag` single-label like CRF).
-  - Zod-validate the returned `selected_values: string[]` against `lessonMetadataSchema.shape.activityType` (already array-shape post-PR-1b).
-  - **Merge into existing `ai_draft_metadata` rather than overwriting** — CRF wrote `cultural_responsiveness_features`; activity_type adds `activityType` to the same JSONB without dropping CRF's keys. Use `jsonb_set` or read-modify-write pattern in the edge function (verify CRF's pattern handles this).
-  - Update `process-submission/deno.json` and `import_map.json` if needed for any new imports (likely none — Anthropic SDK + Zod already in place).
-- **Task 2.4 step 5 — deploy to TEST.** When PR 2 opens, CI deploys; verify via `mcp__supabase-test__get_edge_function process-submission` that the new prompt + multi-label call site land. Test by submitting a lesson and checking `lesson_submissions.ai_draft_metadata.activityType` is populated as an array.
-- After Task 2.4 ships: Task 2.5 (tags prompt + eval). Then PR 2 push + open + per-PR ritual.
-- **TEST DB verification deferred until PR 2 push** — CI applies new migrations + edge fn updates when PR opens; per-round verification rule applies starting from round 0.
+- **Task 2.5 — tags prompt + eval (vocab-locked, 2-value enum).** Same shape as Task 2.4 except:
+  - Vocab: `orientation` / `bilingual_handouts` (closed enum at `TAG_VALUES`).
+  - Body-signal source for orientation: opening-ritual / norms-intro / community-building patterns. Body-signal source for bilingual_handouts: presence of Canva handout/recipe-card links flagged as bilingual.
+  - **Eval-gate sample-set decision required upfront.** Activity_type used the 113 reviewer-tagged submissions; tags hasn't been reviewer-tagged historically (the column is brand-new from PR 1). Options: (a) reviewer-tag a small synthetic worksheet (e.g., 30-50 lessons hand-selected for orientation + bilingual_handouts + neither), (b) skip canonical eval and ship a smoke-test only; (c) defer Task 2.5 entirely until reviewers organically tag a useful set. Surface to user at session start.
+  - Write path: per Task 2.2c, the LLM draft writes through to `lessons.tags` directly via `complete_review_atomic`'s side-channel — reviewer does NOT see/edit tags in PR 2 scope; the tags picker UI defers to Phase 2. Eval-gate threshold is the only gate against bad drafts at submission time.
+  - Edge-function wire-up will use same RMW pattern as activity_type: the third writer reads the merged-after-CRF-and-activity_type JSONB and overlays the `tags` key.
+- **Alternative path: PR 2 push now** (skipping Task 2.5 from this PR's scope). User option — CRF + activity_type are complete; tags can ship as a follow-up PR after Task 2.5's sample-set question is answered. Trades scope-completeness for shorter time-to-deploy on the two prompts that ARE eval-gated and ready.
 
 **Pre-push gating reminder before opening PR 2:**
 - The `complete_review_atomic` migration `20260519000000_*` (Task 2.2c, rebased Session 38) merges activity_type array passthrough + tags side-channel; verify on TEST DB that `pg_get_functiondef('complete_review_atomic'::regprocedure)` matches local 6/6 RPC body signals after CI applies.
-- The `process-submission` edge function deploy needs both `ANTHROPIC_API_KEY` set on TEST and the activity_type prompt file present at `prompts/activity-type.md`. The CRF prompt deploy already proved this works; activity_type adds one more `loadX()` cache + one more multi-label call site, structurally parallel.
+- The `process-submission` edge function deploy needs both `ANTHROPIC_API_KEY` set on TEST and **two prompt files** present (`prompts/cultural-responsiveness-features.md` + `prompts/activity-type.md`). Deploy verification via 3-signal pattern: version increment + ezbr_sha256 match + grep `'submit_tags'` in deployed source confirms both prompts are wired.
+- TEST submission verification needs to cover all four cases of (CRF fires Y/N) × (activity_type fires Y/N): submission with "Cultural Responsiveness" section + agenda → both prompts fire, both keys in draft; submission without CR section + with agenda → only activity_type fires; submission empty body → neither (or both fire with empty/noisy outputs); regenerate-embedding flow → neither fires.
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -300,6 +295,52 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - **My API cost estimates were ~3× over actuals.** Across smoke + v1 + v2 + v3, my projected cost per call was 2.7-3.5× the actual. Likely my chars-per-token assumption (3.5) was too low, OR Anthropic's billing has a discount I'm unaware of, OR there's a workspace-credit subsidy. For future projections, anchor on user-observed actuals not my pricing math; my math is consistently overestimating.
 
 - **Single-truth-row eval values are stringent.** Academic now has 1 truth row in the 113-sample set. Per-value academic recall is binary: 1.000 if the LLM correctly tags Lorax, 0.000 if it doesn't. Future canonical re-runs need to keep producing this 1/1 to maintain the per-value floor. If the 1-row category becomes a flake risk, options: (a) add 2-3 more academic-only lessons to the sample set (would need to find/invent), (b) drop the per-value floor for academic only via threshold-config exemption, (c) accept the binary signal as load-bearing — a regression on Lorax tells us the prompt has shifted academic interpretation away from the rule.
+
+### Session 42 — 2026-05-07 — PR 2 Task 2.4 step 4: activity_type prompt wired into process-submission edge function
+
+**Done (1 code commit `5c6b7ea` + this session-end docs commit pending):**
+
+- **Activity_type prompt wired into `supabase/functions/process-submission/index.ts`** (+129 lines). Module-level constants + loader: `ACTIVITY_TYPE_MODEL = 'claude-opus-4-7'`, `ACTIVITY_TYPE_PROMPT_URL` pointing to `./prompts/activity-type.md`, `loadActivityTypePrompt()` cache helper. New `ACTIVITY_TYPE_VALUES` import added to the existing `_shared/metadataSchemas.ts` import block.
+
+- **Step 4.6 wire-up block** placed immediately after the CRF block (Step 4.5), before the duplicate-detection branch. Skip predicate is `!regenerateEmbedding` only — no body-content preflight (unlike CRF's "Cultural Responsiveness" header check) since activity_type works on summary + agenda + skills which every ESYNYC submission carries. Tool: `submit_tags` with `selected_values` array enum-restricted to `ACTIVITY_TYPE_VALUES` (4 values) + `uniqueItems: true`. Multi-label per D2.1.
+
+- **Read-modify-write into `ai_draft_metadata`.** After Zod validation succeeds, the block SELECTs the existing `ai_draft_metadata` JSONB, spreads it into a new object, overlays the `activityType` key, and UPDATEs the row. CRF's writer at lines 404-411 of the merge-base does a plain UPDATE (overwrites the JSONB column wholesale); a second writer with the same pattern would drop CRF's `culturalResponsivenessFeatures` key. RMW preserves CRF's data without touching CRF's code. Sequential within the request — no race with CRF.
+
+- **Failure paths**: Zod validation fail → log + skip write; SELECT fail → log + skip write; UPDATE fail → log + continue; outer try/catch → log + continue. Submission flow never blocks on tagging. Same shape as CRF.
+
+- **Type-check + lint pass**: clean baseline before commit, clean after commit.
+
+**Decisions made:**
+
+- **RMW over alternatives** (`jsonb_set` raw SQL or refactor to single accumulator-write). Three options were on the table:
+  - **(A) RMW (chosen)**: read existing JSONB, merge in JS, write back. One extra SELECT per writer. Simple, doesn't touch CRF. Scales to Task 2.5 (tags) by adding a third writer that reads the merged-after-CRF+activity_type JSONB.
+  - **(B) `jsonb_set` raw SQL**: atomic, single round-trip, but requires raw SQL via `rpc()` or a helper function. Adds infrastructure for a problem that doesn't exist (no concurrency between writers within a single request).
+  - **(C) Refactor to single end-of-flow write**: collect all prompt outputs in an in-memory accumulator, write once at the end. Cleanest at scale but requires touching CRF's commit (`67a3cd7`) which is already in the PR 2 chain. Kickoff guidance: "Don't add features, refactor, or introduce abstractions beyond what the task requires." Defer to Task 2.5 if multi-write round-trip cost becomes painful at 3+ writers.
+
+  Picked (A) for minimal-diff + extension friendliness for Task 2.5. (C) is queued as a candidate refactor when 4+ writers exist and the round-trip cost is measurably painful.
+
+- **No body-content skip predicate.** Considered mirroring CRF's regex check on the body content for activity_type — but the activity_type prompt explicitly works on summary + agenda + skills (the standard ESYNYC submission template), not on a specific section header. A submission with empty body produces noisy predictions but Zod still validates the array; cost is one wasted Anthropic call. Adding a predicate would cost more in maintenance than it saves in calls.
+
+- **`ai_draft_model` column reflects the last writer.** When both CRF and activity_type fire, both writes hit `ai_draft_model = 'claude-opus-4-7'` so the column is identical regardless of order. If models diverge (e.g., a future Haiku-classified prompt), the column would only reflect the last writer. Schema accepts this for foundation phase; revisit when models actually diverge (Phase 2).
+
+- **`submit_tags` tool name shared with CRF.** Both blocks declare a tool named `submit_tags` in separate Anthropic API calls. The two tool definitions have different enum lists (`ACTIVITY_TYPE_VALUES` vs `CULTURAL_RESPONSIVENESS_FEATURE_VALUES`); the prompt cache treats them as distinct cache slots based on the serialized tool definition + system prompt. No conflict.
+
+**Process notes for Session 43+:**
+
+- **PR 2 push decision required.** Session 41's "Next session picks up" framed Task 2.5 (tags) as the next coding task; with step 4 done, the user can choose to:
+  - **(a) Open PR 2 now** with CRF + activity_type only. Tags ships as a small follow-up PR after Task 2.5's sample-set question is answered. Faster time-to-TEST for the two prompts that ARE eval-gated.
+  - **(b) Continue to Task 2.5** (tags prompt + eval). Bigger PR scope, longer time-to-TEST, but ships all three vocab-locked prompts in one PR.
+  Surface to user at session start.
+
+- **Task 2.5 sample-set question is the highest-impact open decision.** Tags has no historical reviewer truth (the column is brand-new from PR 1). Three options:
+  - **(i) Hand-curated synthetic worksheet (~30-50 lessons)**: reviewer-tags a small set across orientation / bilingual_handouts / neither for the canonical eval gate. ~1-2 hrs of user time.
+  - **(ii) Skip canonical eval; smoke-test only**: ship the prompt without the eval gate's structured signal. Eval gate would have to come post-deploy when reviewer activity organically produces a sample set.
+  - **(iii) Defer Task 2.5 entirely**: ship CRF + activity_type only; tags waits until reviewers have organically tagged enough lessons through the post-deploy review flow.
+  Surface to user at session start.
+
+- **Watch for the type-coupled cluster pattern** if Task 2.5 (or any Gate-C-classified vocab-locked prompt) introduces type-narrowing across edge function + Zod schemas + mappers. This session's wire-up was purely additive (one more loader + one more call site + one more Zod validate); no cluster invariants tripped. Same shape expected for Task 2.5 unless tags introduces something unusual.
+
+- **TEST DB verification deferred until PR 2 push.** Per the per-round verification rule, verification fires when the PR opens (round 0) and after every fix-up round. Pre-push there is nothing on TEST or PROD that's affected by this session's local-only commit.
 
 ### Sessions 18-36 — archived
 
