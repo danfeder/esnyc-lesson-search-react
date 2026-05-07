@@ -38,4 +38,22 @@ describe('computeInitialMetadataFromAiDraft', () => {
       location: 'Indoor',
     });
   });
+
+  it('maps canonical culturalResponsivenessFeatures → review form', () => {
+    expect(
+      computeInitialMetadataFromAiDraft({
+        culturalResponsivenessFeatures: ['Communicates high expectations'],
+      })
+    ).toEqual({
+      culturalResponsivenessFeatures: ['Communicates high expectations'],
+    });
+  });
+
+  it('returns null when culturalResponsivenessFeatures contains invalid value', () => {
+    expect(
+      computeInitialMetadataFromAiDraft({
+        culturalResponsivenessFeatures: ['not-a-real-feature'],
+      })
+    ).toBeNull();
+  });
 });
