@@ -118,13 +118,33 @@ const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, str
 // stripped on save). Without re-adding the suffix when loading an
 // existing review, a pill the reviewer previously selected appears
 // unselected on reopen — the form looks blank even though the value
-// is present and validates fine. `both` and any legacy already-suffixed
-// values pass through unchanged.
+// is present and validates fine.
+//
+// Shape-tolerant by design: pre-D2.1 reviews stored `activityType` as a
+// scalar string (113 PROD rows as of 2026-05-06). The `as ReviewMetadata`
+// cast at the call site is a runtime lie for those rows. Calling `v.map`
+// on a scalar throws `is not a function`, which surfaces in
+// `ReviewErrorBoundary` instead of the review UI. Widen to `unknown`
+// and handle scalar input so reopening any approved submission stays
+// safe; legacy `'both'` fans out to multi-pill `[cooking-only, garden-only]`.
 function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
-  const v = raw.activityType;
-  if (typeof v !== 'string' || v.length === 0) return raw;
-  if (v === 'both' || v.endsWith('-only')) return raw;
-  return { ...raw, activityType: `${v}-only` as ReviewMetadata['activityType'] };
+  const v: unknown = raw.activityType;
+  if (v == null) return raw;
+
+  if (typeof v === 'string') {
+    if (v === '') return raw;
+    if (v === 'both') return { ...raw, activityType: ['cooking-only', 'garden-only'] };
+    return { ...raw, activityType: [v.endsWith('-only') ? v : `${v}-only`] };
+  }
+
+  if (Array.isArray(v) && v.length > 0) {
+    return {
+      ...raw,
+      activityType: (v as string[]).map((s) => (s.endsWith('-only') ? s : `${s}-only`)),
+    };
+  }
+
+  return raw;
 }
 
 function parseExtractedContent(content: string): { title: string; summary: string } {
@@ -227,24 +247,18 @@ export function ReviewDetail() {
     }
   }, []);
 
-  const showCookingFields = useMemo(
-    () =>
-      metadata.activityType === 'cooking-only' ||
-      metadata.activityType === 'both' ||
-      metadata.activityType === 'cooking',
-    [metadata.activityType]
-  );
-  const showGardenFields = useMemo(
-    () =>
-      metadata.activityType === 'garden-only' ||
-      metadata.activityType === 'both' ||
-      metadata.activityType === 'garden',
-    [metadata.activityType]
-  );
+  const showCookingFields = useMemo(() => {
+    const types = metadata.activityType ?? [];
+    return types.includes('cooking') || types.includes('cooking-only');
+  }, [metadata.activityType]);
+  const showGardenFields = useMemo(() => {
+    const types = metadata.activityType ?? [];
+    return types.includes('garden') || types.includes('garden-only');
+  }, [metadata.activityType]);
 
   const validateRequiredFields = useCallback(() => {
     const errors: string[] = [];
-    if (!metadata.activityType) errors.push('Activity Type');
+    if (!metadata.activityType?.length) errors.push('Activity Type');
     if (!metadata.location) errors.push('Location');
     if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
     if (!metadata.themes?.length) errors.push('Thematic Categories');
@@ -264,7 +278,7 @@ export function ReviewDetail() {
 
   const fieldProgress = useMemo(() => {
     const required: { label: string; filled: boolean }[] = [
-      { label: 'Activity Type', filled: !!metadata.activityType },
+      { label: 'Activity Type', filled: (metadata.activityType?.length ?? 0) > 0 },
       { label: 'Location', filled: !!metadata.location },
       { label: 'Grade Levels', filled: (metadata.gradeLevels?.length ?? 0) > 0 },
       { label: 'Thematic Categories', filled: (metadata.themes?.length ?? 0) > 0 },
@@ -502,10 +516,7 @@ export function ReviewDetail() {
     // clicked pill visually deselects on next render).
     const payload: ReviewMetadata = {
       ...metadata,
-      activityType:
-        typeof metadata.activityType === 'string'
-          ? (metadata.activityType.replace(/-only$/, '') as ReviewMetadata['activityType'])
-          : metadata.activityType,
+      activityType: metadata.activityType?.map((s) => s.replace(/-only$/, '')),
     };
 
     // PR 1 Task 1.5: defense-in-depth Zod validation against the same
@@ -847,9 +858,8 @@ export function ReviewDetail() {
                 <IntFormField label="Activity type" required error={fieldError('Activity Type')}>
                   <IntPillGroup
                     options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.activityType)}
-                    {...singleProps(metadata.activityType, (v) =>
-                      handleMetadataChange('activityType', v)
-                    )}
+                    selected={metadata.activityType ?? []}
+                    onChange={(v) => handleMetadataChange('activityType', v)}
                     ariaLabel="Activity type"
                   />
                 </IntFormField>

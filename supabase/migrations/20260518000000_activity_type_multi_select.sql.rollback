@@ -1,0 +1,43 @@
+-- =====================================================
+-- ROLLBACK: 20260518000000_activity_type_multi_select.sql
+-- =====================================================
+-- The .sql.rollback extension keeps this file inert under `supabase db push`
+-- (the CLI only picks up .sql files). To roll back manually, run the
+-- statements below via psql or `mcp__supabase-*__execute_sql`.
+--
+-- NOTE: Step (1) of the forward migration repointed [both] rows to
+-- [cooking, garden]. THIS ROLLBACK CANNOT DISTINGUISH the original 135/139
+-- [both] rows from any [cooking, garden] rows that pre-existed or were
+-- written after the forward migration. A "safe" data rollback would need
+-- a pre-migration backup of the lessons.activity_type column. Without
+-- that, do NOT blindly repoint [cooking, garden] -> [both]; leave the
+-- canonicalized data alone and only revert the schema (CHECK + trigger
+-- value-validation list).
+
+-- =====================================================
+-- (1) Restore valid_activity_type CHECK with 'both' included.
+-- =====================================================
+ALTER TABLE public.lessons
+  DROP CONSTRAINT IF EXISTS valid_activity_type;
+
+ALTER TABLE public.lessons
+  ADD CONSTRAINT valid_activity_type
+  CHECK (
+    activity_type IS NULL
+    OR activity_type <@ ARRAY['cooking','garden','both','academic','craft']::text[]
+  );
+
+-- =====================================================
+-- (2) Restore lessons_normalize_write to pre-D2.1 body.
+-- =====================================================
+-- Easiest path: re-apply 20260515000000_metadata_value_validation.sql
+-- which has the pre-D2.1 CREATE OR REPLACE for the function body
+-- (5-value activityType allowed list). Either re-run that migration's
+-- (4) section, or source the body via:
+--   `git show 8497752:supabase/migrations/20260515000000_metadata_value_validation.sql`
+-- and apply just the CREATE OR REPLACE FUNCTION block.
+
+-- =====================================================
+-- (3) NOTIFY pgrst
+-- =====================================================
+NOTIFY pgrst, 'reload schema';

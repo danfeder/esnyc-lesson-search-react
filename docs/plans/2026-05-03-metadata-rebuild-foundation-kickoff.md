@@ -70,10 +70,26 @@ worksheet outputs from the parallel curriculum-team track):**
   in git. If it doesn't exist, you're starting Session 1 — create it using
   the template at the bottom of this prompt.
 
+  **Active/archive split (added 2026-05-05).** This file holds only the
+  Current State header + recent session log + recent decisions worth
+  carrying + pre-next-PR verification list + pointers. The "Current State"
+  header at the top is what you actually need to orient — it summarizes
+  active PR / branch / last commits / what next session picks up / blockers
+  in ~500 words. Older session entries live in the archive (next bullet);
+  read on demand.
+
+- `/Users/danfeder/cCode/esynyc-lessonsearch-v2/docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status-archive.md`
+  Full per-session journal for prior PRs. Read on demand only — usually
+  via `grep -n "<term>" archive.md` or targeted `Read` with offset/limit.
+  Don't read end-to-end at session start; the active file's Current State
+  header is enough for orientation.
+
 # SESSION-START RITUAL (do this FIRST, every session)
 
 1. Read this whole prompt.
-2. Read the execution status file (or note it needs creating).
+2. Read the active execution status file. The "Current State" header at
+   the top is enough for orientation; the recent session log adds detail.
+   Don't read the archive at session start — it's reference-only.
 3. Read the design doc end-to-end. Settled decisions are NOT debatable
    (see "LOCKED" below).
 4. Read the implementation plan from the task you're about to start through
@@ -274,13 +290,26 @@ independent, do it. If the next task is substantive, end the session.
 1. `npm run type-check && npm run lint` — must pass.
 2. `git status && git log --oneline -5 origin/main..HEAD` — confirm what
    landed.
-3. Update the execution status file:
-   - What got done this session (commit hashes + task IDs)
-   - Where the next session picks up (specific task ID + any setup needed)
-   - Any blockers, surprises, or decisions made
-   - Current branch + what's pushed vs. local
-4. Commit the status file.
-5. Tell me in 2-3 sentences what got done and what the next session picks
+3. Update the active execution status file:
+   - **Refresh the "Current State" header** at the top so it reflects
+     reality at session-end (active PR / branch / last commits / what next
+     session picks up / blockers). This is the load-bearing piece for next
+     session's orientation — keep it tight (~500 words max).
+   - **Append a session log entry** under "Recent session log" with: what
+     got done (commit hashes + task IDs), decisions made, process learnings.
+   - **Update Out-of-scope follow-ups** if new ones surfaced; remove any
+     that are now resolved.
+4. Commit the status file (and any kickoff prompt edits if you tweaked
+   the locked decisions or rituals).
+5. **PR-cycle archival (do at the START of each new PR cycle, NOT mid-PR):**
+   When starting a fresh branch for the next PR, move the prior PR's
+   session entries from the active file into the archive file. Audit each
+   entry as you move it for any process learnings worth promoting to
+   `~/.claude/projects/.../memory/feedback_*.md` files OR hygiene
+   follow-ups worth promoting to MEMORY.md. The archive is reference-only;
+   anything load-bearing for future sessions graduates to durable storage
+   first.
+6. Tell me in 2-3 sentences what got done and what the next session picks
    up. End there.
 
 # AUTO-LOADED MEMORY (already in your context, don't duplicate)
@@ -349,14 +378,24 @@ does not exist yet, create it using the existing scaffold at that path
 
 # RIGHT NOW
 
-Read this prompt → read design doc → read implementation plan from current
-task → read status file → run baseline checks → tell me where you are and
-what's next. Don't start coding until I confirm.
+Read this prompt → read active status file (Current State header is
+load-bearing) → read implementation plan from current task → run baseline
+checks → tell me where you are and what's next. Don't start coding until I
+confirm.
 
-**For Sessions 1-3 (pre-PR-1):** the first three sessions execute Gates A
-(lessonFormat dependency sweep verification), B (validator architecture
-decision + Zod canonical scaffold), and C (per-prompt readiness audit).
-None of these is a code-bearing PR — they produce inputs that PR 1 / PR 2
-consume. Gate B's scaffold lands as Task 1.0 of PR 1.
+The status doc's "Current State" header tells you which PR is active,
+which branch, what the next task is, and any pre-task verification work
+(e.g., the pre-PR-2 `tags` silent-drop check that was carried out of
+PR 1's round-5 ritual). Trust the header; trust the kickoff's locked
+decisions; verify against the implementation plan when starting an actual
+task.
+
+**Session-1 mode (only if `execution-status.md` does NOT exist):** the
+first three sessions execute Gates A (lessonFormat dependency sweep
+verification), B (validator architecture decision + Zod canonical
+scaffold), and C (per-prompt readiness audit). None of these is a
+code-bearing PR — they produce inputs that PR 1 / PR 2 consume. Gate B's
+scaffold lands as Task 1.0 of PR 1. Use the Session 1 path only when
+starting fresh.
 
 <!-- ===== END OF KICKOFF BODY ===== -->

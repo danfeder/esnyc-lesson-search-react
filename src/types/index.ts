@@ -100,7 +100,7 @@ export interface ViewState {
 
 // Review types for submission processing
 export interface ReviewMetadata {
-  activityType?: string; // Single select for review
+  activityType?: string[]; // Multi-select for review
   location?: string; // Single select for review
   gradeLevels?: string[];
   themes?: string[];

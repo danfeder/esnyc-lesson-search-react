@@ -98,14 +98,14 @@ All schema changes ship in the structural-schema PR. **D4 vocabulary canonicaliz
 **lessonFormat removal — coordinated cross-surface sweep required.** Dropping the column without coordinated changes to dependent surfaces breaks the runtime. The PR-1 migration must coordinate with: `lessons_with_metadata` view (CREATE OR REPLACE — otherwise smart-search 5xx's); 4 RPCs that reference the column (`search_lessons`, `complete_review_atomic`, `get_lesson_details_for_review`, `archive_duplicate_lesson`); `lessons_normalize_write_trg` trigger (rewrite to drop column⇄metadata sync for lessonFormat); `_alias_lesson_format` helper drop; `_shared/search-helpers.ts` (3 references); ~30 TypeScript surfaces (`LessonMetadata.lessonFormat` and `SearchFilters.lessonFormat` are non-optional); duplicate-review subsystem (separate column appearance via duplicate-detection RPC); `lesson_archive.lesson_format` column decision (keep historical vs drop); `supabase/seed.sql`; `database.types.ts` regen; ~6 test fixture files. See implementation plan PR 1 for per-surface task breakdown; the comprehensive sweep is **pre-PR-1 Gate A**.
 
 **Vocabulary expansions (closed-enum changes in code; data left unchanged at this stage):**
-- `activity_type` enum: 4 → 5 values (`cooking / garden / both / academic / craft`) — D2
+- `activity_type` enum: 4 values (`cooking / garden / academic / craft`); **multi-select** — D2 + D2.1 (refined 2026-05-06; `both` retired in PR 1b, replaced by `[cooking, garden]`).
 - `tags` closed enum: from `[]` (empty allowed-values list, column unused) → `["orientation", "bilingual_handouts"]` — D2 + D7
 - `cultural_responsiveness_features` enum locked to the 7 master-list features (Brown CR framework) — D9
 
 **Filter UI changes (sidebar):**
 - `lessonFormat` filter section removed — D3
 - New "Lesson Type" tag-based filter section, starting with `orientation` and `bilingual_handouts` — D2 + D7
-- Activity Type filter expanded to 5 values; `academic-cooking` filter slug renamed/migrated to align with `both` storage — D2
+- Activity Type filter: 4-value multi-select chip group (`cooking-only / garden-only / academic-only / craft-only`); old `'both'` chip retired in PR 1b — teachers select cooking-only + garden-only simultaneously to get the previous behavior — D2 + D2.1
 
 ### Schema items dropped from prior session drafts
 
@@ -160,7 +160,7 @@ Today's actual coverage: 1 SQL CHECK on values (`valid_seasons`); 1 shape-only t
 
 - **Vocab-locked (ships in PR 2 once eval gate passes):** fields whose canonical vocabulary is settled by foundation-phase walkthrough decisions, independent of Stage 1 worksheets.
   - `cultural_responsiveness_features` — D9 — vocab is the 7 master-list Brown CR features + 35 example practices for body-text mapping; older lessons (no body CR section, ~45% of corpus) skipped.
-  - `activity_type` — D2 — vocab locked at 5 values (`cooking / garden / both / academic / craft`).
+  - `activity_type` — D2 + D2.1 — vocab locked at 4 values (`cooking / garden / academic / craft`); **multi-label** output (LLM emits `["cooking"]`, `["cooking","garden"]`, `["craft","garden"]`, etc. — array of 1+ applicable values per lesson). `both` retired post-PR-1b.
   - `tags` — D2 + D7 — vocab locked at `["orientation", "bilingual_handouts"]`.
 
 - **Stage-1-gated (deploys after corresponding worksheet lands):** fields whose canonical vocabulary depends on the Stage 1 worksheet round.

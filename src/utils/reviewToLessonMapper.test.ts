@@ -12,9 +12,15 @@ describe('reviewToLesson', () => {
   // SQL-mirror cases — each translation rule from complete_review_atomic
   // (migration 20260428000003 lines 142-167) gets a focused test.
 
-  it('wraps activityType single-select string into a single-element array', () => {
-    expect(reviewToLesson({ activityType: 'cooking' })).toEqual({
+  it('passes activityType array through (single-element)', () => {
+    expect(reviewToLesson({ activityType: ['cooking'] })).toEqual({
       activityType: ['cooking'],
+    });
+  });
+
+  it('passes activityType array through (multi-element)', () => {
+    expect(reviewToLesson({ activityType: ['cooking', 'garden'] })).toEqual({
+      activityType: ['cooking', 'garden'],
     });
   });
 
@@ -91,7 +97,7 @@ describe('reviewToLesson', () => {
 
   it('handles a fully-populated review payload (acceptance fixture)', () => {
     const review: ReviewFormPayloadValidated = {
-      activityType: 'cooking',
+      activityType: ['cooking'],
       location: 'Indoor',
       themes: ['Food Systems'],
       season: ['Fall'],
@@ -135,9 +141,15 @@ describe('lessonToReview', () => {
     expect(lessonToReview({})).toEqual({});
   });
 
-  it('extracts first element of activityType array into a single string', () => {
+  it('passes activityType array through (single-element)', () => {
     expect(lessonToReview({ activityType: ['cooking'] })).toEqual({
-      activityType: 'cooking',
+      activityType: ['cooking'],
+    });
+  });
+
+  it('passes activityType array through (multi-element)', () => {
+    expect(lessonToReview({ activityType: ['cooking', 'garden'] })).toEqual({
+      activityType: ['cooking', 'garden'],
     });
   });
 
@@ -189,16 +201,17 @@ describe('lessonToReview', () => {
 
 describe('mapper round-trip property', () => {
   // Round-trip on the review-form side is lossless for every valid review
-  // payload, because the canonical writer only ever produces single-element
-  // activityType / locationRequirements arrays.
+  // payload — activityType is array-shape in both schemas; the canonical
+  // writer keeps locationRequirements single-element.
 
   const reviewFixtures: ReviewFormPayloadValidated[] = [
     {},
-    { activityType: 'garden' },
+    { activityType: ['garden'] },
+    { activityType: ['cooking', 'garden'] },
     { location: 'Outdoor' },
     { themes: ['Garden Basics'], season: ['Summer'] },
     {
-      activityType: 'both',
+      activityType: ['cooking'],
       location: 'Indoor',
       themes: ['Food Systems'],
       season: ['Fall', 'Winter'],
@@ -217,8 +230,8 @@ describe('mapper round-trip property', () => {
   });
 
   // Canonical → review → canonical is lossless ONLY when:
-  //   1. activityType and locationRequirements have ≤ 1 element (SQL invariant
-  //      — lessonToReview picks first element of each).
+  //   1. locationRequirements has ≤ 1 element (SQL invariant — lessonToReview
+  //      picks first element of locationRequirements).
   //   2. The canonical input has no canonical-only fields. Review form has a
   //      smaller surface than canonical; fields that drop on round-trip:
   //      duration, groupSize, skills, equipment, academicConcepts, tags.
@@ -227,10 +240,11 @@ describe('mapper round-trip property', () => {
   const canonicalFixturesSafe: LessonMetadataValidated[] = [
     {},
     { activityType: ['academic'] },
+    { activityType: ['cooking', 'garden'] },
     { locationRequirements: ['Both'] },
     { thematicCategories: ['Plant Growth'] },
     {
-      activityType: ['craft'],
+      activityType: ['craft', 'garden'],
       locationRequirements: ['Indoor'],
       thematicCategories: ['Food Justice'],
       seasonTiming: ['Spring', 'Summer'],
@@ -238,20 +252,8 @@ describe('mapper round-trip property', () => {
     },
   ];
 
-  it.each(canonicalFixturesSafe)(
-    'reviewToLesson(lessonToReview(x)) === x for %j (single-element activityType / location)',
-    (canonical) => {
-      expect(reviewToLesson(lessonToReview(canonical))).toEqual(canonical);
-    }
-  );
-
-  it('is intentionally lossy for canonical with multi-element activityType (documented asymmetry)', () => {
-    const lossy: LessonMetadataValidated = { activityType: ['cooking', 'garden'] };
-    // Lessons-to-review picks the first element; round-trip produces a
-    // single-element canonical.
-    expect(reviewToLesson(lessonToReview(lossy))).toEqual({
-      activityType: ['cooking'],
-    });
+  it.each(canonicalFixturesSafe)('reviewToLesson(lessonToReview(x)) === x for %j', (canonical) => {
+    expect(reviewToLesson(lessonToReview(canonical))).toEqual(canonical);
   });
 
   it('is intentionally lossy for canonical-only fields (documented asymmetry)', () => {

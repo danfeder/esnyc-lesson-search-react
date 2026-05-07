@@ -51,9 +51,10 @@ export function extractTextFromGoogleDoc(doc: any): string {
  *
  * Field names match the submission-side keys consumed by detect-duplicates'
  * calculateMetadataOverlap (gradeLevels, thematicCategories, activityType,
- * culturalHeritage, seasonTiming, cookingMethods). Values match the canonical
- * filter values defined in src/utils/filterDefinitions.ts so that Jaccard
- * comparison against lessons.metadata aligns case-insensitively.
+ * culturalHeritage, seasonTiming, cookingMethods). Values match what's stored
+ * on the lessons side: activityType uses canonical column values (cooking,
+ * garden, academic, craft); other fields use filter values from
+ * src/utils/filterDefinitions.ts so Jaccard comparison aligns case-insensitively.
  *
  * This is intentionally conservative: a missing field is preferable to a
  * wrong one, since detect-duplicates skips fields that are missing on either
@@ -63,7 +64,7 @@ export function extractTextFromGoogleDoc(doc: any): string {
 export interface MetadataSketch {
   gradeLevels?: string[];
   thematicCategories?: string[];
-  activityType?: string;
+  activityType?: string[];
   culturalHeritage?: string[];
   seasonTiming?: string[];
   cookingMethods?: string[];
@@ -229,17 +230,17 @@ function extractSeasons(content: string): string[] {
   return Array.from(found);
 }
 
-function extractActivityType(content: string): string | undefined {
+function extractActivityType(content: string): string[] | undefined {
   const list = findLabeledLine(content, /\bactivity\s+type\s*[:=]\s*([^\n]+)/i);
   if (list) {
     const lower = list.toLowerCase();
     const cooking = /cooking|kitchen/.test(lower);
     const garden = /garden/.test(lower);
     const academic = /academic/.test(lower);
-    if (cooking && garden) return 'both';
-    if (cooking) return 'cooking-only';
-    if (garden) return 'garden-only';
-    if (academic) return 'academic-only';
+    if (cooking && garden) return ['cooking', 'garden'];
+    if (cooking) return ['cooking'];
+    if (garden) return ['garden'];
+    if (academic) return ['academic'];
   }
   // Frequency-based inference. Threshold ≥3 to require strong signal.
   const cookingHits = (
@@ -252,9 +253,9 @@ function extractActivityType(content: string): string | undefined {
       /\b(?:garden|planting|harvest|soil|compost|seedling|seed-?starting|sowing|transplant)\b/gi
     ) || []
   ).length;
-  if (cookingHits >= 3 && gardenHits >= 3) return 'both';
-  if (cookingHits >= 3 && gardenHits === 0) return 'cooking-only';
-  if (gardenHits >= 3 && cookingHits === 0) return 'garden-only';
+  if (cookingHits >= 3 && gardenHits >= 3) return ['cooking', 'garden'];
+  if (cookingHits >= 3 && gardenHits === 0) return ['cooking'];
+  if (gardenHits >= 3 && cookingHits === 0) return ['garden'];
   return undefined;
 }
 

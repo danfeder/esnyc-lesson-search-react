@@ -31,13 +31,12 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
 
   activityType: {
     label: 'Activity Type',
-    type: 'single',
+    type: 'multiple',
     options: [
-      { value: 'cooking-only', label: 'Cooking Only' },
-      { value: 'garden-only', label: 'Garden Only' },
-      { value: 'both', label: 'Cooking + Garden' },
-      { value: 'academic-only', label: 'Academic Only' },
-      { value: 'craft-only', label: 'Craft Only' },
+      { value: 'cooking-only', label: 'Cooking' },
+      { value: 'garden-only', label: 'Garden' },
+      { value: 'academic-only', label: 'Academic' },
+      { value: 'craft-only', label: 'Craft' },
     ],
   },
 
