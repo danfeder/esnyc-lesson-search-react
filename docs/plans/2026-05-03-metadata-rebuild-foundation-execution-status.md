@@ -1,24 +1,31 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 40 (PR 2 Task 2.4 step 2 shipped local: worksheet labels filled in by user + bodies pulled from TEST DB + `scripts/build-activity-type-samples.ts` parser/merger + `scripts/eval-data/activity-type-samples.json` built; perfect-prediction dry-run validates schema + metrics math; 13 commits ahead of main; ready for canonical eval run).
+**Last updated:** 2026-05-07 — Session 41 (PR 2 Task 2.4 step 3 shipped local: activity_type eval gate cleared at macroF1=0.887 after Rule Y prompt rewrite + 17 truth retags; Console API direct billing actually ~$2 per run vs $7 projected; 15 commits ahead of main; Task 2.4 step 4 next).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-36 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (~1600 lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — IN PROGRESS, samples.json ready for canonical eval.** Branch `feat/metadata-foundation-llm-tagging` is 13 commits ahead of `main` (`bd9d6e4`): 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 4 docs (Sessions 36 + 37 + 38 + 40-pending). PR 2 not yet pushed; no PR open.
+**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — IN PROGRESS, activity_type eval gate cleared. Task 2.4 step 4 next.** Branch `feat/metadata-foundation-llm-tagging` is 15 commits ahead of `main` (`bd9d6e4`) after this session's code commit (16 with the pending docs commit): 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 1 code (Task 2.4 step 3) + 5 docs (Sessions 36 + 37 + 38 + 40 + 41-pending). PR 2 not yet pushed; no PR open.
 
-**Task 2.4 step 2 shipped local-only this session (`a426114`):**
-- `scripts/eval-data/activity-type-relabel-worksheet-v2.md` — user filled in all 113 `**New labels (multi-label):**` lines against the 4-value canonical multi-label vocab; 0 invalid labels, 0 empty lines.
-- `/tmp/activity-type-bodies.json` (intermediate, not committed) — 113 rows of `{id, body}` pulled from TEST DB via `mcp__supabase-test__execute_sql` (single query; persisted-output path extracted from MCP error since 700KB payload exceeds inline cap). README documents the full pull recipe for re-runs.
-- `scripts/build-activity-type-samples.ts` (200 LOC, npx tsx) — parses worksheet → extracts `{id, labels}` per entry; reads bodies dump; merges into harness-shape `[{id, body, truth}]`. Validates every worksheet ID has a body, every truth label is in vocab, no entry has an empty label line. Exits 0 on success / 1 on validation failure with per-error report.
-- `scripts/eval-data/activity-type-samples.json` (805 lines, 664KB) — 113 entries built from worksheet labels + TEST DB bodies. Truth distribution: garden 68 / cooking 34 / craft 13 / academic 11. 12 multi-label rows (10.6%). Total body chars 652,580 (avg 5,775; max 16,941; min 2,662).
-- `scripts/eval-data/activity-type-samples.README.md` — replaced "craft may have zero truth labels" caveat with actual post-relabel state; added "How samples.json was built" pipeline section; expanded distribution table with both pre- and post-relabel columns.
-- Verified end-to-end via perfect-prediction dry-run (no API spend): `--dry-run-with-predictions` against truth-as-predicted yielded macroF1=1.000, microF1=1.000, exit 0. Schema validation + truth-in-vocab check passed for all 113 samples.
+**Task 2.4 step 3 shipped local-only this session (`5e25431`):**
+- Canonical eval gate **cleared at macroF1=0.887** (gate floor 0.700) on the post-Rule-Y truth set.
+- Per-value F1: cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852. Macro recall 0.956 — high recall is the desired direction for the draft-validate reviewer workflow.
+- Iteration trajectory:
+  - v1 baseline (permissive academic): macroF1 0.605 — failed (academic FPs 72 of 113).
+  - v2 mode-exclusive academic: macroF1 0.670 — failed (academic FPs dropped 72→6, but garden FNs grew 19→23 via garden→craft confusion).
+  - **v3 Rule Y (hybrid garden + 17 truth retags): macroF1 0.887 — passed.**
+- Rule Y design call (Session 41): `garden` is a hybrid tag firing for both hands-on activity AND food/agriculture/garden topical content; `academic` becomes mode-exclusive and narrow (in 113-row sample, only "The Lorax Debate" qualifies). User authored this rule mid-session after seeing v2's garden→craft confusion pattern revealed garden was being used both topically and activity-based by reviewers.
+- 17 truth retags applied via `/tmp/apply-retags.mjs` (one-off helper, not committed):
+  - 7 `[academic]` → `[garden]` or `[garden, craft]` (food/agriculture topical)
+  - 10 `[garden]` → `[garden, craft]` (added craft for substantial activity blocks)
+- Final truth distribution: garden 76 / cooking 34 / academic 1 / craft 26; 23 of 113 rows multi-label (was 10 pre-retag).
+- Cost actuals: Console API direct ~$2 per full 113-sample run (vs $7 projection; vs $30 via CLIProxyAPI proxy). Total session spend ~$6 of $9 budget across smoke + v1 + v2 + v3 runs.
 
-**Eval-gate guardrail state on the as-built sample set:**
-- `craft` truth count = 13 (non-zero) — `maxPredictionRateForAbsentValues=0.10` guardrail is **dormant** for craft; per-value craft precision/recall apply normally.
-- Active thresholds for the canonical run: `macroF1 >= 0.7` (CRF reference cleared at 0.937) + `minRecallPerValue >= 0.5` (per-value floor). Most-likely-fail values: craft (over-prediction) or academic (truth count 11 — small denominator, missed labels move the needle fast).
+**Eval-gate guardrail state after Rule Y retag:**
+- `academic` truth count = 1 (just "The Lorax Debate"). Per-value academic recall is binary on this sample set: either 1.000 or 0.000. v3 prompt correctly tagged it; future canonical re-runs need to keep producing 1/1 to maintain the per-value floor.
+- All other vocab values have non-zero truth labels; `maxPredictionRateForAbsentValues=0.10` guardrail is dormant.
+- Active thresholds: `macroF1 >= 0.7` (cleared at 0.887) + `minRecallPerValue >= 0.5` (cleared on all four values; lowest was garden 0.679 precision but recall was perfect at 1.000).
 
 **Foundation-phase substrate live on PROD (post-PR-1 + PR-1b, unchanged this session):**
 - Schema: `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns added; `activity_type` array-shape multi-select with closed enum at 4 values; `tags` array column with closed enum; `cultural_responsiveness_features` closed to 7 Brown CR features.
@@ -29,22 +36,27 @@
 
 **On PR 2 branch (local-only, NOT yet on PROD):**
 - Tasks 2.1-2.3 done (CRF auto-tag).
-- Task 2.4 step 1 done (Session 39 — activity_type scaffolding: prompt + vocab + thresholds + worksheet stub + harness guardrail).
-- Task 2.4 step 2 done (this session — worksheet labels + samples.json + build script).
-- Tasks 2.4 steps 3-5 pending: canonical eval run → wire prompt into `process-submission/index.ts` → deploy.
+- Task 2.4 step 1 done (Session 39 — activity_type scaffolding).
+- Task 2.4 step 2 done (Session 40 — samples.json built).
+- Task 2.4 step 3 done (this session — canonical eval cleared at macroF1=0.887 with Rule Y).
+- **Tasks 2.4 steps 4-5 pending**: wire prompt into `process-submission/index.ts` → deploy to TEST.
 - Task 2.5 pending: tags prompt + eval (vocab-locked, 2-value enum `orientation / bilingual_handouts`; write path goes through PR 1b's `complete_review_atomic` tags side-channel rather than the review-form mapper).
 
 **Branches (unchanged from Session 38 except commit count):**
 - `main` at `bd9d6e4` (PR 1b squash merge).
-- `feat/metadata-foundation-llm-tagging` — 13 commits ahead of main; not yet pushed; no PR open yet.
+- `feat/metadata-foundation-llm-tagging` — 15 commits ahead of main (16 with pending docs commit); not yet pushed; no PR open yet.
 - `backup/feat-metadata-foundation-llm-tagging-pre-rebase` — pre-Session-38-rebase backup; deletable after PR 2 ships.
 - `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — deletable at convenience.
 
 **Next session picks up:**
-- **Task 2.4 step 3 — canonical eval run** via `npx tsx scripts/eval-llm-tagging-prompt.ts --prompt supabase/functions/process-submission/prompts/activity-type.md --samples scripts/eval-data/activity-type-samples.json --vocab scripts/eval-data/activity-type-vocab.json --threshold-config scripts/eval-data/activity-type-thresholds.json --output /tmp/activity-type-eval-result.json [--base-url http://127.0.0.1:8317/api/provider/anthropic]`. CRF reference: cleared at macroF1=0.937 / cost $30.23 via CLIProxyAPI (Session 25). Activity_type cost expected ~similar (~$30 proxy / ~$7 direct Console API). Decision before running: proxy (Max billing, cache_read=0 cost gotcha) vs direct Console API. CLIProxyAPI must be running locally if `--base-url` is used.
-- If gate passes: **Task 2.4 step 4** wires prompt into `process-submission/index.ts` mirroring the CRF call shape (loads prompt at module scope, calls Anthropic with `submit_tags` multi-label tool, Zod-validates against `lessonMetadataSchema.activityType`, merges into existing `ai_draft_metadata` rather than overwriting CRF's draft).
-- If gate fails: iterate prompt + re-run. Most-likely-fail values: craft (over-prediction; threshold floor 0.5 recall on 13-row truth) or academic (small denominator at 11; a few misses move the needle).
-- After Task 2.4 ships: Task 2.5 (tags prompt). Then PR 2 push + open + per-PR ritual.
+- **Task 2.4 step 4 — wire activity_type prompt into `process-submission/index.ts` edge function.** Structurally parallel to CRF wire-up (commit `67a3cd7`, Task 2.3 step 5):
+  - Load `activity-type.md` prompt at module scope alongside the CRF prompt loader.
+  - Call Anthropic with `submit_tags` multi-label tool (NOT `submit_tag` single-label like CRF).
+  - Zod-validate the returned `selected_values: string[]` against `lessonMetadataSchema.shape.activityType` (already array-shape post-PR-1b).
+  - **Merge into existing `ai_draft_metadata` rather than overwriting** — CRF wrote `cultural_responsiveness_features`; activity_type adds `activityType` to the same JSONB without dropping CRF's keys. Use `jsonb_set` or read-modify-write pattern in the edge function (verify CRF's pattern handles this).
+  - Update `process-submission/deno.json` and `import_map.json` if needed for any new imports (likely none — Anthropic SDK + Zod already in place).
+- **Task 2.4 step 5 — deploy to TEST.** When PR 2 opens, CI deploys; verify via `mcp__supabase-test__get_edge_function process-submission` that the new prompt + multi-label call site land. Test by submitting a lesson and checking `lesson_submissions.ai_draft_metadata.activityType` is populated as an array.
+- After Task 2.4 ships: Task 2.5 (tags prompt + eval). Then PR 2 push + open + per-PR ritual.
 - **TEST DB verification deferred until PR 2 push** — CI applies new migrations + edge fn updates when PR opens; per-round verification rule applies starting from round 0.
 
 **Pre-push gating reminder before opening PR 2:**
@@ -83,6 +95,10 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 - **Missing unit-test coverage for `validateRequiredFields` + `fieldProgress` in ReviewDetail.tsx.** Surfaced by PR 1b round-0 code-reviewer agent + bug-fix `be406c3` (Session 32). The 2-line truthy-check regression on the activityType field went undetected by the test suite because no test exercises the validators with empty-array fixtures. Cleanest path: refactor the validators into pure utility functions (e.g., `src/utils/reviewValidation.ts`) and add unit tests covering "Activity Type required when array is empty" + sibling cases. Out of scope for the PR 1b fix-up (kickoff: "A bug fix doesn't need surrounding cleanup"); worth a focused hygiene PR. The other 17 metadata fields use the same `?.length` pattern so a single test file would cover the regression surface for all required fields.
 
 - **Missing unit-test coverage for `reAddActivityTypeSuffix` shape-tolerant loader.** Surfaced by PR 1b round 1 + fix-up `131168b` (Session 34). The pre-fix `if (!v || v.length === 0) return raw` followed by `v.map(...)` would have crashed on any of the 113 historical scalar `tagged_metadata.activityType` rows; visual smoke caught the post-fix happy paths but the test suite has no fixture-driven coverage. Cleanest path: same as the `validateRequiredFields` follow-up — extract to `src/utils/reviewMetadataLoaders.ts` (or fold into `reviewValidation.ts`) and add unit tests covering scalar `'garden'` / `'both'` / empty / null-undefined / array round-trip. Out of scope for the round-1 fix-up; worth a focused hygiene PR alongside the validator-test follow-up since both are in the same file and the same cleanup shape.
+
+- **Activity_type prompt v3 garden FPs at 36 may need tightening if reviewer pushback emerges.** Session 41 canonical run: garden recall 1.000 (every garden-tagged lesson caught) but garden precision 0.679 (LLM tags garden topical on 36 lessons reviewers didn't tag). For draft-validate use case this is the right direction (reviewers easily remove extras; missed tags harder to catch). If post-deployment reviewer feedback shows "too many lessons getting garden tag," tightening options: (a) require explicit garden/food keyword density above some bar before topical-garden fires, (b) carve out lesson categories where topical-garden shouldn't fire (e.g., "general food worker / advocacy lessons that don't mention plants/growing"), (c) add a "weak topical" sub-tier. Not investigated at session-end; logged for visibility. Source: `/tmp/activity-type-eval-result-v3.json` per-sample data.
+
+- **`academic` truth count = 1 in current activity_type sample set (just The Lorax Debate)** — per-value academic recall is binary (1.000 or 0.000). Future canonical re-runs need to keep correctly tagging Lorax to maintain the per-value floor. Single-row eval is fragile if the prompt drifts. Options when this becomes a flake risk: (a) add 2-3 more academic-only lessons to the sample set (would need to find/invent), (b) drop the per-value floor for academic only via threshold-config exemption, (c) accept the binary signal as load-bearing — a regression on Lorax tells us the prompt has shifted academic interpretation away from Rule Y. Not urgent; logged for visibility if future iterations find this constraining. Source: Session 41 final truth distribution after Rule Y retags.
 
 ## Pointers to durable context
 
@@ -230,6 +246,60 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - **Watch for the type-coupled cluster pattern at step 4.** Wiring activity_type into `process-submission/index.ts` should be structurally parallel to CRF's wire-up (Task 2.3 step 5, commit `67a3cd7`): one new prompt-load helper, one new Anthropic call, one new Zod-validate-into-`ai_draft_metadata`. Likely additive, no type narrowing — but if a shared interface like `AiDraftPayload` needs widening, ship as one cluster commit covering edge fn + Zod schema + any consumer reads.
 
 - **No PR 2 push this session.** Branch is now 13 commits ahead of main. PR 2 push waits on Tasks 2.4 (3-5) + 2.5 closure. Bundle session-end docs commits with the next code push (`feedback_no_docs_push_during_pr.md` spirit: don't burn CI cycles on docs-only changes).
+
+### Session 41 — 2026-05-07 — PR 2 Task 2.4 step 3: activity_type eval gate cleared + Rule Y hybrid garden
+
+**Done (1 code commit `5e25431` + this session-end docs commit pending):**
+
+- **Canonical eval gate cleared at macroF1=0.887** (gate floor 0.700) on the post-Rule-Y truth set. Per-value F1: cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852. Macro recall 0.956 / macro precision 0.836. Result file `/tmp/activity-type-eval-result-v3.json` (not committed; CRF pattern doesn't commit eval results).
+
+- **Rule Y design call (mid-session)**: user introduced `garden` as a hybrid tag firing for both hands-on garden activity AND food/agriculture/garden topical content. `academic` becomes mode-exclusive and narrow. The user authored this rule mid-session after seeing v2's failure mode (garden→craft confusion) revealed the reviewers had been using "garden" both topically (lesson is about pollinators / food systems / etc.) and activity-based (students do hands-on garden work) inconsistently across samples. Rule Y disambiguates: garden is hybrid by design; academic is the rare narrow fallback for non-food/non-garden conceptual content (e.g., The Lorax Debate).
+
+- **17 truth retags applied** via one-off helper `/tmp/apply-retags.mjs` (not committed; intentional — script reads `/tmp/retag-pairs.json` and edits worksheet markdown by ID-matching regex):
+  - 7 `[academic]` → `[garden]` or `[garden, craft]` (food/agriculture topical lessons that previously got academic by reviewer judgment): Meet The Food System; African American Food Traditions; Foods From Around the World; How Food Moves (Food Miles); School Lunch Heroes (added craft); The Apple Story (added craft); The Ugly Vegetables (added craft).
+  - 10 `[garden]` → `[garden, craft]` (lessons that already had garden topical truth but had substantial craft activity reviewers didn't tag): All About Birds, Anthotype, Bug Camouflage, Butterflies, Exquisite Plants, Ladybugs, Garden Community, Tea Bags, Honey Bee Pollinators, What Gardeners Wear.
+  - The Lorax Debate stays as the sole `[academic]` entry — deforestation/environmentalism, not food/agriculture.
+
+- **Iteration trajectory** (3 full canonical runs + 1 smoke):
+  - Smoke (5 samples, original prompt): macroF1=0.756 on tiny denominator; passed gate but unrepresentative — only 1 of 5 samples exhibited the academic FP problem.
+  - v1 full (113 samples, original prompt): macroF1=0.605 — failed. Academic FPs 72 of 113 (LLM tagged academic on 73% of lessons; reviewers tagged it on 11). Confusion matrix revealed dominant pattern: opening rituals + closing reflections triggering academic across hands-on lessons.
+  - v2 full (113 samples, mode-exclusive academic prompt + 3 academic-handson outlier retags): macroF1=0.670 — failed (improved by 0.065 but didn't clear). Academic FPs dropped 72→6 (massive precision improvement); but garden FNs grew 19→23 via new garden→craft confusion pattern (LLM read garden-themed-craft lessons as `[craft]` instead of `[garden]`). User's analysis: reviewers were using "garden" both topically and activity-based; the v2 prompt forced activity-based interpretation, dropping topical garden tags.
+  - **v3 full (113 samples, Rule Y prompt + 17 retags): macroF1=0.887 — passed.** Garden recall now 1.000 (was 0.667 in v2); garden precision 0.679 (LLM aggressive on topical tag, fits draft-validate use case where reviewers easily remove extras).
+
+- **README updated** (`scripts/eval-data/activity-type-samples.README.md`):
+  - Distribution table extended to three columns: pre-relabel old vocab / post-v2-relabel / post-Rule-Y retag.
+  - Added "Canonical run result (Session 41)" block with full per-value metrics + actual cost.
+  - Updated cost note: Console API direct ~$2 per 113-sample run (was $7 projection; ~3-4× cheaper than CLIProxyAPI proxy as expected).
+
+- **Cost actuals**: Console API direct billing ~$2 per full canonical run (vs my $5.43 estimate; vs $30 via CLIProxyAPI proxy with `cache_read=0` cost gotcha). User tracked actuals from Anthropic console; my pricing estimates were ~3× over. Total session spend: ~$6 of $9 budget (smoke $0.13 + v1 $2 + v2 $2 + v3 $2). ~$3 budget margin remaining.
+
+**Decisions made:**
+
+- **Direct Console API over CLIProxyAPI proxy** for this run. User had $9 in console credits; proxy would have cost ~$30 via Max billing (cache_read=0 gotcha). Decision: swap `ANTHROPIC_API_KEY` in `.env.local` for a Console key (`sk-ant-api03-...`), keep proxy key under separate name `ANTHROPIC_CONSOLE_API_KEY`, use shell prefix `ANTHROPIC_API_KEY="$(grep ... .env.local | cut -d= -f2)"` to inject at runtime without polluting shell history. dotenv's `override: false` default keeps shell env winning over `.env.local`. Both keys coexist; future runs can pick which billing path.
+
+- **Smoke-then-full vs straight-to-full**: did smoke first ($0.13) to verify Console key works + measure per-call cost. Smoke passed (macroF1=0.756 on 5) but had unreliable signal on academic FPs (only 1 of 5 samples exhibited the problem). For subsequent iterations (v2, v3), went straight to full instead of smoking — v1's full data showed smoke was too small to predict full-run behavior.
+
+- **Rule Y design over alternatives**: when v2 failed, considered three paths — (A) retag the 14 garden→craft outlier truths to `[craft]`, (B) loosen prompt to read garden-themed-craft as `[garden, craft]`, (C) accept v2 as close-to-pass + adjust gate threshold. User picked B with caveat: "garden tag fires for anything plant/agriculture-related, including food systems, food culture, agricultural history" — which became Rule Y (hybrid tag). Strong design call that simplified the entire mental model; reviewer truth was using `garden` inconsistently both topically and activity-based.
+
+- **Retag scope**: 17 lessons total, not the broader cooking-lessons-with-food-discussion. User's intent reading: garden topical fires when the lesson's CONTENT is about food/garden/agriculture (discussion topic, summary, objectives), not just because cooking lessons "involve food." 31 `[cooking]`-only truth labels left untouched — those represent the user's earlier judgment that the cooking activity was the dominant frame, not garden topical.
+
+- **Ship v3 without further iteration**: macroF1=0.887 cleared by 0.187. Garden precision 0.679 (36 garden FPs) is the only soft spot; LLM is being slightly aggressive on the topical tag, applying it where reviewers didn't. For the draft-validate use case, this is the right direction (reviewers easily remove extras; missed tags harder to catch). Pattern across iterations showed each tightening introduced new failure modes; further iteration likely diminishing returns.
+
+- **Don't commit eval result JSON**: CRF pattern doesn't commit `/tmp/*-eval-result.json`; canonical run is regeneratable from prompt + samples + thresholds. Headline numbers captured in commit message + README + this status entry.
+
+- **Don't commit one-off retag scripts**: `/tmp/apply-retags.mjs` and `/tmp/retag-pairs.json` are one-off helpers. Session log + README documents the retag intent; the helper script regex pattern (`(- \\*\\*ID:\\*\\* \`<id>\`[^\\n]*\\n[\\s\\S]*?\\n)\\*\\*New labels \\(multi-label\\):\\*\\*[^\\n]+`) is the reusable bit and is captured here.
+
+**Process notes for Session 42+:**
+
+- **Task 2.4 step 4 should be structurally parallel to CRF wire-up.** Activity_type adds one more prompt loader + one more Anthropic call + one more Zod validation in `process-submission/index.ts`. Key differences from CRF: multi-label tool call (`submit_tags` not `submit_tag`); array shape return (`activityType: string[]`); merge-not-overwrite into `ai_draft_metadata` (CRF writes `cultural_responsiveness_features` key; activity_type adds `activityType` key without dropping CRF's). Verify CRF's pattern handles read-modify-write of `ai_draft_metadata` cleanly before adding the second writer.
+
+- **Watch for the type-coupled cluster pattern at step 4 (per Session 30 PR 1b learning)** — wiring activity_type into the edge function should be additive (one new prompt + one new call site + one new Zod validate). No type narrowing across consumers expected. But if a shared interface like `AiDraftPayload` needs widening, ship as one cluster commit.
+
+- **CLIProxyAPI cost gotcha confirmed**: actual proxy cost was ~$30 (Session 25 CRF) vs ~$2 direct (Session 41 activity_type). The 15× ratio mostly comes from the prompt-cache miss (proxy adds Claude Code's session prompt per call, breaks cache). For future eval runs with budget pressure, direct Console API is dramatically cheaper. The proxy still has a place when burning Max credits is preferred over Console balance.
+
+- **My API cost estimates were ~3× over actuals.** Across smoke + v1 + v2 + v3, my projected cost per call was 2.7-3.5× the actual. Likely my chars-per-token assumption (3.5) was too low, OR Anthropic's billing has a discount I'm unaware of, OR there's a workspace-credit subsidy. For future projections, anchor on user-observed actuals not my pricing math; my math is consistently overestimating.
+
+- **Single-truth-row eval values are stringent.** Academic now has 1 truth row in the 113-sample set. Per-value academic recall is binary: 1.000 if the LLM correctly tags Lorax, 0.000 if it doesn't. Future canonical re-runs need to keep producing this 1/1 to maintain the per-value floor. If the 1-row category becomes a flake risk, options: (a) add 2-3 more academic-only lessons to the sample set (would need to find/invent), (b) drop the per-value floor for academic only via threshold-config exemption, (c) accept the binary signal as load-bearing — a regression on Lorax tells us the prompt has shifted academic interpretation away from the rule.
 
 ### Sessions 18-36 — archived
 
