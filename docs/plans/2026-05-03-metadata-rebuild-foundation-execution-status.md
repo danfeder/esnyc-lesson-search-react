@@ -1,84 +1,46 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-07 — Session 43 (PR 2 OPEN as PR #477 with CRF + activity_type only — tags LLM deferred to follow-up after sample-set methodology decision; pre-push code-reviewer agent surfaced 0 P0/P1 + 2 accepted P2 fix-ups; awaiting bot reviewers + CI).
+**Last updated:** 2026-05-07 — Session 44 (PR 2 round 1 fix-ups committed locally — migration rename to fix back-sort + CodeQL regex→slice; user's own Codex pass already triaged round 1 findings; bot voice single-voice not converged; 4 commits ahead of origin awaiting push + CI rerun).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-36 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (~1600 lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 2 (lesson-submission LLM auto-tag — CRF + activity_type only; tags LLM DEFERRED) — OPEN as PR #477.** Branch `feat/metadata-foundation-llm-tagging` is 19 commits ahead of `main` (`bd9d6e4`) after this session's pre-push fix-up + push: 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 1 code (Task 2.4 step 3) + 1 code (Task 2.4 step 4) + 1 code (pre-push fix-up `233dfd3`) + 7 docs (Sessions 36 + 37 + 38 + 40 + 41 + 42 + 43-pending). Pushed; PR open at https://github.com/danfeder/esnyc-lesson-search-react/pull/477.
+**PR #477 (PR 2 — lesson-submission LLM auto-tag, CRF + activity_type only; tags LLM deferred to follow-up) — OPEN, round 1 fix-ups committed locally, awaiting push.** Branch `feat/metadata-foundation-llm-tagging` at `4ea642b`, **4 commits ahead of origin** (Session 43 docs `4ef9cb0` + rename `fff430d` + regex `4ea642b` + this session's docs commit pending). Origin head still `233dfd3` from Session 43's push.
 
-**Session 43 actions (this session):**
-- **PR-scope decision settled.** User confirmed recommendation to push PR 2 with CRF + activity_type only and defer tags to a separate follow-up PR. Reasoning: tags has no historical reviewer truth (column is brand-new from PR 1), so the eval-gate methodology that anchored the prior two prompts (CRF on 353 reviewer-tagged rows, activity_type on 113 reviewer-tagged rows) doesn't apply. Three options for the tags sample-set methodology — synthetic worksheet (~1-2 hr user time) / smoke-test only / defer until organic reviewer activity produces data — get their own PR after the question is answered.
-- **Pre-push code-reviewer agent dispatched** (`feature-dev:code-reviewer`, opus model) on `git diff main...HEAD` (~9,125 insertions across 27 files). Agent reviewed the two migrations + edge function LLM blocks + Zod mirror + ReviewDetail draft-init + mappers + helpers + eval-gate harness. **Findings: 0 P0/P1, 3 P2, 3 P3.**
-- **Triage applied: 2 P2 accepted as fix-ups (commit `233dfd3`); 4 findings rejected as pre-existing PR-1 code or non-issues.** Accepted:
-  - **P2-1 — rollback comment block** added to `20260516000000_lesson_submissions_ai_draft_metadata.sql` per `supabase/migrations/CLAUDE.md` template (sibling migration already had the trailer).
-  - **P2-2 — `NULL → []` flip on tags column** for legacy lessons during approve_update fixed by dropping the final `ARRAY[]::text[]` arm from the COALESCE chain. UPDATE path now matches INSERT path: when no tags writer is wired (and none ships in this PR), both paths return NULL. Inline comment updated.
-- Rejected: P2-3 (Zod result.data discard in complete-review) + P3-1 (CRF block comment phrasing) + P3-2 (CRF regex header-vs-anywhere) + P3-3 (agent itself flagged as not-real-issue). All pre-existing PR-1/Task-2.3 surface area; revisit as future hygiene if needed.
-- **Pre-push verification clean:** type-check + lint, supabase db reset (all migrations apply), tests 573/573 passing.
-- **Pushed + PR opened at #477** with full description covering scope / deferred-work / pre-push findings + 12-item Test plan checklist.
+**Session 44 actions (this session):**
+- Active-PR session-orientation: bots all reviewed (claude-review issue-comment + GHAS CodeQL + user's own Codex pass at 15:45); 3 failing checks (E2E Tests on migration back-sort, Security Audit on pre-existing `@lhci/cli` chain, CodeQL on a regex); zero P1 from bot voice convergence — bot voice is single-voice on substance.
+- Migration back-sort root cause investigated via MCP probes against both TEST + PROD `supabase_migrations.schema_migrations`. **Codex review's claim "TEST has 20260516000000 / 20260519000000 recorded" was WRONG** — both DBs at `20260518100000` (PR 1b's tip); neither PR 2 migration applied; column probe confirmed `ai_draft_metadata` columns absent on TEST. CI behavior chain: `db push --dry-run` exits 1 → `set -o pipefail` propagates → GHA fail-fast skips the apply step.
+- Fix-up commit 1 (`fff430d`) — migration rename via `git mv` from `20260516000000` → `20260518200000` (sorts post-PR-1b's `20260518100000`, before PR 2's `20260519000000` RPC migration that reads the columns). Body unchanged; header gets a context block explaining the rename + rule-exception rationale (mirrors `20260519000000_*`'s rename header pattern).
+- Fix-up commit 2 (`4ea642b`) — replaced HTML-sanitizer regex on `scripts/build-activity-type-samples.ts:90` with `indexOf('<!--')` + `slice` (clears CodeQL alerts #23 + #24). Behavior-equivalent on actual worksheet input.
+- Skipped Security Audit fix (pre-existing `@lhci/cli` / `tmp` / `postcss` / `basic-ftp` / `ip-address` chain per MEMORY hygiene-follow-ups; not introduced by this PR).
+- Local verification clean: `supabase db reset` (all 15 migrations apply; `schema_migrations` shows `20260518000000 → 20260518100000 → 20260518200000 → 20260519000000`; 3 ai_draft_* columns present per local MCP probe) + 573/573 tests + type-check + lint.
 
-**Eval-gate guardrail state (unchanged from Session 41 — gate cleared at macroF1=0.887):**
-- Per-value F1: cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852. Macro recall 0.956.
-- `academic` truth count = 1 ("The Lorax Debate"). Per-value academic recall is binary on this sample set; future canonical re-runs need to keep producing 1/1 to maintain the per-value floor.
-- All other vocab values have non-zero truth labels; `maxPredictionRateForAbsentValues=0.10` guardrail is dormant.
-- Active thresholds: `macroF1 >= 0.7` (cleared at 0.887) + `minRecallPerValue >= 0.5` (cleared on all four values).
+**Foundation-phase substrate live on PROD (unchanged since Session 36):** `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns; `activity_type` + `tags` array-shape multi-select with closed enums; `cultural_responsiveness_features` closed to 7 Brown CR features; 3 CHECK constraints + trigger value-validation; Zod canonical + bidirectional mappers + Deno mirror + freshness CI test; filter UI Lesson Type backed by `tags`, Activity Type 4-value multi-select chips; `complete-review` Zod-validated. **`process-submission`** has CRF prompt wired in **on PROD**; activity_type wire-up is in PR 2's branch and lands on PROD only after PR 2 ships.
 
-**Foundation-phase substrate live on PROD (post-PR-1 + PR-1b, unchanged this session):**
-- Schema: `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns added; `activity_type` array-shape multi-select with closed enum at 4 values; `tags` array column with closed enum; `cultural_responsiveness_features` closed to 7 Brown CR features.
-- 3 CHECK constraints (`<@` containment, length-agnostic) + trigger value-validation helper.
-- Zod canonical + bidirectional mappers + Deno mirror + `enums.json` + freshness CI test.
-- Filter UI: `lessonFormat` removed; "Lesson Type" sidebar filter backed by `tags`. Activity Type: 4-value multi-select chips, no `'both'`, no "Only" suffix.
-- Edge functions: `complete-review` Zod-validated; `process-submission` has CRF prompt wired in.
+**Eval-gate state (unchanged since Session 41):** activity_type macroF1=0.887 cleared; per-value F1 cooking 0.889 / garden 0.809 / academic 1.000 / craft 0.852; macro recall 0.956; `academic` truth count = 1 (Lorax binary); `maxPredictionRateForAbsentValues=0.10` guardrail dormant.
 
-**Tasks done (CRF + activity_type complete; tags deferred):**
-- Tasks 2.1-2.3 done (CRF auto-tag).
-- Task 2.4 step 1 done (Session 39 — activity_type scaffolding).
-- Task 2.4 step 2 done (Session 40 — samples.json built).
-- Task 2.4 step 3 done (Session 41 — canonical eval cleared at macroF1=0.887 with Rule Y).
-- Task 2.4 step 4 done (Session 42 — activity_type prompt wired into edge function with RMW merge).
-- **Task 2.4 step 5 — TEST DB verification — fires when CI applies.** Use the PR's Test plan checklist. 6/6 RPC body signals + edge fn 3-signal pattern + 4-case submission smoke matrix.
-- **Task 2.5 — tags prompt + eval — DEFERRED to a separate post-PR-2 follow-up PR** after the sample-set methodology decision is made. Tags side-channel scaffolding ships in PR 2 to make the future LLM writer drop in cleanly without further migrations.
+**Tasks (CRF + activity_type complete in branch; tags deferred):** 2.1-2.3 (CRF) + 2.4 step 1-4 (activity_type prompt + samples + canonical eval + edge-fn wire-up) all done. **Task 2.4 step 5 — TEST DB verification — fires once round 1 fix-ups are pushed and CI applies the renamed migration.** Task 2.5 — tags prompt + eval — deferred to a separate post-PR-2 follow-up PR (sample-set methodology decision pending).
 
-**Branches (after push):**
-- `main` at `bd9d6e4` (PR 1b squash merge).
-- `feat/metadata-foundation-llm-tagging` — 19 commits, pushed to origin, tracking. PR #477 OPEN.
-- `backup/feat-metadata-foundation-llm-tagging-pre-rebase` — pre-Session-38-rebase backup; deletable after PR 2 ships.
-- `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — deletable at convenience.
+**Branches:** `main` at `bd9d6e4` (PR 1b squash). `feat/metadata-foundation-llm-tagging` 4 commits ahead of origin (push pending). `backup/feat-metadata-foundation-llm-tagging-pre-rebase` (deletable post-PR-2 ship). `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` (deletable at convenience).
 
-**Next session picks up — PR 2 round 0 / 1 review cycle:**
-
-Apply the active-PR session-orientation rule (per `feedback_pr_bot_review_workflow.md`): the prior session's status doc is stale because bot reviews fire between sessions. Before any other work, run:
+**Next session picks up — push + CI rerun + TEST DB round 1 verification:**
 
 ```bash
-git log @{u}..HEAD                                         # confirm no unpushed commits
-gh pr view 477 --json reviews,comments,state,mergeable     # live PR state
-gh pr checks 477                                           # CI status
+git log @{u}..HEAD                                         # confirm 4 unpushed commits
+git push                                                   # bundle pushes Session 43 docs + 2 fix-ups + Session 44 docs
+gh pr checks 477                                           # watch for E2E + CodeQL turning green
+gh pr view 477 --json reviews,comments,state,mergeable     # check for round-2 bot voice
 ```
 
-Then collect findings from ALL FOUR PR surfaces (per `feedback_pr_comment_surfaces.md` — querying only one is a verification failure):
-
-```bash
-gh pr view 477 --comments                                                                          # issue-comments (where bots usually post)
-gh api repos/danfeder/esnyc-lesson-search-react/pulls/477/reviews --jq '.[] | {user: .user.login, state, body}'    # PR reviews
-gh api repos/danfeder/esnyc-lesson-search-react/pulls/477/comments --jq '.[] | {user: .user.login, path, line, body}'  # line-comments
-gh run view <failing-run-id> --log-failed                  # any failing CI check details
-```
-
-Then **TEST DB verification (the kickoff PER-PR RITUAL step 9 — re-verify after each round, not just round 0):**
-- `mcp__supabase-test__execute_sql pg_get_functiondef('complete_review_atomic'::regprocedure)` → 6/6 RPC body signals: declare `v_ai_draft jsonb` + pluck from `lesson_submissions.ai_draft_metadata` + INSERT array passthrough for `activityType` + UPDATE array passthrough for `activityType` + INSERT tags from draft + UPDATE tags carry-forward (NULL preserved — the P2-2 fix).
-- `mcp__supabase-test__execute_sql` to confirm tags column distribution unchanged on legacy rows (no NULL → [] flip on existing rows; CI's apply-migration step doesn't fire complete_review_atomic on legacy rows).
+Then **TEST DB verification (per-round verification rule; this is round 1)** once CI's apply step lands:
+- `mcp__supabase-test__execute_sql` on `supabase_migrations.schema_migrations` → confirm `20260518200000` and `20260519000000` recorded.
+- `mcp__supabase-test__execute_sql` → confirm 3 `ai_draft_*` columns present on `lesson_submissions`.
+- `mcp__supabase-test__execute_sql pg_get_functiondef('complete_review_atomic'::regprocedure)` → 6/6 RPC body signals (declare `v_ai_draft jsonb` + pluck from `lesson_submissions.ai_draft_metadata` + INSERT array passthrough for `activityType` + UPDATE array passthrough for `activityType` + INSERT tags from draft + UPDATE tags carry-forward NULL).
 - `mcp__supabase-test__get_edge_function process-submission` → 3-signal pattern (version + ezbr_sha256 + source-grep for `loadCrfPrompt` AND `loadActivityTypePrompt` AND both `submit_tags` tool definitions).
-- 4-case submission smoke matrix once `ANTHROPIC_API_KEY` is set on TEST: with-CR + agenda → both fire; without-CR + agenda → only activity_type fires; empty body → noisy/empty outputs; regenerate-embedding → neither fires.
+- 4-case submission smoke matrix once `ANTHROPIC_API_KEY` is set on TEST.
 
-**Triage rules for any findings:**
-- Investigate every finding (rebuttal pass per `feedback_bot_review_investigation.md`).
-- Bot voice convergence (3 independent voices agree) is P1 signal; absence of convergence correlates with absence of P1 (per `feedback_pr_bot_review_workflow.md`).
-- Empirical evidence (TEST/PROD MCP probes) can escalate single-voice low-confidence findings — for any "N rows historical" claim, run the corresponding MCP probe before triaging.
-- Round-cap after 2 rounds of bot review (kickoff PER-PR RITUAL step 10).
-- Surface accept/reject recommendations to user with rationale BEFORE applying.
-
-**Carrier choice for Session 43's docs commit:** session-end docs commit lands locally only this session (per `feedback_no_docs_push_during_pr.md` — bundles with the next fix-up push to avoid a docs-only CI cycle on PR #477). Next session bundles it with the first fix-up commit (or a final docs roll-up if no fix-ups are needed before ship).
+**Triage rules for any round-2 findings (kickoff PER-PR RITUAL):** investigate every finding (rebuttal pass per `feedback_bot_review_investigation.md`); empirical evidence (MCP probes) can escalate single-voice low-confidence findings; round-cap after 2 rounds (this is round 1, so round 2 is the last full triage cycle); surface accept/reject recommendations to user BEFORE applying.
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -96,6 +58,8 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 - **esm.sh CDN 522 flakes are recurring on `deploy-edge-functions.yml`** — same per-job transient pattern as the migrate-production SASL flake. `gh run rerun --failed` is the working mitigation. (Captured in MEMORY.md hygiene-follow-ups.)
 - **Type-coupled cluster impl-plan flaw (single-occurrence — watch for recurrence).** When a schema-shape change touches multiple consumer files, decompose-by-file impl plans break tsc invariants mid-session. Session 30 surfaced this in PR 1b: Tasks 1b.3 (Zod array shape) + 1b.4 (mappers) + 1b.5 (ReviewDetail consumer) had to ship as one cluster because the type narrowing cascaded across all three. Future similar work should bundle consumer-cluster from impl-plan time, OR explicitly note "intermediate tsc-break expected; cluster ships together" in the verify clauses. Stays as candidate (single occurrence) — promote to `feedback_*.md` if it recurs.
 - **Cherry-pick approach over `git rebase` when stale-docs would generate multi-commit conflicts (single-occurrence — watch for recurrence).** Session 38 surfaced this on the PR 2 rebase: vanilla `git rebase main` would have triggered ~13 separate docs conflicts (one per PR 2 docs commit, since main's docs reflect Session 37's archive split while PR 2's stale docs were on Session 17-27 pre-split layout). Resolved by `git reset --hard main` + cherry-picking only the 7 code commits + re-bundling docs fresh (Sessions 36+37 cherry-picked from `docs/session-36-pr1b-shipped` + Session 38 written from scratch). Per-session docs commit history from PR 2 is lost (preserved in `backup/feat-metadata-foundation-llm-tagging-pre-rebase` for traceability), but session log entries are reconstructed in active status doc + archive. Tradeoff: cleaner code-only PR 2 commit chain (squash-merge friendly), but does need the docs reconstruction. Generalizable: identify the substantive (code/feature) commits vs the housekeeping (docs/status) commits; cherry-pick only the substantive set; re-run docs work fresh at the end.
+- **Rebase-rename-sweep: rename ALL stale-timestamp migration files, not just body-conflicting ones (single-occurrence — watch for recurrence).** Session 38's PR 2 rebase renamed `20260517000000_complete_review_atomic_tags_side_channel.sql → 20260519000000_*` because of a body conflict with PR 1b's `20260518100000_*` on `complete_review_atomic`. The other PR 2 migration `20260516000000_lesson_submissions_ai_draft_metadata.sql` was NOT renamed because adding new columns on `lesson_submissions` doesn't conflict with anything in PR 1b — local `supabase db reset` applies in version order so it kept working. Only TEST CI's `supabase db push --dry-run` (which checks "any local file with timestamp before remote's last applied?") caught it 6 sessions later when PR 2 was finally pushed (Session 43→44). Rule for future rebases: scan ALL `supabase/migrations/*.sql` files on the rebased branch — if any timestamp is `<` the rebase target's last migration, rename regardless of body-conflict status. Stays as candidate (single occurrence) — promote to `feedback_*.md` if it recurs.
+- **`database-migrations` skill rule has a documented exception class.** Standard rule: "NEVER edit a migration file that has been pushed to a remote branch." Session 44's back-sort fix had to rename a pushed migration. Exception is justified ONLY when: (a) the bug IS the filename / timestamp (body is correct), AND (b) the file was never applied to any remote DB (verified by MCP probe of `supabase_migrations.schema_migrations`). The skill's escape paths ("create new fix migration" / "reset TEST DB") cannot fix a back-sorted timestamp because the back-sorted file remains in the tree tripping dry-run; a reset is heavyweight and unnecessary when no remote state needs preserving. Document the exception explicitly in the migration file header + commit message + status doc when used.
 
 ## Out-of-scope follow-ups (tracked here for PR 5+ / Phase 2 / future hygiene)
 
@@ -317,6 +281,44 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - **My API cost estimates were ~3× over actuals.** Across smoke + v1 + v2 + v3, my projected cost per call was 2.7-3.5× the actual. Likely my chars-per-token assumption (3.5) was too low, OR Anthropic's billing has a discount I'm unaware of, OR there's a workspace-credit subsidy. For future projections, anchor on user-observed actuals not my pricing math; my math is consistently overestimating.
 
 - **Single-truth-row eval values are stringent.** Academic now has 1 truth row in the 113-sample set. Per-value academic recall is binary: 1.000 if the LLM correctly tags Lorax, 0.000 if it doesn't. Future canonical re-runs need to keep producing this 1/1 to maintain the per-value floor. If the 1-row category becomes a flake risk, options: (a) add 2-3 more academic-only lessons to the sample set (would need to find/invent), (b) drop the per-value floor for academic only via threshold-config exemption, (c) accept the binary signal as load-bearing — a regression on Lorax tells us the prompt has shifted academic interpretation away from the rule.
+
+### Session 44 — 2026-05-07 — PR 2 round 1 fix-ups: migration rename for back-sort + CodeQL regex slice
+
+**Done (2 code commits + this session-end docs commit pending — local only per `feedback_no_docs_push_during_pr.md` until next push):**
+
+- **Active-PR session-orientation per Session 43's process note**: ran `git log @{u}..HEAD` + `gh pr view 477 --json reviews,comments,state,mergeable` + `gh pr checks 477` + four-surface comment query (issue-comments + reviews + line-comments + failing-job logs). Findings: bots have all completed reviews (claude-review + GHAS CodeQL + user's own Codex pass at 15:45); 3 failing checks (E2E Tests, Security Audit, CodeQL); zero P1 from bot voice convergence — bot voice is single-voice `claude` on substance + single-voice `GHAS` on the regex; Security Audit is the pre-existing `@lhci/cli` chain (already in MEMORY hygiene-follow-ups, not introduced by this PR).
+
+- **Migration back-sort root cause investigated** via `mcp__supabase-test__execute_sql` + `mcp__supabase-remote__execute_sql` against `supabase_migrations.schema_migrations`. Both TEST and PROD are at `20260518100000` (PR 1b's tip) — neither PR 2 migration is recorded on either DB, and `lesson_submissions.ai_draft_metadata` columns do NOT exist on TEST (column probe returned `[]`). **Codex review's claim ("TEST has 20260516000000 and 20260519000000 recorded") was WRONG** per fresh probe — likely Codex hallucinated or read against a different DB. Rule learning: single-source MCP claims in review comments can be stale; always re-probe at the time of action, not at the time of review.
+
+- **CI behavior chain confirmed**: `supabase db push --dry-run` (line 59 of `.github/workflows/e2e.yml`) exits 1 on the back-sort detection ("Found local migration files to be inserted before the last migration on remote database"); `set -o pipefail` propagates the exit code; GHA's default fail-fast skips the subsequent `supabase db push` step (line 121) because its `if:` check doesn't override the implicit `success()`. The migration genuinely never applied. The bug is the FILENAME (timestamp), not the body.
+
+- **Fix-up commit 1 (`fff430d`) — migration rename via `git mv`**: `20260516000000_lesson_submissions_ai_draft_metadata.sql` → `20260518200000_lesson_submissions_ai_draft_metadata.sql`. New timestamp sorts cleanly post-PR-1b (`> 20260518100000`) and before PR 2's RPC migration that reads these columns (`< 20260519000000`). Body unchanged (additive `ADD COLUMN IF NOT EXISTS` + comments). Header gets a context block explaining the rename + rationale for the rule exception (mirrors `20260519000000_*`'s own rename header pattern).
+
+- **Fix-up commit 2 (`4ea642b`) — CodeQL regex slice**: replaced `replace(/<!--.*?-->/g, '')` on `scripts/build-activity-type-samples.ts:90` with `indexOf('<!--')` + `slice` approach. Clears 2 CodeQL alerts (alerts #23 "Incomplete multi-character sanitization" + #24 "Bad HTML filtering regexp"). Behavior-equivalent on real worksheet input — only 1 occurrence of `<!--` in the entire current worksheet, in the intro section, not in any label line. Inline comment documents the intent: treat `<!--` as a line-comment terminator, not as one half of an HTML tag pair.
+
+- **Local verification clean**: `supabase db reset` (all 15 migrations apply in correct order; 4 ai_draft_* columns present per local MCP probe; `schema_migrations` shows `20260518000000 → 20260518100000 → 20260518200000 → 20260519000000`) + 573/573 tests + type-check + lint all green.
+
+- **Other claude bot findings rejected per user's own Codex triage** (concur with all rejections): `ai_draft_model` last-writer-wins (P3 — both models are `claude-opus-4-7` today, no real divergence); `user`/`supabaseClient: any` (pre-existing on `origin/main`); `SubmissionDetail` missing `ai_draft_metadata` field (type-doc only — `ReviewDetail` reads through `submissionData`, not the typed interface); merged JSONB not re-validated before write (P3 hardening, no current risk); duplicate Anthropic client + missing LLM timeouts + literal vocab values in tests + CLI `console.log` (all P3 nits, kickoff "don't refactor beyond task" applies).
+
+**Decisions made:**
+
+- **Rule-exception rename over reset-TEST-DB**. The `database-migrations` skill + `supabase/migrations/CLAUDE.md` explicitly say "NEVER edit a migration file that has been pushed." The skill offers two escape paths: (a) "create a new fix migration", or (b) "reset TEST DB". Neither fits this bug — (a) can't fix a back-sorted FILENAME (the back-sorted file would still be in the tree tripping `db push --dry-run`); (b) is heavyweight (~800 rows of TEST data) and unnecessary because no remote DB has the migration applied. The rule's spirit is "don't drift TEST/PROD" — that drift cannot occur when TEST has nothing applied. Documented the exception explicitly in the migration file header + commit message + a new bullet in Recent decisions covering the exception class. User pre-approved the rename approach in this session before any file changes.
+
+- **Two fix-up commits, not one combined**. Cleaner git log + bisect; matches Session 43's "round-N fix-up pattern." Squash-merge collapses to one commit on main anyway.
+
+- **Skipped Security Audit fix.** Pre-existing `@lhci/cli`/`tmp`/`postcss`/`basic-ftp`/`ip-address` chain (already in MEMORY.md hygiene-follow-ups). Not introduced by this PR. Belongs to a focused dependency-upgrade PR; outside this round's scope per `feedback_pr_bot_review_workflow.md` rule "default-reject hardening for internal-only."
+
+**Process notes for Session 45+:**
+
+- **Push bundle = 4 commits ahead of origin**: Session 43 docs (`4ef9cb0`) + rename (`fff430d`) + regex (`4ea642b`) + Session 44 docs. Per `feedback_no_docs_push_during_pr.md`, Session 43's docs commit rides along with the fix-ups instead of pushing standalone (avoid CI cycle on docs-only changes).
+
+- **TEST DB verification fires when CI applies the renamed migration** (this is round 1 of bot review per `feedback_per_round_test_db_verification.md`). Required probes: 6/6 RPC body signals on `complete_review_atomic` (declare `v_ai_draft jsonb` + pluck from `lesson_submissions.ai_draft_metadata` + INSERT array passthrough for `activityType` + UPDATE array passthrough for `activityType` + INSERT tags from draft + UPDATE tags carry-forward) + tags column distribution unchanged on legacy rows (no NULL → [] flip) + 3-signal edge fn pattern (version + ezbr_sha256 + source-content grep for `loadCrfPrompt` AND `loadActivityTypePrompt` AND both `submit_tags` tool definitions) + 4-case submission smoke matrix (gated on `ANTHROPIC_API_KEY` set on TEST). The renamed migration is functionally identical to the original; TEST should apply cleanly on first try.
+
+- **Watch the rebase-rename-sweep pattern** (newly captured in Recent decisions): when rebasing migrations onto a branch with newer-timestamp migrations, ALL files on the rebased branch with timestamps EARLIER than the rebase target's tip migration must be renamed, regardless of body-conflict status. Local `supabase db reset` won't catch the issue because it applies in version order — only `db push --dry-run` against TEST does. Single occurrence so far (Session 38's miss); promote to `feedback_*.md` if it recurs on a future rebase.
+
+- **Round-cap rule applies after one more round**: this is round 1. Per kickoff PER-PR RITUAL step 10, after 2 rounds of bot review fix only critical bugs and ship. If a round-2 fires (next session if bots return after the push), apply the same rebuttal pass + four-surface query + per-round TEST DB re-verification.
+
+- **Anticipated next-session shape**: (a) push bundle → wait for CI to apply migrations + run E2E + CodeQL clean → run TEST DB verification round 1 → if green and no new bot findings, await user merge approval; (b) if round 2 fires, apply same triage rules and re-verify.
 
 ### Session 43 — 2026-05-07 — PR 2 PUSHED + OPENED as #477 (CRF + activity_type only; tags LLM deferred)
 
