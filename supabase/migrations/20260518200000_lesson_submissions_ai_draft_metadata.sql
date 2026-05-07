@@ -1,6 +1,30 @@
 -- Metadata-rebuild foundation phase, PR 2, Task 2.2a:
 -- Add storage columns for submission-time LLM-drafted metadata.
 --
+-- Renamed from 20260516000000 → 20260518200000 during PR 2 round 1 review
+-- (Session 44, post-PR-1b ship). Original 20260516000000 was authored
+-- 2026-05-05 BEFORE PR 1b's 20260518000000_activity_type_multi_select.sql /
+-- 20260518100000_complete_review_atomic_activity_type_multi.sql shipped.
+-- Session 38's PR 2 rebase renamed the OTHER PR 2 migration
+-- (20260517000000 → 20260519000000_complete_review_atomic_tags_side_channel)
+-- because it had a body conflict on complete_review_atomic, but missed
+-- this file because adding new columns on lesson_submissions doesn't
+-- conflict with anything in PR 1b — local `supabase db reset` applies in
+-- version order so it kept working. Only TEST CI's `supabase db push
+-- --dry-run` (which checks "any local file with timestamp before remote's
+-- last applied?") caught it: TEST + PROD were both at 20260518100000 last
+-- applied, so this file's 20260516000000 timestamp tripped back-sort
+-- detection. Renamed to 20260518200000 to sort cleanly post-PR-1b
+-- (> 20260518100000) and before PR 2's RPC migration that reads these
+-- columns (< 20260519000000). Body unchanged.
+--
+-- Note: standard rule is "never edit a pushed migration." Exception is
+-- justified here because the bug IS the filename, the file was never
+-- applied to any remote DB (TEST + PROD both at 20260518100000 per MCP
+-- probe at rename time), and the skill-recommended escape paths
+-- ("create new fix migration" / "reset TEST DB") don't fix a back-sorted
+-- timestamp.
+--
 -- Submitters provide zero classification metadata; the `process-submission`
 -- edge function will run vocab-locked Opus tagging prompts and write canonical
 -- drafts here. ReviewDetail.tsx reads `ai_draft_metadata` at form-init when no
