@@ -22,25 +22,31 @@ Multi-label: a sample may have 1, 2, 3, or rarely 4 truth values. The Zod harnes
 
 ## How rows were selected
 
-The 113 rows are every submission on TEST DB whose reviewer-supplied `submission_reviews.tagged_metadata.activityType` is non-null. Distribution under the pre-PR-1b 5-value scalar vocab:
+The 113 rows are every submission on TEST DB whose reviewer-supplied `submission_reviews.tagged_metadata.activityType` is non-null. Distribution under the pre-PR-1b 5-value scalar vocab vs. post-relabel multi-label distribution:
 
-| Old reviewer label | Count |
-|---|---|
-| `garden` | 67 |
-| `cooking` | 33 |
-| `academic` | 11 |
-| `both` | 2 |
-| `craft` | 0 |
+| Value | Pre-relabel old vocab (single-label) | Post-relabel new vocab (multi-label, count truth-occurrences) |
+|---|---|---|
+| `garden` | 67 | 68 |
+| `cooking` | 33 | 34 |
+| `academic` | 11 | 11 |
+| `craft` | 0 | 13 |
+| `both` | 2 | (retired; expressed as `cooking, garden`) |
 
-All 113 rows are scalar (`jsonb_typeof = 'string'`); no fresh array-shape reviewer saves have landed since PR 1b shipped 2026-05-07.
+12 of 113 rows (10.6%) carry 2+ labels in the post-relabel set; the rest are single-label. Total truth occurrences: 126. Total body chars: 652,580 (avg 5,775; min 2,662; max 16,941).
+
+All 113 rows are scalar (`jsonb_typeof = 'string'`) in the TEST DB tagged_metadata column; no fresh array-shape reviewer saves have landed since PR 1b shipped 2026-05-07.
 
 The `craft` value did not exist in the reviewer's vocabulary when these were tagged (5-value vocab was `cooking / garden / both / academic / craft`, but the original v3 vocab pre-D2 only had `cooking / garden / both / academic`). Worksheet v1 (deprecated) tried to triage 26 craft-suspect candidates against the 5-value single-label vocab; v2 takes the simpler approach of relabeling all 113 against the post-PR-1b 4-value multi-label vocab.
 
-## Eval-gate caveat — `craft` may have zero truth labels
+## Eval-gate guardrails — actual state after relabeling
 
-If the user's relabeling produces zero `craft` rows in the 113 set, per-value craft recall is undefined (TP+FN=0). The harness applies a `maxPredictionRateForAbsentValues` ceiling instead — fails the gate if the LLM predicts craft on more than 10% of samples. See `activity-type-thresholds.json`.
+`craft` ended up with 13 truth labels (not zero), so per-value craft precision/recall applies normally. The `maxPredictionRateForAbsentValues=0.10` guardrail in `activity-type-thresholds.json` is **dormant** for craft on this sample set (it only fires when a vocab value has `truthCount === 0`).
 
-If the user labels some samples as `craft`, regular precision/recall apply and the absent-values ceiling is dormant for that value. The threshold mechanism is deliberately general (any vocabulary value with truth_count = 0 in a given sample set) so it carries forward to future runs.
+The guardrail is deliberately general — any future eval run where a vocab value has zero truth labels will trigger it (e.g., a tags eval where neither `orientation` nor `bilingual_handouts` shows up in the user's labeling). The mechanism carries forward unchanged.
+
+The remaining active thresholds for the canonical run:
+- `macroF1 >= 0.7` (CRF reference cleared at 0.937)
+- `minRecallPerValue >= 0.5` (per-value floor — the most likely failure path is craft if the prompt over-predicts; secondary risk is academic at truth count 11, where a few misses move the needle).
 
 ## Order
 
@@ -62,7 +68,29 @@ WHERE sr.tagged_metadata ? 'activityType'
 ORDER BY ls.extracted_title NULLS LAST, ls.id;
 ```
 
-The worksheet build chunked this query into 4 batches of 25-30 rows with summary + agenda window extracts (350 + 500 chars) for compactness; the full-body version above is what the samples.json will use.
+The worksheet build chunked the same row set into 4 batches of 25-30 rows with summary + agenda window extracts (350 + 500 chars) for compactness; the full-body version above is what samples.json uses.
+
+## How samples.json was built
+
+After the user fills in worksheet labels, samples.json is regenerated via:
+
+```bash
+# 1. Pull full bodies from TEST DB (write to a tmp JSON, format: [{ id, body }])
+# Run via mcp__supabase-test__execute_sql with the regeneration SQL above
+# (without the title + old_label columns), then save the result rows to
+# /tmp/activity-type-bodies.json. The 113-row payload is ~700KB and exceeds
+# the inline MCP cap; the persisted-output file path is returned in the
+# error message — extract the bodies array from the JSON-wrapped result.
+
+# 2. Run the build script — merges worksheet labels with bodies dump
+npx tsx scripts/build-activity-type-samples.ts \
+  --worksheet scripts/eval-data/activity-type-relabel-worksheet-v2.md \
+  --bodies    /tmp/activity-type-bodies.json \
+  --vocab     scripts/eval-data/activity-type-vocab.json \
+  --output    scripts/eval-data/activity-type-samples.json
+```
+
+The build script validates: every worksheet ID has a body in the bodies dump; every truth label is in vocab; no entry has an empty/missing label line. Exit 0 on success; exit 1 + per-error report on validation failure.
 
 ## What's NOT in the worksheet
 

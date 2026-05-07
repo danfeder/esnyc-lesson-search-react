@@ -77,7 +77,7 @@ Agenda/Class Flow: (10 mins) | Opening ritual (10 mins): |  | Raise your hand if
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -97,7 +97,7 @@ Agenda/Class Flow, Day 1: ( | 45 minutes | ) | Opening ritual (10 minutes): | "C
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic, craft
 
 ---
 
@@ -117,7 +117,7 @@ Agenda/Class Flow: ( | 45-50 minutes | ) | Opening ritual (10 mins) |  | Welcome
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -137,7 +137,7 @@ Agenda/Class Flow: | Opening ritual: | Ask students to recall what they learned 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -157,7 +157,7 @@ Agenda/Class Flow: (45 minutes) | Opening ritual (15 minutes): | Show students t
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -177,7 +177,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -197,7 +197,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -217,7 +217,7 @@ Agenda/Class Flow: | Compost Stew |  |  | Opening ritual (5 min) | Welcome and s
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -237,7 +237,7 @@ Agenda/Class Flow: ( | 45-50 minutes | ) | Opening ritual | (10 min) | Welcome b
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -257,7 +257,7 @@ Agenda/Class Flow: ( | 45-50 minutes | ) | Welcome back to class everyone!  As s
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -277,7 +277,7 @@ Agenda/Class Flow: ( | 45-50 minutes | ) | Opening ritual: | (15 minutes) | Welc
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -297,7 +297,7 @@ Agenda/Class Flow (45-50 minutes): | Opening ritual (15 minutes): | Welcome stud
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -317,7 +317,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -337,7 +337,7 @@ Agenda/Class Flow: | Opening ritual (5 minutes): | Introduce the applesauce reci
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -357,7 +357,7 @@ Agenda/Class Flow: | Opening ritual (5 minutes): | Introduce the applesauce reci
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -377,7 +377,7 @@ Agenda/Class Flow: | Opening ritual: | Ask students if they have ever baked anyt
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -397,7 +397,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -417,7 +417,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking, garden, craft
 
 ---
 
@@ -437,7 +437,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** craft
 
 ---
 
@@ -457,7 +457,7 @@ Agenda/Class Flow: | Opening ritual (5 minutes): |  | Review community expectati
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -477,7 +477,7 @@ Agenda/Class Flow: ( | 45 minutes) |  | Opening ritual (20 minutes): |  | Welcom
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -497,7 +497,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -517,7 +517,7 @@ Agenda/Class Flow: |  | Opening ritual (15 min): | Welcome students back to gard
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -537,7 +537,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -557,7 +557,7 @@ Agenda/Class Flow |  |  | Opening Ritual | (10 minutes) |  | "Today we are makin
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -577,7 +577,7 @@ Agenda/Class Flow: | Opening ritual (5 minutes): | How is everyone feeling today
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -597,7 +597,7 @@ Agenda/Class Flow: ( | 45-50 minutes | ) | Welcome back to class everyone!  As s
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -617,7 +617,7 @@ Agenda/Class Flow (45-50 minutes): | Opening ritual: | Welcome back to class eve
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -637,7 +637,7 @@ Agenda/Class Flow (45-50 minutes): | Opening ritual (15 minutes): | Welcome back
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -657,7 +657,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** craft
 
 ---
 
@@ -677,7 +677,7 @@ Agenda/Class Flo | w: |  | Opening ritual: (10 min) |  | Welcome students back t
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -697,7 +697,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -717,7 +717,7 @@ Agenda/Class Flow: | Opening ritual: | Start by asking students what they discus
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -737,7 +737,7 @@ Agenda/Class Flow: |  | Opening ritual: (5 mins) | Welcome students back to gard
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -757,7 +757,7 @@ Agenda/Class Flow: ( | 90 minutes) |  | Opening ritual (15 minutes): | Welcome s
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -777,7 +777,7 @@ Agenda/Class Flow |  | Opening Ritual | (10 minutes) | Welcome group. Ask someon
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, academic
 
 ---
 
@@ -797,7 +797,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking, academic
 
 ---
 
@@ -817,7 +817,7 @@ Agenda/Class Flow: | Opening ritual: | Welcome students. Go over norms for garde
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -837,7 +837,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -857,7 +857,7 @@ Agenda/Class Flow |  | Opening Ritual (10 minutes) | Welcome students back to th
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -877,7 +877,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -897,7 +897,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -917,7 +917,7 @@ Agenda/Class Flow: | Opening ritual with SEL component AND with emphasis on year
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -937,7 +937,7 @@ Agenda/Class Flow: | Opening ritual: | Introduce yourself as the kitchen and gar
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -957,7 +957,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -977,7 +977,7 @@ Agenda/Class Flow: | Opening ritual: | Tell the class that today they will takin
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -997,7 +997,7 @@ Agenda/Class Flow |  | Opening Ritual | (10 minutes) | Welcome to the Garden (or
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1017,7 +1017,7 @@ Agenda/Class Flow: | Opening ritual: | Ask students if they know what a traditio
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1037,7 +1037,7 @@ Agenda/Class Flow: | Opening ritual: | Welcome students. (5 minutes) | Go over c
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1057,7 +1057,7 @@ Agenda/Class Flow: |  | Opening ritual (5 minutes): | Welcome students to class.
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1077,7 +1077,7 @@ Agenda/Class Flow: | Opening ritual (10 minutes): | The teacher explains that to
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1097,7 +1097,7 @@ Agenda/Class Flow: | Opening ritual: (10 min) |  | Welcome students back to gard
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** craft
 
 ---
 
@@ -1117,7 +1117,7 @@ Agenda/Class Flow: | Opening ritual with SEL component AND with emphasis on year
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1137,7 +1137,7 @@ Agenda/Class Flow |  | Opening ritual (10 min) |  | Pose a question to the stude
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -1157,7 +1157,7 @@ Agenda/Class Flow: | Opening ritual (10 minutes): | Introduce Palestine & olive 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1177,7 +1177,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1197,7 +1197,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking, garden
 
 ---
 
@@ -1217,7 +1217,7 @@ Agenda/Class Flow: | Welcome students back to the garden.  Ask students if they 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1237,7 +1237,7 @@ Agenda/Class Flow: | Opening ritual (10 minutes): |  | The teacher introduces th
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1257,7 +1257,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1277,7 +1277,7 @@ Agenda/Class Flow: | Opening ritual (5 minutes): |  | Hi everyone, welcome back 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1297,7 +1297,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1317,7 +1317,7 @@ Agenda/Class Flow | Opening ritual (10 minutes) | Explain that we are going to l
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1337,7 +1337,7 @@ Agenda/Class Flow: | Opening ritual: | Ask students if they know what season it 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1357,7 +1357,7 @@ Agenda/Class Flow |  |  | Opening Ritual |  | We are going to learn about the Lu
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1377,7 +1377,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1397,7 +1397,7 @@ Agenda/Class Flow: |  | Opening ritual: | Welcome students |  | Welcome to Edibl
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1417,7 +1417,7 @@ Agenda/Class Flow: | Opening ritual: (10 min) |  | Welcome students back to gard
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1437,7 +1437,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1457,7 +1457,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** craft
 
 ---
 
@@ -1477,7 +1477,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1497,7 +1497,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1517,7 +1517,7 @@ Agenda/Class Flow: ( | 50 minutes | ) | Opening ritual (15 minutes) | . | Welcom
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1537,7 +1537,7 @@ Agenda/Class Flow: (45-50 minutes) | Welcome back to class everyone!  As student
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1557,7 +1557,7 @@ Agenda/Class Flow: | Opening ritual (15 minutes): |  | Welcome students back to 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1577,7 +1577,7 @@ Agenda/Class Flow |  | Opening | (5 minutes) | Today you are going to be detecti
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1597,7 +1597,7 @@ Agenda/Class Flow: | Opening ritual: | "How is everyone feeling today?" Thumb ch
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1617,7 +1617,7 @@ Agenda/Class Flow (45-50 minutes): | Opening ritual with SEL component AND with 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1637,7 +1637,7 @@ Agenda/Class Flow: | Opening ritual (10 minutes): | "We've been talking in garde
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1657,7 +1657,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1677,7 +1677,7 @@ Agenda/Class Flow: ( | 45-50 minutes | ) | Opening ritual (10 minutes): | Welcom
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1697,7 +1697,7 @@ Agenda/Class Flow (45 | -50 minutes) | : | Opening ritual (10 minutes): |  | Wel
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1717,7 +1717,7 @@ Agenda/Class Flow: |  | Opening ritual (10 minutes): | Raise your hand if you ar
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1737,7 +1737,7 @@ Agenda/Class Flow: | (50 minutes | ) |  | Introduction: Welcome students back to
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1757,7 +1757,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1777,7 +1777,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1797,7 +1797,7 @@ Agenda/Class Flow | : | Introduction (10 min) | Welcome students back to the gar
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1817,7 +1817,7 @@ Agenda/Class Flow: | Opening ritual (15 minutes): | Welcome the students and ask
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -1837,7 +1837,7 @@ Agenda/Class Flow (45 minutes): |  | Opening ritual (15 minutes): | Welcome stud
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1857,7 +1857,7 @@ Agenda/Class Flow: ( | 45-50 minutes | ) | Opening ritual with SEL component AND
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -1877,7 +1877,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1897,7 +1897,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden, craft
 
 ---
 
@@ -1917,7 +1917,7 @@ Agenda/Class Flow: | Opening ritual: | Ask students to show you with their thumb
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -1937,7 +1937,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1957,7 +1957,7 @@ Agenda/Class Flow: | Opening ritual (15 minutes): |  | "All year, we've been lea
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -1977,7 +1977,7 @@ Agenda/Class Flow: | Opening (5 minutes): |  | Welcome to class! How is everyone
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -1997,7 +1997,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** academic
 
 ---
 
@@ -2017,7 +2017,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2037,7 +2037,7 @@ Agenda/Class Flow: |  | Opening Ritual | "How is everyone feeling today?" Thumb 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2057,7 +2057,7 @@ Agenda/Class Flow | (45-50 minutes) | : | Opening ritual (10 minutes): | Welcome
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -2077,7 +2077,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -2097,7 +2097,7 @@ Agenda/Class Flow: | Opening ritual: (15-20 minutes) |  |  | Opening circle/disc
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -2117,7 +2117,7 @@ Agenda/Class Flow: |  | Opening Ritual | (5 minutes) | Welcome to our school gar
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2137,7 +2137,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2159,7 +2159,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2179,7 +2179,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2199,7 +2199,7 @@ Agenda/Class Flow: ( | 45 mins | ) |  | Welcome students back to class.  Last ti
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2219,7 +2219,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2239,7 +2239,7 @@ Agenda/Class Flow: (link to relevant hand-outs and include estimated time) | Ope
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** cooking
 
 ---
 
@@ -2259,7 +2259,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2279,7 +2279,7 @@ Agenda/Class Flow: | Opening ritual: | Today we are going to be meeting one of t
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2299,7 +2299,7 @@ Agenda/Class Flow |  |  | Opening Ritual (10 min) | Welcome students to the gard
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
@@ -2319,7 +2319,7 @@ Agenda/Class Flow: (link to relevant hand | -outs and | include estimated time) 
 
 </details>
 
-**New labels (multi-label):** 
+**New labels (multi-label):** garden
 
 ---
 
