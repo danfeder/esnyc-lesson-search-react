@@ -1,20 +1,24 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-06 — Session 39 (PR 2 Task 2.4 step 1 shipped local: activity_type prompt + worksheet v2 stub with all 113 reviewer-tagged submissions + harness `maxPredictionRateForAbsentValues` guardrail for craft-prediction-rate caveat; 11 commits ahead of main; awaiting user labeling pass before canonical eval).
+**Last updated:** 2026-05-06 — Session 40 (PR 2 Task 2.4 step 2 shipped local: worksheet labels filled in by user + bodies pulled from TEST DB + `scripts/build-activity-type-samples.ts` parser/merger + `scripts/eval-data/activity-type-samples.json` built; perfect-prediction dry-run validates schema + metrics math; 13 commits ahead of main; ready for canonical eval run).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-36 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (~1600 lines, read on demand via grep). When a new PR cycle begins, that PR's session entries can move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — IN PROGRESS, awaiting user labeling for Task 2.4.** Branch `feat/metadata-foundation-llm-tagging` is 11 commits ahead of `main` (`bd9d6e4`): 7 code (Tasks 2.1-2.3) + 1 code (Task 2.4 step 1, this session) + 3 docs (Sessions 36 + 37 + 38). PR 2 not yet pushed; no PR open.
+**PR 2 (lesson-submission LLM auto-tag — vocab-locked prompts) — IN PROGRESS, samples.json ready for canonical eval.** Branch `feat/metadata-foundation-llm-tagging` is 13 commits ahead of `main` (`bd9d6e4`): 7 code (Tasks 2.1-2.3) + 2 code (Task 2.4 steps 1+2) + 4 docs (Sessions 36 + 37 + 38 + 40-pending). PR 2 not yet pushed; no PR open.
 
-**Task 2.4 step 1 shipped local-only this session (`fccd05e`):**
-- `supabase/functions/process-submission/prompts/activity-type.md` — multi-label prompt mirroring CRF shape, 4-value canonical lowercase enum (`cooking / garden / academic / craft`), conservative-tagging bias, substantial-block-bar tie-breakers (10+ minutes or main production output).
-- `scripts/eval-data/activity-type-vocab.json` — multi-label, 4 values.
-- `scripts/eval-data/activity-type-thresholds.json` — `macroF1=0.7` + `minRecallPerValue=0.5` (CRF baseline) + `maxPredictionRateForAbsentValues=0.10` (initial guardrail; tunable post-canonical-run).
-- `scripts/eval-data/activity-type-relabel-worksheet-v2.md` — 113 reviewer-tagged submissions in alphabetic order, each with summary excerpt (350 chars) + agenda excerpt (500 chars) in `<details>` blocks + empty `**New labels (multi-label):**` line for user; 2331 lines. Old-label distribution under pre-PR-1b 5-value scalar vocab: garden 67 / cooking 33 / academic 11 / both 2 / craft 0.
-- `scripts/eval-data/activity-type-samples.README.md` — methodology, regeneration SQL, harness usage, craft-prediction caveat documented.
-- Harness extension: `scripts/lib/evalMetrics.ts` adds `maxPredictionRateForAbsentValues` threshold key. Fires when a vocabulary value has `truth_count = 0` and the LLM still predicts it on `> ceiling × sample_count` rows. Generalized to any vocabulary value missing from truth; CRF behavior unchanged. 21/21 evalMetrics tests passing including 4 new cases (above ceiling = fail; at ceiling = pass; truthCount>0 = no-op; empty input = no-op). Threshold schema in `scripts/eval-llm-tagging-prompt.ts` mirrored.
+**Task 2.4 step 2 shipped local-only this session (`a426114`):**
+- `scripts/eval-data/activity-type-relabel-worksheet-v2.md` — user filled in all 113 `**New labels (multi-label):**` lines against the 4-value canonical multi-label vocab; 0 invalid labels, 0 empty lines.
+- `/tmp/activity-type-bodies.json` (intermediate, not committed) — 113 rows of `{id, body}` pulled from TEST DB via `mcp__supabase-test__execute_sql` (single query; persisted-output path extracted from MCP error since 700KB payload exceeds inline cap). README documents the full pull recipe for re-runs.
+- `scripts/build-activity-type-samples.ts` (200 LOC, npx tsx) — parses worksheet → extracts `{id, labels}` per entry; reads bodies dump; merges into harness-shape `[{id, body, truth}]`. Validates every worksheet ID has a body, every truth label is in vocab, no entry has an empty label line. Exits 0 on success / 1 on validation failure with per-error report.
+- `scripts/eval-data/activity-type-samples.json` (805 lines, 664KB) — 113 entries built from worksheet labels + TEST DB bodies. Truth distribution: garden 68 / cooking 34 / craft 13 / academic 11. 12 multi-label rows (10.6%). Total body chars 652,580 (avg 5,775; max 16,941; min 2,662).
+- `scripts/eval-data/activity-type-samples.README.md` — replaced "craft may have zero truth labels" caveat with actual post-relabel state; added "How samples.json was built" pipeline section; expanded distribution table with both pre- and post-relabel columns.
+- Verified end-to-end via perfect-prediction dry-run (no API spend): `--dry-run-with-predictions` against truth-as-predicted yielded macroF1=1.000, microF1=1.000, exit 0. Schema validation + truth-in-vocab check passed for all 113 samples.
+
+**Eval-gate guardrail state on the as-built sample set:**
+- `craft` truth count = 13 (non-zero) — `maxPredictionRateForAbsentValues=0.10` guardrail is **dormant** for craft; per-value craft precision/recall apply normally.
+- Active thresholds for the canonical run: `macroF1 >= 0.7` (CRF reference cleared at 0.937) + `minRecallPerValue >= 0.5` (per-value floor). Most-likely-fail values: craft (over-prediction) or academic (truth count 11 — small denominator, missed labels move the needle fast).
 
 **Foundation-phase substrate live on PROD (post-PR-1 + PR-1b, unchanged this session):**
 - Schema: `lesson_format` dropped; `series_id` + `part_number` + `crf_confirmed` columns added; `activity_type` array-shape multi-select with closed enum at 4 values; `tags` array column with closed enum; `cultural_responsiveness_features` closed to 7 Brown CR features.
@@ -25,21 +29,21 @@
 
 **On PR 2 branch (local-only, NOT yet on PROD):**
 - Tasks 2.1-2.3 done (CRF auto-tag).
-- Task 2.4 step 1 done (this session — activity_type scaffolding).
-- Tasks 2.4 steps 2-5 pending: user labels worksheet v2 → Claude parses into `activity-type-samples.json` → canonical eval run via harness (~$30 via CLIProxyAPI proxy or ~$7 direct Console API) → wire prompt into `process-submission/index.ts` alongside existing CRF call.
+- Task 2.4 step 1 done (Session 39 — activity_type scaffolding: prompt + vocab + thresholds + worksheet stub + harness guardrail).
+- Task 2.4 step 2 done (this session — worksheet labels + samples.json + build script).
+- Tasks 2.4 steps 3-5 pending: canonical eval run → wire prompt into `process-submission/index.ts` → deploy.
 - Task 2.5 pending: tags prompt + eval (vocab-locked, 2-value enum `orientation / bilingual_handouts`; write path goes through PR 1b's `complete_review_atomic` tags side-channel rather than the review-form mapper).
 
-**Branches (unchanged from Session 38):**
+**Branches (unchanged from Session 38 except commit count):**
 - `main` at `bd9d6e4` (PR 1b squash merge).
-- `feat/metadata-foundation-llm-tagging` — 11 commits ahead of main; not yet pushed; no PR open yet.
+- `feat/metadata-foundation-llm-tagging` — 13 commits ahead of main; not yet pushed; no PR open yet.
 - `backup/feat-metadata-foundation-llm-tagging-pre-rebase` — pre-Session-38-rebase backup; deletable after PR 2 ships.
 - `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — deletable at convenience.
 
 **Next session picks up:**
-- **User labels worksheet v2** (~2-3 hrs) — fills the 113 `**New labels (multi-label):**` lines with comma-separated 4-value-vocab values. When done, Claude parses the worksheet and builds `activity-type-samples.json` (113 entries with full submission body + truth array).
-- After samples.json built, **Task 2.4 step 3** runs the canonical eval via `npx tsx scripts/eval-llm-tagging-prompt.ts --prompt activity-type.md --samples activity-type-samples.json --vocab activity-type-vocab.json --threshold-config activity-type-thresholds.json --output /tmp/activity-type-eval-result.json`. CRF reference: cleared at macroF1=0.937 / cost $30.23 via CLIProxyAPI (Session 25). Activity_type cost expected to be similar.
-- If gate passes: Task 2.4 step 4 wires prompt into `process-submission/index.ts` mirroring the CRF call shape (loads prompt at module scope, calls Anthropic with `submit_tags` multi-label tool, Zod-validates against `lessonMetadataSchema.activityType`, merges into existing `ai_draft_metadata` rather than overwriting CRF's draft).
-- If gate fails: iterate prompt + re-run. Hardest expected failure mode = craft false-positives (any non-zero craft truth value in worksheet flips the per-value precision/recall path).
+- **Task 2.4 step 3 — canonical eval run** via `npx tsx scripts/eval-llm-tagging-prompt.ts --prompt supabase/functions/process-submission/prompts/activity-type.md --samples scripts/eval-data/activity-type-samples.json --vocab scripts/eval-data/activity-type-vocab.json --threshold-config scripts/eval-data/activity-type-thresholds.json --output /tmp/activity-type-eval-result.json [--base-url http://127.0.0.1:8317/api/provider/anthropic]`. CRF reference: cleared at macroF1=0.937 / cost $30.23 via CLIProxyAPI (Session 25). Activity_type cost expected ~similar (~$30 proxy / ~$7 direct Console API). Decision before running: proxy (Max billing, cache_read=0 cost gotcha) vs direct Console API. CLIProxyAPI must be running locally if `--base-url` is used.
+- If gate passes: **Task 2.4 step 4** wires prompt into `process-submission/index.ts` mirroring the CRF call shape (loads prompt at module scope, calls Anthropic with `submit_tags` multi-label tool, Zod-validates against `lessonMetadataSchema.activityType`, merges into existing `ai_draft_metadata` rather than overwriting CRF's draft).
+- If gate fails: iterate prompt + re-run. Most-likely-fail values: craft (over-prediction; threshold floor 0.5 recall on 13-row truth) or academic (small denominator at 11; a few misses move the needle).
 - After Task 2.4 ships: Task 2.5 (tags prompt). Then PR 2 push + open + per-PR ritual.
 - **TEST DB verification deferred until PR 2 push** — CI applies new migrations + edge fn updates when PR opens; per-round verification rule applies starting from round 0.
 
@@ -188,6 +192,44 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - **User labeling is the bottleneck.** Worksheet v2 stub stops at the empty `**New labels (multi-label):**` lines; user fills 113 rows over ~2-3 hrs. Resume after user signals done. Parser to write Session 40 will be similar shape to whatever ad-hoc parsing CRF samples used; if no formal parser exists, build a small `scripts/build-activity-type-samples.mjs` that reads worksheet markdown + writes samples.json.
 - **Watch for the CLIProxyAPI cache_read=0 cost gotcha at canonical eval time.** Per Session 25 + MEMORY.md, every harness call through the proxy shows `cache_read=0` even with explicit `cache_control: ephemeral`. Per-call cost ~3-4× direct Console API rates. Activity_type canonical run on 113 samples expected ~$30 via proxy vs ~$7 direct. User has $200 Max extra-usage budget; ~6 prompts at proxy rates fits, but if running tight, drop the `--base-url` flag and bill against Console API instead.
 - **No type-coupled cluster pattern fired this session.** Per Session 30 PR 1b learning, schema-shape changes touching Zod + mappers + edge fn + tests need to ship as one cluster commit. Task 2.4 step 1 added a new threshold key to one file (evalMetrics.ts) + threshold-schema mirror in one file (eval-llm-tagging-prompt.ts) + threshold-config JSON + unit tests; no schema-shape change. Watch for the pattern at Task 2.4 step 4 (wire into process-submission/index.ts) — should mostly be additive (one more `loadX()` + one more Anthropic call + one more Zod validation), no type narrowing across consumers.
+
+### Session 40 — 2026-05-06 — PR 2 Task 2.4 step 2: worksheet labels + samples.json built
+
+**Done (1 code commit `a426114` + this session-end docs commit pending):**
+
+- **User completed worksheet labels** between sessions: 113/113 entries filled in, 0 invalid labels (all in canonical 4-value vocab `cooking / garden / academic / craft`), 0 empty lines. Local pre-build parse confirmed parseability before any DB work. Per-label distribution: garden 68 / cooking 34 / craft 13 / academic 11; 12 multi-label rows (10.6%, range 2-2 labels per multi row). Old-vs-new shifts: garden 67→68, cooking 33→34, academic 11→11 (unchanged), `both` 2→0 (retired; expressed as `cooking, garden`), craft 0→13 (new value; reviewers were forced to mis-classify these in the old vocab).
+
+- **Bodies pulled from TEST DB via `mcp__supabase-test__execute_sql`** in a single query (id + extracted_content for the 113 reviewer-tagged submissions, ordered `extracted_title NULLS LAST, ls.id` matching worksheet order). 113-row payload was 696,399 chars (~700KB) and exceeded the inline MCP cap; the persisted-output file path was returned in the error message. Extracted the JSON-wrapped result via small `extract-bodies.mjs` helper that parses outer JSON → inner JSON → regex match between `<untrusted-data-XXX>` markers → bodies array. Written to `/tmp/activity-type-bodies.json` (intermediate, not committed). 113 unique IDs; perfect overlap with worksheet IDs (0 missing, 0 extra).
+
+- **Built `scripts/build-activity-type-samples.ts`** (200 LOC, npx tsx). Mirrors harness style (zod schema validation, similar argv parsing, similar logging output). Reads worksheet via regex split on `^---$` then per-chunk extraction of `- **ID:** \`uuid\`` and `**New labels (multi-label):** values` (strip inline `<!-- -->` comments before split-by-comma + trim + lowercase). Reads bodies dump + vocab JSON. Validates: every worksheet ID has a body in the bodies dump; every truth label is in vocab; no entry has an empty/missing label line. Exits 0 on success / 1 + per-error report on validation failure. De-duplicates within a single label list with a warn log if duplicates collapsed (none triggered).
+
+- **Ran build → emitted `scripts/eval-data/activity-type-samples.json`** (805 lines, 664KB, 113 entries). Schema matches harness's `sampleSchema = z.object({id, body, truth: string[]})`. Total body chars 652,580 matches MCP sanity query.
+
+- **Verified end-to-end via perfect-prediction dry-run** (no API spend): generated truth-as-predicted from samples.json via 1-line node helper, ran `--dry-run-with-predictions` against full 113-row sample set with all thresholds active. Result: `samples=113`, all per-value P=R=F1=1.000, macroF1=microF1=1.000, exit 0. Confirmed: harness's zod sampleSchema parses; truth-in-vocab validation passes; metrics math runs across all 4 values; threshold logic evaluates; output file format intact.
+
+- **Updated `activity-type-samples.README.md`**: replaced "Eval-gate caveat — `craft` may have zero truth labels" section with "Eval-gate guardrails — actual state after relabeling" reflecting craft truth count = 13 (guardrail dormant, per-value P/R applies); expanded distribution table with both pre- and post-relabel columns; added "How samples.json was built" pipeline section documenting the bodies-pull → build-script invocation. Total body chars + min/max/avg added so future readers can size their MCP pulls.
+
+**Decisions made:**
+
+- **Single full-pull MCP query over chunked batches.** Initial plan was 12 batches of 10 rows (113 rows / 100K-char inline cap = ~12 batches at avg row size). After running batch 0/12 and seeing the persisted-output mechanism fire on the very first batch, realized persistence already bypasses the inline cap — switched to a single 113-row query. Saved 11 round-trips. The `Error: result (696,399 characters) exceeds maximum allowed tokens` is not a failure mode; the persisted file path is fully usable.
+
+- **Build script committed (not ad-hoc).** CRF samples were assembled ad-hoc with no committed build script (verified via `git show 5eeaf47 --stat`); v2 of activity_type takes a different path because (a) Session 39's process notes explicitly called for a build script, (b) Task 2.5 (tags) and any future Gate-C-classified vocab-locked prompts will need similar parser infrastructure, (c) the worksheet → samples.json reproduction is high-leverage to keep machine-driven (avoids manual JSON crafting + paste mistakes). 200 LOC TS file mirrors the harness's style for maintainer continuity.
+
+- **`/tmp/activity-type-bodies.json` intermediate not committed.** Same rationale as CRF's pull (no committed bodies dump): the bodies are already in samples.json once merged, and the regeneration recipe in README + the build-script invocation cover reproducibility. Avoids duplicating ~700KB of body text across two committed files.
+
+- **Worksheet labels committed in the same commit as samples.json + build script.** Worksheet labels are the source-of-truth that drove samples.json; bundling them keeps the data lineage visible in one commit. Matches the way Session 39 bundled prompt + worksheet stub + harness extension into a single Task 2.4 step 1 commit.
+
+- **README distribution table given both pre- and post-relabel columns.** Earlier README had only pre-relabel (single-label) distribution; post-relabel (multi-label) adds a "count truth-occurrences" framing that's cleaner than trying to express multi-label in row-counts. The split also visually shows the `both` retirement and the craft surfacing.
+
+**Process notes for Session 41+:**
+
+- **CLIProxyAPI vs Console API decision required before Task 2.4 step 3.** Per MEMORY.md, proxy adds cache_read=0 → ~3-4× cost vs direct Console API. Activity_type canonical run on 113 samples: ~$30 proxy / ~$7 direct. User's $200 Max extra-usage budget covers ~6 prompts at proxy rates, but if running tight on budget, drop the `--base-url` flag and bill against Console API. CRF run (Session 25) used proxy at $30.23. The decision should surface to the user before the run, not be silently chosen.
+
+- **Most-likely-fail values on canonical run: craft (over-prediction) or academic (small denominator).** Craft: prompt biases toward conservative tagging (substantial-block bar) but `academic, craft` and `craft` are easy to over-recall on lessons with substantial closing art segments. Per-value floor 0.5 recall on 13-row truth = need ≥ 7/13 craft TPs and per-value precision floor not in thresholds. Academic: 11-row truth means each missed academic = 0.091 recall drop; LLM probably tags more conservatively than reviewers on subtle academic-discussion frames. If gate fails, study the per-value confusion in the JSON output before iterating prompt.
+
+- **Watch for the type-coupled cluster pattern at step 4.** Wiring activity_type into `process-submission/index.ts` should be structurally parallel to CRF's wire-up (Task 2.3 step 5, commit `67a3cd7`): one new prompt-load helper, one new Anthropic call, one new Zod-validate-into-`ai_draft_metadata`. Likely additive, no type narrowing — but if a shared interface like `AiDraftPayload` needs widening, ship as one cluster commit covering edge fn + Zod schema + any consumer reads.
+
+- **No PR 2 push this session.** Branch is now 13 commits ahead of main. PR 2 push waits on Tasks 2.4 (3-5) + 2.5 closure. Bundle session-end docs commits with the next code push (`feedback_no_docs_push_during_pr.md` spirit: don't burn CI cycles on docs-only changes).
 
 ### Sessions 18-36 — archived
 
