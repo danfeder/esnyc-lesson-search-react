@@ -16,20 +16,25 @@
 
 **Foundation-phase substrate after PR 4 ships:** PR 1 + PR 1b + PR 2 substrate + soft-retire columns on `lessons` + `lessons_with_metadata` view exposes them + 21 imports retired (7 cluster-key namespaces above) + 7 archive-only concepts restored + FSA Pt 1 retitle + 8 user-facing filter surfaces (search_lessons RPC + smart-search + search-lessons + useLessonStats + LessonSearchPicker submitter path + RevisingSubmissionForm + process-submission server-side validation + 2 embedding scripts) + 6 intentionally-unfiltered surfaces (detect-duplicates + ReviewDetail + ReviewDashboard + get_lesson_details_for_review + supabase.ts connectivity test + view itself) + `LessonSearchPicker.excludeRetired` prop infrastructure.
 
+**Stage 1 worksheets — confirmed NOT YET STARTED (Session 51 post-merge discovery).** No worksheet artifacts exist on disk anywhere (`docs/plans/`, top-level dirs, etc.). The decision journal's wrap-up note (Session 9, 2026-05-03) listed "D1 content layer (Stage 1 heritage worksheet round)" as remaining work; foundation-phase implementation track has stayed on code work since then. Per design doc §5, the worksheet methodology is *"Claude drafts per-field canonical worksheets using `~/cCode/taggingv3/esynyc-taxonomy-schema-v2.md` as baseline + a corpus audit (Counter-style); 2 expert reviewers + user validate / amend / reject."* Claude is part of the worksheet-creation work, not just a consumer of validated worksheets.
+
 **Next session picks up — start the next PR cycle.**
 
 The remaining foundation-phase PRs in scope (per kickoff WHERE THINGS LIVE):
-- **PR 3a** (search infra now): `search_vector` + embeddings + smart-search drift fix. Independent of Stage 1 — does NOT gate on curriculum-team worksheet outputs. Ready to start anytime.
+- **PR 3a** (search infra now): `search_vector` + embeddings + smart-search drift fix. Independent of Stage 1 — does NOT gate on curriculum-team worksheet outputs. **Ready to start anytime; the obvious unblocked code item.**
 - **PR 3b** (search synonym population): folds into PR 6+; depends on Stage 2 re-tag outputs.
-- **PR 5+** (D4 vocab canonicalization): Title Case canonical across ~10 vocab fields; Pydantic on all 17 fields. **Depends on Stage 1 worksheet outputs** from the parallel curriculum-team track. Verify Stage 1 status before scoping; if worksheets not yet landed, PR 5 is gated.
+- **PR 5+** (D4 vocab canonicalization): Title Case canonical across ~10 vocab fields; Pydantic on all 17 fields. **Depends on Stage 1 worksheet outputs** — gated until at least heritage + concepts worksheets land.
 - **PR 6+** (Stage 2 corpus re-tag + reviewer validation flow): depends on PR 5 + Stage 1 closure + Stage 2 reviewer-validation UX walk; flexible timing.
 
-**Recommended Session 52 first move:** ask whether Stage 1 curriculum-team worksheets have advanced enough to scope PR 5, and if not, default to PR 3a (search infra) as the unblocked next item.
+**Stage 1 worksheet round** is its own multi-session initiative, not a single PR. Per design doc §4 it's a separate parallel work track. When started, scaffold the four-file pattern (design + impl plan + kickoff prompt + status doc) per `feedback_multi_session_execution.md` rather than rolling it into the foundation-phase status doc. Heritage is first (~78 values; design doc estimates 300-500 Opus lesson-reads + novelty pass + reviewer/user validation hours); concepts (~211 values, biggest) second; ~8 smaller fields after. Total estimate: weeks-to-months of curriculum-team time.
+
+**Recommended Session 52 first move:** PR 3a (search infra). It's the cleanest continuation of foundation-phase rhythm, unblocks tangible benefits (academicConcepts searchability + smart-search synonym drift fix), and runs through the established PR ritual (1-3 sessions). Stage 1 worksheet kickoff is bigger work that benefits from a separately-scaffolded multi-session initiative — best taken on after PR 3a ships.
 
 **First-task ritual for Session 52:**
 1. **PR-cycle archival** — per kickoff session-end ritual step 5: move Sessions 47-51 (PR 4 cycle) from active execution-status.md → archive file. Audit each entry for any process learnings worth promoting to `feedback_*.md` files OR hygiene follow-ups worth promoting to MEMORY.md before moving.
-2. **Cherry-pick Session 51 docs commit** from `feat/metadata-foundation-corpus-cleanup` to the new PR's branch (Session 47 precedent — the merged-branch session-end docs commit bundles into the next PR).
-3. **Branch off updated `main`** at `03970d0` for the next PR's feature branch.
+2. **Cherry-pick Session 51 docs commit (`c02e22c`)** from `feat/metadata-foundation-corpus-cleanup` to the new PR 3a branch (Session 47 precedent — the merged-branch session-end docs commit bundles into the next PR).
+3. **Branch off updated `main`** at `03970d0` as `feat/metadata-foundation-search-infra` (or similar) for PR 3a.
+4. **Read implementation plan PR 3a section** before scoping — verify scope still matches design intent + corpus state after PR 4.
 
 **Branches:**
 - `main` at `03970d0` (PR 4 squash-merge); origin matches
@@ -133,13 +138,14 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 
 - **PR-cycle archival is the first task.** Move Sessions 47-51 (PR 4 cycle) from active execution-status.md → archive file. Audit each entry for process learnings worth promoting to `feedback_*.md` files OR hygiene follow-ups worth promoting to MEMORY.md before moving.
 
-- **Stage 1 worksheet status check.** Before scoping PR 5 (D4 vocab canonicalization), ask whether the curriculum-team-track worksheet rounds have advanced. If not, default to PR 3a (search infra: search_vector + embeddings + smart-search drift fix) which is independent of Stage 1.
+- **Stage 1 worksheets DO NOT EXIST.** Verified Session 51 post-merge: no worksheet artifacts on disk anywhere. The decision journal's wrap-up note framed worksheets as "remaining work after foundation-phase implementation begins"; foundation-phase implementation has run since then but stayed on code work. **PR 5 is gated until heritage + concepts worksheets land.** Default to PR 3a (search infra — independent of Stage 1) as the unblocked code item; scaffold Stage 1 worksheet round as its own separate multi-session initiative when ready.
 
-- **Cherry-pick this Session 51 docs commit** from `feat/metadata-foundation-corpus-cleanup` to the new PR's branch as Session 47 did with `0672cc8` (Session 46 docs cherry-pick). The session-end docs commit on a merged-branch is the established pattern.
+- **Cherry-pick this Session 51 docs commit (`c02e22c`)** from `feat/metadata-foundation-corpus-cleanup` to the new PR 3a branch as Session 47 did with `0672cc8` (Session 46 docs cherry-pick). The session-end docs commit on a merged-branch is the established pattern.
 
 - **Process-learning candidates to consider promoting:**
   - **Active-doc-vs-live-PR reconciliation** (this session's pre-merge orientation correction). Adjacent to `feedback_pr_bot_review_workflow.md`'s "Active-PR session-orientation" rule but a slightly different surface — the rule is currently framed as "git log vs status doc" reconciliation; this session's pattern is "live PR state vs status doc snapshot" reconciliation. Single occurrence (this session); leave as candidate. Promote if it recurs.
   - **UNSTABLE-merge-state precedent for baseline-only failures.** Single occurrence (PR 4); the pattern is documented in active doc's Pre-existing CI noise section and in this session entry. If it recurs on PR 5+ or PR 3a, promote to feedback or MEMORY hygiene.
+  - **Don't assert track-status without checking** (this session's worksheet-status discovery). My initial Session 51 wrap-up framed the next-session decision as "ask whether Stage 1 worksheets have advanced" — implying a parallel curriculum-team track was running with worksheets accumulating. User asked the direct question, I checked, no worksheets exist. The framing was sloppy: "verify before claiming" is implicit in `feedback_data_safety_top_priority.md` for prod state, but it applies equally to track-status assertions ("X is happening on a parallel track" → check first). Single occurrence; could promote as a `feedback_verification_before_track_status_claims.md` if it recurs, or fold into existing verification-before-completion patterns.
 
 ### Session 50 — 2026-05-08 — PR 4 round-2 IN clean + Codex R2-1 cosmetic cleanup + spot-check + ready to merge
 
