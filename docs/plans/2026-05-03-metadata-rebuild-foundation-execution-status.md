@@ -1,48 +1,40 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 50 (PR 4 round-2 bot review IN — clean across 3 surfaces; Codex R2-1 cosmetic cleanup applied bundled with this docs commit; round-cap activated; ready to merge + approve PROD migration).
+**Last updated:** 2026-05-08 — Session 51 (PR 4 SHIPPED + PROD-applied + verified; foundation-phase substrate complete through PR 4).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-46 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 4 (corpus cleanup) — PR #478 OPEN, round 2 IN clean, round-cap activated, ready to merge.** Branch `feat/metadata-foundation-corpus-cleanup` from main `cf2aad4` (PR 2 squash-merge 2026-05-07). 8 commits ahead pre-Session-50 (10 after Session 50 fix-up + docs commit): `0672cc8` (Session 46 docs cherry-pick) + `ed8ca21` (PR 4 substantive migrations) + `868ed54` (Session 47 docs) + `f522740` (8 filter-surface follow-up) + `b0f2564` (pre-push P0 view-migration fix) + `6a801c1` (Session 48 docs) + `bfb3786` (Session 49 round-1 fix-up: F1+F3+F4) + `786203b` (Session 49 docs, push happened post-Session-49) + `<TBD>` (Session 50 round-2 cleanup — Codex R2-1 cosmetic strip + Session 50 docs).
+**PR 4 (corpus cleanup) — SHIPPED + PROD-applied + verified.** PR #478 squash-merged 2026-05-08 21:47:58 UTC as `03970d0`. Both PROD workflows succeeded first-try (no SASL flake on `migrate-production.yml` apply step; no esm.sh CDN flake on `deploy-edge-functions.yml` matrix).
 
-**Round 0 TEST DB verification PASS (Session 49) + Session 50 spot-check PASS:** 21 retired ✓, 7 distinct retired_reason groups ✓, 751 live via view ✓, FSA retitle ✓, view exposes 2 new columns ✓, 7/7 concepts populated with object shape ✓, F7 verification (0 array-shape archive concepts) ✓. Session 50 spot-check probe re-confirmed all counts unchanged after the non-DB-affecting Round-1 fix-up — Round 0 probes remain load-bearing.
+**Pre-PROD MCP probe (Session 51, before merge):** confirmed clean PROD pre-state — `retired_at`/`retired_reason` columns absent, 7 concept-recovery targets all NULL/missing, FSA still had original "& 2" title, 788 total lessons. Session 46/47/48 precedent applied as expected.
 
-**Round 1 bot review triage (Session 49):** 7 findings across 3 reviewer surfaces. Acceptance 3/7. ACCEPT: F1 type sync, F3 PR-N comment cleanup, F4 detect-duplicates intent guards. REJECT/DEFER: F2 pushed-migration comment, F5 partial index, F6 dead search-lessons edge fn, F7 array-shape verifiably clean.
+**Post-PROD verification (Session 51, after both PROD workflows succeeded):** 9/9 substance probes PASS on `mcp__supabase-remote__execute_sql` — P1 retired=21 ✓, P2 distinct_reasons=7 ✓, P3 FSA title='Food System Advocates (Part 1)' ✓, P4 view exposes both new cols ✓, P5 view_live_count=767 ✓ (= 788 − 21), P6 7/7 concepts populated with object shape ✓, P7 no array-shape archive concepts ✓, P8 7 cluster-key namespaces (`import:cas_food_justice / import:city_blossoms_botanical_artists / import:foodcorps_2017 / import:nyc_dep_watershed / import:nyc_doe_colonial_ny / import:oregon_doe_leaves / import:pflp_2003`) ✓, P9 search_lessons total_count=767 ✓.
 
-**Round 2 bot review IN clean (Session 50) — 3-surface convergence on ship:**
-- **claude-review formal** (commit `786203b`): "**0 P0/P1 findings. Ready to merge from a code-quality perspective.**" 2 P3 observations (process-submission error message merge, regenerate-embeddings retired-no-embedding diagnostic) — both debuggability nuances, not bugs.
-- **claude long-form**: 1 "Minor" false-positive (claimed missing `excludeRetired=false` negative test — test exists at `LessonSearchPicker.test.tsx:284`; same bot's inline review at L284 + Codex Round 2 both confirm) + 3 informational items already deferred from Round 1 (raw lessons query, view body duplication, dead edge fn).
-- **Codex round 2 (user-pass)** (commit `786203b`): "**No P1/P2 issues found on the new head.**" 1 P3 cosmetic: 2 stray `post-PR-4` comments in `useLessonStats.test.ts:22,175` missed by F3's grep (the form was hyphenated, not literal `PR 4`).
+**3-signal edge function verification (Session 51):** all 3 functional-change slugs deployed correctly — `smart-search` v24 + `search-lessons` v22 + `process-submission` v32 all show `.is('retired_at', null)` source content with the expected explanatory comments. (`detect-duplicates` had F4 comment-only intent-guard additions; redeployed in same workflow run, no functional change to verify.)
 
-**Round 2 triage (Session 50):** Acceptance 1/4 — squarely default-reject calibration band.
-- **ACCEPT R2-1**: Codex P3 cosmetic strip — 2 lines fixed. Mirrors F3 disposition (CLAUDE.md "don't reference current task"). Verified clean post-fix via grep.
-- **REJECT R2-2**: claude-review P3 process-submission error message merge — Codex explicitly defers; debuggability nuance for direct-API callers, not user-visible.
-- **REJECT R2-3**: claude-review P3 regenerate-embeddings diagnostic — Codex explicitly defers; correct for normal operation; latent gap only if rows un-retire.
-- **REJECT R2-4 (false positive)**: claude long-form "missing negative test" — test exists at L284; bot's own inline comment + Codex confirm.
+**Foundation-phase substrate after PR 4 ships:** PR 1 + PR 1b + PR 2 substrate + soft-retire columns on `lessons` + `lessons_with_metadata` view exposes them + 21 imports retired (7 cluster-key namespaces above) + 7 archive-only concepts restored + FSA Pt 1 retitle + 8 user-facing filter surfaces (search_lessons RPC + smart-search + search-lessons + useLessonStats + LessonSearchPicker submitter path + RevisingSubmissionForm + process-submission server-side validation + 2 embedding scripts) + 6 intentionally-unfiltered surfaces (detect-duplicates + ReviewDetail + ReviewDashboard + get_lesson_details_for_review + supabase.ts connectivity test + view itself) + `LessonSearchPicker.excludeRetired` prop infrastructure.
 
-**Round-cap activated per kickoff hard rule §10**: round 2 just landed clean → natural ship-decision point. R2 surface convergence ("ready to merge", "no P1/P2") is the bot-voice signal.
+**Next session picks up — start the next PR cycle.**
 
-**Pre-existing CI noise (NOT a PR 4 finding):** `Security & Dependencies` workflow FAIL on `@lhci/cli` transitive vulns (basic-ftp / ip-address / postcss / tmp). Documented in MEMORY.md hygiene-follow-ups; recurs on every PR; both Codex and claude-review confirmed baseline. NOT a merge blocker.
+The remaining foundation-phase PRs in scope (per kickoff WHERE THINGS LIVE):
+- **PR 3a** (search infra now): `search_vector` + embeddings + smart-search drift fix. Independent of Stage 1 — does NOT gate on curriculum-team worksheet outputs. Ready to start anytime.
+- **PR 3b** (search synonym population): folds into PR 6+; depends on Stage 2 re-tag outputs.
+- **PR 5+** (D4 vocab canonicalization): Title Case canonical across ~10 vocab fields; Pydantic on all 17 fields. **Depends on Stage 1 worksheet outputs** from the parallel curriculum-team track. Verify Stage 1 status before scoping; if worksheets not yet landed, PR 5 is gated.
+- **PR 6+** (Stage 2 corpus re-tag + reviewer validation flow): depends on PR 5 + Stage 1 closure + Stage 2 reviewer-validation UX walk; flexible timing.
 
-**Foundation-phase substrate after PR 4 ships:** all PR 1 / PR 1b / PR 2 substrate + soft-retire columns on `lessons` + view exposes them + 21 imports retired + 7 archive-only concepts restored + FSA Pt 1 retitle + 8 filter surfaces + `LessonSearchPicker.excludeRetired` prop infrastructure.
+**Recommended Session 52 first move:** ask whether Stage 1 curriculum-team worksheets have advanced enough to scope PR 5, and if not, default to PR 3a (search infra) as the unblocked next item.
 
-**Next session picks up — merge + PROD migration ship:**
-1. **Wait for CI re-run** on Session 50 push HEAD (type-check / lint / tests / claude-review one more pass — no DB changes).
-2. **Post Round-2 response on PR #478** with the 4-finding triage table and acceptance trajectory.
-3. **Pre-PROD MCP probe** via `mcp__supabase-remote__execute_sql` confirming PROD pre-state (21 retired = 0; 7 concept-recovery targets NULL; FSA original title) — Session 46 / 47 / 48 precedent.
-4. **User merges PR #478** (squash-merge per Recent decisions; that triggers `migrate-production.yml`).
-5. **User approves PROD migration workflow** in GitHub Actions — `migrate-production.yml` applies the 4 PR 4 migrations to PROD.
-6. **Watch for the Apply-step SASL flake** (per MEMORY.md hygiene-follow-ups: `migrate-production.yml` SASL apply-step variant; recurring pattern). If it flakes, `gh run rerun --failed <run_id>` re-runs only the Apply slot; approval gate re-fires for re-approval. Migrations are all idempotent (`CREATE OR REPLACE` + `IF NOT EXISTS` + idempotent UPDATE guards) so retry is safe.
-7. **Post-PROD MCP verify** via `mcp__supabase-remote__execute_sql` — same probe set as Round 0 (21 retired + 7 distinct reasons + FSA new title + view exposes 2 cols + 7/7 concepts populated).
-8. **PR-cycle archival prep** — at the start of the next PR's first session, move PR 4 session entries (47-50) into the archive file.
+**First-task ritual for Session 52:**
+1. **PR-cycle archival** — per kickoff session-end ritual step 5: move Sessions 47-51 (PR 4 cycle) from active execution-status.md → archive file. Audit each entry for any process learnings worth promoting to `feedback_*.md` files OR hygiene follow-ups worth promoting to MEMORY.md before moving.
+2. **Cherry-pick Session 51 docs commit** from `feat/metadata-foundation-corpus-cleanup` to the new PR's branch (Session 47 precedent — the merged-branch session-end docs commit bundles into the next PR).
+3. **Branch off updated `main`** at `03970d0` for the next PR's feature branch.
 
 **Branches:**
-- `main` at `cf2aad4` (PR 2 squash-merge); origin matches
-- `feat/metadata-foundation-corpus-cleanup` — PR #478, 8 commits ahead pre-Session-50 (10 after Session 50 fix-up + docs commit)
-- `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` (all deletable at convenience)
+- `main` at `03970d0` (PR 4 squash-merge); origin matches
+- `feat/metadata-foundation-corpus-cleanup` — PR #478 MERGED; the Session 51 session-end docs commit is local-only on this branch waiting to be cherry-picked into the next PR. Do NOT delete this branch until the cherry-pick happens.
+- `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — all deletable at convenience
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -110,6 +102,44 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 51 — 2026-05-08 — PR 4 SHIPPED + PROD-applied + verified
+
+**Done (1 squash-merge on main + this session-end docs commit on local PR 4 branch, bundled per `feedback_no_docs_push_during_pr.md` spirit — though here the "no PR open" state means the docs commit waits for cherry-pick rather than bundles into a push):**
+
+- **Pre-merge orientation correction.** Session 50 docs claimed item 2 of "Next session picks up" was "Post Round-2 response on PR #478" — but a 4-surface PR comment query found the response WAS already posted at 21:00:45 UTC at the close of Session 50 (issue comment by danfeder, "## Round-2 review response (commits `bfb3786..b33eacc`)"). The active doc was a snapshot at session-close before that response went up. Reconciled to live PR state before any code work. **Pattern note:** the active doc's task list is a session-close snapshot; subsequent activity (push that triggers post-cap reviews + comment posting + bot follow-ups) can move state. Always reconcile via 4-surface PR query before trusting the doc. (Adjacent to `feedback_pr_bot_review_workflow.md` "Active-PR session-orientation" rule, but a slightly different flavor — this is "active-doc-vs-live-PR" not "status-doc-vs-git-log".)
+
+- **Pre-PROD MCP probe (4 probes batched):** column pre-state (`retired_at`/`retired_reason` absent on PROD `lessons` table — `col_count=0`); 7 concept-recovery targets (`has_concepts_key=false, concepts_type=null` for all 7 lesson_ids); FSA pre-retitle (`'Food System Advocates (Part 1 & 2)'`); total + view + RPC presence (788 lessons; view doesn't yet have new cols; `search_lessons` exists). All 4 probes confirmed clean PROD pre-state. Session 49 lesson-id hallucination did NOT recur this session — copied verbatim from migration `20260520010000_*` header.
+
+- **Squash-merge of PR #478** via `gh pr merge 478 --squash`. Merge commit `03970d0`. PR title `feat(metadata-foundation): PR 4 — corpus cleanup (21 imports retired)` + comprehensive PR body became the squash commit subject + body. PR `mergeStateStatus=UNSTABLE` due to the documented baseline `Security Audit` failure (`@lhci/cli` transitive vulns); merge proceeded because UNSTABLE just signals not-all-green CI, not a real blocker, and the user has merge admin rights.
+
+- **Both PROD workflows succeeded first-try.** `migrate-production.yml` (run 25581184726): 4/4 jobs (Check Migration Changes, Verify Recent Backup, Migration Dry Run, Apply to Production) all SUCCESS. `deploy-edge-functions.yml` (run 25581184711): SUCCESS. Neither flake fired this round (no SASL on apply, no esm.sh CDN 522 on edge functions). Both queued at 21:48:01 UTC; user approved both after status doc handoff.
+
+- **Post-PROD verification on PROD (single batched 9-probe query via `mcp__supabase-remote__execute_sql`):** 9/9 substance PASS — see Current State for the full table. P8 returned literal `<7 cluster keys>` placeholder mismatch in my probe code (status `FAIL`) but the actual value matched the expected pattern of 7 cluster-key namespaces; cosmetic not substantive — the 9/9 framing is the right read.
+
+- **3-signal edge function verification on the 3 functional-change slugs** via `mcp__supabase-remote__get_edge_function`: `smart-search` v24 / `search-lessons` v22 / `process-submission` v32 all confirmed deployed with the expected `.is('retired_at', null)` body change + the explanatory comments wired into Session 48's source edits. (`detect-duplicates` had F4 comment-only changes; the workflow redeployed it in the same matrix run, but no functional surface to verify.)
+
+- **Title-discrepancy logged.** PROD lesson `1uwZRLYoxThlJxDq-vV3cePHmEMGMCpj5Opk0nHVvqqI` shows `'African American Food Traditions – Museum (45 min)'` (with " (45 min)" suffix); migration `20260520010000_recover_archive_only_concepts.sql:21` comment says without the suffix. Not a bug — the migration only touches `metadata.academicConcepts`, not `title` — but the comment was stale on the displayed title text. Logging for post-merge follow-up only; no action.
+
+**Decisions made:**
+
+- **`gh pr merge 478 --squash` despite UNSTABLE mergeStateStatus.** UNSTABLE = not-all-green CI; the failing check is the documented `Security Audit` baseline noise (per MEMORY.md hygiene-follow-ups + Codex Round 2 explicitly confirmed). User has admin rights; explicit "you can do the merge yourself" authorization. Default-allow merge. If a similar baseline-only UNSTABLE state recurs on a future PR with explicit user authorization, this is now precedent.
+
+- **No SASL flake mitigation invoked.** Per memory, the migrate-production.yml SASL apply-step variant is recurring (Phase 2 PR #446 + Phase 8b PR #468 + PR 4 was the next candidate). Did NOT fire this run. Lucky-run; doesn't disprove the pattern. Stays in MEMORY.md hygiene-follow-ups as a recurring risk for future migrations.
+
+- **No esm.sh CDN 522 flake mitigation invoked.** Per memory, `deploy-edge-functions.yml` per-job esm.sh transient flakes happen occasionally (PR 1 PROD `invitation-management` 2026-05-05 was the first confirmed). Did NOT fire this run. Same observation — stays in MEMORY.md.
+
+**Process notes for Session 52+:**
+
+- **PR-cycle archival is the first task.** Move Sessions 47-51 (PR 4 cycle) from active execution-status.md → archive file. Audit each entry for process learnings worth promoting to `feedback_*.md` files OR hygiene follow-ups worth promoting to MEMORY.md before moving.
+
+- **Stage 1 worksheet status check.** Before scoping PR 5 (D4 vocab canonicalization), ask whether the curriculum-team-track worksheet rounds have advanced. If not, default to PR 3a (search infra: search_vector + embeddings + smart-search drift fix) which is independent of Stage 1.
+
+- **Cherry-pick this Session 51 docs commit** from `feat/metadata-foundation-corpus-cleanup` to the new PR's branch as Session 47 did with `0672cc8` (Session 46 docs cherry-pick). The session-end docs commit on a merged-branch is the established pattern.
+
+- **Process-learning candidates to consider promoting:**
+  - **Active-doc-vs-live-PR reconciliation** (this session's pre-merge orientation correction). Adjacent to `feedback_pr_bot_review_workflow.md`'s "Active-PR session-orientation" rule but a slightly different surface — the rule is currently framed as "git log vs status doc" reconciliation; this session's pattern is "live PR state vs status doc snapshot" reconciliation. Single occurrence (this session); leave as candidate. Promote if it recurs.
+  - **UNSTABLE-merge-state precedent for baseline-only failures.** Single occurrence (PR 4); the pattern is documented in active doc's Pre-existing CI noise section and in this session entry. If it recurs on PR 5+ or PR 3a, promote to feedback or MEMORY hygiene.
 
 ### Session 50 — 2026-05-08 — PR 4 round-2 IN clean + Codex R2-1 cosmetic cleanup + spot-check + ready to merge
 
