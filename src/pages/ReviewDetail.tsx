@@ -1316,7 +1316,7 @@ export function ReviewDetail() {
               {showSearch && (
                 <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                   <p className="text-xs text-gray-600 mb-2">{searchHelpText}</p>
-                  {/* PR 4: intentionally NOT passing excludeRetired so the
+                  {/* Intentionally NOT passing excludeRetired so the
                       reviewer can find retired competitors during dup-review
                       escape-hatch search (e.g., "this submission is a
                       re-import of retired Stone Soup"). Submitter flows

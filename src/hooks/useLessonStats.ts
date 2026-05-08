@@ -21,7 +21,7 @@ export function useLessonStats(): LessonStats {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Get total LIVE lesson count (excludes soft-retired imports per PR 4).
+        // Get total LIVE lesson count (excludes soft-retired imports).
         const { count, error } = await supabase
           .from('lessons_with_metadata')
           .select('*', { count: 'exact', head: true })

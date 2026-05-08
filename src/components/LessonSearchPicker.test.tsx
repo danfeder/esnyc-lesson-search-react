@@ -246,7 +246,7 @@ describe('LessonSearchPicker', () => {
     expect(screen.queryByText(/can't find it/i)).not.toBeInTheDocument();
   });
 
-  it('applies retired_at IS NULL filter when excludeRetired=true (PR 4)', async () => {
+  it('applies retired_at IS NULL filter when excludeRetired=true', async () => {
     const { supabase } = await import('@/lib/supabase');
     const isMock = vi.fn().mockReturnThis();
     (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({

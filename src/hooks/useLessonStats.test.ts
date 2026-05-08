@@ -116,7 +116,7 @@ describe('useLessonStats', () => {
       });
 
       expect(mock).toHaveBeenCalledWith('*', { count: 'exact', head: true });
-      // PR 4: live-corpus filter excludes soft-retired imports.
+      // Live-corpus filter excludes soft-retired imports.
       expect(isMock).toHaveBeenCalledWith('retired_at', null);
     });
   });

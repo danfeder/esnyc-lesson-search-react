@@ -130,7 +130,7 @@ async function generateEmbeddings() {
       .select('*')
       .not('content_text', 'is', null)  // Must have content
       .is('content_embedding', null)     // But no embedding yet
-      .is('retired_at', null)            // PR 4: skip soft-retired imports
+      .is('retired_at', null)            // Skip soft-retired imports
       .order('lesson_id');
 
     if (fetchError) throw fetchError;
@@ -237,7 +237,7 @@ async function generateEmbeddings() {
     }
 
     // Verify results (live corpus only — soft-retired rows are intentionally
-    // skipped per PR 4 so they don't inflate denominators).
+    // skipped so they don't inflate denominators).
     console.log('\n🔍 Verifying embeddings...');
     const { count: totalCount } = await supabase
       .from('lessons')

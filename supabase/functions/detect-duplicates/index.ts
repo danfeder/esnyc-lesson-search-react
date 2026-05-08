@@ -217,7 +217,9 @@ serve(async (req) => {
     // Generate content hash
     const contentHash = await generateContentHash(content, metadata);
 
-    // First, check for exact hash matches
+    // First, check for exact hash matches.
+    // Intentionally queries the full corpus (no retired filter) so reviewers
+    // catch a future re-submission of a previously retired import.
     const { data: hashMatches, error: hashError } = await supabase.rpc('find_lessons_by_hash', {
       hash_value: contentHash,
     });
@@ -248,7 +250,8 @@ serve(async (req) => {
     if (embedding && embedding.length === 1536) {
       const vectorString = `[${embedding.join(',')}]`;
 
-      // Use the SQL function for semantic search
+      // Use the SQL function for semantic search.
+      // Intentionally unfiltered — see comment at the hash check above.
       const { data: semanticMatches, error: semanticError } = await supabase.rpc(
         'find_similar_lessons_by_embedding',
         {
@@ -263,7 +266,9 @@ serve(async (req) => {
           // Skip if already found as exact match
           if (duplicates.some((d) => d.lessonId === match.lesson_id)) continue;
 
-          // Get full lesson data for metadata
+          // Get full lesson data for metadata.
+          // Intentionally unfiltered — if `match.lesson_id` is a retired row,
+          // we still want its metadata so the dup-check report surfaces it.
           const { data: lesson } = await supabase
             .from('lessons_with_metadata')
             .select('metadata')
@@ -293,7 +298,8 @@ serve(async (req) => {
         }
       }
     } else {
-      // Fallback to title-based search if no embedding
+      // Fallback to title-based search if no embedding.
+      // Intentionally unfiltered — see comment at the hash check above.
       const { data: allLessons, error: lessonsError } = await supabase
         .from('lessons_with_metadata')
         .select('lesson_id, title, metadata')

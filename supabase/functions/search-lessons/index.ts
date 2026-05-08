@@ -61,7 +61,7 @@ serve(async (req) => {
     let supabaseQuery = supabaseClient
       .from('lessons_with_metadata')
       .select('*', { count: 'exact' })
-      // PR 4: exclude soft-retired imports from user-facing search.
+      // Exclude soft-retired imports from user-facing search.
       // Note: this edge fn has no live front-end caller today (front-end
       // uses the search_lessons RPC + smart-search edge fn); kept in sync
       // for symmetry since the function is still deployed.

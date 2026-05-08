@@ -208,7 +208,7 @@ serve(async (req) => {
       // rows on the error path. The DB-level FK serves as the TOCTOU
       // backstop; this check provides fast user feedback.
       //
-      // PR 4: also reject UPDATEs targeting soft-retired imports. The
+      // Also reject UPDATEs targeting soft-retired imports. The
       // submitter UI (RevisingSubmissionForm + LessonSearchPicker
       // excludeRetired prop) hides retired rows, but a hand-typed or
       // direct-API call could still send a retired lesson_id; defense in

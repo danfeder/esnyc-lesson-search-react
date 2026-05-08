@@ -17,7 +17,7 @@ interface LessonSearchPickerProps {
   onClear: () => void;
   cantFindOption?: boolean;
   onCantFind?: () => void;
-  // PR 4: when true, soft-retired imports are excluded from the dropdown.
+  // When true, soft-retired imports are excluded from the dropdown.
   // Submitter flows (RevisingSubmissionForm) opt in so teachers can't pick
   // a retired lesson as their UPDATE target. Reviewer flows (ReviewDetail
   // dup-review escape hatch) leave default false so the reviewer can still
