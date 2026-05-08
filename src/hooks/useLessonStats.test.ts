@@ -19,7 +19,7 @@ vi.mock('@/utils/logger', () => ({
 }));
 
 // Typed mock helper for Supabase select queries.
-// Chain shape (post-PR-4): from(...).select(...).is('retired_at', null)
+// Chain shape: from(...).select(...).is('retired_at', null)
 // The `is()` call is the terminal awaited call; select returns an object
 // with `is`, and `is` returns the Promise.
 interface MockSelectResult {
@@ -172,7 +172,7 @@ describe('useLessonStats', () => {
     });
 
     it('handles thrown exceptions', async () => {
-      // Rejection happens at the terminal `is()` call (post-PR-4 chain shape).
+      // Rejection happens at the terminal `is()` call.
       const isMock = vi.fn().mockRejectedValue(new Error('Network error'));
       const selectMock = vi.fn().mockReturnValue({ is: isMock });
       mockSupabase.from.mockReturnValue({ select: selectMock } as unknown as ReturnType<
