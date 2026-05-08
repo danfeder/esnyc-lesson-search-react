@@ -3,11 +3,15 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LessonSearchPicker } from '@/components/LessonSearchPicker';
 
+// Mock chain shape: from → select → ilike → [is when excludeRetired=true] →
+// order → limit. `is` is included so the chain resolves regardless of
+// excludeRetired value (component conditionally invokes it).
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
       ilike: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({
         data: [
@@ -37,6 +41,7 @@ describe('LessonSearchPicker', () => {
     (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
       ilike: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({
         data: [
@@ -110,6 +115,7 @@ describe('LessonSearchPicker', () => {
     (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
       ilike: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: [], error: null }),
     }));
@@ -192,6 +198,7 @@ describe('LessonSearchPicker', () => {
     (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
       ilike: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnValue(searchPromise),
     }));
@@ -237,5 +244,47 @@ describe('LessonSearchPicker', () => {
     await user.type(screen.getByPlaceholderText(/search by lesson title/i), 'nonsense');
     await waitFor(() => {}, { timeout: 500 });
     expect(screen.queryByText(/can't find it/i)).not.toBeInTheDocument();
+  });
+
+  it('applies retired_at IS NULL filter when excludeRetired=true', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const isMock = vi.fn().mockReturnThis();
+    (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
+      is: isMock,
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    }));
+
+    const user = userEvent.setup();
+    render(
+      <LessonSearchPicker selected={null} onSelect={vi.fn()} onClear={vi.fn()} excludeRetired />
+    );
+
+    await user.type(screen.getByPlaceholderText(/search by lesson title/i), 'apple');
+    await waitFor(() => expect(isMock).toHaveBeenCalledWith('retired_at', null), {
+      timeout: 1000,
+    });
+  });
+
+  it('does NOT apply retired_at filter when excludeRetired is unset (default false)', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const isMock = vi.fn().mockReturnThis();
+    (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
+      is: isMock,
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    }));
+
+    const user = userEvent.setup();
+    render(<LessonSearchPicker selected={null} onSelect={vi.fn()} onClear={vi.fn()} />);
+
+    await user.type(screen.getByPlaceholderText(/search by lesson title/i), 'apple');
+    // Wait for the debounced query to fire by waiting for `from` to be called.
+    await waitFor(() => expect(supabase.from).toHaveBeenCalled(), { timeout: 1000 });
+    expect(isMock).not.toHaveBeenCalled();
   });
 });

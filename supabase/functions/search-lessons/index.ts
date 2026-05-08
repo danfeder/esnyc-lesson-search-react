@@ -60,7 +60,12 @@ serve(async (req) => {
     // Build the base query
     let supabaseQuery = supabaseClient
       .from('lessons_with_metadata')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact' })
+      // Exclude soft-retired imports from user-facing search.
+      // Note: this edge fn has no live front-end caller today (front-end
+      // uses the search_lessons RPC + smart-search edge fn); kept in sync
+      // for symmetry since the function is still deployed.
+      .is('retired_at', null);
 
     // Apply text search if query exists
     if (query && query.trim()) {

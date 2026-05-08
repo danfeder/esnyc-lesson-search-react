@@ -207,11 +207,18 @@ serve(async (req) => {
       // Phase 8b: validate originalLessonId BEFORE INSERT to avoid orphan
       // rows on the error path. The DB-level FK serves as the TOCTOU
       // backstop; this check provides fast user feedback.
+      //
+      // Also reject UPDATEs targeting soft-retired imports. The
+      // submitter UI (RevisingSubmissionForm + LessonSearchPicker
+      // excludeRetired prop) hides retired rows, but a hand-typed or
+      // direct-API call could still send a retired lesson_id; defense in
+      // depth at the server boundary.
       if (normalizedSubmissionType === 'update' && normalizedOriginalLessonId) {
         const { count: lessonCount, error: lessonCheckError } = await supabaseAdmin
           .from('lessons')
           .select('lesson_id', { count: 'exact', head: true })
-          .eq('lesson_id', normalizedOriginalLessonId);
+          .eq('lesson_id', normalizedOriginalLessonId)
+          .is('retired_at', null);
         if (lessonCheckError) {
           throw lessonCheckError;
         }

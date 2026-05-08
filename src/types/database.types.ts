@@ -577,6 +577,8 @@ export type Database = {
           original_submission_id: string | null;
           part_number: number | null;
           processing_notes: string | null;
+          retired_at: string | null;
+          retired_reason: string | null;
           review_notes: string | null;
           search_vector: unknown;
           season_timing: string[] | null;
@@ -620,6 +622,8 @@ export type Database = {
           original_submission_id?: string | null;
           part_number?: number | null;
           processing_notes?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
           review_notes?: string | null;
           search_vector?: unknown;
           season_timing?: string[] | null;
@@ -663,6 +667,8 @@ export type Database = {
           original_submission_id?: string | null;
           part_number?: number | null;
           processing_notes?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
           review_notes?: string | null;
           search_vector?: unknown;
           season_timing?: string[] | null;
@@ -1086,6 +1092,8 @@ export type Database = {
           original_submission_id: string | null;
           prep_time_minutes_meta: string | null;
           processing_notes: string | null;
+          retired_at: string | null;
+          retired_reason: string | null;
           review_notes: string | null;
           search_vector: unknown;
           season_meta: string | null;
@@ -1143,6 +1151,8 @@ export type Database = {
           original_submission_id?: string | null;
           prep_time_minutes_meta?: never;
           processing_notes?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
           review_notes?: string | null;
           search_vector?: unknown;
           season_meta?: never;
@@ -1200,6 +1210,8 @@ export type Database = {
           original_submission_id?: string | null;
           prep_time_minutes_meta?: never;
           processing_notes?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
           review_notes?: string | null;
           search_vector?: unknown;
           season_meta?: never;

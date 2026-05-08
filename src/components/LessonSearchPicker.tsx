@@ -17,6 +17,12 @@ interface LessonSearchPickerProps {
   onClear: () => void;
   cantFindOption?: boolean;
   onCantFind?: () => void;
+  // When true, soft-retired imports are excluded from the dropdown.
+  // Submitter flows (RevisingSubmissionForm) opt in so teachers can't pick
+  // a retired lesson as their UPDATE target. Reviewer flows (ReviewDetail
+  // dup-review escape hatch) leave default false so the reviewer can still
+  // find any lesson, including retired competitors.
+  excludeRetired?: boolean;
 }
 
 const DEBOUNCE_MS = 300;
@@ -28,6 +34,7 @@ export function LessonSearchPicker({
   onClear,
   cantFindOption = false,
   onCantFind,
+  excludeRetired = false,
 }: LessonSearchPickerProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<LessonSearchResult[]>([]);
@@ -36,37 +43,42 @@ export function LessonSearchPicker({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
-  const runSearch = useCallback(async (q: string) => {
-    const myRequestId = ++requestIdRef.current;
-    if (!q.trim()) {
-      setResults([]);
-      setHasQueried(false);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('lessons')
-        .select('lesson_id, title, grade_levels, season_timing')
-        .ilike('title', `%${q}%`)
-        .order('title', { ascending: true })
-        .limit(MAX_RESULTS);
-      if (myRequestId !== requestIdRef.current) return;
-      if (error) throw error;
-      setResults((data ?? []) as LessonSearchResult[]);
-      setHasQueried(true);
-    } catch (err) {
-      if (myRequestId !== requestIdRef.current) return;
-      logger.debug('LessonSearchPicker query failed:', err);
-      setResults([]);
-      setHasQueried(true);
-    } finally {
-      if (myRequestId === requestIdRef.current) {
+  const runSearch = useCallback(
+    async (q: string) => {
+      const myRequestId = ++requestIdRef.current;
+      if (!q.trim()) {
+        setResults([]);
+        setHasQueried(false);
         setIsLoading(false);
+        return;
       }
-    }
-  }, []);
+      setIsLoading(true);
+      try {
+        let qry = supabase
+          .from('lessons')
+          .select('lesson_id, title, grade_levels, season_timing')
+          .ilike('title', `%${q}%`);
+        if (excludeRetired) {
+          qry = qry.is('retired_at', null);
+        }
+        const { data, error } = await qry.order('title', { ascending: true }).limit(MAX_RESULTS);
+        if (myRequestId !== requestIdRef.current) return;
+        if (error) throw error;
+        setResults((data ?? []) as LessonSearchResult[]);
+        setHasQueried(true);
+      } catch (err) {
+        if (myRequestId !== requestIdRef.current) return;
+        logger.debug('LessonSearchPicker query failed:', err);
+        setResults([]);
+        setHasQueried(true);
+      } finally {
+        if (myRequestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [excludeRetired]
+  );
 
   useEffect(() => {
     if (selected) return;
