@@ -1,28 +1,29 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 53 (Task 3a.2 shipped — search_vector includes academicConcepts).
+**Last updated:** 2026-05-08 — Session 54 (Task 3a.3 shipped — generate-embeddings includes academicConcepts + verification harness).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 3a (search infra) — IN PROGRESS, branch up.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge). 5 commits ahead of main: 2 cherry-picked Session 51 docs (`92f5636` + `d9377f9`) + Session 52 archival commit (`ceb5aa8`) + Session 52 Task 3a.1 decision commit (`c15c82a`) + **Session 53 Task 3a.2 ship commit (`9a21354`) — search_vector regeneration migration shipping.** Type-check + lint clean baseline.
+**PR 3a (search infra) — IN PROGRESS, branch up.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge). **8 commits ahead of main** after Session 54 ship + this session-end docs commit. Recent commits: Session 53 Task 3a.2 ship (`9a21354`) → Session 53 docs (`7b828f6`) → **Session 54 Task 3a.3 ship (`81b5d2e`) — generate-embeddings.mjs includes academicConcepts + new `scripts/test-prepare-lesson-text.mjs` verification harness**. Type-check + lint clean baseline.
 
 **Foundation-phase substrate live in PROD:** PR 1 + PR 1b + PR 2 + PR 4 all shipped + PROD-applied + verified. PR 4's full substrate (soft-retire columns + 21 retired imports + 7 concept-recovery rows + FSA Pt 1 retitle + 8 user-facing filter surfaces) verified Session 51 via 9-probe MCP query. Stage 1 worksheets DO NOT YET EXIST (verified Session 51 post-merge); PR 5 stays gated until heritage + concepts worksheets land.
 
-**Task 3a.1 (smart-search drift resolution) — DECIDED 2026-05-08 Session 52: Option B (drop the TS hardcoded list, read from DB).**
+**PR 3a task status:**
+- ✅ Task 3a.1 — smart-search drift resolution **decision** (locked Session 52: Option B — refactor smart-search to read from `search_synonyms` DB table at request time; drop the hardcoded TS dictionary).
+- ✅ Task 3a.2 — search_vector regeneration migration shipped Session 53 (`9a21354`).
+- ✅ Task 3a.3 — generate-embeddings includes academicConcepts shipped Session 54 (`81b5d2e`) including `prepareLessonText` flatten of `{Subject: [concept,...]}` shape, new `--lesson-ids` ops flag, ESM main-module guard for testability without side effects, exported `prepareLessonText`, and `scripts/test-prepare-lesson-text.mjs` harness with 4 MCP-derived fixture shapes (multi-subject multi-concept / multi-subject single-concept / single-subject multi-concept / null edge case). All 4 assertions pass.
+- ⏳ Task 3a.4 — smart-search refactor + seed migration per Option B (next session).
+- ⏳ Task 3a.5 — PR ritual.
 
-Refactor `smart-search/index.ts` to query `search_synonyms` table at request time. Drop the hardcoded `searchSynonyms` (~30 entries at lines 18-59) + `spellingSuggestions` (~13 entries at lines 62-75) objects entirely. One-time seed migration takes the existing TS dictionary content and inserts it into `search_synonyms` with the right `synonym_type` (`bidirectional` for synonyms, `typo_correction` for spelling suggestions — both already exist in the column's CHECK constraint per baseline migration line 1995) so suggestion chips don't regress when the TS layer comes out. Single source of truth going forward; ±10-30ms latency cost per smart-search call accepted as the price of zero drift risk. **Decision rationale:** 2 sources of truth (TS + DB) is the architectural debt; concept-derived synonyms in PR 3b / PR 6+ will populate the DB layer; keeping a TS mirror would require continuous re-sync indefinitely.
+**Task 3a.3 verification deviation (load-bearing for any future contributor reading this commit chain):** Original Task 3a.3 plan called for `--test --dry-run --lesson-ids=...` runtime against TEST DB. That path is blocked because `scripts/generate-embeddings.mjs:49` hardcodes `--test` to `https://epedjebjemztzdyhqace.supabase.co` (deleted Supabase project) and `TEST_SUPABASE_SERVICE_KEY` in `.env` is stale per `project_test_key_stale.md`. After two-bot consultation (this session), verification scoped to **C-plus** — export `prepareLessonText`, ship a checked-in fixture-based harness, keep operational script clean of verification-only CLI modes. Local-seeded DB (B-plus) was rejected after probe showed `data/consolidated_lessons.json` is a Nov 2024 snapshot with **0 of 831 rows populated for `academicConcepts`** — predates the v3 batch tagging run (2025-07-10), so local-seeded verification of concept-handling code paths is unreliable. Full corpus embedding regeneration deferred to bundle with Stage 2 corpus re-tag in PR 6+ where the underlying content actually changes.
 
 **Pre-Task-3a.4 verification (do FIRST when picking up Task 3a.4 — the smart-search drift fix):**
 - Query `search_synonyms` current row count + sample content via `mcp__supabase-test__execute_sql` AND `mcp__supabase-remote__execute_sql` (TEST + PROD diff). Check overlap with the TS dictionary's ~58 entries — some may already be in DB.
 - Decide on conflict-handling for the seed migration: skip-existing (`ON CONFLICT DO NOTHING`) vs replace-existing (`ON CONFLICT DO UPDATE`) vs fail-on-conflict (require empty target). Preferred default: `ON CONFLICT DO NOTHING` (idempotent + non-destructive).
 - Confirm `expand_search_with_synonyms` SQL function (defined in baseline migration line 161 of `20251001_production_baseline_snapshot.sql`) handles the new bulk row count without performance regression. Today's table is small; post-seed adds ~58 rows; not expected to be load-bearing on perf, but worth a sanity check.
 - Per `feedback_verbatim_identifiers_in_probes.md`: when verifying the seed migration's outcome, copy term values verbatim from the migration body, not from memory.
-
-**Task 3a.2 — DONE Session 53 (`9a21354`).** Migration `20260521000000_search_vector_with_concepts.sql`: new helper `_flatten_academic_concepts(jsonb) -> text` flattens the `{Subject: [concept,...]}` shape; `update_lesson_search_vector()` rewritten with inline setweight chain that includes concepts at weight C alongside thematic_categories / cultural_heritage / garden_skills / cooking_skills; trigger recreated with `metadata` added to UPDATE OF list (concept-only metadata writes now propagate to FTS — concepts have no column-shape mirror so the prior column-only list missed them); one-time backfill `UPDATE lessons SET metadata = metadata` regenerates search_vector for every existing row. Verified locally: helper handles all input shapes (object / empty / null / non-array / deep array / empty array); trigger fires on metadata-only UPDATE (LESSON-001 fixture demonstrated `'photosynthesi':29C`, `'fraction':28C` appearing post-update); rows without concepts have no phantom tokens. `npm run test:rls` shows the same 5/2 (passed/failed) result as the pre-migration baseline — both failing scenarios (`archive_duplicate_lesson validates lesson existence` + `archive_duplicate_lesson prevents self-archiving`) are pre-existing and unrelated.
-
-**Next session picks up Task 3a.3** (embedding generation script update). Per impl plan §750: edit `scripts/generate-embeddings.mjs` to add `academicConcepts` to the embedded text (currently the script embeds themes / heritage / skills / ingredients but NOT concepts). The actual TEST corpus re-run is a separate decision (real OpenAI cost) — confirm with user before kicking off. Suggested remaining PR 3a sequence: 3a.3 (embeddings script edit + optional re-run) → 3a.4 (smart-search refactor + seed migration per Task 3a.1's Option B) → 3a.5 (PR ritual).
 
 **Remaining foundation-phase PRs in scope:**
 - **PR 3a** (this work, in progress): `search_vector` + embeddings + smart-search drift fix.
@@ -91,6 +92,12 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 
 - **`generate_lesson_search_vector` is now dead code in the trigger path.** Session 53 Task 3a.2 rewrote `update_lesson_search_vector()` to inline the setweight chain (so it can call `_flatten_academic_concepts` for the new C-weight block). The legacy `generate_lesson_search_vector(...)` immutable helper is no longer called from anywhere in the codebase (verified via grep across `supabase/migrations/`, `supabase/functions/`, `scripts/`, `src/`); it's still GRANT'd to anon / authenticated / service_role for any hypothetical external consumer. Cleanup option: drop the function + revoke its grants in a small follow-up migration if confidence is high that no Supabase Studio query / one-off ad-hoc tool calls it. Low-priority hygiene; keeping the function around costs a few hundred bytes of catalog state. (Source: Session 53 Task 3a.2.)
 
+- **`scripts/generate-embeddings.mjs` `--test` mode is end-to-end broken.** Hardcoded URL at line 49 (`epedjebjemztzdyhqace.supabase.co`) points to a deleted Supabase project; the matching `TEST_SUPABASE_SERVICE_KEY` in `.env` is also stale per `project_test_key_stale.md`. The current TEST project is `rxgajgmphciuaqzvwmox`. So `node scripts/generate-embeddings.mjs --test --dry-run` cannot connect. Fix options: (a) update both the hardcoded URL AND have user refresh the env var, (b) replace `--test` with a `VITE_SUPABASE_URL=...` env-var-driven approach matching the rest of the script's conventions, (c) remove `--test` entirely and rely on the `VITE_SUPABASE_URL` + `requireNonProd` guard pattern alone. Surfaced Session 54 when the planned Task 3a.3 verification path turned out to be blocked. Out of scope for Task 3a.3 per "a bug fix doesn't need surrounding cleanup"; worth a focused script-hygiene PR. (Source: Session 54.)
+
+- **`data/consolidated_lessons.json` is stale and predates `academicConcepts`.** 831 lessons from 2024-11-18, used by `npm run import-data` for local seeding. Predates the v3 batch tagging run that populated `academicConcepts` (2025-07-10) — 0 of 831 rows have populated concepts. Local-seeded verification of any concept-handling code path (or other v3-era metadata fields) is unreliable from this file. Fix: re-export from current PROD or TEST and replace; or build a fresh seed pipeline. Out of scope; surfaced Session 54 when evaluating local-seed verification path for Task 3a.3. (Source: Session 54.)
+
+- **Pre-existing key-name drift in `scripts/generate-embeddings.mjs:prepareLessonText`.** Current code reads `lesson.metadata.thematicCategory` (singular) and treats `lesson.metadata.culturalHeritage` as a string. Canonical post-PR-1 schema uses `thematicCategories` (plural, array) and `culturalHeritage` (often array). For modern submission-era / post-B-update rows, those `if` branches silently emit nothing because the key access returns `undefined`. Effect: embeddings for modern rows miss the theme + heritage signals entirely. Pre-existing (predates foundation phase, predates Zod canonical). Fix: align key names with canonical schema + array-vs-string handling. The new `scripts/test-prepare-lesson-text.mjs` harness can be extended with plural-shape fixtures once fixed. Out of scope for Task 3a.3 per "a bug fix doesn't need surrounding cleanup"; worth a focused embeddings-hygiene PR. (Source: Session 54.)
+
 ## Pointers to durable context
 
 - **Kickoff prompt:** `docs/plans/2026-05-03-metadata-rebuild-foundation-kickoff.md` (paste at session start)
@@ -106,6 +113,44 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 54 — 2026-05-08 — Task 3a.3 shipped (generate-embeddings includes academicConcepts + verification harness)
+
+**Done (1 code commit + this session-end docs commit):**
+
+- **Task 3a.3 (`81b5d2e`):** `scripts/generate-embeddings.mjs` updated; `scripts/test-prepare-lesson-text.mjs` created. Substantive change: `prepareLessonText` flattens `metadata.academicConcepts` (`{Subject: [concept,...]}`) into the embedded text alongside themes / heritage / skills / ingredients. Subject keys + concept values both flow into the comma-separated token list, mirroring the SQL helper `_flatten_academic_concepts` from Task 3a.2 so semantic similarity reflects both layers. Defensive null/empty-object handling — no `Concepts:` line emitted when no usable tokens. Three additional changes that ride along:
+  - **`--lesson-ids=ID1,ID2` flag** — bypasses the null-embedding filter so already-embedded rows can be re-processed. General ops utility for targeted re-embed after content fixes; no current consumer in this PR.
+  - **ESM main-module guard** — auto-run + `requireNonProd()` invocation moved behind `if (process.argv[1] === fileURLToPath(import.meta.url))`. `prepareLessonText` exported. This makes the script importable by verification harnesses without firing DB-connecting side effects.
+  - **`scripts/test-prepare-lesson-text.mjs` harness** — exercises 4 fixture shapes derived from a 2026-05-08 `mcp__supabase-test__execute_sql` probe of TEST corpus rows. Cases: multi-subject multi-concept (Sun Study), multi-subject single-concept-each (Roots and Shoots), single-subject multi-concept (Water Cycle and Dumplings), null edge case (Orientation Lesson). Run via `node scripts/test-prepare-lesson-text.mjs`. All 4 assertions pass; no DB or OpenAI credentials required.
+
+- **Pre-flight on TEST DB**: probed `academicConcepts` shape distribution — 435 multi-subject / 228 single-subject / 88 null / 0 empty-object across 751 active rows. Selected 4 specific rows for fixture sourcing.
+
+- **Local validation**:
+  - `node scripts/test-prepare-lesson-text.mjs` — 4/4 PASS.
+  - `npm run type-check && npm run lint` — both clean. Lint covers `.ts/.tsx` only (per `package.json:lint`); `.mjs` files aren't covered, which is acceptable.
+  - `node --check` on both scripts — both parse cleanly.
+
+**Decisions made:**
+
+- **Verification scope: C-plus (export + checked-in fixture harness) over A (`--print-fixtures` CLI flag) over B-plus (local-seeded DB dry-run).** Two-bot consultation this session. **Reasoning chain:** original plan Task 3a.3 verification path (`--test --dry-run --lesson-ids=...`) was blocked by stale `--test` config (URL points to deleted project; key in .env is stale). First fallback considered: A — embed `--print-fixtures` CLI mode in the script itself. Senior-dev pushback: ops scripts shouldn't carry verification-only CLI modes; reusable artifact is the pure function + expected output, captured cleanly by a separate test file. Second fallback considered: B-plus — seed local DB with full corpus via `npm run import-data` and run `--dry-run --lesson-ids=...` against local. Probe rejected this: `data/consolidated_lessons.json` is Nov 2024 (5+ months old), 0 of 831 rows have populated `academicConcepts`. Per the senior dev's decision rule: "stale local seed with few/no concepts is worse than four MCP-derived fixtures." Final landing: **C-plus** — export `prepareLessonText`, add ESM main-module guard, ship `scripts/test-prepare-lesson-text.mjs` with 4 fixtures derived from live MCP probes. Fixture-based artifact is reproducible in-tree; future shape changes can be tested via the same harness; operational script stays clean of verification-only modes.
+
+- **Full corpus embedding regeneration deferred to PR 6+ (Stage 2 corpus re-tag).** Initial cost framing in the prior status doc was over-cautious — at `text-embedding-3-small` rates ($0.02/1M tokens) and ~2K tokens/lesson, a full 751-row TEST regen is ~$0.03. So cost was never the deciding factor. The actual reasoning is staleness: TEST embeddings would go stale immediately when Stage 2 re-tags concept content. The natural batching boundary is when the underlying content meaningfully changes — that's PR 6+. PROD regen would be churn before then.
+
+- **`--lesson-ids` flag kept despite being unused in this verification.** Composes naturally with future TEST DB or local DB workflows once the env-state issues are resolved; ~10 LOC; general ops utility for targeted re-embed after content fixes.
+
+**Process notes / minor mishaps:**
+
+- **Two-bot consultation pattern, second use this PR cycle.** First use was Task 3a.1 decision Session 52 (Option B locked). This session, sequential consultation walked verification scope from Option C (the original plan) through B → A → fixture-only → C-plus, with each step refined by surfacing concrete blockers (stale TEST URL, stale local seed JSON, scope-creep risk of CLI fixture mode). Pattern: when initial framing is wrong (e.g., "cost is the deciding factor"), correcting the framing in the next consultation message is faster than starting fresh; it also surfaces decision-rule refinements that would have been missed otherwise. Watch-pattern (single PR, two occurrences — promote to feedback memory if it recurs in future PRs).
+
+- **Out-of-scope hygiene observations are real, not decorative.** Three follow-ups added this session — stale `--test` URL, stale `consolidated_lessons.json`, pre-existing `thematicCategory`/`culturalHeritage` key-name drift in `prepareLessonText`. All three would have stayed invisible without the verification-path investigation; the `prepareLessonText` drift in particular is silently degrading embedding quality for modern submission-era rows today. Worth surfacing in a focused embeddings-hygiene PR alongside the script's broken `--test` mode.
+
+**Process notes for Session 55+:**
+
+- **Task 3a.4 is next.** Smart-search drift fix per Option B (locked Session 52): refactor `smart-search/index.ts` to read from `search_synonyms` DB table at request time + one-time seed migration with the ~58 TS dictionary entries (~30 synonyms `bidirectional` + ~13 spelling-suggestions `typo_correction`).
+
+- **Pre-Task-3a.4 verification list (still applies, restated for visibility — see Current State header).**
+
+- **Fixture-harness pattern is now in-tree.** `scripts/test-prepare-lesson-text.mjs` sets a precedent for future verification harnesses on operational scripts that have stale or broken DB-connection modes. ESM main-module guard + export + standalone harness file. Pattern composes with any other script where the pure-function logic is worth verifying without DB/API credentials.
 
 ### Session 53 — 2026-05-08 — Task 3a.2 shipped (search_vector regeneration migration including academicConcepts)
 
