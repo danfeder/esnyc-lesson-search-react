@@ -259,12 +259,7 @@ describe('LessonSearchPicker', () => {
 
     const user = userEvent.setup();
     render(
-      <LessonSearchPicker
-        selected={null}
-        onSelect={vi.fn()}
-        onClear={vi.fn()}
-        excludeRetired
-      />
+      <LessonSearchPicker selected={null} onSelect={vi.fn()} onClear={vi.fn()} excludeRetired />
     );
 
     await user.type(screen.getByPlaceholderText(/search by lesson title/i), 'apple');
