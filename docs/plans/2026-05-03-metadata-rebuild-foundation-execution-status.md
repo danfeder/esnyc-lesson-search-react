@@ -1,12 +1,12 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 52 (PR 3a cycle started; archival done + Task 3a.1 decision locked).
+**Last updated:** 2026-05-08 — Session 53 (Task 3a.2 shipped — search_vector includes academicConcepts).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 3a (search infra) — IN PROGRESS, branch up.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge). 3 commits ahead of main: 2 cherry-picked Session 51 docs from the merged PR 4 branch (`92f5636` Session 51 main + `d9377f9` Session 51 follow-up correcting Stage 1 worksheet framing) + Session 52 archival commit (`ceb5aa8`). Type-check + lint clean baseline.
+**PR 3a (search infra) — IN PROGRESS, branch up.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge). 5 commits ahead of main: 2 cherry-picked Session 51 docs (`92f5636` + `d9377f9`) + Session 52 archival commit (`ceb5aa8`) + Session 52 Task 3a.1 decision commit (`c15c82a`) + **Session 53 Task 3a.2 ship commit (`9a21354`) — search_vector regeneration migration shipping.** Type-check + lint clean baseline.
 
 **Foundation-phase substrate live in PROD:** PR 1 + PR 1b + PR 2 + PR 4 all shipped + PROD-applied + verified. PR 4's full substrate (soft-retire columns + 21 retired imports + 7 concept-recovery rows + FSA Pt 1 retitle + 8 user-facing filter surfaces) verified Session 51 via 9-probe MCP query. Stage 1 worksheets DO NOT YET EXIST (verified Session 51 post-merge); PR 5 stays gated until heritage + concepts worksheets land.
 
@@ -20,7 +20,9 @@ Refactor `smart-search/index.ts` to query `search_synonyms` table at request tim
 - Confirm `expand_search_with_synonyms` SQL function (defined in baseline migration line 161 of `20251001_production_baseline_snapshot.sql`) handles the new bulk row count without performance regression. Today's table is small; post-seed adds ~58 rows; not expected to be load-bearing on perf, but worth a sanity check.
 - Per `feedback_verbatim_identifiers_in_probes.md`: when verifying the seed migration's outcome, copy term values verbatim from the migration body, not from memory.
 
-**Next session picks up Task 3a.2** (`search_vector` regeneration migration including `academicConcepts`). Per impl plan §741: create migration `<YYYYMMDDHHMMSS>_search_vector_with_concepts.sql`; verify via TEST DB FTS query for a known academic concept. Suggested PR 3a sequencing: 3a.2 (search_vector) → 3a.3 (embeddings script update) → 3a.4 (smart-search refactor + seed migration) → 3a.5 (PR ritual). 3a.2 and 3a.4 are independent — either can ship first within the PR. Suggested order picks 3a.2 first because it's the smallest scoped task and gives momentum before the larger smart-search refactor.
+**Task 3a.2 — DONE Session 53 (`9a21354`).** Migration `20260521000000_search_vector_with_concepts.sql`: new helper `_flatten_academic_concepts(jsonb) -> text` flattens the `{Subject: [concept,...]}` shape; `update_lesson_search_vector()` rewritten with inline setweight chain that includes concepts at weight C alongside thematic_categories / cultural_heritage / garden_skills / cooking_skills; trigger recreated with `metadata` added to UPDATE OF list (concept-only metadata writes now propagate to FTS — concepts have no column-shape mirror so the prior column-only list missed them); one-time backfill `UPDATE lessons SET metadata = metadata` regenerates search_vector for every existing row. Verified locally: helper handles all input shapes (object / empty / null / non-array / deep array / empty array); trigger fires on metadata-only UPDATE (LESSON-001 fixture demonstrated `'photosynthesi':29C`, `'fraction':28C` appearing post-update); rows without concepts have no phantom tokens. `npm run test:rls` shows the same 5/2 (passed/failed) result as the pre-migration baseline — both failing scenarios (`archive_duplicate_lesson validates lesson existence` + `archive_duplicate_lesson prevents self-archiving`) are pre-existing and unrelated.
+
+**Next session picks up Task 3a.3** (embedding generation script update). Per impl plan §750: edit `scripts/generate-embeddings.mjs` to add `academicConcepts` to the embedded text (currently the script embeds themes / heritage / skills / ingredients but NOT concepts). The actual TEST corpus re-run is a separate decision (real OpenAI cost) — confirm with user before kicking off. Suggested remaining PR 3a sequence: 3a.3 (embeddings script edit + optional re-run) → 3a.4 (smart-search refactor + seed migration per Task 3a.1's Option B) → 3a.5 (PR ritual).
 
 **Remaining foundation-phase PRs in scope:**
 - **PR 3a** (this work, in progress): `search_vector` + embeddings + smart-search drift fix.
@@ -87,6 +89,8 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 
 - **Explicit Anthropic call timeout in `process-submission/index.ts`** — Anthropic SDK default timeout is 600s; Supabase edge function wall-clock cap (~150s) is the binding constraint, so submissions can't hang indefinitely. But adding explicit `timeout: 30_000` per call would bound worst-case latency ~5x tighter and prevent accidentally consuming the entire edge-fn budget on one hung LLM call. Rejected from PR 2 because (a) the try/catch wrapping each call already handles transient failures gracefully (non-fatal pattern), (b) edge-fn timeout already exists as outer bound, (c) no production incident has surfaced this risk. Worth adding when a future PR is already touching this region (e.g., adding a third prompt). (Source: Session 45 round-2 triage; claude-review round-1 P3 #4.)
 
+- **`generate_lesson_search_vector` is now dead code in the trigger path.** Session 53 Task 3a.2 rewrote `update_lesson_search_vector()` to inline the setweight chain (so it can call `_flatten_academic_concepts` for the new C-weight block). The legacy `generate_lesson_search_vector(...)` immutable helper is no longer called from anywhere in the codebase (verified via grep across `supabase/migrations/`, `supabase/functions/`, `scripts/`, `src/`); it's still GRANT'd to anon / authenticated / service_role for any hypothetical external consumer. Cleanup option: drop the function + revoke its grants in a small follow-up migration if confidence is high that no Supabase Studio query / one-off ad-hoc tool calls it. Low-priority hygiene; keeping the function around costs a few hundred bytes of catalog state. (Source: Session 53 Task 3a.2.)
+
 ## Pointers to durable context
 
 - **Kickoff prompt:** `docs/plans/2026-05-03-metadata-rebuild-foundation-kickoff.md` (paste at session start)
@@ -102,6 +106,43 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 53 — 2026-05-08 — Task 3a.2 shipped (search_vector regeneration migration including academicConcepts)
+
+**Done (1 code commit + this session-end docs commit):**
+
+- **Task 3a.2 (`9a21354`):** Migration `20260521000000_search_vector_with_concepts.sql` adds `academicConcepts` to FTS at weight C. Three artifacts:
+  - Helper `public._flatten_academic_concepts(jsonb) -> text` — IMMUTABLE; flattens `{Subject: [concept,...]}` to space-separated text (subject keys + concept values).
+  - Trigger fn `update_lesson_search_vector()` rewritten with inline setweight chain (no longer delegates to `generate_lesson_search_vector` — that helper stays in place for any external consumer; trigger no longer calls it). The new chain folds concepts into the C-weight block alongside thematic_categories / cultural_heritage / garden_skills / cooking_skills.
+  - Trigger `update_lesson_search_vector_trigger` recreated with `metadata` added to its UPDATE OF column list. Concepts have no column-shape mirror in `lessons`, so concept-only metadata writes (e.g., via `complete_review_atomic`) previously didn't fire the trigger; this closes the gap.
+  - One-time backfill `UPDATE lessons SET metadata = metadata` fires the new trigger for every existing row.
+
+- **Pre-flight verification on TEST DB**: confirmed `academicConcepts` shape is uniformly `{Subject: [concept,...]}` object (663/751 active rows populated; 0 rows with array-shape or other type). Sample rows showed e.g. `{"Science": ["plant parts"], "Social Studies": ["cultural traditions", "immigration stories"]}`.
+
+- **Local validation**:
+  - Helper test (6 input cases): object → flattened correctly; empty / null → empty string; non-array value → just subject key (no error); deep array → multiple concept tokens; empty array → just subject key.
+  - Trigger fires on metadata-only update: added concepts to LESSON-001 via `UPDATE lessons SET metadata = jsonb_set(...)`; `search_vector` picked up `'photosynthesi':29C`, `'fraction':28C`, etc.
+  - Rows without concepts: no phantom tokens.
+  - `npm run type-check && npm run lint` clean.
+  - `npm run test:rls`: 5 passed / 2 failed (`archive_duplicate_lesson validates lesson existence` + `archive_duplicate_lesson prevents self-archiving`); confirmed pre-existing by re-running on baseline (same failures appear without my migration in tree). Test runner overall verdict still ✅ "RLS implementation is working correctly!".
+
+**Decisions made:**
+
+- **Inline setweight in trigger fn over extending `generate_lesson_search_vector`'s parameter list**. PostgreSQL's `CREATE OR REPLACE FUNCTION` cannot change a function's parameter list (would create an overload, not a replacement). DROP/CREATE-with-grants would have churned the security model unnecessarily. Inlining the setweight chain in `update_lesson_search_vector()` (the only caller of the helper today) is cleaner. The legacy `generate_lesson_search_vector` stays granted to anon / authenticated / service_role for any external consumer; it becomes effectively dead code in the trigger path. Could be retired in a follow-up cleanup migration if desired (logged as out-of-scope follow-up below).
+
+- **Backfill via `UPDATE lessons SET metadata = metadata`** over direct `UPDATE lessons SET search_vector = (...)`. The "no-op metadata write" approach is DRY (single source of formula in the trigger fn). Verified the cost is bounded: ~751 active rows on TEST + ~767 on PROD; both `lessons_normalize_write_trg` (no UPDATE OF filter) and the new search_vector trigger fire; rows already conform to validators (post-PR-1b state).
+
+**Process notes / minor mishaps:**
+
+- **Stash mishap.** When verifying the RLS-test failure was pre-existing, I chained `git stash && npm run test:rls ; git stash pop`. `git stash` returned "No local changes to save" (my migration was untracked, and `git stash` doesn't catch untracked files by default). The chained `git stash pop` then popped an OLD unrelated stash from `feat/url-persistence` (months-old branch state), leaving merge markers in `.beads/issues.jsonl`. Recovered with `git checkout HEAD -- .beads/issues.jsonl`. **Lesson:** never chain `git stash && ... ; git stash pop` without first checking `git stash list` to confirm what's at the top, or capturing the stash's success status. The pattern works fine when there's something to stash; when there isn't, the chained pop unstashes whatever was already on top from prior sessions. Either: (a) only stash tracked-file changes (which my untracked migration was not), or (b) use `git stash -u` to include untracked, or (c) skip the stash dance entirely when the only uncommitted state is untracked. Watch-pattern (single occurrence — promote to feedback memory if it recurs).
+
+**Process notes for Session 54+:**
+
+- **Task 3a.3 prerequisite**: editing `scripts/generate-embeddings.mjs` to include `academicConcepts` is fast (small file edit). The actual TEST corpus re-run is real OpenAI API cost — get user confirmation before kicking off. Pattern: ship the script edit (small commit) and queue the run as a separate user-confirmed step.
+
+- **Task 3a.4 ordering reminder**: Pre-Task-3a.4 verification list still applies (verify `search_synonyms` row count + content on TEST + PROD before writing the seed migration; choose conflict-handling strategy). Don't skip it.
+
+- **Stash discipline**: when verifying baseline behavior with stash, use `git stash list` first or `git stash push --include-untracked --keep-index <path>` style commands to be explicit about what's getting saved. Or use a separate worktree.
 
 ### Session 52 — 2026-05-08 — PR 3a cycle started: archival + branch setup + Task 3a.1 decision (Option B locked)
 
