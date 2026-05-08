@@ -1,12 +1,18 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 48 (PR 4 filter-surface follow-up: 8 user-facing surfaces filter retired imports + view migration that exposes `retired_at` to the view + LessonSearchPicker `excludeRetired` prop; pre-push code-reviewer agent caught and fixed P0 latent bug; ready to push and open PR).
+**Last updated:** 2026-05-08 — Session 49 (PR 4 round-1 bot review triaged + consolidated fix-up `bfb3786` applied: F1 type sync + F3 PR-N comment cleanup + F4 detect-duplicates intent guards; 4 findings rejected/deferred per default-reject calibration; ready to push fix-up and await round 2).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-46 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 4 (corpus cleanup) — Sessions 47-48, ready to push 2026-05-08.** Branch `feat/metadata-foundation-corpus-cleanup` from main `cf2aad4` (PR 2 squash-merge 2026-05-07). 5 commits ahead (6 after this session-end docs commit): `0672cc8` (Session 46 docs cherry-pick) + `ed8ca21` (PR 4 substantive migrations: 21 imports retired + 7 archive concepts recovered + FSA retitle) + `868ed54` (Session 47 docs) + `f522740` (PR 4 follow-up: 8 user-facing surfaces filter retired) + `b0f2564` (P0 fix from pre-push review: view migration + ReviewDetail hardening comment). NOT pushed yet; PR opens immediately after the docs commit.
+**PR 4 (corpus cleanup) — PR #478 OPEN, Session 49 round-1 fix-up applied 2026-05-08.** Branch `feat/metadata-foundation-corpus-cleanup` from main `cf2aad4` (PR 2 squash-merge 2026-05-07). 7 commits ahead (8 after this session-end docs commit): `0672cc8` (Session 46 docs cherry-pick) + `ed8ca21` (PR 4 substantive migrations: 21 imports retired + 7 archive concepts recovered + FSA retitle) + `868ed54` (Session 47 docs) + `f522740` (PR 4 follow-up: 8 user-facing surfaces filter retired) + `b0f2564` (P0 fix from pre-push review: view migration + ReviewDetail hardening comment) + `6a801c1` (Session 48 docs) + `bfb3786` (Session 49 round-1 fix-up: F1 types + F3 comment cleanup + F4 detect-duplicates intent guards).
+
+**Round 0 TEST DB verification PASS (Session 49):** 21 retired count ✓, 7 distinct retired_reason groups ✓, FSA retitle ✓, view exposes 2 new columns ✓, 7/7 concepts recovered with object shape ✓, view live count 751 ✓, search_lessons RPC count 751 ✓, F7 verification (0 array-shape archive concepts anywhere) ✓. PROD pre-state confirmed all 7 concept-recovery targets currently NULL with object-shape archives ready.
+
+**Round 1 bot review triage (Session 49):** 7 findings across 3 reviewer surfaces (claude-review formal, claude long-form, Codex). Acceptance trajectory 3/7 — squarely within `feedback_pr_bot_review_workflow.md` default-reject calibration band:
+- **ACCEPT**: F1 (database.types.ts type sync — added retired_at/retired_reason to 6 type blocks), F3 (stripped 13 `PR 4` references across 9 files; kept WHY content), F4 (4 intent comments in detect-duplicates symmetric with ReviewDetail's hardening pattern).
+- **REJECT/DEFER**: F2 (pushed-migration comment correction; documented in out-of-scope), F5 (partial index hypothetical at corpus 788; documented), F6 (dead search-lessons edge fn; surface inventory tracked it; documented), F7 (TEST + PROD probe confirms zero array-shape archives — verification gate passed).
 
 **Surface inventory locked (from Session 48 investigation):**
 - **Filtered (8 surfaces):** `search_lessons` RPC body, `smart-search` edge fn, `search-lessons` edge fn (defensive — dead front-end caller), `useLessonStats` hook, `LessonSearchPicker` (new `excludeRetired` prop, default false), `RevisingSubmissionForm` caller (passes `excludeRetired`), `process-submission` update-target validation (defense-in-depth), `generate-embeddings.mjs` + `regenerate-all-embeddings.mjs` (don't burn OpenAI cost on retired).
@@ -33,18 +39,17 @@
 
 **Foundation-phase substrate after PR 4 ships:** all PR 1 / PR 1b / PR 2 substrate + soft-retire columns on `lessons` + view exposes them + 21 imports retired + 7 archive-only concepts restored + FSA Pt 1 retitle + 8 filter surfaces filtering retired rows + `LessonSearchPicker.excludeRetired` prop infrastructure for submitter-vs-reviewer asymmetry.
 
-**Next session picks up — PR 4 push + bot review cycle:**
-1. **Push branch + open PR** with `gh pr create`. CI applies migrations to TEST DB; this fires the round 0 verification window.
-2. **Round 0 TEST DB verification** via `mcp__supabase-test__execute_sql`: 21 retired count + FSA new title + 7 concepts recovered shape + view exposes new columns + search_lessons RPC count drops appropriately.
-3. **Bot review rounds + ritual** per `feedback_pr_bot_review_workflow.md` (CodeRabbit + Claude Review). Investigate every finding; default-reject hardening for internal-only paths.
-4. **Per-round TEST DB re-verification** for any DB-affecting fix-up commits.
-5. **Round-cap after 2 rounds of bot review.**
-6. **Pre-PROD-apply MCP probe** (Session 46 pattern) before approving the production migration workflow.
-7. **Post-PROD verify** via `mcp__supabase-remote__execute_sql` (21 retired count + view shape + RPC count).
+**Next session picks up — push round-1 fix-up + monitor round 2:**
+1. **Push fix-up `bfb3786` + Session 49 docs commit together** per `feedback_no_docs_push_during_pr.md`. CI re-runs on the new HEAD.
+2. **Per-round TEST DB re-verification** — round-1 fix-up has zero DB-affecting commits (only TS source / test / scripts / edge fn body comments + intent comments), so a quick spot-check is sufficient (verify 21-retired / 751-live counts haven't drifted). Round 0 probes remain load-bearing.
+3. **Wait for round 2 bot review.** Round 1 acceptance was 3/7 — bots may push back on the rejects. Default to documenting rather than re-fixing if F2/F5/F6 come back. F7 is verifiably moot.
+4. **Round-cap after round 2 of bot review** per kickoff hard rule.
+5. **Pre-PROD-apply MCP probe** (Session 46 pattern) before approving production migration workflow.
+6. **Post-PROD verify** via `mcp__supabase-remote__execute_sql` (21 retired count + view shape + RPC count).
 
 **Branches:**
 - `main` at `cf2aad4` (PR 2 squash-merge); origin matches
-- `feat/metadata-foundation-corpus-cleanup` — this session's work, 5 commits ahead (6 after this session-end docs commit)
+- `feat/metadata-foundation-corpus-cleanup` — PR #478, 7 commits ahead (8 after this session-end docs commit)
 - `feat/metadata-foundation-llm-tagging` (PR 2 merged; deletable at convenience)
 - `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` (all deletable at convenience)
 
@@ -91,6 +96,12 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 
 - **Per-field model provenance inside `ai_draft_metadata`** — `lesson_submissions.ai_draft_model text` records only the last writer (today: activity_type's model wins because it writes second). Both prompts use `claude-opus-4-7` so no provenance is wrong today, but if CRF and activity_type ever migrate to different models (e.g., CRF on Sonnet for cost savings, activity_type stays Opus), the column silently mis-attributes the CRF draft. Fix: store per-field model inside the JSONB (`{ _meta: { models: { crf: '...', activityType: '...' } } }`) or add a separate `ai_draft_models jsonb` column. Surfaced by claude-review round-1 P2 + round-2 inline P3. Not blocking PR 2; worth addressing when (a) a third LLM-auto-tag prompt lands, OR (b) CRF/activity_type model versions diverge for any reason. (Source: Session 45 round-2 triage.)
 
+- **Migration verification-comment syntax (PR 4 round-1 F2 from Codex P3).** `supabase/migrations/20260520020000_search_lessons_filter_retired.sql:216` documents an expected post-apply count via `SELECT count(*) FROM (SELECT * FROM search_lessons() LIMIT 1000) sub; -- 767 (live)`. The inner query returns at most 20 rows (page_size default), so the outer LIMIT is a no-op. Correct syntax: `SELECT total_count FROM search_lessons(page_size => 1) LIMIT 1`. Not editing the pushed migration (database-migrations skill rule); document for future verification comments. Comment-only inaccuracy; doesn't affect runtime behavior. (Source: PR #478 round-1 Codex pass.)
+
+- **Partial index `WHERE retired_at IS NULL` on `lessons` (PR 4 round-1 F5 from claude long-form Low).** Every `search_lessons` RPC call, smart-search query, and `useLessonStats` fetch now evaluates `retired_at IS NULL` against the full `lessons` table. At 788 rows this is negligible. A partial index `CREATE INDEX IF NOT EXISTS idx_lessons_retired_at_null ON lessons (lesson_id) WHERE retired_at IS NULL;` would help if corpus growth or `EXPLAIN ANALYZE` plans show pain. Codex defers; revisit when there's empirical evidence of cost. (Source: PR #478 round-1 claude long-form review.)
+
+- **Dead `search-lessons` edge fn (PR 4 round-1 F6 from claude long-form Low).** Has no live front-end caller today (front-end uses `search_lessons` RPC + `smart-search` edge fn) but stays deployed and is now kept-in-sync with the retired filter. "Kept in sync for symmetry" means every future filter change has one more place to remember. Cleanest fix is to undeploy via `supabase functions delete search-lessons --project-ref ...` after merging this PR; that's separate work outside PR 4 scope and follows the deferred-approval ordering hazard pattern from MEMORY.md (drain queued production-approval runs before approving them). (Source: PR #478 round-1 claude long-form review.)
+
 - **Explicit Anthropic call timeout in `process-submission/index.ts`** — Anthropic SDK default timeout is 600s; Supabase edge function wall-clock cap (~150s) is the binding constraint, so submissions can't hang indefinitely. But adding explicit `timeout: 30_000` per call would bound worst-case latency ~5x tighter and prevent accidentally consuming the entire edge-fn budget on one hung LLM call. Rejected from PR 2 because (a) the try/catch wrapping each call already handles transient failures gracefully (non-fatal pattern), (b) edge-fn timeout already exists as outer bound, (c) no production incident has surfaced this risk. Worth adding when a future PR is already touching this region (e.g., adding a third prompt). (Source: Session 45 round-2 triage; claude-review round-1 P3 #4.)
 
 ## Pointers to durable context
@@ -108,6 +119,51 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 49 — 2026-05-08 — PR 4 round-1 bot review triaged + consolidated fix-up applied
+
+**Done (1 substantive commit `bfb3786` + this session-end docs commit):**
+
+- **Session-orientation check** flagged status doc was stale on push state — branch was actually pushed and PR #478 OPEN with round 1 already in. Pattern matches `feedback_pr_bot_review_workflow.md` "Active-PR session-orientation" rule (recurred 4× across PR 1b sessions 33-36). Reconciled active doc to reality before any code work.
+
+- **Round 0 TEST DB verification probes** via `mcp__supabase-test__execute_sql` (single batched 13-probe query). All probes returned correct values: 21 retired ✓, 7 distinct retired_reason groups ✓, FSA new title ✓, view exposes 2 new columns ✓, 7/7 concepts recovered with `object` shape ✓, 0 array-shape archive concepts anywhere (F7 verification gate passed) ✓, search_lessons total_count 751 = 772−21 ✓, view live count 751 ✓. PROD pre-state diagnostic confirmed all 7 concept-recovery targets currently NULL with `object`-shape archives ready to populate on PROD-apply.
+
+- **My initial P6 probe used hallucinated lesson_ids** (only 1 of 7 IDs matched the actual migration target list). Re-ran with correct IDs from migration `20260520010000_*` header → all 7 confirmed populated. Lesson for future migration-outcome probes: copy lesson_ids verbatim from migration source rather than typing from memory.
+
+- **Round 1 bot review triage** (3 reviewer surfaces — claude-review formal + claude long-form + Codex via user-pass). 7 findings consolidated; rebuttal pass per `feedback_bot_review_investigation.md`:
+  - **F1 ACCEPT** (Codex P2): `database.types.ts` missing `retired_at`/`retired_reason` on `Tables.lessons.{Row,Insert,Update}` + `Views.lessons_with_metadata.{Row,Insert,Update}`. Hand-patched 6 type blocks (12 field additions). Hand-patch path correct per status doc out-of-scope note that the file is hand-patched since PR 1.
+  - **F2 REJECT (document)** (Codex P3): migration verification-comment syntax inaccuracy. Editing pushed/applied migration violates database-migrations skill rule; comment-only fix is semantically safe but doesn't justify breaking the rule. Documented in out-of-scope follow-ups for future migrations.
+  - **F3 ACCEPT** (claude-review P2 + claude long-form Low): 13 `PR 4` references stripped from 9 files (`LessonSearchPicker.tsx`, `LessonSearchPicker.test.tsx`, `useLessonStats.ts`, `useLessonStats.test.ts`, `ReviewDetail.tsx`, `search-lessons/index.ts`, `smart-search/index.ts`, `process-submission/index.ts`, `generate-embeddings.mjs` ×2, `regenerate-all-embeddings.mjs` ×3). Per CLAUDE.md project root: "Don't reference the current task". Kept the explanatory WHY content; stripped only the task-prefix. Migration internal comments left alone (per database-migrations skill rule + the date-stamped artifact framing).
+  - **F4 ACCEPT (light)** (claude-review P1, Codex P3): 4 sites in `detect-duplicates/index.ts` got 1-line intent comments explaining why they intentionally read the full corpus (no retired filter): hash check (L221), semantic embedding (L252), metadata enrichment (L268), fallback title search (L297). Symmetric with `ReviewDetail.tsx:1319`'s existing hardening comment.
+  - **F5 REJECT** (claude long-form Low): partial index hypothetical at corpus 788. Documented with revisit trigger.
+  - **F6 REJECT** (claude long-form Low): dead `search-lessons` edge fn. Already in surface inventory + tracked. Documented with the deferred-approval ordering hazard caveat.
+  - **F7 REJECT (verified clean)** (claude-review P3): TEST DB probe `P8_archive_array_shape_skipped = 0` — no array-shape archive concepts exist anywhere. PROD diagnostic confirms all 7 concept-recovery targets have object-shape archives. Codex framed as "verification gate"; gate just passed.
+
+- **Consolidated fix-up commit `bfb3786`** applies F1+F3+F4 in one commit. 12 files changed, +35/-17 net. Local verification clean: type-check + lint + 577/577 vitest (matches PR 4 baseline; F3 strips don't affect test count, F4 added intent-only comments).
+
+- **Source `PR 4` reference grep post-fix-up** returns zero hits across `src/`, `supabase/`, `scripts/` — F3 is complete (migration internal comments retained intentionally).
+
+**Decisions made:**
+
+- **Round 1 acceptance trajectory: 3/7.** Squarely in `feedback_pr_bot_review_workflow.md` default-reject calibration band — accepted F1 (real type-correctness gap), F3 (CLAUDE.md compliance), F4 (light hardening symmetric with existing pattern). Rejected F2/F5/F6 with documentation; F7 was verifiably moot.
+
+- **Pushed-migration comment correction (F2): document, don't fix.** The cited inaccuracy is in a SQL comment in an already-applied migration. Editing pushed migrations violates database-migrations skill rule even though the proposed fix is semantically safe. Codex itself rates P3. Document for future migrations to use the correct verification syntax.
+
+- **Light-touch F4 over heavyweight refactor.** Bot's recommendation could have been spun into "refactor `detect-duplicates` to make the filter-or-not choice an explicit parameter" but a 1-line intent comment per query site is cheap insurance and matches the existing ReviewDetail hardening pattern. Refactor is out of scope for foundation-phase PR 4.
+
+- **No DB-affecting commits this round** — fix-up touches only TS source / test / scripts / edge fn body comments + intent comments. Per-round TEST DB re-verification is therefore a quick spot-check rather than full reprobe (round 0 probes remain load-bearing). One concrete data point for `feedback_per_round_test_db_verification.md`: rounds with zero DB-affecting changes get a relaxed verification rubric.
+
+**Process notes for Session 50+:**
+
+- **Push fix-up `bfb3786` + this session-end docs commit together** per `feedback_no_docs_push_during_pr.md`. CI re-runs on the new HEAD; bots emit round 2 reviews after that.
+
+- **Round 2 bot review expected.** Bots may push back on the rejects (F2/F5/F6). Default-reject re-applies; document if they re-flag. F7 is verifiably moot — TEST DB probes prove zero array-shape archives.
+
+- **Round-cap after round 2** per kickoff hard rule. If a 3rd round comes in, fix only critical bugs, document the rest, ship.
+
+- **Pre-PROD-apply MCP probe pattern** (Session 46 + 47 + 48 precedent) — same probes via `mcp__supabase-remote__execute_sql` AS A READ before approving PROD migration workflow. Belt-and-braces: TEST↔PROD diff via same query body to spot-check both surfaces.
+
+- **Watch the migrate-production.yml SASL flake on apply step.** PR 4 has 4 migrations applying together. If the apply step flakes, `gh run rerun --failed <run_id>` re-runs only the failed slot; approval gate re-fires for re-approval. Migrations are idempotent so retry is safe.
 
 ### Session 48 — 2026-05-08 — PR 4 follow-up: 8 filter surfaces + view migration + P0 fix from pre-push review (ready to push)
 
