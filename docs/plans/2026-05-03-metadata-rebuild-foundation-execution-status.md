@@ -1,42 +1,50 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 47 (PR 4 cycle started: 21 third-party imports soft-retired + 7 archive-only concepts recovered + FSA Pt 1 retitle; 2 migrations local-only on `feat/metadata-foundation-corpus-cleanup`; PR-cycle archival of Sessions 37-46 done this session).
+**Last updated:** 2026-05-08 — Session 48 (PR 4 filter-surface follow-up: 8 user-facing surfaces filter retired imports + view migration that exposes `retired_at` to the view + LessonSearchPicker `excludeRetired` prop; pre-push code-reviewer agent caught and fixed P0 latent bug; ready to push and open PR).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-46 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 4 (corpus cleanup) — Session 47, in flight 2026-05-08.** Branch `feat/metadata-foundation-corpus-cleanup` from main `cf2aad4` (PR 2 squash-merge 2026-05-07). 2 commits ahead: `0672cc8` (Session 46 docs cherry-pick from merged PR 2 branch per Session 38 precedent) + `ed8ca21` (PR 4 substantive migrations). NOT pushed yet; PR opens after filter-surface follow-ups land per `feedback_no_docs_push_during_pr.md` spirit (bundle substrate migrations + filter surfaces in one PR cycle).
+**PR 4 (corpus cleanup) — Sessions 47-48, ready to push 2026-05-08.** Branch `feat/metadata-foundation-corpus-cleanup` from main `cf2aad4` (PR 2 squash-merge 2026-05-07). 5 commits ahead (6 after this session-end docs commit): `0672cc8` (Session 46 docs cherry-pick) + `ed8ca21` (PR 4 substantive migrations: 21 imports retired + 7 archive concepts recovered + FSA retitle) + `868ed54` (Session 47 docs) + `f522740` (PR 4 follow-up: 8 user-facing surfaces filter retired) + `b0f2564` (P0 fix from pre-push review: view migration + ReviewDetail hardening comment). NOT pushed yet; PR opens immediately after the docs commit.
 
-**Locked decisions this session (3 user-confirmed):**
-1. **Soft-delete via `retired_at timestamptz` + `retired_reason text` columns** with cluster-key namespace `import:<source>` (7 distinct keys for the 21 imports: pflp_2003 / foodcorps_2017 / cas_food_justice / nyc_doe_colonial_ny / city_blossoms_botanical_artists / nyc_dep_watershed / oregon_doe_leaves). Reversible. Future retirement reasons can use other namespaces.
-2. **404 UX for direct-link to retired lessons** — same `WHERE retired_at IS NULL` filter as search; 0 PROD bookmarks anywhere makes any custom UI for retired moot.
-3. **Filter retired in 6 surfaces** (next session's work): lessons_with_metadata view, search_lessons RPC, smart-search edge fn, lesson detail query, facetCounts.ts, embedding regen script. detect-duplicates + content-hash dedup intentionally NOT filtered (cross-checking against retired imports is useful at submission time).
+**Surface inventory locked (from Session 48 investigation):**
+- **Filtered (8 surfaces):** `search_lessons` RPC body, `smart-search` edge fn, `search-lessons` edge fn (defensive — dead front-end caller), `useLessonStats` hook, `LessonSearchPicker` (new `excludeRetired` prop, default false), `RevisingSubmissionForm` caller (passes `excludeRetired`), `process-submission` update-target validation (defense-in-depth), `generate-embeddings.mjs` + `regenerate-all-embeddings.mjs` (don't burn OpenAI cost on retired).
+- **Unfiltered (intentional asymmetry):** `detect-duplicates` edge fn, `get_lesson_details_for_review` RPC, `ReviewDetail` similar-lesson + off-list submitter target fetches, `ReviewDashboard` queue-badge title lookup, `src/lib/supabase.ts` connectivity test, `lessons_with_metadata` view itself. These exist so dup-checking + reviewer dup-flow catch future re-submissions of retired imports.
+- **Out of scope:** ~13 admin/historical scripts in `scripts/` (one-shots, not user-facing).
 
-**Pre-flight investigation (4 PROD probes, all clean):**
-- **Drop list count** — actual is **21**, not 23 (kickoff/decision-journal "23" is stale early estimate). Memory file's listing is authoritative; structural sweep against PROD found 30 false positives + 0 obvious additional candidates. TEST↔PROD parity exact at 21.
-- **FK + user-state audit** — bookmarks_total=0 anywhere in PROD; 0 lesson_versions / collections / submissions / reviews / similarities on the 21 drop rows. 2 historical references (Leaves We Eat + Stone Soup as canonical winners of dedup `group_6` and `group_82` resolved 2025-09-01 `merge_and_archive`) preserved intact under soft-delete.
-- **FSA current title** — confirmed "Food System Advocates (Part 1 & 2)"; tags + format columns NULL.
-- **Archive-only concepts** — 7 distinct lesson_ids with ~19 concepts surviving only in `lesson_versions` archive (all archived 2026-04-27 Phase 6.2). Tally drift from memory's "16 concepts" → 19 measured 2026-05-08 is the same population.
+**Per-consumer filter approach** (not view-bake): the 3 view-based call sites (`useLessonStats` / `smart-search` / `search-lessons`) call `.is('retired_at', null)` after `.from('lessons_with_metadata')` directly. The view stays unfiltered so `detect-duplicates` / `get_lesson_details_for_review` / `ReviewDetail` similar-lesson fetch / `ReviewDashboard` badges still see retired rows.
 
-**PR 4 substantive code shipped this session (commit `ed8ca21`, 2 files / +256):**
-- `supabase/migrations/20260520000000_corpus_cleanup_retire_imports.sql` — adds `retired_at` + `retired_reason` columns; UPDATEs 21 drop rows with cluster keys; UPDATEs FSA row to drop "& 2"; idempotent guards (`AND retired_at IS NULL`, `AND title = '...'`).
-- `supabase/migrations/20260520010000_recover_archive_only_concepts.sql` — restores `academicConcepts` from archive into 7 live rows; DISTINCT ON + ORDER BY version_number DESC defensively; idempotent.
+**P0 caught and fixed via pre-push review:** the 3 view-based `.is('retired_at', null)` calls would have failed with PostgREST 400 because `lessons_with_metadata` view (last redefined `20260512000000`) uses an explicit column list that doesn't auto-include columns added later. Migration `20260520030000_lessons_with_metadata_expose_retired.sql` recreates the view with `retired_at` + `retired_reason` appended at the end (PostgreSQL allows appending columns to `CREATE OR REPLACE VIEW`). NOTIFY pgrst reload schema for immediate cache invalidation. Local toggle test confirms 4 expected behaviors: view filtered count 5→4, view unfiltered stays 5, RPC count 5→4, view + RPC restoration on `retired_at = NULL`.
 
-**Local verification clean**: `supabase db reset` applies all migrations; type-check + lint clean; vitest 575/575; MCP probe confirms `retired_at` + `retired_reason` columns present with correct types.
+**PR 4 substantive code shipped Sessions 47-48 (3 migrations + 5 source edits + 2 test files + 1 hardening comment):**
+- `20260520000000_corpus_cleanup_retire_imports.sql` (Session 47): `retired_at` / `retired_reason` columns + 21 retire UPDATEs + FSA retitle.
+- `20260520010000_recover_archive_only_concepts.sql` (Session 47): restores `academicConcepts` from archive into 7 live rows.
+- `20260520020000_search_lessons_filter_retired.sql` (Session 48): `CREATE OR REPLACE FUNCTION search_lessons` body adds `AND l.retired_at IS NULL` to count + select WHERE clauses.
+- `20260520030000_lessons_with_metadata_expose_retired.sql` (Session 48): `CREATE OR REPLACE VIEW lessons_with_metadata` appends 2 new columns at the end.
+- 5 source edits: `smart-search/index.ts`, `search-lessons/index.ts`, `useLessonStats.ts`, `LessonSearchPicker.tsx` (new `excludeRetired` prop), `RevisingSubmissionForm.tsx` (passes prop), `process-submission/index.ts` (server-side validation), `generate-embeddings.mjs`, `regenerate-all-embeddings.mjs`.
+- 2 test files updated for the new chain shape (`useLessonStats.test.ts`, `LessonSearchPicker.test.tsx`); +2 new tests for `excludeRetired` prop.
+- 1 hardening comment at `ReviewDetail.tsx:1319` documenting why reviewer flow intentionally does NOT pass `excludeRetired`.
 
-**Foundation-phase substrate WILL include after PR 4 ships:** all PR 1 / PR 1b / PR 2 substrate + soft-retire columns on `lessons` + 21 imports retired + 7 archive-only concepts restored + FSA Pt 1 retitle + 6 filter surfaces filtering retired rows.
+**Local verification clean**: `supabase db reset` applies all 4 PR 4 migrations cleanly; type-check + lint clean; vitest 577/577 (was 575/575; +2 new for `excludeRetired` prop). MCP probes confirm:
+- `lessons.retired_at` + `lessons.retired_reason` columns present with correct types
+- `lessons_with_metadata` view exposes both new columns post-migration
+- Toggle test: view filtered count drops 5→4 when LESSON-001 retired; view unfiltered stays at 5; `search_lessons()` RPC drops to 4; restored to 5 on `retired_at = NULL`
 
-**Next session picks up — PR 4 follow-up work:**
-1. **Filter surfaces** — add `WHERE retired_at IS NULL` (or equivalent shape filter) to: `search_lessons` RPC body + companion view `lessons_with_metadata`, `smart-search` edge fn (`supabase/functions/smart-search/index.ts`), lesson detail page query (front-end), `src/utils/facetCounts.ts`, embedding regen script (find via grep). Probably one new migration + 2-3 frontend/edge edits.
-2. **Tests** — extend any tests that count corpus rows to expect `live_count` semantics; verify retired filter end-to-end.
-3. **Pre-push code-reviewer agent** dispatched on `git diff main...HEAD` (Opus per `feedback_opus_subagents.md`); accept/reject findings; commit fix-ups before push.
-4. **Push branch + open PR**. CI applies migrations to TEST DB; round 0 verification via `mcp__supabase-test__execute_sql` (21 retired count + FSA new title + 7 concepts recovered shape-correct).
-5. **Bot review rounds + ritual**.
+**Foundation-phase substrate after PR 4 ships:** all PR 1 / PR 1b / PR 2 substrate + soft-retire columns on `lessons` + view exposes them + 21 imports retired + 7 archive-only concepts restored + FSA Pt 1 retitle + 8 filter surfaces filtering retired rows + `LessonSearchPicker.excludeRetired` prop infrastructure for submitter-vs-reviewer asymmetry.
+
+**Next session picks up — PR 4 push + bot review cycle:**
+1. **Push branch + open PR** with `gh pr create`. CI applies migrations to TEST DB; this fires the round 0 verification window.
+2. **Round 0 TEST DB verification** via `mcp__supabase-test__execute_sql`: 21 retired count + FSA new title + 7 concepts recovered shape + view exposes new columns + search_lessons RPC count drops appropriately.
+3. **Bot review rounds + ritual** per `feedback_pr_bot_review_workflow.md` (CodeRabbit + Claude Review). Investigate every finding; default-reject hardening for internal-only paths.
+4. **Per-round TEST DB re-verification** for any DB-affecting fix-up commits.
+5. **Round-cap after 2 rounds of bot review.**
+6. **Pre-PROD-apply MCP probe** (Session 46 pattern) before approving the production migration workflow.
+7. **Post-PROD verify** via `mcp__supabase-remote__execute_sql` (21 retired count + view shape + RPC count).
 
 **Branches:**
 - `main` at `cf2aad4` (PR 2 squash-merge); origin matches
-- `feat/metadata-foundation-corpus-cleanup` — this session's work, 2 commits ahead (3 after this session-end docs commit)
+- `feat/metadata-foundation-corpus-cleanup` — this session's work, 5 commits ahead (6 after this session-end docs commit)
 - `feat/metadata-foundation-llm-tagging` (PR 2 merged; deletable at convenience)
 - `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` (all deletable at convenience)
 
@@ -100,6 +108,74 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 48 — 2026-05-08 — PR 4 follow-up: 8 filter surfaces + view migration + P0 fix from pre-push review (ready to push)
+
+**Done (2 substantive commits + this session-end docs commit):**
+
+- **Surface inventory pass** (~30 min). Targeted greps + MCP probes mapped every consumer of `lessons` / `lessons_with_metadata`. Result: 8 surfaces filter retired (search_lessons RPC + smart-search + search-lessons + useLessonStats + LessonSearchPicker + RevisingSubmissionForm + process-submission + 2 embedding scripts), 6 surfaces stay unfiltered (detect-duplicates + ReviewDetail + ReviewDashboard + get_lesson_details_for_review + supabase.ts connectivity test + view itself), ~13 admin scripts out of scope. Empirical TEST DB pre-commit probe: 0 current submissions / similarities / reviews / bookmarks reference any of the 21 retired IDs (only 2 expected dedup-winner rows in `duplicate_resolutions`). PR 4 is forward-looking, not backfilling broken state.
+
+- **3 NEW surfaces beyond status doc's original 6** identified during inventory: `search-lessons` edge fn (defensive — dead front-end caller today, but deployed), `LessonSearchPicker` (new `excludeRetired` prop with submitter-vs-reviewer asymmetry), `process-submission` server-side validation (defense-in-depth even if picker UI is bypassed).
+
+- **Per-consumer filter approach (not view-bake)** — locked because detect-duplicates / get_lesson_details_for_review / ReviewDetail similar-lesson fetch / ReviewDashboard badges all read from view (or `lessons` directly) AND need to keep seeing retired rows for future re-submission catch. View-bake forces consumers off the view; per-consumer is cleaner.
+
+- **`LessonSearchPicker.excludeRetired` prop** — new `excludeRetired?: boolean` prop, default false. Threaded through `runSearch` useCallback dep array. RevisingSubmissionForm caller passes `excludeRetired`; ReviewDetail caller leaves default false (with a hardening comment per pre-push review's P1 #4 finding). 2 new tests cover both paths.
+
+- **Migration 1 — `20260520020000_search_lessons_filter_retired.sql`** (192 lines). `CREATE OR REPLACE FUNCTION search_lessons` body adds `AND l.retired_at IS NULL` to BOTH count + select WHERE clauses. Body-only change → no GRANT re-issue needed. NOTIFY pgrst reload schema for cache safety.
+
+- **Migration 2 — `20260520030000_lessons_with_metadata_expose_retired.sql`** (133 lines). `CREATE OR REPLACE VIEW lessons_with_metadata` appends `l.retired_at` + `l.retired_reason` at the end (PostgreSQL allows column appends to existing views). View stays unfiltered — consumers apply `.is('retired_at', null)` at query site for the asymmetry. Critical fix from pre-push review (without it, 3 view-based call sites would have hit PostgREST 400).
+
+- **Source edits across 8 files** (commit `f522740`):
+  - `smart-search/index.ts:155` + `search-lessons/index.ts:62` + `useLessonStats.ts:25-28` (3 view-based callers)
+  - `LessonSearchPicker.tsx` (new prop + chain integration with useCallback dep)
+  - `RevisingSubmissionForm.tsx:174` (passes `excludeRetired`)
+  - `process-submission/index.ts:212` (server-side validation)
+  - `generate-embeddings.mjs:129 + 240/244` (fetch + verify denominators)
+  - `regenerate-all-embeddings.mjs:72/154/206` (regenerate + verify + mock fetch)
+
+- **Tests updated** (commit `f522740`):
+  - `useLessonStats.test.ts` mock chain updated to include `is` (terminal call), 4 of 9 tests modified, +1 assertion for `expect(isMock).toHaveBeenCalledWith('retired_at', null)`. All 9 pass.
+  - `LessonSearchPicker.test.tsx` mock chain updated to include `is: vi.fn().mockReturnThis()` across 4 mock setups; +2 new tests covering `excludeRetired={true}` triggers `.is(...)` and unset-default does NOT trigger it. All pass.
+
+- **Pre-push code-reviewer agent dispatched (Opus mode per `feedback_opus_subagents.md`)** on `git diff main...HEAD` — caught 1 P0 (the view doesn't expose `retired_at` → 3 callers would have 400'd at runtime), 3 P1s (2 deferred as "not bugs today / future hardening" + 1 actionable hardening comment), 1 P2 (defer). P0 fix applied in commit `b0f2564`: new view migration. P1 #4 hardening comment applied at `ReviewDetail.tsx:1319` documenting reviewer-flow rationale.
+
+- **Local verification clean post-fix**: `supabase db reset` applies all 4 PR 4 migrations cleanly; `lessons_with_metadata` view confirmed exposing both new columns via information_schema query; toggle test passes (view filtered 5→4, view unfiltered stays 5, RPC drops to 4, restoration works); type-check + lint + vitest 577/577 clean.
+
+- **Migration commit `f522740` + fix-up commit `b0f2564`** on `feat/metadata-foundation-corpus-cleanup`. Branch is now 5 commits ahead of main (Session 46 docs cherry-pick + 2 substantive Session 47 + Session 47 docs + Session 48 substantive + Session 48 fix-up); session-end docs commit makes 6 ahead.
+
+**Decisions made:**
+
+- **Per-consumer filter approach over view-bake** — confirmed cleanest given the asymmetry requirement (detect-duplicates / reviewer dup-flow keep seeing retired). View-bake would force consumers off the view, more refactor.
+
+- **`LessonSearchPicker.excludeRetired` prop with default=false (not bake-into-component)** — chose prop over single behavior because of the genuine submitter/reviewer asymmetry. Default false preserves all existing callers (including `ReviewDetail`); the new submitter caller (`RevisingSubmissionForm`) explicitly opts in. Hardening comment at reviewer call-site prevents silent drift if future refactor flips the default.
+
+- **Empirical TEST DB probe before locking surface inventory** — discovered 0 current state references any retired ID. PR 4 is forward-looking (catches future Stone Soup re-submissions); current state is empirically clean. Lower blast radius than the original 6-surface concern implied.
+
+- **3 NEW surfaces beyond status doc's original 6** — added `search-lessons` edge fn (defensive symmetry), `LessonSearchPicker` (UX asymmetry), `process-submission` server-side validation (defense-in-depth). Status doc's "6 surfaces" was directional; investigation refined to 8.
+
+- **CREATE OR REPLACE for both migrations (not DROP+CREATE)** — both `search_lessons` (signature unchanged, body-only change) and `lessons_with_metadata` view (PostgreSQL permits appending columns) can use the lighter pattern. No GRANT re-issue needed; existing function/view identity preserved.
+
+- **Pre-push code-reviewer agent value confirmed.** P0 finding (view-doesn't-expose-retired) was a latent bug that local `supabase db reset` did NOT catch (the failing call sites use mocked tests; the local DB ran but the chain was never exercised against the actual view). Local toggle test only exercised the search_lessons RPC path, not the view path. Pre-push review is exactly the kind of independent eyes that catches this class of bug — a concrete data point for `feedback_pr_bot_review_workflow.md`.
+
+**Process notes for Session 49+:**
+
+- **Push branch immediately when next session starts** — substrate + filter surfaces are bundled per `feedback_no_docs_push_during_pr.md` spirit. CI applies all 4 PR 4 migrations to TEST DB on first push. Round 0 verification fires immediately after CI.
+
+- **Round 0 verification queries** (run via `mcp__supabase-test__execute_sql` after CI applies migrations to TEST DB):
+  - 21 retired count: `SELECT count(*) FROM lessons WHERE retired_at IS NOT NULL;` should return 21
+  - 7 distinct reasons: `SELECT count(DISTINCT retired_reason) FROM lessons WHERE retired_at IS NOT NULL;` should return 7
+  - FSA retitle: `SELECT title FROM lessons WHERE lesson_id = '1iqGFHrQ0rWfyoLo4R4n8FO9N-S7LW1ZpalaLNF5_Tmk';` should be `'Food System Advocates (Part 1)'`
+  - View exposes columns: `SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='lessons_with_metadata' AND column_name IN ('retired_at','retired_reason');` should return 2 rows
+  - View live count: `SELECT count(*) FROM lessons_with_metadata WHERE retired_at IS NULL;` ≈ 767 (TEST corpus 788 minus 21)
+  - Concepts recovery: `SELECT count(*) FROM lessons WHERE lesson_id = ANY(ARRAY[<7-id list>]) AND metadata->'academicConcepts' IS NOT NULL;` should return 7
+
+- **Pre-PROD-apply MCP probe pattern** (Session 46 + 47 precedent) — same probes via `mcp__supabase-remote__execute_sql` AS A READ before approving PROD migration workflow. Belt-and-braces: TEST↔PROD diff via same query body to spot-check both surfaces.
+
+- **Post-PROD verify** — same probes via `mcp__supabase-remote__execute_sql` after PROD migrations applied. Mandatory per kickoff hard rule (CI verify-step has known SASL flake).
+
+- **Watch the migrate-production.yml SASL flake on apply step.** PR 4 has 4 migrations applying together (vs the typical 1-2). If the apply step flakes, `gh run rerun --failed <run_id>` is the working primitive (per memory's hygiene-follow-ups). Approval gate re-fires for re-approval. Migrations are idempotent (`CREATE OR REPLACE` + `IF NOT EXISTS` + `AND retired_at IS NULL` guards) so retry is safe.
+
+- **Bot review rounds expected.** PR 1 had 5 rounds; PR 2 had 5 rounds. PR 4 should be lighter (smaller diff + cleaner separation of concerns) but expect 2-3 rounds at minimum. Round-cap after 2 per kickoff.
 
 ### Session 47 — 2026-05-08 — PR 4 cycle started: 21 imports soft-retired + 7 concepts recovered + FSA retitle (migrations local-only)
 
