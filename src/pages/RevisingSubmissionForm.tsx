@@ -180,6 +180,7 @@ export function RevisingSubmissionForm() {
               onClear={() => setSelectedLesson(null)}
               cantFindOption
               onCantFind={() => setCantFind(true)}
+              excludeRetired
             />
           )}
         </div>

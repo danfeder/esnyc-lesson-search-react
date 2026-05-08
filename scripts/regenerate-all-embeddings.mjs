@@ -67,11 +67,12 @@ async function regenerateAllEmbeddings() {
   console.log('=' .repeat(60));
 
   try {
-    // 1. Get all lessons
+    // 1. Get all live lessons (skip soft-retired imports per PR 4)
     console.log('📋 Fetching all lessons...');
     const { data: lessons, error: fetchError } = await supabase
       .from('lessons')
       .select('lesson_id, title, content_text, content_embedding')
+      .is('retired_at', null)
       .order('created_at', { ascending: false });
     
     if (fetchError) throw fetchError;
@@ -150,11 +151,12 @@ async function regenerateAllEmbeddings() {
     console.log(`❌ Failed: ${failCount} embeddings failed`);
     console.log(`⏭️  Skipped: ${skipCount} (no content)`);
     
-    // 6. Verify
+    // 6. Verify (live corpus only — soft-retired rows excluded per PR 4)
     const { data: finalCheck } = await supabase
       .from('lessons')
       .select('lesson_id')
-      .is('content_embedding', null);
+      .is('content_embedding', null)
+      .is('retired_at', null);
     
     if (finalCheck && finalCheck.length > 0) {
       console.log(`\n⚠️  ${finalCheck.length} lessons still missing embeddings`);
@@ -202,11 +204,12 @@ async function createMockEmbeddings() {
   console.log('=' .repeat(60));
   
   try {
-    // Get all lessons
+    // Get all live lessons (skip soft-retired imports per PR 4)
     const { data: lessons } = await supabase
       .from('lessons')
       .select('lesson_id, title, content_text')
-      .not('content_text', 'is', null);
+      .not('content_text', 'is', null)
+      .is('retired_at', null);
     
     console.log(`Found ${lessons.length} lessons to process\n`);
     

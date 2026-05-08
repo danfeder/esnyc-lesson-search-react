@@ -130,6 +130,7 @@ async function generateEmbeddings() {
       .select('*')
       .not('content_text', 'is', null)  // Must have content
       .is('content_embedding', null)     // But no embedding yet
+      .is('retired_at', null)            // PR 4: skip soft-retired imports
       .order('lesson_id');
 
     if (fetchError) throw fetchError;
@@ -235,16 +236,19 @@ async function generateEmbeddings() {
       }
     }
 
-    // Verify results
+    // Verify results (live corpus only — soft-retired rows are intentionally
+    // skipped per PR 4 so they don't inflate denominators).
     console.log('\n🔍 Verifying embeddings...');
     const { count: totalCount } = await supabase
       .from('lessons')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .is('retired_at', null);
 
     const { count: embeddedCount } = await supabase
       .from('lessons')
       .select('*', { count: 'exact', head: true })
-      .not('content_embedding', 'is', null);
+      .not('content_embedding', 'is', null)
+      .is('retired_at', null);
 
     const totalTime = (Date.now() - startTime) / 1000;
     const actualCost = ((processed * (totalTokens / lessons.length)) / 1000) * 0.00002;

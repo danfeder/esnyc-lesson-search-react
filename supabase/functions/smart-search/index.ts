@@ -153,7 +153,12 @@ serve(async (req) => {
     // Build the base query
     let supabaseQuery = supabaseClient
       .from('lessons_with_metadata')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact' })
+      // PR 4: exclude soft-retired imports from user-facing search.
+      // The `lessons_with_metadata` view is intentionally not filtered;
+      // detect-duplicates / get_lesson_details_for_review need to keep
+      // seeing retired rows so reviewers catch future re-submissions.
+      .is('retired_at', null);
 
     // Apply smart text search if query exists
     if (query && query.trim()) {

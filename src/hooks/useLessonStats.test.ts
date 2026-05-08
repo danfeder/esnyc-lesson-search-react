@@ -18,18 +18,22 @@ vi.mock('@/utils/logger', () => ({
   },
 }));
 
-// Typed mock helper for Supabase select queries
+// Typed mock helper for Supabase select queries.
+// Chain shape (post-PR-4): from(...).select(...).is('retired_at', null)
+// The `is()` call is the terminal awaited call; select returns an object
+// with `is`, and `is` returns the Promise.
 interface MockSelectResult {
   count: number | null;
   error: { message: string } | null;
 }
 
 function createMockSelectQuery(result: MockSelectResult | Promise<MockSelectResult>) {
-  const selectMock = vi
-    .fn()
-    .mockReturnValue(result instanceof Promise ? result : Promise.resolve(result));
+  const promise = result instanceof Promise ? result : Promise.resolve(result);
+  const isMock = vi.fn().mockReturnValue(promise);
+  const selectMock = vi.fn().mockReturnValue({ is: isMock });
   return {
     mock: selectMock,
+    isMock,
     chain: { select: selectMock } as unknown as ReturnType<typeof supabase.from>,
   };
 }
@@ -102,7 +106,7 @@ describe('useLessonStats', () => {
     });
 
     it('calls supabase with correct parameters', async () => {
-      const { mock, chain } = createMockSelectQuery({ count: 100, error: null });
+      const { mock, isMock, chain } = createMockSelectQuery({ count: 100, error: null });
       mockSupabase.from.mockReturnValue(chain);
 
       renderHook(() => useLessonStats());
@@ -112,6 +116,8 @@ describe('useLessonStats', () => {
       });
 
       expect(mock).toHaveBeenCalledWith('*', { count: 'exact', head: true });
+      // PR 4: live-corpus filter excludes soft-retired imports.
+      expect(isMock).toHaveBeenCalledWith('retired_at', null);
     });
   });
 
@@ -166,7 +172,9 @@ describe('useLessonStats', () => {
     });
 
     it('handles thrown exceptions', async () => {
-      const selectMock = vi.fn().mockRejectedValue(new Error('Network error'));
+      // Rejection happens at the terminal `is()` call (post-PR-4 chain shape).
+      const isMock = vi.fn().mockRejectedValue(new Error('Network error'));
+      const selectMock = vi.fn().mockReturnValue({ is: isMock });
       mockSupabase.from.mockReturnValue({ select: selectMock } as unknown as ReturnType<
         typeof supabase.from
       >);
@@ -181,7 +189,8 @@ describe('useLessonStats', () => {
     });
 
     it('handles non-Error exceptions with fallback message', async () => {
-      const selectMock = vi.fn().mockRejectedValue('string error');
+      const isMock = vi.fn().mockRejectedValue('string error');
+      const selectMock = vi.fn().mockReturnValue({ is: isMock });
       mockSupabase.from.mockReturnValue({ select: selectMock } as unknown as ReturnType<
         typeof supabase.from
       >);
@@ -197,7 +206,8 @@ describe('useLessonStats', () => {
 
     it('logs error when fetch fails', async () => {
       const testError = new Error('Network error');
-      const selectMock = vi.fn().mockRejectedValue(testError);
+      const isMock = vi.fn().mockRejectedValue(testError);
+      const selectMock = vi.fn().mockReturnValue({ is: isMock });
       mockSupabase.from.mockReturnValue({ select: selectMock } as unknown as ReturnType<
         typeof supabase.from
       >);
