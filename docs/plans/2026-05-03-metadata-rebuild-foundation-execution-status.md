@@ -1,44 +1,39 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 51 (PR 4 SHIPPED + PROD-applied + verified; foundation-phase substrate complete through PR 4).
+**Last updated:** 2026-05-08 — Session 52 (PR 3a cycle started; archival done + Task 3a.1 decision locked).
 
-> **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-46 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
+> **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 4 (corpus cleanup) — SHIPPED + PROD-applied + verified.** PR #478 squash-merged 2026-05-08 21:47:58 UTC as `03970d0`. Both PROD workflows succeeded first-try (no SASL flake on `migrate-production.yml` apply step; no esm.sh CDN flake on `deploy-edge-functions.yml` matrix).
+**PR 3a (search infra) — IN PROGRESS, branch up.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge). 3 commits ahead of main: 2 cherry-picked Session 51 docs from the merged PR 4 branch (`92f5636` Session 51 main + `d9377f9` Session 51 follow-up correcting Stage 1 worksheet framing) + Session 52 archival commit (`ceb5aa8`). Type-check + lint clean baseline.
 
-**Pre-PROD MCP probe (Session 51, before merge):** confirmed clean PROD pre-state — `retired_at`/`retired_reason` columns absent, 7 concept-recovery targets all NULL/missing, FSA still had original "& 2" title, 788 total lessons. Session 46/47/48 precedent applied as expected.
+**Foundation-phase substrate live in PROD:** PR 1 + PR 1b + PR 2 + PR 4 all shipped + PROD-applied + verified. PR 4's full substrate (soft-retire columns + 21 retired imports + 7 concept-recovery rows + FSA Pt 1 retitle + 8 user-facing filter surfaces) verified Session 51 via 9-probe MCP query. Stage 1 worksheets DO NOT YET EXIST (verified Session 51 post-merge); PR 5 stays gated until heritage + concepts worksheets land.
 
-**Post-PROD verification (Session 51, after both PROD workflows succeeded):** 9/9 substance probes PASS on `mcp__supabase-remote__execute_sql` — P1 retired=21 ✓, P2 distinct_reasons=7 ✓, P3 FSA title='Food System Advocates (Part 1)' ✓, P4 view exposes both new cols ✓, P5 view_live_count=767 ✓ (= 788 − 21), P6 7/7 concepts populated with object shape ✓, P7 no array-shape archive concepts ✓, P8 7 cluster-key namespaces (`import:cas_food_justice / import:city_blossoms_botanical_artists / import:foodcorps_2017 / import:nyc_dep_watershed / import:nyc_doe_colonial_ny / import:oregon_doe_leaves / import:pflp_2003`) ✓, P9 search_lessons total_count=767 ✓.
+**Task 3a.1 (smart-search drift resolution) — DECIDED 2026-05-08 Session 52: Option B (drop the TS hardcoded list, read from DB).**
 
-**3-signal edge function verification (Session 51):** all 3 functional-change slugs deployed correctly — `smart-search` v24 + `search-lessons` v22 + `process-submission` v32 all show `.is('retired_at', null)` source content with the expected explanatory comments. (`detect-duplicates` had F4 comment-only intent-guard additions; redeployed in same workflow run, no functional change to verify.)
+Refactor `smart-search/index.ts` to query `search_synonyms` table at request time. Drop the hardcoded `searchSynonyms` (~30 entries at lines 18-59) + `spellingSuggestions` (~13 entries at lines 62-75) objects entirely. One-time seed migration takes the existing TS dictionary content and inserts it into `search_synonyms` with the right `synonym_type` (`bidirectional` for synonyms, `typo_correction` for spelling suggestions — both already exist in the column's CHECK constraint per baseline migration line 1995) so suggestion chips don't regress when the TS layer comes out. Single source of truth going forward; ±10-30ms latency cost per smart-search call accepted as the price of zero drift risk. **Decision rationale:** 2 sources of truth (TS + DB) is the architectural debt; concept-derived synonyms in PR 3b / PR 6+ will populate the DB layer; keeping a TS mirror would require continuous re-sync indefinitely.
 
-**Foundation-phase substrate after PR 4 ships:** PR 1 + PR 1b + PR 2 substrate + soft-retire columns on `lessons` + `lessons_with_metadata` view exposes them + 21 imports retired (7 cluster-key namespaces above) + 7 archive-only concepts restored + FSA Pt 1 retitle + 8 user-facing filter surfaces (search_lessons RPC + smart-search + search-lessons + useLessonStats + LessonSearchPicker submitter path + RevisingSubmissionForm + process-submission server-side validation + 2 embedding scripts) + 6 intentionally-unfiltered surfaces (detect-duplicates + ReviewDetail + ReviewDashboard + get_lesson_details_for_review + supabase.ts connectivity test + view itself) + `LessonSearchPicker.excludeRetired` prop infrastructure.
+**Pre-Task-3a.4 verification (do FIRST when picking up Task 3a.4 — the smart-search drift fix):**
+- Query `search_synonyms` current row count + sample content via `mcp__supabase-test__execute_sql` AND `mcp__supabase-remote__execute_sql` (TEST + PROD diff). Check overlap with the TS dictionary's ~58 entries — some may already be in DB.
+- Decide on conflict-handling for the seed migration: skip-existing (`ON CONFLICT DO NOTHING`) vs replace-existing (`ON CONFLICT DO UPDATE`) vs fail-on-conflict (require empty target). Preferred default: `ON CONFLICT DO NOTHING` (idempotent + non-destructive).
+- Confirm `expand_search_with_synonyms` SQL function (defined in baseline migration line 161 of `20251001_production_baseline_snapshot.sql`) handles the new bulk row count without performance regression. Today's table is small; post-seed adds ~58 rows; not expected to be load-bearing on perf, but worth a sanity check.
+- Per `feedback_verbatim_identifiers_in_probes.md`: when verifying the seed migration's outcome, copy term values verbatim from the migration body, not from memory.
 
-**Stage 1 worksheets — confirmed NOT YET STARTED (Session 51 post-merge discovery).** No worksheet artifacts exist on disk anywhere (`docs/plans/`, top-level dirs, etc.). The decision journal's wrap-up note (Session 9, 2026-05-03) listed "D1 content layer (Stage 1 heritage worksheet round)" as remaining work; foundation-phase implementation track has stayed on code work since then. Per design doc §5, the worksheet methodology is *"Claude drafts per-field canonical worksheets using `~/cCode/taggingv3/esynyc-taxonomy-schema-v2.md` as baseline + a corpus audit (Counter-style); 2 expert reviewers + user validate / amend / reject."* Claude is part of the worksheet-creation work, not just a consumer of validated worksheets.
+**Next session picks up Task 3a.2** (`search_vector` regeneration migration including `academicConcepts`). Per impl plan §741: create migration `<YYYYMMDDHHMMSS>_search_vector_with_concepts.sql`; verify via TEST DB FTS query for a known academic concept. Suggested PR 3a sequencing: 3a.2 (search_vector) → 3a.3 (embeddings script update) → 3a.4 (smart-search refactor + seed migration) → 3a.5 (PR ritual). 3a.2 and 3a.4 are independent — either can ship first within the PR. Suggested order picks 3a.2 first because it's the smallest scoped task and gives momentum before the larger smart-search refactor.
 
-**Next session picks up — start the next PR cycle.**
+**Remaining foundation-phase PRs in scope:**
+- **PR 3a** (this work, in progress): `search_vector` + embeddings + smart-search drift fix.
+- **PR 3b** (later): `search_synonyms` population with concept-derived everyday↔framework pairs. Folds into PR 6+; depends on Stage 2 re-tag outputs.
+- **PR 5+** (later): D4 vocab canonicalization (Title Case canonical across ~10 vocab fields; Pydantic on all 17 fields). **Depends on Stage 1 worksheet outputs** — gated until at least heritage + concepts worksheets land.
+- **PR 6+** (later): Stage 2 corpus re-tag + reviewer validation flow.
 
-The remaining foundation-phase PRs in scope (per kickoff WHERE THINGS LIVE):
-- **PR 3a** (search infra now): `search_vector` + embeddings + smart-search drift fix. Independent of Stage 1 — does NOT gate on curriculum-team worksheet outputs. **Ready to start anytime; the obvious unblocked code item.**
-- **PR 3b** (search synonym population): folds into PR 6+; depends on Stage 2 re-tag outputs.
-- **PR 5+** (D4 vocab canonicalization): Title Case canonical across ~10 vocab fields; Pydantic on all 17 fields. **Depends on Stage 1 worksheet outputs** — gated until at least heritage + concepts worksheets land.
-- **PR 6+** (Stage 2 corpus re-tag + reviewer validation flow): depends on PR 5 + Stage 1 closure + Stage 2 reviewer-validation UX walk; flexible timing.
-
-**Stage 1 worksheet round** is its own multi-session initiative, not a single PR. Per design doc §4 it's a separate parallel work track. When started, scaffold the four-file pattern (design + impl plan + kickoff prompt + status doc) per `feedback_multi_session_execution.md` rather than rolling it into the foundation-phase status doc. Heritage is first (~78 values; design doc estimates 300-500 Opus lesson-reads + novelty pass + reviewer/user validation hours); concepts (~211 values, biggest) second; ~8 smaller fields after. Total estimate: weeks-to-months of curriculum-team time.
-
-**Recommended Session 52 first move:** PR 3a (search infra). It's the cleanest continuation of foundation-phase rhythm, unblocks tangible benefits (academicConcepts searchability + smart-search synonym drift fix), and runs through the established PR ritual (1-3 sessions). Stage 1 worksheet kickoff is bigger work that benefits from a separately-scaffolded multi-session initiative — best taken on after PR 3a ships.
-
-**First-task ritual for Session 52:**
-1. **PR-cycle archival** — per kickoff session-end ritual step 5: move Sessions 47-51 (PR 4 cycle) from active execution-status.md → archive file. Audit each entry for any process learnings worth promoting to `feedback_*.md` files OR hygiene follow-ups worth promoting to MEMORY.md before moving.
-2. **Cherry-pick Session 51 docs commit (`c02e22c`)** from `feat/metadata-foundation-corpus-cleanup` to the new PR 3a branch (Session 47 precedent — the merged-branch session-end docs commit bundles into the next PR).
-3. **Branch off updated `main`** at `03970d0` as `feat/metadata-foundation-search-infra` (or similar) for PR 3a.
-4. **Read implementation plan PR 3a section** before scoping — verify scope still matches design intent + corpus state after PR 4.
+**Stage 1 worksheet round** is its own multi-session initiative, not a single PR. Per design doc §4 it's a separate parallel work track. When started, scaffold the four-file pattern (design + impl plan + kickoff prompt + status doc) per `feedback_multi_session_execution.md` rather than rolling it into the foundation-phase status doc. Heritage is first (~78 values); concepts (~211 values, biggest) second; ~8 smaller fields after.
 
 **Branches:**
 - `main` at `03970d0` (PR 4 squash-merge); origin matches
-- `feat/metadata-foundation-corpus-cleanup` — PR #478 MERGED; the Session 51 session-end docs commit is local-only on this branch waiting to be cherry-picked into the next PR. Do NOT delete this branch until the cherry-pick happens.
+- `feat/metadata-foundation-search-infra-3a` — current PR 3a branch (3 commits ahead of main; Task 3a.1 decision documented here + archival commit landed; no code work yet)
+- `feat/metadata-foundation-corpus-cleanup` — PR #478 MERGED; Session 51 docs commits cherry-picked into PR 3a branch Session 52. **SAFE TO DELETE** (local + origin both fine to remove).
 - `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — all deletable at convenience
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
@@ -108,7 +103,35 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 
 ## Recent session log
 
-_(Session 47-51 entries archived to `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md`. Session 52 entry will land at session-end.)_
+### Session 52 — 2026-05-08 — PR 3a cycle started: archival + branch setup + Task 3a.1 decision (Option B locked)
+
+**Done (2 cherry-pick commits + 1 archival commit + 1 feedback memory promotion + this session-end docs commit):**
+
+- **Branch setup**: pulled main → `03970d0` (PR 4 squash-merge); branched as `feat/metadata-foundation-search-infra-3a`; cherry-picked `c02e22c` (Session 51 main docs) + `d4cc621` (Session 51 follow-up correcting Stage 1 worksheet framing) from the merged PR 4 branch (renumbered as `92f5636` + `d9377f9` after the cherry-pick). Branch is now 3 commits ahead of main. Session 47 precedent followed (cherry-pick merged-branch session-end docs into next PR).
+
+- **PR-cycle archival**: per kickoff session-end ritual step 5, Sessions 47-51 (PR 4 cycle) moved from active execution-status.md → archive file. Archive grew by 248 lines (now 2258 lines); active shrank by 252 lines (now 115 lines pre-Session-52-log-entry). Session 49's missing header (Session 49 docs commit `786203b` shipped without `### Session N — date — title`) reconstructed from commit message and inserted at archive time.
+
+- **Process-learning promotion**: hallucinated-IDs-in-migration-outcome-probes pattern (recurred 2× in PR 4 — Sessions 49 + 50) promoted to new feedback memory `feedback_verbatim_identifiers_in_probes.md` per kickoff "audit each entry for promotions" rule. MEMORY.md updated with pointer entry under Working preferences. Other PR 4 watch-pattern candidates (active-doc-vs-live-PR reconciliation / UNSTABLE-merge-state precedent / don't-assert-track-status-without-checking) retained as candidates pending recurrence per Session 51's framing — single-occurrence threshold not met.
+
+- **Task 3a.1 decision (smart-search drift resolution)**: Option B locked (drop TS hardcoded list, read from DB). Smart-search edge fn will be refactored to read `search_synonyms` from DB at request time; ~58 hardcoded TS entries (lines 18-75) will be seeded into the DB via a one-time migration. See Current State for the full decision context + pre-Task-3a.4 verification list.
+
+- **Pre-flight reads** (from kickoff §HARD RULES + impl plan PR 3a pre-flight): confirmed current state of `smart-search/index.ts:18-75` (TS hardcoded), `scripts/generate-embeddings.mjs:81-91` (currently embeds themes / heritage / skills / ingredients but NOT concepts → Task 3a.3 fixes), decision journal D5 §305-348 (drift resolution sub-question at line 330; smart-search edge fn rewrite scoped at line 345), and the baseline migration's `expand_search_with_synonyms` definition (line 161 of `20251001_production_baseline_snapshot.sql`).
+
+**Decisions made:**
+
+- **Option B for smart-search drift** (over Option A "populate both layers" or Option C "hybrid with caching"). Architectural cleanliness over minor request-latency cost. Concept-derived synonyms arriving in PR 3b / PR 6+ will populate the DB layer; keeping a TS mirror would require continuous re-sync indefinitely. Hybrid (Option C) was rejected as premature optimization for a low-traffic edge fn.
+
+- **Promote hallucinated-IDs pattern over "leave as candidate"** despite Session 51's default of waiting for additional recurrence. Concentrated 2× recurrence within ONE PR cycle (Sessions 49 + 50) suggested active risk; the rule is concrete and short; promotion cost minimal. Session 51's "single occurrence" gating doesn't apply since the pattern hit twice.
+
+**Process notes for Session 53+:**
+
+- **Pre-Task-3a.4 verification is load-bearing.** Before writing the smart-search refactor + seed migration, verify the current `search_synonyms` row count + content via TEST + PROD MCP. The seed migration's conflict-handling depends on this.
+
+- **Task ordering inside PR 3a is flexible.** 3a.2 (search_vector regen) and 3a.4 (smart-search refactor) are independent — either can ship first within the PR. Suggested sequence is 3a.2 → 3a.3 → 3a.4 → 3a.5 because the search_vector migration is the smallest scoped task and gives momentum before the larger refactor.
+
+- **PR 3a is a "small substrate + 2 small touchpoints" PR**, not a multi-task megapush like PR 1 or PR 4. Expect 1-3 sessions to complete + 1 round of bot review at most. No DB-wide schema changes; lower migration risk than prior PRs.
+
+- **Seed migration's idempotency**: per foundation-phase pattern across all migrations, the seed migration must handle re-running gracefully (`INSERT ... ON CONFLICT DO NOTHING` preferred default).
 
 ### Sessions 18-51 — archived
 
