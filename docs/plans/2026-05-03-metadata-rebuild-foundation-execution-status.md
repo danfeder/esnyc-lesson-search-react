@@ -1,12 +1,12 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 55 (Task 3a.4 shipped — smart-search reads search_synonyms from DB; PR #479 opened).
+**Last updated:** 2026-05-08 — Session 56 (Task 3a.5 round 1 fix-ups shipped — Apple Story drift repair + _flatten guard + smart-search fallback; PR #479 awaiting Round 2 bot reviews).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 3a (search infra) — PR #479 OPEN, awaiting bot reviews.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge); **9 commits ahead of main + 1 unpushed Session-55 docs commit** (next push bundles fix-ups + this docs entry per `feedback_no_docs_push_during_pr.md`). Recent commits: Session 53 Task 3a.2 ship (`9a21354`) → Session 54 Task 3a.3 ship (`81b5d2e`) → **Session 55 Task 3a.4 ship (`4595235`) — smart-search edge fn now reads `search_synonyms` from DB at request time + 13-row seed migration with whitespace CHECK constraint**. Type-check + lint clean baseline. PR opened at https://github.com/danfeder/esnyc-lesson-search-react/pull/479.
+**PR 3a (search infra) — PR #479 OPEN, Round 1 fix-ups landing.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge); **10 commits ahead of main + 1 unpushed Session-55 docs commit + 1 unpushed fix-up commit + 1 unpushed Session-56 docs commit** (next push bundles all three per `feedback_no_docs_push_during_pr.md`). Recent commits: Session 54 Task 3a.3 ship (`81b5d2e`) → Session 55 Task 3a.4 ship (`4595235`) → **Session 56 Round-1 fix-ups (`010f0ea`) — Apple Story drift repair migration + _flatten_academic_concepts defensive guard migration + smart-search fetchSynonyms try/catch fallback**. Type-check + lint clean baseline. PR remains at https://github.com/danfeder/esnyc-lesson-search-react/pull/479.
 
 **Foundation-phase substrate live in PROD:** PR 1 + PR 1b + PR 2 + PR 4 all shipped + PROD-applied + verified. PR 4's full substrate (soft-retire columns + 21 retired imports + 7 concept-recovery rows + FSA Pt 1 retitle + 8 user-facing filter surfaces) verified Session 51 via 9-probe MCP query. Stage 1 worksheets DO NOT YET EXIST (verified Session 51 post-merge); PR 5 stays gated until heritage + concepts worksheets land.
 
@@ -15,20 +15,32 @@
 - ✅ Task 3a.2 — search_vector regeneration migration shipped Session 53 (`9a21354`).
 - ✅ Task 3a.3 — generate-embeddings includes academicConcepts shipped Session 54 (`81b5d2e`).
 - ✅ Task 3a.4 — smart-search refactor + seed migration shipped Session 55 (`4595235`); PR #479 opened.
-- ⏳ Task 3a.5 — PR ritual: bot reviews, four-surface comment triage, fix-ups, TEST DB verification, merge.
+- ⏳ Task 3a.5 — PR ritual: **Round 1 bot reviews triaged + fix-ups committed (`010f0ea`)**; pending push, Round 2 bot reviews, post-CI TEST DB verification, merge.
+
+**Round 1 fix-ups (commit `010f0ea`) — ALL 3 findings investigated + addressed:**
+- **Codex P1 (BLOCKER) ACCEPTED:** Apple Story (`lesson_2d43fc76...`) had column-empty `season_timing` + drifted metadata `seasonTiming = ["end-of-year"]`. The `UPDATE lessons SET metadata = metadata` backfill in `20260521000000` line 121 fired `lessons_normalize_write_trg` §G, derived `{end-of-year}` for the column, hit `valid_seasons` CHECK (Title Case enum). CI E2E aborted at statement 8 with SQLSTATE 23514. **Fix:** new migration `20260520120000_season_timing_drift_repair_2.sql` slots BEFORE `20260521000000` and strips non-canonical seasonTiming key from any matching row (column-empty + non-canonical metadata value). Pattern-based, idempotent, forward-only. Mirrors PR #475 round 2 precedent (`20260511120000_season_timing_drift_repair.sql`) minus the now-defunct `lessonFormat` predicate. **Apple Story is the ONLY row affected on TEST AND PROD** — confirmed via 4 MCP probes (TEST + PROD audits + non-empty-array filter + valid_seasons enum check).
+- **Codex P2 (defensive) ACCEPTED:** `_flatten_academic_concepts` uses `jsonb_each(COALESCE(p_concepts, '{}'::jsonb))` — handles SQL NULL but errors on JSON null / arrays / strings / numbers. Zero rows trigger today (TEST 684 object + 88 SQL-NULL; PROD 697 object + 91 SQL-NULL), but the helper is in the FTS trigger path. **Fix:** new migration `20260523000000_flatten_academic_concepts_safer.sql` slots AFTER `20260522000000` and CREATE OR REPLACEs the helper with `CASE WHEN jsonb_typeof(p_concepts) = 'object' THEN p_concepts ELSE '{}'::jsonb END` wrapping both `jsonb_each` calls. Function signature unchanged so the trigger picks up the new body automatically. Verified locally with 10-input test (NULL / JSON null / array / string / number / boolean / empty obj / canonical / non-array value) — all pass without erroring.
+- **Claude Medium (resilience) ACCEPTED:** `fetchSynonyms()` failure throws → outer catch returns 500. Pre-refactor TS dictionary made expansion infallible. **Fix:** wrap `await fetchSynonyms(supabaseClient)` in try/catch in `smart-search/index.ts`; failures degrade to empty `synonyms` array (the variable's pre-loop init), which `buildSmartSearchQuery` accepts cleanly. Restores prior resilience for synonyms-RLS-misconfig narrow case.
+- **Claude Medium #4 (anon SELECT not verified) REJECTED:** already verified Session 55 + RLS policy + anon grants confirmed. Codex agrees.
+- **Claude Low items REJECTED** per default-reject hardening (`feedback_pr_bot_review_workflow.md`): `.trim()` redundancy / ORDER BY consistency / `--lesson-ids` parsing / `requireNonProd` bypass / `pico-gallo` semantics / `halloween-spring` semantics — all trivial or already-acknowledged tradeoffs.
+- **Pre-existing dead `if`** (claude flagged) — already documented as out-of-scope follow-up below; preserved verbatim per the locked B-b decision.
+- **Test coverage gap for `expandSearchTerms` / `test-prepare-lesson-text.mjs` not in CI / fixture ordering** — captured as out-of-scope follow-ups below.
+
+**Pre-Task-3a.5-Round-2 verification list (do FIRST when picking up PR ritual after Round 2 bots land):**
+- **Wait for Round 2 bot reviews** on PR #479 after the fix-up push. Round 2 may surface follow-on issues; round-cap rule says fix only critical bugs after 2 rounds.
+- **TEST DB re-verification** (per `feedback_per_round_test_db_verification.md`): once CI re-applies all migrations to TEST:
+  - Confirm Apple Story repair: `SELECT metadata ? 'seasonTiming' FROM lessons WHERE lesson_id = 'lesson_2d43fc766fa14401b48065f167003ded'` should be `false` (key stripped).
+  - Confirm `_flatten_academic_concepts` body: `SELECT pg_get_functiondef(oid) FROM pg_proc WHERE proname = '_flatten_academic_concepts'` should contain the `CASE WHEN jsonb_typeof(p_concepts) = 'object'` guard.
+  - Confirm `search_synonyms` count = 73 (60 existing + 13 new).
+  - Confirm each of the 6 affected terms (christmas / thanksgiving / halloween / easter / latino / hispanic) produces valid tsquery via `to_tsquery('english', expand_search_with_synonyms(...))`.
+  - Confirm CHECK constraint rejects multi-word INSERT.
+- Per `feedback_verbatim_identifiers_in_probes.md`: copy lesson_id values + term values verbatim from migration sources, never from memory.
 
 **Task 3a.4 sub-decisions (load-bearing for any future contributor reading commit `4595235`):**
 - **Read mechanism = B-b** (preserves current behavior: edge fn reads raw table; bidirectional/oneway/typo branching re-implemented in TS; `:*` prefix matching + plural munging preserved verbatim).
 - **Migration scope = β** (add 13 distinct (term, synonym_type, synonyms) combinations the TS dictionary covered that the DB lacked). Pre-task probe of TEST + PROD found 60 existing rows already richer than the TS list except for these 13 entries.
 - **Multi-word phrase handling = Option 1 + Option 7** (locked via external senior-dev consult): tokenize multi-word phrases (`winter celebration` → `winter` + `celebration`) AND add CHECK constraint preventing future whitespace values. The pre-existing TS dictionary was emitting `winter celebration:*` to Postgres tsquery which always errored — anyone searching christmas/easter/halloween/thanksgiving/latino/hispanic was getting 500s from smart-search. The DB's pre-seeded 60 rows correctly avoided multi-word values; this migration extends that convention.
 - **CHECK separator = empty string `''`, NOT the senior-dev's E'\x1f' suggestion.** Empirical diagnostic probe showed Postgres' `\s` regex AND `[[:space:]]` BOTH match `0x1f` (Unit Separator); the recommended E'\x1f' separator produces false positives on every multi-element array. Empty separator concatenates synonyms directly with no boundary char; whitespace inside any individual synonym still surfaces. Migration body comment captures this rationale fully.
-
-**Pre-Task-3a.5 verification (do FIRST when picking up the PR ritual):**
-- **Wait for bot reviews to land** on PR #479 (CodeRabbit + Claude long-form + Codex typically settle within 5-15 min after PR open; check `gh pr view 479 --comments` + `gh api repos/danfeder/esnyc-lesson-search-react/pulls/479/reviews` + `gh api repos/.../pulls/479/comments` per `feedback_pr_comment_surfaces.md`).
-- **TEST DB verification** (per `feedback_per_round_test_db_verification.md`): once CI applies migration to TEST, run `mcp__supabase-test__execute_sql` to verify count = 73 (60 existing + 13 new); verify each of the 6 affected terms (christmas / thanksgiving / halloween / easter / latino / hispanic) produces a valid tsquery via `to_tsquery('english', expand_search_with_synonyms(...))`; verify CHECK constraint rejects multi-word INSERT.
-- Per `feedback_verbatim_identifiers_in_probes.md`: copy term values verbatim from migration source, never from memory.
-
-**Pre-existing dead code observation (recorded as out-of-scope follow-up below):** `supabase/functions/smart-search/index.ts:75` has an inner `if (term.endsWith('s')) { expandedTerms.add(term.substring(0, term.length - 1)); }` that adds a value already added 3 lines earlier (Set no-op). Pre-existing in `81b5d2e:smart-search/index.ts:100-104`; refactor preserved verbatim per the locked B-b decision. The OLD comments suggest the author intended `-es` or `-ies` plural-specific stripping that was never actually implemented. Pre-push reviewer flagged this; the author's actual intent for the inner branch is unknown, so a real fix needs investigation. Out of scope for Task 3a.4.
 
 **Remaining foundation-phase PRs in scope:**
 - **PR 3a** (this work, PR #479 open): `search_vector` + embeddings + smart-search drift fix.
@@ -109,6 +121,12 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 
 - **Senior-dev's E'\x1f' separator suggestion empirically wrong; documented in migration body.** The PR 3a Task 3a.4 senior-dev consult recommended `array_to_string(synonyms, E'\x1f')` for the CHECK constraint expression because they assumed Unit Separator (0x1f) is a non-printable non-whitespace separator. Local diagnostic probe revealed Postgres' AREs treat `\x1f` (and other low-ASCII control chars) as whitespace, despite POSIX C locale not classifying them as such. The migration uses empty separator `''` instead with full rationale in body comments. Worth documenting somewhere durable that "E'\x1f' is matched by `\s` in PG regex" so future contributors don't repeat the mistake — could go in the migration body, in a hypothetical regex-cheatsheet comment in `_shared/`, or as a lint rule. Low priority. (Source: Session 55.)
 
+- **Missing unit-test coverage for `expandSearchTerms` (smart-search/index.ts).** Surfaced by claude-review on PR #479 round 1. The refactored signature `expandSearchTerms(query, synonyms)` accepts an in-memory `SynonymRow[]` and is fully testable in isolation (no DB dependency). Cleanest path: Vitest spec covering (a) bidirectional reverse lookup, (b) oneway one-direction expansion, (c) typo_correction expansion, (d) prefix-variant behavior for >4-char terms, (e) plural-munging branch (or empty array if the dead inner `if` is removed first). Out of scope for the round-1 fix-up; worth a focused smart-search hygiene PR alongside the dead-`if` cleanup follow-up already on this list. (Source: Session 56 PR #479 round 1.)
+
+- **`test-prepare-lesson-text.mjs` not in CI / fixture ordering assumption.** Surfaced by claude-review on PR #479 round 1. The standalone harness is functional locally but isn't wired into `npm run test`, so it won't catch shape regressions in CI. Two paths: (a) add `package.json:test:embeddings` script + invoke from CI, or (b) port the 4 fixtures to Vitest. The fixture ordering assumption (assertions check substring `'Concepts: Arts, visual arts, Science, ...'` which depends on `Object.entries` insertion order) only matters if the harness is ever run against live DB data — V8 preserves insertion order for inline string-keyed object literals, so the in-tree fixtures stay deterministic. Out of scope for the round-1 fix-up; bundle with the broader test-coverage hygiene PR. (Source: Session 56 PR #479 round 1.)
+
+- **tsquery operator injection from `search_synonyms` rows (defensive only, no current risk).** Surfaced by claude-review on PR #479 round 1. `buildSmartSearchQuery` appends `:*` to each term without sanitizing tsquery-special characters (`|`, `&`, `!`, `<`, `>`, `(`, `)`). The new CHECK constraint blocks whitespace but not those operators. Real risk minimal because only admins write to `search_synonyms` (RLS denies anon/authenticated INSERT; service-role-only). Worth considering an additional CHECK condition `term !~ '[|&!<>()]' AND array_to_string(synonyms, '') !~ '[|&!<>()]'` for defense in depth if a future migration ever needs to add tsquery-syntactically-fragile terms. Defensive only; no current need. (Source: Session 56 PR #479 round 1.)
+
 ## Pointers to durable context
 
 - **Kickoff prompt:** `docs/plans/2026-05-03-metadata-rebuild-foundation-kickoff.md` (paste at session start)
@@ -124,6 +142,66 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 56 — 2026-05-08 — PR #479 Round 1 fix-ups shipped (Apple Story drift + _flatten guard + smart-search fallback)
+
+**Done (1 fix-up commit + this Session-56 docs commit, both unpushed; bundle with prior unpushed Session-55 docs in next push):**
+
+- **Round 1 bot reviews investigated (4-surface query per `feedback_pr_comment_surfaces.md`):**
+  - `gh pr view 479 --comments` (issue-comments) — Netlify deploy preview / TEST DB dry-run / edge fn deploy / claude-review long-form / Codex pass-by-danfeder
+  - `gh api repos/.../pulls/479/reviews` — empty (no formal review summaries)
+  - `gh api repos/.../pulls/479/comments` (line-attached) — empty (no inline review comments)
+  - `gh pr checks 479` — E2E Tests RED (P1 blocker), Security Audit RED (known baseline), claude-review/claude-database-review/Test & Build/Test Coverage/Bundle/Lighthouse/CodeQL all green
+
+- **Round 1 findings triaged with empirical investigation per `feedback_bot_review_investigation.md`:**
+  - **Codex P1 (BLOCKER) — confirmed via 4 MCP probes + CI log inspection:**
+    - TEST + PROD audit: Apple Story (`lesson_2d43fc76...`) is the ONLY drifted row on both surfaces (`metadata.seasonTiming = ["end-of-year"]` + empty column).
+    - Migration history probe: `supabase_migrations.schema_migrations` on TEST shows applied through `20260520030000` only — `20260521000000` rolled back cleanly mid-apply.
+    - CI log: confirmed exact failure path — `lessons_normalize_write` derives `season_timing = {end-of-year}`, `valid_seasons` CHECK rejects, statement 8 aborts.
+    - Trigger logic confirmed: §G uses derive-from-metadata only when column is empty (Apple Story's case).
+  - **Codex P2 (defensive) — confirmed zero current impact via 2 MCP probes:** TEST 684 object + 88 SQL-NULL; PROD 697 object + 91 SQL-NULL. No JSON null / array / string / number rows. Defensive harden only.
+  - **Claude Medium (resilience) — confirmed via `smart-search/index.ts` code read:** `fetchSynonyms` throws → outer catch (line 186-198) returns 500. Pre-refactor TS dictionary made expansion infallible.
+  - **Claude Medium #4 (anon SELECT not verified) — REJECTED:** verified Session 55 + Codex agrees.
+  - **Claude Low items — REJECTED** per default-reject-hardening rule.
+
+- **3 fix-ups (commit `010f0ea`):**
+  - `supabase/migrations/20260520120000_season_timing_drift_repair_2.sql` — slots BEFORE `20260521000000`; pattern-based seasonTiming key strip; mirrors PR #475 round 2 precedent (`20260511120000_season_timing_drift_repair.sql`) minus `lessonFormat` predicate (defunct post-PR-1).
+  - `supabase/migrations/20260523000000_flatten_academic_concepts_safer.sql` — slots AFTER `20260522000000`; `CREATE OR REPLACE` adds `CASE WHEN jsonb_typeof(p_concepts) = 'object' THEN p_concepts ELSE '{}'::jsonb END` wrapper around both `jsonb_each` calls.
+  - `supabase/functions/smart-search/index.ts` — try/catch around `fetchSynonyms` call only; failures degrade to empty `synonyms` array (no expansion); restored prior resilience.
+
+- **Local validation:**
+  - `supabase db reset` clean (all 3 migrations + 2 new fix-up migrations apply).
+  - Migration B helper test: 10 input shapes (NULL / JSON null / `[]` / `[1,2,3]` / `"hello"` / `42` / `true` / `{}` / canonical / non-array value) — all pass without erroring; canonical output unchanged.
+  - Migration A WHERE-clause test: 10 cases (5 drift / 5 non-drift) — predicate matches drift only, leaves canonical / column-populated / empty-array / absent-key alone.
+  - `node scripts/test-prepare-lesson-text.mjs` — 4/4 PASS.
+  - `npm run type-check && npm run lint` — clean.
+  - `npm run test:rls` — 5/2 (same pre-existing baseline failures from Session 53; not related to PR 3a).
+
+- **Pre-push code-reviewer agent (Opus, `feature-dev:code-reviewer`):** No Critical or Major findings. Confirmed: Migration A WHERE clause precise (matches Apple Story shape, excludes canonical/column-populated/empty/absent), strip operator safe, idempotent, ASCII-lex timestamp slotting correct. Migration B handles all non-object cases without erroring, canonical-shape output unchanged, inner array-only filter still needed for non-array sub-values, grants survive `CREATE OR REPLACE`. smart-search try/catch correctly scoped (only around `fetchSynonyms`, not `buildSmartSearchQuery` or `textSearch`); `synonyms` defaults to `[]` cleanly. Trio together restores PR 3a to passing state.
+
+**Decisions made:**
+
+- **Codex P2 disposition: ship inline now (vs defer as out-of-scope follow-up).** User chose "ship inline" via AskUserQuestion. Reasoning: cost trivial (1 small CREATE OR REPLACE migration), value real for any future Stage 2 batch run that produces non-object academicConcepts shape (the Pydantic validators upstream are belt-and-braces, not load-bearing). User values DB safety highly per `feedback_data_safety_top_priority.md`.
+
+- **Fix-up shape: 2 migrations + 1 code change (vs 1 combined migration + 1 code change).** Two migrations because the helper `_flatten_academic_concepts` doesn't exist until `20260521000000` runs, so the harden cannot run before it. Cleanest path is: drift repair before `20260521000000`, helper harden after `20260522000000`. Single combined migration cannot achieve both timing constraints.
+
+- **Don't edit `20260521000000` body in-place** (per `database-migrations` skill rule + supabase/migrations/CLAUDE.md `STOP` block). Even though TEST + PROD never applied the file body successfully, the rule applies broadly to pushed migration files. New fix-up migrations only.
+
+**Process notes / observations:**
+
+- **Recurrence of bare-UPDATE-fires-trigger-on-drift bug class.** This is the SECOND occurrence in the foundation-phase initiative — first was PR #475 round 2 (Session 14, fixed via `20260511120000_season_timing_drift_repair.sql`), now PR #479 round 1 (Session 56, fixed via `20260520120000_season_timing_drift_repair_2.sql`). Pattern: any migration that does a bulk UPDATE on `lessons` to fire `lessons_normalize_write_trg` will hit `valid_seasons` CHECK on rows with column-empty + non-canonical metadata seasonTiming. The fix shape is identical (defensive WHERE-clause strip). Future migrations of this shape (Stage 2 re-tag, vocab canonicalization migrations in PR 5+) should pre-check for the drift before doing bulk metadata UPDATEs. **Watch-pattern, third recurrence promotes to feedback memory.** The precedent migration's body comment + this fix-up's body comment together serve as the durable documentation; future contributors who hit the same CHECK violation will land on either via grep for `valid_seasons` in `supabase/migrations/`.
+
+- **Per-PR ritual followed cleanly:** pre-push reviewer dispatched (Opus, no Critical/Major) → fix-ups stayed minimal → local validation comprehensive (5 separate verification surfaces) → status doc updated before push. The kickoff's 8-step ritual structure works well for a moderate-size fix-up cycle.
+
+- **Out-of-scope follow-ups captured below:** test coverage gap for `expandSearchTerms`, `test-prepare-lesson-text.mjs` not-in-CI / fixture ordering, tsquery operator injection defensive harden. None blocking; all candidates for a focused smart-search hygiene PR.
+
+**Process notes for Session 57+:**
+
+- **Push triggers Round 2 CI cycle.** Once pushed, CI re-applies migrations (now 5 pending: 3 from PR 3a head + 2 fix-ups). Round 2 bot reviews land 5-15 min after push. Round-cap rule: after 2 rounds, fix only critical bugs. So Round 2 is the LAST round of substantive iteration — anything after that should be ship-or-defer.
+
+- **TEST DB re-verification (per `feedback_per_round_test_db_verification.md`) is mandatory after CI applies.** Five probes listed in Current State header. Don't skip even if CI is green — same audit-query body that ran in this session can be re-run once TEST is updated.
+
+- **Bundle Session-56 docs + prior Session-55 docs + fix-up commit into one push.** Per `feedback_no_docs_push_during_pr.md`. Three commits going up at once.
 
 ### Session 55 — 2026-05-08 — Task 3a.4 shipped (smart-search reads search_synonyms from DB + whitespace constraint); PR #479 opened
 
