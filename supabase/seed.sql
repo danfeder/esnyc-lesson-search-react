@@ -162,9 +162,12 @@ ON CONFLICT (lesson_id) DO UPDATE SET
 
 INSERT INTO search_synonyms (term, synonyms, synonym_type)
 VALUES
-  ('tomato', ARRAY['tomatoes', 'cherry tomato', 'roma', 'heirloom'], 'bidirectional'),
+  -- Multi-word synonyms are tokenized into individual words to satisfy the
+  -- search_synonyms_lexemes_no_whitespace CHECK constraint added in
+  -- 20260522000000_seed_search_synonyms_from_smart_search.sql.
+  ('tomato', ARRAY['tomatoes', 'cherry', 'roma', 'heirloom'], 'bidirectional'),
   ('bread', ARRAY['loaf', 'dough', 'baking'], 'bidirectional'),
-  ('salsa', ARRAY['sauce', 'dip', 'pico de gallo'], 'bidirectional'),
+  ('salsa', ARRAY['sauce', 'dip', 'pico', 'gallo'], 'bidirectional'),
   ('garden', ARRAY['gardening', 'outdoor', 'growing'], 'bidirectional'),
   ('cook', ARRAY['cooking', 'prepare', 'make', 'chef'], 'bidirectional')
 ON CONFLICT DO NOTHING;
