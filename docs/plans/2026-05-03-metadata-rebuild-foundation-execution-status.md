@@ -1,32 +1,37 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 54 (Task 3a.3 shipped — generate-embeddings includes academicConcepts + verification harness).
+**Last updated:** 2026-05-08 — Session 55 (Task 3a.4 shipped — smart-search reads search_synonyms from DB; PR #479 opened).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 3a (search infra) — IN PROGRESS, branch up.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge). **8 commits ahead of main** after Session 54 ship + this session-end docs commit. Recent commits: Session 53 Task 3a.2 ship (`9a21354`) → Session 53 docs (`7b828f6`) → **Session 54 Task 3a.3 ship (`81b5d2e`) — generate-embeddings.mjs includes academicConcepts + new `scripts/test-prepare-lesson-text.mjs` verification harness**. Type-check + lint clean baseline.
+**PR 3a (search infra) — PR #479 OPEN, awaiting bot reviews.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge); **9 commits ahead of main + 1 unpushed Session-55 docs commit** (next push bundles fix-ups + this docs entry per `feedback_no_docs_push_during_pr.md`). Recent commits: Session 53 Task 3a.2 ship (`9a21354`) → Session 54 Task 3a.3 ship (`81b5d2e`) → **Session 55 Task 3a.4 ship (`4595235`) — smart-search edge fn now reads `search_synonyms` from DB at request time + 13-row seed migration with whitespace CHECK constraint**. Type-check + lint clean baseline. PR opened at https://github.com/danfeder/esnyc-lesson-search-react/pull/479.
 
 **Foundation-phase substrate live in PROD:** PR 1 + PR 1b + PR 2 + PR 4 all shipped + PROD-applied + verified. PR 4's full substrate (soft-retire columns + 21 retired imports + 7 concept-recovery rows + FSA Pt 1 retitle + 8 user-facing filter surfaces) verified Session 51 via 9-probe MCP query. Stage 1 worksheets DO NOT YET EXIST (verified Session 51 post-merge); PR 5 stays gated until heritage + concepts worksheets land.
 
 **PR 3a task status:**
 - ✅ Task 3a.1 — smart-search drift resolution **decision** (locked Session 52: Option B — refactor smart-search to read from `search_synonyms` DB table at request time; drop the hardcoded TS dictionary).
 - ✅ Task 3a.2 — search_vector regeneration migration shipped Session 53 (`9a21354`).
-- ✅ Task 3a.3 — generate-embeddings includes academicConcepts shipped Session 54 (`81b5d2e`) including `prepareLessonText` flatten of `{Subject: [concept,...]}` shape, new `--lesson-ids` ops flag, ESM main-module guard for testability without side effects, exported `prepareLessonText`, and `scripts/test-prepare-lesson-text.mjs` harness with 4 MCP-derived fixture shapes (multi-subject multi-concept / multi-subject single-concept / single-subject multi-concept / null edge case). All 4 assertions pass.
-- ⏳ Task 3a.4 — smart-search refactor + seed migration per Option B (next session).
-- ⏳ Task 3a.5 — PR ritual.
+- ✅ Task 3a.3 — generate-embeddings includes academicConcepts shipped Session 54 (`81b5d2e`).
+- ✅ Task 3a.4 — smart-search refactor + seed migration shipped Session 55 (`4595235`); PR #479 opened.
+- ⏳ Task 3a.5 — PR ritual: bot reviews, four-surface comment triage, fix-ups, TEST DB verification, merge.
 
-**Task 3a.3 verification deviation (load-bearing for any future contributor reading this commit chain):** Original Task 3a.3 plan called for `--test --dry-run --lesson-ids=...` runtime against TEST DB. That path is blocked because `scripts/generate-embeddings.mjs:49` hardcodes `--test` to `https://epedjebjemztzdyhqace.supabase.co` (deleted Supabase project) and `TEST_SUPABASE_SERVICE_KEY` in `.env` is stale per `project_test_key_stale.md`. After two-bot consultation (this session), verification scoped to **C-plus** — export `prepareLessonText`, ship a checked-in fixture-based harness, keep operational script clean of verification-only CLI modes. Local-seeded DB (B-plus) was rejected after probe showed `data/consolidated_lessons.json` is a Nov 2024 snapshot with **0 of 831 rows populated for `academicConcepts`** — predates the v3 batch tagging run (2025-07-10), so local-seeded verification of concept-handling code paths is unreliable. Full corpus embedding regeneration deferred to bundle with Stage 2 corpus re-tag in PR 6+ where the underlying content actually changes.
+**Task 3a.4 sub-decisions (load-bearing for any future contributor reading commit `4595235`):**
+- **Read mechanism = B-b** (preserves current behavior: edge fn reads raw table; bidirectional/oneway/typo branching re-implemented in TS; `:*` prefix matching + plural munging preserved verbatim).
+- **Migration scope = β** (add 13 distinct (term, synonym_type, synonyms) combinations the TS dictionary covered that the DB lacked). Pre-task probe of TEST + PROD found 60 existing rows already richer than the TS list except for these 13 entries.
+- **Multi-word phrase handling = Option 1 + Option 7** (locked via external senior-dev consult): tokenize multi-word phrases (`winter celebration` → `winter` + `celebration`) AND add CHECK constraint preventing future whitespace values. The pre-existing TS dictionary was emitting `winter celebration:*` to Postgres tsquery which always errored — anyone searching christmas/easter/halloween/thanksgiving/latino/hispanic was getting 500s from smart-search. The DB's pre-seeded 60 rows correctly avoided multi-word values; this migration extends that convention.
+- **CHECK separator = empty string `''`, NOT the senior-dev's E'\x1f' suggestion.** Empirical diagnostic probe showed Postgres' `\s` regex AND `[[:space:]]` BOTH match `0x1f` (Unit Separator); the recommended E'\x1f' separator produces false positives on every multi-element array. Empty separator concatenates synonyms directly with no boundary char; whitespace inside any individual synonym still surfaces. Migration body comment captures this rationale fully.
 
-**Pre-Task-3a.4 verification (do FIRST when picking up Task 3a.4 — the smart-search drift fix):**
-- Query `search_synonyms` current row count + sample content via `mcp__supabase-test__execute_sql` AND `mcp__supabase-remote__execute_sql` (TEST + PROD diff). Check overlap with the TS dictionary's ~58 entries — some may already be in DB.
-- Decide on conflict-handling for the seed migration: skip-existing (`ON CONFLICT DO NOTHING`) vs replace-existing (`ON CONFLICT DO UPDATE`) vs fail-on-conflict (require empty target). Preferred default: `ON CONFLICT DO NOTHING` (idempotent + non-destructive).
-- Confirm `expand_search_with_synonyms` SQL function (defined in baseline migration line 161 of `20251001_production_baseline_snapshot.sql`) handles the new bulk row count without performance regression. Today's table is small; post-seed adds ~58 rows; not expected to be load-bearing on perf, but worth a sanity check.
-- Per `feedback_verbatim_identifiers_in_probes.md`: when verifying the seed migration's outcome, copy term values verbatim from the migration body, not from memory.
+**Pre-Task-3a.5 verification (do FIRST when picking up the PR ritual):**
+- **Wait for bot reviews to land** on PR #479 (CodeRabbit + Claude long-form + Codex typically settle within 5-15 min after PR open; check `gh pr view 479 --comments` + `gh api repos/danfeder/esnyc-lesson-search-react/pulls/479/reviews` + `gh api repos/.../pulls/479/comments` per `feedback_pr_comment_surfaces.md`).
+- **TEST DB verification** (per `feedback_per_round_test_db_verification.md`): once CI applies migration to TEST, run `mcp__supabase-test__execute_sql` to verify count = 73 (60 existing + 13 new); verify each of the 6 affected terms (christmas / thanksgiving / halloween / easter / latino / hispanic) produces a valid tsquery via `to_tsquery('english', expand_search_with_synonyms(...))`; verify CHECK constraint rejects multi-word INSERT.
+- Per `feedback_verbatim_identifiers_in_probes.md`: copy term values verbatim from migration source, never from memory.
+
+**Pre-existing dead code observation (recorded as out-of-scope follow-up below):** `supabase/functions/smart-search/index.ts:75` has an inner `if (term.endsWith('s')) { expandedTerms.add(term.substring(0, term.length - 1)); }` that adds a value already added 3 lines earlier (Set no-op). Pre-existing in `81b5d2e:smart-search/index.ts:100-104`; refactor preserved verbatim per the locked B-b decision. The OLD comments suggest the author intended `-es` or `-ies` plural-specific stripping that was never actually implemented. Pre-push reviewer flagged this; the author's actual intent for the inner branch is unknown, so a real fix needs investigation. Out of scope for Task 3a.4.
 
 **Remaining foundation-phase PRs in scope:**
-- **PR 3a** (this work, in progress): `search_vector` + embeddings + smart-search drift fix.
+- **PR 3a** (this work, PR #479 open): `search_vector` + embeddings + smart-search drift fix.
 - **PR 3b** (later): `search_synonyms` population with concept-derived everyday↔framework pairs. Folds into PR 6+; depends on Stage 2 re-tag outputs.
 - **PR 5+** (later): D4 vocab canonicalization (Title Case canonical across ~10 vocab fields; Pydantic on all 17 fields). **Depends on Stage 1 worksheet outputs** — gated until at least heritage + concepts worksheets land.
 - **PR 6+** (later): Stage 2 corpus re-tag + reviewer validation flow.
@@ -35,7 +40,7 @@
 
 **Branches:**
 - `main` at `03970d0` (PR 4 squash-merge); origin matches
-- `feat/metadata-foundation-search-infra-3a` — current PR 3a branch (3 commits ahead of main; Task 3a.1 decision documented here + archival commit landed; no code work yet)
+- `feat/metadata-foundation-search-infra-3a` — current PR 3a branch (PR #479 open). 9 commits pushed, 1 docs commit pending bundling with next fix-up push per `feedback_no_docs_push_during_pr.md`.
 - `feat/metadata-foundation-corpus-cleanup` — PR #478 MERGED; Session 51 docs commits cherry-picked into PR 3a branch Session 52. **SAFE TO DELETE** (local + origin both fine to remove).
 - `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema` — all deletable at convenience
 
@@ -98,6 +103,12 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 
 - **Pre-existing key-name drift in `scripts/generate-embeddings.mjs:prepareLessonText`.** Current code reads `lesson.metadata.thematicCategory` (singular) and treats `lesson.metadata.culturalHeritage` as a string. Canonical post-PR-1 schema uses `thematicCategories` (plural, array) and `culturalHeritage` (often array). For modern submission-era / post-B-update rows, those `if` branches silently emit nothing because the key access returns `undefined`. Effect: embeddings for modern rows miss the theme + heritage signals entirely. Pre-existing (predates foundation phase, predates Zod canonical). Fix: align key names with canonical schema + array-vs-string handling. The new `scripts/test-prepare-lesson-text.mjs` harness can be extended with plural-shape fixtures once fixed. Out of scope for Task 3a.3 per "a bug fix doesn't need surrounding cleanup"; worth a focused embeddings-hygiene PR. (Source: Session 54.)
 
+- **Pre-existing dead inner `if` in `smart-search/index.ts` prefix-variant block.** Lines 70-77 of refactored `smart-search/index.ts` contain `if (term.length > 4) { expandedTerms.add(term.substring(0, term.length - 1)); expandedTerms.add(term + 's'); if (term.endsWith('s')) { expandedTerms.add(term.substring(0, term.length - 1)); } }`. The inner `if` block adds a value already added 3 lines earlier (Set no-op). Surfaced by pre-push code-reviewer agent on PR #479. Confirmed pre-existing at `81b5d2e:smart-search/index.ts:100-104`; refactor preserved verbatim per the locked B-b "preserve current behavior" decision. Comments in OLD code ("Remove last character" then "Remove plural") suggest the author intended `-es` or `-ies` plural-specific stripping that was never actually implemented. Real fix needs investigation of the original intent + decision on whether to implement the suggested stripping or just remove the dead branch. Out of scope for Task 3a.4 per kickoff "A bug fix doesn't need surrounding cleanup"; worth a focused smart-search hygiene PR alongside any related work. (Source: Session 55 pre-push review.)
+
+- **`expand_search_with_synonyms` SQL function still has the `\s`-matches-`\x1f` regex flavor.** The function only OR-joins synonym arrays with spaces between elements; the new CHECK constraint added in PR 3a Task 3a.4 prevents whitespace from entering the data, so the function's output stays valid for `to_tsquery` post-PR-3a. But if a future contributor disables the constraint temporarily (e.g., for a data migration) and inserts whitespace-bearing values, the SQL function would silently emit broken tsquery output. Belt-and-braces fix: have the SQL function explicitly tokenize each synonym on whitespace before OR-joining, so it produces valid tsquery regardless of input. Defensive only; not needed today. (Source: Session 55.)
+
+- **Senior-dev's E'\x1f' separator suggestion empirically wrong; documented in migration body.** The PR 3a Task 3a.4 senior-dev consult recommended `array_to_string(synonyms, E'\x1f')` for the CHECK constraint expression because they assumed Unit Separator (0x1f) is a non-printable non-whitespace separator. Local diagnostic probe revealed Postgres' AREs treat `\x1f` (and other low-ASCII control chars) as whitespace, despite POSIX C locale not classifying them as such. The migration uses empty separator `''` instead with full rationale in body comments. Worth documenting somewhere durable that "E'\x1f' is matched by `\s` in PG regex" so future contributors don't repeat the mistake — could go in the migration body, in a hypothetical regex-cheatsheet comment in `_shared/`, or as a lint rule. Low priority. (Source: Session 55.)
+
 ## Pointers to durable context
 
 - **Kickoff prompt:** `docs/plans/2026-05-03-metadata-rebuild-foundation-kickoff.md` (paste at session start)
@@ -113,6 +124,49 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 55 — 2026-05-08 — Task 3a.4 shipped (smart-search reads search_synonyms from DB + whitespace constraint); PR #479 opened
+
+**Done (1 code commit + this Session-55 docs commit which stays unpushed per no-docs-push-during-pr):**
+
+- **Task 3a.4 (`4595235`):** Three coupled changes shipped together:
+  - **`supabase/functions/smart-search/index.ts` rewrite.** Drops the hardcoded `searchSynonyms` / `spellingSuggestions` Records (~58 entries, lines 18-75 of pre-refactor). New `fetchSynonyms()` helper reads `search_synonyms` table at request time via the existing anon-keyed supabase client (anon already has SELECT grant + RLS policy `Public can view synonyms`). `expandSearchTerms` / `buildSmartSearchQuery` take a `SynonymRow[]` argument and re-implement the `bidirectional` / `oneway` / `typo_correction` branching in TS. Filter-only requests (no query) skip the synonyms fetch entirely. `:*` prefix matching + word-stem-plural munging preserved verbatim per the locked B-b decision.
+  - **`supabase/migrations/20260522000000_seed_search_synonyms_from_smart_search.sql` (new file).** INSERTs 13 missing entries with `WHERE NOT EXISTS` triple-key idempotency guard. ALTER TABLE ADD CONSTRAINT `search_synonyms_lexemes_no_whitespace` uses `term !~ '\s' AND array_to_string(synonyms, '') !~ '\s'`.
+  - **`supabase/seed.sql` 2-line edit.** Tokenize `cherry tomato` → `cherry`; `pico de gallo` → `pico` + `gallo`. Necessary because the new constraint validates pre-seeded local DB rows at `supabase db reset` time.
+
+- **Pre-task probes:** TEST + PROD `search_synonyms` snapshot (60 rows each, identical content + schema). RLS state confirmed (anon SELECT + Public-can-view RLS policy). `expand_search_with_synonyms` SQL function definition retrieved.
+
+- **Local validation:** `supabase db reset` clean. Probes confirmed count = 18 (5 seed + 13 migration); all 6 affected terms (christmas / thanksgiving / halloween / easter / latino / hispanic) produce valid tsquery via `to_tsquery('english', expand_search_with_synonyms(...))`; CHECK constraint correctly rejects `INSERT` of `ARRAY['multi word value']`. Edge fn smoke (christmas dinner / thanksgiving harvest / middel) returns valid `expandedQuery` with no tsquery syntax errors. `npm run type-check && npm run lint` clean.
+
+- **PR #479 opened:** https://github.com/danfeder/esnyc-lesson-search-react/pull/479 — bot reviews pending.
+
+**Decisions made:**
+
+- **Read mechanism = B-b** (locked via AskUserQuestion mid-task): edge fn reads raw `search_synonyms` table; bidirectional/oneway/typo branching re-implemented in TS; preserves prefix matching + plural munging. `expand_search_with_synonyms()` SQL fn was rejected for direct call because (a) it loses the `:*` prefix and stem munging, and (b) the SQL function uses POSIX regex matching that's identical to a substring search and doesn't compose with the FTS query-shaping the edge fn does.
+
+- **Migration scope = β** (locked via AskUserQuestion mid-task): add the 13 specific entries the TS dictionary covered that the DB lacked (after MCP probe revealed the DB is already richer than originally assumed — only 13 distinct triples were missing, not "near-empty seed of ~58 entries" as the kickoff prompt had implied).
+
+- **Multi-word phrase handling = Option 1 + Option 7** (locked via senior-dev consult): tokenize multi-word phrases into individual word tokens (`winter celebration` → `winter` + `celebration`) AND add CHECK constraint preventing future whitespace-bearing inserts. Five additional options surfaced for the senior dev that I hadn't originally considered (Option 4 substrate fix; Option 5 phrase operator `<->`; Option 6 switch to `websearch_to_tsquery`; Option 7 CHECK constraint; Option 8 hybrid TS-only fix). The senior dev's reasoning chain — that phrase semantics never worked anyway, so tokenization is the safest executable approximation, and a CHECK constraint pairs naturally to prevent regression — was the highest-confidence answer.
+
+- **CHECK separator = empty string `''`, NOT the senior-dev's E'\x1f' suggestion.** This is an EMPIRICAL CORRECTION: the senior dev recommended `array_to_string(synonyms, E'\x1f')` because they assumed `\x1f` (Unit Separator) is a non-printable non-whitespace separator. Local `supabase db reset` failed when the constraint validated pre-seeded data; diagnostic probe (`SELECT E'\x1f' ~ '\s'`) returned `true` on TEST DB. Postgres' AREs treat `\x1f` (and several other low-ASCII control chars) as whitespace, despite POSIX C locale not classifying them as such. Empty separator avoids the problem because it doesn't introduce any character that could match `\s`; whitespace inside any individual synonym still surfaces in the joined string.
+
+**Process notes / observations:**
+
+- **Two-bot consultation pattern, third use this PR cycle (Tasks 3a.1, 3a.3, 3a.4).** Each use surfaced 1-3 options I had not originally considered. The pattern's value is consistent enough across 3 occurrences that it's worth promoting to feedback memory next session. Concrete pattern: when implementing a non-trivial decision, write a self-contained brief (kickoff context + bug description + options I've considered + constraints) and have the user paste it to a fresh agent. The fresh agent reliably surfaces options I missed because it has no context-bias from my own analysis.
+
+- **Empirical-correction-of-expert-advice pattern.** The senior dev's E'\x1f' separator was wrong empirically; the bug only surfaced when local `supabase db reset` failed mid-migration. Lesson: when an expert's recommendation includes a specific implementation detail (like a separator choice), local-test the implementation BEFORE assuming it's correct. The diagnostic probe (`SELECT E'\x1f' ~ '\s', E'\x1f' ~ '[[:space:]]', ' ' ~ '\s'`) was valuable for explicitly checking the regex behavior across 3 chars × 2 patterns.
+
+- **Pre-push code-reviewer agent (Opus, `feature-dev:code-reviewer`).** Found 1 finding (Finding 1: dead inner `if` in expandSearchTerms prefix-variant block, confidence 65). Investigation per `feedback_bot_review_investigation.md`: confirmed pre-existing in OLD code at `81b5d2e:smart-search/index.ts:100-104`; refactor preserves verbatim per the locked B-b decision; out-of-scope per the kickoff "A bug fix doesn't need surrounding cleanup" principle. Logged as out-of-scope follow-up below + in PR description. Reviewer also flagged Finding 2 (whitespace-only `expandedQuery` shape change) but reviewer agreed no fix needed because the consumer hook gates on `query.length > 0` post-trim. Net pre-push outcome: 0 must-fix findings, ship as-is.
+
+- **Senior-dev-brief writeup pattern.** I wrote `.tmp/senior-dev-brief-multi-word-synonyms.md` as a self-contained brief that the user took to a senior dev agent. The brief was 7 numbered options + decision constraints + file references + reporting format. This was the third time this PR cycle that "write the brief and let the user dispatch the agent" was used — pattern composes naturally with the kickoff's "When initial framing is wrong... correcting in the next consultation message is faster than starting fresh" guidance.
+
+**Process notes for Session 56+:**
+
+- **PR #479 awaits bot reviews.** Per kickoff per-PR ritual: wait for external bots (CodeRabbit, Claude long-form, Codex) to land — they ARE the second pass; do NOT dispatch another code-reviewer agent. Once findings land, collect from all four PR surfaces (`gh pr view 479 --comments` + `gh api repos/.../pulls/479/reviews` + `gh api repos/.../pulls/479/comments` + `gh pr checks 479`); investigate each per `feedback_bot_review_investigation.md`; surface accept/reject recommendations BEFORE applying.
+
+- **TEST DB verification once CI applies.** Per `feedback_per_round_test_db_verification.md`, post-CI verification on TEST: count = 73; expand_search_with_synonyms returns valid tsquery for all 6 affected terms; CHECK constraint blocks multi-word INSERT. Repeat after every round of post-PR fix-ups, not just at PR open.
+
+- **Session-end docs commit stays unpushed** per `feedback_no_docs_push_during_pr.md`. Bundle with the next fix-up push (or final ritual closure if no fix-ups land).
 
 ### Session 54 — 2026-05-08 — Task 3a.3 shipped (generate-embeddings includes academicConcepts + verification harness)
 
