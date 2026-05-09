@@ -142,7 +142,16 @@ serve(async (req) => {
     let smartSearchQuery: string | null = null;
 
     if (trimmedQuery) {
-      synonyms = await fetchSynonyms(supabaseClient);
+      // Defensive: if the synonyms fetch fails (RLS misconfig, transient
+      // pooler hiccup specific to search_synonyms), proceed with no
+      // synonym expansion rather than returning a 500. Pre-refactor the
+      // hardcoded TS dictionary made this path infallible; restoring the
+      // resilience for the narrow misconfig case.
+      try {
+        synonyms = await fetchSynonyms(supabaseClient);
+      } catch (synonymsErr) {
+        console.error('smart-search fetchSynonyms failed; proceeding with no expansion:', synonymsErr);
+      }
       smartSearchQuery = buildSmartSearchQuery(trimmedQuery, synonyms);
       console.log(`Original query: "${query}" -> Smart query: "${smartSearchQuery}"`);
       // Use the smart search query with full-text search
