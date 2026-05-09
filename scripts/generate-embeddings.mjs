@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import { encoding_for_model } from 'tiktoken';
+import { fileURLToPath } from 'node:url';
 import { requireNonProd } from './lib/require-env.mjs';
 
 // Load environment variables
@@ -17,13 +18,11 @@ dotenv.config();
 // Configuration
 const IS_TEST_MODE = process.argv.includes('--test');
 const DRY_RUN = process.argv.includes('--dry-run');
+const LESSON_IDS_ARG = process.argv.find(arg => arg.startsWith('--lesson-ids='));
+const LESSON_IDS = LESSON_IDS_ARG
+  ? LESSON_IDS_ARG.split('=')[1].split(',').map(s => s.trim()).filter(Boolean)
+  : null;
 
-// The `--test` flag routes to a dedicated hardcoded test project and self-guards.
-// In all other cases, resolve the target from VITE_SUPABASE_URL and refuse prod
-// unless --i-mean-prod is explicitly passed.
-if (!IS_TEST_MODE) {
-  requireNonProd({ scriptName: 'generate-embeddings' });
-}
 const BATCH_SIZE = 5; // Process 5 lessons at a time (reduced to avoid token limit)
 const MAX_TOKENS_PER_LESSON = 7500; // More conservative limit to avoid errors
 
@@ -66,9 +65,10 @@ function truncateToTokenLimit(text, maxTokens) {
 }
 
 /**
- * Prepare lesson text for embedding
+ * Prepare lesson text for embedding.
+ * Exported for verification harness (scripts/test-prepare-lesson-text.mjs).
  */
-function prepareLessonText(lesson) {
+export function prepareLessonText(lesson) {
   // Combine relevant fields for embedding
   const parts = [
     `Title: ${lesson.title}`,
@@ -89,6 +89,25 @@ function prepareLessonText(lesson) {
     }
     if (lesson.metadata.ingredients?.length > 0) {
       parts.push(`Ingredients: ${lesson.metadata.ingredients.join(', ')}`);
+    }
+    // academicConcepts shape is { Subject: [concept, ...] }; flatten subject
+    // keys + concept values into a single token list so both surfaces influence
+    // semantic similarity. Mirrors the SQL helper _flatten_academic_concepts.
+    if (lesson.metadata.academicConcepts && typeof lesson.metadata.academicConcepts === 'object') {
+      const conceptParts = [];
+      for (const [subject, concepts] of Object.entries(lesson.metadata.academicConcepts)) {
+        if (typeof subject === 'string' && subject.length > 0) {
+          conceptParts.push(subject);
+        }
+        if (Array.isArray(concepts)) {
+          for (const c of concepts) {
+            if (typeof c === 'string' && c.length > 0) conceptParts.push(c);
+          }
+        }
+      }
+      if (conceptParts.length > 0) {
+        parts.push(`Concepts: ${conceptParts.join(', ')}`);
+      }
     }
   }
 
@@ -124,14 +143,27 @@ async function generateEmbeddings() {
 
   try {
     // Fetch lessons that need embeddings
-    console.log('📋 Fetching lessons without embeddings...');
-    const { data: lessons, error: fetchError } = await supabase
+    if (LESSON_IDS) {
+      console.log(`📋 Fetching ${LESSON_IDS.length} targeted lesson(s) (--lesson-ids)...`);
+    } else {
+      console.log('📋 Fetching lessons without embeddings...');
+    }
+    let query = supabase
       .from('lessons')
       .select('*')
-      .not('content_text', 'is', null)  // Must have content
-      .is('content_embedding', null)     // But no embedding yet
-      .is('retired_at', null)            // Skip soft-retired imports
-      .order('lesson_id');
+      .not('content_text', 'is', null)
+      .is('retired_at', null);
+
+    if (LESSON_IDS) {
+      // --lesson-ids bypasses the null-embedding filter so already-embedded
+      // rows can be re-processed (e.g., dry-run shape verification, targeted
+      // re-embed after content fixes).
+      query = query.in('lesson_id', LESSON_IDS);
+    } else {
+      query = query.is('content_embedding', null);
+    }
+
+    const { data: lessons, error: fetchError } = await query.order('lesson_id');
 
     if (fetchError) throw fetchError;
 
@@ -157,12 +189,17 @@ async function generateEmbeddings() {
 
     if (DRY_RUN) {
       console.log('🔍 DRY RUN - Showing sample prepared texts:\n');
-      preparedTexts.slice(0, 3).forEach(({ lesson, text, tokens }) => {
-        console.log(`Lesson: ${lesson.title}`);
+      // Targeted runs (--lesson-ids) show every row's full metadata block so
+      // shape verification can spot-check each. Full-corpus runs stay
+      // truncated to keep the output manageable.
+      const sampleSlice = LESSON_IDS ? preparedTexts : preparedTexts.slice(0, 3);
+      const previewLen = LESSON_IDS ? 1000 : 200;
+      sampleSlice.forEach(({ lesson, text, tokens }) => {
+        console.log(`Lesson: ${lesson.title} [${lesson.lesson_id}]`);
         console.log(`Tokens: ${tokens}`);
-        console.log(`Preview: ${text.substring(0, 200)}...\n`);
+        console.log(`Preview: ${text.substring(0, previewLen)}${text.length > previewLen ? '...' : ''}\n`);
       });
-      console.log('✅ Dry run complete. Add --dry-run=false to generate actual embeddings.');
+      console.log('✅ Dry run complete. Re-run without --dry-run to generate actual embeddings.');
       return;
     }
 
@@ -278,15 +315,27 @@ async function generateEmbeddings() {
   }
 }
 
-// Show usage
-if (process.argv.includes('--help')) {
-  console.log('Usage: node generate-embeddings.mjs [options]');
-  console.log('Options:');
-  console.log('  --test      Run on test database instead of production');
-  console.log('  --dry-run   Show what would be done without making API calls');
-  console.log('  --help      Show this help message');
-  process.exit(0);
-}
+// Run side effects only when this file is the entry point. Verification
+// harnesses (scripts/test-prepare-lesson-text.mjs) import prepareLessonText
+// without running the embedding job or hitting requireNonProd.
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  if (process.argv.includes('--help')) {
+    console.log('Usage: node generate-embeddings.mjs [options]');
+    console.log('Options:');
+    console.log('  --test                Run on test database instead of production');
+    console.log('  --dry-run             Show what would be done without making API calls');
+    console.log('  --lesson-ids=ID1,ID2  Target specific lesson_ids (bypasses the null-embedding filter)');
+    console.log('  --help                Show this help message');
+    process.exit(0);
+  }
 
-// Run the embedding generation
-generateEmbeddings().catch(console.error);
+  // The `--test` flag routes to a dedicated hardcoded test project and self-guards.
+  // In all other cases, resolve the target from VITE_SUPABASE_URL and refuse prod
+  // unless --i-mean-prod is explicitly passed.
+  if (!IS_TEST_MODE) {
+    requireNonProd({ scriptName: 'generate-embeddings' });
+  }
+
+  generateEmbeddings().catch(console.error);
+}

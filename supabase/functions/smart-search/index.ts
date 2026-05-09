@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   applyFilters,
   applySorting,
@@ -14,93 +14,65 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Smart search synonyms and expansions
-const searchSynonyms: Record<string, string[]> = {
-  // Women's History
-  women: ["women's", 'woman', 'female', 'ladies', 'girls'],
-  woman: ['women', "women's", 'female', 'lady', 'girl'],
+type SynonymType = 'bidirectional' | 'oneway' | 'typo_correction';
 
-  // Cultural terms
-  hispanic: ['latino', 'latina', 'latinx', 'latin american', 'spanish'],
-  latino: ['hispanic', 'latina', 'latinx', 'latin american'],
-  asian: ['chinese', 'japanese', 'korean', 'vietnamese', 'thai', 'indian'],
+interface SynonymRow {
+  term: string;
+  synonyms: string[];
+  synonym_type: SynonymType;
+}
 
-  // Food terms
-  vegetables: ['veggies', 'veggie', 'vegetable', 'greens'],
-  veggies: ['vegetables', 'veggie', 'vegetable', 'greens'],
-  herbs: ['herb', 'spices', 'seasoning'],
+async function fetchSynonyms(supabaseClient: SupabaseClient): Promise<SynonymRow[]> {
+  const { data, error } = await supabaseClient
+    .from('search_synonyms')
+    .select('term, synonyms, synonym_type');
+  if (error) throw error;
+  return (data ?? []) as SynonymRow[];
+}
 
-  // Garden terms
-  planting: ['plant', 'planted', 'sowing', 'seeding'],
-  growing: ['grow', 'cultivation', 'gardening'],
-  harvest: ['harvesting', 'picking', 'gathering'],
-
-  // Cooking terms
-  cooking: ['cook', 'baking', 'preparing', 'kitchen'],
-  recipe: ['recipes', 'cooking', 'preparation'],
-
-  // Grade levels
-  kindergarten: ['k', 'kinder', 'pre-k', 'pk'],
-  elementary: ['elem', 'primary', 'lower', 'upper'],
-  middle: ['ms', 'junior high', 'intermediate'],
-
-  // Seasons
-  fall: ['autumn', 'september', 'october', 'november'],
-  winter: ['december', 'january', 'february'],
-  spring: ['march', 'april', 'may'],
-  summer: ['june', 'july', 'august'],
-
-  // Holidays and observances
-  thanksgiving: ['turkey', 'gratitude', 'harvest festival'],
-  christmas: ['holiday', 'winter celebration', 'december'],
-  halloween: ['pumpkin', 'october', 'fall celebration'],
-  valentine: ['love', 'heart', 'february'],
-  easter: ['spring celebration', 'eggs', 'bunny'],
-};
-
-// Common misspellings and variations
-const spellingSuggestions: Record<string, string> = {
-  womens: "women's",
-  womans: "woman's",
-  vegatable: 'vegetable',
-  vegatables: 'vegetables',
-  recipie: 'recipe',
-  recipies: 'recipes',
-  kindergarden: 'kindergarten',
-  elementry: 'elementary',
-  middel: 'middle',
-  cookin: 'cooking',
-  plantin: 'planting',
-  growin: 'growing',
-};
-
-function expandSearchTerms(query: string): string[] {
+function expandSearchTerms(query: string, synonyms: SynonymRow[]): string[] {
   const terms = query
     .toLowerCase()
     .split(/\s+/)
     .filter((term) => term.length > 0);
   const expandedTerms = new Set<string>();
 
+  // Index synonyms by term and (for bidirectional) by their synonym values.
+  const byTerm = new Map<string, SynonymRow[]>();
+  const bidirectionalBySynonym = new Map<string, SynonymRow[]>();
+  for (const row of synonyms) {
+    const term = row.term.toLowerCase();
+    if (!byTerm.has(term)) byTerm.set(term, []);
+    byTerm.get(term)!.push(row);
+    if (row.synonym_type === 'bidirectional') {
+      for (const syn of row.synonyms) {
+        const key = syn.toLowerCase();
+        if (!bidirectionalBySynonym.has(key)) bidirectionalBySynonym.set(key, []);
+        bidirectionalBySynonym.get(key)!.push(row);
+      }
+    }
+  }
+
   for (const term of terms) {
-    // Add the original term
     expandedTerms.add(term);
 
-    // Check for spelling corrections
-    if (spellingSuggestions[term]) {
-      expandedTerms.add(spellingSuggestions[term]);
+    // Term match: any synonym_type folds in its synonyms list.
+    for (const row of byTerm.get(term) ?? []) {
+      for (const syn of row.synonyms) expandedTerms.add(syn.toLowerCase());
     }
 
-    // Add synonyms
-    if (searchSynonyms[term]) {
-      searchSynonyms[term].forEach((synonym) => expandedTerms.add(synonym));
+    // Synonym match: only bidirectional rows fold back to the term and siblings.
+    for (const row of bidirectionalBySynonym.get(term) ?? []) {
+      expandedTerms.add(row.term.toLowerCase());
+      for (const syn of row.synonyms) expandedTerms.add(syn.toLowerCase());
     }
 
-    // Add partial matches for longer terms
+    // Prefix variants for words >4 chars (preserves prior behavior).
     if (term.length > 4) {
-      expandedTerms.add(term.substring(0, term.length - 1)); // Remove last character
-      expandedTerms.add(term + 's'); // Add plural
+      expandedTerms.add(term.substring(0, term.length - 1));
+      expandedTerms.add(term + 's');
       if (term.endsWith('s')) {
-        expandedTerms.add(term.substring(0, term.length - 1)); // Remove plural
+        expandedTerms.add(term.substring(0, term.length - 1));
       }
     }
   }
@@ -108,12 +80,15 @@ function expandSearchTerms(query: string): string[] {
   return Array.from(expandedTerms);
 }
 
-function buildSmartSearchQuery(query: string): string {
-  const expandedTerms = expandSearchTerms(query);
+function buildSmartSearchQuery(query: string, synonyms: SynonymRow[]): string {
+  const expandedTerms = expandSearchTerms(query, synonyms);
 
   // Create a tsquery that searches for any of the expanded terms
   // Use prefix matching (:*) for partial word matches
-  const tsqueryParts = expandedTerms.map((term) => `${term}:*`);
+  const tsqueryParts = expandedTerms
+    .map((term) => term.trim())
+    .filter((term) => term.length > 0)
+    .map((term) => `${term}:*`);
 
   // Combine with OR for broader matching
   return tsqueryParts.join(' | ');
@@ -160,11 +135,25 @@ serve(async (req) => {
       // seeing retired rows so reviewers catch future re-submissions.
       .is('retired_at', null);
 
-    // Apply smart text search if query exists
-    if (query && query.trim()) {
-      const smartSearchQuery = buildSmartSearchQuery(query.trim());
-      console.log(`Original query: "${query}" -> Smart query: "${smartSearchQuery}"`);
+    // Fetch synonyms once per request when there is a query to expand.
+    // Filter-only requests skip the round-trip.
+    const trimmedQuery = query?.trim();
+    let synonyms: SynonymRow[] = [];
+    let smartSearchQuery: string | null = null;
 
+    if (trimmedQuery) {
+      // Defensive: if the synonyms fetch fails (RLS misconfig, transient
+      // pooler hiccup specific to search_synonyms), proceed with no
+      // synonym expansion rather than returning a 500. Pre-refactor the
+      // hardcoded TS dictionary made this path infallible; restoring the
+      // resilience for the narrow misconfig case.
+      try {
+        synonyms = await fetchSynonyms(supabaseClient);
+      } catch (synonymsErr) {
+        console.error('smart-search fetchSynonyms failed; proceeding with no expansion:', synonymsErr);
+      }
+      smartSearchQuery = buildSmartSearchQuery(trimmedQuery, synonyms);
+      console.log(`Original query: "${query}" -> Smart query: "${smartSearchQuery}"`);
       // Use the smart search query with full-text search
       supabaseQuery = supabaseQuery.textSearch('search_vector', smartSearchQuery);
     }
@@ -185,8 +174,8 @@ serve(async (req) => {
 
     // Include search suggestions if no results found
     let suggestions: string[] = [];
-    if (lessons.length === 0 && query && query.trim()) {
-      const expandedTerms = expandSearchTerms(query.trim());
+    if (lessons.length === 0 && trimmedQuery) {
+      const expandedTerms = expandSearchTerms(trimmedQuery, synonyms);
       suggestions = expandedTerms.slice(0, 5); // Limit to 5 suggestions
     }
 
@@ -197,7 +186,7 @@ serve(async (req) => {
         page,
         totalPages: Math.ceil((count || 0) / limit),
         suggestions,
-        expandedQuery: query ? buildSmartSearchQuery(query.trim()) : null,
+        expandedQuery: smartSearchQuery,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
