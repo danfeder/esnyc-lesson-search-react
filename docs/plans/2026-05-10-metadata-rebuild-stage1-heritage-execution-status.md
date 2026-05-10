@@ -22,8 +22,8 @@
 **What's NOT done:**
 
 - §13 African cluster: per-value entries TBD (~10 entries).
-- §14 European cluster: per-value entries TBD (~9 entries).
-- §15 Middle Eastern cluster: per-value entries TBD (~6 entries).
+- §14 European cluster: per-value entries TBD (~12 entries — 1 cluster root + 2 sub-regions + 6 country-specifics + 3 kebab-case drift; per §14 framing block).
+- §15 Middle Eastern cluster: per-value entries TBD (~8 entries — 1 cluster root + 1 sub-region + 4 country-specifics + 2 kebab-case drift; per §15 framing block).
 - §9 cross-cluster section per-value entries (diaspora / indigenous identities, multi-parent canonicals): TBD.
 - §16 end-summary canonical-vocab table: populates mechanically from filled entries; empty until per-value entries fill.
 - Cluster decision summary blocks: always TBD (curriculum team writes at handoff).
@@ -41,7 +41,7 @@
 4. Address §9.2 multi-parent decision: Egyptian (2 corpus lessons) and Moroccan (1) are geographically North African + culturally Middle Eastern. Decide canonical home — single-parent OR multi-parent under both clusters (per Session 64's Puerto Rican multi-parent precedent: Notes-level flag if the per-entry shape doesn't directly accommodate).
 5. Stop at end of African cluster.
 
-**Stop-point heuristic confirmed Sessions 62 + 64:** one cluster per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) each fit the session boundary cleanly. African at ~10 entries is naturally smaller scope; European at ~9 entries is similar; Middle Eastern at ~6 entries is smallest. May fit 1-2 clusters per session if Opus-read load is light, but `one-cluster-default-OR-natural-decision-batch` remains the reasonable working rule.
+**Stop-point heuristic confirmed Sessions 62 + 64:** one cluster per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) each fit the session boundary cleanly. African at ~10 entries is naturally smaller scope; European at ~12 entries (corpus + drift) is similar to Americas in size; Middle Eastern at ~8 entries is smallest. May fit 1-2 clusters per session if Opus-read load is light, but `one-cluster-default-OR-natural-decision-batch` remains the reasonable working rule.
 
 ## Locked design decisions
 
