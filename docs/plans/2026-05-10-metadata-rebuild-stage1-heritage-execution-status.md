@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-10 — Session 61 (PR #481 ship cycle complete: round-1 + round-2 + Notes fix-up; squash-merge in progress; Asian cluster per-value fill opens next session).
+**Last updated:** 2026-05-10 — Session 63 (PR #482 round-1 + round-2 fix-ups applied — Americas bullet regenerated from §12 + worksheet status banner SCAFFOLD → PRE-HANDOFF + §7 parser invariant note added + session-number collision corrected; awaiting merge; Americas cluster fill is next-session work).
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -10,35 +10,48 @@
 
 ## Current state
 
-**Scaffold SHIPPED (Sessions 60-61, 2026-05-10).** PR #481 (round-1 + round-2 + Notes fix-up) squash-merge in progress. Two files shipped:
+**Asian cluster ✅ Session 62 (2026-05-10).** Worksheet §11 has all 18 per-value entries populated (1 cluster root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift merge records). 7 of those have Opus-corpus-read `<details>` blocks integrated (Asian, East Asian, South Asian, Southeast Asian, Chinese, Japanese, Indian); the remaining 11 entries are structural populations per the §4 methodology. **PR #482 in review cycle — round-1 + round-2 fix-ups applied Session 63 (round-1: Americas bullet regenerated + banner SCAFFOLD → PRE-HANDOFF + foundation-phase line tightened; round-2: §7 parser invariant note added + session-number collision corrected + line 23 stale breakdown removed); awaiting merge.**
 
-1. `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — the worksheet itself. Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention) complete and load-bearing. Per-cluster framing blocks pre-populated with corpus distribution data from Session 59 query. Per-value entry blocks TBD subsequent sessions before curriculum-team handoff.
-2. This file (`...-execution-status.md`).
+**What's done:**
+
+- §11 Asian cluster: 18 per-value entries ✅
+- Cluster framing blocks for all 5 regional clusters + cross-cluster (Session 60 scaffold) ✅
+- Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention / Appendix A v3 baseline) ✅
 
 **What's NOT done:**
 
-- Per-value entry blocks within each cluster (Asian / Americas / African / European / Middle Eastern) — TBD.
-- Cross-cluster section (§9 of the worksheet) per-value entries — TBD.
-- Opus-corpus-read evidence (collapsible `<details>` excerpts) — TBD.
-- End summary canonical-vocab table (§16) populates mechanically from filled entries; empty until per-value entries fill.
+- §12 Americas cluster: per-value entries TBD (~22 entries — see "For next session" block below for the per-bucket breakdown drawn from worksheet §12).
+- §13 African cluster: per-value entries TBD (~9 entries).
+- §14 European cluster: per-value entries TBD (~9 entries).
+- §15 Middle Eastern cluster: per-value entries TBD (~6 entries).
+- §9 cross-cluster section per-value entries (diaspora / indigenous identities, multi-parent canonicals): TBD.
+- §16 end-summary canonical-vocab table: populates mechanically from filled entries; empty until per-value entries fill.
+- Cluster decision summary blocks: always TBD (curriculum team writes at handoff).
 
-**For next session:**
+**For next session (Stage 1 Session 64 = Americas cluster):**
 
-1. **Pick a starting cluster.** Recommendation: **Asian** — has the cleanest hierarchical structure (5 sub-regions + ~9 country-specifics + 3 kebab-case drift values; total ~17 per-value entries). Tests the per-value entry format on a complete cluster before scaling. Alternatives: Americas (most corpus-heavy, but biggest scope, ~22 entries); Middle Eastern (smallest scope, ~6 entries, but mostly-new sub-regions which are less typical work).
-2. **For each per-value entry in the chosen cluster:**
-   - Populate `canonical_key` (kebab-case slug from surface label)
-   - Populate `surface_label` proposal (from v3 baseline OR best-fit Title Case)
-   - Populate `frequency_count` (already in cluster framing block; copy down)
-   - Populate `parent` proposal (from v3 baseline OR first-principles cluster fit)
-   - Populate `filter_ui_tier` proposal (frequency-based default per §6 guideline)
-   - Populate `aliases` candidate list (kebab-case drift variants from cluster framing block)
-   - For frequency ≥5 OR ambiguous: launch Opus-corpus-read agent to read sample lesson bodies tagged with the value; capture 2-3 excerpts in collapsible `<details>` block.
-   - For mechanical canonical-vs-kebab drift (`asian` → `Asian`): no Opus read needed; the call is structural.
-   - Leave `verdict` and `notes` for curriculum-team fill at handoff.
-3. **Repeat for remaining clusters** in subsequent sessions. Order: Asian → Americas → African → European → Middle Eastern → cross-cluster section.
-4. **Cross-cluster section (§9 of the worksheet)** populates last, after regional clusters are filled — multi-parent decisions are easier to land once each cluster's home options are visible.
+1. Branch off `main` at the merge commit for this session's PR.
+2. Populate Americas cluster's per-value entries per §12 framing block. Total: **22 entries** (or 23 if Cajun/Creole gets an Americas entry per §12 cluster decision #5 — default is to leave it in cross-cluster §9.1):
+   - Cluster root (1): Americas (170)
+   - Sub-regions (3): North American (83), Latin American (77), Caribbean (17)
+   - Country-specifics by frequency (10):
+     - ≥10 lessons (1): Mexican (38)
+     - 4 lessons (1): Puerto Rican (4)
+     - 2 lessons (5): Salvadoran, Honduran, Cuban, Jamaican, Peruvian (each 2)
+     - 1 lesson (3): Brazilian, Ecuadorian, Guyanese (each 1)
+   - New sub-region candidates — v3-absent (3): Central American (1), South American (1), Southern United States (1)
+   - v3-canonical corpus-absent (1): Dominican (Latin American). [Cajun/Creole — current home §9.1; §12 decision #5 may move to Americas]
+   - Kebab-case drift (4): `americas`, `north-american`, `latin-american`, `caribbean`
+3. Dispatch Opus corpus-read agents for high-frequency / ambiguous values per §4 threshold (≥5 OR ambiguous). Strong candidates by frequency:
+   - Americas (170 — cluster root; §12 decision #1 asks whether tag is meaningful or under-tagged default)
+   - North American (83)
+   - Latin American (77)
+   - Caribbean (17)
+   - Mexican (38)
+   - Plus optionally one of the `new` candidates if curriculum team wants verification before canonicalizing (Central American 1, South American 1, Southern United States 1)
+4. Stop at end of Americas cluster (one-cluster-per-session heuristic).
 
-**Stop-point heuristic:** populate ONE cluster per session (or one cluster's complex per-value entries + simple ones, if the cluster is small). Don't bundle multiple clusters in one session — corpus-read is the time-consuming part and one cluster's worth is a natural session boundary.
+**Stop-point heuristic confirmed Session 62:** one cluster per session is the right scope. The Asian cluster (18 entries, 7 Opus reads) fit the session boundary cleanly. Americas at ~22 entries is naturally similar scope; African / European / Middle Eastern are smaller (~6-9 entries each) and may fit 1-2 clusters per session if Opus-read load is light.
 
 ## Locked design decisions
 
@@ -96,6 +109,51 @@ Stage 1 is **content-shaping**: there's no implementation plan with file paths a
 
 ## Session log
 
+### Session 62 — 2026-05-10 — Asian cluster per-value entries populated
+
+**Branch:** `docs/stage1-heritage-asian-cluster` (off `main` at `e05556a`, the PR #481 squash-merge).
+
+**Done:**
+
+- Backfilled PR #481 squash-merge hash (`e05556a`) in this doc's Session 61 entry + in foundation-phase status doc's PRs-SHIPPED list and Branches block.
+- Verified Asian cluster's 18 corpus values against TEST DB. Counts match the Session 59 framing block exactly (Asian 63, East Asian 35, Chinese 15, South Asian 15, Japanese 9, Indian 7, Southeast Asian 5, Central Asian 4, Pakistani 4, Uzbek 4, Korean 3, south-asian 3, east-asian 2, Vietnamese 2, asian 1, Malaysian 1, Sri Lankan 1, Taiwanese 1).
+- Populated worksheet §11 with all 18 per-value entry blocks: 1 cluster root (Asian) + 4 sub-regions (East Asian, South Asian, Southeast Asian, Central Asian) + 10 country-specifics (Chinese, Japanese, Indian, Pakistani, Uzbek, Korean, Vietnamese, Sri Lankan, Malaysian, Taiwanese) + 3 kebab-case drift merge entries (`asian`, `east-asian`, `south-asian`).
+- Dispatched 7 parallel Opus corpus-read agents — Asian (63), East Asian (35), South Asian (15), Southeast Asian (5), Chinese (15), Japanese (9), Indian (7). Each returned a worksheet-ready collapsible `<details>` block with 2-3 representative excerpts + a tagging-pattern observation. All 7 integrated into the corresponding §11 entries.
+- Lower-frequency entries (Pakistani 4, Uzbek 4, Korean 3, Vietnamese 2, Sri Lankan 1, Malaysian 1, Taiwanese 1) populated structurally per §4 methodology with Notes-block proposals; no Opus read needed.
+
+**Decisions made this session:**
+
+- **Filter-UI tier proposals — frequency default with v3-canonical override.** §6 defaults: `top` if ≥40 OR cluster root; `sub` if ≥5 with clear parent `top`; `internal` if <5. I proposed `sub` for the 4 sub-regions despite East Asian (35) sitting under the `top` threshold and Southeast Asian (5) at the `sub` threshold, and for Central Asian (4) + Pakistani (4) + Uzbek (4) below the threshold — rationale: v3 canonical status + clear hierarchical role + sole-parent-for-child-country status. For country-specifics ≤2 lessons (Vietnamese, Sri Lankan, Malaysian, Taiwanese), proposed `internal` per §11 cluster-decision-#2's pre-handoff bar (`sub` at ≥3 lessons). Notes per entry flag deviations and rationale for curriculum-team override.
+
+- **Kebab-case drift entries as separate `merge` records (Convention B).** Per Session 61's planning, drift variants `asian` / `east-asian` / `south-asian` get their own per-value entries with `verdict: merge` rather than being captured as `aliases` on the canonical entries (Convention A). Canonical entries' `aliases: []` accordingly. Tradeoff: Convention B makes the drift visible as first-class corpus content (parser shows drift counts directly); Convention A would have been more compact (one fewer entry per drift). The `alias_map` output is identical under both conventions. Followed Session 61's named count of 18.
+
+- **Verdict left as `<to_fill>` for all canonical entries.** Per §4 spec, verdict is curriculum-team-fill territory. Pre-populating verdict (e.g., `keep` for v3 canonicals, `new` for Sri Lankan) would short-circuit the team's judgment process. Notes per entry flag the strongest candidate verdicts where corpus evidence supports a specific call (e.g., Sri Lankan as `new` candidate based on substantive single-lesson body content).
+
+**Process notes / observations:**
+
+- **Parallel Opus agent dispatch landed cleanly.** 7 agents finished within a single round-trip (~20-45 sec each, ~40-50K total tokens per agent including DB queries). Each returned a worksheet-ready `<details>` block; integration was mechanical Edit work. Pattern is generalizable — Americas (~22 entries, ~6 Opus reads), African (~9 entries, ~3 reads), European (~9 entries, ~3 reads), Middle Eastern (~6 entries, ~2 reads).
+
+- **Corpus-read evidence surfaced real audit signal beyond verdict-input data.** Specifically:
+  - **Bánh Mì lesson mis-tagged as `Vietnamese + East Asian + Asian`.** Correct parent chain is Southeast Asian. Flagged in §11.2 East Asian + §11.12 Vietnamese notes.
+  - **4 of 15 `South Asian` lessons missing country tags** (Aloo Gobi names Indian + Pakistani; Black Bean Burgers anchors on India). Flagged in §11.3 + §11.9 Pakistani notes.
+  - **2 of 5 `Southeast Asian` lessons missing country tags** (Khao Soi → Thai/Lao; Lumpia → Filipino). Flagged in §11.4.
+  - **Sri Lankan Curry lesson body geographically mis-locates Sri Lanka as "Southeast Asia"** (it's South Asia). Lesson tagging is correct; body content has factual error. Flagged in §11.3 + §11.13 notes.
+
+  Stage 2 re-tag should pick up the missing country tags. Body-content errors are outside Stage 1's scope but worth surfacing for curriculum-team review.
+
+- **`Asian` cluster root is meaningful — not under-tagging.** 4 of 63 lessons are genuinely pan-Asian (multi-country comparison, world-foods units). 59 are hierarchically-tagged with `Asian` as redundant parent. Cluster framing decision #4 ("Asian-as-default fallback") asked whether 63 includes under-tagging — Opus read confirms no. Worth recording as a confirmed corpus characteristic.
+
+- **Session boundary held at one cluster.** Stop-point heuristic from "For next session" felt right — 18 entries took the bulk of the session (corpus queries + 7 agent dispatches + entry drafting + Notes synthesis + integration). Americas at ~22 entries is naturally next-session scope; smaller clusters may fit 1-2 per session.
+
+- **Pre-push code-reviewer agent caught 2 P2 internal-consistency findings on Opus-agent-produced content.** §11.4 Southeast Asian details-block summary header read "3 with country tag, 2 without" while the tagging-pattern paragraph below it enumerated "only 2 of the 4 cuisine lessons carry a country tag" plus 1 non-cuisine near-miss (Bats & Banana Pancakes) — header reframed to "2 of 4 cuisine + 1 non-cuisine near-miss." §11.7 Japanese tagging-pattern arithmetic was internally inconsistent ("6 of the 7 sampled lessons" + "Two looser tags exist" = 8, not 7) — rephrased to drop the precise-sample-count framing. Both fix-up'd in commit before push. Reinforces the kickoff pattern: dispatch reviewer on docs-only PRs too — count/math/cross-reference consistency is exactly the class of bug a fresh-eyes agent catches and a self-reviewer misses. THIRD time on the Stage 1 track that the pre-push agent caught real bugs missed by self-review (Sessions 60 `da09777`, 61 `a5b584b`, 62 fix-up commit).
+
+**For next session (Stage 1 Session 63 = Americas cluster).**
+
+- Branch off `main` at this session's PR squash-merge (TBD until PR opens + merges).
+- Populate Americas cluster per §12 framing block — ~22 entries (cluster root + 3 sub-regions + 14 country-specifics including 3 v3-absent `new` candidates + 4 kebab-case drift variants).
+- Dispatch ~5-6 Opus corpus-read agents for high-frequency / ambiguous values: Americas (170 — cluster root; ambiguity question #1 about under-tagging), North American (83), Latin American (77), Caribbean (17), Mexican (38). Optionally one of the `new` candidates (Central American 1, South American 1, Southern United States 1) if curriculum team wants verification before canonicalizing.
+- Stop at end of Americas cluster.
+
 ### Session 61 — 2026-05-10 — PR #481 ship cycle complete (round-1 + round-2 + Notes fix-up; squash-merge in progress)
 
 PR #481 (Stage 1 heritage worksheet scaffold) shipped through the standard review cycle:
@@ -103,7 +161,7 @@ PR #481 (Stage 1 heritage worksheet scaffold) shipped through the standard revie
 - **Round-1:** 5 accepted bot findings (F1 v3 path → Appendix A; F2 `####` heading depth standardized; F3 `null` root parent encoding; F4 Dominican added to Americas; F5 alias_map clarified), 1 rejected (F6 TOC §1-§8 note — defensible design). Includes the v3 baseline embedded as Appendix A — worksheet now self-contained for curriculum-team handoff. (`0c2e138`)
 - **Pre-push agent post-round-1** caught one F2-sweep miss in §5.2 prose (`### <cluster>...` left as 3-hash); separate fix-up commit. (`a5b584b`)
 - **Round-2:** 1 accepted (R2.2 Notes-field parsing convention clarified in §7), 3 rejected per round-cap + default-reject hardening (R2.1 diaspora placeholder; R2.3 data snapshot anchor; R2.4 ToC §1-§8 read-linearly note). (`b5c0020`)
-- **PR #481 squash-merge in progress** (commit hash TBD — backfill at start of Session 62).
+- **PR #481 squash-merged 2026-05-10 as `e05556a`** (backfilled Session 62).
 
 **Worksheet state at ship.** Header sections complete (§1 purpose, §2 hierarchy rules, §3 verdict vocab, §4 per-entry shape, §5 cluster framing pattern, §6 filter-UI tier conventions, §7 parsing convention). Cluster framing blocks pre-populated with Session 59 corpus distribution. Cross-cluster section §9.1-§9.4 stubbed. Cluster template §10. Cluster sections §11-§15 framing complete; per-value entries deliberately TBD. End-summary canonical-vocab table §16 templated empty. Appendix A v3 baseline reference embedded. **Per-value entries are the next track of work.**
 
