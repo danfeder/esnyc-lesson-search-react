@@ -1,12 +1,12 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-10 — Session 60 (Stage 1 heritage worksheet scaffold created as 2-file pattern at `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-*.md`; foundation-phase code track has no unblocked next PR — see Stage 1 execution status doc for per-cluster fill schedule).
+**Last updated:** 2026-05-10 — Session 61 (PR #481 ship cycle — round-1 + round-2 + Notes fix-up, squash-merge in progress; foundation-phase code track has no unblocked next PR — see Stage 1 execution status doc for per-cluster fill schedule).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Stage 1 heritage worksheet — scaffold SHIPPED Session 60 (2026-05-10); per-value fill is the next track.** PR #480 (Session 58 status doc refresh) merged Session 59 as `ab9f857`. With foundation-phase code track at 5/6+ PRs shipped + PROD-verified, no PR is unblocked next on that track (PR 3b / 5 / 6 all gated on Stage 1 / Stage 2 outputs). Stage 1 heritage is the unblocker. Session 59 closed out 4 corpus-evidence-driven design decisions through a guided walk-through PLUS a meta-decision to skip the `/kickoff-feature` 4-file scaffold (overkill for content-shaping work). Session 60 produced the 2-file scaffold (worksheet + execution status doc); per-value entry fill happens in subsequent sessions before curriculum-team handoff.
+**Stage 1 heritage worksheet — scaffold SHIPPED Sessions 60-61 (2026-05-10); PR #481 squash-merge in progress. Per-value fill (Asian cluster first, 18 entries — see Stage 1 status doc for breakdown) opens next session.** Session 60 created the 2-file scaffold (worksheet + execution status doc); Session 61 ran PR #481 through round-1 (5 accepted + 1 rejected of 6 bot findings — local v3 path → Appendix A; `####` heading depth standardized; root parent encoding standardized on `null`; Dominican added to Americas v3-corpus-absent set; alias_map clarified) + round-2 (1 accepted + 3 rejected of 4 findings — Notes-field parsing convention clarified; diaspora placeholder, data snapshot anchor, and ToC §1-§8 note all rejected per round-cap + default-reject hardening). Foundation-phase code track has no unblocked next PR — PR 3b / 5 / 6 all gate on Stage 1 / Stage 2 outputs.
 
 **Stage 1 work track lives at its own peer status doc:**
 - **Worksheet:** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — curriculum-team-facing deliverable. Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention) complete; cluster framing blocks pre-populated with corpus distribution data; per-value entries TBD subsequent sessions.
@@ -19,6 +19,7 @@
 - **PR 4** (#478 → squash `03970d0`, 2026-05-08): 21 third-party imports retired (`retired_at` soft-delete); 7 archive-only concept-recovery rows; FSA Pt 1 retitle; 8 filter surfaces gate retired rows.
 - **PR 3a** (#479 → squash `bb3372b`, 2026-05-08): `academicConcepts` in FTS + embeddings; `smart-search` reads `search_synonyms` from DB at request time; CHECK constraint locks multi-word values; 6 historically-broken queries (christmas / thanksgiving / halloween / easter / latino / hispanic) functional.
 - **PR #480** (squash `ab9f857`, 2026-05-09): Session 58 status doc refresh, docs-only.
+- **PR #481** (squash `<TBD — fill at next session>`, 2026-05-10): Stage 1 heritage worksheet scaffold (2-file pattern: worksheet + execution status doc; v3 baseline embedded as Appendix A); Sessions 60-61.
 
 **5/5 PROD verification probes for PR 3a + 3-signal `smart-search` edge fn deploy verification — ALL PASS** Session 58 (full record in that session's log entry below).
 
@@ -32,9 +33,9 @@
 **PR-cycle archival deferred:** Sessions 52-58 (PR 3a) entries remain in this active file for now. They'll move to `...-execution-status-archive.md` at the start of the next PR cycle on the foundation-phase code track (likely PR 5+, far in the future). Until then, the active file is a tolerable size and the entries are useful reference for any foundation-phase work that picks up before Stage 1 closes.
 
 **Branches:**
-- `main` at `ab9f857` (PR #480 squash-merge); origin matches.
-- **Active:** `docs/stage1-heritage-scaffold` (this session — Stage 1 scaffold; docs-only; PR-pending).
-- All foundation-phase feature branches deletable at convenience: `feat/metadata-foundation-search-infra-3a`, `feat/metadata-foundation-corpus-cleanup`, `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`. Plus `docs/session-58-pr3a-shipped` (PR #480 origin-deleted via `--delete-branch`; local kept for traceability).
+- `main` at `<TBD — PR #481 squash-merge in progress>` (or `ab9f857` if not yet merged); origin matches.
+- **Active:** none. PR #481 squash-merge in progress; scaffold SHIPPED.
+- All foundation-phase feature branches deletable at convenience: `feat/metadata-foundation-search-infra-3a`, `feat/metadata-foundation-corpus-cleanup`, `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`. Plus `docs/session-58-pr3a-shipped` (PR #480 origin-deleted via `--delete-branch`; local kept for traceability). Plus `docs/stage1-heritage-scaffold` (PR #481 origin-deleted via `--delete-branch`; local kept for traceability).
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -113,6 +114,8 @@ These flowed out of the PR 1 + PR 1b rituals (Sessions 13-36). General patterns 
 
 - **Project convention: future-dated migration filename timestamps are intentional.** Codex Round 2 of PR #479 flagged the `20260520120000_*` migration's body comment "Apple Story did not have lessonFormat at audit time on 2026-05-11" as an inconsistent/future date. Resolution: 2026-05-11 references the precedent migration's filename timestamp `20260511120000_*`, not a calendar audit date — the project deliberately uses near-future timestamps to guarantee correct sort ordering for new migrations. Future bot reviewers may flag similar dates; the convention is real but undocumented. Could go in `supabase/migrations/CLAUDE.md` as a "you'll see future dates in migration filenames; it's intentional" note. Trivial. (Source: Session 57 PR #479 round 2.)
 
+- **Stage 1 worksheet `Notes` field parsing convention — defer-confirm before parser implementation.** Round-2 R2.2 of PR #481 surfaced inconsistency between §7's parseable-fields list (which had `notes` listed) and §4's `**Notes:**` prose-block format (no leading bullet, free-form prose, lives outside the labeled-line shape). Resolved at spec level — §7 now explicitly excludes Notes from parseable fields and lists `**Notes:**` blocks alongside cluster framing as "not structurally parsed." Forward-looking concern: if a future parser implementation finds the "human-only prose" convention awkward (e.g., it may want to surface `**Notes:**` blocks alongside structured fields for reviewer context), revisit the convention. Worth flagging when parser work begins for PR 6+. (Source: PR #481 round 2 R2.2.)
+
 ## Pointers to durable context
 
 - **Kickoff prompt:** `docs/plans/2026-05-03-metadata-rebuild-foundation-kickoff.md` (paste at session start)
@@ -128,6 +131,44 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 61 — 2026-05-10 — PR #481 ship cycle complete (round-1 + round-2 + Notes fix-up; squash-merge in progress)
+
+**Branch:** `docs/stage1-heritage-scaffold` (continued from Session 60).
+
+**Done (3 fix-up commits + session-end status doc update):**
+
+- **Commit 1 (`0c2e138`):** PR #481 round-1 fix-ups for 5 accepted bot findings (claude-review + Codex pass on initial open):
+  - **F1 (convergent P1, both bots):** replaced absolute local v3 path (`/Users/danfeder/cCode/taggingv3/...`) with self-contained Appendix A (verbatim §3 Cultural Heritage from `esynyc-taxonomy-schema-v2.md`); status doc points at the appendix.
+  - **F2 (Codex P2):** per-value entry heading mismatch — §4 spec said `###`, §10 template said `####`. Standardized on `####` (proper nesting under `## Cluster N` → `### Per-value entries` → `####` per-value).
+  - **F3 (Codex P2):** root parent encoding — §4 + §10 said `<cluster_root>` placeholder; §7 JSON example used `null`. Standardized on `null`.
+  - **F4 (Codex P2):** added missing `Dominican` (v3-canonical, corpus-absent under Latin American) to Americas cluster framing alongside `Cajun/Creole`.
+  - **F5 (Claude P2):** alias_map JSON example used `"asian (lowercase)": "asian"` parenthetical pseudo-key + unexplained `"north-american": "north-american"` identity. Replaced with literal alias examples + explainer.
+  - **F6 (Claude P3, rejected):** TOC §8 starts at §9 — defensible design (TOC focuses on §9-§16 navigated content; §1-§8 are read-once methodology). Codex agreed as noise.
+
+- **Commit 2 (`a5b584b`):** pre-push code-reviewer agent (post-round-1) caught one F2-sweep miss — §5.2 line 224 prose still cited per-value blocks as `### <cluster>.<index>...` (3-hash). Same class as F2 (heading-depth inconsistency); one-character fix. Reinforces the kickoff PER-PR-RITUAL pattern: pre-push agent value reaffirmed (this is the SECOND time on PR #481 the agent caught real bugs missed by self-review — Session 60's `da09777` was the first).
+
+- **Commit 3 (`b5c0020`):** PR #481 round-2 fix-up for one accepted bot finding:
+  - **R2.2 (convergent Claude P2 / Codex P3):** §7 listed `notes` as a known parseable field, but §4 renders Notes as `**Notes:**` block (no leading bullet) outside the labeled-line shape. Removed `notes` from §7 parseable list; extended "not parsed structurally" enumeration to include `**Notes:**` blocks. 3 other round-2 findings rejected per round-cap + default-reject hardening for internal-only docs:
+    - R2.1 diaspora cluster placeholder `canonical_key` (Claude P2): cross-cluster fill is scheduled last per Stage 1 plan; no blocker.
+    - R2.3 cluster framing data-snapshot anchor (Claude P3): date is findable via Session 59 ref + status doc.
+    - R2.4 ToC §1-§8 read-linearly note (Claude P3): same class as round-1 F6; defensible design.
+
+- **Commit 4 (this commit):** Session 61 status doc updates (foundation-phase + Stage 1) + R2.2 follow-up captured in out-of-scope follow-ups list.
+
+**Process notes / observations:**
+
+- **Pre-push code-reviewer agent value reaffirmed.** Round-1's F2 sweep covered §4 spec + §10 template (×2); the agent caught a 3rd location (§5.2 prose) before push. SECOND time on this PR that the pre-push agent caught real bugs missed by self-review. On a docs-only PR with cross-references across sections, the agent earns its dispatch every time. (Already captured in `feedback_pr_bot_review_workflow.md` from prior sessions; reinforced again.)
+- **Round-cap + default-reject hardening worked cleanly.** Round-2 produced 4 findings, 1 accepted (Notes — convergent + 1-line fix), 3 rejected (non-blocking polish). Codex's triage of Claude's findings aligned with my reading on all 4 — independent verification.
+- **Bot voice convergence as priority signal — partially confirmed.** Round 1: F1 was convergent P1; both bots agreed on highest priority. Round 2: R2.2 (Notes field) was convergent P2/P3; both bots agreed it was a real ambiguity but Codex framed as defer-OK. Convergence still signals "real issue" but doesn't always elevate to blocker. (Already captured in `feedback_pr_bot_review_workflow.md`.)
+- **Session 61 = continuation of PR #481 review cycle.** Sessions 52-58 (PR 3a) entries + Sessions 59-61 (PR #481) entries remain in this active file pending PR-cycle archival at next foundation-phase code-track PR (likely PR 5+, far in the future).
+
+**For next session (Stage 1 Session 62 = Asian cluster per-value fill):**
+
+- Once PR #481 squash-merges to main, Session 62 opens by branching off main and starting Asian cluster per-value entries (~17 entries: 5 sub-region canonicals + ~9 country-specifics + 3 kebab-case drift variants). Read the **Stage 1 execution status doc** first — that's where Stage 1 next-session orientation lives. This foundation-phase status doc carries only the pointer.
+- One small carry-over: Session 62 should backfill the PR #481 squash-merge hash in this status doc's "PRs SHIPPED" list (currently TBD) and in the Branches block. Trivial first-task.
+
+**Out-of-scope follow-ups (this session):** Notes-field parsing convention captured as a forward-looking item in the out-of-scope list above (revisit when PR 6+ parser work begins).
 
 ### Session 60 — 2026-05-10 — Stage 1 heritage scaffold created (2-file pattern); per-value fill is next track
 

@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-10 — Session 60 (scaffold created; 2-file pattern established; per-value entries TBD subsequent sessions before curriculum-team handoff).
+**Last updated:** 2026-05-10 — Session 61 (PR #481 ship cycle complete: round-1 + round-2 + Notes fix-up; squash-merge in progress; Asian cluster per-value fill opens next session).
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -10,7 +10,7 @@
 
 ## Current state
 
-**Scaffold complete (Session 60, 2026-05-10).** Two files created:
+**Scaffold SHIPPED (Sessions 60-61, 2026-05-10).** PR #481 (round-1 + round-2 + Notes fix-up) squash-merge in progress. Two files shipped:
 
 1. `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — the worksheet itself. Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention) complete and load-bearing. Per-cluster framing blocks pre-populated with corpus distribution data from Session 59 query. Per-value entry blocks TBD subsequent sessions before curriculum-team handoff.
 2. This file (`...-execution-status.md`).
@@ -95,6 +95,26 @@ Stage 1 is **content-shaping**: there's no implementation plan with file paths a
 **When to revisit.** If a future content-shaping initiative (concepts worksheet round, ~8 smaller-field worksheets) follows this 2-file pattern successfully, it's worth promoting to a `feedback_*.md` rule. Until then, single-occurrence call.
 
 ## Session log
+
+### Session 61 — 2026-05-10 — PR #481 ship cycle complete (round-1 + round-2 + Notes fix-up; squash-merge in progress)
+
+PR #481 (Stage 1 heritage worksheet scaffold) shipped through the standard review cycle:
+
+- **Round-1:** 5 accepted bot findings (F1 v3 path → Appendix A; F2 `####` heading depth standardized; F3 `null` root parent encoding; F4 Dominican added to Americas; F5 alias_map clarified), 1 rejected (F6 TOC §1-§8 note — defensible design). Includes the v3 baseline embedded as Appendix A — worksheet now self-contained for curriculum-team handoff. (`0c2e138`)
+- **Pre-push agent post-round-1** caught one F2-sweep miss in §5.2 prose (`### <cluster>...` left as 3-hash); separate fix-up commit. (`a5b584b`)
+- **Round-2:** 1 accepted (R2.2 Notes-field parsing convention clarified in §7), 3 rejected per round-cap + default-reject hardening (R2.1 diaspora placeholder; R2.3 data snapshot anchor; R2.4 ToC §1-§8 read-linearly note). (`b5c0020`)
+- **PR #481 squash-merge in progress** (commit hash TBD — backfill at start of Session 62).
+
+**Worksheet state at ship.** Header sections complete (§1 purpose, §2 hierarchy rules, §3 verdict vocab, §4 per-entry shape, §5 cluster framing pattern, §6 filter-UI tier conventions, §7 parsing convention). Cluster framing blocks pre-populated with Session 59 corpus distribution. Cross-cluster section §9.1-§9.4 stubbed. Cluster template §10. Cluster sections §11-§15 framing complete; per-value entries deliberately TBD. End-summary canonical-vocab table §16 templated empty. Appendix A v3 baseline reference embedded. **Per-value entries are the next track of work.**
+
+**Updated for parser-future.** §7 now excludes `notes` from parseable fields (Notes blocks are human-only prose). If a future parser implementation wants to surface Notes alongside structured fields, that's a parser-side design choice to revisit then; the worksheet's spec is now consistent.
+
+**For next session (Stage 1 Session 62 = Asian cluster per-value fill).**
+
+- Branch off main at the PR #481 squash-merge commit (backfill the hash in both this doc and the foundation-phase doc as Session 62's first task).
+- Populate the Asian cluster's per-value entries: 18 entries (5 sub-region canonicals — Asian cluster root + East Asian, South Asian, Southeast Asian, Central Asian sub-regions + 10 country-specifics — Chinese, Japanese, Korean, Indian, Pakistani, Uzbek, Vietnamese, Sri Lankan, Malaysian, Taiwanese + 3 kebab-case drift variants — `asian`, `east-asian`, `south-asian`). Note: this corrects the "~17 / ~9 country-specifics" wording in the Session 60 entry; recount produced 18 / 10. Session 60 entry left as-is (historical).
+- Launch Opus-corpus-read agent for high-frequency / ambiguous values: Asian (63), East Asian (35), South Asian (15), Chinese (15), Japanese (9), Indian (7) — others can populate from structural call.
+- Stop at end of Asian cluster (the planned session boundary per cluster).
 
 ### Session 60 — 2026-05-10 — Stage 1 heritage scaffold created (2-file pattern)
 
