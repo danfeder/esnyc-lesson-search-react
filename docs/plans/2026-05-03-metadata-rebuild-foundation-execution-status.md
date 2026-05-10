@@ -1,12 +1,16 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-10 — Session 59 (PR #480 [Session 58 status doc refresh] merged on main as `ab9f857`; **Stage 1 heritage worksheet design considerations LOCKED** through 4 corpus-evidence-driven decisions in this session; four-file scaffold via `/kickoff-feature` is the next session's first action).
+**Last updated:** 2026-05-10 — Session 60 (Stage 1 heritage worksheet scaffold created as 2-file pattern at `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-*.md`; foundation-phase code track has no unblocked next PR — see Stage 1 execution status doc for per-cluster fill schedule).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Stage 1 heritage worksheet — design considerations LOCKED Session 59 (2026-05-10); 2-file scaffold pending next session.** PR #480 (Session 58 status doc refresh) merged Session 59 as `ab9f857`. With foundation-phase code track at 5/6+ PRs shipped + PROD-verified, no PR is unblocked next on that track (PR 3b / 5 / 6 all gated on Stage 1 / Stage 2 outputs). Stage 1 heritage is the unblocker. Session 59 closed out 4 corpus-evidence-driven design decisions through a guided walk-through (full record in Session 59 log entry below) PLUS a meta-decision that the `/kickoff-feature` 4-file scaffold (design + impl plan + kickoff prompt + status doc) is overkill for content-shaping work — Stage 1 needs only 2 files: the worksheet itself (its header section IS the design doc for curriculum team) + a short execution status doc (me-and-user-only progress tracker). Next session creates those 2 files manually; pastes the Session 59 locked decisions into the worksheet header.
+**Stage 1 heritage worksheet — scaffold SHIPPED Session 60 (2026-05-10); per-value fill is the next track.** PR #480 (Session 58 status doc refresh) merged Session 59 as `ab9f857`. With foundation-phase code track at 5/6+ PRs shipped + PROD-verified, no PR is unblocked next on that track (PR 3b / 5 / 6 all gated on Stage 1 / Stage 2 outputs). Stage 1 heritage is the unblocker. Session 59 closed out 4 corpus-evidence-driven design decisions through a guided walk-through PLUS a meta-decision to skip the `/kickoff-feature` 4-file scaffold (overkill for content-shaping work). Session 60 produced the 2-file scaffold (worksheet + execution status doc); per-value entry fill happens in subsequent sessions before curriculum-team handoff.
+
+**Stage 1 work track lives at its own peer status doc:**
+- **Worksheet:** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — curriculum-team-facing deliverable. Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention) complete; cluster framing blocks pre-populated with corpus distribution data; per-value entries TBD subsequent sessions.
+- **Stage 1 execution status:** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` — project-internal progress tracker for Stage 1. Carries the 4 Session 59 locked design decisions with full rationale. Peer to (not folded into) this foundation-phase status doc. **Read this for Stage 1 next-session orientation; this foundation-phase status doc only carries the pointer.**
 
 **Foundation-phase substrate live in PROD — 5 of 6+ PRs SHIPPED:**
 - **PR 1** (#475 → squash `8497752`, 2026-05-05): structural schema (`lesson_format` dropped; `tags`/`activity_type`/`crf_confirmed`/`series_id`/`part_number` columns; Zod canonical + review-form schemas with bidirectional mappers + Deno mirror; 3 CHECK constraints + `_validate_meta_enum_values` trigger guard; "Lesson Type" sidebar filter; `complete-review` Zod validation).
@@ -23,19 +27,13 @@
 - **PR 5+** (later): D4 vocab canonicalization (Title Case across ~10 fields; Pydantic on all 17 fields). **Gated until Stage 1 heritage + concepts worksheets land.**
 - **PR 6+** (later): Stage 2 corpus re-tag + reviewer validation flow.
 
-**Stage 1 heritage scaffold — for next session (2-file plan):**
-1. **Branch off** `main` at `ab9f857` — e.g., `feat/metadata-foundation-stage1-heritage-scaffold`.
-2. **Apply `git stash pop`** (Session 59's local status doc update) as commit 1 on the new feature branch — per Session 51 / Session 58 stash precedent. Stash message: "Session 59 status doc — Stage 1 design considerations LOCKED + PR #480 merged + 2-file plan decided".
-3. **Skip `/kickoff-feature`** — 4-file scaffold is overkill for content-shaping work (no implementation plan with file paths + code snippets needed; no per-PR ritual needed). Create 2 files manually instead.
-4. **File 1: `docs/plans/2026-05-XX-stage-1-heritage-worksheet.md`** — the worksheet itself. Header section doubles as design doc for curriculum team (methodology + verdict definitions + hierarchy rules + parsing convention + cluster framing pattern). Per-cluster framing blocks + per-value entries follow. Methodology to encode: v3 baseline (`/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md`) + per-value Opus-corpus-read evidence + reviewer/user validate. Per-entry shape: canonical key + surface label + alias list + schema position (parent field) + filter-UI tier + frequency + content-evidence verdict + cluster-level prose summary fields.
-5. **File 2: `docs/plans/2026-05-XX-stage-1-heritage-execution-status.md`** — short me-and-user-only doc (~50-100 lines). Holds: current cluster, progress per cluster, next-session pickup pointer, decisions-not-relevant-to-curriculum-team (the 4 Session 59 locked decisions live here too as the internal rationale record), process notes. Equivalent to this foundation-phase status doc but scaled down.
-6. **Encode Session 59 locked decisions** (4 decisions captured in Session 59 log entry below) into BOTH files: worksheet header (curriculum-team-facing summary) + execution status doc (full rationale + tradeoffs). The 4 decisions: hierarchy depth = 2-level-flexible parent chains; hierarchy artifact UI = full tree; cluster decisions pattern = C narrative + per-value SoT + cluster prose blocks + cross-cluster section; live canonical-preview = B2 tree-filter mode toggle.
-7. **PR-cycle archival timing:** when the Stage 1 execution status doc is created, move PR 3a session entries (52-58) from this active foundation-phase status doc into `...-execution-status-archive.md`. Foundation-phase status doc keeps a short pointer to the Stage 1 execution status doc location.
+**For later (whenever PR 3b / 5 / 6 unblocks):** branch off `main`; review out-of-scope follow-ups below; follow the kickoff-prompt session-start ritual. PR 5 (D4 vocab canonicalization) unblocks once Stage 1 heritage worksheet completes; PR 6+ (Stage 2 re-tag) unblocks after PR 5 lands.
 
-**For later (whenever PR 3b / 5 / 6 unblocks):** branch off `main`; review out-of-scope follow-ups below; follow the kickoff-prompt session-start ritual.
+**PR-cycle archival deferred:** Sessions 52-58 (PR 3a) entries remain in this active file for now. They'll move to `...-execution-status-archive.md` at the start of the next PR cycle on the foundation-phase code track (likely PR 5+, far in the future). Until then, the active file is a tolerable size and the entries are useful reference for any foundation-phase work that picks up before Stage 1 closes.
 
 **Branches:**
 - `main` at `ab9f857` (PR #480 squash-merge); origin matches.
+- **Active:** `docs/stage1-heritage-scaffold` (this session — Stage 1 scaffold; docs-only; PR-pending).
 - All foundation-phase feature branches deletable at convenience: `feat/metadata-foundation-search-infra-3a`, `feat/metadata-foundation-corpus-cleanup`, `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`. Plus `docs/session-58-pr3a-shipped` (PR #480 origin-deleted via `--delete-branch`; local kept for traceability).
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
@@ -130,6 +128,38 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 60 — 2026-05-10 — Stage 1 heritage scaffold created (2-file pattern); per-value fill is next track
+
+**Branch:** `docs/stage1-heritage-scaffold` (off `main` at `ab9f857`).
+
+**Done (2 commits expected — Session 59 stash recovery + scaffold files bundled with this status doc update):**
+
+- **Commit 1 (`92b088b`):** popped Session 59 stash; recovered foundation-phase status doc Session 59 entry verbatim (the entry locking the 4 design decisions + the 2-file scaffold meta-decision). No editorial changes.
+- **Commit 2 (this commit):** bundled the Stage 1 scaffold creation + foundation-phase status doc update:
+  - **Created** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — ~700-line curriculum-team-facing worksheet. Header sections complete and load-bearing (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention). Cluster framing blocks for 5 regional clusters (Asian / Americas / African / European / Middle Eastern) pre-populated with corpus distribution data from Session 59 query (re-run this session against TEST DB; 76 distinct values confirmed stable). Cross-cluster section §9 stubbed with diaspora handling, multi-parent values, filter-UI tier conventions, naming conventions. Cluster template §10 annotated. End-summary canonical-vocab table §16 templated but empty (regenerates mechanically from per-value entries).
+  - **Created** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` — ~150-line project-internal progress tracker. Carries the 4 Session 59 locked design decisions with full rationale + tradeoffs + worksheet implications. Session 60 entry documents this scaffold work.
+  - **Updated** this foundation-phase status doc: Current State header rewritten to point at the Stage 1 scaffold files; "Last updated" line updated to Session 60; Branches section adds the active branch; this Session 60 log entry added.
+
+**Decisions made this session:**
+
+- **Pre-populate cluster framing blocks with corpus distribution; defer per-value entries.** Cluster framing is reference data the curriculum team reads before working through entries — having it filled in makes the scaffold immediately useful for understanding shape of the work. Per-value entries are time-consuming to populate (Opus-corpus-read agent dispatches for high-frequency values) and naturally span subsequent sessions one cluster at a time. Cleanest scaffold/fill split.
+- **Cluster fill order: Asian first.** Asian cluster has cleanest hierarchy structure (5 sub-regions + 9 country-specifics + 3 kebab-case drift variants = ~17 per-value entries). Tests the per-value entry format on a complete cluster before scaling to bigger clusters (Americas has ~22 entries; cross-cluster diaspora is its own complexity). Captured as next-session pointer in the Stage 1 status doc.
+- **No PR for the scaffold yet (in-session pending decision).** Once these 3 commits land on the branch, the next ritual step is push + open docs-only PR for user review. Following the kickoff "PER-PR RITUAL" — pre-push code-reviewer agent dispatch will happen before push.
+
+**Process notes / observations:**
+
+- **2-file pattern landed cleanly on first attempt.** Session 59's meta-decision to skip `/kickoff-feature` 4-file scaffold was vindicated in execution: the 2 files are clearly distinguishable in purpose (worksheet = deliverable + curriculum-team-facing design doc via its header; status doc = project-internal progress tracker + rationale). A 4-file scaffold would have produced a redundant kickoff prompt (no per-PR ritual to enforce) and an implementation plan that would have just restated the worksheet's "fill these clusters in this order." Worth tracking whether this pattern repeats successfully across concepts worksheet (~211 values, next Stage 1 round after heritage) before promoting to `feedback_*.md`.
+- **Pre-populating cluster framing blocks turned out to be more substantive than expected.** Each framing block surfaces 3-5 cluster decisions that the curriculum team needs to make. Drafting those decisions surfaced multi-parent ambiguities (Egyptian, Persian, Moroccan, Spanish) that needed a cross-cluster home in §9.2. The scaffold session is doing some real design work, not just structural typing.
+- **Foundation-phase status doc gets thinner; Stage 1 status doc absorbs the load.** Sequential pattern: foundation-phase status doc carries pointers; Stage 1 status doc carries Stage-1-specific session entries and design rationale. When the concepts worksheet starts (next Stage 1 round), it'll get its own peer status doc. Each work track's status doc stays focused on that track's per-session journal.
+
+**For next session (Stage 1 Session 61 = Asian cluster per-value fill):**
+
+- **Read the Stage 1 execution status doc first** — that's where the next-session pointer lives now, not in this foundation-phase doc.
+- This foundation-phase doc carries only the pointer to Stage 1; the substantive Stage 1 next-session orientation is in the Stage 1 status doc's "For next session" section.
+- If foundation-phase code-track work picks up before Stage 1 closes (unlikely but possible — e.g., if a discovered foundation-phase regression needs a fix-up PR), use the standard kickoff session-start ritual against this doc.
+
+**Out-of-scope follow-ups (this session):** none new.
 
 ### Session 59 — 2026-05-10 — PR #480 merged + Stage 1 heritage worksheet design considerations LOCKED through corpus-evidence-driven walk-through
 
