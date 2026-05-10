@@ -221,7 +221,7 @@ This block is **reference data**; the curriculum team reads it before working th
 
 ### 5.2 Per-value entries (source of truth)
 
-The series of `### <cluster>.<index>. <surface_label>` blocks per §4. These are the **vocabulary changes** consumers read mechanically.
+The series of `#### <cluster>.<index>. <surface_label>` blocks per §4. These are the **vocabulary changes** consumers read mechanically.
 
 ### 5.3 Cluster decision summary block (the WHY)
 
