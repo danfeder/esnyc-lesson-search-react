@@ -141,6 +141,8 @@ Stage 1 is **content-shaping**: there's no implementation plan with file paths a
 
 - **Session boundary held at one cluster.** Stop-point heuristic from "For next session" felt right — 18 entries took the bulk of the session (corpus queries + 7 agent dispatches + entry drafting + Notes synthesis + integration). Americas at ~22 entries is naturally next-session scope; smaller clusters may fit 1-2 per session.
 
+- **Pre-push code-reviewer agent caught 2 P2 internal-consistency findings on Opus-agent-produced content.** §11.4 Southeast Asian details-block summary header read "3 with country tag, 2 without" while the tagging-pattern paragraph below it enumerated "only 2 of the 4 cuisine lessons carry a country tag" plus 1 non-cuisine near-miss (Bats & Banana Pancakes) — header reframed to "2 of 4 cuisine + 1 non-cuisine near-miss." §11.7 Japanese tagging-pattern arithmetic was internally inconsistent ("6 of the 7 sampled lessons" + "Two looser tags exist" = 8, not 7) — rephrased to drop the precise-sample-count framing. Both fix-up'd in commit before push. Reinforces the kickoff pattern: dispatch reviewer on docs-only PRs too — count/math/cross-reference consistency is exactly the class of bug a fresh-eyes agent catches and a self-reviewer misses. THIRD time on the Stage 1 track that the pre-push agent caught real bugs missed by self-review (Sessions 60 `da09777`, 61 `a5b584b`, 62 fix-up commit).
+
 **For next session (Stage 1 Session 63 = Americas cluster).**
 
 - Branch off `main` at this session's PR squash-merge (TBD until PR opens + merges).

@@ -556,7 +556,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **verdict:** `<to_fill>`
 - **aliases:** `[]`
 
-<details><summary>Corpus evidence (5 active lessons; 3 with country tag, 2 without)</summary>
+<details><summary>Corpus evidence (5 active lessons — 4 SE-Asian cuisine + 1 non-cuisine near-miss; 2 of the 4 cuisine lessons carry an SE-Asian country tag, 2 don't)</summary>
 
 - **`1pjRERorBS4k4iil9VRgiRzjDHZtunwn3v-NFt7xTuwQ` — "Mushroom Khao Soi":** "Students will make khao soi, a dish from Thailand, Myanmar, and Laos... we are continuing this month to explore recipes that come from Asia and the Pacific Islands, as a way of celebrating AAPI Heritage Month. Show a map and point out Thailand, Myanmar, and Laos." (Tagged `Southeast Asian + Asian` only — no country tag despite explicit Thai/Lao/Burmese framing.)
 - **`1vtacAdf80q9FyZ4dEEzWmVLdycRmgJ7_MSRbrweoGwA` — "AAPI Heritage Month - Philippines & Lumpia":** "A lesson focusing on the Philippines... Students will also prepare lumpia, which is a popular Filipino recipe... Because of both its location and history of colonization (especially by Spain), culture and food in the Philippines is a mixture of Asian and Spanish flavors." (Tagged `Southeast Asian + Asian` only — explicitly Filipino but no Filipino country tag.)
@@ -621,7 +621,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **`1d1KP9lfI6jQdF9sBU74ncPv36OZZbTfm` — "Vegetable Ramen":** "Ramen is a Japanese dish (show Japan on Map). The word ramen means 'pulled noodles'. Noodles came from China 4000 years ago... We're going to cook up some ramen noodles today, add them to broth, and top them with fresh vegetables." Toppings include mushrooms, scallions, ginger, mirin-style aromatics; chopsticks listed in materials.
 - **`1R6DqXH9XvSvZq9B0106w0CHtS3kvuJNX53taROiZZBE` — "Daikon Pickles & Furikake":** "The recipes we are creating today are from Japan and Korea. We will be cooking the leaves to make a recipe called..." Lesson uses daikon radish + furikake (a canonical Japanese rice seasoning); CR section explicitly invites students to connect to family heritage and home country.
 
-**Tagging pattern:** Tagging is mostly semantically consistent — 6 of the 7 sampled lessons feature core Japanese dishes/ingredients (sushi, nori, ramen, daikon, furikake, miso) with explicit Japan framing in the lesson body. Two looser tags exist — "Food Preservation" only mentions sushi as one example among many global preservation techniques, and "Spring and Summer Plants" centers Mexican amaranth with mizuna as a secondary tasting. Both feel weaker than the cuisine-focused majority.
+**Tagging pattern:** Tagging is mostly semantically consistent — most sampled lessons feature core Japanese dishes/ingredients (sushi, nori, ramen, daikon, furikake, miso) with explicit Japan framing in the lesson body. Two looser tags exist — "Food Preservation" only mentions sushi as one example among many global preservation techniques, and "Spring and Summer Plants" centers Mexican amaranth with mizuna as a secondary tasting. Both feel weaker than the cuisine-focused majority.
 
 </details>
 
