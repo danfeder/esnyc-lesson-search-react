@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-10 — Session 63 (PR #482 round-1 fix-up applied — Americas next-session bullet regenerated from §12 + worksheet status banner SCAFFOLD → PRE-HANDOFF; Americas cluster fill is next-session work).
+**Last updated:** 2026-05-10 — Session 63 (PR #482 round-1 + round-2 fix-ups applied — Americas bullet regenerated from §12 + worksheet status banner SCAFFOLD → PRE-HANDOFF + §7 parser invariant note added + session-number collision corrected; awaiting merge; Americas cluster fill is next-session work).
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -10,7 +10,7 @@
 
 ## Current state
 
-**Asian cluster ✅ Session 62 (2026-05-10).** Worksheet §11 has all 18 per-value entries populated (1 cluster root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift merge records). 7 of those have Opus-corpus-read `<details>` blocks integrated (Asian, East Asian, South Asian, Southeast Asian, Chinese, Japanese, Indian); the remaining 11 entries are structural populations per the §4 methodology. **PR #482 in review cycle — round-1 fix-up applied Session 63 (Americas next-session bullet regenerated from §12; worksheet banner SCAFFOLD → PRE-HANDOFF; foundation-phase status doc Session 62 line tightened); awaiting next round or merge.**
+**Asian cluster ✅ Session 62 (2026-05-10).** Worksheet §11 has all 18 per-value entries populated (1 cluster root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift merge records). 7 of those have Opus-corpus-read `<details>` blocks integrated (Asian, East Asian, South Asian, Southeast Asian, Chinese, Japanese, Indian); the remaining 11 entries are structural populations per the §4 methodology. **PR #482 in review cycle — round-1 + round-2 fix-ups applied Session 63 (round-1: Americas bullet regenerated + banner SCAFFOLD → PRE-HANDOFF + foundation-phase line tightened; round-2: §7 parser invariant note added + session-number collision corrected + line 23 stale breakdown removed); awaiting merge.**
 
 **What's done:**
 
@@ -20,7 +20,7 @@
 
 **What's NOT done:**
 
-- §12 Americas cluster: per-value entries TBD (~22 entries — cluster root + 3 sub-regions + 14 country-specifics including 3 v3-absent `new` candidates + 4 kebab-case drift variants).
+- §12 Americas cluster: per-value entries TBD (~22 entries — see "For next session" block below for the per-bucket breakdown drawn from worksheet §12).
 - §13 African cluster: per-value entries TBD (~9 entries).
 - §14 European cluster: per-value entries TBD (~9 entries).
 - §15 Middle Eastern cluster: per-value entries TBD (~6 entries).
@@ -28,7 +28,7 @@
 - §16 end-summary canonical-vocab table: populates mechanically from filled entries; empty until per-value entries fill.
 - Cluster decision summary blocks: always TBD (curriculum team writes at handoff).
 
-**For next session (Stage 1 Session 63 = Americas cluster):**
+**For next session (Stage 1 Session 64 = Americas cluster):**
 
 1. Branch off `main` at the merge commit for this session's PR.
 2. Populate Americas cluster's per-value entries per §12 framing block. Total: **22 entries** (or 23 if Cajun/Creole gets an Americas entry per §12 cluster decision #5 — default is to leave it in cross-cluster §9.1):
