@@ -282,10 +282,10 @@ When the worksheet is filled and ready for hand-off, the next-stage tool parses 
 - **<field_name>:** <value>
 ```
 
-- `<field_name>` is a known field (canonical_key / surface_label / parent / filter_ui_tier / verdict / merge_into / split_into / drop_to / aliases / notes)
+- `<field_name>` is a known field (canonical_key / surface_label / parent / filter_ui_tier / verdict / merge_into / split_into / drop_to / aliases)
 - `<value>` is field-typed (string / canonical_key-shape / enum / list)
 - Inline HTML comments (`<!-- ... -->`) are tolerated and stripped by the parser
-- Cluster framing blocks and cluster decision summary blocks are **not** parsed structurally — they are human reference / narrative
+- Cluster framing blocks, cluster decision summary blocks, and per-entry `**Notes:**` blocks (no leading bullet — see §4) are **not** parsed structurally — they are human reference / narrative
 - The end-summary canonical-vocab table (§16) is **generated mechanically** from parsed per-value entries; do not hand-edit it (changes get clobbered on re-parse)
 
 **Skipped entries:** if a `verdict` line is missing or blank, the parser warns but does not fail. Unparsed entries are excluded from the canonical vocabulary output until filled.
