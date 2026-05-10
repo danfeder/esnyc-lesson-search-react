@@ -478,7 +478,310 @@ The following block is a **template** showing the shape of a cluster section. Pe
 
 ### Per-value entries
 
-*(TBD — per-value entry blocks for Asian cluster populated in subsequent session before handoff)*
+#### 11.1. Asian (63)
+
+- **canonical_key:** `asian`
+- **surface_label:** `Asian`
+- **parent:** `null`
+- **filter_ui_tier:** `top`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (63 active lessons; 4 without sub-region/country, 59 with at least one child tag)</summary>
+
+- **`1puemyxDt0Cy3w5acFa9bjZGdfWEsZLs5` — "Tastes Around the World":** Tagged `[Asian, Latin American, Mediterranean]`. A gallery-walk lesson with six country stations spanning continents — "Dominican Republic: tostones and oregano / Japan: green tea and seaweed / Ecuador: pickled onions and cilantro / India: chai and garam masala / Colombia: arepas and dragon fruit / Ethiopia: dates and turmeric." `Asian` carries two distinct countries (Japan + India) inside one comparative lesson.
+- **`1lv-gM8xprEt5t1YVLxvBN8eYI0uabXRN8XETqJVOJZQ` — "5th Grade Food Cultures Unit Overview":** Tagged `[Latin American, Asian, African, European]`. Summary — "Through this series of six lessons students will learn about food cultures from around the world. These lessons will cover the countries Ukraine, Uzbekistan, Mexico, China, and some Caribbean Island nations." `Asian` is the umbrella for both Uzbekistan (Central Asian) and China (East Asian) inside a single curated unit.
+- **`1iTH3kooXMEVDsZaV1wqVGLvgXO3c55lrxtsIHGlaz28` — "India / Aloo Gobi":** Tagged `[Indian, South Asian, Asian]`. Single-country lesson — "Introduce country of India: map, flag, language, food facts / India is a large country in Asia... Indian dishes often have many flavorful spices and seasonings / Introduce recipe: Aloo Gobi." `Asian` here is a redundant ancestor in the 3-level chain Indian → South Asian → Asian, not an independent signal.
+
+**Tagging pattern:** Cohort A (4/63) is genuinely pan-Asian — all four are around-the-world comparison or multi-country curriculum lessons where `Asian` carries 2+ unrelated countries (Japan+India, China+Uzbekistan, etc.) and there is no single sub-region to assign. Cohort B (59/63) uses `Asian` as the redundant root of a Country → Sub-region → `Asian` ancestry chain (e.g., Vietnamese/Southeast Asian/Asian, Japanese/East Asian/Asian, Uzbek/Central Asian/Asian); the `Asian` tag adds no information beyond what the children already encode. No under-tagged Cohort A cases surfaced — when a country is identifiable, the writer tagged the country.
+
+</details>
+
+**Notes:** Cluster root for the Asian cluster. Cohort A's 4 lessons demonstrate `Asian` as a meaningful pan-region tag (not under-tagging) — multi-country comparison and world-foods unit lessons. Cohort B's 59 lessons use `Asian` as redundant hierarchical-parent ancestry; the worksheet's parent-chain shape preserves this without requiring it to carry independent information. Filter-UI tier `top` is the cluster-root default and the corpus signal supports it.
+
+---
+
+#### 11.2. East Asian (35)
+
+- **canonical_key:** `east-asian`
+- **surface_label:** `East Asian`
+- **parent:** `asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (35 active lessons; 9 without a country tag, 26 with at least one)</summary>
+
+- **`16ZNi4Oeu5j4mMOZrEk7OYlrqIhSsqj_f` — "Agar Jelly - MS"** (no-country cohort; tagged `East Asian + Asian` only): Lesson explicitly disclaims country specificity — "We are making a dessert that many people enjoy during the lunar new year. Note: some students may know this holiday as Chinese new year, but it is celebrated in many countries throughout Asia. The main ingredient, agar, comes from seaweed — similar to what we used to make sushi last week." Genuinely pan-East-Asian framing (Lunar New Year as multi-country holiday + agar dessert + cross-reference to Japanese sushi).
+- **`1HPlsYxxlLedPhVzJETkI62iz3JW9q7ytnVMKXAswiHM` — "Rice Paddy Modeling"** (no-country cohort; tagged `East Asian + Asian` only): Body is unambiguously China-specific — "Ask students to tell you what they already know about the ancient Chinese empire. Explain that today is all about one of the foods that first came from Ancient China: rice!" No mention of Japan, Korea, or other East Asian rice cultures — this is a missing-country tag (should also carry `Chinese`).
+- **`1-1T0a4pCECA5e0ek7pcvFoTRa3-piEGwGHKWrsnxtUs` — "Chinese Scrambled Eggs and Soybean Dumplings"** (with-country cohort; tagged `Chinese + East Asian + Asian`): Summary — "Students will learn to make scrambled eggs and vegetable dumplings in the Chinese tradition..." — clean hierarchical chain (country + sub-region + region all present).
+
+**Tagging pattern:** Cohort B (26 lessons) is consistent — each carries one country tag plus `East Asian + Asian` as parent-chain redundancy. Cohort A (9 lessons without a country) is mixed — some are genuinely pan-East-Asian (Agar Jelly explicitly cross-references Chinese/Japanese traditions), but others are clearly missing a country tag (Rice Paddy Modeling is explicitly Chinese in the body; "Ancient China Bingo" is in the title itself). One Cohort A lesson — "Bánh Mì" — is tagged `Vietnamese + East Asian + Asian`, which is a mis-tag (Vietnam is Southeast Asian, not East Asian). Net: `East Asian` legitimately exists as a sub-region for genuine multi-country lessons, but at least 3-4 of the 9 Cohort A rows need a country tag added during re-tagging.
+
+</details>
+
+**Notes:** v3 canonical sub-region. Filter-UI tier `sub` proposed by frequency default (35 lessons; just under the ≥40 `top` threshold). Curriculum team may promote to `top` given near-threshold count and cluster significance. Corpus surfaces one mis-tagged lesson (Bánh Mì should be Southeast Asian, not East Asian) — flag for Stage 2 re-tag fix-up.
+
+---
+
+#### 11.3. South Asian (15)
+
+- **canonical_key:** `south-asian`
+- **surface_label:** `South Asian`
+- **parent:** `asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (15 active lessons; 4 without a country tag, 11 with at least one)</summary>
+
+- **`0BwC8Pf3ZwAXjNnhsOUZNLVRIUE0` — "Aloo Gobi (3rd-5th)":** "Welcome back to your kitchen, everyone! Today we will make an Indian and Pakistani dish called Aloo Gobi... It is a dish made with spices, potatoes, and cauliflower. Aloo is the Hindu word for potato and gobi means cauliflower." (Tagged `[South Asian, Asian]` only — no Indian or Pakistani country tag despite the lesson explicitly naming both.)
+- **`1aqSoaGDAVFvSWjZJeKAEIkHvPdrWKsxq` — "Black Bean Burgers":** "One of the countries mentioned in the article was India. Many people in India are vegetarians... because their religion considers cows a sacred animal... So instead of eating the hamburgers made of meat that you are used to, they eat veggie burgers instead." (Tagged `[North American, South Asian, Americas]` — India-anchored but no Indian country tag.)
+- **`1V7feFPt6bZc0b695g_3Qe_U4AAE-xO5s` — "Sri Lankan Curry":** "This month we are making food from Southeast Asia from a small country called Sri Lanka (show on map). Sri Lanka is close to India and has a lot of influences from other countries that have colonized them in the past (Britain, Portugal, Amsterdam). This is a reason there are now many more countries that eat curry. One of the most important ingredients in our Sri Lankan curry is coconut milk!" (Tagged `[Sri Lankan, South Asian, Asian]`.)
+
+**Tagging pattern:** The 4 no-country `South Asian` lessons are not genuinely pan-South-Asian — they explicitly name India and/or Pakistan in the body and look like missing country tags. The single `Sri Lankan` lesson is substantive (map activity, geography, colonial history, regional curry comparison) and reads as a strong candidate for `Sri Lankan` as a `new` canonical child of `South Asian`.
+
+</details>
+
+**Notes:** v3 canonical sub-region. The Sri Lankan Curry lesson body mis-locates Sri Lanka as "Southeast Asia" (it's geographically South Asia); the tagging itself is correct (`Sri Lankan + South Asian + Asian`). The 4 no-country `South Asian` lessons look like missing-country tags (Aloo Gobi mentions Indian AND Pakistani; Black Bean Burgers anchors on India explicitly) — flag for Stage 2 re-tag.
+
+---
+
+#### 11.4. Southeast Asian (5)
+
+- **canonical_key:** `southeast-asian`
+- **surface_label:** `Southeast Asian`
+- **parent:** `asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (5 active lessons; 3 with country tag, 2 without)</summary>
+
+- **`1pjRERorBS4k4iil9VRgiRzjDHZtunwn3v-NFt7xTuwQ` — "Mushroom Khao Soi":** "Students will make khao soi, a dish from Thailand, Myanmar, and Laos... we are continuing this month to explore recipes that come from Asia and the Pacific Islands, as a way of celebrating AAPI Heritage Month. Show a map and point out Thailand, Myanmar, and Laos." (Tagged `Southeast Asian + Asian` only — no country tag despite explicit Thai/Lao/Burmese framing.)
+- **`1vtacAdf80q9FyZ4dEEzWmVLdycRmgJ7_MSRbrweoGwA` — "AAPI Heritage Month - Philippines & Lumpia":** "A lesson focusing on the Philippines... Students will also prepare lumpia, which is a popular Filipino recipe... Because of both its location and history of colonization (especially by Spain), culture and food in the Philippines is a mixture of Asian and Spanish flavors." (Tagged `Southeast Asian + Asian` only — explicitly Filipino but no Filipino country tag.)
+- **`1xA88OeHAL5csyB1zfUwvQaibMNdryE7c` — "Bats & Banana Pancakes":** "Bananas originated in Southeast Asia, in the jungles of Malaysia, Indonesia or the Philippines where many varieties of wild bananas still grow today." (Tagged `Southeast Asian + Asian + Caribbean + Latin American + Americas` — Southeast Asia surfaces only as an origin-story aside in a bat-pollinator lesson.)
+
+**Tagging pattern:** `Southeast Asian` has a coherent corpus signal — 4 of 5 lessons cook a genuinely SE-Asian dish (Thai/Lao khao soi, Malaysian ABC shaved ice, Filipino lumpia, Vietnamese summer rolls) and frame the region explicitly. The 5th (Bats & Banana Pancakes) is a near-miss using SE Asia only as a banana-origin reference. Country-tag coverage is incomplete — only 2 of the 4 cuisine lessons carry a country tag; Khao Soi and Lumpia should but don't. Implication — keep `Southeast Asian` as a canonical sub-region. The cluster is real and pedagogically used (AAPI Heritage Month framing); collapsing to Asian would lose the deliberate regional grouping. Stage 2 should add missing country tags (Thai/Lao for Khao Soi, Filipino for Lumpia) and re-evaluate whether Bats & Banana Pancakes should drop the SE-Asian tag entirely.
+
+</details>
+
+**Notes:** v3 canonical sub-region. At the ≥5 corpus-read threshold; included. Signal supports keeping the sub-region (4/5 lessons are genuine SE-Asian cuisine with AAPI Heritage Month framing). Country-tag coverage issues noted for Stage 2.
+
+---
+
+#### 11.5. Central Asian (4)
+
+- **canonical_key:** `central-asian`
+- **surface_label:** `Central Asian`
+- **parent:** `asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical sub-region. Below the ≥5 corpus-read threshold; structural call. The single country canonical under Central Asian is `Uzbek` (4 lessons); the sub-region + country combine to 8 lessons of Central Asian content. Filter-UI tier `sub` proposed despite frequency 4 (below the default `sub` threshold of 5) — v3 canonical status and sole-parent-for-Uzbek role support sub-tier. Curriculum team may demote to `internal` if they prefer the strict frequency default.
+
+---
+
+#### 11.6. Chinese (15)
+
+- **canonical_key:** `chinese`
+- **surface_label:** `Chinese`
+- **parent:** `east-asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (15 active lessons tagged with `Chinese`)</summary>
+
+- **`1JCT_JOaWRCF_-9M_0P3VVVU_seTz8xcr7VKzkdA8rLk` — "Smashed Cucumber Salad":** "China is the 3rd biggest country in the world... The weather and food also changes in different areas of China. Today we are making a recipe from the Sichuan region, which is near the middle of China." Show students China and the Sichuan region on the map.
+- **`1FUV91GHRSx5T0w2VYJgZlZjqid4vU7-Ic-Hra6rV5Q8` — "Lucky 8 Stir Fry":** "Eight is a lucky number in Chinese culture, especially around Lunar New Year. The word in Chinese for the number 'eight' is the same as the word for 'prosperity'... Today we are going to be making a Chinese dish that has eight vegetables in it..." (bok choy, snow peas, bean sprouts, mushroom).
+- **`1eViPJBz9xeqq8o3U3e3MTaccETv6n2C1Q-w6DhG1E-I` — "3rd Grade Chinese-Style Dumplings":** Soybean dumplings with wonton wrappers, scallion, ginger, garlic, white pepper, rice wine vinegar, sesame oil, soy sauce; steamed in bamboo baskets, eaten with chopsticks. "Today we are traveling to China to make Chinese style dumplings... Play Chinese music as students come into classroom."
+
+**Tagging pattern:** Tagging is semantically consistent — every sampled lesson shows recognizable Chinese-heritage cuisine, ingredients, or cultural framing. The cluster is dumpling/Lunar-New-Year heavy (~7 of 15 — vegetable dumplings, fortune cookies, Lucky 8 stir fry, dumplings-for-LNY), with the remainder being other clearly Chinese dishes (Sichuan smashed cucumber, fried rice, sesame cauliflower, Chinese roasted carrots, scrambled eggs with soybeans, plant-part stir fry) plus one Grace Lin read-aloud ("The Ugly Vegetables") which is China-themed via the author and story content. Regional specificity appears once (Sichuan); otherwise lessons frame China at the country level. No false positives in the sample.
+
+</details>
+
+**Notes:** v3 canonical country, parent = East Asian. Highest-frequency country in the Asian cluster. Clean tagging signal; no candidates for `merge` / `drop`.
+
+---
+
+#### 11.7. Japanese (9)
+
+- **canonical_key:** `japanese`
+- **surface_label:** `Japanese`
+- **parent:** `east-asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (9 active lessons tagged with `Japanese`)</summary>
+
+- **`1fR_VcTO7V1OWM7qp2EweRBN9Zl9z1e3N7pQuvZhJO1k` — "Vegetable Sushi":** "Today we are going to make a special recipe from Japan. Can someone come up and point out Japan on a map?... The recipe from today is made with rice, vegetables and rolled up using a seaweed wrap called 'nori'... in Japan, sushi is traditionally made using fish, which is abundant in Japan because it is an island country surrounded by water... learn how to use chopsticks to eat our sushi with!"
+- **`1d1KP9lfI6jQdF9sBU74ncPv36OZZbTfm` — "Vegetable Ramen":** "Ramen is a Japanese dish (show Japan on Map). The word ramen means 'pulled noodles'. Noodles came from China 4000 years ago... We're going to cook up some ramen noodles today, add them to broth, and top them with fresh vegetables." Toppings include mushrooms, scallions, ginger, mirin-style aromatics; chopsticks listed in materials.
+- **`1R6DqXH9XvSvZq9B0106w0CHtS3kvuJNX53taROiZZBE` — "Daikon Pickles & Furikake":** "The recipes we are creating today are from Japan and Korea. We will be cooking the leaves to make a recipe called..." Lesson uses daikon radish + furikake (a canonical Japanese rice seasoning); CR section explicitly invites students to connect to family heritage and home country.
+
+**Tagging pattern:** Tagging is mostly semantically consistent — 6 of the 7 sampled lessons feature core Japanese dishes/ingredients (sushi, nori, ramen, daikon, furikake, miso) with explicit Japan framing in the lesson body. Two looser tags exist — "Food Preservation" only mentions sushi as one example among many global preservation techniques, and "Spring and Summer Plants" centers Mexican amaranth with mizuna as a secondary tasting. Both feel weaker than the cuisine-focused majority.
+
+</details>
+
+**Notes:** v3 canonical country, parent = East Asian. Clean signal for cuisine-focused lessons; two looser tags are not misuse but worth flagging if Stage 2 wants tighter `Japanese` semantics.
+
+---
+
+#### 11.8. Indian (7)
+
+- **canonical_key:** `indian`
+- **surface_label:** `Indian`
+- **parent:** `south-asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (7 active lessons tagged with `Indian`)</summary>
+
+- **`1gLuwRIEfiYyfqztlMGAEOeAuJI1flmj7` — "Aloo Gobi":** "Explain that today, we are going to make a recipe from Northern India. It is called Aloo Gobi. It uses some flavors and ingredients that you may already know, and some flavors that are new."
+- **`1a4viRwOePhno2u67vPKhHza4Aj-CMpRQ` — "World Religions - Hinduism":** "Those who practice Hinduism believe that cows are a sacred animal, so they don't eat beef. But many hindus don't eat meat at all!... Today we are going to make a vegetarian dish called biryani. Biryani is a rice dish filled with vegetables that is popular in India where a lot of people who practice Hinduism live."
+- **`1jiYzGtxroLR7lpqAWGQTIroLh3Gr13XbcxWhTLDR_Ec` — "Navdanya & The Importance of Seed Saving":** "Explain that today we are going to be learning about a movement called Navdanya that began in India... This lesson encourages learning within the context of culture by providing an example of leadership and resistance in the South Asian community."
+
+**Tagging pattern:** All 7 lessons are unambiguously South-Asian-Indian — 4 Aloo Gobi variants (potato-cauliflower dish from northern India/Pakistan with Hindi vocab and Bollywood music cues), a Hinduism/biryani lesson, a Navdanya seed-sovereignty lesson explicitly framed "South Asian community," and a Food Preservation lesson that references India once for pickle history. No American Indian / Indigenous framing appears anywhere; the Food Preservation tag is the weakest fit (India is one of several cultural examples, not the focus) but not a misuse.
+
+</details>
+
+**Notes:** v3 canonical country, parent = South Asian. No `Indian` / American-Indian ambiguity in the corpus — every sampled lesson is unambiguously South-Asian-Indian. (The cross-cluster section §9.1 separately handles American-Indian / Indigenous canonicals.)
+
+---
+
+#### 11.9. Pakistani (4)
+
+- **canonical_key:** `pakistani`
+- **surface_label:** `Pakistani`
+- **parent:** `south-asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = South Asian. Below the ≥5 corpus-read threshold; structural call. Note — the §11.3 South Asian corpus read surfaced an Aloo Gobi lesson tagged `South Asian` only that explicitly names Pakistani heritage; under-tagging suggests the actual `Pakistani` corpus footprint is larger than 4. Stage 2 re-tag should pick up the missing country tags. Filter-UI tier `sub` proposed despite frequency 4 (below the default sub threshold of 5) — v3 canonical status plus corroborating under-tagged evidence supports sub-tier.
+
+---
+
+#### 11.10. Uzbek (4)
+
+- **canonical_key:** `uzbek`
+- **surface_label:** `Uzbek`
+- **parent:** `central-asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country and the only canonical child of Central Asian. Below the ≥5 corpus-read threshold; structural call. Filter-UI tier `sub` proposed despite frequency 4 — sole-child-of-Central-Asian status supports it.
+
+---
+
+#### 11.11. Korean (3)
+
+- **canonical_key:** `korean`
+- **surface_label:** `Korean`
+- **parent:** `east-asian`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = East Asian. Just at the ≥3-lesson sub-tier bar per §11 cluster decision #2 (pre-handoff proposal — all ≥3 lessons get sub-tier). Below the ≥5 corpus-read threshold; structural call. The §11.7 Japanese corpus read surfaced a lesson tagged with both Japan and Korea (Daikon Pickles & Furikake), so Korean tagging extends beyond the 3 explicit Korean-only rows.
+
+---
+
+#### 11.12. Vietnamese (2)
+
+- **canonical_key:** `vietnamese`
+- **surface_label:** `Vietnamese`
+- **parent:** `southeast-asian`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = Southeast Asian. Below the ≥3-lesson sub-tier bar per §11 cluster decision #2 — `internal`-tier proposed (filter-searchable via FTS / embeddings but not surfaced as a clickable filter chip). Curriculum team may promote to `sub` given v3 canonical status. The §11.2 East Asian corpus read surfaced a Bánh Mì lesson mis-tagged as `Vietnamese + East Asian + Asian`; the correct parent chain is `Vietnamese + Southeast Asian + Asian` — flag for Stage 2 fix-up.
+
+---
+
+#### 11.13. Sri Lankan (1)
+
+- **canonical_key:** `sri-lankan`
+- **surface_label:** `Sri Lankan`
+- **parent:** `south-asian`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline (Appendix A South Asian lists Indian / Bengali / Pakistani only). 1 corpus lesson, but the §11.3 South Asian corpus read found the single Sri Lankan Curry lesson substantive — map activity, geographic locator, colonial-history context, ingredient specificity around coconut milk. Candidate for `new` verdict if curriculum team agrees; otherwise `merge → south-asian` is the structural alternative. `internal`-tier proposed regardless given the 1-lesson frequency.
+
+---
+
+#### 11.14. Malaysian (1)
+
+- **canonical_key:** `malaysian`
+- **surface_label:** `Malaysian`
+- **parent:** `southeast-asian`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = Southeast Asian. 1 corpus lesson. Below the ≥3-lesson sub-tier bar per §11 cluster decision #2 — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status.
+
+---
+
+#### 11.15. Taiwanese (1)
+
+- **canonical_key:** `taiwanese`
+- **surface_label:** `Taiwanese`
+- **parent:** `east-asian`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = East Asian. 1 corpus lesson. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status.
+
+---
+
+#### 11.16. `asian` (drift literal — 1 corpus appearance)
+
+- **canonical_key:** `asian`
+- **surface_label:** `asian`
+- **parent:** `null`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `asian`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 1 corpus row. Surfaced explicitly as a `merge` entry for parser-and-reader clarity. The `canonical_key` field matches the merge target's slug (both are kebab-case-lowercase by slug convention applied to the same underlying value — see §7 alias_map identity-shaped entries). This entry contributes `"asian" → "asian"` to the `alias_map` output (literal-to-canonical-key); verdict `merge` excludes it from the canonical vocabulary list.
+
+---
+
+#### 11.17. `east-asian` (drift literal — 2 corpus appearances)
+
+- **canonical_key:** `east-asian`
+- **surface_label:** `east-asian`
+- **parent:** `asian`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `east-asian`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 2 corpus rows. Same convention as §11.16. Contributes `"east-asian" → "east-asian"` to `alias_map`.
+
+---
+
+#### 11.18. `south-asian` (drift literal — 3 corpus appearances)
+
+- **canonical_key:** `south-asian`
+- **surface_label:** `south-asian`
+- **parent:** `asian`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `south-asian`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 3 corpus rows. Same convention as §11.16. Contributes `"south-asian" → "south-asian"` to `alias_map`.
 
 ### Cluster decision summary
 
