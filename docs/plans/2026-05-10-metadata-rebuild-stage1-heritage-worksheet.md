@@ -48,7 +48,7 @@ Plus the surface-label call (display string the UI shows), alias list (corpus va
 
 Three inputs converge into each verdict:
 
-1. **v3 baseline** (`/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md` §3 Cultural Heritage) — the working hypothesis for canonical shape. Most v3 values will `keep` as-is; a few may `split` or change parent.
+1. **v3 baseline** (see Appendix A — verbatim §3 Cultural Heritage from `esynyc-taxonomy-schema-v2.md`) — the working hypothesis for canonical shape. Most v3 values will `keep` as-is; a few may `split` or change parent.
 2. **Per-value Opus-corpus-read evidence** — for any value with non-trivial usage (5+ lessons) or any ambiguous value, an Opus agent reads the actual lesson bodies tagged with it to confirm whether the tagging is semantically consistent. Surfaced in collapsible `<details>` excerpts on each per-value entry. Mechanical canonical-vs-kebab-case-drift values don't need fresh Opus reads — the canonical-vs-alias call is structural.
 3. **Reviewer / user validation** — curriculum-team subject-matter judgment on the cluster framing and verdict calls, especially for ambiguous identities, diaspora handling, and new sub-region candidates.
 
@@ -139,11 +139,11 @@ Each per-value entry has a `verdict` field. The five verdicts:
 Each per-value entry is a labeled-line block. Format:
 
 ```markdown
-### <cluster>.<index>. <surface_label> (<frequency_count>)
+#### <cluster>.<index>. <surface_label> (<frequency_count>)
 
 - **canonical_key:** `<slug>` — kebab-case lowercase
 - **surface_label:** `<display string>`
-- **parent:** `<canonical_key of parent>` OR `<cluster_root>`
+- **parent:** `<canonical_key of parent>` OR `null` (for cluster-root entries)
 - **filter_ui_tier:** `top` | `sub` | `internal`
 - **verdict:** `keep` | `merge` | `split` | `drop` | `new`
 - **merge_into / split_into / drop_to:** `<canonical_key>` (only for merge/split/drop)
@@ -300,13 +300,17 @@ When the worksheet is filled and ready for hand-off, the next-stage tool parses 
     ...
   ],
   "alias_map": {
-    "asian (lowercase)": "asian",
+    "Asian": "asian",
+    "asian": "asian",
+    "North American": "north-american",
     "north-american": "north-american",
     ...
   },
   "drops": [...]
 }
 ```
+
+**alias_map keys** are corpus literal strings (canonical surface labels OR drift variants); **values** are canonical keys (kebab-case lowercase slugs). Identity-shaped entries (e.g., `"north-american": "north-american"`) are meaningful — they confirm a kebab-case drift literal resolves to the canonical_key for the corresponding Title Case canonical surface label.
 
 ---
 
@@ -320,6 +324,7 @@ When the worksheet is filled and ready for hand-off, the next-stage tool parses 
 - §14 [Cluster: European](#14-cluster-european)
 - §15 [Cluster: Middle Eastern](#15-cluster-middle-eastern)
 - §16 [End summary: canonical vocabulary table](#16-end-summary-canonical-vocabulary-table)
+- [Appendix A: v3 baseline (Cultural Heritage)](#appendix-a-v3-baseline-cultural-heritage)
 
 ---
 
@@ -415,7 +420,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 
 - **canonical_key:** `<slug>`
 - **surface_label:** `<label>`
-- **parent:** `<cluster_root>` or another canonical key
+- **parent:** `null` (for cluster-root entries) or another canonical key
 - **filter_ui_tier:** `top` / `sub` / `internal`
 - **verdict:** `keep` / `merge` / `split` / `drop` / `new`
 - **aliases:** `[...]`
@@ -512,7 +517,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 2. **`North American` (83) and `Latin American` (77) parity.** Both substantial — confirm both as `top`-tier sub-region canonicals. The North American category interacts with the cross-cluster diaspora section: `African American` lessons and indigenous lessons could plausibly carry `North American` parent.
 3. **New sub-region candidates:** `Central American` (1), `South American` (1), `Southern United States` (1) — each has only 1 corpus occurrence. `new` (curriculum-team adds), `merge` into existing sub-region, or `drop`?
 4. **Country-specific bar:** Mexican (38) is clearly canonical. Below Mexican: Puerto Rican (4), Salvadoran/Honduran/Cuban/Jamaican/Peruvian (each 2), then 1-lesson values. Same bar question as Asian cluster.
-5. **`Cajun/Creole` (v3 canonical, corpus-absent):** keep, drop, or internal? Cultural significance high; corpus signal absent.
+5. **v3-baseline-but-corpus-absent values:** `Dominican` (Latin American, v3) and `Cajun/Creole` (North American, v3 — also tracked in cross-cluster §9.1). Both corpus-absent. Per-value: `keep` for future tagging, `drop` for absence, or `internal`-tier? Cajun/Creole has high cultural significance; Dominican is typical Latin American country-specific signal that may emerge as the corpus grows.
 
 ### Per-value entries
 
@@ -635,6 +640,71 @@ The following block is a **template** showing the shape of a cluster section. Pe
 ```
 
 This table serves as the **hand-off artifact** to PR 5+ (D4 vocab canonicalization migration) and PR 6+ (Stage 2 re-tag prompt closed-vocab constraint).
+
+---
+
+## Appendix A: v3 baseline (Cultural Heritage)
+
+> Verbatim excerpt from `esynyc-taxonomy-schema-v2.md` §3 Cultural Heritage. Embedded here so the worksheet is self-contained for curriculum-team handoff. Per §1 methodology, the v3 baseline is the working hypothesis for canonical shape; most v3 values will `keep` as-is, a few may `split` or change parent.
+
+- **Type:** Multi-select
+- **Required:** No
+- **Limit:** 5 tags maximum
+- **Hierarchical Structure:**
+  - **Asian**
+    - **East Asian**
+      - Chinese
+      - Japanese
+      - Korean
+      - Taiwanese
+    - **Southeast Asian**
+      - Vietnamese
+      - Filipino
+      - Malaysian
+      - Thai
+    - **South Asian**
+      - Indian
+      - Bengali
+      - Pakistani
+    - **Central Asian**
+      - Uzbek
+  - **Americas**
+    - **Latin American**
+      - Mexican
+      - Dominican
+      - Puerto Rican
+      - Salvadoran
+    - **Caribbean**
+      - Jamaican
+    - **North American**
+      - Cajun/Creole
+      - Indigenous/Native American
+        - Lenape
+        - Three Sisters traditions
+      - African American diaspora
+        - Soul Food
+        - Black culinary history
+  - **African**
+    - **West African**
+    - Ethiopian
+    - Nigerian
+  - **European**
+    - **Eastern European**
+      - Russian/Ukrainian
+      - Polish
+    - **Mediterranean**
+      - Italian
+      - Spanish
+      - Greek
+    - French
+  - **Middle Eastern**
+    - **Levantine**
+      - Palestinian
+      - Lebanese
+      - Syrian
+      - Jordanian
+    - Israeli
+- **Note:** Selecting a specific culture auto-populates parent categories (can be removed)
 
 ---
 
