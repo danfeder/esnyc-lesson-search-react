@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet
 
-> **Status: PRE-HANDOFF (last update Session 62, 2026-05-10).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries: Asian cluster ✅ Session 62 (§11); Americas onward TBD subsequent sessions before curriculum-team handoff.** End-summary canonical-vocab table fills only as per-value verdicts close.
+> **Status: PRE-HANDOFF (last update Session 64, 2026-05-10).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries: Asian cluster ✅ Session 62 (§11); Americas cluster ✅ Session 64 (§12); African / European / Middle Eastern + cross-cluster diaspora TBD subsequent sessions before curriculum-team handoff.** End-summary canonical-vocab table fills only as per-value verdicts close.
 >
 > **Owner during scaffold/pre-handoff phase:** project maintainer (Claude + user). **Owner at handoff:** ESYNYC curriculum team.
 >
@@ -826,7 +826,353 @@ The following block is a **template** showing the shape of a cluster section. Pe
 
 ### Per-value entries
 
-*(TBD — per-value entry blocks for Americas cluster populated in subsequent session before handoff)*
+#### 12.1. Americas (170)
+
+- **canonical_key:** `americas`
+- **surface_label:** `Americas`
+- **parent:** `null`
+- **filter_ui_tier:** `top`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (170 active lessons; ~28 genuinely pan-Americas or cross-continent, ~142 country/sub-region chains)</summary>
+
+- **`1IxkjYeOmhz2M_MC_Cbzj8vJMnLNVA5UX56CGi6E_Ap8` — "Food Photovoice Lesson Four: What the World Eats"** (Cohort A; tagged `[Asian, African, European, Americas]`): Summary — "Students will look at photographs of families from around the world and their food for the week making comparisons about amount, cost and type of food." Body — "This week, we are going to look at food and families around the world. We will look at photos that show us a family that lives somewhere in the world and what this family eats in an entire week..." `Americas` carries the entire Western Hemisphere alongside three other continents in a single explicit world-comparison lesson — no sub-region/country children, and none would be appropriate.
+- **`1G1tJ-_RY56dsObDj_75hm3xBoL5Mgh9Nj44p3dEqlWk` — "Rice & Beans 2-ways"** (Cohort A; tagged `[Cuban, Jamaican, Caribbean, Latin American, Americas]`): "Today we are going to create two Rice and Beans recipes from two different countries. We will be making a Cuban-style rice and beans recipe, and Jamaican-style rice and beans recipe." Two unrelated Caribbean countries in one lesson; `Americas` is a redundant ancestor here but the lesson is structurally pan-Caribbean/cross-country, which the worksheet's parent-chain shape preserves.
+- **`13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA` — "The Story of the 3 sisters"** (Cohort B variant; tagged `[Lenape, Indigenous, Americas]` — no `North American` parent): Body — "Who are the Lenape? They are an Indigenous people who used to inhabit the eastern seaboard... The Lenape planted the 3 sisters because they knew they would grow best together." Single-people Indigenous lesson reaching `Americas` directly without a `North American` geographic parent, illustrating the inconsistent diaspora-vs-sub-region tagging pattern (see Notes).
+
+**Tagging pattern:** Cohort A (~28/170, ~16%) is meaningfully pan-Americas in three shapes — (i) world-comparison lessons that explicitly tag 2-4 continents; (ii) cross-Americas-country lessons that tag 2+ sub-regions (Rice & Beans 2-ways spans Cuban + Jamaican; History of Tex-Mex spans Mexican + North American; Black Bean Dip spans Mexican + Caribbean); and (iii) genuine pan-region framings with no specific country (Descriptive Language, Our Garden and Kitchen Community — both tag `Caribbean + Latin American + Americas` describing community-cultural breadth rather than a specific cuisine). Cohort B (~142/170, ~84%) uses `Americas` as the redundant root of a Country → Sub-region → `Americas` ancestry chain. Audit signal: a small set of edge cases over-tag `Americas` with multiple Americas sub-regions despite the body content being about a different region — e.g., `Bats & Banana Pancakes` is tagged `Caribbean + Latin American + Americas` though SE Asia is the actual subject; `Flies & Fruit` similarly mixes South Asian + Caribbean + Latin American + Americas.
+
+</details>
+
+**Notes:** Cluster root for the Americas cluster (highest-frequency cluster root in the corpus at 170 lessons). Cohort A's ~28 lessons confirm `Americas` as a meaningful pan-region tag, not under-tagging. Cohort B's ~142 lessons use `Americas` as hierarchical-parent ancestry. **Cross-cluster diaspora interaction is INCONSISTENT in the corpus** (per TEST DB direct queries 2026-05-10): African American lessons carry `North American` 16/24 of the time (67%); Indigenous 19/24 (79%); Lenape 3/7 (43%); Native American 3/5 (60%). The remaining diaspora/Indigenous lessons skip `North American` entirely and reach `Americas` only via the identity tag's parent chain. Curriculum team should decide whether the canonical schema requires the geographic parent be present on all diaspora-tagged lessons (Stage 2 backfill) or treats `Americas` as the canonical anchor for identity-tagged lessons (status quo). Filter-UI tier `top` is the cluster-root default. Stage 2 audit signal: review the over-tagged Asian-cluster lessons that also carry `Caribbean + Latin American + Americas` (Bats & Banana Pancakes, Flies & Fruit) — candidates to drop the Americas sub-region tagging entirely.
+
+---
+
+#### 12.2. North American (83)
+
+- **canonical_key:** `north-american`
+- **surface_label:** `North American`
+- **parent:** `americas`
+- **filter_ui_tier:** `top`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (83 active lessons; cohort breakdown ~23 African American + West African diaspora, ~23 Indigenous-cluster, 2 Mexican cross-tag, ~35 USA-generic)</summary>
+
+- **`1bjiET8ffFpU5_gCMgJBiTDPuHhE0lCPGBnv72LXzrW4` — "Black History Month: Ice Cream Heroes"** (African American cohort; tagged `[African American, North American, Americas]`): "Ice cream was first introduced to America by a Black chef named James Hemings. James Hemings was enslaved by the American president, Thomas Jefferson until he became free at the age of 30. He studied cooking in France and brought many French recipes to America..." Banana-only ice cream lesson framed around three Black culinary innovators (Hemings, Augustus Jackson, Alfred Cralle). `North American` here functions as the geographic anchor for the African American diaspora story.
+- **`12ZjWQaqW6hOPDo16zi9PN3iG92jI4KLz` — "Blue Corn Cookies"** (Indigenous cohort; tagged `[Native American, North American, Americas]`): "Today you are going to learn about a food Native Americans/American Indians eat called CORN... This is Blue Corn, blue is utilized a lot by some Tribes of the American West like the Hopi and Navajos..." Tribe-specific in body (Hopi, Navajo) but heritage tag stops at the pan-Indigenous level; `North American` as geographic parent under which `Native American` sits.
+- **`1ldS7zEG960hNqyamfSPAbO_mKmmRpHvJ` — "History of Tex-Mex Food"** (Mexican cross-cluster cohort; tagged `[Mexican, Latin American, Americas, North American]`): "Today we are going to learn about Tex-Mex food. Based on the name can you tell where in the world Tex-Mex is from? (Texas and Mexico). Tex-Mex is considered fusion food because it combines foods from different cultures/communities." Carries BOTH `Latin American` (v3 cultural-cluster parent) AND `North American` (geographic parent) — the only sub-region in the corpus where v3 surfaces a dual-parent chain on the same lesson. Both Mexican-tagged North-American rows (Tex-Mex, Vegetarian Quesadillas) demonstrate this pattern.
+
+**Tagging pattern:** `North American` decomposes into four cohorts with very different semantic loads (cohort sizes are exclusive-bucketed by tag-presence priority: AA/WA diaspora > Indigenous-cluster > Mexican > residual). **Cohort A — African American / West African diaspora (~23 lessons):** 15 carry `African American` only, 7 carry `West African` only, 1 carries both; framings include Black History Month, Juneteenth, Hoppin' John, Soul Food, the Black Panther Party. **Cohort B — Indigenous / Native American / Lenape / Haudenosaunee (~23 lessons):** dominated by Three Sisters / corn / Thanksgiving framing; uses `North American` as the standard hierarchical parent above the indigenous-people tags. **Cohort C — Mexican (2 lessons):** Tex-Mex and Vegetarian Quesadillas; both carry the dual `Latin American + North American` parent chain, acknowledging Mexico's geographic placement. **Cohort D — USA-generic residual (~35 lessons):** pure "American" cooking-school dishes (mac & cheese, apple pie, pumpkin muffins, ketchup, cranberry oat cookies), historical-period lessons (Civil War, Colonial NY, Plantations & Industrial Ag), and US-school-garden / NYC-specific content (Honeybee Man, Guerilla Gardening, Alice Waters, Michelle Obama) with no specific ethnic anchor.
+
+</details>
+
+**Notes:** v3 canonical sub-region. Filter-UI tier `top` proposed by frequency (83 lessons, well above the ≥40 threshold) and cluster-parent role. **Cross-cluster diaspora interaction is partial, not uniform** — only 67% of African American lessons and 79% of Indigenous lessons in the corpus carry `North American` as a parallel tag (per §12.1 Notes; verified by direct TEST DB queries 2026-05-10). The 35 USA-generic lessons (Cohort D) raise a structural question: should there be a `United States` country canonical under `North American`, or is "American cooking-school" content best left as a `North American` direct-child cohort without further canonical structure? v3 has no `American`/`United States` country tag; the corpus has none either. Cluster decision #2 frames this as the central North American question. `Cajun/Creole` (v3-canonical-corpus-absent) currently lives in cross-cluster §9.1; §12 decision #5 considers whether to move it under `North American` here, possibly as a child of the new `southern-united-states` sub-region (§12.17). Stage 2 audit signal: the Mexican / Latin American dual-tag pattern (2 lessons) is the only place where v3 surfaces conflicting cluster parents — both Tex-Mex and Vegetarian Quesadillas carry the dual chain, suggesting the dual-parent pattern is intentional rather than a tagging error.
+
+---
+
+#### 12.3. Latin American (77)
+
+- **canonical_key:** `latin-american`
+- **surface_label:** `Latin American`
+- **parent:** `americas`
+- **filter_ui_tier:** `top`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (77 active lessons; 37 with `Mexican`, 22 with no country tag, 4 with `Puerto Rican`, ~14 with other LA countries — Cuban/Honduran/Salvadoran/Peruvian × 2 each, plus Brazilian/Ecuadorian/Guyanese × 1 each)</summary>
+
+- **`1u84NuJq0TStf_mZlUtht2OjNnf8bKkSbBuwEBkDSCfI` — "Foods From Around the World: Mexico"** (Mexican cohort; tagged `Mexican + Latin American + Americas`): Summary — "Students will do a reading and watch a video about the culture, geography, and typical ingredients from Mexico, as well as how this food culture is present in New York City." Unambiguous country-specific lesson; `Latin American` here functions as parent-chain redundancy under `Mexican`, mirroring the East Asian Cohort B pattern.
+- **`1fSCWUvOjhGHy2TYYvy7rnzx6tL9KS8CRo2A71txuuNw` — "Literary Sancocho"** (no-country cohort; tagged `Latin American + Americas` only): Body explicitly frames the dish pan-regionally — "Today we are going to make sancocho, which is a Latin American soup, that is made up of a variety of ingredients." No country anchor. Genuinely Cohort A — the lesson author chose a multi-country dish deliberately. Compare with **`1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag` — "Three Sister Arepas"** (also no-country, tagged `Latin American + Americas + Indigenous`), where the dish (arepas) is in fact Colombian/Venezuelan-specific — that's a missing-country tag, not a deliberate pan-LA choice.
+- **`1rwjyCJ7i7WelQhfAVmxP_8kx-8no7KdmE94v0ExqNRw` — "Making Tostones"** (Puerto Rican cohort; tagged `Puerto Rican + Caribbean + Latin American + Americas`): Body offers the corpus's own articulation of the LA/Caribbean overlap — "Tostones are made in many different Latin American and Caribbean countries like Puerto Rico, Jamaica, Nicaragua, Cuba, Florida, Honduras and Venezuela." All 4 PR lessons in the corpus carry BOTH `Caribbean + Latin American` simultaneously — the corpus does not treat the two as alternative placements; it dual-codes.
+
+**Tagging pattern:** Cohort B (55 lessons with at least one country tag — Mexican 37 + Puerto Rican 4 + ~14 other LA countries with 1-2 each) is highly consistent: country tag + `Latin American` + `Americas` is the standard chain. Cohort A (22 no-country) is mixed: roughly half are genuine pan-LA framings (Sancocho, Literary Sancocho, generic Empanadas, "Tastes Around the World," cultures-unit overviews); the other half are under-tagged country-specific lessons (arepas without Colombian/Venezuelan; "Harvesting Friends / Cosechando Amigos" with no country). One mis-tag surfaces: `1mAI2VtQntfWhUtIEKT1xP6Q028Hx-Jyqx_Xr-V2vWkI` ("Empanadas") carries `Latin American + Spanish + Mediterranean + European` based on a single body sentence noting empanada origins in Spain — over-tagged from the European parent chain. Notably, `Latin American` shows partial overlap with `Caribbean` for 6 lessons (all 4 Puerto Rican rows + `Black Bean Dip (Mobile Education)` Mexican-but-also-Caribbean + `Rice & Beans 2-ways` Cuban/Jamaican dual) — the corpus encodes Caribbean and Latin American as overlapping rather than mutually exclusive regions.
+
+</details>
+
+**Notes:** v3 canonical sub-region. Filter-UI tier `top` proposed by frequency (77 lessons, well above the ≥40 threshold). Cohort split: 55 country-anchored (Mexican-dominant at 37, then ~14 other LA-countries) vs 22 no-country (roughly half deliberate pan-LA, half under-tagged country-specific lessons). The corpus DOES support v3's Latin American placement for Puerto Rican — all 4 PR lessons dual-code as `Puerto Rican + Caribbean + Latin American + Americas` simultaneously, and "Making Tostones" itself articulates the LA/Caribbean overlap in lesson body text. Curriculum team should decide whether the hierarchy artifact treats Caribbean ⊂ Latin American, Caribbean as sibling sub-region with shared members, or models Puerto Rico as a dual-parent leaf — the corpus pattern points to dual-parent. Stage 2 audit signals: (1) arepa lessons (Three Sister Arepas + Three Sisters Empanadas) need `Colombian`/`Venezuelan` country tags; (2) empanada lessons over-tagged with `Spanish + European` chain based on single body sentence about Spanish origins; (3) Cohort A no-country rows mixing in `Asian` sub-regions (Bats & Banana Pancakes tagged `Southeast Asian + Caribbean + Latin American`; Flies & Fruit tagged `South Asian + Caribbean + Latin American`) need a focused re-tag pass — likely artifacts of v3 multi-cuisine tagging on weakly-cultural lessons.
+
+---
+
+#### 12.4. Caribbean (17)
+
+- **canonical_key:** `caribbean`
+- **surface_label:** `Caribbean`
+- **parent:** `americas`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (17 active lessons; 11 with a Caribbean country tag, 4 pan-Caribbean/no-country, 2 cross-cluster carry-overs)</summary>
+
+- **`18b977UbveLAzs1crIsZ1Jj9GZIQw5f-ACgtgpM35cmw` — "Arroz con Gandules"** (tagged `Puerto Rican + Caribbean + Latin American + Americas`): Summary — "Students will make arroz con gandules, a recipe from Puerto Rico, and a salad with cabbage, carrot, and apple." Body keywords explicitly list "Hispanic/Latinx heritage, Caribbean, Puerto Rico". All 4 Puerto Rican lessons in the corpus follow this exact shape — they carry BOTH `Caribbean` AND `Latin American` simultaneously. The v3 baseline's "PR under Latin American not Caribbean" choice is contradicted by every PR lesson in the actual corpus.
+- **`1G1tJ-_RY56dsObDj_75hm3xBoL5Mgh9Nj44p3dEqlWk` — "Rice & Beans 2-ways"** (tagged `Cuban + Jamaican + Caribbean + Latin American + Americas`): Body — "Today we are going to create two Rice and Beans recipes from two different countries. We will be making a Cuban-style rice and beans recipe, and Jamaican-style rice and beans recipe." Multi-country pan-Caribbean lesson where Cuban + Jamaican both tag, and `Caribbean` legitimately functions as the joining parent — also paired with `Latin American` (the Cuban tag pulls it in).
+- **`1xA88OeHAL5csyB1zfUwvQaibMNdryE7c` — "Bats & Banana Pancakes"** (tagged `Southeast Asian + Asian + Caribbean + Latin American + Americas`): Body — "Bananas originated in Southeast Asia, in the jungles of Malaysia, Indonesia or the Philippines... Bananas constitute a significant portion of the export revenues for many Latin American and Caribbean countries." The lesson is ABOUT bat-pollinator biology and banana economics, not Caribbean foodways — `Caribbean` was tagged for a one-sentence mention of Latin American/Caribbean banana exports. Clear over-tagging from a single content cue.
+
+**Tagging pattern:** Three distinct cohorts. **(1) Country-tagged with hierarchy carry-up (11 lessons):** 4 Puerto Rican, 2 Jamaican, 2 Cuban, 1 Guyanese, plus 2 cross-cluster — "Black Bean Dip" (Mexican + Caribbean, body cites "popular in Costa Rica, Mexico, Cuba") and "Bats & Banana Pancakes" (Southeast Asian + Caribbean, over-tag). Of these, **every single Puerto Rican lesson carries `Caribbean` AND `Latin American` together** — the corpus does NOT respect the v3 either/or split. **(2) Pan-Caribbean / country-absent (4 lessons):** "Foods From Around the World: Caribbean Islands", "Food Memories", "Descriptive Language", "Our Garden and Kitchen Community" — `Caribbean` operates as the primary heritage tag without a country, sometimes genuinely regional, sometimes inheriting from incidental recipe choice. **(3) Cross-cluster acknowledgment (2 lessons):** Two Callaloo lessons tag `Caribbean + Americas + West African + African` — explicitly acknowledging the dish's West African diasporic origin alongside its Caribbean home. Net: `Caribbean` legitimately functions as both a parent (when paired with country tags) and as a primary regional tag (when no country is specified); the v3 placement of Puerto Rican under Latin American (Spanish-speaking axis) is empirically rejected by 4/4 PR rows in the corpus.
+
+</details>
+
+**Notes:** v3 canonical sub-region. **Puerto Rican placement signal is decisive: 4/4 PR lessons carry BOTH `Caribbean` AND `Latin American` simultaneously** — the corpus has never respected v3's geographic-vs-Spanish-speaking either/or framing; in practice PR sits in both subtrees at once. This argues for the worksheet's parent-chain model to allow multi-parent membership rather than forcing PR into one or the other (per Session 59 design decision #1's "2-level-flexible parent chains" framing). Filter-UI tier `sub` proposed (17 lessons, between sub and top thresholds). Cluster decision: curriculum team may promote to `top` given v3 canonical status + role as parent for 5 country-specifics (Puerto Rican × 4 + Jamaican × 2 + Cuban × 2 + Guyanese × 1, with Cohort 1 totaling 11 lessons). Stage 2 audit signals: (a) "Bats & Banana Pancakes" should drop `Caribbean + Latin American + Americas` — a single sentence about banana export economies does not make a banana-and-bats biology lesson a Caribbean food lesson; (b) "Descriptive Language" and "Our Garden and Kitchen Community" carry `Caribbean + Latin American + Americas` with no body content surfacing a clear regional framing; (c) the two Callaloo `Caribbean + West African` pairings are intentional and worth preserving as the template for diaspora-aware tagging. Trinidadian, Haitian, Bahamian, and Dominican are all zero-corpus — none surface even adjacent to the 4 pan-Caribbean lessons.
+
+---
+
+#### 12.5. Mexican (38)
+
+- **canonical_key:** `mexican`
+- **surface_label:** `Mexican`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (38 active lessons tagged with `Mexican`)</summary>
+
+- **`1zbfn_WweqPwJD_we1vyGzaVTVLRvtXOaICLEpKwHxjg` — "Tamales":** "These tamales are from Mexico, but many of Mexico's neighboring countries also make tamales... Tamales are a food tradition from Mexico. They can take a long time to prepare, so they are usually prepared on very special days, like Christmas, New Year's, Mexican Independence Day, or birthdays." Masa harina + corn husks + bell pepper / tomato / onion / mozzarella filling; lesson explicitly frames tradition as the word of the day and invites students to share their own family food traditions.
+- **`1ldS7zEG960hNqyamfSPAbO_mKmmRpHvJ` — "History of Tex-Mex Food":** "Today we are going to learn about Tex-Mex food. Based on the name can you tell where in the world Tex-Mex is from? (Texas and Mexico). Tex-Mex is considered fusion food because it combines foods from different cultures/communities. If there is a map locate where Texas and Mexico are — take note of proximity." Students read a Tex-Mex history article and make enchiladas. Heritage chain `[Mexican, Latin American, Americas, North American]` is the cross-cluster signal that distinguishes this lesson and "Vegetarian Quesadillas" from the cuisine-pure majority.
+- **`1lsIXKwRddBM5Qvz6JMAd7BC78EHSU5jOiFd4vmpvP_4` — "Corn and the Aztec Empire":** "You all read an article about the Aztec Empire... what food was very important during this time? Corn, which is a very versatile vegetable, was used for most meals. Today we will be making atole, which is a creamy dish made from corn flour that can be consumed as a drink or with a spoon. Atole is something that has been eaten since ancient times..." 7th grade winter lesson explicitly bridges pre-Columbian Mesoamerican history to modern Mexican cuisine.
+
+**Tagging pattern:** Tagging is semantically clean — every sampled lesson has a recognizable Mexican thread (cuisine, ingredient, history, or geography). The cluster is salsa- and corn-heavy: ~9 of 38 are salsa variants (Garden Salsa, Harvest Salsa × 4 incl. Mobile Education variants, Pico de Gallo, Summer Harvest Salsa, Top Chef Salsa, Salsa Toast × 2, September Salsa Toasts), ~6 are corn dishes (esquites × 3, Mexican Street Corn Salad × 1, atole, Three Sisters tortilla/enchilada/taco lessons), and the remainder spans tacos, tamales, quesadillas, guacamole, agua fresca, jicama slaw, empanadas, amaranth, and burrito bowls. Three lessons frame Mexico through Hispanic/Latinx Heritage Month rather than country cuisine specifically (Esquites × 2 + Foods From Around the World: Mexico). One lesson — "Farm Workers & Pesticides" — uses the Mexican tag to frame Cesar Chavez and migrant farm worker activism rather than cuisine, but stays plausibly within heritage scope.
+
+</details>
+
+**Notes:** v3 canonical country, parent = Latin American. Biggest country in the Americas cluster and one of the cleanest signals in the corpus — no false positives in the sample. Three observations: (1) **No sub-region detail in lesson bodies** — no Yucatecan / Oaxacan / Sinaloan / Sonoran framing surfaces; the only sub-style that appears is `Tex-Mex` (2 lessons), correctly cross-tagged to `North American` and behaving as a Mexican-American fusion category rather than a Mexico-internal region. (2) **Cross-cluster tagging is mostly principled but has 2 looser cases.** `3 Sisters Tacos` carries `[Lenape, Indigenous, Mexican, Latin American, Americas]` — defensible (Three Sisters agriculture spans Mesoamerican and Indigenous North American traditions). `Empanadas & Corn Salad` carries `[..., Mexican, Spanish, European]` for the colonial-fusion angle, also defensible. Looser: `Black Bean Dip` adds `Caribbean` (no Caribbean framing in the summary), and `September Salsa Toasts` adds `[Italian, European]` (likely noise from the "toast" element, weakest fit in the cluster). (3) **One geography-only lesson** — `Monarch Migration` uses `Mexican` because monarchs overwinter in Mexico, not because of cuisine or culture; the lesson body literally writes `Tags: Mexico, North America`. Borderline for a heritage tag but raises the question of whether `culturalHeritage` should accept geographic-place tagging. Flag for the curriculum team.
+
+---
+
+#### 12.6. Puerto Rican (4)
+
+- **canonical_key:** `puerto-rican`
+- **surface_label:** `Puerto Rican`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (4 active lessons tagged with `Puerto Rican` — full cohort read; all 4 dual-coded as Caribbean AND Latin American)</summary>
+
+- **`18b977UbveLAzs1crIsZ1Jj9GZIQw5f-ACgtgpM35cmw` — "Arroz con Gandules":** "Explain that we are making a recipe from Puerto Rico today. Show it on the map and let them know that it is part of the United States... arroz con gandules, rice and pigeon peas, is considered by some to be the national dish of Puerto Rico... adobo seasoning is a very important part of Puerto Rican cooking, and we are going to be making our own adobo seasoning mix today." Lesson body tags list "Hispanic/Latinx heritage, Caribbean, Puerto Rico." Heritage array: `["Puerto Rican", "Caribbean", "Latin American", "Americas"]`.
+- **`1VShcRmcQCpjPrrltCpytiHeuAgHuIb311EOIoSctnmU` — "Arroz con Gandules / Apple Jicama Slaw":** "Show them Puerto Rico on the map and let them know that it is part of the United States... Talk about how Puerto Rico is a part of the US and that it is a commonwealth / territory, and if you're born there you are a US citizen... What language do people speak in Puerto Rico?" Makes sofrito with aji dulce, culantro; same arroz con gandules dish. Heritage array: `["Puerto Rican", "Caribbean", "Latin American", "Americas"]`.
+- **`1rwjyCJ7i7WelQhfAVmxP_8kx-8no7KdmE94v0ExqNRw` — "Making Tostones":** Lesson summary: "they will learn about a new Latin American and Caribbean food." Body: "Tostones are made in many different Latin American and Caribbean countries like Puerto Rico, Jamaica, Nicaragua, Cuba, Florida, Honduras and Venezuela. Tostones are made from plantains." Explicitly groups Puerto Rico in a Pan-Caribbean + Latin-American frame with Jamaica (Anglophone Caribbean) and Cuba (Spanish Caribbean). Heritage array: `["Puerto Rican", "Caribbean", "Latin American", "Americas"]`.
+
+**Tagging pattern:** Tagging is semantically consistent and unambiguous as MULTI-PARENT. All 4 lessons carry the identical 4-level heritage hierarchy `["Puerto Rican", "Caribbean", "Latin American", "Americas"]` — the existing tagger treats this country as belonging to BOTH the Caribbean parent AND the Latin American parent simultaneously, not one or the other. Cuisine is uniformly Spanish-Caribbean / Afro-Caribbean (arroz con gandules × 3 with sofrito, adobo, pigeon peas, plantains; tostones × 1). Body framing splits cleanly: the rice-and-gandules lessons foreground the US-commonwealth-territory angle ("Puerto Rico is a part of the US"), while the tostones lesson foregrounds the Pan-Caribbean culinary network (PR alongside Jamaica, Cuba, Nicaragua, Honduras, Venezuela). The corpus signal does NOT support v3's single-parent placement under Latin American; it supports MULTI-PARENT (Latin American AND Caribbean).
+
+</details>
+
+**Notes:** v3 canonical country, parent = Latin American per v3 baseline. **The corpus signal recommends MULTI-PARENT placement under BOTH `caribbean` and `latin-american`** — 4/4 lessons stamped with both parents, and the tostones body explicitly groups Puerto Rico with Jamaica (Anglophone-Caribbean, NOT Latin American) AND Cuba (Spanish Caribbean) in a single "Latin American and Caribbean" framing that only makes sense if PR sits in both. The arroz-con-gandules lessons' US-territory framing ("part of the United States... commonwealth / territory") is a third weak axis that doesn't translate cleanly to a heritage-hierarchy parent. Filter-UI tier `sub` proposed (4 lessons; below the ≥5 threshold for `sub` by frequency, but v3 canonical status + decisive corpus signal + the cross-cluster placement question support sub-tier). The `parent` field above shows the v3 baseline (`latin-american`); curriculum team should decide whether to (a) leave as single-parent Latin American per v3, (b) move to single-parent Caribbean, or (c) introduce multi-parent (both Caribbean and Latin American) — per Session 59 design decision #1 the 2-level-flexible parent-chain rules accommodate either single OR multi-parent at the curriculum team's discretion. **Signal for §12 framing #5 (Dominican):** the tostones lesson body lists Cuba but NOT Dominican Republic, even though Dominican cuisine shares tostones + sofrito + similar Caribbean-Spanish-speaking diaspora — suggests Dominican is genuinely absent from the corpus, not just under-tagged. **Stage 2 audit signal:** the existing 4-level hierarchy tagging on every Puerto Rican lesson is the cleanest cohort observed in the worksheet so far — if the canonical schema adopts multi-parent for Puerto Rican, no re-tagging needed; if forced single-parent, all 4 require a parent-drop decision.
+
+---
+
+#### 12.7. Salvadoran (2)
+
+- **canonical_key:** `salvadoran`
+- **surface_label:** `Salvadoran`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = Latin American per v3 baseline. 2 corpus lessons. Below the ≥3-lesson sub-tier bar per §11 cluster decision #2 — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. If §12 framing #3's `Central American` NEW sub-region candidate is accepted, parent re-routes to `central-american`.
+
+---
+
+#### 12.8. Honduran (2)
+
+- **canonical_key:** `honduran`
+- **surface_label:** `Honduran`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline (Appendix A Latin American lists Mexican / Dominican / Puerto Rican / Salvadoran only). 2 corpus lessons. Candidate for `new` verdict — Honduran cuisine shares Central American culinary traditions with Salvadoran. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `Central American` NEW sub-region candidate is accepted, parent re-routes to `central-american`.
+
+---
+
+#### 12.9. Cuban (2)
+
+- **canonical_key:** `cuban`
+- **surface_label:** `Cuban`
+- **parent:** `caribbean`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline (Appendix A Caribbean lists only Jamaican). 2 corpus lessons (Rice & Beans 2-ways pairs Cuban with Jamaican; Black Bean Dip pairs Cuban with Mexican). Candidate for `new` verdict — Cuban appears alongside Jamaican in the cross-Caribbean comparison lesson and is geographically + culturally a clear Caribbean country. The §12.6 Puerto Rican tostones body lists Cuba in its pan-Caribbean culinary geography — Cuban presence in the corpus is well-supported beyond just the 2 explicitly-tagged rows. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed.
+
+---
+
+#### 12.10. Jamaican (2)
+
+- **canonical_key:** `jamaican`
+- **surface_label:** `Jamaican`
+- **parent:** `caribbean`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = Caribbean per v3 baseline. 2 corpus lessons (Rice & Beans 2-ways pairs with Cuban; a separate Jamaican-tagged lesson per the §12.4 corpus read). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. (The §12.4 Caribbean and §12.6 Puerto Rican corpus reads both surface Jamaican as part of Anglophone-Caribbean comparison framings — well-supported corpus signal.)
+
+---
+
+#### 12.11. Peruvian (2)
+
+- **canonical_key:** `peruvian`
+- **surface_label:** `Peruvian`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline (Appendix A Latin American lists Mexican / Dominican / Puerto Rican / Salvadoran only). 2 corpus lessons. Candidate for `new` verdict — Peru is the largest South American country by population and culinary tradition; corpus presence well-supported. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american`.
+
+---
+
+#### 12.12. Brazilian (1)
+
+- **canonical_key:** `brazilian`
+- **surface_label:** `Brazilian`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Brazil is the largest country in South America by population and area. Note: Brazil is Portuguese-speaking, not Spanish-speaking; "Latin American" parent is the v3-baseline-derived placement but Brazilian cultural identity sits adjacent to Hispanic Latin American rather than within it. `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american` (which would be a more natural geographic fit).
+
+---
+
+#### 12.13. Ecuadorian (1)
+
+- **canonical_key:** `ecuadorian`
+- **surface_label:** `Ecuadorian`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Ecuador is part of Andean South American culinary tradition. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american`.
+
+---
+
+#### 12.14. Guyanese (1)
+
+- **canonical_key:** `guyanese`
+- **surface_label:** `Guyanese`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Guyana is geographically South American but culturally distinct (Anglophone, large Indo-Caribbean and Afro-Guyanese populations; culinary traditions overlap with Caribbean). The §12.4 Caribbean corpus read identifies the 1 Guyanese-tagged lesson as also tagged `Caribbean` — empirical multi-parent signal similar to Puerto Rican. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Cluster decision: parent could be `latin-american` (v3-baseline-style), `caribbean` (geographic-cultural fit), `south-american` (geographic fit if §12 framing #3's NEW sub-region candidate accepted), or multi-parent. Curriculum team call.
+
+---
+
+#### 12.15. Central American (1)
+
+- **canonical_key:** `central-american`
+- **surface_label:** `Central American`
+- **parent:** `americas`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline (v3 has no `Central American` sub-region; v3 Latin American lists Mexican / Dominican / Puerto Rican / Salvadoran as flat country-specifics). 1 corpus lesson tagged with this value. Candidate for `new` verdict — would create a Central American sub-region as a sibling of Latin American and Caribbean. If accepted, would re-parent Salvadoran (2 lessons) and Honduran (2 lessons) from `latin-american` to `central-american`. Filter-UI tier `internal` proposed at the 1-corpus-occurrence level — curriculum team may promote to `sub` if the re-parenting cohort (Salvadoran + Honduran + this 1 row = 5 lessons) justifies sub-tier. **Cluster decision required:** §12 framing #3 asks specifically about this candidate.
+
+---
+
+#### 12.16. South American (1)
+
+- **canonical_key:** `south-american`
+- **surface_label:** `South American`
+- **parent:** `americas`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. 1 corpus lesson tagged with this value. Candidate for `new` verdict — would create a South American sub-region as a sibling of Latin American and Caribbean. If accepted, would naturally re-parent Peruvian (2), Brazilian (1), Ecuadorian (1), and possibly Guyanese (1) from `latin-american` to `south-american`. Filter-UI tier `internal` proposed at the 1-corpus-occurrence level — curriculum team may promote to `sub` if the re-parenting cohort (~5-6 lessons) justifies sub-tier. **Cluster decision required:** §12 framing #3. Note: arepa-tagged lessons (Three Sister Arepas, Three Sisters Empanadas) are currently untagged for country (Colombian / Venezuelan) per §12.3 audit signal; Stage 2 country-tag backfill would also feed into the `south-american` cohort.
+
+---
+
+#### 12.17. Southern United States (1)
+
+- **canonical_key:** `southern-united-states`
+- **surface_label:** `Southern United States`
+- **parent:** `north-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. 1 corpus lesson tagged with this value. Candidate for `new` verdict — would create a Southern United States sub-region under North American, useful for Soul Food / Cajun-Creole / Southern-cuisine framing. Note: v3 baseline lists `Cajun/Creole` as a `North American` child (currently corpus-absent — see §9.1 cross-cluster); if `Southern United States` becomes a canonical sub-region, `Cajun/Creole` could naturally re-parent under it. The §12.2 North American corpus read identified ~35 USA-generic lessons (Cohort D) that have no specific ethnic anchor — some of these may eventually carry `Southern United States` tagging if a southern-cuisine sub-region cohort emerges (Stage 2). Filter-UI tier `internal` proposed at 1-lesson frequency. **Cluster decision required:** §12 framing #3.
+
+---
+
+#### 12.18. Dominican (0)
+
+- **canonical_key:** `dominican`
+- **surface_label:** `Dominican`
+- **parent:** `latin-american`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, parent = Latin American per v3 baseline. **0 corpus lessons** — this is a v3-baseline-but-corpus-absent value (per §12 framing decision #5). Verdict options: `keep` for future tagging (Dominican cuisine shares strong tradition with Puerto Rican and Cuban; corpus may grow); `drop` for absence of corpus signal; or `internal`-tier-only as a placeholder. The §12.6 Puerto Rican corpus read flags that the tostones body explicitly lists Cuba (also corpus-present, see §12.9) but NOT Dominican Republic, even though Dominican cuisine shares tostones / sofrito / similar Caribbean-Spanish-speaking diaspora — suggests Dominican is genuinely absent rather than under-tagged. Filter-UI tier `internal` proposed regardless of verdict given 0 frequency. **Note on convention:** this entry diverges from §11 Asian cluster's convention (where v3-canonical-corpus-absent values Filipino / Thai / Bengali were handled at cluster-decision-summary level without per-value entries). §12 framing decision #5 explicitly asks the verdict at per-value level, so Dominican gets a per-value entry. Curriculum team's verdict here also informs how to handle the parallel Asian v3-absent values.
+
+---
+
+#### 12.19. `americas` (drift literal — 1 corpus appearance)
+
+- **canonical_key:** `americas`
+- **surface_label:** `americas`
+- **parent:** `null`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `americas`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 1 corpus row. Surfaced explicitly as a `merge` entry for parser-and-reader clarity. The `canonical_key` field matches the merge target's slug (both are kebab-case-lowercase by slug convention applied to the same underlying value — see §7 alias_map identity-shaped entries). This entry contributes `"americas" → "americas"` to the `alias_map` output (literal-to-canonical-key); verdict `merge` excludes it from the canonical vocabulary list.
+
+---
+
+#### 12.20. `north-american` (drift literal — 13 corpus appearances)
+
+- **canonical_key:** `north-american`
+- **surface_label:** `north-american`
+- **parent:** `americas`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `north-american`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 13 corpus rows — the largest single drift footprint in the Americas cluster (and one of the largest in the whole corpus). Same convention as §11.16. Contributes `"north-american" → "north-american"` to `alias_map`.
+
+---
+
+#### 12.21. `latin-american` (drift literal — 4 corpus appearances)
+
+- **canonical_key:** `latin-american`
+- **surface_label:** `latin-american`
+- **parent:** `americas`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `latin-american`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 4 corpus rows. Same convention as §11.16. Contributes `"latin-american" → "latin-american"` to `alias_map`.
+
+---
+
+#### 12.22. `caribbean` (drift literal — 1 corpus appearance)
+
+- **canonical_key:** `caribbean`
+- **surface_label:** `caribbean`
+- **parent:** `americas`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `caribbean`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 1 corpus row. Same convention as §11.16. Contributes `"caribbean" → "caribbean"` to `alias_map`.
 
 ### Cluster decision summary
 
@@ -1013,4 +1359,4 @@ This table serves as the **hand-off artifact** to PR 5+ (D4 vocab canonicalizati
 
 ---
 
-*End of worksheet (last update Session 62, 2026-05-10 — Asian cluster per-value entries populated).*
+*End of worksheet (last update Session 64, 2026-05-10 — Americas cluster per-value entries populated).*
