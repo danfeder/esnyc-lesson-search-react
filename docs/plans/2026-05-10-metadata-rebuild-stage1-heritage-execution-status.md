@@ -35,12 +35,12 @@
    - Cluster root (1): Americas (170)
    - Sub-regions (3): North American (83), Latin American (77), Caribbean (17)
    - Country-specifics by frequency (10):
-     - ≥3 lessons (1): Mexican (38)
+     - ≥10 lessons (1): Mexican (38)
      - 4 lessons (1): Puerto Rican (4)
      - 2 lessons (5): Salvadoran, Honduran, Cuban, Jamaican, Peruvian (each 2)
      - 1 lesson (3): Brazilian, Ecuadorian, Guyanese (each 1)
    - New sub-region candidates — v3-absent (3): Central American (1), South American (1), Southern United States (1)
-   - v3-canonical corpus-absent (1): Dominican (Latin American). [Cajun/Creole pending §12 decision #5; default cross-cluster §9.1]
+   - v3-canonical corpus-absent (1): Dominican (Latin American). [Cajun/Creole — current home §9.1; §12 decision #5 may move to Americas]
    - Kebab-case drift (4): `americas`, `north-american`, `latin-american`, `caribbean`
 3. Dispatch Opus corpus-read agents for high-frequency / ambiguous values per §4 threshold (≥5 OR ambiguous). Strong candidates by frequency:
    - Americas (170 — cluster root; §12 decision #1 asks whether tag is meaningful or under-tagged default)
