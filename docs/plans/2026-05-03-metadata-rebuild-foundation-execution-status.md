@@ -1,6 +1,6 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-10 — Session 62 (Stage 1 heritage worksheet — Asian cluster per-value entries populated, PR opening; foundation-phase code track has no unblocked next PR — see Stage 1 execution status doc for per-cluster fill schedule).
+**Last updated:** 2026-05-10 — Session 63 (Stage 1 PR #482 round-1 fix-up applied; substantive Stage 1 progress lives in peer status doc; foundation-phase code track has no unblocked next PR — see Stage 1 execution status doc for per-cluster fill schedule).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
@@ -145,7 +145,7 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 
 **Stage 1 work track continues at peer status doc** — see `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` for substantive Session 62 entry (decisions, process notes) + next-session pointer (Americas cluster per-value fill).
 
-**For next session:** Americas cluster per-value fill (~22 entries — largest cluster: cluster root + 3 sub-regions + 14 country-specifics including 3 v3-absent `new` candidates + 4 kebab-case drift variants). Per-cluster fill schedule remaining after Asian: Americas → African → European → Middle Eastern → cross-cluster diaspora.
+**For next session:** Americas cluster per-value fill (~22 entries — largest cluster; see Stage 1 status doc's "For next session" block + worksheet §12 for the per-bucket breakdown). Per-cluster fill schedule remaining after Asian: Americas → African → European → Middle Eastern → cross-cluster diaspora.
 
 ### Session 61 — 2026-05-10 — PR #481 ship cycle complete (round-1 + round-2 + Notes fix-up; squash-merge in progress)
 

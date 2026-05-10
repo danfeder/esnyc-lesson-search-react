@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet
 
-> **Status: SCAFFOLD (Session 60, 2026-05-10).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries are not yet populated** — that work happens in subsequent sessions before curriculum-team handoff. End-summary canonical-vocab table fills only as per-value verdicts close.
+> **Status: PRE-HANDOFF (last update Session 62, 2026-05-10).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries: Asian cluster ✅ Session 62 (§11); Americas onward TBD subsequent sessions before curriculum-team handoff.** End-summary canonical-vocab table fills only as per-value verdicts close.
 >
 > **Owner during scaffold/pre-handoff phase:** project maintainer (Claude + user). **Owner at handoff:** ESYNYC curriculum team.
 >
@@ -55,7 +55,7 @@ Three inputs converge into each verdict:
 ### Worksheet hand-off model
 
 ```
-SCAFFOLD (this session)        PRE-HANDOFF (subsequent sessions)        HANDOFF (curriculum team)
+SCAFFOLD (Session 60)          PRE-HANDOFF (Sessions 62+)               HANDOFF (curriculum team)
        │                                  │                                       │
        ▼                                  ▼                                       ▼
 Header sections written        Per-value entries populated:           Curriculum team fills:
@@ -1011,4 +1011,4 @@ This table serves as the **hand-off artifact** to PR 5+ (D4 vocab canonicalizati
 
 ---
 
-*End of worksheet scaffold (Session 60, 2026-05-10).*
+*End of worksheet (last update Session 62, 2026-05-10 — Asian cluster per-value entries populated).*

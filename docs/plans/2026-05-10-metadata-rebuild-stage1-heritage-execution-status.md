@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-10 — Session 62 (Asian cluster per-value entries populated; PR opening next; Americas cluster fill is next-session work).
+**Last updated:** 2026-05-10 — Session 63 (PR #482 round-1 fix-up applied — Americas next-session bullet regenerated from §12 + worksheet status banner SCAFFOLD → PRE-HANDOFF; Americas cluster fill is next-session work).
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -10,7 +10,7 @@
 
 ## Current state
 
-**Asian cluster ✅ Session 62 (2026-05-10).** Worksheet §11 has all 18 per-value entries populated (1 cluster root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift merge records). 7 of those have Opus-corpus-read `<details>` blocks integrated (Asian, East Asian, South Asian, Southeast Asian, Chinese, Japanese, Indian); the remaining 11 entries are structural populations per the §4 methodology. PR opening; squash-merge expected this session or next.
+**Asian cluster ✅ Session 62 (2026-05-10).** Worksheet §11 has all 18 per-value entries populated (1 cluster root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift merge records). 7 of those have Opus-corpus-read `<details>` blocks integrated (Asian, East Asian, South Asian, Southeast Asian, Chinese, Japanese, Indian); the remaining 11 entries are structural populations per the §4 methodology. **PR #482 in review cycle — round-1 fix-up applied Session 63 (Americas next-session bullet regenerated from §12; worksheet banner SCAFFOLD → PRE-HANDOFF; foundation-phase status doc Session 62 line tightened); awaiting next round or merge.**
 
 **What's done:**
 
@@ -31,12 +31,16 @@
 **For next session (Stage 1 Session 63 = Americas cluster):**
 
 1. Branch off `main` at the merge commit for this session's PR.
-2. Populate Americas cluster's 22 per-value entries per §12 framing block:
-   - Cluster root: Americas (170)
+2. Populate Americas cluster's per-value entries per §12 framing block. Total: **22 entries** (or 23 if Cajun/Creole gets an Americas entry per §12 cluster decision #5 — default is to leave it in cross-cluster §9.1):
+   - Cluster root (1): Americas (170)
    - Sub-regions (3): North American (83), Latin American (77), Caribbean (17)
-   - Country-specifics ≥3 lessons (1): Mexican (38)
-   - Country-specifics 2 lessons (5): Puerto Rican, Salvadoran, Honduran, Cuban, Jamaican, Peruvian (Puerto Rican is 4)
-   - Country-specifics 1 lesson (4): Brazilian, Ecuadorian, Guyanese; plus 3 v3-absent `new` candidates (Central American, South American, Southern United States)
+   - Country-specifics by frequency (10):
+     - ≥3 lessons (1): Mexican (38)
+     - 4 lessons (1): Puerto Rican (4)
+     - 2 lessons (5): Salvadoran, Honduran, Cuban, Jamaican, Peruvian (each 2)
+     - 1 lesson (3): Brazilian, Ecuadorian, Guyanese (each 1)
+   - New sub-region candidates — v3-absent (3): Central American (1), South American (1), Southern United States (1)
+   - v3-canonical corpus-absent (1): Dominican (Latin American). [Cajun/Creole pending §12 decision #5; default cross-cluster §9.1]
    - Kebab-case drift (4): `americas`, `north-american`, `latin-american`, `caribbean`
 3. Dispatch Opus corpus-read agents for high-frequency / ambiguous values per §4 threshold (≥5 OR ambiguous). Strong candidates by frequency:
    - Americas (170 — cluster root; §12 decision #1 asks whether tag is meaningful or under-tagged default)
