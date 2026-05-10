@@ -110,7 +110,7 @@ Pre-locking 1-level depth would force "merge upward" of country-specifics that h
 
 Some values plausibly belong under more than one cluster (e.g., **Egyptian** — North Africa cluster, or Middle Eastern cluster? **Persian** — Middle Eastern cluster, or Central Asian cluster?). These get a **single canonical home** per the cluster framing call, but the cross-cluster section logs the alternative and the reasoning.
 
-The hierarchy artifact UI (see §6) surfaces the parent chain as a tree but allows visual inspection of multi-parent ambiguity via the cross-cluster section. The canonical store remains single-parent.
+The hierarchy artifact UI (a future companion tool — design captured in the Stage 1 execution status doc Decision 2) surfaces the parent chain as a tree but allows visual inspection of multi-parent ambiguity via the cross-cluster section. The canonical store remains single-parent.
 
 ### Cluster boundaries
 
@@ -188,7 +188,7 @@ For Claude-pre-population (in subsequent sessions before handoff):
 
 ### Parser-compatible format
 
-The labeled-line shape (`- **field_name:** value`) is parseable by a small Python script (similar to the activity-type-v2 worksheet parser) into structured JSON for downstream consumers. The end-summary canonical-vocab table (§11) is regenerated mechanically from the parsed entries.
+The labeled-line shape (`- **field_name:** value`) is parseable by a small Python script (similar to the activity-type-v2 worksheet parser) into structured JSON for downstream consumers. The end-summary canonical-vocab table (§16) is regenerated mechanically from the parsed entries.
 
 ---
 
@@ -286,7 +286,7 @@ When the worksheet is filled and ready for hand-off, the next-stage tool parses 
 - `<value>` is field-typed (string / canonical_key-shape / enum / list)
 - Inline HTML comments (`<!-- ... -->`) are tolerated and stripped by the parser
 - Cluster framing blocks and cluster decision summary blocks are **not** parsed structurally — they are human reference / narrative
-- The end-summary canonical-vocab table (§11) is **generated mechanically** from parsed per-value entries; do not hand-edit it (changes get clobbered on re-parse)
+- The end-summary canonical-vocab table (§16) is **generated mechanically** from parsed per-value entries; do not hand-edit it (changes get clobbered on re-parse)
 
 **Skipped entries:** if a `verdict` line is missing or blank, the parser warns but does not fail. Unparsed entries are excluded from the canonical vocabulary output until filled.
 
