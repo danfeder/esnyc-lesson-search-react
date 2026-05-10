@@ -290,7 +290,7 @@ When the worksheet is filled and ready for hand-off, the next-stage tool parses 
 
 **Skipped entries:** if a `verdict` line is missing or blank, the parser warns but does not fail. Unparsed entries are excluded from the canonical vocabulary output until filled.
 
-**Identity-shaped drift entries:** drift entries (`verdict: merge`) can carry a `canonical_key` value identical to their `merge_into` target's `canonical_key` — e.g., the kebab-case drift `asian` and the canonical `Asian` both have `canonical_key: asian`. Parsers MUST filter on `verdict in ('keep', 'new')` BEFORE keying canonical vocabulary by `canonical_key`, otherwise drift entries silently collide with (or de-duplicate) their canonical sources. Drift entries contribute only to the `alias_map` output; identity entries like `"asian" → "asian"` in `alias_map` are harmless.
+**Identity-shaped drift entries:** drift entries (`verdict: merge`) can carry a `canonical_key` value identical to their `merge_into` target's `canonical_key` — e.g., the kebab-case drift `asian` and the canonical `Asian` both have `canonical_key: asian`. Parsers MUST filter on `verdict in ('keep', 'new')` BEFORE keying canonical vocabulary by `canonical_key`, otherwise drift entries silently collide with (or de-duplicate) their canonical sources. Drift entries contribute only to the `alias_map` output (not to the `canonical` array); identity entries like `"asian" → "asian"` in `alias_map` are harmless.
 
 **Output shape (handed to PR 5+ migration):**
 
