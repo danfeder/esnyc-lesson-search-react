@@ -1,63 +1,48 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-08 — Session 57 (PR #479 Round 2 bots triaged → all DEFER/REJECT; 5/5 TEST DB probes pass; deploy-preview spot-check pass; ready for merge approval).
+**Last updated:** 2026-05-08 — Session 58 (PR 3a SHIPPED + PROD-applied + verified; **next track committed: Stage 1 heritage worksheet round** — gets its own four-file scaffold via `/kickoff-feature` whenever it starts).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**PR 3a (search infra) — PR #479 OPEN, READY FOR MERGE APPROVAL.** `feat/metadata-foundation-search-infra-3a` branched off `main` at `03970d0` (PR 4 squash-merge); HEAD = `87f0267` matches origin (no unpushed commits — the Session 56 push bundled all 3 prior commits as planned). Recent commits: Session 54 Task 3a.3 ship (`81b5d2e`) → Session 55 Task 3a.4 ship (`4595235`) → Session 56 docs (`0b34348`) → **Session 56 Round-1 fix-ups (`010f0ea`) — Apple Story drift repair migration + _flatten_academic_concepts defensive guard migration + smart-search fetchSynonyms try/catch fallback** → Session 56 docs (`87f0267`). Type-check + lint clean baseline. PR at https://github.com/danfeder/esnyc-lesson-search-react/pull/479.
+**PR 3a (search infra) — SHIPPED 2026-05-08.** Squash commit `bb3372b` on main; merged via `gh pr merge 479 --squash --delete-branch --auto` after Round 2 bot triage closed clean (Codex Round 2 explicit "no blockers"; claude long-form 7×P2/P3 all DEFER per round-cap rule). 4 migrations applied to PROD (`20260520120000_season_timing_drift_repair_2` → `20260521000000_search_vector_with_concepts` → `20260522000000_seed_search_synonyms_from_smart_search` → `20260523000000_flatten_academic_concepts_safer`); `smart-search` edge fn deployed to PROD (version 25, ezbr_sha256 `b0878450...`). Both PROD workflows ran clean — no SASL flake, no CDN 522.
 
-**CI status:** all green except known-baseline Security Audit (`@lhci/cli` chain — recurring per MEMORY.md hygiene follow-ups). E2E Tests now PASS (Apple Story drift fix repaired the Round-1 P1 blocker). `claude-review`, `claude-database-review`, Test & Build, Lighthouse, Bundle Analysis, CodeQL, Test Coverage, Deploy Preview, Deploy to TEST — smart-search, semgrep — all PASS.
+**5/5 PROD verification probes — ALL PASS Session 58** (run against `mcp__supabase-remote__execute_sql`; matches TEST 5/5 from Session 57):
+1. Apple Story (`lesson_2d43fc766fa14401b48065f167003ded`) `seasonTiming` key stripped: `metadata ? 'seasonTiming' = false`, column empty, metadata value null.
+2. `_flatten_academic_concepts` body contains `CASE WHEN jsonb_typeof(p_concepts) = 'object' THEN p_concepts ELSE '{}'::jsonb END` wrapping both `jsonb_each` calls; signature unchanged.
+3. `search_synonyms` count = 73 (60 existing + 13 new).
+4. All 6 affected terms (christmas / thanksgiving / halloween / easter / latino / hispanic) emit valid tsquery via `to_tsquery('english', expand_search_with_synonyms(...))`. Sample halloween → `'celebr' | 'fall' | 'halloween' | 'octob' | 'pumpkin'`.
+5. CHECK constraint `search_synonyms_lexemes_no_whitespace` raises `check_violation` on multi-word INSERT.
 
-**Round 2 bot reviews — landed + triaged Session 57; all DEFER or REJECT (no fix-up commits needed):**
-- **Codex Round 2** (posted by danfeder against `87f0267`): explicit "No new blocking findings from me." Codex P1 (Apple Story) + Codex P2 (`_flatten_academic_concepts` guard) confirmed fixed. CI E2E logs show `Finished supabase db push` then `50 passed / 3 skipped` — clears the prior TEST migration blocker. One nit (future-dated `2026-05-11` in drift-repair-2 migration comment) REJECTED — refers to precedent migration's filename timestamp `20260511120000_*` per project's future-dated-timestamp convention, not a calendar audit date; can't edit pushed migration anyway.
-- **Claude long-form Round 2:** 7 findings, all P2/P3, all deferred:
-  - **P2 #1 (per-request synonym fetch, no caching):** DEFER — claude's own framing "follow-up rather than blocker"; ~73 rows, current scale negligible; gracefully degrades via Round 1 try/catch. Out-of-scope follow-up logged.
-  - **P2 #2 (broad `hispanic`/`halloween` token expansions):** ACCEPTED via spot-check — locked tradeoff, eyeball-validated on deploy preview Session 57. See spot-check verdict block below.
-  - **P2 #3 (`GRANT ALL TO anon` on `_flatten_academic_concepts`):** DEFER — claude's framing "matches existing patterns in the codebase, so not a blocker"; broader grant cleanup is its own work. Out-of-scope follow-up logged.
-  - **P3 #4 (per-call `byTerm` / `bidirectionalBySynonym` map builds):** DEFER — claude framing "non-issue at scale"; coupled with P2 #1.
-  - **P3 #5 (double `CASE WHEN jsonb_typeof` evaluation in flatten_safer):** DEFER — IMMUTABLE function; Postgres can constant-fold; cost = 0. Pushed migration, can't edit per skill rule.
-  - **P3 #6 (inconsistent VALUES casts in seed migration):** DEFER — standard Postgres pattern (first row establishes types for CTE); cosmetic; pushed migration.
-  - **P3 #7 (missing non-object fixtures in `test-prepare-lesson-text.mjs`):** DEFER — already noted in Session 56 follow-ups; SQL function tested locally with 10 inputs.
+**3-signal smart-search edge fn verification — ALL PASS Session 58** (per MEMORY.md "edge function deploy false-success" hygiene): version `25` (incremented), ezbr_sha256 unique to this deploy, source grep confirms new `async function fetchSynonyms` + `from('search_synonyms')` + try/catch resilience wrapper present and old hardcoded `searchSynonyms` Record absent.
 
-**5/5 TEST DB verification probes — ALL PASS Session 57** (per `feedback_per_round_test_db_verification.md` — re-verified after CI re-applied migrations to TEST):
-1. **Apple Story key strip** ✅ — `lesson_2d43fc766fa14401b48065f167003ded`: `metadata ? 'seasonTiming' = false`, `column_array_len = 0`, `metadata->'seasonTiming' = null`. The drift-repair-2 migration successfully stripped the non-canonical key.
-2. **`_flatten_academic_concepts` guard** ✅ — function body contains `CASE WHEN jsonb_typeof(p_concepts) = 'object' THEN p_concepts ELSE '{}'::jsonb END` wrapping both `jsonb_each` calls. Function signature unchanged.
-3. **`search_synonyms` count** ✅ — 73 rows (60 existing + 13 new from seed migration).
-4. **6-term tsquery validity** ✅ — all 6 affected terms (christmas / thanksgiving / halloween / easter / latino / hispanic) produce valid tsquery via `to_tsquery('english', expand_search_with_synonyms(...))`. No syntax errors.
-5. **CHECK constraint rejection** ✅ — multi-word INSERT raises `check_violation` as expected.
+**Foundation-phase substrate live in PROD — 5 of 6+ PRs SHIPPED:**
+- **PR 1** (#475 → squash `8497752`, 2026-05-05): `lesson_format` dropped (column + JSONB key from all rows); `tags` + `activity_type` + `crf_confirmed` + `series_id` + `part_number` columns added; Zod canonical + review-form schemas with bidirectional mappers + Deno mirror with CI equivalence test; 3 CHECK constraints + `_validate_meta_enum_values` trigger guard; "Lesson Type" sidebar filter; `complete-review` Zod write-surface validation.
+- **PR 1b** (#476 → squash `bd9d6e4`, 2026-05-07): `activity_type` 5-value → 4-value multi-select (`both` retired, replaced by `[cooking, garden]`); ReviewDetail + filter UI updated; 113 historical scalar `tagged_metadata.activityType` rows survive via shape-tolerant loader.
+- **PR 2** (#477 → squash `cf2aad4`, 2026-05-07): submission-time LLM auto-tag — CRF + activity_type + tags vocab-locked prompts; `ai_draft_metadata` + `ai_draft_generated_at` + `ai_draft_model` columns; `process-submission` edge fn writes drafts; Stage-1-gated prompts (academicConcepts / cultural_heritage / Gate-C-classified) defer to corresponding worksheets.
+- **PR 4** (#478 → squash `03970d0`, 2026-05-08): 21 third-party imports retired (`retired_at` soft-delete); 7 archive-only concept-recovery rows; FSA Pt 1 retitle (drop "& 2"); `search_lessons` filter retired; 8 user-facing filter surfaces gate retired rows.
+- **PR 3a** (#479 → squash `bb3372b`, 2026-05-08): `academicConcepts` in FTS `search_vector` (C-weight) + corpus-side embeddings (`prepareLessonText`); `smart-search` reads `search_synonyms` from DB at request time (drops hardcoded TS dictionary); CHECK constraint locks out multi-word values; 6 historically-broken queries (christmas / thanksgiving / halloween / easter / latino / hispanic) functional.
 
-**Deploy-preview spot-check Session 57 (claude P2 #2 ASK):**
-- **`hispanic`** (227 results, 30% of corpus): top 4 = literal "Hispanic Heritage Month" lessons (Honduran/Mexican); top 5-10 = Latin American/Spanish content; tail brings in African American / North American lessons via `american` token expansion. Relevance ranking puts on-target results first.
-- **`halloween`** (289 results, 38% of corpus): top 7 = pumpkin-themed lessons (exactly what a teacher wants); top 8+ = Fall garden lessons via `fall` expansion + cultural celebrations via `celebration` expansion (Eid, Pesto Celebration). Broad but ranked below on-target.
-- **Verdict:** ship-acceptable. Locked tradeoff lives up to its billing — way better than the pre-fix state where these searches emitted 500s on every request.
-
-**Pre-merge gate:** user approval to merge. Once merged, PROD migration workflow triggers → manual approval gate → migrations apply → MCP verification on PROD via the same 5 probes against `mcp__supabase-remote__execute_sql`.
-
-**Foundation-phase substrate live in PROD:** PR 1 + PR 1b + PR 2 + PR 4 all shipped + PROD-applied + verified. PR 4's full substrate (soft-retire columns + 21 retired imports + 7 concept-recovery rows + FSA Pt 1 retitle + 8 user-facing filter surfaces) verified Session 51 via 9-probe MCP query. Stage 1 worksheets DO NOT YET EXIST (verified Session 51 post-merge); PR 5 stays gated until heritage + concepts worksheets land.
-
-**PR 3a task status:**
-- ✅ Task 3a.1 — smart-search drift resolution decision (Option B locked Session 52).
-- ✅ Task 3a.2 — search_vector regeneration shipped Session 53 (`9a21354`).
-- ✅ Task 3a.3 — generate-embeddings includes academicConcepts shipped Session 54 (`81b5d2e`).
-- ✅ Task 3a.4 — smart-search refactor + seed migration shipped Session 55 (`4595235`); PR #479 opened.
-- ✅ Task 3a.5 — PR ritual completed Session 57: Round 1 fix-ups (`010f0ea`) → Round 2 bot reviews triaged (all defer/reject) → 5/5 TEST DB probes pass → spot-check pass. **Awaiting merge approval only.**
-
-**Round 1 + Round 2 fix-ups + sub-decisions:** historical detail captured in commits `010f0ea` (Round 1 fix-ups), `4595235` (Task 3a.4 main), and migration body comments (`20260520120000_*` Apple Story drift repair, `20260522000000_*` synonym seed + CHECK constraint, `20260523000000_*` flatten guard). Round-2 triage detail above. Session 56 + 57 entries below have the full investigation chain.
-
-**Remaining foundation-phase PRs in scope:**
-- **PR 3a** (this work, PR #479 open): `search_vector` + embeddings + smart-search drift fix.
-- **PR 3b** (later): `search_synonyms` population with concept-derived everyday↔framework pairs. Folds into PR 6+; depends on Stage 2 re-tag outputs.
-- **PR 5+** (later): D4 vocab canonicalization (Title Case canonical across ~10 vocab fields; Pydantic on all 17 fields). **Depends on Stage 1 worksheet outputs** — gated until at least heritage + concepts worksheets land.
+**Remaining foundation-phase PRs:**
+- **PR 3b** (later): `search_synonyms` population with concept-derived everyday↔framework pairs produced by Stage 2 re-tag prompts. Folds into PR 6+ work track; depends on Stage 2 re-tag outputs.
+- **PR 5+** (later): D4 vocab canonicalization (Title Case across ~10 fields; Pydantic on all 17 fields). **Gated until Stage 1 heritage + concepts worksheets land.**
 - **PR 6+** (later): Stage 2 corpus re-tag + reviewer validation flow.
 
-**Stage 1 worksheet round** is its own multi-session initiative, not a single PR. Per design doc §4 it's a separate parallel work track. When started, scaffold the four-file pattern (design + impl plan + kickoff prompt + status doc) per `feedback_multi_session_execution.md` rather than rolling it into the foundation-phase status doc. Heritage is first (~78 values); concepts (~211 values, biggest) second; ~8 smaller fields after.
+**Stage 1 worksheet round — COMMITTED AS NEXT TRACK 2026-05-08.** This is the deliberate post-PR-3a direction. It is its own multi-session initiative on the curriculum-team-driven track and gets its OWN four-file scaffold (design + impl plan + kickoff prompt + status doc) per `feedback_multi_session_execution.md` — NOT rolled into this foundation-phase status doc. Heritage worksheet is first (~78 values; smallest scope, tests the methodology); concepts second (~211 values, biggest); then ~8 smaller fields. The scaffold output gates D4 vocab canonicalization timing (PR 5+) and Stage 2 re-tag prompt design (PR 6+). Reasoning for committing now: with PR 3a shipped, the foundation-phase code track has no unblocked next PR — PR 3b / 5 / 6 are all gated on Stage 1 / Stage 2 outputs. Stage 1 is the actual unblocker. Scaffolding it now (planning, no curriculum-team availability needed yet) means execution starts immediately when curriculum-team time appears.
+
+**For next session (Stage 1 heritage scaffold start):**
+1. Invoke `/kickoff-feature` (or work from `~/.claude/templates/multi-session-execution/`) to scaffold the four files for the Stage 1 heritage worksheet round.
+2. Methodology to encode in the design doc: v3 baseline (`/Users/danfeder/cCode/taggingv3/esynyc-taxonomy-schema-v2.md`) + per-value Opus-corpus-read evidence + reviewer/user validate. Per-field judgment on whether Opus-corpus-reads are needed (heritage = yes per design doc §5).
+3. Worksheet output schema: canonical key, surface label, alias list (every variant form found in corpus, doubles as Stage 2 migration map), schema position, filter-UI tier, frequency, content-evidence verdict.
+4. PR-cycle archival: move PR 3a session entries (52-58) into `...-execution-status-archive.md` as part of session-1 ritual when scaffolding starts a new status doc.
+5. Branch off `main` (`bb3372b`, with full foundation-phase code-track substrate live) — though Stage 1 may not need a code branch if the worksheet is purely planning/content work.
+
+**For later (whenever PR 3b / 5 / 6 unblocks):** branch off `main`; review out-of-scope follow-ups list below; follow the kickoff-prompt's session-start ritual.
 
 **Branches:**
-- `main` at `03970d0` (PR 4 squash-merge); origin matches.
-- `feat/metadata-foundation-search-infra-3a` — current PR 3a branch (PR #479 open). HEAD = `87f0267` matches origin. 11 commits ahead of `main`. Awaiting merge approval.
-- Stale branches deletable at convenience: `feat/metadata-foundation-corpus-cleanup` (PR #478 merged), `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`.
+- `main` at `bb3372b` (PR 3a squash-merge); origin matches.
+- All foundation-phase feature branches deletable at convenience: `feat/metadata-foundation-search-infra-3a` (auto-deleted on origin via `--delete-branch`; local copy can stay for traceability), `feat/metadata-foundation-corpus-cleanup`, `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`.
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -151,6 +136,62 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 58 — 2026-05-08 — PR #479 MERGED + PROD-applied + verified; tracking docs swept
+
+**Done (squash-merge `bb3372b` on main; status doc + memory + MEMORY.md refreshed):**
+
+- **Merge sequence:**
+  - Pushed Session 57 docs commit `7e6c1b5` to PR HEAD (so the squash includes the Session 57 entry).
+  - `gh pr merge 479 --squash --delete-branch --auto` queued; PR auto-merged at 2026-05-09T02:02:14Z as squash commit `bb3372b71484d351c496694dbb7b9a22ace3f45b`.
+  - Both PROD workflows (`migrate-production` run `25588572688` + `deploy-edge-functions` run `25588572713`) approved by user; both completed clean. **Zero flakes this cycle** — no SASL, no esm.sh CDN 522.
+
+- **5/5 PROD verification probes — ALL PASS** (run against `mcp__supabase-remote__execute_sql`; verbatim lesson_id + term values copied from migration sources per `feedback_verbatim_identifiers_in_probes.md`):
+  1. Apple Story `seasonTiming` key stripped on PROD (matches TEST result).
+  2. `_flatten_academic_concepts` body has the `jsonb_typeof = 'object'` guard (matches TEST).
+  3. `search_synonyms` PROD count = 73 (matches TEST + matches expected post-apply count from migration body comment).
+  4. All 6 affected terms emit valid tsquery on PROD (output identical to TEST).
+  5. CHECK constraint rejects multi-word INSERT on PROD (matches TEST).
+  
+  TEST↔PROD diff: zero substantive differences. The 4 migrations + edge fn deploy applied identically across both surfaces.
+
+- **3-signal smart-search edge fn verification — ALL PASS** (per MEMORY.md "edge function deploy false-success" hygiene pattern):
+  1. **Version increment:** PROD now at `25` (was at some prior version; the workflow's deploy step bumped it).
+  2. **ezbr_sha256:** `b0878450829488060fe520e4ff0242d0c0a77abf94ef64960ff3c8b890461df3` — current deploy hash retrieved via `mcp__supabase-remote__get_edge_function smart-search`.
+  3. **Source grep:** new `async function fetchSynonyms(supabaseClient: SupabaseClient): Promise<SynonymRow[]>` present in `files[].content`; `.from('search_synonyms')` present; `try { synonyms = await fetchSynonyms(...) } catch (synonymsErr)` resilience wrapper present; old hardcoded `searchSynonyms` Record absent.
+
+- **Migrations list confirmation:** `mcp__supabase-remote__list_migrations` shows the 4 new migrations as the LAST 4 entries (most recent), confirming correct sort order + apply ordering: `20260520120000_season_timing_drift_repair_2` → `20260521000000_search_vector_with_concepts` → `20260522000000_seed_search_synonyms_from_smart_search` → `20260523000000_flatten_academic_concepts_safer`.
+
+- **Tracking docs swept (this session-end):**
+  - **Active status doc** (this file): Current State header rewritten for post-merge state — PR 3a moved from "READY FOR MERGE APPROVAL" to "SHIPPED 2026-05-08"; PROD probe results documented; foundation-phase scoreboard now lists 5 of 6+ PRs SHIPPED with squash-commit hashes; remaining PRs (3b / 5 / 6) noted with their gating dependencies.
+  - **`MEMORY.md` Active initiatives entry:** rewritten from "PR 1 SHIPPED 2026-05-05; PR 2 next" to reflect PR 1 + 1b + 2 + 4 + 3a all shipped + PROD-applied + verified.
+  - **Project memory (`project_metadata_rebuild_initiative.md`):** YAML frontmatter `name` + `description` fields updated; new section appended covering PR 1b + 2 + 4 + 3a ship + verification.
+
+**Decisions made:**
+
+- **Squash auto-merge with `--delete-branch`.** Per PR 1 + PR 1b precedent (squash-merge over rebase-merge for foundation-phase PRs); per-task hashes preserved in archive + decision journal; main stays clean with one merge commit per PR. `--auto` flag queued the merge for as-soon-as-checks-pass; `--delete-branch` removed origin branch automatically (local branch kept for traceability).
+
+- **Tracking docs sweep done in single session vs split across sessions.** All three files (status doc, MEMORY.md, project memory) updated together as one logical "PR 3a closeout." Avoids the staleness pattern where the project memory says "PR 2 next" weeks after PRs 4 + 3a have shipped. Worth keeping as a pattern for future foundation-phase PR closeouts: "tracking docs sweep" is part of the merge close ritual, not deferred to next session.
+
+- **Stage 1 heritage worksheet committed as next track.** With Resend email delivery deferred (user choice), Stage 1 is the actual unblocker for the rest of the foundation phase — PR 3b / 5 / 6 are all gated on Stage 1 / Stage 2 outputs. Stage 1 has the highest "compounding value" property: heritage's pattern locks in concepts' pattern locks in 8 smaller fields' pattern. Scaffolding it now (planning work, no curriculum-team availability needed yet) means execution starts immediately when curriculum-team time appears, instead of waiting on planning ceremony. Heritage first because smallest scope (~78 values; tests the methodology before the bigger ~211-value concepts worksheet). Stage 1 gets its own four-file scaffold (design + impl plan + kickoff prompt + status doc) per `feedback_multi_session_execution.md` — does NOT roll into this foundation-phase status doc.
+
+**Process notes / observations:**
+
+- **PROD apply this cycle was the cleanest of the foundation phase.** PR 1 had cosmetic Verify-step SASL flake; PR 1b PROD deploy had esm.sh CDN 522 flake; PR 4 PROD apply had the apply-step SASL flake (rerun resolved). PR 3a hit zero flakes — both PROD workflows green on first try. Sample size 5; no obvious causal explanation for cleanliness this cycle (same Supabase CLI version, same time of day, similar migration count). Worth tracking; may revert to flake on next PR.
+
+- **3-signal edge fn verification continues to be reliable.** Third use this initiative (PR 1, PR 1b, PR 3a). Pattern: version increment + new ezbr_sha256 + source grep for known new code. Already promoted to MEMORY.md hygiene-follow-ups; this is just confirmation. Notable that the three signals always converge — no false positives from one signal saying "deployed" while another says "stale" since the pattern was added. The pattern could be packaged as a small bash script if it sees more use; today it's three MCP tool calls + visual diff which is fine for this volume.
+
+- **Tracking docs sweep highlighted the durability gap.** Status doc on disk lives with the project repo (recoverable via git log). Memory files at `~/.claude/projects/.../memory/*.md` live outside git; they survive sessions but aren't recoverable if the home directory is wiped. The project memory file is 560 lines / ~30K tokens of chronological journal; if it's lost, the structured walkthrough record is unrecoverable (decision journal at `docs/plans/2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md` IS in the project repo and IS recoverable, but the per-session memory journal is not duplicated there). Worth considering whether the project memory file should be mirrored into the project repo's `docs/plans/` for redundancy. Not urgent; flagged for visibility.
+
+**Process notes for next session (Stage 1 heritage scaffold start):**
+
+- **Next session = Stage 1 heritage worksheet four-file scaffold.** Decision committed Session 58. Invoke `/kickoff-feature` (or work from `~/.claude/templates/multi-session-execution/`); produce design doc + impl plan + kickoff prompt + status doc for the heritage worksheet. The scaffold is the current target — actual worksheet execution can happen later when curriculum-team availability appears.
+
+- **PR-cycle archival timing:** Stage 1 may not be a code branch (worksheet work is content-heavy, may live in `/Users/danfeder/cCode/taggingv3/` or `docs/plans/` rather than feature branches). When the Stage 1 status doc is created, move PR 3a session entries (52-58) into `...-execution-status-archive.md` AND consider whether the Stage 1 status doc is a peer to the foundation-phase status doc (separate file for separate work track) or if some content cross-references both. Likely: separate Stage 1 status doc; foundation-phase status doc carries forward only the "Stage 1 status: scaffold lives at <path>" pointer.
+
+- **None of Sessions 52-58 surfaced new feedback patterns worth promoting to durable feedback memory.** State-vs-doc divergence is already a candidate; chrome-devtools-mcp spot-check pattern needs a second occurrence before promotion; tracking-docs-sweep at PR-close needs a second occurrence too.
+
+- **Foundation-phase substrate is now load-bearing for any frontend work.** Future non-metadata frontend changes need to be aware that `lesson_format` doesn't exist; `tags` is array-typed; `activity_type` is multi-select; `retired_at` filters need consideration in any new search query path; `search_synonyms` is the synonym source of truth; `academicConcepts` are in FTS + embeddings.
 
 ### Session 57 — 2026-05-08 — PR #479 Round 2 triaged + 5/5 TEST DB probes pass + spot-check pass; awaiting merge approval
 
