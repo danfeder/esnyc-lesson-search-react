@@ -102,6 +102,8 @@ The Stage 1 work is split across multiple files; this block names which surface 
 
 **For next session (Stage 1 Session 68 = European cluster):**
 
+> See `## Next session contract` near the top of this doc for the structured authoritative summary (session, branch base, primary objective, expected files, first task, must verify, do not do). The numbered list below carries the procedural detail (per-entry breakdown, framing decisions, Opus-dispatch plan).
+
 1. Branch off latest `main` after PR #485 merges. PR #484 squash `7894a47` is the pre-#485 anchor; replace this branch-base note with the PR #485 squash commit during PR #485 closeout. NO PR #484 hash backfill needed in Session 68 — Session 67 did that directly on main (precedent break from Sessions 64/66's "first commit on next session's branch" pattern; user explicitly authorized in Session 67).
 2. Populate European cluster's per-value entries per §14 framing block. Total: **~12 entries**:
    - Cluster root (1): European (53)
