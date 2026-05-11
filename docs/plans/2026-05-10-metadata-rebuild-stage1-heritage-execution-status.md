@@ -28,7 +28,7 @@ Audit signal register (Stage 2 corpus cleanup / reviewer-validation intake): `do
 Fixed-shape orientation for the next session. Update at PR closeout (see PR closeout checklist below).
 
 - **Session:** Stage 1 Session 69 — PR #487 review cycle (mirrors Sessions 63 / 65 / 67 precedent for review-cycle sessions)
-- **Branch base:** continue on `docs/stage1-heritage-european-cluster` (no branch switch); PR #487 already open with 3 commits (`49a98be` cluster fill + `f2bdabe` pre-push fix-ups + `b50e2d0` session-numbering bookkeeping fix).
+- **Branch base:** continue on `docs/stage1-heritage-european-cluster` (no branch switch); PR #487 already open; 4 commits as of `4452cce` (`49a98be` cluster fill + `f2bdabe` pre-push fix-ups + `b50e2d0` session-numbering bookkeeping fix + `4452cce` round-1 fix-ups). Round-2 fix-up commits may follow.
 - **Primary objective:** Triage bot review findings on PR #487, apply round-1 + round-2 fix-ups as needed per the kickoff prompt's PR ritual, reach squash-merge.
 - **Stop point:** PR #487 squash-merged into `main`. Optionally include direct-to-main closeout backfill if the Session 67 / PR #485 precedent applies (status doc updates land directly on main rather than waiting for Session 70's first commit).
 - **Expected files to touch:**
