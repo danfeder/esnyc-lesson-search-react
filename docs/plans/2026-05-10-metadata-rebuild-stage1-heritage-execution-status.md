@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-10 — Session 65 (PR #483 review cycle wrapped — round-1 fix-up `ea0c443` shipped 2 P2 doc-consistency fixes + 1 nitpick; round-2 default-rejected all 4 Claude minor/informational findings; Codex round-2 independently verified round-1 fixes + reached identical reject-all verdict on Claude round-2 — two-voice convergence; PR squash-merge in progress).
+**Last updated:** 2026-05-10 — Session 66 (African cluster per-value fill ✅ — 10 entries populated in worksheet §13; §9.2 multi-parent Egyptian + Moroccan resolved; 8 audit signals surfaced for Stage 2; 6/6 pre-push reviewer catch on Stage 1 track; PR #484 OPEN, squash-merge pending).
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -10,38 +10,39 @@
 
 ## Current state
 
-**Americas cluster ✅ Session 64 (2026-05-10) + PR #483 ✅ Session 65 review cycle wrapped (2026-05-10; squash-merge in progress).** Worksheet §12 has all 22 per-value entries populated (1 cluster root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-canonical-corpus-absent + 4 kebab-case drift merge records). 6 of those have Opus-corpus-read `<details>` blocks integrated (Americas, North American, Latin American, Caribbean, Mexican, Puerto Rican); the remaining 16 entries are structural per §4 methodology. **Asian cluster ✅ Session 62 shipped 2026-05-10 as PR #482 squash `d58eb59` (Session 63 round-1 + round-2 fix-ups applied + merged).** PR #483 review cycle (Session 65): round-1 fix-up `ea0c443` accepted 2 Codex P2 + 1 Claude nitpick (multi-parent / Decision 1 misattribution at 2 spots; Caribbean cohort math at 3 spots; §12.20 corpus-scale hedge); round-2 default-rejected 4 Claude minor/informational findings; Codex round-2 independently verified round-1 fixes landed correctly + reached identical reject-all verdict on Claude round-2 (two-voice convergence on default-reject). Audit signals surfaced for Stage 2: inconsistent cross-cluster diaspora tagging (67% AA / 79% Indigenous / 43% Lenape lessons carry North American — settled via TEST DB query), 4/4 Puerto Rican lessons multi-parent dual-coded as Caribbean + Latin American, missing country tags on arepa lessons, over-tagged Asian-cluster lessons spuriously carrying Caribbean + Latin American + Americas, Mexican `Monarch Migration` geography-only tagging.
+**African cluster ✅ Session 66 (2026-05-10). PR #484 OPEN, squash-merge pending.** Worksheet §13 has all 10 per-value entries populated (1 cluster root African 41 + 3 sub-regions [West African 15 v3, North African 2 NEW, East African 1 NEW] + 5 country-specifics [Nigerian 2 re-parented under West African; Egyptian 2 multi-parent; Kenyan 2 NEW; Ethiopian 1 re-parented under East African; Moroccan 1 multi-parent] + 1 kebab-case drift `african` 1). 2 of those have Opus-corpus-read `<details>` blocks (African + West African); the remaining 8 entries are structural per §4 methodology with direct SQL inspection of the 11 country / sub-region lesson bodies. §9.2 multi-parent resolved: Egyptian → North African primary (Middle Eastern flagged at Notes-level; corpus splits 1/1); Moroccan → North African primary (no Middle Eastern corpus signal). Pre-push code-reviewer agent caught 2 P2 + 1 P3 internal-consistency findings (Cohort 4 misreference in §13.1 Notes; §13.2 details-header bucket arithmetic; dangling "Audit signals for Stage 2 section" reference) — all 3 accepted + fix-up'd in commit `e49366e`. **Sixth consecutive Stage 1 pre-push agent catch.** Audit signals surfaced for Stage 2: Carver content split-tagged inconsistently across 3 sibling lessons; Wangari Maathai under-tagged on 1 of 2 lessons; 7-8 Juneteenth / BHM / post-Civil-War lessons missing `African American` tag; Seed & Date Balls over-tagged with `West African + Asian`; Egyptian tagging inconsistency across 2 ful medames lessons; Edmond Albius under-tagged for East African geography (Réunion); `5th Grade Food Cultures Unit Overview` heritage-array anomaly; East African sub-region under-tagging (0/3 Kenyan + Ethiopian lessons currently use it). **Americas cluster ✅ Session 64 shipped 2026-05-10 as PR #483 squash `fc45a96` (merged 2026-05-11 01:37 UTC; Session 65 round-1 + round-2 fix-ups applied + merged with two-voice convergence on default-reject for round-2).** Americas worksheet §12 has all 22 per-value entries populated (1 cluster root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-canonical-corpus-absent + 4 kebab-case drift merge records). 6 of those have Opus-corpus-read `<details>` blocks integrated (Americas, North American, Latin American, Caribbean, Mexican, Puerto Rican); the remaining 16 entries are structural per §4 methodology. **Asian cluster ✅ Session 62 shipped 2026-05-10 as PR #482 squash `d58eb59` (Session 63 round-1 + round-2 fix-ups applied + merged).** PR #483 review cycle (Session 65): round-1 fix-up `ea0c443` accepted 2 Codex P2 + 1 Claude nitpick (multi-parent / Decision 1 misattribution at 2 spots; Caribbean cohort math at 3 spots; §12.20 corpus-scale hedge); round-2 default-rejected 4 Claude minor/informational findings; Codex round-2 independently verified round-1 fixes landed correctly + reached identical reject-all verdict on Claude round-2 (two-voice convergence on default-reject). Audit signals surfaced for Stage 2: inconsistent cross-cluster diaspora tagging (67% AA / 79% Indigenous / 43% Lenape lessons carry North American — settled via TEST DB query), 4/4 Puerto Rican lessons multi-parent dual-coded as Caribbean + Latin American, missing country tags on arepa lessons, over-tagged Asian-cluster lessons spuriously carrying Caribbean + Latin American + Americas, Mexican `Monarch Migration` geography-only tagging.
 
 **What's done:**
 
 - §11 Asian cluster: 18 per-value entries ✅
 - §12 Americas cluster: 22 per-value entries ✅
+- §13 African cluster: 10 per-value entries ✅
+- §9.2 multi-parent table: Egyptian + Moroccan rows resolved from TBD to North African primary ✅
 - Cluster framing blocks for all 5 regional clusters + cross-cluster (Session 60 scaffold) ✅
 - Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention / Appendix A v3 baseline) ✅
 
 **What's NOT done:**
 
-- §13 African cluster: per-value entries TBD (~10 entries).
 - §14 European cluster: per-value entries TBD (~12 entries — 1 cluster root + 2 sub-regions + 6 country-specifics + 3 kebab-case drift; per §14 framing block).
 - §15 Middle Eastern cluster: per-value entries TBD (~8 entries — 1 cluster root + 1 sub-region + 4 country-specifics + 2 kebab-case drift; per §15 framing block).
-- §9 cross-cluster section per-value entries (diaspora / indigenous identities, multi-parent canonicals): TBD.
+- §9 cross-cluster section per-value entries (diaspora / indigenous identities, remaining multi-parent canonicals — Persian, Israeli, Spanish): TBD.
 - §16 end-summary canonical-vocab table: populates mechanically from filled entries; empty until per-value entries fill.
 - Cluster decision summary blocks: always TBD (curriculum team writes at handoff).
 
-**For next session (Stage 1 Session 66 = African cluster):**
+**For next session (Stage 1 Session 67 = European cluster):**
 
-1. Branch off `main` at the squash-merge commit for PR #483 (TBD until merge completes; backfill the hash in this file's Session 65 entry + Current state header + foundation-phase status doc's PRs-SHIPPED list + Branches block as Session 66's first task).
-2. Populate African cluster's per-value entries per §13 framing block. Total: **~10 entries**:
-   - Cluster root (1): African (41)
-   - Sub-regions (3): West African (15, v3), North African (2, NEW), East African (1, NEW)
-   - Country-specifics (5): Nigerian (2, v3), Egyptian (2, multi-parent — also Middle Eastern per §9.2), Kenyan (2, NEW), Ethiopian (1, v3), Moroccan (1, multi-parent — also Middle Eastern per §9.2)
-   - Kebab-case drift (1): `african` (1 appearance)
-   - Plus §9.2 multi-parent entries for Egyptian + Moroccan (cross-cluster section work)
-3. Dispatch ~2-3 Opus corpus-read agents for high-frequency / ambiguous values per §4 threshold (≥5 OR ambiguous): African (41 — cluster root) + West African (15 — major sub-region). Optionally one of the NEW candidates (North African 2, East African 1) if curriculum team wants verification before canonicalizing.
-4. Address §9.2 multi-parent decision: Egyptian (2 corpus lessons) and Moroccan (1) are geographically North African + culturally Middle Eastern. Decide canonical home — single-parent OR multi-parent under both clusters (per Session 64's Puerto Rican multi-parent precedent: Notes-level flag if the per-entry shape doesn't directly accommodate).
-5. Stop at end of African cluster.
+1. Branch off `main` at the squash-merge commit for PR #484 (TBD until merge completes; backfill the hash in this file's Session 66 entry + Current state header + foundation-phase status doc's PRs-SHIPPED list + Branches block as Session 67's first task).
+2. Populate European cluster's per-value entries per §14 framing block. Total: **~12 entries**:
+   - Cluster root (1): European (53)
+   - Sub-regions (2): Mediterranean (39, v3 — heavier than cluster root), Eastern European (3, v3)
+   - Country-specifics (6): Italian (24, v3), Spanish (5, multi-parent per §9.2 — also Latin American), Ukrainian (3, v3), Greek (2, v3), Russian (1, v3 — currently in combined `Russian/Ukrainian` canonical), Irish (2, NEW — not in v3)
+   - Kebab-case drift (3): `european` (1), `mediterranean` (2), `eastern-european` (1)
+   - Plus §9.2 multi-parent entry for Spanish (cross-cluster section work)
+3. Dispatch ~2-3 Opus corpus-read agents: European (53 — cluster root), Mediterranean (39 — major sub-region), Italian (24 — heaviest country-specific). Optionally Eastern European (3) for the Russian/Ukrainian split decision.
+4. Address §14 framing decisions: (1) Split `Russian/Ukrainian` v3 canonical into separate `Russian` + `Ukrainian` canonicals; (2) confirm Mediterranean → `top` tier; (3) Polish + French v3 canonicals corpus-absent — keep / drop / internal; (4) Irish (2, NOT v3) → `new` candidate; (5) Spanish multi-parent (§9.2) — European/Mediterranean (v3) or Latin American (some Spanish-language curricula).
+5. Stop at end of European cluster.
 
-**Stop-point heuristic confirmed Sessions 62 + 64:** one cluster per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) each fit the session boundary cleanly. African at ~10 entries is naturally smaller scope; European at ~12 entries (corpus + drift) is similar to Americas in size; Middle Eastern at ~8 entries is smallest. May fit 1-2 clusters per session if Opus-read load is light, but `one-cluster-default-OR-natural-decision-batch` remains the reasonable working rule.
+**Stop-point heuristic confirmed Sessions 62 + 64 + 66:** one cluster per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) + African (10 entries, 2 Opus reads) each fit the session boundary cleanly. African at ~10 entries was the smallest-so-far and completed with cycles to spare. European at ~12 entries (corpus + drift) is similar to Americas in size; Middle Eastern at ~8 entries is smallest. May fit 1-2 clusters per session if Opus-read load is light, but `one-cluster-default-OR-natural-decision-batch` remains the reasonable working rule.
 
 ## Locked design decisions
 
@@ -99,6 +100,70 @@ Stage 1 is **content-shaping**: there's no implementation plan with file paths a
 
 ## Session log
 
+### Session 66 — 2026-05-10 — African cluster per-value entries populated
+
+**Branch:** `docs/stage1-heritage-african-cluster` (off `main` at `fc45a96`, the PR #483 squash-merge).
+
+**Done:**
+
+- Backfilled PR #483 squash-merge hash (`fc45a96`, merged 2026-05-11 01:37 UTC) in this status doc's Session 65 entry + Current state header + Last-updated line + foundation-phase status doc's Current State header + Branches block. (Commit `4a89ce9`.)
+- Verified African cluster's 10 corpus values against TEST DB. Counts match the §13 framing block exactly (African 41, West African 15, North African 2, East African 1, Egyptian 2, Kenyan 2, Nigerian 2, Ethiopian 1, Moroccan 1, `african` 1) — plus the cross-cluster `African American` 24 / `African American diaspora` 2 / kebab-case `african-american` 0 baseline for diaspora-pairing-rate computation.
+- Populated worksheet §13 with all 10 per-value entry blocks: 1 cluster root (African) + 3 sub-regions (West African v3, North African NEW, East African NEW) + 5 country-specifics (Nigerian re-parented under West African, Egyptian multi-parent, Kenyan NEW, Ethiopian re-parented under East African, Moroccan multi-parent) + 1 kebab-case drift merge entry (`african`). (Commit `635ed10`.)
+- Dispatched 2 parallel Opus corpus-read agents — African (41) + West African (15). Each returned a worksheet-ready `<details>` corpus-evidence block; both integrated into §13.1 + §13.2. One numerical correction applied at integration time: §13.2 NA-without-AA count corrected 8 → 7 after direct TEST DB verification revealed 1 NA-with-AA overlap (the BHM black-eyed peas five-tag-stack lesson is both AA AND NA, so distinct NA-without-AA is 7 not 8 of 15).
+- Resolved §9.2 multi-parent decisions for Egyptian + Moroccan (both rows previously TBD). Egyptian: corpus splits 1/1 between North African + Middle Eastern (both ful medames lessons, inconsistent tagging convention) — pre-handoff recommendation = North African primary with Middle Eastern multi-parent flag in §13.6 Notes. Moroccan: sole corpus lesson tags `[Moroccan, North African, African]` with body explicitly anchoring "Northern Africa" via map activity — no Middle Eastern corpus signal — pre-handoff recommendation = North African primary, alternative noted only for curricular parity.
+- Lower-frequency entries (North African 2, East African 1, Nigerian 2, Egyptian 2, Kenyan 2, Ethiopian 1, Moroccan 1) populated structurally per §4 methodology using direct SQL query on the 11 lesson bodies; no Opus reads needed for these 8 entries.
+- Worksheet header + footer status banners updated to Session 66.
+- Pre-push code-reviewer agent caught 2 P2 + 1 P3 internal-consistency findings on agent-produced content (P2 §13.1 Notes "Cohort 4 / Cohort D residual" referenced a nonexistent cohort; P2 §13.2 details-summary header bucket arithmetic overlap not reconciled when the 8 → 7 NA-without-AA correction landed in the tagging-pattern paragraph; P3 §13.1 Notes dangling "Audit signals for Stage 2 section" reference to a non-existent section). All 3 accepted + fix-up'd in commit `e49366e`.
+
+**Decisions made this session:**
+
+- **Re-parent Nigerian under West African (corpus-supported).** v3 baseline lists `Nigerian` directly under `African` without a `West African` intermediate. Both corpus Nigerian rows actually tag `[Nigerian, West African, African]` — empirical 2/2 support for re-parent. Pre-handoff structural recommendation: parent = `west-african`. Captured in §13.5 Notes.
+
+- **Re-parent Ethiopian under East African (structural, not corpus-supported).** v3 baseline lists `Ethiopian` directly under `African` without an `East African` intermediate. The sole corpus Ethiopian row tags `[Ethiopian, African]` — does NOT carry `East African`. Pre-handoff recommendation re-parents under the proposed NEW `east-african` sub-region for structural parity, accepting that 0/1 corpus rows currently match. Stage 2 backfill would add `East African`.
+
+- **Parent Kenyan under East African (structural, not corpus-supported).** Kenyan is a NEW canonical (not in v3); both corpus Kenyan rows tag `[Kenyan, African]` and `[Kenyan, African, Brazilian, ...]` — neither carries `East African`. Same structural pre-handoff recommendation as Ethiopian.
+
+- **§9.2 multi-parent — Egyptian primary = North African (with Middle Eastern flag).** Corpus splits evenly 1/1 between the two cluster placements (both ful medames lessons disagree). Apply §9.2 decision rule (cultural/culinary heritage tradition the lesson body invokes): both lessons treat the dish as Egyptian, no Middle Eastern-specific framing in either body. Pre-handoff = North African primary with Middle Eastern noted as multi-parent alternative — curriculum team validates whether to switch or maintain. Mirrors Session 64 Puerto Rican precedent (single-parent pre-handoff + Notes-level multi-parent flag).
+
+- **§9.2 multi-parent — Moroccan primary = North African (no Middle Eastern signal).** Sole corpus lesson tags `[Moroccan, North African, African]` with body explicitly anchoring "Northern Africa" via map activity. No Middle Eastern corpus signal whatsoever. Pre-handoff = North African (clear).
+
+- **Filter-UI tier — `sub` for North African (2) + East African (1) despite low frequency.** Structural rationale: both fill canonical-home gaps for country-specifics (North African for Egyptian + Moroccan; East African for Kenyan + Ethiopian). The §6 default threshold (`sub` at ≥5) is overridden on cluster-structural grounds, mirroring §11 Central Asian (4 lessons → sub) precedent. Curriculum team may downgrade to `internal` if the new-sub-region status doesn't earn the chip.
+
+- **Cluster decision summary block — left TBD per curriculum-team-fill convention.** Same pattern as §11 + §12.
+
+**Process notes / observations:**
+
+- **2 parallel Opus agents landed cleanly.** ~117s + ~141s per agent for African (41) + West African (15). Both produced worksheet-ready `<details>` blocks with 4 + 6 representative excerpts and 5-8 sentence tagging-pattern paragraphs + 5-6 audit-signal bullets each. Integration was mechanical Edit work + one numerical correction (the §13.2 NA-without-AA 8 → 7 fix at integration time).
+
+- **Cohort C diaspora-heavy pattern is the African cluster's defining characteristic.** 25 of 41 African-tagged lessons (61%) tag `African` alongside `African American` and/or `West African` and/or `Americas/North American` — Black History Month, Juneteenth, post-Civil War foodways, Callaloo. This is the most diaspora-heavy cluster root in the corpus to date (vs Asian's 4/63 Cohort A pan-region or Americas's primarily-hierarchical-parent 142/170 ancestry). West African (sub-region) inherits the pattern even more sharply — 14/15 (93%) carry at least one cross-cluster tag, with 12/15 carrying a specific diaspora-cluster tag (3 AA + 2 Caribbean + 7 NA-without-AA) and only Nigeria/Red Bean Stew (1/15) pure West African + African.
+
+- **Egyptian's 1/1 corpus split exposes the multi-parent question empirically.** Two ful medames lessons disagree on cluster placement: `[Egyptian, North African, African]` vs `[Egyptian, Middle Eastern, African]`. Same dish, different framings — the multi-parent question is real in the corpus, not just theoretical. The §13 framing block decision #2 was right to flag it; §9.2 pre-handoff recommendation defers the final call to curriculum team while picking North African as the primary anchor. The two ful medames lessons should converge on a single tagging convention post-curriculum-team handoff (Stage 2 follow-on).
+
+- **Pre-push code-reviewer agent SIXTH consecutive Stage 1 PR commit catch.** Sessions 60-66 each had pre-push agent catch real bugs missed by self-review. The two Session 66 P2 findings (Cohort 4 misreference; §13.2 header arithmetic overlap) are the same class as Session 62 + 63 + 65's math/count consistency catches. Pattern: dispatch the agent every time on docs PRs too — fresh-eyes review is exactly the value-add for long-text content with internal cross-references and bucket arithmetic.
+
+- **Process lesson candidate — when integration corrects an agent's numerical claim, sweep ALL related claims in the same entry.** The Session 66 8 → 7 NA-without-AA correction landed cleanly in the tagging-pattern paragraph during integration but the parallel claim in the details-summary header was not re-reconciled. Pre-push agent caught the second instance. Similar pattern to PR #483 Session 65 fix-up's 3-spot Caribbean math reconciliation. Worth flagging as a candidate `feedback_*.md` rule if it recurs in PR #485-486 sessions — for now noted as single-occurrence reinforcement of the existing multi-spot math-reconciliation pattern in `feedback_pr_bot_review_workflow.md`.
+
+- **Stop-point heuristic continues to hold.** African at ~10 entries completed comfortably within the session — smaller than Asian (18) and Americas (22), with more cycles spent on §9.2 multi-parent investigation than on per-value drafting (2 ful medames lessons + 1 Moroccan lesson needed direct SQL body inspection to decide). Future smaller-cluster sessions (Middle Eastern at ~8 entries) likely complete with similar comfort.
+
+**Audit signals surfaced for Stage 2 re-tag (8 total):**
+
+- **Inconsistent Carver content tagging** — `In the Garden with Dr. Carver` tags `[African, African American, Americas]` correctly; sibling `Lotion & Agar Soap` K + MS tag `[African, North American]` (missing `African American` despite identical author/subject — Dr. George Washington Carver). Backfill `African American + Americas`.
+- **Under-tagged Wangari Maathai content** — `October Seed Saving` tags `[Kenyan, African]` correctly; sibling `Wangari Maathai 4th/5th` tags only `[African]` despite same source body. Backfill `Kenyan + East African` (post-PR-484 if East African canonicalizes).
+- **Under-tagged African American cohort (7-8 lessons)** — Juneteenth × 4, BHM cornbread, Newly Freed Americans, BEP Stew, BEP Hummus tag `West African + North American` but omit explicit `African American` despite content alignment. Cross-references §12.2 North American Cohort A finding.
+- **Over-tagged Seed & Date Balls** — `[West African, African, Americas, Asian]` based on single body sentences about Carolina rice cultivation + Asian arid-region seed-ball use. Drop both `West African` and `Asian` (the lesson is springtime gardening + a date-ball snack).
+- **Egyptian tagging inconsistency** — 2 ful medames lessons use different cluster placements (North African vs Middle Eastern). Whichever curriculum team picks, the other lesson should be re-tagged.
+- **Edmond Albius under-tagged** — `[African, African American diaspora]` but body identifies Réunion (East African / Indian Ocean French colony). Missing East African sub-region + plausibly mis-labeled `African American diaspora` (Albius was Réunionnais, not African American).
+- **`5th Grade Food Cultures Unit Overview` heritage-array anomaly** — tags `[Latin American, Asian, African, European]` but body keywords list "Ukraine, Uzbekistan, Pakistan, China, Mexico, Caribbean Islands, New York" — no African country. Plausible legacy auto-tagging artifact; flag for Stage 2 reviewer validation. Drop `African` unless the unit's 6 daughter lessons surface African content.
+- **East African sub-region under-tagging** — 0/2 Kenyan + 0/1 Ethiopian lessons currently carry `East African`. If §13.4 East African canonicalizes as `new`, Stage 2 should backfill on all 3 rows.
+
+**PR #484 OPEN 2026-05-10 — squash-merge pending.** Backfill the squash hash in Session 67 per PR-cycle precedent (see "For next session" block above for the exact backfill task list).
+
+**For next session (Stage 1 Session 67 = European cluster per-value fill):** see "For next session" block above; first task = backfill PR #484 squash-merge hash in this status doc + foundation-phase status doc.
+
+**Out-of-scope follow-ups (this session):** the multi-spot math-reconciliation pattern surfaced at integration time is now a clear reinforcement of the same pattern caught at Sessions 62 + 63 + 65 — promote to `feedback_pr_bot_review_workflow.md` as a confirmed pattern if it recurs in PR #485 or later. Single-occurrence on top of the existing rule for now.
+
+---
+
 ### Session 65 — 2026-05-10 — PR #483 review cycle (round-1 fix-up + round-2 default-reject + two-voice convergence)
 
 **Branch:** `docs/stage1-heritage-americas-cluster` (continued from Session 64).
@@ -123,7 +188,7 @@ Stage 1 is **content-shaping**: there's no implementation plan with file paths a
 - **Two-voice convergence on REJECT is the inverse signal of convergence on FINDING.** Existing memory `feedback_pr_bot_review_workflow.md` captures Claude+Codex convergence on a finding as a P1 signal. PR #483 round-2 surfaced the inverse: when both voices independently triage the same finding-set to "reject all," that's high-confidence default-reject confirmation. Same signal mechanism in both directions. Worth flagging for promotion to the memory file if it recurs in PR #484+ (PR #482 round-2 had a similar reject-pattern but only 1 voice; PR #483 is the first 2-voice reject convergence).
 - **Claude F4 misread pattern.** An LLM reviewer can flag "inconsistency within X group" when the pattern is actually "each X inherits from Y" but X's Y values happen to vary (some null, some non-null). Surface variation reads as inconsistency without the inheritance inference. If this recurs in African / European / Middle Eastern drift sweeps (which will have the same inherit-from-merge_into-target pattern), worth a §7 sentence stating the inheritance convention explicitly. For now, single occurrence; §7 parser invariant + Notes are operationally sufficient.
 
-**PR #483 squash-merged 2026-05-10 — TBD UTC as `<TBD>`** (backfill in Session 66 per "For next session" block above).
+**PR #483 squash-merged 2026-05-11 01:37 UTC as `fc45a96`** (verified via `gh pr view 483 --json state,mergedAt,mergeCommit`; backfilled this Session 66 housekeeping commit).
 
 **For next session (Stage 1 Session 66 = African cluster per-value fill):** see "For next session" block above; first task = backfill PR #483 squash-merge hash in this entry + Current state header + foundation-phase status doc's PRs-SHIPPED list + Branches block.
 

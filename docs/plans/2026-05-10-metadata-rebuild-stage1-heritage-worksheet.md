@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet
 
-> **Status: PRE-HANDOFF (last update Session 64, 2026-05-10).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries: Asian cluster ✅ Session 62 (§11); Americas cluster ✅ Session 64 (§12); African / European / Middle Eastern + cross-cluster diaspora TBD subsequent sessions before curriculum-team handoff.** End-summary canonical-vocab table fills only as per-value verdicts close.
+> **Status: PRE-HANDOFF (last update Session 66, 2026-05-10).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries: Asian cluster ✅ Session 62 (§11); Americas cluster ✅ Session 64 (§12); African cluster ✅ Session 66 (§13); European / Middle Eastern + cross-cluster diaspora TBD subsequent sessions before curriculum-team handoff.** End-summary canonical-vocab table fills only as per-value verdicts close.
 >
 > **Owner during scaffold/pre-handoff phase:** project maintainer (Claude + user). **Owner at handoff:** ESYNYC curriculum team.
 >
@@ -370,9 +370,9 @@ Values that plausibly belong under more than one cluster. These get a single can
 
 | Value | Possible parents | Pre-handoff recommendation |
 | --- | --- | --- |
-| `Egyptian` (2 lessons) | African (North African sub-region) OR Middle Eastern | TBD |
+| `Egyptian` (2 lessons) | African (North African sub-region) OR Middle Eastern | **North African primary** (Session 66). Corpus splits the multi-parent question evenly — 1/2 lessons tag `Egyptian + North African + African`, 1/2 tag `Egyptian + Middle Eastern + African` (both are ful medames). Single-parent home recommended = `North African` (geographic anchor + first lesson's hierarchical chain); Middle Eastern flagged as multi-parent alternative in §13.6 Notes for curriculum-team review. |
 | `Persian` (1 lesson) | Middle Eastern OR Central Asian | TBD |
-| `Moroccan` (1 lesson) | African (North African sub-region) OR Middle Eastern | TBD |
+| `Moroccan` (1 lesson) | African (North African sub-region) OR Middle Eastern | **North African primary** (Session 66). Sole corpus lesson tags `Moroccan + North African + African`; body explicitly anchors Morocco in "Northern Africa" with map activity (`"The flavors of this recipe come from a country called Morocco in Northern Africa. Show Morocco on the map."`). No Middle Eastern corpus signal — curriculum-team may surface the alternative if curricular framing changes, but the corpus does not. |
 | `Israeli` (1 lesson, v3 canonical) | Middle Eastern (v3) OR Mediterranean | TBD |
 | `Spanish` (5 lessons, v3 canonical) | European (Mediterranean sub-region, v3) OR Latin American (some Spanish-language curricula) | TBD |
 
@@ -1206,7 +1206,167 @@ The following block is a **template** showing the shape of a cluster section. Pe
 
 ### Per-value entries
 
-*(TBD — per-value entry blocks for African cluster populated in subsequent session before handoff)*
+#### 13.1. African (41)
+
+- **canonical_key:** `african`
+- **surface_label:** `African`
+- **parent:** `null`
+- **filter_ui_tier:** `top`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (41 active lessons; 3 genuinely pan-region, 9 country/sub-region chains without diaspora overlay, 25 cross-cluster diaspora carry-ins, 4 under-tagged residuals)</summary>
+
+- **`1IxkjYeOmhz2M_MC_Cbzj8vJMnLNVA5UX56CGi6E_Ap8` — "Food Photovoice Lesson Four: What the World Eats"** (Cohort A; tagged `[Asian, African, European, Americas]`): Body — "This week, we are going to look at food and families around the world. We will look at photos that show us a family that lives somewhere in the world and what this family eats in an entire week..." An explicit four-continent comparison lesson with no sub-region or country children; `African` carries the entire continent alongside three other continents and none of the standard sub-regions (North/East/West) would be appropriate. The same pan-Africa framing shape as the §11.1 Asian Cohort A.
+- **`1HWSlL8xio3QQkculHrVLA0EvEBSU4Th_tEZU4pXiD4Q` — "Nigeria / Red Bean Stew"** (Cohort B; tagged `[Nigerian, West African, African]`): Body — "Red Bean Stew/Nigeria (Foods around the World). Summary: Students will learn about Nigeria and make red bean stew." Single-country lesson with the canonical 3-level chain Nigerian → West African → African; `African` is the redundant root of the ancestry chain, not an independent signal. Companion shape to the §11.1 Aloo Gobi (Indian → South Asian → Asian) example.
+- **`14wTm_zkFDwSqkUBJj01zdY2Lq1D6-eXdj6BQcZwOrQ4` — "Black Eyed Peas, the South and BHM"** (Cohort C; tagged `[African American, North American, Americas, West African, African]`): Summary — "In honor of Black History Month, we are making black eyed peas and collard greens with a really tasty spice called berbere." The five-tag stack threads the African diaspora simultaneously: `African American + North American + Americas` is the post-emancipation U.S. South cuisine, and `West African + African` is the pre-emancipation origin (black-eyed peas + berbere). This is the dominant cohort shape — `African` paired with U.S./Americas diaspora tags in Black History Month and Juneteenth lessons. The companion `Stewed Black Eyed Peas w/Plantains` summary names it explicitly: "Also a traditional dish eaten throughout the Americas, it demonstrates the African Diaspora."
+- **`1xAXJC36uPVXF-yL1zmbCk6SqFJU_Ht5Kkg0Mc7NfwL8` — "Wangari Maathai 4th/5th"** (Cohort D under-tagged; tagged `[African]` only): Body — "Today we're going to learn about a hero who helped her community and the Earth by planting trees... Introduce Wangari Maathai." The lesson is about Wangari Maathai, a Kenyan environmental activist, but only `African` is tagged — the sibling lesson `October Seed Saving` (also Wangari Maathai content per body: "a real woman who lived in Kenya, a country in Africa. Her name is Wangari Maathai") correctly tags `[Kenyan, African]`. Inconsistent depth on the same source material.
+
+**Tagging pattern:** Cohort A (3/41, ~7%) is genuinely pan-Africa — world-comparison and around-the-world-foods lessons where `African` carries the whole continent alongside other continents with no specific country to assign. Cohort B (9/41, ~22%) uses `African` as the redundant root of a Country → Sub-region → `African` ancestry chain (Nigerian/West African/African, Egyptian/North African/African, Kenyan/African, Ethiopian/African, Moroccan/North African/African, East African/African). Cohort C (25/41, ~61%) is the dominant pattern and the distinctive feature of this cluster: `African` paired with `African American` and/or `West African` and `Americas/North American` in Black History Month, Juneteenth, and African American foodways lessons — the tagging is intentionally diasporic-aware, locating dishes both at their West African origin and at their U.S. cultural home. Cohort D (4/41, ~10%) flags under-tagging: `Wangari Maathai 4th/5th` carries only `African` despite Kenyan body content; `Edmond Albius` carries `[African, African American diaspora]` without a sub-region tag (body identifies Réunion / East Africa); the two `Lotion & Agar Soap` lessons (K + MS) carry `[African, North American]` — Dr. George Washington Carver content where the African American identity tag is the natural fit (sibling `In the Garden with Dr. Carver` carries it correctly). **Cross-cluster diaspora pairing rates** (active corpus, TEST DB query 2026-05-10): 15 of 24 `African American` lessons carry `African` as a parallel tag (62.5%); 3 of 24 carry `West African` (12.5%); 1 of 2 `African American diaspora` lessons carries `African`. Of the 12 `West African + African` lessons that do NOT also carry `African American`, 10 are diaspora-aware Cohort C carry-ins (2 Callaloo, 7 with `North American` parent — Juneteenth × 3, BHM × 2, Newly Freed Americans, BEP Hummus — and 1 Juneteenth that omits NA too); only 1 (Nigeria/Red Bean Stew) is pure West African + African with no cross-cluster tag. The diaspora connection is encoded in the West African + Americas/North American/Caribbean pairing even when the explicit `African American` tag is omitted.
+
+</details>
+
+**Notes:** Cluster root for the African cluster (third-largest cluster root in the corpus at 41 lessons, after Americas 170 and Asian 63). Cohort C's 25 lessons (~61%) make this the most diaspora-heavy cluster root in the corpus — by contrast with Asian's §11.1 (Cohort A pan-region 4 + Cohort B hierarchical-parent 59 dominate) and Americas's §12.1 (Cohort A pan-Americas ~28 + Cohort B hierarchical-parent ~142). Neither of those cluster roots carries a comparable cluster-level diaspora cohort — for Americas, the sub-region §12.2 North American is where the diaspora cohort lives (Cohort A African American/West African diaspora ~23, Cohort B Indigenous/Native American ~23, Cohort D USA-generic ~35), not the cluster root itself. Filter-UI tier `top` is the cluster-root default and well-supported by frequency. Stage 2 audit signals include: under-tagged Kenyan content (Wangari Maathai 4th/5th), under-tagged Carver content (2 soap lessons), under-tagged Réunion / East African geography (Edmond Albius), and a Cohort A heritage-array anomaly (`5th Grade Food Cultures Unit Overview` carries `African` despite no African country in the body keywords — plausible legacy auto-tagging artifact; flag for Stage 2 reviewer validation). The cross-cluster diaspora interaction with §9.1 is the heaviest in the corpus and would benefit from explicit Stage 2 attention to (a) whether `African American`-content lessons should carry both `African` AND `West African` (current corpus pattern: 15/24 carry `African`, 3/24 carry `West African`) and (b) whether the cluster-root convention for diaspora-bridged dishes is `African` or `West African` (a structural curriculum-team question).
+
+---
+
+#### 13.2. West African (15)
+
+- **canonical_key:** `west-african`
+- **surface_label:** `West African`
+- **parent:** `african`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+<details><summary>Corpus evidence (15 active lessons; 14 of 15 carry at least one cross-cluster tag — only Nigeria/Red Bean Stew is pure West African + African. Cross-cluster pairings overlap — 1 lesson is both `African American` AND `North American`. Bucket counts: 3 with `African American`, 2 with `Caribbean`, 8 with `North American` (7 of those WITHOUT explicit `African American`; 1 of those also `Southern United States`), 2 with Americas-only cross-cluster (Juneteenth `1gHg6...` + Seed & Date Balls). 2 lessons additionally country-tag `Nigerian`.)</summary>
+
+- **`1HWSlL8xio3QQkculHrVLA0EvEBSU4Th_tEZU4pXiD4Q` — "Nigeria / Red Bean Stew"** (Cohort A, country-tagged + pure-WA; tagged `[Nigerian, West African, African]`): "Red Bean Stew/Nigeria (Foods around the World) Keywords: Nigeria, red bean stew. Summary: Students will learn about Nigeria and make red bean stew." Anchored to a single named country with no diaspora framing — students learn about Nigeria specifically, no slave-trade or African-American history context. The ONLY lesson in the cohort that is pure West African + African (no `North American`, `African American`, or `Caribbean` carry-along) — the cleanest country-anchored row.
+- **`10VASBkheY2wLqM6A81N6yLjwY0lMGbcFcQ7MElBYqEY` — "A Short History of African American Farmers and Cooks"** (Cohort A + Cohort C — country tag AND African American diaspora; tagged `[Nigerian, West African, African American, African, Americas]`): "Students will read an introductory text about influence of African Americans on American farming and food traditions, moving from the era of slavery to the modern era. Then students will cook and eat Nigerian asaro, a recipe that combines African and American influences." Explicitly bridges Nigeria → African American culinary tradition by pairing a Black-history reading with a Nigerian dish. The five-tag chain is the corpus's most-articulated diaspora pattern — country + sub-region + region + diaspora-cluster + geographic-anchor.
+- **`1UnaUuap0s73WmekEM-m0amMyaww8T_bYS6JeNFgZmmY` — "Callaloo"** (Cohort C, Caribbean diaspora pairing; tagged `[Caribbean, Americas, West African, African]`): "Today we will make a dish called Callaloo which comes from tropical Caribbean islands like Trinidad, Jamaica and Dominica. (Point to the countries on a world map). These are places that are warm for most of the year… We will look at how people eat different foods in different climates, and at how traditional dishes change when people move around the world." Body anchors entirely in Caribbean geography; the `West African + African` tag pair acknowledges the dish's diasporic origin without surfacing in the lesson text. Both Callaloo lessons in the cohort use this same `Caribbean + West African + African` tag chain (the corpus's headline cross-cluster pattern — also surfaced in the §12.2 North American read).
+- **`1NHQd8BVmNECNgkMV4FeJjC5fzMxi-Pcp` — "Stewed Black Eyed Peas w/Plantains"** (Cohort C, African American diaspora pairing; tagged `[West African, African, African American, Americas]`): "As a tribute to Black History month, students will learn how to make a black-eyed pea stew with fried plantains, a popular dish throughout western Africa. Also a traditional dish eaten throughout the Americas, it demonstrates the African Diaspora… This dish is traditionally eaten for luck during the New Year in the American South. It originates in Africa, particularly Western Africa and Ghana, where it was brought to the Americas through the slave trade." Body explicitly names "the African Diaspora" as the framing concept — the most pedagogically-explicit diaspora lesson in the cohort. Curiously omits the `North American` tag despite anchoring in the American South.
+- **`1DdaCvc-EWgpVEHQLfngJnMUrHO3TsRRRfdMRsG9XX0o` — "Newly Freed Americans"** (Cohort C, North American diaspora framing without explicit `African American` tag; tagged `[West African, African, North American, Americas]`): "Most Black Americans who lived in the South after the Civil War trace their ancestry to West Africa. Yams were a very important crop to West African peoples." Lesson body is unambiguously about African American history (sharecropping, post-Civil-War sweet potato cultivation, Black culinary culture preservation) — yet carries no `African American` tag. This is the pattern across 7 of the 8 `North American`-paired lessons in the cohort: Juneteenth, Black History Month, and Civil War framings tag `West African + North American` but omit `African American` despite all-but-explicit content alignment.
+- **`149Rdf7CWlzT281PVn5cXzPekcyHA2ozj` — "Seed & Date Balls"** (Cohort D, over-tagged audit signal; tagged `[West African, African, Americas, Asian]`): The body's West African reference is one paragraph deep in a multi-civilizational survey: "Seed balls may have been used by the Ancient Egyptians to seed the receding banks of The Nile after annual floods. They have been used in Asia and elsewhere, especially in arid regions… In the Carolinas in the 1700's, West African slaves, predominantly women, were brought in to cultivate rice using a seed ball technique that was used in Africa." Lesson's actual focus is springtime seed-ball gardening + a date-ball snack — neither the seed-ball technique nor the date-ball recipe is meaningfully West African. The `Asian` tag is similarly tenuous (one body sentence). This is the cohort's clearest over-tagging case.
+
+**Tagging pattern:** West African is unusually diaspora-heavy — **14 of 15 lessons (93%) carry at least one cross-cluster diaspora tag**, far above the East Asian (~26%) and South Asian comparisons (per §11.2 and §11.3). The diaspora pairings split into three buckets: **3 lessons (20%) carry the explicit `African American` tag** (Short History, BHM black-eyed peas, Stewed BEP w/Plantains); **2 lessons (13%) carry `Caribbean`** (both Callaloo lessons, mirroring the §12.4 finding that Caribbean dishes intentionally surface West African diasporic origin); and **8 lessons (53%) carry `North American` as a diaspora-framing parent** — of those 8, 7 (47%) carry `North American` WITHOUT an explicit `African American` tag despite content that is unambiguously African American (Juneteenth lessons, BHM cornbread/Hoppin' John, Newly Freed Americans, Black-Eyed Pea Hummus); the 1 NA-with-explicit-AA case is the BHM black-eyed peas lesson which is fully five-tag-stacked. Only **1 lesson (7%)** — Nigeria / Red Bean Stew — is pure West African + African with no cross-cluster carry-along. **Country-tag adoption is sparse** — 2 of 15 lessons (13%) carry `Nigerian`; the remaining 13 stop at `West African` even when bodies name specific countries (e.g., Stewed BEP w/Plantains explicitly cites "Western Africa and Ghana"; no `Ghanaian` tag). **The headline Stage 2 audit signal is the African American under-tagging pattern** — 7-8 lessons read as African American-cluster content (Juneteenth, BHM, post-Civil-War sharecropping, Hoppin' John, Newly Freed Americans) but omit the `African American` diaspora-cluster tag the §12.2 read showed should be present. The flip-side (Seed & Date Balls' over-tag of `West African` for one body sentence about Carolina rice cultivation) is a single, easily-corrected case.
+
+</details>
+
+**Notes:** v3 canonical sub-region. Filter-UI tier `sub` proposed (15 lessons, comfortably above the ≥5 sub-tier bar; below the ≥40 `top` threshold). Curriculum team may promote to `top` given the cluster's curricular density and the 93% diaspora-pairing rate — `West African` carries an unusually high amount of pedagogical weight per the corpus pattern. Pre-handoff structural recommendation: keep parent = `african`. v3 baseline lists `Nigerian` (and `Ethiopian`) directly under `African` without a `West African` intermediate; the corpus's 2/2 Nigerian rows actually use `[Nigerian, West African, African]` — empirical support for re-parenting Nigerian under `west-african` (see §13.5 Notes). Stage 2 audit signals: (a) 7 Juneteenth / BHM lessons missing the `African American` tag; (b) 1 over-tagged lesson (Seed & Date Balls) — both flagged in the corpus read's "Audit signals" section preserved in the worksheet revision history. The two-Callaloo `Caribbean + West African` pattern is intentional and worth preserving as the template for diaspora-aware tagging (mirrors the §12.4 Caribbean finding).
+
+---
+
+#### 13.3. North African (2)
+
+- **canonical_key:** `north-african`
+- **surface_label:** `North African`
+- **parent:** `african`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline (Appendix A lists only `West African` as a sub-region under `African`). Proposed `new` candidate per the §13 framing block decision #1 — fills the structural gap for North African country-specifics (Egyptian, Moroccan). 2 corpus lessons currently carry `North African`:
+
+- `1JYc3BYK-ZbYBcYQSUPKrFR3ocLhjnBRiFXFj3EV3CmE` ("Cooking with Seeds: Ful Medames") — tagged `[Egyptian, North African, African]`. Body locates the ful medames dish in Egypt; structural three-level chain country → sub-region → cluster root.
+- `1LyuuuF-GNwUfVIgxrR_3NQLCEbD59GkfFN145WeTk3Q` ("Moroccan Carrot Salad, Two Ways") — tagged `[Moroccan, North African, African]`. Body — "The flavors of this recipe come from a country called Morocco in Northern Africa. Show Morocco on the map." — explicitly anchors Morocco in North Africa with a map activity. Clean three-level chain.
+
+**Multi-parent interaction:** the second Ful Medames lesson (`1K8JBnS7hTldpcB-f0CkDK94yYJyr_7r0itLDL3IOz4U`) — same dish, different tagging — tags `[Egyptian, Middle Eastern, African]` (no North African; uses Middle Eastern as the sub-region anchor). The corpus splits the Egyptian multi-parent question evenly at 1/1; see §9.2 + §13.6 Egyptian Notes. Filter-UI tier `sub` proposed despite low corpus frequency (2 lessons) — fills structural role of canonical home for country-specifics. Curriculum team may consider `internal`-tier if the new-sub-region status warrants a lower-visibility chip.
+
+---
+
+#### 13.4. East African (1)
+
+- **canonical_key:** `east-african`
+- **surface_label:** `East African`
+- **parent:** `african`
+- **filter_ui_tier:** `sub`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. Proposed `new` candidate per the §13 framing block decision #1 — fills the structural gap for East African country-specifics (Kenyan, Ethiopian). 1 corpus lesson currently carries `East African`:
+
+- `13wZWpVxLu5wuquuOugOCJf0Z9oRerMo9Af9pV1P5mAM` ("Sukuma Wiki") — tagged `[East African, African]`. Body keywords: "collards, tomatoes, East African, Kenya, Tanzania, Uganda, Swahili." Pan-East-African framing — the dish is multi-country regional (per body keywords), and the lesson deliberately stops at the sub-region rather than picking a single country. Reads as Cohort B (sub-region without country tag) in §11.2 / §11.3 style.
+
+**Under-tagging signal:** the 2 Kenyan lessons (§13.7) and 1 Ethiopian lesson (§13.8) all skip `East African` and chain directly to `African`. If `East African` is canonicalized as a `new` sub-region, those 3 rows would benefit from `East African` backfill in Stage 2. Filter-UI tier `sub` proposed despite the 1-lesson frequency — same structural rationale as North African (§13.3): the canonical home for country-specifics earns the chip. Curriculum team may consider `internal`-tier given the corpus signal of 1; the case for `sub` rests on structural role rather than frequency. Stage 2 audit signal: Sri Lankan Curry-style body errors are absent here — the Sukuma Wiki body is geographically accurate.
+
+---
+
+#### 13.5. Nigerian (2)
+
+- **canonical_key:** `nigerian`
+- **surface_label:** `Nigerian`
+- **parent:** `west-african`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, listed in v3 baseline (Appendix A) directly under `African` without a `West African` intermediate. Pre-handoff structural recommendation: re-parent under `west-african` — both corpus lessons (`1HWSlL8xio3QQkculHrVLA0EvEBSU4Th_tEZU4pXiD4Q` "Nigeria / Red Bean Stew" and `10VASBkheY2wLqM6A81N6yLjwY0lMGbcFcQ7MElBYqEY` "A Short History of African American Farmers and Cooks") tag the full chain `[Nigerian, West African, African]`, providing empirical support. Below the ≥3-lesson sub-tier bar per the cluster-bar convention (§11 cluster decision #2; mirrored in §12 cluster decision #4) — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. No Stage 2 audit signal specific to Nigerian beyond the (cross-referenced) audit on `Stewed Black Eyed Peas w/Plantains` (body cites "Western Africa and Ghana" but tags only `[West African, African, African American, Americas]` — `Ghanaian` candidate; outside this entry's scope).
+
+---
+
+#### 13.6. Egyptian (2)
+
+- **canonical_key:** `egyptian`
+- **surface_label:** `Egyptian`
+- **parent:** `north-african`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline (Appendix A's `African` cluster lists only `West African` sub-region + `Ethiopian` + `Nigerian` country-specifics; no Egyptian entry). Proposed `new` candidate. **Multi-parent — see §9.2.** Both Egyptian lessons in the corpus are ful medames but tag inconsistently: `1JYc3BYK-ZbYBcYQSUPKrFR3ocLhjnBRiFXFj3EV3CmE` ("Cooking with Seeds: Ful Medames") tags `[Egyptian, North African, African]` (African cluster route); `1K8JBnS7hTldpcB-f0CkDK94yYJyr_7r0itLDL3IOz4U` ("Ful Medames") tags `[Egyptian, Middle Eastern, African]` (Middle Eastern cluster route). The corpus splits 1/1 between the two cluster placements — neither convention has won. §9.2 pre-handoff recommendation: single-parent canonical home = `north-african` (geographic anchor + matches one of the two corpus rows); Middle Eastern flagged as multi-parent alternative for curriculum-team review per the §9.2 decision rule (culinary/cultural heritage tradition the lesson body invokes). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub`. Stage 2 follow-on: the two ful medames lessons should converge on a single tagging convention — whichever cluster wins, the other lesson should be re-tagged for consistency.
+
+---
+
+#### 13.7. Kenyan (2)
+
+- **canonical_key:** `kenyan`
+- **surface_label:** `Kenyan`
+- **parent:** `east-african`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. Proposed `new` candidate. 2 corpus lessons: `18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS` ("Earth Heroes") tags `[Kenyan, African, Brazilian, Latin American, Americas]` — multi-country comparison lesson where Kenya is one of several "earth heroes" countries; `1k7KqowpILVoRe-X0sOiOtcwJyC8_fJ17nwLu-DW5_r4` ("October Seed Saving") tags `[Kenyan, African]` — Wangari Maathai content. **Empirical signal: 0/2 Kenyan lessons currently carry `East African` as parallel tag** — both chain directly to `African`. The pre-handoff re-parent under `east-african` is structural (matches the §13 framing block decision #1) rather than corpus-supported; Stage 2 backfill would add `East African` to both rows. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum-team consideration: confirm `east-african` parent (vs. direct under `african`) and whether the §13.4 East African sub-region warrants Stage 2 backfill on existing Kenyan rows.
+
+---
+
+#### 13.8. Ethiopian (1)
+
+- **canonical_key:** `ethiopian`
+- **surface_label:** `Ethiopian`
+- **parent:** `east-african`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** v3 canonical country, listed in v3 baseline (Appendix A) directly under `African` without an `East African` intermediate. Pre-handoff structural recommendation: re-parent under `east-african` (per §13 framing block decision #1). 1 corpus lesson: `1PuE6Pj23USsj3DLlcZsDf9l_N59EEMgWNEGnp1O_AVE` ("Misir Wot (Ethiopian Spiced Red Lentils)") tags `[Ethiopian, African]` — does NOT carry `East African`. Empirical pattern matches Kenyan (§13.7): direct chain from country to cluster root, skipping the geographic sub-region. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. Stage 2 backfill: add `East African` to this row if the new sub-region is adopted.
+
+---
+
+#### 13.9. Moroccan (1)
+
+- **canonical_key:** `moroccan`
+- **surface_label:** `Moroccan`
+- **parent:** `north-african`
+- **filter_ui_tier:** `internal`
+- **verdict:** `<to_fill>`
+- **aliases:** `[]`
+
+**Notes:** NOT in v3 baseline. Proposed `new` candidate. **Multi-parent — see §9.2.** 1 corpus lesson: `1LyuuuF-GNwUfVIgxrR_3NQLCEbD59GkfFN145WeTk3Q` ("Moroccan Carrot Salad, Two Ways") tags `[Moroccan, North African, African]` — clean three-level chain. Body anchors Morocco in "Northern Africa" with an explicit map activity ("The flavors of this recipe come from a country called Morocco in Northern Africa. Show Morocco on the map."). **No Middle Eastern corpus signal** — unlike Egyptian (§13.6), where the corpus split evenly 1/1 between North African and Middle Eastern, Moroccan's sole corpus lesson cleanly anchors in North Africa. §9.2 pre-handoff recommendation: `north-african` is the clear primary parent; Middle Eastern alternative noted in §9.2 only for curricular-framing parity with Egyptian — corpus does not support it. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed.
+
+---
+
+#### 13.10. `african` (drift literal — 1 corpus appearance)
+
+- **canonical_key:** `african`
+- **surface_label:** `african`
+- **parent:** `null`
+- **filter_ui_tier:** `internal`
+- **verdict:** `merge`
+- **merge_into:** `african`
+- **aliases:** `[]`
+
+**Notes:** Kebab-case-lowercase drift literal observed in 1 corpus row (`lesson_2d1dc9177095438787c8087cbf48f682` — "Food Origins Scavenger Hunt", tagged `[asian, americas, african, european]`, a multi-continent comparison lesson where all four cluster-root tags are kebab-case-lowercase — recognizable post-PR-update synthetic-`lesson_` ID). Same convention as §11.16-18 and §12.19-22. The `canonical_key` field matches the merge target's slug (both are kebab-case-lowercase by slug convention applied to the same underlying value — see §7 alias_map identity-shaped entries; recall the §7 parser invariant: `verdict in ('keep', 'new')` filter applies BEFORE keying canonical_key). This entry contributes `"african" → "african"` to the `alias_map` output (literal-to-canonical-key); verdict `merge` excludes it from the canonical vocabulary list.
 
 ### Cluster decision summary
 
@@ -1359,4 +1519,4 @@ This table serves as the **hand-off artifact** to PR 5+ (D4 vocab canonicalizati
 
 ---
 
-*End of worksheet (last update Session 64, 2026-05-10 — Americas cluster per-value entries populated).*
+*End of worksheet (last update Session 66, 2026-05-10 — African cluster per-value entries populated).*
