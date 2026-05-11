@@ -1,6 +1,6 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-11 — Stage 1 Session 69 PR #487 review cycle shipped; European cluster ✅ squash-merged 2026-05-11 18:37 UTC as `f429fb0`. Foundation-phase code track still has no unblocked next PR; Stage 1 next session = Session 70 Middle Eastern cluster fill (will branch off `main` at `f429fb0` or downstream closeout commit; ~11 entries).
+**Last updated:** 2026-05-11 — Stage 1 Session 70 Middle Eastern cluster per-value entries populated (11 entries; all 5 regional clusters now complete); §9.2 multi-parent table fully populated (Persian + Israeli resolved to Middle Eastern primary, Central Asian + Mediterranean flagged as alternatives). 9 ME-NN audit signals appended to register (cluster total ~41 open Stage 2 signals across all clusters). Foundation-phase code track still has no unblocked next PR; Stage 1 next session = Session 71 PR review cycle for Middle Eastern, then Session 72 = §9.1 cross-cluster diaspora & indigenous identities + §16 end-summary canonical-vocab table.
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
@@ -37,11 +37,11 @@
 
 **For later (whenever PR 3b / 5 / 6 unblocks):** branch off `main`; review out-of-scope follow-ups below; follow the kickoff-prompt session-start ritual. PR 5 (D4 vocab canonicalization) unblocks once Stage 1 heritage worksheet completes; PR 6+ (Stage 2 re-tag) unblocks after PR 5 lands.
 
-**PR-cycle archival deferred:** Sessions 52-69 entries (PR 3a code-track + PR #480 / PR #481 / PR #482 / Session-64 Americas-cluster + Session-65 PR #483 review-cycle + Session-66 PR #484 African-cluster + Session-67 PR #484 review cycle + PR #485 hygiene Stage 1 docs-track + Session-68 PR #487 European-cluster + Session-69 PR #487 review-cycle) remain in this active file for now. They'll move to `...-execution-status-archive.md` at the start of the next PR cycle on the foundation-phase code track (likely PR 5+, far in the future). Until then, the active file is a tolerable size and the entries are useful reference for any foundation-phase work that picks up before Stage 1 closes.
+**PR-cycle archival deferred:** Sessions 52-70 entries (PR 3a code-track + PR #480 / PR #481 / PR #482 / Session-64 Americas-cluster + Session-65 PR #483 review-cycle + Session-66 PR #484 African-cluster + Session-67 PR #484 review cycle + PR #485 hygiene Stage 1 docs-track + Session-68 PR #487 European-cluster + Session-69 PR #487 review-cycle + Session-70 Middle-Eastern-cluster) remain in this active file for now. They'll move to `...-execution-status-archive.md` at the start of the next PR cycle on the foundation-phase code track (likely PR 5+, far in the future). Until then, the active file is a tolerable size and the entries are useful reference for any foundation-phase work that picks up before Stage 1 closes.
 
 **Branches:**
-- `main` at `f429fb0` (PR #487 squash-merge commit). Session 69 closeout backfill direct-to-main per Sessions 67 + 68/PR #485 precedent (third occurrence) — moves main forward one commit beyond this hash.
-- **No active branch.** Foundation-phase code track has no unblocked next PR; Stage 1 next session = Session 70 Middle Eastern cluster fill (will branch fresh from `main` at `f429fb0` or downstream closeout commit, as `docs/stage1-heritage-middle-eastern-cluster`).
+- `main` at `cdfdc19` (Session 69 PR #487 closeout-backfill commit, downstream of PR #487 squash `f429fb0`; direct-to-main per Sessions 67 + 68/PR #485 precedent — third-occurrence threshold).
+- **Active branch:** `docs/stage1-heritage-middle-eastern-cluster` (Session 70 Middle Eastern cluster per-value entries; PR pending push end of Session 70).
 - All foundation-phase feature branches deletable at convenience: `feat/metadata-foundation-search-infra-3a`, `feat/metadata-foundation-corpus-cleanup`, `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`. Plus `docs/session-58-pr3a-shipped` (PR #480 origin-deleted via `--delete-branch`; local kept for traceability). Plus `docs/stage1-heritage-scaffold` (PR #481 origin-deleted via `--delete-branch`; local kept for traceability). Plus `docs/stage1-heritage-asian-cluster` (PR #482 squash-merged; local kept for traceability). Plus `docs/stage1-heritage-americas-cluster` (PR #483 squash-merged 2026-05-11 01:37 UTC as `fc45a96`; local likely already deleted on prior session-end, otherwise kept for traceability). Plus `docs/stage1-heritage-african-cluster` (PR #484 squash-merged 2026-05-11 02:54 UTC as `7894a47`; origin auto-deleted via `--delete-branch`; local auto-switched to main on merge). Plus `docs/stage1-status-tracking-structure` (PR #485 squash-merged 2026-05-11 15:39 UTC as `b9f2cef`; origin auto-deleted via `--delete-branch`; local auto-switched to main on merge). Plus `docs/stage1-heritage-european-cluster` (PR #487 squash-merged 2026-05-11 18:37 UTC as `f429fb0`; origin auto-deleted via `--delete-branch`; local auto-switched to main on merge).
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
@@ -138,6 +138,26 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 70 — 2026-05-11 — Stage 1 heritage Middle Eastern cluster per-value entries
+
+**Branch:** `docs/stage1-heritage-middle-eastern-cluster` (off `main` at `cdfdc19`, the Session 69 PR #487 closeout-backfill commit, downstream of PR #487 squash `f429fb0`; chose current HEAD over the contract's literal `f429fb0` to preserve the closeout-backfill content, matching Session 68's branch-base choice precedent).
+
+**Done:**
+
+- Verified Middle Eastern cluster corpus distribution against TEST DB. Counts match the §15 framing block exactly (Middle Eastern 23, Levantine 14, Yemeni 3 NEW, Egyptian 2 cross-ref §13.6 + §9.2, `levantine` drift 2, Israeli 1 NEW + multi-parent, `middle-eastern` drift 1, Palestinian 1, Persian 1 NEW + multi-parent, Lebanese / Syrian / Jordanian 0 each). Adjacent-country scan (Iraqi / Iranian / Turkish / Kurdish / Saudi / Gulf / Arab / Bedouin / Bahraini / Omani / Qatari / Emirati) returned EMPTY — no hidden Middle Eastern values beyond the framing block.
+- Populated worksheet §15 with all 11 Middle Eastern cluster per-value entries: 1 cluster root (Middle Eastern 23) + 1 sub-region (Levantine 14) + 4 country-specifics with corpus (Yemeni 3 NEW, Persian 1 NEW + multi-parent, Palestinian 1, Israeli 1 + multi-parent) + 3 v3-baseline-corpus-absent under Levantine (Lebanese, Syrian, Jordanian — per §12.18 Dominican precedent) + 2 kebab-case drift entries (`middle-eastern`, `levantine`). Smallest cluster fill (vs Asian 18, Americas 22, African 10, European 14).
+- Resolved §9.2 multi-parent decisions for Persian (→ Middle Eastern primary; Central Asian flagged) + Israeli (→ Middle Eastern primary; Mediterranean flagged). **§9.2 multi-parent table fully complete** (5/5 canonicals: Egyptian Session 66, Moroccan Session 66, Spanish Session 68, Persian Session 70, Israeli Session 70).
+- Dispatched 2 parallel Opus corpus-read agents (Middle Eastern 23 cluster root + Levantine 14 sub-region). Both returned worksheet-ready `<details>` blocks integrated into §15.1 + §15.2. Levantine showed 100% Middle Eastern pairing — the cleanest hierarchical sub-region in the worksheet (vs Mediterranean 95%, North American mixed diaspora, East Asian / West African with cross-cluster carry-ins).
+- Appended 9 ME-NN audit signal register entries (ME-01 through ME-09). **ME-01 duplicate-of-AFR-05** (Egyptian Ful Medames routing inconsistency surfaced from Middle Eastern cluster perspective) — second cross-cluster audit-signal coordination after EUR-11's reframe of AME-06 (Session 68).
+- All 5 regional clusters (§11-§15) now have per-value entries populated. Remaining Stage 1 work: §9.1 cross-cluster diaspora & indigenous identities + §16 end-summary canonical-vocab table.
+- Pre-push code-reviewer agent dispatch deferred to end-of-session (next step).
+
+**Stage 1 work track continues at peer status doc** — see `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` for substantive Session 70 entry (decisions, process notes, audit signals, framing-decision resolutions) + next-session pointer (Session 71 PR review cycle).
+
+**For next session:** PR review cycle (Session 71, mirroring Sessions 63 / 65 / 67 / 69 precedent for review-cycle sessions) — triage bot review findings, apply round-1 + round-2 fix-ups, reach squash-merge. Session 72 = §9.1 cross-cluster diaspora & indigenous identities + §16 end-summary canonical-vocab table after Session 71 merges.
+
+---
 
 ### Session 69 — 2026-05-11 — PR #487 review cycle (round-1 + round-2 fix-ups + round-3 default-reject + squash-merge + direct-to-main backfill)
 
