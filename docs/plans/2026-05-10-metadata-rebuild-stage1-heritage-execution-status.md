@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-11 — Session 68 European cluster per-value entries populated; PR #487 (open). Branched from `main` at `f45278a` (the PR #485 closeout backfill commit on main, downstream of squash `b9f2cef`). Next cluster-content session = Session 69 Middle Eastern after PR #487 review + merge.
+**Last updated:** 2026-05-11 — Session 68 European cluster per-value entries populated; PR #487 (open). Branched from `main` at `f45278a` (the PR #485 closeout backfill commit on main, downstream of squash `b9f2cef`). Next session = Session 69 PR #487 review cycle (mirroring Sessions 63 / 65 / 67 precedent); cluster-content resumes at Session 70 Middle Eastern after PR #487 merges.
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -27,26 +27,41 @@ Audit signal register (Stage 2 corpus cleanup / reviewer-validation intake): `do
 
 Fixed-shape orientation for the next session. Update at PR closeout (see PR closeout checklist below).
 
-- **Session:** Stage 1 Session 69 — Middle Eastern cluster per-value fill (assuming PR #487 closes cleanly with at most a review-cycle session between)
-- **Branch base:** `main` at PR #487 squash-merge commit (TBD until merge). Branch as `docs/stage1-heritage-middle-eastern-cluster`.
-- **Primary objective:** Populate worksheet §15 with all Middle Eastern cluster per-value entries (~8 entries: 1 cluster root Middle Eastern 23 + 1 sub-region [Levantine 14] + 4 country-specifics [Yemeni 3 NEW, Persian 1 NEW + multi-parent, Palestinian 1, Israeli 1 + multi-parent] + 2 kebab-case drift [`middle-eastern` 1, `levantine` 2]); add the §9.2 multi-parent entries for Persian + Israeli in the cross-cluster section. Plus v3-canonical-corpus-absent country-specifics under Levantine (Lebanese, Syrian, Jordanian) per §12.18 Dominican precedent.
-- **Stop point:** End of Middle Eastern cluster (one cluster per session, per Sessions 62 / 64 / 66 / 68 stop-point heuristic). After Middle Eastern, only cross-cluster §9 + end-summary §16 remain.
+- **Session:** Stage 1 Session 69 — PR #487 review cycle (mirrors Sessions 63 / 65 / 67 precedent for review-cycle sessions)
+- **Branch base:** continue on `docs/stage1-heritage-european-cluster` (no branch switch); PR #487 already open with 2 commits (`49a98be` cluster fill + `f2bdabe` pre-push fix-ups).
+- **Primary objective:** Triage bot review findings on PR #487, apply round-1 + round-2 fix-ups as needed per the kickoff prompt's PR ritual, reach squash-merge.
+- **Stop point:** PR #487 squash-merged into `main`. Optionally include direct-to-main closeout backfill if the Session 67 / PR #485 precedent applies (status doc updates land directly on main rather than waiting for Session 70's first commit).
 - **Expected files to touch:**
-  - `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — §15 per-value entries, §9.2 Persian + Israeli rows in cross-cluster section
-  - `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` — Session 69 log entry; dashboard + contract refresh at PR closeout
-  - `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-register.md` — append any new Middle-Eastern-cluster audit signals as `ME-NN`
-  - `docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md` — Current State header + PRs-SHIPPED list + Branches block on PR merge
-- **First task:** Per the foundation-status carrying pattern, no hash backfill needed if Session 68's PR closeout backfills cleanly into main (matches Session 67 / PR #485 closeout pattern). Start with TEST DB corpus-distribution verification queries against `lessons.metadata.culturalHeritage` for the 8 Middle Eastern values plus the §9.2 Persian + Israeli cross-cluster checks plus the v3-corpus-absent Levantine country-specifics (Lebanese, Syrian, Jordanian).
+  - Same 4 docs files as PR #487 (minor fix-ups; no new substantive content)
+  - `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` — Session 69 log entry + PR closeout checklist boxes ticked + dashboard row updated to `✅ Shipped` with squash hash + Last updated line
+  - `docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md` — Session 69 log entry + Current State header refresh + PRs-SHIPPED list squash hash backfill + Branches block (move from "Active" to traceability list)
+- **First task:** Collect findings from all 4 PR surfaces per `feedback_pr_comment_surfaces.md`:
+  - `gh pr view 487 --comments` (issue comments)
+  - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/487/reviews` (formal reviews — auto-Claude lands first)
+  - `gh api repos/danfeder/esnyc-lesson-search-react/pulls/487/comments` (inline review comments)
+  - `gh pr checks 487` (CI checks)
 - **Must verify:**
-  - `git diff --check` clean
-  - No code / migration / package / Supabase / test file changes (`git diff --name-only origin/main...HEAD | grep -Ev '^docs/'` returns nothing)
-  - §15 framing decisions resolved (Levantine country-specific v3-corpus-absent disposition for Lebanese/Syrian/Jordanian; Yemeni NEW canonical; Persian multi-parent vs Central Asian; Israeli multi-parent vs Mediterranean)
-  - Pre-push code-reviewer agent dispatched on the docs PR (Sessions 60-68 pattern; ninth consecutive Stage 1 catch — Session 68 broke the streak at 0 findings; resume the catch-count from there)
+  - All findings investigated per `feedback_bot_review_investigation.md` (default-reject for stylistic / single-voice / low-confidence on internal-only docs; accept on convergent findings or empirical evidence)
+  - Round-cap at 2 bot-review rounds; if a 3rd round appears, fix only critical bugs and document the rest
+  - Two-voice convergence (Claude + Codex OR Claude + Hermes OR Codex + Hermes) treated as P1 signal per `feedback_pr_bot_review_workflow.md`
+  - Pre-push code-reviewer agent dispatched on each fix-up diff (eighth-then-ninth Stage 1 catch dependent on findings)
+  - Docs-only constraint maintained throughout
 - **Do not do:**
   - Touch source code, migrations, package files, Supabase files, or tests
-  - Pre-decide curriculum-team-facing verdicts (`<to_fill>` stays per §4 spec)
-  - Modify worksheet content outside §15 + the §9.2 Persian + Israeli cross-cluster rows
-  - Start cross-cluster §9 per-value entries (separate session)
+  - Accept stylistic single-voice findings on internal-only docs (default-reject hardening per `feedback_pr_bot_review_workflow.md`)
+  - Merge PR #487 without user instruction
+  - Start Session 70 Middle Eastern cluster work until PR #487 is merged
+
+### Session 70 contract (preview — Middle Eastern cluster fill)
+
+For visibility; will be promoted to the active `Next session contract` block at PR #487 closeout.
+
+- **Session:** Stage 1 Session 70 — Middle Eastern cluster per-value fill
+- **Branch base:** `main` at PR #487 squash-merge commit (TBD until merge). Branch as `docs/stage1-heritage-middle-eastern-cluster`.
+- **Primary objective:** Populate worksheet §15 with all Middle Eastern cluster per-value entries (~8 entries with corpus + 3 v3-corpus-absent Levantine country-specifics = ~11 entries: 1 cluster root Middle Eastern 23 + 1 sub-region [Levantine 14] + 4 country-specifics with corpus [Yemeni 3 NEW, Persian 1 NEW + multi-parent, Palestinian 1, Israeli 1 + multi-parent] + 3 v3-canonical-corpus-absent under Levantine [Lebanese, Syrian, Jordanian] per §12.18 Dominican precedent + 2 kebab-case drift [`middle-eastern` 1, `levantine` 2]); add the §9.2 multi-parent entries for Persian + Israeli.
+- **Stop point:** End of Middle Eastern cluster (one cluster per session, per Sessions 62 / 64 / 66 / 68 stop-point heuristic). After Middle Eastern, only cross-cluster §9 + end-summary §16 remain.
+- **First task:** Per the Session 67 / PR #485 / PR #487 closeout precedent, no hash backfill needed if Session 69 PR closeout backfills cleanly into main. Start with TEST DB corpus-distribution verification queries for the 8 Middle Eastern values + §9.2 Persian + Israeli cross-cluster checks + v3-corpus-absent Levantine country-specifics.
+- **§15 framing decisions to resolve:** (1) Levantine country-specific v3-corpus-absent disposition for Lebanese / Syrian / Jordanian; (2) Yemeni NEW canonical; (3) Persian multi-parent vs Central Asian; (4) Israeli multi-parent vs Mediterranean.
 
 ## PR closeout checklist
 
@@ -100,21 +115,22 @@ The Stage 1 work is split across multiple files; this block names which surface 
 - §16 end-summary canonical-vocab table: populates mechanically from filled entries; empty until per-value entries fill.
 - Cluster decision summary blocks: always TBD (curriculum team writes at handoff).
 
-**For next session (Stage 1 Session 69 = Middle Eastern cluster, assuming PR #487 closes cleanly):**
+**For next session (Stage 1 Session 69 = PR #487 review cycle; Session 70 = Middle Eastern cluster after PR #487 merges):**
 
 > See `## Next session contract` near the top of this doc for the structured authoritative summary (session, branch base, primary objective, expected files, first task, must verify, do not do). The numbered list below carries the procedural detail (per-entry breakdown, framing decisions, Opus-dispatch plan).
 
-1. Branch off `main` at PR #487 squash-merge commit (TBD until merge). NO hash backfill task in Session 69 if PR #487 follows Session 67 / PR #485 closeout pattern (direct-to-main post-merge backfill); else first task is hash backfill matching Sessions 64 / 66 pattern.
-2. Populate Middle Eastern cluster's per-value entries per §15 framing block. Total: **~8 entries with corpus + 3 v3-corpus-absent = ~11 entries**:
+1. **Session 69 is the PR #487 review cycle, not the Middle Eastern fill.** Branch stays on `docs/stage1-heritage-european-cluster`; triage bot review findings (auto-Claude + optional manual Codex/Hermes); apply round-1 + round-2 fix-ups; reach squash-merge. See the `## Next session contract` block above for the structured Session 69 contract. Procedural detail for the Session 70 Middle Eastern fill follows below as a preview.
+2. After PR #487 merges (Session 69), Session 70 = Middle Eastern fill. Branch off `main` at PR #487 squash-merge commit (TBD). NO hash backfill task in Session 70 if PR #487 follows Session 67 / PR #485 closeout pattern (direct-to-main post-merge backfill); else first task is hash backfill matching Sessions 64 / 66 pattern.
+3. Populate Middle Eastern cluster's per-value entries per §15 framing block. Total: **~8 entries with corpus + 3 v3-corpus-absent = ~11 entries**:
    - Cluster root (1): Middle Eastern (23)
    - Sub-region (1): Levantine (14, v3)
    - Country-specifics with corpus (4): Yemeni (3, NEW — not in v3), Persian (1, NEW + multi-parent per §9.2), Palestinian (1, v3 under Levantine), Israeli (1, v3 + multi-parent per §9.2)
    - v3-canonical-corpus-absent (3): Lebanese, Syrian, Jordanian (all v3 under Levantine, 0 corpus rows) — per §12.18 Dominican precedent
    - Kebab-case drift (2): `middle-eastern` (1), `levantine` (2)
    - Plus §9.2 multi-parent entries for Persian + Israeli (cross-cluster section work)
-3. Dispatch ~1-2 Opus corpus-read agents: Middle Eastern (23 — cluster root), Levantine (14 — sub-region). Lower-frequency country-specifics (Yemeni 3, Persian/Palestinian/Israeli 1 each) handle structurally.
-4. Address §15 framing decisions: (1) Yemeni (3, not v3) → `new` candidate, parent = directly under Middle Eastern (Yemen doesn't fit Levantine cleanly); (2) Persian (1, not v3) → §9.2 — Middle Eastern home or Central Asian; (3) Israeli (1, v3) → §9.2 — Middle Eastern (v3) or Mediterranean; (4) Lebanese / Syrian / Jordanian v3-corpus-absent — keep / drop / internal per §12.18 Dominican precedent; (5) Egyptian multi-parent → §15 cluster Notes-level back-reference to §13.6 / §9.2 Session 66 resolution.
-5. Stop at end of Middle Eastern cluster. Do NOT start cross-cluster §9 per-value entries.
+4. Dispatch ~1-2 Opus corpus-read agents: Middle Eastern (23 — cluster root), Levantine (14 — sub-region). Lower-frequency country-specifics (Yemeni 3, Persian/Palestinian/Israeli 1 each) handle structurally.
+5. Address §15 framing decisions: (1) Yemeni (3, not v3) → `new` candidate, parent = directly under Middle Eastern (Yemen doesn't fit Levantine cleanly); (2) Persian (1, not v3) → §9.2 — Middle Eastern home or Central Asian; (3) Israeli (1, v3) → §9.2 — Middle Eastern (v3) or Mediterranean; (4) Lebanese / Syrian / Jordanian v3-corpus-absent — keep / drop / internal per §12.18 Dominican precedent; (5) Egyptian multi-parent → §15 cluster Notes-level back-reference to §13.6 / §9.2 Session 66 resolution.
+6. Stop at end of Middle Eastern cluster. Do NOT start cross-cluster §9 per-value entries.
 
 **Stop-point heuristic confirmed Sessions 62 + 64 + 66 + 68:** one cluster per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) + African (10 entries, 2 Opus reads) + European (14 entries, 3 Opus reads) each fit the session boundary cleanly. Middle Eastern at ~8-11 entries (corpus + v3-corpus-absent + drift) is the smallest cluster — likely fits comfortably within a single session. May fit 1-2 clusters per session if Opus-read load is light, but `one-cluster-default-OR-natural-decision-batch` remains the reasonable working rule.
 
@@ -225,7 +241,7 @@ See `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-registe
 - **EUR-13** Empanadas & Corn Salad Mediterranean omission + Mexican co-tag reviewer-validation
 - **EUR-14** Irish depth-2-vs-depth-3 asymmetry — sub-region canonicalization decision
 
-**For next session (Stage 1 Session 69 = Middle Eastern cluster):** see "For next session" + Next session contract blocks above. Per the foundation-status carrying pattern, no hash backfill needed if Session 68's PR closeout backfills cleanly into main (matches Session 67 / PR #485 closeout pattern). PR #487 review cycle may add a Session-68.5 entry between this and Session 69 if multiple rounds land.
+**For next session (Stage 1 Session 69 = PR #487 review cycle, mirroring Sessions 63 / 65 / 67):** see Next session contract block at top of doc. Triage bot review findings on PR #487, apply round-1 + round-2 fix-ups as needed, reach squash-merge. Session 70 Middle Eastern fill follows after PR #487 merges.
 
 **Out-of-scope follow-ups (this session):** the 141K MCP response cap is a working ceiling worth noting for future cluster-fill queries; the EUR-11 cross-cluster audit-signal coordination is the first explicit register-level reframe and may warrant a register-section convention if it recurs across cluster fills (single-occurrence so far, not yet promoted).
 

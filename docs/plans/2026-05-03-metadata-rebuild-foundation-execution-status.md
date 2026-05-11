@@ -1,6 +1,6 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-11 — Stage 1 Session 68 European cluster per-value entries populated; PR #487 (open). Branched from `main` at `f45278a` (PR #485 closeout backfill commit on main, downstream of squash `b9f2cef`). Foundation-phase code track still has no unblocked next PR; Stage 1 next session = Session 69 Middle Eastern, branches from PR #487 squash-merge after merge.
+**Last updated:** 2026-05-11 — Stage 1 Session 68 European cluster per-value entries populated; PR #487 (open). Branched from `main` at `f45278a` (PR #485 closeout backfill commit on main, downstream of squash `b9f2cef`). Foundation-phase code track still has no unblocked next PR; Stage 1 next session = Session 69 PR #487 review cycle (mirroring Sessions 63 / 65 / 67 precedent), with Session 70 Middle Eastern fill following after PR #487 merges.
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
@@ -155,7 +155,7 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 
 **Stage 1 work track continues at peer status doc** — see `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` for substantive Session 68 entry (decisions, process notes, audit signals, framing-decision resolutions) + next-session pointer (Middle Eastern cluster per-value fill).
 
-**For next session:** Middle Eastern cluster per-value fill (~8 with corpus + 3 v3-corpus-absent = ~11 entries — see Stage 1 status doc's "For next session" block + worksheet §15 for the per-bucket breakdown). Per-cluster fill schedule remaining after European: Middle Eastern → cross-cluster diaspora § 9.1 / §9.2 remainders → end-summary §16.
+**For next session:** PR #487 review cycle (Session 69, mirroring Sessions 63 / 65 / 67 precedent for review-cycle sessions) — triage bot review findings, apply round-1 + round-2 fix-ups, reach squash-merge. Session 70 = Middle Eastern cluster fill (~11 entries) after PR #487 merges. Per-cluster fill schedule remaining: Middle Eastern → cross-cluster diaspora §9.1 / §9.2 remainders → end-summary §16.
 
 ### Session 67 — 2026-05-11 — PR #484 review cycle (round-1 fix-ups + round-2 default-reject + squash-merge + direct-to-main backfill)
 
