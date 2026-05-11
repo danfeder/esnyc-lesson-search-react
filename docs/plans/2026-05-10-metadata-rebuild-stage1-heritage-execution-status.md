@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-10 — Session 64 (Americas cluster per-value entries populated — 22 entries; 6 Opus corpus-read `<details>` blocks integrated; cross-agent disagreement on diaspora-NA pairing resolved via TEST DB direct queries).
+**Last updated:** 2026-05-10 — Session 65 (PR #483 review cycle wrapped — round-1 fix-up `ea0c443` shipped 2 P2 doc-consistency fixes + 1 nitpick; round-2 default-rejected all 4 Claude minor/informational findings; Codex round-2 independently verified round-1 fixes + reached identical reject-all verdict on Claude round-2 — two-voice convergence; PR squash-merge in progress).
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -10,7 +10,7 @@
 
 ## Current state
 
-**Americas cluster ✅ Session 64 (2026-05-10).** Worksheet §12 has all 22 per-value entries populated (1 cluster root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-canonical-corpus-absent + 4 kebab-case drift merge records). 6 of those have Opus-corpus-read `<details>` blocks integrated (Americas, North American, Latin American, Caribbean, Mexican, Puerto Rican); the remaining 16 entries are structural per §4 methodology. **Asian cluster ✅ Session 62 shipped 2026-05-10 as PR #482 squash `d58eb59` (Session 63 round-1 + round-2 fix-ups applied + merged).** PR for Session 64 (Americas) opens at this work's push. Audit signals surfaced for Stage 2: inconsistent cross-cluster diaspora tagging (67% AA / 79% Indigenous / 43% Lenape lessons carry North American — settled via TEST DB query), 4/4 Puerto Rican lessons multi-parent dual-coded as Caribbean + Latin American, missing country tags on arepa lessons, over-tagged Asian-cluster lessons spuriously carrying Caribbean + Latin American + Americas, Mexican `Monarch Migration` geography-only tagging.
+**Americas cluster ✅ Session 64 (2026-05-10) + PR #483 ✅ Session 65 review cycle wrapped (2026-05-10; squash-merge in progress).** Worksheet §12 has all 22 per-value entries populated (1 cluster root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-canonical-corpus-absent + 4 kebab-case drift merge records). 6 of those have Opus-corpus-read `<details>` blocks integrated (Americas, North American, Latin American, Caribbean, Mexican, Puerto Rican); the remaining 16 entries are structural per §4 methodology. **Asian cluster ✅ Session 62 shipped 2026-05-10 as PR #482 squash `d58eb59` (Session 63 round-1 + round-2 fix-ups applied + merged).** PR #483 review cycle (Session 65): round-1 fix-up `ea0c443` accepted 2 Codex P2 + 1 Claude nitpick (multi-parent / Decision 1 misattribution at 2 spots; Caribbean cohort math at 3 spots; §12.20 corpus-scale hedge); round-2 default-rejected 4 Claude minor/informational findings; Codex round-2 independently verified round-1 fixes landed correctly + reached identical reject-all verdict on Claude round-2 (two-voice convergence on default-reject). Audit signals surfaced for Stage 2: inconsistent cross-cluster diaspora tagging (67% AA / 79% Indigenous / 43% Lenape lessons carry North American — settled via TEST DB query), 4/4 Puerto Rican lessons multi-parent dual-coded as Caribbean + Latin American, missing country tags on arepa lessons, over-tagged Asian-cluster lessons spuriously carrying Caribbean + Latin American + Americas, Mexican `Monarch Migration` geography-only tagging.
 
 **What's done:**
 
@@ -28,9 +28,9 @@
 - §16 end-summary canonical-vocab table: populates mechanically from filled entries; empty until per-value entries fill.
 - Cluster decision summary blocks: always TBD (curriculum team writes at handoff).
 
-**For next session (Stage 1 Session 65 = African cluster):**
+**For next session (Stage 1 Session 66 = African cluster):**
 
-1. Branch off `main` at the merge commit for Session 64's PR.
+1. Branch off `main` at the squash-merge commit for PR #483 (TBD until merge completes; backfill the hash in this file's Session 65 entry + Current state header + foundation-phase status doc's PRs-SHIPPED list + Branches block as Session 66's first task).
 2. Populate African cluster's per-value entries per §13 framing block. Total: **~10 entries**:
    - Cluster root (1): African (41)
    - Sub-regions (3): West African (15, v3), North African (2, NEW), East African (1, NEW)
@@ -98,6 +98,36 @@ Stage 1 is **content-shaping**: there's no implementation plan with file paths a
 **When to revisit.** If a future content-shaping initiative (concepts worksheet round, ~8 smaller-field worksheets) follows this 2-file pattern successfully, it's worth promoting to a `feedback_*.md` rule. Until then, single-occurrence call.
 
 ## Session log
+
+### Session 65 — 2026-05-10 — PR #483 review cycle (round-1 fix-up + round-2 default-reject + two-voice convergence)
+
+**Branch:** `docs/stage1-heritage-americas-cluster` (continued from Session 64).
+
+**Done (1 fix-up commit + 1 status-doc session-end commit):**
+
+- **Round-1 cycle.** Collected from all 4 PR surfaces. Claude verdict "Ready to merge" with 4 lower-priority observations + 2 nitpicks; Codex (manual dispatch) flagged 2 P2 doc-consistency findings. Accepted 2 P2 + 1 Claude nitpick → `ea0c443` (Session 65 round-1 fix-up):
+  - **Codex P2.1 — multi-parent / Decision 1 misattribution.** Status doc:121 + worksheet §12.4 Notes:917 both wrongly attributed multi-parent flexibility to Session 59 design decision #1 (which governs hierarchy DEPTH, not multiple simultaneous parents). Reframed both spots: Decision 1 governs depth, not multi-parent membership; multi-parent ambiguity (Puerto Rican today, future Egyptian / Moroccan per §13) captured at Notes-level; adding `parents:` plural would be a future schema/worksheet decision. Critical because Session 64's status doc Puerto Rican bullet is the named precedent for the African-cluster Egyptian/Moroccan multi-parent plan — propagating the misattribution there would have continued the error.
+  - **Codex P2.2 — Caribbean cohort math.** §12.4 summary line 907 ("11 with a Caribbean country tag" — wrong; cross-cluster carry-ins aren't country-tagged), tagging-pattern paragraph line 913 ("11 distinct lessons; 12 tag-appearances" — "12" doesn't match any clean interpretation; legacy framing from cb7a316), and Notes line 917 ("= 8 distinct country-tagged lessons" — wrong; 8 is tag-appearances, 7 is distinct) reconciled across all 3 spots: 7 country-tagged distinct lessons (8 country tag-appearances since Rice & Beans dual-tagged Cuban+Jamaican) + 4 cross-cluster carry-ins = 11 Cohort 1 distinct lessons. Total: 11 + 4 + 2 = 17 ✓.
+  - **Claude nitpick — §12.20 corpus-scale hedge.** "(and one of the largest in the whole corpus)" parenthetical dropped; Americas-cluster-scope claim retained (verifiable from §12.19-22 directly: 13 > 4 > 1 > 1).
+  - **Default-rejected (round 1).** 4 Claude observations (§12.4 Caribbean tier in decision summary; §12.14 Guyanese cluster decision callout; §12.12 Brazilian conditional callout; Puerto Rican multi-parent → locked-design-decision candidate) + 1 Claude meta-nitpick (PR-cycle archival range observation). Reasoning: internal-docs default-reject hardening; 4 Claude observations were polish for things already in Notes; Puerto Rican multi-parent question more cleanly addressed by Codex P2.1 misattribution fix.
+- **Pre-push code-reviewer agent (Opus, feature-dev:code-reviewer) on the fix-up diff returned CLEAN.** Verified math consistent across all 3 §12.4 spots (11 in Cohort 1 = 7 country-tagged + 4 carry-ins; 8 country tag-appearances ÷ 7 distinct lessons), §12.20 cross-reference to §11.16 still valid, status doc + worksheet §12.4 wording on multi-parent / `parents:` plural mutually consistent. **First clean agent return after 7 consecutive pre-push catches on the Stage 1 track** (Sessions 60 da09777, 61 a5b584b, 62 df39f07, 63 18ff1ef + b5e4ebe, 64 ea64812 + cb7a316). Not a streak "break" — the agent did useful work confirming math-reconciliation was correctly applied across the 3 §12.4 spots, which is exactly the class of multi-spot edit where independent verification matters most.
+- **Round-2 cycle.** claude-review round-2 returned 4 minor/informational findings (F1 drift `parent` semantically misleading; F2 Guyanese parent placeholder anchoring; F3 Dominican parity convention; F4 `americas` drift `parent: null` claimed inconsistency). All 4 default-rejected per internal-docs hardening:
+  - F1: §7 parser invariant already covers the operational concern (filter on verdict before keying canonical_key); matches §11 precedent; not worth diverging mid-Stage-1.
+  - F2: same as Claude's round-1 observation; Notes cover it; Claude himself wrote "no action needed before curriculum-team review."
+  - F3: handoff question already captured in status doc framing ("Worksheet structure can converge on a single convention at curriculum-team handoff time"); curriculum team will see all §11 + §12 entries together and decide convention then.
+  - F4: based on misread — verified §12.19-22 directly that ALL drift entries inherit from their merge_into target's parent. `americas` drift inherits `null` because canonical Americas has null parent (cluster root); §12.20-22 inherit `americas` because their canonicals have parent `americas`. Pattern is uniform; Claude was reading surface variation without inferring the inheritance.
+- **Codex round-2 (manual dispatch).** Independently verified all 3 round-1 fix-ups landed correctly + reached identical reject-all verdict on Claude's 4 round-2 findings with matching rationale. Verdict: "ready to merge from my side."
+
+**Process notes / observations:**
+
+- **Two-voice convergence on REJECT is the inverse signal of convergence on FINDING.** Existing memory `feedback_pr_bot_review_workflow.md` captures Claude+Codex convergence on a finding as a P1 signal. PR #483 round-2 surfaced the inverse: when both voices independently triage the same finding-set to "reject all," that's high-confidence default-reject confirmation. Same signal mechanism in both directions. Worth flagging for promotion to the memory file if it recurs in PR #484+ (PR #482 round-2 had a similar reject-pattern but only 1 voice; PR #483 is the first 2-voice reject convergence).
+- **Claude F4 misread pattern.** An LLM reviewer can flag "inconsistency within X group" when the pattern is actually "each X inherits from Y" but X's Y values happen to vary (some null, some non-null). Surface variation reads as inconsistency without the inheritance inference. If this recurs in African / European / Middle Eastern drift sweeps (which will have the same inherit-from-merge_into-target pattern), worth a §7 sentence stating the inheritance convention explicitly. For now, single occurrence; §7 parser invariant + Notes are operationally sufficient.
+
+**PR #483 squash-merged 2026-05-10 — TBD UTC as `<TBD>`** (backfill in Session 66 per "For next session" block above).
+
+**For next session (Stage 1 Session 66 = African cluster per-value fill):** see "For next session" block above; first task = backfill PR #483 squash-merge hash in this entry + Current state header + foundation-phase status doc's PRs-SHIPPED list + Branches block.
+
+---
 
 ### Session 64 — 2026-05-10 — Americas cluster per-value entries populated
 
