@@ -2,14 +2,14 @@
 
 **Last updated:** 2026-05-11 (extracted from Stage 1 execution status doc Sessions 62-67 and worksheet §11-§13 Notes blocks).
 
-> **Purpose.** Open audit signals surfaced during Stage 1 per-value fills, structured for Stage 2 corpus re-tag intake. Each entry is sourced from existing documentation (worksheet Notes blocks or status doc session entries). Do not invent new signals here; append from session work as it lands.
+> **Purpose.** Open audit signals surfaced during Stage 1 per-value fills, structured for Stage 2 corpus cleanup / reviewer-validation intake. Covers re-tag actions, body-content review, and reviewer-led judgment calls. Each entry is sourced from existing documentation (worksheet Notes blocks or status doc session entries). Do not invent new signals here; append from session work as it lands.
 >
 > **Status vocabulary.**
 > - `Open` — flagged, not yet addressed
-> - `Resolved` — closed by a Stage 2 re-tag action; record the closing PR or backfill query in the row
+> - `Resolved` — closed by a Stage 2 corpus cleanup, re-tag, or reviewer-validation action; record the closing PR, backfill query, or reviewer decision in the row
 > - `Deferred` — explicitly scoped out; record the reason in the row
 >
-> **Scope.** Stage 1 surfaces audit signals as a byproduct of per-value worksheet fills. Stage 2 (corpus re-tag + reviewer validation flow) is where signals close. This register is the bridge between the two stages.
+> **Scope.** Stage 1 surfaces audit signals as a byproduct of per-value worksheet fills. Stage 2 (corpus cleanup + reviewer-validation flow — including re-tag PRs, body-content reviews, and reviewer judgment) is where signals close. This register is the bridge between the two stages.
 
 ## Open signals
 
@@ -36,7 +36,7 @@
 
 ## Resolved signals
 
-(none yet — first resolutions land with Stage 2 corpus re-tag PRs)
+(none yet — first resolutions land with Stage 2 corpus cleanup, re-tag PRs, or reviewer-validation decisions)
 
 ## Deferred signals
 
@@ -49,7 +49,7 @@ When a session surfaces a new audit signal during a per-value fill or review cyc
 1. Assign an ID using the cluster prefix (`ASI` / `AME` / `AFR` / `EUR` / `ME` / `X` for cross-cluster) + the next available sequence number for that cluster.
 2. Append the row to the Open signals table above.
 3. Cite the source document (worksheet section + Notes line, status doc session entry, or both). Repo-facing evidence only — no private-memory citations (see Source-of-truth rules in the Stage 1 execution status doc).
-4. Do NOT mark `Resolved` until a Stage 2 re-tag PR or backfill query closes the gap; record the closing reference in the row when resolved.
+4. Do NOT mark `Resolved` until a Stage 2 corpus cleanup, re-tag PR, backfill query, or reviewer-validation decision closes the gap; record the closing reference in the row when resolved.
 
 ## See also
 
