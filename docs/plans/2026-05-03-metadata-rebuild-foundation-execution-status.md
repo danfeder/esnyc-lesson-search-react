@@ -1,12 +1,12 @@
 # Metadata Rebuild — Foundation Phase — Execution Status
 
-**Last updated:** 2026-05-10 — Session 63 (Stage 1 PR #482 round-1 + round-2 fix-ups applied; substantive Stage 1 progress lives in peer status doc; foundation-phase code track has no unblocked next PR — see Stage 1 execution status doc for per-cluster fill schedule).
+**Last updated:** 2026-05-10 — Session 65 (Stage 1 Americas cluster PR #483 review cycle wrapped — round-1 fix-up shipped 2 P2 + 1 nitpick; round-2 default-rejected all 4 Claude minor/informational findings with two-voice convergence from Codex; PR squash-merge in progress; substantive Stage 1 progress lives in peer status doc; foundation-phase code track has no unblocked next PR).
 
 > **About this file.** Active status carrying forward only what the next 1-2 sessions need to orient. Full per-session journal for Sessions 1-51 lives in `2026-05-03-metadata-rebuild-foundation-execution-status-archive.md` (read on demand via grep). When a new PR cycle begins, that PR's session entries move to the archive at the start of the following PR; the active file always reflects current PR + a small carry-forward roll-up.
 
 ## Current State
 
-**Stage 1 heritage worksheet — Asian cluster ✅ Session 62 (2026-05-10); PR opening. Per-value fill schedule: Asian (✅) → Americas (next, ~22 entries) → African (~9) → European (~9) → Middle Eastern (~6) → cross-cluster diaspora.** Sessions 60-61 shipped the scaffold (PR #481, squash `e05556a`); Session 62 populated the Asian cluster's 18 per-value entries (1 cluster root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift merge records). 7 of those have integrated Opus-corpus-read `<details>` blocks (Asian, East Asian, South Asian, Southeast Asian, Chinese, Japanese, Indian); the remaining 11 entries are structural per §4 methodology. Audit signal surfaced: Bánh Mì East-Asian mis-tag, 4 missing country tags on South Asian, 2 missing on Southeast Asian, Sri Lanka geography error in lesson body — all flagged for Stage 2 re-tag. Foundation-phase code track has no unblocked next PR — PR 3b / 5 / 6 all gate on Stage 1 / Stage 2 outputs.
+**Stage 1 heritage worksheet — Americas cluster ✅ Session 64 (2026-05-10) + PR #483 ✅ Session 65 review cycle wrapped (2026-05-10; squash-merge in progress). Per-value fill schedule: Asian (✅) → Americas (✅) → African (next, ~10 entries) → European (~12) → Middle Eastern (~8) → cross-cluster diaspora.** Sessions 60-61 shipped the scaffold (PR #481, squash `e05556a`); Session 62 populated the Asian cluster's 18 per-value entries (PR #482, squash `d58eb59`, shipped 2026-05-10 with Session 63 round-1 + round-2 fix-ups applied + merged). Session 64 populated the Americas cluster's 22 per-value entries (1 cluster root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-canonical-corpus-absent + 4 kebab-case drift merge records). 6 of those have integrated Opus-corpus-read `<details>` blocks (Americas, North American, Latin American, Caribbean, Mexican, Puerto Rican); the remaining 16 entries are structural per §4 methodology. Session 65 review cycle: round-1 fix-up `ea0c443` accepted 2 Codex P2 + 1 Claude nitpick (multi-parent / Decision 1 misattribution at 2 spots; Caribbean cohort math at 3 spots; §12.20 corpus-scale hedge); round-2 default-rejected 4 Claude minor/informational findings; Codex round-2 independently verified round-1 fixes + reached identical reject-all verdict on Claude round-2 (two-voice convergence on default-reject). Audit signals surfaced for Stage 2: inconsistent cross-cluster diaspora tagging (67% AA / 79% Indigenous / 43% Lenape lessons carry North American — verified by TEST DB direct queries Session 64); 4/4 Puerto Rican lessons multi-parent dual-coded as Caribbean + Latin American; missing country tags on arepa lessons; over-tagged Asian-cluster lessons spuriously carrying Caribbean + Latin American + Americas; Mexican `Monarch Migration` geography-only tagging. Foundation-phase code track has no unblocked next PR — PR 3b / 5 / 6 all gate on Stage 1 / Stage 2 outputs.
 
 **Stage 1 work track lives at its own peer status doc:**
 - **Worksheet:** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — curriculum-team-facing deliverable. Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention) complete; cluster framing blocks pre-populated with corpus distribution data; per-value entries TBD subsequent sessions.
@@ -20,6 +20,8 @@
 - **PR 3a** (#479 → squash `bb3372b`, 2026-05-08): `academicConcepts` in FTS + embeddings; `smart-search` reads `search_synonyms` from DB at request time; CHECK constraint locks multi-word values; 6 historically-broken queries (christmas / thanksgiving / halloween / easter / latino / hispanic) functional.
 - **PR #480** (squash `ab9f857`, 2026-05-09): Session 58 status doc refresh, docs-only.
 - **PR #481** (squash `e05556a`, 2026-05-10): Stage 1 heritage worksheet scaffold (2-file pattern: worksheet + execution status doc; v3 baseline embedded as Appendix A); Sessions 60-61.
+- **PR #482** (squash `d58eb59`, 2026-05-10): Stage 1 heritage worksheet Asian cluster per-value entries (18 entries: 1 cluster root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift merge records; 7 Opus corpus-read `<details>` blocks integrated); Sessions 62-63 (Session 63 ran round-1 + round-2 fix-up cycle).
+- **PR #483** (squash `<TBD>`, 2026-05-10): Stage 1 heritage worksheet Americas cluster per-value entries (22 entries: 1 cluster root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-canonical-corpus-absent + 4 kebab-case drift merge records; 6 Opus corpus-read `<details>` blocks integrated); Sessions 64-65 (Session 65 ran round-1 + round-2 fix-up cycle with two-voice convergence on default-reject for round-2). **Backfill squash hash next session.**
 
 **5/5 PROD verification probes for PR 3a + 3-signal `smart-search` edge fn deploy verification — ALL PASS** Session 58 (full record in that session's log entry below).
 
@@ -30,12 +32,12 @@
 
 **For later (whenever PR 3b / 5 / 6 unblocks):** branch off `main`; review out-of-scope follow-ups below; follow the kickoff-prompt session-start ritual. PR 5 (D4 vocab canonicalization) unblocks once Stage 1 heritage worksheet completes; PR 6+ (Stage 2 re-tag) unblocks after PR 5 lands.
 
-**PR-cycle archival deferred:** Sessions 52-58 (PR 3a) entries remain in this active file for now. They'll move to `...-execution-status-archive.md` at the start of the next PR cycle on the foundation-phase code track (likely PR 5+, far in the future). Until then, the active file is a tolerable size and the entries are useful reference for any foundation-phase work that picks up before Stage 1 closes.
+**PR-cycle archival deferred:** Sessions 52-65 entries (PR 3a code-track + PR #480 / PR #481 / PR #482 / Session-64 Americas-cluster + Session-65 PR #483 review-cycle Stage 1 docs-track) remain in this active file for now. They'll move to `...-execution-status-archive.md` at the start of the next PR cycle on the foundation-phase code track (likely PR 5+, far in the future). Until then, the active file is a tolerable size and the entries are useful reference for any foundation-phase work that picks up before Stage 1 closes.
 
 **Branches:**
-- `main` at `e05556a` (PR #481 squash-merge); origin matches.
-- **Active:** `docs/stage1-heritage-asian-cluster` (Stage 1 Session 62 — Asian cluster per-value entries; PR opening).
-- All foundation-phase feature branches deletable at convenience: `feat/metadata-foundation-search-infra-3a`, `feat/metadata-foundation-corpus-cleanup`, `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`. Plus `docs/session-58-pr3a-shipped` (PR #480 origin-deleted via `--delete-branch`; local kept for traceability). Plus `docs/stage1-heritage-scaffold` (PR #481 origin-deleted via `--delete-branch`; local kept for traceability).
+- `main` at `d58eb59` (PR #482 squash-merge); will advance to PR #483 squash-merge on completion.
+- **Active:** `docs/stage1-heritage-americas-cluster` (Stage 1 Sessions 64-65 — Americas cluster per-value entries + PR #483 review cycle; squash-merge in progress).
+- All foundation-phase feature branches deletable at convenience: `feat/metadata-foundation-search-infra-3a`, `feat/metadata-foundation-corpus-cleanup`, `feat/metadata-foundation-llm-tagging`, `backup/feat-metadata-foundation-llm-tagging-pre-rebase`, `docs/session-36-pr1b-shipped`, `feat/metadata-foundation-activity-type-multi`, `feat/metadata-foundation-schema`. Plus `docs/session-58-pr3a-shipped` (PR #480 origin-deleted via `--delete-branch`; local kept for traceability). Plus `docs/stage1-heritage-scaffold` (PR #481 origin-deleted via `--delete-branch`; local kept for traceability). Plus `docs/stage1-heritage-asian-cluster` (PR #482 squash-merged; local kept for traceability). The active `docs/stage1-heritage-americas-cluster` joins this list as deletable-after-merge once PR #483 squash-merges (backfill in Session 66's first commit).
 
 ## Recent decisions worth carrying forward (PR 1 → PR 1b → PR 2)
 
@@ -131,6 +133,38 @@ Auto-loaded MEMORY (already in conversation context, do not re-read by default):
 - Project-specific memories: `project_metadata_three_regimes.md` / `project_vocabulary_drift_scope.md` / `project_lesson_format_conflated.md` / `project_dedup_third_state.md` / `project_metadata_cleanup_candidates.md` / `project_crf_stamp_theater.md` / `project_teacher_zero_metadata_model.md` / `project_imported_non_esynyc_drops.md`
 
 ## Recent session log
+
+### Session 64 — 2026-05-10 — Stage 1 heritage Americas cluster per-value entries
+
+**Branch:** `docs/stage1-heritage-americas-cluster` (off `main` at `d58eb59`, the PR #482 squash-merge).
+
+**Done:**
+
+- Backfilled PR #482 squash-merge hash (`d58eb59`) in this status doc's PRs-SHIPPED list + Branches block + Current State header + in the Stage 1 status doc's Session 62 entry + Current state header.
+- Populated 22 per-value entries for the Americas cluster in `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` §12 (1 cluster root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-canonical-corpus-absent + 4 kebab-case drift merge entries).
+- Dispatched 6 parallel Opus corpus-read agents (Americas, North American, Latin American, Caribbean, Mexican, Puerto Rican) producing `<details>` corpus-evidence blocks integrated into the worksheet entries.
+- Ran 2 supplementary TEST DB queries to resolve a cross-agent disagreement on diaspora-to-North-American pairing rates: African American 16/24 (67%); Indigenous 19/24 (79%); Lenape 3/7 (43%); Native American 3/5 (60%). Used to ground the §12.1 + §12.2 Notes.
+- Audit signals surfaced for Stage 2 re-tag: 4/4 Puerto Rican lessons multi-parent dual-coded as Caribbean + Latin American (corpus rejects v3's single-parent under Latin American); inconsistent diaspora-to-North-American pairing (per query above); over-tagged Asian-cluster lessons spuriously tagged Caribbean + Latin American + Americas (Bats & Banana Pancakes, Flies & Fruit); missing country tags on arepa lessons (Three Sister Arepas, Three Sisters Empanadas — should also carry Colombian / Venezuelan); over-tagged Empanadas lesson with `Spanish + Mediterranean + European` from single-sentence Spanish-origin mention; Mexican `Monarch Migration` uses heritage tagging for geographic-place rather than cuisine/culture.
+
+**Stage 1 work track continues at peer status doc** — see `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` for substantive Session 64 entry (decisions, process notes, audit signals) + next-session pointer (African cluster per-value fill).
+
+**For next session:** African cluster per-value fill (~10 entries — see Stage 1 status doc's "For next session" block + worksheet §13 for the per-bucket breakdown). Per-cluster fill schedule remaining after Americas: African → European → Middle Eastern → cross-cluster diaspora.
+
+### Session 63 — 2026-05-10 — PR #482 review cycle (round-1 + round-2 + 2 pre-push agent fix-ups)
+
+**Branch:** `docs/stage1-heritage-asian-cluster` (continued from Session 62).
+
+**Done:**
+
+- 4 fix-up commits for PR #482 round-1 + round-2 + 2 pre-push agent passes (`2b3158f`, `18ff1ef`, `fa56c9a`, `b5e4ebe`).
+- 5 findings accepted across both rounds: F1 Americas next-session count math, F2 worksheet header SCAFFOLD → PRE-HANDOFF, §7 parser invariant (identity-shaped drift entries need verdict-filter before canonical_key keying), session-number collision (Session 63 = fix-up cycle, not Americas), stale line 23 Americas summary breakdown.
+- 3 findings rejected per round-2 default-reject hardening for internal-only docs.
+- PR #482 squash-merged 2026-05-10 22:58 UTC as `d58eb59` (verified via `gh pr view 482 --json state,mergedAt,mergeCommit`).
+- Pre-push code-reviewer agent FIFTH consecutive Stage 1 PR commit catch — Sessions 60-63 each had pre-push agent catch real bugs self-review missed.
+
+**Stage 1 work track continues at peer status doc** — see `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` for full Session 63 details (commit-by-commit fix-up summary + process notes).
+
+**For next session:** Americas cluster per-value fill (handled by Session 64; see Stage 1 status doc).
 
 ### Session 62 — 2026-05-10 — Stage 1 heritage Asian cluster per-value entries
 
