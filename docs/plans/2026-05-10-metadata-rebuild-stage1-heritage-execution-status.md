@@ -1,12 +1,82 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-11 — Session 67 (PR #484 review cycle: round-1 fix-ups for 4 P3 findings [2-voice MEMORY.md citation + 3 Hermes doc-staleness nits] + round-2 default-reject for Claude's 3 forward-looking suggestions; PR #484 squash-merged 2026-05-11 02:54 UTC as `7894a47`; pre-push agent 0-findings on round-1 fix-up diff; next session = Session 68 European cluster).
+**Last updated:** 2026-05-11 — Stage 1 status-tracking structure added (Current state dashboard + Next session contract + PR closeout checklist + Source-of-truth rules + audit signal register pointer; no cluster-content advance). Prior cluster-content session = Session 67 (PR #484 review cycle: round-1 fix-ups for 4 P3 findings [2-voice MEMORY.md citation + 3 Hermes doc-staleness nits] + round-2 default-reject for Claude's 3 forward-looking suggestions; PR #484 squash-merged 2026-05-11 02:54 UTC as `7894a47`; pre-push agent 0-findings on round-1 fix-up diff; next cluster-content session = Session 68 European cluster).
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
 > **What lives here:** current state of the worksheet fill, locked design decisions and rationale, session log, next-session pointer.
 >
 > **What does NOT live here:** the worksheet content itself (lives in `2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md`); methodology and conventions intended for curriculum-team handoff (live in the worksheet header).
+
+## Current state dashboard
+
+| Area | Status | PR | Merge commit | Notes / next action |
+|------|--------|-----|---------------|---------------------|
+| Scaffold / §1-§10 | ✅ Shipped | #481 | `e05556a` | Header sections + cluster framing blocks + cross-cluster stubs + cluster template + end-summary table; v3 baseline as Appendix A |
+| Asian §11 | ✅ Shipped | #482 | `d58eb59` | 18 entries (1 root + 4 sub-regions + 10 country-specifics + 3 kebab-case drift); 7 Opus corpus-read `<details>` blocks integrated |
+| Americas §12 | ✅ Shipped | #483 | `fc45a96` | 22 entries (1 root + 3 sub-regions + 10 country-specifics + 3 NEW sub-region candidates + 1 v3-corpus-absent + 4 drift); 6 Opus corpus-read `<details>` blocks integrated |
+| African §13 | ✅ Shipped | #484 | `7894a47` | 10 entries (1 root + 3 sub-regions + 5 country-specifics + 1 drift); §9.2 Egyptian + Moroccan multi-parent resolved to North African primary; 2 Opus corpus-read `<details>` blocks integrated |
+| European §14 | Next session | TBD | TBD | ~12 entries planned (1 root + 2 sub-regions + 6 country-specifics + 3 drift); §9.2 Spanish multi-parent row |
+| Middle Eastern §15 | TBD | TBD | TBD | ~8 entries planned (1 root + 1 sub-region + 4 country-specifics + 2 drift) |
+| Cross-cluster §9 | TBD | TBD | TBD | Per-value entries for diaspora / indigenous identities + remaining §9.2 multi-parent rows (Persian, Israeli, Spanish) |
+| End summary §16 | TBD | TBD | TBD | Populates mechanically from filled per-value entries |
+
+Audit signal register (Stage 2 re-tag intake): `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-register.md`. Carries the audit signals surfaced during Stage 1 per-value fills (~18 open as of 2026-05-11). Append new signals there; do not duplicate into per-cluster status-doc narrative.
+
+## Next session contract
+
+Fixed-shape orientation for the next session. Update at PR closeout (see PR closeout checklist below).
+
+- **Session:** Stage 1 Session 68 — European cluster per-value fill
+- **Branch base:** `main` at `7894a47` (PR #484 squash-merge). Branch as `docs/stage1-heritage-european-cluster`.
+- **Primary objective:** Populate worksheet §14 with all European cluster per-value entries (~12 entries: 1 cluster root European 53 + 2 sub-regions [Mediterranean 39, Eastern European 3] + 6 country-specifics [Italian 24, Spanish 5, Ukrainian 3, Greek 2, Russian 1, Irish 2 NEW] + 3 kebab-case drift [`european` 1, `mediterranean` 2, `eastern-european` 1]); add the §9.2 multi-parent entry for Spanish in the cross-cluster section.
+- **Stop point:** End of European cluster (one cluster per session, per Sessions 62 / 64 / 66 stop-point heuristic). Do NOT start Middle Eastern §15.
+- **Expected files to touch:**
+  - `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` — §14 per-value entries, §9.2 Spanish row in cross-cluster section
+  - `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` — Session 68 log entry; dashboard + contract refresh at PR closeout
+  - `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-register.md` — append any new European-cluster audit signals as `EUR-NN`
+  - `docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md` — Current State header + PRs-SHIPPED list + Branches block on PR merge
+- **First task:** NO PR #484 hash backfill (Session 67 did it directly on main). Start with TEST DB corpus-distribution verification queries against `lessons.metadata.culturalHeritage` for the 12 European values plus any §9.2 Spanish cross-cluster checks.
+- **Must verify:**
+  - `git diff --check` clean
+  - No code / migration / package / Supabase / test file changes (`git diff --name-only origin/main...HEAD | grep -Ev '^docs/'` returns nothing)
+  - §14 framing decisions resolved (Russian/Ukrainian split; Mediterranean filter tier; Polish/French v3-corpus-absent disposition; Irish NEW candidate; Spanish multi-parent)
+  - Pre-push code-reviewer agent dispatched on the docs PR (Sessions 60-66 pattern; sixth-then-seventh consecutive Stage 1 catch)
+- **Do not do:**
+  - Touch source code, migrations, package files, Supabase files, or tests
+  - Pre-decide curriculum-team-facing verdicts (`<to_fill>` stays per §4 spec)
+  - Modify worksheet content outside §14 + the §9.2 Spanish cross-cluster row
+  - Start Middle Eastern §15
+
+## PR closeout checklist
+
+Reusable per-PR ritual for Stage 1 docs PRs. Tick each box as part of the merge cycle so the dashboard, contract, and pointer surfaces stay in sync with `main`.
+
+- [ ] Record PR number and squash commit in the dashboard row for the shipped cluster
+- [ ] Update Current state dashboard row (status `✅ Shipped`, PR number, merge commit, notes summary)
+- [ ] Update `Last updated` line in this doc
+- [ ] Update foundation status doc pointer (Current State header + PRs-SHIPPED list)
+- [ ] Update Branches block in foundation status doc (move branch from "Active" to traceability list)
+- [ ] Update Next session contract for the next cluster (session number, branch base, primary objective, expected files, first task, must verify, do not do)
+- [ ] Append new audit signals to `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-register.md`
+- [ ] Search for stale strings and replace:
+  - `squash-merge pending`
+  - `PR #NNN OPEN` for the just-merged PR
+  - `TBD until merge` for the just-merged PR
+  - the previous active branch name
+- [ ] Confirm no code / migration / package / Supabase / test files changed in the closing PR
+
+## Source-of-truth rules
+
+The Stage 1 work is split across multiple files; this block names which surface owns which fact.
+
+- **Worksheet** (`2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md`): curriculum-facing metadata decisions — verdicts, parent recommendations, canonical keys, aliases, corpus evidence, audit signals visible to handoff. The deliverable for curriculum-team review.
+- **Stage 1 execution status doc** (this file): current progress (dashboard), next-session contract, locked project-internal design decisions (Session 59), session log, audit-register pointer.
+- **Foundation status doc** (`2026-05-03-metadata-rebuild-foundation-execution-status.md`): summarizes Stage 1 + carries one-line pointer here. Does NOT carry Stage 1 narrative or per-cluster detail beyond what fits in the Current State header + PRs-SHIPPED list.
+- **Audit signal register** (`2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-register.md`): open audit signals queued for Stage 2 re-tag. Append-only during Stage 1; signals resolve in Stage 2.
+- **TEST DB facts** (corpus counts, value distributions, tag pairing rates): verify via the project's read-only TEST DB MCP access pattern (`mcp__supabase-test__execute_sql`). Do not cite agent recall or stale prior queries for new claims.
+- **Agent / private memory:** may guide workflow but must not be cited as repo-facing evidence in worksheet content. Cite a TEST DB query, corpus excerpt, or prior shipped PR's content instead. (See Session 67 round-1 fix-up precedent — bots converged on this finding.)
+- **PR comments**: review evidence, not durable source of truth unless copied into worksheet or status doc.
 
 ## Current state
 
@@ -415,6 +485,7 @@ PR #481 (Stage 1 heritage worksheet scaffold) shipped through the standard revie
 ## Pointers to durable context
 
 - **Worksheet:** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` (the deliverable)
+- **Audit signal register:** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-register.md` (Stage 2 re-tag intake — open audit signals surfaced during per-value fills)
 - **Foundation-phase status doc:** `docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md` (peer status doc; carries one-line pointer here)
 - **Foundation-phase design doc:** `docs/plans/2026-05-03-metadata-rebuild-foundation-design.md` (§5 has the LLM-tagging methodology that informs per-field Opus-corpus-read approach)
 - **v3 baseline:** Worksheet Appendix A (verbatim §3 Cultural Heritage from `esynyc-taxonomy-schema-v2.md`) — canonical hypothesis going in
