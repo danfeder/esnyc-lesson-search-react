@@ -173,6 +173,45 @@ Stage 1 is **content-shaping**: there's no implementation plan with file paths a
 
 ## Session log
 
+### Session 74 — 2026-05-11 — §16 end-summary canonical-vocab table populated
+
+**Branch:** `docs/stage1-heritage-end-summary` (off `main` at `52c633a` — the Session 73 PR #489 closeout-backfill commit, downstream of PR #489 squash `3ea3ecb`; matches Next session contract literal branch base since Session 73 closeout-backfill was direct-to-main per the now-durable pattern — 5 occurrences past 3rd-occurrence promotion threshold).
+
+**Done:**
+
+- Read §6 per-entry shape conventions + §7 parsing convention to confirm field set (canonical_key / surface_label / parent / filter_ui_tier / frequency / aliases / verdict + structured merge_into for merge entries) and the §7 alias_map identity-shaped-entries invariant (drift `canonical_key` matches the merge target's slug; consumers MUST filter on `verdict in ('keep', 'new')` BEFORE keying canonical vocabulary).
+- Read all 88 per-value entries across §11 Asian (15 substantive + 3 drift = 18) + §12 Americas (18 substantive + 4 drift = 22) + §13 African (9 substantive + 1 drift = 10) + §14 European (11 substantive + 3 drift = 14) + §15 Middle Eastern (9 substantive + 2 drift = 11) + §9.1 cross-cluster (13, all substantive). Extracted structural fields per row.
+- Populated worksheet §16 end-summary canonical-vocab table with all 88 rows. Verified row count = 88 via grep tally. Verified `filter_ui_tier` distribution reconciles: 12 top + 19 sub + 57 internal = 88 (top tally = 5 cluster roots [Asian, Americas, African, European, Middle Eastern] + 2 structurally-promoted sub-regions [Mediterranean, Levantine — both `top` despite below-≥40 frequency on cluster-defining-role grounds] + 2 high-frequency Americas sub-regions [North American, Latin American] + 3 §9.1 entries [cluster root, African American, Indigenous] = 12 ✓). Verified canonical_key duplicates are exactly the 13 Title-Case-canonical + kebab-case-drift pairs (per §7 alias_map identity convention — 13 Title-Case + 13 lowercase drift = 26 paired rows; alias_map identity-shape carries the drift literal `→` canonical_key collision intentionally) plus the 2 §9.1 `<to_fill>` Decision-gated entries (§9.1.1 cluster root + §9.1.4 Indigenous, both pending Decision 1 / Decision 3 resolution).
+- Added explanatory preamble to §16 covering: row count + per-cluster breakdown; 7-column spec; merge target inline encoding (`merge → <slug>`); `<to_fill>` cells mirror the per-value entries and concentrate on §9.1 cross-cluster framing decisions still pending curriculum-team verdict (Decisions 1-5).
+- Updated worksheet status banners (line 3 header banner + final-line footer banner) to reflect Session 74 §16 completion.
+
+**Decisions made this session:**
+
+- **Encode merge target inline in the `verdict` cell** as `merge → <target_canonical_key>` rather than adding an 8th column. Reasoning: the Next session contract explicitly listed 7 fields (canonical_key, surface_label, parent, filter_ui_tier, frequency, aliases, verdict); structured `merge_into` is preserved separately in per-value entries per §7 parsing convention. §16 is a presentation surface (not parser-reversible — existing scaffold says "do not hand-edit it (changes get clobbered on re-parse)"), so inline encoding satisfies the 7-column spec while preserving the merge relationship for human readers.
+- **Preserve fenced code block wrapper around the §16 table**. Reasoning: matches existing §16 scaffold convention and the §7 output-JSON-format example below it (both use triple-backtick fencing for "machine-output-like reference data"). The §16 table is the hand-off artifact to PR 5+ / PR 6+ consumers, parallel in role to JSON output shape.
+
+**Process notes / observations:**
+
+- Mechanical transcription was fast once per-value entries were fully populated — read each entry's labeled-line fields, extract the 6 structural fields (`frequency` comes from the per-entry header parens, e.g., `### 11.1. Asian (63)` → 63), encode the 7th (`verdict`) directly, append to the table. ~88 rows × 7 columns = 616 cell-extractions; all done in a single batch.
+- Two pieces of per-value metadata don't surface in §16: per-entry `<details>` Opus corpus-read blocks (stay in §11-§15 + §9.1 for curriculum-team scan) and `**Notes:**` free-form prose (likewise). §16 is structural-fields-only by design.
+- Existing scaffold's column count was 6 (no `verdict`); the Next session contract's 7-column spec adds `verdict` explicitly. Expanded the header to 7 columns matching the contract.
+- Sticky issue worth recording: §9.1.7 Indigenous Peoples has `verdict: merge` + `merge_into: indigenous`, but `indigenous` as a `canonical_key` is itself `<to_fill>` pending Decision 3. The §16 row encodes `merge → indigenous` faithfully; if Decision 3 lands on `native-american` or `indigenous-native-american` instead, this merge target needs updating along with the cluster-root + Indigenous canonical resolutions.
+- §9.1.1 cluster root and §9.1.4 Indigenous both surface `<to_fill>` for `canonical_key` + `surface_label` — these are the 2 rows in the table that require curriculum-team verdict before §16 becomes fully resolvable. All other 86 rows have all 6 structural fields populated (some with `<to_fill>` verdicts pending review, but key + label + parent + tier + frequency + aliases all filled).
+- Tier breakdown of 12 top / 19 sub / 57 internal reflects structural pre-handoff recommendations: ≥40-frequency hard threshold accounts for 5 cluster roots + 2 sub-regions (North American 83, Latin American 77); ≥40-frequency falls Mediterranean (39) just short but the call promotes it on cluster-defining grounds per the Session 68 / 70 precedent that established structural-role-overrides-frequency for sole-meaningful-sub-region cases (Mediterranean for European cluster; Levantine for Middle Eastern). Curriculum team may revisit; pre-handoff recommendation flags it explicitly.
+
+**What was NOT done this session:**
+
+- Cluster decision summary blocks remain TBD (curriculum-team writes at handoff per §5.3 convention) — not scoped for §16 transcription.
+- §9.2 multi-parent table unchanged from Session 70 (5/5 multi-parent canonicals resolved earlier).
+- §9.3 + §9.4 cross-cluster housekeeping unchanged (no new exceptions surfaced).
+- No audit signal register additions — §16 is mechanical transcription from per-value entries; no new corpus reads, no new audit signals.
+- Stage 1 status doc dashboard row / Last-updated banner / Current State prose paragraph remain unchanged pre-merge — these update at PR closeout (per the now-durable closeout-backfill pattern, 5 occurrences).
+- Foundation status doc Current State header / PRs-SHIPPED list / Branches block unchanged pre-merge — these also update at PR closeout.
+
+**Next:** dispatch pre-push code-reviewer agent on the §16 diff (14th Stage 1 catch-streak watch — Sessions 60-73 = 13 consecutive substantive catches; mechanical-transcription PRs tend to surface arithmetic / count-mismatch / structural-consistency findings — high-leverage catch surface). Then push branch + open PR + collect bot reviews + triage. PR closeout backfill (post-merge) lands the dashboard / banners / foundation-pointer updates per the now-durable pattern.
+
+---
+
 ### Session 72 — 2026-05-11 — §9.1 cross-cluster Diaspora & Indigenous Identities per-value entries populated
 
 **Branch:** `docs/stage1-heritage-cross-cluster-and-end-summary` (off `main` at `4b34aa0` — the Session 71 PR #488 closeout-backfill commit, downstream of PR #488 squash `76d5369`; matches contract's literal branch base since Session 71 closeout-backfill was direct-to-main per the now-durable pattern).
