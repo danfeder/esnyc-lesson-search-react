@@ -91,22 +91,22 @@ The Stage 1 work is split across multiple files; this block names which surface 
 - §12 Americas cluster: 22 per-value entries ✅
 - §13 African cluster: 10 per-value entries ✅
 - §14 European cluster: 14 per-value entries ✅
-- §9.2 multi-parent table: Egyptian + Moroccan + Spanish rows resolved from TBD to recommended primary parents ✅
+- §15 Middle Eastern cluster: 11 per-value entries ✅
+- §9.2 multi-parent table: Egyptian + Moroccan + Spanish + Persian + Israeli rows resolved from TBD to recommended primary parents ✅ (5/5 multi-parent canonicals complete)
 - Cluster framing blocks for all 5 regional clusters + cross-cluster (Session 60 scaffold) ✅
 - Header sections (purpose / methodology / hierarchy rules / verdict vocab / per-entry shape / cluster framing pattern / filter-UI tier conventions / parsing convention / Appendix A v3 baseline) ✅
 
 **What's NOT done:**
 
-- §15 Middle Eastern cluster: per-value entries TBD (~8 entries — 1 cluster root + 1 sub-region + 4 country-specifics + 2 kebab-case drift; per §15 framing block; plus v3-canonical-corpus-absent Lebanese/Syrian/Jordanian under Levantine per §12.18 Dominican precedent — likely 11 entries total).
-- §9 cross-cluster section per-value entries (diaspora / indigenous identities, remaining §9.2 multi-parent canonicals — Persian, Israeli): TBD.
+- §9.1 cross-cluster diaspora & indigenous identities per-value entries: TBD.
 - §16 end-summary canonical-vocab table: populates mechanically from filled entries; empty until per-value entries fill.
 - Cluster decision summary blocks: always TBD (curriculum team writes at handoff).
 
-**For next session (Stage 1 Session 70 = Middle Eastern cluster per-value fill):**
+**For next session (Stage 1 Session 71 = PR review cycle for Middle Eastern):**
 
-See `## Next session contract` block at top of doc for the authoritative summary (branch base `main` @ `f429fb0`, primary objective, framing decisions, must verify, do not do). Procedural detail (per-entry breakdown, Opus-dispatch plan) is captured in the contract's `Primary objective` + `Must verify` fields. NO hash backfill task at Session 70 start — Session 69 backfilled directly to main per Sessions 67 + 68/PR #485 precedent.
+See `## Next session contract` block at top of doc for the authoritative summary (branch `docs/stage1-heritage-middle-eastern-cluster`; primary objective = triage bot review findings, apply fix-ups, reach squash-merge; must verify; do not do). Session 72 = §9.1 cross-cluster diaspora & indigenous identities + §16 end-summary canonical-vocab table after Session 71 merges.
 
-**Stop-point heuristic confirmed Sessions 62 + 64 + 66 + 68:** one cluster per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) + African (10 entries, 2 Opus reads) + European (14 entries, 3 Opus reads) each fit the session boundary cleanly. Middle Eastern at ~11 entries (corpus + v3-corpus-absent + drift) is the smallest cluster — likely fits comfortably within a single session.
+**Stop-point heuristic confirmed Sessions 62 + 64 + 66 + 68 + 70:** one cluster per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) + African (10 entries, 2 Opus reads) + European (14 entries, 3 Opus reads) + Middle Eastern (11 entries, 2 Opus reads — smallest cluster) each fit the session boundary cleanly.
 
 ## Locked design decisions
 
