@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet — Execution Status
 
-**Last updated:** 2026-05-11 — Stage 1 status-tracking structure added (Current state dashboard + Next session contract + PR closeout checklist + Source-of-truth rules + audit signal register pointer; no cluster-content advance). Prior cluster-content session = Session 67 (PR #484 review cycle: round-1 fix-ups for 4 P3 findings [2-voice MEMORY.md citation + 3 Hermes doc-staleness nits] + round-2 default-reject for Claude's 3 forward-looking suggestions; PR #484 squash-merged 2026-05-11 02:54 UTC as `7894a47`; pre-push agent 0-findings on round-1 fix-up diff; next cluster-content session = Session 68 European cluster).
+**Last updated:** 2026-05-11 — PR #485 (Stage 1 status-tracking structure: dashboard + Next session contract + PR closeout checklist + Source-of-truth rules + audit signal register) squash-merged 2026-05-11 15:39 UTC as `b9f2cef`; closeout backfill applied directly on main per Session 67 precedent (user-authorized via Hermes-recommended post-merge closeout). Prior cluster-content session = Session 67 (PR #484 review cycle, squash `7894a47`); next cluster-content session = Session 68 European cluster, branches from `main` at `b9f2cef`.
 
 > **About this file.** Project-internal progress tracker for the Stage 1 heritage worksheet initiative. Peer to (not folded into) the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -28,7 +28,7 @@ Audit signal register (Stage 2 corpus cleanup / reviewer-validation intake): `do
 Fixed-shape orientation for the next session. Update at PR closeout (see PR closeout checklist below).
 
 - **Session:** Stage 1 Session 68 — European cluster per-value fill
-- **Branch base:** latest `main` after PR #485 merges. PR #484 squash `7894a47` is the pre-#485 anchor; replace this branch-base note with the PR #485 squash commit during PR #485 closeout. Branch as `docs/stage1-heritage-european-cluster`.
+- **Branch base:** `main` at `b9f2cef` (PR #485 squash-merge). Branch as `docs/stage1-heritage-european-cluster`.
 - **Primary objective:** Populate worksheet §14 with all European cluster per-value entries (~12 entries: 1 cluster root European 53 + 2 sub-regions [Mediterranean 39, Eastern European 3] + 6 country-specifics [Italian 24, Spanish 5, Ukrainian 3, Greek 2, Russian 1, Irish 2 NEW] + 3 kebab-case drift [`european` 1, `mediterranean` 2, `eastern-european` 1]); add the §9.2 multi-parent entry for Spanish in the cross-cluster section.
 - **Stop point:** End of European cluster (one cluster per session, per Sessions 62 / 64 / 66 stop-point heuristic). Do NOT start Middle Eastern §15.
 - **Expected files to touch:**
@@ -104,7 +104,7 @@ The Stage 1 work is split across multiple files; this block names which surface 
 
 > See `## Next session contract` near the top of this doc for the structured authoritative summary (session, branch base, primary objective, expected files, first task, must verify, do not do). The numbered list below carries the procedural detail (per-entry breakdown, framing decisions, Opus-dispatch plan).
 
-1. Branch off latest `main` after PR #485 merges. PR #484 squash `7894a47` is the pre-#485 anchor; replace this branch-base note with the PR #485 squash commit during PR #485 closeout. NO PR #484 hash backfill needed in Session 68 — Session 67 did that directly on main (precedent break from Sessions 64/66's "first commit on next session's branch" pattern; user explicitly authorized in Session 67).
+1. Branch off `main` at the PR #485 squash-merge commit (`b9f2cef`). NO hash backfill task in Session 68 — Session 67 backfilled PR #484 (`7894a47`) on main, and PR #485 closeout did its own backfill on main (precedent: hygiene / cleanup-only sessions push directly to main; user-authorized in Session 67 and again at PR #485 closeout via Hermes-recommended post-merge closeout).
 2. Populate European cluster's per-value entries per §14 framing block. Total: **~12 entries**:
    - Cluster root (1): European (53)
    - Sub-regions (2): Mediterranean (39, v3 — heavier than cluster root), Eastern European (3, v3)
