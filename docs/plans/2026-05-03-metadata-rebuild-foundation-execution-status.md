@@ -18,7 +18,7 @@
   - Audit signal register: `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-audit-signal-register.md` — 50 open Stage 2 signals (4 ASI + 6 AME + 8 AFR + 14 EUR + 9 ME + 9 X).
 - **Concepts worksheet (active 2026-05-12+):**
   - Stage 1 execution status: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-execution-status.md` — project-internal progress tracker. Session 77 (2026-05-12) locked 15 design decisions `D-C1`-`D-C15` covering structural shape (concept-first, not subject-first), per-entry shape, and methodology (hybrid Opus reads, 3 frequency-tier PRs, single curriculum-team pass). Concept-first restructure was informed by parallel-subagent schema-simplification investigation reports at `docs/plans/2026-05-12-academic-concepts-shape-investigation.md` + `2026-05-12-academic-concepts-shape-simplification-report.md`. **Read this for Stage 1 concepts next-session orientation; this foundation-phase status doc only carries the pointer.**
-  - Worksheet: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` — to be created Session 78 (scaffold).
+  - Worksheet: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` — Session 78 PR #493 scaffold (header sections §1–§10 + empty tier skeletons §11/§12/§13 + Appendix A v3 baseline). Per-value entries for §11/§12/§13 land Sessions 79/80/81; curriculum-team fill Session 82+.
   - Audit signal register: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-audit-signal-register.md` — to be created when first concept-derived Stage 2 signal surfaces (probably Session 79+); `CON-NN` prefix.
 
 **Foundation-phase substrate live in PROD — 6 of 6+ PRs SHIPPED:**

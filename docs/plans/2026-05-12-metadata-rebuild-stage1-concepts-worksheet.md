@@ -20,7 +20,7 @@ The Stage 1 concepts worksheet is the curriculum-team-facing artifact for **cano
 - What surface label the user-facing UI shows for it
 - What near-duplicate aliases (case-mixing drift, granularity duplicates, semantic near-twins) collapse into it during the Stage 2 corpus re-tag migration
 - Which current subject(s) it appears under, and which subject(s) it canonically lives under post-cleanup
-- Whether the concept name is string-identical to a `thematicCategories` value (flagged for separate concept↔theme reconciliation)
+- Whether the concept name shares a vocabulary with a `thematicCategories` value under case normalization (flagged for separate concept↔theme reconciliation)
 
 The output is a **locked canonical concepts vocabulary** that downstream consumers operate on:
 
@@ -182,7 +182,7 @@ Each per-value entry is a labeled-line block. Format (10 fields locked per D-C7)
 
 ### Field-by-field semantics
 
-- **`canonical_key`** (heading) — kebab-case lowercase slug derived from `canonical_label`. Example: `plant_parts`, `plant_identification`. Underscores between words inside the slug; hyphen-vs-underscore convention to be locked at parser-write time (Session 79 prep).
+- **`canonical_key`** (heading) — lowercase slug derived from `canonical_label`. Example: `plant_parts`, `plant_identification`. Examples use underscore-separated words (`snake_case`), but the final hyphen-vs-underscore convention is locked at parser-write time (Session 79 prep) since downstream consumers may prefer one or the other.
 - **`canonical_label`** — Title Case display string the UI shows. Example: `Plant Parts`, `Plant Identification`.
 - **`verdict`** — one of `keep | merge | new | drop | <to_fill>` (see §3).
 - **`frequency`** — total lesson-appearances in the active corpus. Dual-count format `5 as-tagged, 8 if aliases merge` when `merge_aliases` is non-empty (per D-C11) — surfaces the curriculum team's actual decision-relevant numbers.
@@ -190,7 +190,7 @@ Each per-value entry is a labeled-line block. Format (10 fields locked per D-C7)
 - **`recommended_primary_subject`** — single subject string. The subject this concept canonically lives under after cleanup. Most entries are single-subject; cross-subject concepts surface as multi-subject in `current_subjects` and pick one in `recommended_primary_subject`.
 - **`recommended_secondary_subjects`** — comma-separated list, or `<none>`. Used when a concept legitimately appears as a lens in multiple subjects (e.g., `observation` may be primary Science and secondary Arts). Captures the genuine cross-subject signal at a coarser grain than per-lesson tagging (per D-C9 — no `per_lesson_override_signal` field).
 - **`merge_aliases`** — list of `(corpus_string, count)` tuples for near-duplicates that collapse into this canonical. Pre-merge per-subject distribution stays in `current_subjects`; the post-merge total goes in `frequency` (per D-C11). For `merge`-verdict entries, replace this field with `merge_into: <canonical_key>` pointing at the canonical target.
-- **`theme_overlap`** — `none` (default) or `YES — <adjudication notes>`. Flagged when the concept's canonical string is identical to a `thematicCategories` canonical string. Three known cases: `ecosystems`, `food systems`, `plant growth` (per §6). Per D-C5, adjudication (which side keeps it; whether both keep with cross-reference) is deferred to the themes worksheet / D4 canonicalization migration; the flag preserves the signal.
+- **`theme_overlap`** — `none` (default) or `YES — <adjudication notes>`. Flagged when the concept's canonical string matches a `thematicCategories` canonical string under case normalization. Three known cases: `ecosystems` (exact-string match — concepts side `ecosystems`, themes side `Ecosystems`; collide under `lower()`), `food systems` (concepts side `food systems`, themes side `Food Systems`), `plant growth` (concepts side `plant growth`, themes side `Plant Growth`) — per §6. Per D-C5, adjudication (which side keeps it; whether both keep with cross-reference) is deferred to the themes worksheet / D4 canonicalization migration; the flag preserves the signal.
 - **`claude_notes`** — one-paragraph pre-handoff recommendation from Claude. Captures: why this verdict is recommended, where the corpus signal lives, any ambiguity worth flagging. Curriculum team reads this as a starting point, not a constraint.
 - **`curriculum_notes`** — `<to_fill>` placeholder for curriculum-team free-form notes. May land empty if the entry needs no notes.
 
@@ -213,14 +213,14 @@ For curriculum-team fill:
 
 For Claude pre-population (Sessions 79–81):
 
-- `canonical_key` — generated from `canonical_label` (kebab-case lowercase, underscore-separated).
+- `canonical_key` — generated from `canonical_label` (lowercase, underscore-separated as `snake_case`; final separator convention locked at parser-write time per §4).
 - `canonical_label` (proposal) — from v3 baseline OR best-fit Title Case from corpus drift cluster.
 - `frequency` — total lesson-appearances in the active corpus (from Session 78 TEST DB probe, refreshed at fill time if corpus drifts).
 - `current_subjects` — verbatim from probe data.
 - `recommended_primary_subject` (proposal) — first-principles from `current_subjects` highest-count subject and concept semantics.
 - `recommended_secondary_subjects` (proposal) — for cross-subject concepts only; `<none>` otherwise.
 - `merge_aliases` (proposal) — all observed near-duplicate strings from probe data + Opus-corpus-read evidence for ambiguous cases.
-- `theme_overlap` — flagged for the 3 string-identical concept↔theme overlaps.
+- `theme_overlap` — flagged for the 3 case-normalized concept↔theme overlaps.
 - `claude_notes` (proposal) — one-paragraph recommendation.
 
 ### Parser-compatible format
@@ -273,15 +273,15 @@ This explicit framing is provided as **explicit permission to spend attention as
 
 ### The known overlaps
 
-Three concept-vocab strings are **string-identical** to `thematicCategories` canonical strings:
+Three concept-vocab strings **share a vocabulary** with `thematicCategories` canonical strings under case normalization. Only `ecosystems` is exact-string identical; the other two overlap once both sides are lowercased (themes vocabulary uses Title Case canonical strings — `Ecosystems`, `Food Systems`, `Plant Growth` — per `src/utils/filterDefinitions.ts`).
 
-| String | As `academicConcepts` (Subject) | As `thematicCategories` |
+| Concepts string (as `academicConcepts`) | Themes string (as `thematicCategories`) | Match type |
 | --- | --- | --- |
-| `ecosystems` | Science (73 appearances; canonical so far) | Canonical thematicCategory (count varies; verified at themes worksheet time) |
-| `food systems` | Social Studies (1 appearance) | Canonical thematicCategory |
-| `plant growth` | Science (9 appearances) | Canonical thematicCategory |
+| `ecosystems` — Science (73 appearances; canonical so far) | `Ecosystems` | Exact-string under `lower()`; case-normalized match |
+| `food systems` — Social Studies (1 appearance) | `Food Systems` | Case-normalized match |
+| `plant growth` — Science (9 appearances) | `Plant Growth` | Case-normalized match |
 
-These overlaps surfaced from Session 77 TEST DB probes and are likely artifacts of the v3 batch-tagging run not enforcing a hard concept-vs-theme boundary.
+These overlaps surfaced from Session 77 TEST DB probes and are likely artifacts of the v3 batch-tagging run not enforcing a hard concept-vs-theme boundary. The themes-side vocabulary count and corpus distribution will be verified at themes worksheet time.
 
 ### How the worksheet handles them (per D-C5)
 
@@ -516,9 +516,9 @@ Cross-referenced from A.1–A.6 above; this list is informational, surfacing the
 - `preservation` — Science (3), Social Studies (1)
 - `storytelling` — Literacy/ELA (75), Arts (1)
 
-### A.8 Concept↔theme string-identical overlaps (3 strings)
+### A.8 Concept↔theme case-normalized overlaps (3 strings)
 
-Concept strings string-identical to `thematicCategories` canonical strings. Per §6 + D-C5, these get a `theme_overlap: YES` flag on their per-value entries; adjudication defers to the themes worksheet / D4 canonicalization migration.
+Concept strings sharing a vocabulary with `thematicCategories` canonical strings under case normalization. Themes side uses Title Case (`Ecosystems`, `Food Systems`, `Plant Growth`); concepts side is lowercase — only `ecosystems` is exact-string identical, the other two collide under `lower()`. Per §6 + D-C5, these get a `theme_overlap: YES` flag on their per-value entries; adjudication defers to the themes worksheet / D4 canonicalization migration.
 
 - `ecosystems` — Science (73)
 - `food systems` — Social Studies (1)
