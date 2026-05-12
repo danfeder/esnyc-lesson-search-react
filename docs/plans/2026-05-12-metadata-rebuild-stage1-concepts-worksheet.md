@@ -692,7 +692,172 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - claude_notes: Canonical Social Studies content tag for lessons engaging with regional/national/global geography — typically tied to "where this food/ingredient comes from" framing. No cross-subject signal and no near-duplicate drift in the v3 baseline. Related concepts `map reading` (Social Studies, 1) and `trade routes` (Social Studies, 16) are distinguishably narrower practices kept as separate canonicals. Recommend keep as canonical with surface label "Geography".
 - curriculum_notes: <to_fill>
 
-<!-- Phase 2b + 2c entries append below in this same PR (Session 79). -->
+<!-- Per-value entries — Phase 2b (Session 79; entries 12–22 of 32). -->
+
+### `decomposition`
+
+- canonical_label: Decomposition
+- verdict: <to_fill>
+- frequency: 47 appearances
+- current_subjects: Science (47)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering composting, organic-matter breakdown, microbe activity, and nutrient cycling in soil — typically tied to school-garden compost programs. No cross-subject signal; no near-duplicate drift in the v3 baseline. Related concept `microorganisms` (Science, 3) is distinguishably narrower (microbe biology) kept as separate canonical. Recommend keep as canonical with surface label "Decomposition".
+- curriculum_notes: <to_fill>
+
+### `soil_science`
+
+- canonical_label: Soil Science
+- verdict: <to_fill>
+- frequency: 44 appearances
+- current_subjects: Science (44)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering soil composition, soil health, soil layers, soil organisms, and soil-plant interactions. Related concept `soil` (Science, 1) is a likely long-tail alias candidate (deferred to Session 81 evaluation); too thin a singleton to confirm direction now. Recommend keep as canonical with surface label "Soil Science".
+- curriculum_notes: <to_fill>
+
+### `life_cycles`
+
+- canonical_label: Life Cycles
+- verdict: <to_fill>
+- frequency: 43 as-tagged, 45 if aliases merge
+- current_subjects: Science (43)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("growing cycles", 1), ("growth patterns", 1)]
+- theme_overlap: none
+- claude_notes: Dominant canonical (43 lessons) spanning the full life-cycle territory ESYNYC teaches: plant life cycles (seed-saving, seed-starting, seasonal growing, "Anywhere Farm"), animal life cycles (butterfly metamorphosis, bees in "Bee Habitat"), and integrated plant-and-animal lessons. The two long-tail singletons in this cluster are alias drift: `growing cycles` (Spring and Summer Plants — origins of seasonal plants) and `growth patterns` (Up, Down and Around — how plants grow in different directions) are both about plant development over time, which the `life_cycles` canonical already covers. No semantic distinction beyond label phrasing.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (7 lessons across cluster members)</summary>
+
+**`life cycles` (43 total, 5 sampled):**
+
+- `1QNvw2_DVlrd8079Jwgyfb8jQzjho1Ut5` **Animal Life Cycles and Adaptations**: "Students will learn about animal life cycles and adaptations, create animal adaptation cards, and examine butterfly life cycles and adaptations."
+- `1WKXLADkrfgZ7462f3JKfHNV-trHtuNtmo3i6Gq-PqeA` **Butterflies**: "Students will learn about the Butterfly Life Cycle and a little bit about butterflies generally (what do they eat, where do they live)…"
+- `1ejnMz5mRDOi4NIPakPgEpKCKpnPz7yx-SAg07-FlTr4` **Edible Flower Collages & Salad**: "Students will collect a variety of natural textures and colors in the garden, explore the life cycles in plants and animals, and make an edible flower collage and salad."
+- `1k7KqowpILVoRe-X0sOiOtcwJyC8_fJ17nwLu-DW5_r4` **October Seed Saving**: "Students will understand the importance of seed saving throughout history, and they will learn how to save their own seeds from the garden."
+- `1NF_sOLKR8um-3T9Eck-_i6j-GEwv0X58TqqJk2Qu350` **Expert's Guide to Gardening: Seed Starting**: "Students will start seeds indoors. Students will then write and illustrate a how-to guide about seed starting."
+
+**`growing cycles` (1, all surveyed):**
+
+- `1zQSzYL0c5Txt5RPNtL4RRU0xSmxuA4VdR8YVHcPcUAY` **Spring and Summer Plants** (tagged-as: `growing cycles`): "Students will learn about the origins of two plants: one typically grown in the spring and another that is typically grown in the summer. Students will understand why each plant is grown during different seasons." — Plant-developmental subset of life cycles.
+
+**`growth patterns` (1, all surveyed):**
+
+- `1jKHsDt0dglFBOn5eWUszoH9nGjpBqRrbAompJYr36tk` **Up, Down and Around** (tagged-as: `growth patterns`): "Students read *Up, Down and Around* and then will cycle through the greenhouse to identify all the different ways plants, fruits and vegetables grow." — Plant-developmental subset of life cycles.
+
+</details>
+
+### `plant_needs`
+
+- canonical_label: Plant Needs
+- verdict: <to_fill>
+- frequency: 41 appearances
+- current_subjects: Science (41)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering what plants require to live and grow (sun, water, soil, air, nutrients). High-frequency standalone with no near-duplicate drift in the v3 baseline. Related concept `plant nutrition` (Science, 2) is distinguishably narrower (specifically nutritional uptake) kept as separate canonical. Recommend keep as canonical with surface label "Plant Needs".
+- curriculum_notes: <to_fill>
+
+### `immigration_stories`
+
+- canonical_label: Immigration Stories
+- verdict: <to_fill>
+- frequency: 34 appearances
+- current_subjects: Social Studies (34)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Social Studies content tag for lessons engaging immigrant food/family/cultural-transmission narratives — typically paired with `cultural traditions` (e.g., Food Roots Lesson, Hummus and Pita, food-worker history lessons). High-frequency single-subject home; no cross-subject signal and no near-duplicate drift. Recommend keep as canonical with surface label "Immigration Stories".
+- curriculum_notes: <to_fill>
+
+### `healthy_choices`
+
+- canonical_label: Healthy Choices
+- verdict: <to_fill>
+- frequency: 30 appearances
+- current_subjects: Health (30)
+- recommended_primary_subject: Health
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Health content tag for lessons engaging student decision-making about food and lifestyle (snack choices, water-vs-sugary-drinks, balanced plates, food-marketing analysis). High-frequency single-subject home; no cross-subject signal. Related concept `hydration` (Health, 1) is distinguishably narrower (specifically water intake) kept as separate canonical. Recommend keep as canonical with surface label "Healthy Choices".
+- curriculum_notes: <to_fill>
+
+### `pollinators`
+
+- canonical_label: Pollinators
+- verdict: <to_fill>
+- frequency: 28 appearances
+- current_subjects: Science (28)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering bees, butterflies, hummingbirds, and pollination biology — typically tied to "bee habitat" and "pollinator gardens" lessons. No cross-subject signal; no near-duplicate drift in the v3 baseline. Distinct from related concepts `beneficial insect identification` (Science, 1) — more specific entomology lens — and `biodiversity` (Science, 6 + Social Studies, 1). Recommend keep as canonical with surface label "Pollinators".
+- curriculum_notes: <to_fill>
+
+### `counting`
+
+- canonical_label: Counting
+- verdict: <to_fill>
+- frequency: 20 appearances
+- current_subjects: Math (20)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Math content tag for early-grade counting and number-recognition activities — typically counting seeds, vegetables, plates, or recipe ingredients in PK–2 lessons. Related concepts `tallying` (Math, 1) and `categorization` (Math, 1) are distinguishably different early-Math practices, kept as separate canonicals. Recommend keep as canonical with surface label "Counting".
+- curriculum_notes: <to_fill>
+
+### `data_collection`
+
+- canonical_label: Data Collection
+- verdict: <to_fill>
+- frequency: 19 appearances
+- current_subjects: Math (19)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Math content tag for data-collection practices — typically recording plant growth measurements, taste-test responses, or class poll results. Related concepts `graphing` (Math, 3) and `sorting` (Math, 1) are downstream data-handling steps, kept as separate canonicals. Recommend keep as canonical with surface label "Data Collection".
+- curriculum_notes: <to_fill>
+
+### `water_cycles`
+
+- canonical_label: Water Cycles
+- verdict: <to_fill>
+- frequency: 17 appearances
+- current_subjects: Science (17)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering the water cycle (evaporation, condensation, precipitation, runoff) — typically tied to garden-irrigation and weather-pattern lessons. No cross-subject signal; no near-duplicate drift. Note: corpus label is plural ("water cycles") — preserved as canonical surface label per worksheet convention of mirroring the dominant corpus form. Curriculum team may prefer singular "Water Cycle" given the singular phenomenon; flagged as a low-stakes surface-label call.
+- curriculum_notes: <to_fill>
+
+### `trade_routes`
+
+- canonical_label: Trade Routes
+- verdict: <to_fill>
+- frequency: 16 appearances
+- current_subjects: Social Studies (16)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Social Studies content tag for lessons engaging historical trade and food-origin geography — typically tied to "where this ingredient came from" mapping (Silk Road, Columbian Exchange, transatlantic food movements). Closely related to `geography` (Social Studies, 56) but distinguishably narrower (specifically trade-route history). Recommend keep as canonical with surface label "Trade Routes".
+- curriculum_notes: <to_fill>
+
+<!-- Per-value entries — Phase 2c (Session 79; entries 23–32 of 32) append below. -->
 
 ---
 
