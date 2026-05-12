@@ -1238,7 +1238,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Peruvian`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `keep`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (Appendix A Latin American lists Mexican / Dominican / Puerto Rican / Salvadoran only). 2 corpus lessons. Candidate for `new` verdict — Peru is the largest South American country by population and culinary tradition; corpus presence well-supported. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american`.
@@ -1251,7 +1251,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Brazilian`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `keep`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Brazil is the largest country in South America by population and area. Note: Brazil is Portuguese-speaking, not Spanish-speaking; "Latin American" parent is the v3-baseline-derived placement but Brazilian cultural identity sits adjacent to Hispanic Latin American rather than within it. `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american` (which would be a more natural geographic fit).
@@ -1264,7 +1264,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Ecuadorian`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `keep`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Ecuador is part of Andean South American culinary tradition. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american`.
@@ -1277,7 +1277,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Guyanese`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `keep`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Guyana is geographically South American but culturally distinct (Anglophone, large Indo-Caribbean and Afro-Guyanese populations; culinary traditions overlap with Caribbean). The §12.4 Caribbean corpus read identifies the 1 Guyanese-tagged lesson as also tagged `Caribbean` — empirical multi-parent signal similar to Puerto Rican. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Cluster decision: parent could be `latin-american` (v3-baseline-style), `caribbean` (geographic-cultural fit), `south-american` (geographic fit if §12 framing #3's NEW sub-region candidate accepted), or multi-parent. Curriculum team call.
