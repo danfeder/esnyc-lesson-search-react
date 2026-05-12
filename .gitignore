@@ -45,6 +45,10 @@ pids
 coverage/
 *.lcov
 
+# Python bytecode (for scripts/*.py utilities)
+__pycache__/
+*.pyc
+
 # nyc test coverage
 .nyc_output
 
