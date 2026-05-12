@@ -100,7 +100,7 @@ def strip_backticks(text: str) -> str:
     return text
 
 
-def parse_value(field_name: str, raw: str) -> object:
+def parse_value(field_name: str, raw: str) -> str | None | list[str]:
     cleaned = strip_inline_comments(raw)
     if field_name == "aliases":
         # Aliases are always backtick-wrapped JSON arrays per §4 convention.
@@ -148,7 +148,7 @@ def extract_frequency(heading_rest: str) -> int:
 
 def parse_worksheet(path: Path) -> list[Entry]:
     entries: list[Entry] = []
-    lines = path.read_text().splitlines()
+    lines = path.read_text(encoding="utf-8").splitlines()
 
     current: Entry | None = None
     for lineno, line in enumerate(lines, start=1):
@@ -272,14 +272,25 @@ def render_table(entries: list[Entry]) -> str:
 
 
 def verify_invariants(entries: list[Entry]) -> list[str]:
-    """Return a list of human-readable invariant-violation messages (empty if clean)."""
+    """Return a list of human-readable invariant-violation messages (empty if clean).
+
+    Expected per-cluster, tier, and verdict distributions are calibrated to the
+    Session 75 / PR #491 curriculum-team-fill state of the worksheet (88 rows).
+    Update the expected_* dicts here when the worksheet evolves (new entries,
+    verdict reclassifications, tier promotions).
+    """
     problems: list[str] = []
+
+    expected_counts = {"11": 18, "12": 22, "13": 10, "14": 14, "15": 11, "9.1": 13}
+    expected_tier_distribution = {"top": 12, "sub": 19, "internal": 57}
+    expected_verdict_distribution = {"keep": 51, "merge": 17, "new": 20}
+    allowed_tiers = set(expected_tier_distribution)
+    allowed_verdicts = set(expected_verdict_distribution) | {"<to_fill>"}
 
     by_cluster: dict[str, list[Entry]] = {}
     for entry in entries:
         by_cluster.setdefault(entry.cluster, []).append(entry)
 
-    expected_counts = {"11": 18, "12": 22, "13": 10, "14": 14, "15": 11, "9.1": 13}
     for cluster, expected in expected_counts.items():
         actual = len(by_cluster.get(cluster, []))
         if actual != expected:
@@ -290,14 +301,43 @@ def verify_invariants(entries: list[Entry]) -> list[str]:
     if len(entries) != 88:
         problems.append(f"total entries: expected 88, found {len(entries)}")
 
-    counts = {"keep": 0, "merge": 0, "new": 0, "drop": 0, "split": 0, "<to_fill>": 0}
+    tier_counts: dict[str, int] = {}
+    verdict_counts: dict[str, int] = {}
     for entry in entries:
-        v = entry.verdict or "<to_fill>"
-        counts[v] = counts.get(v, 0) + 1
-    if counts.get("<to_fill>", 0) != 0:
+        tier = entry.filter_ui_tier or "<to_fill>"
+        tier_counts[tier] = tier_counts.get(tier, 0) + 1
+        if tier not in allowed_tiers:
+            problems.append(
+                f"{entry.cluster}.{entry.idx}: unknown filter_ui_tier {tier!r}"
+                f" (allowed: {sorted(allowed_tiers)})"
+            )
+
+        verdict = entry.verdict or "<to_fill>"
+        verdict_counts[verdict] = verdict_counts.get(verdict, 0) + 1
+        if verdict not in allowed_verdicts:
+            problems.append(
+                f"{entry.cluster}.{entry.idx}: unknown verdict {verdict!r}"
+                f" (allowed: {sorted(allowed_verdicts)})"
+            )
+
+    if verdict_counts.get("<to_fill>", 0) != 0:
         problems.append(
-            f"verdict <to_fill>: expected 0 unfilled cells, found {counts['<to_fill>']}"
+            f"verdict <to_fill>: expected 0 unfilled cells, found {verdict_counts['<to_fill>']}"
         )
+
+    for tier, expected in expected_tier_distribution.items():
+        actual = tier_counts.get(tier, 0)
+        if actual != expected:
+            problems.append(
+                f"tier {tier!r}: expected {expected} entries, found {actual}"
+            )
+
+    for verdict, expected in expected_verdict_distribution.items():
+        actual = verdict_counts.get(verdict, 0)
+        if actual != expected:
+            problems.append(
+                f"verdict {verdict!r}: expected {expected} entries, found {actual}"
+            )
 
     # Drift-entry §7 alias_map identity invariant: a merge entry's canonical_key
     # equals its merge_into target's canonical_key (drift literals only).
@@ -366,7 +406,13 @@ def main() -> int:
     table = render_table(entries)
 
     if args.apply:
-        content = args.worksheet.read_text()
+        if problems:
+            print(
+                "error: refusing to apply with invariant failures (see above).",
+                file=sys.stderr,
+            )
+            return 1
+        content = args.worksheet.read_text(encoding="utf-8")
         # The §16 table block lives between the introductory ``` fence and the
         # closing ``` fence. Replace only the fenced block to preserve preamble
         # and trailing prose.
@@ -383,7 +429,7 @@ def main() -> int:
             return 2
         replacement = match.group(1) + table + match.group(3)
         new_content = content[: match.start()] + replacement + content[match.end():]
-        args.worksheet.write_text(new_content)
+        args.worksheet.write_text(new_content, encoding="utf-8")
         print(f"Replaced §16 table in {args.worksheet}", file=sys.stderr)
     else:
         print(table)
