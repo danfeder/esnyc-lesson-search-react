@@ -1,6 +1,6 @@
 # Stage 1 Heritage Worksheet
 
-> **Status: PRE-HANDOFF (last update Session 72, 2026-05-11).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries: Asian cluster ✅ Session 62 (§11); Americas cluster ✅ Session 64 (§12); African cluster ✅ Session 66 (§13); European cluster ✅ Session 68 (§14); Middle Eastern cluster ✅ Session 70 (§15); cross-cluster diaspora & indigenous identities ✅ Session 72 (§9.1) — all 5 regional clusters + cross-cluster §9.1 complete; end-summary canonical-vocab table (§16) TBD Session 74 before curriculum-team handoff.** §9.2 multi-parent table fully complete (5/5 canonicals resolved). §9.3 + §9.4 cross-cluster housekeeping complete. End-summary canonical-vocab table fills only as per-value verdicts close.
+> **Status: PRE-HANDOFF (last update Session 74, 2026-05-11).** Header sections (purpose, methodology, hierarchy rules, verdict vocabulary, per-entry shape, cluster framing pattern, filter-UI tier conventions, parsing convention) are complete and load-bearing. Per-cluster framing blocks contain corpus distribution data from the Session 59 query. **Per-value entries: Asian cluster ✅ Session 62 (§11); Americas cluster ✅ Session 64 (§12); African cluster ✅ Session 66 (§13); European cluster ✅ Session 68 (§14); Middle Eastern cluster ✅ Session 70 (§15); cross-cluster diaspora & indigenous identities ✅ Session 72 (§9.1) — all 5 regional clusters + cross-cluster §9.1 complete. End-summary canonical-vocab table ✅ Session 74 (§16, 88 rows mechanically transcribed; this is the final substantive worksheet work pre-curriculum-team-handoff).** §9.2 multi-parent table fully complete (5/5 canonicals resolved). §9.3 + §9.4 cross-cluster housekeeping complete.
 >
 > **Owner during scaffold/pre-handoff phase:** project maintainer (Claude + user). **Owner at handoff:** ESYNYC curriculum team.
 >
@@ -2030,10 +2030,103 @@ The following block is a **template** showing the shape of a cluster section. Pe
 
 **Mechanically regenerated** from parsed per-value entries (§11-§15) and the cross-cluster diaspora cluster (§9.1). Do not hand-edit.
 
+**Row count:** 88 total — Asian §11 (18) + Americas §12 (22) + African §13 (10) + European §14 (14) + Middle Eastern §15 (11) + cross-cluster §9.1 (13).
+
+**Columns:** `canonical_key | surface_label | parent | filter_ui_tier | frequency | aliases | verdict`. Drift entries' `surface_label` is the corpus literal (lowercase kebab-case) while their `canonical_key` matches the merge target's slug per §7 alias_map identity-shaped entries; consumers MUST filter on `verdict in ('keep', 'new')` BEFORE keying canonical vocabulary by `canonical_key` to avoid drift / canonical collision (§7 parser invariant). The `verdict` cell encodes any merge target inline as `merge → <target_canonical_key>`; underlying per-value entries carry the structured `merge_into` field separately (§7 parsing convention).
+
+**`<to_fill>`** placeholders mirror the per-value entries — they cover §9.1 cross-cluster framing decisions still pending curriculum-team verdict (cluster-root `canonical_key` + `surface_label` per Decision 1; Indigenous `canonical_key` + `surface_label` per Decision 3; per-value `parent` reroute targets dependent on the cluster-root resolution).
+
 ```
-| canonical_key | surface_label | parent | filter_ui_tier | frequency | aliases |
-|---|---|---|---|---|---|
-| TBD — populated when per-value entries fill |
+| canonical_key | surface_label | parent | filter_ui_tier | frequency | aliases | verdict |
+|---|---|---|---|---|---|---|
+| asian | Asian | null | top | 63 | [] | <to_fill> |
+| east-asian | East Asian | asian | sub | 35 | [] | <to_fill> |
+| south-asian | South Asian | asian | sub | 15 | [] | <to_fill> |
+| southeast-asian | Southeast Asian | asian | sub | 5 | [] | <to_fill> |
+| central-asian | Central Asian | asian | sub | 4 | [] | <to_fill> |
+| chinese | Chinese | east-asian | sub | 15 | [] | <to_fill> |
+| japanese | Japanese | east-asian | sub | 9 | [] | <to_fill> |
+| indian | Indian | south-asian | sub | 7 | [] | <to_fill> |
+| pakistani | Pakistani | south-asian | sub | 4 | [] | <to_fill> |
+| uzbek | Uzbek | central-asian | sub | 4 | [] | <to_fill> |
+| korean | Korean | east-asian | sub | 3 | [] | <to_fill> |
+| vietnamese | Vietnamese | southeast-asian | internal | 2 | [] | <to_fill> |
+| sri-lankan | Sri Lankan | south-asian | internal | 1 | [] | <to_fill> |
+| malaysian | Malaysian | southeast-asian | internal | 1 | [] | <to_fill> |
+| taiwanese | Taiwanese | east-asian | internal | 1 | [] | <to_fill> |
+| asian | asian | null | internal | 1 | [] | merge → asian |
+| east-asian | east-asian | asian | internal | 2 | [] | merge → east-asian |
+| south-asian | south-asian | asian | internal | 3 | [] | merge → south-asian |
+| americas | Americas | null | top | 170 | [] | <to_fill> |
+| north-american | North American | americas | top | 83 | [] | <to_fill> |
+| latin-american | Latin American | americas | top | 77 | [] | <to_fill> |
+| caribbean | Caribbean | americas | sub | 17 | [] | <to_fill> |
+| mexican | Mexican | latin-american | sub | 38 | [] | <to_fill> |
+| puerto-rican | Puerto Rican | latin-american | sub | 4 | [] | <to_fill> |
+| salvadoran | Salvadoran | latin-american | internal | 2 | [] | <to_fill> |
+| honduran | Honduran | latin-american | internal | 2 | [] | <to_fill> |
+| cuban | Cuban | caribbean | internal | 2 | [] | <to_fill> |
+| jamaican | Jamaican | caribbean | internal | 2 | [] | <to_fill> |
+| peruvian | Peruvian | latin-american | internal | 2 | [] | <to_fill> |
+| brazilian | Brazilian | latin-american | internal | 1 | [] | <to_fill> |
+| ecuadorian | Ecuadorian | latin-american | internal | 1 | [] | <to_fill> |
+| guyanese | Guyanese | latin-american | internal | 1 | [] | <to_fill> |
+| central-american | Central American | americas | internal | 1 | [] | <to_fill> |
+| south-american | South American | americas | internal | 1 | [] | <to_fill> |
+| southern-united-states | Southern United States | north-american | internal | 1 | [] | <to_fill> |
+| dominican | Dominican | latin-american | internal | 0 | [] | <to_fill> |
+| americas | americas | null | internal | 1 | [] | merge → americas |
+| north-american | north-american | americas | internal | 13 | [] | merge → north-american |
+| latin-american | latin-american | americas | internal | 4 | [] | merge → latin-american |
+| caribbean | caribbean | americas | internal | 1 | [] | merge → caribbean |
+| african | African | null | top | 41 | [] | <to_fill> |
+| west-african | West African | african | sub | 15 | [] | <to_fill> |
+| north-african | North African | african | sub | 2 | [] | <to_fill> |
+| east-african | East African | african | sub | 1 | [] | <to_fill> |
+| nigerian | Nigerian | west-african | internal | 2 | [] | <to_fill> |
+| egyptian | Egyptian | north-african | internal | 2 | [] | <to_fill> |
+| kenyan | Kenyan | east-african | internal | 2 | [] | <to_fill> |
+| ethiopian | Ethiopian | east-african | internal | 1 | [] | <to_fill> |
+| moroccan | Moroccan | north-african | internal | 1 | [] | <to_fill> |
+| african | african | null | internal | 1 | [] | merge → african |
+| european | European | null | top | 53 | [] | <to_fill> |
+| mediterranean | Mediterranean | european | top | 39 | [] | <to_fill> |
+| eastern-european | Eastern European | european | sub | 3 | [] | <to_fill> |
+| italian | Italian | mediterranean | sub | 24 | [] | <to_fill> |
+| spanish | Spanish | mediterranean | internal | 5 | [] | <to_fill> |
+| ukrainian | Ukrainian | eastern-european | internal | 3 | [] | <to_fill> |
+| greek | Greek | mediterranean | internal | 2 | [] | <to_fill> |
+| irish | Irish | european | internal | 2 | [] | <to_fill> |
+| russian | Russian | eastern-european | internal | 1 | [] | <to_fill> |
+| french | French | european | internal | 0 | [] | <to_fill> |
+| polish | Polish | eastern-european | internal | 0 | [] | <to_fill> |
+| european | european | null | internal | 1 | [] | merge → european |
+| mediterranean | mediterranean | european | internal | 2 | [] | merge → mediterranean |
+| eastern-european | eastern-european | european | internal | 1 | [] | merge → eastern-european |
+| middle-eastern | Middle Eastern | null | top | 23 | [] | <to_fill> |
+| levantine | Levantine | middle-eastern | top | 14 | [] | <to_fill> |
+| yemeni | Yemeni | middle-eastern | internal | 3 | [] | <to_fill> |
+| persian | Persian | middle-eastern | internal | 1 | [] | <to_fill> |
+| palestinian | Palestinian | levantine | internal | 1 | [] | <to_fill> |
+| israeli | Israeli | middle-eastern | internal | 1 | [] | <to_fill> |
+| lebanese | Lebanese | levantine | internal | 0 | [] | <to_fill> |
+| syrian | Syrian | levantine | internal | 0 | [] | <to_fill> |
+| jordanian | Jordanian | levantine | internal | 0 | [] | <to_fill> |
+| middle-eastern | middle-eastern | null | internal | 1 | [] | merge → middle-eastern |
+| levantine | levantine | middle-eastern | internal | 2 | [] | merge → levantine |
+| <to_fill> | <to_fill> | null | top | 57 | [] | new |
+| african-american | African American | <to_fill> | top | 24 | ["African American diaspora"] | <to_fill> |
+| african-american-diaspora | African American diaspora | <to_fill> | internal | 2 | ["African American"] | <to_fill> |
+| <to_fill> | <to_fill> | <to_fill> | top | 24 | ["Native American", "Indigenous/Native American", "Indigenous Peoples"] | <to_fill> |
+| native-american | Native American | <to_fill> | internal | 5 | [] | <to_fill> |
+| indigenous-native-american | Indigenous/Native American | <to_fill> | internal | 1 | [] | <to_fill> |
+| indigenous-peoples | Indigenous Peoples | <to_fill> | internal | 1 | [] | merge → indigenous |
+| lenape | Lenape | <to_fill> | sub | 7 | [] | keep |
+| haudenosaunee | Haudenosaunee | <to_fill> | internal | 3 | [] | new |
+| soul-food | Soul Food | <to_fill> | internal | 0 | [] | <to_fill> |
+| three-sisters-traditions | Three Sisters traditions | <to_fill> | internal | 0 | [] | <to_fill> |
+| black-culinary-history | Black culinary history | <to_fill> | internal | 0 | [] | <to_fill> |
+| cajun-creole | Cajun/Creole | <to_fill> | internal | 0 | [] | <to_fill> |
 ```
 
 This table serves as the **hand-off artifact** to PR 5+ (D4 vocab canonicalization migration) and PR 6+ (Stage 2 re-tag prompt closed-vocab constraint).
@@ -2105,4 +2198,4 @@ This table serves as the **hand-off artifact** to PR 5+ (D4 vocab canonicalizati
 
 ---
 
-*End of worksheet (last update Session 72, 2026-05-11 — §9.1 cross-cluster diaspora & indigenous identities per-value entries populated; all 5 regional clusters + §9.1 cross-cluster complete; §16 end-summary canonical-vocab table TBD Session 74).*
+*End of worksheet (last update Session 74, 2026-05-11 — §16 end-summary canonical-vocab table populated; 88 rows mechanically transcribed from §11-§15 per-value entries + §9.1 cross-cluster; all substantive Stage 1 worksheet work complete pre-curriculum-team-handoff).*
