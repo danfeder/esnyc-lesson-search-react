@@ -67,7 +67,7 @@ jobs:
         # Informational only — a transient API hiccup must not fail the e2e
         # job and block PR merging. The dry-run is also in the step summary.
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -194,7 +194,7 @@ jobs:
         # Same rationale as the dry-run comment step: informational only,
         # must not block CI on a transient API hiccup.
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
