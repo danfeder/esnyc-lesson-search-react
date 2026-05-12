@@ -7,6 +7,8 @@
 > **What lives here:** current state of the worksheet fill, locked design decisions and rationale, session log, next-session pointer.
 >
 > **What does NOT live here:** the worksheet content itself (lives in `2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md`); methodology and conventions intended for curriculum-team handoff (live in the worksheet header).
+>
+> **Sibling initiative — Stage 1 concepts worksheet** (active 2026-05-12+): `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-execution-status.md`. Started Session 77 with a 15-decision methodology-design pass; Session 78 = worksheet scaffold. Concepts is the inherent next Stage 1 deliverable per the foundation design doc sequence and gates PR 5 (D4 canonicalization) + PR 6 (Stage 2 re-tag).
 
 ## Current state dashboard
 
