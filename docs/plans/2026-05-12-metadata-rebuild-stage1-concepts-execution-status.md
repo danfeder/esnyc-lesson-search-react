@@ -1,6 +1,6 @@
 # Stage 1 Concepts Worksheet — Execution Status
 
-**Last updated:** 2026-05-12 — Session 77 methodology-design (pre-scaffold; user-locked Session 76 closeout). No code/worksheet artifact created this session; 15 design decisions locked as `D-C1` through `D-C15` covering structural shape, per-entry shape, and methodology. TEST DB probes verified design-doc claims (~211 / 6 subjects → actual 208 distinct strings, 216 (subject, concept) pairs, 6 subjects with skewed distribution Science 92 / ELA 46 / SS 37 / Arts 20 / Math 18 / Health 3). Schema-simplification investigation via parallel-subagent research found subject grouping is UI-orphaned (no live consumer reads subject keys); decision was made NOT to migrate schema before worksheet (D-C2) but to restructure the worksheet itself as concept-first rather than subject-first (D-C1) to avoid hardening v3 subject artifacts into canonical structure. Stage 1 concepts is the inherent next worksheet per foundation design doc sequence (heritage → concepts → ~8 smaller fields) and gates PR 5 (D4 canonicalization migration) + PR 6 (Stage 2 re-tag prompt closed-vocab constraint).
+**Last updated:** 2026-05-12 — Session 78 scaffold creation (pre-PR; branch `docs/stage1-concepts-scaffold` off `main` at `db89798`). Worksheet scaffold landed at `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (525 lines: header sections §1–§10 + empty tier section skeletons §11/§12/§13 + Appendix A v3 baseline grouped by subject + A.7 cross-subject + A.8 theme-overlap cross-reference blocks). TEST DB probe (4 SQL probes via `mcp__supabase-test__execute_sql`) confirmed Session 77 numbers and added the per-concept frequency distribution needed for D-C14 calibration: at locked ≥10 / 3-9 / 1-2 cutoffs the tier counts are **32 / 39 / 137 = 208 ✓**. Long-tail at 137 is larger than the ~50-entry PR-review sweet spot — Session 79 weighs whether to split (singletons-only vs 1-and-2 → ~89/~48) or accept the larger PR since most long-tail verdicts are noise-drop. Mid-tier at 39 is on the smaller side; combining with high-impact rejected by D-C4 (per-tier decision character differs). Per-subject totals match Session 77 exactly: Science 92 / Social Studies 37 / Literacy/ELA 46 / Math 18 / Arts 20 / Health 3 = 216 (subject, concept) pairs across 208 distinct strings with 8 cross-subject overlaps. No per-value entries; no upfront Opus batch yet (Session 79 prep). Foundation-phase code track still has no unblocked next PR — PR 3b / 5 / 6 all gate on Stage 1 (now concepts) / Stage 2 outputs.
 
 > **About this file.** Project-internal progress tracker for the Stage 1 concepts worksheet initiative. Peer to (not folded into) the heritage execution status doc at `2026-05-10-metadata-rebuild-stage1-heritage-execution-status.md` and the foundation-phase status doc at `2026-05-03-metadata-rebuild-foundation-execution-status.md`. The foundation-phase status doc carries a one-line pointer here.
 >
@@ -13,10 +13,10 @@
 | Area | Status | PR | Merge commit | Notes / next action |
 |------|--------|-----|---------------|---------------------|
 | Methodology design | ✅ Shipped | *Session 77 (this doc; no PR — methodology lands as the status doc itself)* | n/a | 15 locked decisions; TEST DB probes verified live state; schema-simplification investigation integrated; concept-first worksheet shape locked |
-| Worksheet scaffold | ⏳ Pending | — | — | Session 78 — create `2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` with header sections (purpose, methodology, hierarchy rules, verdict vocab, per-entry shape, frequency-tier section structure, parsing convention). No per-value entries yet. |
-| High-impact tier (PR-Concepts-1) | ⏳ Pending | — | — | Session 79 — Claude pre-fill all high-impact entries (frequency ≥ 10 appearances; estimated ~30-50 entries). Upfront Opus batch runs before this session. |
-| Mid-tier (PR-Concepts-2) | ⏳ Pending | — | — | Session 80 — Claude pre-fill mid-tier entries (frequency 3-9 appearances; estimated ~60-80 entries). |
-| Long-tail (PR-Concepts-3) | ⏳ Pending | — | — | Session 81 — Claude pre-fill long-tail entries (frequency 1-2 appearances; estimated ~100-120 entries). Most verdicts will be `drop` (noise singletons) or `merge`. |
+| Worksheet scaffold | 🔄 PR pending | TBD | TBD | Session 78 ✅ — `2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (525 lines) created with §1–§10 header sections + empty §11/§12/§13 tier skeletons + Appendix A v3 baseline. PR pending; moves to ✅ Shipped on closeout backfill. |
+| High-impact tier (PR-Concepts-1) | ⏳ Pending | — | — | Session 79 — Claude pre-fill all high-impact entries (frequency ≥10 appearances; **probe-confirmed 32 entries** at Session 78 calibration). Upfront Opus batch runs before per-entry fill (per D-C13). |
+| Mid-tier (PR-Concepts-2) | ⏳ Pending | — | — | Session 80 — Claude pre-fill mid-tier entries (frequency 3-9 appearances; **probe-confirmed 39 entries** at Session 78 calibration; smaller than D-C4 estimated 60-80 but kept separate per D-C4 decision-character rationale). |
+| Long-tail (PR-Concepts-3) | ⏳ Pending | — | — | Session 81 — Claude pre-fill long-tail entries (frequency 1-2 appearances; **probe-confirmed 137 entries** at Session 78 calibration; larger than D-C4 estimated 100-120). Session 79 weighs splitting across two PRs (singletons-only ~89 vs 1-and-2 ~48) vs accepting the larger noise-drop-heavy PR. Most verdicts will be `drop` (noise singletons) or `merge`. |
 | Curriculum-team fill integration | ⏳ Pending | — | — | Session 82 — single curriculum-team pass over full 208-entry worksheet; review depth varies by tier per D-C15. |
 | Closeout / reconciliation | ⏳ Pending | — | — | Session 83+ — if curriculum-team fill needs reconciliation edits or any structural §16-equivalent post-pass. May not need its own PR if integration is clean. |
 
@@ -26,42 +26,41 @@ Audit signal register (Stage 2 corpus cleanup / reviewer-validation intake): pee
 
 Fixed-shape orientation for the next session. Update at PR closeout (see PR closeout checklist below).
 
-**Stage 1 concepts methodology is locked. Session 78 = worksheet scaffold creation.**
+**Worksheet scaffold is in PR review (Session 78). Session 79 = upfront Opus batch (per D-C13) + high-impact tier per-value fills (PR-Concepts-1).**
 
-The locked methodology decisions (D-C1 through D-C15 below) drive the scaffold shape. Session 78 creates the worksheet file with header sections + the 3 frequency-tier section skeletons; no per-value entries yet.
+The locked methodology decisions (D-C1 through D-C15 below) plus the Session 78 calibration data (32 high / 39 mid / 137 long-tail at the locked ≥10 / 3-9 / 1-2 cutoffs) drive Session 79's shape. Session 79 has two phases: (1) upfront Opus batch on ~60-90 highest-leverage concepts (all 8 cross-subject concepts, ~30-40 ambiguous near-duplicate clusters, ~10-15 sample singletons with vague names); (2) per-value entry fills for the 32 high-impact (≥10) entries in §11.
 
-- **Session:** Stage 1 Session 78 — Concepts worksheet scaffold creation.
-- **Branch base:** `main` at the Session 77 closeout commit (this session's docs commit; downstream of PR #492 squash `e5f4257`).
-- **Primary objective:** Create the worksheet scaffold per locked methodology. Write only header sections (no per-value entries). Header sections to cover:
-  - §1 Purpose — what this worksheet is for; curriculum-team-facing.
-  - §2 Methodology — concept-first shape; flat list ordered by frequency descending; subjects as evidence columns; 3 frequency-tier sections.
-  - §3 Verdict vocabulary — `keep / merge / new / drop / <to_fill>` with definitions and examples (per D-C8).
-  - §4 Per-entry shape — the 10-field labeled-line shape (per D-C7); parsing convention.
-  - §5 Frequency-tier section structure — explain the 3 tiers; exact cutoff numbers TBD at PR-1 fill time (per D-C14).
-  - §6 Theme overlap convention — flag at entry level per D-C5; 3 known cases (`ecosystems`, `food systems`, `plant growth`).
-  - §7 Merge_aliases convention — pre-merge per-subject distribution in `current_subjects`; post-merge total in `frequency` (per D-C11).
-  - §8 Cross-subject convention — `recommended_primary_subject` (single) + `recommended_secondary_subjects` (multi); the 8 known cross-subject concepts noted as candidates.
-  - §9 Curriculum-team review depth — explicit framing per D-C15 that review depth can vary by tier.
-  - §10 Parsing convention — labeled-line shape, identity invariant, alias_map semantics (carry forward heritage's §7 convention adapted).
-  - Section skeletons for the 3 frequency tiers (`§11 High-impact tier`, `§12 Mid-tier`, `§13 Long-tail`) with empty entry slots.
-  - Appendix A — v3 baseline vocabulary embedded as reference (the 208-string canonical list grouped by current subject).
-- **Stop point:** Header sections complete + appendix A populated + empty tier section skeletons in place. No per-value entries. No upfront Opus batch yet (that's Session 79 prep).
+- **Session:** Stage 1 Session 79 — Upfront Opus batch + PR-Concepts-1 (high-impact tier per-value fills).
+- **Branch base:** `main` at the Session 78 PR closeout commit (TBD on Session 78 PR merge; this will be the closeout-backfill commit downstream of the Session 78 PR squash).
+- **Primary objective:** Run the upfront Opus batch FIRST (per D-C13 it runs *before* per-entry fill begins), then pre-fill all 32 high-impact tier entries in §11 of the worksheet. Each per-value entry uses the 10-field labeled-line shape locked in D-C7. Curriculum-team verdict fields (`verdict`, `curriculum_notes`) stay as `<to_fill>` per the worksheet's pre-handoff convention.
+- **Opus batch composition (per D-C13):**
+  - All 8 cross-subject concepts (biodiversity, companion planting, historical figures, nutrition education, observation, poetry, preservation, storytelling) — read sample lessons from each subject context to assess whether the cross-subject split is genuine-lens or tagging-artifact.
+  - ~30-40 ambiguous near-duplicate clusters surfaced from the Session 78 probe data:
+    - Plural/singular pairs: `adaptation`/`adaptations`/`plant adaptation`/`plant adaptations`; `seasonal change`/`seasonal changes`/`seasonal cycles`/`seasons`/`seasonality`; `harvest`/`harvesting`; `seeds`/`seed starting`/`seed dispersal`; `roots`/`root vegetables`
+    - Name variants: `plant identification`/`identifying plants`/`plant ID`; `nutrition`/`nutrition education` (cross-subject); `social justice`/`social justice issues`; `food preservation`/`preservation` (cross-subject); `community`/`community systems`/`community building`/`community activism`
+    - Subject-edge cases: `historical figures` vs `historical context` (Social Studies); `recipe reading`/`recipe writing`/`recipe selection`/`recipe scaling`; `writing`/`writing claims`/`narrative writing`/`descriptive writing`/`opinion writing`/`persuasive writing`/`argumentative writing`/`how-to writing`/`informational writing`/`comparative writing`/`creative writing`
+  - ~10-15 sample singletons with vague names: `garden topics`, `general exploration`, `plant science`, `plant-based proteins`, `food processing`, `holidays`, `national and religious holidays`, `voting`, `song`, `coloring`, `craft activity`, `imaginary play`
+  - Budget: target ~60-90 reads total at ~$0.50-$1.50 per read = ~$30-$135 total Opus cost. Trim list if budget pressure surfaces (cross-subject 8 + top-5 near-duplicate clusters are the load-bearing reads).
+- **Per-value fill order (after batch lands):** highest-frequency first within §11, descending by frequency per D-C3. The 32 high-impact entries top-of-list: `plant parts` (239), `cultural traditions` (206), `nutrition education` (100/7 cross-subject), `visual arts` (76), `storytelling` (75/1 cross-subject), `ecosystems` (73, theme-overlap), `recipe reading` (69), `historical figures` (68/1 cross-subject), `measurement` (66), `vocabulary development` (59), `geography` (56), `decomposition` (47), `soil science` (44), `life cycles` (43), `plant needs` (41), `immigration stories` (34), `healthy choices` (30), `pollinators` (28), `counting` (20), `data collection` (19), `water cycles` (17), `trade routes` (16), `estimation` (15), `community systems` (15), `seeds` (13), `thermal energy` (12), `colonialism's impact` (12), `food webs` (11), `seasonality` (11), `sensory exploration` (11), `companion planting` (10/3 cross-subject), `seasonal changes` (10).
+- **Tier-cutoff calibration call (per D-C14):** Session 78 confirmed 32 / 39 / 137 at the locked ≥10 / 3-9 / 1-2 cutoffs. Mid-tier 39 stays as-is (combining with high-impact rejected by D-C4). Long-tail 137 deserves a Session 79 weigh-in: split into singletons-only (~89) vs 1-and-2 (~48) for two PRs, OR accept the larger single noise-drop-heavy PR. Decide before opening PR-Concepts-3 (Session 81); doesn't block Session 79's high-impact fill.
+- **Stop point:** All 32 high-impact entries pre-filled (verdict + curriculum_notes stay `<to_fill>`; everything else is Claude pre-population). Upfront Opus batch complete with `<details>` blocks integrated for the ~30-40 batch-targeted concepts that land in the high-impact tier. PR-Concepts-1 opened.
 - **Expected files to touch:**
-  - New: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md`.
-  - This file — update dashboard row for Worksheet scaffold → ✅ Shipped; update Next session contract for Session 79.
-  - Heritage exec status doc — no changes needed (one-line cross-reference already in place from this session).
-  - Foundation status doc — Last updated banner refresh.
-- **First task:** Run a TEST DB probe to enumerate the actual frequency distribution across all 208 distinct concept strings (this confirms the tier cutoff numbers for D-C14 calibration). Output: a `(concept, subject, appearances)` list sortable by appearances. Then start writing header sections per the outline above.
+  - `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` — fill §11 with 32 per-value entries; integrate Opus `<details>` blocks where the batched read applies; possibly update §5 if Session 79 makes the long-tail-split call.
+  - This file — dashboard row update for high-impact tier; Next session contract for Session 80; session log entry for Session 79.
+  - Audit signal register (create when first signal surfaces — likely during Opus batch findings or per-entry fills): `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-audit-signal-register.md` with `CON-NN` prefix.
+  - Foundation status doc — Last updated banner refresh + scaffold roll-up.
+- **First task:** Branch off `main` at the Session 78 PR closeout commit. Run upfront Opus batch via Agent subagents (subagent_type Explore or general-purpose with model=opus per the Opus preference). Save batch output to a workspace file (e.g., `/tmp/concepts-opus-batch-session79.md`) for reference during per-entry fills. **Do not begin per-entry fills until batch is complete and reviewed.**
 - **Must verify (this session):**
-  - Tier cutoff numbers produce roughly 50-entry PR sizes (calibrating D-C14's 10+ / 3-9 / 1-2 against actual distribution).
-  - Worksheet header sections cover all 10 locked design decisions visible to the curriculum team (D-C1, D-C3, D-C4, D-C5, D-C7, D-C8, D-C11, D-C12, D-C14, D-C15 are curriculum-facing; the others are project-internal).
-  - Appendix A's v3 baseline is grouped by current subject (matching the existing data shape) for traceability, even though the worksheet structure is concept-first.
+  - Each high-impact tier entry covers all 10 fields from D-C7; verdict + curriculum_notes are `<to_fill>` (not pre-filled).
+  - Cross-subject concepts (8 of the 32 high-impact entries are cross-subject: nutrition education, storytelling, historical figures, companion planting are in the high-impact tier) surface `recommended_primary_subject` + `recommended_secondary_subjects` per D-C9.
+  - The 1 theme-overlap concept in the high-impact tier (`ecosystems` 73, Science) flags `theme_overlap: YES` per D-C5.
+  - Dual-frequency format (D-C11) applied to any merge-candidate entries in the high-impact tier (likely few since high-impact concepts are usually canonical, not near-duplicate; but check `seasonal changes` 10 vs `seasonal change` 2 + `seasonal cycles` 6 + `seasons` 2 cluster as it spans high-impact and mid-tier).
 - **Do not do:**
-  - Open per-value entries (premature; that's Session 79+ after upfront Opus batch).
-  - Skip the TEST DB probe — the tier cutoff numbers need to be verified against current state, not assumed from Session 77's probes (which counted strings but didn't compute per-string frequency distribution for calibration).
-  - Touch the heritage worksheet or its status doc beyond verification that the cross-reference pointer is intact.
+  - Skip the upfront Opus batch (per D-C13 it's load-bearing for Session 79's verdict-readiness).
+  - Touch the heritage worksheet, its status doc, or the foundation design doc beyond Last-updated-banner refresh.
+  - Fill mid-tier (§12) or long-tail (§13) — those are Sessions 80 / 81.
   - Approve PROD migrations / deploys (N/A — docs-only).
-  - Begin the upfront Opus batch (that's Session 79 prep; the batch runs *before* Session 79's per-entry fill begins).
+  - Pre-fill `verdict` or `curriculum_notes` — those are curriculum-team fields per D-C7 + pre-handoff convention.
 
 ## PR closeout checklist
 
@@ -296,3 +295,61 @@ Curriculum team reviews the full 208-entry worksheet in one pass (Session 82), m
 - Themes worksheet timing — out of scope; the 3 theme-overlap entries' resolution gates on themes worksheet existence, which is somewhere after concepts ships.
 
 **Next:** Session 78 = worksheet scaffold creation (header sections + tier section skeletons + Appendix A v3 baseline).
+
+### Session 78 — 2026-05-12 — Worksheet scaffold creation
+
+**Outcome:** Worksheet scaffold landed at `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (525 lines). All 10 header sections (§1–§10) populated; 3 tier section skeletons (§11/§12/§13) in place with framing prose but no per-value entries; Appendix A v3 baseline complete (208 distinct concept strings grouped by current subject across A.1–A.6 + A.7 cross-subject cross-reference + A.8 theme-overlap cross-reference). PR pending.
+
+**Work done:**
+
+1. **TEST DB calibration probes** (4 probes via `mcp__supabase-test__execute_sql`) confirming D-C14 tier-cutoff numbers against current state:
+   - Row sanity: 663 live with `academicConcepts` / 88 live without / 21 retired / 772 total — matches Session 77's published row count exactly.
+   - Per-(subject, concept) frequency: 216 distinct pairs across 663 live rows, 1912 total concept-appearances.
+   - Per-concept (summed across subjects) frequency: 208 distinct concept strings; tier distribution at locked cutoffs is **32 (≥10) / 39 (3–9) / 137 (1–2) = 208 ✓**; 8 cross-subject concepts confirmed.
+   - Per-subject totals match Session 77: Science 92 distinct / 774 pair-appearances; Social Studies 37 / 453; Literacy/ELA 46 / 290; Math 18 / 150; Health 3 / 131; Arts 20 / 114.
+
+2. **Calibration findings (vs D-C4 estimates):**
+   - High-impact ≥10 at 32 entries: in D-C4's estimated 30-50 range ✓.
+   - Mid-tier 3–9 at 39 entries: smaller than D-C4's estimated 60-80. Stays separate per D-C4 decision-character rationale (combining with high-impact mixes verdict-call shape).
+   - Long-tail 1–2 at 137 entries: larger than D-C4's estimated 100-120 and over the ~50-entry PR-review sweet spot. Session 79 can decide to split (singletons-only ~89 vs 1-and-2-appearances ~48) or accept the larger noise-drop-heavy PR.
+   - Numerical calibration captured in worksheet §5 framing; tier cutoffs in §11/§12/§13 headers reference the Session 78 probe numbers as the working defaults.
+
+3. **Scaffold authoring** — 525 lines covering:
+   - §1 Purpose & methodology, including the curriculum-team-facing 4-verdict explanation (D-C8 with `<to_fill>` as the unfilled default) and the consumer-list of who reads worksheet output (PR 5 / PR 6 / PR 3b / PR 2 deferred / Phase 2 reviewer UX).
+   - §2 Structural shape — concept-first rationale (D-C1) + flat-by-frequency rationale (D-C3) + 3-frequency-tier rationale (D-C4 + D-C14).
+   - §3 Verdict vocabulary — `keep / merge / new / drop / <to_fill>` with drop-vs-merge distinction (D-C8) called out explicitly.
+   - §4 Per-value entry shape — 10-field labeled-line block (D-C7); field-by-field semantics; fillable-vs-pre-populated breakdown; parser compatibility.
+   - §5 Frequency-tier section structure — 3 tiers locked, cutoffs probe-confirmed, calibratability framing (D-C14), per-tier review depth framing (D-C15).
+   - §6 Theme overlap convention — D-C5 flag-and-defer pattern for `ecosystems` / `food systems` / `plant growth`.
+   - §7 Merge_aliases convention — dual-frequency on merge-candidate entries (D-C11) + merge_aliases-vs-search_synonyms distinction (D-C10 boundary).
+   - §8 Cross-subject convention — primary + secondary subjects (D-C9); 8 known cross-subject concepts listed; rationale for concept-first per-entry over subject-first two-entries pattern.
+   - §9 Curriculum-team review depth — short pointer back to §5's tier-by-tier framing; placeholder for any later guidance.
+   - §10 Parsing convention — adapted from heritage's §7 with adjustment for concepts' lack of case-mixing drift (no identity-shaped alias entries; per the Session 77 probe finding of zero case/whitespace drift in v3 baseline).
+   - §11 / §12 / §13 — empty tier skeletons with framing prose only (no per-value entries; reserved for Sessions 79 / 80 / 81).
+   - Appendix A — v3 baseline v3 reference. A.1–A.6 grouped by subject, alphabetically ordered within subject, each concept annotated with appearance count. A.7 cross-subject overlaps cross-reference. A.8 concept↔theme string-identical overlaps cross-reference.
+
+4. **Branch:** `docs/stage1-concepts-scaffold` off `main` at `db89798`. Single commit pending session-end.
+
+**Calibration data carried into Session 79 contract:**
+
+- Tier counts: 32 high / 39 mid / 137 long-tail at locked cutoffs.
+- Long-tail split-decision: deferred to Session 79 (singletons-only ~89 vs 1-and-2 ~48 vs accept-larger).
+- High-impact top-32 entries pre-ordered by frequency for Session 79's per-value fill ordering.
+- 4 cross-subject concepts in high-impact tier: `nutrition education` 100/7, `storytelling` 75/1, `historical figures` 68/1, `companion planting` 10/3 — flagged for D-C9 secondary-subject treatment.
+- 1 theme-overlap concept in high-impact tier: `ecosystems` 73 — flagged for D-C5 flag-and-defer treatment.
+- Near-duplicate cluster spanning tiers worth Opus batch attention: `seasonal changes` 10 (high) + `seasonal cycles` 6 (mid) + `seasonal change` 2 (long) + `seasonality` 11 (high) + `seasons` 2 (long) — Session 79 batch should read to clarify canonicalization shape.
+
+**Files touched:**
+
+- Created: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (525 lines).
+- Updated: this file (Last updated banner; dashboard row for Worksheet scaffold; Next session contract replaced for Session 79; Session 78 log entry).
+- Foundation status doc — updated at this session's session-end (Last updated banner + Current State pointer refresh).
+
+**Out-of-scope items surfaced (deferred to Session 79+):**
+
+- Upfront Opus batch composition — finalized list of ~60-90 concepts to read lives in the Session 79 Next session contract; specific lesson_ids to read per concept selected at batch time.
+- Long-tail PR split decision — Session 79 weighs whether §13 ships as one PR (~137 entries) or two (~89 singletons + ~48 1-and-2).
+- Parser script — heritage's `scripts/parse-heritage-worksheet.py` is the model; the concepts parser is Session 79+ or post-fill scope, not Session 78.
+- Audit register file — created when first concept-derived audit signal surfaces (probably Session 79+).
+
+**Next:** Session 79 = upfront Opus batch (per D-C13) + PR-Concepts-1 high-impact tier per-value fills (32 entries in §11).
