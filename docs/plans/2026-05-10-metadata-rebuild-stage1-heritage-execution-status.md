@@ -29,22 +29,38 @@ Audit signal register (Stage 2 corpus cleanup / reviewer-validation intake): `do
 
 Fixed-shape orientation for the next session. Update at PR closeout (see PR closeout checklist below).
 
-**Stage 1 worksheet is now fully complete (content + scaffolding + structural §16 regeneration all ✅ Shipped). Session 77 has no inherent Stage 1 next step — pivot direction is user's call.**
+**Stage 1 heritage worksheet is fully complete. Session 77 = Stage 1 concepts worksheet methodology-design session (user-locked Session 76 closeout, after §16 final-and-correct verification).**
 
-- **Session:** Stage 1 Session 77 — TBD by user direction. Stage 1 content + structural tracks are both substantively complete. Three plausible pivots, none of them inherent to Stage 1:
-  - **(a) Q&A relay mode** if the curriculum team raises questions or corrections on the now-filled worksheet. Dedicated kickoff prompt drafted at Session 74 closeout (currently a user-side worktree artifact, not yet committed); see the user's local working directory for status.
-  - **(b) Pause Stage 1 and pivot to the foundation-phase code track** (PR 3b / 5 / 6). All three remain gated on Stage 2 outputs, so this pivot is itself blocked unless a Stage 2 prep task surfaces.
-  - **(c) Companion-artifact UI work** per Session 59 Decision 2 (full-tree hierarchy) + Decision 4 (B2 tree-filter live-canonical-preview toggle). User has been preparing related side work; surfacing through normal review channels when ready.
-- **Branch base:** TBD per pivot. If a Stage 1 follow-up is needed, fork off `main` at the Session 76 closeout-backfill commit (downstream of PR #492 squash `e5f4257`).
-- **Primary objective:** TBD. Stage 1 has no inherent unblocked next task.
-- **Stop point:** TBD per pivot direction.
-- **Expected files to touch:** TBD per pivot. The 2 user-side worktree artifacts (Q&A kickoff doc + heritage-worksheet-form/ directory) are user-owned and may surface on their own branches/PRs when ready.
-- **First task:** Decide pivot direction with user at session start. Do not assume Stage 1 has another structural step — it does not.
-- **Must verify:** Nothing Stage-1-inherent; depends on pivot.
+Stage 1 has a worksheet sequence per the foundation design doc (lines 71 + 153 + 167): heritage first (~78 values, just shipped) → **concepts second (~211 values, biggest of the rebuild)** → ~8 smaller fields. Concepts is the inherent next Stage 1 deliverable and is the actual gate on PR 5 (D4 canonicalization migration) and PR 6 (Stage 2 corpus re-tag). Memory-tracked context: concepts has new shape questions heritage didn't — concept-vs-theme redundancy ("ecosystems" might be both a concept and a theme), per-concept everyday-vocab synonym mapping, and possibly a 6-subject subdivision.
+
+- **Session:** Stage 1 Session 77 — Concepts worksheet methodology-design (pre-scaffold). Lock structural decisions BEFORE opening any per-value entries. Concepts is ~2.7x heritage's scope; a structural mistake costs ~2.7x more to refactor mid-stream. Heritage's Session 59 design walkthrough is the precedent — concepts deserves equivalent upstream investment.
+- **Branch base:** `main` at `df76ef5` (Session 76 PR #492 closeout-backfill commit; downstream of PR #492 squash `e5f4257`).
+- **Primary objective:** Lock methodology decisions for the concepts worksheet so Session 78 can open a clean scaffold. Open shape questions (non-exhaustive, to be resolved in this session):
+  - **Hierarchy structure** — subdivide by the 6 subjects (Science / Math / ELA / Social Studies / Health / Arts or whatever the actual subject set is, to be confirmed via TEST DB probe) as top-level clusters, or treat as a flat list with subject as a tag? Heritage used cluster + sub-region; concepts may not have a natural geographic-like structure.
+  - **Concept-vs-theme redundancy** — some concept values likely duplicate theme values per the design doc; decide whether to flag candidates inline in the per-value entries (e.g., a `theme_overlap: true` field) or run a separate redundancy audit before/after the worksheet round.
+  - **Per-concept everyday-vocab synonym mapping** — is this a separate field on each per-value entry (extra dimension), a separate parallel worksheet, or deferred to PR 3b's `search_synonyms` population work?
+  - **Opus-corpus-read pass timing** — upfront (run on all ~211 values before per-value entries open, like a batch-eval) or lazily (during per-value fills, like heritage)? Upfront is more parallel-friendly; lazy fits the cluster-per-session boundary heritage used.
+  - **v3 baseline existence** — does concepts have a v3-batch-tagged canonical list to anchor on (like heritage had v3 cultural heritage values), or is this a from-scratch build? Confirm via TEST DB probe on `lessons.metadata.academicConcepts`.
+  - **Scaffold reuse vs evolution** — follow heritage's locked 2-file pattern verbatim (worksheet + execution status doc, per Session 59 meta-decision) or evolve based on concepts-specific needs?
+  - **Curriculum-team handoff timing** — same single-pass-after-Claude-fill rhythm as heritage, or a different cadence (e.g., per-subject mini-rounds)?
+- **Stop point:** All methodology decisions documented as locked design decisions (in a new Stage 1 concepts execution status doc or as a "Locked design decisions" section in a single concepts doc — TBD per the scaffold-reuse decision above). No per-value entries opened. No worksheet scaffold yet — that's Session 78.
+- **Expected files to touch:**
+  - New: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-execution-status.md` (or similar) — Stage 1 concepts progress tracker, peer to (not folded into) the heritage execution status doc.
+  - Optional new: `docs/plans/2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (or similar) — if the scaffold-reuse decision lands at "open the worksheet shell now with header sections," include this; otherwise defer to Session 78.
+  - Heritage execution status doc — may add a one-line cross-reference pointer to the concepts initiative.
+  - Foundation status doc — may extend the Last updated banner + Current State header with the concepts initiative pointer.
+- **First task:** Run a TEST DB probe via `mcp__supabase-test__execute_sql` to enumerate the actual concepts vocabulary on `lessons.metadata.academicConcepts`. Verify the ~211-value count + the 6-subject grouping (design doc claims). These claims came from earlier corpus analysis and may have drifted post-PR-4 retired-set drop. Then bring findings + open shape questions to user for the methodology walk-through.
+- **Must verify (this session):**
+  - Live concepts vocabulary count + subject grouping (vs design doc's ~211 / 6 claims).
+  - Concept-vs-theme overlap is real (one or two cross-checks on candidate values like "ecosystems").
+  - v3 baseline existence: how many concepts have v3 canonical tags, how many are recent submissions, how many are drift literals.
+  - At least one shape question resolved per decision area (hierarchy / redundancy / synonyms / Opus-read / v3 baseline / scaffold / handoff).
 - **Do not do:**
-  - Re-open Stage 1 worksheet structure (§1-§16 substantively complete per the per-value entries + curriculum-team fill + parser-driven regeneration).
-  - Touch the 2 user-side untracked artifacts without explicit user direction (Q&A kickoff doc + heritage-worksheet-form/).
-  - Approve PROD migrations / deploys (N/A — docs-only or no PR yet).
+  - Open per-value entries (premature; that's Session 79+ at earliest after Session 78 scaffold).
+  - Scaffold the worksheet header sections (premature; that's Session 78 after methodology lands).
+  - Touch the heritage worksheet or its status doc beyond a one-line cross-reference pointer (Stage 1 heritage track is closed).
+  - Approve PROD migrations / deploys (N/A — docs-only).
+  - Skip the TEST DB probe — design-doc claims about value count + subject grouping must be re-verified before locking methodology.
 
 ## PR closeout checklist
 
@@ -115,9 +131,9 @@ The Stage 1 work is split across multiple files; this block names which surface 
 - Cluster decision summary blocks: always TBD (curriculum team writes at handoff per §5.3 convention).
 - Further curriculum-team rounds (corrections, audit-signal responses, `<details>` Opus-corpus-read reactions): pending team feedback if any.
 
-**For next session (Stage 1 Session 77 = TBD by user pivot direction; Stage 1 has no inherent next step):**
+**For next session (Stage 1 Session 77 = Concepts worksheet methodology-design — user-locked Session 76 closeout after §16 final-and-correct verification):**
 
-See `## Next session contract` block at top of doc for the authoritative scope. Stage 1 content + scaffolding + structural §16 regeneration are all ✅ Shipped after PR #492. The 3 plausible pivot directions are: (a) Q&A relay mode for curriculum-team questions on the filled worksheet, (b) pause Stage 1 and pivot to the foundation-phase code track (PR 3b / 5 / 6 — all still gated on Stage 2 outputs), or (c) companion-artifact UI work per Session 59 Decisions 2 + 4 (full-tree hierarchy + B2 tree-filter live preview). None of these are inherent Stage 1 follow-ups. Decide with user at session start.
+See `## Next session contract` block at top of doc for the authoritative scope + must-verify list. Stage 1 heritage worksheet is fully complete; Stage 1 concepts worksheet is the inherent next deliverable per the design doc's sequence (heritage → concepts → ~8 smaller fields). Concepts is ~211 values across 6 subjects (~2.7x heritage's 78), has new shape questions heritage didn't (concept-vs-theme redundancy + per-concept everyday-vocab synonym mapping), and gates PR 5 + PR 6. Session 77 scope is methodology-design only — no per-value entries, no scaffold yet (Session 78). First task: TEST DB probe to verify the ~211-value / 6-subject claims and the v3 baseline existence before locking methodology.
 
 **Stop-point heuristic confirmed Sessions 62 + 64 + 66 + 68 + 70 + 72:** one cluster (or cross-cluster) per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) + African (10 entries, 2 Opus reads) + European (14 entries, 3 Opus reads) + Middle Eastern (11 entries, 2 Opus reads — smallest regional cluster root by lesson count) + Cross-cluster §9.1 (13 entries, 2 Opus reads — 57 distinct aggregate lessons split across AA cohort 26 + Indigenous cohort 31) each fit the session boundary cleanly. §9.1 is the third-smallest fill by entry count (vs Middle Eastern 11 / African 10) but second-largest by aggregate lesson coverage (vs Asian 63 / Americas 170 / European 53 / African 41 / Middle Eastern 23) — the cross-cluster nature spans canopy across all 5 regional clusters' geographic territories without owning any single one.
 
