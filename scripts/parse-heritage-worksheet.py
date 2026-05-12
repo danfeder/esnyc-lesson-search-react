@@ -51,6 +51,7 @@ DEFAULT_WORKSHEET = (
 
 # Clusters whose per-value entries feed §16, in §16 emission order.
 TARGET_CLUSTERS = ("11", "12", "13", "14", "15", "9.1")
+_CLUSTER_ORDER = {c: i for i, c in enumerate(TARGET_CLUSTERS)}
 
 HEADING_RE = re.compile(
     r"^####\s+(?P<cluster>\d+(?:\.\d+)?)\.(?P<idx>\d+)\.\s+(?P<rest>.*?)\s*$"
@@ -221,8 +222,7 @@ def parse_worksheet(path: Path) -> list[Entry]:
 
 def cluster_sort_key(entry: Entry) -> tuple:
     """Order entries §11 → §12 → §13 → §14 → §15 → §9.1, then by idx."""
-    order = {c: i for i, c in enumerate(TARGET_CLUSTERS)}
-    return (order[entry.cluster], entry.idx)
+    return (_CLUSTER_ORDER[entry.cluster], entry.idx)
 
 
 def render_aliases(aliases: list[str]) -> str:
