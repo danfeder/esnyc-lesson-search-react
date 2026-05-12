@@ -857,7 +857,283 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - claude_notes: Canonical Social Studies content tag for lessons engaging historical trade and food-origin geography — typically tied to "where this ingredient came from" mapping (Silk Road, Columbian Exchange, transatlantic food movements). Closely related to `geography` (Social Studies, 56) but distinguishably narrower (specifically trade-route history). Recommend keep as canonical with surface label "Trade Routes".
 - curriculum_notes: <to_fill>
 
-<!-- Per-value entries — Phase 2c (Session 79; entries 23–32 of 32) append below. -->
+<!-- Per-value entries — Phase 2c (Session 79; entries 23–32 of 32). End of §11. -->
+
+### `estimation`
+
+- canonical_label: Estimation
+- verdict: <to_fill>
+- frequency: 15 appearances
+- current_subjects: Math (15)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Math content tag for estimation practices — typically estimating quantities (seeds per packet, vegetables per garden bed), times (cooking durations), or measurements (cup-equivalents) in cooking and gardening contexts. No cross-subject signal; no near-duplicate drift. Closely related to `measurement` (Math, 66) — used together when students estimate then measure precisely. Recommend keep as canonical with surface label "Estimation".
+- curriculum_notes: <to_fill>
+
+### `community_systems`
+
+- canonical_label: Community Systems
+- verdict: <to_fill>
+- frequency: 15 as-tagged, 17 if aliases merge
+- current_subjects: Social Studies (15)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("community", 1), ("community building", 1)]
+- theme_overlap: none
+- claude_notes: Canonical Social Studies content tag — currently a broad civic/structural bucket combining several sub-lenses: farm and food workers (Cesar Chavez, Booker T. Whatley's CSA, School Food Heroes), food and environmental systems (food-system environmental impact, watersheds, biodiversity, the Lorax debate), community gardens and food justice, and community membership norms. The unifying thread is "systems thinking applied to community + food + environment." Two singletons fold in cleanly: `community` (Social Studies, 1 — Mural Painting 101: public-space ownership) and `community building` (Social Studies, 1 — Meet the Green Room: classroom welcoming/SEL) — neither has corpus depth to stand alone. **Note: a third related singleton `community activism` (Social Studies, 1 — Guerilla Gardening for Birds) is intentionally NOT merged here** — it redirects to merge into the existing canonical `advocacy` (Social Studies, 3 — Food System Advocates, Lorax Debate), since `community activism` is a near-synonym for `advocacy` rather than a sub-lens of `community_systems`. Stage 2 may want to sharpen the boundary between `community_systems` / `food systems` / `environmental justice` — those concepts currently overlap in their corpus usage.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (18 lessons sampled across cluster + related concepts)</summary>
+
+**`community systems` cluster (15 lessons, all sampled):**
+
+- `1Bk8XOVO3OD7eEVsdHZc7fgpAdlmJHDHR` **Who Grew Your Lunch?**: "Students will read narratives to learn more about the farmers and workers who grow our food." [farm workers / food system]
+- `1B-4jTGPsOXmFJp-q-4JpMJ3e7Qw5I92aOxtgWHD6UNU` **Farm Workers & Pesticides**: "Students will read a story… learn about the activist work of Cesar Chavez…" [farm workers / food system / activism]
+- `1exshEQcKwxp6NmN2FbKX010ds55NMaohartd8NV4cEc` **Booker T. Whatley's CSA**: "Booker T. Whatley… pioneering of the CSA (Community Supported Agriculture) model…" [food system / CSA]
+- `1nbnwFytunU5eIfH7IpqfM1wXrqEeU6marG3o6lOBJdM` **School Food Heroes**: "the work that school food workers do…" [food system workers]
+- `1HuffJuy_-bVzIAm4GxzBhG3gOtiRoAKBBapswfhZrCg` **Seed Bursts**: "community garden activists and make their own to plant in their communities." [community gardens / activism]
+- `1F9HMi267ePLvdQUys_rOe1wuna6NhP9ScssgXA4gufE` **Natural Resources and Our Garden**: conservation framing. [environmental system]
+- `1V1Ho1hoyHjHI9Zs2N_MudkOxRwi2g8pI60txN_1DsNU` **Environmental Impact of the Food System** (also tagged `environmental justice`): "explore the environmental impact of different kinds of foods…" [food system + env-justice]
+- `1--zJNW0DZBiogPJvNw65XQlItZ7h2FHelNrHPFNK3Yw` **Community Gardens & Food Justice**: "introduced to food justice by learning about community gardens…" [food justice / community gardens]
+- `1TcLFx4PqfwvY7BL6hZApm039rPpWF9HENeQAXLsmt8I` **Introduction to Photovoice**: "Food Photovoice Project." [food-narrative civic action]
+- `1ASkYeKJRJaQrSFlqQU3BStblC4tIVgBXUFystjahWh0` **Watersheds**: "examine different watershed models and observe how different land uses affect water quality…" [environmental system]
+- `1raRGSNW74_POCDLaJAgLk7ct7uqvSkzjqWy3bWbZFYM` **Along the River!**: water-system protection. [environmental system]
+- `18sSQUw48YOS12Egcpbk-N4MR3HjN-CnaoI64nzoEElM` **School Lunch Heroes**: school food workers. [food system workers]
+- `1bVDe707ybEfXjRhURKAmvdArp200ufJDnAxp3xx_qzw` **The Lorax Debate** (CO-TAGGED with `advocacy`): "read Dr. Seuss' Lorax and learn about the importance of advocacy…" [community systems + advocacy CO-TAG]
+- `1dHNasB4vEvH8G_OIy5Y7kVTOjXSovx_qLUGVB2UYk-M` **BIODIVERSITY**: "story of the 3 sisters and learn about biodiversity." [environmental system]
+- `0BwC8Pf3ZwAXjS3JwZUFpbVlETzA` **Our Garden and Kitchen Community**: "different members in the garden community… become active members…" [community membership norms]
+
+**`community` singleton:**
+
+- `13jE3-XsWBgxZpiSFB0MDFxur3HGv_zAxqzstYDhhuaI` **Mural Painting 101: Beautifying the Garden** (tagged-as: `community`): "using art to take ownership of and take care of public spaces…" — public-space ownership; pure narrowing.
+
+**`community building` singleton:**
+
+- `17MEeMT7CWyareeKsrPFyDfeURWMrYCNMjmVMVBTobX0` **Meet the Green Room** (tagged-as: `community building`): "Students will be welcomed to ESYNYC programming, go over class expectations and work collaboratively to brainstorm…" — classroom norms / welcoming (SEL-adjacent). Weakest fit of the merge candidates; alternative is to drop the concept tag entirely on this single lesson rather than promote a singleton.
+
+**`community activism` singleton — REDIRECTED to merge into `advocacy`, NOT this canonical:**
+
+- `1zcUU8ZGOM2kU1pTPPm9K-QccEVQTmhURBp6uLnzKhVs` **Guerilla Gardening for Birds** (tagged-as: `community activism`): "make seed bursts to grow bird-friendly plants in their neighborhood, learning about the importance of habitat and the role they can play to make New York City a better home for birds." — neighborhood civic action / direct action; structurally parallel to `advocacy` (3) lessons (Food System Advocates, Lorax Debate), not to `community_systems`.
+
+**Related concepts surveyed for boundary context (kept as separate canonicals):**
+
+- `1ooeavtd1AUn9ZlM9vDS9J9g3rBvRQJ48Hk4lhTzlDw4` **Food System Advocates** (tagged-as: `advocacy` + `social justice issues`)
+- `1iqGFHrQ0rWfyoLo4R4n8FO9N-S7LW1ZpalaLNF5_Tmk` **Food System Advocates (Part 1)** (`advocacy` + `social justice issues`)
+- `1pnHqm6JGB5AATRIGyU3KHeeUhKlbR7KvQXFQRxm45gA` **Food Debates** (`environmental justice` + `food systems`)
+
+</details>
+
+### `seeds`
+
+- canonical_label: Seeds
+- verdict: <to_fill>
+- frequency: 13 appearances
+- current_subjects: Science (13)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Broad general-purpose Science concept covering seed anatomy and parts (e.g., "Seed Maps" dissecting a lima bean), what seeds need to grow, edible seeds (e.g., "Cooking with Seeds: Ful Medames", "Lentil Wraps"), seed sorting, seed saving and the origins of agriculture, and planting seeds in the garden. Two adjacent concepts intentionally stay standalone rather than merging in: `seed dispersal` (Science, 3) — distinct ecological lens (water/wind/animal-attachment mechanisms; all 3 lessons are model-building exercises) — and `seed starting` (Science, 1) — distinct propagation/germination concept (pre-germination for transplant). All three are different scientific lenses on seeds; each gets its own canonical entry (Session 80/81 long-tail).
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (13 lessons across cluster — all members sampled)</summary>
+
+**`seeds` (13 total, 9 sampled):**
+
+- `19OW9S7QbgkM_XtHaYS-qOqrQi37ILPbe` **Seeds**: "Students will learn a dance to show what seeds need to grow and remove seeds from pods or fruits to save them."
+- `1OEkfD4RFpBGO3ThBUEyThjjgZtypepfB` **Seed Maps**: "Students examine different kinds of edible seeds, dissect a lima bean, and color in a picture of all the parts of a seed." [anatomy]
+- `1JYc3BYK-ZbYBcYQSUPKrFR3ocLhjnBRiFXFj3EV3CmE` **Cooking with Seeds: Ful Medames**: "Students will make connections to seeds that they eat, then work together to make ful medames, an Egyptian breakfast dish." [edible seeds]
+- `1z8haBSaUGDcZj8oJZm1GewvY6q9yqViChbrNxHpdRIQ` **Lentil Wraps**: "lentil wrap and discuss plant based proteins and signs of spring." [edible seeds / legume]
+- `1zJ9YkEXYPu4YVOJTwGJsYT2iUOUSYYhq` **Seed Mosaics**: "how a seed grows and will make seed mosaics."
+- `1oUCj2ax8d4JEgo-jveknC3gR3Q4kKUju03WTIt9EMvc` **Seed Saving and the Neolithic Revolution**: "origins of agriculture and seed saving…" [seed saving]
+- `1kFyghgNIAzktCjT5kRijYKY3qtg--4NS` **Seed Sorting, Greater Than or Less Than**: "sort seeds into groups based on their physical type…" [classification]
+- `1el1EApCZrr5y0a0yR1iYEdaZ23IMDEif` **Tropical Seeds**: "continue sowing seeds in the garden and learn that some tropical seeds are used to make cookies." [planting + edible]
+- `1VKc93F8VynYic-8QfH1o0gqyamu4d5ciD05_MiLPvYA` **Plant Part Puzzles**: "Students will plant seeds outside." [planting]
+
+**Adjacent canonicals (kept standalone, not merged):**
+
+- `seed dispersal` (Science, 3 — all 3 are model-building lessons on water/wind/animal-attachment dispersal mechanisms; distinct ecological lens). Sample: `1_WlZmDJv8Ql-sCLlOyxr2qL4zeb1GQda` **Seed Dispersal** ("Students build models of seeds that can float in water, float through the air, or attach to animals.")
+- `seed starting` (Science, 1 — Foods From Around the World: Final Vote — "start seeds for that recipe"; propagation/timing concept distinct from generic planting).
+
+</details>
+
+### `thermal_energy`
+
+- canonical_label: Thermal Energy
+- verdict: <to_fill>
+- frequency: 12 appearances
+- current_subjects: Science (12)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering heat transfer and thermal energy in cooking contexts — typically tied to "what happens when food cooks" lessons (boiling, baking, frying, melting). Related concepts `mechanical_energy` (Science, 1), `phases of matter` (Science, 2), and `states of matter` (Science, 1) are distinguishably different physics concepts kept as separate canonicals. Recommend keep as canonical with surface label "Thermal Energy".
+- curriculum_notes: <to_fill>
+
+### `colonialisms_impact`
+
+- canonical_label: Colonialism's Impact
+- verdict: <to_fill>
+- frequency: 12 appearances
+- current_subjects: Social Studies (12)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Social Studies content tag for lessons engaging the historical impact of colonialism on food systems, cultures, agriculture, and displacement — typically tied to Indigenous-foodways, transatlantic-trade, and post-colonial-displacement lessons. Possessive form ("Colonialism's") preserves the natural-language phrasing; canonical_key uses `colonialisms_impact` (apostrophe dropped per snake_case convention). No cross-subject signal; no near-duplicate drift. Adjacent concepts `slavery` (Social Studies, 1), `Native American history` (Social Studies, 1), `Indigenous knowledge` (Social Studies, 1), `Indigenous stories` (Social Studies, 1), and `history of the American West` (Social Studies, 1) are distinct cultural/historical concepts kept as separate canonicals (Session 81 long-tail review). Recommend keep as canonical with surface label "Colonialism's Impact".
+- curriculum_notes: <to_fill>
+
+### `food_webs`
+
+- canonical_label: Food Webs
+- verdict: <to_fill>
+- frequency: 11 appearances
+- current_subjects: Science (11)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering trophic-level relationships in ecosystems (producers → consumers → decomposers) — typically tied to "who eats whom" food-chain and ecosystem-modeling lessons. Distinct from related concepts `ecosystems` (Science, 73 — broader ecological-systems frame), `producers` (Science, 2), `consumers` (Science, 2), and `biodiversity` (Science, 6 + Social Studies, 1). Recommend keep as canonical with surface label "Food Webs".
+- curriculum_notes: <to_fill>
+
+### `seasonality`
+
+- canonical_label: Seasonality
+- verdict: <to_fill>
+- frequency: 11 as-tagged, 24 if aliases merge
+- current_subjects: Science (11)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: Health, Social Studies
+- merge_aliases: [("seasonal cycles", 6), ("seasonal eating", 7)]
+- theme_overlap: none
+- claude_notes: Canonical Science concept for the **food-availability lens** ("which foods grow in which season; cook with what's local and now") — typically tied to seasonal-scavenger-hunt, winter-fruit-salad, summer-harvest-salsa, and food-preservation lessons. Two near-duplicates fold in cleanly despite their misleading labels: `seasonal cycles` (Science, 6) — DESPITE the cycle-sounding label, 6 of 7 sampled lessons are seasonal-eating content (Pumpkin Spice Muffins, Food Miles, September Salsa Toasts, Tomato Sauce, Sweet and Sour Roots, Alice Waters edible education) — and `seasonal eating` (Science, 7) — pure food-availability lens (Eating in Season, summer-crop scavenger hunts, fall-harvest cooking, Food Geography - Pizza). Post-merge total: 24 lessons. Recommended secondary subjects (Health for nutrition-of-seasonal-eating, Social Studies for food-geography and local-food-systems) capture the cross-disciplinary nature of seasonal-eating lessons. **Companion canonical:** `seasonal_changes` (entry 32 below) is the **phenomenology lens** — keep as a separate canonical absorbing `seasonal change` (2) + `seasons` (2). The corpus mixes these two lenses heavily; see the audit-signal note at the bottom of the `<details>` block.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (38 lessons across the full seasonality + seasonal_changes cluster; combined evidence for both canonicals)</summary>
+
+**`seasonality` (11 lessons, tagged-as: `seasonality`):**
+
+- `1fScJvz-agCFPz1ycN-GLI2nw7G_xAorMMbJ7KTCbPKE` **Sweet Potato Fries: Lunch Club** [food lens]
+- `1gLuwRIEfiYyfqztlMGAEOeAuJI1flmj7` **Aloo Gobi** [food lens]
+- `1EPkNrvYIN_1pGe7zRjikBwIo2FcfNVxa3QADs26qYf8` **Winter Fruit Salad (Seasonality)** [food lens]
+- `1BVqAJ319zKHJq4EBMuvXu3nhn0o5Yc4iAnnh8TvwiEc` **PS 109 Leaf Rubbing Cards** [PHENOMENOLOGY — likely mistagged; should sit under seasonal_changes]
+- `1MUz9pgQ4Qb7hRGx0Rqhp5Xzma2xM6kjBZ2Y7P44urKU` **Two Types of Potato Hash Browns** [food lens]
+- `1kgvrmzkZ7o81URjqGwoq1DK0VicdTIHfvtXEvvmfxK8` **Winter Fruit Salad (Mobile Education)** [food lens]
+- `1UuTbP_4V0UhFCUjKKkHy7qaED4ZoyWHCMoHF70VflC4` **Seasonality Scavenger Hunt**: "which foods grow in which season." [food lens — definitional]
+- `14JdOakN4HRDb_auGVrz9hAWHPcgpp9BjEEqN1YJhgOg` **Food Preservation in the Kitchen**: "how seasonality affects cooking practices and techniques." [food lens — definitional]
+- `15pgBlVdHdxpRCD22dmwzIgG-aBgHwe8dK2BNzg-85ks` **The Garden in the Winter** [mixed: phenomenology + food]
+- `1kSgjpijAnIVj2ocA_UHc3ggMT2cdk8Z7` **Beet Ketchup**: "the importance of a root vegetable as a storage crop…" [food lens — storage-crop = seasonal-availability]
+- `1XmATwlVih6GFIL4MOlhDC2GXQuex6V0W` **Summer Harvest Salsa** [food lens]
+
+**`seasonal cycles` (6 of 7 sampled, tagged-as: `seasonal cycles`):**
+
+- `1K0zdfgOhbMmfWLeSwPfpz3dJ0RM7fLrAilQ2Ebfjilk` **Pumpkin Spice Muffins** [food lens — LABEL says cycles, CONTENT is food]
+- `1tVWgHidAxvsPRMW2aJXd6YcFP9w0kbK6uOj_nbpu-KM` **Food Miles Game** [food systems lens]
+- `0B9X3sp9nlAgmVmZpaFd6clptWTA` **September Salsa Toasts** [food lens — "exploring and eating the fall harvest"]
+- `1uV2W6gUUZMDDM4VlhghIJ9w4GoLHpd1_` **Women's History Month: Alice Waters** [food-systems / edible-education lens]
+- `1V2Xt4cB9K19aItujCO8lrshz1YDSW022Okln4jI0ij8` **Introduction to Salad Project** [food / year-long-growing lens]
+- `14J7Twqm1YFCToMB1DpIjtQhN_va2CH6r_iCJQSef5X0` **Tomato Sauce with Summer Vegetables**: "explore the bounty of late summer harvest." [food lens]
+- `1xdz4aJqRcHYaAluj-x3C0VoQRM3UNy-gERUvpuOuwcM` **Sweet and Sour Roots, Two Ways**: "discuss their qualities and seasonal availability." [food lens — definitional]
+
+**`seasonal eating` (7 sampled, tagged-as: `seasonal eating`):**
+
+- `1ncYLZbPt8k5p09bbTterR3d6U3hv6MzRH7-JXRP4rDQ` **The Seasons: Winter** [phenomenology — appears mistagged; part of Seasons template-trio]
+- `0BxEc0RZeYtCiUGNLaHJQSUFoQVE` **September Sixth Grade Summer Plant Hunt** [food / garden lens]
+- `0BxEc0RZeYtCiOWhTRk5FRjBUc0k` **Food Geography - Pizza**: "historic and geographic origins of the food they eat…" [food-geography lens]
+- `15uTWnv3aOIIeOLAhCjiA-9cG9xZlBKONpMZt-oyJYEQ` **September Sixth Grade Summer and Pizza Plant Hunt** [food lens]
+- `1cX_lHizAQAD-XccT95OugIwfmcCXIWsI35hk4ewmF1c` **The Seasons: Fall**: "the different kinds of weather… seasons go in a cycle." [phenomenology — same template as Seasons: Spring tagged under `seasonal_changes` elsewhere]
+- `1G2slXxMJJB4pRclGYIcjUA4XhGxqemytyzHQkJug3Yc` **Eating in Season**: "certain foods are available only in certain seasons in the northeast." [food lens — definitional]
+
+**`seasonal changes` (10 lessons, tagged-as: `seasonal changes` — belongs to companion canonical `seasonal_changes` below):**
+
+- `1CE324nZDL2kz_4P5TwDuvoX7Zx_NMwUz` **Leaf Collecting** [phenomenology]
+- `19ZBXDDQ5vZ2y5LrJ8w_7D7sqXSQNQeUF06ovPagaQo0` **Fall/Winter Veggies and Fruits** [phenomenology + light food]
+- `0BzCUl-9h7sgELW96MDR3dkZ3MlE` **Signs of Spring** [phenomenology]
+- `0BxEc0RZeYtCiVVRTV0xRM2FpQ3M` **The Year in Seasons**: "seasons go in a cycle." [phenomenology — definitional]
+- `13REACG4YMxTiRNKer3COca2quFvSlb1a` **Mr. Anthony's Spring Trees Unit** [phenomenology — also see entry 5 (`storytelling`) for cross-cluster note]
+- `1HHuEkR4gaoN7_Q7mlcteiDQ93glIfluzHF9sZSfZ0k8` **The Garden in the Summer** [phenomenology / garden phenology]
+- `1A34UK78EbtdHIVeiVe0lNiLJaJ557y-JlS_o673-hmw` **The Garden in the Fall** [phenomenology]
+- `1Yy7iv3vxPHukKFooYce0yr5BOqUcqprM2rhUWX12Cgo` **The Garden in the Spring** [phenomenology]
+- `1e0UWQYtEYVnGioomuIHx4LwJn3sJ8wKV` **Seasonal Changes**: "Students will observe and discuss the changes in trees throughout the year…" [phenomenology — definitional]
+- `1bO5UbLgXj5Puo2h-KXm31-0rmWIr4hItroTNYpIwta8` **The Seasons: Spring** [phenomenology — template-trio]
+
+**`seasonal change` singular (2 lessons; long-tail merge into `seasonal_changes`):**
+
+- `1CSPiEww-2bIuRRyPnbZAqG8K_8D1kw7hr85RSRJACSk` **Spring Special Spot and Signs of Spring Scavenger Hunt** [phenomenology — pure singular drift]
+- `19Sjs7Fz7Z8ToT421a3VVT_j8_b-KUXAp` **Fall: Special Spot** [phenomenology — pure singular drift]
+
+**`seasons` (2 lessons; long-tail merge into `seasonal_changes`):**
+
+- `0BwC8Pf3ZwAXjN04xRGEwcl9Cd0k` **The Summer Garden** [mixed — garden phenology + food; tag is generic]
+- `1Sh9vw7Co-Y5Sl4q-l4e1zUEojDscaxgof8AnWwlMI9A` **Garden Celebration: Culmination of Plant Parts and Seasons** [phenomenology — generic seasons review]
+
+**Audit signal (for the Stage 2 audit register):** `Seasons: Spring` is tagged `seasonal changes` while `Seasons: Fall` and `Seasons: Winter` (from the same template-trio) are tagged `seasonal eating` — direct evidence that the legacy taxonomy could not reliably distinguish these two concepts. When re-tagging in Stage 2, reviewers will need an explicit decision rule (food-availability lens vs cycle-phenomenology lens) to handle the template-trio consistently.
+
+</details>
+
+### `sensory_exploration`
+
+- canonical_label: Sensory Exploration
+- verdict: <to_fill>
+- frequency: 11 appearances
+- current_subjects: Science (11)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering five-senses exploration of food and garden materials — typically tied to early-grade taste/smell/touch/sight/sound activities (taste-test bars, sensory scavenger hunts, herb-smelling). Related concepts `taste` (Science, 1), `sound` (Science, 1), `observation` (Science, 5) are distinguishably narrower single-sense or methodology concepts kept as separate canonicals. Recommend keep as canonical with surface label "Sensory Exploration".
+- curriculum_notes: <to_fill>
+
+### `companion_planting`
+
+- canonical_label: Companion Planting
+- verdict: <to_fill>
+- frequency: 13 appearances (Science 10 + Social Studies 3)
+- current_subjects: Science (10), Social Studies (3)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Tagging-artifact cross-subject split. Companion planting is fundamentally an agronomic concept (intercropping plants whose biology benefits each other — the corn/beans/squash mutualism). All 13 lessons cluster tightly around one corpus theme: 11 are Three-Sisters / Lenape / Squanto Indigenous-agriculture lessons, plus 1 generic "Planting in Patterns" garden-pattern lesson, plus 1 cooking variant. The Science / Social Studies split reflects reviewer inconsistency rather than genuine cognitive-lens difference — identical lesson templates land on opposite subjects ("3 Sisters Tacos" → Social Studies vs "Three Sisters Tacos" → Science; "3 Sisters Dip" → Social Studies vs "Three Sisters Soup" → Science). The cultural/historical framing is already captured on these same rows by Social-Studies concepts `cultural traditions`, `Native American history`, `historical figures`, `colonialism's impact`, plus `culturalHeritage` tags. Recommend consolidate all 13 occurrences under Science as the canonical subject; Indigenous-agriculture context is preserved on the rows by the co-present Social-Studies concepts.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (13 lessons across Science + Social Studies — 10 Science, 3 Social Studies, 0 overlap)</summary>
+
+**Science cohort (10 lessons):**
+
+- `0BwC8Pf3ZwAXjMmRRd0xWTUQ0U1U` **Squanto's Ad Agency**: "agricultural techniques he taught the English…"
+- `0BwC8Pf3ZwAXjVTZsQVBuMUs3T2M` **The Lenape Farmers and Skits**: "agricultural techniques they used…"
+- `1XlUFSs_ls80ONwWgGCPHHA8re4kfmzgL` **The Three Sisters**: "understand how corn, beans, and squash help each other grow in the garden." [explicit biological-mutualism framing]
+- `1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4` **Planting in Patterns** (Science-only, sole non-Three-Sisters lesson): "design their own patterns, then plant in patterns in the garden." **The ONLY row with `companion planting` and NO Social-Studies tags — confirms the agronomic-not-cultural reading when stripped of Three-Sisters framing.**
+- `1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN` **Three Sisters Soup**: "highlights the agricultural method of companion planting." [explicit "agricultural method"]
+- `1AVz6xA4ZJO7mT3oWSJ2unIiY0APuj9yg` **Middle School Three Sisters Soup and Forage Salad**: same explicit "agricultural method" framing.
+- `13uPiVU50hQcj_Ho1vEhfJmVeK8BFTqb-0BdHmx-wIdg` **Three Sisters in the Kitchen**
+- `1hlnX5VDqvm83un6VT_B_OpJ08bZ9uN-KlS_lVYkqOE8` **Lenape Farming Techniques**: row also has `soil science` — pairing with another agronomic concept reinforces Science lens.
+- `1VYlTlYBqXiaIa1Tu9d9ZX8dI9YtYETH35bhDl8W3fgA` **Three Sisters Pupusas and Curtido**
+- `1fNjAzV9JZhGsVCvQZui8jtoSfcSBEiNkU9yhTg55lEQ` **Three Sisters Tacos**: nearly identical to the Social-Studies-tagged "3 Sisters Tacos" below — **smoking gun of reviewer-inconsistency.**
+
+**Social Studies cohort (3 lessons):**
+
+- `13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA` **The Story of the 3 sisters** (SS): story-only lesson; `companion planting` under Social Studies here likely reflects the absence of any actual planting activity.
+- `1BQdTnCzvCWc7u6MA9ey1HFm-H1g-fXdcgGXFU_Fxzww` **3 Sisters Tacos** (SS): same template as the Science **Three Sisters Tacos** above; opposite subject placement.
+- `1S_zIVPNORzjlZbmmm89reX2GFZFV1uwAM6B2mqa7B0U` **3 Sisters Dip & Pita chips** (SS): summary's "work well together / help each other" framing IS the companion-planting biological-mutualism claim, just rendered as story.
+
+</details>
+
+### `seasonal_changes`
+
+- canonical_label: Seasonal Changes
+- verdict: <to_fill>
+- frequency: 10 as-tagged, 14 if aliases merge
+- current_subjects: Science (10)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("seasonal change", 2), ("seasons", 2)]
+- theme_overlap: none
+- claude_notes: Canonical Science concept for the **phenomenology lens** — "seasons go in a cycle; signs of spring; trees changing through the year." The cleanest, most semantically coherent member of the broader seasonality cluster (10 of 10 lessons are phenomenology, vs the mixed signal in `seasonality` 11 / `seasonal cycles` 6 / `seasonal eating` 7). Two singletons fold in: `seasonal change` (Science, 2 — pure singular drift; both Spring/Fall Special Spot are garden-observation phenomenology) and `seasons` (Science, 2 — Summer Garden + Garden Celebration; generic seasons-cycle review). Post-merge total: 14 lessons. **Companion canonical:** `seasonality` (entry 29 above) is the **food-availability lens** — keep as separate canonical absorbing `seasonal cycles` (6) + `seasonal eating` (7). For the full `<details>` corpus-evidence block covering all 6 cluster members and the audit signal about scrambled corpus labels, see entry 29's `<details>` block above.
+- curriculum_notes: <to_fill>
 
 ---
 
