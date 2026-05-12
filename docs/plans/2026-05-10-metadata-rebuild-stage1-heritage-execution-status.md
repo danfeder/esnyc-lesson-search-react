@@ -28,22 +28,26 @@ Audit signal register (Stage 2 corpus cleanup / reviewer-validation intake): `do
 
 Fixed-shape orientation for the next session. Update at PR closeout (see PR closeout checklist below).
 
-**Stage 1 worksheet curriculum-team fill ✅ integrated to `main` via PR #491. Stage 1 content track is substantively complete. No actionable Stage 1 implementation task remains pending. Session 76 is TBD by user direction.**
+**Stage 1 worksheet curriculum-team fill ✅ integrated to `main` via PR #491. Stage 1 content track is substantively complete. Session 76 = §16 end-summary regeneration (user-locked Session 75 closeout).**
 
-- **Session:** Stage 1 Session 76 — TBD by user. Three plausible directions:
-  - **(a) §16 end-summary regeneration** — the §16 table still carries `<to_fill>` verdict cells throughout (per "Do not hand-edit — mechanically regenerated"). Implementing the regeneration parser (or hand-regenerating §16 from the now-filled per-value entries as a one-off) would close the final Stage 1 docs gap. Scope: write a parser per §7 conventions OR hand-regenerate §16 once.
-  - **(b) Pause until curriculum-team returns more verdicts** — they returned an initial fill (PR #491 integration); future rounds may surface corrections, audit-signal responses, or `<details>` Opus-corpus-read reactions. Foundation-phase code track also has no unblocked next PR.
-  - **(c) Pivot to foundation-phase code track** if PR 3b / 5 / 6 unblock prior to further curriculum-team return (e.g., if Resend setup completes and Phase 8a rejection UI becomes actionable, or if user pulls a foundation-track follow-up forward).
-- **Branch base:** N/A — no Stage 1 code/docs PR in flight until Session 76 direction is chosen.
-- **Primary objective:** N/A — depends on Session 76 direction.
-- **Stop point:** N/A — depends on Session 76 scope.
-- **Expected files to touch:** N/A — depends on Session 76 direction.
-- **First task:** Read foundation status doc Current State + this doc's Current state dashboard at session start; user confirms direction; proceed from there.
-- **Must verify:** N/A pre-merge — depends on what Session 76 ships.
+- **Session:** Stage 1 Session 76 — §16 end-summary canonical-vocab table regeneration. The §16 table still carries `<to_fill>` verdict cells throughout (per "Do not hand-edit — mechanically regenerated" rule). Regeneration closes the final Stage 1 docs gap.
+- **Branch base:** `main` at `9f268cd` (Session 75 closeout-backfill commit; downstream of PR #491 squash `d8af791`).
+- **Primary objective:** Regenerate the §16 88-row end-summary canonical-vocab table from the now-filled per-value entries in §11-§15 + §9.1. Output should reflect the curriculum-team verdicts: 51 keep / 17 merge / 20 new (plus the 13 drift-literal merge entries are structurally identity-shaped with their canonical targets per §7 alias_map convention; consumers filter on `verdict in ('keep', 'new')` before keying canonical vocabulary). Two implementation paths to choose between at Session 76 start:
+  - **(a) Parser-driven regeneration** — write a small Python script per §4 / §7 conventions that reads labeled-line per-value entries and emits the markdown table. Reusable across future Stage 1 / Stage 2 worksheets. Higher up-front cost; long-term reuse benefit. Reference: §4 says "similar to the activity-type-v2 worksheet parser."
+  - **(b) One-off hand-regeneration** — manually transcribe the now-filled verdicts from per-value entries into the §16 table (88 rows × verdict cell + any other affected cells). Lower up-front cost; throwaway. Acceptable since §16 is the only consumer of this output at this point.
+- **Stop point:** Once §16 table is fully regenerated with all 88 row verdicts reflecting the per-value entries' current state (no `<to_fill>` verdict cells remaining), plus row count + tier distribution + drift-canonical-identity invariants verified.
+- **Expected files to touch:** `docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` (§16 table); optionally `scripts/parse-heritage-worksheet.py` (or similar — if path (a) chosen). Status doc + foundation status doc updates at PR closeout per established Stage 1 pattern.
+- **First task:** Decide (a) vs (b) with user. If (a), explore whether the activity-type-v2 worksheet parser exists in-repo as reference; if (b), draft the regenerated §16 directly. Either way, verify §16's preamble explanations stay accurate (column spec, merge-target inline encoding, drift-entry identity convention).
+- **Must verify:**
+  - §16 row count = 88 (no rows added/dropped during regen).
+  - §16 verdict cell distribution matches per-value entries: 51 keep + 17 merge + 20 new = 88.
+  - §7 alias_map identity invariant intact: drift entries' `canonical_key` matches the merge target's slug.
+  - Tier distribution from §16 reconciles: 12 top + 19 sub + 57 internal (or updated post-fill if Decision 4 [tribal-nation tier] or Decision 5 [v3-corpus-absent tier] resolutions changed any tier).
+  - `<to_fill>` cell count in §16 drops from current ~75 (verdict-cells-only) to 0 (or to a documented residual if any field beyond verdict legitimately remains TBD).
 - **Do not do:**
-  - Pre-emptively rewrite curriculum-team-supplied verdicts (D1-D5 framing decisions, per-value verdicts, surface labels, parents, filter_ui_tier) without explicit user instruction — the team's choices on PR #491 are now the canonical fill. If round-2 review surfaces semantic issues (vs the spec-alignment fixes already shipped), surface to user; don't unilaterally re-litigate.
-  - Approve PROD migrations / deploys (N/A — docs-only / pause state, but explicit reminder).
-  - Hand-edit §16 verdict cells row-by-row without first deciding whether to regenerate (per "Do not hand-edit" rule). If regeneration is chosen, treat §16 as a generated artifact, not a hand-maintained one.
+  - Pre-emptively rewrite curriculum-team-supplied verdicts during regen — the regenerated §16 should mirror per-value entries faithfully; if a per-value entry has `verdict: keep` then §16 row's verdict cell should be `keep`. No re-litigation.
+  - Hand-edit §16 without first deciding parser vs hand-regen path. If hand-regen is the choice, document it as a one-off in the PR description so future maintainers know the table was hand-produced, not parser-produced.
+  - Approve PROD migrations / deploys (N/A — docs-only).
 
 ## PR closeout checklist
 
@@ -112,9 +116,9 @@ The Stage 1 work is split across multiple files; this block names which surface 
 - §16 end-summary table verdict cells remain `<to_fill>` — per "Do not hand-edit — mechanically regenerated" rule. Regeneration is a parser-driven step (or one-off hand-regeneration from the now-filled per-value entries); Session 76 candidate scope.
 - Further curriculum-team rounds (corrections, audit-signal responses, `<details>` Opus-corpus-read reactions): pending team feedback if any.
 
-**For next session (Stage 1 Session 76 = TBD by user direction):**
+**For next session (Stage 1 Session 76 = §16 end-summary regeneration, user-locked at Session 75 closeout):**
 
-See `## Next session contract` block at top of doc for the authoritative summary. Stage 1 content track is substantively complete after PR #491 curriculum-team-fill integration. Three plausible directions for Session 76: (a) §16 end-summary regeneration from the now-filled per-value entries (parser-driven or one-off hand-regen — the final remaining structural gap); (b) pause until curriculum-team returns more verdicts / corrections; (c) pivot to foundation-phase code track if PR 3b / 5 / 6 unblock. User decides direction at session start.
+See `## Next session contract` block at top of doc for the authoritative scope + must-verify list. Stage 1 content track is substantively complete after PR #491 curriculum-team-fill integration; §16 regeneration closes the final docs gap. Two implementation paths to choose between at Session 76 start: (a) parser-driven regeneration (reusable Python script per §4 / §7) or (b) one-off hand-regeneration of the 88 verdict cells. Decide with user.
 
 **Stop-point heuristic confirmed Sessions 62 + 64 + 66 + 68 + 70 + 72:** one cluster (or cross-cluster) per session is the right scope. Asian (18 entries, 7 Opus reads) + Americas (22 entries, 6 Opus reads) + African (10 entries, 2 Opus reads) + European (14 entries, 3 Opus reads) + Middle Eastern (11 entries, 2 Opus reads — smallest regional cluster root by lesson count) + Cross-cluster §9.1 (13 entries, 2 Opus reads — 57 distinct aggregate lessons split across AA cohort 26 + Indigenous cohort 31) each fit the session boundary cleanly. §9.1 is the third-smallest fill by entry count (vs Middle Eastern 11 / African 10) but second-largest by aggregate lesson coverage (vs Asian 63 / Americas 170 / European 53 / African 41 / Middle Eastern 23) — the cross-cluster nature spans canopy across all 5 regional clusters' geographic territories without owning any single one.
 
