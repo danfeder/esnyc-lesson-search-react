@@ -356,10 +356,23 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 4. Specific indigenous nations (`Lenape` 7, `Haudenosaunee` 3, plus v3-baseline `Three Sisters traditions` corpus-absent): are these `sub` or `internal` tier? Are they parented under a sub-region (Northeast Woodlands? Eastern Woodlands?) or directly under the diaspora-cluster root?
 5. v3-baseline-but-corpus-absent values (`Soul Food`, `Three Sisters traditions`, `Black culinary history`, `Cajun/Creole`): `keep` for future tagging, `drop` for lack of corpus signal, or `internal`-tier only?
 
+
+**Curriculum team framing decisions (filled at handoff):**
+
+**D1 — What do we call the diaspora/indigenous cluster?** "Indigenous and Diaspora" Single combined cluster root with both as parallel direct children
+
+**D2 — How do we name the African American value?** Use "African American" as the canonical label. Retire "African American diaspora"
+
+**D3 — Indigenous, Native American, or both?** Use "Indigenous" as the canonical label; merge "Native American" + "Indigenous/Native American" as aliases.
+
+**D4 — How are specific tribal nations parented?** Parent directly under Indigenous
+
+**D5 — What about v3 values with zero corpus lessons?** Keep them all as `internal`-tier placeholders for future tagging
+
 #### 9.1.1. Diaspora & Indigenous (cluster root — NEW canonical, 57 distinct child-value lessons aggregate)
 
-- **canonical_key:** `<to_fill>` (Decision 1 — `diaspora-and-indigenous` / `indigenous-and-diaspora` / split into two roots `diaspora` + `indigenous`)
-- **surface_label:** `<to_fill>` (Decision 1)
+- **canonical_key:** `indigenous-and-diaspora`
+- **surface_label:** `Indigenous and Diaspora`
 - **parent:** `null`
 - **filter_ui_tier:** `top`
 - **verdict:** `new`
@@ -373,9 +386,9 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `african-american`
 - **surface_label:** `African American`
-- **parent:** `<to_fill>` (cluster-root key TBD per Decision 1)
+- **parent:** `indigenous-and-diaspora`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>` (Decision 2 — keep `African American` as canonical surface label per corpus prevalence, with `African American diaspora` retired/merged; OR adopt v3-canonical `African American diaspora` and merge `African American` 24 into it)
+- **verdict:** `keep`
 - **aliases:** `["African American diaspora"]`
 
 <details><summary>Corpus evidence (26 active lessons; 24 `African American` + 2 `African American diaspora`; topical breakdown — 9 BHM/civil-rights historical-figure lessons, 8 Hoppin' John / Black-Eyed-Pea recipe lessons, 4 foodways/framework lessons including 1 Black-Eyed-Pea-Salad variant, 3 cornbread/greens recipe lessons, 1 Sweet Potato Biscuits, plus the 2 AA-diaspora rows; **North American pairing 65.4% (17/26 — combined AA + AA-diaspora; AA-only baseline is 66.7% at 16/24)** — substantially below §15.2 Levantine's 100% and §14.2 Mediterranean's 95%, surfacing AME-01; **3 West African + AA co-tags** and a separate **AFR-03 inverse pattern** of 7-8 West African + NA lessons missing AA; **continental `African` parent split** — 15 of 24 AA lessons carry `African` (foodways + Carver Garden + Cajun BEP + Hoppin' John burgers + Short History + cornbread foodways) while 9 omit it (BHM historical-figure lessons + Black Panther + Sweet Potato Biscuits) — a sub-pattern with no parallel in any other cluster.)</summary>
@@ -401,9 +414,10 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `african-american-diaspora`
 - **surface_label:** `African American diaspora`
-- **parent:** `<to_fill>` (cluster-root key TBD per Decision 1; alternative `african-american` if Decision 2 resolves canonical surface label to `African American`)
+- **parent:** `indigenous-and-diaspora`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>` (Decision 2 — most likely `merge` into `African American`; alternative `keep` if curriculum team prefers v3 surface label; X-04 + X-05 argue against `keep`)
+- **merge_into:** `african-american`
+- **verdict:** `merge`
 - **aliases:** `["African American"]` <!-- only load-bearing under the alternative Decision 2 direction where §9.1.3 stays canonical; under the primary recommendation (merge into `african-american`), aliases here is non-load-bearing -->
 
 **Notes:** v3 canonical surface label, parent = North American per v3 baseline (Appendix A — `African American diaspora` listed directly under `North American` with children `Soul Food` + `Black culinary history`). **2 corpus lessons, both problem rows** — neither is a clean instance of the canonical. **(1) `Edmond Albius and the Story of Vanilla`** (`1fHAR1HOSD0CTmyQkbhR8zTNwhAWfcnJn`) tags `[African, African American diaspora]` but body unambiguously locates Réunion (Indian Ocean / east-of-Africa) and the protagonist is Réunionnais — AFR-06 register entry. The `African American diaspora` tag in this row rides on a coda mentioning contemporary AA botanists rather than on the protagonist's heritage. **(2) `Soul Food Sunday`** (`1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M`) tags `[African American diaspora, North American, Americas]` but **the lesson body is a blank ESYNYC template stub never filled in** — only the title carries any signal. X-05 register entry. **Decision 2 implication:** the v3-canonical `African American diaspora` is functionally vacant in the active corpus — both rows are pathological, and the curricular weight of 24 `African American` rows decisively favors that surface label. Pre-handoff recommendation: `merge` into `African American` (canonical_key `african-american` per §9.1.2); Cajun/Creole + Soul Food + Black culinary history v3-baseline children re-parent under `african-american` if not retired (Decision 5 + §9.1.10 + §9.1.12 + §9.1.13). Filter-UI tier `internal` regardless of verdict given 2 corpus rows + both problem rows. Stage 2 audit signal cross-refs AFR-06 (Edmond Albius mis-allocation + missing East African), X-04 (canonical functionally vacant), X-05 (Soul Food Sunday template stub).
@@ -412,11 +426,11 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 #### 9.1.4. Indigenous (24)
 
-- **canonical_key:** `<to_fill>` (Decision 3 — `indigenous` per corpus prevalence, or `indigenous-native-american` per v3 canonical, or `native-american` per body-text frequency)
-- **surface_label:** `<to_fill>` (Decision 3 — `Indigenous` / `Indigenous/Native American` / `Native American`)
-- **parent:** `<to_fill>` (cluster-root key TBD per Decision 1)
+- **canonical_key:** `indigenous`
+- **surface_label:** `Indigenous`
+- **parent:** `indigenous-and-diaspora`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>` (Decision 3 — most likely `keep` at corpus-prevalent `Indigenous` surface label with `Native American` + `Indigenous/Native American` + `Indigenous Peoples` merging as aliases; alternative is to adopt v3-canonical `Indigenous/Native American` and backfill across 30 other rows)
+- **verdict:** `keep`
 - **aliases:** `["Native American", "Indigenous/Native American", "Indigenous Peoples"]`
 
 <details><summary>Corpus evidence (31 distinct lessons across Indigenous + Native American + Indigenous/Native American + Indigenous Peoples + Lenape + Haudenosaunee canonicals; ~17-18 Three Sisters lessons across all six canonical values, 3 Haudenosaunee Thanksgiving Address lessons, ~2 Lenape-specific non-Three-Sisters lessons, ~5 Native American/Indigenous-other framings, and 5 cross-cluster Latin American carry-ins. NA-pairing rate varies sharply by canonical: 79% Indigenous / 60% Native American / 43% Lenape / 100% Haudenosaunee / 0/1 Indigenous/Native American / 1/1 Indigenous Peoples)</summary>
@@ -444,9 +458,10 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `native-american`
 - **surface_label:** `Native American`
-- **parent:** `<to_fill>` (cluster-root key TBD per Decision 1; alternative `indigenous` if Decision 3 resolves canonical to `Indigenous`)
+- **parent:** `indigenous-and-diaspora`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>` (Decision 3 — most likely `merge` into `Indigenous` per corpus prevalence; alternative `keep` as parallel canonical to `Indigenous` if curriculum team chooses two surface labels)
+- **merge_into:** `indigenous`
+- **verdict:** `merge`
 - **aliases:** `[]`
 
 **Notes:** Surface-label variant of the §9.1.4 Indigenous canonical, 5 corpus rows: `All About Corn` (cross-cluster Latin American, no NA), `Blue Corn Cookies`, `Fry Bread & Stories`, `Thanksgiving in the Garden`, `Three Sisters Empanadas` (cross-cluster Latin American, no NA). NA-pairing 3/5 = 60% (AME-01). Body-text evidence (per §9.1.4 corpus excerpts) shows the corpus's pedagogical materials treat `Native American` and `Indigenous` as interchangeable surface labels for the same population — `Haudenosaunee Thanksgiving Address` body says "Native Americans, or Indigenous People" directly; `The Three Sisters` lesson body uses "Native Americans" even though its heritage tag is `Indigenous`; `Fry Bread & Stories` body uses "Native Americans" in tag-and-body alignment. Curriculum team Decision 3 picks the single canonical surface label between `Indigenous` (24, corpus prevalence) / `Native American` (5, body-text prevalence in `Indigenous`-tagged lessons) / `Indigenous/Native American` (1, v3 canonical). Pre-handoff recommendation: `merge` into `Indigenous` per corpus tag prevalence; surface label and canonical_key both shift to `Indigenous` / `indigenous`. Filter-UI tier `internal` regardless of verdict given merge candidacy. Stage 2 audit signal cross-ref AME-01 (NA-pairing inconsistency), X-07 (2 of 5 Native American rows route cross-cluster Latin American without NA — `All About Corn` + `Three Sisters Empanadas`), X-08 (`Indigenous/Native American` v3-canonical functionally vacant — Native American is the more-prevalent body-text surface label and the second-prevalent tag surface label).
@@ -457,9 +472,10 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `indigenous-native-american`
 - **surface_label:** `Indigenous/Native American`
-- **parent:** `<to_fill>` (cluster-root key TBD per Decision 1; alternative `indigenous` if Decision 3 resolves to `Indigenous` canonical with this as merge candidate)
+- **parent:** `indigenous-and-diaspora`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>` (Decision 3 — most likely `merge` into `Indigenous` per corpus-prevalence; alternative `keep` as v3-canonical surface label and backfill across all 31 cohort rows)
+- **merge_into:** `indigenous`
+- **verdict:** `merge`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical surface label, parent = North American per v3 baseline (Appendix A — `Indigenous/Native American` listed under `North American` with children `Lenape` + `Three Sisters traditions`). **1 corpus lesson** — `Plants and Music` (`1CAKF0L0SYp5fgaXqZrrb4G-K3LzOu56phWV9JFg67U8`) tagged `[Indigenous/Native American, Latin American, Americas]`, the cohort's only `Indigenous/Native American` row, and structurally a "ghost canonical" — the v3-merged surface label never propagated to the 30 other cohort lessons that use `Indigenous` (24), `Native American` (5), or `Indigenous Peoples` (1). The lesson body is a pan-global plants-and-music exploration anchored only by "Andean flute music" + "Native American heritage month" tag-as-keyword; the `Indigenous/Native American` cultural-heritage tag rides primarily on those weak signals rather than on substantive Indigenous body content (per §9.1.4 corpus excerpts + X-08 audit signal). Decision 3 implication: v3-canonical retention requires backfilling 30 lessons; v3-canonical retirement aligns with the corpus's existing splintered surface labels but reverses a v3 design decision. Pre-handoff recommendation: `merge` into `Indigenous` (Decision 3 corpus-prevalence direction); `Indigenous/Native American` retired as the v3 surface label. Filter-UI tier `internal` regardless of verdict given 1 corpus row + ghost-canonical status. Stage 2 audit signal cross-ref X-08 (v3-canonical functionally vacant — 1 corpus row + thin body content + never propagated through the rest of the cohort).
@@ -470,7 +486,7 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `indigenous-peoples`
 - **surface_label:** `Indigenous Peoples`
-- **parent:** `<to_fill>` (cluster-root key TBD per Decision 1; alternative `indigenous` if Decision 3 resolves to `Indigenous` canonical with this as merge alias)
+- **parent:** `indigenous-and-diaspora`
 - **filter_ui_tier:** `internal`
 - **verdict:** `merge`
 - **merge_into:** `indigenous`
@@ -484,7 +500,7 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `lenape`
 - **surface_label:** `Lenape`
-- **parent:** `<to_fill>` (Decision 4 — `indigenous` direct OR `eastern-woodlands` NEW sub-region intermediate; v3 baseline lists `Lenape` under `Indigenous/Native American` directly)
+- **parent:** `indigenous`
 - **filter_ui_tier:** `sub`
 - **verdict:** `keep`
 - **aliases:** `[]`
@@ -497,7 +513,7 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `haudenosaunee`
 - **surface_label:** `Haudenosaunee`
-- **parent:** `<to_fill>` (Decision 4 — `indigenous` direct OR `eastern-woodlands` NEW sub-region intermediate; not in v3 baseline so no v3 parent recommendation)
+- **parent:** `indigenous`
 - **filter_ui_tier:** `internal`
 - **verdict:** `new`
 - **aliases:** `[]`
@@ -510,9 +526,9 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `soul-food`
 - **surface_label:** `Soul Food`
-- **parent:** `<to_fill>` (Decision 5 — `african-american` per v3 baseline child-of-AA-diaspora structure; alternative `southern-united-states` if §12.17 NEW sub-region under North American per the §12 Americas cluster decision)
+- **parent:** `african-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>` (Decision 5 — `keep` for future tagging, `drop` for absence of corpus signal, or `internal`-tier-only as placeholder)
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical, parent = African American diaspora per v3 baseline (Appendix A — `Soul Food` listed under `North American → African American diaspora` as a child). **0 corpus lessons** — v3-baseline-but-corpus-absent per the §12.18 Dominican / §15.7 Lebanese precedent. **Body-text reference points** exist despite zero direct tagging: `Sweet Potato Biscuits` (§9.1.2 corpus) body invokes Soul Food framing without the tag ("candied yams, sweet potato pie" + "Black Americans from the south"); `Soul Food Sunday` (§9.1.3 AA-diaspora row) carries the title surface label "Soul Food" but the lesson body is a blank template stub (X-05). The Cajun Black Eyed Peas Slider variants (§9.1.2, 4 corpus rows) carry "Cajun" in title + body framing but route to `African American` not Soul Food. **Decision 5 implication:** the v3 children-of-AA-diaspora canonicals (Soul Food, Black culinary history) and the v3 sibling Cajun/Creole (§9.1.13) are all corpus-absent placeholders the curricular tagging convention does not deploy. Verdict options: `keep` for future tagging (curricular Soul Food signal is well-attested in body content; corpus may grow); `drop` for absence of direct corpus signal; or `internal`-tier-only as a placeholder. Filter-UI tier `internal` regardless of verdict given 0 frequency. Pre-handoff recommendation per Decision 5: `internal`-tier placeholder with parent = `african-american` (or §12.17 Southern United States NEW sub-region if §12 Americas cluster adopts that re-parenting structure). Curriculum-team verdict coordinates with §9.1.12 Black culinary history + §9.1.13 Cajun/Creole — parallel v3-baseline-corpus-absent cases. Stage 2 audit signal: this entry doesn't surface a new audit signal — it's a Decision-5-pending v3-baseline placeholder.
@@ -523,9 +539,9 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `three-sisters-traditions`
 - **surface_label:** `Three Sisters traditions`
-- **parent:** `<to_fill>` (Decision 5 + Decision 3 — v3 baseline lists under `Indigenous/Native American` as a child; alternative is to retire-as-canonical and treat Three Sisters as a cross-canonical-value theme per X-09)
+- **parent:** `indigenous`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>` (Decision 5 — `keep` for future tagging, `drop` for absence of corpus signal, or `internal`-tier-only; X-09 argues for retire or restructure since Three Sisters appears across cohort canonicals not under a single parent)
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical, parent = Indigenous/Native American per v3 baseline (Appendix A — `Three Sisters traditions` listed under `North American → Indigenous/Native American` as a child, sibling of `Lenape`). **0 corpus lessons** tagged with the v3 surface label `Three Sisters traditions` directly — but **17-18 corpus lessons have substantive Three Sisters body content** spread across 6 cohort canonicals: 11 `Indigenous`-tagged Three Sisters lessons (The Three Sisters, Three Sisters Soup, Three Sisters Succotash, etc.), 5 `Lenape`-tagged Three Sisters lessons (per §9.1.8), 1 `Indigenous Peoples`-tagged Lenape Three Sisters lesson (`Legend of the 3 sisters`), 2 `Native American`-tagged cross-cluster Three Sisters lessons (`All About Corn`, `Three Sisters Empanadas` — both via Latin American), plus the `Indigenous`-cross-cluster `3 Sisters Tacos` (Mexican + Latin American + Lenape) and `Three Sister Arepas` (Latin American + Indigenous). **X-09 audit signal:** Three Sisters is a *cross-canonical-value theme* in the corpus, not a child-of-one-canonical-value canonical. The v3-baseline single-parent placement (`Indigenous/Native American → Three Sisters traditions`) doesn't match corpus reality. Decision 5 verdict options: (a) `keep` as v3-canonical (would require backfilling 17-18 corpus lessons with the `Three Sisters traditions` tag at the country/specific-nation level, displacing/supplementing their current Lenape/Indigenous/Native American tagging); (b) `drop` as canonical and treat Three Sisters as a thematic-tag (potentially via the `tags` field rather than `culturalHeritage`); (c) `internal`-tier-only placeholder pending Decision 3 + Decision 4 resolution; (d) restructure as a sub-canonical-of-multiple-parents (would require schema support for multi-parent — see §12.4 Puerto Rican / §9.2 multi-parent patterns). Pre-handoff recommendation per Decision 5: `internal`-tier placeholder with retire-as-canonical leaning; Three Sisters topical content is well-served by the existing per-value tagging across Lenape / Indigenous / Native American, and the v3 sibling-to-Lenape placement doesn't fit how the corpus actually deploys the concept. Filter-UI tier `internal` regardless of verdict given 0 frequency. Stage 2 audit signal cross-ref X-09 (Three Sisters as cross-canonical-value theme — Decision 5 reshape).
@@ -536,9 +552,9 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `black-culinary-history`
 - **surface_label:** `Black culinary history`
-- **parent:** `<to_fill>` (Decision 5 — `african-american` per v3 baseline child-of-AA-diaspora; alternative `african-american-diaspora` if Decision 2 retains AA-diaspora as canonical)
+- **parent:** `african-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>` (Decision 5 — `keep` / `drop` / `internal`-tier-only)
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical, parent = African American diaspora per v3 baseline (Appendix A — `Black culinary history` listed under `North American → African American diaspora` as a child alongside `Soul Food`). **0 corpus lessons** — v3-baseline-but-corpus-absent per the §9.1.10 Soul Food precedent. **Body-text reference points** are diffuse — most §9.1.2 African American cohort lessons frame their content in Black-culinary-history terms (BHM cohort, Hoppin' John lessons, foodways lessons), but no corpus row carries `Black culinary history` as a tag because the cohort uses the cluster-level `African American` instead. Conceptually overlapping with `African American` as a tag (specifically the historical-framing subset, which is most of the cohort). Decision 5 verdict options identical to §9.1.10 Soul Food (`keep` / `drop` / `internal`-tier-only). Pre-handoff recommendation per Decision 5: `internal`-tier placeholder OR `drop` as canonical — the curricular vocabulary doesn't differentiate `Black culinary history` from `African American` at the tag level, suggesting the v3 child-canonical is functionally redundant with the parent canonical. Filter-UI tier `internal` regardless of verdict given 0 frequency. Curriculum-team verdict coordinates with §9.1.10 Soul Food + §9.1.13 Cajun/Creole. Stage 2 audit signal: this entry doesn't surface a new audit signal — it's a Decision-5-pending v3-baseline placeholder, parallel to Soul Food.
@@ -549,9 +565,9 @@ Values that don't fit a region→sub-region→country pattern get a single canon
 
 - **canonical_key:** `cajun-creole`
 - **surface_label:** `Cajun/Creole`
-- **parent:** `<to_fill>` (Decision 5 — v3 baseline lists under `North American` directly as a sibling of Indigenous/Native American + African American diaspora; alternative `southern-united-states` if §12.17 NEW sub-region adopted per the §12 Americas cluster decision; alternative `african-american` if §9.1.2 absorbs the v3 child-canonical given the corpus's Cajun BEP Sliders lessons all route through `African American`)
+- **parent:** `indigenous-and-diaspora` <!-- D5 + parent divergence: parented direct under cluster root rather than `african-american` (siblings §9.1.10 Soul Food + §9.1.12 Black culinary history are AA-parented); curriculum team treats Louisiana foodways as not reducible to AA identity. -->
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>` (Decision 5 — `keep` / `drop` / `internal`-tier-only; alternative `merge` into `african-american` per the Cajun BEP Slider corpus pattern)
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical, parent = North American directly per v3 baseline (Appendix A — `Cajun/Creole` listed as a sibling of `Indigenous/Native American` + `African American diaspora` under `North American`). **0 corpus lessons** — v3-baseline-but-corpus-absent. **Body-text reference points:** the 4 Cajun Black Eyed Peas Slider variants (§9.1.2 corpus, all 4 carry "Cajun" in title + body) demonstrate that the curricular vocabulary uses "Cajun" but routes the tagging through `African American + African` rather than through a `Cajun/Creole` canonical — the v3 child-canonical is functionally collapsed into AA at the tag level. **Cross-reference §12.17 Southern United States** (NEW candidate from §12 Americas cluster fill, 1 corpus lesson tagged): if Southern United States canonicalizes as a NEW North American sub-region, Cajun/Creole could naturally re-parent under it (per §12.2 North American Notes + §12.17 Notes). Decision 5 verdict options: (a) `keep` as canonical with v3-baseline parent `North American` direct; (b) re-parent under §12.17 Southern United States NEW sub-region; (c) `merge` into `african-american` (§9.1.2) per corpus tagging convention (the 4 Cajun BEP Slider lessons are all tagged AA); (d) `drop` as canonical given absent direct tagging; (e) `internal`-tier-only as placeholder. Pre-handoff recommendation per Decision 5: `internal`-tier placeholder with the `merge into african-american` option being the strongest corpus-tag-prevalence argument (4 Cajun BEP Slider rows route through AA); curriculum team may prefer `keep` + `southern-united-states` re-parent for richer regional structure. Filter-UI tier `internal` regardless of verdict given 0 frequency. Cross-references: §9.1.2 African American (corpus convention absorbs Cajun framing); §9.1.10 Soul Food + §9.1.12 Black culinary history (parallel v3-baseline-corpus-absent cases); §12.17 Southern United States (NEW candidate that would naturally parent Cajun/Creole if adopted); §12.2 North American Notes (cross-cluster reference to the same question). Stage 2 audit signal: this entry doesn't surface a new audit signal — it's a Decision-5-pending v3-baseline placeholder with multiple structural options.
@@ -686,7 +702,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Asian`
 - **parent:** `null`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (63 active lessons; 4 without sub-region/country, 59 with at least one child tag)</summary>
@@ -709,7 +725,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `East Asian`
 - **parent:** `asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (35 active lessons; 9 without a country tag, 26 with at least one)</summary>
@@ -732,7 +748,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `South Asian`
 - **parent:** `asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (15 active lessons; 4 without a country tag, 11 with at least one)</summary>
@@ -755,7 +771,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Southeast Asian`
 - **parent:** `asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (5 active lessons — 4 SE-Asian cuisine + 1 non-cuisine near-miss; 2 of the 4 cuisine lessons carry an SE-Asian country tag, 2 don't)</summary>
@@ -778,7 +794,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Central Asian`
 - **parent:** `asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical sub-region. Below the ≥5 corpus-read threshold; structural call. The single country canonical under Central Asian is `Uzbek` (4 lessons); the sub-region + country combine to 8 lessons of Central Asian content. Filter-UI tier `sub` proposed despite frequency 4 (below the default `sub` threshold of 5) — v3 canonical status and sole-parent-for-Uzbek role support sub-tier. Curriculum team may demote to `internal` if they prefer the strict frequency default.
@@ -791,7 +807,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Chinese`
 - **parent:** `east-asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (15 active lessons tagged with `Chinese`)</summary>
@@ -814,7 +830,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Japanese`
 - **parent:** `east-asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (9 active lessons tagged with `Japanese`)</summary>
@@ -837,7 +853,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Indian`
 - **parent:** `south-asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (7 active lessons tagged with `Indian`)</summary>
@@ -860,7 +876,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Pakistani`
 - **parent:** `south-asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = South Asian. Below the ≥5 corpus-read threshold; structural call. Note — the §11.3 South Asian corpus read surfaced an Aloo Gobi lesson tagged `South Asian` only that explicitly names Pakistani heritage; under-tagging suggests the actual `Pakistani` corpus footprint is larger than 4. Stage 2 re-tag should pick up the missing country tags. Filter-UI tier `sub` proposed despite frequency 4 (below the default sub threshold of 5) — v3 canonical status plus corroborating under-tagged evidence supports sub-tier.
@@ -873,7 +889,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Uzbek`
 - **parent:** `central-asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country and the only canonical child of Central Asian. Below the ≥5 corpus-read threshold; structural call. Filter-UI tier `sub` proposed despite frequency 4 — sole-child-of-Central-Asian status supports it.
@@ -886,7 +902,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Korean`
 - **parent:** `east-asian`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = East Asian. Just at the ≥3-lesson sub-tier bar per §11 cluster decision #2 (pre-handoff proposal — all ≥3 lessons get sub-tier). Below the ≥5 corpus-read threshold; structural call. The §11.7 Japanese corpus read surfaced a lesson tagged with both Japan and Korea (Daikon Pickles & Furikake), so Korean tagging extends beyond the 3 explicit Korean-only rows.
@@ -899,7 +915,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Vietnamese`
 - **parent:** `southeast-asian`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Southeast Asian. Below the ≥3-lesson sub-tier bar per §11 cluster decision #2 — `internal`-tier proposed (filter-searchable via FTS / embeddings but not surfaced as a clickable filter chip). Curriculum team may promote to `sub` given v3 canonical status. The §11.2 East Asian corpus read surfaced a Bánh Mì lesson mis-tagged as `Vietnamese + East Asian + Asian`; the correct parent chain is `Vietnamese + Southeast Asian + Asian` — flag for Stage 2 fix-up.
@@ -912,7 +928,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Sri Lankan`
 - **parent:** `south-asian`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (Appendix A South Asian lists Indian / Bengali / Pakistani only). 1 corpus lesson, but the §11.3 South Asian corpus read found the single Sri Lankan Curry lesson substantive — map activity, geographic locator, colonial-history context, ingredient specificity around coconut milk. Candidate for `new` verdict if curriculum team agrees; otherwise `merge → south-asian` is the structural alternative. `internal`-tier proposed regardless given the 1-lesson frequency.
@@ -925,7 +941,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Malaysian`
 - **parent:** `southeast-asian`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Southeast Asian. 1 corpus lesson. Below the ≥3-lesson sub-tier bar per §11 cluster decision #2 — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status.
@@ -938,7 +954,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Taiwanese`
 - **parent:** `east-asian`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = East Asian. 1 corpus lesson. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status.
@@ -1032,7 +1048,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Americas`
 - **parent:** `null`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (170 active lessons; ~28 genuinely pan-Americas or cross-continent, ~142 country/sub-region chains)</summary>
@@ -1055,7 +1071,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `North American`
 - **parent:** `americas`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (83 active lessons; cohort breakdown ~23 African American + West African diaspora, ~23 Indigenous-cluster, 2 Mexican cross-tag, ~35 USA-generic)</summary>
@@ -1078,7 +1094,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Latin American`
 - **parent:** `americas`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (77 active lessons; 38 with `Mexican`, 24 with no country tag, 4 with `Puerto Rican`, 11 distinct lessons with other-LA-country tags — 2 Cuban + 1 Jamaican + 2 Salvadoran + 2 Honduran + 2 Peruvian + 1 Brazilian + 1 Ecuadorian + 1 Guyanese = 12 tag-appearances but 11 distinct lessons since Rice & Beans 2-ways double-counts as Cuban + Jamaican)</summary>
@@ -1101,7 +1117,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Caribbean`
 - **parent:** `americas`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (17 active lessons; 11 in Cohort 1 — 7 country-tagged with hierarchy carry-up + 4 cross-cluster carry-ins; 4 pan-Caribbean / no-country; 2 Callaloo cross-cluster acknowledgments)</summary>
@@ -1124,7 +1140,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Mexican`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (38 active lessons tagged with `Mexican`)</summary>
@@ -1147,7 +1163,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Puerto Rican`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (4 active lessons tagged with `Puerto Rican` — full cohort read; all 4 dual-coded as Caribbean AND Latin American)</summary>
@@ -1170,7 +1186,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Salvadoran`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Latin American per v3 baseline. 2 corpus lessons. Below the ≥3-lesson sub-tier bar per §11 cluster decision #2 — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. If §12 framing #3's `Central American` NEW sub-region candidate is accepted, parent re-routes to `central-american`.
@@ -1183,7 +1199,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Honduran`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (Appendix A Latin American lists Mexican / Dominican / Puerto Rican / Salvadoran only). 2 corpus lessons. Candidate for `new` verdict — Honduran cuisine shares Central American culinary traditions with Salvadoran. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `Central American` NEW sub-region candidate is accepted, parent re-routes to `central-american`.
@@ -1196,7 +1212,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Cuban`
 - **parent:** `caribbean`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (Appendix A Caribbean lists only Jamaican). 2 corpus lessons (per direct TEST DB query): "Rice & Beans 2-ways" (heritage `[Cuban, Jamaican, Caribbean, Latin American, Americas]`) and "Everybody Cooks Rice" (heritage `[Cuban, Latin American, Americas]` — notably MISSING the `Caribbean` parent despite Cuba being geographically Caribbean). Candidate for `new` verdict — Cuban appears alongside Jamaican in the cross-Caribbean comparison lesson and is geographically + culturally a clear Caribbean country. The §12.6 Puerto Rican tostones body lists Cuba in its pan-Caribbean culinary geography — Cuban presence in the corpus is well-supported beyond just the 2 explicitly-tagged rows. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. **Stage 2 audit signal:** "Everybody Cooks Rice" is missing the `Caribbean` parent tag — should re-tag to `[Cuban, Caribbean, Latin American, Americas]` (or to multi-parent equivalent depending on the cluster decision).
@@ -1209,7 +1225,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Jamaican`
 - **parent:** `caribbean`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Caribbean per v3 baseline. 2 corpus lessons (Rice & Beans 2-ways pairs with Cuban; a separate Jamaican-tagged lesson per the §12.4 corpus read). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. (The §12.4 Caribbean and §12.6 Puerto Rican corpus reads both surface Jamaican as part of Anglophone-Caribbean comparison framings — well-supported corpus signal.)
@@ -1222,7 +1238,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Peruvian`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (Appendix A Latin American lists Mexican / Dominican / Puerto Rican / Salvadoran only). 2 corpus lessons. Candidate for `new` verdict — Peru is the largest South American country by population and culinary tradition; corpus presence well-supported. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american`.
@@ -1235,7 +1251,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Brazilian`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Brazil is the largest country in South America by population and area. Note: Brazil is Portuguese-speaking, not Spanish-speaking; "Latin American" parent is the v3-baseline-derived placement but Brazilian cultural identity sits adjacent to Hispanic Latin American rather than within it. `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american` (which would be a more natural geographic fit).
@@ -1248,7 +1264,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Ecuadorian`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Ecuador is part of Andean South American culinary tradition. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. If §12 framing #3's `South American` NEW sub-region candidate is accepted, parent re-routes to `south-american`.
@@ -1261,7 +1277,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Guyanese`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson. Candidate for `new` verdict — Guyana is geographically South American but culturally distinct (Anglophone, large Indo-Caribbean and Afro-Guyanese populations; culinary traditions overlap with Caribbean). The §12.4 Caribbean corpus read identifies the 1 Guyanese-tagged lesson as also tagged `Caribbean` — empirical multi-parent signal similar to Puerto Rican. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Cluster decision: parent could be `latin-american` (v3-baseline-style), `caribbean` (geographic-cultural fit), `south-american` (geographic fit if §12 framing #3's NEW sub-region candidate accepted), or multi-parent. Curriculum team call.
@@ -1274,7 +1290,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Central American`
 - **parent:** `americas`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (v3 has no `Central American` sub-region; v3 Latin American lists Mexican / Dominican / Puerto Rican / Salvadoran as flat country-specifics). 1 corpus lesson tagged with this value. Candidate for `new` verdict — would create a Central American sub-region as a sibling of Latin American and Caribbean. If accepted, would re-parent Salvadoran (2 lessons) and Honduran (2 lessons) from `latin-american` to `central-american`. Filter-UI tier `internal` proposed at the 1-corpus-occurrence level — curriculum team may promote to `sub` if the re-parenting cohort (Salvadoran + Honduran + this 1 row = 5 lessons) justifies sub-tier. **Cluster decision required:** §12 framing #3 asks specifically about this candidate.
@@ -1287,7 +1303,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `South American`
 - **parent:** `americas`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson tagged with this value. Candidate for `new` verdict — would create a South American sub-region as a sibling of Latin American and Caribbean. If accepted, would naturally re-parent Peruvian (2), Brazilian (1), Ecuadorian (1), and possibly Guyanese (1) from `latin-american` to `south-american`. Filter-UI tier `internal` proposed at the 1-corpus-occurrence level — curriculum team may promote to `sub` if the re-parenting cohort (~5-6 lessons) justifies sub-tier. **Cluster decision required:** §12 framing #3. Note: arepa-tagged lessons (Three Sister Arepas, Three Sisters Empanadas) are currently untagged for country (Colombian / Venezuelan) per §12.3 audit signal; Stage 2 country-tag backfill would also feed into the `south-american` cohort.
@@ -1300,7 +1316,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Southern United States`
 - **parent:** `north-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. 1 corpus lesson tagged with this value. Candidate for `new` verdict — would create a Southern United States sub-region under North American, useful for Soul Food / Cajun-Creole / Southern-cuisine framing. Note: v3 baseline lists `Cajun/Creole` as a `North American` child (currently corpus-absent — see §9.1 cross-cluster); if `Southern United States` becomes a canonical sub-region, `Cajun/Creole` could naturally re-parent under it. The §12.2 North American corpus read identified ~35 USA-generic lessons (Cohort D) that have no specific ethnic anchor — some of these may eventually carry `Southern United States` tagging if a southern-cuisine sub-region cohort emerges (Stage 2). Filter-UI tier `internal` proposed at 1-lesson frequency. **Cluster decision required:** §12 framing #3.
@@ -1313,7 +1329,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Dominican`
 - **parent:** `latin-american`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Latin American per v3 baseline. **0 corpus lessons** — this is a v3-baseline-but-corpus-absent value (per §12 framing decision #5). Verdict options: `keep` for future tagging (Dominican cuisine shares strong tradition with Puerto Rican and Cuban; corpus may grow); `drop` for absence of corpus signal; or `internal`-tier-only as a placeholder. The §12.6 Puerto Rican corpus read flags that the tostones body explicitly lists Cuba (also corpus-present, see §12.9) but NOT Dominican Republic, even though Dominican cuisine shares tostones / sofrito / similar Caribbean-Spanish-speaking diaspora — suggests Dominican is genuinely absent rather than under-tagged. Filter-UI tier `internal` proposed regardless of verdict given 0 frequency. **Note on convention:** this entry diverges from §11 Asian cluster's convention (where v3-canonical-corpus-absent values Filipino / Thai / Bengali were handled at cluster-decision-summary level without per-value entries). §12 framing decision #5 explicitly asks the verdict at per-value level, so Dominican gets a per-value entry. Curriculum team's verdict here also informs how to handle the parallel Asian v3-absent values.
@@ -1412,7 +1428,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `African`
 - **parent:** `null`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (41 active lessons; 3 genuinely pan-region, 9 country/sub-region chains without diaspora overlay, 25 cross-cluster diaspora carry-ins, 4 under-tagged residuals)</summary>
@@ -1436,7 +1452,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `West African`
 - **parent:** `african`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (15 active lessons; 14 of 15 carry at least one cross-cluster tag — only Nigeria/Red Bean Stew is pure West African + African. Cross-cluster pairings overlap — 1 lesson is both `African American` AND `North American`. Bucket counts: 3 with `African American`, 2 with `Caribbean`, 8 with `North American` (7 of those WITHOUT explicit `African American`; 1 of those also `Southern United States`), 2 with Americas-only cross-cluster (Juneteenth `1gHg6...` + Seed & Date Balls). 2 lessons additionally country-tag `Nigerian`.)</summary>
@@ -1462,7 +1478,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `North African`
 - **parent:** `african`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (Appendix A lists only `West African` as a sub-region under `African`). Proposed `new` candidate per the §13 framing block decision #1 — fills the structural gap for North African country-specifics (Egyptian, Moroccan). 2 corpus lessons currently carry `North African`:
@@ -1480,7 +1496,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `East African`
 - **parent:** `african`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. Proposed `new` candidate per the §13 framing block decision #1 — fills the structural gap for East African country-specifics (Kenyan, Ethiopian). 1 corpus lesson currently carries `East African`:
@@ -1497,7 +1513,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Nigerian`
 - **parent:** `west-african`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, listed in v3 baseline (Appendix A) directly under `African` without a `West African` intermediate. Pre-handoff structural recommendation: re-parent under `west-african` — both corpus lessons (`1HWSlL8xio3QQkculHrVLA0EvEBSU4Th_tEZU4pXiD4Q` "Nigeria / Red Bean Stew" and `10VASBkheY2wLqM6A81N6yLjwY0lMGbcFcQ7MElBYqEY` "A Short History of African American Farmers and Cooks") tag the full chain `[Nigerian, West African, African]`, providing empirical support. Below the ≥3-lesson sub-tier bar per the cluster-bar convention (§11 cluster decision #2; mirrored in §12 cluster decision #4) — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. No Stage 2 audit signal specific to Nigerian beyond the (cross-referenced) audit on `Stewed Black Eyed Peas w/Plantains` (body cites "Western Africa and Ghana" but tags only `[West African, African, African American, Americas]` — `Ghanaian` candidate; outside this entry's scope).
@@ -1510,7 +1526,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Egyptian`
 - **parent:** `north-african`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline (Appendix A's `African` cluster lists only `West African` sub-region + `Ethiopian` + `Nigerian` country-specifics; no Egyptian entry). Proposed `new` candidate. **Multi-parent — see §9.2.** Both Egyptian lessons in the corpus are ful medames but tag inconsistently: `1JYc3BYK-ZbYBcYQSUPKrFR3ocLhjnBRiFXFj3EV3CmE` ("Cooking with Seeds: Ful Medames") tags `[Egyptian, North African, African]` (African cluster route); `1K8JBnS7hTldpcB-f0CkDK94yYJyr_7r0itLDL3IOz4U` ("Ful Medames") tags `[Egyptian, Middle Eastern, African]` (Middle Eastern cluster route). The corpus splits 1/1 between the two cluster placements — neither convention has won. §9.2 pre-handoff recommendation: single-parent canonical home = `north-african` (geographic anchor + matches one of the two corpus rows); Middle Eastern flagged as multi-parent alternative for curriculum-team review per the §9.2 decision rule (culinary/cultural heritage tradition the lesson body invokes). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub`. Stage 2 follow-on: the two ful medames lessons should converge on a single tagging convention — whichever cluster wins, the other lesson should be re-tagged for consistency.
@@ -1523,7 +1539,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Kenyan`
 - **parent:** `east-african`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. Proposed `new` candidate. 2 corpus lessons: `18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS` ("Earth Heroes") tags `[Kenyan, African, Brazilian, Latin American, Americas]` — multi-country comparison lesson where Kenya is one of several "earth heroes" countries; `1k7KqowpILVoRe-X0sOiOtcwJyC8_fJ17nwLu-DW5_r4` ("October Seed Saving") tags `[Kenyan, African]` — Wangari Maathai content. **Empirical signal: 0/2 Kenyan lessons currently carry `East African` as parallel tag** — both chain directly to `African`. The pre-handoff re-parent under `east-african` is structural (matches the §13 framing block decision #1) rather than corpus-supported; Stage 2 backfill would add `East African` to both rows. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum-team consideration: confirm `east-african` parent (vs. direct under `african`) and whether the §13.4 East African sub-region warrants Stage 2 backfill on existing Kenyan rows.
@@ -1536,7 +1552,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Ethiopian`
 - **parent:** `east-african`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, listed in v3 baseline (Appendix A) directly under `African` without an `East African` intermediate. Pre-handoff structural recommendation: re-parent under `east-african` (per §13 framing block decision #1). 1 corpus lesson: `1PuE6Pj23USsj3DLlcZsDf9l_N59EEMgWNEGnp1O_AVE` ("Misir Wot (Ethiopian Spiced Red Lentils)") tags `[Ethiopian, African]` — does NOT carry `East African`. Empirical pattern matches Kenyan (§13.7): direct chain from country to cluster root, skipping the geographic sub-region. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed. Curriculum team may promote to `sub` given v3 canonical status. Stage 2 backfill: add `East African` to this row if the new sub-region is adopted.
@@ -1549,7 +1565,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Moroccan`
 - **parent:** `north-african`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** NOT in v3 baseline. Proposed `new` candidate. **Multi-parent — see §9.2.** 1 corpus lesson: `1LyuuuF-GNwUfVIgxrR_3NQLCEbD59GkfFN145WeTk3Q` ("Moroccan Carrot Salad, Two Ways") tags `[Moroccan, North African, African]` — clean three-level chain. Body anchors Morocco in "Northern Africa" with an explicit map activity ("The flavors of this recipe come from a country called Morocco in Northern Africa. Show Morocco on the map."). **No Middle Eastern corpus signal** — unlike Egyptian (§13.6), where the corpus split evenly 1/1 between North African and Middle Eastern, Moroccan's sole corpus lesson cleanly anchors in North Africa. §9.2 pre-handoff recommendation: `north-african` is the clear primary parent; Middle Eastern alternative noted in §9.2 only for curricular-framing parity with Egyptian — corpus does not support it. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed.
@@ -1607,7 +1623,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `European`
 - **parent:** `null`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (53 active lessons; 3 genuinely pan-region multi-continent, 35 hierarchical-chain country/sub-region (22 Italian + 5 Mediterranean-only + 3 Ukrainian + 2 Spanish + 2 Irish + 1 Greek), 11 cross-cluster Americas carry-ins, 4 anomaly residuals)</summary>
@@ -1633,7 +1649,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Mediterranean`
 - **parent:** `european`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (39 active lessons; 37 of 39 carry `European` as a parent — 95%; the 2 exceptions are `Street Vendors/Chicken Over Rice` and `Tastes Around the World`. Cohort breakdown: 23 Italian-anchored (B-Italian, 59%); 4 Spanish-anchored (B-Spanish, 10% — 2 actual Spain-cuisine + 2 Spanish-language-curriculum carry-ins to Latin American empanadas); 2 Greek (B-Greek, 5% — Tzatziki + Where Does Pizza Come From which is dual-tagged Italian + Greek); 8 pan-Mediterranean with no country (B-pan-Med, 21%); 4 cross-cluster anomalies where `Mediterranean` rides alongside non-European cluster tags (Food Preservation, Street Vendors, Tastes Around the World, Sandwich Swap — the last is also counted in B-pan-Med since it pairs hummus/pita with sunbutter/jelly across cluster lines without naming a country). Sum 23 + 4 + 2 + 8 + 4 = 41 reconciles to 39 via 2 acknowledged overlaps: Where Does Pizza Come From in both B-Italian and B-Greek; Sandwich Swap in both B-pan-Med and cross-cluster.)</summary>
@@ -1658,7 +1674,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Eastern European`
 - **parent:** `european`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical sub-region. 3 corpus lessons all carry the full `[Eastern European, European]` parent chain plus a country tag: `Borscht` (`1i-jRBvEt7y6JAIeoiGDsX7J75sok1BV4BXZbD-vYlp4`) tags `[Ukrainian, Russian, Eastern European, European]` — dual-country Eastern Europe pan-region lesson (body: "today we are making a soup that comes from Eastern Europe, countries like Russia and Ukraine… many Russian/Ukrainian students will be excited to share!"); `Foods From Around the World: Ukraine` (`1-AYK5D4_VEmu2ZWgFtaJItK_rn3hhoEK8YdPr_F0Ows`) tags `[Ukrainian, Eastern European, European]` — country-anchored Ukraine lesson with Ukrainian American NYC community framing; `Varenyky` (`1kk7iWzUOFQY786Ilr2MqaEiCmfv1EpUm`) tags `[Ukrainian, Eastern European, European]` — Ukrainian dumpling lesson. **Empirical signal: 3/3 Eastern European lessons carry `European`** (100% pairing rate) and 3/3 also carry `Ukrainian`; `Russian` appears only in the Borscht dual-tag. The canonical 3-level chain Ukrainian → Eastern European → European is consistently applied across all 3 rows. Filter-UI tier `sub` proposed (3 lessons is at the threshold per §6 conventions); curriculum team may consider `internal` given the low corpus frequency, but the sub-region serves a clear structural purpose as the canonical home for Ukrainian / Russian and (if `keep`) Polish (v3-corpus-absent — see §14.11). Stage 2 follow-on: if Polish receives a `keep` verdict, Eastern European sub-region acquires structural depth even without additional corpus rows. Worth confirming at handoff whether the v3 combined `Russian/Ukrainian` canonical should be split (see §14.6 Ukrainian, §14.9 Russian, EUR-12) — corpus already treats them as separate values per the Borscht dual-tag pattern.
@@ -1671,7 +1687,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Italian`
 - **parent:** `mediterranean`
 - **filter_ui_tier:** `sub`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (24 active lessons tagged with `Italian`)</summary>
@@ -1696,7 +1712,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Spanish`
 - **parent:** `mediterranean`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, listed in v3 baseline (Appendix A) under `Mediterranean`. **Multi-parent — see §9.2.** Corpus splits 2 + 3: the 2 Tortilla Española lessons (`1JEpJpbINYmbIN9j5W2dYrgIW6e0EqpalMa3kqm_53cI` + `1N7gRmGohK_fCtpiHemQTl1-Bpg-hwOF9`) tag pure Spain-the-country cuisine via the `[Spanish, Mediterranean, European]` chain (no Latin American); both bodies explicitly anchor "a recipe from a country in Europe called Spain." The 3 empanada lessons (BCCS Empanadas, Empanadas, Empanadas & Corn Salad) tag `Spanish` alongside Latin American + Americas as a colonial-origin bridge — body text "Empanadas are a popular food in Latin America but have origins in Spain." 4 of 5 Spanish-tagged lessons carry `Mediterranean` (only `Empanadas & Corn Salad` omits — it tags `[Latin American, Americas, Mexican, Spanish, European]`); all 5 carry `European`. §9.2 pre-handoff recommendation: single-parent canonical home = `mediterranean` (Spain-the-country anchor + v3 baseline placement + 4/5 corpus Mediterranean-pairing rate); Latin American flagged as multi-parent alternative for curriculum-team review per the §9.2 decision rule (culinary/cultural heritage tradition the lesson body invokes). Sits at the ≥5-lesson sub-tier threshold; `internal`-tier proposed as a conservative multi-parent bridge choice pending curriculum-team review (Latin American alternative flagged above). Curriculum team may promote to `sub` per the §6 threshold or retain the conservative call. Stage 2 audit signals captured to register entries EUR-11 (Spanish multi-parent disposition + AME-06 coordination — the 3 empanada lessons are reframed from over-tag to intentional colonial-origin bridge), EUR-13 (Empanadas & Corn Salad 5-tag stack reviewer validation — Mexican co-tag content-supported via Mexican-style corn salad ingredients but worth confirming the absence of Mediterranean is intentional), and EUR-05 (duplicate Tortilla Española rows shared with §14.2 Notes audit signal).
@@ -1709,7 +1725,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Ukrainian`
 - **parent:** `eastern-european`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, listed in v3 baseline (Appendix A) under `Eastern European` as part of the combined `Russian/Ukrainian` canonical entry. **Per §14 framing block decision #1: corpus already treats Ukrainian and Russian as separate values** (3 Ukrainian + 1 Russian as distinct heritage values, with only the Borscht row dual-tagging both); pre-handoff recommendation is `split` into separate canonicals, with Ukrainian retaining the Eastern European parent. 3 corpus lessons: `Borscht` tags `[Ukrainian, Russian, Eastern European, European]` (Eastern Europe pan-country lesson, "many Russian/Ukrainian students will be excited to share"); `Foods From Around the World: Ukraine` tags `[Ukrainian, Eastern European, European]` (country-anchored Ukraine lesson — body opens "today we are learning about Ukraine and the Ukrainian American community in New York City"); `Varenyky` (canonical row `1kk7iWzUOFQY786Ilr2MqaEiCmfv1EpUm`) tags `[Ukrainian, Eastern European, European]` (Ukrainian dumpling lesson, "Show the world map and ask students to identify Ukraine"). Empirical signal: 3/3 carry the full Ukrainian → Eastern European → European 3-level chain. Below the ≥3-lesson sub-tier bar (sits exactly at 3) — `internal`-tier proposed; curriculum team may promote to `sub` given v3 canonical status + the Ukrainian American NYC community framing in `Foods From Around the World: Ukraine`. Stage 2 follow-on captured to register entry EUR-12 (v3 `Russian/Ukrainian` combined canonical key needs explicit retirement — no corpus rows actually use the combined value; the corpus diverged from v3 by operating with separate Russian + Ukrainian values).
@@ -1722,7 +1738,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Greek`
 - **parent:** `mediterranean`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, listed in v3 baseline (Appendix A) under `Mediterranean`. 2 corpus lessons: `Tzatziki (Mobile Education)` (`1pcHIE8XKH0K4P0VkCFcpi-cAPiMqepljmPxYllnXYjU`) tags `[Greek, Mediterranean, European]` — body explicitly anchors "a traditional Greek yogurt and cucumber sauce" with explicit cross-regional comparisons ("This sauce is very popular in Greece as well as other countries in the Middle East. Many cultures around the world have similar yogurt sauces/dips, like Raita in India, Labneh in the Middle East, and Caesar/Ranch dressing in America."); `Where Does Pizza Come From?` (`0B5ixnZghJTD6QWZIRUo1cWZ1NWs`) tags `[Italian, Mediterranean, European, Greek]` — Greek lagana → Italian lasagna transmission lesson (body: "ancient Greeks had a flat, thin bread, which they called lagana. The Italians learned about lagana, which may have inspired them to create a flat, thin noodle that we call lasagna"); the corpus's only Italian + Greek dual-country row. Both bodies actively invoke cross-country Mediterranean transmission — Greek is the only Mediterranean country-specific where the sub-region label does meaningful semantic work in the body content (per §14.2 `<details>` Tagging pattern). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed; curriculum team may promote to `sub` given v3 canonical status + the pedagogically-substantive cross-Mediterranean transmission framing. Stage 2 audit signal captured to register entry EUR-04 (Microbiome lesson uses the same tzatziki recipe but strips the `Greek` country tag — under-tagging signal).
@@ -1735,7 +1751,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Irish`
 - **parent:** `european`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** **NOT in v3 baseline** (Appendix A's `European` cluster lists `Eastern European` + `Russian/Ukrainian` + `Polish` + `Mediterranean` + `Italian` + `Spanish` + `Greek` + `French`; no Irish entry). Proposed `new` candidate per §14 framing block decision #4. 2 corpus lessons both anchor cleanly to Ireland-the-country: `Ireland / Colcannon` (`1fD6vZTk364ZQ0tfBHJAHpW-itfX28me6_VJ-w1xFr1Y`) tags `[Irish, European]` with body "Intro to Ireland - show on map, discuss culture, highlight traditional foods" + Gaelic etymology ("cal ceannann," "white-headed cabbage") + Irish Potato Famine context; `Potato Leek Soup` (`18LGHGw5bid1uFmapJbJlSUlwX4-h7oUGNoZ-nu47egM`) tags `[Irish, European]` (November lesson — potato + leek + cabbage variation that fits the colcannon pattern). **Both Irish lessons skip the sub-region level** — they chain Irish → European directly (depth 2), not Irish → sub-region → European (depth 3) like Italian/Spanish/Greek (via Mediterranean) or Ukrainian/Russian (via Eastern European). No v3 sub-region (`Western European` / `Northern European`) exists for Ireland, and no other corpus country-specifics cluster there (French is v3-corpus-absent — see §14.10), so Irish acts as the only direct-under-European country-specific. Pre-handoff structural recommendation: keep parent = `european` (skipping the absent sub-region level is correct per §2 hierarchy-rules depth-flexibility — a 2-level chain is valid when the cluster shape doesn't call for a sub-region). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed; curriculum team may consider creating a new `Western European` or `Northern European` sub-region if the corpus is expected to grow to include additional UK / Nordic country-specifics. Stage 2 audit signal captured to register entry EUR-14 (depth-2-vs-depth-3 asymmetry between Irish and Italian/Spanish/Greek/Ukrainian/Russian — structurally legitimate but worth surfacing at canonicalization).
@@ -1748,7 +1764,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Russian`
 - **parent:** `eastern-european`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, listed in v3 baseline (Appendix A) under `Eastern European` as part of the combined `Russian/Ukrainian` canonical entry. **Per §14 framing block decision #1: pre-handoff recommendation is `split` into separate canonicals, with Russian retaining the Eastern European parent.** 1 corpus lesson: `Borscht` (`1i-jRBvEt7y6JAIeoiGDsX7J75sok1BV4BXZbD-vYlp4`) tags `[Ukrainian, Russian, Eastern European, European]` — the corpus's only Russian-tagged row, and it dual-tags both Ukrainian + Russian (body: "today we are making a soup that comes from Eastern Europe, countries like Russia and Ukraine… many Russian/Ukrainian students will be excited to share!"). Empirical signal: 1/1 Russian carries the full Russian → Eastern European → European chain plus the additional Ukrainian co-tag (Borscht is treated as a genuinely cross-country Eastern Europe lesson). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed; curriculum team may consider `keep` for future tagging given (a) v3 canonical status, (b) distinct culinary tradition from Ukrainian per §14 framing decision #1's geopolitical + culinary-distinctness rationale, (c) the single corpus row's dual-country tag is a legitimate Eastern Europe pan-country lesson rather than a tagging error. Stage 2 follow-on captured to register entry EUR-12 (same as §14.6 Ukrainian — v3 `Russian/Ukrainian` combined canonical key retirement; corpus already operates with the split).
@@ -1761,7 +1777,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `French`
 - **parent:** `european`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = European per v3 baseline (Appendix A — French is listed directly under `European`, **NOT** under `Mediterranean`, despite France having a Mediterranean coastline). **0 corpus lessons** — this is a v3-baseline-but-corpus-absent value (per §14 framing block decision #3). Verdict options: `keep` for future tagging (French cuisine is a curricular staple and the corpus may grow to include canonical French dishes like quiche, ratatouille, French toast); `drop` for absence of corpus signal; or `internal`-tier-only as a placeholder. Filter-UI tier `internal` proposed regardless of verdict given 0 frequency. **Note on convention:** matches the §12.18 Dominican (0) precedent — v3-canonical-corpus-absent values get per-value entries rather than being handled only at cluster-decision-summary level (a divergence from §11 Asian's convention for Filipino/Thai/Bengali). Curriculum-team consideration: v3's placement of French directly under `European` (skipping `Mediterranean`) implies French cuisine is treated as broader-than-Mediterranean — covers Northern French (Brittany, Normandy, Burgundy) plus Mediterranean French (Provence, Côte d'Azur). If `keep`, retain the v3 placement under European direct (not under Mediterranean). Curriculum-team verdict here also informs how to handle the parallel Polish v3-corpus-absent value (§14.11).
@@ -1774,7 +1790,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Polish`
 - **parent:** `eastern-european`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Eastern European per v3 baseline (Appendix A — listed under `Eastern European` alongside the combined `Russian/Ukrainian`). **0 corpus lessons** — this is a v3-baseline-but-corpus-absent value (per §14 framing block decision #3). Verdict options: `keep` for future tagging (Polish cuisine — pierogi, kielbasa, bigos — has substantial NYC community presence and the corpus may grow); `drop` for absence of corpus signal; or `internal`-tier-only as a placeholder. Filter-UI tier `internal` proposed regardless of verdict given 0 frequency. Matches the §12.18 Dominican (0) precedent for v3-canonical-corpus-absent values (per §14.10 French Notes convention). Curriculum-team consideration: if `keep` for Polish + Ukrainian + Russian, the `Eastern European` sub-region acquires structural depth and canonicalization treats it as a depth-3 sub-region; if `drop` for Polish, Eastern European still works at depth 3 for the canonically-active Ukrainian + Russian under it (per §14.3 Notes).
@@ -1856,7 +1872,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Middle Eastern`
 - **parent:** `null`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (23 active lessons; 2 cluster-root-only Cohort A, 19 hierarchical-chain Cohort B [13 Levantine-only + 3 Yemeni + 1 Persian + 1 Israeli + 1 Palestinian three-level chain], 2 cross-cluster Cohort C)</summary>
@@ -1883,7 +1899,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Levantine`
 - **parent:** `middle-eastern`
 - **filter_ui_tier:** `top`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 <details><summary>Corpus evidence (14 active lessons; **100% Middle Eastern pairing — 14/14 lessons carry `Middle Eastern` as parent, the cleanest hierarchical signal of any sub-region in the worksheet**. Cohort breakdown: 6 hummus-anchored (43% — Bean Dips, Hummus, Hummus and Pita, Harvesting Carrots/Hummus, Herb Hummus, Recipe Reading); 2 Fattoush-anchored (14% — Fattoush, Middle Eastern Salad - Fattoush); 3 Eid-specific (21% — Celebrating Eid, Dolmas for Eid, Ma'amoul Cookies for Eid); 3 standalone Levantine dishes (21% — Chilled Cucumber and Tahini Soup, Shepherd Salad, Za'atar with Roasted Potatoes). Country-tag pattern: 13 of 14 lessons (93%) tag `Levantine + Middle Eastern` ONLY with no country-specific tag; only `Hummus and Pita` (1 lesson) carries the 3-level chain `Palestinian → Levantine → Middle Eastern` — the cluster's only 3-level row. Body-text country naming is more frequent than tag-level naming: 5 lessons name specific Levantine countries in their bodies (Fattoush names "Syria, Lebanon, Jordan, Israel and Palestine"; Chilled Cucumber Soup names Palestine; Hummus and Pita names Palestine + Lebanon + Saudi Arabia + Iran + Iraq + Egypt; Middle Eastern Salad - Fattoush names "Iraq, Yemen, Lebanon, and Iran"; Za'atar names Egypt) but only Hummus and Pita carries that signal into the heritage tags. 0 cross-cluster anomalies — no Levantine lesson omits the `Middle Eastern` parent or pairs with a non-Middle-Eastern cluster.)</summary>
@@ -1909,7 +1925,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Yemeni`
 - **parent:** `middle-eastern`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** **NOT in v3 baseline** (Appendix A's `Middle Eastern` cluster lists `Levantine` [Palestinian, Lebanese, Syrian, Jordanian] + `Israeli`; no Yemeni entry). Proposed `new` candidate per §15 framing block decision #2. 3 corpus lessons all anchor cleanly to Yemen-the-country with depth-2 direct-under-Middle-Eastern tagging: `Yemeni Fasoulia` (`1ulDJYHIEKOqidEYl9gQ2xsBFEVhI2alJ`) tags `[Yemeni, Middle Eastern]` with body "Show Yemen on the world map. Depending on grade level, give a brief description of the situation in Yemen"; `Yemeni Shakshuka` (`1x4iNndIGdwuqZuIkMc9-iDkHsc7lA-Y8dG9nptzZKs8`) tags `[Yemeni, Middle Eastern]` with Yemen anchored via Hawaij spice mix + recipe-title framing (lighter body framing than Fasoulia, but Hawaij is a definitively Yemeni spice signature); `Zahawig` (`188Ph9s6OEdUgNQScQOxGiqAtvNd2r78X`) tags `[Yemeni, Middle Eastern]` with body explicit "Zahawig/Sahawiq, Middle East, Arabic, Yemen, condiment… Introduce the recipe of the day, zahawig, a sauce from Yemen" plus "This could be used as a part of a larger lesson unit about foods and cultural traditions of the Middle East." Empirical signal: 3/3 carry the depth-2 chain Yemeni → Middle Eastern with NO Levantine intermediate (Yemen sits on the Arabian Peninsula, not in the Levant). Structurally parallel to §14.8 Irish (depth-2 direct-under-European, no sub-region intermediate) and to the §13.4 East African / §13.3 North African NEW sub-region candidates surfaced in §13 African cluster. Below the ≥3-lesson sub-tier bar (sits exactly at 3) — `internal`-tier proposed; curriculum team may promote to `sub` given the clean Yemen anchoring across all 3 corpus rows and the curricular substance (map-locate + situation-context framing in Yemeni Fasoulia; Hawaij spice + zahawig sauce). Pre-handoff structural recommendation: parent = `middle-eastern` direct (Yemen doesn't fit Levantine cluster geography); if curriculum team prefers to surface an `Arabian Peninsula` sub-region NEW candidate (covering Yemeni + possibly future Saudi Arabian / Emirati / Omani country-specifics — Hummus and Pita §15.5 body names Saudi Arabia as a hummus-eating country), the parent re-routes to `arabian-peninsula`. Stage 2 audit signal cross-ref ME-05 (Yemeni depth-2 asymmetry parallel to EUR-14 Irish-direct-under-European — same canonicalization question).
@@ -1922,7 +1938,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Persian`
 - **parent:** `middle-eastern`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `new`
 - **aliases:** `[]`
 
 **Notes:** **NOT in v3 baseline** (Appendix A's `Middle Eastern` cluster lists `Levantine` + `Israeli`; no Persian or Iranian entry). Proposed `new` candidate per §15 framing block decision #3. **Multi-parent — see §9.2.** 1 corpus lesson `Kuku Sabzi` (`1q78Gpy8f9L1gXvJ8h2GvurXs9eaFMyIM`) tags `[Persian, Middle Eastern]` depth-2 direct-under-Middle-Eastern with body explicitly anchoring the Iran framing: "Show Iran on the world map. Explain that some people in Iran are Persian and that we are making a Persian herb omelette today called Kuku Sabzi." The lesson is a Persian herb omelette + Mast-o Khair cucumber-yogurt sauce. Empirical signal: 1/1 carries the depth-2 chain with NO Central Asian co-presence in corpus tagging. §9.2 pre-handoff recommendation: single-parent canonical home = `middle-eastern` (geographic anchor for modern Iran + cultural anchor of Persian-as-Iranian-identity + 1/1 corpus Middle Eastern pairing); Central Asian flagged as multi-parent alternative for curriculum-team review per §9.2 decision rule (historical Persianate world extends into Central Asia even though the corpus tags only the modern Iran framing — Persian-speaking populations in Tajikistan, Afghanistan, Uzbekistan; Silk Road / Mongol-era cultural diffusion). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed; curriculum team may consider `keep` for future tagging given v3-canonical status of similar single-country Middle Eastern values like Israeli + Palestinian. Stage 2 audit signal cross-ref ME-05 (depth-2 asymmetry; canonicalization question about whether an `Iranian` sub-region intermediate should be introduced).
@@ -1935,7 +1951,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Palestinian`
 - **parent:** `levantine`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Levantine per v3 baseline (Appendix A — Palestinian listed under `Levantine` alongside Lebanese, Syrian, Jordanian). 1 corpus lesson `Hummus and Pita` (`1eFmMW_gk1dR2uEpUWTVHylQAB7-OSAIKNfwc07Dbmgg`) tags `[Palestinian, Levantine, Middle Eastern]` — **the cluster's only depth-3 chain** (per §15.1 + §15.2 Notes). Substantive Palestinian-anchored body: "Students will read a story by a Palestinian author about olive trees in Palestine and how hummus is an important food in Palestinian culture since the main ingredients (chickpeas, olive oil, sesame) are native plants in that region and indigenous Palestinian people have stewarded this land, cared for these native plants and survived on this food for many generations… 'Today we are going to focus on one country that eats hummus and grows the plants needed to make hummus - Palestine!' …Both Palestinians and Israelis feel ancestral connections to the same land… However, Israel is forcefully occupying the land." Strong indigenous-stewardship framing + explicitly anti-occupation pedagogical content + Palestinian-author book anchor — the body justifies the full 3-level country tag in a way other Levantine-cohort lessons do not. Body also names 5 other hummus-eating Middle Eastern countries (Lebanon, Saudi Arabia, Iran, Iraq, Egypt) widening to pan-Middle-East scope while keeping the country focus on Palestine. Below the ≥3-lesson sub-tier bar — `internal`-tier proposed; curriculum team may consider `keep` for future tagging given v3 canonical status + the pedagogical substance of the single corpus lesson + likely growth potential for Levantine country-specifics. Stage 2 audit signal cross-ref ME-07 (sibling Chilled Cucumber and Tahini Soup lesson `13nUlv33...` has equally substantive Palestinian body framing — including "Show Palestine on the map. Today we are making a recipe from Palestine" + a Palestinian-chef video segment — but stops at `[Levantine, Middle Eastern]` without the country tag; under-tag candidate for backfill).
@@ -1948,7 +1964,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Israeli`
 - **parent:** `middle-eastern`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Middle Eastern direct per v3 baseline (Appendix A — Israeli listed directly under `Middle Eastern`, **NOT** under `Levantine`, despite Israel being Levantine geographically). **Multi-parent — see §9.2.** 1 corpus lesson `Breakfast around the World / Israeli Salad` (`18oKyXzj8zydRDEtQvZ68USr144_9vfMJhckXNo6NFVk`) tags `[Israeli, Middle Eastern]` matching v3's depth-2 placement, with body "Intro to Israel - show on map, discuss culture, highlight traditional foods. Israel is a small country in the Middle East (point it out on map) about the same size as New Jersey. The capital is Jerusalem… It has snowy mountains in the north, and hot deserts in the south. Most people speak either Arabic or Hebrew. Let's practice some Hebrew! To say hello, you say 'Shalom.'" Empirical signal: 1/1 carries the depth-2 chain with NO Levantine intermediate (matching v3) and NO Mediterranean co-presence. §9.2 pre-handoff recommendation: single-parent canonical home = `middle-eastern` (v3 baseline alignment + corpus signal + body's explicit "Israel is a small country in the Middle East" anchor); Mediterranean flagged as multi-parent alternative for curriculum-team review per §9.2 decision rule (Israeli cuisine has substantial Mediterranean overlap — hummus, falafel, shakshuka, Israeli salad are all Mediterranean-coded culinarily — but corpus tagging is purely Middle Eastern and no body content invokes Mediterranean framing). Below the ≥3-lesson sub-tier bar — `internal`-tier proposed; curriculum team may consider `keep` for future tagging given v3 canonical status. **Cross-reference §15.5 Palestinian:** both Israeli and Palestinian are Levantine geographically, but v3 routes them asymmetrically — Palestinian → Levantine → Middle Eastern (depth 3) vs Israeli → Middle Eastern (depth 2). The corpus follows v3's asymmetric routing exactly. v3-by-design (intentional placement reflecting the geopolitical sensitivity of Israeli-vs-Levantine identity rather than tagging error) — but worth recording explicitly for curriculum-team awareness during the §9.2 multi-parent disposition decision. Stage 2 audit signal cross-ref ME-05 (Israeli depth-2 canonicalization question — should Israeli route through `Levantine` like Palestinian, or stay depth-2 per v3?).
@@ -1961,7 +1977,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Lebanese`
 - **parent:** `levantine`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Levantine per v3 baseline (Appendix A). **0 corpus lessons** — this is a v3-baseline-but-corpus-absent value per the §12.18 Dominican / §14.10 French / §14.11 Polish precedent. Strong body-text reference points across the Levantine cohort despite zero direct tagging: `Hummus and Pita` (§15.5) body lists Lebanon as a hummus-eating country ("a food enjoyed in many different countries in the Middle East, like Lebanon, Saudi Arabia, Iran, Iraq, Egypt"); `Fattoush` (§15.2) body explicitly names Lebanon as a Levantine country ("It includes countries like Syria, Lebanon, Jordan, Israel and Palestine"); `Middle Eastern Salad - Fattoush` body names Lebanon. Fattoush itself is canonically Lebanese-Syrian cuisine, suggesting Lebanese-specific tagging would be content-justified on multiple Levantine cohort lessons. Verdict options: `keep` for future tagging (curricular Lebanese signal is well-attested in body content; corpus may grow); `drop` for absence of direct corpus signal; or `internal`-tier-only as a placeholder. Filter-UI tier `internal` proposed regardless of verdict given 0 frequency. Pre-handoff recommendation per §15 framing block decision #1: keep at `sub`-tier (Levantine cluster has high curricular significance and country-specific signals can emerge as the corpus grows). Curriculum-team verdict here also informs Syrian + Jordanian dispositions (§15.8, §15.9) — parallel structural cases. Stage 2 audit signal cross-ref ME-09 (Lebanese / Syrian / Jordanian country-tag backfill candidates across the 13-row country-less Levantine cohort).
@@ -1974,7 +1990,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Syrian`
 - **parent:** `levantine`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Levantine per v3 baseline (Appendix A). **0 corpus lessons** — v3-baseline-but-corpus-absent per the §12.18 Dominican / §15.7 Lebanese precedent. Body-text reference points: `Fattoush` (§15.2) body names Syria as a Levantine country ("It includes countries like Syria, Lebanon, Jordan, Israel and Palestine"); `Dolmas for Eid` (§15.2) body explicitly names Syria via the "Yebra - Syria" entry in the multi-country stuffed-grape-leaves vocabulary list. Fattoush itself is canonically Lebanese-Syrian cuisine, suggesting Syrian-specific tagging would be content-justified on Fattoush cohort lessons. Verdict options identical to §15.7 Lebanese (`keep` / `drop` / `internal`-only placeholder). Filter-UI tier `internal` proposed regardless of verdict given 0 frequency. Pre-handoff recommendation per §15 framing block decision #1: keep at `sub`-tier. Curriculum-team verdict coordinates with §15.7 Lebanese + §15.9 Jordanian. Stage 2 audit signal cross-ref ME-09.
@@ -1987,7 +2003,7 @@ The following block is a **template** showing the shape of a cluster section. Pe
 - **surface_label:** `Jordanian`
 - **parent:** `levantine`
 - **filter_ui_tier:** `internal`
-- **verdict:** `<to_fill>`
+- **verdict:** `keep`
 - **aliases:** `[]`
 
 **Notes:** v3 canonical country, parent = Levantine per v3 baseline (Appendix A). **0 corpus lessons** — v3-baseline-but-corpus-absent per the §12.18 Dominican / §15.7 Lebanese precedent. Body-text reference points: `Fattoush` (§15.2) body names Jordan as a Levantine country ("It includes countries like Syria, Lebanon, Jordan, Israel and Palestine"); the `Hummus` (§15.2) lesson frames the lesson around `The Sandwich Swap`, a picturebook by a Jordanian-American author (Queen Rania of Jordan + Kelly DiPucchio) — but the lesson body never names the author or the Jordanian connection explicitly, so the Jordanian framing is structural / authorial rather than body-text-supported. Verdict options identical to §15.7 Lebanese (`keep` / `drop` / `internal`-only placeholder). Filter-UI tier `internal` proposed regardless of verdict given 0 frequency. Pre-handoff recommendation per §15 framing block decision #1: keep at `sub`-tier. Curriculum-team verdict coordinates with §15.7 Lebanese + §15.8 Syrian. Stage 2 audit signal cross-ref ME-09.
