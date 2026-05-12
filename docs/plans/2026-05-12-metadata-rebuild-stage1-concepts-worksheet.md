@@ -437,7 +437,262 @@ When the worksheet is filled and ready for hand-off, the next-stage tool parses 
 >
 > **Frequency cutoff calibratability:** the ≥10 cutoff is the Session 78 locked default. Session 79 may recalibrate after seeing full per-concept frequency context.
 
-<!-- Per-value entries land here in PR-Concepts-1 (Session 79). -->
+<!-- Per-value entries — Phase 2a (Session 79; entries 1–11 of 32). Subsequent phases 2b + 2c append below. -->
+
+### `plant_parts`
+
+- canonical_label: Plant Parts
+- verdict: <to_fill>
+- frequency: 239 appearances
+- current_subjects: Science (239)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Highest-frequency concept in the corpus (239 lessons) and the canonical anchor for plant-anatomy content across grades K–5 (roots, stems, leaves, flowers, fruits, seeds). Pure single-subject home; no cross-subject signal and no near-duplicate drift in the v3 baseline. Related concepts `roots` (Science 2) and `root vegetables` (Science 3) are anatomically more specific concepts the corpus distinguishes from the generic `plant_parts` (not aliases). Recommend keep as canonical with surface label "Plant Parts".
+- curriculum_notes: <to_fill>
+
+### `cultural_traditions`
+
+- canonical_label: Cultural Traditions
+- verdict: <to_fill>
+- frequency: 206 as-tagged, 208 if aliases merge
+- current_subjects: Social Studies (206)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("family traditions", 1), ("international food traditions", 1)]
+- theme_overlap: none
+- claude_notes: Second-largest concept in the corpus and the canonical Social Studies content tag for "this lesson engages with a cultural practice, holiday, or food heritage" — used broadly across AAPI Heritage Month, Lunar New Year, Black History Month, Three Sisters, hummus, Aloo Gobi, Thanksgiving lessons. Both Social-Studies singletons in this cluster — `family traditions` (Tamales lesson, 1) and `international food traditions` (Fattoush lesson, 1) — are already dual-tagged with `cultural traditions` and read as pure narrowings of the parent concept (family-specific framing; programmatic-theme framing); safe to fold in as aliases. Note: `cultural narratives` (Literacy/ELA, 8) is intentionally NOT merged here — it stays as its own standalone Literacy/ELA canonical entry (Session 80, mid-tier) since 7 of 8 instances co-tag with `storytelling` and consistently center reading/writing/telling a culturally-rooted story (genuine literacy-side narrative-storytelling lens, distinguishable from the broad SS content tag).
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (10 lessons sampled across cluster members)</summary>
+
+**`cultural traditions` (Social Studies; 206 total, 5 sampled):**
+
+- `1vtacAdf80q9FyZ4dEEzWmVLdycRmgJ7_MSRbrweoGwA` **AAPI Heritage Month — Philippines & Lumpia**: "Students will continue to learn about AAPI heritage month with a lesson focusing on the Philippines… Students will also prepare lumpia, which is a popular Filipino recipe."
+- `1B3Phuk-DzUJFDHJKfg9RPlolcBWMeaq6gwWRjOfhU9I` **Hoppin' John Burgers: Celebrating Black History Month**: "Students will make Hoppin' John burgers, then will read 'What If We Were All The Same,' and discuss how our differences are important."
+- `1LIpgLeP6F2iRRUklhiZKEKNIJm4XNfwNuO67ilEgwEM` **Lunar New Year and Dumplings**: "Third stop on our cooking world tour, learning about dumplings in preparation for Lunar New Year."
+- `0BxEc0RZeYtCicXRsbXUyaDNKSEU` **Thanksgiving in the Garden**: "Students will learn how Thanksgiving is tied to Native American agriculture and how Native Americans passed along their knowledge to colonial Americans…"
+- `12afDXwtfouvdhbJWIlpB07gF2L-N0KDg9Ws_OXqcca0` **Aloo Gobi (3–5)**: "Students will learn to make a simple and delicious Indian dish known as Aloo Gobi. They will discuss trade and what it means to grow different ingredients in different climates."
+
+**`family traditions` (Social Studies; 1, all surveyed):**
+
+- `1zbfn_WweqPwJD_we1vyGzaVTVLRvtXOaICLEpKwHxjg` **Tamales** (dual-tagged with `cultural traditions`): "Students will define tradition and share food traditions from their family. Students will make tamales with bell pepper, onion, and tomato filling." — Pure family-specific narrowing of the parent concept.
+
+**`international food traditions` (Social Studies; 1, all surveyed):**
+
+- `1TUWRgAOk2dykAk6yzDOqf4nVxXtk5PL3oRyE9V-3wMk` **Middle Eastern Salad — Fattoush** (dual-tagged with `cultural traditions`): "Students will practice making Fattoush… They will explore the bounty of the late summer harvest and begin investigate this year's theme of international food traditions." — Programmatic-theme narrowing.
+
+**Cross-cluster: `cultural narratives` (Literacy/ELA; 8 total, 4 sampled) — STAYS STANDALONE, not merged here:**
+
+- `1XlUFSs_ls80ONwWgGCPHHA8re4kfmzgL` **The Three Sisters** (LE; `cultural narratives` + `storytelling`): "Students will read a version of the Three Sisters legend to understand how corn, beans, and squash help each other grow in the garden."
+- `113uxucSb35_m5yZ2GQeRWlzEuDWivLJ_G5LNgOx_vRc` **Food Roots Lesson** (LE; `cultural narratives` + `storytelling`; also SS `cultural traditions` + `immigration stories`): "Students will listen to a food roots story read aloud… come up with their own food roots narrative…"
+- `1qTGQcuxoW6erfUZvXAoFPaYeXnoMxf8dcjSdKNTRO8U` **Celebrating Georgia Gilmore: Pies from Nowhere** (LE; `cultural narratives` + `storytelling`; also SS `historical figures` + `civil rights movement`): biography read-aloud about the Montgomery Bus Boycott.
+- `1eFmMW_gk1dR2uEpUWTVHylQAB7-OSAIKNfwc07Dbmgg` **Hummus and Pita** (LE; `cultural narratives` + `storytelling` + `recipe reading`): "Students will read a story by a Palestinian author about olive trees…"
+
+Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 6 of 8 also tag SS `cultural traditions` (already double-coded across subjects).
+
+</details>
+
+### `nutrition_education`
+
+- canonical_label: Nutrition Education
+- verdict: <to_fill>
+- frequency: 107 appearances (Health 100 + Science 7)
+- current_subjects: Health (100), Science (7)
+- recommended_primary_subject: Health
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Heavily asymmetric cross-subject split — Health-100 vs Science-7 — but the Science-7 is **not a coherent biology-of-nutrition cohort**; it's a tagging-artifact of how `academicConcepts` got populated when Health was absent from a lesson's `academicIntegration` array. 6 of the 7 Science-tagged rows are cultural-recipe lessons (Agua Fresca, All About Corn, Juneteenth, BHM: Ice Cream Heroes, Carbon Footprint Tacos, Plants as Medicine) whose other Science concepts are absent or unrelated. Only Glucose Regulation (1 of 7) is genuinely science-framed AND it is already double-tagged with Health, so consolidating to Health-only loses zero signal. Recommend consolidate to Health as sole canonical subject. If a future lesson genuinely teaches the biology of nutrition (digestion, metabolism, macronutrients), a distinct Science concept like `digestion` or `human body systems` is more appropriate than overloading `nutrition_education`.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (13 lessons across Health + Science — all 7 Science + 6 Health-only sample)</summary>
+
+**Science-tagged cohort (all 7):**
+
+- `12eCbV1wJMk_qL3DPKY3qaR_q_eu7CpojLr0tmJXHm5k` **Plants as Medicine**: "Students will make a tea bag of aromatic herbs to understand how plants have been used as medicine." `academicIntegration: ["Science","Social Studies"]` — no Health. Botany + cultural-medicine framing, not biology of nutrition.
+- `14JtnclwiZhMFr_MxwL9pK9D1StoyIhElXZUZX-sngKI` **Carbon Footprint / Black Bean Tacos**: "Students will learn about the carbon footprint of animal vs. plant based foods… while making black bean tacos." Sustainability + recipe; nutrition_education tag incidental.
+- `1bjiET8ffFpU5_gCMgJBiTDPuHhE0lCPGBnv72LXzrW4` **Black History Month: Ice Cream Heroes**: "history of the Black chefs who popularized ice cream… plant-based ice cream made with only bananas." History + recipe.
+- `1gHg6aknsieTv59SaRFx0HJy9Zft4oKFdUXiX3MzCd8A` **Juneteenth**: "discuss Juneteenth, why many people eat red foods… make a red fruit salad." Holiday + recipe.
+- `1OfOMGHJwRPuGSfoM4TQ1A4J2bLbs7EPh1t_83NNngME` **Glucose Regulation** (Science + Health): "Students will test how much glucose is in different foods and drinks." **The only genuinely-science-framed row** — already double-tagged with Health.
+- `1UmWmKPM-RNKCwVU4p3HbroX3b90NHUDpT6E_grpguUI` **Agua Fresca**: recipe + culture lesson.
+- `1xaMyZf2OTGpX2GAD8-qgYADXHw1vTevByfs1bJ55lNs` **All About Corn**: history-of-an-ingredient lesson.
+
+**Health-tagged sample (6 of 100):**
+
+- `1QiqNPrXEpDXt7Hmc8uMC8hWCSNfhi3qacbIuVzqZxZA` **Juneteenth and Cultural Awareness Through Cooking** (Health): same lesson genre as the Science-tagged Juneteenth above, but here `academicIntegration: ["Social Studies","Health"]` puts nutrition_education under Health. **Direct evidence the split tracks `academicIntegration`, not lesson content.**
+- `1GmkjYCD6QLIreMRxv6ebg0K1oc5U9y43` **Green Smoothie & Black Bean Brownies** (Health): "examine the role of sugar in both plant and human nutrition… fiber and protein which balance out the sugar/energy rush." More biologically-framed than 5 of 7 Science-tagged rows, yet correctly Health-only.
+- `1fScJvz-agCFPz1ycN-GLI2nw7G_xAorMMbJ7KTCbPKE` **Sweet Potato Fries: Lunch Club** (Health): pure recipe + healthy-snack framing.
+- `1xAHtAr8-faQdQW0eEoA_CL1pcySGhzsWguOj9e5R3UQ` **Trail Mix at PS 96** (Health): "make trail mix… learn about healthy snacks…"
+- `1dXzaZv3yFh5wlHxkkZPPCrQdJWsXT5-tvGA4CP3yNuY` **Do we Recognize these Logos?** (Health): food-marketing context.
+- `1f_AqSOkZJxlDgEKca_ePV4ywfJRapbY8SYzWUytUefo` **Vegetarian Chili** (Health): cafeteria-recipe lesson.
+
+**Cross-cohort overlap:** Of 100 Health + 7 Science rows, only **1** carries both tags (Glucose Regulation). Health is the dominant home (100 / 107 = 93.5%); the Science-7 is not a coherent biology-framed subset but a tail of cultural-recipe lessons whose reviewer-chosen `academicIntegration` excluded Health.
+
+</details>
+
+### `visual_arts`
+
+- canonical_label: Visual Arts
+- verdict: <to_fill>
+- frequency: 76 as-tagged, 78 if aliases merge
+- current_subjects: Arts (76)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("coloring", 1), ("craft activity", 1)]
+- theme_overlap: none
+- claude_notes: Canonical Arts content tag for lessons engaging visual creation (drawing, painting, collage, garden journaling, plant illustration). Two long-tail singletons surfaced from the Wave 3 vague-singleton scan should merge in: `coloring` (Arts, 1 — pre-drawn seed-map coloring on a row already co-tagged `drawing`, so the merge is lossless) and `craft activity` (Arts, 1 — paper-cutout construction of a winter "garden bed"; too vague to be canonical). Both are PK–K lessons. Related concept `drawing` (Arts, 9) is intentionally NOT merged — it remains its own mid-tier canonical entry (Session 80) as a distinct visual-arts technique. Recommend keep as canonical with surface label "Visual Arts".
+- curriculum_notes: <to_fill>
+
+### `storytelling`
+
+- canonical_label: Storytelling
+- verdict: <to_fill>
+- frequency: 76 appearances (Literacy/ELA 75 + Arts 1)
+- current_subjects: Literacy/ELA (75), Arts (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA content tag for narrative-comprehension and oral-sharing practices — picture-book read-alouds (*The Carrot Seed*, *Spring After Spring*), personal food-memory sharing, letter writing, cultural-narrative reading. The single Arts-tagged lesson ("Mr. Anthony's Spring Trees Unit") shows no distinguishably performative or theatrical lens — its summary is one sentence, body fields are empty, and `storytelling` is redundantly tagged under both subjects on the same row. Only 1 of 75 (1.3%) Literacy/ELA storytelling lessons also carries Arts:storytelling, and it is precisely this thinly-described row. No coherent performative-storytelling cohort exists in the corpus. Recommend consolidate to Literacy/ELA as sole canonical subject; reserve a distinct Arts concept like `dramatic performance` or `puppetry` if curriculum ever needs a genuine theatrical-storytelling lens.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (6 lessons across Literacy/ELA + Arts; co-occurrence stats from full 75-row population)</summary>
+
+- `13REACG4YMxTiRNKer3COca2quFvSlb1a` **Mr. Anthony's Spring Trees Unit** (Arts AND Literacy/ELA): summary is one sentence — "Students will learn all about Spring Trees!" No body fields populated. `academicConcepts` carries `storytelling` redundantly under both `Arts: ["visual arts","storytelling"]` and `Literacy/ELA: ["storytelling","vocabulary development"]`. The Arts tag is not paired with any performative/theatrical concept; it sits next to `visual arts`. **This is the only lesson in the corpus carrying Arts:storytelling.**
+- `1eFmMW_gk1dR2uEpUWTVHylQAB7-OSAIKNfwc07Dbmgg` **Hummus and Pita** (LE): "Students will read a story by a Palestinian author about olive trees in Palestine and how hummus is an important food in Palestinian culture…" Narrative/comprehension lens.
+- `1pIcyAiQqaFTZTDsU6TR5G3sRyo_EmsVH` **Food Memories** (LE): "Students will share a food memory… use sensory language to describe what they smelled, heard, felt and tasted." Personal-narrative + ELA vocabulary work.
+- `1uV2W6gUUZMDDM4VlhghIJ9w4GoLHpd1_` **Women's History Month: Alice Waters** (LE): "Students will write letters to Alice…" Composition + biographical reading.
+- `1Ebh6tFUdUgk3BwowZPq-JCvADMo2SOff` **Women's History Month: Rachel Carson** (LE): "*Spring After Spring* will be read aloud…" Picture-book read-aloud.
+- `1nHQfqeyaGR6lr0zGuanfS_SFTzlPWNh2` **The Carrot Seed** (LE): canonical picture-book read-aloud — textbook narrative-comprehension use.
+
+**Co-occurrence stats (full 75-lesson LE storytelling population, `retired_at IS NULL`):**
+
+- 75 lessons tag `storytelling` under Literacy/ELA.
+- 20 of 75 (27%) also carry some Arts concepts in `academicConcepts.Arts` (e.g., `visual arts`) — but those Arts arrays are for other concepts.
+- Only 1 of 75 (1.3%) also carries `storytelling` under Arts — the Spring Trees row.
+- The performative-lens hypothesis (puppetry, drama, oral-tradition-as-performance distinct from narrative reading) finds zero supporting evidence in the Arts:storytelling row or in the broader corpus.
+
+</details>
+
+### `ecosystems`
+
+- canonical_label: Ecosystems
+- verdict: <to_fill>
+- frequency: 73 appearances
+- current_subjects: Science (73)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: YES — `ecosystems` (concepts, Science 73) is **exact-string identical** to `Ecosystems` (themes, Title Case canonical per `src/utils/filterDefinitions.ts`) under `lower()`. This is the only exact-string concept↔theme collision in the corpus (the other two case-normalized overlaps — `food systems` / `plant growth` — are not exact-string). Per D-C5, adjudication (which side keeps the canonical string; whether both keep with cross-reference; whether one side renames) is deferred to the themes worksheet / D4 canonicalization migration. Flag preserves the signal for the future reconciliation pass.
+- claude_notes: Canonical Science concept covering food webs, habitat interdependence, biodiversity, and ecological-systems thinking. No near-duplicate drift within the Science concepts vocabulary; related concepts `food webs` (Science, 11) and `biodiversity` (Science, 6 + Social Studies, 1) are intentionally distinct (food webs = trophic-level focus; biodiversity = species-diversity focus). The only complication is the theme-overlap flag — `ecosystems` shares an exact-string vocabulary with `thematicCategories: Ecosystems`. Resolution defers to the themes worksheet per D-C5; this entry surfaces the signal and recommends keep as Science canonical pending that reconciliation.
+- curriculum_notes: <to_fill>
+
+### `recipe_reading`
+
+- canonical_label: Recipe Reading
+- verdict: <to_fill>
+- frequency: 69 appearances
+- current_subjects: Literacy/ELA (69)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA content tag for reading a recipe as procedural text — students follow ordered instructions, decode ingredient lists, and use the recipe as a comprehension/decoding artifact while cooking. Confirmed across 5 sampled lessons spanning grades K–5. Two related Literacy/ELA concepts intentionally stay standalone (Session 80, mid-tier): `recipe_writing` (LE, 2) — students *compose* their own recipes drawing on personal/cultural knowledge — and `recipe_selection` (LE, 1) — students *vote among* their designed recipes as an evaluation/decision-making practice. The three represent distinguishable literacy moves (comprehension vs. composition vs. evaluation), not a single canonical with aliases. Note also: `recipe_scaling` (Math, 3) is a separate Math-side concept (fractions/ratios for scaling), **not** part of this Literacy/ELA family.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (10 lessons across recipe-reading + sibling LE concepts + recipe_scaling Math comparison)</summary>
+
+**`recipe reading` (Literacy/ELA; 69 total, 5 sampled):**
+
+- `1l6irtaLAUCwJKUVzi0mFwnVsFrsYpdBmLqOgHZ7RKSk` **Garden on a Cracker**: "Students will discuss what can be found in a garden and assemble a 'garden' on a cracker… work together to follow a recipe to make a simple bean dip…" Recipe-as-procedural-text.
+- `1SXGRa4IWP5stnCgUctK5H7kp2gYIzTWbex4yWNbJzqI` **Pearsauce/Applesauce (3K/PreK)**: "Students will be able to name their favorite fruits and follow along with a recipe." Earliest-grade follow-the-recipe practice.
+- `15MzdlSDCvHEWEDsD83ukH9Y49qj-MNcfdjtcpdAna3w` **Following Instructions**: "Students will practice following instructions and work together to complete a recipe… practice knife skills and follow the steps of a recipe." Framed explicitly as instructions-following.
+- `1bSSPsUhFEcR1eFzEB9_PvsoANMmvNhTXYxePmhRQ0lI` **Vegetable Whole Wheat Pasta**: cooking lesson with multi-step recipe execution.
+- `1VopeukPABPXfPNpelqpzrVTnBmj-KMauFyeZ68a62BQ` **Summer Veg Saute (Knife Cuts Part 2)**: recipe as procedural anchor for knife-skills practice.
+
+**`recipe writing` (Literacy/ELA; 2 total, both surveyed — standalone canonical, not merged here):**
+
+- `19CMwluTwweSei-u_gCvoerBrGG839U_Al7a4ORiZKa8` **Fruit Salad Challenge**: "Students will compete in teams to make the best fruit salad…" Team-based composition of an original recipe — distinct from reading an existing one.
+- `167u70cUC4N1EJ9H-9IAl1c4J7zGZ6Ta_LOvDStgqGks` **Foods From Around the World: Recipe Design**: "create their own recipe, using their personal knowledge and their learning in this unit." Explicit recipe composition.
+
+**`recipe selection` (Literacy/ELA; 1 total — standalone canonical, not merged here):**
+
+- `1nNPA0q0yh9gE_Qz7Nx5_jmUIqhkOAOWrISWtv7pYLs4` **Foods From Around the World: Final Vote**: "Students will vote on their recipe for their final class of the year and start seeds for that recipe." Companion to the Recipe Design lesson — evaluation/decision-making practice (also CASEL "responsible decision-making").
+
+**`recipe scaling` (Math; 3 total, 2 sampled — separate Math-side concept, NOT part of this Literacy/ELA family):**
+
+- `1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX` **Equivalent Ratios** (Math): "Students will calculate equivalent ratios to complete a recipe to feed the whole class." Math computation using a recipe as context.
+- `1_rHQ9aGoFQkgrM1ebgtqo5o6ZjJqXAoA` **Green Room Party** (Math): math (likely scaling) precedes recipe execution.
+
+</details>
+
+### `historical_figures`
+
+- canonical_label: Historical Figures
+- verdict: <to_fill>
+- frequency: 69 appearances (Social Studies 68 + Literacy/ELA 1)
+- current_subjects: Social Studies (68), Literacy/ELA (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: The Social Studies / Literacy/ELA split is almost certainly a v3 batch-tagging inconsistency, not a genuine cognitive-lens distinction. The Social Studies cohort (68 lessons) covers historical individuals as agents of cultural, civic, or scientific change — Cesar Chavez, George Washington Carver, Black History Month figures, ancient civilizations' staple-crop architects, LGBTQ activists — and that lens (people-as-history-makers) is the canonical home. The single Literacy/ELA outlier ("In the Garden with Dr. Carver") teaches the SAME historical figure (Carver) via picture-book read-aloud; a separate Social-Studies-tagged lesson ("Lotion & Agar Soap — K") on the same person sits cleanly under Social Studies. If "biographical reading comprehension" were a distinct ELA lens, we would expect dozens of similar lessons, not one. Recommend consolidate `historical_figures` to Social Studies as sole canonical subject; the read-aloud-of-biography dimension is already captured by `storytelling` under Literacy/ELA. Note related concept `historical_context` (Social Studies, 1) — likely also a candidate `keep` or `merge into historical_figures`, deferred to Session 81 (long-tail review).
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (7 lessons across Social Studies + Literacy/ELA)</summary>
+
+- `13biNspAVeUukqY_WNu7jN4CQKydttOt7OR85dnY3EFw` **In the Garden with Dr. Carver** (Literacy/ELA — sole non-SS row): "Students will read a story about plant scientist Dr. Carver and then will do a garden job… Students will learn about an exemplary Black scientist, gardener, and leader whose work and knowledge contributes to our garden today." Co-tagged `storytelling` under LE. K-grade read-aloud biography.
+- `1f1FVc2FsYYwFtCFWDRAxSfsT3BcPC1E5` **Lotion & Agar Soap — K** (Social Studies — SAME person, Carver): "Students will create two cosmetics recipes & make connections to Dr. George Washington Carver…" **Direct evidence the LE/SS split is tagging-artifact, not lens distinction — same person, different subject tag.**
+- `1B-4jTGPsOXmFJp-q-4JpMJ3e7Qw5I92aOxtgWHD6UNU` **Farm Workers & Pesticides** (SS): "Students will read a story to learn about how pesticides negatively affect farm workers and learn about the activist work of Cesar Chavez…" Civic/activist-figure lens; note also involves "read a story" but is tagged SS.
+- `1QiqNPrXEpDXt7Hmc8uMC8hWCSNfhi3qacbIuVzqZxZA` **Juneteenth and Cultural Awareness Through Cooking** (SS): holiday-anchored historical-events lens.
+- `1uDDPxAKSjEPYMU36W80bEbSMa_YuuGPNw62CXFGD6hM` **Hoppin' John Burgers: Celebrating Black History Month** (SS): cultural-contributors-as-historical-figures lens.
+- `1Bu7pmpP3oDfpHBPwCaroz3gpJokwB3TjZfkJUKYzk-k` **The Tradition of Lesbian Potlucks** (SS): movement-figures / community-history lens.
+- `0BzCUl-9h7sgEVHdwcE9LZlJxRXM` **Staple Foods: Amaranth** (SS): "NYS Social Studies 2.3a: Understand the roles and contributions of individuals and groups to social, political, economic, cultural, scientific, technological…" Standards-anchored.
+
+</details>
+
+### `measurement`
+
+- canonical_label: Measurement
+- verdict: <to_fill>
+- frequency: 66 appearances
+- current_subjects: Math (66)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Highest-frequency Math concept in the corpus (66 lessons; ~44% of all Math concept appearances). Canonical Math content tag for measurement skills (length, volume, weight, temperature, time, area, perimeter — typically in cooking and gardening contexts). Closest related Math concepts — `weight` (1), `volume` (2), `area` (1), `perimeter` (1) — are anatomically more specific and corpus-distinguished from the generic `measurement` tag (not aliases). Recommend keep as canonical with surface label "Measurement".
+- curriculum_notes: <to_fill>
+
+### `vocabulary_development`
+
+- canonical_label: Vocabulary Development
+- verdict: <to_fill>
+- frequency: 59 appearances
+- current_subjects: Literacy/ELA (59)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA content tag for vocabulary-building activities — naming, defining, expanding word knowledge in cooking and garden contexts. Pure single-subject home; no cross-subject signal and no near-duplicate drift in the v3 baseline. Related LE concepts (`reading comprehension` 6, `descriptive language` 1, `figurative language` 1, `sensory details` 1) are distinguishably different literacy practices, kept separate. Recommend keep as canonical with surface label "Vocabulary Development".
+- curriculum_notes: <to_fill>
+
+### `geography`
+
+- canonical_label: Geography
+- verdict: <to_fill>
+- frequency: 56 appearances
+- current_subjects: Social Studies (56)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Social Studies content tag for lessons engaging with regional/national/global geography — typically tied to "where this food/ingredient comes from" framing. No cross-subject signal and no near-duplicate drift in the v3 baseline. Related concepts `map reading` (Social Studies, 1) and `trade routes` (Social Studies, 16) are distinguishably narrower practices kept as separate canonicals. Recommend keep as canonical with surface label "Geography".
+- curriculum_notes: <to_fill>
+
+<!-- Phase 2b + 2c entries append below in this same PR (Session 79). -->
 
 ---
 
