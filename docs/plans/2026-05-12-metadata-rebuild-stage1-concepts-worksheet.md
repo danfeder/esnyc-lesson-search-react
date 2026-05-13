@@ -3077,6 +3077,19 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - claude_notes: Comparative-biology concept — typically tied to early-grade life-science lessons comparing plants and animals. Adjacent §11 `life_cycles` 43 (broader cyclic-process frame for both plants and animals) is the established canonical home. Recommend merge into §11 `life_cycles` 43 OR drop as too vague / specific to a single lesson framing. The 1-lesson signal is thin; lean toward merge.
 - curriculum_notes: <to_fill>
 
+### `plant_based_proteins`
+
+- canonical_label: Plant-Based Proteins
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific nutrition concept — plant-derived protein sources (legumes, beans, nuts). Adjacent freq-2 `protein` 2 (Sci) + long-tail `macronutrients` 1, `macromolecules` 1, §12 `legumes` 3 + §11 `nutrition_education` 107 cover related nutrition-chemistry concepts. Recommend merge into §12 `legumes` 3 (the specific protein-source canonical for plant-protein lessons) OR into `protein` 2 (the broader protein canonical) OR §11 `nutrition_education` 107 (the broader nutrition canonical). Pending curriculum-team verdict; lean toward legumes merge.
+- curriculum_notes: <to_fill>
+
 ### `plant_id`
 
 - canonical_label: Plant ID
@@ -3114,19 +3127,6 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - merge_aliases: <none>
 - theme_overlap: none
 - claude_notes: Drop per CON-03 audit signal — `plant science` is the second vague Science concept tagged on the *Informational Writing - Topics/Subtopics* ELA lesson (the other being `garden topics` 1, also a drop). The lesson teaches the literacy concept of topics-vs-subtopics using cooking/gardening as brainstorming fodder; the Science tags are defensive slot-filling, not real concepts. Recommend drop.
-- curriculum_notes: <to_fill>
-
-### `plant_based_proteins`
-
-- canonical_label: Plant-Based Proteins
-- verdict: <to_fill>
-- frequency: 1 appearances
-- current_subjects: Science (1)
-- recommended_primary_subject: Science
-- recommended_secondary_subjects: <none>
-- merge_aliases: <none>
-- theme_overlap: none
-- claude_notes: Specific nutrition concept — plant-derived protein sources (legumes, beans, nuts). Adjacent freq-2 `protein` 2 (Sci) + long-tail `macronutrients` 1, `macromolecules` 1, §12 `legumes` 3 + §11 `nutrition_education` 107 cover related nutrition-chemistry concepts. Recommend merge into §12 `legumes` 3 (the specific protein-source canonical for plant-protein lessons) OR into `protein` 2 (the broader protein canonical) OR §11 `nutrition_education` 107 (the broader nutrition canonical). Pending curriculum-team verdict; lean toward legumes merge.
 - curriculum_notes: <to_fill>
 
 ### `planting`
