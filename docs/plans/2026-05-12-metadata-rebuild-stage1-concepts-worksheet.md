@@ -431,11 +431,11 @@ When the worksheet is filled and ready for hand-off, the next-stage tool parses 
 
 ## §11 High-impact tier — concepts with ≥ 10 appearances
 
-> **Status: empty skeleton.** ~32 entries (Session 78 probe count at ≥10 cutoff). Session 79 fills per-value entries here after the upfront Opus batch (per D-C13).
+> **Status: filled (32 of 32 entries).** Session 79 per-value fills landed in PR-Concepts-1 with Phase 1 upfront Opus batch evidence integrated as `<details>` blocks on 10 entries (cross-subject + near-duplicate cluster + theme-overlap cases). Awaiting curriculum-team verdicts on `verdict` and `curriculum_notes` fields.
 >
 > **Review depth (D-C15):** high. These concepts drive the bulk of the corpus's academic-integration signal. Mistakes here propagate widely.
 >
-> **Frequency cutoff calibratability:** the ≥10 cutoff is the Session 78 locked default. Session 79 may recalibrate after seeing full per-concept frequency context.
+> **Frequency cutoff calibratability:** the ≥10 cutoff was the Session 78 locked default; Session 79 confirmed the 32-entry count at fill time.
 
 <!-- Per-value entries — Phase 2a (Session 79; entries 1–11 of 32). Subsequent phases 2b + 2c append below. -->
 
@@ -935,7 +935,7 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - recommended_secondary_subjects: <none>
 - merge_aliases: <none>
 - theme_overlap: none
-- claude_notes: Broad general-purpose Science concept covering seed anatomy and parts (e.g., "Seed Maps" dissecting a lima bean), what seeds need to grow, edible seeds (e.g., "Cooking with Seeds: Ful Medames", "Lentil Wraps"), seed sorting, seed saving and the origins of agriculture, and planting seeds in the garden. Two adjacent concepts intentionally stay standalone rather than merging in: `seed dispersal` (Science, 3) — distinct ecological lens (water/wind/animal-attachment mechanisms; all 3 lessons are model-building exercises) — and `seed starting` (Science, 1) — distinct propagation/germination concept (pre-germination for transplant). All three are different scientific lenses on seeds; each gets its own canonical entry (Session 80/81 long-tail).
+- claude_notes: Broad general-purpose Science concept covering seed anatomy and parts (e.g., "Seed Maps" dissecting a lima bean), what seeds need to grow, edible seeds (e.g., "Cooking with Seeds: Ful Medames", "Lentil Wraps"), seed sorting, seed saving and the origins of agriculture, and planting seeds in the garden. Two adjacent concepts intentionally stay standalone rather than merging in: `seed dispersal` (Science, 3) — distinct ecological lens (water/wind/animal-attachment mechanisms; all 3 lessons are model-building exercises) — and `seed starting` (Science, 1) — distinct propagation/germination concept (pre-germination for transplant). All three are different scientific lenses on seeds; each gets its own canonical entry (`seed_dispersal` in Session 80 mid-tier; `seed_starting` in Session 81 long-tail).
 - curriculum_notes: <to_fill>
 
 <details><summary>Corpus evidence (13 lessons across cluster — all members sampled)</summary>
