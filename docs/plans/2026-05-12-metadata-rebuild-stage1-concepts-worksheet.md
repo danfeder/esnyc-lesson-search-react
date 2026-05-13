@@ -1139,11 +1139,553 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 
 ## §12 Mid-tier — concepts with 3–9 appearances
 
-> **Status: empty skeleton.** ~39 entries (Session 78 probe count at 3–9 cutoff). Session 80 fills per-value entries here.
+> **Status: filled (39 of 39 entries).** Session 80 per-value fills landed in PR-Concepts-2. Three entries integrate Session 79 Phase 1 upfront Opus batch evidence as `<details>` blocks (biodiversity + observation cross-subject splits + preservation cross-subject + canonical-absorbing). Two entries propose `merge → seasonality` (§11 entry 29) for the seasonality-cluster mid-tier members (`seasonal_cycles` 6 + `seasonal_eating` 7); curriculum team may flip to standalone-keep if the surface-label direction reads differently. Awaiting curriculum-team verdicts on `verdict` and `curriculum_notes` fields.
 >
-> **Review depth (D-C15):** moderate. Most entries are `keep` with minor surface-label or alias refinements. Attention OK but variance acceptable.
+> **Review depth (D-C15):** moderate. Most entries are `keep` with minor surface-label or alias refinements. Attention OK but variance acceptable. Pay closer attention to: (a) merge-candidate entries (advocacy + community activism per CON-05; preservation + food preservation per CON-09; plant_identification + identifying plants + plant ID; adaptations + adaptation + plant adaptation + plant adaptations; social_justice_issues + social justice; seasonal_cycles + seasonal_eating proposing merge into §11 seasonality); (b) audit-signal-referenced entries (writing CON-12; observation CON-13; garden_exploration CON-14; nutrition CON-15); (c) cross-subject entries (biodiversity, observation, preservation); (d) the single theme-overlap entry (plant_growth per §6).
+>
+> **Frequency cutoff calibratability:** the 3–9 cutoff was the Session 78 locked default; Session 80 confirmed the 39-entry count at fill time against the same probe with `retired_at IS NULL` filter — without the filter the same probe returns 42 entries, so 3 distinct concept strings appear only on retired lessons and correctly drop out of the live-corpus mid-tier. Tier-cutoff calibration call per D-C14: Session 80 punted the long-tail split decision to Session 81 (preliminary count: ~108 singletons + ~29 two-appearance entries = 137 long-tail total; one 137-entry PR is too big for the 50-entry bandwidth sweet spot, but the 108/29 split leaves one PR still oversized — Session 81 weighs an even-thirds split or alternate cuts).
 
-<!-- Per-value entries land here in PR-Concepts-2 (Session 80). -->
+<!-- Per-value entries — Session 80; 39 entries frequency-descending, alphabetical tie-break within frequency. -->
+
+### `drawing`
+
+- canonical_label: Drawing
+- verdict: <to_fill>
+- frequency: 9 appearances
+- current_subjects: Arts (9)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Arts concept covering the act of drawing — typically tied to garden-journaling, plant-illustration, observational sketching (Special Spot scavenger hunts, leaf rubbings), and "draw what you see" early-grade exercises. The §11 `visual_arts` 76 claude_notes explicitly preserves `drawing` as a separate mid-tier canonical rather than rolling it in: the corpus treats drawing as a distinct technique deserving its own home. Adjacent narrower Arts concepts `painting` 1, `coloring` 1, and `craft activity` 1 are long-tail singletons (the latter two merge into `visual_arts` per §11). Recommend keep with surface label "Drawing"; curriculum team may want to reconsider the drawing-vs-visual_arts boundary if the corpus signal feels muddled (option: collapse drawing into visual_arts as a specific technique).
+- curriculum_notes: <to_fill>
+
+### `fractions`
+
+- canonical_label: Fractions
+- verdict: <to_fill>
+- frequency: 9 appearances
+- current_subjects: Math (9)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Math concept covering fractional arithmetic in cooking and recipe contexts — measuring ingredients, scaling recipes, and visual fractions (pizza slices, halving fruit). Distinct from related math canonicals in §11 (`measurement` 66, `counting` 20, `data_collection` 19, `estimation` 15) and §12 `recipe_scaling` 3 (which applies fractions but emphasizes scaling-as-operation). Recommend keep with surface label "Fractions".
+- curriculum_notes: <to_fill>
+
+### `plant_growth`
+
+- canonical_label: Plant Growth
+- verdict: <to_fill>
+- frequency: 9 appearances
+- current_subjects: Science (9)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: YES — `plant growth` (concepts, Science 9) shares a vocabulary with `Plant Growth` (themes, Title Case canonical per `src/utils/filterDefinitions.ts`) under `lower()`. One of three known concept↔theme overlaps in §6 (`ecosystems` exact-string per §11 entry 6; `plant growth` and `food systems` 1 long-tail are case-normalized matches). Per D-C5, adjudication (which side keeps the canonical string; whether both keep with cross-reference; whether one side renames) is deferred to the themes worksheet / D4 canonicalization migration; this flag preserves the signal.
+- claude_notes: Canonical Science concept covering plant-growth processes — sprouting seeds, growth stages, tracking seedling progress — typically tied to early-grade plant-life observation lessons. Distinct from §11 `plant_parts` 239 (anatomy), `plant_needs` 41 (resource requirements), `life_cycles` 43 (broader cyclic-process frame including animals), and `seeds` 13 (seed-anatomy-to-planting concept). Adjacent long-tail concepts `growing cycles` 1 and `growth patterns` 1 are likely too vague to stand alone; curriculum team may want to fold them into `plant_growth` at Session 81 long-tail review. The theme-overlap flag is the only structural complication. Recommend keep as Science canonical pending the themes-worksheet reconciliation pass.
+- curriculum_notes: <to_fill>
+
+### `cultural_narratives`
+
+- canonical_label: Cultural Narratives
+- verdict: <to_fill>
+- frequency: 8 appearances
+- current_subjects: Literacy/ELA (8)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering reading, writing, and telling stories rooted in cultural context — Three Sisters legend, Food Roots Lesson, Celebrating Georgia Gilmore (Pies from Nowhere biography read-aloud), Hummus and Pita (Palestinian olive-trees story). The §11 `cultural_traditions` 206 (Social Studies) claude_notes explicitly preserves `cultural_narratives` as a separate Literacy/ELA canonical rather than folding it in: 7 of 8 lessons co-tag with `storytelling` (Literacy/ELA) and consistently center reading-or-telling a culturally-rooted story, which is a genuine literacy-side narrative-storytelling lens distinguishable from the broad Social Studies content tag. Distinct from §12 `narrative_writing` 3 (which targets student composition rather than reading/comprehension). Recommend keep as standalone Literacy/ELA canonical.
+- curriculum_notes: <to_fill>
+
+### `photosynthesis`
+
+- canonical_label: Photosynthesis
+- verdict: <to_fill>
+- frequency: 8 appearances
+- current_subjects: Science (8)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering the biological process of photosynthesis — plant-energy production from sunlight, role of chlorophyll, food-making in leaves. Adjacent long-tail biological-process concepts `cellular respiration` 1 and `chemical reactions` 1 are distinguishably different processes kept as separate canonicals. Distinct from §11 `plant_needs` 41 (which includes sunlight as a need but covers the broader resource-requirement frame). Recommend keep with surface label "Photosynthesis".
+- curriculum_notes: <to_fill>
+
+### `writing`
+
+- canonical_label: Writing
+- verdict: <to_fill>
+- frequency: 8 appearances
+- current_subjects: Literacy/ELA (8)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Generic Literacy/ELA tag used when reviewers pick "writing" as a free-form composition concept without specifying the writing genre. **Boundary tension with mid-tier sub-types.** §12 also has `how_to_writing` 5, `narrative_writing` 3, `opinion_writing` 3, `descriptive_writing` 3, `persuasive_writing` 4, plus long-tail `argumentative writing` 2, `informational writing` 2, `recipe writing` 2, `comparative writing` 1, `creative writing` 1, `letter writing` 1, `writing claims` 1. Curriculum team needs to decide: (a) keep `writing` 8 as a residual catch-all for un-genred writing instruction (cluster ~8 base + sub-type total ~28 = ~36 writing lessons spread across labels); (b) drop `writing` 8 in favor of more-specific genre tags (force reviewers to pick a genre at re-tag time); or (c) flip and treat `writing` as the canonical with all genre sub-types as merge_aliases. Recommend option (a) standalone keep with surface label "Writing"; option (b) loses signal on the 8 "writing-without-specified-genre" rows; option (c) collapses pedagogically distinct genres (opinion vs narrative vs persuasive teach different skills, per Common Core ELA standards). Audit signal CON-12 captures this decision.
+- curriculum_notes: <to_fill>
+
+### `biodiversity`
+
+- canonical_label: Biodiversity
+- verdict: <to_fill>
+- frequency: 7 appearances
+- current_subjects: Science (6), Social Studies (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Tagging-artifact cross-subject split. Across 7 sampled lessons (6 Science, 1 Social Studies), `biodiversity` is used in a single consistent ecological sense — diversity of species and resilience of living communities (food webs, monoculture-vs-polyculture, plant families, adaptation, ecosystems). The lone Social Studies tagging is on "The Story of the 3 sisters," whose teacher-facing summary frames the lesson as the Lenape indigenous practice of *companion planting*; that lesson already carries `Social Studies: [cultural traditions, companion planting]` doing the cultural-knowledge work, and `Science: [plant parts, ecosystems]` doing the natural-science work, so adding `biodiversity` to Social Studies is over-stretch rather than a distinct lens. Notably, the parallel "BIODIVERSITY" lesson (`1dHNasB4...`) explicitly teaches *both* social and ecological diversity but the reviewer correctly placed `biodiversity` only under Science and used `cultural traditions` + `community systems` for the Social Studies axis — a deliberately non-duplicated assignment that the "3 sisters" tagging contradicts. Recommend consolidating to Science as the sole canonical home; cultural-knowledge framing is preserved by `cultural traditions` + `companion planting` co-tags. Adds a fourth data point to the broader artifact pattern captured in CON-04 (historical_figures) + CON-08 (companion_planting) + CON-10 (nutrition_education) — `academicConcepts` subject keys frequently track each lesson's `academicIntegration` array rather than its content. Distinct from §11 `food_webs` 11 (trophic-level focus vs species-diversity focus) and §11 `ecosystems` 73 (broader ecological-systems frame).
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (7 lessons across Science + Social Studies)</summary>
+
+- `1v7aPRuAM9q1jdffDr1IqgxZUKqTZ7By-` **Biodiversity** (Science): "Students will play a game to understand the importance and advantages of biodiversity... Students will be able to explain what biodiversity is and how biodiversity provides protection against environmental risks." Co-tagged `Science: food webs`, theme `Ecosystems`. Pure ecology.
+- `1dHNasB4vEvH8G_OIy5Y7kVTOjXSovx_qLUGVB2UYk-M` **BIODIVERSITY** (Science): "Students will learn and understand the importance of diversity amongst members of a social and ecological community and how that diversity increases the richness and resilience of that community." Uses 3-sisters story as the vehicle. Reviewer assigned `Science: [biodiversity, ecosystems]` AND `Social Studies: [cultural traditions, community systems]` — note `biodiversity` deliberately NOT placed under Social Studies even though the lesson explicitly teaches social diversity.
+- `1f8rMP3RKcbOHCrh1td_H_3yHnnUyKAvIgyOT7f0Pac0` **Biodiversity & Monoculture** (Science): "Students will understand the difference between biodiverse farms and monoculture farms and the impact that plant diversity has on animals." Pollinator ecology; clear ecological lens.
+- `13REACG4YMxTiRNKer3COca2quFvSlb1a` **Mr. Anthony's Spring Trees Unit** (Science): identifying native trees and seasonal indicators; co-tagged `Science: [plant identification, seasonal changes, biodiversity]`. Native-species diversity = ecological.
+- `1tYdCp_VLcX-ymleYFMRBj20Pzf4U7j912gg_k_-yMko` **Plant Families** (Science): "Students will use their observation skills to sort plants into different categories... Students will begin to explore the concept of biodiversity." Species-grouping introduction to biodiversity — ecological.
+- `0BzCUl-9h7sgESGZ0MThTY0NBYVE` **Seed Dispersal** (Science): "individual variations within a species may cause certain individuals to have an advantage in survival and reproduction"; co-tagged `Science: [adaptation, seed dispersal, biodiversity]`. Adaptation/variation = ecological.
+- `13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA` **The Story of the 3 sisters** (Social Studies): "Students will become familiar with the indigenous planting technique of companion planting by learning about the 3 sisters, corn, beans and squash." Reviewer placed `Social Studies: [cultural traditions, companion planting, biodiversity]` and `Science: [plant parts, ecosystems]`. The cultural-knowledge angle is already carried by `cultural traditions` + `companion planting`; `biodiversity` here is over-stretch — the analogous `1dHNasB4...` lesson kept `biodiversity` on the Science side only.
+
+</details>
+
+### `seasonal_eating`
+
+- canonical_label: Seasonal Eating
+- verdict: <to_fill>
+- frequency: 7 appearances
+- current_subjects: Science (7)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Recommend merge into `seasonality` (§11 entry 29, freq 11) as the food-availability lens canonical home — already proposed in §11 `seasonality`'s `merge_aliases: [("seasonal cycles", 6), ("seasonal eating", 7)]`. Per §11 seasonality entry's `<details>` block, 5 of 7 sampled `seasonal eating` lessons are pure food-availability content (September Sixth Grade Summer Plant Hunt, Food Geography - Pizza, September Sixth Grade Summer and Pizza Plant Hunt, Eating in Season "certain foods are available only in certain seasons in the northeast" — definitional, and one more); 2 of 7 are phenomenology-content lessons mistagged (The Seasons: Fall + The Seasons: Winter — direct evidence of the template-trio mistagging captured in audit signal CON-01). Curriculum team can flip the merge direction if "seasonal eating" reads as a more pedagogically-clear surface label than "seasonality" — both pick the same merged cohort, the choice is purely surface-label preference. Companion canonical `seasonal_changes` (§11 entry 32, freq 10) covers the phenomenology lens. Cross-reference §11 entry 29's `<details>` block for the combined 38-lesson cluster evidence.
+- curriculum_notes: <to_fill>
+
+### `music`
+
+- canonical_label: Music
+- verdict: <to_fill>
+- frequency: 6 appearances
+- current_subjects: Arts (6)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Arts concept covering music-making in lesson contexts — songs about plants/food/garden, instrument creation, listening exercises. Adjacent long-tail concepts `song` 1 (Literacy/ELA — different lens, likely lyric-as-text composition) and `instrument making` 1 (Arts — narrower craft-construction lens) are distinguishably distinct and stay separate canonicals. Recommend keep with surface label "Music".
+- curriculum_notes: <to_fill>
+
+### `observation`
+
+- canonical_label: Observation
+- verdict: <to_fill>
+- frequency: 6 appearances
+- current_subjects: Science (5), Arts (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Tagging-artifact cross-subject split. The single Arts-tagged lesson ("Spring Special Spot and Signs of Spring Scavenger Hunt") is a direct curricular twin of the Science-tagged "Fall: Special Spot" — both are seasonal garden-observation lessons in the same Special Spot series, and the Spring version's only difference appears to be that the tagger bundled "observation" together with "drawing" under Arts (as "observational drawing") instead of keeping observation under Science where its companion lesson placed it. All five Science-tagged lessons frame observation as empirical/sensory garden-science practice (Rachel Carson nature-writing, sensory scavenger hunts, plant-needs observation, seasonal-change observation). No lesson in the sample uses observation as a distinguishably artistic/perceptual training practice (e.g., still-life, perceptual aesthetics). Recommend consolidating to Science as the sole canonical home, and treating Arts-paired observation in these garden lessons as `drawing` (the act) + `observation` (the science practice the drawing supports). Related §11 concept `sensory_exploration` 11 is broader (5-senses exploration); observation is the methodology-of-noticing concept. Audit signal CON-13 captures the v3 tagger's behavior of attaching `observation` to whichever subject already carried `drawing` — worth a corpus-wide audit before consolidation.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (6 lessons across Science + Arts)</summary>
+
+- `1ycSqtbE4BzPe28OrrOG7T72wvvG51ynT_Q2GrR5Rg-I` **4 Color Scavenger Hunt** (Science: ["sensory exploration","observation"]): "Students walk around the garden looking for signs which instruct them in various tasks, mostly sensory observations." Pure sensory/empirical garden observation; no artistic framing.
+- `19Sjs7Fz7Z8ToT421a3VVT_j8_b-KUXAp` **Fall: Special Spot** (Science: ["seasonal change","observation"]; Arts: ["drawing"]): "Students will talk about the seasons and then sit outside in the garden in a place of their choosing to observe the garden in the fall." Observation is filed under Science; drawing alone is under Arts. The Special-Spot series treats observation as a seasonal-science practice.
+- `13biNspAVeUukqY_WNu7jN4CQKydttOt7OR85dnY3EFw` **In the Garden with Dr. Carver** (Science: ["plant needs","observation"]): "Students will read a story about plant scientist Dr. Carver and then will do a garden job to practice their own skills as garden scientists and experts." Observation explicitly framed as scientific practice ("garden scientists").
+- `1CSPiEww-2bIuRRyPnbZAqG8K_8D1kw7hr85RSRJACSk` **Spring Special Spot and Signs of Spring Scavenger Hunt** (Arts: ["drawing","observation"]; Science: ["seasonal change","weather"]): "Students will draw pictures of what they observe in the garden during springtime, and will then complete the Signs of Spring Sensory Scavenger Hunt." THE SMOKING GUN: same curricular series as Fall: Special Spot but inconsistently filed — observation moved under Arts, paired with drawing. Summary frames it as "what they observe" (empirical), not perceptual-training.
+- `1eqwPqe-b3yL59iy8tBSWyxwM1cDoIyNURl6mpuiTews` **Welcome to the Garden** (Science: ["sensory exploration","observation"]): "Students are introduced to garden rules, make class agreements, and participate in sensory exploration of the garden space." Sensory/empirical observation.
+- `1Ebh6tFUdUgk3BwowZPq-JCvADMo2SOff` **Women's History Month: Rachel Carson** (Science: ["ecosystems","observation"]): "Students will learn about Rachel Carson and how she inspired the environmental movement by her writing based on observations of nature." Observation explicitly framed as ecological/scientific practice (Carson as a scientist).
+
+</details>
+
+### `reading_comprehension`
+
+- canonical_label: Reading Comprehension
+- verdict: <to_fill>
+- frequency: 6 appearances
+- current_subjects: Literacy/ELA (6)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering reading-for-understanding practices — text questions, summarizing, identifying main ideas. Adjacent long-tail concept `reading` 2 (Literacy/ELA) may fold in as a generic-comprehension-without-specified-scaffold alias; Session 81 long-tail review will weigh. Distinct from §11 `recipe_reading` 69 (specific recipe-text reading), §11 `storytelling` 76 (narrative-storytelling lens), and §12 `cultural_narratives` 8 (cultural-story reading). Recommend keep with surface label "Reading Comprehension".
+- curriculum_notes: <to_fill>
+
+### `seasonal_cycles`
+
+- canonical_label: Seasonal Cycles
+- verdict: <to_fill>
+- frequency: 6 appearances
+- current_subjects: Science (6)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Recommend merge into `seasonality` (§11 entry 29, freq 11) — already proposed in §11 `seasonality`'s `merge_aliases: [("seasonal cycles", 6), ("seasonal eating", 7)]`. Per §11 seasonality entry's `<details>` block, DESPITE the cycle-sounding surface label, 6 of 7 sampled `seasonal cycles` lessons are seasonal-eating content (Pumpkin Spice Muffins, Food Miles Game, September Salsa Toasts, Tomato Sauce with Summer Vegetables, Sweet and Sour Roots Two Ways, Alice Waters edible-education) — the food-availability lens that §11 seasonality canonicalizes. The label "seasonal cycles" misleads; the lessons under it teach what's available when to cook, not seasonal phenomenology. Curriculum team can flip the merge direction if "seasonal cycles" reads as a clearer surface label than "seasonality" — both pick the same merged cohort. Companion canonical `seasonal_changes` (§11 entry 32, freq 10) covers the phenomenology lens (signs of spring, leaf collecting, garden phenology); those lessons would NOT route here. Cross-reference §11 entry 29's `<details>` block for the combined 38-lesson cluster evidence.
+- curriculum_notes: <to_fill>
+
+### `adaptations`
+
+- canonical_label: Adaptations
+- verdict: <to_fill>
+- frequency: 5 as-tagged, 8 if aliases merge
+- current_subjects: Science (5)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("adaptation", 1), ("plant adaptation", 1), ("plant adaptations", 1)]
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering biological adaptations — how organisms (plants and animals) develop traits to survive in their environments. The 5 base-tagged lessons span plant adaptations (seasonal-survival, drought-tolerance) and broader ecosystem adaptation (variation, natural selection). Three near-duplicate long-tail singletons fold in cleanly: `adaptation` (Science, 1 — singular drift), `plant adaptation` (Science, 1 — narrower plant-specific lens), and `plant adaptations` (Science, 1 — pluralized variant of plant adaptation). The §7 worksheet example used `adaptation` (singular) as the proposed canonical key; this entry uses `adaptations` (plural) per the highest-frequency-wins convention used in §11 (`seasonality` 11 > `seasonal_changes` 10 > seasonality-cluster aliases). Curriculum team can flip the canonical label to singular if pluralization feels less idiomatic; both labels pick the same merged cohort. Post-merge total: 8 lessons.
+- curriculum_notes: <to_fill>
+
+### `animal_needs`
+
+- canonical_label: Animal Needs
+- verdict: <to_fill>
+- frequency: 5 appearances
+- current_subjects: Science (5)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering animal life requirements (food, water, shelter, space) — typically tied to early-grade habitat lessons and pollinator-resource lessons. Symmetric pairing with §11 `plant_needs` 41 (plant biology counterpart). Adjacent §12 concept `habitats` 4 is distinct (focused on the environmental-context that supports needs); §11 `pollinators` 28 overlaps in subject matter but emphasizes pollinator-specific ecology. Recommend keep with surface label "Animal Needs".
+- curriculum_notes: <to_fill>
+
+### `how_to_writing`
+
+- canonical_label: How-to Writing
+- verdict: <to_fill>
+- frequency: 5 appearances
+- current_subjects: Literacy/ELA (5)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering procedural / instructional-writing genre — typically tied to recipe-writing lessons, garden-task instructions, and step-by-step "how to" composition. Adjacent long-tail concept `recipe writing` 2 may be considered an alias (recipe writing is one specific application of how-to writing); curriculum team can decide at Session 81 long-tail review. Distinct from other §12 writing sub-types (`narrative_writing` 3, `opinion_writing` 3, `descriptive_writing` 3, `persuasive_writing` 4) and §12 catchall `writing` 8 — each represents a pedagogically distinct genre. Recommend keep with surface label "How-to Writing". Audit signal CON-12 captures the broader writing-cluster canonical-shape question.
+- curriculum_notes: <to_fill>
+
+### `plant_identification`
+
+- canonical_label: Plant Identification
+- verdict: <to_fill>
+- frequency: 5 as-tagged, 8 if aliases merge
+- current_subjects: Science (5)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("identifying plants", 2), ("plant ID", 1)]
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering plant-identification practices — herb identification, weed-vs-edible identification, plant-family sorting, native-plant recognition. Two near-duplicate long-tail variants fold in cleanly: `identifying plants` (Science, 2 — verb-form drift) and `plant ID` (Science, 1 — abbreviated drift); the §7 worksheet example explicitly modeled this cluster. Post-merge total: 8 lessons. Adjacent §11 concept `plant_parts` 239 is distinct (anatomy lens); §11 `plant_needs` 41 is distinct (resource lens). Recommend keep with surface label "Plant Identification".
+- curriculum_notes: <to_fill>
+
+### `social_justice_issues`
+
+- canonical_label: Social Justice Issues
+- verdict: <to_fill>
+- frequency: 5 as-tagged, 7 if aliases merge
+- current_subjects: Social Studies (5)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("social justice", 2)]
+- theme_overlap: none
+- claude_notes: Canonical Social Studies concept covering social-justice-themed lessons — food justice, equity, civil rights movement, Cesar Chavez and farm labor. Long-tail near-duplicate `social justice` (Social Studies, 2) folds in cleanly as a label-shortening variant. Curriculum team may want to consider whether `social_justice_issues` or `social_justice` is the better surface label (both pick the same merged cohort; the "issues" suffix is slightly less neutral). Post-merge total: 7 lessons. Adjacent §12 concepts `environmental_justice` 3 and `advocacy` 3 are distinct civic concepts kept as separate canonicals (environmental_justice focuses specifically on environment-related justice; advocacy is action-orientation). Recommend keep with surface label "Social Justice Issues" or curriculum-team preference of "Social Justice".
+- curriculum_notes: <to_fill>
+
+### `bilingual_education`
+
+- canonical_label: Bilingual Education
+- verdict: <to_fill>
+- frequency: 4 appearances
+- current_subjects: Literacy/ELA (4)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering bilingual-education practices — Spanish-English vocabulary lessons, dual-language read-alouds, multilingual food-vocabulary work. Distinct from §11 `vocabulary_development` 59 (broader vocabulary frame, single-language). Recommend keep with surface label "Bilingual Education".
+- curriculum_notes: <to_fill>
+
+### `garden_exploration`
+
+- canonical_label: Garden Exploration
+- verdict: <to_fill>
+- frequency: 4 appearances
+- current_subjects: Science (4)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Generic Science tag for garden-introduction lessons — typically tied to early-grade "welcome to the garden" first-day-of-program lessons. **Pedagogical-content lightness flag for curriculum-team consideration:** unlike specific Science concepts like §11 `plant_parts` 239 or `pollinators` 28, "garden exploration" doesn't denote a distinct scientific concept being taught — it's a context tag meaning "this lesson takes place in/around the garden." Adjacent long-tail vague-Science singletons (`garden topics` 1, `general exploration` 1, `plant science` 1) are recommended drops per audit signals CON-02 + CON-03 + the singletons-garden-meta scan (Session 79). Curriculum team should decide whether `garden_exploration` is canonical enough to keep (4 lessons share the framing) or also lands on the drop list (treat the broader "garden as context" as captured by the `location: garden` filter rather than as an academic concept). Audit signal CON-14 captures this boundary question.
+- curriculum_notes: <to_fill>
+
+### `global_connections`
+
+- canonical_label: Global Connections
+- verdict: <to_fill>
+- frequency: 4 appearances
+- current_subjects: Social Studies (4)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Social Studies concept covering globalization, food-trade routes, and cultural-exchange-across-borders content — typically tied to "where does our food come from" geography lessons and trade-routes lessons. Adjacent §11 concepts `geography` 56 (broader spatial-knowledge frame) and `trade_routes` 16 (specific trade-economics lens) are distinct. Recommend keep with surface label "Global Connections".
+- curriculum_notes: <to_fill>
+
+### `habitats`
+
+- canonical_label: Habitats
+- verdict: <to_fill>
+- frequency: 4 appearances
+- current_subjects: Science (4)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering animal-and-plant habitat-context — typically tied to pollinator-habitat lessons, biodiversity-of-habitats lessons, and "what does this animal need to live" lessons. Symmetric pairing with §12 `animal_needs` 5 — habitats (environmental context) vs animal_needs (resource requirements). Distinct from §11 `ecosystems` 73 (broader system-of-relationships frame). Recommend keep with surface label "Habitats".
+- curriculum_notes: <to_fill>
+
+### `movement`
+
+- canonical_label: Movement
+- verdict: <to_fill>
+- frequency: 4 appearances
+- current_subjects: Arts (4)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Arts concept covering movement-based pedagogy — dance, body-based learning, kinesthetic activities (e.g., "Students will learn a dance to show what seeds need to grow"). Adjacent long-tail concepts `dance` 1 (Arts) and `imaginary play` 1 (Arts) are narrower or distinguishable lenses kept as separate canonicals. Recommend keep with surface label "Movement".
+- curriculum_notes: <to_fill>
+
+### `nutrition`
+
+- canonical_label: Nutrition
+- verdict: <to_fill>
+- frequency: 4 appearances
+- current_subjects: Science (4)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Generic Science tag for nutrition content — **boundary tension with §11 `nutrition_education` 107 (Health 100, Science 7).** The §11 nutrition_education canonical absorbs nutrition-as-broad-content; this `nutrition` 4 Science tag may cover narrower biology-of-nutrition framings (macronutrients, energy from food, plant-vs-animal sources) — OR it may be pure label drift (a shorter alias of `nutrition_education`). Curriculum team should decide whether `nutrition` is a Science-specific narrower concept (distinct from Health-side `nutrition_education`) or just label drift (merge into `nutrition_education`'s Science-7 secondary). Without Opus-read corpus inspection, the call isn't decidable from probe data alone; flag for curriculum-team judgment or targeted Opus read at fill time. Audit signal CON-15 captures this nutrition-vs-nutrition_education boundary question. Related long-tail concepts `plant nutrition` 2, `macronutrients` 1, `macromolecules` 1 are distinguishably narrower biology concepts kept separate.
+- curriculum_notes: <to_fill>
+
+### `persuasive_writing`
+
+- canonical_label: Persuasive Writing
+- verdict: <to_fill>
+- frequency: 4 appearances
+- current_subjects: Literacy/ELA (4)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering persuasive composition genre — typically tied to "convince your reader" and food-system advocacy lessons. Adjacent long-tail concept `argumentative writing` 2 may be considered a variant (some pedagogy distinguishes "argumentative" as evidence-based vs "persuasive" as emotion-allowed; Common Core ELA standards treat argument as the 6-12 successor to K-5 opinion-writing, with persuasive as a pre-CCSS umbrella term). Curriculum team can decide at Session 81 long-tail review. Distinct from other §12 writing sub-types and §12 catchall `writing` 8 (see CON-12). Recommend keep with surface label "Persuasive Writing".
+- curriculum_notes: <to_fill>
+
+### `preservation`
+
+- canonical_label: Preservation
+- verdict: <to_fill>
+- frequency: 4 as-tagged, 5 if aliases merge
+- current_subjects: Science (3), Social Studies (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: Social Studies (conditional — only if curriculum team affirms a "cultural-heritage / traditional-knowledge preservation" lens distinct from food-science preservation)
+- merge_aliases: [("food preservation", 1)]
+- theme_overlap: none
+- claude_notes: The 3 Science `preservation` lessons (jam-making in *Bud Not Buddy/Jam*, vegetable pickling in *Pickle Lesson with Ms. Ingrit*, rose glycerite/honey infusion in *Healing with Roses*) all describe food-or-edible-plant preservation techniques — jamming, pickling/fermenting, herbal infusion — which is the same cognitive lens as the sole `food preservation` Science lesson (*Sandor Katz: Food Hero*, fermentation/cultured butter). On the Science axis these are a single concept and should consolidate; this entry uses `preservation` as the canonical label (highest-frequency-wins convention from §11), but the Session 79 Opus read flagged that `food_preservation` is the more semantically precise label — curriculum team may flip the canonical-label direction (both pick the same merged Science cohort, choice is purely surface-label preference). Post-merge total: 5 lessons. The lone Social Studies `preservation` tag (*Three Sisters Succotash*, paired with `Indigenous / North American / Americas` cultural-heritage and Social Studies `cultural traditions`) plausibly carries a distinct *cultural-historical preservation of Indigenous foodways* lens — "modern and past methods of preservation" framing is comparative-history, not technique-acquisition — but it's a single-lesson signal and the summary is thin. Curriculum team decides: (a) accept the cultural-heritage lens and keep `preservation` as a Social Studies-only label distinct from a Science `food_preservation` canonical, or (b) treat the Three Sisters tagging as artifactual and consolidate all 4 lessons under Science as `food_preservation`, dropping `preservation` from the vocabulary. If (a) is chosen, consider renaming the Social Studies form to something less ambiguous (e.g., `cultural_preservation` or `traditional_foodways_preservation`) to make the lens explicit. Audit signal CON-09 (created Session 79) is closed by this entry's merge_aliases proposal pending Stage 2 implementation.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (5 lessons across Science + Social Studies + `food preservation` comparison; reproduced from Session 79 Phase 1 Opus batch per F2 hardening pattern)</summary>
+
+- `1jS-jjcZs0zF-WSwzkrgryefL2kiBepp2ahvqQzzQodI` **Bud Not Buddy/Jam** (Science): "Students will learn about preservation of food, and learn about canning techniques developed and used during the Great Depression era." Lens = food-science preservation (canning/jamming). Cultural heritage: `North American, Americas`. Other concepts: Literacy `novel connections, recipe reading`; Social Studies `historical figures, cultural traditions`. Has a historical-context overlay but the `preservation` concept is tagged ONLY under Science, and the body describes canning *technique*.
+- `1yUHWKsyYlQoHqmOuuX4IttgvcVY5uDOeJwsKAwjco9s` **Pickle Lesson with Ms. Ingrit** (Science): "Students will harvest carrots, radishes and scallions from the garden and pickle them!" Lens = food-science preservation (pickling/fermentation). No cultural-heritage tagging. Concepts: Science `plant parts, preservation`. Purely a food-preservation technique lesson.
+- `1130Pa-vFa5TJC8uK-sjgpOjsvD7TkJYAau5esNfsmY0` **Healing with Roses** (Science): "Students will make a rose glycerite tincture (glycerite is a sweet syrupy plant-based extract) and rose infused honey to understand the healing properties of roses, physically, emotionally and spiritually." Lens = botanical/herbal preservation (infusion/extraction). Stretches the food-preservation framing but is still a *substance-stabilization-via-sugar/alcohol* technique, consistent with the canning/pickling/fermenting cohort. Other concepts: Social Studies `cultural traditions`.
+- `1w_JBTJYmqF0qcXiOtV_nV32nphCjD8uEYRSHdHyROFE` **Three Sisters Succotash** (Social Studies): "Students will learn to make a simple Native American dish using corn, beans, and squash. They will also compare and contrast modern and past methods of preservation." Lens = potentially cultural-historical preservation of Indigenous foodways — `preservation` here is tagged *only* under Social Studies (Science slot has `plant parts` only), paired with `Indigenous / North American / Americas` cultural heritage tags and Social Studies `cultural traditions`. The "compare and contrast modern vs past methods" framing is comparative-history, not technique-acquisition. This is the one lesson whose `preservation` use case looks distinguishable.
+- `1w0c7tESqksEPlQL-Fj1tpTL3i2ofmN_Agq-UwwqErBE` **Sandor Katz: Food Hero** (Science, `food preservation` comparison): "Students learn about fermentation expert Sandor Katz and make cultured butter while discussing food preservation." Lens = food-science preservation (fermentation). Concepts: Science `fermentation, food preservation`; Social Studies `historical figures, cultural traditions`. Indistinguishable in lens from the 3 Science `preservation` lessons above — the only difference is the tagger picked the more specific term.
+
+</details>
+
+### `advertising`
+
+- canonical_label: Advertising
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Social Studies (3)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Social Studies concept covering food-marketing and advertising-analysis lessons — typically tied to "Do we Recognize these Logos?" media-literacy lessons and food-industry-marketing critique. Adjacent long-tail concept `food marketing` 1 (Social Studies) may merge in cleanly; curriculum team can decide at Session 81 long-tail review. Recommend keep with surface label "Advertising".
+- curriculum_notes: <to_fill>
+
+### `advocacy`
+
+- canonical_label: Advocacy
+- verdict: <to_fill>
+- frequency: 3 as-tagged, 4 if aliases merge
+- current_subjects: Social Studies (3)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: [("community activism", 1)]
+- theme_overlap: none
+- claude_notes: Canonical Social Studies concept covering advocacy / civic-action lessons — Food System Advocates (Parts 1 + main), The Lorax Debate, action-orientation-on-issues. Long-tail singleton `community activism` (Social Studies, 1 — *Guerilla Gardening for Birds*, neighborhood civic action for bird habitat) folds in cleanly as a near-synonym; the §11 `community_systems` 15 canonical explicitly redirects `community activism` to merge here rather than into community_systems, since the lesson's "make seed bursts to grow bird-friendly plants in their neighborhood... role they can play to make New York City a better home" framing is structurally parallel to existing advocacy lessons. Post-merge total: 4 lessons. Adjacent §12 concepts `social_justice_issues` 5 and `environmental_justice` 3 are distinct civic concepts (issue-orientation vs action-orientation). Audit signal CON-05 (created Session 79) is closed by this entry's merge_aliases proposal pending Stage 2 implementation.
+- curriculum_notes: <to_fill>
+
+### `descriptive_writing`
+
+- canonical_label: Descriptive Writing
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Literacy/ELA (3)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering descriptive-writing genre — typically tied to sensory-language food-memory lessons (e.g., Food Memories where students describe taste/smell/texture). Adjacent long-tail concept `descriptive language` 1 (Literacy/ELA) is likely a closely-related variant — the language-vs-writing distinction (using descriptive language vs producing descriptive composition) may collapse in practice. Curriculum team can decide at Session 81 long-tail review. Distinct from other §12 writing sub-types. Recommend keep with surface label "Descriptive Writing".
+- curriculum_notes: <to_fill>
+
+### `environmental_justice`
+
+- canonical_label: Environmental Justice
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Social Studies (3)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Social Studies concept covering environmental-justice content — environmental impact of food systems, food debates, community impact of pollution. Per audit signal CON-06 (from §11 `community_systems` 15 entry), this concept currently overlaps semantically with `community_systems` ("food-system environmental impact" and "Environmental Impact of the Food System" lesson appears under both labels) and to a lesser extent with `social_justice_issues` 5. Stage 2 reviewer-validation pass should sharpen the boundary between these three concepts — or confirm the overlap as intentional broad-bucket framing. Adjacent §12 concepts `social_justice_issues` 5 (broader social-justice) and `advocacy` 3 (action-orientation) are kept as separate canonicals. Recommend keep with surface label "Environmental Justice"; flag the CON-06 boundary question for curriculum-team adjudication.
+- curriculum_notes: <to_fill>
+
+### `food_presentation`
+
+- canonical_label: Food Presentation
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Arts (3)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Arts concept covering food-as-art-form lessons — plating, food-art design, visual-composition of meals. Distinct from §11 `visual_arts` 76 (broader visual-creation umbrella) and §11 `cultural_traditions` 206 (cultural framing). Recommend keep with surface label "Food Presentation".
+- curriculum_notes: <to_fill>
+
+### `graphing`
+
+- canonical_label: Graphing
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Math (3)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Math concept covering data visualization — bar graphs, pictographs, charts of cooking/garden data. Distinct from §11 `data_collection` 19 (broader data-work canonical) — graphing is the specific visualization step. Recommend keep with surface label "Graphing".
+- curriculum_notes: <to_fill>
+
+### `legumes`
+
+- canonical_label: Legumes
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Science (3)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Narrow Science botanical concept covering legume plants (beans, lentils, peas) — typically tied to bean-cooking and lentil-lesson curriculum. Adjacent long-tail concept `plant-based proteins` 1 (Science) may overlap conceptually (legumes are the main plant-protein source) but is a distinguishably different nutritional lens; kept separate. Recommend keep with surface label "Legumes".
+- curriculum_notes: <to_fill>
+
+### `microorganisms`
+
+- canonical_label: Microorganisms
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Science (3)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Science concept covering microorganism biology — yeast, bacteria, fermentation organisms — typically tied to fermentation lessons, sourdough, decomposition. Adjacent long-tail singletons `yeast` 1 (Science), `microbiome` 1 (Science), and `fermentation` 1 (Science) are narrower related concepts; the §11 `decomposition` 47 canonical covers the broader breakdown-process frame. Curriculum team can consider whether `microorganisms` should absorb these singletons at Session 81 long-tail review. Recommend keep with surface label "Microorganisms".
+- curriculum_notes: <to_fill>
+
+### `narrative_writing`
+
+- canonical_label: Narrative Writing
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Literacy/ELA (3)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering narrative-composition genre — story-writing, personal-narrative, food-memory storytelling-as-composition. Distinct from §12 `cultural_narratives` 8 (which covers reading or telling culturally-rooted stories, including by other authors), and from §11 `storytelling` 76 (which covers narrative-comprehension and oral-sharing rather than student production). Distinct from other §12 writing sub-types. Recommend keep with surface label "Narrative Writing".
+- curriculum_notes: <to_fill>
+
+### `novel_connections`
+
+- canonical_label: Novel Connections
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Literacy/ELA (3)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering text-to-text or text-to-experience connections from novel-reading — typically tied to literature-circle / novel-study lessons that connect a book's content to food, gardens, or cultural themes (Bud Not Buddy/Jam, etc.). The label is mildly idiomatic; curriculum team may want a clearer surface label like "Novel-to-Lesson Connections" or "Literature Connections". Distinct from §11 `recipe_reading` 69 (procedural-text reading) and §12 `cultural_narratives` 8 (culturally-rooted-story reading). Recommend keep with surface label "Novel Connections" (or curriculum-team preferred clearer phrasing).
+- curriculum_notes: <to_fill>
+
+### `opinion_writing`
+
+- canonical_label: Opinion Writing
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Literacy/ELA (3)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Literacy/ELA concept covering opinion-piece composition — taste-test-opinion writing, "what's your favorite" reflection writing. Distinct from §12 `persuasive_writing` 4 (which targets audience-convincing via argument) and long-tail `argumentative writing` 2 (evidence-based argumentation). The opinion / persuasive / argumentative trio reflects Common Core ELA writing-standard distinctions (opinion = K-5; argument = 6-12; persuasive = pre-CCSS umbrella term); curriculum team may want to flag this distinction in pedagogical context. Recommend keep with surface label "Opinion Writing".
+- curriculum_notes: <to_fill>
+
+### `recipe_scaling`
+
+- canonical_label: Recipe Scaling
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Math (3)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Canonical Math concept covering recipe-scaling arithmetic — doubling/halving recipes, ratio-based scaling for portion-counts. Adjacent long-tail concepts `scaling` 1 (Math — generic; possibly absorb at Session 81 long-tail review), `ratios` 2 (Math), and `unit rates` 2 (Math) are kept as separate canonicals; `recipe_scaling` is the recipe-specific application. Distinct from §12 `fractions` 9 (which provides the arithmetic foundation but is used outside recipe contexts too). Recommend keep with surface label "Recipe Scaling".
+- curriculum_notes: <to_fill>
+
+### `root_vegetables`
+
+- canonical_label: Root Vegetables
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Science (3)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Narrow Science botanical concept covering root vegetables — carrots, potatoes, beets, radishes — typically tied to root-vegetable cooking lessons. Adjacent long-tail concept `roots` 2 (Science) is distinct anatomically (general plant-anatomy concept). Per §11 `plant_parts` 239 claude_notes, both `roots` and `root_vegetables` are "anatomically more specific concepts the corpus distinguishes from the generic `plant_parts` (not aliases)" — the corpus convention treats them as standalone. Recommend keep with surface label "Root Vegetables" as a culinary-botanical specific concept.
+- curriculum_notes: <to_fill>
+
+### `seed_dispersal`
+
+- canonical_label: Seed Dispersal
+- verdict: <to_fill>
+- frequency: 3 appearances
+- current_subjects: Science (3)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Narrow Science ecological concept covering seed-dispersal mechanisms — water, wind, animal-attachment — typically tied to model-building lessons where students design seed-dispersal mechanisms. Per §11 `seeds` 13 claude_notes, `seed_dispersal` is kept as a separate canonical (distinct ecological lens from the broader seeds concept; all 3 corpus lessons are model-building exercises). Adjacent long-tail concept `seed starting` 1 (Science) is also kept separate per §11 seeds claude_notes (propagation/germination concept). Recommend keep with surface label "Seed Dispersal".
+- curriculum_notes: <to_fill>
 
 ---
 
