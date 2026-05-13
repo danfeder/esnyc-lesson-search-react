@@ -1489,7 +1489,7 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - frequency: 4 as-tagged, 5 if aliases merge
 - current_subjects: Science (3), Social Studies (1)
 - recommended_primary_subject: Science
-- recommended_secondary_subjects: Social Studies (conditional — only if curriculum team affirms a "cultural-heritage / traditional-knowledge preservation" lens distinct from food-science preservation)
+- recommended_secondary_subjects: Social Studies (conditional)
 - merge_aliases: [("food preservation", 1)]
 - theme_overlap: none
 - claude_notes: The 3 Science `preservation` lessons (jam-making in *Bud Not Buddy/Jam*, vegetable pickling in *Pickle Lesson with Ms. Ingrit*, rose glycerite/honey infusion in *Healing with Roses*) all describe food-or-edible-plant preservation techniques — jamming, pickling/fermenting, herbal infusion — which is the same cognitive lens as the sole `food preservation` Science lesson (*Sandor Katz: Food Hero*, fermentation/cultured butter). On the Science axis these are a single concept and should consolidate; this entry uses `preservation` as the canonical label (highest-frequency-wins convention from §11), but the Session 79 Opus read flagged that `food_preservation` is the more semantically precise label — curriculum team may flip the canonical-label direction (both pick the same merged Science cohort, choice is purely surface-label preference). Post-merge total: 5 lessons. The lone Social Studies `preservation` tag (*Three Sisters Succotash*, paired with `Indigenous / North American / Americas` cultural-heritage and Social Studies `cultural traditions`) plausibly carries a distinct *cultural-historical preservation of Indigenous foodways* lens — "modern and past methods of preservation" framing is comparative-history, not technique-acquisition — but it's a single-lesson signal and the summary is thin. Curriculum team decides: (a) accept the cultural-heritage lens and keep `preservation` as a Social Studies-only label distinct from a Science `food_preservation` canonical, or (b) treat the Three Sisters tagging as artifactual and consolidate all 4 lessons under Science as `food_preservation`, dropping `preservation` from the vocabulary. If (a) is chosen, consider renaming the Social Studies form to something less ambiguous (e.g., `cultural_preservation` or `traditional_foodways_preservation`) to make the lens explicit. Audit signal CON-09 (created Session 79) is closed by this entry's merge_aliases proposal pending Stage 2 implementation.
@@ -1541,7 +1541,7 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - recommended_secondary_subjects: <none>
 - merge_aliases: <none>
 - theme_overlap: none
-- claude_notes: Canonical Literacy/ELA concept covering descriptive-writing genre — typically tied to sensory-language food-memory lessons (e.g., Food Memories where students describe taste/smell/texture). Adjacent long-tail concept `descriptive language` 1 (Literacy/ELA) is likely a closely-related variant — the language-vs-writing distinction (using descriptive language vs producing descriptive composition) may collapse in practice. Curriculum team can decide at Session 81 long-tail review. Distinct from other §12 writing sub-types. Recommend keep with surface label "Descriptive Writing".
+- claude_notes: Canonical Literacy/ELA concept covering descriptive-writing genre — typically tied to sensory-language food-memory lessons (e.g., Food Memories where students describe taste/smell/texture). Adjacent long-tail concept `descriptive language` 1 (Literacy/ELA) is likely a closely-related variant — the language-vs-writing distinction (using descriptive language vs producing descriptive composition) may collapse in practice. Curriculum team can decide at Session 81 long-tail review. Distinct from other §12 writing sub-types (see CON-12 for the writing-cluster canonical-shape question). Recommend keep with surface label "Descriptive Writing".
 - curriculum_notes: <to_fill>
 
 ### `environmental_justice`
@@ -1619,7 +1619,7 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - recommended_secondary_subjects: <none>
 - merge_aliases: <none>
 - theme_overlap: none
-- claude_notes: Canonical Literacy/ELA concept covering narrative-composition genre — story-writing, personal-narrative, food-memory storytelling-as-composition. Distinct from §12 `cultural_narratives` 8 (which covers reading or telling culturally-rooted stories, including by other authors), and from §11 `storytelling` 76 (which covers narrative-comprehension and oral-sharing rather than student production). Distinct from other §12 writing sub-types. Recommend keep with surface label "Narrative Writing".
+- claude_notes: Canonical Literacy/ELA concept covering narrative-composition genre — story-writing, personal-narrative, food-memory storytelling-as-composition. Distinct from §12 `cultural_narratives` 8 (which covers reading or telling culturally-rooted stories, including by other authors), and from §11 `storytelling` 76 (which covers narrative-comprehension and oral-sharing rather than student production). Distinct from other §12 writing sub-types (see CON-12 for the writing-cluster canonical-shape question). Recommend keep with surface label "Narrative Writing".
 - curriculum_notes: <to_fill>
 
 ### `novel_connections`
@@ -1645,7 +1645,7 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - recommended_secondary_subjects: <none>
 - merge_aliases: <none>
 - theme_overlap: none
-- claude_notes: Canonical Literacy/ELA concept covering opinion-piece composition — taste-test-opinion writing, "what's your favorite" reflection writing. Distinct from §12 `persuasive_writing` 4 (which targets audience-convincing via argument) and long-tail `argumentative writing` 2 (evidence-based argumentation). The opinion / persuasive / argumentative trio reflects Common Core ELA writing-standard distinctions (opinion = K-5; argument = 6-12; persuasive = pre-CCSS umbrella term); curriculum team may want to flag this distinction in pedagogical context. Recommend keep with surface label "Opinion Writing".
+- claude_notes: Canonical Literacy/ELA concept covering opinion-piece composition — taste-test-opinion writing, "what's your favorite" reflection writing. Distinct from §12 `persuasive_writing` 4 (which targets audience-convincing via argument) and long-tail `argumentative writing` 2 (evidence-based argumentation). The opinion / persuasive / argumentative trio reflects Common Core ELA writing-standard distinctions (opinion = K-5; argument = 6-12; persuasive = pre-CCSS umbrella term); curriculum team may want to flag this distinction in pedagogical context. The broader writing-cluster canonical-shape question (writing 8 generic + sub-types) is captured in CON-12. Recommend keep with surface label "Opinion Writing".
 - curriculum_notes: <to_fill>
 
 ### `recipe_scaling`
