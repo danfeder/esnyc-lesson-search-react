@@ -1,6 +1,6 @@
 # Stage 1 Concepts Worksheet
 
-> **Status: SCAFFOLD (last update Session 78, 2026-05-12).** Header sections (§1–§10) and tier skeletons (§11–§13) are in place; Appendix A v3 baseline is populated. **No per-value entries yet.** Per-value fills land across PR-Concepts-1 (high-impact tier ≥10 appearances), PR-Concepts-2 (mid-tier 3–9 appearances), PR-Concepts-3 (long-tail 1–2 appearances). Curriculum-team handoff happens once all three tier PRs ship.
+> **Status: PRE-HANDOFF FILLED (last update Session 81, 2026-05-12).** Header sections (§1–§10) and tier skeletons (§11–§13) in place; Appendix A v3 baseline populated; **all 208 per-value entries pre-filled across the 3 tiers** (32 high-impact in §11 / 39 mid-tier in §12 / 137 long-tail in §13). `verdict` + `curriculum_notes` fields stay `<to_fill>` per pre-handoff convention. PR-Concepts-1 (§11, Session 79, squash `1ab5e82`) + PR-Concepts-2 (§12, Session 80, squash `e7632e3`) + PR-Concepts-3 (§13, Session 81 — this PR). **Awaiting curriculum-team verdict pass** (Session 82+).
 >
 > **Owner during scaffold/pre-handoff phase:** project maintainer (Claude + user). **Owner at handoff:** ESYNYC curriculum team.
 >
@@ -1691,11 +1691,1794 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 
 ## §13 Long-tail tier — concepts with 1–2 appearances
 
-> **Status: empty skeleton.** ~137 entries (Session 78 probe count at 1–2 cutoff). Session 81 fills per-value entries here. Session 79 may decide to split this tier across multiple PRs (singletons-only vs 1-and-2-appearance entries) to keep PR sizes near the ~50-entry sweet spot — see §5 calibration note.
+> **Status: filled (137 of 137 entries).** Session 81 per-value fills landed in PR-Concepts-3 with 137 entries (29 frequency-2 + 108 frequency-1, all alphabetical within frequency-descending order per D-C3). Single-PR option chosen per D-C14 split decision (alternatives considered: 108-vs-29 split, even-thirds split, alphabetical halves — single PR wins because merge clusters stay coherent: `plant_identification` aliases span freq-2 + freq-1, `adaptations` aliases span 3 freq-1 entries, `cultural_traditions` / `community_systems` / `visual_arts` alias members are mixed freq). No upfront Opus batch needed (Session 79's Phase 1 batch covered the cross-cutters and ambiguous near-duplicate clusters; long-tail singletons are mostly drop-by-content-light judgment or merge-into-proposed-canonical). Forward-referenced merge_alias proposals from §11/§12 land here as alias-side entries (CON-05 advocacy / CON-09 preservation / CON-11 historical_context closure; §11 cultural_traditions / community_systems / visual_arts; §12 adaptations / plant_identification / social_justice_issues / how_to_writing / reading_comprehension; §11 seasonal_changes seasons cluster). Awaiting curriculum-team verdicts on `verdict` and `curriculum_notes` fields.
 >
-> **Review depth (D-C15):** light. Most entries are `drop` (vague singletons like `garden topics`, `general exploration`) or `merge` (near-duplicates of higher-tier canonicals). Rapid skim is fine for clear-drop singletons; merge candidates warrant attention.
+> **Review depth (D-C15):** light. Most entries are `drop` (vague singletons like `garden topics`, `general exploration`, `plant science` per CON-02/CON-03) or `merge` (near-duplicate of a higher-tier canonical, often with the merge proposal already living in the §11/§12 canonical entry's `merge_aliases` field). Rapid skim is fine for clear-drop singletons; merge-candidate clusters warrant attention; the CON-11 `historical_context` merge-vs-keep call + the §6 theme-overlap `food systems` entry + CON-16 Indigenous-cluster reframing question + CON-22 reading-cluster boundary all need substantive verdicts.
+>
+> **Frequency cutoff calibratability:** the 1–2 cutoff was the Session 78 locked default; Session 80 punted the split decision to Session 81; Session 81 ran the calibration probe (returns **108 freq-1 + 29 freq-2 = 137 ✓** at `retired_at IS NULL` filter, matching Session 80's preliminary count exactly) and committed to single-PR per D-C14.
 
-<!-- Per-value entries land here in PR-Concepts-3 (Session 81). -->
+<!-- Per-value entries — Session 81; 137 entries frequency-descending, alphabetical tie-break within frequency. 29 freq-2 entries first, then 108 freq-1 entries. -->
+
+### `argumentative_writing`
+
+- canonical_label: Argumentative Writing
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (2)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-cluster sub-type covered by audit signal CON-12 (writing-cluster canonical-shape question; see §12 `writing` entry). Pedagogically distinct from §12 `persuasive_writing` 4 in some upper-grade ELA frameworks (Common Core distinguishes "argument" as evidence-based claim support from "persuasion" as rhetorical appeal), but the corpus signal at N=2 cannot reliably support that distinction. Verdict depends on the CON-12 curriculum-team decision: (a) keep `writing` 8 as catch-all → this entry plausibly merges into `persuasive_writing` 4 or stands alone; (b) drop `writing` 8 → keep this as a sub-canonical; (c) flip writing as canonical with sub-types as aliases → merge into `writing`. Recommend pending CON-12 verdict.
+- curriculum_notes: <to_fill>
+
+### `climate`
+
+- canonical_label: Climate
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Science concept covering climate science framings (regional climate, climate-vs-weather distinction). Paired with long-tail singleton `climate change` 1 (Science) — see CON-20 audit signal for the climate / climate_change merge-or-distinguish question. Curriculum team may keep `climate` as the broader canonical and absorb `climate change` 1 as merge_alias (climate change is a sub-topic of climate science), OR keep both standalone if the climate-change-specific framing is pedagogically distinct. Recommend keep with `climate change` 1 as candidate merge_alias pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `consumers`
+
+- canonical_label: Consumers
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Ecology concept (food-web trophic level — organisms that consume producers). Pairs with long-tail singleton `producers` 2 (Science) — both are food-web-position concepts. Recommend merge into §11 `food_webs` 11 cluster, OR keep both as a standalone trophic-level mini-cluster if the curriculum team wants explicit producers/consumers tagging. The merge direction is supported by `food_webs` being the established canonical home for trophic-level lessons; producers/consumers are sub-concepts of food-web structure.
+- curriculum_notes: <to_fill>
+
+### `discussion`
+
+- canonical_label: Discussion
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (2)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Literacy/ELA concept covering classroom-discussion practice — accountable talk, paired discussion, whole-class conversation. Adjacent long-tail concepts `debate` 1 (Lit/ELA) + `public speaking` 1 (Lit/ELA) cover narrower oral-communication practices; curriculum team may consolidate the trio (discussion + debate + public_speaking) into a single `oral_communication` canonical at re-tag time, or keep separate. Recommend keep with surface label "Discussion".
+- curriculum_notes: <to_fill>
+
+### `erosion`
+
+- canonical_label: Erosion
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct earth-science concept covering soil-erosion, water-erosion, and weathering processes. Adjacent §11 `soil_science` 44 covers the broader soil-formation frame; erosion is a specific process narrower than soil_science. Recommend keep standalone with surface label "Erosion"; curriculum team may also fold into soil_science if the corpus signal feels narrow.
+- curriculum_notes: <to_fill>
+
+### `germination`
+
+- canonical_label: Germination
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct plant-biology concept covering seed-germination process — the specific transition from dormant seed to emerging seedling. Adjacent §11 `life_cycles` 43 covers broader cyclic-process frame; §12 `plant_growth` 9 covers post-germination growth stages; §11 `seeds` 13 covers seed-anatomy-and-planting. Germination is the specific moment-of-emergence concept distinguishable from these neighbors. Recommend keep standalone with surface label "Germination"; curriculum team may merge into plant_growth or seeds if the boundary feels artificial.
+- curriculum_notes: <to_fill>
+
+### `identifying_plants`
+
+- canonical_label: Identifying Plants
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Verb-form drift of §12 `plant_identification` 5 — already proposed for merge in `plant_identification`'s `merge_aliases: [("identifying plants", 2), ("plant ID", 1)]`. Post-merge total for plant_identification canonical: 8 lessons. The §7 worksheet methodology used this cluster as the canonical example of merge_aliases conventions. Recommend merge into `plant_identification` per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `informational_writing`
+
+- canonical_label: Informational Writing
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (2)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-cluster sub-type covered by audit signal CON-12. Pedagogically distinct from §12 `how_to_writing` 5 (procedural genre) and §12 `descriptive_writing` 3 (sensory-detail genre) — informational writing emphasizes factual exposition rather than process-explanation or vivid-imagery. One of the two lessons here is the *Informational Writing - Topics/Subtopics* template that surfaced CON-03 (the lesson with vague Science co-tags `garden topics` + `plant science`). Verdict depends on CON-12 verdict: (a) keep `writing` 8 as catch-all → keep this standalone or merge into how_to_writing; (b) drop writing 8 → keep as sub-canonical; (c) flip → merge into writing. Recommend pending CON-12 verdict.
+- curriculum_notes: <to_fill>
+
+### `patterns`
+
+- canonical_label: Patterns
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Math (2)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Math concept covering pattern recognition (number patterns, shape patterns, garden-bed arrangement patterns). Adjacent §11 `counting` 20, `data_collection` 19, `estimation` 15 are different math practices kept as separate canonicals. Recommend keep with surface label "Patterns".
+- curriculum_notes: <to_fill>
+
+### `performance`
+
+- canonical_label: Performance
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Arts (2)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Arts concept covering performance arts (skits, plays, demonstrations). Adjacent long-tail Arts concepts `dance` 1, `puppetry` 1, `puppet making` 1, `instrument making` 1 cover specific performance modalities; curriculum team may consolidate under a broader `performing_arts` canonical at re-tag time. Recommend keep with surface label "Performance" pending the broader Arts-cluster review.
+- curriculum_notes: <to_fill>
+
+### `phases_of_matter`
+
+- canonical_label: Phases of Matter
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Physical-science concept covering states / phases of matter (solid / liquid / gas / transitions). Closely paired with long-tail singleton `states of matter` 1 (Science) — see CON-19 audit signal for the phases-vs-states canonical-label question; both labels refer to the same physical-chemistry concept. Recommend canonical here as `phases_of_matter` (higher frequency wins per §7 alpha tie-break convention used in §11/§12) with `states of matter` as merge_alias proposal pending curriculum-team verdict on canonical surface label.
+- curriculum_notes: <to_fill>
+
+### `plant_nutrition`
+
+- canonical_label: Plant Nutrition
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct plant-biology concept covering plant-nutritional-uptake processes (water, nutrients, photosynthesis-derived energy). Adjacent §11 `plant_needs` 41 covers resource requirements broadly; §12 `photosynthesis` 8 covers the specific energy-production mechanism; §12 `nutrition` 4 covers human nutrition. Recommend keep standalone — narrower than plant_needs but distinct from photosynthesis. Curriculum team may merge into plant_needs if the boundary feels artificial.
+- curriculum_notes: <to_fill>
+
+### `poetry`
+
+- canonical_label: Poetry
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (1), Arts (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: Arts
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Cross-subject concept appearing once each under Literacy/ELA and Arts — one of 8 known cross-subject concepts per §8. The Lit/ELA-side lens is typically text-poetry reading or composition; the Arts-side lens is performance-poetry (recitation, spoken word). Both lenses are pedagogically real (unlike the tagging-artifact crosses in CON-04/08/10), so Lit/ELA primary + Arts secondary is the recommendation. Curriculum team confirms whether to keep both subjects as canonical (poetry as a genuine cross-subject concept) or consolidate to a single subject home. Recommend keep cross-subject with Lit/ELA primary.
+- curriculum_notes: <to_fill>
+
+### `producers`
+
+- canonical_label: Producers
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Ecology concept (food-web trophic level — autotrophic organisms, primarily plants, that produce food via photosynthesis). Pairs with long-tail freq-2 `consumers` 2 (Science) and §11 `food_webs` 11. Recommend merge into §11 `food_webs` 11 cluster as a trophic-level sub-concept, OR keep both `producers` + `consumers` standalone as a paired mini-cluster if curriculum team wants explicit producers/consumers tagging. The merge direction is supported by `food_webs` being the established canonical home for trophic-level lessons.
+- curriculum_notes: <to_fill>
+
+### `protein`
+
+- canonical_label: Protein
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Nutrition-chemistry concept covering protein as a macronutrient. Adjacent singletons `macromolecules` 1 + `macronutrients` 1 (both Science) + §12 `nutrition` 4 + §11 `nutrition_education` 107 cover broader nutrition-related concepts; long-tail `plant-based proteins` 1 (Science) is the specific plant-protein subtopic. Recommend keep standalone OR merge into `macronutrients` 1 (treat protein as a specific macronutrient example) — both pick the same content; curriculum team picks the surface-label preference.
+- curriculum_notes: <to_fill>
+
+### `ratios`
+
+- canonical_label: Ratios
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Math (2)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Math concept covering ratio reasoning — typically tied to recipe scaling (ingredient ratios) and proportional reasoning. Adjacent freq-2 `unit_rates` 2 (Math) is closely related (rates are a specific kind of ratio); §12 `recipe_scaling` 3 applies ratio reasoning specifically. Recommend keep standalone with `unit rates` 2 as candidate merge_alias (ratios is the broader concept, unit rates a sub-application) pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `reading`
+
+- canonical_label: Reading
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (2)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Generic Literacy/ELA tag without specified comprehension-or-genre frame. Recommend merge into §12 `reading_comprehension` 6 — `reading_comprehension` is the established canonical for reading-for-understanding lessons; `reading` 2 is a label-shortening variant. Curriculum team may instead keep `reading` 2 as a separate broader-frame canonical if the 2 lessons here are not specifically comprehension-focused (read-aloud, sustained silent reading, etc.) — see CON-22 audit signal for the broader reading-cluster boundary question (reading / reading_comprehension / narrative_reading / biography_reading / informational_text).
+- curriculum_notes: <to_fill>
+
+### `recipe_writing`
+
+- canonical_label: Recipe Writing
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (2)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-cluster sub-type covered by CON-12. Already flagged in §12 `how_to_writing` 5's claude_notes as candidate merge_alias (recipe writing is a specific application of how-to writing — procedural composition with ingredient-quantity emphasis). Recommend merge into §12 `how_to_writing` 5 pending CON-12 curriculum-team verdict on the broader writing-cluster shape. If CON-12 picks option (a) `writing` 8 as catch-all, `recipe_writing` could either fold into how_to_writing or remain a distinct sub-canonical.
+- curriculum_notes: <to_fill>
+
+### `research`
+
+- canonical_label: Research
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (2)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Literacy/ELA concept covering research practices — gathering information, citing sources, organizing findings. Adjacent long-tail concept `note-taking` 1 (Lit/ELA) is a research sub-practice. Recommend keep with surface label "Research"; curriculum team may consolidate research + note_taking into a single canonical at re-tag time.
+- curriculum_notes: <to_fill>
+
+### `roots`
+
+- canonical_label: Roots
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific plant-anatomy concept (roots as a plant part). The §11 `plant_parts` 239 canonical is the established home for plant-anatomy tagging; `roots` 2 is plausibly a sub-part-specific drift that should merge into plant_parts. Adjacent §12 `root_vegetables` 3 covers a related but distinct concept (vegetables grown from roots — turnips, carrots, beets — emphasizing the harvest-and-eat dimension rather than plant anatomy). Recommend merge into §11 `plant_parts` 239 as a sub-anatomy alias.
+- curriculum_notes: <to_fill>
+
+### `scientific_method`
+
+- canonical_label: Scientific Method
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Science concept covering the scientific-method-as-practice frame (hypothesis, experiment, conclusion). Closely paired with long-tail singleton `scientific claims` 1 (Science) — both cover science-as-practice rather than science-as-content. Recommend keep standalone with `scientific claims` 1 as candidate merge_alias; alternatively keep both standalone as parallel science-practice canonicals. Curriculum team picks.
+- curriculum_notes: <to_fill>
+
+### `seasonal_change`
+
+- canonical_label: Seasonal Change
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Singular-form drift of §11 `seasonal_changes` 10 (entry 32) — already proposed in `seasonal_changes`'s `merge_aliases: [("seasonal change", 2), ("seasons", 2)]`. Post-merge total for seasonal_changes canonical: 14 lessons. Per CON-01 audit signal, the broader seasonality cluster (seasonal_changes / seasonality / seasonal_eating / seasonal_cycles) has cross-cluster mistagging where "Seasons" template-trio lessons split between phenomenology (`seasonal_change`) and food-availability (`seasonal_eating`) canonicals. Recommend merge into §11 `seasonal_changes` 10.
+- curriculum_notes: <to_fill>
+
+### `seasons`
+
+- canonical_label: Seasons
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Generic-label drift of §11 `seasonal_changes` 10 (entry 32) — already proposed in `seasonal_changes`'s `merge_aliases: [("seasonal change", 2), ("seasons", 2)]`. The 2 lessons here are part of the "Seasons" template-trio cohort surfaced in CON-01 audit signal (cross-cluster mistagging between seasonality canonicals). Recommend merge into §11 `seasonal_changes` 10.
+- curriculum_notes: <to_fill>
+
+### `sequencing`
+
+- canonical_label: Sequencing
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Literacy/ELA (2)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Literacy/ELA concept covering sequencing practices — ordering events, story-sequence, procedural-sequence. Recommend keep standalone with surface label "Sequencing"; the concept is structurally distinct from §12 `reading_comprehension` 6 (which covers broader text-understanding) and §11 `vocabulary_development` 59 (which covers word-level work).
+- curriculum_notes: <to_fill>
+
+### `social_justice`
+
+- canonical_label: Social Justice
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Social Studies (2)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Label-shortening variant of §12 `social_justice_issues` 5 — already proposed in `social_justice_issues`'s `merge_aliases: [("social justice", 2)]`. Post-merge total for social_justice_issues canonical: 7 lessons. Curriculum team may flip the canonical direction (use `social_justice` as the surface label, treat `social_justice_issues` 5 as the merge_alias) — both pick the same merged cohort; the choice is purely surface-label preference. Recommend merge per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `spices`
+
+- canonical_label: Spices
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Narrow cooking-science concept covering spice-related lessons (taste-and-flavor, food chemistry, cultural cuisine spice profiles). The Science subject placement is borderline — these lessons are typically more cultural-culinary than scientific in framing. Recommend keep standalone with surface label "Spices"; curriculum team may also drop as too narrow OR consider re-subject-tagging (Social Studies-side cultural-cuisine if the 2 lessons frame spices culturally rather than chemically).
+- curriculum_notes: <to_fill>
+
+### `tool_use`
+
+- canonical_label: Tool Use
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Science (2)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Science concept covering scientific tool-use (microscope, scale, measuring instruments) in garden / cooking contexts. Adjacent §12 `simple_machines` 1 covers physics-tool-use; tool_use is the broader laboratory/observation practice. Recommend keep with surface label "Tool Use"; curriculum team may also drop if the 2 lessons are not specifically about tool-use as a teaching concept.
+- curriculum_notes: <to_fill>
+
+### `unit_rates`
+
+- canonical_label: Unit Rates
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Math (2)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific Math concept covering unit-rate reasoning (price per pound, miles per hour, etc.). Sub-application of freq-2 `ratios` 2 (rates are a specific kind of ratio). Recommend keep standalone if curriculum team wants explicit unit-rate tagging, OR merge into `ratios` 2 as a sub-concept. Both options keep the math signal; choice is granularity preference.
+- curriculum_notes: <to_fill>
+
+### `volume`
+
+- canonical_label: Volume
+- verdict: <to_fill>
+- frequency: 2 appearances
+- current_subjects: Math (2)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Geometric/measurement concept covering volume measurement (capacity, cubic units, recipe-quantity volume). Closely paired with §11 `measurement` 66 (the established canonical for measurement lessons) and long-tail singletons `weight` 1, `area` 1, `perimeter` 1 — see CON-23 audit signal for the measurement-cluster boundary question (volume / weight / area / perimeter / measurement). Recommend either merge into §11 `measurement` 66 as a sub-dimension alias OR keep standalone as a specific-measurement-dimension canonical; curriculum-team verdict on whether the §11 measurement canonical absorbs these sub-dimensions or keeps them as parallel specifics.
+- curriculum_notes: <to_fill>
+
+### `adaptation`
+
+- canonical_label: Adaptation
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Singular-form drift of §12 `adaptations` 5 — already proposed in `adaptations`'s `merge_aliases: [("adaptation", 1), ("plant adaptation", 1), ("plant adaptations", 1)]`. Post-merge total for adaptations canonical: 8 lessons. Curriculum team may flip canonical direction (use `adaptation` as the surface label, treat `adaptations` 5 as the merge_alias) — both pick the same merged cohort; the choice is purely surface-label preference (singular feels more concept-y; plural feels more lesson-list-y). Recommend merge per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `animal_welfare`
+
+- canonical_label: Animal Welfare
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Social Studies concept covering animal-welfare ethics (factory farming, humane treatment, vegetarianism). Adjacent long-tail singleton `factory farming` 1 (SS) is closely related; both concepts together cover the food-ethics axis. Recommend keep standalone with surface label "Animal Welfare"; curriculum team may consolidate animal_welfare + factory_farming under a broader `food_ethics` canonical at re-tag time.
+- curriculum_notes: <to_fill>
+
+### `area`
+
+- canonical_label: Area
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Math (1)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Geometry concept covering area calculation (garden-bed area, recipe-pan area). Part of the measurement-cluster boundary question (CON-23 — area / perimeter / volume / weight / measurement). Recommend merge into §11 `measurement` 66 as a sub-dimension alias, OR keep standalone if curriculum team wants explicit area tagging. The mid-tier `measurement` canonical is the established home for measurement lessons.
+- curriculum_notes: <to_fill>
+
+### `argumentation`
+
+- canonical_label: Argumentation
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Practice-of-arguing concept (verbal claim-defense) — pairs with freq-2 `argumentative_writing` 2 (the written-form variant). Both are part of the CON-12 writing/argument-cluster. Adjacent long-tail `debate` 1 + `discussion` 2 + `public_speaking` 1 cover related oral-communication practices. Recommend keep or merge into `debate` 1 / `discussion` 2 pending CON-12 verdict on the broader argumentation-writing-discussion-debate cluster shape.
+- curriculum_notes: <to_fill>
+
+### `beneficial_insect_identification`
+
+- canonical_label: Beneficial Insect Identification
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific Science concept covering beneficial-insect identification (pollinators, predators of pests) in garden contexts. Closely related to §11 `pollinators` 28 (broader pollinator-ecology canonical) and §12 `plant_identification` 5 (identification practice across plants — see also long-tail `identifying plants` 2 alias). Recommend merge into §11 `pollinators` 28 as a sub-concept OR drop as overly narrow specific application; the broader pollinator-ecology canonical likely covers the beneficial-insect framing.
+- curriculum_notes: <to_fill>
+
+### `biography`
+
+- canonical_label: Biography
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Literary genre — biography as a reading category. Closely paired with long-tail singleton `biography reading` 1 (Lit/ELA) — see CON-22 audit signal for the reading-cluster boundary question. Recommend merge `biography` + `biography reading` into a single canonical (likely `biography_reading` or `biographies`) OR merge into §11 `storytelling` 76 (which covers culturally-rooted narratives and biographies of food-history figures — Cesar Chavez, Rachel Carson, Dr. Carver) as the established canonical home for biographical reading. Pending curriculum-team verdict on reading-cluster boundary.
+- curriculum_notes: <to_fill>
+
+### `biography_reading`
+
+- canonical_label: Biography Reading
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Reading-practice variant of long-tail singleton `biography` 1 (Lit/ELA). See CON-22 reading-cluster audit signal. Recommend merge with `biography` 1 into a single canonical, OR merge both into §11 `storytelling` 76 / §12 `reading_comprehension` 6 / §12 `cultural_narratives` 8 (the latter is where biography-of-food-history-figures-as-cultural-narrative arguably belongs). Pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `biotic_abiotic_factors`
+
+- canonical_label: Biotic/Abiotic Factors
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Ecology concept distinguishing living (biotic) from non-living (abiotic) components of ecosystems. Closely related to §11 `ecosystems` 73 (the established broader ecology canonical). Recommend merge into §11 `ecosystems` 73 as a sub-concept — biotic/abiotic-factor framings are sub-vocabulary within ecosystem teaching. Curriculum team may keep standalone if the specific biotic/abiotic distinction warrants its own tag.
+- curriculum_notes: <to_fill>
+
+### `cardiovascular_system`
+
+- canonical_label: Cardiovascular System
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific human-anatomy concept covering the cardiovascular system. Closely paired with long-tail singleton `circulatory system` 1 (Science) — see CON-18 audit signal for the cardiovascular/circulatory canonical-label question (these labels refer to the same anatomical system). Recommend merge into a single canonical (likely `circulatory_system` as the more commonly-used pedagogical surface label) with the other as alias. Curriculum-team verdict on surface label.
+- curriculum_notes: <to_fill>
+
+### `categorization`
+
+- canonical_label: Categorization
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Math (1)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Classification skill — grouping items by attribute. Closely paired with long-tail singleton `sorting` 1 (Math) — both are classification practices. Recommend merge `categorization` + `sorting` into a single canonical (likely `categorization` as the more pedagogically formal term) OR keep both standalone if curriculum team wants distinct kindergarten-friendly tags.
+- curriculum_notes: <to_fill>
+
+### `cellular_respiration`
+
+- canonical_label: Cellular Respiration
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct cellular-biology concept — the cellular energy-production process complementary to §12 `photosynthesis` 8 (these two are the paired energy-cycle concepts in biology curricula). Recommend keep standalone if curriculum team wants to preserve the cellular-respiration / photosynthesis pairing in the canonical vocabulary, OR drop as too narrow for the corpus (N=1). The keep argument is stronger if curriculum team wants symmetric coverage of the photosynthesis pair.
+- curriculum_notes: <to_fill>
+
+### `chemical_reactions`
+
+- canonical_label: Chemical Reactions
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct chemistry concept covering chemical-reaction mechanisms (cooking-chemistry, fermentation as chemical-reaction). Adjacent long-tail `fermentation` 1 (Science) is a specific application of chemical reactions in cooking contexts. Recommend keep standalone with surface label "Chemical Reactions"; curriculum team may consolidate the chemistry-cluster (chemical_reactions + fermentation + yeast) at re-tag time.
+- curriculum_notes: <to_fill>
+
+### `circulatory_system`
+
+- canonical_label: Circulatory System
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific human-anatomy concept — same anatomical system as long-tail singleton `cardiovascular system` 1 (see CON-18 audit signal). Recommend merge with `cardiovascular_system` 1 into a single canonical. Surface-label preference (cardiovascular vs circulatory) is a curriculum-team call; the two terms cover the same anatomy with different vocabulary registers (cardiovascular is medical / clinical; circulatory is K-12 pedagogically common).
+- curriculum_notes: <to_fill>
+
+### `civil_rights_movement`
+
+- canonical_label: Civil Rights Movement
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific historical-movement concept tied to civil-rights-era lessons (likely co-tagged with `historical_figures` 68 for figures like Georgia Gilmore, Cesar Chavez, etc.). Adjacent §12 `social_justice_issues` 5 covers broader social-justice frames. Recommend keep standalone with surface label "Civil Rights Movement" — specific enough as a historical-movement concept to warrant its own canonical, distinct from the broader social-justice category.
+- curriculum_notes: <to_fill>
+
+### `climate_change`
+
+- canonical_label: Climate Change
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific climate-science concept — sub-topic of `climate` 2 (freq-2). See CON-20 audit signal for the climate / climate_change canonical-shape question. Recommend merge into `climate` 2 as a sub-concept (climate change is a specific phenomenon within climate science), OR keep both standalone if curriculum team wants distinct climate-change tagging for environmental-justice / advocacy lessons. The merge direction is supported by climate being the broader canonical.
+- curriculum_notes: <to_fill>
+
+### `coloring`
+
+- canonical_label: Coloring
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific Arts technique — already proposed for merge in §11 `visual_arts` 76's `merge_aliases: [("coloring", 1), ("craft activity", 1)]`. Coloring is a sub-technique of visual_arts (the established broad-Arts canonical). Recommend merge per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `colors_of_plants`
+
+- canonical_label: Colors of Plants
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Vague observation-frame tag — closer to a lesson topic ("today we looked at plant colors") than a distinct scientific concept. Recommend merge into §11 `plant_parts` 239 (plant anatomy includes coloration), OR `sensory_exploration` 11 (color observation as a sensory practice), OR drop as too narrow. Pending curriculum-team verdict; lean toward merge into plant_parts.
+- curriculum_notes: <to_fill>
+
+### `community`
+
+- canonical_label: Community
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Label-shortening drift of §11 `community_systems` 15 — already proposed in `community_systems`'s `merge_aliases: [("community", 1), ("community building", 1)]`. Per CON-06 audit signal, community_systems double-duties as "food systems" + "environmental systems" + "community structures" — `community` 1 plausibly lands on the community-structures lens. Recommend merge into §11 `community_systems` 15.
+- curriculum_notes: <to_fill>
+
+### `community_activism`
+
+- canonical_label: Community Activism
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Cross-cluster merge target per CON-05 audit signal — already proposed in §12 `advocacy` 3's `merge_aliases: [("community activism", 1)]` (NOT into §11 `community_systems` 15 despite the surface-label cluster; activism is the action-orientation that pairs with advocacy, not the structural systems frame of community_systems). The lesson here is "Guerilla Gardening for Birds" (per CON-05 evidence). Recommend merge into §12 `advocacy` 3 per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `community_building`
+
+- canonical_label: Community Building
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Label variant of §11 `community_systems` 15 — already proposed in `community_systems`'s `merge_aliases: [("community", 1), ("community building", 1)]`. Per CON-06, the broader community_systems canonical may eventually narrow its scope (sharpen the food-systems vs environmental-systems vs community-structures boundaries); `community_building` would fall on the community-structures side. Recommend merge into §11 `community_systems` 15; curriculum team may also drop if the boundary-sharpening in CON-06 retires this surface-label.
+- curriculum_notes: <to_fill>
+
+### `comparative_writing`
+
+- canonical_label: Comparative Writing
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-cluster sub-type covered by CON-12. Pedagogically distinct from §12 `descriptive_writing` 3 + `narrative_writing` 3 + `persuasive_writing` 4 + `opinion_writing` 3 — comparative writing emphasizes side-by-side analysis. Verdict depends on CON-12 verdict; recommend pending curriculum-team decision.
+- curriculum_notes: <to_fill>
+
+### `craft_activity`
+
+- canonical_label: Craft Activity
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Activity-tag rather than a distinct Arts concept — already proposed for merge in §11 `visual_arts` 76's `merge_aliases: [("coloring", 1), ("craft activity", 1)]`. Recommend merge into §11 `visual_arts` 76 per the established proposal; alternatively drop as too vague (curriculum team may judge "craft activity" as a context-tag like "this lesson involves crafting" rather than a concept).
+- curriculum_notes: <to_fill>
+
+### `creative_writing`
+
+- canonical_label: Creative Writing
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-cluster sub-type covered by CON-12 — note this is corpus-tagged Arts not Literacy/ELA (per §12 `writing` entry and Appendix A.6), an apparent tagging-artifact since creative writing is canonically a Lit/ELA practice. Recommend re-subject to Literacy/ELA as part of CON-12 cluster decision. Per CON-12 verdict: (a) keep `writing` 8 as catch-all → merge `creative_writing` into `writing`; (b) drop `writing` 8 → keep as Lit/ELA sub-canonical; (c) flip → merge into `writing` 8. Pending CON-12 curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `dance`
+
+- canonical_label: Dance
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Arts concept covering dance / movement-arts. Adjacent §12 `movement` 4 (Arts) is the broader movement-canonical (dance is a specific kind of movement). Recommend merge into §12 `movement` 4 as a sub-concept OR keep standalone if curriculum team wants explicit dance tagging.
+- curriculum_notes: <to_fill>
+
+### `debate`
+
+- canonical_label: Debate
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Distinct Literacy/ELA concept — formal debate practice (resolved-position arguing). Part of the argument-discussion-debate cluster (CON-12-adjacent — see also long-tail `argumentation` 1, `discussion` 2, `public_speaking` 1). Recommend keep standalone with surface label "Debate" OR consolidate into a broader `oral_communication` / `discussion` canonical at curriculum-team discretion.
+- curriculum_notes: <to_fill>
+
+### `descriptive_language`
+
+- canonical_label: Descriptive Language
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Literacy concept covering descriptive-language use (sensory words, adjectives, vivid imagery). Part of the figurative-language-cluster — see long-tail singletons `figurative language` 1, `similes` 1, `sensory details` 1 + §11 `vocabulary_development` 59. Recommend merge into §11 `vocabulary_development` 59 (the broader word-craft canonical) OR consolidate the figurative-language cluster (descriptive_language + figurative_language + similes + sensory_details) into a single `figurative_language` canonical at curriculum-team discretion — see CON-24 audit signal for the cluster boundary.
+- curriculum_notes: <to_fill>
+
+### `design`
+
+- canonical_label: Design
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Vague Arts concept — could be visual design, graphic design, garden design, or design-thinking process. Recommend keep standalone OR drop as too vague; if keep, curriculum team should clarify surface label (e.g., "Visual Design" or "Garden Design") for downstream coherence.
+- curriculum_notes: <to_fill>
+
+### `engineering`
+
+- canonical_label: Engineering
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Engineering as a subject is conventionally Science (STEM); corpus-tagging under Arts is an apparent tagging-artifact. Adjacent §12 `simple_machines` 1 (Science) and `mechanical energy` 1 (Science) cover engineering-adjacent physics. Recommend re-subject to Science AND merge into §12 `simple_machines` 1 OR keep standalone after re-subject; curriculum-team verdict on surface-label and subject placement.
+- curriculum_notes: <to_fill>
+
+### `environmental_impact`
+
+- canonical_label: Environmental Impact
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Vague environmental-effects concept — closely related to §12 `environmental_justice` 3 (advocacy-oriented environmental ethics) and §11 `community_systems` 15 (per CON-06, includes environmental-systems lens). Recommend merge into §12 `environmental_justice` 3 (the advocacy-canonical) OR keep standalone if curriculum team wants a neutral environmental-effects tag distinct from environmental-justice advocacy. Pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `environmental_stewardship`
+
+- canonical_label: Environmental Stewardship
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Environmental-ethics concept emphasizing responsible-care framing (distinct from environmental_justice's advocacy frame). Adjacent §12 `environmental_justice` 3 (SS) and long-tail `environmental impact` 1 (SS) cover related environmental-themed concepts. Recommend merge into a broader environmental-ethics canonical (potentially renaming environmental_justice to a more inclusive term) OR keep standalone with surface label "Environmental Stewardship"; curriculum team picks.
+- curriculum_notes: <to_fill>
+
+### `factory_farming`
+
+- canonical_label: Factory Farming
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific food-systems concept tied to industrial-agriculture critique. Adjacent long-tail singletons `animal welfare` 1 (SS), `farm labor` 1 (SS), `food marketing` 1 (SS), `food systems` 1 (SS — theme overlap) cover related food-systems / food-ethics tags. Recommend keep standalone OR consolidate the food-ethics cluster (animal_welfare + factory_farming + farm_labor + food_marketing) under a broader `food_ethics` canonical at curriculum-team discretion. The §11 `community_systems` 15 may already cover factory_farming's food-systems aspect.
+- curriculum_notes: <to_fill>
+
+### `family_traditions`
+
+- canonical_label: Family Traditions
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Narrower family-specific lens within the cultural-traditions frame — already proposed in §11 `cultural_traditions` 206's `merge_aliases: [("family traditions", 1), ("international food traditions", 1)]`. Family traditions is a sub-application of cultural traditions where the cultural unit is family rather than ethnic / national group. Recommend merge into §11 `cultural_traditions` 206 per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `farm_labor`
+
+- canonical_label: Farm Labor
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Labor-history concept tied to farm-worker / Cesar-Chavez / migrant-labor lessons. Adjacent long-tail `factory_farming` 1, `slavery` 1, `civil_rights_movement` 1 cover related labor-history and ethics concepts. Recommend keep standalone with surface label "Farm Labor" OR consolidate into a broader `labor_history` canonical at curriculum-team discretion.
+- curriculum_notes: <to_fill>
+
+### `feedback_systems`
+
+- canonical_label: Feedback Systems
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Advanced biology/systems-thinking concept covering feedback loops (homeostatic regulation, ecological feedback). Adjacent long-tail singleton `homeostasis` 1 (Science) covers the biological-regulation lens specifically. Recommend keep standalone OR consolidate feedback_systems + homeostasis under a broader `biological_systems` canonical at curriculum-team discretion. May also drop as too advanced for the K-12 corpus signal.
+- curriculum_notes: <to_fill>
+
+### `fermentation`
+
+- canonical_label: Fermentation
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific chemistry/biology concept covering fermentation processes (yeast, bacteria, food-preservation chemistry). Per CON-09 audit signal, fermentation is one of the §12 `preservation` cluster's content patterns (the Sandor Katz "Food Hero" lesson — currently tagged `food preservation` 1 — covers fermentation specifically). Adjacent long-tail singletons `yeast` 1 (Sci) + `chemical reactions` 1 (Sci) cover related fermentation-specific chemistry. Recommend keep standalone OR merge into a broader cooking-chemistry canonical (fermentation + yeast + chemical_reactions) at curriculum-team discretion.
+- curriculum_notes: <to_fill>
+
+### `figurative_language`
+
+- canonical_label: Figurative Language
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Literacy concept covering metaphor / simile / personification / imagery. Part of the figurative-language cluster (CON-24) — see long-tail singletons `descriptive_language` 1, `similes` 1, `sensory_details` 1. Recommend either keep `figurative_language` as the canonical absorbing `similes` 1 + (potentially) `descriptive_language` 1 + `sensory_details` 1 as merge_aliases, OR consolidate into §11 `vocabulary_development` 59 as the broader word-craft canonical. Pending curriculum-team verdict on cluster shape.
+- curriculum_notes: <to_fill>
+
+### `food_marketing`
+
+- canonical_label: Food Marketing
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Commercial food-industry concept covering marketing-of-food (advertising-aimed-at-children, food-packaging analysis). Closely related to §12 `advertising` 3 (Social Studies) — food_marketing is a specific application of advertising in the food-systems context. Recommend merge into §12 `advertising` 3 (the broader canonical) OR keep standalone if curriculum team wants explicit food-marketing tagging distinct from general advertising.
+- curriculum_notes: <to_fill>
+
+### `food_memory`
+
+- canonical_label: Food Memory
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Niche concept — likely tied to a personal-narrative / food-memoir writing or reading lesson. Adjacent §12 `cultural_narratives` 8 (Lit/ELA) covers culturally-rooted narrative which often involves food-memory framing. Recommend merge into §12 `cultural_narratives` 8 OR drop as too narrow / niche; pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `food_preservation`
+
+- canonical_label: Food Preservation
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: CON-09 closure — already proposed for merge in §12 `preservation` 4's `merge_aliases: [("food preservation", 1)]`. The Science-side merge is straightforward (Sandor Katz "Food Hero" lesson covers fermentation, which is food-preservation chemistry — same lens as the other Science preservation lessons). Post-merge total for preservation canonical: 5 lessons. Recommend merge per the established proposal; cultural-preservation lens (Three Sisters Succotash SS-tagged `preservation` 1 in §12) is the open question CON-09 captures.
+- curriculum_notes: <to_fill>
+
+### `food_processing`
+
+- canonical_label: Food Processing
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Vague concept — could be industrial food-processing (commercial scale) or kitchen food-prep (small scale). The Science subject tagging suggests the industrial / food-chemistry frame. Adjacent §12 `preservation` 4, `fermentation` 1, `chemical_reactions` 1 cover related food-chemistry concepts. Recommend keep standalone OR merge into a broader food-chemistry canonical at curriculum-team discretion. May also drop as too vague.
+- curriculum_notes: <to_fill>
+
+### `food_systems`
+
+- canonical_label: Food Systems
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: YES — `food systems` (concepts, Social Studies 1) shares a vocabulary with `Food Systems` (themes, Title Case canonical per `src/utils/filterDefinitions.ts`) under `lower()`. One of three known concept↔theme overlaps in §6 (`ecosystems` exact-string at §11 entry 6; `food systems` and `plant growth` are case-normalized matches; `plant_growth` 9 lives at §12). Per D-C5, adjudication (which side keeps the canonical string; whether both keep with cross-reference; whether one side renames) is deferred to the themes worksheet / D4 canonicalization migration; this flag preserves the signal. Per CON-06, §11 `community_systems` 15 already double-duties as the "food systems" lens within concepts — the themes-side overlap may make this entry redundant entirely. Three resolution options: (a) concept-side keeps the canonical (`food systems` 1 standalone); (b) themes-side keeps the canonical (drop the concept entry); (c) both keep with cross-reference. Themes worksheet existence gates the verdict.
+- claude_notes: One of 3 theme-overlap concepts per §6 / D-C5. Per CON-06, the broader `community_systems` 15 (§11) double-duties as the food-systems lens within concepts already. The 1-lesson signal here likely doesn't warrant its own canonical when the themes-side `Food Systems` and the concepts-side `community_systems` together cover the food-systems frame. Recommend pending themes worksheet existence + the §11 `community_systems` boundary-sharpening (CON-06 Stage 2 action). Most likely Stage 2 outcome: drop concept-side `food_systems` 1 entirely, theme-side `Food Systems` carries the food-systems-as-theme signal, and `community_systems` 15 narrows to community-structures-only.
+- curriculum_notes: <to_fill>
+
+### `garden_topics`
+
+- canonical_label: Garden Topics
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Drop per CON-03 audit signal — `garden topics` is one of two vague Science concepts tagged on the *Informational Writing - Topics/Subtopics* ELA lesson (the other being `plant science` 1, also a drop). The lesson teaches the literacy concept of topics-vs-subtopics using cooking/gardening as brainstorming fodder; the Science tags are defensive slot-filling, not real concepts being taught. Zero plant biology, zero growth processes. Recommend drop.
+- curriculum_notes: <to_fill>
+
+### `general_exploration`
+
+- canonical_label: General Exploration
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Drop per CON-02 audit signal — `general exploration` is the lone Science singleton on the *Soul Food Sunday* template-stub lesson (body is verbatim ESYNYC blank template "Do something here. (time)"; never filled). The lesson is a cleanup-candidate to either delete or recover; the Science tag is template-default scaffolding, not a real concept. Recommend drop (will resolve with CON-02 cleanup track).
+- curriculum_notes: <to_fill>
+
+### `growing_cycles`
+
+- canonical_label: Growing Cycles
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Vague plant-process tag — covered by either §11 `life_cycles` 43 (broader cyclic-process frame including plants and animals) or §12 `plant_growth` 9 (specific plant-growth-stages frame). Recommend merge into §12 `plant_growth` 9 (plant-specific) OR §11 `life_cycles` 43 (broader); the §11 canonical is the more established home, but plant_growth more semantically specific. Pending curriculum-team verdict; lean toward plant_growth merge for specificity.
+- curriculum_notes: <to_fill>
+
+### `growth_patterns`
+
+- canonical_label: Growth Patterns
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Vague plant-growth-pattern tag — covered by §12 `plant_growth` 9. Recommend merge into §12 `plant_growth` 9 OR drop as too vague to be canonical; pending curriculum-team verdict. Adjacent long-tail singleton `growing cycles` 1 (Science) is a similar vague-Science-singleton that lands on similar merge candidates.
+- curriculum_notes: <to_fill>
+
+### `harvest`
+
+- canonical_label: Harvest
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Noun-form gardening concept — closely paired with long-tail singleton `harvesting` 1 (gerund form; Science). See CON-21 audit signal for the harvest / harvesting form-drift question. Recommend merge `harvest` + `harvesting` into a single canonical (likely `harvesting` as the action-oriented gerund form, OR `harvest` as the more concise noun form) AND consider merging the resulting canonical into a broader life-cycle or plant_growth canonical at curriculum-team discretion. Both labels cover the same activity-of-harvesting concept; surface-label choice is curriculum-team preference.
+- curriculum_notes: <to_fill>
+
+### `harvesting`
+
+- canonical_label: Harvesting
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Gerund-form gardening concept — closely paired with long-tail singleton `harvest` 1 (noun form). See CON-21 audit signal for the harvest / harvesting form-drift question. Recommend merge with `harvest` 1 into a single canonical. Surface-label preference is curriculum-team call. The combined-pair concept may also merge into a broader life-cycle / plant-growth canonical depending on curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `historical_context`
+
+- canonical_label: Historical Context
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: CON-11 closure — the §11 `historical_figures` 68 entry's claude_notes flagged this singleton as a candidate merge_alias OR a candidate standalone-keep depending on whether the curriculum team distinguishes "historical context" (era / setting backdrop — when a lesson uses a historical time period as scene-setting rather than centering specific historical-figures-as-history-makers) as a different cognitive lens from "historical figures" (people-as-history-makers). Recommend either: (a) **merge** into §11 `historical_figures` 68 if the curriculum team views these lenses as the same canonical (post-merge total: 69 lessons); or (b) **keep standalone** if "historical context" denotes a backdrop-lens distinct from people-centric historical-figures content. The 1-lesson signal is too thin to decide structurally — curriculum-team subject-matter judgment is the right input here.
+- curriculum_notes: <to_fill>
+
+### `history_of_the_american_west`
+
+- canonical_label: History of the American West
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific historical-period concept — corpus literal `history of the American West` (lowercase article, capitalized proper noun). Likely tied to a specific lesson on US-westward-expansion history. Recommend keep standalone (specific enough to warrant its own tag) OR drop as too narrow / specific for the canonical vocabulary; alternatively merge into §11 `historical_figures` 68 + `geography` 56 if the lesson centers people-and-place rather than historical-period-as-topic. Curriculum-team verdict on specificity threshold.
+- curriculum_notes: <to_fill>
+
+### `holidays`
+
+- canonical_label: Holidays
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Generic holidays tag — closely paired with long-tail singleton `national and religious holidays` 1 (SS). See CON-17 audit signal for the holidays-cluster question. Recommend merge `holidays` + `national_and_religious_holidays` into §11 `cultural_traditions` 206 (holidays are typically cultural-tradition observations; e.g., Diwali, Thanksgiving, Día de los Muertos, Eid). Both labels cover the same content; cultural_traditions is the established broader canonical.
+- curriculum_notes: <to_fill>
+
+### `homeostasis`
+
+- canonical_label: Homeostasis
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Advanced biology concept covering homeostatic regulation. Adjacent long-tail singleton `feedback systems` 1 (Sci) is closely related (homeostasis is regulated via feedback systems). Recommend either keep standalone OR drop as too advanced / narrow for the K-12 corpus signal. May also consolidate with feedback_systems into a broader biological-regulation canonical. Curriculum team picks.
+- curriculum_notes: <to_fill>
+
+### `hydration`
+
+- canonical_label: Hydration
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Health (1)
+- recommended_primary_subject: Health
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: One of three Health canonicals (alongside §11 `nutrition_education` 107 and `healthy_choices` 30). Distinct from the nutrition-education broader frame — hydration is a specific health-practice concept. Recommend keep standalone OR merge into `healthy_choices` 30 as a sub-practice. The Health subject has only 3 distinct concepts in the v3 baseline, so collapsing further may erode coverage; lean toward keep.
+- curriculum_notes: <to_fill>
+
+### `imaginary_play`
+
+- canonical_label: Imaginary Play
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Early-childhood dramatic-play concept (pretend, role-play). Distinct from §12 `movement` 4 + `music` 6 + long-tail `dance` 1, `performance` 2 (cluster of performing-arts concepts). Recommend keep standalone for early-grade Arts coverage OR drop as too narrow; curriculum team picks. May also consolidate the dramatic-play + performance cluster (imaginary_play + performance + puppetry + dance) under a broader `performing_arts` canonical.
+- curriculum_notes: <to_fill>
+
+### `indigenous_knowledge`
+
+- canonical_label: Indigenous Knowledge
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Indigenous-perspectives concept tied to Native-American / Indigenous-content lessons (Three Sisters, traditional ecological knowledge, Indigenous foodways). Closely paired with long-tail singletons `Indigenous stories` 1 (SS), `Native American history` 1 (SS) — see CON-16 audit signal for the Indigenous-cluster reframing question. The heritage worksheet's §9.1 cross-cluster `Indigenous and Diaspora` cluster (D1 in heritage `culturalHeritage` field) covers Indigenous identity at the heritage field; concepts-side coverage is fragmented across these 3 singletons. Recommend curriculum team consider: (a) consolidate all 3 singletons under a single `indigenous_perspectives` canonical, OR (b) merge into §11 `cultural_traditions` 206 (treat as cultural-tradition lens), OR (c) keep separate. Pending curriculum-team verdict; CON-16 captures the reframing question.
+- curriculum_notes: <to_fill>
+
+### `indigenous_stories`
+
+- canonical_label: Indigenous Stories
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: Literacy/ELA
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Indigenous-narrative concept — story-form Indigenous-content tagged Social Studies rather than Literacy/ELA. See CON-16 Indigenous-cluster audit signal. The lesson likely also fits §12 `cultural_narratives` 8 (Lit/ELA) and §11 `storytelling` 76 (Lit/ELA) — story-form content is conventionally Lit/ELA. Recommend either: (a) re-subject to Literacy/ELA and merge into `cultural_narratives` 8; OR (b) consolidate with `Indigenous knowledge` 1 + `Native American history` 1 under a unified Indigenous-perspectives canonical; OR (c) merge into §11 `cultural_traditions` 206. Pending curriculum-team verdict per CON-16.
+- curriculum_notes: <to_fill>
+
+### `informational_text`
+
+- canonical_label: Informational Text
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Reading-side counterpart to `informational_writing` 2 — informational text as a reading-genre frame (nonfiction reading, encyclopedic-text comprehension). See CON-22 reading-cluster audit signal. Recommend merge into §12 `reading_comprehension` 6 as a sub-application (reading comprehension of informational texts) OR keep standalone as a distinct nonfiction-reading canonical. Pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `instrument_making`
+
+- canonical_label: Instrument Making
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific Arts/craft concept covering musical-instrument construction. Adjacent §12 `music` 6 (the broader music canonical) + long-tail `puppet making` 1 + `craft activity` 1 cover related making/craft concepts. Recommend merge into §12 `music` 6 (instrument-making as a sub-application of music education) OR keep standalone if curriculum team wants the craft-construction lens distinct from music-as-listening-or-performance. Curriculum team picks.
+- curriculum_notes: <to_fill>
+
+### `international_food_traditions`
+
+- canonical_label: International Food Traditions
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Narrower geography-flavored variant of §11 `cultural_traditions` 206 — already proposed in `cultural_traditions`'s `merge_aliases: [("family traditions", 1), ("international food traditions", 1)]`. International food traditions is a sub-application of cultural traditions emphasizing geographic-cuisine framing. Recommend merge into §11 `cultural_traditions` 206 per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `letter_writing`
+
+- canonical_label: Letter Writing
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-cluster sub-type covered by CON-12 — letter-writing genre (personal letter, formal letter, advocacy letter). Verdict depends on CON-12 verdict. Recommend pending curriculum-team decision; if CON-12 picks (a) keep `writing` 8 as catch-all → likely merge into `writing` 8; if (b) drop writing 8 → keep as sub-canonical; if (c) flip → merge into writing.
+- curriculum_notes: <to_fill>
+
+### `literary_elements`
+
+- canonical_label: Literary Elements
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Literary-craft concept covering literary-element analysis (character, setting, plot, theme). Adjacent long-tail `figurative_language` 1, `descriptive_language` 1, `similes` 1, `sensory_details` 1 cover figurative-language craft (CON-24). Recommend keep standalone as the literary-elements canonical, with the figurative-language cluster as separate concepts; alternatively consolidate literary craft (literary_elements + figurative_language + similes + descriptive_language) under a broader `literary_craft` canonical at curriculum-team discretion.
+- curriculum_notes: <to_fill>
+
+### `macromolecules`
+
+- canonical_label: Macromolecules
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Biochemistry concept — macromolecules (proteins, carbohydrates, lipids, nucleic acids). Closely paired with long-tail singleton `macronutrients` 1 (Sci) and freq-2 `protein` 2 (Sci) — these together cover nutrition-chemistry / biochemistry. Recommend either keep standalone OR merge into `macronutrients` 1 (broader nutrition-chemistry frame) OR drop as too advanced for K-12 corpus. Pending curriculum-team verdict on the biochemistry-cluster shape.
+- curriculum_notes: <to_fill>
+
+### `macronutrients`
+
+- canonical_label: Macronutrients
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Nutrition-chemistry concept covering protein, carbohydrate, fat (the macronutrient classes). Closely paired with freq-2 `protein` 2 + long-tail singleton `macromolecules` 1 (Sci). Recommend keep standalone as the macronutrients canonical absorbing `protein` 2 + `macromolecules` 1 as merge_aliases at curriculum-team discretion, OR keep as a parallel-with-protein narrower-specific canonical. The nutrition-chemistry cluster (macronutrients + protein + macromolecules + plant-based proteins + plant_nutrition + nutrition + nutrition_education) is sprawling; curriculum team picks the canonical shape.
+- curriculum_notes: <to_fill>
+
+### `map_reading`
+
+- canonical_label: Map Reading
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Geography-skill concept — map reading practice (legend interpretation, coordinate reading, regional identification). Adjacent §11 `geography` 56 is the established canonical for geography lessons. Recommend merge into §11 `geography` 56 as a sub-skill OR keep standalone if curriculum team wants explicit map-skills tagging distinct from broader geography content.
+- curriculum_notes: <to_fill>
+
+### `mechanical_energy`
+
+- canonical_label: Mechanical Energy
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Physics concept — mechanical energy (kinetic + potential). Adjacent long-tail singleton `simple machines` 1 (Sci) and §12 `thermal_energy` 12 cover related physics concepts. Recommend keep standalone OR consolidate mechanical_energy + simple_machines under a broader `physics_concepts` canonical at curriculum-team discretion. The §12 `thermal_energy` 12 is the established energy-related canonical (high-impact-adjacent).
+- curriculum_notes: <to_fill>
+
+### `microbiome`
+
+- canonical_label: Microbiome
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Microbiology concept — microbial communities (gut microbiome, soil microbiome). Closely related to §12 `microorganisms` 3 (the broader microbe canonical). Recommend merge into §12 `microorganisms` 3 as a sub-concept (microbiome is a specific microbial-community framing within microorganism content).
+- curriculum_notes: <to_fill>
+
+### `narrative_reading`
+
+- canonical_label: Narrative Reading
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Reading-side narrative-genre concept — see CON-22 reading-cluster audit signal (reading / reading_comprehension / narrative_reading / biography_reading / informational_text). Recommend merge into §12 `reading_comprehension` 6 as a sub-genre (narrative-reading is reading-comprehension applied to narrative texts) OR keep standalone if curriculum team wants explicit narrative-reading tagging distinct from broader reading-comprehension.
+- curriculum_notes: <to_fill>
+
+### `national_and_religious_holidays`
+
+- canonical_label: National and Religious Holidays
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific holidays variant — closely paired with long-tail singleton `holidays` 1 (SS). See CON-17 audit signal for the holidays-cluster question. Recommend merge `national_and_religious_holidays` + `holidays` into §11 `cultural_traditions` 206 (holidays are typically cultural-tradition observations). The verbose surface-label "national and religious holidays" is unusually specific; cultural_traditions absorbs this content cleanly.
+- curriculum_notes: <to_fill>
+
+### `native_american_history`
+
+- canonical_label: Native American History
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific historical-content concept — Native American history. See CON-16 Indigenous-cluster audit signal (Indigenous_knowledge / Indigenous_stories / Native_American_history singletons together). Heritage worksheet's §9.1 cross-cluster `Indigenous and Diaspora` cluster (D1) covers Native American as a heritage-side identity already. Recommend curriculum team consider: (a) consolidate the 3 Indigenous singletons under unified `indigenous_perspectives` canonical; OR (b) merge into §11 `historical_figures` 68 + `geography` 56 if the lesson centers specific Native-American historical figures + places; OR (c) merge into §11 `cultural_traditions` 206; OR (d) keep standalone. Pending curriculum-team verdict per CON-16.
+- curriculum_notes: <to_fill>
+
+### `note_taking`
+
+- canonical_label: Note-Taking
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Research-practice concept — note-taking as a sub-skill of research / informational-reading. Closely paired with freq-2 `research` 2 (Lit/ELA) + long-tail `organizing ideas` 1 (Lit/ELA). Recommend merge into freq-2 `research` 2 as a sub-skill OR consolidate research + note_taking + organizing_ideas under a broader `research_practices` canonical at curriculum-team discretion.
+- curriculum_notes: <to_fill>
+
+### `organizing_ideas`
+
+- canonical_label: Organizing Ideas
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-process / research-process concept — organizing ideas before drafting. Adjacent long-tail `note_taking` 1, freq-2 `research` 2 cover related writing/research-process skills; CON-12 writing-cluster also adjacent. Recommend merge into freq-2 `research` 2 OR into CON-12 writing-cluster outcome; pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `painting`
+
+- canonical_label: Painting
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific Arts technique — should likely follow `coloring` 1 + `craft activity` 1 (both already proposed merge into §11 `visual_arts` 76) and merge into `visual_arts` 76 as a sub-technique. Recommend merge into §11 `visual_arts` 76; this is a third visual-art-technique singleton not currently in the established proposed merge_aliases list but parallel in pattern.
+- curriculum_notes: <to_fill>
+
+### `perimeter`
+
+- canonical_label: Perimeter
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Math (1)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Geometry concept — perimeter measurement. Part of the measurement-cluster boundary (CON-23) — see freq-2 `volume` 2, long-tail `area` 1, `weight` 1, §11 `measurement` 66. Recommend merge into §11 `measurement` 66 as a sub-dimension alias OR keep standalone with surface label "Perimeter". The mid-tier `measurement` canonical is the established home for measurement lessons.
+- curriculum_notes: <to_fill>
+
+### `pests`
+
+- canonical_label: Pests
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Garden-pest concept — pest identification, pest management, IPM. Adjacent long-tail `beneficial insect identification` 1 (Sci) is the complementary concept (beneficial-vs-pest insects). Recommend keep standalone OR consolidate the insect-cluster (pests + beneficial_insect_identification + §11 `pollinators` 28) at curriculum-team discretion. The §11 pollinators canonical is high-impact and may absorb the beneficial-insects framing; pests would be the complementary canonical.
+- curriculum_notes: <to_fill>
+
+### `photojournalism`
+
+- canonical_label: Photojournalism
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Unusual concept — photojournalism is more commonly a media-studies / arts concept than Lit/ELA. The 1-lesson signal is too thin to know whether to drop or keep. Recommend keep standalone if curriculum team confirms the lesson genuinely centers photojournalism-as-Lit/ELA-genre; otherwise drop OR re-subject to Arts.
+- curriculum_notes: <to_fill>
+
+### `plant_adaptation`
+
+- canonical_label: Plant Adaptation
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Narrower plant-specific variant of §12 `adaptations` 5 — already proposed in `adaptations`'s `merge_aliases: [("adaptation", 1), ("plant adaptation", 1), ("plant adaptations", 1)]`. Recommend merge into §12 `adaptations` 5 per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `plant_adaptations`
+
+- canonical_label: Plant Adaptations
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Pluralized variant of long-tail `plant adaptation` 1 — already proposed in §12 `adaptations` 5's `merge_aliases: [("adaptation", 1), ("plant adaptation", 1), ("plant adaptations", 1)]`. Recommend merge into §12 `adaptations` 5 per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `plant_and_animal_similarities`
+
+- canonical_label: Plant and Animal Similarities
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Comparative-biology concept — typically tied to early-grade life-science lessons comparing plants and animals. Adjacent §11 `life_cycles` 43 (broader cyclic-process frame for both plants and animals) is the established canonical home. Recommend merge into §11 `life_cycles` 43 OR drop as too vague / specific to a single lesson framing. The 1-lesson signal is thin; lean toward merge.
+- curriculum_notes: <to_fill>
+
+### `plant_based_proteins`
+
+- canonical_label: Plant-Based Proteins
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific nutrition concept — plant-derived protein sources (legumes, beans, nuts). Adjacent freq-2 `protein` 2 (Sci) + long-tail `macronutrients` 1, `macromolecules` 1, §12 `legumes` 3 + §11 `nutrition_education` 107 cover related nutrition-chemistry concepts. Recommend merge into §12 `legumes` 3 (the specific protein-source canonical for plant-protein lessons) OR into `protein` 2 (the broader protein canonical) OR §11 `nutrition_education` 107 (the broader nutrition canonical). Pending curriculum-team verdict; lean toward legumes merge.
+- curriculum_notes: <to_fill>
+
+### `plant_id`
+
+- canonical_label: Plant ID
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Abbreviated drift of §12 `plant_identification` 5 — already proposed in `plant_identification`'s `merge_aliases: [("identifying plants", 2), ("plant ID", 1)]`. Note corpus literal preserves "ID" (uppercase). Recommend merge into §12 `plant_identification` 5 per the established proposal.
+- curriculum_notes: <to_fill>
+
+### `plant_reproduction`
+
+- canonical_label: Plant Reproduction
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Plant-biology concept — flower-to-seed reproduction, pollination, fruit-as-seed-carrier. Closely paired with §11 `pollinators` 28 (which covers the pollination axis), §11 `seeds` 13, §11 `life_cycles` 43, §12 `plant_growth` 9. Recommend either keep standalone (plant_reproduction is distinguishable from pollinators which focuses on bee/butterfly ecology rather than the reproductive process) OR merge into §11 `life_cycles` 43 (the broader plant-and-animal cyclic-process frame). Pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `plant_science`
+
+- canonical_label: Plant Science
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Drop per CON-03 audit signal — `plant science` is the second vague Science concept tagged on the *Informational Writing - Topics/Subtopics* ELA lesson (the other being `garden topics` 1, also a drop). The lesson teaches the literacy concept of topics-vs-subtopics using cooking/gardening as brainstorming fodder; the Science tags are defensive slot-filling, not real concepts. Recommend drop.
+- curriculum_notes: <to_fill>
+
+### `planting`
+
+- canonical_label: Planting
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Gardening-activity tag — closer to a context tag ("today we planted seeds") than a distinct scientific concept. Adjacent §11 `seeds` 13 (seed-anatomy-and-planting frame), §12 `plant_growth` 9, long-tail `seed starting` 1, `spacing` 1, `harvest` 1, `harvesting` 1 cover related gardening-activity concepts. Recommend merge into §11 `seeds` 13 (the seed-anatomy-and-planting canonical absorbs planting-as-activity) OR drop as too vague. Pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `problem_solving`
+
+- canonical_label: Problem Solving
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Unusual Lit/ELA tag — problem-solving is more conventionally Math (or cross-curricular). The Lit/ELA placement is an apparent tagging-artifact. Adjacent §11 / §12 don't have a clear merge target. Recommend re-subject to Math AND keep standalone, OR drop as too vague + likely re-subject anyway. Curriculum team picks.
+- curriculum_notes: <to_fill>
+
+### `public_speaking`
+
+- canonical_label: Public Speaking
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Oral-communication skill — pairs with long-tail `debate` 1, `argumentation` 1, freq-2 `discussion` 2 (oral-communication cluster). Recommend keep standalone OR consolidate into a broader `oral_communication` canonical at curriculum-team discretion. Pedagogically distinct enough from discussion (presentation vs dialogue) to plausibly stand alone.
+- curriculum_notes: <to_fill>
+
+### `puppet_making`
+
+- canonical_label: Puppet Making
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific craft concept — paired with long-tail `puppetry` 1 (the performance side of the same activity). Adjacent §11 `visual_arts` 76 covers craft generally; §12 `movement` 4, long-tail `performance` 2 + `dance` 1 cover performing-arts. Recommend either: (a) merge puppet_making into §11 `visual_arts` 76 (craft side) AND puppetry into the performing-arts cluster (performance + dance), OR (b) keep puppet_making + puppetry as a paired puppetry-cluster, OR (c) drop both as too narrow. Pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `puppetry`
+
+- canonical_label: Puppetry
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Arts (1)
+- recommended_primary_subject: Arts
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Performance-side puppet concept — paired with long-tail `puppet making` 1 (the craft side). Recommend either keep both standalone as a paired cluster, OR consolidate with §12 `movement` 4, `music` 6, long-tail `performance` 2, `dance` 1 under a broader performing-arts canonical, OR drop as too narrow. Curriculum team picks.
+- curriculum_notes: <to_fill>
+
+### `read_aloud`
+
+- canonical_label: Read-Aloud
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Teaching-technique tag — read-aloud is a pedagogical practice (teacher reads to students) rather than a distinct content concept. Adjacent §11 `storytelling` 76 (the established narrative-reading-and-telling canonical) covers most read-aloud lessons in the corpus. Recommend merge into §11 `storytelling` 76 OR drop as too vague (read-aloud is a technique, not a concept).
+- curriculum_notes: <to_fill>
+
+### `recipe_selection`
+
+- canonical_label: Recipe Selection
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Vague recipe-related Lit/ELA tag — could be choosing-among-recipes practice or recipe-as-text selection. Adjacent §11 `recipe_reading` 69 (the established broad-recipe Lit/ELA canonical) likely absorbs this content. Recommend merge into §11 `recipe_reading` 69.
+- curriculum_notes: <to_fill>
+
+### `scaling`
+
+- canonical_label: Scaling
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Math (1)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Generic-label drift of §12 `recipe_scaling` 3 — scaling-as-math-operation applied to recipes (doubling, halving, tripling ingredient quantities). Recommend merge into §12 `recipe_scaling` 3 as a label-shortening alias.
+- curriculum_notes: <to_fill>
+
+### `scientific_claims`
+
+- canonical_label: Scientific Claims
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Science-practice concept — making and supporting scientific claims (evidence-based reasoning). Closely paired with freq-2 `scientific_method` 2 (the broader science-as-practice canonical). Recommend merge into freq-2 `scientific_method` 2 as a sub-practice OR keep standalone as a distinct claim-and-evidence frame.
+- curriculum_notes: <to_fill>
+
+### `seed_starting`
+
+- canonical_label: Seed Starting
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific gardening-activity concept — starting seeds indoors / in trays. Adjacent §11 `seeds` 13 is the established broad-seeds canonical (covers seed-anatomy-and-planting). Recommend merge into §11 `seeds` 13 as a sub-activity, per the §11 `seeds` entry's existing acknowledgment that "seed_dispersal in Session 80 mid-tier; seed_starting in Session 81 long-tail" both relate to the seeds cluster.
+- curriculum_notes: <to_fill>
+
+### `sensory_details`
+
+- canonical_label: Sensory Details
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Figurative-language sub-concept covering sensory imagery (taste, smell, touch detail in writing). Part of CON-24 figurative-language cluster (`figurative_language` 1, `descriptive_language` 1, `similes` 1, `sensory_details` 1 + §11 `vocabulary_development` 59). Recommend merge into `figurative_language` 1 as a sub-type OR into §11 `vocabulary_development` 59 as broader word-craft canonical. Pending CON-24 verdict.
+- curriculum_notes: <to_fill>
+
+### `similes`
+
+- canonical_label: Similes
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific figurative-language device — typically a sub-concept of figurative_language. Part of CON-24 figurative-language cluster. Recommend merge into `figurative_language` 1 (the broader figurative-language canonical) OR into §11 `vocabulary_development` 59 (the established broader word-craft canonical). Pending CON-24 verdict.
+- curriculum_notes: <to_fill>
+
+### `simple_machines`
+
+- canonical_label: Simple Machines
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Physics concept — lever, pulley, wedge, screw, inclined plane, wheel-and-axle (the 6 simple machines). Closely paired with long-tail `mechanical_energy` 1 (Sci). Recommend keep standalone OR consolidate simple_machines + mechanical_energy under a broader `physics_concepts` canonical at curriculum-team discretion.
+- curriculum_notes: <to_fill>
+
+### `slavery`
+
+- canonical_label: Slavery
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Social Studies (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific historical-content concept covering slavery-as-history (likely tied to a lesson on US slavery, African diaspora, or food-and-labor history). Adjacent §11 `historical_figures` 68, long-tail `civil_rights_movement` 1, `farm_labor` 1, `colonialism's_impact` 12 cover related historical-content concepts. Recommend keep standalone as a specific historical-content concept distinct from the §11 `colonialisms_impact` 12 broader-canonical AND from the §11 `historical_figures` 68 people-centric canonical. The 1-lesson signal is thin but the concept's pedagogical weight warrants keeping.
+- curriculum_notes: <to_fill>
+
+### `soil`
+
+- canonical_label: Soil
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Label-shortening drift of §11 `soil_science` 44 — `soil` 1 is plausibly a soil-science lesson tagged with the shorter label. Recommend merge into §11 `soil_science` 44 as a label-shortening alias. The 44-lesson `soil_science` canonical is the established home for soil-related lessons.
+- curriculum_notes: <to_fill>
+
+### `song`
+
+- canonical_label: Song
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Unusual Lit/ELA tag — song / lyric content is more conventionally Arts (music). The Lit/ELA placement may be a tagging-artifact (lesson centers song lyrics as text rather than song-as-performance). Adjacent §12 `music` 6 (Arts) is the established music canonical. Recommend either: (a) re-subject to Arts and merge into §12 `music` 6; (b) keep as Lit/ELA `song` standalone (treating song as a text-genre); (c) drop as too narrow. Pending curriculum-team verdict.
+- curriculum_notes: <to_fill>
+
+### `sorting`
+
+- canonical_label: Sorting
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Math (1)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Classification-practice concept — typically tied to early-grade pre-math activities (sort plants by leaf shape, sort foods by color). Closely paired with long-tail `categorization` 1 (Math). Recommend merge with `categorization` 1 into a single canonical, OR keep both standalone if curriculum team wants distinct kindergarten-friendly tags. The pair feels redundant; lean toward merge.
+- curriculum_notes: <to_fill>
+
+### `sound`
+
+- canonical_label: Sound
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Physics concept covering sound waves, frequency, vibration. Distinct from other Science singletons in the corpus. Recommend keep standalone OR drop as too narrow / specific (1-lesson signal). The §11 `sensory_exploration` 11 covers sensory-observation including sound, but at a coarser grain (sensory_exploration is multi-sense observation, not sound-specifically).
+- curriculum_notes: <to_fill>
+
+### `spacing`
+
+- canonical_label: Spacing
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Gardening-practice concept — seed/plant spacing in garden beds. Adjacent long-tail `planting` 1, `seed starting` 1, §11 `seeds` 13, §12 `plant_growth` 9 cover related gardening-activity concepts. Recommend merge into §11 `seeds` 13 (the seed-anatomy-and-planting canonical) OR drop as too narrow.
+- curriculum_notes: <to_fill>
+
+### `states_of_matter`
+
+- canonical_label: States of Matter
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Physical-science concept — same content as freq-2 `phases of matter` 2 (Sci). See CON-19 audit signal for the phases-of-matter / states-of-matter canonical-label question. Recommend merge into freq-2 `phases_of_matter` 2 (higher-frequency wins per established convention). Surface-label preference (phases-of-matter is more chemistry-formal; states-of-matter is more K-12 colloquial) is a curriculum-team call.
+- curriculum_notes: <to_fill>
+
+### `tallying`
+
+- canonical_label: Tallying
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Math (1)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Data-collection practice — tally marks, count-by-mark. Closely related to §11 `counting` 20 and §11 `data_collection` 19. Recommend merge into §11 `counting` 20 (the broader count-tracking canonical) OR §11 `data_collection` 19 (the broader data-collection canonical). Pending curriculum-team verdict; lean toward data_collection (tallying is a specific data-collection technique).
+- curriculum_notes: <to_fill>
+
+### `taste`
+
+- canonical_label: Taste
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific sensory concept — taste-as-sense / taste-testing in cooking lessons. Adjacent §11 `sensory_exploration` 11 covers broader sensory observation (the 5-senses frame). Recommend merge into §11 `sensory_exploration` 11 (taste is one of the 5 senses covered by sensory_exploration).
+- curriculum_notes: <to_fill>
+
+### `voting`
+
+- canonical_label: Voting
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Social Studies
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Civic-engagement concept — voting practices, democratic process. The Lit/ELA subject placement is an apparent tagging-artifact (voting is conventionally Social Studies / civics). Recommend re-subject to Social Studies AND keep standalone, OR merge into §12 `advocacy` 3 (the civic-action canonical) at curriculum-team discretion. Pending verdict.
+- curriculum_notes: <to_fill>
+
+### `weather`
+
+- canonical_label: Weather
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Meteorology concept — weather observation, weather patterns, weather-vs-climate distinction. Distinct from freq-2 `climate` 2 (Sci) but closely related (weather is short-term; climate is long-term). Adjacent §11 `seasonal_changes` 10 covers seasonal phenomenology. Recommend keep standalone OR merge into §11 `seasonal_changes` 10 (weather is part of seasonal observation) at curriculum-team discretion.
+- curriculum_notes: <to_fill>
+
+### `weight`
+
+- canonical_label: Weight
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Math (1)
+- recommended_primary_subject: Math
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Measurement-dimension concept — weight measurement (grams, pounds, ounces). Part of the measurement-cluster boundary (CON-23). Recommend merge into §11 `measurement` 66 as a sub-dimension alias OR keep standalone if curriculum team wants explicit weight tagging distinct from broader measurement.
+- curriculum_notes: <to_fill>
+
+### `writing_claims`
+
+- canonical_label: Writing Claims
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Literacy/ELA (1)
+- recommended_primary_subject: Literacy/ELA
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Writing-cluster sub-type covered by CON-12 — claim-and-evidence writing (similar to argumentative_writing 2 freq-2 in pedagogical character). Verdict depends on CON-12 verdict. Recommend pending curriculum-team decision; if CON-12 picks (a) keep `writing` 8 as catch-all → likely merge into freq-2 `argumentative_writing` 2 or `writing` 8; if (b) drop writing 8 → keep as sub-canonical; if (c) flip → merge into writing.
+- curriculum_notes: <to_fill>
+
+### `yeast`
+
+- canonical_label: Yeast
+- verdict: <to_fill>
+- frequency: 1 appearances
+- current_subjects: Science (1)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Specific microorganism concept — yeast as a fermentation agent (bread-making, brewing-adjacent). Closely paired with long-tail `fermentation` 1 (Science) + §12 `microorganisms` 3 (the broader microbe canonical). Recommend merge into §12 `microorganisms` 3 OR merge into long-tail `fermentation` 1 (yeast is the fermentation-causing organism). Curriculum team picks; lean toward microorganisms merge (broader canonical, established mid-tier home).
+- curriculum_notes: <to_fill>
 
 ---
 
