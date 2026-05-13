@@ -959,6 +959,42 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 
 </details>
 
+### `companion_planting`
+
+- canonical_label: Companion Planting
+- verdict: <to_fill>
+- frequency: 13 appearances (Science 10 + Social Studies 3)
+- current_subjects: Science (10), Social Studies (3)
+- recommended_primary_subject: Science
+- recommended_secondary_subjects: <none>
+- merge_aliases: <none>
+- theme_overlap: none
+- claude_notes: Tagging-artifact cross-subject split. Companion planting is fundamentally an agronomic concept (intercropping plants whose biology benefits each other — the corn/beans/squash mutualism). All 13 lessons cluster tightly around one corpus theme: 11 are Three-Sisters / Lenape / Squanto Indigenous-agriculture lessons, plus 1 generic "Planting in Patterns" garden-pattern lesson, plus 1 cooking variant. The Science / Social Studies split reflects reviewer inconsistency rather than genuine cognitive-lens difference — identical lesson templates land on opposite subjects ("3 Sisters Tacos" → Social Studies vs "Three Sisters Tacos" → Science; "3 Sisters Dip" → Social Studies vs "Three Sisters Soup" → Science). The cultural/historical framing is already captured on these same rows by Social-Studies concepts `cultural traditions`, `Native American history`, `historical figures`, `colonialism's impact`, plus `culturalHeritage` tags. Recommend consolidate all 13 occurrences under Science as the canonical subject; Indigenous-agriculture context is preserved on the rows by the co-present Social-Studies concepts.
+- curriculum_notes: <to_fill>
+
+<details><summary>Corpus evidence (13 lessons across Science + Social Studies — 10 Science, 3 Social Studies, 0 overlap)</summary>
+
+**Science cohort (10 lessons):**
+
+- `0BwC8Pf3ZwAXjMmRRd0xWTUQ0U1U` **Squanto's Ad Agency**: "agricultural techniques he taught the English…"
+- `0BwC8Pf3ZwAXjVTZsQVBuMUs3T2M` **The Lenape Farmers and Skits**: "agricultural techniques they used…"
+- `1XlUFSs_ls80ONwWgGCPHHA8re4kfmzgL` **The Three Sisters**: "understand how corn, beans, and squash help each other grow in the garden." [explicit biological-mutualism framing]
+- `1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4` **Planting in Patterns** (Science-only, sole non-Three-Sisters lesson): "design their own patterns, then plant in patterns in the garden." **The ONLY row with `companion planting` and NO Social-Studies tags — confirms the agronomic-not-cultural reading when stripped of Three-Sisters framing.**
+- `1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN` **Three Sisters Soup**: "highlights the agricultural method of companion planting." [explicit "agricultural method"]
+- `1AVz6xA4ZJO7mT3oWSJ2unIiY0APuj9yg` **Middle School Three Sisters Soup and Forage Salad**: same explicit "agricultural method" framing.
+- `13uPiVU50hQcj_Ho1vEhfJmVeK8BFTqb-0BdHmx-wIdg` **Three Sisters in the Kitchen**
+- `1hlnX5VDqvm83un6VT_B_OpJ08bZ9uN-KlS_lVYkqOE8` **Lenape Farming Techniques**: row also has `soil science` — pairing with another agronomic concept reinforces Science lens.
+- `1VYlTlYBqXiaIa1Tu9d9ZX8dI9YtYETH35bhDl8W3fgA` **Three Sisters Pupusas and Curtido**
+- `1fNjAzV9JZhGsVCvQZui8jtoSfcSBEiNkU9yhTg55lEQ` **Three Sisters Tacos**: nearly identical to the Social-Studies-tagged "3 Sisters Tacos" below — **smoking gun of reviewer-inconsistency.**
+
+**Social Studies cohort (3 lessons):**
+
+- `13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA` **The Story of the 3 sisters** (SS): story-only lesson; `companion planting` under Social Studies here likely reflects the absence of any actual planting activity.
+- `1BQdTnCzvCWc7u6MA9ey1HFm-H1g-fXdcgGXFU_Fxzww` **3 Sisters Tacos** (SS): same template as the Science **Three Sisters Tacos** above; opposite subject placement.
+- `1S_zIVPNORzjlZbmmm89reX2GFZFV1uwAM6B2mqa7B0U` **3 Sisters Dip & Pita chips** (SS): summary's "work well together / help each other" framing IS the companion-planting biological-mutualism claim, just rendered as story.
+
+</details>
+
 ### `thermal_energy`
 
 - canonical_label: Thermal Energy
@@ -1085,42 +1121,6 @@ Co-tagging stats: 7 of 8 `cultural narratives` lessons also tag `storytelling`; 
 - theme_overlap: none
 - claude_notes: Canonical Science concept covering five-senses exploration of food and garden materials — typically tied to early-grade taste/smell/touch/sight/sound activities (taste-test bars, sensory scavenger hunts, herb-smelling). Related concepts `taste` (Science, 1), `sound` (Science, 1), `observation` (Science, 5) are distinguishably narrower single-sense or methodology concepts kept as separate canonicals. Recommend keep as canonical with surface label "Sensory Exploration".
 - curriculum_notes: <to_fill>
-
-### `companion_planting`
-
-- canonical_label: Companion Planting
-- verdict: <to_fill>
-- frequency: 13 appearances (Science 10 + Social Studies 3)
-- current_subjects: Science (10), Social Studies (3)
-- recommended_primary_subject: Science
-- recommended_secondary_subjects: <none>
-- merge_aliases: <none>
-- theme_overlap: none
-- claude_notes: Tagging-artifact cross-subject split. Companion planting is fundamentally an agronomic concept (intercropping plants whose biology benefits each other — the corn/beans/squash mutualism). All 13 lessons cluster tightly around one corpus theme: 11 are Three-Sisters / Lenape / Squanto Indigenous-agriculture lessons, plus 1 generic "Planting in Patterns" garden-pattern lesson, plus 1 cooking variant. The Science / Social Studies split reflects reviewer inconsistency rather than genuine cognitive-lens difference — identical lesson templates land on opposite subjects ("3 Sisters Tacos" → Social Studies vs "Three Sisters Tacos" → Science; "3 Sisters Dip" → Social Studies vs "Three Sisters Soup" → Science). The cultural/historical framing is already captured on these same rows by Social-Studies concepts `cultural traditions`, `Native American history`, `historical figures`, `colonialism's impact`, plus `culturalHeritage` tags. Recommend consolidate all 13 occurrences under Science as the canonical subject; Indigenous-agriculture context is preserved on the rows by the co-present Social-Studies concepts.
-- curriculum_notes: <to_fill>
-
-<details><summary>Corpus evidence (13 lessons across Science + Social Studies — 10 Science, 3 Social Studies, 0 overlap)</summary>
-
-**Science cohort (10 lessons):**
-
-- `0BwC8Pf3ZwAXjMmRRd0xWTUQ0U1U` **Squanto's Ad Agency**: "agricultural techniques he taught the English…"
-- `0BwC8Pf3ZwAXjVTZsQVBuMUs3T2M` **The Lenape Farmers and Skits**: "agricultural techniques they used…"
-- `1XlUFSs_ls80ONwWgGCPHHA8re4kfmzgL` **The Three Sisters**: "understand how corn, beans, and squash help each other grow in the garden." [explicit biological-mutualism framing]
-- `1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4` **Planting in Patterns** (Science-only, sole non-Three-Sisters lesson): "design their own patterns, then plant in patterns in the garden." **The ONLY row with `companion planting` and NO Social-Studies tags — confirms the agronomic-not-cultural reading when stripped of Three-Sisters framing.**
-- `1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN` **Three Sisters Soup**: "highlights the agricultural method of companion planting." [explicit "agricultural method"]
-- `1AVz6xA4ZJO7mT3oWSJ2unIiY0APuj9yg` **Middle School Three Sisters Soup and Forage Salad**: same explicit "agricultural method" framing.
-- `13uPiVU50hQcj_Ho1vEhfJmVeK8BFTqb-0BdHmx-wIdg` **Three Sisters in the Kitchen**
-- `1hlnX5VDqvm83un6VT_B_OpJ08bZ9uN-KlS_lVYkqOE8` **Lenape Farming Techniques**: row also has `soil science` — pairing with another agronomic concept reinforces Science lens.
-- `1VYlTlYBqXiaIa1Tu9d9ZX8dI9YtYETH35bhDl8W3fgA` **Three Sisters Pupusas and Curtido**
-- `1fNjAzV9JZhGsVCvQZui8jtoSfcSBEiNkU9yhTg55lEQ` **Three Sisters Tacos**: nearly identical to the Social-Studies-tagged "3 Sisters Tacos" below — **smoking gun of reviewer-inconsistency.**
-
-**Social Studies cohort (3 lessons):**
-
-- `13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA` **The Story of the 3 sisters** (SS): story-only lesson; `companion planting` under Social Studies here likely reflects the absence of any actual planting activity.
-- `1BQdTnCzvCWc7u6MA9ey1HFm-H1g-fXdcgGXFU_Fxzww` **3 Sisters Tacos** (SS): same template as the Science **Three Sisters Tacos** above; opposite subject placement.
-- `1S_zIVPNORzjlZbmmm89reX2GFZFV1uwAM6B2mqa7B0U` **3 Sisters Dip & Pita chips** (SS): summary's "work well together / help each other" framing IS the companion-planting biological-mutualism claim, just rendered as story.
-
-</details>
 
 ### `seasonal_changes`
 
