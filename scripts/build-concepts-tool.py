@@ -71,6 +71,12 @@ DEFAULT_TOOL_OUTPUT = (
     / "concepts-worksheet-form"
     / "concepts-worksheet-tool.html"
 )
+DEFAULT_TEMPLATE = (
+    REPO_ROOT
+    / "scripts"
+    / "concepts-worksheet-tool.template.html"
+)
+DATA_PAYLOAD_PLACEHOLDER = "__DATA_PAYLOAD__"
 
 # Tier sections, in worksheet order.
 TIER_ORDER: tuple[str, ...] = ("11", "12", "13")
@@ -677,6 +683,12 @@ def main() -> int:
         help="Path to write the built HTML tool (with --build-html).",
     )
     parser.add_argument(
+        "--template",
+        type=Path,
+        default=DEFAULT_TEMPLATE,
+        help="Path to the HTML template (with --build-html).",
+    )
+    parser.add_argument(
         "--pretty",
         action="store_true",
         help="Pretty-print JSON output (default: compact).",
@@ -707,15 +719,34 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
-        # HTML build defers to build_html_tool; placeholder for follow-up
-        # session. For now, emit JSON to the tool output path so the HTML
-        # build step can pick it up.
+        if not args.template.exists():
+            print(f"error: template not found at {args.template}", file=sys.stderr)
+            return 2
+        template = args.template.read_text(encoding="utf-8")
+        if DATA_PAYLOAD_PLACEHOLDER not in template:
+            print(
+                f"error: template missing placeholder {DATA_PAYLOAD_PLACEHOLDER!r}",
+                file=sys.stderr,
+            )
+            return 2
+        payload = build_payload(entries, raw_lines)
+        # Compact JSON to keep the embedded payload small. The HTML parser
+        # accepts any whitespace inside <script id="dataPayload"
+        # type="application/json">.
+        payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        # Escape `</script>` if it appears anywhere in the payload (defensive;
+        # the worksheet body could in theory contain that literal substring
+        # and would otherwise terminate our script tag).
+        payload_json = payload_json.replace("</script>", "<\\/script>")
+        html = template.replace(DATA_PAYLOAD_PLACEHOLDER, payload_json)
+        args.tool_output.parent.mkdir(parents=True, exist_ok=True)
+        args.tool_output.write_text(html, encoding="utf-8")
+        size_kb = args.tool_output.stat().st_size / 1024
         print(
-            "error: --build-html is not yet implemented; emit JSON via --output "
-            "and inject into the HTML template in a follow-up build step.",
+            f"Wrote HTML tool to {args.tool_output} ({size_kb:.1f} KB)",
             file=sys.stderr,
         )
-        return 2
+        return 0
 
     payload = build_payload(entries, raw_lines)
     indent = 2 if args.pretty else None

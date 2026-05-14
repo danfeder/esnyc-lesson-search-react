@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concepts Worksheet — Curriculum Team Review</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f7f6f1;
+    --panel: #ffffff;
+    --panel-soft: #fbfaf6;
+    --border: #e3e1d9;
+    --border-strong: #cfcdc4;
+    --text: #1a1a1a;
+    --text-strong: #0d0d0d;
+    --muted: #5e5e58;
+    --hint: #8a8a83;
+    --accent: #1f5a47;
+    --accent-soft: #d3e4d9;
+    --accent-strong: #133a2c;
+    --warn: #b45309;
+    --warn-soft: #fdf3da;
+    --warn-border: #e3b865;
+
+    --keep: #1f5a47;
+    --keep-soft: #d3e4d9;
+    --merge: #b25a1f;
+    --merge-soft: #f4dfc8;
+    --new: #1d4ed8;
+    --new-soft: #d6e1f7;
+    --drop: #a4143c;
+    --drop-soft: #f6d1da;
+
+    --tier-11: #1d4ed8;
+    --tier-12: #6b6b6b;
+    --tier-13: #8a8a83;
+
+    --subject-science: #1f5a47;
+    --subject-social: #b25a1f;
+    --subject-literacy: #6d3ba8;
+    --subject-math: #1d4ed8;
+    --subject-arts: #c2185b;
+    --subject-health: #be4b13;
+
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow-card: 0 1px 0 rgba(20, 20, 18, 0.04), 0 4px 12px -8px rgba(20, 20, 18, 0.08);
+    --shadow-panel: 0 1px 2px rgba(20, 20, 18, 0.04);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  body { min-height: 100vh; }
+  code, .mono {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-panel);
+  }
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 12px 24px;
+    flex-wrap: wrap;
+  }
+  .top-row.filters {
+    padding-top: 4px;
+    padding-bottom: 12px;
+    gap: 10px 18px;
+    border-top: 1px dashed var(--border);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+  }
+  .brand .subtitle {
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+  .saved-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .saved-badge::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .saved-badge.dirty::before {
+    background: var(--warn);
+  }
+  .progress-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .progress-pill .progress-num {
+    font-variant-numeric: tabular-nums;
+  }
+  .progress-pill .progress-bar {
+    width: 88px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+  .progress-pill .progress-bar > i {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transition: width 150ms ease-out;
+  }
+  .actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  button.btn {
+    appearance: none;
+    border: 1px solid var(--border-strong);
+    background: var(--panel);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    line-height: 1.4;
+    transition: background 80ms ease;
+  }
+  button.btn:hover { background: var(--panel-soft); }
+  button.btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button.btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  button.btn.primary:hover { background: var(--accent-strong); }
+  button.btn.ghost {
+    border-color: transparent;
+    background: transparent;
+  }
+  button.btn.ghost:hover { background: var(--panel-soft); }
+
+  /* ---------- Filter chips ---------- */
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .filter-group .filter-label {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-right: 2px;
+  }
+  .chip {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    padding: 3px 11px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition: background 80ms ease, border-color 80ms ease;
+  }
+  .chip:hover { background: var(--panel-soft); }
+  .chip.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-strong);
+    font-weight: 500;
+  }
+  .chip .count {
+    color: var(--muted);
+    margin-left: 4px;
+    font-size: 11.5px;
+  }
+  .chip.active .count {
+    color: var(--accent-strong);
+  }
+  .search-input {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    padding: 5px 11px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    width: 260px;
+  }
+  .search-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+
+  /* ---------- Layout ---------- */
+  main.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 28px;
+    max-width: 1480px;
+    margin: 24px auto 64px;
+    padding: 0 24px;
+  }
+  @media (max-width: 1100px) {
+    main.layout {
+      grid-template-columns: 1fr;
+    }
+    aside.cluster-signals {
+      position: static !important;
+      max-height: none !important;
+    }
+  }
+
+  /* ---------- Tier section headers ---------- */
+  .tier-section {
+    margin-bottom: 36px;
+  }
+  .tier-section > h2 {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .tier-section > h2 .tier-num {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    margin-right: 8px;
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .tier-section > p.tier-blurb {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  /* ---------- Entry card ---------- */
+  .entry-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-card);
+    transition: border-color 120ms ease;
+  }
+  .entry-card[data-verdict=""]:not([data-verdict="<to_fill>"]):not([data-verdict]) { /* no-op */ }
+  .entry-card[data-filled="true"] {
+    border-color: var(--accent-soft);
+    background: linear-gradient(0deg, rgba(31,90,71,0.025), rgba(31,90,71,0.025)), var(--panel);
+  }
+  .entry-card[data-needs-call="true"] {
+    border-left: 3px solid var(--warn-border);
+  }
+  .entry-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-bottom: 6px;
+  }
+  .entry-num {
+    color: var(--hint);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    min-width: 44px;
+  }
+  .entry-label {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-strong);
+  }
+  .entry-key {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+  .entry-freq {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .entry-freq .freq-primary { color: var(--text); font-weight: 500; }
+  .entry-freq .freq-merge { color: var(--merge); }
+
+  .subject-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .subject-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 9px;
+    border-radius: 4px;
+    background: rgba(31, 90, 71, 0.07);
+    color: var(--subject-science);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .subject-chip[data-subject="Science"] { background: rgba(31, 90, 71, 0.08); color: var(--subject-science); }
+  .subject-chip[data-subject="Social Studies"] { background: rgba(178, 90, 31, 0.09); color: var(--subject-social); }
+  .subject-chip[data-subject="Literacy/ELA"] { background: rgba(109, 59, 168, 0.09); color: var(--subject-literacy); }
+  .subject-chip[data-subject="Math"] { background: rgba(29, 78, 216, 0.08); color: var(--subject-math); }
+  .subject-chip[data-subject="Arts"] { background: rgba(194, 24, 91, 0.08); color: var(--subject-arts); }
+  .subject-chip[data-subject="Health"] { background: rgba(190, 75, 19, 0.09); color: var(--subject-health); }
+  .subject-chip[data-primary="true"] {
+    box-shadow: inset 0 0 0 1px currentColor;
+  }
+  .subject-chip .count {
+    color: inherit;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+  }
+
+  /* Theme overlap callout */
+  .theme-overlap-callout {
+    display: none;
+    background: var(--warn-soft);
+    border: 1px solid var(--warn-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    font-size: 12.5px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .theme-overlap-callout.shown { display: block; }
+  .theme-overlap-callout strong { color: var(--warn); }
+
+  /* Merge aliases proposed block */
+  .merge-aliases-block {
+    display: none;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: var(--merge-soft);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+  }
+  .merge-aliases-block.shown { display: block; }
+  .merge-aliases-block .label {
+    font-weight: 500;
+    color: var(--merge);
+    margin-bottom: 4px;
+  }
+  .merge-aliases-block ul {
+    margin: 0;
+    padding: 0 0 0 18px;
+    color: var(--text);
+  }
+  .merge-aliases-block li {
+    margin-bottom: 2px;
+  }
+  .merge-aliases-block li .count {
+    color: var(--muted);
+    margin-left: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Cluster-signal badge on entries */
+  .cluster-membership-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    background: rgba(29, 78, 216, 0.08);
+    color: var(--tier-11);
+    font-size: 11.5px;
+    margin-right: 6px;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+  }
+  .cluster-membership-badge:hover { text-decoration: underline; }
+
+  /* Verdict radio group */
+  fieldset.verdict-options {
+    border: none;
+    margin: 0 0 8px;
+    padding: 0;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  fieldset.verdict-options > legend {
+    padding: 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .verdict-options label.verdict-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    padding: 5px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    background: var(--panel);
+    user-select: none;
+    transition: all 80ms ease;
+  }
+  .verdict-options label.verdict-option:hover {
+    background: var(--panel-soft);
+  }
+  .verdict-options input[type="radio"] {
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .verdict-options label.verdict-option[data-verdict="keep"].selected {
+    background: var(--keep-soft);
+    border-color: var(--keep);
+    color: var(--keep);
+    font-weight: 500;
+  }
+  .verdict-options label.verdict-option[data-verdict="merge"].selected {
+    background: var(--merge-soft);
+    border-color: var(--merge);
+    color: var(--merge);
+    font-weight: 500;
+  }
+  .verdict-options label.verdict-option[data-verdict="new"].selected {
+    background: var(--new-soft);
+    border-color: var(--new);
+    color: var(--new);
+    font-weight: 500;
+  }
+  .verdict-options label.verdict-option[data-verdict="drop"].selected {
+    background: var(--drop-soft);
+    border-color: var(--drop);
+    color: var(--drop);
+    font-weight: 500;
+  }
+
+  /* merge_into input */
+  .merge-into-block {
+    display: none;
+    margin: 8px 0 4px;
+    padding: 8px 12px;
+    background: var(--merge-soft);
+    border-radius: var(--radius-sm);
+    align-items: center;
+    gap: 8px;
+  }
+  .merge-into-block.shown { display: flex; }
+  .merge-into-block label {
+    font-size: 12.5px;
+    color: var(--merge);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .merge-into-input {
+    flex: 1;
+    appearance: none;
+    border: 1px solid var(--border-strong);
+    background: var(--panel);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  .merge-into-input:focus {
+    outline: 2px solid var(--merge);
+    outline-offset: -1px;
+    border-color: var(--merge);
+  }
+
+  /* Collapsible notes / corpus evidence */
+  details.collapsible {
+    margin: 10px 0;
+    border-top: 1px dashed var(--border);
+    padding-top: 8px;
+  }
+  details.collapsible > summary {
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--muted);
+    user-select: none;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  details.collapsible > summary::-webkit-details-marker { display: none; }
+  details.collapsible > summary::before {
+    content: "▸";
+    display: inline-block;
+    transition: transform 100ms ease;
+    color: var(--hint);
+  }
+  details.collapsible[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  details.collapsible > .collapsible-body {
+    margin-top: 10px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  details.collapsible > .collapsible-body code {
+    background: rgba(0, 0, 0, 0.04);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  details.collapsible.corpus-evidence > .collapsible-body {
+    font-size: 12.5px;
+    color: var(--muted);
+    border-left: 2px solid var(--border-strong);
+    padding-left: 12px;
+    white-space: pre-wrap;
+  }
+
+  /* Notes inputs */
+  .notes-block {
+    margin-top: 12px;
+  }
+  .notes-block label {
+    display: block;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  textarea.notes-input {
+    appearance: none;
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 38px;
+  }
+  textarea.notes-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+  textarea.reviewer-note-input {
+    border-style: dashed;
+    border-color: var(--border-strong);
+    background: var(--panel-soft);
+    min-height: 28px;
+  }
+
+  /* ---------- Sidebar — Cluster signals ---------- */
+  aside.cluster-signals {
+    position: sticky;
+    top: 132px;
+    align-self: start;
+    max-height: calc(100vh - 152px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  aside.cluster-signals > h2 {
+    font-size: 13.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+  aside.cluster-signals > p {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin: 0 0 16px;
+  }
+  .cluster-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-card);
+  }
+  .cluster-card[data-answered="true"] {
+    border-color: var(--accent-soft);
+  }
+  .cluster-card h3 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+  .cluster-card .cluster-id {
+    color: var(--tier-11);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .cluster-card .cluster-question {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin: 0 0 10px;
+    line-height: 1.5;
+  }
+  .cluster-card .cluster-options {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 0 12px;
+  }
+  .cluster-card .cluster-options label {
+    display: flex;
+    gap: 8px;
+    align-items: start;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    border: 1px solid transparent;
+    transition: background 80ms ease;
+  }
+  .cluster-card .cluster-options label:hover {
+    background: var(--panel-soft);
+  }
+  .cluster-card .cluster-options input[type="radio"] {
+    margin: 3px 0 0;
+    accent-color: var(--accent);
+  }
+  .cluster-card .cluster-options input[type="radio"]:checked + .option-text {
+    font-weight: 500;
+    color: var(--accent-strong);
+  }
+  .cluster-card .cluster-options label.selected {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .cluster-card .cluster-members {
+    font-size: 11.5px;
+    color: var(--muted);
+    border-top: 1px dashed var(--border);
+    padding-top: 8px;
+  }
+  .cluster-card .cluster-members .members-label {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    color: var(--hint);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .cluster-card .cluster-members ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .cluster-card .cluster-members .member-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .cluster-card .cluster-members .member-pill:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .cluster-card .cluster-members .member-pill .verdict-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--hint);
+  }
+  .cluster-card .cluster-members .member-pill[data-verdict="keep"] .verdict-dot { background: var(--keep); }
+  .cluster-card .cluster-members .member-pill[data-verdict="merge"] .verdict-dot { background: var(--merge); }
+  .cluster-card .cluster-members .member-pill[data-verdict="new"] .verdict-dot { background: var(--new); }
+  .cluster-card .cluster-members .member-pill[data-verdict="drop"] .verdict-dot { background: var(--drop); }
+
+  /* ---------- Empty / no-results state ---------- */
+  .no-results {
+    background: var(--panel-soft);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 36px 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .no-results strong { color: var(--text); display: block; margin-bottom: 4px; }
+
+  /* ---------- Onboarding modal ---------- */
+  dialog.onboarding {
+    border: none;
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.3);
+    padding: 0;
+    max-width: 560px;
+    width: calc(100% - 32px);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  dialog.onboarding::backdrop {
+    background: rgba(20, 20, 18, 0.45);
+  }
+  dialog.onboarding .modal-body {
+    padding: 24px 28px;
+  }
+  dialog.onboarding h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+  }
+  dialog.onboarding p {
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+  dialog.onboarding ul {
+    padding-left: 22px;
+  }
+  dialog.onboarding li { margin-bottom: 6px; }
+  dialog.onboarding .modal-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* ---------- Advanced menu popover ---------- */
+  .advanced-menu {
+    position: absolute;
+    right: 24px;
+    top: 56px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    min-width: 240px;
+    display: none;
+    z-index: 40;
+  }
+  .advanced-menu.shown { display: block; }
+  .advanced-menu button.menu-item {
+    width: 100%;
+    text-align: left;
+    appearance: none;
+    border: none;
+    background: transparent;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .advanced-menu button.menu-item:hover {
+    background: var(--panel-soft);
+  }
+  .advanced-menu .menu-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 0;
+  }
+  .advanced-menu .menu-hint {
+    padding: 6px 12px;
+    color: var(--hint);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- Highlight scroll target ---------- */
+  .entry-card.flash {
+    animation: flash-highlight 1.4s ease;
+  }
+  @keyframes flash-highlight {
+    0%, 30% { background: var(--accent-soft); border-color: var(--accent); }
+    100% { background: var(--panel); border-color: var(--border); }
+  }
+
+  /* ---------- Misc ---------- */
+  .hidden { display: none !important; }
+  .visually-hidden {
+    position: absolute;
+    clip: rect(0 0 0 0);
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <h1>Concepts Worksheet</h1>
+      <span class="subtitle">Curriculum Team Review · 208 canonical concepts</span>
+    </div>
+    <span class="saved-badge" id="savedBadge">Saved locally</span>
+    <span class="progress-pill" id="progressPill">
+      <span class="progress-num"><span id="progressFilled">0</span>/208 filled</span>
+      <span class="progress-bar"><i id="progressBar" style="width: 0%"></i></span>
+    </span>
+    <div class="actions">
+      <button class="btn primary" id="exportBtn" type="button">Save &amp; Export ↓</button>
+      <button class="btn ghost" id="advancedBtn" type="button" aria-haspopup="menu">⚙ Advanced</button>
+      <div class="advanced-menu" id="advancedMenu" role="menu">
+        <div class="menu-hint">Import / Export</div>
+        <button class="menu-item" id="importBtn" type="button">Import a saved markdown file…</button>
+        <button class="menu-item" id="downloadJsonBtn" type="button">Download progress as JSON</button>
+        <input type="file" id="importInput" accept=".md,text/markdown,text/plain" class="hidden">
+        <div class="menu-divider"></div>
+        <div class="menu-hint">Help</div>
+        <button class="menu-item" id="showOnboardingBtn" type="button">Show welcome screen</button>
+        <div class="menu-divider"></div>
+        <div class="menu-hint">Reset</div>
+        <button class="menu-item" id="clearStateBtn" type="button" style="color: var(--drop);">Clear all progress…</button>
+      </div>
+    </div>
+  </div>
+  <div class="top-row filters">
+    <div class="filter-group" id="statusFilterGroup">
+      <span class="filter-label">Status</span>
+      <button class="chip active" data-filter="status" data-value="all" type="button">All <span class="count" id="statusCountAll">208</span></button>
+      <button class="chip" data-filter="status" data-value="needs" type="button">Needs my call <span class="count" id="statusCountNeeds">208</span></button>
+      <button class="chip" data-filter="status" data-value="filled" type="button">Filled <span class="count" id="statusCountFilled">0</span></button>
+    </div>
+    <div class="filter-group" id="tierFilterGroup">
+      <span class="filter-label">Tier</span>
+      <button class="chip active" data-filter="tier" data-value="all" type="button">All</button>
+      <button class="chip" data-filter="tier" data-value="11" type="button">§11 High-impact <span class="count">32</span></button>
+      <button class="chip" data-filter="tier" data-value="12" type="button">§12 Mid-tier <span class="count">39</span></button>
+      <button class="chip" data-filter="tier" data-value="13" type="button">§13 Long-tail <span class="count">137</span></button>
+    </div>
+    <div class="filter-group" id="subjectFilterGroup">
+      <span class="filter-label">Subject</span>
+      <button class="chip active" data-filter="subject" data-value="all" type="button">All</button>
+      <!-- subject chips appended by JS -->
+    </div>
+    <div class="filter-group">
+      <label class="chip" style="cursor: pointer;">
+        <input type="checkbox" id="themeOverlapToggle" style="margin: 0 6px 0 0; accent-color: var(--warn);">
+        Theme overlap only <span class="count">3</span>
+      </label>
+    </div>
+    <div class="filter-group" style="margin-left: auto;">
+      <input type="search" class="search-input" id="searchInput" placeholder="Search concepts…">
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="entries" id="entriesContainer">
+    <!-- Tier sections + entry cards rendered by JS -->
+  </section>
+  <aside class="cluster-signals" id="clusterSignalsPanel">
+    <h2>Cluster signals</h2>
+    <p>Cross-entry questions where the cluster needs a coherent verdict. Click a member to jump to it.</p>
+    <!-- Cluster signal cards rendered by JS -->
+  </aside>
+</main>
+
+<dialog id="onboardingModal" class="onboarding">
+  <div class="modal-body">
+    <h2>Welcome to the Concepts Worksheet</h2>
+    <p>For each of <strong>208 canonical concepts</strong>, make one decision per entry: <em>keep</em>, <em>merge</em>, <em>new</em>, or <em>drop</em>. Most entries have a clear Claude-recommended verdict — just confirm it. A handful need your judgment.</p>
+    <p><strong>How it works:</strong></p>
+    <ul>
+      <li>Your progress saves automatically in this browser. The bottom-left badge shows the status.</li>
+      <li>Concepts are organized by frequency (§11 high-impact → §12 mid-tier → §13 long-tail). High-impact deserves the most attention; long-tail can be skimmed.</li>
+      <li>Five <strong>Cluster signal</strong> cards on the right ask cross-entry questions (writing cluster, reading cluster, measurement cluster, figurative-language cluster, Indigenous cross-field). Answer those alongside the per-entry verdicts.</li>
+      <li>When you're done (or want a backup), click <strong>Save &amp; Export ↓</strong>. It downloads a markdown file you send back to the project maintainer.</li>
+      <li>Three entries flag <strong>theme overlap</strong> with the themes worksheet — your verdict here is still useful; the themes-side adjudication happens later.</li>
+    </ul>
+    <p style="color: var(--muted); font-size: 12.5px;">Local saving is tied to this browser on this computer. To move work between devices, use Save &amp; Export and Import from the ⚙ Advanced menu.</p>
+    <div class="modal-actions">
+      <button class="btn primary" type="button" id="dismissOnboardingBtn">Get started</button>
+    </div>
+  </div>
+</dialog>
+
+<script id="dataPayload" type="application/json">__DATA_PAYLOAD__</script>
+
+<script>
+"use strict";
+
+// ---------- Constants & state keys ----------
+
+const STORAGE_KEY = "concepts-worksheet-state-v1";
+const FILTER_KEY = "concepts-worksheet-filter-v1";
+const ONBOARD_KEY = "concepts-worksheet-onboard-v1";
+
+const VERDICTS = ["keep", "merge", "new", "drop"];
+
+// ---------- Load payload ----------
+
+const payload = JSON.parse(document.getElementById("dataPayload").textContent);
+const ENTRIES = payload.entries;
+const TIER_ORDER = payload.tier_order;
+const TIER_LABELS = payload.tier_labels;
+const TIER_FREQ_RANGE = payload.tier_freq_range;
+const SUBJECT_ORDER = payload.subject_order;
+const VERDICT_CAPTIONS = payload.verdict_captions;
+const FIELD_LABELS = payload.field_labels;
+const CLUSTER_SIGNALS = payload.cluster_signals;
+const RAW_MARKDOWN_LINES = payload.raw_markdown_lines;
+
+// Index entries by canonical_key for lookups.
+const ENTRIES_BY_KEY = new Map();
+for (const entry of ENTRIES) {
+  ENTRIES_BY_KEY.set(entry.canonical_key, entry);
+}
+
+// Build the set of cluster-signal-member keys for cross-reference badges.
+const CLUSTER_MEMBERSHIP = new Map(); // canonical_key -> [{id, label}]
+for (const signal of CLUSTER_SIGNALS) {
+  for (const member of signal.members) {
+    if (!CLUSTER_MEMBERSHIP.has(member)) {
+      CLUSTER_MEMBERSHIP.set(member, []);
+    }
+    CLUSTER_MEMBERSHIP.get(member).push({ id: signal.id, label: signal.label });
+  }
+}
+
+// ---------- State management ----------
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    if (parsed.schema_version !== 1) return defaultState();
+    return parsed;
+  } catch (e) {
+    console.warn("Failed to load state", e);
+    return defaultState();
+  }
+}
+
+function defaultState() {
+  return {
+    schema_version: 1,
+    entries: {}, // canonical_key -> { verdict, merge_into, curriculum_notes, reviewer_note }
+    cluster_signals: {}, // CON-NN -> option_index
+  };
+}
+
+let saveDebounce = null;
+function saveState() {
+  setBadgeDirty(true);
+  if (saveDebounce) clearTimeout(saveDebounce);
+  saveDebounce = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setBadgeDirty(false);
+    } catch (e) {
+      console.error("Failed to save state", e);
+      setBadgeDirty(true, "Save failed");
+    }
+  }, 250);
+}
+
+function getEntryState(key) {
+  return state.entries[key] || {};
+}
+
+function setEntryState(key, patch) {
+  const cur = state.entries[key] || {};
+  state.entries[key] = { ...cur, ...patch };
+  saveState();
+}
+
+function getClusterState(id) {
+  return state.cluster_signals[id];
+}
+
+function setClusterState(id, optionIndex) {
+  if (optionIndex === null || optionIndex === undefined) {
+    delete state.cluster_signals[id];
+  } else {
+    state.cluster_signals[id] = optionIndex;
+  }
+  saveState();
+}
+
+// ---------- Filter state ----------
+
+let filterState = loadFilterState();
+
+function loadFilterState() {
+  try {
+    const raw = localStorage.getItem(FILTER_KEY);
+    if (!raw) return defaultFilterState();
+    const parsed = JSON.parse(raw);
+    return { ...defaultFilterState(), ...parsed };
+  } catch (e) {
+    return defaultFilterState();
+  }
+}
+
+function defaultFilterState() {
+  return {
+    status: "all", // all | needs | filled
+    tier: "all", // all | 11 | 12 | 13
+    subject: "all", // all | Science | ...
+    themeOverlapOnly: false,
+    search: "",
+  };
+}
+
+function saveFilterState() {
+  try {
+    localStorage.setItem(FILTER_KEY, JSON.stringify(filterState));
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+// ---------- DOM utils ----------
+
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "className") node.className = v;
+    else if (k === "dataset") {
+      for (const [dk, dv] of Object.entries(v)) node.dataset[dk] = dv;
+    } else if (k.startsWith("on") && typeof v === "function") {
+      node.addEventListener(k.slice(2).toLowerCase(), v);
+    } else if (v !== null && v !== undefined && v !== false) {
+      // Some DOM properties are read-only getters (e.g. HTMLInputElement.list).
+      // Try direct assignment first, fall back to setAttribute on failure.
+      if (k in node) {
+        try {
+          node[k] = v;
+        } catch (_e) {
+          node.setAttribute(k, v);
+        }
+      } else {
+        node.setAttribute(k, v);
+      }
+    }
+  }
+  for (const child of children.flat()) {
+    if (child === null || child === undefined || child === false) continue;
+    node.appendChild(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[c]);
+}
+
+// Lightweight inline-markdown for claude_notes display (backticks, *italic*, **bold**).
+function renderInlineMarkdown(text) {
+  if (!text) return "";
+  let html = escapeHtml(text);
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/(?<![*])\*([^*\n]+)\*(?![*])/g, "<em>$1</em>");
+  return html;
+}
+
+// ---------- Entry status helpers ----------
+
+function entryFilled(key) {
+  const s = getEntryState(key);
+  return !!s.verdict && VERDICTS.includes(s.verdict);
+}
+
+function entryVerdict(key) {
+  const s = getEntryState(key);
+  return s.verdict || "<to_fill>";
+}
+
+function entryMergeInto(key) {
+  return getEntryState(key).merge_into || "";
+}
+
+// ---------- Render entry card ----------
+
+function renderEntryCard(entry) {
+  const stateForEntry = getEntryState(entry.canonical_key);
+  const verdict = entryVerdict(entry.canonical_key);
+  const filled = entryFilled(entry.canonical_key);
+  const themeOverlap = entry.parsed.theme_overlap;
+  const mergeAliases = entry.parsed.merge_aliases;
+  const currentSubjects = entry.parsed.current_subjects;
+  const primarySubject = entry.parsed.recommended_primary_subject;
+  const secondarySubjects = entry.parsed.recommended_secondary_subjects || [];
+  const mergeIntoVal = stateForEntry.merge_into || "";
+  const curriculumNotes = stateForEntry.curriculum_notes || "";
+  const reviewerNote = stateForEntry.reviewer_note || "";
+  const clusterMemberships = CLUSTER_MEMBERSHIP.get(entry.canonical_key) || [];
+
+  const card = el("article", {
+    className: "entry-card",
+    id: `entry-${entry.canonical_key}`,
+    dataset: {
+      canonicalKey: entry.canonical_key,
+      tier: entry.tier,
+      verdict,
+      filled: String(filled),
+      needsCall: String(!filled),
+      themeOverlap: themeOverlap.flagged ? "true" : "false",
+      primarySubject: primarySubject || "",
+    },
+  });
+
+  // ---- Head row ----
+  const head = el("header", { className: "entry-head" });
+  head.appendChild(el("span", { className: "entry-num" }, `#${entry.tier}.${entry.tier_idx}`));
+  head.appendChild(el("span", { className: "entry-label" }, entry.parsed.canonical_label || entry.canonical_key));
+  head.appendChild(el("span", { className: "entry-key mono" }, `\`${entry.canonical_key}\``));
+
+  const freq = el("span", { className: "entry-freq" });
+  if (entry.parsed.frequency_post_merge != null) {
+    freq.appendChild(el("span", { className: "freq-primary" }, `${entry.parsed.frequency_primary}`));
+    freq.appendChild(document.createTextNode(" "));
+    freq.appendChild(el("span", { className: "freq-merge" }, `→ ${entry.parsed.frequency_post_merge} if aliases merge`));
+  } else {
+    freq.appendChild(el("span", { className: "freq-primary" }, `${entry.parsed.frequency_primary}`));
+    freq.appendChild(document.createTextNode(" appearances"));
+  }
+  head.appendChild(freq);
+  card.appendChild(head);
+
+  // ---- Cluster membership badges ----
+  if (clusterMemberships.length > 0) {
+    const badgeRow = el("div", { style: "margin-bottom: 8px;" });
+    for (const cm of clusterMemberships) {
+      const badge = el("button", {
+        className: "cluster-membership-badge mono",
+        type: "button",
+        title: `Part of cluster signal: ${cm.label}`,
+        onclick: () => scrollToClusterSignal(cm.id),
+      }, cm.id);
+      badgeRow.appendChild(badge);
+    }
+    card.appendChild(badgeRow);
+  }
+
+  // ---- Subject chips ----
+  if (currentSubjects.length > 0) {
+    const chips = el("div", { className: "subject-chips" });
+    for (const sub of currentSubjects) {
+      const isPrimary = sub.subject === primarySubject;
+      const isSecondary = secondarySubjects.includes(sub.subject);
+      const chip = el(
+        "span",
+        {
+          className: "subject-chip",
+          dataset: { subject: sub.subject, primary: String(isPrimary) },
+          title: isPrimary
+            ? `Recommended primary subject`
+            : isSecondary
+              ? `Recommended secondary subject`
+              : `Current tagging`,
+        },
+        sub.subject,
+        " ",
+        el("span", { className: "count" }, sub.count.toString()),
+      );
+      chips.appendChild(chip);
+    }
+    card.appendChild(chips);
+  }
+
+  // ---- Theme overlap callout ----
+  if (themeOverlap.flagged) {
+    const cb = el("div", { className: "theme-overlap-callout shown" });
+    cb.innerHTML = `<strong>⚠ Theme overlap.</strong> ${renderInlineMarkdown(themeOverlap.note)}`;
+    card.appendChild(cb);
+  }
+
+  // ---- Merge aliases block ----
+  if (mergeAliases.length > 0) {
+    const aliasBlock = el("div", { className: "merge-aliases-block shown" });
+    aliasBlock.appendChild(el("div", { className: "label" }, "Merge aliases (proposed):"));
+    const ul = el("ul");
+    for (const a of mergeAliases) {
+      ul.appendChild(el("li", {},
+        el("code", {}, a.alias),
+        el("span", { className: "count" }, `(${a.count})`),
+      ));
+    }
+    aliasBlock.appendChild(ul);
+    card.appendChild(aliasBlock);
+  }
+
+  // ---- Verdict radio group ----
+  const verdictFs = el("fieldset", { className: "verdict-options" });
+  verdictFs.appendChild(el("legend", {}, "Verdict"));
+  for (const v of VERDICTS) {
+    const id = `verdict-${entry.canonical_key}-${v}`;
+    const label = el("label", {
+      className: "verdict-option" + (verdict === v ? " selected" : ""),
+      dataset: { verdict: v },
+      htmlFor: id,
+    });
+    const input = el("input", {
+      type: "radio",
+      name: `verdict-${entry.canonical_key}`,
+      id,
+      value: v,
+      checked: verdict === v,
+      onchange: () => onVerdictChange(entry.canonical_key, v),
+    });
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(verdictLabel(v)));
+    verdictFs.appendChild(label);
+  }
+  card.appendChild(verdictFs);
+
+  // ---- merge_into autocomplete (shown only when verdict==merge) ----
+  const mergeIntoBlock = el("div", {
+    className: "merge-into-block" + (verdict === "merge" ? " shown" : ""),
+  });
+  mergeIntoBlock.appendChild(el("label", { htmlFor: `mergeinto-${entry.canonical_key}` }, "Merge into:"));
+  const mergeIntoInput = el("input", {
+    type: "text",
+    className: "merge-into-input mono",
+    id: `mergeinto-${entry.canonical_key}`,
+    placeholder: "Enter canonical_key (e.g., plant_identification)",
+    value: mergeIntoVal,
+    list: "all-canonical-keys",
+    autocomplete: "off",
+    spellcheck: false,
+    oninput: (ev) => onMergeIntoChange(entry.canonical_key, ev.target.value),
+  });
+  mergeIntoBlock.appendChild(mergeIntoInput);
+  card.appendChild(mergeIntoBlock);
+
+  // ---- Claude notes (collapsible) ----
+  if (entry.parsed.claude_notes && entry.parsed.claude_notes.trim()) {
+    const notes = el("details", { className: "collapsible claude-notes-block" });
+    notes.appendChild(el("summary", {}, "Why Claude recommends this"));
+    const body = el("div", { className: "collapsible-body" });
+    body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+    notes.appendChild(body);
+    card.appendChild(notes);
+  }
+
+  // ---- Corpus evidence (collapsible, opaque markdown) ----
+  if (entry.details.present && entry.details.lines.length > 0) {
+    const corp = el("details", { className: "collapsible corpus-evidence" });
+    // Extract the summary text from the <details><summary>...</summary> first line.
+    let summaryText = "Corpus evidence";
+    const firstLine = entry.details.lines[0];
+    const m = firstLine.match(/<summary>(.*?)<\/summary>/);
+    if (m) summaryText = m[1];
+    corp.appendChild(el("summary", {}, summaryText));
+    const body = el("div", { className: "collapsible-body" });
+    // Strip the <details>/<summary>/</details> wrapper lines.
+    const inner = entry.details.lines.slice(1, -1).join("\n").replace(/^\n+|\n+$/g, "");
+    body.innerHTML = renderInlineMarkdown(inner);
+    corp.appendChild(body);
+    card.appendChild(corp);
+  }
+
+  // ---- Curriculum notes textarea ----
+  const cnBlock = el("div", { className: "notes-block" });
+  cnBlock.appendChild(el("label", { htmlFor: `curnotes-${entry.canonical_key}` }, "Curriculum notes (your verdict rationale)"));
+  cnBlock.appendChild(el("textarea", {
+    className: "notes-input",
+    id: `curnotes-${entry.canonical_key}`,
+    placeholder: "Optional. Capture your thinking, especially for ambiguous calls.",
+    value: curriculumNotes,
+    oninput: (ev) => onNotesChange(entry.canonical_key, "curriculum_notes", ev.target.value),
+  }));
+  card.appendChild(cnBlock);
+
+  // ---- Reviewer note textarea ----
+  const rnBlock = el("div", { className: "notes-block" });
+  rnBlock.appendChild(el("label", { htmlFor: `revnote-${entry.canonical_key}` }, "Reviewer note (private, not exported as canonical content)"));
+  rnBlock.appendChild(el("textarea", {
+    className: "notes-input reviewer-note-input",
+    id: `revnote-${entry.canonical_key}`,
+    placeholder: "Inline disagreement, follow-up flag, anything not part of the verdict.",
+    value: reviewerNote,
+    oninput: (ev) => onNotesChange(entry.canonical_key, "reviewer_note", ev.target.value),
+  }));
+  card.appendChild(rnBlock);
+
+  return card;
+}
+
+function verdictLabel(v) {
+  switch (v) {
+    case "keep": return "keep";
+    case "merge": return "merge →";
+    case "new": return "new";
+    case "drop": return "drop";
+    default: return v;
+  }
+}
+
+// ---------- Render datalist for merge_into autocomplete ----------
+
+function ensureCanonicalKeysDatalist() {
+  if (document.getElementById("all-canonical-keys")) return;
+  const dl = el("datalist", { id: "all-canonical-keys" });
+  for (const e of ENTRIES) {
+    dl.appendChild(el("option", { value: e.canonical_key, label: e.parsed.canonical_label || e.canonical_key }));
+  }
+  document.body.appendChild(dl);
+}
+
+// ---------- Entry change handlers ----------
+
+function onVerdictChange(key, v) {
+  setEntryState(key, { verdict: v });
+  updateEntryCardChrome(key);
+  updateProgress();
+  updateClusterSignalMembers();
+  updateStatusCounts();
+  applyFilters();
+}
+
+function onMergeIntoChange(key, value) {
+  setEntryState(key, { merge_into: value.trim() });
+}
+
+function onNotesChange(key, field, value) {
+  setEntryState(key, { [field]: value });
+}
+
+function updateEntryCardChrome(key) {
+  const card = document.getElementById(`entry-${key}`);
+  if (!card) return;
+  const v = entryVerdict(key);
+  const filled = entryFilled(key);
+  card.dataset.verdict = v;
+  card.dataset.filled = String(filled);
+  card.dataset.needsCall = String(!filled);
+  // Toggle merge_into block visibility
+  const block = card.querySelector(".merge-into-block");
+  if (block) block.classList.toggle("shown", v === "merge");
+  // Update verdict-option selected styles
+  for (const opt of card.querySelectorAll("label.verdict-option")) {
+    opt.classList.toggle("selected", opt.dataset.verdict === v);
+  }
+}
+
+// ---------- Render tier sections ----------
+
+function renderAllEntries() {
+  const container = document.getElementById("entriesContainer");
+  container.innerHTML = "";
+  ensureCanonicalKeysDatalist();
+  for (const tier of TIER_ORDER) {
+    const section = el("section", { className: "tier-section", dataset: { tier } });
+    const h2 = el("h2");
+    h2.appendChild(el("span", { className: "tier-num mono" }, `§${tier}`));
+    h2.appendChild(document.createTextNode(TIER_LABELS[tier].replace(`§${tier} `, "")));
+    section.appendChild(h2);
+    section.appendChild(el("p", { className: "tier-blurb" }, `${TIER_FREQ_RANGE[tier]} · review depth: ${tierReviewDepth(tier)}`));
+    const entriesInTier = ENTRIES.filter((e) => e.tier === tier);
+    for (const entry of entriesInTier) {
+      section.appendChild(renderEntryCard(entry));
+    }
+    container.appendChild(section);
+  }
+  // No-results placeholder
+  const noResults = el("div", { className: "no-results hidden", id: "noResults" });
+  noResults.appendChild(el("strong", {}, "No entries match your filters."));
+  noResults.appendChild(el("span", {}, "Clear a filter or change your search to see entries."));
+  container.appendChild(noResults);
+}
+
+function tierReviewDepth(tier) {
+  if (tier === "11") return "high (per-entry attention)";
+  if (tier === "12") return "moderate (variance acceptable)";
+  return "rapid skim OK on clear drops";
+}
+
+// ---------- Cluster signal panel ----------
+
+function renderClusterSignalsPanel() {
+  const panel = document.getElementById("clusterSignalsPanel");
+  // Keep h2 + intro paragraph; remove only previous cluster cards.
+  for (const card of panel.querySelectorAll(".cluster-card")) card.remove();
+  for (const signal of CLUSTER_SIGNALS) {
+    panel.appendChild(renderClusterSignalCard(signal));
+  }
+}
+
+function renderClusterSignalCard(signal) {
+  const card = el("section", {
+    className: "cluster-card",
+    id: `cluster-${signal.id}`,
+    dataset: { id: signal.id, answered: String(getClusterState(signal.id) != null) },
+  });
+  const heading = el("h3");
+  heading.appendChild(el("span", { className: "cluster-id mono" }, signal.id));
+  heading.appendChild(document.createTextNode(signal.label));
+  card.appendChild(heading);
+  card.appendChild(el("p", { className: "cluster-question" }, signal.question));
+
+  const optsContainer = el("div", { className: "cluster-options" });
+  signal.options.forEach((opt, idx) => {
+    const selected = getClusterState(signal.id) === idx;
+    const label = el("label", { className: selected ? "selected" : "" });
+    label.appendChild(el("input", {
+      type: "radio",
+      name: `cluster-${signal.id}`,
+      checked: selected,
+      onchange: () => {
+        setClusterState(signal.id, idx);
+        renderClusterSignalsPanel();
+      },
+    }));
+    label.appendChild(el("span", { className: "option-text" }, opt));
+    optsContainer.appendChild(label);
+  });
+  // Clear option
+  if (getClusterState(signal.id) != null) {
+    const clear = el("button", {
+      className: "btn ghost",
+      type: "button",
+      style: "font-size: 11.5px; padding: 2px 8px; margin-top: 2px;",
+      onclick: () => {
+        setClusterState(signal.id, null);
+        renderClusterSignalsPanel();
+      },
+    }, "Clear");
+    optsContainer.appendChild(clear);
+  }
+  card.appendChild(optsContainer);
+
+  // Members
+  const members = el("div", { className: "cluster-members" });
+  members.appendChild(el("span", { className: "members-label" }, `Members (${signal.members.length}) — click to jump:`));
+  const ul = el("ul");
+  for (const memberKey of signal.members) {
+    const memberEntry = ENTRIES_BY_KEY.get(memberKey);
+    const verdict = memberEntry ? entryVerdict(memberKey) : "<to_fill>";
+    const pill = el("button", {
+      className: "member-pill",
+      type: "button",
+      dataset: { verdict },
+      title: memberEntry
+        ? `${memberEntry.parsed.canonical_label || memberKey} · verdict: ${verdict}`
+        : `${memberKey} (entry not found)`,
+      onclick: () => scrollToEntry(memberKey),
+    });
+    pill.appendChild(el("span", { className: "verdict-dot" }));
+    pill.appendChild(document.createTextNode(memberKey));
+    ul.appendChild(pill);
+  }
+  members.appendChild(ul);
+  card.appendChild(members);
+
+  return card;
+}
+
+function updateClusterSignalMembers() {
+  // Update verdict-dot color on every cluster-member pill.
+  for (const pill of document.querySelectorAll(".cluster-card .member-pill")) {
+    const memberKey = pill.textContent.trim();
+    const v = entryVerdict(memberKey);
+    pill.dataset.verdict = v;
+  }
+}
+
+// ---------- Filters ----------
+
+function buildSubjectChips() {
+  const group = document.getElementById("subjectFilterGroup");
+  // Remove existing dynamic chips (keep label + "All").
+  for (const c of group.querySelectorAll(".chip[data-filter='subject']:not([data-value='all'])")) {
+    c.remove();
+  }
+  const counts = subjectCounts();
+  for (const subj of SUBJECT_ORDER) {
+    const count = counts[subj] || 0;
+    if (count === 0) continue;
+    const chip = el("button", {
+      className: "chip",
+      type: "button",
+      dataset: { filter: "subject", value: subj },
+      onclick: (ev) => setFilter("subject", subj),
+    }, subj, " ", el("span", { className: "count" }, count.toString()));
+    group.appendChild(chip);
+  }
+}
+
+function subjectCounts() {
+  const counts = {};
+  for (const e of ENTRIES) {
+    const subj = e.parsed.recommended_primary_subject;
+    if (!subj) continue;
+    counts[subj] = (counts[subj] || 0) + 1;
+  }
+  return counts;
+}
+
+function setFilter(filter, value) {
+  filterState[filter] = value;
+  // Toggle chip active state in this group
+  const group = document.querySelector(`.filter-group [data-filter="${filter}"][data-value="${value}"]`)?.parentElement;
+  if (group) {
+    for (const c of group.querySelectorAll(".chip[data-filter='" + filter + "']")) {
+      c.classList.toggle("active", c.dataset.value === value);
+    }
+  }
+  saveFilterState();
+  applyFilters();
+}
+
+function applyFilters() {
+  const searchQ = filterState.search.trim().toLowerCase();
+  let visibleCount = 0;
+  for (const card of document.querySelectorAll(".entry-card")) {
+    const key = card.dataset.canonicalKey;
+    const entry = ENTRIES_BY_KEY.get(key);
+    if (!entry) continue;
+    let show = true;
+    if (filterState.status !== "all") {
+      const filled = entryFilled(key);
+      if (filterState.status === "needs" && filled) show = false;
+      if (filterState.status === "filled" && !filled) show = false;
+    }
+    if (filterState.tier !== "all" && entry.tier !== filterState.tier) show = false;
+    if (filterState.subject !== "all") {
+      if (entry.parsed.recommended_primary_subject !== filterState.subject) show = false;
+    }
+    if (filterState.themeOverlapOnly && !entry.parsed.theme_overlap.flagged) show = false;
+    if (searchQ) {
+      const hay = (
+        entry.canonical_key + " " +
+        (entry.parsed.canonical_label || "") + " " +
+        (entry.parsed.claude_notes || "")
+      ).toLowerCase();
+      if (!hay.includes(searchQ)) show = false;
+    }
+    card.classList.toggle("hidden", !show);
+    if (show) visibleCount++;
+  }
+
+  // Hide tier sections that have no visible entries.
+  for (const sec of document.querySelectorAll(".tier-section")) {
+    const visible = sec.querySelectorAll(".entry-card:not(.hidden)").length;
+    sec.classList.toggle("hidden", visible === 0);
+  }
+  document.getElementById("noResults").classList.toggle("hidden", visibleCount > 0);
+}
+
+function updateStatusCounts() {
+  let filled = 0;
+  let needs = 0;
+  for (const e of ENTRIES) {
+    if (entryFilled(e.canonical_key)) filled++;
+    else needs++;
+  }
+  document.getElementById("statusCountAll").textContent = ENTRIES.length.toString();
+  document.getElementById("statusCountNeeds").textContent = needs.toString();
+  document.getElementById("statusCountFilled").textContent = filled.toString();
+}
+
+// ---------- Progress + badges ----------
+
+function updateProgress() {
+  const total = ENTRIES.length;
+  const filled = ENTRIES.filter((e) => entryFilled(e.canonical_key)).length;
+  document.getElementById("progressFilled").textContent = filled.toString();
+  const pct = total > 0 ? (filled / total) * 100 : 0;
+  document.getElementById("progressBar").style.width = `${pct}%`;
+}
+
+function setBadgeDirty(dirty, message) {
+  const badge = document.getElementById("savedBadge");
+  badge.classList.toggle("dirty", dirty);
+  badge.textContent = dirty ? (message || "Saving…") : "Saved locally";
+}
+
+// ---------- Scroll-to helpers ----------
+
+function scrollToEntry(canonical_key) {
+  const node = document.getElementById(`entry-${canonical_key}`);
+  if (!node) return;
+  // Temporarily clear filters that may hide this entry.
+  if (node.classList.contains("hidden")) {
+    setFilter("status", "all");
+    setFilter("tier", "all");
+    setFilter("subject", "all");
+    if (filterState.themeOverlapOnly) {
+      filterState.themeOverlapOnly = false;
+      document.getElementById("themeOverlapToggle").checked = false;
+      saveFilterState();
+      applyFilters();
+    }
+  }
+  node.scrollIntoView({ behavior: "smooth", block: "center" });
+  node.classList.remove("flash");
+  // Force reflow to restart animation.
+  void node.offsetWidth;
+  node.classList.add("flash");
+}
+
+function scrollToClusterSignal(id) {
+  const node = document.getElementById(`cluster-${id}`);
+  if (!node) return;
+  node.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// ---------- Export to markdown ----------
+
+function buildExportMarkdown() {
+  // Walk raw_markdown_lines. For each line, check if any entry has a field
+  // whose lineno matches; if so, swap in the user-edited value. Otherwise
+  // emit the line unchanged.
+  const lineEdits = new Map(); // 1-based lineno -> replacement_line
+  const insertions = new Map(); // 1-based lineno -> list_of_extra_lines_after
+  function insertAfterLine(lineno, line) {
+    if (!insertions.has(lineno)) insertions.set(lineno, []);
+    insertions.get(lineno).push(line);
+  }
+
+  for (const entry of ENTRIES) {
+    const entryState = getEntryState(entry.canonical_key);
+    const verdict = entryState.verdict;
+    const curriculumNotes = entryState.curriculum_notes;
+    const mergeInto = entryState.merge_into;
+    const reviewerNote = entryState.reviewer_note;
+
+    if (verdict && VERDICTS.includes(verdict)) {
+      const fv = entry.fields.verdict;
+      if (fv) {
+        lineEdits.set(fv.lineno, `- verdict: ${verdict}`);
+      }
+    }
+
+    if (curriculumNotes !== undefined && curriculumNotes !== null) {
+      const fv = entry.fields.curriculum_notes;
+      if (fv) {
+        const trimmed = curriculumNotes.replace(/\n+/g, " ").trim();
+        const valueOut = trimmed === "" ? "<to_fill>" : trimmed;
+        lineEdits.set(fv.lineno, `- curriculum_notes: ${valueOut}`);
+      }
+    }
+
+    if (verdict === "merge" && mergeInto && mergeInto.trim()) {
+      // Insert / update merge_into. If the entry has no merge_into field
+      // already, append it after the merge_aliases line (or after
+      // theme_overlap if merge_aliases is missing).
+      const trimmed = mergeInto.trim();
+      const existing = entry.fields.merge_into;
+      if (existing) {
+        lineEdits.set(existing.lineno, `- merge_into: ${trimmed}`);
+      } else {
+        const anchorField = entry.fields.merge_aliases || entry.fields.theme_overlap;
+        if (anchorField) {
+          insertAfterLine(anchorField.lineno, `- merge_into: ${trimmed}`);
+        }
+      }
+    }
+
+    if (reviewerNote && reviewerNote.trim()) {
+      // Reviewer note as a private inline HTML comment after curriculum_notes.
+      // Escape `-->` so it cannot terminate the comment.
+      const trimmed = reviewerNote.replace(/-->/g, "→]").trim();
+      const anchorField = entry.fields.curriculum_notes;
+      if (anchorField) {
+        insertAfterLine(anchorField.lineno, `  <!-- reviewer note: ${trimmed} -->`);
+      }
+    }
+  }
+
+  const out = [];
+  // Add cluster-signal verdict comments at the very top after the H1 if any
+  // are answered (so the maintainer sees them without having to scroll).
+  // We do this by injecting an HTML comment block AFTER the first line.
+  const clusterComments = clusterSignalCommentBlock();
+
+  for (let i = 0; i < RAW_MARKDOWN_LINES.length; i++) {
+    const lineno = i + 1;
+    const original = RAW_MARKDOWN_LINES[i];
+    if (lineEdits.has(lineno)) {
+      out.push(lineEdits.get(lineno));
+    } else {
+      out.push(original);
+    }
+    if (insertions.has(lineno)) {
+      for (const extra of insertions.get(lineno)) out.push(extra);
+    }
+    // Inject cluster-signal comment block right after the H1 title (line 1).
+    if (i === 0 && clusterComments) {
+      out.push(...clusterComments);
+    }
+  }
+  return out.join("\n") + "\n";
+}
+
+function clusterSignalCommentBlock() {
+  const answered = CLUSTER_SIGNALS.filter((s) => getClusterState(s.id) != null);
+  if (answered.length === 0) return null;
+  const lines = ["", "<!-- Cluster-signal verdicts captured by curriculum-team review tool:"];
+  for (const s of answered) {
+    const idx = getClusterState(s.id);
+    lines.push(`     - ${s.id} ${s.label}: ${s.options[idx]}`);
+  }
+  lines.push("-->");
+  return lines;
+}
+
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime || "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function onExport() {
+  const md = buildExportMarkdown();
+  downloadFile(payload.worksheet_filename, md, "text/markdown;charset=utf-8");
+}
+
+function onDownloadJson() {
+  const payloadOut = {
+    schema_version: 1,
+    saved_at: new Date().toISOString(),
+    state,
+  };
+  downloadFile("concepts-worksheet-progress.json", JSON.stringify(payloadOut, null, 2), "application/json");
+}
+
+// ---------- Import ----------
+
+function onImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const text = reader.result;
+      if (typeof text !== "string") throw new Error("Imported file is not text");
+      // Best-effort import: parse the markdown looking for verdict /
+      // curriculum_notes / merge_into per entry. Reuses entry line numbers.
+      const importedState = parseMarkdownForImport(text);
+      // Merge into state (don't overwrite empty state with imported empty).
+      for (const [key, patch] of Object.entries(importedState)) {
+        state.entries[key] = { ...(state.entries[key] || {}), ...patch };
+      }
+      saveState();
+      renderAllEntries();
+      renderClusterSignalsPanel();
+      updateProgress();
+      updateStatusCounts();
+      applyFilters();
+      alert("Imported. " + Object.keys(importedState).length + " entries updated.");
+    } catch (e) {
+      console.error(e);
+      alert("Import failed: " + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseMarkdownForImport(text) {
+  const lines = text.split(/\r?\n/);
+  const result = {}; // canonical_key -> {verdict, curriculum_notes, merge_into}
+  let currentKey = null;
+  for (const line of lines) {
+    const heading = line.match(/^### `([^`]+)`\s*$/);
+    if (heading) {
+      currentKey = heading[1];
+      if (currentKey.startsWith("<")) currentKey = null;
+      continue;
+    }
+    if (!currentKey) continue;
+    const fm = line.match(/^- ([a-z_]+):\s*(.*)$/);
+    if (!fm) continue;
+    const field = fm[1];
+    const value = fm[2].replace(/<!--.*?-->/g, "").trim();
+    if (field === "verdict" && VERDICTS.includes(value)) {
+      result[currentKey] = { ...(result[currentKey] || {}), verdict: value };
+    } else if (field === "curriculum_notes" && value !== "<to_fill>") {
+      result[currentKey] = { ...(result[currentKey] || {}), curriculum_notes: value };
+    } else if (field === "merge_into" && value) {
+      result[currentKey] = { ...(result[currentKey] || {}), merge_into: value };
+    }
+  }
+  return result;
+}
+
+// ---------- Clear state ----------
+
+function onClearState() {
+  if (!confirm("Clear ALL progress? This deletes every saved verdict, curriculum note, and reviewer note from this browser. Cannot be undone.")) return;
+  state = defaultState();
+  localStorage.removeItem(STORAGE_KEY);
+  renderAllEntries();
+  renderClusterSignalsPanel();
+  updateProgress();
+  updateStatusCounts();
+  applyFilters();
+}
+
+// ---------- Onboarding ----------
+
+function maybeShowOnboarding() {
+  const dismissed = localStorage.getItem(ONBOARD_KEY);
+  if (!dismissed) showOnboarding();
+}
+
+function showOnboarding() {
+  const dlg = document.getElementById("onboardingModal");
+  if (typeof dlg.showModal === "function") dlg.showModal();
+  else dlg.setAttribute("open", "");
+}
+
+function dismissOnboarding(persist) {
+  const dlg = document.getElementById("onboardingModal");
+  if (typeof dlg.close === "function") dlg.close();
+  else dlg.removeAttribute("open");
+  if (persist) localStorage.setItem(ONBOARD_KEY, "1");
+}
+
+// ---------- Advanced menu ----------
+
+function toggleAdvancedMenu(show) {
+  const menu = document.getElementById("advancedMenu");
+  if (show === undefined) menu.classList.toggle("shown");
+  else menu.classList.toggle("shown", show);
+}
+
+// ---------- Wire-up ----------
+
+function init() {
+  buildSubjectChips();
+  renderAllEntries();
+  renderClusterSignalsPanel();
+  updateProgress();
+  updateStatusCounts();
+
+  // Restore filter UI from saved state.
+  for (const filter of ["status", "tier", "subject"]) {
+    const value = filterState[filter];
+    const target = document.querySelector(`.chip[data-filter="${filter}"][data-value="${value}"]`);
+    if (target) {
+      for (const c of target.parentElement.querySelectorAll(`.chip[data-filter="${filter}"]`)) {
+        c.classList.toggle("active", c === target);
+      }
+    }
+  }
+  document.getElementById("themeOverlapToggle").checked = filterState.themeOverlapOnly;
+  document.getElementById("searchInput").value = filterState.search;
+  applyFilters();
+
+  // Filter chip click handlers (status + tier — subject is wired in buildSubjectChips).
+  for (const chip of document.querySelectorAll('.chip[data-filter="status"], .chip[data-filter="tier"]')) {
+    chip.addEventListener("click", () => setFilter(chip.dataset.filter, chip.dataset.value));
+  }
+  // Subject "all" chip click handler.
+  document.querySelector('.chip[data-filter="subject"][data-value="all"]').addEventListener("click", () => setFilter("subject", "all"));
+
+  // Theme overlap toggle
+  document.getElementById("themeOverlapToggle").addEventListener("change", (ev) => {
+    filterState.themeOverlapOnly = ev.target.checked;
+    saveFilterState();
+    applyFilters();
+  });
+
+  // Search input
+  let searchDebounce = null;
+  document.getElementById("searchInput").addEventListener("input", (ev) => {
+    const v = ev.target.value;
+    if (searchDebounce) clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+      filterState.search = v;
+      saveFilterState();
+      applyFilters();
+    }, 120);
+  });
+
+  // Top bar actions
+  document.getElementById("exportBtn").addEventListener("click", onExport);
+  document.getElementById("advancedBtn").addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    toggleAdvancedMenu();
+  });
+  document.addEventListener("click", (ev) => {
+    if (!ev.target.closest("#advancedMenu") && !ev.target.closest("#advancedBtn")) {
+      toggleAdvancedMenu(false);
+    }
+  });
+  document.getElementById("importBtn").addEventListener("click", () => {
+    document.getElementById("importInput").click();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("importInput").addEventListener("change", (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    onImport(f);
+    ev.target.value = ""; // Reset so the same file can be re-imported.
+  });
+  document.getElementById("downloadJsonBtn").addEventListener("click", () => {
+    onDownloadJson();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("showOnboardingBtn").addEventListener("click", () => {
+    showOnboarding();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("clearStateBtn").addEventListener("click", () => {
+    onClearState();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("dismissOnboardingBtn").addEventListener("click", () => dismissOnboarding(true));
+
+  maybeShowOnboarding();
+}
+
+init();
+</script>
+</body>
+</html>
