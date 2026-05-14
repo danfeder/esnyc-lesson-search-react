@@ -500,14 +500,20 @@
     border-radius: var(--radius-sm);
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
   }
   .merge-into-block.shown { display: flex; }
+  .merge-into-block.needs-target {
+    background: var(--warn-soft);
+    box-shadow: inset 0 0 0 1px var(--warn-border);
+  }
   .merge-into-block label {
     font-size: 12.5px;
     color: var(--merge);
     font-weight: 500;
     white-space: nowrap;
   }
+  .merge-into-block.needs-target label { color: var(--warn); }
   .merge-into-input {
     flex: 1;
     appearance: none;
@@ -523,6 +529,65 @@
     outline: 2px solid var(--merge);
     outline-offset: -1px;
     border-color: var(--merge);
+  }
+  .merge-into-block.needs-target .merge-into-input {
+    border-color: var(--warn-border);
+  }
+  .merge-into-warning {
+    flex: 0 0 100%;
+    margin-top: 4px;
+    color: var(--warn);
+    font-size: 12px;
+  }
+
+  /* Recommended-verdict pill (one-click confirm) */
+  .recommended-pill-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .recommended-pill {
+    appearance: none;
+    border: 1px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 80ms ease;
+  }
+  .recommended-pill:hover { background: var(--accent); color: white; }
+  .recommended-pill[data-verdict="merge"] {
+    border-color: var(--merge);
+    background: var(--merge-soft);
+    color: var(--merge);
+  }
+  .recommended-pill[data-verdict="merge"]:hover { background: var(--merge); color: white; }
+  .recommended-pill[data-verdict="drop"] {
+    border-color: var(--drop);
+    background: var(--drop-soft);
+    color: var(--drop);
+  }
+  .recommended-pill[data-verdict="drop"]:hover { background: var(--drop); color: white; }
+  .recommended-pill[data-verdict="new"] {
+    border-color: var(--new);
+    background: var(--new-soft);
+    color: var(--new);
+  }
+  .recommended-pill[data-verdict="new"]:hover { background: var(--new); color: white; }
+  .recommended-pill.matches-current {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .recommended-pill.matches-current::after {
+    content: " ✓";
+    margin-left: 2px;
   }
 
   /* Collapsible notes / corpus evidence */
@@ -1138,7 +1203,15 @@ function renderInlineMarkdown(text) {
 
 function entryFilled(key) {
   const s = getEntryState(key);
-  return !!s.verdict && VERDICTS.includes(s.verdict);
+  if (!s.verdict || !VERDICTS.includes(s.verdict)) return false;
+  // Merge verdict requires a non-empty merge_into target to count as
+  // complete — otherwise the exported worksheet would carry verdict=merge
+  // with no target, which violates the parser's "merge_into required iff
+  // verdict==merge" invariant.
+  if (s.verdict === "merge") {
+    return !!(s.merge_into && s.merge_into.trim());
+  }
+  return true;
 }
 
 function entryVerdict(key) {
@@ -1148,6 +1221,11 @@ function entryVerdict(key) {
 
 function entryMergeInto(key) {
   return getEntryState(key).merge_into || "";
+}
+
+function entryNeedsMergeTarget(key) {
+  const s = getEntryState(key);
+  return s.verdict === "merge" && !(s.merge_into && s.merge_into.trim());
 }
 
 // ---------- Render entry card ----------
@@ -1261,6 +1339,38 @@ function renderEntryCard(entry) {
     card.appendChild(aliasBlock);
   }
 
+  // ---- Recommended-verdict pill (one-click confirm) ----
+  const suggestedVerdict = entry.parsed.suggested_verdict;
+  if (suggestedVerdict && VERDICTS.includes(suggestedVerdict)) {
+    const row = el("div", { className: "recommended-pill-row" });
+    row.appendChild(el("span", {}, "💡 Claude recommends:"));
+    const pill = el("button", {
+      type: "button",
+      className: "recommended-pill" + (verdict === suggestedVerdict ? " matches-current" : ""),
+      dataset: { verdict: suggestedVerdict },
+      title: verdict === suggestedVerdict
+        ? `You've already chosen ${suggestedVerdict}.`
+        : `Click to accept Claude's recommendation (${suggestedVerdict})`,
+      onclick: () => {
+        if (entryVerdict(entry.canonical_key) === suggestedVerdict) return;
+        // Find the radio for this verdict and trigger the change handler.
+        const radio = card.querySelector(`input[type="radio"][name="verdict-${entry.canonical_key}"][value="${suggestedVerdict}"]`);
+        if (radio) {
+          radio.checked = true;
+          onVerdictChange(entry.canonical_key, suggestedVerdict);
+          // For merge, focus the target input so the team can type the canonical_key.
+          if (suggestedVerdict === "merge") {
+            const inp = card.querySelector(`#mergeinto-${entry.canonical_key}`);
+            if (inp) inp.focus();
+          }
+        }
+      },
+    });
+    pill.textContent = `Accept · ${suggestedVerdict}`;
+    row.appendChild(pill);
+    card.appendChild(row);
+  }
+
   // ---- Verdict radio group ----
   const verdictFs = el("fieldset", { className: "verdict-options" });
   verdictFs.appendChild(el("legend", {}, "Verdict"));
@@ -1286,8 +1396,11 @@ function renderEntryCard(entry) {
   card.appendChild(verdictFs);
 
   // ---- merge_into autocomplete (shown only when verdict==merge) ----
+  const needsTarget = entryNeedsMergeTarget(entry.canonical_key);
   const mergeIntoBlock = el("div", {
-    className: "merge-into-block" + (verdict === "merge" ? " shown" : ""),
+    className: "merge-into-block"
+      + (verdict === "merge" ? " shown" : "")
+      + (needsTarget ? " needs-target" : ""),
   });
   mergeIntoBlock.appendChild(el("label", { htmlFor: `mergeinto-${entry.canonical_key}` }, "Merge into:"));
   const mergeIntoInput = el("input", {
@@ -1302,6 +1415,11 @@ function renderEntryCard(entry) {
     oninput: (ev) => onMergeIntoChange(entry.canonical_key, ev.target.value),
   });
   mergeIntoBlock.appendChild(mergeIntoInput);
+  const warning = el("div", {
+    className: "merge-into-warning" + (needsTarget ? "" : " hidden"),
+    id: `mergeinto-warn-${entry.canonical_key}`,
+  }, "⚠ Merge needs a target — enter the canonical_key of the concept this should fold into.");
+  mergeIntoBlock.appendChild(warning);
   card.appendChild(mergeIntoBlock);
 
   // ---- Claude notes (collapsible) ----
@@ -1345,11 +1463,11 @@ function renderEntryCard(entry) {
 
   // ---- Reviewer note textarea ----
   const rnBlock = el("div", { className: "notes-block" });
-  rnBlock.appendChild(el("label", { htmlFor: `revnote-${entry.canonical_key}` }, "Reviewer note (private, not exported as canonical content)"));
+  rnBlock.appendChild(el("label", { htmlFor: `revnote-${entry.canonical_key}` }, "Reviewer note (the maintainer will see this in the export, but it isn't parsed as canonical content)"));
   rnBlock.appendChild(el("textarea", {
     className: "notes-input reviewer-note-input",
     id: `revnote-${entry.canonical_key}`,
-    placeholder: "Inline disagreement, follow-up flag, anything not part of the verdict.",
+    placeholder: "Inline disagreement, follow-up flag, anything you want to say to the maintainer but don't want stored as the canonical verdict.",
     value: reviewerNote,
     oninput: (ev) => onNotesChange(entry.canonical_key, "reviewer_note", ev.target.value),
   }));
@@ -1392,6 +1510,10 @@ function onVerdictChange(key, v) {
 
 function onMergeIntoChange(key, value) {
   setEntryState(key, { merge_into: value.trim() });
+  updateEntryCardChrome(key);
+  updateProgress();
+  updateStatusCounts();
+  applyFilters();
 }
 
 function onNotesChange(key, field, value) {
@@ -1403,15 +1525,30 @@ function updateEntryCardChrome(key) {
   if (!card) return;
   const v = entryVerdict(key);
   const filled = entryFilled(key);
+  const needsTarget = entryNeedsMergeTarget(key);
   card.dataset.verdict = v;
   card.dataset.filled = String(filled);
   card.dataset.needsCall = String(!filled);
-  // Toggle merge_into block visibility
+  // Toggle merge_into block visibility + needs-target warning.
   const block = card.querySelector(".merge-into-block");
-  if (block) block.classList.toggle("shown", v === "merge");
+  if (block) {
+    block.classList.toggle("shown", v === "merge");
+    block.classList.toggle("needs-target", needsTarget);
+  }
+  const warn = card.querySelector(`#mergeinto-warn-${key}`);
+  if (warn) warn.classList.toggle("hidden", !needsTarget);
   // Update verdict-option selected styles
   for (const opt of card.querySelectorAll("label.verdict-option")) {
     opt.classList.toggle("selected", opt.dataset.verdict === v);
+  }
+  // Update recommended-pill matches-current state.
+  const pill = card.querySelector(".recommended-pill");
+  if (pill) {
+    const matches = pill.dataset.verdict === v;
+    pill.classList.toggle("matches-current", matches);
+    pill.title = matches
+      ? `You've already chosen ${pill.dataset.verdict}.`
+      : `Click to accept Claude's recommendation (${pill.dataset.verdict})`;
   }
 }
 
@@ -1812,12 +1949,24 @@ function onImport(file) {
     try {
       const text = reader.result;
       if (typeof text !== "string") throw new Error("Imported file is not text");
-      // Best-effort import: parse the markdown looking for verdict /
-      // curriculum_notes / merge_into per entry. Reuses entry line numbers.
-      const importedState = parseMarkdownForImport(text);
-      // Merge into state (don't overwrite empty state with imported empty).
-      for (const [key, patch] of Object.entries(importedState)) {
+      // Best-effort import: parse the markdown for per-entry edits + the
+      // cluster-signal comment block at the top.
+      const importedEntries = parseEntryEditsFromMarkdown(text);
+      const importedReviewerNotes = parseReviewerNotesFromMarkdown(text);
+      const importedClusterSignals = parseClusterSignalsFromMarkdown(text);
+
+      let entryCount = 0;
+      for (const [key, patch] of Object.entries(importedEntries)) {
         state.entries[key] = { ...(state.entries[key] || {}), ...patch };
+        entryCount++;
+      }
+      for (const [key, note] of Object.entries(importedReviewerNotes)) {
+        state.entries[key] = { ...(state.entries[key] || {}), reviewer_note: note };
+      }
+      let clusterCount = 0;
+      for (const [id, optionIndex] of Object.entries(importedClusterSignals)) {
+        state.cluster_signals[id] = optionIndex;
+        clusterCount++;
       }
       saveState();
       renderAllEntries();
@@ -1825,7 +1974,11 @@ function onImport(file) {
       updateProgress();
       updateStatusCounts();
       applyFilters();
-      alert("Imported. " + Object.keys(importedState).length + " entries updated.");
+      alert(
+        `Imported. ${entryCount} entries updated; `
+        + `${Object.keys(importedReviewerNotes).length} reviewer notes; `
+        + `${clusterCount} cluster-signal answers.`
+      );
     } catch (e) {
       console.error(e);
       alert("Import failed: " + e.message);
@@ -1834,7 +1987,7 @@ function onImport(file) {
   reader.readAsText(file);
 }
 
-function parseMarkdownForImport(text) {
+function parseEntryEditsFromMarkdown(text) {
   const lines = text.split(/\r?\n/);
   const result = {}; // canonical_key -> {verdict, curriculum_notes, merge_into}
   let currentKey = null;
@@ -1857,6 +2010,57 @@ function parseMarkdownForImport(text) {
     } else if (field === "merge_into" && value) {
       result[currentKey] = { ...(result[currentKey] || {}), merge_into: value };
     }
+  }
+  return result;
+}
+
+function parseReviewerNotesFromMarkdown(text) {
+  // Reviewer notes are exported as `  <!-- reviewer note: ... -->` lines
+  // directly after each entry's curriculum_notes field. Walk per-entry and
+  // restore the most recent `reviewer note:` comment found within each
+  // entry block.
+  const lines = text.split(/\r?\n/);
+  const result = {};
+  let currentKey = null;
+  for (const line of lines) {
+    const heading = line.match(/^### `([^`]+)`\s*$/);
+    if (heading) {
+      currentKey = heading[1];
+      if (currentKey.startsWith("<")) currentKey = null;
+      continue;
+    }
+    if (!currentKey) continue;
+    const m = line.match(/<!--\s*reviewer note:\s*(.*?)\s*-->/);
+    if (m) {
+      result[currentKey] = m[1];
+    }
+  }
+  return result;
+}
+
+function parseClusterSignalsFromMarkdown(text) {
+  // The export injects an HTML comment block after the worksheet's H1 of the
+  // shape:
+  //
+  //   <!-- Cluster-signal verdicts captured by curriculum-team review tool:
+  //        - CON-12 Writing-cluster canonical shape: Keep `writing` 8 ...
+  //        - CON-22 Reading-cluster boundary: Keep all 6 as distinct canonicals
+  //   -->
+  //
+  // Parse those lines back into { "CON-12": option_index, ... }.
+  const result = {};
+  const match = text.match(/<!--\s*Cluster-signal verdicts[\s\S]*?-->/);
+  if (!match) return result;
+  const block = match[0];
+  const lineRe = /-\s+(CON-\d+)\b[^:]*:\s*(.+?)\s*$/gm;
+  let lineMatch;
+  while ((lineMatch = lineRe.exec(block)) !== null) {
+    const id = lineMatch[1];
+    const optionText = lineMatch[2].trim();
+    const signal = CLUSTER_SIGNALS.find((s) => s.id === id);
+    if (!signal) continue;
+    const idx = signal.options.findIndex((o) => o === optionText);
+    if (idx >= 0) result[id] = idx;
   }
   return result;
 }

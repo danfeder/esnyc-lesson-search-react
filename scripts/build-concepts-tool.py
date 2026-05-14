@@ -263,6 +263,39 @@ FREQUENCY_MERGE_TOTAL_RE = re.compile(r"(\d+)\s+if\s+aliases\s+merge")
 SUBJECT_COUNT_RE = re.compile(
     r"(?P<subject>[A-Z][A-Za-z/]+(?:\s+[A-Za-z/]+)*)\s*\((?P<count>\d+)\)"
 )
+# Match a "Recommend X" hint in claude_notes prose. Used to surface a
+# clickable "Accept recommendation" pill in the UI. Looks for verbatim
+# "Recommend keep" / "Recommends merging" / "Recommend drop" etc. across
+# the common natural-language phrasings the per-value entries actually use.
+RECOMMEND_HINT_RE = re.compile(
+    r"\bRecommend(?:s|ed)?\b[^.]*?\b("
+    r"keep|kept|keeping"
+    r"|merge|merged|merging|merger"
+    r"|drop|dropped|dropping"
+    r"|new|added|adding"
+    r"|consolidate|consolidated"  # "Recommend consolidate to X" → keep
+    r"|standalone"  # "Recommend keep standalone" → keep (already caught) but also "Recommend standalone" → keep
+    r")\b",
+    re.IGNORECASE,
+)
+RECOMMEND_VERB_TO_VERDICT = {
+    "keep": "keep",
+    "kept": "keep",
+    "keeping": "keep",
+    "standalone": "keep",
+    "consolidate": "keep",
+    "consolidated": "keep",
+    "merge": "merge",
+    "merged": "merge",
+    "merging": "merge",
+    "merger": "merge",
+    "drop": "drop",
+    "dropped": "drop",
+    "dropping": "drop",
+    "new": "new",
+    "added": "new",
+    "adding": "new",
+}
 
 
 # ---------- Data classes ----------
@@ -367,6 +400,27 @@ def parse_merge_aliases(raw: str) -> list[dict[str, Any]]:
         {"alias": m.group("s"), "count": int(m.group("n"))}
         for m in matches
     ]
+
+
+def extract_suggested_verdict(claude_notes: str) -> str | None:
+    """Heuristically extract Claude's recommended verdict from claude_notes prose.
+
+    Per-value entries typically conclude with "Recommend keep ..." or
+    "Recommend merge into X" — a natural-language hint that the UI can
+    surface as a one-click "Accept recommendation" affordance.
+
+    Returns one of {"keep", "merge", "drop", "new"} or None when the prose
+    has no detectable recommendation. The match is the FIRST "Recommend …"
+    in the prose; later occurrences (counter-recommendations, hedges) are
+    ignored on purpose so the surfaced hint reflects the lead recommendation.
+    """
+    if not claude_notes:
+        return None
+    match = RECOMMEND_HINT_RE.search(claude_notes)
+    if not match:
+        return None
+    verb = match.group(1).lower()
+    return RECOMMEND_VERB_TO_VERDICT.get(verb)
 
 
 def parse_theme_overlap(raw: str) -> dict[str, Any]:
@@ -620,6 +674,9 @@ def entry_to_json(entry: Entry) -> dict[str, Any]:
             ),
             "claude_notes": entry.field_value("claude_notes"),
             "curriculum_notes": entry.field_value("curriculum_notes"),
+            "suggested_verdict": extract_suggested_verdict(
+                entry.field_value("claude_notes")
+            ),
         },
     }
 
