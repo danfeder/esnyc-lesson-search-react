@@ -49,7 +49,7 @@
 **Remaining foundation-phase PRs:**
 - **PR 3b** (later): `search_synonyms` population with concept-derived everyday↔framework pairs from Stage 2 re-tag prompts. Folds into PR 6+; depends on Stage 2 outputs.
 - **PR 5+** (later): D4 vocab canonicalization (Title Case across ~10 fields; Pydantic on all 17 fields). **Gated until Stage 1 heritage + concepts worksheets land.**
-- **PR 6+** (later): Stage 2 corpus re-tag + reviewer validation flow.
+- **PR 6+** (later): Stage 2 corpus re-tag + reviewer validation flow. **Pre-planning exploration available** (EXPLORATORY — NOT LOCKED — NOT A DECISION): `docs/plans/2026-05-13-stage2-retag-mechanism-exploration.md` recommends reopening the locked mechanism decision (Python+Pydantic adaptation of `taggingv3` → candidate replacement is TypeScript+Zod batch runner). Read before drafting PR 6+ implementation plan text; the eventual walkthrough decides, not the exploration doc.
 
 **For later (whenever PR 3b / 5 / 6 unblocks):** branch off `main`; review out-of-scope follow-ups below; follow the kickoff-prompt session-start ritual. PR 5 (D4 vocab canonicalization) unblocks once Stage 1 heritage worksheet completes; PR 6+ (Stage 2 re-tag) unblocks after PR 5 lands.
 
