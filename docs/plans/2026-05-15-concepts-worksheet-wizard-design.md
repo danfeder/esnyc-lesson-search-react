@@ -101,16 +101,21 @@ The translation lives in the JS render and commit handlers; nothing in `build-co
 displayedVerdict =
     state.entries[key].verdict                     # if committed, always wins
     || aiPrefillCandidate(entry, tier)             # §12/§13 + has suggested_verdict
-    || clusterPrefillCandidate(entry, clusterState)  # cluster member + Resolve has fired
-    || null                                        # blank radio for Decide steps without any prefill
+    || clusterPrefillCandidate(entry, tier, clusterState)  # §12/§13 cluster member + Resolve has fired
+    || null                                        # blank radio (§11, theme-overlap, or no rec)
 ```
+
+Pre-fill candidates are tier-gated: **§11 entries never receive a pre-fill**, even from a cluster Resolve. The cluster suggestion is rendered as text on the step (caption "Suggested from CON-XX") but the radio stays blank. See §6.4 for the §11 cluster-member Decide layout.
 
 ### Commit actions (these write to `state.entries[key]`)
 
-- **Confirm step**: clicking "✓ Agree — …" primary button
-- **Any step**: choosing a verdict via "Pick something else ▾" radio
-- **Merge destination picker**: clicking "Confirm" on a target
-- Any explicit verdict radio click
+Merge is a two-stage commit; everything else is one-stage.
+
+- **Confirm step "✓ Agree — …" button (non-merge pre-fill)**: writes the displayed verdict in one click.
+- **Confirm step "✓ Agree — Fold into `X`" button (high-confidence merge target)**: writes `verdict=merge` + `merge_into=X` atomically in one click. (See §7 for the high-confidence shortcut path.)
+- **Picking "Keep as concept", "Remove", or "Add new concept" via radio (any step)**: writes that verdict in one click.
+- **Picking "Fold into another" via radio (any step)**: does NOT yet write state. Opens the merge destination picker. State commit happens only when the picker's `Confirm` button is clicked, at which point `verdict=merge` and `merge_into=<target>` write together.
+- **Merge destination picker `Confirm`**: writes `verdict=merge` + `merge_into=<target>` together.
 
 ### Non-commit actions (state untouched)
 
@@ -121,7 +126,7 @@ displayedVerdict =
 
 ### Invariant: empty-export hash
 
-Opening the tool, walking through any number of steps without committing, and closing the tab leaves `localStorage` empty for entries. Export then walks `raw_markdown_lines` unchanged — empty-export SHA matches source worksheet SHA. Verified in Batch 1 smoke check.
+Opening the tool, walking through any number of steps without committing, and closing the tab leaves `localStorage` empty for entries. Export then walks `raw_markdown_lines` unchanged — empty-export SHA matches source worksheet SHA. Must be verified in the Batch 1 smoke check (see §15).
 
 ### Visual cue on a pre-filled radio
 
@@ -218,14 +223,14 @@ Why this needs attention: §11 High-impact concept.
 - **`claude_notes` expanded by default** (Decide gets full reasoning visible).
 - **Less common link** opens `new` as a 4th radio option.
 
-### 6.3 Confirm step with cluster-derived pre-fill (after a Resolve)
+### 6.3 Confirm step with cluster-derived pre-fill (§12/§13 cluster member)
 
 ```
-─── §11 High-impact · Confirm ─────────  step 31 of 208
-Recipe Writing                                    §11.27
-`recipe_writing`     12 appearances · Literacy/ELA
+─── §13 Long-tail · Confirm ───────────  step 161 of 208
+Recipe Writing                                    §13.22
+`recipe_writing`     2 appearances · Literacy/ELA
 
-§11 High-impact: review carefully.
+§13 Long-tail: quick pass; pause when unsure.
 
 💡 Suggested from CON-12 Writing-cluster: Fold into `writing`
    You picked "Use `writing` as the umbrella; collapse all
@@ -241,10 +246,43 @@ Recipe Writing                                    §11.27
   [← Previous]                                [Decide later]
 ```
 
-- **Caption swap**: "Suggested from CON-12" replaces "AI suggestion."
-- **Tier strip still shows** ("§11 High-impact: review carefully") because tier doesn't change with mode.
-- Note: §11 normally routes to Decide, but cluster-derived pre-fills downgrade attention to Confirm. The §11 high-impact framing is still surfaced in the tier strip; the reviewer can still override via "Pick something else."
+- **Caption swap**: "Suggested from CON-12" replaces "AI suggestion." Source visibility per W13.
+- **Tier strip matches the entry's tier** ("§13 Long-tail: quick pass; pause when unsure").
 - **Override here triggers mismatch flag** + auto-opens notes drawer.
+- Applies only to §12/§13 cluster members. §11 cluster members render as Decide (next subsection).
+
+### 6.4 Decide step for a §11 cluster member (after a Resolve)
+
+The routing rule from §3 is unambiguous: **§11 entries always render as Decide**, regardless of pre-fill source. A cluster Resolve does NOT downgrade a §11 entry to Confirm. The cluster suggestion is still surfaced — visibly, with the source caption — but the radio stays blank and the reviewer makes a conscious commit.
+
+```
+─── §11 High-impact · Decide ──────────  step 14 of 208
+Writing                                            §11.14
+`writing`             8 appearances · Literacy/ELA
+
+§11 High-impact: review carefully.
+Why this needs attention: §11 High-impact concept (also a CON-12
+cluster member; cluster suggestion below).
+
+💡 Suggested from CON-12 Writing-cluster: Keep as concept
+   You picked "Use `writing` as the umbrella; collapse all
+   specific sub-types" — `writing` is the umbrella you'd keep.
+
+  Your call (no default — high-impact tier):
+  ( ) Keep as concept
+  ( ) Fold into another
+  ( ) Remove
+  Less common: add new concept
+
+  + Add a note
+
+  [← Previous]    [Decide later]    [Save · Next →]
+   (disabled until a verdict is picked)
+```
+
+- Cluster suggestion appears but does NOT pre-fill the radio.
+- Reviewer picks consciously — matching cluster suggestion or diverging.
+- Diverging triggers the mismatch flag exactly the same way as on a §12/§13 Confirm-mode override.
 
 ## 7. Merge destination picker
 
@@ -292,12 +330,34 @@ Parser change (Batch 1):
 
 ```python
 SUGGESTED_MERGE_TARGET_HIGH_CONFIDENCE_RE = re.compile(
-    r"Recommend\s+merg(?:e|ing)\s+(?:into\s+|to\s+)?`([a-z_]+)`",
+    r"Recommend\s+merg(?:e|ing)\s+into\s+(?:§\d+\s+)?`([a-z_]+)`",
     re.IGNORECASE,
 )
 ```
 
-The pattern matches `Recommend merging into \`plant_identification\`` and similar verbatim forms. If the regex hits and the captured `canonical_key` exists in the entry set, target is high-confidence. Otherwise, fall back to picker.
+The pattern matches the dominant forms observed in the actual worksheet prose:
+
+- `Recommend merge into \`plant_identification\`` (simple form)
+- `Recommend merge into §11 \`food_webs\` 11` (§N-prefixed form — far more common)
+- `Recommend merging into §12 \`reading_comprehension\` 6` (gerund variant)
+
+Extracted `canonical_key` is validated against the known entry-key set; a target not found in the set is treated as low-confidence.
+
+**Empirical coverage** (measured 2026-05-15 against the Session 81 worksheet payload):
+
+| | Hits | % of 78 merge recs |
+|---|---:|---:|
+| Narrow original regex (no `§\d+` prefix) | 11 | 14% |
+| Broadened regex above | 53 | **68%** |
+| Remaining unmatched (fallback to picker) | 25 | 32% |
+
+The unmatched 32% are real fallbacks, not bugs — they cover prose shapes the design treats as picker-only:
+- "Recommend either merge into A OR keep standalone" (ambiguous between two options)
+- "Recommend merge A + B into a single canonical (likely C)" (target inside parenthetical hint)
+- "Recommend merge X + Y into Z" (multi-source merge — wizard would need a different shape to handle)
+- "Recommend re-subject to Science AND merge into X" (compound recommendation; `Recommend\s+merg` doesn't match because the first verb after "Recommend" isn't "merg")
+
+Batch 1 verification must report the extraction rate ("X of Y merge recommendations matched the high-confidence shortcut; Z fell through to picker") so we have a baseline if the worksheet evolves and the rate drifts.
 
 ## 8. Notes drawer (auto-surface)
 
@@ -343,12 +403,14 @@ Writing-cluster canonical shape
 ```
 
 - Cluster signal text is read straight from `payload.cluster_signals` (which the parser builds from `CLUSTER_SIGNAL_DEFINITIONS` in `build-concepts-tool.py`). The audit register remains source of truth; UI doesn't rephrase options.
-- "Save · Continue" commits the cluster decision AND **derives per-member pre-fills**:
+- "Save · Continue" commits the cluster decision AND **derives per-member pre-fills** for §12/§13 members. CON-12 example:
   - **"Keep all 8 as separate canonicals"**: no pre-fill change; members walk through as Confirm (with their own AI pre-fill) or Decide (if §11 or no rec).
-  - **"Replace `writing` catch-all with specific sub-types"**: pre-fills `writing` itself as `drop`; sub-types walk through with their own pre-fills.
-  - **"Use `writing` as the umbrella"**: pre-fills each sub-type as `merge → writing`; `writing` itself walks through as `keep`.
-- Member pre-fills carry caption **"Suggested from CON-12"** at the per-entry step.
+  - **"Drop `writing` 8 + sub-types are the only canonicals"**: `writing` receives suggestion `Remove`; §12/§13 sub-types walk with their own AI pre-fills.
+  - **"Merge sub-types into `writing` 8 catch-all"**: §12/§13 sub-types receive suggestion `Fold into writing`; `writing` itself receives suggestion `Keep as concept`.
+- **§11 members never get a pre-fill** (per W17). The cluster suggestion is shown as text on the §11 member's Decide step (caption "Suggested from CON-XX"), but the radio stays blank and the reviewer commits consciously. See §6.4.
+- Member pre-fills carry caption **"Suggested from CON-XX"** at the per-entry step (Confirm or Decide).
 - **"Decide later"** on a cluster step leaves member entries in Decide mode with reason "Part of cluster CON-XX (no decision yet)."
+- **Full per-option mapping for all 5 cluster signals lives in §17** (including CON-16 cross-field and CON-24 pick-one edge cases where auto-prefill is suppressed).
 
 ## 10. Top bar — decision debt
 
@@ -405,12 +467,11 @@ Concepts Worksheet · Curriculum Review            ● Saved locally
 
 ## 12. What's removed (vs. current tool)
 
-- Both notes textareas (curriculum_notes + reviewer_note); replaced by single auto-surface drawer
+- Reviewer-note textarea (the second per-entry notes field); the `curriculum_notes` field stays accessible via the auto-surface notes drawer
 - Right sidebar cluster panel (now Resolve steps in the wizard flow)
 - All filter chips (status / tier / subject / theme-overlap-only)
 - Inline search input (replaced by jump-to-entry in top bar)
 - Onboarding modal in its current shape (rewritten as wizard intro screen)
-- Cross-membership cluster badges as clickable nav (now still visible but no separate sidebar)
 
 ## 13. What's preserved
 
@@ -421,7 +482,7 @@ Concepts Worksheet · Curriculum Review            ● Saved locally
 - Clear-all-progress action, Show-welcome action (now: "Show wizard intro")
 - Three-tier locked distribution (32/39/137) and four-verdict vocab (`keep/merge/new/drop`) per D-C4 / D-C8
 - Theme-overlap callout, merge_aliases proposal, corpus evidence collapsible
-- Cluster-membership badges on per-entry steps (informational; clicking jumps back to the Resolve step)
+- Cluster-membership badges on per-entry steps — visual indicator preserved; click target changes from "scroll to old sidebar" to "jump back to the corresponding Resolve step"
 
 ## 14. Implementation plan — two batches
 
@@ -443,7 +504,7 @@ Scope:
 - Pre-fill commit-on-action semantics enforced in `entryFilled` + render
 - Parser change (`build-concepts-tool.py`):
   - Add `claude_notes_summary` field (first-sentence extraction)
-  - Add `suggested_merge_target` field (high-confidence extraction from `Recommend merging into \`X\`` hints)
+  - Add `suggested_merge_target` field (high-confidence extraction per §7.3 regex; expected coverage ~68% of merge recommendations; remaining 32% fall through to picker)
 - Simple "Done" end screen with Save & Export button
 - Smoke verification:
   - Empty export SHA matches source worksheet SHA
@@ -456,7 +517,7 @@ Scope:
 Adds the cluster-member auto-pre-fill chain, the review summary screen, cluster-mismatch detection, and the wizard intro rewrite.
 
 Scope:
-- Cluster Resolve decisions auto-pre-fill member entries (per-option logic in §9)
+- Cluster Resolve decisions auto-pre-fill member entries (full per-option matrix for all 5 clusters in §17; high-level CON-12 example in §9)
 - Cluster-derived pre-fill caption "Suggested from CON-XX" on member steps
 - Mismatch detection: per-entry verdict ≠ cluster shape's derivation → flag + auto-open notes drawer + "Differs from cluster decision" reason on Decide step
 - Review summary screen: grouped by verdict + Decide later bucket + cluster choices + mismatch highlights + edit/resume links
@@ -479,8 +540,9 @@ Then browser smoke (manual or chrome-devtools-mcp):
 3. **Pre-fill non-commit**: open a §13 Confirm step (pre-fill rendered), hit "← Previous" → state.entries[key].verdict still undefined; export of that entry is `<to_fill>`.
 4. **Commit roundtrip**: agree on 5 entries → export → re-import → state restored.
 5. **Merge destination picker**: pick "Fold into another" on a high-confidence entry → primary "Confirm" commits both verdict + target atomically.
-6. **Cluster Resolve + member walk** (Batch 2): pick "Use `writing` as the umbrella" on CON-12 → walk member entries → each shows "Suggested from CON-12" with `merge → writing` pre-fill.
+6. **Cluster Resolve + member walk** (Batch 2): pick "Merge sub-types into `writing` 8 catch-all" on CON-12 → walk member entries → §12/§13 sub-types show "Suggested from CON-12" with radio pre-filled to `Fold into writing`; the §11 member `writing` shows the same caption but with a blank radio (Decide).
 7. **Mismatch flag** (Batch 2): override a cluster-derived pre-fill → mismatch flag set + notes drawer auto-opens + review summary lists under "Differs from cluster decision."
+8. **Merge-target extraction rate** (Batch 1): the build script's `--verify-only` output must print, e.g., `merge-target extraction: 53 of 78 merge recommendations (68%) — 25 fall through to picker`. Baseline is 53/78 against the Session 81 worksheet; alert if it drops below ~60% on later worksheet revisions.
 
 ## 16. Out of scope / explicit non-goals
 
@@ -491,7 +553,72 @@ Then browser smoke (manual or chrome-devtools-mcp):
 - New "search synonyms" features — Stage 1 worksheet scope only.
 - Editing the worksheet's `<to_fill>` convention or per-entry shape — parser invariants stay locked.
 
-## 17. Decision log (this session)
+## 17. Cluster auto-prefill matrix (Batch 2)
+
+Per-option mapping from each cluster Resolve decision to its derived member pre-fills. Pre-fill caption on member steps reads "Suggested from CON-XX." §11 members never receive a pre-fill (per §6.4) regardless of cluster decision — the suggestion is rendered as text only.
+
+For brevity below, "→ X for sub-types" means each sub-type member receives `verdict=merge`, `merge_into=X` as a cluster-derived pre-fill. Specific entries that are §11 receive the suggestion as text only (no radio pre-fill).
+
+### CON-12 — Writing-cluster canonical shape
+
+Members: `writing`, `narrative_writing`, `opinion_writing`, `descriptive_writing`, `how_to_writing`, `recipe_writing`, `informational_writing` (7).
+
+| Option | Member derivation |
+|---|---|
+| **Keep `writing` 8 as catch-all + sub-types stay canonical** | No pre-fill change. Each member walks through with its own AI pre-fill (Confirm in §12/§13) or no pre-fill (§11 → Decide). |
+| **Drop `writing` 8 + sub-types are the only canonicals** | `writing` receives suggestion: `Remove`. Sub-types: no cluster-derived change (each walks with its own AI pre-fill). |
+| **Merge sub-types into `writing` 8 catch-all** | `writing` receives suggestion: `Keep as concept`. Each sub-type receives suggestion: `Fold into writing`. |
+
+### CON-16 — Indigenous cross-field overlap
+
+Members: `indigenous_knowledge`, `indigenous_stories`, `native_american_history` (3).
+
+| Option | Member derivation |
+|---|---|
+| **Keep concepts-side as separate singleton canonicals** | No pre-fill change. Each member walks individually. |
+| **Reframe under heritage `Indigenous and Diaspora` cluster (D1)** | **No auto-pre-fill** — this is a cross-field signal that adjudicates on the heritage worksheet, not here. Caption on each member reads: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome." |
+| **Drop concepts-side and rely on heritage-side tagging** | Each member receives suggestion: `Remove`. |
+
+### CON-22 — Reading-cluster boundary
+
+Members: `reading`, `reading_comprehension`, `narrative_reading`, `biography_reading`, `informational_text`, `biography` (6).
+
+| Option | Member derivation |
+|---|---|
+| **Keep all 6 as distinct canonicals** | No pre-fill change. Each member walks individually. |
+| **Merge specific reading sub-types into `reading`** | `reading` receives suggestion: `Keep as concept`. Each specific sub-type (`reading_comprehension`, `narrative_reading`, `biography_reading`, `informational_text`, `biography`) receives suggestion: `Fold into reading`. |
+| **Drop generic `reading` and keep specific sub-types** | `reading` receives suggestion: `Remove`. Sub-types: no cluster-derived change (walk with own AI pre-fill). |
+
+### CON-23 — Measurement-cluster boundary
+
+Members: `measurement`, `volume`, `area`, `weight`, `perimeter` (5).
+
+| Option | Member derivation |
+|---|---|
+| **Keep `measurement` parent + 4 specific sub-types as canonicals** | No pre-fill change. Each member walks individually. |
+| **Merge specific sub-types into `measurement` parent** | `measurement` receives suggestion: `Keep as concept`. Each specific sub-type (`volume`, `area`, `weight`, `perimeter`) receives suggestion: `Fold into measurement`. |
+
+### CON-24 — Figurative-language cluster
+
+Members: `figurative_language`, `similes`, `descriptive_language`, `sensory_details` (4).
+
+| Option | Member derivation |
+|---|---|
+| **Keep `figurative_language` parent + 3 specific sub-types** | No pre-fill change. Each member walks individually. |
+| **Merge specific sub-types into `figurative_language`** | `figurative_language` receives suggestion: `Keep as concept`. Sub-types (`similes`, `descriptive_language`, `sensory_details`) receive suggestion: `Fold into figurative_language`. |
+| **Pick one canonical (figurative_language OR descriptive_language)** | **No auto-pre-fill** — option is ambiguous (which one is the canonical?). Caption on each member reads: "CON-24: pick-one outcome — verdict here pending the parent canonical." Resolve UI should prompt the reviewer to nominate the parent before walking members; treat as a Decide-mode follow-up on the Resolve step itself. |
+
+### Mismatch detection (§11 also)
+
+For every committed per-entry verdict, the wizard checks whether it agrees with the cluster-derivation that would otherwise apply. Disagreement triggers:
+
+1. **Mismatch flag** set on the entry (persisted in `state.entries[key].cluster_mismatch = "CON-XX"`).
+2. **Auto-opens the notes drawer** on the next visit to that entry, with the prompt: "Heads up — this differs from the cluster shape you picked. Worth a quick note?"
+3. **Review summary** lists the entry under "Differs from cluster decision" with both the cluster shape and the per-entry verdict shown.
+
+Mismatch does not block export. The committed per-entry verdict wins on the exported markdown.
+
+## 18. Decision log (this session)
 
 | ID | Decision | Rationale |
 |---|---|---|
@@ -511,3 +638,7 @@ Then browser smoke (manual or chrome-devtools-mcp):
 | W14 | Review summary is the only power-user surface | Wizard stays calm |
 | W15 | Merge as destination picker; high-confidence shortcut | Verdict + target as one atomic decision |
 | W16 | Two-batch implementation | Each batch leaves tool working; Batch 1 = MVP wizard, Batch 2 = polish |
+| W17 | §11 stays Decide regardless of cluster pre-fill source | High-impact tier is the hardest line; even a strong cluster signal shouldn't downgrade conscious commit to one-click confirmation |
+| W18 | Merge is a two-stage commit (`verdict=merge` writes only with `merge_into`) | The committed shape must satisfy parser invariants; the picker is the only path that writes both atomically |
+| W19 | Broadened merge-target regex to allow `§\d+\s+` prefix; report extraction rate at Batch 1 verify | Empirical coverage: 53/78 (68%) vs 11/78 (14%) for the narrow form. 32% fallback to picker is expected, not a bug |
+| W20 | Cluster auto-prefill matrix specified for all 5 clusters (§17) | CON-12 alone wasn't enough; CON-16 option 2 and CON-24 option 3 surfaced edge cases worth pinning in writing |
