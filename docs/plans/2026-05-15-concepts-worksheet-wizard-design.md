@@ -125,16 +125,16 @@ Merge is a two-stage commit; everything else is one-stage.
 - **Picking "Fold into another" via radio (any step)**: does NOT yet write state. Opens the merge destination picker. State commit happens only when the picker's `Confirm` button is clicked, at which point `verdict=merge` and `merge_into=<target>` write together.
 - **Merge destination picker `Confirm`**: writes `verdict=merge` + `merge_into=<target>` together.
 
-### Non-commit actions (state untouched)
+### Non-commit actions (entry/export state untouched)
 
 - Opening the step (even though the radio displays a pre-fill)
-- "Decide later" (replaces "Skip")
+- "Decide later" (replaces "Skip") may mark the step in a UI-only deferred set (for the review summary), but it does not write `state.entries[key].verdict`, `merge_into`, or `curriculum_notes`
 - "← Previous"
 - Jumping to entry via top-bar search
 
 ### Invariant: empty-export hash
 
-Opening the tool, walking through any number of steps without committing, and closing the tab leaves `localStorage` empty for entries. Export then walks `raw_markdown_lines` unchanged — empty-export SHA matches source worksheet SHA. Must be verified in the Batch 1 smoke check (see §15).
+Opening the tool, walking through any number of steps without committing, and closing the tab leaves `localStorage` empty for entry decisions. UI-only wizard state such as current step index or deferred-step markers may exist, but export still walks `raw_markdown_lines` unchanged — empty-export SHA matches source worksheet SHA. Must be verified in the Batch 1 smoke check (see §15).
 
 ### Visual cue on a pre-filled radio
 
@@ -438,7 +438,7 @@ Concepts Worksheet · Curriculum Review              ● Saved locally
   - "to decide" = unfilled Decide-mode steps
   - "to confirm" = unfilled Confirm-mode steps (pre-fill rendered but not yet committed)
   - "cluster shapes" = unanswered Resolve steps
-- "Decide later" count is shown only in the review summary (not in the top bar — keeps the wizard calm).
+- "Decide later" count is shown only in the review summary (not in the top bar — keeps the wizard calm). It comes from UI-only deferred-step markers, not from exported worksheet fields.
 - **Jump to entry**: autocomplete search over canonical_keys and labels. Selecting jumps the wizard to that step (state-preserving).
 - **Review so far**: opens the review summary screen at any time (return arrow brings you back to the wizard step you were on).
 - **⚙ Advanced**: import / download JSON progress / show wizard intro / clear all progress (same set as today, minus filter actions).
@@ -475,7 +475,7 @@ Concepts Worksheet · Curriculum Review            ● Saved locally
 
 - Sections are collapsible; each row links back into the wizard at that step.
 - **Mismatch section** is informational only — the reviewer's committed verdict wins on export; the section just surfaces "you might want to revisit this."
-- **Save & Export** works regardless of `Decide later` or mismatch counts (entries in Decide later export as `<to_fill>`).
+- **Save & Export** works regardless of `Decide later` or mismatch counts. Steps marked `Decide later` are UI-only; if no verdict was committed, the corresponding entry exports as `<to_fill>`.
 
 ## 12. What's removed (vs. current tool)
 
@@ -548,7 +548,7 @@ python3 scripts/build-concepts-tool.py --build-html
 Then browser smoke (manual or chrome-devtools-mcp):
 
 1. **Empty-export hash invariant**: fresh open → click `Save & Export` without committing any step → compare exported markdown against the source worksheet → must be byte-identical (SHA-256 match). (Closing the tab alone does NOT produce an export — the empty-export check requires actually clicking Save & Export.)
-2. **Skip semantics**: open a step, hit "Decide later," advance, export → verdict line is `<to_fill>`.
+2. **Decide-later semantics**: open a step, hit "Decide later," advance, export → verdict line is `<to_fill>`; review summary lists the step under `DECIDE LATER`.
 3. **Pre-fill non-commit**: open a §13 Confirm step (pre-fill rendered), hit "← Previous" → state.entries[key].verdict still undefined; export of that entry is `<to_fill>`.
 4. **Commit roundtrip**: agree on 5 entries → export → re-import → state restored.
 5. **Merge destination picker**: pick "Fold into another" on a high-confidence entry → primary "Confirm" commits both verdict + target atomically.
