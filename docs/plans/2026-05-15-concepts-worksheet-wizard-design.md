@@ -100,10 +100,18 @@ The translation lives in the JS render and commit handlers; nothing in `build-co
 ```
 displayedVerdict =
     state.entries[key].verdict                     # if committed, always wins
-    || aiPrefillCandidate(entry, tier)             # §12/§13 + has suggested_verdict
     || clusterPrefillCandidate(entry, tier, clusterState)  # §12/§13 cluster member + Resolve has fired
+    || aiPrefillCandidate(entry, tier)             # §12/§13 + has suggested_verdict
     || null                                        # blank radio (§11, theme-overlap, or no rec)
 ```
+
+**Cluster pre-fill wins over AI pre-fill** when both apply. The intent is that a Resolve decision is the most recent expression of the reviewer's intent for that family of entries, and members should visibly track it with the "Suggested from CON-XX" caption. If AI pre-fill won first, cluster-derived suggestions would silently lose on entries that also carry an AI recommendation — exactly the entries where the Resolve was supposed to shape behavior.
+
+`clusterPrefillCandidate(entry, tier, clusterState)` returns:
+- `null` for `tier == §11` (per W17 — §11 stays Decide regardless of cluster source)
+- `null` for cluster options that map to "no pre-fill change" (e.g., CON-12 "Keep all 8 as separate canonicals", CON-22 "Keep all 6 as distinct canonicals" — full table in §17)
+- `null` for cluster options that explicitly suppress auto-prefill (CON-16 option 2 cross-field, CON-24 option 3 pick-one — see §17)
+- otherwise the cluster-derived suggested verdict (`keep` / `merge` with a target / `drop`)
 
 Pre-fill candidates are tier-gated: **§11 entries never receive a pre-fill**, even from a cluster Resolve. The cluster suggestion is rendered as text on the step (caption "Suggested from CON-XX") but the radio stays blank. See §6.4 for the §11 cluster-member Decide layout.
 
@@ -256,17 +264,17 @@ Recipe Writing                                    §13.22
 The routing rule from §3 is unambiguous: **§11 entries always render as Decide**, regardless of pre-fill source. A cluster Resolve does NOT downgrade a §11 entry to Confirm. The cluster suggestion is still surfaced — visibly, with the source caption — but the radio stays blank and the reviewer makes a conscious commit.
 
 ```
-─── §11 High-impact · Decide ──────────  step 14 of 208
-Writing                                            §11.14
-`writing`             8 appearances · Literacy/ELA
+─── §11 High-impact · Decide ──────────  step 9 of 208
+Measurement                                        §11.9
+`measurement`        66 appearances · Math
 
 §11 High-impact: review carefully.
-Why this needs attention: §11 High-impact concept (also a CON-12
+Why this needs attention: §11 High-impact concept (also a CON-23
 cluster member; cluster suggestion below).
 
-💡 Suggested from CON-12 Writing-cluster: Keep as concept
-   You picked "Use `writing` as the umbrella; collapse all
-   specific sub-types" — `writing` is the umbrella you'd keep.
+💡 Suggested from CON-23 Measurement-cluster: Keep as concept
+   You picked "Merge specific sub-types into `measurement` parent"
+   — `measurement` is the parent canonical you'd keep.
 
   Your call (no default — high-impact tier):
   ( ) Keep as concept
@@ -283,6 +291,8 @@ cluster member; cluster suggestion below).
 - Cluster suggestion appears but does NOT pre-fill the radio.
 - Reviewer picks consciously — matching cluster suggestion or diverging.
 - Diverging triggers the mismatch flag exactly the same way as on a §12/§13 Confirm-mode override.
+
+Example data verified against the Session 81 payload: `measurement` is §11 entry #9, 66 appearances; CON-23 has 5 members (`measurement` parent + `volume`, `area`, `weight`, `perimeter` sub-types).
 
 ## 7. Merge destination picker
 
@@ -384,15 +394,16 @@ One optional textarea per step, hidden behind `+ Add a note` link. Maps to works
 ─── Resolve cluster ─────────────────  CON-12 (1 of 5)
 Writing-cluster canonical shape
 
-  About this question: how should the writing cluster
-  (catch-all + 7 sub-types) resolve canonically? Your decision
-  shapes 8 related entries below.
+  How should the writing-cluster shape (catch-all + 7
+  sub-types) resolve?
+                                  (rendered from signal.question)
 
-  ( ) Keep all 8 as separate canonicals
-  ( ) Replace `writing` catch-all with the specific sub-types
-  ( ) Use `writing` as the umbrella; collapse all sub-types
+  ( ) Keep `writing` 8 as catch-all + sub-types stay canonical
+  ( ) Drop `writing` 8 + sub-types are the only canonicals
+  ( ) Merge sub-types into `writing` 8 catch-all
+                                   (rendered from signal.options)
 
-  Members (7) — click to peek:
+  Members (N) — click to peek:        (N = signal.members.length)
   · writing · narrative_writing · opinion_writing
   · descriptive_writing · how_to_writing · recipe_writing
   · informational_writing
@@ -403,6 +414,7 @@ Writing-cluster canonical shape
 ```
 
 - Cluster signal text is read straight from `payload.cluster_signals` (which the parser builds from `CLUSTER_SIGNAL_DEFINITIONS` in `build-concepts-tool.py`). The audit register remains source of truth; UI doesn't rephrase options.
+- All counts in the rendered step (member counts, "(N)" labels) are data-driven from `signal.members.length` — the design doc's mock numbers are illustrative only. The verbatim `signal.question` and `signal.options` prose may contain internal count discrepancies (e.g., CON-12's "+ 7 sub-types" / "Keep all 8" wording vs the 7-member list — `writing` 8 freq + 6 sub-types). Fixing those is an audit-register concern, out of scope for this redesign. The wizard renders verbatim regardless.
 - "Save · Continue" commits the cluster decision AND **derives per-member pre-fills** for §12/§13 members. CON-12 example:
   - **"Keep all 8 as separate canonicals"**: no pre-fill change; members walk through as Confirm (with their own AI pre-fill) or Decide (if §11 or no rec).
   - **"Drop `writing` 8 + sub-types are the only canonicals"**: `writing` receives suggestion `Remove`; §12/§13 sub-types walk with their own AI pre-fills.
@@ -535,7 +547,7 @@ python3 scripts/build-concepts-tool.py --build-html
 
 Then browser smoke (manual or chrome-devtools-mcp):
 
-1. **Empty-export hash invariant**: fresh open → close → diff source worksheet vs exported markdown → must be byte-identical (SHA-256 match).
+1. **Empty-export hash invariant**: fresh open → click `Save & Export` without committing any step → compare exported markdown against the source worksheet → must be byte-identical (SHA-256 match). (Closing the tab alone does NOT produce an export — the empty-export check requires actually clicking Save & Export.)
 2. **Skip semantics**: open a step, hit "Decide later," advance, export → verdict line is `<to_fill>`.
 3. **Pre-fill non-commit**: open a §13 Confirm step (pre-fill rendered), hit "← Previous" → state.entries[key].verdict still undefined; export of that entry is `<to_fill>`.
 4. **Commit roundtrip**: agree on 5 entries → export → re-import → state restored.
@@ -642,3 +654,4 @@ Mismatch does not block export. The committed per-entry verdict wins on the expo
 | W18 | Merge is a two-stage commit (`verdict=merge` writes only with `merge_into`) | The committed shape must satisfy parser invariants; the picker is the only path that writes both atomically |
 | W19 | Broadened merge-target regex to allow `§\d+\s+` prefix; report extraction rate at Batch 1 verify | Empirical coverage: 53/78 (68%) vs 11/78 (14%) for the narrow form. 32% fallback to picker is expected, not a bug |
 | W20 | Cluster auto-prefill matrix specified for all 5 clusters (§17) | CON-12 alone wasn't enough; CON-16 option 2 and CON-24 option 3 surfaced edge cases worth pinning in writing |
+| W21 | Cluster pre-fill wins over AI pre-fill in display order | A Resolve decision is the most recent expression of intent for a family of entries; member suggestions must visibly track it, not lose to an older AI rec |
