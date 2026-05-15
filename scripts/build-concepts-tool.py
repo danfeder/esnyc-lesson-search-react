@@ -423,6 +423,26 @@ def extract_suggested_verdict(claude_notes: str) -> str | None:
     return RECOMMEND_VERB_TO_VERDICT.get(verb)
 
 
+def extract_claude_notes_summary(claude_notes: str) -> str:
+    """Return the first sentence of claude_notes for the Confirm-step one-liner.
+
+    The wizard's Confirm step shows a single-sentence summary by default;
+    "▸ more" expands the full prose. First-sentence boundary is the first
+    period / question mark / exclamation followed by whitespace or end of
+    string (the trailing whitespace requirement avoids matching abbreviations
+    like "e.g." mid-sentence).
+
+    Returns empty string when claude_notes is empty; returns the entire
+    stripped prose when no terminator is found.
+    """
+    if not claude_notes:
+        return ""
+    match = re.search(r"^(.+?[.!?])(?:\s|$)", claude_notes.strip())
+    if match:
+        return match.group(1).strip()
+    return claude_notes.strip()
+
+
 def parse_theme_overlap(raw: str) -> dict[str, Any]:
     """Return {'flagged': bool, 'note': str}."""
     cleaned = strip_inline_comments(raw)
@@ -673,6 +693,9 @@ def entry_to_json(entry: Entry) -> dict[str, Any]:
                 entry.field_value("theme_overlap")
             ),
             "claude_notes": entry.field_value("claude_notes"),
+            "claude_notes_summary": extract_claude_notes_summary(
+                entry.field_value("claude_notes")
+            ),
             "curriculum_notes": entry.field_value("curriculum_notes"),
             "suggested_verdict": extract_suggested_verdict(
                 entry.field_value("claude_notes")
