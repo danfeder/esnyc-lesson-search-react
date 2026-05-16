@@ -9,8 +9,8 @@
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **IN PROGRESS**
-- Last milestone completed: **M1.1** (parser `claude_notes_summary`, commit `6ae69ef`)
-- Next milestone: **M1.2** (parser — `suggested_merge_target` field)
+- Last milestone completed: **M1.3** (parser `--verify-only` reports merge-target rate, commit `<this commit>`)
+- Next milestone: **M1.4** (template rewrite — rip out long-scroll, install wizard shell) — **large session, /clear recommended**
 
 ## Branch baseline at M1.0
 
@@ -36,6 +36,12 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 - **M1.0 complete (`c849fff`):** plan + status doc committed; branch verified clean against plan baseline.
 - **M1.1 complete (`6ae69ef`):** parser emits `claude_notes_summary`; 208/208 entries have non-empty summaries with terminal punctuation.
 - Per user request, scaffolded `2026-05-15-concepts-worksheet-wizard-execution-kickoff.md` as a durable per-milestone kickoff prompt so future sessions can `/clear` between milestones to keep context fresh.
+
+### Session 2 (2026-05-15)
+
+- **M1.2 complete (`b22e06a`):** parser emits `suggested_merge_target` via `Recommend merg(e|ing) into [§N ]`target`` regex with valid-key filtering plumbed through `entry_to_json` / `build_payload`. Extraction matched W19's empirical prediction exactly: 53/78 (68%) merge recommendations resolved, 25 fall through to picker by design.
+- **M1.3 complete (`<this commit>`):** `--verify-only` (and full payload runs) now print `merge-target extraction: 53 of 78 merge recommendations (68%) — 25 fall through to picker` after the existing tier-distribution line; warns if rate ever drops below 60% floor. **Smoke check #8 baseline recorded: 53/78 (68%).** Matrix will be filled at M1.17 gate.
+- Bundled in same session per Group rule (trivial parser-only TDD).
 
 ## Open questions / parked concerns
 

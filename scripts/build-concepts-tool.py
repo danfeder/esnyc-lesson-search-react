@@ -830,6 +830,32 @@ def main() -> int:
         file=sys.stderr,
     )
 
+    # Merge-target extraction rate (smoke check #8 per design §15).
+    valid_keys = {e.canonical_key for e in entries}
+    merge_rec_count = 0
+    matched_count = 0
+    for entry in entries:
+        suggested = extract_suggested_verdict(entry.field_value("claude_notes"))
+        if suggested == "merge":
+            merge_rec_count += 1
+            if extract_suggested_merge_target(
+                entry.field_value("claude_notes"), valid_keys
+            ):
+                matched_count += 1
+    pct = (100 * matched_count / merge_rec_count) if merge_rec_count else 0
+    fallthrough = merge_rec_count - matched_count
+    print(
+        f"merge-target extraction: {matched_count} of {merge_rec_count} "
+        f"merge recommendations ({pct:.0f}%) — {fallthrough} fall through to picker",
+        file=sys.stderr,
+    )
+    if merge_rec_count > 0 and pct < 60:
+        print(
+            f"WARNING: extraction rate {pct:.0f}% is below the 60% floor — "
+            f"worksheet prose may have drifted; investigate before shipping.",
+            file=sys.stderr,
+        )
+
     if args.verify_only:
         return 1 if problems else 0
 
