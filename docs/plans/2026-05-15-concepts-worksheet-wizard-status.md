@@ -9,8 +9,8 @@
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **IN PROGRESS**
-- Last milestone completed: **M1.5** (decision-debt top-bar counters wired live, commit `e25e8bc`)
-- Next milestone: **M1.6** (step machine — derived sequence + current-index storage) — medium session
+- Last milestone completed: **M1.6** (wizard step sequence + index state wired, commit `1232bba`)
+- Next milestone: **M1.7** (per-entry Confirm step renderer — §6.1 + §6.3) — large session
 
 ## Branch baseline at M1.0
 
@@ -55,6 +55,12 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 - **M1.5 complete (`e25e8bc`):** added `entryMode()` (design §3 routing), `clusterPrefillCandidate()` Batch-1 stub returning null, and the real `updateDecisionDebt()` body replacing the M1.4 stub. Wired `updateDecisionDebt()` into `setClusterState()` (newly added) and `init()` (after `renderCurrentStep()`); existing wires in `onVerdictChange` / `onMergeIntoChange` / `onImport` / `onClearState` carried over from M1.4 stub period.
 - Browser smoke (chrome-devtools-mcp `evaluate_script`): live DOM counters at baseline = **decide=46, confirm=162, resolve=5, bar=0%**; total reconciles to 208 entries + 5 cluster signals = 213. Plan estimated ~35 Decide; actual 46 because the third Decide branch (`!hasAiRec && !hasClusterRec`) catches **12 §12/§13 entries with `suggested_verdict: null`** in the worksheet (e.g., `biodiversity`, `observation`, `phases_of_matter`, `creative_writing`). Spot-checked — these legitimately lack an AI verdict, so routing them to Decide is spec-correct, not a parser bug. Decide tier breakdown: 32 §11 + 8 §12 + 6 §13. State-change wiring exercised via 4 paths (Confirm verdict commit 162→161, Decide verdict commit 46→45, `setClusterState` 5→4, manual clear back to baseline); bar advances 1/213 per commit; zero console errors.
 - M1.4 status doc bundled into M1.5 commit per kickoff default.
+
+### Session 5 (2026-05-15)
+
+- **M1.6 complete (`1232bba`):** added `state.wizard = { step_index, deferred }` to `defaultState()` + `loadState()` migration for pre-wizard state. Replaced `buildStepSequence()` stub with real impl: walks `ENTRIES` in `TIER_ORDER`, interleaves each cluster Resolve step before its earliest tier-order member (clamps stale `step_index`). Added `currentStep()` lookup. Replaced `renderCurrentStep()` stub with real dispatcher (entry / cluster / end-screen sentinel) + `updateNavButtonState()` (Prev disabled at step 0). Added three stub renderers — `renderEntryStep` (delegates to M1.4 `renderEntryCard`), `renderClusterStep` (M1.10 placeholder), `renderEndScreen` (M1.15 placeholder).
+- Browser smoke (chrome-devtools-mcp `evaluate_script`): `stepSequence.length = 213` (208 entries + 5 clusters). All 5 cluster Resolve steps fire before their first tier-order member, including the W12 test case: **CON-22 emits at idx 44, immediately before `reading_comprehension` at idx 45** (not before `reading`, which sits at §13 well after the reading-comprehension §12 row). Cluster positions: CON-23@8 → measurement@9; CON-12@38 → writing@39; CON-22@44 → reading_comprehension@45; CON-24@128 → descriptive_language@129; CON-16@157 → indigenous_knowledge@158. Current step at index 0 = `entry:plant_parts` (§11 · Decide). Cluster step probe at index 8 renders `wizard-step cluster-step` class + M1.10 placeholder text. End-screen sentinel at index 213 renders `wizard-step end-screen` + M1.15 placeholder. Nav-button states: prev disabled at step 0, enabled at step 8. M1.5 decision-debt counters unchanged (46/162/5/0%). Zero console errors throughout. `state.wizard` migration from prior schema-1 state confirmed: `{step_index: 0, deferred: []}` initialized.
+- M1.5 status doc bundled into M1.6 commit per kickoff default.
 
 ## Open questions / parked concerns
 

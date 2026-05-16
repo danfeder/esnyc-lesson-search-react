@@ -501,6 +501,23 @@ const ONBOARD_KEY = "concepts-worksheet-onboard-v1";
 
 const VERDICTS = ["keep", "merge", "new", "drop"];
 
+// Reviewer-facing labels (W8). Distinct from `verdictLabel()` (export
+// vocab: "keep / merge → / new / drop"), which stays untouched.
+// "Fold into another" is the standalone form (Pick something else radios
+// with no target picked yet); when a target IS known, use the helper
+// below so the label reads "Fold into `target`" (matches design §6.1/§6.3).
+const REVIEWER_LABELS = {
+  keep: "Keep as concept",
+  merge: "Fold into another",
+  new: "Add new concept",
+  drop: "Remove",
+};
+
+function reviewerLabelWithTarget(verdict, target) {
+  if (verdict === "merge" && target) return `Fold into \`${target}\``;
+  return REVIEWER_LABELS[verdict] || verdict;
+}
+
 // ---------- Load payload ----------
 
 const payload = JSON.parse(document.getElementById("dataPayload").textContent);
@@ -722,22 +739,236 @@ function clusterPrefillCandidate(entry) {
   return null;
 }
 
-// ---------- Render entry card (stub: filled in M1.7+) ----------
+// ---------- Render entry step (Confirm = M1.7; Decide = M1.8) ----------
 
-function renderEntryCard(entry, mode) {
-  // Stub: render a placeholder step card. Filled in by M1.5-M1.13.
+// Single source of truth for "what pre-fill does this entry's Confirm step
+// display, and where does it come from." MUST be called by BOTH the renderer
+// and any commit path so the user can't commit a value different from what
+// the screen shows. Becomes load-bearing in Batch 2 when cluster pre-fill
+// (W21) outranks AI pre-fill on cluster member entries.
+function displayedPrefillForEntry(entry) {
+  const s = getEntryState(entry.canonical_key);
+  if (s.verdict) {
+    return {
+      verdict: s.verdict,
+      merge_into: s.merge_into || null,
+      captionSource: "Saved",
+      isCommitted: true,
+    };
+  }
+  const clusterPrefill = clusterPrefillCandidate(entry); // null in Batch 1
+  if (clusterPrefill) {
+    return {
+      verdict: clusterPrefill.verdict,
+      merge_into: clusterPrefill.merge_into || null,
+      captionSource: `Suggested from ${clusterPrefill.from}`,
+      isCommitted: false,
+    };
+  }
+  if (entry.parsed.suggested_verdict) {
+    return {
+      verdict: entry.parsed.suggested_verdict,
+      merge_into: entry.parsed.suggested_merge_target || null,
+      captionSource: "Claude recommends",
+      isCommitted: false,
+    };
+  }
+  return null;
+}
+
+function renderConfirmStep(entry) {
+  const key = entry.canonical_key;
+  const prefill = displayedPrefillForEntry(entry);
+  if (!prefill) return renderDecideStep(entry);
+  const displayed = prefill.verdict;
+  const displayedTarget = prefill.merge_into;
+  const captionSource = prefill.captionSource;
+
   const card = el("article", {
-    className: "wizard-step entry-step",
-    dataset: { key: entry.canonical_key, mode },
+    className: "wizard-step entry-step confirm-mode",
+    dataset: { key, mode: "Confirm", tier: entry.tier },
   });
-  card.appendChild(el("header", { className: "step-head" },
-    el("span", { className: "step-tier-mode mono" }, `§${entry.tier} · ${mode}`),
-    el("span", { className: "step-of" }, `step ?? of ??`),
-  ));
-  card.appendChild(el("h2", {}, entry.parsed.canonical_label || entry.canonical_key));
-  card.appendChild(el("p", { className: "step-placeholder" },
-    `(Wizard step renderer not yet implemented — milestone M1.7-M1.8.)`));
+
+  card.appendChild(renderStepHead(entry, "Confirm"));
+  card.appendChild(renderTierStrip(entry.tier));
+
+  if (entry.parsed.merge_aliases && entry.parsed.merge_aliases.length > 0) {
+    card.appendChild(renderMergeAliases(entry));
+  }
+
+  card.appendChild(renderClaudeRecommendation(entry, displayed, displayedTarget, captionSource));
+  card.appendChild(renderPrimaryAgreeAction(entry, displayed, displayedTarget));
+  card.appendChild(renderPickSomethingElse(entry, displayed));
+  card.appendChild(renderNotesDrawer(entry, /*forceOpen=*/false));
+
   return card;
+}
+
+// M1.8 placeholder. Replaced by real Decide renderer in M1.8; stubbed here
+// so init can render §11 Decide entries (e.g., step 0 = `plant_parts`)
+// without throwing while M1.7 ships standalone.
+function renderDecideStep(entry) {
+  const card = el("article", {
+    className: "wizard-step entry-step decide-mode",
+    dataset: { key: entry.canonical_key, mode: "Decide", tier: entry.tier },
+  });
+  card.appendChild(renderStepHead(entry, "Decide"));
+  card.appendChild(renderTierStrip(entry.tier));
+  card.appendChild(el("p", { className: "step-placeholder muted" },
+    "(Decide renderer — M1.8.)"));
+  return card;
+}
+
+function renderStepHead(entry, mode) {
+  const totalSteps = stepSequence.length;
+  const stepNum = state.wizard.step_index + 1;
+  const head = el("header", { className: "step-head" });
+  head.appendChild(el("span", { className: `mode-chip mode-${mode.toLowerCase()}` }, mode));
+  head.appendChild(el("span", { className: "step-of" }, `step ${stepNum} of ${totalSteps}`));
+  head.appendChild(el("h2", { className: "step-title" },
+    entry.parsed.canonical_label || entry.canonical_key));
+  head.appendChild(el("div", { className: "step-key-row" },
+    el("code", {}, `\`${entry.canonical_key}\``),
+    el("span", { className: "step-meta" },
+      `${entry.parsed.frequency_primary} appearances · ${entry.parsed.recommended_primary_subject || "—"}`),
+  ));
+  return head;
+}
+
+function renderTierStrip(tier) {
+  const strip = el("div", { className: `tier-strip tier-strip-${tier}` });
+  if (tier === "11") strip.textContent = "§11 High-impact: review carefully.";
+  else if (tier === "12") strip.textContent = "§12 Mid-tier: confirm or adjust.";
+  else strip.textContent = "§13 Long-tail: quick pass; pause when unsure.";
+  return strip;
+}
+
+function renderClaudeRecommendation(entry, displayed, target, captionSource) {
+  const wrap = el("div", { className: "claude-rec" });
+  const label = displayed
+    ? reviewerLabelWithTarget(displayed, target)
+    : "(no recommendation)";
+  wrap.appendChild(el("p", { className: "claude-rec-headline" },
+    el("span", {}, "💡 "),
+    el("strong", {}, `${captionSource}: `),
+    document.createTextNode(label),
+  ));
+  const summary = entry.parsed.claude_notes_summary || "";
+  if (summary) {
+    wrap.appendChild(el("p", { className: "claude-rec-summary" }, summary));
+  }
+  if (entry.parsed.claude_notes && entry.parsed.claude_notes !== summary) {
+    const more = el("details", { className: "claude-rec-more" });
+    more.appendChild(el("summary", {}, "▸ more"));
+    const body = el("div", { className: "claude-rec-more-body" });
+    body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+    more.appendChild(body);
+    wrap.appendChild(more);
+  }
+  return wrap;
+}
+
+function renderPrimaryAgreeAction(entry, displayed, target) {
+  const key = entry.canonical_key;
+  const wrap = el("div", { className: "primary-action-row" });
+  if (!displayed) {
+    wrap.appendChild(el("p", { className: "muted" }, "(no pre-fill — pick below)"));
+    return wrap;
+  }
+  const label = reviewerLabelWithTarget(displayed, target);
+  const btn = el("button", {
+    type: "button",
+    className: "btn primary primary-agree",
+    onclick: () => {
+      if (displayed === "merge" && !target) {
+        openMergePicker(entry, /*defaultTarget=*/null);
+        return;
+      }
+      const patch = { verdict: displayed };
+      if (displayed === "merge") patch.merge_into = target;
+      setEntryState(key, patch);
+      onCommit(key);
+    },
+  }, `✓ Agree — ${label}`);
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+function renderPickSomethingElse(entry, displayed) {
+  const key = entry.canonical_key;
+  const wrap = el("details", { className: "pick-other" });
+  wrap.appendChild(el("summary", {}, "Pick something else ▾"));
+  const group = el("div", { className: "verdict-options-group" });
+  for (const v of ["keep", "merge", "drop"]) {
+    if (v === displayed) continue;
+    const opt = el("label", { className: "verdict-option" });
+    opt.appendChild(el("input", {
+      type: "radio",
+      name: `pick-other-${key}`,
+      onchange: () => onPickOtherVerdict(entry, v),
+    }));
+    opt.appendChild(el("span", {}, REVIEWER_LABELS[v]));
+    group.appendChild(opt);
+  }
+  wrap.appendChild(group);
+  // "Less common: add new concept" link (W9)
+  const newLink = el("button", {
+    type: "button",
+    className: "btn linkish",
+    onclick: () => onPickOtherVerdict(entry, "new"),
+  }, "Less common: add new concept");
+  wrap.appendChild(newLink);
+  return wrap;
+}
+
+function renderMergeAliases(entry) {
+  const block = el("div", { className: "merge-aliases-block" });
+  block.appendChild(el("div", { className: "label" }, "Merge aliases (proposed):"));
+  const ul = el("ul");
+  for (const a of entry.parsed.merge_aliases) {
+    ul.appendChild(el("li", {},
+      el("code", {}, a.alias),
+      el("span", { className: "count" }, `(${a.count})`),
+    ));
+  }
+  block.appendChild(ul);
+  return block;
+}
+
+// ---------- Commit + override handlers ----------
+
+function onCommit(key) {
+  updateDecisionDebt();
+  renderCurrentStep();
+}
+
+function onPickOtherVerdict(entry, v) {
+  if (v === "merge") {
+    openMergePicker(entry, entry.parsed.suggested_merge_target);
+    return;
+  }
+  setEntryState(entry.canonical_key, { verdict: v });
+  maybeAutoOpenNotesDrawer(entry, v, "override");
+  onCommit(entry.canonical_key);
+}
+
+function openMergePicker(entry, defaultTarget) {
+  // M1.11 fills in. Stub: commit immediately if defaultTarget is present.
+  if (defaultTarget) {
+    setEntryState(entry.canonical_key, { verdict: "merge", merge_into: defaultTarget });
+    onCommit(entry.canonical_key);
+  } else {
+    alert("Merge picker — M1.11.");
+  }
+}
+
+function maybeAutoOpenNotesDrawer(entry, verdict, trigger) {
+  // M1.12 fills in.
+}
+
+function renderNotesDrawer(entry, forceOpen) {
+  // M1.12 fills in. Stub keeps renderConfirmStep's append unconditional.
+  return el("div", { className: "notes-drawer-stub" });
 }
 
 function renderClusterSignalsPanel() {
@@ -753,24 +984,6 @@ function ensureCanonicalKeysDatalist() {
     dl.appendChild(el("option", { value: e.canonical_key, label: e.parsed.canonical_label || e.canonical_key }));
   }
   document.body.appendChild(dl);
-}
-
-// ---------- Entry change handlers ----------
-
-function onVerdictChange(key, v) {
-  setEntryState(key, { verdict: v });
-  renderCurrentStep();
-  updateDecisionDebt();
-}
-
-function onMergeIntoChange(key, value) {
-  setEntryState(key, { merge_into: value.trim() });
-  renderCurrentStep();
-  updateDecisionDebt();
-}
-
-function onNotesChange(key, field, value) {
-  setEntryState(key, { [field]: value });
 }
 
 // ---------- Saved badge ----------
@@ -1184,8 +1397,8 @@ function updateNavButtonState() {
 }
 
 function renderEntryStep(entry, mode) {
-  // Stub — M1.7 (Confirm) + M1.8 (Decide) fill in.
-  return renderEntryCard(entry, mode); // current M1.4 stub
+  if (mode === "Confirm") return renderConfirmStep(entry);
+  return renderDecideStep(entry);
 }
 
 function renderClusterStep(signal) {
