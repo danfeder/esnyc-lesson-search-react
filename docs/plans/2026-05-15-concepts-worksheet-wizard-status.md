@@ -9,7 +9,7 @@
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **SHIPPED** (M1.17 smoke gate passed 2026-05-15)
-- Last milestone completed: **M1.17** (Batch 1 smoke check gate — commit `<pending>`)
+- Last milestone completed: **M1.17** (Batch 1 smoke check gate — commit `5630a69`)
 - Next milestone: Batch 2 begins (M2.1 cluster auto-prefill matrix) — separate session
 
 ## Branch baseline at M1.0
@@ -141,7 +141,7 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 
 ### Session 16 (2026-05-15)
 
-- **M1.17 complete (`<pending>`):** all 6 Batch-1-relevant smoke checks from design §15 (#1-5, #8) PASS end-to-end against the M1.16 build; zero console errors throughout.
+- **M1.17 complete (`5630a69`):** all 6 Batch-1-relevant smoke checks from design §15 (#1-5, #8) PASS end-to-end against the M1.16 build; zero console errors throughout.
   - **#1 Empty-export SHA invariant:** PASS — `buildExportMarkdown()` SHA-256 `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03`, byte-identical to source `2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (264,428 bytes / 3547 lines). Re-verified post-fix (see below) — SHA unchanged.
   - **#2 Decide-later semantics:** PASS — defer on `plant_id` (§13 Confirm step 183/213): `state.entries.plant_id` undefined, `state.wizard.deferred = ["plant_id"]`, step_index advances 183→184, export shows `verdict: <to_fill>` for the deferred entry.
   - **#3 Pre-fill non-commit:** PASS — `recipe_writing` (§13 Confirm step 91/213) displays pre-fill "✓ Agree — Fold into `how_to_writing`"; click Previous → step 91→90, `state.entries.recipe_writing` undefined, export shows `verdict: <to_fill>`.
