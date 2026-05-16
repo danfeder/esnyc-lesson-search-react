@@ -1508,9 +1508,31 @@ function init() {
   // button. The Advanced menu item above is the always-available affordance
   // that keeps the data-safety floor working across all in-flight milestones.
 
-  // Wizard navigation buttons (wired to step machine in M1.13)
+  // Wizard navigation buttons
   document.getElementById("prevBtn").addEventListener("click", () => navStep(-1));
-  document.getElementById("nextBtn").addEventListener("click", () => navStep(+1));
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    // Next on a Confirm-mode entry doubles as the primary commit when nothing
+    // is committed yet (matches the ✓ Agree button). Use displayedPrefillForEntry
+    // — same helper the renderer uses — so render and commit can't drift.
+    const step = currentStep();
+    if (!step) return;
+    if (step.kind === "entry") {
+      const mode = entryMode(step.entry);
+      if (mode === "Confirm" && !entryFilled(step.id)) {
+        const prefill = displayedPrefillForEntry(step.entry);
+        if (!prefill) { navStep(+1); return; }
+        if (prefill.verdict === "merge" && !prefill.merge_into) {
+          openMergePicker(step.entry, null);
+          return;
+        }
+        const patch = { verdict: prefill.verdict };
+        if (prefill.verdict === "merge") patch.merge_into = prefill.merge_into;
+        setEntryState(step.id, patch);
+        onCommit(step.id);
+      }
+    }
+    navStep(+1);
+  });
   document.getElementById("deferBtn").addEventListener("click", () => navDefer());
 
   // Jump-to-entry (wired in M1.14)
@@ -1522,6 +1544,50 @@ function init() {
 
   document.getElementById("dismissOnboardingBtn").addEventListener("click", () => dismissOnboarding(true));
   maybeShowOnboarding();
+
+  // Keyboard shortcuts (Design §14)
+  //   ← / ArrowLeft → Previous
+  //   Enter         → Next (also commits if Save·Next is active)
+  //   L             → Decide later
+  //   K / M / N / D → verdict select (Confirm → onPickOtherVerdict; Decide → onDecideVerdict)
+  // Skip when the user is typing in an input/textarea, when a modifier is held,
+  // or when no step is active.
+  document.addEventListener("keydown", (ev) => {
+    const tag = (ev.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || ev.target.isContentEditable) return;
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    const step = currentStep();
+    if (!step) return;
+    switch (ev.key.toLowerCase()) {
+      case "arrowleft":
+        ev.preventDefault();
+        navStep(-1);
+        break;
+      case "enter":
+        ev.preventDefault();
+        document.getElementById("nextBtn").click();
+        break;
+      case "l":
+        ev.preventDefault();
+        navDefer();
+        break;
+      case "k":
+      case "m":
+      case "n":
+      case "d":
+        if (step.kind === "entry") {
+          ev.preventDefault();
+          const map = { k: "keep", m: "merge", n: "new", d: "drop" };
+          const v = map[ev.key.toLowerCase()];
+          if (entryMode(step.entry) === "Confirm") {
+            onPickOtherVerdict(step.entry, v);
+          } else {
+            onDecideVerdict(step.entry, v);
+          }
+        }
+        break;
+    }
+  });
 }
 
 // ---------- Step machine stubs (filled in M1.6+) ----------
@@ -1592,10 +1658,11 @@ function renderCurrentStep() {
   card.innerHTML = "";
   const step = currentStep();
   if (!step) {
-    card.appendChild(renderEndScreen()); // M1.15
-    return;
-  }
-  if (step.kind === "entry") {
+    // End-screen sentinel (M1.15). updateNavButtonState() still runs below so
+    // Next/Defer get disabled — the no-step branch in updateNavButtonState
+    // depends on always being called after every render.
+    card.appendChild(renderEndScreen());
+  } else if (step.kind === "entry") {
     const mode = entryMode(step.entry);
     card.appendChild(renderEntryStep(step.entry, mode));
   } else if (step.kind === "cluster") {
@@ -1606,10 +1673,33 @@ function renderCurrentStep() {
 }
 
 function updateNavButtonState() {
-  // Disable Previous on step 0; disable Next when step isn't "advanceable"
-  // (M1.9 fills in mode-specific rules; for M1.6 we treat advance as always allowed).
+  // Prev: disabled on step 0. Next: disabled until step is "advanceable":
+  //   Decide-mode entry → needs verdict committed
+  //   Cluster → needs answer picked
+  //   Confirm-mode entry → always enabled (Next commits displayed pre-fill if not yet committed)
+  // Defer: enabled on every wizard step.
+  const step = currentStep();
   document.getElementById("prevBtn").disabled = state.wizard.step_index <= 0;
-  document.getElementById("nextBtn").disabled = false;
+  if (!step) {
+    document.getElementById("nextBtn").disabled = true;
+    document.getElementById("deferBtn").disabled = true;
+    return;
+  }
+  if (step.kind === "cluster") {
+    const answered = getClusterState(step.id) !== undefined;
+    document.getElementById("nextBtn").disabled = !answered;
+    document.getElementById("deferBtn").disabled = false;
+    return;
+  }
+  // Entry step
+  const filled = entryFilled(step.id);
+  const mode = entryMode(step.entry);
+  if (mode === "Decide") {
+    document.getElementById("nextBtn").disabled = !filled;
+  } else {
+    document.getElementById("nextBtn").disabled = false;
+  }
+  document.getElementById("deferBtn").disabled = false;
 }
 
 function renderEntryStep(entry, mode) {
@@ -1711,8 +1801,33 @@ function renderEndScreen() {
   card.appendChild(el("p", {}, "End of wizard — milestone M1.15."));
   return card;
 }
-function navStep(delta) { /* M1.13 */ }
-function navDefer() { /* M1.13 */ }
+function navStep(delta) {
+  const newIndex = state.wizard.step_index + delta;
+  if (newIndex < 0 || newIndex >= stepSequence.length) {
+    // End of sequence: render end screen (M1.15 sentinel).
+    if (newIndex === stepSequence.length) {
+      state.wizard.step_index = newIndex;
+      saveState();
+      renderCurrentStep();
+    }
+    return;
+  }
+  state.wizard.step_index = newIndex;
+  saveState();
+  renderCurrentStep();
+}
+
+function navDefer() {
+  // Mark current step as deferred in UI-only set; advance without writing entry state.
+  const step = currentStep();
+  if (!step) return;
+  const stepId = step.kind === "entry" ? step.id : step.id;  // both unique
+  if (!state.wizard.deferred.includes(stepId)) {
+    state.wizard.deferred.push(stepId);
+    saveState();
+  }
+  navStep(+1);
+}
 function onJumpToEntry(key) { /* M1.14 */ }
 function updateDecisionDebt() {
   let toDecide = 0;
