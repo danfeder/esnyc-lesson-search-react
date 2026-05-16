@@ -1828,7 +1828,29 @@ function navDefer() {
   }
   navStep(+1);
 }
-function onJumpToEntry(key) { /* M1.14 */ }
+function onJumpToEntry(value) {
+  if (!value) return;
+  // Match by canonical_key first; fall back to label.
+  let foundIndex = -1;
+  for (let i = 0; i < stepSequence.length; i++) {
+    const s = stepSequence[i];
+    if (s.kind === "entry" && (s.id === value || s.entry.parsed.canonical_label === value)) {
+      foundIndex = i;
+      break;
+    }
+    if (s.kind === "cluster" && s.id === value) {
+      foundIndex = i;
+      break;
+    }
+  }
+  if (foundIndex < 0) {
+    alert(`No entry/cluster found for \`${value}\``);
+    return;
+  }
+  state.wizard.step_index = foundIndex;
+  saveState();
+  renderCurrentStep();
+}
 function updateDecisionDebt() {
   let toDecide = 0;
   let toConfirm = 0;
