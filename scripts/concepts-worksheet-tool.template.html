@@ -804,19 +804,113 @@ function renderConfirmStep(entry) {
   return card;
 }
 
-// M1.8 placeholder. Replaced by real Decide renderer in M1.8; stubbed here
-// so init can render §11 Decide entries (e.g., step 0 = `plant_parts`)
-// without throwing while M1.7 ships standalone.
 function renderDecideStep(entry) {
+  const key = entry.canonical_key;
+  const stateForEntry = getEntryState(key);
+  const verdict = stateForEntry.verdict;
+  const aiSuggestion = entry.parsed.suggested_verdict;
+  const clusterSuggestion = clusterPrefillCandidate(entry); // null in Batch 1
+
   const card = el("article", {
     className: "wizard-step entry-step decide-mode",
-    dataset: { key: entry.canonical_key, mode: "Decide", tier: entry.tier },
+    dataset: { key, mode: "Decide", tier: entry.tier },
   });
+
   card.appendChild(renderStepHead(entry, "Decide"));
   card.appendChild(renderTierStrip(entry.tier));
-  card.appendChild(el("p", { className: "step-placeholder muted" },
-    "(Decide renderer — M1.8.)"));
+  card.appendChild(renderWhyAttention(entry));
+
+  // Theme-overlap callout (more prominent on Decide steps)
+  if (entry.parsed.theme_overlap && entry.parsed.theme_overlap.flagged) {
+    const cb = el("div", { className: "theme-overlap-callout" });
+    cb.innerHTML = `<strong>⚠ Theme overlap.</strong> ${renderInlineMarkdown(entry.parsed.theme_overlap.note)}`;
+    card.appendChild(cb);
+  }
+
+  if (entry.parsed.merge_aliases && entry.parsed.merge_aliases.length > 0) {
+    card.appendChild(renderMergeAliases(entry));
+  }
+
+  // Claude's recommendation if any — shown but radio stays blank.
+  if (aiSuggestion || clusterSuggestion) {
+    const source = clusterSuggestion
+      ? `Suggested from ${clusterSuggestion.from}`
+      : "Claude recommends";
+    const v = clusterSuggestion ? clusterSuggestion.verdict : aiSuggestion;
+    const t = clusterSuggestion ? clusterSuggestion.merge_into : entry.parsed.suggested_merge_target;
+    const wrap = el("div", { className: "claude-rec" });
+    const targetSuffix = (v === "merge" && t) ? ` \`${t}\`` : "";
+    wrap.appendChild(el("p", { className: "claude-rec-headline" },
+      el("span", {}, "💡 "),
+      el("strong", {}, `${source}: `),
+      document.createTextNode(`${REVIEWER_LABELS[v] || v}${targetSuffix}`),
+    ));
+    if (entry.parsed.claude_notes) {
+      const body = el("div", { className: "claude-rec-body-expanded" });
+      body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+      wrap.appendChild(body);
+    }
+    card.appendChild(wrap);
+  } else if (entry.parsed.claude_notes) {
+    // No suggestion but notes exist — still show them.
+    const wrap = el("div", { className: "claude-rec" });
+    const body = el("div", { className: "claude-rec-body-expanded" });
+    body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+    wrap.appendChild(body);
+    card.appendChild(wrap);
+  }
+
+  // ---- Verdict radio group (blank — no pre-fill, even if cluster suggestion present) ----
+  const fs = el("fieldset", { className: "verdict-options-group" });
+  fs.appendChild(el("legend", {},
+    "Your call (no default", entry.tier === "11" ? " — high-impact tier" : "", "):"
+  ));
+  for (const v of ["keep", "merge", "drop"]) {
+    const label = el("label", { className: "verdict-option" });
+    label.appendChild(el("input", {
+      type: "radio",
+      name: `decide-${key}`,
+      checked: verdict === v,
+      onchange: () => onDecideVerdict(entry, v),
+    }));
+    label.appendChild(el("span", {}, REVIEWER_LABELS[v]));
+    fs.appendChild(label);
+  }
+  card.appendChild(fs);
+  const newLink = el("button", {
+    type: "button",
+    className: "btn linkish",
+    onclick: () => onDecideVerdict(entry, "new"),
+  }, "Less common: add new concept");
+  card.appendChild(newLink);
+
+  // Notes drawer (M1.12)
+  card.appendChild(renderNotesDrawer(entry, false));
+
   return card;
+}
+
+function renderWhyAttention(entry) {
+  // Priority order per design §3.
+  const theme = entry.parsed.theme_overlap;
+  let reason = null;
+  if (theme && theme.flagged) {
+    reason = "Theme overlap with themes worksheet.";
+  } else if (clusterPrefillCandidate(entry)) {
+    // (Batch 2 path) revisit-mode + Differs-from-cluster + Part-of-cluster-no-decision
+    // For Batch 1 this branch is unreachable (clusterPrefillCandidate stays null)
+    reason = "(Cluster reason — Batch 2.)";
+  } else if (entry.tier === "11") {
+    reason = "§11 High-impact concept.";
+  } else if (!entry.parsed.suggested_verdict) {
+    reason = "No confident recommendation.";
+  }
+  const wrap = el("div", { className: "why-attention" });
+  if (reason) {
+    wrap.appendChild(el("span", { className: "why-label" }, "Why this needs attention: "));
+    wrap.appendChild(document.createTextNode(reason));
+  }
+  return wrap;
 }
 
 function renderStepHead(entry, mode) {
@@ -949,6 +1043,21 @@ function onPickOtherVerdict(entry, v) {
   }
   setEntryState(entry.canonical_key, { verdict: v });
   maybeAutoOpenNotesDrawer(entry, v, "override");
+  onCommit(entry.canonical_key);
+}
+
+function onDecideVerdict(entry, v) {
+  if (v === "merge") {
+    openMergePicker(entry, entry.parsed.suggested_merge_target);
+    return;
+  }
+  setEntryState(entry.canonical_key, { verdict: v });
+  // Auto-open notes drawer on new/drop and on override (M1.12)
+  if (v === "new" || v === "drop") {
+    maybeAutoOpenNotesDrawer(entry, v, "new-or-drop");
+  } else if (entry.parsed.suggested_verdict && v !== entry.parsed.suggested_verdict) {
+    maybeAutoOpenNotesDrawer(entry, v, "override");
+  }
   onCommit(entry.canonical_key);
 }
 
