@@ -2,14 +2,15 @@
 
 > **Plan:** `2026-05-15-concepts-worksheet-wizard-plan.md`
 > **Design:** `2026-05-15-concepts-worksheet-wizard-design.md`
-> **Kickoff:** `2026-05-15-concepts-tool-simplification-kickoff.md`
+> **Per-milestone kickoff:** `2026-05-15-concepts-worksheet-wizard-execution-kickoff.md` ← paste at start of each fresh session
+> **Original brainstorm kickoff:** `2026-05-15-concepts-tool-simplification-kickoff.md` (design phase only; do not re-execute)
 
 ## Current state
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **IN PROGRESS**
-- Last milestone completed: **M1.0** (plan + status doc scaffolded, branch verified)
-- Next milestone: **M1.1** (parser — `claude_notes_summary` field)
+- Last milestone completed: **M1.1** (parser `claude_notes_summary`, commit `6ae69ef`)
+- Next milestone: **M1.2** (parser — `suggested_merge_target` field)
 
 ## Branch baseline at M1.0
 
@@ -32,7 +33,9 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 - Read design end-to-end (`2026-05-15-concepts-worksheet-wizard-design.md`).
 - Drafted plan; 3 review rounds with the user surfacing 11 findings total (6 P1/P2 fixes in round 1, 3 in round 2, 2 P3 nits in round 3). Plan v4 signed off for execution with per-milestone review.
 - Committed design-doc clarifications standalone (`dd7d45b`) before plan finalization.
-- **M1.0 complete:** branch verified clean against plan baseline; status doc scaffolded.
+- **M1.0 complete (`c849fff`):** plan + status doc committed; branch verified clean against plan baseline.
+- **M1.1 complete (`6ae69ef`):** parser emits `claude_notes_summary`; 208/208 entries have non-empty summaries with terminal punctuation.
+- Per user request, scaffolded `2026-05-15-concepts-worksheet-wizard-execution-kickoff.md` as a durable per-milestone kickoff prompt so future sessions can `/clear` between milestones to keep context fresh.
 
 ## Open questions / parked concerns
 
