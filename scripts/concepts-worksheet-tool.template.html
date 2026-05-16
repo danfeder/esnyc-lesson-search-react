@@ -40,19 +40,25 @@
     --tier-13: #1f5a47;
     --tier-13-soft: #e6efea;
 
-    /* Mode chip tints */
-    --mode-confirm: #5e5e58;
-    --mode-confirm-soft: #ede9df;
+    /* Mode chip tints (plan §2353: Confirm=gray-blue, Resolve=amber, Decide=red-orange) */
+    --mode-confirm: #4a5a6a;
+    --mode-confirm-soft: #e4e9ee;
     --mode-resolve: #b45309;
     --mode-resolve-soft: #fdf3da;
-    --mode-decide: #a4143c;
-    --mode-decide-soft: #f6d1da;
+    --mode-decide: #b0331d;
+    --mode-decide-soft: #fbe4dc;
+
+    /* Notes drawer tints */
+    --notes-bg: #fbfaf2;
+    --notes-bg-strong: #f3f1e3;
+    --notes-border: #d6d2c2;
 
     --card-max: 720px;
     --radius: 10px;
     --radius-sm: 6px;
     --shadow-card: 0 1px 0 rgba(20, 20, 18, 0.04), 0 4px 12px -8px rgba(20, 20, 18, 0.08);
     --shadow-panel: 0 1px 2px rgba(20, 20, 18, 0.04);
+    --shadow-overlay: 0 6px 22px -10px rgba(20, 20, 18, 0.22);
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   }
@@ -127,19 +133,27 @@
     background: var(--warn);
   }
 
-  /* Decision-debt counters (M1.5 wires real counts) */
+  /* Decision-debt counters (M1.5 wires real counts; M1.16 visual hierarchy) */
   .decision-debt {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: baseline;
+    gap: 16px;
     font-size: 12.5px;
     color: var(--muted);
     flex-wrap: wrap;
   }
   .decision-debt b { color: var(--text-strong); }
+  /* Decide is the highest-priority counter — larger, accent-colored numeral */
+  .decision-debt .debt-decide { font-size: 13px; }
+  .decision-debt .debt-decide b {
+    font-size: 16px;
+    color: var(--mode-decide);
+  }
+  .decision-debt .debt-confirm b { font-size: 14px; }
+  .decision-debt .debt-resolve b { font-size: 13px; }
   .debt-bar {
     display: inline-block;
-    width: 80px;
+    width: 96px;
     height: 6px;
     background: var(--border);
     border-radius: 3px;
@@ -271,12 +285,13 @@
   }
   .wizard-nav #nextBtn { margin-left: auto; }
 
-  /* Step head + placeholder */
+  /* Step head: chip + step-of share row 1; title + key-row break to row 2/3 */
   .step-head {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 12px 14px;
+    margin-bottom: 4px;
     font-size: 12.5px;
     color: var(--muted);
   }
@@ -284,11 +299,32 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .step-of { margin-left: auto; }
+  .step-of {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
   .step-placeholder {
     color: var(--muted);
     font-style: italic;
   }
+  .step-head .step-title {
+    flex-basis: 100%;
+    margin: 8px 0 2px;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-strong);
+  }
+  .step-head .step-key-row {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .step-head .step-key-row code { color: var(--text-strong); }
   .wizard-step h2 {
     margin: 4px 0 12px;
     font-size: 20px;
@@ -299,33 +335,40 @@
   .mode-chip {
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 999px;
     font-size: 11.5px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
   }
-  .mode-chip[data-mode="confirm"] {
+  /* Some renderers (cluster step §9) ship `mode-resolve` as a second class
+     instead of `data-mode="resolve"`; cover both spellings. */
+  .mode-chip[data-mode="confirm"],
+  .mode-chip.mode-confirm {
     background: var(--mode-confirm-soft);
     color: var(--mode-confirm);
   }
-  .mode-chip[data-mode="resolve"] {
+  .mode-chip[data-mode="resolve"],
+  .mode-chip.mode-resolve {
     background: var(--mode-resolve-soft);
     color: var(--mode-resolve);
   }
-  .mode-chip[data-mode="decide"] {
+  .mode-chip[data-mode="decide"],
+  .mode-chip.mode-decide {
     background: var(--mode-decide-soft);
     color: var(--mode-decide);
   }
 
-  /* ---------- Tier strip (filled in by M1.7+) ---------- */
+  /* ---------- Tier strip (full-width band inside card, plan §2354) ---------- */
   .tier-strip {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11.5px;
+    display: block;
+    padding: 6px 12px;
+    margin: 8px 0 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 500;
+    border-left: 3px solid currentColor;
   }
   .tier-strip[data-tier="11"] {
     background: var(--tier-11-soft);
@@ -417,12 +460,421 @@
     gap: 8px;
   }
 
+  /* ---------- Why-this-attention row (Decide mode) ---------- */
+  .why-attention {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .why-attention .why-label {
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .theme-overlap-callout {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    background: var(--warn-soft);
+    border: 1px solid var(--warn-border);
+    border-radius: var(--radius-sm);
+    color: var(--warn);
+    font-size: 13px;
+  }
+
+  /* ---------- Claude recommendation block ---------- */
+  .claude-rec {
+    margin: 8px 0 14px;
+    padding: 12px 14px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .claude-rec-headline {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    color: var(--text-strong);
+  }
+  .claude-rec-summary {
+    margin: 0;
+    color: var(--text);
+  }
+  .claude-rec-body-expanded {
+    margin: 6px 0 0;
+    color: var(--text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .claude-rec-more {
+    margin-top: 6px;
+  }
+  .claude-rec-more > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 12.5px;
+    list-style: none;
+    user-select: none;
+  }
+  .claude-rec-more > summary::-webkit-details-marker { display: none; }
+  .claude-rec-more > summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    color: var(--hint);
+  }
+  .claude-rec-more[open] > summary::before { content: "▾"; }
+  .claude-rec-more-body {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+
+  /* ---------- Verdict options group (Decide radio fieldset) ---------- */
+  .verdict-options-group {
+    margin: 6px 0 12px;
+    padding: 10px 14px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+  }
+  .verdict-options-group legend {
+    padding: 0 6px;
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .verdict-options-group .verdict-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 14px 4px 0;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13.5px;
+  }
+  .verdict-options-group .verdict-option:hover {
+    background: var(--panel-soft);
+  }
+  .verdict-options-group .verdict-option input[type="radio"] {
+    accent-color: var(--accent);
+    margin: 0;
+  }
+
+  /* ---------- Primary action (Confirm "Agree" button row) ---------- */
+  .primary-action-row {
+    margin: 10px 0 12px;
+  }
+  .primary-action-row .muted {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+  }
+  button.btn.primary-agree {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14.5px;
+    font-weight: 600;
+  }
+
+  /* ---------- Pick something else (low-contrast expand) ---------- */
+  details.pick-other {
+    margin: 6px 0 12px;
+  }
+  details.pick-other > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 4px 0;
+    font-size: 13px;
+    color: var(--muted);
+    user-select: none;
+  }
+  details.pick-other > summary::-webkit-details-marker { display: none; }
+  details.pick-other > summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    color: var(--hint);
+  }
+  details.pick-other[open] > summary::before { content: "▾"; }
+  details.pick-other > summary:hover { color: var(--text); }
+  details.pick-other .verdict-options-group {
+    margin-top: 8px;
+    background: var(--panel-soft);
+  }
+  button.btn.linkish {
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    color: var(--muted);
+    font-size: 12.5px;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  button.btn.linkish:hover { color: var(--text); }
+
+  /* ---------- Merge picker (in-card panel) ---------- */
+  .merge-picker {
+    margin: 14px -4px 0;
+    padding: 14px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-overlay);
+  }
+  .merge-picker h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .merge-shortcut {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+  }
+  .merge-shortcut .muted {
+    margin: 0 0 6px;
+    color: var(--accent-strong);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .merge-shortcut-confirm {
+    width: 100%;
+    padding: 8px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .merge-picker > .muted {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin: 4px 0 6px;
+  }
+  .merge-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    font-size: 13px;
+  }
+  .merge-input:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  .merge-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  /* ---------- Merge aliases block (Confirm-mode evidence) ---------- */
+  .merge-aliases-block {
+    margin: 6px 0 12px;
+    padding: 8px 12px;
+    background: var(--panel-soft);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .merge-aliases-block .label {
+    font-weight: 600;
+    color: var(--text-strong);
+    margin-bottom: 2px;
+  }
+  .merge-aliases-block .count {
+    color: var(--hint);
+    margin-left: 4px;
+  }
+
+  /* ---------- Notes drawer (§8) ---------- */
+  details.notes-drawer {
+    margin: 12px 0 6px;
+    border: 1px solid var(--notes-border);
+    border-radius: var(--radius-sm);
+    background: var(--notes-bg);
+  }
+  details.notes-drawer > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--muted);
+    user-select: none;
+  }
+  details.notes-drawer > summary::-webkit-details-marker { display: none; }
+  details.notes-drawer > summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    color: var(--hint);
+  }
+  details.notes-drawer[open] > summary::before { content: "▾"; }
+  details.notes-drawer[open] {
+    background: var(--notes-bg-strong);
+  }
+  details.notes-drawer[open] > summary {
+    color: var(--text);
+    font-weight: 500;
+    padding-bottom: 4px;
+  }
+  .drawer-prompt {
+    margin: 0 12px 6px;
+    padding: 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  textarea.notes-input {
+    display: block;
+    width: calc(100% - 24px);
+    min-height: 72px;
+    margin: 0 12px 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--notes-border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+  textarea.notes-input:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  /* ---------- Cluster Resolve step (§9) ---------- */
+  .cluster-question {
+    margin: 8px 0 10px;
+    padding: 10px 12px;
+    background: var(--mode-resolve-soft);
+    border-left: 3px solid var(--mode-resolve);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--text-strong);
+    line-height: 1.5;
+  }
+  .cluster-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 0 14px;
+  }
+  .cluster-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    cursor: pointer;
+    font-size: 13.5px;
+    line-height: 1.4;
+  }
+  .cluster-option:hover {
+    background: var(--panel-soft);
+    border-color: var(--border-strong);
+  }
+  .cluster-option.selected {
+    background: var(--mode-resolve-soft);
+    border-color: var(--mode-resolve);
+  }
+  .cluster-option input[type="radio"] {
+    accent-color: var(--mode-resolve);
+    margin: 2px 0 0;
+  }
+  .cluster-option .option-text { flex: 1; }
+  .cluster-members {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .cluster-members > div:first-child {
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .cluster-members ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+  }
+  .cluster-members li {
+    margin: 3px 0;
+    line-height: 1.5;
+  }
+  button.member-peek {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--accent);
+  }
+  button.member-peek:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  /* ---------- End screen (§10) ---------- */
+  .wizard-step.end-screen h2 {
+    font-size: 24px;
+    margin: 0 0 14px;
+    color: var(--text-strong);
+  }
+  .end-summary {
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+  .end-summary > div { margin: 0; }
+  .end-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  /* Note: renderEndScreen ships inline font-size/padding on the Save & Export
+     button (plan §2227-2266). Keep those inline values authoritative; this
+     rule just adds shared end-screen button color/weight so the inline
+     overrides win where present. */
+  .end-actions .btn.primary { font-weight: 600; }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 720px) {
     .top-row { padding: 10px 16px; gap: 10px; }
     .jump-input { width: 140px; }
     main.wizard-layout { margin: 16px auto 60px; padding: 0 12px; }
     .wizard-card { padding: 18px; }
+    .step-head .step-title { font-size: 19px; }
+    .merge-picker { margin-left: -2px; margin-right: -2px; padding: 12px; }
+    .verdict-options-group .verdict-option { display: flex; margin-right: 0; }
+    .decision-debt { gap: 10px; }
+    .decision-debt .debt-decide b { font-size: 15px; }
   }
 </style>
 </head>
