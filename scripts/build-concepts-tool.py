@@ -296,6 +296,16 @@ RECOMMEND_VERB_TO_VERDICT = {
     "added": "new",
     "adding": "new",
 }
+# Match "Recommend merge into `target`" / "Recommend merging into §11 `target` 11"
+# in claude_notes prose. The §\d+\s+ prefix is optional because the worksheet's
+# §-prefixed form is far more common than the bare-key form. Per W19, empirical
+# coverage is 53/78 (68%) on the Session 81 worksheet. Unmatched cases (e.g.,
+# "Recommend either merge into A OR keep standalone") legitimately fall through
+# to the merge destination picker.
+SUGGESTED_MERGE_TARGET_RE = re.compile(
+    r"Recommend\s+merg(?:e|ing)\s+into\s+(?:§\d+\s+)?`([a-z_]+)`",
+    re.IGNORECASE,
+)
 
 
 # ---------- Data classes ----------
@@ -441,6 +451,32 @@ def extract_claude_notes_summary(claude_notes: str) -> str:
     if match:
         return match.group(1).strip()
     return claude_notes.strip()
+
+
+def extract_suggested_merge_target(
+    claude_notes: str,
+    valid_keys: set[str],
+) -> str | None:
+    """Return Claude's high-confidence merge target if claude_notes names one.
+
+    Returns None when:
+      - no `Recommend merg(e|ing) into ...` clause is present
+      - the named target isn't in the parsed canonical_key set (typo / stale ref)
+      - multiple ambiguous targets are present (only the FIRST match is examined;
+        ambiguity surfaces empirically as unmatched targets)
+
+    Used by the wizard's merge destination picker to render a single-click
+    "Claude suggests → X [Confirm]" shortcut (design §7.1).
+    """
+    if not claude_notes:
+        return None
+    match = SUGGESTED_MERGE_TARGET_RE.search(claude_notes)
+    if not match:
+        return None
+    target = match.group(1)
+    if target not in valid_keys:
+        return None
+    return target
 
 
 def parse_theme_overlap(raw: str) -> dict[str, Any]:
@@ -646,7 +682,7 @@ def verify_invariants(entries: list[Entry]) -> list[str]:
 # ---------- Emit JSON payload ----------
 
 
-def entry_to_json(entry: Entry) -> dict[str, Any]:
+def entry_to_json(entry: Entry, valid_keys: set[str]) -> dict[str, Any]:
     """Serialize one Entry to the JSON payload shape consumed by the HTML tool."""
     fields_json: dict[str, dict[str, Any]] = {}
     for fname, fv in entry.fields.items():
@@ -700,6 +736,10 @@ def entry_to_json(entry: Entry) -> dict[str, Any]:
             "suggested_verdict": extract_suggested_verdict(
                 entry.field_value("claude_notes")
             ),
+            "suggested_merge_target": extract_suggested_merge_target(
+                entry.field_value("claude_notes"),
+                valid_keys,
+            ),
         },
     }
 
@@ -708,6 +748,7 @@ def build_payload(
     entries: list[Entry],
     raw_lines: list[str],
 ) -> dict[str, Any]:
+    valid_keys = {e.canonical_key for e in entries}
     return {
         "schema_version": 1,
         "worksheet_filename": DEFAULT_WORKSHEET.name,
@@ -720,7 +761,7 @@ def build_payload(
         "field_labels": FIELD_LABELS,
         "cluster_signals": CLUSTER_SIGNAL_DEFINITIONS,
         "entry_count": len(entries),
-        "entries": [entry_to_json(e) for e in entries],
+        "entries": [entry_to_json(e, valid_keys) for e in entries],
         "raw_markdown_lines": raw_lines,
     }
 
