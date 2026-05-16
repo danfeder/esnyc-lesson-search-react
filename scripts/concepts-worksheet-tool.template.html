@@ -590,6 +590,7 @@ function setClusterState(id, optionIndex) {
     state.cluster_signals[id] = optionIndex;
   }
   saveState();
+  updateDecisionDebt();
 }
 
 // ---------- DOM utils ----------
@@ -689,6 +690,30 @@ function tierReviewDepth(tier) {
   if (tier === "11") return "review carefully";
   if (tier === "12") return "confirm or adjust";
   return "quick pass; pause when unsure";
+}
+
+// ---------- Mode routing (design §3) ----------
+
+function entryMode(entry) {
+  // Mode routing per design §3. Returns "Confirm" or "Decide".
+  // (Resolve is a cluster-step mode, not per-entry.)
+  if (entry.tier === "11") return "Decide";
+  const theme = entry.parsed.theme_overlap;
+  if (theme && theme.flagged) return "Decide";
+  const hasAiRec = entry.parsed.suggested_verdict
+    && VERDICTS.includes(entry.parsed.suggested_verdict);
+  const hasClusterRec = !!clusterPrefillCandidate(entry); // M1.10
+  if (!hasAiRec && !hasClusterRec) return "Decide";
+  // Revisit-as-Decide: previously committed verdict differs from AI rec.
+  const committed = getEntryState(entry.canonical_key).verdict;
+  if (committed && committed !== entry.parsed.suggested_verdict) return "Decide";
+  return "Confirm";
+}
+
+function clusterPrefillCandidate(entry) {
+  // Stub for M1.5 — actual cluster→member derivation is M2.1 (Batch 2).
+  // Batch 1 always returns null, so cluster pre-fills don't yet propagate.
+  return null;
 }
 
 // ---------- Render entry card (stub: filled in M1.7+) ----------
@@ -1006,6 +1031,7 @@ function init() {
 
   // Render the current step into #wizardCard. Stubbed in M1.6.
   renderCurrentStep();
+  updateDecisionDebt();
 
   // Top-bar buttons
   document.getElementById("advancedBtn").addEventListener("click", (ev) => {
@@ -1077,7 +1103,29 @@ function renderCurrentStep() {
 function navStep(delta) { /* M1.13 */ }
 function navDefer() { /* M1.13 */ }
 function onJumpToEntry(key) { /* M1.14 */ }
-function updateDecisionDebt() { /* M1.5 */ }
+function updateDecisionDebt() {
+  let toDecide = 0;
+  let toConfirm = 0;
+  for (const entry of ENTRIES) {
+    const filled = entryFilled(entry.canonical_key);
+    if (filled) continue;
+    const mode = entryMode(entry);
+    if (mode === "Decide") toDecide++;
+    else toConfirm++;
+  }
+  let unresolvedClusters = 0;
+  for (const signal of CLUSTER_SIGNALS) {
+    if (getClusterState(signal.id) === undefined) unresolvedClusters++;
+  }
+  document.getElementById("debtDecideCount").textContent = toDecide.toString();
+  document.getElementById("debtConfirmCount").textContent = toConfirm.toString();
+  document.getElementById("debtResolveCount").textContent = unresolvedClusters.toString();
+  // Progress bar tracks (1 - debt/total).
+  const total = ENTRIES.length + CLUSTER_SIGNALS.length;
+  const remaining = toDecide + toConfirm + unresolvedClusters;
+  const pct = total > 0 ? (100 * (total - remaining) / total) : 0;
+  document.getElementById("debtBar").style.width = `${pct}%`;
+}
 
 init();
 </script>

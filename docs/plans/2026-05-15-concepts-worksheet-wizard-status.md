@@ -9,8 +9,8 @@
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **IN PROGRESS**
-- Last milestone completed: **M1.3** (parser `--verify-only` reports merge-target rate, commit `08e42d1`)
-- Next milestone: **M1.4** (template rewrite — rip out long-scroll, install wizard shell) — **large session, /clear recommended**
+- Last milestone completed: **M1.4** (template rewrite — long-scroll out, wizard shell in, `reviewer_note` channel removed per W5, commit `53024ca`)
+- Next milestone: **M1.5** (top-bar decision-debt counters) — small session
 
 ## Branch baseline at M1.0
 
@@ -43,6 +43,13 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 - **M1.3 complete (`08e42d1`):** `--verify-only` (and full payload runs) now print `merge-target extraction: 53 of 78 merge recommendations (68%) — 25 fall through to picker` after the existing tier-distribution line; warns if rate ever drops below 60% floor. **Smoke check #8 baseline recorded: 53/78 (68%).** Matrix will be filled at M1.17 gate.
 - Bundled in same session per Group rule (trivial parser-only TDD).
 
+### Session 3 (2026-05-15)
+
+- **M1.4 complete (`53024ca`):** template rewritten end-to-end (2198→1085 lines; -1462/+349). CSS replaced with ~290-line wizard-shell draft (single-card layout, top-bar decision-debt region, mode-chip + tier-strip tokens for M1.5+); body HTML swapped to `<header.top>` + single-card `<main>` + three-button nav + simplified onboarding modal. JS deletions: filter-state quartet, `buildSubjectChips`/`subjectCounts`/`setFilter`/`applyFilters`/`updateStatusCounts`, `parseReviewerNotesFromMarkdown`, `renderAllEntries`, `renderClusterSignalCard`, `updateClusterSignalMembers`, `updateProgress`, `scrollToEntry`/`scrollToClusterSignal`, `updateEntryCardChrome`. JS stubs added: `renderEntryCard(entry, mode)`, `renderClusterSignalsPanel`, `buildStepSequence`, `renderCurrentStep`, `navStep`, `navDefer`, `onJumpToEntry`, `updateDecisionDebt`. `reviewer_note` channel fully removed (W5): `buildExportMarkdown` no longer emits the HTML comment; `onImport` no longer parses it; legacy files import without alert noise. `init()` rewritten per plan Step 5; `onClearState` + `onVerdictChange` + `onMergeIntoChange` redirected to the new stubs. Preserved utilities: `el`, `escapeHtml`, `renderInlineMarkdown`, entry status helpers (`entryFilled`, `entryVerdict`, `entryMergeInto`, `entryNeedsMergeTarget`), `verdictLabel`, `tierReviewDepth`, `ensureCanonicalKeysDatalist`, `setBadgeDirty`, `clusterSignalCommentBlock`, `downloadFile`, `onExport`, `onDownloadJson`, `parseEntryEditsFromMarkdown`, `parseClusterSignalsFromMarkdown`, onboarding helpers, `toggleAdvancedMenu`.
+- **Smoke check #1 (Empty-export SHA invariant) PASS** — `buildExportMarkdown()` SHA-256 = `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03`, byte-identical to source `2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (264,428 bytes, 3547 lines). Verified via chrome-devtools-mcp `evaluate_script` against the built artifact.
+- Browser smoke (chrome-devtools-mcp): zero console errors; onboarding modal renders + dismisses; top bar shows all expected pieces (brand, saved badge, 0/0/0 debt counters, jump-to-entry, disabled Review-so-far, ⚙ Advanced); placeholder body line "Wizard step machine not yet wired. 208 entries loaded." renders; Advanced menu opens with all 5 items including "Save & Export markdown ↓".
+- `tierReviewDepth()` refreshed to W10 wording ("review carefully" / "confirm or adjust" / "quick pass; pause when unsure") since renderers in M1.7+ will consume it.
+
 ## Open questions / parked concerns
 
 (none yet)
@@ -53,7 +60,7 @@ Recorded at M1.17 (Batch 1 gate) and again at Batch 2 conclusion.
 
 | # | Check | M1.17 result |
 |---|---|---|
-| 1 | Empty-export SHA invariant | — |
+| 1 | Empty-export SHA invariant | PASS @ M1.4 (`53024ca`, 2026-05-15) |
 | 2 | Decide-later semantics | — |
 | 3 | Pre-fill non-commit | — |
 | 4 | Commit roundtrip | — |
