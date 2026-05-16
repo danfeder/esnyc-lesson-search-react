@@ -1654,21 +1654,24 @@ function currentStep() {
 
 function renderCurrentStep() {
   const card = document.getElementById("wizardCard");
-  if (!card) return;
+  const nav = document.getElementById("wizardNav");
   card.innerHTML = "";
   const step = currentStep();
   if (!step) {
-    // End-screen sentinel (M1.15). updateNavButtonState() still runs below so
-    // Next/Defer get disabled — the no-step branch in updateNavButtonState
-    // depends on always being called after every render.
+    // End screen: step_index === stepSequence.length. Hide the bottom nav —
+    // end-screen has its own ← Back / Save & Export buttons; leaving
+    // Previous/Decide-later/Next visible would risk stale button state.
     card.appendChild(renderEndScreen());
-  } else if (step.kind === "entry") {
+    nav.classList.add("hidden");
+    return;
+  }
+  nav.classList.remove("hidden");
+  if (step.kind === "entry") {
     const mode = entryMode(step.entry);
     card.appendChild(renderEntryStep(step.entry, mode));
   } else if (step.kind === "cluster") {
     card.appendChild(renderClusterStep(step.signal));
   }
-  // Mode chip + step counter in step-head are set inside the renderers.
   updateNavButtonState();
 }
 
@@ -1796,22 +1799,49 @@ function jumpToStepByEntryKey(key) {
 }
 
 function renderEndScreen() {
-  // Stub — M1.15 fills in.
   const card = el("article", { className: "wizard-step end-screen" });
-  card.appendChild(el("p", {}, "End of wizard — milestone M1.15."));
+  card.appendChild(el("h2", {}, "Done — Save & Export"));
+
+  // Summary line
+  let committedEntries = 0, deferredEntries = 0, blankEntries = 0;
+  for (const entry of ENTRIES) {
+    if (entryFilled(entry.canonical_key)) committedEntries++;
+    else if (state.wizard.deferred.includes(entry.canonical_key)) deferredEntries++;
+    else blankEntries++;
+  }
+  const committedClusters = CLUSTER_SIGNALS.filter((s) => getClusterState(s.id) !== undefined).length;
+
+  const summary = el("div", { className: "end-summary" });
+  summary.appendChild(el("p", {}, `${committedEntries} of ${ENTRIES.length} entries committed.`));
+  if (deferredEntries > 0) summary.appendChild(el("p", {}, `${deferredEntries} marked "Decide later" (export as <to_fill>).`));
+  if (blankEntries > 0) summary.appendChild(el("p", {}, `${blankEntries} entries not yet visited (export as <to_fill>).`));
+  summary.appendChild(el("p", {}, `${committedClusters} of ${CLUSTER_SIGNALS.length} cluster shapes resolved.`));
+  card.appendChild(summary);
+
+  // Primary export button
+  const btnRow = el("div", { className: "end-actions" });
+  btnRow.appendChild(el("button", {
+    type: "button",
+    className: "btn primary",
+    style: "font-size: 16px; padding: 12px 24px;",
+    onclick: onExport,
+  }, "Save & Export ↓"));
+  btnRow.appendChild(el("button", {
+    type: "button",
+    className: "btn ghost",
+    onclick: () => { state.wizard.step_index = stepSequence.length - 1; saveState(); renderCurrentStep(); },
+  }, "← Back to wizard"));
+  card.appendChild(btnRow);
+
+  card.appendChild(el("p", { className: "muted", style: "margin-top: 24px;" },
+    "Review summary screen with grouped verdicts + mismatch detection lands in Batch 2."));
+
   return card;
 }
 function navStep(delta) {
   const newIndex = state.wizard.step_index + delta;
-  if (newIndex < 0 || newIndex >= stepSequence.length) {
-    // End of sequence: render end screen (M1.15 sentinel).
-    if (newIndex === stepSequence.length) {
-      state.wizard.step_index = newIndex;
-      saveState();
-      renderCurrentStep();
-    }
-    return;
-  }
+  if (newIndex < 0) return;
+  if (newIndex > stepSequence.length) return;
   state.wizard.step_index = newIndex;
   saveState();
   renderCurrentStep();
