@@ -1834,10 +1834,12 @@ function parseEntryEditsFromMarkdown(text) {
     const fieldMatch = line.match(/^- (verdict|curriculum_notes|merge_into):\s*(.*?)\s*$/);
     if (fieldMatch) {
       const field = fieldMatch[1];
-      let value = fieldMatch[2];
-      if (value === "<to_fill>") value = "";
-      if (!result[currentKey]) result[currentKey] = {};
+      const value = fieldMatch[2];
+      // Skip placeholder rows so unmodified entries don't create empty
+      // shells in state.entries on roundtrip import.
+      if (value === "<to_fill>") continue;
       if (field === "verdict" && !VERDICTS.includes(value)) continue;
+      if (!result[currentKey]) result[currentKey] = {};
       result[currentKey][field] = value;
     }
   }
