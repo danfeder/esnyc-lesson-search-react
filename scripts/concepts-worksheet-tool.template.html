@@ -22,6 +22,7 @@
     --warn-soft: #fdf3da;
     --warn-border: #e3b865;
 
+    /* Verdict colors */
     --keep: #1f5a47;
     --keep-soft: #d3e4d9;
     --merge: #b25a1f;
@@ -31,17 +32,23 @@
     --drop: #a4143c;
     --drop-soft: #f6d1da;
 
-    --tier-11: #1d4ed8;
-    --tier-12: #6b6b6b;
-    --tier-13: #8a8a83;
+    /* Tier strip tints (W10: §11 red-orange / §12 amber / §13 muted green) */
+    --tier-11: #b25a1f;
+    --tier-11-soft: #fce8d6;
+    --tier-12: #b45309;
+    --tier-12-soft: #fdf3da;
+    --tier-13: #1f5a47;
+    --tier-13-soft: #e6efea;
 
-    --subject-science: #1f5a47;
-    --subject-social: #b25a1f;
-    --subject-literacy: #6d3ba8;
-    --subject-math: #1d4ed8;
-    --subject-arts: #c2185b;
-    --subject-health: #be4b13;
+    /* Mode chip tints */
+    --mode-confirm: #5e5e58;
+    --mode-confirm-soft: #ede9df;
+    --mode-resolve: #b45309;
+    --mode-resolve-soft: #fdf3da;
+    --mode-decide: #a4143c;
+    --mode-decide-soft: #f6d1da;
 
+    --card-max: 720px;
     --radius: 10px;
     --radius-sm: 6px;
     --shadow-card: 0 1px 0 rgba(20, 20, 18, 0.04), 0 4px 12px -8px rgba(20, 20, 18, 0.08);
@@ -49,6 +56,7 @@
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   }
+
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
@@ -64,8 +72,9 @@
     font-family: var(--font-mono);
     font-size: 12.5px;
   }
+  .hidden { display: none !important; }
 
-  /* ---------- Header ---------- */
+  /* ---------- Top bar ---------- */
   header.top {
     position: sticky;
     top: 0;
@@ -80,12 +89,8 @@
     gap: 18px;
     padding: 12px 24px;
     flex-wrap: wrap;
-  }
-  .top-row.filters {
-    padding-top: 4px;
-    padding-bottom: 12px;
-    gap: 10px 18px;
-    border-top: 1px dashed var(--border);
+    max-width: 1280px;
+    margin: 0 auto;
   }
   .brand {
     display: flex;
@@ -102,15 +107,17 @@
     color: var(--muted);
     font-size: 12.5px;
   }
+
   .saved-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12.5px;
+    gap: 5px;
     color: var(--muted);
+    font-size: 11.5px;
   }
   .saved-badge::before {
     content: "";
+    display: inline-block;
     width: 7px;
     height: 7px;
     border-radius: 50%;
@@ -119,802 +126,303 @@
   .saved-badge.dirty::before {
     background: var(--warn);
   }
-  .progress-pill {
-    display: inline-flex;
+
+  /* Decision-debt counters (M1.5 wires real counts) */
+  .decision-debt {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 12px;
-    border-radius: 999px;
-    background: var(--accent-soft);
-    color: var(--accent-strong);
+    gap: 12px;
     font-size: 12.5px;
-    font-weight: 500;
+    color: var(--muted);
+    flex-wrap: wrap;
   }
-  .progress-pill .progress-num {
-    font-variant-numeric: tabular-nums;
-  }
-  .progress-pill .progress-bar {
-    width: 88px;
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(0, 0, 0, 0.08);
+  .decision-debt b { color: var(--text-strong); }
+  .debt-bar {
+    display: inline-block;
+    width: 80px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
     overflow: hidden;
   }
-  .progress-pill .progress-bar > i {
+  .debt-bar i {
     display: block;
     height: 100%;
     background: var(--accent);
-    transition: width 150ms ease-out;
+    transition: width 200ms ease;
   }
+
+  /* Actions cluster (right-aligned) */
   .actions {
     margin-left: auto;
     display: flex;
     align-items: center;
     gap: 8px;
+    position: relative;
   }
+  .jump-input {
+    width: 200px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    font-size: 12.5px;
+    font-family: inherit;
+  }
+  .jump-input:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  /* ---------- Buttons (preserved) ---------- */
   button.btn {
-    appearance: none;
+    display: inline-block;
+    padding: 6px 12px;
     border: 1px solid var(--border-strong);
     background: var(--panel);
     color: var(--text);
-    padding: 6px 14px;
-    border-radius: 8px;
+    font: inherit;
     font-size: 13px;
-    font-family: inherit;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    line-height: 1.4;
-    transition: background 80ms ease;
   }
   button.btn:hover { background: var(--panel-soft); }
   button.btn:focus-visible {
     outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    outline-offset: 1px;
   }
   button.btn.primary {
     background: var(--accent);
-    color: white;
+    color: #fff;
     border-color: var(--accent);
   }
   button.btn.primary:hover { background: var(--accent-strong); }
   button.btn.ghost {
-    border-color: transparent;
     background: transparent;
+    border-color: var(--border);
   }
   button.btn.ghost:hover { background: var(--panel-soft); }
+  button.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 
-  /* ---------- Filter chips ---------- */
-  .filter-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .filter-group .filter-label {
-    font-size: 12.5px;
-    color: var(--muted);
-    margin-right: 2px;
-  }
-  .chip {
-    appearance: none;
-    border: 1px solid var(--border);
+  /* Advanced menu */
+  .advanced-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 260px;
     background: var(--panel);
-    color: var(--text);
-    padding: 3px 11px;
-    border-radius: 999px;
-    font-size: 12.5px;
-    font-family: inherit;
-    cursor: pointer;
-    font-variant-numeric: tabular-nums;
-    transition: background 80ms ease, border-color 80ms ease;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 6px 0;
+    display: none;
+    z-index: 40;
   }
-  .chip:hover { background: var(--panel-soft); }
-  .chip.active {
-    background: var(--accent-soft);
-    border-color: var(--accent);
-    color: var(--accent-strong);
-    font-weight: 500;
-  }
-  .chip .count {
-    color: var(--muted);
-    margin-left: 4px;
-    font-size: 11.5px;
-  }
-  .chip.active .count {
-    color: var(--accent-strong);
-  }
-  .search-input {
-    appearance: none;
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--text);
-    padding: 5px 11px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: inherit;
-    width: 260px;
-  }
-  .search-input:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: -1px;
-    border-color: var(--accent);
-  }
-
-  /* ---------- Layout ---------- */
-  main.layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 28px;
-    max-width: 1480px;
-    margin: 24px auto 64px;
-    padding: 0 24px;
-  }
-  @media (max-width: 1100px) {
-    main.layout {
-      grid-template-columns: 1fr;
-    }
-    aside.cluster-signals {
-      position: static !important;
-      max-height: none !important;
-    }
-  }
-
-  /* ---------- Tier section headers ---------- */
-  .tier-section {
-    margin-bottom: 36px;
-  }
-  .tier-section > h2 {
-    margin: 0 0 6px;
-    font-size: 13.5px;
+  .advanced-menu.shown { display: block; }
+  .advanced-menu .menu-hint {
+    padding: 4px 14px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--hint);
   }
-  .tier-section > h2 .tier-num {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: var(--panel);
-    border: 1px solid var(--border);
+  .advanced-menu .menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
     color: var(--text);
-    margin-right: 8px;
-    font-size: 12px;
-    text-transform: none;
-    letter-spacing: 0;
   }
-  .tier-section > p.tier-blurb {
-    margin: 0 0 14px;
-    color: var(--muted);
-    font-size: 12.5px;
+  .advanced-menu .menu-item:hover { background: var(--panel-soft); }
+  .advanced-menu .menu-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
   }
 
-  /* ---------- Entry card ---------- */
-  .entry-card {
+  /* ---------- Wizard layout (single-card) ---------- */
+  main.wizard-layout {
+    max-width: var(--card-max);
+    margin: 32px auto 80px;
+    padding: 0 16px;
+  }
+  .wizard-card {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 18px 20px;
-    margin-bottom: 14px;
     box-shadow: var(--shadow-card);
-    transition: border-color 120ms ease;
+    padding: 24px;
+    min-height: 280px;
   }
-  .entry-card[data-verdict=""]:not([data-verdict="<to_fill>"]):not([data-verdict]) { /* no-op */ }
-  .entry-card[data-filled="true"] {
-    border-color: var(--accent-soft);
-    background: linear-gradient(0deg, rgba(31,90,71,0.025), rgba(31,90,71,0.025)), var(--panel);
-  }
-  .entry-card[data-needs-call="true"] {
-    border-left: 3px solid var(--warn-border);
-  }
-  .entry-head {
+  .wizard-nav {
     display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 8px 14px;
-    margin-bottom: 6px;
+    gap: 12px;
+    margin-top: 16px;
+    align-items: center;
   }
-  .entry-num {
-    color: var(--hint);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    min-width: 44px;
+  .wizard-nav #nextBtn { margin-left: auto; }
+
+  /* Step head + placeholder */
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
   }
-  .entry-label {
+  .step-tier-mode {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .step-of { margin-left: auto; }
+  .step-placeholder {
+    color: var(--muted);
+    font-style: italic;
+  }
+  .wizard-step h2 {
+    margin: 4px 0 12px;
+    font-size: 20px;
     font-weight: 600;
-    font-size: 16px;
-    color: var(--text-strong);
   }
-  .entry-key {
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12.5px;
-  }
-  .entry-freq {
-    margin-left: auto;
-    color: var(--muted);
-    font-size: 12.5px;
-    font-variant-numeric: tabular-nums;
-  }
-  .entry-freq .freq-primary { color: var(--text); font-weight: 500; }
-  .entry-freq .freq-merge { color: var(--merge); }
 
-  .subject-chips {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-  }
-  .subject-chip {
+  /* ---------- Mode chips (filled in by M1.7+) ---------- */
+  .mode-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 9px;
-    border-radius: 4px;
-    background: rgba(31, 90, 71, 0.07);
-    color: var(--subject-science);
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .subject-chip[data-subject="Science"] { background: rgba(31, 90, 71, 0.08); color: var(--subject-science); }
-  .subject-chip[data-subject="Social Studies"] { background: rgba(178, 90, 31, 0.09); color: var(--subject-social); }
-  .subject-chip[data-subject="Literacy/ELA"] { background: rgba(109, 59, 168, 0.09); color: var(--subject-literacy); }
-  .subject-chip[data-subject="Math"] { background: rgba(29, 78, 216, 0.08); color: var(--subject-math); }
-  .subject-chip[data-subject="Arts"] { background: rgba(194, 24, 91, 0.08); color: var(--subject-arts); }
-  .subject-chip[data-subject="Health"] { background: rgba(190, 75, 19, 0.09); color: var(--subject-health); }
-  .subject-chip[data-primary="true"] {
-    box-shadow: inset 0 0 0 1px currentColor;
-  }
-  .subject-chip .count {
-    color: inherit;
-    opacity: 0.7;
-    font-variant-numeric: tabular-nums;
-    font-size: 11px;
-  }
-
-  /* Theme overlap callout */
-  .theme-overlap-callout {
-    display: none;
-    background: var(--warn-soft);
-    border: 1px solid var(--warn-border);
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    margin-bottom: 12px;
-    font-size: 12.5px;
-    color: var(--text);
-    line-height: 1.5;
-  }
-  .theme-overlap-callout.shown { display: block; }
-  .theme-overlap-callout strong { color: var(--warn); }
-
-  /* Merge aliases proposed block */
-  .merge-aliases-block {
-    display: none;
-    margin-bottom: 12px;
-    padding: 10px 14px;
-    background: var(--merge-soft);
-    border-radius: var(--radius-sm);
-    font-size: 12.5px;
-  }
-  .merge-aliases-block.shown { display: block; }
-  .merge-aliases-block .label {
-    font-weight: 500;
-    color: var(--merge);
-    margin-bottom: 4px;
-  }
-  .merge-aliases-block ul {
-    margin: 0;
-    padding: 0 0 0 18px;
-    color: var(--text);
-  }
-  .merge-aliases-block li {
-    margin-bottom: 2px;
-  }
-  .merge-aliases-block li .count {
-    color: var(--muted);
-    margin-left: 4px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Cluster-signal badge on entries */
-  .cluster-membership-badge {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 4px;
-    background: rgba(29, 78, 216, 0.08);
-    color: var(--tier-11);
+    padding: 2px 8px;
+    border-radius: 999px;
     font-size: 11.5px;
-    margin-right: 6px;
-    cursor: pointer;
-    border: none;
-    font-family: inherit;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
-  .cluster-membership-badge:hover { text-decoration: underline; }
+  .mode-chip[data-mode="confirm"] {
+    background: var(--mode-confirm-soft);
+    color: var(--mode-confirm);
+  }
+  .mode-chip[data-mode="resolve"] {
+    background: var(--mode-resolve-soft);
+    color: var(--mode-resolve);
+  }
+  .mode-chip[data-mode="decide"] {
+    background: var(--mode-decide-soft);
+    color: var(--mode-decide);
+  }
 
-  /* Verdict radio group */
-  fieldset.verdict-options {
-    border: none;
-    margin: 0 0 8px;
-    padding: 0;
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  fieldset.verdict-options > legend {
-    padding: 0;
-    font-size: 12.5px;
-    color: var(--muted);
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-  .verdict-options label.verdict-option {
+  /* ---------- Tier strip (filled in by M1.7+) ---------- */
+  .tier-strip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    border: 1px solid var(--border);
-    padding: 5px 14px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: 13px;
-    background: var(--panel);
-    user-select: none;
-    transition: all 80ms ease;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11.5px;
   }
-  .verdict-options label.verdict-option:hover {
+  .tier-strip[data-tier="11"] {
+    background: var(--tier-11-soft);
+    color: var(--tier-11);
+  }
+  .tier-strip[data-tier="12"] {
+    background: var(--tier-12-soft);
+    color: var(--tier-12);
+  }
+  .tier-strip[data-tier="13"] {
+    background: var(--tier-13-soft);
+    color: var(--tier-13);
+  }
+
+  /* ---------- Collapsibles (preserved) ---------- */
+  details.collapsible {
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     background: var(--panel-soft);
   }
-  .verdict-options input[type="radio"] {
-    margin: 0;
-    accent-color: var(--accent);
-  }
-  .verdict-options label.verdict-option[data-verdict="keep"].selected {
-    background: var(--keep-soft);
-    border-color: var(--keep);
-    color: var(--keep);
-    font-weight: 500;
-  }
-  .verdict-options label.verdict-option[data-verdict="merge"].selected {
-    background: var(--merge-soft);
-    border-color: var(--merge);
-    color: var(--merge);
-    font-weight: 500;
-  }
-  .verdict-options label.verdict-option[data-verdict="new"].selected {
-    background: var(--new-soft);
-    border-color: var(--new);
-    color: var(--new);
-    font-weight: 500;
-  }
-  .verdict-options label.verdict-option[data-verdict="drop"].selected {
-    background: var(--drop-soft);
-    border-color: var(--drop);
-    color: var(--drop);
-    font-weight: 500;
-  }
-
-  /* merge_into input */
-  .merge-into-block {
-    display: none;
-    margin: 8px 0 4px;
-    padding: 8px 12px;
-    background: var(--merge-soft);
-    border-radius: var(--radius-sm);
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .merge-into-block.shown { display: flex; }
-  .merge-into-block.needs-target {
-    background: var(--warn-soft);
-    box-shadow: inset 0 0 0 1px var(--warn-border);
-  }
-  .merge-into-block label {
-    font-size: 12.5px;
-    color: var(--merge);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  .merge-into-block.needs-target label { color: var(--warn); }
-  .merge-into-input {
-    flex: 1;
-    appearance: none;
-    border: 1px solid var(--border-strong);
-    background: var(--panel);
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
-    font-size: 12.5px;
-    color: var(--text);
-  }
-  .merge-into-input:focus {
-    outline: 2px solid var(--merge);
-    outline-offset: -1px;
-    border-color: var(--merge);
-  }
-  .merge-into-block.needs-target .merge-into-input {
-    border-color: var(--warn-border);
-  }
-  .merge-into-warning {
-    flex: 0 0 100%;
-    margin-top: 4px;
-    color: var(--warn);
-    font-size: 12px;
-  }
-
-  /* Recommended-verdict pill (one-click confirm) */
-  .recommended-pill-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 4px 0 8px;
-    font-size: 12.5px;
-    color: var(--muted);
-  }
-  .recommended-pill {
-    appearance: none;
-    border: 1px solid var(--accent);
-    background: var(--accent-soft);
-    color: var(--accent-strong);
-    padding: 3px 12px;
-    border-radius: 999px;
-    font-size: 12.5px;
-    font-family: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 80ms ease;
-  }
-  .recommended-pill:hover { background: var(--accent); color: white; }
-  .recommended-pill[data-verdict="merge"] {
-    border-color: var(--merge);
-    background: var(--merge-soft);
-    color: var(--merge);
-  }
-  .recommended-pill[data-verdict="merge"]:hover { background: var(--merge); color: white; }
-  .recommended-pill[data-verdict="drop"] {
-    border-color: var(--drop);
-    background: var(--drop-soft);
-    color: var(--drop);
-  }
-  .recommended-pill[data-verdict="drop"]:hover { background: var(--drop); color: white; }
-  .recommended-pill[data-verdict="new"] {
-    border-color: var(--new);
-    background: var(--new-soft);
-    color: var(--new);
-  }
-  .recommended-pill[data-verdict="new"]:hover { background: var(--new); color: white; }
-  .recommended-pill.matches-current {
-    opacity: 0.55;
-    cursor: default;
-  }
-  .recommended-pill.matches-current::after {
-    content: " ✓";
-    margin-left: 2px;
-  }
-
-  /* Collapsible notes / corpus evidence */
-  details.collapsible {
-    margin: 10px 0;
-    border-top: 1px dashed var(--border);
-    padding-top: 8px;
-  }
   details.collapsible > summary {
+    list-style: none;
     cursor: pointer;
+    padding: 6px 12px;
     font-size: 12.5px;
     color: var(--muted);
+    position: relative;
     user-select: none;
-    list-style: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
   }
   details.collapsible > summary::-webkit-details-marker { display: none; }
   details.collapsible > summary::before {
     content: "▸";
     display: inline-block;
-    transition: transform 100ms ease;
+    width: 14px;
     color: var(--hint);
   }
-  details.collapsible[open] > summary::before {
-    transform: rotate(90deg);
-  }
+  details.collapsible[open] > summary::before { content: "▾"; }
   details.collapsible > .collapsible-body {
-    margin-top: 10px;
+    padding: 6px 12px 10px;
+    font-size: 12.5px;
     color: var(--text);
-    font-size: 13px;
-    line-height: 1.55;
   }
   details.collapsible > .collapsible-body code {
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--panel);
     padding: 1px 4px;
     border-radius: 3px;
   }
   details.collapsible.corpus-evidence > .collapsible-body {
-    font-size: 12.5px;
-    color: var(--muted);
-    border-left: 2px solid var(--border-strong);
-    padding-left: 12px;
-    white-space: pre-wrap;
-  }
-
-  /* Notes inputs */
-  .notes-block {
-    margin-top: 12px;
-  }
-  .notes-block label {
-    display: block;
-    font-size: 12.5px;
-    color: var(--muted);
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-  textarea.notes-input {
-    appearance: none;
-    width: 100%;
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--text);
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
-    font-family: inherit;
-    font-size: 13px;
-    line-height: 1.5;
-    resize: vertical;
-    min-height: 38px;
-  }
-  textarea.notes-input:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: -1px;
-    border-color: var(--accent);
-  }
-  textarea.reviewer-note-input {
-    border-style: dashed;
-    border-color: var(--border-strong);
-    background: var(--panel-soft);
-    min-height: 28px;
-  }
-
-  /* ---------- Sidebar — Cluster signals ---------- */
-  aside.cluster-signals {
-    position: sticky;
-    top: 132px;
-    align-self: start;
-    max-height: calc(100vh - 152px);
+    max-height: 320px;
     overflow-y: auto;
-    padding-right: 4px;
   }
-  aside.cluster-signals > h2 {
-    font-size: 13.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin: 0 0 6px;
-    font-weight: 600;
-  }
-  aside.cluster-signals > p {
-    color: var(--muted);
-    font-size: 12.5px;
-    margin: 0 0 16px;
-  }
-  .cluster-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    box-shadow: var(--shadow-card);
-  }
-  .cluster-card[data-answered="true"] {
-    border-color: var(--accent-soft);
-  }
-  .cluster-card h3 {
-    margin: 0 0 4px;
-    font-size: 13px;
-    font-weight: 600;
-    display: flex;
-    gap: 6px;
-    align-items: baseline;
-  }
-  .cluster-card .cluster-id {
-    color: var(--tier-11);
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-  .cluster-card .cluster-question {
-    color: var(--muted);
-    font-size: 12.5px;
-    margin: 0 0 10px;
-    line-height: 1.5;
-  }
-  .cluster-card .cluster-options {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin: 0 0 12px;
-  }
-  .cluster-card .cluster-options label {
-    display: flex;
-    gap: 8px;
-    align-items: start;
-    cursor: pointer;
-    padding: 5px 8px;
-    border-radius: var(--radius-sm);
-    font-size: 12.5px;
-    border: 1px solid transparent;
-    transition: background 80ms ease;
-  }
-  .cluster-card .cluster-options label:hover {
-    background: var(--panel-soft);
-  }
-  .cluster-card .cluster-options input[type="radio"] {
-    margin: 3px 0 0;
-    accent-color: var(--accent);
-  }
-  .cluster-card .cluster-options input[type="radio"]:checked + .option-text {
-    font-weight: 500;
-    color: var(--accent-strong);
-  }
-  .cluster-card .cluster-options label.selected {
-    background: var(--accent-soft);
-    border-color: var(--accent);
-  }
-  .cluster-card .cluster-members {
-    font-size: 11.5px;
-    color: var(--muted);
-    border-top: 1px dashed var(--border);
-    padding-top: 8px;
-  }
-  .cluster-card .cluster-members .members-label {
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 500;
-    color: var(--hint);
-    display: block;
-    margin-bottom: 4px;
-  }
-  .cluster-card .cluster-members ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .cluster-card .cluster-members .member-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 1px 7px;
-    border-radius: 4px;
-    background: var(--panel-soft);
-    border: 1px solid var(--border);
-    cursor: pointer;
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 11px;
-  }
-  .cluster-card .cluster-members .member-pill:hover {
-    background: var(--accent-soft);
-    border-color: var(--accent);
-  }
-  .cluster-card .cluster-members .member-pill .verdict-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--hint);
-  }
-  .cluster-card .cluster-members .member-pill[data-verdict="keep"] .verdict-dot { background: var(--keep); }
-  .cluster-card .cluster-members .member-pill[data-verdict="merge"] .verdict-dot { background: var(--merge); }
-  .cluster-card .cluster-members .member-pill[data-verdict="new"] .verdict-dot { background: var(--new); }
-  .cluster-card .cluster-members .member-pill[data-verdict="drop"] .verdict-dot { background: var(--drop); }
 
-  /* ---------- Empty / no-results state ---------- */
-  .no-results {
-    background: var(--panel-soft);
-    border: 1px dashed var(--border-strong);
-    border-radius: var(--radius);
-    padding: 36px 24px;
-    text-align: center;
-    color: var(--muted);
+  /* ---------- Flash highlight (preserved for jump-to-entry feedback) ---------- */
+  @keyframes flash-highlight {
+    0%   { box-shadow: 0 0 0 3px var(--accent); }
+    100% { box-shadow: var(--shadow-card); }
   }
-  .no-results strong { color: var(--text); display: block; margin-bottom: 4px; }
+  .wizard-card.flash {
+    animation: flash-highlight 1200ms ease-out;
+  }
 
-  /* ---------- Onboarding modal ---------- */
+  /* ---------- Onboarding dialog (preserved) ---------- */
   dialog.onboarding {
     border: none;
     border-radius: var(--radius);
-    box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.3);
     padding: 0;
+    background: var(--panel);
+    box-shadow: 0 8px 28px -10px rgba(20, 20, 18, 0.32);
     max-width: 560px;
-    width: calc(100% - 32px);
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
   }
   dialog.onboarding::backdrop {
-    background: rgba(20, 20, 18, 0.45);
+    background: rgba(20, 20, 18, 0.55);
   }
   dialog.onboarding .modal-body {
-    padding: 24px 28px;
+    padding: 20px 22px 18px;
   }
   dialog.onboarding h2 {
     margin: 0 0 8px;
     font-size: 18px;
   }
   dialog.onboarding p {
-    color: var(--text);
-    line-height: 1.6;
-    font-size: 14px;
+    margin: 0 0 12px;
+    line-height: 1.5;
   }
-  dialog.onboarding ul {
-    padding-left: 22px;
-  }
-  dialog.onboarding li { margin-bottom: 6px; }
   dialog.onboarding .modal-actions {
-    margin-top: 20px;
     display: flex;
-    gap: 8px;
     justify-content: flex-end;
+    gap: 8px;
   }
 
-  /* ---------- Advanced menu popover ---------- */
-  .advanced-menu {
-    position: absolute;
-    right: 24px;
-    top: 56px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.2);
-    padding: 8px;
-    min-width: 240px;
-    display: none;
-    z-index: 40;
-  }
-  .advanced-menu.shown { display: block; }
-  .advanced-menu button.menu-item {
-    width: 100%;
-    text-align: left;
-    appearance: none;
-    border: none;
-    background: transparent;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: 13px;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .advanced-menu button.menu-item:hover {
-    background: var(--panel-soft);
-  }
-  .advanced-menu .menu-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 6px 0;
-  }
-  .advanced-menu .menu-hint {
-    padding: 6px 12px;
-    color: var(--hint);
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  /* ---------- Highlight scroll target ---------- */
-  .entry-card.flash {
-    animation: flash-highlight 1.4s ease;
-  }
-  @keyframes flash-highlight {
-    0%, 30% { background: var(--accent-soft); border-color: var(--accent); }
-    100% { background: var(--panel); border-color: var(--border); }
-  }
-
-  /* ---------- Misc ---------- */
-  .hidden { display: none !important; }
-  .visually-hidden {
-    position: absolute;
-    clip: rect(0 0 0 0);
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .top-row { padding: 10px 16px; gap: 10px; }
+    .jump-input { width: 140px; }
+    main.wizard-layout { margin: 16px auto 60px; padding: 0 12px; }
+    .wizard-card { padding: 18px; }
   }
 </style>
 </head>
@@ -924,85 +432,57 @@
   <div class="top-row">
     <div class="brand">
       <h1>Concepts Worksheet</h1>
-      <span class="subtitle">Curriculum Team Review · 208 canonical concepts</span>
+      <span class="subtitle">Curriculum Team Review</span>
     </div>
     <span class="saved-badge" id="savedBadge">Saved locally</span>
-    <span class="progress-pill" id="progressPill">
-      <span class="progress-num"><span id="progressFilled">0</span>/208 filled</span>
-      <span class="progress-bar"><i id="progressBar" style="width: 0%"></i></span>
-    </span>
+    <div class="decision-debt" id="decisionDebt">
+      <span class="debt-decide"><b id="debtDecideCount">0</b> to decide</span>
+      <span class="debt-confirm"><b id="debtConfirmCount">0</b> to confirm</span>
+      <span class="debt-resolve"><b id="debtResolveCount">0</b> cluster shapes</span>
+      <span class="debt-bar"><i id="debtBar" style="width: 0%"></i></span>
+    </div>
     <div class="actions">
-      <button class="btn primary" id="exportBtn" type="button">Save &amp; Export ↓</button>
+      <div class="jump-to-entry">
+        <input type="search" class="jump-input" id="jumpInput"
+               placeholder="🔍 Jump to entry…" list="all-canonical-keys"
+               autocomplete="off">
+      </div>
+      <button class="btn ghost" id="reviewSoFarBtn" type="button" disabled
+              title="Available in Batch 2">Review so far</button>
       <button class="btn ghost" id="advancedBtn" type="button" aria-haspopup="menu">⚙ Advanced</button>
       <div class="advanced-menu" id="advancedMenu" role="menu">
         <div class="menu-hint">Import / Export</div>
+        <button class="menu-item" id="exportBtn" type="button">Save &amp; Export markdown ↓</button>
         <button class="menu-item" id="importBtn" type="button">Import a saved markdown file…</button>
         <button class="menu-item" id="downloadJsonBtn" type="button">Download progress as JSON</button>
         <input type="file" id="importInput" accept=".md,text/markdown,text/plain" class="hidden">
         <div class="menu-divider"></div>
         <div class="menu-hint">Help</div>
-        <button class="menu-item" id="showOnboardingBtn" type="button">Show welcome screen</button>
+        <button class="menu-item" id="showOnboardingBtn" type="button">Show wizard intro</button>
         <div class="menu-divider"></div>
         <div class="menu-hint">Reset</div>
         <button class="menu-item" id="clearStateBtn" type="button" style="color: var(--drop);">Clear all progress…</button>
       </div>
     </div>
   </div>
-  <div class="top-row filters">
-    <div class="filter-group" id="statusFilterGroup">
-      <span class="filter-label">Status</span>
-      <button class="chip active" data-filter="status" data-value="all" type="button">All <span class="count" id="statusCountAll">208</span></button>
-      <button class="chip" data-filter="status" data-value="needs" type="button">Needs my call <span class="count" id="statusCountNeeds">208</span></button>
-      <button class="chip" data-filter="status" data-value="filled" type="button">Filled <span class="count" id="statusCountFilled">0</span></button>
-    </div>
-    <div class="filter-group" id="tierFilterGroup">
-      <span class="filter-label">Tier</span>
-      <button class="chip active" data-filter="tier" data-value="all" type="button">All</button>
-      <button class="chip" data-filter="tier" data-value="11" type="button">§11 High-impact <span class="count">32</span></button>
-      <button class="chip" data-filter="tier" data-value="12" type="button">§12 Mid-tier <span class="count">39</span></button>
-      <button class="chip" data-filter="tier" data-value="13" type="button">§13 Long-tail <span class="count">137</span></button>
-    </div>
-    <div class="filter-group" id="subjectFilterGroup">
-      <span class="filter-label">Subject</span>
-      <button class="chip active" data-filter="subject" data-value="all" type="button">All</button>
-      <!-- subject chips appended by JS -->
-    </div>
-    <div class="filter-group">
-      <label class="chip" style="cursor: pointer;">
-        <input type="checkbox" id="themeOverlapToggle" style="margin: 0 6px 0 0; accent-color: var(--warn);">
-        Theme overlap only <span class="count">3</span>
-      </label>
-    </div>
-    <div class="filter-group" style="margin-left: auto;">
-      <input type="search" class="search-input" id="searchInput" placeholder="Search concepts…">
-    </div>
-  </div>
 </header>
 
-<main class="layout">
-  <section class="entries" id="entriesContainer">
-    <!-- Tier sections + entry cards rendered by JS -->
-  </section>
-  <aside class="cluster-signals" id="clusterSignalsPanel">
-    <h2>Cluster signals</h2>
-    <p>Cross-entry questions where the cluster needs a coherent verdict. Click a member to jump to it.</p>
-    <!-- Cluster signal cards rendered by JS -->
-  </aside>
+<main class="wizard-layout">
+  <article class="wizard-card" id="wizardCard">
+    <!-- step content rendered by JS -->
+  </article>
+  <nav class="wizard-nav" id="wizardNav">
+    <button class="btn ghost" id="prevBtn" type="button">← Previous</button>
+    <button class="btn ghost" id="deferBtn" type="button">Decide later</button>
+    <button class="btn primary" id="nextBtn" type="button">Save · Next →</button>
+  </nav>
 </main>
 
 <dialog id="onboardingModal" class="onboarding">
   <div class="modal-body">
-    <h2>Welcome to the Concepts Worksheet</h2>
-    <p>For each of <strong>208 canonical concepts</strong>, make one decision per entry: <em>keep</em>, <em>merge</em>, <em>new</em>, or <em>drop</em>. Most entries have a clear Claude-recommended verdict — just confirm it. A handful need your judgment.</p>
-    <p><strong>How it works:</strong></p>
-    <ul>
-      <li>Your progress saves automatically in this browser. The bottom-left badge shows the status.</li>
-      <li>Concepts are organized by frequency (§11 high-impact → §12 mid-tier → §13 long-tail). High-impact deserves the most attention; long-tail can be skimmed.</li>
-      <li>Five <strong>Cluster signal</strong> cards on the right ask cross-entry questions (writing cluster, reading cluster, measurement cluster, figurative-language cluster, Indigenous cross-field). Answer those alongside the per-entry verdicts.</li>
-      <li>When you're done (or want a backup), click <strong>Save &amp; Export ↓</strong>. It downloads a markdown file you send back to the project maintainer.</li>
-      <li>Three entries flag <strong>theme overlap</strong> with the themes worksheet — your verdict here is still useful; the themes-side adjudication happens later.</li>
-    </ul>
-    <p style="color: var(--muted); font-size: 12.5px;">Local saving is tied to this browser on this computer. To move work between devices, use Save &amp; Export and Import from the ⚙ Advanced menu.</p>
+    <h2>Concepts Worksheet</h2>
+    <p>Walk through 208 concepts one at a time. Confirm Claude's calls, resolve five clusters, and pause on the few that matter.</p>
+    <p style="color: var(--muted); font-size: 12.5px;">(Full intro rewrite lands in Batch 2.)</p>
     <div class="modal-actions">
       <button class="btn primary" type="button" id="dismissOnboardingBtn">Get started</button>
     </div>
@@ -1017,7 +497,6 @@
 // ---------- Constants & state keys ----------
 
 const STORAGE_KEY = "concepts-worksheet-state-v1";
-const FILTER_KEY = "concepts-worksheet-filter-v1";
 const ONBOARD_KEY = "concepts-worksheet-onboard-v1";
 
 const VERDICTS = ["keep", "merge", "new", "drop"];
@@ -1035,13 +514,11 @@ const FIELD_LABELS = payload.field_labels;
 const CLUSTER_SIGNALS = payload.cluster_signals;
 const RAW_MARKDOWN_LINES = payload.raw_markdown_lines;
 
-// Index entries by canonical_key for lookups.
 const ENTRIES_BY_KEY = new Map();
 for (const entry of ENTRIES) {
   ENTRIES_BY_KEY.set(entry.canonical_key, entry);
 }
 
-// Build the set of cluster-signal-member keys for cross-reference badges.
 const CLUSTER_MEMBERSHIP = new Map(); // canonical_key -> [{id, label}]
 for (const signal of CLUSTER_SIGNALS) {
   for (const member of signal.members) {
@@ -1072,7 +549,7 @@ function loadState() {
 function defaultState() {
   return {
     schema_version: 1,
-    entries: {}, // canonical_key -> { verdict, merge_into, curriculum_notes, reviewer_note }
+    entries: {}, // canonical_key -> { verdict, merge_into, curriculum_notes }
     cluster_signals: {}, // CON-NN -> option_index
   };
 }
@@ -1113,39 +590,6 @@ function setClusterState(id, optionIndex) {
     state.cluster_signals[id] = optionIndex;
   }
   saveState();
-}
-
-// ---------- Filter state ----------
-
-let filterState = loadFilterState();
-
-function loadFilterState() {
-  try {
-    const raw = localStorage.getItem(FILTER_KEY);
-    if (!raw) return defaultFilterState();
-    const parsed = JSON.parse(raw);
-    return { ...defaultFilterState(), ...parsed };
-  } catch (e) {
-    return defaultFilterState();
-  }
-}
-
-function defaultFilterState() {
-  return {
-    status: "all", // all | needs | filled
-    tier: "all", // all | 11 | 12 | 13
-    subject: "all", // all | Science | ...
-    themeOverlapOnly: false,
-    search: "",
-  };
-}
-
-function saveFilterState() {
-  try {
-    localStorage.setItem(FILTER_KEY, JSON.stringify(filterState));
-  } catch (e) {
-    /* ignore */
-  }
 }
 
 // ---------- DOM utils ----------
@@ -1228,254 +672,6 @@ function entryNeedsMergeTarget(key) {
   return s.verdict === "merge" && !(s.merge_into && s.merge_into.trim());
 }
 
-// ---------- Render entry card ----------
-
-function renderEntryCard(entry) {
-  const stateForEntry = getEntryState(entry.canonical_key);
-  const verdict = entryVerdict(entry.canonical_key);
-  const filled = entryFilled(entry.canonical_key);
-  const themeOverlap = entry.parsed.theme_overlap;
-  const mergeAliases = entry.parsed.merge_aliases;
-  const currentSubjects = entry.parsed.current_subjects;
-  const primarySubject = entry.parsed.recommended_primary_subject;
-  const secondarySubjects = entry.parsed.recommended_secondary_subjects || [];
-  const mergeIntoVal = stateForEntry.merge_into || "";
-  const curriculumNotes = stateForEntry.curriculum_notes || "";
-  const reviewerNote = stateForEntry.reviewer_note || "";
-  const clusterMemberships = CLUSTER_MEMBERSHIP.get(entry.canonical_key) || [];
-
-  const card = el("article", {
-    className: "entry-card",
-    id: `entry-${entry.canonical_key}`,
-    dataset: {
-      canonicalKey: entry.canonical_key,
-      tier: entry.tier,
-      verdict,
-      filled: String(filled),
-      needsCall: String(!filled),
-      themeOverlap: themeOverlap.flagged ? "true" : "false",
-      primarySubject: primarySubject || "",
-    },
-  });
-
-  // ---- Head row ----
-  const head = el("header", { className: "entry-head" });
-  head.appendChild(el("span", { className: "entry-num" }, `#${entry.tier}.${entry.tier_idx}`));
-  head.appendChild(el("span", { className: "entry-label" }, entry.parsed.canonical_label || entry.canonical_key));
-  head.appendChild(el("span", { className: "entry-key mono" }, `\`${entry.canonical_key}\``));
-
-  const freq = el("span", { className: "entry-freq" });
-  if (entry.parsed.frequency_post_merge != null) {
-    freq.appendChild(el("span", { className: "freq-primary" }, `${entry.parsed.frequency_primary}`));
-    freq.appendChild(document.createTextNode(" "));
-    freq.appendChild(el("span", { className: "freq-merge" }, `→ ${entry.parsed.frequency_post_merge} if aliases merge`));
-  } else {
-    freq.appendChild(el("span", { className: "freq-primary" }, `${entry.parsed.frequency_primary}`));
-    freq.appendChild(document.createTextNode(" appearances"));
-  }
-  head.appendChild(freq);
-  card.appendChild(head);
-
-  // ---- Cluster membership badges ----
-  if (clusterMemberships.length > 0) {
-    const badgeRow = el("div", { style: "margin-bottom: 8px;" });
-    for (const cm of clusterMemberships) {
-      const badge = el("button", {
-        className: "cluster-membership-badge mono",
-        type: "button",
-        title: `Part of cluster signal: ${cm.label}`,
-        onclick: () => scrollToClusterSignal(cm.id),
-      }, cm.id);
-      badgeRow.appendChild(badge);
-    }
-    card.appendChild(badgeRow);
-  }
-
-  // ---- Subject chips ----
-  if (currentSubjects.length > 0) {
-    const chips = el("div", { className: "subject-chips" });
-    for (const sub of currentSubjects) {
-      const isPrimary = sub.subject === primarySubject;
-      const isSecondary = secondarySubjects.includes(sub.subject);
-      const chip = el(
-        "span",
-        {
-          className: "subject-chip",
-          dataset: { subject: sub.subject, primary: String(isPrimary) },
-          title: isPrimary
-            ? `Recommended primary subject`
-            : isSecondary
-              ? `Recommended secondary subject`
-              : `Current tagging`,
-        },
-        sub.subject,
-        " ",
-        el("span", { className: "count" }, sub.count.toString()),
-      );
-      chips.appendChild(chip);
-    }
-    card.appendChild(chips);
-  }
-
-  // ---- Theme overlap callout ----
-  if (themeOverlap.flagged) {
-    const cb = el("div", { className: "theme-overlap-callout shown" });
-    cb.innerHTML = `<strong>⚠ Theme overlap.</strong> ${renderInlineMarkdown(themeOverlap.note)}`;
-    card.appendChild(cb);
-  }
-
-  // ---- Merge aliases block ----
-  if (mergeAliases.length > 0) {
-    const aliasBlock = el("div", { className: "merge-aliases-block shown" });
-    aliasBlock.appendChild(el("div", { className: "label" }, "Merge aliases (proposed):"));
-    const ul = el("ul");
-    for (const a of mergeAliases) {
-      ul.appendChild(el("li", {},
-        el("code", {}, a.alias),
-        el("span", { className: "count" }, `(${a.count})`),
-      ));
-    }
-    aliasBlock.appendChild(ul);
-    card.appendChild(aliasBlock);
-  }
-
-  // ---- Recommended-verdict pill (one-click confirm) ----
-  const suggestedVerdict = entry.parsed.suggested_verdict;
-  if (suggestedVerdict && VERDICTS.includes(suggestedVerdict)) {
-    const row = el("div", { className: "recommended-pill-row" });
-    row.appendChild(el("span", {}, "💡 Claude recommends:"));
-    const pill = el("button", {
-      type: "button",
-      className: "recommended-pill" + (verdict === suggestedVerdict ? " matches-current" : ""),
-      dataset: { verdict: suggestedVerdict },
-      title: verdict === suggestedVerdict
-        ? `You've already chosen ${suggestedVerdict}.`
-        : `Click to accept Claude's recommendation (${suggestedVerdict})`,
-      onclick: () => {
-        if (entryVerdict(entry.canonical_key) === suggestedVerdict) return;
-        // Find the radio for this verdict and trigger the change handler.
-        const radio = card.querySelector(`input[type="radio"][name="verdict-${entry.canonical_key}"][value="${suggestedVerdict}"]`);
-        if (radio) {
-          radio.checked = true;
-          onVerdictChange(entry.canonical_key, suggestedVerdict);
-          // For merge, focus the target input so the team can type the canonical_key.
-          if (suggestedVerdict === "merge") {
-            const inp = card.querySelector(`#mergeinto-${entry.canonical_key}`);
-            if (inp) inp.focus();
-          }
-        }
-      },
-    });
-    pill.textContent = `Accept · ${suggestedVerdict}`;
-    row.appendChild(pill);
-    card.appendChild(row);
-  }
-
-  // ---- Verdict radio group ----
-  const verdictFs = el("fieldset", { className: "verdict-options" });
-  verdictFs.appendChild(el("legend", {}, "Verdict"));
-  for (const v of VERDICTS) {
-    const id = `verdict-${entry.canonical_key}-${v}`;
-    const label = el("label", {
-      className: "verdict-option" + (verdict === v ? " selected" : ""),
-      dataset: { verdict: v },
-      htmlFor: id,
-    });
-    const input = el("input", {
-      type: "radio",
-      name: `verdict-${entry.canonical_key}`,
-      id,
-      value: v,
-      checked: verdict === v,
-      onchange: () => onVerdictChange(entry.canonical_key, v),
-    });
-    label.appendChild(input);
-    label.appendChild(document.createTextNode(verdictLabel(v)));
-    verdictFs.appendChild(label);
-  }
-  card.appendChild(verdictFs);
-
-  // ---- merge_into autocomplete (shown only when verdict==merge) ----
-  const needsTarget = entryNeedsMergeTarget(entry.canonical_key);
-  const mergeIntoBlock = el("div", {
-    className: "merge-into-block"
-      + (verdict === "merge" ? " shown" : "")
-      + (needsTarget ? " needs-target" : ""),
-  });
-  mergeIntoBlock.appendChild(el("label", { htmlFor: `mergeinto-${entry.canonical_key}` }, "Merge into:"));
-  const mergeIntoInput = el("input", {
-    type: "text",
-    className: "merge-into-input mono",
-    id: `mergeinto-${entry.canonical_key}`,
-    placeholder: "Enter canonical_key (e.g., plant_identification)",
-    value: mergeIntoVal,
-    list: "all-canonical-keys",
-    autocomplete: "off",
-    spellcheck: false,
-    oninput: (ev) => onMergeIntoChange(entry.canonical_key, ev.target.value),
-  });
-  mergeIntoBlock.appendChild(mergeIntoInput);
-  const warning = el("div", {
-    className: "merge-into-warning" + (needsTarget ? "" : " hidden"),
-    id: `mergeinto-warn-${entry.canonical_key}`,
-  }, "⚠ Merge needs a target — enter the canonical_key of the concept this should fold into.");
-  mergeIntoBlock.appendChild(warning);
-  card.appendChild(mergeIntoBlock);
-
-  // ---- Claude notes (collapsible) ----
-  if (entry.parsed.claude_notes && entry.parsed.claude_notes.trim()) {
-    const notes = el("details", { className: "collapsible claude-notes-block" });
-    notes.appendChild(el("summary", {}, "Why Claude recommends this"));
-    const body = el("div", { className: "collapsible-body" });
-    body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
-    notes.appendChild(body);
-    card.appendChild(notes);
-  }
-
-  // ---- Corpus evidence (collapsible, opaque markdown) ----
-  if (entry.details.present && entry.details.lines.length > 0) {
-    const corp = el("details", { className: "collapsible corpus-evidence" });
-    // Extract the summary text from the <details><summary>...</summary> first line.
-    let summaryText = "Corpus evidence";
-    const firstLine = entry.details.lines[0];
-    const m = firstLine.match(/<summary>(.*?)<\/summary>/);
-    if (m) summaryText = m[1];
-    corp.appendChild(el("summary", {}, summaryText));
-    const body = el("div", { className: "collapsible-body" });
-    // Strip the <details>/<summary>/</details> wrapper lines.
-    const inner = entry.details.lines.slice(1, -1).join("\n").replace(/^\n+|\n+$/g, "");
-    body.innerHTML = renderInlineMarkdown(inner);
-    corp.appendChild(body);
-    card.appendChild(corp);
-  }
-
-  // ---- Curriculum notes textarea ----
-  const cnBlock = el("div", { className: "notes-block" });
-  cnBlock.appendChild(el("label", { htmlFor: `curnotes-${entry.canonical_key}` }, "Curriculum notes (your verdict rationale)"));
-  cnBlock.appendChild(el("textarea", {
-    className: "notes-input",
-    id: `curnotes-${entry.canonical_key}`,
-    placeholder: "Optional. Capture your thinking, especially for ambiguous calls.",
-    value: curriculumNotes,
-    oninput: (ev) => onNotesChange(entry.canonical_key, "curriculum_notes", ev.target.value),
-  }));
-  card.appendChild(cnBlock);
-
-  // ---- Reviewer note textarea ----
-  const rnBlock = el("div", { className: "notes-block" });
-  rnBlock.appendChild(el("label", { htmlFor: `revnote-${entry.canonical_key}` }, "Reviewer note (the maintainer will see this in the export, but it isn't parsed as canonical content)"));
-  rnBlock.appendChild(el("textarea", {
-    className: "notes-input reviewer-note-input",
-    id: `revnote-${entry.canonical_key}`,
-    placeholder: "Inline disagreement, follow-up flag, anything you want to say to the maintainer but don't want stored as the canonical verdict.",
-    value: reviewerNote,
-    oninput: (ev) => onNotesChange(entry.canonical_key, "reviewer_note", ev.target.value),
-  }));
-  card.appendChild(rnBlock);
-
-  return card;
-}
-
 function verdictLabel(v) {
   switch (v) {
     case "keep": return "keep";
@@ -1486,7 +682,38 @@ function verdictLabel(v) {
   }
 }
 
-// ---------- Render datalist for merge_into autocomplete ----------
+function tierReviewDepth(tier) {
+  // Per W10: §11 "review carefully" / §12 "confirm or adjust" / §13
+  // "quick pass; pause when unsure." Per-mode copy is owned by the step
+  // renderers (M1.7+); this helper stays for renderer convenience.
+  if (tier === "11") return "review carefully";
+  if (tier === "12") return "confirm or adjust";
+  return "quick pass; pause when unsure";
+}
+
+// ---------- Render entry card (stub: filled in M1.7+) ----------
+
+function renderEntryCard(entry, mode) {
+  // Stub: render a placeholder step card. Filled in by M1.5-M1.13.
+  const card = el("article", {
+    className: "wizard-step entry-step",
+    dataset: { key: entry.canonical_key, mode },
+  });
+  card.appendChild(el("header", { className: "step-head" },
+    el("span", { className: "step-tier-mode mono" }, `§${entry.tier} · ${mode}`),
+    el("span", { className: "step-of" }, `step ?? of ??`),
+  ));
+  card.appendChild(el("h2", {}, entry.parsed.canonical_label || entry.canonical_key));
+  card.appendChild(el("p", { className: "step-placeholder" },
+    `(Wizard step renderer not yet implemented — milestone M1.7-M1.8.)`));
+  return card;
+}
+
+function renderClusterSignalsPanel() {
+  // Stub — filled in M1.10 (cluster Resolve step renderer).
+}
+
+// ---------- Datalist for merge_into autocomplete ----------
 
 function ensureCanonicalKeysDatalist() {
   if (document.getElementById("all-canonical-keys")) return;
@@ -1501,317 +728,27 @@ function ensureCanonicalKeysDatalist() {
 
 function onVerdictChange(key, v) {
   setEntryState(key, { verdict: v });
-  updateEntryCardChrome(key);
-  updateProgress();
-  updateClusterSignalMembers();
-  updateStatusCounts();
-  applyFilters();
+  renderCurrentStep();
+  updateDecisionDebt();
 }
 
 function onMergeIntoChange(key, value) {
   setEntryState(key, { merge_into: value.trim() });
-  updateEntryCardChrome(key);
-  updateProgress();
-  updateStatusCounts();
-  applyFilters();
+  renderCurrentStep();
+  updateDecisionDebt();
 }
 
 function onNotesChange(key, field, value) {
   setEntryState(key, { [field]: value });
 }
 
-function updateEntryCardChrome(key) {
-  const card = document.getElementById(`entry-${key}`);
-  if (!card) return;
-  const v = entryVerdict(key);
-  const filled = entryFilled(key);
-  const needsTarget = entryNeedsMergeTarget(key);
-  card.dataset.verdict = v;
-  card.dataset.filled = String(filled);
-  card.dataset.needsCall = String(!filled);
-  // Toggle merge_into block visibility + needs-target warning.
-  const block = card.querySelector(".merge-into-block");
-  if (block) {
-    block.classList.toggle("shown", v === "merge");
-    block.classList.toggle("needs-target", needsTarget);
-  }
-  const warn = card.querySelector(`#mergeinto-warn-${key}`);
-  if (warn) warn.classList.toggle("hidden", !needsTarget);
-  // Update verdict-option selected styles
-  for (const opt of card.querySelectorAll("label.verdict-option")) {
-    opt.classList.toggle("selected", opt.dataset.verdict === v);
-  }
-  // Update recommended-pill matches-current state.
-  const pill = card.querySelector(".recommended-pill");
-  if (pill) {
-    const matches = pill.dataset.verdict === v;
-    pill.classList.toggle("matches-current", matches);
-    pill.title = matches
-      ? `You've already chosen ${pill.dataset.verdict}.`
-      : `Click to accept Claude's recommendation (${pill.dataset.verdict})`;
-  }
-}
-
-// ---------- Render tier sections ----------
-
-function renderAllEntries() {
-  const container = document.getElementById("entriesContainer");
-  container.innerHTML = "";
-  ensureCanonicalKeysDatalist();
-  for (const tier of TIER_ORDER) {
-    const section = el("section", { className: "tier-section", dataset: { tier } });
-    const h2 = el("h2");
-    h2.appendChild(el("span", { className: "tier-num mono" }, `§${tier}`));
-    h2.appendChild(document.createTextNode(TIER_LABELS[tier].replace(`§${tier} `, "")));
-    section.appendChild(h2);
-    section.appendChild(el("p", { className: "tier-blurb" }, `${TIER_FREQ_RANGE[tier]} · review depth: ${tierReviewDepth(tier)}`));
-    const entriesInTier = ENTRIES.filter((e) => e.tier === tier);
-    for (const entry of entriesInTier) {
-      section.appendChild(renderEntryCard(entry));
-    }
-    container.appendChild(section);
-  }
-  // No-results placeholder
-  const noResults = el("div", { className: "no-results hidden", id: "noResults" });
-  noResults.appendChild(el("strong", {}, "No entries match your filters."));
-  noResults.appendChild(el("span", {}, "Clear a filter or change your search to see entries."));
-  container.appendChild(noResults);
-}
-
-function tierReviewDepth(tier) {
-  if (tier === "11") return "high (per-entry attention)";
-  if (tier === "12") return "moderate (variance acceptable)";
-  return "rapid skim OK on clear drops";
-}
-
-// ---------- Cluster signal panel ----------
-
-function renderClusterSignalsPanel() {
-  const panel = document.getElementById("clusterSignalsPanel");
-  // Keep h2 + intro paragraph; remove only previous cluster cards.
-  for (const card of panel.querySelectorAll(".cluster-card")) card.remove();
-  for (const signal of CLUSTER_SIGNALS) {
-    panel.appendChild(renderClusterSignalCard(signal));
-  }
-}
-
-function renderClusterSignalCard(signal) {
-  const card = el("section", {
-    className: "cluster-card",
-    id: `cluster-${signal.id}`,
-    dataset: { id: signal.id, answered: String(getClusterState(signal.id) != null) },
-  });
-  const heading = el("h3");
-  heading.appendChild(el("span", { className: "cluster-id mono" }, signal.id));
-  heading.appendChild(document.createTextNode(signal.label));
-  card.appendChild(heading);
-  card.appendChild(el("p", { className: "cluster-question" }, signal.question));
-
-  const optsContainer = el("div", { className: "cluster-options" });
-  signal.options.forEach((opt, idx) => {
-    const selected = getClusterState(signal.id) === idx;
-    const label = el("label", { className: selected ? "selected" : "" });
-    label.appendChild(el("input", {
-      type: "radio",
-      name: `cluster-${signal.id}`,
-      checked: selected,
-      onchange: () => {
-        setClusterState(signal.id, idx);
-        renderClusterSignalsPanel();
-      },
-    }));
-    label.appendChild(el("span", { className: "option-text" }, opt));
-    optsContainer.appendChild(label);
-  });
-  // Clear option
-  if (getClusterState(signal.id) != null) {
-    const clear = el("button", {
-      className: "btn ghost",
-      type: "button",
-      style: "font-size: 11.5px; padding: 2px 8px; margin-top: 2px;",
-      onclick: () => {
-        setClusterState(signal.id, null);
-        renderClusterSignalsPanel();
-      },
-    }, "Clear");
-    optsContainer.appendChild(clear);
-  }
-  card.appendChild(optsContainer);
-
-  // Members
-  const members = el("div", { className: "cluster-members" });
-  members.appendChild(el("span", { className: "members-label" }, `Members (${signal.members.length}) — click to jump:`));
-  const ul = el("ul");
-  for (const memberKey of signal.members) {
-    const memberEntry = ENTRIES_BY_KEY.get(memberKey);
-    const verdict = memberEntry ? entryVerdict(memberKey) : "<to_fill>";
-    const pill = el("button", {
-      className: "member-pill",
-      type: "button",
-      dataset: { verdict },
-      title: memberEntry
-        ? `${memberEntry.parsed.canonical_label || memberKey} · verdict: ${verdict}`
-        : `${memberKey} (entry not found)`,
-      onclick: () => scrollToEntry(memberKey),
-    });
-    pill.appendChild(el("span", { className: "verdict-dot" }));
-    pill.appendChild(document.createTextNode(memberKey));
-    ul.appendChild(pill);
-  }
-  members.appendChild(ul);
-  card.appendChild(members);
-
-  return card;
-}
-
-function updateClusterSignalMembers() {
-  // Update verdict-dot color on every cluster-member pill.
-  for (const pill of document.querySelectorAll(".cluster-card .member-pill")) {
-    const memberKey = pill.textContent.trim();
-    const v = entryVerdict(memberKey);
-    pill.dataset.verdict = v;
-  }
-}
-
-// ---------- Filters ----------
-
-function buildSubjectChips() {
-  const group = document.getElementById("subjectFilterGroup");
-  // Remove existing dynamic chips (keep label + "All").
-  for (const c of group.querySelectorAll(".chip[data-filter='subject']:not([data-value='all'])")) {
-    c.remove();
-  }
-  const counts = subjectCounts();
-  for (const subj of SUBJECT_ORDER) {
-    const count = counts[subj] || 0;
-    if (count === 0) continue;
-    const chip = el("button", {
-      className: "chip",
-      type: "button",
-      dataset: { filter: "subject", value: subj },
-      onclick: (ev) => setFilter("subject", subj),
-    }, subj, " ", el("span", { className: "count" }, count.toString()));
-    group.appendChild(chip);
-  }
-}
-
-function subjectCounts() {
-  const counts = {};
-  for (const e of ENTRIES) {
-    const subj = e.parsed.recommended_primary_subject;
-    if (!subj) continue;
-    counts[subj] = (counts[subj] || 0) + 1;
-  }
-  return counts;
-}
-
-function setFilter(filter, value) {
-  filterState[filter] = value;
-  // Toggle chip active state in this group
-  const group = document.querySelector(`.filter-group [data-filter="${filter}"][data-value="${value}"]`)?.parentElement;
-  if (group) {
-    for (const c of group.querySelectorAll(".chip[data-filter='" + filter + "']")) {
-      c.classList.toggle("active", c.dataset.value === value);
-    }
-  }
-  saveFilterState();
-  applyFilters();
-}
-
-function applyFilters() {
-  const searchQ = filterState.search.trim().toLowerCase();
-  let visibleCount = 0;
-  for (const card of document.querySelectorAll(".entry-card")) {
-    const key = card.dataset.canonicalKey;
-    const entry = ENTRIES_BY_KEY.get(key);
-    if (!entry) continue;
-    let show = true;
-    if (filterState.status !== "all") {
-      const filled = entryFilled(key);
-      if (filterState.status === "needs" && filled) show = false;
-      if (filterState.status === "filled" && !filled) show = false;
-    }
-    if (filterState.tier !== "all" && entry.tier !== filterState.tier) show = false;
-    if (filterState.subject !== "all") {
-      if (entry.parsed.recommended_primary_subject !== filterState.subject) show = false;
-    }
-    if (filterState.themeOverlapOnly && !entry.parsed.theme_overlap.flagged) show = false;
-    if (searchQ) {
-      const hay = (
-        entry.canonical_key + " " +
-        (entry.parsed.canonical_label || "") + " " +
-        (entry.parsed.claude_notes || "")
-      ).toLowerCase();
-      if (!hay.includes(searchQ)) show = false;
-    }
-    card.classList.toggle("hidden", !show);
-    if (show) visibleCount++;
-  }
-
-  // Hide tier sections that have no visible entries.
-  for (const sec of document.querySelectorAll(".tier-section")) {
-    const visible = sec.querySelectorAll(".entry-card:not(.hidden)").length;
-    sec.classList.toggle("hidden", visible === 0);
-  }
-  document.getElementById("noResults").classList.toggle("hidden", visibleCount > 0);
-}
-
-function updateStatusCounts() {
-  let filled = 0;
-  let needs = 0;
-  for (const e of ENTRIES) {
-    if (entryFilled(e.canonical_key)) filled++;
-    else needs++;
-  }
-  document.getElementById("statusCountAll").textContent = ENTRIES.length.toString();
-  document.getElementById("statusCountNeeds").textContent = needs.toString();
-  document.getElementById("statusCountFilled").textContent = filled.toString();
-}
-
-// ---------- Progress + badges ----------
-
-function updateProgress() {
-  const total = ENTRIES.length;
-  const filled = ENTRIES.filter((e) => entryFilled(e.canonical_key)).length;
-  document.getElementById("progressFilled").textContent = filled.toString();
-  const pct = total > 0 ? (filled / total) * 100 : 0;
-  document.getElementById("progressBar").style.width = `${pct}%`;
-}
+// ---------- Saved badge ----------
 
 function setBadgeDirty(dirty, message) {
   const badge = document.getElementById("savedBadge");
+  if (!badge) return;
   badge.classList.toggle("dirty", dirty);
   badge.textContent = dirty ? (message || "Saving…") : "Saved locally";
-}
-
-// ---------- Scroll-to helpers ----------
-
-function scrollToEntry(canonical_key) {
-  const node = document.getElementById(`entry-${canonical_key}`);
-  if (!node) return;
-  // Temporarily clear filters that may hide this entry.
-  if (node.classList.contains("hidden")) {
-    setFilter("status", "all");
-    setFilter("tier", "all");
-    setFilter("subject", "all");
-    if (filterState.themeOverlapOnly) {
-      filterState.themeOverlapOnly = false;
-      document.getElementById("themeOverlapToggle").checked = false;
-      saveFilterState();
-      applyFilters();
-    }
-  }
-  node.scrollIntoView({ behavior: "smooth", block: "center" });
-  node.classList.remove("flash");
-  // Force reflow to restart animation.
-  void node.offsetWidth;
-  node.classList.add("flash");
-}
-
-function scrollToClusterSignal(id) {
-  const node = document.getElementById(`cluster-${id}`);
-  if (!node) return;
-  node.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // ---------- Export to markdown ----------
@@ -1832,7 +769,6 @@ function buildExportMarkdown() {
     const verdict = entryState.verdict;
     const curriculumNotes = entryState.curriculum_notes;
     const mergeInto = entryState.merge_into;
-    const reviewerNote = entryState.reviewer_note;
 
     if (verdict && VERDICTS.includes(verdict)) {
       const fv = entry.fields.verdict;
@@ -1863,16 +799,6 @@ function buildExportMarkdown() {
         if (anchorField) {
           insertAfterLine(anchorField.lineno, `- merge_into: ${trimmed}`);
         }
-      }
-    }
-
-    if (reviewerNote && reviewerNote.trim()) {
-      // Reviewer note as a private inline HTML comment after curriculum_notes.
-      // Escape `-->` so it cannot terminate the comment.
-      const trimmed = reviewerNote.replace(/-->/g, "→]").trim();
-      const anchorField = entry.fields.curriculum_notes;
-      if (anchorField) {
-        insertAfterLine(anchorField.lineno, `  <!-- reviewer note: ${trimmed} -->`);
       }
     }
   }
@@ -1950,9 +876,10 @@ function onImport(file) {
       const text = reader.result;
       if (typeof text !== "string") throw new Error("Imported file is not text");
       // Best-effort import: parse the markdown for per-entry edits + the
-      // cluster-signal comment block at the top.
+      // cluster-signal comment block at the top. Legacy reviewer_note
+      // lines (W5: removed) are ignored without raising — see parser
+      // notes above.
       const importedEntries = parseEntryEditsFromMarkdown(text);
-      const importedReviewerNotes = parseReviewerNotesFromMarkdown(text);
       const importedClusterSignals = parseClusterSignalsFromMarkdown(text);
 
       let entryCount = 0;
@@ -1960,23 +887,16 @@ function onImport(file) {
         state.entries[key] = { ...(state.entries[key] || {}), ...patch };
         entryCount++;
       }
-      for (const [key, note] of Object.entries(importedReviewerNotes)) {
-        state.entries[key] = { ...(state.entries[key] || {}), reviewer_note: note };
-      }
       let clusterCount = 0;
       for (const [id, optionIndex] of Object.entries(importedClusterSignals)) {
         state.cluster_signals[id] = optionIndex;
         clusterCount++;
       }
       saveState();
-      renderAllEntries();
-      renderClusterSignalsPanel();
-      updateProgress();
-      updateStatusCounts();
-      applyFilters();
+      renderCurrentStep();
+      updateDecisionDebt();
       alert(
         `Imported. ${entryCount} entries updated; `
-        + `${Object.keys(importedReviewerNotes).length} reviewer notes; `
         + `${clusterCount} cluster-signal answers.`
       );
     } catch (e) {
@@ -1995,44 +915,18 @@ function parseEntryEditsFromMarkdown(text) {
     const heading = line.match(/^### `([^`]+)`\s*$/);
     if (heading) {
       currentKey = heading[1];
-      if (currentKey.startsWith("<")) currentKey = null;
+      if (currentKey.startsWith("<")) currentKey = null; // skip placeholders
       continue;
     }
     if (!currentKey) continue;
-    const fm = line.match(/^- ([a-z_]+):\s*(.*)$/);
-    if (!fm) continue;
-    const field = fm[1];
-    const value = fm[2].replace(/<!--.*?-->/g, "").trim();
-    if (field === "verdict" && VERDICTS.includes(value)) {
-      result[currentKey] = { ...(result[currentKey] || {}), verdict: value };
-    } else if (field === "curriculum_notes" && value !== "<to_fill>") {
-      result[currentKey] = { ...(result[currentKey] || {}), curriculum_notes: value };
-    } else if (field === "merge_into" && value) {
-      result[currentKey] = { ...(result[currentKey] || {}), merge_into: value };
-    }
-  }
-  return result;
-}
-
-function parseReviewerNotesFromMarkdown(text) {
-  // Reviewer notes are exported as `  <!-- reviewer note: ... -->` lines
-  // directly after each entry's curriculum_notes field. Walk per-entry and
-  // restore the most recent `reviewer note:` comment found within each
-  // entry block.
-  const lines = text.split(/\r?\n/);
-  const result = {};
-  let currentKey = null;
-  for (const line of lines) {
-    const heading = line.match(/^### `([^`]+)`\s*$/);
-    if (heading) {
-      currentKey = heading[1];
-      if (currentKey.startsWith("<")) currentKey = null;
-      continue;
-    }
-    if (!currentKey) continue;
-    const m = line.match(/<!--\s*reviewer note:\s*(.*?)\s*-->/);
-    if (m) {
-      result[currentKey] = m[1];
+    const fieldMatch = line.match(/^- (verdict|curriculum_notes|merge_into):\s*(.*?)\s*$/);
+    if (fieldMatch) {
+      const field = fieldMatch[1];
+      let value = fieldMatch[2];
+      if (value === "<to_fill>") value = "";
+      if (!result[currentKey]) result[currentKey] = {};
+      if (field === "verdict" && !VERDICTS.includes(value)) continue;
+      result[currentKey][field] = value;
     }
   }
   return result;
@@ -2068,14 +962,11 @@ function parseClusterSignalsFromMarkdown(text) {
 // ---------- Clear state ----------
 
 function onClearState() {
-  if (!confirm("Clear ALL progress? This deletes every saved verdict, curriculum note, and reviewer note from this browser. Cannot be undone.")) return;
+  if (!confirm("Clear ALL progress? This deletes every saved verdict and curriculum note from this browser. Cannot be undone.")) return;
   state = defaultState();
   localStorage.removeItem(STORAGE_KEY);
-  renderAllEntries();
-  renderClusterSignalsPanel();
-  updateProgress();
-  updateStatusCounts();
-  applyFilters();
+  renderCurrentStep();
+  updateDecisionDebt();
 }
 
 // ---------- Onboarding ----------
@@ -2109,54 +1000,14 @@ function toggleAdvancedMenu(show) {
 // ---------- Wire-up ----------
 
 function init() {
-  buildSubjectChips();
-  renderAllEntries();
-  renderClusterSignalsPanel();
-  updateProgress();
-  updateStatusCounts();
+  // Build step sequence (entries in tier order; cluster Resolve steps
+  // interleaved before their first member). Stubbed in M1.6.
+  buildStepSequence();
 
-  // Restore filter UI from saved state.
-  for (const filter of ["status", "tier", "subject"]) {
-    const value = filterState[filter];
-    const target = document.querySelector(`.chip[data-filter="${filter}"][data-value="${value}"]`);
-    if (target) {
-      for (const c of target.parentElement.querySelectorAll(`.chip[data-filter="${filter}"]`)) {
-        c.classList.toggle("active", c === target);
-      }
-    }
-  }
-  document.getElementById("themeOverlapToggle").checked = filterState.themeOverlapOnly;
-  document.getElementById("searchInput").value = filterState.search;
-  applyFilters();
+  // Render the current step into #wizardCard. Stubbed in M1.6.
+  renderCurrentStep();
 
-  // Filter chip click handlers (status + tier — subject is wired in buildSubjectChips).
-  for (const chip of document.querySelectorAll('.chip[data-filter="status"], .chip[data-filter="tier"]')) {
-    chip.addEventListener("click", () => setFilter(chip.dataset.filter, chip.dataset.value));
-  }
-  // Subject "all" chip click handler.
-  document.querySelector('.chip[data-filter="subject"][data-value="all"]').addEventListener("click", () => setFilter("subject", "all"));
-
-  // Theme overlap toggle
-  document.getElementById("themeOverlapToggle").addEventListener("change", (ev) => {
-    filterState.themeOverlapOnly = ev.target.checked;
-    saveFilterState();
-    applyFilters();
-  });
-
-  // Search input
-  let searchDebounce = null;
-  document.getElementById("searchInput").addEventListener("input", (ev) => {
-    const v = ev.target.value;
-    if (searchDebounce) clearTimeout(searchDebounce);
-    searchDebounce = setTimeout(() => {
-      filterState.search = v;
-      saveFilterState();
-      applyFilters();
-    }, 120);
-  });
-
-  // Top bar actions
-  document.getElementById("exportBtn").addEventListener("click", onExport);
+  // Top-bar buttons
   document.getElementById("advancedBtn").addEventListener("click", (ev) => {
     ev.stopPropagation();
     toggleAdvancedMenu();
@@ -2165,6 +1016,10 @@ function init() {
     if (!ev.target.closest("#advancedMenu") && !ev.target.closest("#advancedBtn")) {
       toggleAdvancedMenu(false);
     }
+  });
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    onExport();
+    toggleAdvancedMenu(false);
   });
   document.getElementById("importBtn").addEventListener("click", () => {
     document.getElementById("importInput").click();
@@ -2187,10 +1042,42 @@ function init() {
     onClearState();
     toggleAdvancedMenu(false);
   });
-  document.getElementById("dismissOnboardingBtn").addEventListener("click", () => dismissOnboarding(true));
 
+  // The end screen (M1.15) renders a second, more prominent Save & Export
+  // button. The Advanced menu item above is the always-available affordance
+  // that keeps the data-safety floor working across all in-flight milestones.
+
+  // Wizard navigation buttons (wired to step machine in M1.13)
+  document.getElementById("prevBtn").addEventListener("click", () => navStep(-1));
+  document.getElementById("nextBtn").addEventListener("click", () => navStep(+1));
+  document.getElementById("deferBtn").addEventListener("click", () => navDefer());
+
+  // Jump-to-entry (wired in M1.14)
+  ensureCanonicalKeysDatalist();
+  document.getElementById("jumpInput").addEventListener("change", (ev) => {
+    onJumpToEntry(ev.target.value);
+    ev.target.value = "";
+  });
+
+  document.getElementById("dismissOnboardingBtn").addEventListener("click", () => dismissOnboarding(true));
   maybeShowOnboarding();
 }
+
+// ---------- Step machine stubs (filled in M1.6+) ----------
+// Source of truth for current step is state.wizard.step_index (added in M1.6);
+// stepSequence is module-level for fast lookups inside renderers and nav.
+let stepSequence = [];
+function buildStepSequence() { stepSequence = []; }
+function renderCurrentStep() {
+  const card = document.getElementById("wizardCard");
+  if (!card) return;
+  card.innerHTML = "";
+  card.appendChild(el("p", {}, `Wizard step machine not yet wired. ${ENTRIES.length} entries loaded.`));
+}
+function navStep(delta) { /* M1.13 */ }
+function navDefer() { /* M1.13 */ }
+function onJumpToEntry(key) { /* M1.14 */ }
+function updateDecisionDebt() { /* M1.5 */ }
 
 init();
 </script>
