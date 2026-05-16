@@ -153,7 +153,8 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 
 ## Open questions / parked concerns
 
-(none yet)
+- **P2 — Decide-mode merge label regression (queued for M2.1):** `renderDecideStep`'s Claude-recommendation block (template ~line 1298) builds the merge label inline as `${REVIEWER_LABELS[v] || v}${targetSuffix}` → "Fold into another `target`", whereas `renderConfirmStep` uses `reviewerLabelWithTarget(v, t)` (template ~line 968) → "Fold into `target`". Dormant in Batch 1 (no Decide-mode entries have suggested_merge_target). Surfaces in M2.1 when `clusterPrefillCandidate` returns `{verdict:"merge", merge_into}` for Decide-mode cluster members (e.g., the CON-12 "Fold into `writing`" case at design §555). Captured inline in plan M2.1 so the fix lands with the cluster propagation work.
+- **P3 — `renderClusterNotesDrawer` stub comment rewritten (closed):** prior comment claimed "Batch 2 wires cluster_notes to the cluster comment block" — false per the locked Batch 2 scope (auto-prefill, mismatch detection, review summary, intro rewrite, counter polish, smoke gate, README handoff). Rewrote in Session 16 follow-up to neutrally document the stub and stop inviting an unplanned cluster_notes channel; call site at template line 2226 stays unconditional so the cluster-step renderer's append chain is stable. Remove the function + call site if cluster Resolve never gains a notes affordance.
 
 ## Smoke check matrix
 

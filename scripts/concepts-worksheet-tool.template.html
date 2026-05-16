@@ -2235,9 +2235,11 @@ function onClusterCommit(signalId) {
 }
 
 function renderClusterNotesDrawer(signal) {
-  // Cluster signal notes are NOT exported to the worksheet's curriculum_notes
-  // field (those are per-entry). For Batch 1, this is a placeholder drawer
-  // (no persistence yet) — Batch 2 wires cluster_notes to the cluster comment block.
+  // Stub: cluster signals don't have a notes channel in the locked Batch 2
+  // plan (auto-prefill, mismatch detection, review summary, intro rewrite,
+  // counter polish, smoke gate, README handoff). The empty div keeps the
+  // cluster-step renderer's unconditional append stable. Remove the call
+  // site too if cluster Resolve never gains a notes affordance.
   return el("div", { className: "cluster-notes-stub" });
 }
 

@@ -2495,6 +2495,8 @@ Outlined at lower fidelity; detailed task breakdown happens at Batch 2 session s
 
 Implement `clusterPrefillCandidate(entry)` to return `{verdict, merge_into?, from}` based on the resolved cluster Resolve answer per the matrix in design §17 (all 5 clusters: CON-12, CON-16, CON-22, CON-23, CON-24). §11 members get the suggestion shown as text but never as a radio pre-fill (per W17).
 
+**Batch 1 carry-over (Session 16 review):** also swap `renderDecideStep`'s Claude-recommendation merge-label builder from the inline `${REVIEWER_LABELS[v] || v}${targetSuffix}` (template ~line 1298) to `reviewerLabelWithTarget(v, t)` so the copy reads "Fold into `target`" instead of "Fold into another `target`". This is dormant in Batch 1 because no Decide-mode entry has `suggested_merge_target`; it surfaces the moment M2.1's `clusterPrefillCandidate` starts feeding `{verdict:"merge", merge_into}` to Decide-mode members (e.g., a CON-12 member pre-filled "Fold into `writing`" per design §555). `reviewerLabelWithTarget` already lives at template ~line 968 and is the pattern `renderConfirmStep` uses.
+
 Files: `scripts/concepts-worksheet-tool.template.html` (JS — replace the stub from M1.5).
 
 ### Milestone 2.2: Cluster-mismatch detection
