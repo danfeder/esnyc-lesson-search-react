@@ -9,8 +9,8 @@
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **IN PROGRESS**
-- Last milestone completed: **M1.8** (per-entry Decide step renderer + §6.2/§6.4 layout live, commit `944f830`)
-- Next milestone: **M1.9** (mode-routing distribution verification — no commit unless bug found) — tiny session
+- Last milestone completed: **M1.9** (mode-routing distribution verified — no code change; status-doc edit pending bundle into M1.10 commit)
+- Next milestone: **M1.10** (Cluster signal Resolve step renderer — §9) — medium session
 
 ## Branch baseline at M1.0
 
@@ -79,6 +79,17 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 - Browser smoke (chrome-devtools-mcp, zero console errors throughout): **plant_parts** (§11 init step 1/213) Decide chip + tier "§11 High-impact: review carefully." + "Why this needs attention: §11 High-impact concept." + Claude body 506 chars expanded (no summary/▸more) + legend `Your call (no default — high-impact tier):` + 3 blank radios + Confirm-mode elements absent + notes drawer stub present. Click Keep → `state.entries.plant_parts = {verdict:"keep"}` saved to localStorage (verified via `beforeChecked: true` on next probe). **plant_growth** (§12 theme-overlap, step 36/213) Decide-mode forced by theme_overlap routing (not tier-11) + "Why this needs attention: Theme overlap with themes worksheet." + ⚠ callout visible + Claude rec "Keep as concept" + legend `Your call (no default):` (no tier-11 suffix). **biodiversity** (§12 no-rec, step 41/213) Decide via `!hasAiRec && !hasClusterRec` branch + "Why this needs attention: No confident recommendation." + no theme callout + notes-only block fires (no headline, 1653-char body). **ecosystems** (§11 + theme-overlap, step 6/213) priority order verified — theme_overlap reason fires before §11 reason on tier-11 entry, confirming `renderWhyAttention` priority chain.
 - **Plan-text discrepancy noted (no code change):** plan verification §2 says "Click 'Keep' → 'Saved' caption appears" — that wording is M1.7-Confirm-specific (via `displayedPrefillForEntry`'s `captionSource`). Decide-mode never uses "Saved" caption; saved verdicts surface as the checked radio. On §11 entries (which stay Decide per `entryMode`'s tier-11 short-circuit), the headline keeps saying "Claude recommends:" while the radio shows the user's pick. Plan code (followed exactly) is consistent with actual behavior; verification text appears to be M1.7 copy-paste.
 - **M1.7 status doc NOT bundled into M1.8 commit `944f830`** (plan's verbatim `git add` was template-only). Both M1.7's pending status doc edit (Session 6 log + header bump M1.6→M1.7) and this M1.8 edit (Session 7 log + header bump M1.7→M1.8) landed together as a tiny standalone status-doc commit (user-chosen — M1.9 may produce no commit per spec, so bundling would have deferred to M1.10).
+
+### Session 8 (2026-05-15)
+
+- **M1.9 complete (no commit — verification milestone):** mode-routing distribution + 3-entry walk both confirm spec-correct behavior. No routing bug, no code change.
+  - **Distribution probe (Step 1):** 208 entries → **162 Confirm + 46 Decide** (matches M1.5 baseline exactly; under the 60-Decide investigation ceiling). Decide reason breakdown via the plan's probe: **§11=31, theme-overlap=3, no-rec=12** (sum 46). Decide tier breakdown: **§11=32, §12=8, §13=6** (sum 46). The §11/reason 31-vs-32 delta is the one §11 entry that's also `theme_overlap.flagged=true` (`ecosystems`, already noted in Session 7's M1.8 log — priority order routes it as "theme-overlap" not "§11" because theme_overlap is checked first in `renderWhyAttention`).
+  - **3-entry walk (Step 2)** via direct `state.wizard.step_index` + `renderCurrentStep()` (no commits, no localStorage writes):
+    - `plant_parts` (§11 · step 1/213): mode **Decide**, tier strip "§11 High-impact: review carefully.", "Why this needs attention: §11 High-impact concept.", "💡 Claude recommends: Keep as concept", blank radio group (no pre-fill button). ✓ matches plan §1592.
+    - `plant_id` (§13 · step 184/213): mode **Confirm**, tier strip "§13 Long-tail: quick pass; pause when unsure.", "💡 Claude recommends: Fold into `plant_identification`", primary button **"✓ Agree — Fold into `plant_identification`"**. ✓ matches plan §1593 verbatim.
+    - `photosynthesis` (§12 · step 38/213, picked from the 29 §12+keep+no-theme-overlap candidates): mode **Confirm**, tier strip "§12 Mid-tier: confirm or adjust.", "💡 Claude recommends: Keep as concept", primary button **"✓ Agree — Keep as concept"**. ✓ matches plan §1594 verbatim.
+  - **Zero console errors/warnings** throughout the probe.
+  - **No anomalies surfaced** → no investigation triggered, no code commit. This status-doc edit pending bundle into the M1.10 commit per kickoff default.
 
 ## Open questions / parked concerns
 

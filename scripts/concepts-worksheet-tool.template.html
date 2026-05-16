@@ -1511,10 +1511,91 @@ function renderEntryStep(entry, mode) {
 }
 
 function renderClusterStep(signal) {
-  // Stub — M1.10 fills in.
-  const card = el("article", { className: "wizard-step cluster-step" });
-  card.appendChild(el("p", {}, `Cluster ${signal.id} step — milestone M1.10.`));
+  const stepNum = state.wizard.step_index + 1;
+  const totalSteps = stepSequence.length;
+  const card = el("article", {
+    className: "wizard-step cluster-step resolve-mode",
+    dataset: { id: signal.id, mode: "Resolve" },
+  });
+
+  const head = el("header", { className: "step-head" });
+  head.appendChild(el("span", { className: "mode-chip mode-resolve" }, "Resolve"));
+  head.appendChild(el("span", { className: "step-of" }, `step ${stepNum} of ${totalSteps}`));
+  head.appendChild(el("h2", { className: "step-title" }, signal.label));
+  head.appendChild(el("div", { className: "step-key-row" },
+    el("code", {}, signal.id),
+    el("span", { className: "step-meta" }, `${signal.members.length} members`),
+  ));
+  card.appendChild(head);
+
+  card.appendChild(el("p", { className: "cluster-question" }, signal.question));
+
+  const optionsContainer = el("div", { className: "cluster-options" });
+  signal.options.forEach((opt, idx) => {
+    const selected = getClusterState(signal.id) === idx;
+    const label = el("label", { className: "cluster-option" + (selected ? " selected" : "") });
+    label.appendChild(el("input", {
+      type: "radio",
+      name: `cluster-${signal.id}`,
+      checked: selected,
+      onchange: () => {
+        setClusterState(signal.id, idx);
+        onClusterCommit(signal.id);
+      },
+    }));
+    label.appendChild(el("span", { className: "option-text" }, opt));
+    optionsContainer.appendChild(label);
+  });
+  card.appendChild(optionsContainer);
+
+  // Members list (click to peek/jump)
+  const membersBlock = el("div", { className: "cluster-members" });
+  membersBlock.appendChild(el("h3", {}, `Members (${signal.members.length})`));
+  const ul = el("ul");
+  for (const memberKey of signal.members) {
+    const memberEntry = ENTRIES_BY_KEY.get(memberKey);
+    const v = memberEntry ? (getEntryState(memberKey).verdict || "(no decision yet)") : "(not in worksheet)";
+    const li = el("li", {});
+    const peekBtn = el("button", {
+      type: "button",
+      className: "member-peek mono",
+      onclick: () => jumpToStepByEntryKey(memberKey),
+    }, memberKey);
+    li.appendChild(peekBtn);
+    li.appendChild(document.createTextNode(` — ${v}`));
+    ul.appendChild(li);
+  }
+  membersBlock.appendChild(ul);
+  card.appendChild(membersBlock);
+
+  // Note drawer (open via + Add a note; auto-open behavior doesn't apply to cluster steps in Batch 1)
+  card.appendChild(renderClusterNotesDrawer(signal));
+
   return card;
+}
+
+function onClusterCommit(signalId) {
+  updateDecisionDebt();
+  renderCurrentStep();
+  // Batch 2 (M2.1): also recompute downstream member pre-fills.
+}
+
+function renderClusterNotesDrawer(signal) {
+  // Cluster signal notes are NOT exported to the worksheet's curriculum_notes
+  // field (those are per-entry). For Batch 1, this is a placeholder drawer
+  // (no persistence yet) — Batch 2 wires cluster_notes to the cluster comment block.
+  return el("div", { className: "cluster-notes-stub" });
+}
+
+function jumpToStepByEntryKey(key) {
+  for (let i = 0; i < stepSequence.length; i++) {
+    if (stepSequence[i].kind === "entry" && stepSequence[i].id === key) {
+      state.wizard.step_index = i;
+      saveState();
+      renderCurrentStep();
+      return;
+    }
+  }
 }
 
 function renderEndScreen() {
