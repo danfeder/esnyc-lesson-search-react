@@ -1138,13 +1138,53 @@ function commitMerge(key, target, pickerEl) {
   onCommit(key);
 }
 
-function maybeAutoOpenNotesDrawer(entry, verdict, trigger) {
-  // M1.12 fills in.
+function renderNotesDrawer(entry, forceOpen) {
+  const key = entry.canonical_key;
+  const cur = getEntryState(key).curriculum_notes || "";
+  const open = forceOpen || autoOpenSet.has(key) || cur.length > 0;
+  const drawer = el("details", { className: "notes-drawer", open });
+  drawer.appendChild(el("summary", {}, cur ? "✎ Note added (click to edit)" : "+ Add a note"));
+
+  const prompt = autoOpenPrompts.get(key);
+  if (prompt) {
+    drawer.appendChild(el("p", { className: "drawer-prompt" }, prompt));
+  }
+
+  const textarea = el("textarea", {
+    className: "notes-input",
+    placeholder: "Optional. Capture your thinking, especially for ambiguous calls.",
+    value: cur,
+    oninput: (ev) => onNotesChange(key, "curriculum_notes", ev.target.value),
+  });
+  drawer.appendChild(textarea);
+  return drawer;
 }
 
-function renderNotesDrawer(entry, forceOpen) {
-  // M1.12 fills in. Stub keeps renderConfirmStep's append unconditional.
-  return el("div", { className: "notes-drawer-stub" });
+// UI-only sets (not in state) tracking which entries should have the drawer
+// auto-opened on next render.
+const autoOpenSet = new Set();
+const autoOpenPrompts = new Map();
+
+function maybeAutoOpenNotesDrawer(entry, verdict, trigger) {
+  const key = entry.canonical_key;
+  let prompt = null;
+  if (trigger === "override") {
+    prompt = "Worth noting why?";
+  } else if (trigger === "new-or-drop") {
+    prompt = "Optional rationale for the team.";
+  } else if (trigger === "cluster-mismatch") {
+    // Batch 2 only
+    prompt = "Heads up — this differs from the cluster shape you picked. Worth a quick note?";
+  }
+  if (prompt) {
+    autoOpenSet.add(key);
+    autoOpenPrompts.set(key, prompt);
+  }
+}
+
+function onNotesChange(key, field, value) {
+  setEntryState(key, { [field]: value });
+  // Note: setEntryState already calls saveState (debounced)
 }
 
 function renderClusterSignalsPanel() {
