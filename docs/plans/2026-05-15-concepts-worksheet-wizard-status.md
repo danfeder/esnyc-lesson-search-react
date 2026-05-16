@@ -9,8 +9,8 @@
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **IN PROGRESS**
-- Last milestone completed: **M1.4** (template rewrite — long-scroll out, wizard shell in, `reviewer_note` channel removed per W5, commit `53024ca`)
-- Next milestone: **M1.5** (top-bar decision-debt counters) — small session
+- Last milestone completed: **M1.5** (decision-debt top-bar counters wired live, commit `e25e8bc`)
+- Next milestone: **M1.6** (step machine — derived sequence + current-index storage) — medium session
 
 ## Branch baseline at M1.0
 
@@ -49,6 +49,12 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 - **Smoke check #1 (Empty-export SHA invariant) PASS** — `buildExportMarkdown()` SHA-256 = `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03`, byte-identical to source `2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` (264,428 bytes, 3547 lines). Verified via chrome-devtools-mcp `evaluate_script` against the built artifact.
 - Browser smoke (chrome-devtools-mcp): zero console errors; onboarding modal renders + dismisses; top bar shows all expected pieces (brand, saved badge, 0/0/0 debt counters, jump-to-entry, disabled Review-so-far, ⚙ Advanced); placeholder body line "Wizard step machine not yet wired. 208 entries loaded." renders; Advanced menu opens with all 5 items including "Save & Export markdown ↓".
 - `tierReviewDepth()` refreshed to W10 wording ("review carefully" / "confirm or adjust" / "quick pass; pause when unsure") since renderers in M1.7+ will consume it.
+
+### Session 4 (2026-05-15)
+
+- **M1.5 complete (`e25e8bc`):** added `entryMode()` (design §3 routing), `clusterPrefillCandidate()` Batch-1 stub returning null, and the real `updateDecisionDebt()` body replacing the M1.4 stub. Wired `updateDecisionDebt()` into `setClusterState()` (newly added) and `init()` (after `renderCurrentStep()`); existing wires in `onVerdictChange` / `onMergeIntoChange` / `onImport` / `onClearState` carried over from M1.4 stub period.
+- Browser smoke (chrome-devtools-mcp `evaluate_script`): live DOM counters at baseline = **decide=46, confirm=162, resolve=5, bar=0%**; total reconciles to 208 entries + 5 cluster signals = 213. Plan estimated ~35 Decide; actual 46 because the third Decide branch (`!hasAiRec && !hasClusterRec`) catches **12 §12/§13 entries with `suggested_verdict: null`** in the worksheet (e.g., `biodiversity`, `observation`, `phases_of_matter`, `creative_writing`). Spot-checked — these legitimately lack an AI verdict, so routing them to Decide is spec-correct, not a parser bug. Decide tier breakdown: 32 §11 + 8 §12 + 6 §13. State-change wiring exercised via 4 paths (Confirm verdict commit 162→161, Decide verdict commit 46→45, `setClusterState` 5→4, manual clear back to baseline); bar advances 1/213 per commit; zero console errors.
+- M1.4 status doc bundled into M1.5 commit per kickoff default.
 
 ## Open questions / parked concerns
 

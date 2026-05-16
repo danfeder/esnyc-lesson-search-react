@@ -539,6 +539,8 @@ function loadState() {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if (parsed.schema_version !== 1) return defaultState();
+    // Migrate older state that pre-dated the wizard block.
+    parsed.wizard = parsed.wizard || defaultState().wizard;
     return parsed;
   } catch (e) {
     console.warn("Failed to load state", e);
@@ -551,6 +553,10 @@ function defaultState() {
     schema_version: 1,
     entries: {}, // canonical_key -> { verdict, merge_into, curriculum_notes }
     cluster_signals: {}, // CON-NN -> option_index
+    wizard: {
+      step_index: 0,
+      deferred: [], // array of step ids (entry canonical_keys or cluster CON-ids)
+    },
   };
 }
 
@@ -1093,12 +1099,107 @@ function init() {
 // Source of truth for current step is state.wizard.step_index (added in M1.6);
 // stepSequence is module-level for fast lookups inside renderers and nav.
 let stepSequence = [];
-function buildStepSequence() { stepSequence = []; }
+function buildStepSequence() {
+  // Step sequence: entries in tier order, with each cluster's Resolve step
+  // interleaved BEFORE that cluster's first member encountered in the walk.
+  // Each step is { kind: "entry" | "cluster", id: <canonical_key or CON-id>, entry?, signal? }.
+  stepSequence = [];
+
+  // Index entries by tier in worksheet order.
+  const entriesInOrder = [];
+  for (const tier of TIER_ORDER) {
+    for (const entry of ENTRIES) {
+      if (entry.tier === tier) entriesInOrder.push(entry);
+    }
+  }
+
+  // Track which cluster signals have been emitted; emit each before its first
+  // member is encountered IN WIZARD ORDER (not in signal.members order).
+  // signal.members lists the "anchor" first by curation, but that anchor isn't
+  // necessarily the earliest-appearing member in tier-walk order — e.g., CON-22
+  // lists `reading` first but `reading_comprehension` is §12 and `reading` is
+  // §13, so the cluster should fire before `reading_comprehension`.
+  const clusterFirstMember = new Map(); // CON-id -> canonical_key
+  for (const signal of CLUSTER_SIGNALS) {
+    const memberSet = new Set(signal.members);
+    for (const entry of entriesInOrder) {
+      if (memberSet.has(entry.canonical_key)) {
+        clusterFirstMember.set(signal.id, entry.canonical_key);
+        break;
+      }
+    }
+  }
+  const emittedClusters = new Set();
+
+  for (const entry of entriesInOrder) {
+    // Emit cluster step if this entry is the first member of an un-emitted cluster.
+    for (const [clusterId, firstMember] of clusterFirstMember.entries()) {
+      if (emittedClusters.has(clusterId)) continue;
+      if (firstMember === entry.canonical_key) {
+        const signal = CLUSTER_SIGNALS.find((s) => s.id === clusterId);
+        stepSequence.push({ kind: "cluster", id: clusterId, signal });
+        emittedClusters.add(clusterId);
+      }
+    }
+    stepSequence.push({ kind: "entry", id: entry.canonical_key, entry });
+  }
+
+  // Clamp current step index in case state has stale value.
+  // Allow stepSequence.length as a valid index — that's the end-screen
+  // sentinel introduced in M1.15. Anything beyond that wraps back.
+  if (state.wizard.step_index > stepSequence.length) {
+    state.wizard.step_index = stepSequence.length - 1;
+  }
+  if (state.wizard.step_index < 0) state.wizard.step_index = 0;
+}
+
+function currentStep() {
+  return stepSequence[state.wizard.step_index];
+}
+
 function renderCurrentStep() {
   const card = document.getElementById("wizardCard");
   if (!card) return;
   card.innerHTML = "";
-  card.appendChild(el("p", {}, `Wizard step machine not yet wired. ${ENTRIES.length} entries loaded.`));
+  const step = currentStep();
+  if (!step) {
+    card.appendChild(renderEndScreen()); // M1.15
+    return;
+  }
+  if (step.kind === "entry") {
+    const mode = entryMode(step.entry);
+    card.appendChild(renderEntryStep(step.entry, mode));
+  } else if (step.kind === "cluster") {
+    card.appendChild(renderClusterStep(step.signal));
+  }
+  // Mode chip + step counter in step-head are set inside the renderers.
+  updateNavButtonState();
+}
+
+function updateNavButtonState() {
+  // Disable Previous on step 0; disable Next when step isn't "advanceable"
+  // (M1.9 fills in mode-specific rules; for M1.6 we treat advance as always allowed).
+  document.getElementById("prevBtn").disabled = state.wizard.step_index <= 0;
+  document.getElementById("nextBtn").disabled = false;
+}
+
+function renderEntryStep(entry, mode) {
+  // Stub — M1.7 (Confirm) + M1.8 (Decide) fill in.
+  return renderEntryCard(entry, mode); // current M1.4 stub
+}
+
+function renderClusterStep(signal) {
+  // Stub — M1.10 fills in.
+  const card = el("article", { className: "wizard-step cluster-step" });
+  card.appendChild(el("p", {}, `Cluster ${signal.id} step — milestone M1.10.`));
+  return card;
+}
+
+function renderEndScreen() {
+  // Stub — M1.15 fills in.
+  const card = el("article", { className: "wizard-step end-screen" });
+  card.appendChild(el("p", {}, "End of wizard — milestone M1.15."));
+  return card;
 }
 function navStep(delta) { /* M1.13 */ }
 function navDefer() { /* M1.13 */ }
