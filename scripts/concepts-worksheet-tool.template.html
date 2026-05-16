@@ -1062,13 +1062,80 @@ function onDecideVerdict(entry, v) {
 }
 
 function openMergePicker(entry, defaultTarget) {
-  // M1.11 fills in. Stub: commit immediately if defaultTarget is present.
-  if (defaultTarget) {
-    setEntryState(entry.canonical_key, { verdict: "merge", merge_into: defaultTarget });
-    onCommit(entry.canonical_key);
-  } else {
-    alert("Merge picker — M1.11.");
+  // Render the picker as a modal-style overlay inside the current step card.
+  // The wizard step card holds the picker; commit triggers re-render of the step.
+  const card = document.getElementById("wizardCard");
+  // Remove any existing picker
+  for (const old of card.querySelectorAll(".merge-picker")) old.remove();
+
+  const picker = el("div", { className: "merge-picker" });
+  picker.appendChild(el("h3", {}, `Fold \`${entry.canonical_key}\` into…`));
+
+  if (defaultTarget && ENTRIES_BY_KEY.has(defaultTarget)) {
+    // High-confidence shortcut
+    const shortcut = el("div", { className: "merge-shortcut" });
+    shortcut.appendChild(el("p", {}, "Claude suggests:"));
+    const confirmBtn = el("button", {
+      type: "button",
+      className: "btn primary merge-shortcut-confirm",
+      onclick: () => commitMerge(entry.canonical_key, defaultTarget, picker),
+    }, `→ ${defaultTarget} (high-confidence target) — Confirm`);
+    shortcut.appendChild(confirmBtn);
+    picker.appendChild(shortcut);
+    picker.appendChild(el("p", { className: "muted" }, "Or pick a different target ▾"));
   }
+
+  // Autocomplete fallback
+  const input = el("input", {
+    type: "text",
+    className: "merge-input mono",
+    placeholder: "Type canonical_key (autocomplete)…",
+    list: "all-canonical-keys",
+    autocomplete: "off",
+  });
+  picker.appendChild(input);
+
+  const actions = el("div", { className: "merge-actions" });
+  const cancelBtn = el("button", {
+    type: "button",
+    className: "btn ghost",
+    onclick: () => { picker.remove(); },
+  }, "Cancel");
+  const confirmBtn = el("button", {
+    type: "button",
+    className: "btn primary",
+    disabled: true,
+    onclick: () => commitMerge(entry.canonical_key, input.value.trim(), picker),
+  }, "Confirm");
+  input.addEventListener("input", () => {
+    const v = input.value.trim();
+    confirmBtn.disabled = !v || !ENTRIES_BY_KEY.has(v) || v === entry.canonical_key;
+  });
+  actions.appendChild(cancelBtn);
+  actions.appendChild(confirmBtn);
+  picker.appendChild(actions);
+
+  card.appendChild(picker);
+  input.focus();
+}
+
+function commitMerge(key, target, pickerEl) {
+  if (!target || !ENTRIES_BY_KEY.has(target) || target === key) {
+    alert(`Invalid target: \`${target}\` is not a known canonical_key.`);
+    return;
+  }
+  setEntryState(key, { verdict: "merge", merge_into: target });
+  pickerEl.remove();
+  // Auto-open notes drawer when committed merge differs from Claude's suggestion.
+  // MUST run BEFORE onCommit so the auto-open marker is set before
+  // renderCurrentStep reads it. Agreement-with-suggestion does not auto-open.
+  const entry = ENTRIES_BY_KEY.get(key);
+  const isOverride = entry.parsed.suggested_verdict !== "merge"
+    || (entry.parsed.suggested_merge_target && target !== entry.parsed.suggested_merge_target);
+  if (isOverride) {
+    maybeAutoOpenNotesDrawer(entry, "merge", "override");
+  }
+  onCommit(key);
 }
 
 function maybeAutoOpenNotesDrawer(entry, verdict, trigger) {
