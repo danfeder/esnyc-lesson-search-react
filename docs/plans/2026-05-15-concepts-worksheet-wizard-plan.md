@@ -3221,8 +3221,10 @@ EOF
 
 ### Milestone 2.1b: CON-24 pick-one canonical Resolve UI (inline reveal)
 
+> **SCOPE ADDITION (user decision 2026-05-28, surfaced by M2.1 calibration):** ALSO wire the `.cluster-info-caption` render into `renderConfirmStep`. M2.1 wired it only into `renderDecideStep`, but every info-only cluster member (CON-16 opt-1, CON-24 opt-2 pre-parent-pick) is §13/Confirm-routed in the real corpus, so the "pending another decision" notice is currently invisible. `renderConfirmStep` already calls `displayedPrefillForEntry` (which carries `clusterInfoCaption` from M2.1) — render it the same ~6-line way `renderDecideStep` does. **De-jargon the caption text when surfacing it:** the `caption_text` values in `CLUSTER_DERIVATIONS` carry `CON-16:`/`CON-24:` prefixes (fine while Decide-only/unseen, but reviewer-visible once shown in Confirm) → strip the `CON-xx:` prefix + plain wording per W22 (e.g. "Hold off — this is pending the heritage review."). See status-doc "RESOLVED DECISION" note.
+
 **Files:**
-- Modify: `scripts/concepts-worksheet-tool.template.html` — extend `renderClusterStep(signal)` at ~line 2167 with a CON-24-specific inline reveal; add `state.cluster_parents` map + `getClusterParent` / `setClusterParent` helpers + `loadState` migration.
+- Modify: `scripts/concepts-worksheet-tool.template.html` — extend `renderClusterStep(signal)` at ~line 2167 with a CON-24-specific inline reveal; add `state.cluster_parents` map + `getClusterParent` / `setClusterParent` helpers + `loadState` migration. **Plus** the scope-addition above: `.cluster-info-caption` render in `renderConfirmStep` + de-jargoned `caption_text` in `CLUSTER_DERIVATIONS`.
 
 **What this milestone does:**
 
