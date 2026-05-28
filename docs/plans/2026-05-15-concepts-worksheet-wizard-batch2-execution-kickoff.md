@@ -22,13 +22,15 @@ After commit, suggest `/clear` + re-paste this kickoff so context stays fresh.
 
 These milestones are **sequential, not a parallel fan-out** — most build on the prior one's code (the plan's "Suggested sequence & dependencies" section is the binding order). Two are order-independent: **M2.4** (intro) and **M2.7** (README, after the UI is stable). Run order: **M2.0 → M2.1 → M2.1b → M2.2 → M2.3 → M2.5 → M2.6 → M2.7** (M2.4 anytime).
 
+> **⚠ WORKFLOW-BY-DEFAULT (standing user directive, reaffirmed Sessions 19–21).** Under ultracode, **orchestrate each milestone's execution as a sequential dynamic Workflow by default — do NOT run milestones inline.** The user course-corrected mid-Batch-2 when M2.1b was run inline. Inline is the exception (trivially small change + healthy context only). The `/concepts-batch2` command's "Execution via workflow" section is the authoritative how-to; the proven shape is executor → adversarial-verifier, workflow does NOT commit, main loop reviews diff + re-confirms SHA + browser-checks + commits, and the main-loop verify is load-bearing (M2.2/M2.3 agents missed real things).
+
 Two execution paths:
 
-1. **Per-session (manual):** one milestone per session, this kickoff at the top, user reviews before each commit. This is how Batch 1 ran.
-2. **Dynamic workflow (ultracode "let Claude decide"):** a workflow may orchestrate the milestones. If so, it MUST respect three things that are easy to lose in autonomous orchestration:
+1. **Dynamic workflow (DEFAULT under ultracode):** a strictly-sequential workflow orchestrates the milestone (executor → adversarial-verifier). It MUST respect three things that are easy to lose in autonomous orchestration:
    - **Sequential pipeline, not parallel.** Each milestone edits the same template and depends on the prior milestone's code. Do not fan milestones out concurrently. (M2.4 / M2.7 are the only ones that may float.)
    - **Review gate (per the 2026-05-28 cadence note above).** Auto-proceed through the mechanical milestones (M2.1/M2.1b/M2.2/M2.3/M2.5); pause for full review only on prose (M2.4/M2.7) + the smoke gate (M2.6). Never auto-commit prose or the smoke gate unprompted. (Before the 2026-05-28 update this was a per-milestone gate on every milestone.)
    - **Browser smoke is real verification.** Each UI milestone is verified in a real browser via chrome-devtools-mcp (screenshots / `evaluate_script` probes), not by unit tests. If the workflow agent has no browser/MCP access, it cannot self-verify — surface that and fall back to attended verification rather than claiming a pass.
+2. **Inline (main-loop) — the EXCEPTION, not the default.** Allowed only for a trivially small change (a few lines) when main-loop context is healthy; prefer a workflow if unsure. The main loop must still confirm the empty-export SHA + browser-check before committing. (Batch 1 ran fully inline; Batch 2 under ultracode is workflow-first.)
 
 # STATE CHECK (run first)
 
