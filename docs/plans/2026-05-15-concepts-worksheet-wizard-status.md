@@ -10,8 +10,9 @@
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **SHIPPED** (M1.17 smoke gate passed 2026-05-15)
 - Batch 2 plan: **FINALIZED 2026-05-28** — 6 self-review revisions applied; **M2.0 plain-language pass added**; design §4.1 + W22 + global plain-language convention recorded
-- Last milestone completed: **M2.0** (Batch 2 plain-language UI pass — commit `4a565ca`)
-- Next milestone: **M2.1 — Cluster auto-prefill matrix (§17) + carry-over P2 fix** (then M2.1b → M2.2 → M2.3 → M2.5 → M2.6 → M2.7; M2.4 anytime). Per-milestone kickoff: `2026-05-15-concepts-worksheet-wizard-batch2-execution-kickoff.md`
+- Last milestone completed: **M2.1** (cluster auto-prefill matrix §17 + carry-over P2 fix — commit `<commit-pending>`)
+- Next milestone: **M2.1b — CON-24 pick-one canonical Resolve UI (inline reveal)** (then M2.2 → M2.3 → M2.5 → M2.6 → M2.7; M2.4 anytime). Per-milestone kickoff: `2026-05-15-concepts-worksheet-wizard-batch2-execution-kickoff.md`
+- **OPEN DESIGN DECISION (surfaced by M2.1 — affects M2.1b):** info-only cluster captions (CON-16 opt-1 heritage-reframe; CON-24 opt-2 pre-parent-pick) render **only in `renderDecideStep`**, but in the real corpus every info-only member is a §13/Confirm-routed entry — so those "verdict here pending …" notices are **never visible to a reviewer**. Actionable cluster prefills (CON-12/22/23 merges/keeps/drops) DO surface in both modes. If those FYI notices should be visible (they exist to stop a reviewer prematurely deciding a *pending* entry), the caption render must also be wired into `renderConfirmStep`/`renderClaudeRecommendation`. Out of M2.1's Steps 1–6 scope; needs a decision before/within M2.1b.
 - **Run mode (set 2026-05-28):** resume via the project command **`/concepts-batch2`** (re-primes a fresh session: loads state + next milestone; preferred over re-pasting the kickoff). **Review cadence relaxed to "prose + smoke only"** — auto-proceed through mechanical milestones (M2.1/M2.1b/M2.2/M2.3/M2.5), full review only on prose (M2.4/M2.7) + the smoke gate (M2.6). Always-on safety floor (empty-export SHA, no generated-HTML commits, no push/PR, parser untouched, plain-language locked) is never relaxed. Details in the kickoff's 2026-05-28 cadence note.
 
 ## Branch baseline at M1.0
@@ -165,6 +166,16 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
 - Minor: the end-screen line "N of 208 entries committed" keeps "committed" (plan Step 9 didn't include it; M2.3 replaces this whole screen).
 - Status-doc edit bundled into the M2.0 commit per kickoff default; hash recorded via the M1.12 `4a565ca` follow-up pattern.
 
+### Session 18 (2026-05-28) — M2.1 via calibration workflow
+
+- **M2.1 complete (`<commit-pending>`):** cluster auto-prefill matrix (design §17) + carry-over P2 fix. Executed via a **dynamic workflow** (executor agent + independent adversarial verifier; calibration run — first time trusting a workflow on logic-heavy work). The workflow did NOT commit; main loop verified the diff + evidence, then committed.
+- **Edits (template only, parser untouched):** added `CLUSTER_DERIVATIONS` (verbatim §17, all 5 clusters; CON-24 opt-2 = `"CON-24_PICK_ONE"` sentinel) + `computeMemberDerivation` + a **`getClusterParent` M2.1 stub** (returns `(state.cluster_parents && state.cluster_parents[id]) || null`); replaced `clusterPrefillCandidate` stub body; extended `displayedPrefillForEntry` (info_only carries caption + falls through; actionable returns plain `captionSource:"Based on your earlier group decision"`, replacing the old `Suggested from CON-xx`); rewrote `renderDecideStep`'s headline via `reviewerLabelWithTarget(v, v==="merge"?(t||null):null)` (P2 fix → "Fold into \`X\`", no "another") + added the `.cluster-info-caption` render. Diff +197/−20, in-scope (no export-path / parser / routing churn).
+- **Verification (both agents, independent; main-loop diff review):** empty-export SHA `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03` byte-identical (checked clean-state before probing AND after clearing probing state); parser byte-exact (208 / 53-of-78); 0 console errors. Probe 1 (CON-12 opt-2 → `narrative_writing`) = `{merge, writing, "Based on your earlier group decision"}` exact. P2 fix live ("💡 Based on your earlier group decision: Fold into \`writing\`"). **CON-24 opt-2 crash trap (the `getClusterParent`-undefined ReferenceError I flagged pre-execution) confirmed prevented** — stub returns null, info_only caption fires, 0 errors.
+- **Two findings (plan-vs-corpus, NOT execution errors):**
+  1. **Stale plan probe:** plan Probe 2 assumed `writing` is §11; in the real corpus `writing` is §12 (Confirm). The genuine sole §11 cluster member is `measurement` (CON-23) — W17 re-tested on it: decide-mode card, plain caption, **zero radios checked** ✓.
+  2. **Info-caption invisibility (logged as OPEN DESIGN DECISION above):** CON-16/CON-24 info-only captions are Decide-only-wired but their members are all §13/Confirm-routed → invisible in the live path. Needs a decision before/within M2.1b.
+- **Calibration outcome: workflow judged trustworthy** for the mechanical chain — executed faithfully, handled the flagged trap, adapted around stale probes, and the adversarial verifier corroborated + surfaced the design gap rather than rubber-stamping.
+
 ### Planning session (2026-05-28)
 
 - Recovered context after an interruption; confirmed Batch 1 SHIPPED and the Batch 2 plan was drafted-but-uncommitted.
@@ -190,5 +201,5 @@ Recorded at M1.17 (Batch 1 gate) and again at Batch 2 conclusion.
 | 4 | Commit roundtrip | PASS — 5 entries (3 Confirm-agree + 2 Decide-pick), md1=md2 SHA `d1038e2b904a50674e93a4eb8b6813e6e4f70c537867ce46b1a274f24c5d1a12`, 0 diff lines; post fix to import parser: 5 imported keys (was 207), no empty shells |
 | 5 | Merge picker high-confidence shortcut | PASS — `plant_id` agree atomic write + "Saved:" caption; low-conf `social_justice` picker validates junk/valid + commits; shortcut-block UI data-unreachable in Batch 1 (re-test at M2.1) |
 | 8 | Merge-target extraction rate | PASS — 53/78 (68%) |
-| 6 | Cluster Resolve + member walk (Batch 2) | DEFERRED |
+| 6 | Cluster Resolve + member walk (Batch 2) | PARTIAL (M2.1) — actionable prefill PASS (CON-12 opt-2 → narrative_writing = merge/writing/"Based on your earlier group decision"); W17 PASS on real §11 member `measurement`; CON-24 opt-2 no-crash PASS. Full 5-cluster walk + CON-24 pick-one reveal at M2.1b; info-only caption visibility = open design decision. |
 | 7 | Mismatch flag (Batch 2) | DEFERRED |

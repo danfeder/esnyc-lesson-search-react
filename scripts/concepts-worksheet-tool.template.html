@@ -1193,9 +1193,163 @@ function entryMode(entry) {
   return "Confirm";
 }
 
+// ---------- Cluster auto-prefill matrix (design §17 / W20) ----------
+//
+// Per-cluster, per-option mapping from a resolved Resolve answer to its
+// derived member prefills. Three shapes:
+//   { verdict: "keep"|"merge"|"drop"|"new", merge_into?: <canonical_key> }
+//       → actionable prefill; W21 routes through displayedPrefillForEntry
+//   { info_only: true, caption_text: "..." }
+//       → caption-only notice on the entry step; no radio prefill
+//   (absent)
+//       → no derivation; member walks with its own AI prefill (or none)
+//
+// §11 members never receive a radio prefill (W17). The caption surfaces
+// in Decide mode regardless of derivation shape.
+const CLUSTER_DERIVATIONS = {
+  // CON-12 — Writing-cluster canonical shape
+  // Members: writing, narrative_writing, opinion_writing, descriptive_writing,
+  //          how_to_writing, recipe_writing, informational_writing
+  "CON-12": {
+    // 0: Keep `writing` 8 as catch-all + sub-types stay canonical — no prefill
+    0: {},
+    // 1: Drop `writing` 8 + sub-types are the only canonicals
+    1: {
+      writing: { verdict: "drop" },
+    },
+    // 2: Merge sub-types into `writing` 8 catch-all
+    2: {
+      writing: { verdict: "keep" },
+      narrative_writing: { verdict: "merge", merge_into: "writing" },
+      opinion_writing: { verdict: "merge", merge_into: "writing" },
+      descriptive_writing: { verdict: "merge", merge_into: "writing" },
+      how_to_writing: { verdict: "merge", merge_into: "writing" },
+      recipe_writing: { verdict: "merge", merge_into: "writing" },
+      informational_writing: { verdict: "merge", merge_into: "writing" },
+    },
+  },
+  // CON-16 — Indigenous cross-field overlap
+  // Members: indigenous_knowledge, indigenous_stories, native_american_history
+  "CON-16": {
+    0: {}, // Keep concepts-side as separate singleton canonicals — no prefill
+    // 1: Reframe under heritage cluster — cross-field, no prefill but caption
+    1: {
+      indigenous_knowledge: {
+        info_only: true,
+        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+      },
+      indigenous_stories: {
+        info_only: true,
+        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+      },
+      native_american_history: {
+        info_only: true,
+        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+      },
+    },
+    // 2: Drop concepts-side and rely on heritage-side tagging
+    2: {
+      indigenous_knowledge: { verdict: "drop" },
+      indigenous_stories: { verdict: "drop" },
+      native_american_history: { verdict: "drop" },
+    },
+  },
+  // CON-22 — Reading-cluster boundary
+  // Members: reading, reading_comprehension, narrative_reading, biography_reading,
+  //          informational_text, biography
+  "CON-22": {
+    0: {}, // Keep all 6 as distinct canonicals
+    // 1: Merge specific reading sub-types into `reading`
+    1: {
+      reading: { verdict: "keep" },
+      reading_comprehension: { verdict: "merge", merge_into: "reading" },
+      narrative_reading: { verdict: "merge", merge_into: "reading" },
+      biography_reading: { verdict: "merge", merge_into: "reading" },
+      informational_text: { verdict: "merge", merge_into: "reading" },
+      biography: { verdict: "merge", merge_into: "reading" },
+    },
+    // 2: Drop generic `reading` and keep specific sub-types
+    2: {
+      reading: { verdict: "drop" },
+    },
+  },
+  // CON-23 — Measurement-cluster boundary
+  // Members: measurement, volume, area, weight, perimeter
+  "CON-23": {
+    0: {}, // Keep parent + 4 specifics as canonicals
+    // 1: Merge specific sub-types into `measurement` parent
+    1: {
+      measurement: { verdict: "keep" },
+      volume: { verdict: "merge", merge_into: "measurement" },
+      area: { verdict: "merge", merge_into: "measurement" },
+      weight: { verdict: "merge", merge_into: "measurement" },
+      perimeter: { verdict: "merge", merge_into: "measurement" },
+    },
+  },
+  // CON-24 — Figurative-language cluster
+  // Members: figurative_language, similes, descriptive_language, sensory_details
+  "CON-24": {
+    0: {}, // Keep parent + 3 specifics
+    // 1: Merge specifics into figurative_language
+    1: {
+      figurative_language: { verdict: "keep" },
+      similes: { verdict: "merge", merge_into: "figurative_language" },
+      descriptive_language: { verdict: "merge", merge_into: "figurative_language" },
+      sensory_details: { verdict: "merge", merge_into: "figurative_language" },
+    },
+    // 2: Pick one canonical — derivations depend on which parent was picked.
+    //    Pre-parent-pick: caption-only on every member.
+    //    Post-parent-pick: see computeMemberDerivation's CON-24 special-case
+    //    (it reads getClusterParent("CON-24") and computes derivations
+    //    based on the picked parent).
+    2: "CON-24_PICK_ONE",  // sentinel; computeMemberDerivation handles
+  },
+};
+
+// M2.1 stub — M2.1b replaces/extends this with the inline CON-24 parent
+// reveal + setClusterParent + loadState migration. Until then it reads
+// state.cluster_parents (which M2.1 never populates) and returns null, so
+// CON-24 option 2 resolves to the "no parent yet → info_only" branch.
+function getClusterParent(id) {
+  return (state.cluster_parents && state.cluster_parents[id]) || null;
+}
+
+function computeMemberDerivation(signalId, optionIndex, memberKey) {
+  const table = CLUSTER_DERIVATIONS[signalId];
+  if (!table) return null;
+  const optionMap = table[optionIndex];
+  if (!optionMap) return null;
+  // CON-24 option 2 special case (pick-one canonical with deferred parent)
+  if (optionMap === "CON-24_PICK_ONE") {
+    const parent = getClusterParent(signalId); // M2.1b wires setClusterParent
+    if (!parent) {
+      // Pre-parent-pick: caption-only on every member
+      return {
+        info_only: true,
+        caption_text: "CON-24: pick-one outcome — verdict here pending the parent canonical.",
+      };
+    }
+    // Post-parent-pick: parent gets keep; others merge into parent
+    if (memberKey === parent) return { verdict: "keep" };
+    return { verdict: "merge", merge_into: parent };
+  }
+  return optionMap[memberKey] || null;
+}
+
 function clusterPrefillCandidate(entry) {
-  // Stub for M1.5 — actual cluster→member derivation is M2.1 (Batch 2).
-  // Batch 1 always returns null, so cluster pre-fills don't yet propagate.
+  // Walks CLUSTER_SIGNALS to find the signal whose member list contains
+  // this entry. If found and the cluster has a committed answer, returns
+  // either an actionable prefill or an info-only caption per design §17.
+  // Returns null when: no enclosing cluster, cluster unanswered, or no
+  // derivation for this member under the committed option.
+  for (const sig of CLUSTER_SIGNALS) {
+    if (!sig.members || !sig.members.includes(entry.canonical_key)) continue;
+    const cs = getClusterState(sig.id);
+    if (cs === undefined) return null;
+    const derivation = computeMemberDerivation(sig.id, cs, entry.canonical_key);
+    if (!derivation) return null;
+    return { from: sig.id, ...derivation };
+  }
   return null;
 }
 
@@ -1216,14 +1370,21 @@ function displayedPrefillForEntry(entry) {
       isCommitted: true,
     };
   }
-  const clusterPrefill = clusterPrefillCandidate(entry); // null in Batch 1
+  const clusterPrefill = clusterPrefillCandidate(entry);
+  let clusterInfoCaption = null;
   if (clusterPrefill) {
-    return {
-      verdict: clusterPrefill.verdict,
-      merge_into: clusterPrefill.merge_into || null,
-      captionSource: `Suggested from ${clusterPrefill.from}`,
-      isCommitted: false,
-    };
+    if (clusterPrefill.info_only) {
+      // Info-only — surface caption separately; fall through to AI prefill
+      clusterInfoCaption = clusterPrefill.caption_text;
+    } else if (clusterPrefill.verdict) {
+      return {
+        verdict: clusterPrefill.verdict,
+        merge_into: clusterPrefill.merge_into || null,
+        captionSource: "Based on your earlier group decision",  // plain (W22) — NOT "Suggested from CON-xx"; source shown via this text, not an emoji
+        isCommitted: false,
+        clusterInfoCaption: null,
+      };
+    }
   }
   if (entry.parsed.suggested_verdict) {
     return {
@@ -1231,6 +1392,16 @@ function displayedPrefillForEntry(entry) {
       merge_into: entry.parsed.suggested_merge_target || null,
       captionSource: "Claude recommends",
       isCommitted: false,
+      clusterInfoCaption,
+    };
+  }
+  if (clusterInfoCaption) {
+    return {
+      verdict: null,
+      merge_into: null,
+      captionSource: null,
+      isCommitted: false,
+      clusterInfoCaption,
     };
   }
   return null;
@@ -1268,8 +1439,8 @@ function renderDecideStep(entry) {
   const key = entry.canonical_key;
   const stateForEntry = getEntryState(key);
   const verdict = stateForEntry.verdict;
-  const aiSuggestion = entry.parsed.suggested_verdict;
-  const clusterSuggestion = clusterPrefillCandidate(entry); // null in Batch 1
+  const prefill = displayedPrefillForEntry(entry);
+  const clusterInfo = prefill?.clusterInfoCaption || null;
 
   const card = el("article", {
     className: "wizard-step entry-step decide-mode",
@@ -1278,6 +1449,13 @@ function renderDecideStep(entry) {
 
   card.appendChild(renderStepHead(entry, "Decide"));
   card.appendChild(renderTierStrip(entry.tier));
+  if (clusterInfo) {
+    card.appendChild(
+      el("p", { className: "cluster-info-caption" },
+        document.createTextNode(clusterInfo)
+      )
+    );
+  }
   card.appendChild(renderWhyAttention(entry));
 
   // Theme-overlap callout (more prominent on Decide steps)
@@ -1291,19 +1469,18 @@ function renderDecideStep(entry) {
     card.appendChild(renderMergeAliases(entry));
   }
 
-  // Claude's recommendation if any — shown but radio stays blank.
-  if (aiSuggestion || clusterSuggestion) {
-    const source = clusterSuggestion
-      ? `Suggested from ${clusterSuggestion.from}`
-      : "Claude recommends";
-    const v = clusterSuggestion ? clusterSuggestion.verdict : aiSuggestion;
-    const t = clusterSuggestion ? clusterSuggestion.merge_into : entry.parsed.suggested_merge_target;
+  // Claude / cluster recommendation if any — shown but radio stays blank.
+  // (info-only prefills have verdict === null → fall to the notes branch; the
+  //  .cluster-info-caption inserted above already carries their explanation.)
+  if (prefill && prefill.verdict) {
+    const v = prefill.verdict;
+    const t = prefill.merge_into;
+    const source = prefill.captionSource;                 // plain caption (W22) | "Claude recommends"
     const wrap = el("div", { className: "claude-rec" });
-    const targetSuffix = (v === "merge" && t) ? ` \`${t}\`` : "";
     wrap.appendChild(el("p", { className: "claude-rec-headline" },
       el("span", {}, "💡 "),
       el("strong", {}, `${source}: `),
-      document.createTextNode(`${REVIEWER_LABELS[v] || v}${targetSuffix}`),
+      document.createTextNode(reviewerLabelWithTarget(v, v === "merge" ? (t || null) : null)),
     ));
     if (entry.parsed.claude_notes) {
       const body = el("div", { className: "claude-rec-body-expanded" });
