@@ -18,6 +18,8 @@ After commit, suggest `/clear` + re-paste this kickoff so context stays fresh.
 
 # EXECUTION MODEL (read before choosing how to run)
 
+> **⚠ REVIEW CADENCE UPDATED 2026-05-28 (user directive).** The original per-milestone review gate below is **relaxed to "prose + smoke only"**: auto-proceed (execute → verify → commit → continue) through the **mechanical** milestones **M2.1, M2.1b, M2.2, M2.3, M2.5**; pause for full user review only on the **prose** milestones (**M2.4** intro, **M2.7** README) and the **smoke gate** (**M2.6**). The always-on safety floor (empty-export SHA invariant, never commit the generated HTML, never push/PR, parser untouched, plain-language locked) is **never** relaxed. The reusable entry point is the project command **`/concepts-batch2`**, which re-primes a fresh session (loads state + next milestone) — preferred over re-pasting this file. M2.0 ran under the old per-milestone gate.
+
 These milestones are **sequential, not a parallel fan-out** — most build on the prior one's code (the plan's "Suggested sequence & dependencies" section is the binding order). Two are order-independent: **M2.4** (intro) and **M2.7** (README, after the UI is stable). Run order: **M2.0 → M2.1 → M2.1b → M2.2 → M2.3 → M2.5 → M2.6 → M2.7** (M2.4 anytime).
 
 Two execution paths:
@@ -25,7 +27,7 @@ Two execution paths:
 1. **Per-session (manual):** one milestone per session, this kickoff at the top, user reviews before each commit. This is how Batch 1 ran.
 2. **Dynamic workflow (ultracode "let Claude decide"):** a workflow may orchestrate the milestones. If so, it MUST respect three things that are easy to lose in autonomous orchestration:
    - **Sequential pipeline, not parallel.** Each milestone edits the same template and depends on the prior milestone's code. Do not fan milestones out concurrently. (M2.4 / M2.7 are the only ones that may float.)
-   - **Per-milestone review gate.** The user reviews every milestone before its commit (their standing preference). A workflow should checkpoint for review, or be run attended — do not auto-commit a chain of milestones unprompted.
+   - **Review gate (per the 2026-05-28 cadence note above).** Auto-proceed through the mechanical milestones (M2.1/M2.1b/M2.2/M2.3/M2.5); pause for full review only on prose (M2.4/M2.7) + the smoke gate (M2.6). Never auto-commit prose or the smoke gate unprompted. (Before the 2026-05-28 update this was a per-milestone gate on every milestone.)
    - **Browser smoke is real verification.** Each UI milestone is verified in a real browser via chrome-devtools-mcp (screenshots / `evaluate_script` probes), not by unit tests. If the workflow agent has no browser/MCP access, it cannot self-verify — surface that and fall back to attended verification rather than claiming a pass.
 
 # STATE CHECK (run first)

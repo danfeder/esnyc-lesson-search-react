@@ -12,6 +12,7 @@
 - Batch 2 plan: **FINALIZED 2026-05-28** — 6 self-review revisions applied; **M2.0 plain-language pass added**; design §4.1 + W22 + global plain-language convention recorded
 - Last milestone completed: **M2.0** (Batch 2 plain-language UI pass — commit `4a565ca`)
 - Next milestone: **M2.1 — Cluster auto-prefill matrix (§17) + carry-over P2 fix** (then M2.1b → M2.2 → M2.3 → M2.5 → M2.6 → M2.7; M2.4 anytime). Per-milestone kickoff: `2026-05-15-concepts-worksheet-wizard-batch2-execution-kickoff.md`
+- **Run mode (set 2026-05-28):** resume via the project command **`/concepts-batch2`** (re-primes a fresh session: loads state + next milestone; preferred over re-pasting the kickoff). **Review cadence relaxed to "prose + smoke only"** — auto-proceed through mechanical milestones (M2.1/M2.1b/M2.2/M2.3/M2.5), full review only on prose (M2.4/M2.7) + the smoke gate (M2.6). Always-on safety floor (empty-export SHA, no generated-HTML commits, no push/PR, parser untouched, plain-language locked) is never relaxed. Details in the kickoff's 2026-05-28 cadence note.
 
 ## Branch baseline at M1.0
 
