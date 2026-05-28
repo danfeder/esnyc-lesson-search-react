@@ -873,6 +873,26 @@
     font-size: 13px;
   }
 
+  /* Cluster-mismatch callout (M2.2) — shown when a per-entry verdict
+     disagrees with the group decision derived for its cluster. */
+  .cluster-mismatch-callout {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-left: 3px solid var(--warn-border);
+    background: var(--warn-soft);
+    border-radius: var(--radius-sm);
+  }
+  .cluster-mismatch-callout .callout-headline {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .cluster-mismatch-callout .callout-detail {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
   /* ---------- End screen (§10) ---------- */
   .wizard-step.end-screen h2 {
     font-size: 24px;
@@ -1113,6 +1133,7 @@ function setClusterState(id, optionIndex) {
   }
   saveState();
   updateDecisionDebt();
+  recomputeMismatchForCluster(id); // M2.2: a group-decision change flips/clears member flags
 }
 
 // ---------- DOM utils ----------
@@ -1361,6 +1382,7 @@ function setClusterParent(id, parent) {
     state.cluster_parents[id] = parent;
   }
   saveState();
+  recomputeMismatchForCluster(id); // M2.2: changing the picked parent shifts CON-24 member derivations
 }
 
 function computeMemberDerivation(signalId, optionIndex, memberKey) {
@@ -1400,6 +1422,78 @@ function clusterPrefillCandidate(entry) {
     return { from: sig.id, ...derivation };
   }
   return null;
+}
+
+// ---------- Cluster-mismatch detection (M2.2) ----------
+// A "mismatch" = the reviewer's committed per-entry verdict disagrees with
+// the shape derived from the group decision they made for the enclosing
+// cluster. The flag (state.entries[key].cluster_mismatch) stores the signal
+// id (e.g. "CON-12") for internal bookkeeping ONLY — it is never shown to the
+// reviewer and never exported (W22 plain-language + empty-export SHA invariant).
+
+// Returns the cluster signal id if entry's committed verdict disagrees with
+// the cluster derivation; null otherwise. Info-only cluster prefills
+// (CON-16 option 1, CON-24 pre-parent-pick) are NOT mismatches — they're
+// informational, not commitments.
+function checkClusterMismatch(entry) {
+  const ev = state.entries[entry.canonical_key];
+  if (!ev || !ev.verdict) return null;
+  const cp = clusterPrefillCandidate(entry);
+  if (!cp || cp.info_only || !cp.verdict) return null;
+  // Disagreement: different verdict, or same merge verdict but different target.
+  if (ev.verdict !== cp.verdict) return cp.from;
+  if (ev.verdict === "merge" && (ev.merge_into || "") !== (cp.merge_into || "")) return cp.from;
+  return null;
+}
+
+function recomputeMismatchForEntry(entry) {
+  const key = entry.canonical_key;
+  const cm = checkClusterMismatch(entry);
+  const ev = state.entries[key] || {};
+  if (cm && ev.cluster_mismatch !== cm) {
+    // New mismatch (or a different signal) — set flag + queue the auto-open.
+    state.entries[key] = { ...ev, cluster_mismatch: cm };
+    saveState();
+    maybeAutoOpenNotesDrawer(entry, ev.verdict, "cluster-mismatch");
+  } else if (!cm && ev.cluster_mismatch) {
+    // Stale mismatch — clear the flag (verdict now matches, or the group
+    // decision changed/cleared so there's nothing to mismatch against).
+    const cleaned = { ...ev };
+    delete cleaned.cluster_mismatch;
+    state.entries[key] = cleaned;
+    saveState();
+  }
+}
+
+function recomputeMismatchForCluster(signalId) {
+  const sig = CLUSTER_SIGNALS.find((s) => s.id === signalId);
+  if (!sig || !sig.members) return;
+  for (const memberKey of sig.members) {
+    const entry = ENTRIES_BY_KEY.get(memberKey);
+    if (entry) recomputeMismatchForEntry(entry);
+  }
+}
+
+// Reviewer-facing yellow callout shown above the recommendation block on
+// every visit to an entry whose verdict mismatches its group decision.
+// Plain-language (W22): no CON-xx id, no "cluster shape" — says "group
+// decision you made for these related concepts".
+function renderClusterMismatchCallout(entry) {
+  const ev = state.entries[entry.canonical_key];
+  if (!ev || !ev.cluster_mismatch) return null;
+  const cp = clusterPrefillCandidate(entry);
+  let shapeText = "a different choice";
+  if (cp && cp.verdict) {
+    shapeText = reviewerLabelWithTarget(cp.verdict, cp.merge_into || null);
+  }
+  return el("div", { className: "cluster-mismatch-callout" },
+    el("p", { className: "callout-headline" },
+      document.createTextNode("⚠ Heads up — this differs from the group decision you made for these related concepts.")
+    ),
+    el("p", { className: "callout-detail" },
+      document.createTextNode(`That group decision points to: ${shapeText}. There's a note open below if you want to capture why.`)
+    )
+  );
 }
 
 // ---------- Render entry step (Confirm = M1.7; Decide = M1.8) ----------
@@ -1488,6 +1582,11 @@ function renderConfirmStep(entry) {
     card.appendChild(renderMergeAliases(entry));
   }
 
+  // M2.2: yellow callout when this committed verdict disagrees with the
+  // group decision derived for its cluster.
+  const confirmMismatch = renderClusterMismatchCallout(entry);
+  if (confirmMismatch) card.appendChild(confirmMismatch);
+
   card.appendChild(renderClaudeRecommendation(entry, displayed, displayedTarget, captionSource));
   card.appendChild(renderPrimaryAgreeAction(entry, displayed, displayedTarget));
   card.appendChild(renderPickSomethingElse(entry, displayed));
@@ -1529,6 +1628,11 @@ function renderDecideStep(entry) {
   if (entry.parsed.merge_aliases && entry.parsed.merge_aliases.length > 0) {
     card.appendChild(renderMergeAliases(entry));
   }
+
+  // M2.2: yellow callout when this committed verdict disagrees with the
+  // group decision derived for its cluster.
+  const decideMismatch = renderClusterMismatchCallout(entry);
+  if (decideMismatch) card.appendChild(decideMismatch);
 
   // Claude / cluster recommendation if any — shown but radio stays blank.
   // (info-only prefills have verdict === null → fall to the notes branch; the
@@ -1595,9 +1699,9 @@ function renderWhyAttention(entry) {
   if (theme && theme.flagged) {
     reason = "Also shows up as a theme — double-check it belongs here as a concept.";
   } else if (clusterPrefillCandidate(entry)) {
-    // (Batch 2 path) revisit-mode + Differs-from-cluster + Part-of-cluster-no-decision
-    // For Batch 1 this branch is unreachable (clusterPrefillCandidate stays null)
-    reason = "(Cluster reason — Batch 2.)";
+    // Plain-language (W22): say "group," never "cluster." Reachable once a
+    // group decision is made (e.g. a §11 member like measurement after CON-23).
+    reason = "Part of a group you've already made a decision about — make sure this concept fits.";
   } else if (entry.tier === "11") {
     reason = "A foundational concept — worth a careful look.";
   } else if (!entry.parsed.suggested_verdict) {
@@ -1730,6 +1834,11 @@ function renderMergeAliases(entry) {
 // ---------- Commit + override handlers ----------
 
 function onCommit(key) {
+  // M2.2: detect/clear cluster mismatch on every commit path. Idempotent —
+  // if a caller (e.g. commitMerge) already ran recomputeMismatchForEntry, the
+  // flag already matches and this is a no-op.
+  const entry = ENTRIES_BY_KEY.get(key);
+  if (entry) recomputeMismatchForEntry(entry);
   updateDecisionDebt();
   renderCurrentStep();
 }
@@ -1828,9 +1937,13 @@ function commitMerge(key, target, pickerEl) {
   // MUST run BEFORE onCommit so the auto-open marker is set before
   // renderCurrentStep reads it. Agreement-with-suggestion does not auto-open.
   const entry = ENTRIES_BY_KEY.get(key);
+  // M2.2: detect mismatch first. A cluster-mismatch auto-open takes precedence
+  // over the override prompt (different prompt text), so suppress the override
+  // auto-open when a mismatch flag was just set by the recompute.
+  recomputeMismatchForEntry(entry);
   const isOverride = entry.parsed.suggested_verdict !== "merge"
     || (entry.parsed.suggested_merge_target && target !== entry.parsed.suggested_merge_target);
-  if (isOverride) {
+  if (isOverride && !state.entries[key]?.cluster_mismatch) {
     maybeAutoOpenNotesDrawer(entry, "merge", "override");
   }
   onCommit(key);
@@ -1871,8 +1984,8 @@ function maybeAutoOpenNotesDrawer(entry, verdict, trigger) {
   } else if (trigger === "new-or-drop") {
     prompt = "Optional rationale for the team.";
   } else if (trigger === "cluster-mismatch") {
-    // Batch 2 only
-    prompt = "Heads up — this differs from the cluster shape you picked. Worth a quick note?";
+    // M2.2 — plain-language (W22): "group decision" not "cluster shape".
+    prompt = "Heads up — this differs from the group decision you made for these related concepts. Worth a quick note?";
   }
   if (prompt) {
     autoOpenSet.add(key);
