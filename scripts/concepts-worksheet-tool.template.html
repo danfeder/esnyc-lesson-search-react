@@ -836,6 +836,43 @@
     border-color: var(--accent);
   }
 
+  /* ---------- CON-24 pick-one parent reveal (M2.1b) ---------- */
+  .con24-parent-picker {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--warn-border);
+    background: var(--warn-soft);
+    border-radius: var(--radius-sm);
+  }
+  .con24-parent-picker .reveal-prompt {
+    margin: 0 0 8px;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .con24-parent-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    cursor: pointer;
+  }
+  .con24-parent-label input[type="radio"] {
+    margin: 0;
+    accent-color: var(--mode-resolve);
+  }
+
+  /* Info-only "hold off, pending another decision" notice on an entry step.
+     Rendered in both Decide (M2.1) and Confirm (M2.1b) modes. */
+  .cluster-info-caption {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn-border);
+    border-radius: var(--radius-sm);
+    color: var(--warn);
+    font-size: 13px;
+  }
+
   /* ---------- End screen (§10) ---------- */
   .wizard-step.end-screen h2 {
     font-size: 24px;
@@ -1018,6 +1055,7 @@ function loadState() {
     if (parsed.schema_version !== 1) return defaultState();
     // Migrate older state that pre-dated the wizard block.
     parsed.wizard = parsed.wizard || defaultState().wizard;
+    if (!parsed.cluster_parents) parsed.cluster_parents = {}; // M2.1b migration
     return parsed;
   } catch (e) {
     console.warn("Failed to load state", e);
@@ -1030,6 +1068,7 @@ function defaultState() {
     schema_version: 1,
     entries: {}, // canonical_key -> { verdict, merge_into, curriculum_notes }
     cluster_signals: {}, // CON-NN -> option_index
+    cluster_parents: {}, // CON-NN -> canonical_key (only set for CON-24 pick-one; M2.1b)
     wizard: {
       step_index: 0,
       deferred: [], // array of step ids (entry canonical_keys or cluster CON-ids)
@@ -1236,15 +1275,15 @@ const CLUSTER_DERIVATIONS = {
     1: {
       indigenous_knowledge: {
         info_only: true,
-        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+        caption_text: "Hold off — this is pending the heritage review.",
       },
       indigenous_stories: {
         info_only: true,
-        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+        caption_text: "Hold off — this is pending the heritage review.",
       },
       native_american_history: {
         info_only: true,
-        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+        caption_text: "Hold off — this is pending the heritage review.",
       },
     },
     // 2: Drop concepts-side and rely on heritage-side tagging
@@ -1306,12 +1345,22 @@ const CLUSTER_DERIVATIONS = {
   },
 };
 
-// M2.1 stub — M2.1b replaces/extends this with the inline CON-24 parent
-// reveal + setClusterParent + loadState migration. Until then it reads
-// state.cluster_parents (which M2.1 never populates) and returns null, so
-// CON-24 option 2 resolves to the "no parent yet → info_only" branch.
+// state.cluster_parents holds the chosen parent canonical for CON-24's
+// pick-one option (index 2). getClusterParent reads it; setClusterParent
+// (M2.1b) writes/clears it via the inline reveal in renderClusterStep.
+// computeMemberDerivation's CON-24 special-case consumes it: no parent →
+// info_only caption; parent set → parent gets keep, others merge into it.
 function getClusterParent(id) {
   return (state.cluster_parents && state.cluster_parents[id]) || null;
+}
+
+function setClusterParent(id, parent) {
+  if (!parent) {
+    delete state.cluster_parents[id];
+  } else {
+    state.cluster_parents[id] = parent;
+  }
+  saveState();
 }
 
 function computeMemberDerivation(signalId, optionIndex, memberKey) {
@@ -1326,7 +1375,7 @@ function computeMemberDerivation(signalId, optionIndex, memberKey) {
       // Pre-parent-pick: caption-only on every member
       return {
         info_only: true,
-        caption_text: "CON-24: pick-one outcome — verdict here pending the parent canonical.",
+        caption_text: "Hold off — this is pending the group's main-concept pick.",
       };
     }
     // Post-parent-pick: parent gets keep; others merge into parent
@@ -1422,6 +1471,18 @@ function renderConfirmStep(entry) {
 
   card.appendChild(renderStepHead(entry, "Confirm"));
   card.appendChild(renderTierStrip(entry.tier));
+
+  // Info-only group notice (e.g. "Hold off — pending the heritage review").
+  // M2.1 wired this into renderDecideStep only, but every info-only member is
+  // Confirm-routed in the real corpus, so surface it here too (M2.1b scope add).
+  const clusterInfo = prefill.clusterInfoCaption || null;
+  if (clusterInfo) {
+    card.appendChild(
+      el("p", { className: "cluster-info-caption" },
+        document.createTextNode(clusterInfo)
+      )
+    );
+  }
 
   if (entry.parsed.merge_aliases && entry.parsed.merge_aliases.length > 0) {
     card.appendChild(renderMergeAliases(entry));
@@ -2384,6 +2445,39 @@ function renderClusterStep(signal) {
     label.appendChild(el("span", { className: "option-text" }, opt));
     optionsContainer.appendChild(label);
   });
+
+  // M2.1b — CON-24 "pick one" inline reveal. The cluster step commits on radio
+  // change (no separate Confirm button), so the reveal keys off the COMMITTED
+  // option (getClusterState === 2), not a staged value. Picking a parent writes
+  // state.cluster_parents and re-renders; computeMemberDerivation then resolves
+  // the CON-24 members toward the chosen parent. Stale parent is cleared in
+  // onClusterCommit when the option flips away from 2.
+  if (signal.id === "CON-24" && getClusterState(signal.id) === 2) {
+    const reveal = el("div", { className: "con24-parent-picker" });
+    reveal.appendChild(
+      el("p", { className: "reveal-prompt" }, "Now pick the main concept to keep:")
+    );
+    const currentParent = getClusterParent("CON-24");
+    for (const parentKey of ["figurative_language", "descriptive_language"]) {
+      const radio = el("input", {
+        type: "radio",
+        name: "con24-parent",
+        value: parentKey,
+        checked: currentParent === parentKey,
+        onchange: () => {
+          setClusterParent("CON-24", parentKey);
+          renderCurrentStep();
+        },
+      });
+      const label = el("label", { className: "con24-parent-label" },
+        radio,
+        el("code", {}, parentKey),
+      );
+      reveal.appendChild(label);
+    }
+    optionsContainer.appendChild(reveal);
+  }
+
   card.appendChild(optionsContainer);
 
   // Members list (click to peek/jump)
@@ -2413,9 +2507,15 @@ function renderClusterStep(signal) {
 }
 
 function onClusterCommit(signalId) {
+  // M2.1b — if CON-24's option flips away from "pick one" (index 2), drop any
+  // previously-chosen parent so it can't linger as zombie state. Runs before
+  // the re-render so member pre-fills recompute against the cleared parent.
+  if (signalId === "CON-24" && getClusterState("CON-24") !== 2) {
+    setClusterParent("CON-24", null);
+  }
   updateDecisionDebt();
   renderCurrentStep();
-  // Batch 2 (M2.1): also recompute downstream member pre-fills.
+  // Member pre-fills recompute lazily when each member step renders (M2.1).
 }
 
 function renderClusterNotesDrawer(signal) {
