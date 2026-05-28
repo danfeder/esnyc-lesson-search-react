@@ -933,6 +933,119 @@
     .decision-debt { gap: 10px; }
     .decision-debt .debt-decide b { font-size: 15px; }
   }
+
+  /* ---------- Review summary (M2.3, design §11) ---------- */
+  .review-summary {
+    max-width: 760px;
+  }
+
+  .summary-header h2 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    color: var(--text-strong);
+  }
+
+  .summary-counts {
+    margin: 0 0 16px;
+    color: var(--muted);
+  }
+
+  .summary-bucket {
+    margin: 12px 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+  }
+
+  .summary-bucket > .bucket-summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    user-select: none;
+  }
+
+  .summary-bucket[open] > .bucket-summary {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .deferred-bucket > .bucket-summary,
+  .mismatch-bucket > .bucket-summary {
+    color: var(--warn);
+  }
+
+  .bucket-list {
+    margin: 0;
+    padding: 8px 14px 14px;
+    list-style: none;
+  }
+
+  .bucket-row {
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .bucket-row:last-child {
+    border-bottom: none;
+  }
+
+  .bucket-row .group-label {
+    font-weight: 500;
+    color: var(--text-strong);
+  }
+
+  /* TRAP B: the tier-tag span was removed from every bucket row (design §11
+     has no tier tags, and "§NN" is a forbidden on-screen code). The tier-tag
+     used to carry margin-left:auto to push the edit/resume link right; that
+     job now belongs to the link itself so it stays right-aligned. */
+  .bucket-row .btn.link.edit-link,
+  .bucket-row .btn.link.resume-link {
+    margin-left: auto;
+    padding: 0;
+    font-size: 13px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    text-decoration: underline dotted;
+    cursor: pointer;
+  }
+
+  .bucket-empty {
+    margin: 0;
+    padding: 10px 14px;
+    color: var(--hint);
+    font-style: italic;
+  }
+
+  .fold-target-group {
+    border-top: 1px dotted var(--border);
+    padding: 10px 14px;
+  }
+
+  .fold-target-group:first-of-type {
+    border-top: none;
+  }
+
+  .fold-target-header {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .summary-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+
+  .summary-footer .btn.primary {
+    font-size: 15px;
+    padding: 10px 20px;
+  }
 </style>
 </head>
 <body>
@@ -1266,6 +1379,75 @@ function entryMode(entry) {
 //
 // §11 members never receive a radio prefill (W17). The caption surfaces
 // in Decide mode regardless of derivation shape.
+
+// ---------- Plain-language display for group (cluster) signals (W22) ----------
+// Tool-owned plain names / questions / option recaps for the 5 group signals.
+// The LOCKED worksheet data (signal.label / signal.question / signal.options)
+// stays the source of truth for export + import and is NEVER edited here; this
+// map only changes what the reviewer SEES in the Resolve step + review summary.
+// options[] is index-aligned with the locked signal.options.
+const CLUSTER_DISPLAY = {
+  "CON-12": {
+    name: "Writing concepts",
+    question: "How should the writing concepts be organized?",
+    options: [
+      "Keep `writing` as a catch-all and keep each sub-type as its own concept",
+      "Drop the general `writing` and keep only the specific writing types",
+      "Fold the specific writing types into the general `writing`",
+    ],
+  },
+  "CON-16": {
+    name: "Indigenous concepts",
+    question: "These Indigenous concepts also come up in the heritage review. How should they be handled here?",
+    options: [
+      "Keep these as separate concepts here",
+      "Handle these in the heritage review instead",
+      "Drop these here and rely on the heritage review",
+    ],
+  },
+  "CON-22": {
+    name: "Reading concepts",
+    question: "How should the reading concepts be organized?",
+    options: [
+      "Keep all six as separate concepts",
+      "Fold the specific reading types into `reading`",
+      "Drop the general `reading` and keep the specific reading types",
+    ],
+  },
+  "CON-23": {
+    name: "Measurement concepts",
+    question: "Should `measurement` stay separate from its four specific types, or absorb them?",
+    options: [
+      "Keep `measurement` and the four specific types as separate concepts",
+      "Fold the specific types into `measurement`",
+    ],
+  },
+  "CON-24": {
+    name: "Figurative-language concepts",
+    question: "How should the figurative-language concepts be organized?",
+    options: [
+      "Keep `figurative_language` and the three specific types as separate concepts",
+      "Fold the specific types into `figurative_language`",
+      "Keep just one main concept",
+    ],
+  },
+};
+
+// Display accessors — fall back to the locked signal data if an id/index is
+// ever missing (keeps the UI safe; never touches the export/import path).
+function clusterDisplayName(signal) {
+  const d = CLUSTER_DISPLAY[signal.id];
+  return (d && d.name) || signal.label;
+}
+function clusterDisplayQuestion(signal) {
+  const d = CLUSTER_DISPLAY[signal.id];
+  return (d && d.question) || signal.question;
+}
+function clusterDisplayOption(signal, idx) {
+  const d = CLUSTER_DISPLAY[signal.id];
+  return (d && d.options && d.options[idx]) || signal.options[idx] || `Option ${idx}`;
+}
+
 const CLUSTER_DERIVATIONS = {
   // CON-12 — Writing-cluster canonical shape
   // Members: writing, narrative_writing, opinion_writing, descriptive_writing,
@@ -2321,6 +2503,15 @@ function init() {
   // button. The Advanced menu item above is the always-available affordance
   // that keeps the data-safety floor working across all in-flight milestones.
 
+  // M2.3: enable the top-bar "Review so far" button (stubbed disabled in
+  // M1.4). It opens the review summary mid-flow.
+  const reviewBtn = document.getElementById("reviewSoFarBtn");
+  if (reviewBtn) {
+    reviewBtn.disabled = false;
+    reviewBtn.removeAttribute("title"); // drop the "Available in Batch 2" tooltip
+    reviewBtn.addEventListener("click", openReviewSummary);
+  }
+
   // Wizard navigation buttons
   document.getElementById("prevBtn").addEventListener("click", () => navStep(-1));
   document.getElementById("nextBtn").addEventListener("click", () => {
@@ -2469,6 +2660,15 @@ function renderCurrentStep() {
   const card = document.getElementById("wizardCard");
   const nav = document.getElementById("wizardNav");
   card.innerHTML = "";
+  // M2.3: when the review summary is open, render it into the existing
+  // #wizardCard host (TRAP E — same appendChild pattern as the end screen,
+  // NOT card.replaceWith). Hide the bottom nav; the summary has its own
+  // footer actions.
+  if (summaryOpen) {
+    card.appendChild(renderReviewSummary());
+    nav.classList.add("hidden");
+    return;
+  }
   const step = currentStep();
   if (!step) {
     // End screen: step_index === stepSequence.length. Hide the bottom nav —
@@ -2534,13 +2734,13 @@ function renderClusterStep(signal) {
   const head = el("header", { className: "step-head" });
   head.appendChild(el("span", { className: "mode-chip mode-resolve" }, MODE_CHIP_LABELS.Resolve));
   head.appendChild(el("span", { className: "step-of" }, `step ${stepNum} of ${totalSteps}`));
-  head.appendChild(el("h2", { className: "step-title" }, signal.label));
+  head.appendChild(el("h2", { className: "step-title" }, clusterDisplayName(signal)));
   head.appendChild(el("div", { className: "step-key-row" },
     el("span", { className: "step-meta" }, `${signal.members.length} concepts in this group`),
   ));
   card.appendChild(head);
 
-  card.appendChild(el("p", { className: "cluster-question" }, signal.question));
+  card.appendChild(el("p", { className: "cluster-question" }, clusterDisplayQuestion(signal)));
 
   const optionsContainer = el("div", { className: "cluster-options" });
   signal.options.forEach((opt, idx) => {
@@ -2555,7 +2755,7 @@ function renderClusterStep(signal) {
         onClusterCommit(signal.id);
       },
     }));
-    label.appendChild(el("span", { className: "option-text" }, opt));
+    label.appendChild(el("span", { className: "option-text" }, clusterDisplayOption(signal, idx)));
     optionsContainer.appendChild(label);
   });
 
@@ -2651,45 +2851,336 @@ function jumpToStepByEntryKey(key) {
   }
 }
 
-function renderEndScreen() {
-  const card = el("article", { className: "wizard-step end-screen" });
-  card.appendChild(el("h2", {}, "Done — Save & Export"));
+// ---------- Review summary screen (M2.3, design §11) ----------
+// UI-only flag for whether the review summary is currently open. NOT
+// persisted — it's a transient view state. The wizard step_index is the
+// single source of truth for "where am I"; summaryOpen just overlays the
+// summary view on top of the current step.
+let summaryOpen = false;
 
-  // Summary line
-  let committedEntries = 0, deferredEntries = 0, blankEntries = 0;
-  for (const entry of ENTRIES) {
-    if (entryFilled(entry.canonical_key)) committedEntries++;
-    else if (state.wizard.deferred.includes(entry.canonical_key)) deferredEntries++;
-    else blankEntries++;
+function openReviewSummary() {
+  summaryOpen = true;
+  renderCurrentStep();
+}
+
+function closeReviewSummary() {
+  summaryOpen = false;
+  // TRAP F: at the natural end of the wizard, renderEndScreen() delegates to
+  // renderReviewSummary(), so the summary IS the end screen. If we just
+  // re-render at the end sentinel (step_index === stepSequence.length), the
+  // summary renders again and "Back to wizard" appears to do nothing. Clamp
+  // back into the last real wizard step so Back lands on actual content.
+  if (state.wizard.step_index >= stepSequence.length) {
+    state.wizard.step_index = stepSequence.length - 1;
+    saveState();
   }
-  const committedClusters = CLUSTER_SIGNALS.filter((s) => getClusterState(s.id) !== undefined).length;
+  renderCurrentStep();
+}
 
-  const summary = el("div", { className: "end-summary" });
-  summary.appendChild(el("p", {}, `${committedEntries} of ${ENTRIES.length} entries committed.`));
-  if (deferredEntries > 0) summary.appendChild(el("p", {}, `${deferredEntries} marked "Decide later" (left blank for now).`));
-  if (blankEntries > 0) summary.appendChild(el("p", {}, `${blankEntries} not yet reviewed (left blank for now).`));
-  summary.appendChild(el("p", {}, `${committedClusters} of ${CLUSTER_SIGNALS.length} group decisions made.`));
-  card.appendChild(summary);
+// Helper for cluster-row [edit] link — jump to the Resolve step for a signal.
+function jumpToStepByClusterId(signalId) {
+  const idx = stepSequence.findIndex((s) => s.kind === "cluster" && s.id === signalId);
+  if (idx >= 0) {
+    state.wizard.step_index = idx;
+    saveState();
+    renderCurrentStep();
+  }
+}
 
-  // Primary export button
-  const btnRow = el("div", { className: "end-actions" });
-  btnRow.appendChild(el("button", {
-    type: "button",
-    className: "btn primary",
-    style: "font-size: 16px; padding: 12px 24px;",
-    onclick: onExport,
-  }, "Save & Export ↓"));
-  btnRow.appendChild(el("button", {
-    type: "button",
-    className: "btn ghost",
-    onclick: () => { state.wizard.step_index = stepSequence.length - 1; saveState(); renderCurrentStep(); },
-  }, "← Back to wizard"));
-  card.appendChild(btnRow);
+function renderReviewSummary() {
+  // TRAP D: return a plain child element WITHOUT id="wizardCard". The host
+  // <article id="wizardCard"> already owns that id; renderCurrentStep appends
+  // this child into it. A duplicate id would break getElementById lookups.
+  const card = el("article", { className: "wizard-step review-summary" });
 
-  card.appendChild(el("p", { className: "muted", style: "margin-top: 24px;" },
-    "Review summary screen with grouped verdicts + mismatch detection lands in Batch 2."));
+  // ---- Header ----
+  const committedCount = ENTRIES.filter((e) => entryFilled(e.canonical_key)).length;
+  const totalCount = ENTRIES.length;
+  card.appendChild(
+    el("header", { className: "summary-header" },
+      el("h2", {}, document.createTextNode("Review your decisions")),
+      el("p", { className: "summary-counts" },
+        document.createTextNode(`${committedCount} of ${totalCount} entries committed.`)
+      )
+    )
+  );
+
+  // ---- Buckets in design §11 mock order ----
+  const keepEntries = collectByVerdict("keep");
+  const foldEntries = collectByVerdict("merge");
+  const newEntries = collectByVerdict("new");
+  const dropEntries = collectByVerdict("drop");
+  // `state.wizard.deferred` holds BARE step ids — entry canonical_keys (e.g.
+  // "plant_parts") and cluster CON-ids (e.g. "CON-23"). A deferred cluster id
+  // simply misses ENTRIES_BY_KEY and drops out, so a straight lookup is
+  // correct (no "entry:" prefix parsing). See navDefer + the M1.15 counts.
+  const deferredEntries = (state.wizard.deferred || [])
+    .map((id) => ENTRIES_BY_KEY.get(id))
+    .filter(Boolean);
+  const mismatchEntries = ENTRIES.filter((e) => state.entries[e.canonical_key]?.cluster_mismatch);
+
+  card.appendChild(renderVerdictBucket("KEEP AS CONCEPT", "keep", keepEntries, /*defaultOpen*/ false));
+  card.appendChild(renderFoldBucket(foldEntries, /*defaultOpen*/ false));
+  card.appendChild(renderVerdictBucket("ADD NEW CONCEPT", "new", newEntries, /*defaultOpen*/ false));
+  card.appendChild(renderVerdictBucket("REMOVE", "drop", dropEntries, /*defaultOpen*/ false));
+  card.appendChild(renderClusterBucket(/*defaultOpen*/ false));
+  card.appendChild(renderDeferredBucket(deferredEntries, /*defaultOpen*/ deferredEntries.length > 0));
+  card.appendChild(renderMismatchBucket(mismatchEntries, /*defaultOpen*/ mismatchEntries.length > 0));
+
+  // ---- Footer actions ----
+  card.appendChild(
+    el("div", { className: "summary-footer" },
+      el("button", {
+        className: "btn ghost back-to-wizard",
+        onclick: closeReviewSummary,
+      }, document.createTextNode("← Back to wizard")),
+      el("button", {
+        className: "btn primary save-export",
+        onclick: onExport,
+      }, document.createTextNode("Save & Export ↓"))
+    )
+  );
 
   return card;
+}
+
+// Helper: collect entries with a given committed verdict, sorted by tier
+// then canonical_key.
+function collectByVerdict(verdict) {
+  const matches = ENTRIES.filter((e) => state.entries[e.canonical_key]?.verdict === verdict);
+  matches.sort(sortByTierThenKey);
+  return matches;
+}
+
+// TRAP A: sort by tier using entry.tier (values "11"/"12"/"13") against
+// TIER_ORDER (the same values). The plan's parsed.tier / "§"-prefixed order
+// map does NOT exist in the real payload (parsed has no tier key).
+function sortByTierThenKey(a, b) {
+  const ai = TIER_ORDER.indexOf(a.tier);
+  const bi = TIER_ORDER.indexOf(b.tier);
+  const ra = ai < 0 ? 99 : ai;
+  const rb = bi < 0 ? 99 : bi;
+  if (ra !== rb) return ra - rb;
+  return a.canonical_key.localeCompare(b.canonical_key);
+}
+
+function renderVerdictBucket(title, verdict, entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket" });
+  details.open = !!defaultOpen;
+  const summary = el("summary", { className: "bucket-summary" },
+    document.createTextNode(`${title} (${entries.length})`)
+  );
+  details.appendChild(summary);
+
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+
+  const list = el("ul", { className: "bucket-list" });
+  for (const e of entries) {
+    // TRAP B: no tier-tag span on screen (design §11 has none; "§NN" is a
+    // forbidden on-screen code). Tiers are used only for sorting above.
+    const row = el("li", { className: "bucket-row" },
+      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderFoldBucket(entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket fold-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`FOLD INTO ANOTHER (${entries.length})`)
+  ));
+
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+
+  // Group by merge target
+  const byTarget = {};
+  for (const e of entries) {
+    const target = state.entries[e.canonical_key].merge_into;
+    if (!byTarget[target]) byTarget[target] = [];
+    byTarget[target].push(e);
+  }
+  // Sort target groups alphabetically by target, members within by tier+key
+  const targets = Object.keys(byTarget).sort();
+  for (const target of targets) {
+    const group = el("div", { className: "fold-target-group" });
+    group.appendChild(
+      el("p", { className: "fold-target-header" },
+        document.createTextNode("Folding into "),
+        el("code", {}, document.createTextNode(target)),
+        document.createTextNode(` (${byTarget[target].length}):`)
+      )
+    );
+    const list = el("ul", { className: "bucket-list" });
+    byTarget[target].sort(sortByTierThenKey);
+    for (const e of byTarget[target]) {
+      // TRAP B: no tier-tag span.
+      const row = el("li", { className: "bucket-row" },
+        el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+        document.createTextNode(" → "),
+        el("code", { className: "target" }, document.createTextNode(target)),
+        el("button", {
+          className: "btn link edit-link",
+          onclick: () => {
+            closeReviewSummary();
+            jumpToStepByEntryKey(e.canonical_key);
+          },
+        }, document.createTextNode("edit ↗"))
+      );
+      list.appendChild(row);
+    }
+    group.appendChild(list);
+    details.appendChild(group);
+  }
+  return details;
+}
+
+function renderClusterBucket(defaultOpen) {
+  // TRAP C: "GROUP DECISIONS" (was "CLUSTER CHOICES").
+  const details = el("details", { className: "summary-bucket cluster-bucket" });
+  details.open = !!defaultOpen;
+  const answered = CLUSTER_SIGNALS.filter((s) => getClusterState(s.id) !== undefined);
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`GROUP DECISIONS (${answered.length} of ${CLUSTER_SIGNALS.length})`)
+  ));
+
+  if (answered.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("No group decisions made yet.")
+    ));
+    return details;
+  }
+
+  const list = el("ul", { className: "bucket-list" });
+  for (const s of answered) {
+    const idx = getClusterState(s.id);
+    const optLabel = clusterDisplayOption(s, idx);
+    // Plain-language (W22): show the tool-owned plain group name + option recap
+    // (CLUSTER_DISPLAY), not the locked signal.label/options. The raw CON-id is
+    // dropped. The locked data still drives export/import untouched.
+    // For CON-24 option 2, append the picked main concept in plain words.
+    let extra = "";
+    if (s.id === "CON-24" && idx === 2) {
+      const p = getClusterParent("CON-24");
+      if (p) extra = ` — keeping ${p}`;
+    }
+    const row = el("li", { className: "bucket-row" },
+      el("span", { className: "group-label" }, document.createTextNode(clusterDisplayName(s))),
+      document.createTextNode(` — ${optLabel}${extra}`),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByClusterId(s.id);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderDeferredBucket(entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket deferred-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`⚠ DECIDE LATER (${entries.length})`)
+  ));
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+  const list = el("ul", { className: "bucket-list" });
+  entries.sort(sortByTierThenKey);
+  for (const e of entries) {
+    // TRAP B: no tier-tag span.
+    const row = el("li", { className: "bucket-row" },
+      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      el("button", {
+        className: "btn link resume-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("resume ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderMismatchBucket(entries, defaultOpen) {
+  // TRAP C: "⚠ DIFFERS FROM A GROUP DECISION" (was "...CLUSTER DECISION").
+  const details = el("details", { className: "summary-bucket mismatch-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`⚠ DIFFERS FROM A GROUP DECISION (${entries.length})`)
+  ));
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+  const list = el("ul", { className: "bucket-list" });
+  entries.sort(sortByTierThenKey);
+  for (const e of entries) {
+    const ev = state.entries[e.canonical_key];
+    const cp = clusterPrefillCandidate(e);
+    // TRAP C: NO "verdict" word, NO CON-id. Use plain reviewer labels.
+    const yourLabel = reviewerLabelWithTarget(ev.verdict, ev.merge_into || null);
+    const groupLabel = cp && !cp.info_only && cp.verdict
+      ? reviewerLabelWithTarget(cp.verdict, cp.merge_into || null)
+      : "(no current suggestion)";
+    const row = el("li", { className: "bucket-row" },
+      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      document.createTextNode(" — you chose "),
+      document.createTextNode(yourLabel),
+      document.createTextNode("; the group decision points to "),
+      document.createTextNode(groupLabel),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderEndScreen() {
+  // M2.3: at the natural end of the wizard, render the full review summary
+  // rather than the M1.15 simple end screen. The summary's "Save & Export"
+  // button is the primary CTA from here.
+  return renderReviewSummary();
 }
 function navStep(delta) {
   const newIndex = state.wizard.step_index + delta;
