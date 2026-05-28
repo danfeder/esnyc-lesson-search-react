@@ -888,9 +888,9 @@
     </div>
     <span class="saved-badge" id="savedBadge">Saved locally</span>
     <div class="decision-debt" id="decisionDebt">
-      <span class="debt-decide"><b id="debtDecideCount">0</b> to decide</span>
-      <span class="debt-confirm"><b id="debtConfirmCount">0</b> to confirm</span>
-      <span class="debt-resolve"><b id="debtResolveCount">0</b> cluster shapes</span>
+      <span class="debt-decide"><b id="debtDecideCount">0</b> your call</span>
+      <span class="debt-confirm"><b id="debtConfirmCount">0</b> to check</span>
+      <span class="debt-resolve"><b id="debtResolveCount">0</b> group decisions</span>
       <span class="debt-bar"><i id="debtBar" style="width: 0%"></i></span>
     </div>
     <div class="actions">
@@ -969,6 +969,14 @@ function reviewerLabelWithTarget(verdict, target) {
   if (verdict === "merge" && target) return `Fold into \`${target}\``;
   return REVIEWER_LABELS[verdict] || verdict;
 }
+
+// Plain task labels shown on the mode chip (W22). Internal mode names
+// (Confirm/Decide/Resolve) stay in routing, CSS classes, and dataset.mode.
+const MODE_CHIP_LABELS = {
+  Confirm: "Quick check",
+  Decide: "Your call",
+  Resolve: "Group decision",
+};
 
 // ---------- Load payload ----------
 
@@ -1275,7 +1283,7 @@ function renderDecideStep(entry) {
   // Theme-overlap callout (more prominent on Decide steps)
   if (entry.parsed.theme_overlap && entry.parsed.theme_overlap.flagged) {
     const cb = el("div", { className: "theme-overlap-callout" });
-    cb.innerHTML = `<strong>⚠ Theme overlap.</strong> ${renderInlineMarkdown(entry.parsed.theme_overlap.note)}`;
+    cb.innerHTML = `<strong>⚠ Also appears as a theme.</strong> ${renderInlineMarkdown(entry.parsed.theme_overlap.note)}`;
     card.appendChild(cb);
   }
 
@@ -1315,7 +1323,7 @@ function renderDecideStep(entry) {
   // ---- Verdict radio group (blank — no pre-fill, even if cluster suggestion present) ----
   const fs = el("fieldset", { className: "verdict-options-group" });
   fs.appendChild(el("legend", {},
-    "Your call (no default", entry.tier === "11" ? " — high-impact tier" : "", "):"
+    "Your call — there's no suggested answer here:"
   ));
   for (const v of ["keep", "merge", "drop"]) {
     const label = el("label", { className: "verdict-option" });
@@ -1347,15 +1355,15 @@ function renderWhyAttention(entry) {
   const theme = entry.parsed.theme_overlap;
   let reason = null;
   if (theme && theme.flagged) {
-    reason = "Theme overlap with themes worksheet.";
+    reason = "Also shows up as a theme — double-check it belongs here as a concept.";
   } else if (clusterPrefillCandidate(entry)) {
     // (Batch 2 path) revisit-mode + Differs-from-cluster + Part-of-cluster-no-decision
     // For Batch 1 this branch is unreachable (clusterPrefillCandidate stays null)
     reason = "(Cluster reason — Batch 2.)";
   } else if (entry.tier === "11") {
-    reason = "§11 High-impact concept.";
+    reason = "A foundational concept — worth a careful look.";
   } else if (!entry.parsed.suggested_verdict) {
-    reason = "No confident recommendation.";
+    reason = "No suggested answer — your judgment needed.";
   }
   const wrap = el("div", { className: "why-attention" });
   if (reason) {
@@ -1369,7 +1377,7 @@ function renderStepHead(entry, mode) {
   const totalSteps = stepSequence.length;
   const stepNum = state.wizard.step_index + 1;
   const head = el("header", { className: "step-head" });
-  head.appendChild(el("span", { className: `mode-chip mode-${mode.toLowerCase()}` }, mode));
+  head.appendChild(el("span", { className: `mode-chip mode-${mode.toLowerCase()}` }, MODE_CHIP_LABELS[mode] || mode));
   head.appendChild(el("span", { className: "step-of" }, `step ${stepNum} of ${totalSteps}`));
   head.appendChild(el("h2", { className: "step-title" },
     entry.parsed.canonical_label || entry.canonical_key));
@@ -1383,9 +1391,9 @@ function renderStepHead(entry, mode) {
 
 function renderTierStrip(tier) {
   const strip = el("div", { className: `tier-strip tier-strip-${tier}` });
-  if (tier === "11") strip.textContent = "§11 High-impact: review carefully.";
-  else if (tier === "12") strip.textContent = "§12 Mid-tier: confirm or adjust.";
-  else strip.textContent = "§13 Long-tail: quick pass; pause when unsure.";
+  if (tier === "11") strip.textContent = "Worth a careful look.";
+  else if (tier === "12") strip.textContent = "A quick confirm or adjust.";
+  else strip.textContent = "Quick pass — pause if something seems off.";
   return strip;
 }
 
@@ -2173,12 +2181,11 @@ function renderClusterStep(signal) {
   });
 
   const head = el("header", { className: "step-head" });
-  head.appendChild(el("span", { className: "mode-chip mode-resolve" }, "Resolve"));
+  head.appendChild(el("span", { className: "mode-chip mode-resolve" }, MODE_CHIP_LABELS.Resolve));
   head.appendChild(el("span", { className: "step-of" }, `step ${stepNum} of ${totalSteps}`));
   head.appendChild(el("h2", { className: "step-title" }, signal.label));
   head.appendChild(el("div", { className: "step-key-row" },
-    el("code", {}, signal.id),
-    el("span", { className: "step-meta" }, `${signal.members.length} members`),
+    el("span", { className: "step-meta" }, `${signal.members.length} concepts in this group`),
   ));
   card.appendChild(head);
 
@@ -2204,7 +2211,7 @@ function renderClusterStep(signal) {
 
   // Members list (click to peek/jump)
   const membersBlock = el("div", { className: "cluster-members" });
-  membersBlock.appendChild(el("h3", {}, `Members (${signal.members.length})`));
+  membersBlock.appendChild(el("h3", {}, `Concepts in this group (${signal.members.length})`));
   const ul = el("ul");
   for (const memberKey of signal.members) {
     const memberEntry = ENTRIES_BY_KEY.get(memberKey);
@@ -2269,9 +2276,9 @@ function renderEndScreen() {
 
   const summary = el("div", { className: "end-summary" });
   summary.appendChild(el("p", {}, `${committedEntries} of ${ENTRIES.length} entries committed.`));
-  if (deferredEntries > 0) summary.appendChild(el("p", {}, `${deferredEntries} marked "Decide later" (export as <to_fill>).`));
-  if (blankEntries > 0) summary.appendChild(el("p", {}, `${blankEntries} entries not yet visited (export as <to_fill>).`));
-  summary.appendChild(el("p", {}, `${committedClusters} of ${CLUSTER_SIGNALS.length} cluster shapes resolved.`));
+  if (deferredEntries > 0) summary.appendChild(el("p", {}, `${deferredEntries} marked "Decide later" (left blank for now).`));
+  if (blankEntries > 0) summary.appendChild(el("p", {}, `${blankEntries} not yet reviewed (left blank for now).`));
+  summary.appendChild(el("p", {}, `${committedClusters} of ${CLUSTER_SIGNALS.length} group decisions made.`));
   card.appendChild(summary);
 
   // Primary export button
