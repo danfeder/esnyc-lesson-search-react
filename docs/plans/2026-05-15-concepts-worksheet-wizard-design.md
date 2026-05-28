@@ -91,6 +91,20 @@ UI uses plain language; the parser and export keep the locked vocab (D-C8).
 
 The translation lives in the JS render and commit handlers; nothing in `build-concepts-tool.py` or the worksheet markdown changes.
 
+### 4.1 Plain-language across the whole UI (curriculum-team voice)
+
+The reviewer is a curriculum-team member, not a developer. Every reviewer-visible string keeps their attention on **the concepts and whether/how each applies to the curriculum** — never on the build machinery. No internal/database terminology appears on screen: no `§11`/`§12`/`§13`, no "tier"/"High-impact/Mid-tier/Long-tail", no raw `CON-xx` ids, no "verdict"/"canonical key"/"metadata"/"corpus", and the routing modes are shown as plain task names rather than named modes.
+
+Mode-chip display mapping (routing logic and the CSS/`dataset.mode` hooks are unchanged — only the visible word changes):
+
+| Internal mode | Chip shown to reviewer |
+|---|---|
+| Confirm | Quick check |
+| Decide | Your call |
+| Resolve | Group decision |
+
+**Display-only boundary.** This is a presentation layer. The export/markdown format is a locked data contract — `<to_fill>` and the `keep`/`merge`/`new`/`drop` vocab stay in the exported file (the empty-export SHA invariant, §5 / D-C8, depends on it). The full current→plain string map and per-string edit locations live in the plan's **Milestone 2.0**; the acceptance test is that the empty-export SHA is byte-identical after the pass.
+
 ## 5. Pre-fill commit-on-action semantics
 
 **Hard rule:** the pre-fill is **rendered**, not **stored**. `state.entries[key].verdict` is only written when the reviewer takes an explicit commit action.
@@ -655,3 +669,4 @@ Mismatch does not block export. The committed per-entry verdict wins on the expo
 | W19 | Broadened merge-target regex to allow `§\d+\s+` prefix; report extraction rate at Batch 1 verify | Empirical coverage: 53/78 (68%) vs 11/78 (14%) for the narrow form. 32% fallback to picker is expected, not a bug |
 | W20 | Cluster auto-prefill matrix specified for all 5 clusters (§17) | CON-12 alone wasn't enough; CON-16 option 2 and CON-24 option 3 surfaced edge cases worth pinning in writing |
 | W21 | Cluster pre-fill wins over AI pre-fill in display order | A Resolve decision is the most recent expression of intent for a family of entries; member suggestions must visibly track it, not lose to an older AI rec |
+| W22 | Plain-language voice across the ENTIRE UI, not just onboarding (Milestone 2.0) | Curriculum reviewers shouldn't have to learn our build vocabulary; a jargon-free intro that then drops them into "§11"/"CON-22" screens is incoherent. Revises the **display** side of W7 (mode chips → Quick check / Your call / Group decision), W10 (drop §-numbers + tier names, keep the calm copy), and W13 (cluster caption → "based on your earlier group decision", no CON-id). Routing, state, and export format unchanged; empty-export SHA invariant is the acceptance test. (2026-05-28) |

@@ -9,8 +9,9 @@
 
 - Branch: `tools/concepts-worksheet-form` (not pushed; no PR)
 - Batch 1 status: **SHIPPED** (M1.17 smoke gate passed 2026-05-15)
+- Batch 2 plan: **FINALIZED 2026-05-28** — 6 self-review revisions applied; **M2.0 plain-language pass added**; design §4.1 + W22 + global plain-language convention recorded
 - Last milestone completed: **M1.17** (Batch 1 smoke check gate — commit `5630a69`)
-- Next milestone: Batch 2 begins (M2.1 cluster auto-prefill matrix) — separate session
+- Next milestone: **M2.0 — Plain-language UI pass** (then M2.1 → M2.1b → M2.2 → M2.3 → M2.5 → M2.6 → M2.7; M2.4 anytime). Per-milestone kickoff: `2026-05-15-concepts-worksheet-wizard-batch2-execution-kickoff.md`
 
 ## Branch baseline at M1.0
 
@@ -150,6 +151,14 @@ Parser baseline: `Parsed 208 entries (§11=32, §12=39, §13=137).`
   - **#8 Merge-target extraction rate:** PASS — `merge-target extraction: 53 of 78 merge recommendations (68%) — 25 fall through to picker` (matches M1.3 baseline exactly; W19 prediction held).
 - **Parser fix folded into M1.17:** Smoke #4 surfaced an import-bloat side effect — `parseEntryEditsFromMarkdown` was creating `{curriculum_notes: ""}` shells for every worksheet row (~207 keys after a 5-entry import roundtrip) because the old code created the result shell at line 1839 BEFORE the verdict-validation gate at line 1840, AND line 1838 normalized `<to_fill>` to `""` so the curriculum_notes line then wrote an empty string into the existing shell. All downstream consumers (`entryFilled` / `entryVerdict` / `entryMergeInto` / `entryNeedsMergeTarget` / export) gracefully degraded — the only observable cost was localStorage bloat. Fix: replaced `if (value === "<to_fill>") value = "";` + early shell-creation with `if (value === "<to_fill>") continue;` + lazy shell-creation moved AFTER the verdict-validation gate. Re-ran Smoke #4 post-fix: imported key count now **5** (was 207), `state.entries` contains exactly the 5 committed shapes (`plant_parts` + `cultural_traditions` + `photosynthesis` + `recipe_writing` + `plant_id`), md1 === md2 SHA unchanged (`d1038e2b…`). Smoke #1 invariant SHA also unchanged (`0c49a7a7…`) — the fix touches import path only.
 - **Batch 1 SHIPPED.** M1.0 → M1.17 all complete. Ready to start Batch 2 (M2.1 onward) in a separate session.
+
+### Planning session (2026-05-28)
+
+- Recovered context after an interruption; confirmed Batch 1 SHIPPED and the Batch 2 plan was drafted-but-uncommitted.
+- Validated the prior session's 9-item self-review of the Batch 2 draft and applied the **6 verified revisions**: M2.3 deferred-collect simplification + test-seed fix (the keys are bare canonical_keys, not `entry:`-prefixed); M2.1 Step 5/6 concreteness + a real `displayed`/`target` → `v`/`t` ReferenceError trap; dropped the `M` prefix from Batch 2 headings to match Batch 1; global line-drift caveat; M2.5 review-line wording; sequence/dependency note.
+- **Added Milestone 2.0 — Plain-language UI pass** (curriculum-team voice, per user directive): de-jargon every reviewer-visible string — mode chips → **Quick check / Your call / Group decision**; drop `§`-codes, `CON-xx` ids, `<to_fill>`, "cluster shapes," "themes worksheet" from the UI. **Display-only**: export/markdown format + the empty-export SHA invariant are unchanged (the acceptance test). Recorded as design **§4.1 + W22** + a global plain-language convention applied to every Batch 2 milestone that emits new on-screen text.
+- Reconciled the downstream ripple: M2.1 caption probes + M2.5 fully (incl. fixing pre-existing M2.5 draft bugs — wrong `.decide-counter` selector, wrong `decideUnfilled` locals, `entryMode === "decide"` case bug); M2.2/M2.3 user-facing labels covered by the convention + per-milestone notes (de-jargoned at their execution).
+- **No code touched — planning only.** Scaffolded `2026-05-15-concepts-worksheet-wizard-batch2-execution-kickoff.md`.
 
 ## Open questions / parked concerns
 

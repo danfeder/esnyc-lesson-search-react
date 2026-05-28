@@ -83,11 +83,13 @@ open docs/plans/concepts-worksheet-form/concepts-worksheet-tool.html
 
 Each milestone's commit must leave the tool **building** (`--verify-only` exits 0; `--build-html` produces a valid HTML). The tool's **behavior** can be in flight across commits during the wizard rewrite milestones, but at every commit boundary the file should load without JS errors and `Save & Export` should still write a markdown file (even if unstyled). This is the data-safety floor: a curriculum-team member opening the build at any commit should not lose work, even if the UI is mid-rewrite.
 
-### What the user reviews between milestones
+### What the user reviews between Batch 1 milestones
 
 - Batch 1 milestones M1.1–M1.3 (parser): I rebuild, run `--verify-only`, show the new fields in a payload sample, get a thumbs-up before committing.
 - Batch 1 milestones M1.4–M1.16 (JS/template): I rebuild + open in browser via chrome-devtools-mcp, run the relevant smoke checks, show screenshots/state probes, get a thumbs-up before committing.
 - Batch 1 milestone M1.17 (full smoke gate): All 6 Batch-1-relevant smoke checks (§15 #1–5, #8) pass before declaring Batch 1 done.
+
+(Batch 2's equivalent subsection lives further down, just above the M2.1 milestone heading.)
 
 ### Pre-flight: design doc clarifications (landed)
 
@@ -2487,51 +2489,2765 @@ EOF
 
 ---
 
-## Batch 2 — Hand-holdy polish (later session)
+## Batch 2 — Hand-holdy polish
 
-Outlined at lower fidelity; detailed task breakdown happens at Batch 2 session start.
+Batch 1 SHIPPED 2026-05-15 (M1.0 → M1.17, smoke gate PASS, commit `5630a69` + cleanup `16a3b7f`). Batch 2 adds the cluster→member auto-prefill chain (W21), cluster-mismatch detection, the review summary screen (design §11), wizard intro rewrite, and the full 8/8 smoke gate. Each milestone leaves the tool **building, exporting, and reloadable** at every commit (data-safety floor unchanged from Batch 1).
 
-### Milestone 2.1: Cluster auto-prefill matrix (§17)
+> **Applies to every Batch 2 milestone below.** All template line numbers cited are post-M1.17 references and **drift as earlier milestones add code** — always `grep -n` for the function name or a nearby anchor string before editing; never trust a cited line number blind. (Stated once here so each milestone doesn't repeat it; M2.1's per-step `grep -n` commands model the pattern.)
 
-Implement `clusterPrefillCandidate(entry)` to return `{verdict, merge_into?, from}` based on the resolved cluster Resolve answer per the matrix in design §17 (all 5 clusters: CON-12, CON-16, CON-22, CON-23, CON-24). §11 members get the suggestion shown as text but never as a radio pre-fill (per W17).
+> **Plain-language convention (design §4.1 / W22) — applies to every Batch 2 milestone that emits new reviewer-visible text.** M2.0 sweeps the existing Batch-1 strings to plain, curriculum-team language; from there, any new on-screen text — M2.1's cluster-prefill caption, M2.2's mismatch reason + callout, M2.3's review-summary labels, M2.4's intro, M2.5's counters, M2.7's README — must be **born plain**: no `§`-codes, `CON-xx` ids, "tier," "verdict," "metadata," "cluster," internal mode names, or `<to_fill>` shown to the reviewer. The export/markdown format is exempt and unchanged (it's the locked pipeline contract; the empty-export SHA invariant guards it). **Note:** the M2.1–M2.3 code blocks below were drafted before M2.0 and still show some pre-M0 strings (old mode/counter labels, "cluster shape," "CLUSTER CHOICES," `CON-xx` in user-facing rows) — replace them per each milestone's own plain-language note when you execute it. M2.1's caption probes and M2.5's counter code + probes are already reconciled.
 
-**Batch 1 carry-over (Session 16 review):** also swap `renderDecideStep`'s Claude-recommendation merge-label builder from the inline `${REVIEWER_LABELS[v] || v}${targetSuffix}` (template ~line 1298) to `reviewerLabelWithTarget(v, t)` so the copy reads "Fold into `target`" instead of "Fold into another `target`". This is dormant in Batch 1 because no Decide-mode entry has `suggested_merge_target`; it surfaces the moment M2.1's `clusterPrefillCandidate` starts feeding `{verdict:"merge", merge_into}` to Decide-mode members (e.g., a CON-12 member pre-filled "Fold into `writing`" per design §555). `reviewerLabelWithTarget` already lives at template ~line 968 and is the pattern `renderConfirmStep` uses.
+### Files touched in Batch 2
 
-Files: `scripts/concepts-worksheet-tool.template.html` (JS — replace the stub from M1.5).
+| Path | Tracked? | Role |
+|---|---|---|
+| `scripts/concepts-worksheet-tool.template.html` | yes | All JS+CSS additions for M2.0–M2.6 land here |
+| `docs/plans/concepts-worksheet-form/README.md` | yes | M2.7 — curriculum-team handoff text update |
+| `docs/plans/concepts-worksheet-form/concepts-worksheet-tool.html` | **no, generated — NEVER `git add`** | Built artifact (~1 MB); rebuild via `--build-html`; do not commit |
+| `docs/plans/2026-05-15-concepts-worksheet-wizard-status.md` | yes | Status doc — Batch 2 session log continues |
+| `docs/plans/2026-05-15-concepts-worksheet-wizard-batch2-execution-kickoff.md` | yes | Durable per-milestone kickoff for Batch 2 (scaffolded after plan finalization) |
 
-### Milestone 2.2: Cluster-mismatch detection
+The parser (`scripts/build-concepts-tool.py`) is **untouched** in Batch 2 — all changes are wizard UI + curriculum-team docs. No new `claude_notes_summary`/`suggested_merge_target` fields, no `--verify-only` output changes; the existing `Parsed 208 entries (§11=32, §12=39, §13=137).` + `merge-target extraction: 53 of 78 …` lines remain the contract.
 
-When a committed per-entry verdict diverges from the cluster-derivation, set `state.entries[key].cluster_mismatch = "CON-XX"` and trigger the notes drawer auto-open with the "Heads up …" prompt. Surface in review summary under "Differs from cluster decision."
+### Existing code worth reusing (post-M1.17 surface)
 
-Files: `scripts/concepts-worksheet-tool.template.html` (JS — extend onCommit + render the mismatch indicator on entry steps).
+All line numbers are against the post-M1.17 template (`scripts/concepts-worksheet-tool.template.html`, after `5630a69` + `16a3b7f`; verify with `grep -n` before each edit — line numbers will drift as Batch 2 milestones add code).
+
+**State helpers (extend, don't replace):**
+- `setEntryState(key, patch)` at line 1051 — already merges patches; M2.2 will pass `{cluster_mismatch: "CON-XX"}` or `{cluster_mismatch: null}` through it
+- `getClusterState(id)` / `setClusterState(id, optionIndex)` at lines 1057-1069 — kept as-is. M2.1b adds a **parallel** `state.cluster_parents` map with new helpers `getClusterParent(id)` / `setClusterParent(id, parent)` so the existing `cluster_signals[id] = optionIndex` shape doesn't churn
+- `loadState()` at line 1059-area — already handles wizard-state migration from M1.6; M2.1b adds a one-liner default for `cluster_parents`
+
+**Render helpers (extend or wire):**
+- `clusterPrefillCandidate(entry)` at line 1188 — currently returns `null` (Batch 1 stub). **M2.1 replaces the body** with the matrix dispatch
+- `displayedPrefillForEntry(entry)` at line 1201 — already has the cluster branch wired (lines 1211-1218); becomes hot path the moment M2.1's `clusterPrefillCandidate` returns non-null
+- `renderConfirmStep(entry)` at line 1231 — displays `captionSource` (plain per M2.0) via `renderClaudeRecommendation`'s hardcoded `💡` headline; **no change required for M2.1**
+- `renderDecideStep(entry)` at line 1259 — **M2.1 swap** of the inline `${REVIEWER_LABELS[v] || v}${targetSuffix}` (line 1298) → `reviewerLabelWithTarget(v, t)` (carry-over P2 fix from Session 16 review). Also gains an §11-cluster-member info caption branch when `clusterPrefillCandidate(entry)` is non-null
+- `renderClusterStep(signal)` at line 2167 — **M2.1b extends** with the CON-24 option-3 inline-reveal sub-section
+- `renderEndScreen()` at line 2257 — **M2.3 replaces** with a thin wrapper that dispatches to `renderReviewSummary()`; M2.3 also adds the `#review-so-far` button wiring in the top bar
+- `maybeAutoOpenNotesDrawer(entry, verdict, trigger)` at line 1620 — already has the `"cluster-mismatch"` case dispatched (lines 1627-1629); **M2.2 wires the caller**
+
+**Commit helpers (extend on M2.2):**
+- `onCommit(entry)` (used by `renderPrimaryAgreeAction`, `onPickOtherVerdict`, `onDecideVerdict`, `commitMerge`) — M2.2 adds `recomputeMismatchForEntry(entry)` after every state write
+- `setClusterState(id, optionIndex)` — M2.2 adds `recomputeMismatchForCluster(id)` because a Resolve answer change can flip mismatch flags for ALL members of that signal
+
+**Decision-debt counters (extend, don't replace):**
+- `updateDecisionDebt()` at line 2340 — already fires from every state-changing path; **M2.5 polish** is purely CSS (zero-state color via `data-zero` attribute) + a one-line read of `cluster_mismatch` if we ever surface the count (we won't — design §10/§441 keeps mismatch out of the top bar; see M2.5 spec)
+
+**Helpers used by review summary:**
+- `jumpToStepByEntryKey(key)` at line 2246 — already wires the entry→step lookup; **M2.3 reuses** for the [edit] / [resume] links
+- `el()`, `escapeHtml()`, `renderInlineMarkdown()` — keep
+- `REVIEWER_LABELS` at line 961, `reviewerLabelWithTarget` at line 968 — keep, **M2.1's P2 fix** wires `reviewerLabelWithTarget` into the Decide-mode render path
+
+### Working tool constraint (Batch 2)
+
+Identical to Batch 1: every commit leaves `--verify-only` exiting 0, `--build-html` producing a valid artifact, and `Save & Export` writing a valid markdown file. The cluster-prefill matrix is additive (Batch 1 reviewers see no behavior change because `state.cluster_signals` is empty until they answer a Resolve step); the mismatch detection runs as a no-op when no cluster is resolved. M2.3's review summary replaces the M1.15 simple end screen — the [← Back to wizard] button + [Save & Export ↓] button continue to work, so the data-safety floor holds.
+
+### What the user reviews between Batch 2 milestones
+
+- **M2.0** (plain-language pass): I rebuild, screenshot the Quick-check / Your-call / Group-decision / end-screen states, run the no-jargon `innerText` probe (no §-codes / `CON-` ids / `<to_fill>` / tier names visible; chips + counters read plain), and confirm the empty-export SHA is byte-identical to M1.17. Thumbs-up before commit.
+- **M2.1** (matrix + carry-over): I rebuild, walk 3-4 cluster-member entries in browser via chrome-devtools-mcp showing the "based on your earlier group decision" caption + radio prefill, demonstrate the renderDecideStep label fix on a synthetic Decide+target case, get thumbs-up before commit.
+- **M2.1b** (CON-24 inline reveal): I rebuild, exercise the CON-24 Resolve step picking option 3 → parent picker reveals → commit → walk to a sub-type member → confirm the suggestion text, thumbs-up.
+- **M2.2** (mismatch detection + callout): I rebuild, exercise: (a) commit a member verdict that disagrees with a resolved cluster → yellow callout renders + notes drawer auto-opens + state has `cluster_mismatch:"CON-XX"`; (b) change the Resolve answer → mismatch flag flips on affected members; (c) commit matching verdict → flag clears. Thumbs-up.
+- **M2.3** (review summary): I rebuild, walk: end-of-wizard summary renders all 7 sections; [edit] link jumps back + closes summary; [← Back to wizard] returns; mid-flow "Review so far" button opens summary; Save & Export from summary still writes a valid markdown. Thumbs-up.
+- **M2.4** (intro rewrite): I rebuild, walk the 3-step intro flow (Next/Back/Skip), confirm the modal closes cleanly and the "Show wizard intro" Advanced menu re-opens it. Thumbs-up.
+- **M2.5** (counter polish): I rebuild, drive counters to zero and confirm the zero-state color shift; confirm via probe that the mismatch recompute does **not** feed the top-bar counter (mismatch stays out of the top bar per design §10/§441).
+- **M2.6** (smoke gate): I run all 8 design §15 smoke checks end-to-end, including the new #6 (cluster Resolve + member walk) and #7 (mismatch flag). All 8 must pass before declaring Batch 2 done.
+- **M2.7** (README): I edit `docs/plans/concepts-worksheet-form/README.md` and walk the user through the rewritten "How to use" section.
+
+### Suggested sequence & dependencies
+
+Default order is linear — **M2.0 → M2.1 → M2.1b → M2.2 → M2.3 → M2.5 → M2.6 → M2.7** — because most milestones' verification leans on the prior one's code: **M2.0 (plain-language pass) goes first so every later milestone inherits the plain vocabulary** (M2.1's cluster caption is then born plain, not jargon-then-refixed); M2.2's mismatch detection needs M2.1's cluster prefills; M2.3's review summary surfaces M2.2's mismatch flags; M2.6 gates on everything. Those data-flow couplings are the only *binding* constraints. Two milestones are order-independent:
+
+- **M2.4** (intro-modal rewrite) touches only onboarding copy + the modal — nothing depends on it and it depends on nothing. Ship it whenever convenient (a good low-risk "warm-up" or filler milestone).
+- **M2.7** (README) needs the UI behaviorally stable but no specific milestone — do it last, or any time after M2.3.
+
+The numbering is sequence-suggestive, not a hard chain beyond the couplings above.
+
+---
+
+### Milestone 2.0: Plain-language UI pass (curriculum-team voice)
+
+**Files:**
+- Modify: `scripts/concepts-worksheet-tool.template.html` — add a `MODE_CHIP_LABELS` map (~near line 961); swap mode-chip display text in `renderStepHead` (~line 1372) and `renderClusterStep` (~line 2176); relabel the three top-bar counters (~lines 891-893); rewrite the three `renderTierStrip` strings (~lines 1386-1388); plain-ify the Decide legend (~line 1318); plain-ify the `renderWhyAttention` reasons (~lines 1350/1356/1358); drop the raw `CON-xx` id + relabel "members" in `renderClusterStep` (~lines 2180-2181, 2207); soften the theme-overlap callout (~line 1278); plain-ify the end-screen summary (~lines 2272-2274).
+
+**What this milestone does:**
+
+Sweeps every reviewer-visible string in the shipped Batch-1 UI to plain, curriculum-team language per design §4.1 / W22. **Display-only**: no routing, state, CSS class, `dataset.mode`, or export/markdown change; parser untouched. Run **first** in Batch 2 so M2.1+ inherit the plain vocabulary (M2.1's cluster-prefill caption is then born plain — see M2.1 Step 4). Line numbers below are post-M1.17 references — **`grep -n` each anchor before editing** (per the Batch 2 convention note above).
+
+**Step 1: Add the mode-chip label map.** Near `REVIEWER_LABELS` (grep `const REVIEWER_LABELS`):
+```js
+// Plain task labels shown on the mode chip (W22). Internal mode names
+// (Confirm/Decide/Resolve) stay in routing, CSS classes, and dataset.mode.
+const MODE_CHIP_LABELS = {
+  Confirm: "Quick check",
+  Decide: "Your call",
+  Resolve: "Group decision",
+};
+```
+
+**Step 2: Swap the mode-chip display text.** `renderStepHead` (grep `mode-chip mode-`):
+```js
+  head.appendChild(el("span", { className: `mode-chip mode-${mode.toLowerCase()}` }, mode));
+```
+→
+```js
+  head.appendChild(el("span", { className: `mode-chip mode-${mode.toLowerCase()}` }, MODE_CHIP_LABELS[mode] || mode));
+```
+`renderClusterStep` (grep `mode-chip mode-resolve`):
+```js
+  head.appendChild(el("span", { className: "mode-chip mode-resolve" }, "Resolve"));
+```
+→
+```js
+  head.appendChild(el("span", { className: "mode-chip mode-resolve" }, MODE_CHIP_LABELS.Resolve));
+```
+
+**Step 3: Relabel the top-bar counters** (grep `debtDecideCount`). Change only the trailing text after each `</b>`:
+```html
+<span class="debt-decide"><b id="debtDecideCount">0</b> to decide</span>
+<span class="debt-confirm"><b id="debtConfirmCount">0</b> to confirm</span>
+<span class="debt-resolve"><b id="debtResolveCount">0</b> cluster shapes</span>
+```
+→
+```html
+<span class="debt-decide"><b id="debtDecideCount">0</b> your call</span>
+<span class="debt-confirm"><b id="debtConfirmCount">0</b> to check</span>
+<span class="debt-resolve"><b id="debtResolveCount">0</b> group decisions</span>
+```
+
+**Step 4: Rewrite the tier-strip guidance** in `renderTierStrip` (grep `High-impact: review carefully`):
+```js
+  if (tier === "11") strip.textContent = "§11 High-impact: review carefully.";
+  else if (tier === "12") strip.textContent = "§12 Mid-tier: confirm or adjust.";
+  else strip.textContent = "§13 Long-tail: quick pass; pause when unsure.";
+```
+→
+```js
+  if (tier === "11") strip.textContent = "Worth a careful look.";
+  else if (tier === "12") strip.textContent = "A quick confirm or adjust.";
+  else strip.textContent = "Quick pass — pause if something seems off.";
+```
+
+**Step 5: Plain-ify the Decide legend** (grep `no default`):
+```js
+    "Your call (no default", entry.tier === "11" ? " — high-impact tier" : "", "):"
+```
+→
+```js
+    "Your call — there's no suggested answer here:"
+```
+
+**Step 6: Plain-ify the `renderWhyAttention` reasons** (grep `themes worksheet`):
+```js
+    reason = "Theme overlap with themes worksheet.";
+```
+→ `reason = "Also shows up as a theme — double-check it belongs here as a concept.";`
+```js
+    reason = "§11 High-impact concept.";
+```
+→ `reason = "A foundational concept — worth a careful look.";`
+```js
+    reason = "No confident recommendation.";
+```
+→ `reason = "No suggested answer — your judgment needed.";`
+
+> Leave the `"(Cluster reason — Batch 2.)"` placeholder (~line 1354) alone — it's unreachable until M2.1 and **M2.2 replaces it** (and must write it plain per the convention).
+
+**Step 7: De-jargon the group (Resolve) step** in `renderClusterStep`. Header key-row (grep `el("code", {}, signal.id)`):
+```js
+  head.appendChild(el("div", { className: "step-key-row" },
+    el("code", {}, signal.id),
+    el("span", { className: "step-meta" }, `${signal.members.length} members`),
+  ));
+```
+→ (drop the raw id; relabel members)
+```js
+  head.appendChild(el("div", { className: "step-key-row" },
+    el("span", { className: "step-meta" }, `${signal.members.length} concepts in this group`),
+  ));
+```
+Members block heading (grep `Members (`):
+```js
+  membersBlock.appendChild(el("h3", {}, `Members (${signal.members.length})`));
+```
+→ `membersBlock.appendChild(el("h3", {}, \`Concepts in this group (${signal.members.length})\`));`
+
+Verify each `signal.label` reads as a plain group name (it's verbatim worksheet text); if any embeds a code or the word "cluster," flag it — labels are data, not template strings, so a label fix would be a worksheet edit, not a code edit.
+
+**Step 8: Soften the theme-overlap callout** (grep `⚠ Theme overlap`):
+```js
+    cb.innerHTML = `<strong>⚠ Theme overlap.</strong> ${renderInlineMarkdown(entry.parsed.theme_overlap.note)}`;
+```
+→
+```js
+    cb.innerHTML = `<strong>⚠ Also appears as a theme.</strong> ${renderInlineMarkdown(entry.parsed.theme_overlap.note)}`;
+```
+
+**Step 9: Plain-ify the end-screen summary** (grep `export as <to_fill>`):
+```js
+  if (deferredEntries > 0) summary.appendChild(el("p", {}, `${deferredEntries} marked "Decide later" (export as <to_fill>).`));
+  if (blankEntries > 0) summary.appendChild(el("p", {}, `${blankEntries} entries not yet visited (export as <to_fill>).`));
+  summary.appendChild(el("p", {}, `${committedClusters} of ${CLUSTER_SIGNALS.length} cluster shapes resolved.`));
+```
+→
+```js
+  if (deferredEntries > 0) summary.appendChild(el("p", {}, `${deferredEntries} marked "Decide later" (left blank for now).`));
+  if (blankEntries > 0) summary.appendChild(el("p", {}, `${blankEntries} not yet reviewed (left blank for now).`));
+  summary.appendChild(el("p", {}, `${committedClusters} of ${CLUSTER_SIGNALS.length} group decisions made.`));
+```
+> **Do NOT touch the export `<to_fill>` token itself** (parser / `buildExportMarkdown`, grep `"<to_fill>"` ~lines 1139/1696/1840). That token is the locked pipeline contract; only its *on-screen mention* changes here. M2.3 later replaces this end screen with the review summary — it must carry these plain strings forward.
+
+**Step 10: Build.**
+```bash
+python3 scripts/build-concepts-tool.py --verify-only
+python3 scripts/build-concepts-tool.py --build-html
+```
+Expected stderr unchanged: `Parsed 208 entries (§11=32, §12=39, §13=137).` + `merge-target extraction: 53 of 78 …`.
+
+**Step 11: Browser smoke via chrome-devtools-mcp.**
+- **Empty-export SHA invariant (THE acceptance test):** `buildExportMarkdown()` SHA-256 === `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03` (unchanged from M1.17). Proves the pass was display-only. If it changed, a string edit leaked into the export path — revert and find it.
+- **No-jargon sweep:** walk a Quick-check step, a Your-call step, a Group-decision step, and the end screen. Check the **chrome elements only** — NOT `document.body.innerText`, because a concept's `claude_notes` body may legitimately mention a section number or the words "high-impact," which would false-positive. Assert: `.mode-chip` textContent ∈ {"Quick check","Your call","Group decision"}; the `.tier-strip` text contains no `§`/"High-impact"/"Mid-tier"/"Long-tail"; the `.debt-decide`/`.debt-confirm`/`.debt-resolve` spans read "N your call" / "N to check" / "N group decisions"; the Group-decision step header shows the plain group label with **no `CON-` code**; the end-screen summary contains no `<to_fill>` or "cluster shape"; and the theme-overlap callout (if shown) reads "Also appears as a theme."
+- **Zero console errors.**
+
+**Step 12: Status doc + commit.** Update status doc (Last milestone → M2.0; Next → M2.1; append Session log with the SHA + no-jargon probe results; matrix unchanged). Then:
+```bash
+git add scripts/concepts-worksheet-tool.template.html docs/plans/2026-05-15-concepts-worksheet-wizard-plan.md docs/plans/2026-05-15-concepts-worksheet-wizard-design.md docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+tools(concepts-worksheet): plain-language UI pass (curriculum-team voice)
+
+M2.0 (Batch 2). Display-only — routing/state/export format unchanged.
+
+- Mode chips → Quick check / Your call / Group decision (MODE_CHIP_LABELS)
+- Top-bar counters, tier strips, Decide legend, why-attention reasons
+- Drop raw CON-xx ids from the Resolve step; "members" → "concepts in this group"
+- Soften theme-overlap callout; plain end-screen summary
+- Export <to_fill> token + keep/merge/new/drop vocab untouched
+  (empty-export SHA invariant 0c49a7a7… verified byte-identical)
+
+Implements design §4.1 / W22.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Milestone 2.1: Cluster auto-prefill matrix (§17) + carry-over P2 fix
+
+**Files:**
+- Modify: `scripts/concepts-worksheet-tool.template.html` — replace `clusterPrefillCandidate(entry)` body (~line 1188); add `CLUSTER_DERIVATIONS` constant + helper `computeMemberDerivation(signalId, optionIndex, memberKey)`; swap merge-label builder in `renderDecideStep` (~line 1298); add §11-cluster-member info caption branch in `renderDecideStep`.
+
+**What this milestone does:**
+
+1. **Wires the design §17 matrix** as a pure-data structure (`CLUSTER_DERIVATIONS`) keyed by cluster signal ID. Each cluster option maps to a `(memberKey) → derivation` lookup. Three derivation shapes:
+   - **Actionable prefill:** `{ verdict, merge_into? }` — flows through `displayedPrefillForEntry` as a "Based on your earlier group decision" caption + radio prefill (W21).
+   - **Info-only caption:** `{ info_only: true, caption_text }` — surfaces a small notice on the entry step but doesn't pre-fill any radio. Used by CON-16 option 2 (heritage reframe) and CON-24 option 3 pre-parent-pick.
+   - **No derivation:** absent from the table — entry walks with its own AI prefill (or none).
+2. **Carry-over P2 fix from Session 16:** `renderDecideStep`'s Claude-recommendation merge-label inline `${REVIEWER_LABELS[v] || v}${targetSuffix}` produces "Fold into another `target`" copy when a target is named — design §6.1 wants "Fold into `target`" (no "another") when target is known. The Confirm-step renderer already uses `reviewerLabelWithTarget(v, t)` correctly (line 1395 / 1424). This milestone swaps the Decide path to match. Dormant in Batch 1 (no Decide-mode entry has `suggested_merge_target`); becomes hot the moment M2.1's matrix feeds `{verdict:"merge", merge_into:"writing"}` to a CON-12 sub-type that's Decide-routed.
+3. **W17 enforcement:** §11 entries stay Decide regardless of cluster prefill source. The matrix produces the prefill, but `entryMode()` (line 1180-area, unchanged) keeps tier-11 → Decide. `renderDecideStep` reads `displayedPrefillForEntry` and surfaces a "Based on your earlier group decision: …" caption block above the blank radios. No radio pre-selection.
+
+**Step 1: Read current state of relevant code blocks**
+
+```bash
+grep -n "function clusterPrefillCandidate\|function displayedPrefillForEntry\|function renderConfirmStep\|function renderDecideStep\|REVIEWER_LABELS\[v\] || v" scripts/concepts-worksheet-tool.template.html
+```
+
+Expected output (line numbers approximate):
+
+```
+961:const REVIEWER_LABELS = {
+1188:function clusterPrefillCandidate(entry) {
+1201:function displayedPrefillForEntry(entry) {
+1231:function renderConfirmStep(entry) {
+1259:function renderDecideStep(entry) {
+1298:      document.createTextNode(`${REVIEWER_LABELS[v] || v}${targetSuffix}`),
+```
+
+The grep is a sanity check that the post-M1.17 surface matches what this plan assumes. If line numbers drift by more than ±10, stop and re-anchor before editing.
+
+**Step 2: Add `CLUSTER_DERIVATIONS` constant + `computeMemberDerivation` helper**
+
+Insert immediately above `function clusterPrefillCandidate(entry) {` (so the table is visually adjacent to the function that reads it). The table is the verbatim encoding of design §17.
+
+```js
+// ---------- Cluster auto-prefill matrix (design §17 / W20) ----------
+//
+// Per-cluster, per-option mapping from a resolved Resolve answer to its
+// derived member prefills. Three shapes:
+//   { verdict: "keep"|"merge"|"drop"|"new", merge_into?: <canonical_key> }
+//       → actionable prefill; W21 routes through displayedPrefillForEntry
+//   { info_only: true, caption_text: "..." }
+//       → caption-only notice on the entry step; no radio prefill
+//   (absent)
+//       → no derivation; member walks with its own AI prefill (or none)
+//
+// §11 members never receive a radio prefill (W17). The caption surfaces
+// in Decide mode regardless of derivation shape.
+const CLUSTER_DERIVATIONS = {
+  // CON-12 — Writing-cluster canonical shape
+  // Members: writing, narrative_writing, opinion_writing, descriptive_writing,
+  //          how_to_writing, recipe_writing, informational_writing
+  "CON-12": {
+    // 0: Keep `writing` 8 as catch-all + sub-types stay canonical — no prefill
+    0: {},
+    // 1: Drop `writing` 8 + sub-types are the only canonicals
+    1: {
+      writing: { verdict: "drop" },
+    },
+    // 2: Merge sub-types into `writing` 8 catch-all
+    2: {
+      writing: { verdict: "keep" },
+      narrative_writing: { verdict: "merge", merge_into: "writing" },
+      opinion_writing: { verdict: "merge", merge_into: "writing" },
+      descriptive_writing: { verdict: "merge", merge_into: "writing" },
+      how_to_writing: { verdict: "merge", merge_into: "writing" },
+      recipe_writing: { verdict: "merge", merge_into: "writing" },
+      informational_writing: { verdict: "merge", merge_into: "writing" },
+    },
+  },
+  // CON-16 — Indigenous cross-field overlap
+  // Members: indigenous_knowledge, indigenous_stories, native_american_history
+  "CON-16": {
+    0: {}, // Keep concepts-side as separate singleton canonicals — no prefill
+    // 1: Reframe under heritage cluster — cross-field, no prefill but caption
+    1: {
+      indigenous_knowledge: {
+        info_only: true,
+        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+      },
+      indigenous_stories: {
+        info_only: true,
+        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+      },
+      native_american_history: {
+        info_only: true,
+        caption_text: "CON-16: cross-field reframe under heritage; verdict here pending heritage-side outcome.",
+      },
+    },
+    // 2: Drop concepts-side and rely on heritage-side tagging
+    2: {
+      indigenous_knowledge: { verdict: "drop" },
+      indigenous_stories: { verdict: "drop" },
+      native_american_history: { verdict: "drop" },
+    },
+  },
+  // CON-22 — Reading-cluster boundary
+  // Members: reading, reading_comprehension, narrative_reading, biography_reading,
+  //          informational_text, biography
+  "CON-22": {
+    0: {}, // Keep all 6 as distinct canonicals
+    // 1: Merge specific reading sub-types into `reading`
+    1: {
+      reading: { verdict: "keep" },
+      reading_comprehension: { verdict: "merge", merge_into: "reading" },
+      narrative_reading: { verdict: "merge", merge_into: "reading" },
+      biography_reading: { verdict: "merge", merge_into: "reading" },
+      informational_text: { verdict: "merge", merge_into: "reading" },
+      biography: { verdict: "merge", merge_into: "reading" },
+    },
+    // 2: Drop generic `reading` and keep specific sub-types
+    2: {
+      reading: { verdict: "drop" },
+    },
+  },
+  // CON-23 — Measurement-cluster boundary
+  // Members: measurement, volume, area, weight, perimeter
+  "CON-23": {
+    0: {}, // Keep parent + 4 specifics as canonicals
+    // 1: Merge specific sub-types into `measurement` parent
+    1: {
+      measurement: { verdict: "keep" },
+      volume: { verdict: "merge", merge_into: "measurement" },
+      area: { verdict: "merge", merge_into: "measurement" },
+      weight: { verdict: "merge", merge_into: "measurement" },
+      perimeter: { verdict: "merge", merge_into: "measurement" },
+    },
+  },
+  // CON-24 — Figurative-language cluster
+  // Members: figurative_language, similes, descriptive_language, sensory_details
+  "CON-24": {
+    0: {}, // Keep parent + 3 specifics
+    // 1: Merge specifics into figurative_language
+    1: {
+      figurative_language: { verdict: "keep" },
+      similes: { verdict: "merge", merge_into: "figurative_language" },
+      descriptive_language: { verdict: "merge", merge_into: "figurative_language" },
+      sensory_details: { verdict: "merge", merge_into: "figurative_language" },
+    },
+    // 2: Pick one canonical — derivations depend on which parent was picked.
+    //    Pre-parent-pick: caption-only on every member.
+    //    Post-parent-pick: see clusterPrefillCandidate's CON-24 special-case
+    //    (it reads state.cluster_parents["CON-24"] and computes derivations
+    //    based on the picked parent).
+    2: "CON-24_PICK_ONE",  // sentinel; computeMemberDerivation handles
+  },
+};
+
+function computeMemberDerivation(signalId, optionIndex, memberKey) {
+  const table = CLUSTER_DERIVATIONS[signalId];
+  if (!table) return null;
+  const optionMap = table[optionIndex];
+  if (!optionMap) return null;
+  // CON-24 option 2 special case (pick-one canonical with deferred parent)
+  if (optionMap === "CON-24_PICK_ONE") {
+    const parent = getClusterParent(signalId); // M2.1b adds this helper
+    if (!parent) {
+      // Pre-parent-pick: caption-only on every member
+      return {
+        info_only: true,
+        caption_text: "CON-24: pick-one outcome — verdict here pending the parent canonical.",
+      };
+    }
+    // Post-parent-pick: parent gets keep; others merge into parent
+    if (memberKey === parent) return { verdict: "keep" };
+    return { verdict: "merge", merge_into: parent };
+  }
+  return optionMap[memberKey] || null;
+}
+```
+
+**Note for M2.1 execution:** `getClusterParent` is added by M2.1b. In M2.1 alone, CON-24 option 2 reads as "no parent yet → info_only caption." That's correct behavior pre-M2.1b. M2.1b's inline reveal wires `setClusterParent` so the second branch fires.
+
+**Step 3: Replace `clusterPrefillCandidate` body**
+
+Replace lines 1188-1192 (currently the stub that returns `null`):
+
+```js
+function clusterPrefillCandidate(entry) {
+  // Walks CLUSTER_SIGNALS to find the signal whose member list contains
+  // this entry. If found and the cluster has a committed answer, returns
+  // either an actionable prefill or an info-only caption per design §17.
+  // Returns null when: no enclosing cluster, cluster unanswered, or no
+  // derivation for this member under the committed option.
+  for (const sig of CLUSTER_SIGNALS) {
+    if (!sig.members || !sig.members.includes(entry.canonical_key)) continue;
+    const cs = getClusterState(sig.id);
+    if (cs === undefined) return null;
+    const derivation = computeMemberDerivation(sig.id, cs, entry.canonical_key);
+    if (!derivation) return null;
+    return { from: sig.id, ...derivation };
+  }
+  return null;
+}
+```
+
+**Step 4: Extend `displayedPrefillForEntry` to carry info-only captions**
+
+Currently (lines 1211-1218) it short-circuits when cluster prefill exists and treats it as an actionable prefill. Update so an `info_only` cluster prefill falls through to the AI prefill (the AI prefill keeps its normal role) but the caller can still read the info caption. Replace lines 1211-1218 with:
+
+```js
+  const clusterPrefill = clusterPrefillCandidate(entry);
+  let clusterInfoCaption = null;
+  if (clusterPrefill) {
+    if (clusterPrefill.info_only) {
+      // Info-only — surface caption separately; fall through to AI prefill
+      clusterInfoCaption = clusterPrefill.caption_text;
+    } else if (clusterPrefill.verdict) {
+      return {
+        verdict: clusterPrefill.verdict,
+        merge_into: clusterPrefill.merge_into || null,
+        captionSource: "Based on your earlier group decision",  // plain (W22) — NOT "Suggested from CON-xx"; source shown via this text, not an emoji
+        isCommitted: false,
+        clusterInfoCaption: null,
+      };
+    }
+  }
+```
+
+Then extend the AI-prefill branch (lines 1220-1227) to carry the caption through:
+
+```js
+  if (entry.parsed.suggested_verdict) {
+    return {
+      verdict: entry.parsed.suggested_verdict,
+      merge_into: entry.parsed.suggested_merge_target || null,
+      captionSource: "Claude recommends",
+      isCommitted: false,
+      clusterInfoCaption,
+    };
+  }
+```
+
+And the terminal `null` return at the bottom of `displayedPrefillForEntry` (currently a bare `return null;` — verify with grep):
+
+```js
+  if (clusterInfoCaption) {
+    return {
+      verdict: null,
+      merge_into: null,
+      captionSource: null,
+      isCommitted: false,
+      clusterInfoCaption,
+    };
+  }
+  return null;
+```
+
+**Step 5: Wire info-caption render in `renderDecideStep`**
+
+Find the line where `renderDecideStep` reads `displayedPrefillForEntry` (or builds the equivalent — Decide mode currently reads `clusterPrefillCandidate(entry)` directly at line 1264). Refactor to use `displayedPrefillForEntry` so the info caption is consistent across modes, then add the info-caption render block.
+
+Concrete edit at line 1264 (Decide mode body — verify with grep first):
+
+Locate:
+```js
+  const clusterSuggestion = clusterPrefillCandidate(entry); // null in Batch 1
+```
+
+Replace with:
+```js
+  const prefill = displayedPrefillForEntry(entry);
+  const clusterInfo = prefill?.clusterInfoCaption || null;
+```
+
+Then, immediately above the existing "Why this needs attention" row (find via grep `renderWhyAttention`), insert:
+
+```js
+  if (clusterInfo) {
+    card.appendChild(
+      el("p", { className: "cluster-info-caption" },
+        document.createTextNode(clusterInfo)
+      )
+    );
+  }
+```
+
+**Finally, rewrite the recommendation-headline block** so it reads off the unified `prefill` object. The line-1264 swap above removed the `clusterSuggestion` local, so the old block (which references `clusterSuggestion`/`aiSuggestion`) no longer compiles — it must be rewritten, not patched. This single rewrite folds in two things: (1) the **carry-over P2 fix** (Step 6) — merge label via `reviewerLabelWithTarget` so it reads "Fold into `writing`", not "Fold into another `writing`"; (2) info-only handling — when `prefill.verdict` is null (e.g. CON-16 heritage reframe, CON-24 pre-parent-pick) the headline is skipped and the `.cluster-info-caption` inserted above carries the explanation. The `💡` source-label headline is otherwise unchanged — the **plain caption text** (set in Step 4 per M2.0/W22) is what tells the reviewer whether a suggestion came from their earlier group decision or from the AI, so no source-emoji distinction is needed (and Confirm mode's `renderClaudeRecommendation` already uses the same `💡`).
+
+Before (template lines 1286-1306 — verify via `grep -n 'aiSuggestion || clusterSuggestion'`):
+```js
+  // Claude's recommendation if any — shown but radio stays blank.
+  if (aiSuggestion || clusterSuggestion) {
+    const source = clusterSuggestion
+      ? `Suggested from ${clusterSuggestion.from}`
+      : "Claude recommends";
+    const v = clusterSuggestion ? clusterSuggestion.verdict : aiSuggestion;
+    const t = clusterSuggestion ? clusterSuggestion.merge_into : entry.parsed.suggested_merge_target;
+    const wrap = el("div", { className: "claude-rec" });
+    const targetSuffix = (v === "merge" && t) ? ` \`${t}\`` : "";
+    wrap.appendChild(el("p", { className: "claude-rec-headline" },
+      el("span", {}, "💡 "),
+      el("strong", {}, `${source}: `),
+      document.createTextNode(`${REVIEWER_LABELS[v] || v}${targetSuffix}`),
+    ));
+    if (entry.parsed.claude_notes) {
+      const body = el("div", { className: "claude-rec-body-expanded" });
+      body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+      wrap.appendChild(body);
+    }
+    card.appendChild(wrap);
+  } else if (entry.parsed.claude_notes) {
+```
+
+After (driven by `prefill`; emoji from source; merge label via `reviewerLabelWithTarget`):
+```js
+  // Claude / cluster recommendation if any — shown but radio stays blank.
+  // (info-only prefills have verdict === null → fall to the notes branch; the
+  //  .cluster-info-caption inserted above already carries their explanation.)
+  if (prefill && prefill.verdict) {
+    const v = prefill.verdict;
+    const t = prefill.merge_into;
+    const source = prefill.captionSource;                 // plain caption (W22) | "Claude recommends"
+    const wrap = el("div", { className: "claude-rec" });
+    wrap.appendChild(el("p", { className: "claude-rec-headline" },
+      el("span", {}, "💡 "),
+      el("strong", {}, `${source}: `),
+      document.createTextNode(reviewerLabelWithTarget(v, v === "merge" ? (t || null) : null)),
+    ));
+    if (entry.parsed.claude_notes) {
+      const body = el("div", { className: "claude-rec-body-expanded" });
+      body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+      wrap.appendChild(body);
+    }
+    card.appendChild(wrap);
+  } else if (entry.parsed.claude_notes) {
+```
+
+The trailing `} else if (entry.parsed.claude_notes) {` is shown as the anchor so you can see where the rewritten block ends — leave that branch and what follows it intact. `aiSuggestion` (line 1263) is now only referenced by the old block; after this rewrite it is unused — remove it or leave it (harmless dead `const`).
+
+**Step 6: Carry-over P2 fix — already folded into the Step 5 headline rewrite**
+
+The Session-16 P2 fix (Decide-mode merge label reading "Fold into another `target`" instead of "Fold into `target`") is **resolved by the Step 5 rewrite above** — its headline builds the label via `reviewerLabelWithTarget(v, v === "merge" ? (t || null) : null)` in place of the old inline `${REVIEWER_LABELS[v] || v}${targetSuffix}` (and `targetSuffix` is dropped). Nothing further to edit here.
+
+> Heads-up for the implementer: an earlier draft of this step used `displayed`/`target` as the locals to pass into `reviewerLabelWithTarget`. Those are the **Confirm**-step names (`renderConfirmStep`); `renderDecideStep`'s locals are `v`/`t`. Dropped in verbatim, `displayed`/`target` would throw `ReferenceError`. The Step 5 block uses the correct `v`/`t`.
+
+Browser-smoke contract: a Decide-mode merge suggestion must read "Fold into `writing`" (no "another"); the non-merge verdicts (`keep`/`drop`/`new`) fall through `reviewerLabelWithTarget` to the bare `REVIEWER_LABELS[verdict]` (helper at template ~line 968).
+
+**Step 7: Build + browser smoke via chrome-devtools-mcp**
+
+```bash
+python3 scripts/build-concepts-tool.py --verify-only
+python3 scripts/build-concepts-tool.py --build-html
+```
+
+Expected stderr line 1: `Parsed 208 entries (§11=32, §12=39, §13=137).`
+Expected stderr line 2: `merge-target extraction: 53 of 78 merge recommendations (68%) — 25 fall through to picker`
+
+Then open the built artifact:
+
+```bash
+open docs/plans/concepts-worksheet-form/concepts-worksheet-tool.html
+```
+
+Browser smoke probes (run via chrome-devtools-mcp `evaluate_script`):
+
+**Probe 1 — CON-12 option 2 (merge sub-types) propagation:**
+
+```js
+// Resolve CON-12 with option 2 (merge sub-types into writing)
+window.__test_setClusterState("CON-12", 2);
+// Jump to a sub-type member (§12 Confirm-mode candidate)
+window.__test_jumpToEntryByKey("narrative_writing");
+// Read displayed prefill
+const e = window.__test_currentEntry();
+const p = window.__test_displayedPrefill(e);
+return {
+  verdict: p?.verdict,
+  merge_into: p?.merge_into,
+  captionSource: p?.captionSource,
+};
+```
+
+Expected:
+```js
+{
+  verdict: "merge",
+  merge_into: "writing",
+  captionSource: "Based on your earlier group decision"
+}
+```
+
+(The `window.__test_*` helpers are temporary probe injections via `evaluate_script` — define inline or use the existing `state` / `ENTRIES_BY_KEY` / `stepSequence` globals directly.)
+
+**Probe 2 — §11 member (`writing`) gets caption text but no radio prefill (W17):**
+
+```js
+// CON-12 still resolved with option 2
+window.__test_jumpToEntryByKey("writing");
+// `writing` is §11 → entryMode returns "decide"; renderDecideStep runs
+const card = document.getElementById("wizardCard");
+const captionEl = card.querySelector(".cluster-info-caption, .claude-rec");
+const radios = card.querySelectorAll('input[type="radio"][name="verdict"]');
+return {
+  cardClass: card.className,
+  captionTextSnippet: captionEl?.textContent?.slice(0, 80),
+  radiosChecked: Array.from(radios).filter(r => r.checked).map(r => r.value),
+};
+```
+
+Expected: `cardClass` includes `decide-mode`; `captionTextSnippet` contains "Based on your earlier group decision" (because option 2 maps `writing → keep` which is actionable, not info-only); `radiosChecked` is `[]` (no pre-fill on §11 per W17).
+
+**Probe 3 — CON-16 option 1 (heritage reframe) info-only caption:**
+
+```js
+window.__test_setClusterState("CON-16", 1);
+window.__test_jumpToEntryByKey("indigenous_knowledge");
+const card = document.getElementById("wizardCard");
+const info = card.querySelector(".cluster-info-caption");
+return {
+  hasInfoCaption: !!info,
+  text: info?.textContent,
+};
+```
+
+Expected: `hasInfoCaption: true`, `text` contains "CON-16: cross-field reframe under heritage".
+
+**Probe 4 — Carry-over P2 fix (renderDecideStep merge label):**
+
+The default corpus has no Decide-mode entry with `suggested_merge_target`, so the fix is not visible via natural reviewer flow. Probe directly by faking a synthetic prefill on plant_parts (§11 Decide):
+
+```js
+// Resolve CON-12 with option 2 to inject a merge prefill into a §11 member
+// — but `writing` is the §11 there. Use writing instead of plant_parts for fidelity.
+window.__test_setClusterState("CON-12", 2);
+window.__test_jumpToEntryByKey("writing");  // §11 + merge prefill
+const card = document.getElementById("wizardCard");
+const recHeadline = card.querySelector(".claude-rec h3, .rec-headline")?.textContent;
+return { recHeadline };
+```
+
+Expected: `recHeadline` reads "💡 Based on your earlier group decision: Keep as concept" (CON-12 option 2 maps `writing → keep`, not merge). For an actual merge-into-target Decide case, walk to `narrative_writing` (§12 — Confirm by default, but if any factor flips it to Decide, e.g. theme_overlap, the label should read "💡 Based on your earlier group decision: Fold into `writing`" not "Fold into another `writing`").
+
+Pragmatic test: write a one-off `<entry-injection>` probe that constructs a synthetic `displayed="merge", target="writing"` and runs `reviewerLabelWithTarget("merge", "writing")` directly. Expected return: `"Fold into \`writing\`"`. This is the carry-over fix's contract.
+
+**Probe 5 — Console error check:**
+
+```js
+return window.__test_collectErrors().length;
+```
+
+Expected: `0`.
+
+**Step 8: Status doc + commit**
+
+Update `docs/plans/2026-05-15-concepts-worksheet-wizard-status.md`:
+- Bump "Last milestone completed" to M2.1
+- Bump "Next milestone" to M2.1b
+- Append Session log entry for M2.1 with the probe results
+- Smoke check matrix row #6 (Cluster Resolve + member walk) — fill partially: "PASS for CON-12 option 2 + CON-16 option 1; CON-24 pick-one deferred to M2.1b."
+
+```bash
+git add scripts/concepts-worksheet-tool.template.html docs/plans/2026-05-15-concepts-worksheet-wizard-plan.md docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+tools(concepts-worksheet): cluster auto-prefill matrix (§17) + Decide-mode merge label fix
+
+M2.1 (Batch 2).
+
+Replaces clusterPrefillCandidate stub with the full design §17 derivation
+matrix for all 5 clusters (CON-12, CON-16, CON-22, CON-23, CON-24). Member
+entries on cluster-resolved steps now receive a 'Based on your earlier group decision'
+caption + radio prefill per W21, while §11 members get the caption text
+only (no radio prefill — W17).
+
+CON-16 option 2 (heritage reframe) and CON-24 option 2 (pick-one, pre-
+parent) surface as info-only captions per design §591 / §621. CON-24's
+post-parent-pick branch reads getClusterParent (added by M2.1b) and is a
+no-op until then.
+
+Also folds in the Session 16 review's P2 carry-over: renderDecideStep's
+merge-label builder swaps from inline ${REVIEWER_LABELS[v]||v}${suffix}
+('Fold into another \`target\`') to reviewerLabelWithTarget(v,t) ('Fold
+into \`target\`'). Now reachable because the matrix can feed merge+target
+into a §12/§13 sub-type that's Decide-routed (theme_overlap or no-rec).
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Milestone 2.1b: CON-24 pick-one canonical Resolve UI (inline reveal)
+
+**Files:**
+- Modify: `scripts/concepts-worksheet-tool.template.html` — extend `renderClusterStep(signal)` at ~line 2167 with a CON-24-specific inline reveal; add `state.cluster_parents` map + `getClusterParent` / `setClusterParent` helpers + `loadState` migration.
+
+**What this milestone does:**
+
+When a reviewer picks CON-24's option 3 ("Pick one canonical — figurative_language OR descriptive_language"), the Resolve card reveals an inline "Now pick the parent canonical:" sub-section below the option radios. Picking a parent + clicking Confirm writes the cluster state (option_index=2) AND the parent into a parallel `state.cluster_parents` map. The M2.1 matrix's CON-24 special-case (already coded as the `"CON-24_PICK_ONE"` sentinel) then derives member prefills using the picked parent.
+
+State shape extension:
+
+```js
+// state.cluster_parents = {} (new in M2.1b)
+// state.cluster_signals[id] = optionIndex (unchanged; M1.6 shape)
+// state.cluster_parents[id] = "<canonical_key>" (only set for CON-24 option 3)
+```
+
+**Step 1: Add `cluster_parents` to `defaultState()` + `loadState` migration**
+
+Find `defaultState()` (grep `function defaultState`):
+
+```js
+function defaultState() {
+  return {
+    schema: 2,
+    entries: {},
+    cluster_signals: {},
+    cluster_parents: {},  // NEW M2.1b
+    wizard: { step_index: 0, deferred: [] },
+  };
+}
+```
+
+Find `loadState()` migration block (grep `function loadState`):
+
+```js
+// Inside loadState(), after the existing migrations:
+if (!parsed.cluster_parents) parsed.cluster_parents = {};
+```
+
+**Step 2: Add `getClusterParent` / `setClusterParent` helpers**
+
+Insert immediately after `setClusterState` (~line 1069):
+
+```js
+function getClusterParent(id) {
+  return state.cluster_parents[id] || null;
+}
+
+function setClusterParent(id, parent) {
+  if (!parent) {
+    delete state.cluster_parents[id];
+  } else {
+    state.cluster_parents[id] = parent;
+  }
+  saveState();
+}
+```
+
+**Step 3: Add CON-24-aware reveal block to `renderClusterStep`**
+
+`renderClusterStep` already renders the option radios + Confirm button per M1.10. M2.1b extends the option-radio render to: when `signal.id === "CON-24"` AND the currently-selected option index is 2, append a parent-picker sub-section below the radios. Picking a parent stores it in `state.cluster_parents["CON-24"]`. The existing Confirm button validates: for CON-24 option 2, the parent must be set before commit.
+
+Concrete edit — locate the option-radio loop in `renderClusterStep` (grep `option-radio\|cluster-option\|signal\.options`):
+
+```js
+// Inside renderClusterStep, after building option radios but before the
+// Confirm button (verify exact location via Read after grep):
+
+if (signal.id === "CON-24") {
+  const selectedOption = getClusterState(signal.id);
+  // Show the inline reveal for option 2 (pick-one canonical)
+  // OR for the radio-staged option 2 (user clicked but hasn't confirmed)
+  const stagedOption = currentStagedOption();  // NEW: reads the radio group's currently-selected value
+  const showReveal = selectedOption === 2 || stagedOption === 2;
+  if (showReveal) {
+    const reveal = el("div", { className: "con24-parent-picker" });
+    reveal.appendChild(
+      el("p", { className: "reveal-prompt" },
+        document.createTextNode("Now pick the parent canonical:")
+      )
+    );
+    const currentParent = getClusterParent("CON-24");
+    for (const parentKey of ["figurative_language", "descriptive_language"]) {
+      const radio = el("input", {
+        type: "radio",
+        name: "con24-parent",
+        value: parentKey,
+        checked: currentParent === parentKey,
+        onchange: () => {
+          setClusterParent("CON-24", parentKey);
+          // Re-render so the Confirm-button enabled state updates
+          renderCurrentStep();
+        },
+      });
+      const label = el("label", { className: "con24-parent-label" },
+        radio,
+        el("code", {}, parentKey)
+      );
+      reveal.appendChild(label);
+    }
+    optionsContainer.appendChild(reveal);
+  }
+}
+```
+
+The `currentStagedOption()` helper is a tiny utility that reads the option radios in the current cluster card to determine which option the reviewer has CLICKED (not yet committed via Confirm). Add it near the top of the cluster-render block:
+
+```js
+function currentStagedOption() {
+  const optRadios = document.querySelectorAll(
+    '#wizardCard input[type="radio"][name^="cluster-option-"]'
+  );
+  for (const r of optRadios) {
+    if (r.checked) return parseInt(r.value, 10);
+  }
+  return null;
+}
+```
+
+**Step 4: Gate Confirm button for CON-24 option 2 on parent-picked**
+
+In the existing Confirm-button render (grep `cluster-confirm\|onClusterCommit`), extend the disabled-state logic:
+
+```js
+const confirmDisabled = (() => {
+  const staged = currentStagedOption();
+  if (staged === null) return true; // no option picked yet
+  if (signal.id === "CON-24" && staged === 2) {
+    // option 3 → parent must be picked
+    if (!getClusterParent("CON-24")) return true;
+  }
+  return false;
+})();
+const confirmBtn = el("button", {
+  className: "btn primary cluster-confirm",
+  disabled: confirmDisabled,
+  // ... rest unchanged
+});
+```
+
+**Step 5: Validate `onClusterCommit` clears stale parent on option change**
+
+When the user re-resolves CON-24 with a non-2 option after previously setting option 2 + a parent, the stale parent should be cleared. Extend `onClusterCommit` (grep `function onClusterCommit`):
+
+```js
+function onClusterCommit(signalId) {
+  // ... existing code that reads the staged option and calls setClusterState
+  // After setClusterState fires, clear stale parent if not CON-24-option-2:
+  if (signalId === "CON-24") {
+    const newOption = getClusterState("CON-24");
+    if (newOption !== 2) {
+      setClusterParent("CON-24", null);
+    }
+  }
+  // ... existing renderCurrentStep / updateDecisionDebt calls
+}
+```
+
+**Step 6: Add minimal CSS for the reveal**
+
+Append to the existing CSS block (grep `con24-parent-picker` to confirm it doesn't already exist):
+
+```css
+.con24-parent-picker {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--warn-border);
+  background: var(--warn-soft);
+  border-radius: 4px;
+}
+
+.con24-parent-picker .reveal-prompt {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.con24-parent-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+
+.con24-parent-label input[type="radio"] {
+  margin: 0;
+}
+```
+
+**Step 7: Build + browser smoke**
+
+```bash
+python3 scripts/build-concepts-tool.py --build-html
+```
+
+Probes via chrome-devtools-mcp:
+
+**Probe 1 — Option 0/1 don't reveal parent picker:**
+
+```js
+window.__test_jumpToStep_byId("cluster:CON-24");
+// Click option 0 radio
+const opts = document.querySelectorAll('#wizardCard input[type="radio"][name^="cluster-option-"]');
+opts[0].click();
+const reveal = document.querySelector(".con24-parent-picker");
+return { revealVisible: !!reveal };
+```
+
+Expected: `revealVisible: false`.
+
+**Probe 2 — Option 2 reveals parent picker; Confirm disabled until parent picked:**
+
+```js
+// Continue from CON-24 step
+const opts = document.querySelectorAll('#wizardCard input[type="radio"][name^="cluster-option-"]');
+opts[2].click();
+const reveal = document.querySelector(".con24-parent-picker");
+const confirmBtn = document.querySelector(".cluster-confirm");
+return {
+  revealVisible: !!reveal,
+  confirmDisabled: confirmBtn.disabled,
+};
+```
+
+Expected: `revealVisible: true`, `confirmDisabled: true`.
+
+**Probe 3 — Pick parent → Confirm enables → Commit → member prefills derive:**
+
+```js
+const parents = document.querySelectorAll('.con24-parent-label input');
+parents[0].click(); // figurative_language
+const confirmBtn = document.querySelector(".cluster-confirm");
+const confirmEnabled = !confirmBtn.disabled;
+confirmBtn.click();
+// State should now have option_index=2 and parent="figurative_language"
+const cs = state.cluster_signals["CON-24"];
+const cp = state.cluster_parents["CON-24"];
+// Walk to a member entry
+window.__test_jumpToEntryByKey("similes");
+const e = window.__test_currentEntry();
+const p = window.__test_displayedPrefill(e);
+return {
+  confirmEnabled,
+  clusterState: cs,
+  clusterParent: cp,
+  similesVerdict: p?.verdict,
+  similesMergeInto: p?.merge_into,
+};
+```
+
+Expected:
+```js
+{
+  confirmEnabled: true,
+  clusterState: 2,
+  clusterParent: "figurative_language",
+  similesVerdict: "merge",
+  similesMergeInto: "figurative_language"
+}
+```
+
+**Probe 4 — Reload preserves cluster_parents:**
+
+```js
+location.reload();
+// (After reload, read state)
+return {
+  clusterState: state.cluster_signals["CON-24"],
+  clusterParent: state.cluster_parents["CON-24"],
+};
+```
+
+Expected: same as before reload (state hydrates via `loadState`).
+
+**Probe 5 — Change option back to 0 clears stale parent:**
+
+```js
+window.__test_jumpToStep_byId("cluster:CON-24");
+const opts = document.querySelectorAll('#wizardCard input[type="radio"][name^="cluster-option-"]');
+opts[0].click();
+const confirmBtn = document.querySelector(".cluster-confirm");
+confirmBtn.click();
+return {
+  clusterState: state.cluster_signals["CON-24"],
+  clusterParent: state.cluster_parents["CON-24"],
+};
+```
+
+Expected: `clusterState: 0`, `clusterParent: null` (or undefined — deleted).
+
+**Step 8: Status doc + commit**
+
+```bash
+git add scripts/concepts-worksheet-tool.template.html docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+tools(concepts-worksheet): CON-24 pick-one canonical Resolve UI (inline reveal)
+
+M2.1b (Batch 2).
+
+Extends renderClusterStep with a CON-24-specific inline reveal: picking
+option 3 ('Pick one canonical (figurative_language OR descriptive_language)')
+expands an inline parent-picker below the option radios. Picking a parent
+enables Confirm; committing writes both state.cluster_signals['CON-24']=2
+and state.cluster_parents['CON-24']=<key>.
+
+New state field: state.cluster_parents (kept parallel to cluster_signals
+so the M1.6 helpers stay scalar). loadState gains a one-liner migration
+to default cluster_parents to {} on pre-M2.1b state.
+
+Helpers: getClusterParent / setClusterParent. The M2.1 matrix's CON-24
+special-case (CLUSTER_DERIVATIONS['CON-24'][2] = sentinel) now resolves
+to member prefills via getClusterParent, so similes/descriptive_language/
+sensory_details receive merge prefills toward the chosen parent.
+
+onClusterCommit clears stale parent when CON-24 option flips from 2 to
+a non-2 option (prevents zombie state).
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Milestone 2.2: Cluster-mismatch detection + entry-step callout
+
+**Files:**
+- Modify: `scripts/concepts-worksheet-tool.template.html` — add `checkClusterMismatch`, `recomputeMismatchForEntry`, `recomputeMismatchForCluster` helpers; extend commit paths to fire recomputeMismatchForEntry; extend setClusterState to fire recomputeMismatchForCluster; add yellow callout render in renderEntryStep (both Confirm + Decide modes); wire `"cluster-mismatch"` trigger to `maybeAutoOpenNotesDrawer`.
+
+**What this milestone does:**
+
+> **Plain-language constraint (design §4.1 / W22) — the callout, auto-open prompt, and any reason text are reviewer-facing.** Write them plain: say "the group decision you made for these related concepts," never "the cluster shape," and never show a raw `CON-xx` id. The callout should read "⚠ Heads up — your verdict differs from the group decision you made for these related concepts." (The code blocks below were drafted pre-M2.0 and still say "cluster shape" — replace per this note.)
+
+When a reviewer commits a per-entry verdict that disagrees with the cluster-derivation (e.g., committed `keep` on `narrative_writing` while CON-12 was resolved as option 2 = merge sub-types into writing), the wizard:
+1. Writes `state.entries[key].cluster_mismatch = "CON-XX"` (M2.1's derivation map drives this).
+2. Renders a yellow callout above the Claude-rec block on every subsequent visit to the entry step (matches Session 16-screenshot theme-overlap callout pattern).
+3. Auto-opens the notes drawer with "Heads up — this differs from the cluster shape you picked. Worth a quick note?" (existing `"cluster-mismatch"` dispatch in `maybeAutoOpenNotesDrawer`; M1.12 already coded this — M2.2 just wires the caller).
+
+When the cluster Resolve answer changes (`setClusterState`), all members get their mismatch flag recomputed (a Resolve change can either fire NEW mismatches or clear stale ones).
+
+Mismatch is purely UI state — `buildExportMarkdown` ignores it; `parseEntryEditsFromMarkdown` doesn't read it from imports. The empty-export SHA invariant is unaffected.
+
+**Step 1: Add mismatch-detection helpers**
+
+Insert immediately after the M2.1 `clusterPrefillCandidate` (~line 1188 + matrix block, verify with grep):
+
+```js
+// ---------- Cluster-mismatch detection (M2.2) ----------
+
+// Returns the cluster signal ID (e.g. "CON-12") if entry's committed
+// verdict disagrees with the cluster-derivation; null otherwise.
+// Info-only cluster prefills (CON-16 option 1, CON-24 pre-parent) are
+// not considered mismatches — they're informational, not commitments.
+function checkClusterMismatch(entry) {
+  const ev = state.entries[entry.canonical_key];
+  if (!ev || !ev.verdict) return null;
+  const cp = clusterPrefillCandidate(entry);
+  if (!cp || cp.info_only || !cp.verdict) return null;
+  // Disagreement: different verdict, or same merge verdict but different target
+  if (ev.verdict !== cp.verdict) return cp.from;
+  if (ev.verdict === "merge" && (ev.merge_into || "") !== (cp.merge_into || "")) return cp.from;
+  return null;
+}
+
+function recomputeMismatchForEntry(entry) {
+  const key = entry.canonical_key;
+  const cm = checkClusterMismatch(entry);
+  const ev = state.entries[key] || {};
+  if (cm && ev.cluster_mismatch !== cm) {
+    // New mismatch (or different signal) — set flag + queue auto-open
+    state.entries[key] = { ...ev, cluster_mismatch: cm };
+    saveState();
+    maybeAutoOpenNotesDrawer(entry, ev.verdict, "cluster-mismatch");
+  } else if (!cm && ev.cluster_mismatch) {
+    // Stale mismatch — clear flag
+    const cleaned = { ...ev };
+    delete cleaned.cluster_mismatch;
+    state.entries[key] = cleaned;
+    saveState();
+  }
+}
+
+function recomputeMismatchForCluster(signalId) {
+  const sig = CLUSTER_SIGNALS.find((s) => s.id === signalId);
+  if (!sig || !sig.members) return;
+  for (const memberKey of sig.members) {
+    const entry = ENTRIES_BY_KEY.get(memberKey);
+    if (entry) recomputeMismatchForEntry(entry);
+  }
+}
+```
+
+**Step 2: Wire `recomputeMismatchForEntry` into every commit path**
+
+Find `onCommit(entry)` (grep `function onCommit`). Append at the end (after `updateDecisionDebt()`):
+
+```js
+function onCommit(entry) {
+  // ... existing body (re-renders + updateDecisionDebt)
+  recomputeMismatchForEntry(entry);  // NEW M2.2
+}
+```
+
+Find `commitMerge(entry, target, pickerEl)` (grep `function commitMerge`). It already writes state then calls `maybeAutoOpenNotesDrawer` before `onCommit`. Since `onCommit` now calls `recomputeMismatchForEntry`, and the recompute itself calls `maybeAutoOpenNotesDrawer` when a NEW mismatch is detected, the order matters. Reorder so `recomputeMismatchForEntry` fires AFTER `setEntryState` but BEFORE the override-trigger `maybeAutoOpenNotesDrawer` call. Concrete edit:
+
+Locate the block (grep `commitMerge` for the existing `maybeAutoOpenNotesDrawer` call):
+
+```js
+setEntryState(key, { verdict: "merge", merge_into: target });
+// Existing override-trigger auto-open
+if (isOverride) {
+  maybeAutoOpenNotesDrawer(entry, "merge", "override");
+}
+onCommit(entry);
+```
+
+Change to:
+
+```js
+setEntryState(key, { verdict: "merge", merge_into: target });
+// NEW M2.2: detect mismatch first; the recompute may queue cluster-mismatch
+// auto-open which takes precedence over override (different prompt text)
+recomputeMismatchForEntry(entry);
+// Override-trigger auto-open fires only if no mismatch flag was just set
+if (isOverride && !state.entries[key]?.cluster_mismatch) {
+  maybeAutoOpenNotesDrawer(entry, "merge", "override");
+}
+onCommit(entry);
+```
+
+(`onCommit` will call `recomputeMismatchForEntry` again — that's idempotent: the second call sees the flag already matches and does nothing. Acceptable redundancy for clarity. Alternative: skip the explicit call here and rely on onCommit; but then the `if (isOverride && !state.entries[key]?.cluster_mismatch)` check fires BEFORE the recompute, which mis-orders. Keep the explicit call.)
+
+**Step 3: Wire `recomputeMismatchForCluster` into `setClusterState`**
+
+Extend `setClusterState` (line 1061):
+
+```js
+function setClusterState(id, optionIndex) {
+  if (optionIndex === null || optionIndex === undefined) {
+    delete state.cluster_signals[id];
+  } else {
+    state.cluster_signals[id] = optionIndex;
+  }
+  saveState();
+  updateDecisionDebt();
+  recomputeMismatchForCluster(id);  // NEW M2.2
+}
+```
+
+Also extend `setClusterParent` (M2.1b) similarly, since changing the CON-24 parent shifts derivations for all CON-24 members:
+
+```js
+function setClusterParent(id, parent) {
+  if (!parent) {
+    delete state.cluster_parents[id];
+  } else {
+    state.cluster_parents[id] = parent;
+  }
+  saveState();
+  recomputeMismatchForCluster(id);  // NEW M2.2
+}
+```
+
+**Step 4: Add yellow-callout render in `renderEntryStep`**
+
+Both Confirm and Decide need the callout when `state.entries[key].cluster_mismatch` is set. Add a render helper near the existing `renderWhyAttention` or similar (grep `function renderWhyAttention`):
+
+```js
+function renderClusterMismatchCallout(entry) {
+  const ev = state.entries[entry.canonical_key];
+  if (!ev || !ev.cluster_mismatch) return null;
+  const signalId = ev.cluster_mismatch;
+  const cp = clusterPrefillCandidate(entry);
+  // Build readable shape description
+  let shapeText = "cluster suggestion";
+  if (cp && cp.verdict) {
+    shapeText = reviewerLabelWithTarget(cp.verdict, cp.merge_into || null);
+  }
+  return el("div", { className: "cluster-mismatch-callout warn-tinted" },
+    el("p", { className: "callout-headline" },
+      document.createTextNode("⚠ Heads up — your verdict differs from the cluster shape you picked.")
+    ),
+    el("p", { className: "callout-detail" },
+      document.createTextNode(`Cluster ${signalId} suggests: ${shapeText}. See note in drawer below.`)
+    )
+  );
+}
+```
+
+Wire into both render paths. Inside `renderConfirmStep(entry)` (grep `function renderConfirmStep`), after the step head + tier strip render but before the Claude recommendation block, insert:
+
+```js
+const mismatchCallout = renderClusterMismatchCallout(entry);
+if (mismatchCallout) card.appendChild(mismatchCallout);
+```
+
+Inside `renderDecideStep(entry)` (grep `function renderDecideStep`), insert the same line at the equivalent position — after the tier strip + theme-overlap-callout render (if present) and before the Claude-rec block.
+
+**Step 5: Add CSS for the callout**
+
+Append to the existing CSS block (grep `cluster-mismatch-callout` to verify it doesn't exist):
+
+```css
+.cluster-mismatch-callout {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-left: 3px solid var(--warn-border);
+  background: var(--warn-soft);
+  border-radius: 4px;
+}
+
+.cluster-mismatch-callout .callout-headline {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.cluster-mismatch-callout .callout-detail {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+```
+
+**Step 6: Build + browser smoke**
+
+```bash
+python3 scripts/build-concepts-tool.py --build-html
+```
+
+Probes:
+
+**Probe 1 — Commit-mismatch detection fires:**
+
+```js
+// Resolve CON-12 with option 2 (merge sub-types into writing)
+window.__test_setClusterState("CON-12", 2);
+// Jump to narrative_writing; CON-12 option 2 suggests merge→writing
+window.__test_jumpToEntryByKey("narrative_writing");
+// Pick "Keep as concept" via Pick Something Else → commits keep
+const otherToggle = document.querySelector("details.pick-other summary");
+otherToggle.click();
+const radios = document.querySelectorAll('details.pick-other input[type="radio"]');
+// Find the keep radio
+const keepRadio = Array.from(radios).find(r => r.value === "keep");
+keepRadio.click();
+return {
+  entryState: state.entries["narrative_writing"],
+  autoOpenPrompt: autoOpenPrompts.get("narrative_writing"),
+  calloutVisible: !!document.querySelector(".cluster-mismatch-callout"),
+};
+```
+
+Expected:
+```js
+{
+  entryState: { verdict: "keep", cluster_mismatch: "CON-12" },
+  autoOpenPrompt: "Heads up — this differs from the cluster shape you picked. Worth a quick note?",
+  calloutVisible: true
+}
+```
+
+**Probe 2 — Cluster-answer change recomputes mismatch:**
+
+```js
+// Continue from probe 1: narrative_writing has cluster_mismatch="CON-12"
+// Now change CON-12 to option 0 (no derivation)
+window.__test_setClusterState("CON-12", 0);
+// narrative_writing's mismatch flag should clear (cluster_prefill is now null)
+return {
+  entryState: state.entries["narrative_writing"],
+};
+```
+
+Expected: `entryState` is `{ verdict: "keep" }` (cluster_mismatch field removed).
+
+**Probe 3 — Commit matching cluster shape doesn't flag:**
+
+```js
+// Resolve CON-23 with option 1 (merge specifics into measurement)
+window.__test_setClusterState("CON-23", 1);
+window.__test_jumpToEntryByKey("volume");
+// Pick "✓ Agree — Fold into measurement" (matches cluster derivation)
+const agreeBtn = document.querySelector(".primary-agree");
+agreeBtn.click();
+return {
+  entryState: state.entries["volume"],
+  calloutVisible: !!document.querySelector(".cluster-mismatch-callout"),
+};
+```
+
+Expected: `entryState: { verdict: "merge", merge_into: "measurement" }` (no `cluster_mismatch`); `calloutVisible: false`.
+
+**Probe 4 — Mismatch persists across reload:**
+
+```js
+// Set up a mismatch
+window.__test_setClusterState("CON-12", 2);
+state.entries["opinion_writing"] = { verdict: "keep" };
+saveState();
+recomputeMismatchForEntry(ENTRIES_BY_KEY.get("opinion_writing"));
+location.reload();
+// After reload
+return { entryState: state.entries["opinion_writing"] };
+```
+
+Expected: `entryState: { verdict: "keep", cluster_mismatch: "CON-12" }`.
+
+**Probe 5 — Empty-export SHA invariant unchanged:**
+
+```js
+// Wipe state, export, hash
+state = defaultState();
+saveState();
+const md = buildExportMarkdown();
+return await sha256(md);
+```
+
+Expected: `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03` (Batch 1 baseline).
+
+**Step 7: Status doc + commit**
+
+```bash
+git add scripts/concepts-worksheet-tool.template.html docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+tools(concepts-worksheet): cluster-mismatch detection + yellow entry-step callout
+
+M2.2 (Batch 2).
+
+Adds checkClusterMismatch / recomputeMismatchForEntry /
+recomputeMismatchForCluster helpers. Every per-entry commit path now
+fires recomputeMismatchForEntry (idempotent re-run inside onCommit is
+acceptable for clarity). setClusterState + setClusterParent fire
+recomputeMismatchForCluster so a Resolve-answer change flips/clears
+flags for all affected members.
+
+When a mismatch is set:
+- state.entries[key].cluster_mismatch = 'CON-XX' (UI-only field; not
+  exported)
+- Notes drawer auto-opens with the cluster-mismatch prompt (M1.12
+  already wired the dispatch case)
+- Yellow callout renders above the Claude-rec block on every visit to
+  the entry step (both Confirm + Decide modes)
+
+Mismatch flag clears when verdict matches cluster shape OR cluster
+prefill goes away (option change clears flag without reopening
+drawer — drawer auto-open only fires on the NEW-mismatch transition).
+
+Info-only cluster prefills (CON-16 option 1, CON-24 pre-parent-pick)
+are not treated as mismatches — they're informational, not commitments.
+
+Empty-export SHA invariant unchanged: cluster_mismatch is not exported.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+---
 
 ### Milestone 2.3: Review summary screen (§11)
 
-Replace the simple end screen with the grouped Review summary: KEEP / FOLD / NEW / REMOVE buckets, cluster choices, decide-later list, mismatch highlights, edit/resume links. "Review so far" button in top bar opens this screen mid-flow.
+**Files:**
+- Modify: `scripts/concepts-worksheet-tool.template.html` — replace `renderEndScreen()` body with a dispatch to `renderReviewSummary()`; add `renderReviewSummary()` + its sub-renderers (`renderVerdictBucket`, `renderClusterBucket`, `renderDeferredBucket`, `renderMismatchBucket`); wire the top-bar "Review so far" button to open the summary mid-flow; add CSS.
 
-Files: `scripts/concepts-worksheet-tool.template.html` (JS — replace `renderEndScreen()` + add `renderReviewSummary()`).
+**What this milestone does:**
 
-### Milestone 2.4: Wizard intro rewrite
+> **Plain-language constraint (design §4.1 / W22) — every summary section label and row is reviewer-facing.** De-jargon per M2.0: `cluster` → `group` ("CLUSTER CHOICES" → "GROUP DECISIONS"; "⚠ DIFFERS FROM CLUSTER DECISION" → "⚠ DIFFERS FROM A GROUP DECISION"; "No cluster shapes resolved yet." → "No group decisions made yet."), and **drop raw `CON-xx` ids from rows** — name the group or say "a group decision" instead. The `§11/§12/§13` references in the *sort order* are internal logic and stay; only on-screen text changes. Read the design §11 mock labels through this lens. (The code blocks below were drafted pre-M2.0 and still show the old strings.)
 
-3-step intro modal: "What you're doing" → "Three work types" → "Save your work". Replaces the M1.4 stub modal.
+Replaces M1.15's simple end screen (one paragraph + Save & Export + Back-to-wizard) with the full design §11 review summary. Sections in design §11 mock order:
 
-Files: `scripts/concepts-worksheet-tool.template.html` (HTML+JS — replace `#onboardingModal` body).
+1. **KEEP AS CONCEPT** (collapsible) — entries grouped, sort by tier (§11 → §12 → §13) then canonical_key
+2. **FOLD INTO ANOTHER** (collapsible) — entries grouped by merge target; within a target group, sort by tier then canonical_key; each row shows `key → target` with [edit ↗] link
+3. **ADD NEW CONCEPT** (collapsible) — flat list
+4. **REMOVE** (collapsible) — flat list
+5. **CLUSTER CHOICES** (collapsible) — `CON-XX — <short option description>` rows
+6. **⚠ DECIDE LATER** (collapsible, **default-open if count > 0**) — entries from `state.wizard.deferred`; each row has [resume] link
+7. **⚠ DIFFERS FROM CLUSTER DECISION** (collapsible, **default-open if count > 0**) — entries with `cluster_mismatch` flag; rows show "key — your verdict `X`, CON-YY suggests `Z`"
 
-### Milestone 2.5: Decision-debt counter polish
+Header strip: "REVIEW YOUR DECISIONS — N of 208 committed" + saved badge. Footer row: [← Back to wizard] + [Save & Export ↓].
 
-Recompute on mismatch flag changes; visually surface deferred count in summary; consider showing decide-now-debt and confirm-now-debt with different visual weight.
+The "Review so far" top-bar button (already a static element from M1.4; currently disabled per the M1.4 status doc) now wires to a dedicated `openReviewSummary()` function: sets a UI-only flag `state.ui = { summaryOpen: true }`, calls `renderCurrentStep()` (which dispatches to summary when the flag is set), and pushes the current step_index onto a small `summaryReturnStack` so [← Back to wizard] can pop and resume.
 
-Files: `scripts/concepts-worksheet-tool.template.html` (JS — extend updateDecisionDebt).
+**Step 1: Add `renderReviewSummary` + sub-renderers**
 
-### Milestone 2.6: Full smoke check pass (8/8)
+Insert near the existing `renderEndScreen` (~line 2257):
 
-Run all 8 smoke checks from design §15. Cluster Resolve + member walk (#6) and Mismatch flag (#7) now pass.
+```js
+function renderReviewSummary() {
+  const card = el("section", { id: "wizardCard", className: "wizard-step review-summary" });
+
+  // ---- Header ----
+  const committedCount = ENTRIES.filter((e) => entryFilled(e.canonical_key)).length;
+  const totalCount = ENTRIES.length;
+  card.appendChild(
+    el("header", { className: "summary-header" },
+      el("h2", {}, document.createTextNode("Review your decisions")),
+      el("p", { className: "summary-counts" },
+        document.createTextNode(`${committedCount} of ${totalCount} entries committed.`)
+      )
+    )
+  );
+
+  // ---- Buckets in design §11 mock order ----
+  const keepEntries = collectByVerdict("keep");
+  const foldEntries = collectByVerdict("merge");
+  const newEntries = collectByVerdict("new");
+  const dropEntries = collectByVerdict("drop");
+  // `state.wizard.deferred` holds BARE step ids — entry canonical_keys (e.g. "plant_parts")
+  // and cluster CON-ids (e.g. "CON-23"). navDefer pushes `step.id` verbatim (template ~line 2310),
+  // and step ids are never prefixed (entry steps use the bare canonical_key; see buildStepSequence
+  // `{ kind: "entry", id: entry.canonical_key }`). A deferred cluster id simply misses ENTRIES_BY_KEY
+  // and drops out, so a straight lookup is correct — no "entry:" prefix parsing. (Verified against
+  // navDefer + the M1.15 end-screen counts, which already use `deferred.includes(entry.canonical_key)`.)
+  const deferredEntries = (state.wizard.deferred || [])
+    .map((id) => ENTRIES_BY_KEY.get(id))
+    .filter(Boolean);
+  const mismatchEntries = ENTRIES.filter((e) => state.entries[e.canonical_key]?.cluster_mismatch);
+
+  card.appendChild(renderVerdictBucket("KEEP AS CONCEPT", "keep", keepEntries, /*defaultOpen*/ false));
+  card.appendChild(renderFoldBucket(foldEntries, /*defaultOpen*/ false));
+  card.appendChild(renderVerdictBucket("ADD NEW CONCEPT", "new", newEntries, /*defaultOpen*/ false));
+  card.appendChild(renderVerdictBucket("REMOVE", "drop", dropEntries, /*defaultOpen*/ false));
+  card.appendChild(renderClusterBucket(/*defaultOpen*/ false));
+  card.appendChild(renderDeferredBucket(deferredEntries, /*defaultOpen*/ deferredEntries.length > 0));
+  card.appendChild(renderMismatchBucket(mismatchEntries, /*defaultOpen*/ mismatchEntries.length > 0));
+
+  // ---- Footer actions ----
+  card.appendChild(
+    el("div", { className: "summary-footer" },
+      el("button", {
+        className: "btn ghost back-to-wizard",
+        onclick: closeReviewSummary,
+      }, document.createTextNode("← Back to wizard")),
+      el("button", {
+        className: "btn primary save-export",
+        onclick: onExport,
+      }, document.createTextNode("Save & Export ↓"))
+    )
+  );
+
+  return card;
+}
+
+// Helper: collect entries with a given committed verdict, sorted by tier
+// then canonical_key.
+function collectByVerdict(verdict) {
+  const matches = ENTRIES.filter((e) => state.entries[e.canonical_key]?.verdict === verdict);
+  matches.sort(sortByTierThenKey);
+  return matches;
+}
+
+function sortByTierThenKey(a, b) {
+  const tierA = a.parsed.tier || "";
+  const tierB = b.parsed.tier || "";
+  if (tierA !== tierB) {
+    // §11 < §12 < §13 per TIER_ORDER
+    const order = { "§11": 0, "§12": 1, "§13": 2 };
+    return (order[tierA] ?? 99) - (order[tierB] ?? 99);
+  }
+  return a.canonical_key.localeCompare(b.canonical_key);
+}
+
+function renderVerdictBucket(title, verdict, entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket", open: defaultOpen || entries.length === 0 ? null : null });
+  // (Open semantics: default-open follows the parameter; HTML <details> open
+  // attribute is presence-based — set via .open = boolean after creation.)
+  details.open = !!defaultOpen;
+  const summary = el("summary", { className: "bucket-summary" },
+    document.createTextNode(`${title} (${entries.length})`)
+  );
+  details.appendChild(summary);
+
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+
+  const list = el("ul", { className: "bucket-list" });
+  for (const e of entries) {
+    const row = el("li", { className: "bucket-row" },
+      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      el("span", { className: "tier-tag" }, document.createTextNode(e.parsed.tier)),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderFoldBucket(entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket fold-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`FOLD INTO ANOTHER (${entries.length})`)
+  ));
+
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+
+  // Group by merge target
+  const byTarget = {};
+  for (const e of entries) {
+    const target = state.entries[e.canonical_key].merge_into;
+    if (!byTarget[target]) byTarget[target] = [];
+    byTarget[target].push(e);
+  }
+  // Sort target groups alphabetically by target, members within by tier+key
+  const targets = Object.keys(byTarget).sort();
+  for (const target of targets) {
+    const group = el("div", { className: "fold-target-group" });
+    group.appendChild(
+      el("p", { className: "fold-target-header" },
+        document.createTextNode("Folding into "),
+        el("code", {}, document.createTextNode(target)),
+        document.createTextNode(` (${byTarget[target].length}):`)
+      )
+    );
+    const list = el("ul", { className: "bucket-list" });
+    byTarget[target].sort(sortByTierThenKey);
+    for (const e of byTarget[target]) {
+      const row = el("li", { className: "bucket-row" },
+        el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+        document.createTextNode(" → "),
+        el("code", { className: "target" }, document.createTextNode(target)),
+        el("span", { className: "tier-tag" }, document.createTextNode(e.parsed.tier)),
+        el("button", {
+          className: "btn link edit-link",
+          onclick: () => {
+            closeReviewSummary();
+            jumpToStepByEntryKey(e.canonical_key);
+          },
+        }, document.createTextNode("edit ↗"))
+      );
+      list.appendChild(row);
+    }
+    group.appendChild(list);
+    details.appendChild(group);
+  }
+  return details;
+}
+
+function renderClusterBucket(defaultOpen) {
+  const details = el("details", { className: "summary-bucket cluster-bucket" });
+  details.open = !!defaultOpen;
+  const answered = CLUSTER_SIGNALS.filter((s) => getClusterState(s.id) !== undefined);
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`CLUSTER CHOICES (${answered.length} of ${CLUSTER_SIGNALS.length})`)
+  ));
+
+  if (answered.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("No cluster shapes resolved yet.")
+    ));
+    return details;
+  }
+
+  const list = el("ul", { className: "bucket-list" });
+  for (const s of answered) {
+    const idx = getClusterState(s.id);
+    const optLabel = s.options[idx] || `Option ${idx}`;
+    // For CON-24 option 2, also surface the picked parent
+    let extra = "";
+    if (s.id === "CON-24" && idx === 2) {
+      const p = getClusterParent("CON-24");
+      if (p) extra = ` — parent: ${p}`;
+    }
+    const row = el("li", { className: "bucket-row" },
+      el("code", { className: "cluster-id" }, document.createTextNode(s.id)),
+      document.createTextNode(` — ${optLabel}${extra}`),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByClusterId(s.id);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderDeferredBucket(entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket deferred-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`⚠ DECIDE LATER (${entries.length})`)
+  ));
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+  const list = el("ul", { className: "bucket-list" });
+  entries.sort(sortByTierThenKey);
+  for (const e of entries) {
+    const row = el("li", { className: "bucket-row" },
+      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      el("span", { className: "tier-tag" }, document.createTextNode(e.parsed.tier)),
+      el("button", {
+        className: "btn link resume-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("resume ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderMismatchBucket(entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket mismatch-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`⚠ DIFFERS FROM CLUSTER DECISION (${entries.length})`)
+  ));
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+  const list = el("ul", { className: "bucket-list" });
+  entries.sort(sortByTierThenKey);
+  for (const e of entries) {
+    const ev = state.entries[e.canonical_key];
+    const cp = clusterPrefillCandidate(e);
+    const yourVerdict = ev.verdict + (ev.merge_into ? ` → ${ev.merge_into}` : "");
+    const clusterShape = cp && !cp.info_only && cp.verdict
+      ? cp.verdict + (cp.merge_into ? ` → ${cp.merge_into}` : "")
+      : "(no current suggestion)";
+    const row = el("li", { className: "bucket-row" },
+      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      document.createTextNode(` — your verdict `),
+      el("code", {}, document.createTextNode(yourVerdict)),
+      document.createTextNode(`, ${ev.cluster_mismatch} suggests `),
+      el("code", {}, document.createTextNode(clusterShape)),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+```
+
+**Step 2: Add `openReviewSummary` / `closeReviewSummary` + state for summary mode**
+
+```js
+// UI-only state for whether the summary is currently open (not persisted)
+let summaryOpen = false;
+
+function openReviewSummary() {
+  summaryOpen = true;
+  renderCurrentStep();
+}
+
+function closeReviewSummary() {
+  summaryOpen = false;
+  renderCurrentStep();
+}
+
+// Helper for cluster-row [edit] link
+function jumpToStepByClusterId(signalId) {
+  const idx = stepSequence.findIndex((s) => s.kind === "cluster" && s.id === signalId);
+  if (idx >= 0) {
+    state.wizard.step_index = idx;
+    saveState();
+    renderCurrentStep();
+  }
+}
+```
+
+**Step 3: Wire summary into `renderCurrentStep` dispatch**
+
+Find `renderCurrentStep` (grep `function renderCurrentStep`). Add the summary branch at the top of the dispatch:
+
+```js
+function renderCurrentStep() {
+  // ... existing element setup
+  if (summaryOpen) {
+    card.replaceWith(renderReviewSummary());
+    // Hide bottom nav while summary is open
+    document.getElementById("wizardNav")?.classList.add("hidden");
+    return;
+  }
+  // ... rest of existing dispatch (entry / cluster / end-screen)
+}
+```
+
+Also ensure the existing nav-show path runs (`document.getElementById("wizardNav").classList.remove("hidden")`) when transitioning back from summary.
+
+**Step 4: Replace `renderEndScreen` to use summary**
+
+Find `renderEndScreen()` (~line 2257). Replace its body with:
+
+```js
+function renderEndScreen() {
+  // M2.3: at the natural end of the wizard, render the full review summary
+  // rather than the M1.15 simple end screen. The summary's "Save & Export"
+  // button is the primary CTA from here.
+  return renderReviewSummary();
+}
+```
+
+**Step 5: Wire the top-bar "Review so far" button**
+
+Find the M1.4 `#reviewSoFarBtn` (grep `reviewSoFarBtn\|Review so far`). It's currently disabled. In `init()` (grep `function init`), add:
+
+```js
+const reviewBtn = document.getElementById("reviewSoFarBtn");
+if (reviewBtn) {
+  reviewBtn.disabled = false;
+  reviewBtn.addEventListener("click", openReviewSummary);
+}
+```
+
+**Step 6: Add CSS for the summary**
+
+Append to the CSS block:
+
+```css
+.review-summary {
+  max-width: 760px;
+}
+
+.summary-header h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  color: var(--text-strong);
+}
+
+.summary-counts {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.summary-bucket {
+  margin: 12px 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.summary-bucket > .bucket-summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  user-select: none;
+}
+
+.summary-bucket[open] > .bucket-summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.deferred-bucket > .bucket-summary,
+.mismatch-bucket > .bucket-summary {
+  color: var(--warn);
+}
+
+.bucket-list {
+  margin: 0;
+  padding: 8px 14px 14px;
+  list-style: none;
+}
+
+.bucket-row {
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.bucket-row:last-child {
+  border-bottom: none;
+}
+
+.bucket-row .tier-tag {
+  font-size: 12px;
+  color: var(--hint);
+  margin-left: auto;
+}
+
+.bucket-row .btn.link.edit-link,
+.bucket-row .btn.link.resume-link {
+  padding: 0;
+  font-size: 13px;
+  color: var(--accent);
+  background: none;
+  border: none;
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+
+.bucket-empty {
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--hint);
+  font-style: italic;
+}
+
+.fold-target-group {
+  border-top: 1px dotted var(--border);
+  padding: 10px 14px;
+}
+
+.fold-target-group:first-of-type {
+  border-top: none;
+}
+
+.fold-target-header {
+  margin: 0 0 6px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.summary-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.summary-footer .btn.primary {
+  font-size: 15px;
+  padding: 10px 20px;
+}
+```
+
+**Step 7: Build + browser smoke**
+
+```bash
+python3 scripts/build-concepts-tool.py --build-html
+```
+
+Probes:
+
+**Probe 1 — End-of-wizard summary renders all 7 sections:**
+
+```js
+// Drive to end-screen sentinel
+state.wizard.step_index = stepSequence.length;
+renderCurrentStep();
+const sections = Array.from(document.querySelectorAll(".summary-bucket > summary")).map((s) => s.textContent);
+return sections;
+```
+
+Expected:
+```js
+[
+  "KEEP AS CONCEPT (N)",
+  "FOLD INTO ANOTHER (N)",
+  "ADD NEW CONCEPT (0)",
+  "REMOVE (N)",
+  "CLUSTER CHOICES (N of 5)",
+  "⚠ DECIDE LATER (N)",
+  "⚠ DIFFERS FROM CLUSTER DECISION (N)"
+]
+```
+
+**Probe 2 — Attention-needer sections default-open when non-zero:**
+
+```js
+// Set up: 1 deferred + 1 mismatch entry, walk to summary
+state.wizard.deferred = ["plant_parts"];  // bare canonical_key — matches what navDefer actually writes (NOT "entry:"-prefixed)
+state.entries["narrative_writing"] = { verdict: "keep", cluster_mismatch: "CON-12" };
+state.cluster_signals["CON-12"] = 2;
+saveState();
+state.wizard.step_index = stepSequence.length;
+renderCurrentStep();
+const buckets = document.querySelectorAll(".summary-bucket");
+const openStates = Array.from(buckets).map((b) => ({
+  title: b.querySelector("summary").textContent,
+  open: b.open,
+}));
+return openStates;
+```
+
+Expected: KEEP/FOLD/NEW/REMOVE/CLUSTER all `open: false`; DECIDE LATER `open: true` (1 deferred); DIFFERS `open: true` (1 mismatch).
+
+**Probe 3 — [edit ↗] link jumps + closes summary:**
+
+```js
+// Click the first edit link on the FOLD section
+const editLinks = document.querySelectorAll(".fold-bucket .edit-link");
+const firstKey = state.entries[Object.keys(state.entries).find((k) => state.entries[k].verdict === "merge")]?.merge_into; // approximate
+editLinks[0]?.click();
+return {
+  summaryClosed: !document.querySelector(".review-summary"),
+  cardKind: stepSequence[state.wizard.step_index]?.kind,
+};
+```
+
+Expected: `summaryClosed: true`; `cardKind: "entry"`.
+
+**Probe 4 — Mid-flow "Review so far" button:**
+
+```js
+// Reset to step 0
+state.wizard.step_index = 0;
+renderCurrentStep();
+const btn = document.getElementById("reviewSoFarBtn");
+btn.click();
+return { summaryOpen: !!document.querySelector(".review-summary") };
+```
+
+Expected: `summaryOpen: true`. (Click [← Back to wizard] returns to step 0.)
+
+**Probe 5 — Save & Export still works from summary:**
+
+```js
+// Stub onExport to record the call
+const origOnExport = window.onExport;
+let exportCalled = 0;
+window.onExport = () => { exportCalled++; };
+document.querySelector(".save-export").click();
+window.onExport = origOnExport;
+return { exportCalled };
+```
+
+Expected: `exportCalled: 1`.
+
+**Probe 6 — Empty-export SHA invariant unchanged:**
+
+```js
+state = defaultState();
+saveState();
+const md = buildExportMarkdown();
+return await sha256(md);
+```
+
+Expected: `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03`.
+
+**Step 8: Status doc + commit**
+
+```bash
+git add scripts/concepts-worksheet-tool.template.html docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+tools(concepts-worksheet): review summary screen (§11)
+
+M2.3 (Batch 2).
+
+Replaces M1.15's simple end screen with the full design §11 review
+summary: 7 collapsible sections per the design mock — KEEP / FOLD /
+NEW / REMOVE / CLUSTER CHOICES / DECIDE LATER / DIFFERS FROM CLUSTER.
+
+Attention-needers (DECIDE LATER, DIFFERS) default-open when count > 0
+so reviewers see them without expanding. Other sections default-closed.
+
+FOLD bucket groups entries by merge target with a 'Folding into <code>X
+</code> (N):' sub-header per target; sort within group by tier (§11 →
+§12 → §13) then canonical_key.
+
+Each row has an [edit ↗] / [resume ↗] link that closes the summary +
+calls jumpToStepByEntryKey (M1.10 helper). Cluster rows use a new
+jumpToStepByClusterId helper.
+
+Mid-flow access: the M1.4-stubbed top-bar 'Review so far' button now
+wires to openReviewSummary; [← Back to wizard] returns to the step
+that was open when summary was launched (preserved via the existing
+state.wizard.step_index — no separate stack needed since renderCurrent
+Step is single-source-of-truth for the step).
+
+Save & Export from the summary footer works (same onExport handler as
+the Advanced menu).
+
+Empty-export SHA invariant unchanged.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Milestone 2.4: Wizard intro rewrite (3-step modal)
+
+**Files:**
+- Modify: `scripts/concepts-worksheet-tool.template.html` — replace the contents of `#onboardingModal` (lines ~993-1010, M1.4 stub) with the 3-step intro flow; extend the onboarding-modal JS helpers (`showOnboarding`, `dismissOnboarding`); add CSS for the step indicator and Next/Back/Skip buttons.
+
+**What this milestone does:**
+
+Replaces the M1.4 single-paragraph onboarding stub with a 3-step intro modal per design §14 list. The 3 steps:
+
+1. **"What you're doing"** — frames the task: 208 worksheet entries; each is a "concept" candidate; goal is to commit a verdict for each so the curriculum team can re-tag lessons confidently.
+2. **"Three work types"** — explains the Confirm / Resolve / Decide modes in plain language: most entries are quick confirmations, a few clusters need a shape decision, and the §11 high-impact entries need conscious calls.
+3. **"Save your work"** — explains the auto-save badge + Advanced menu's Save & Export + Import path. Closes the intro.
+
+Navigation: Back / Next buttons (Back disabled on step 1; Next is "Get started" on step 3). A small "Skip intro" link at top-right. Step indicator dots (●○○ / ○●○ / ○○●). Modal persists across navigation; closing via Skip or step-3 Get-started sets `localStorage.intro_shown = "1"` so the modal doesn't auto-reopen on next session reload.
+
+Re-openable via Advanced menu's "Show wizard intro" item (already wired in M1.14).
+
+> **Plain-language constraint (curriculum-team audience) — applies to ALL copy in this milestone; the provisional draft copy below must be reconciled to it.** The reader is a curriculum reviewer, not a developer. Keep their attention on **the concepts themselves and whether/how each applies to the curriculum** — never on the machinery we built underneath. Do **not** make them learn our internal vocabulary: avoid `§11`/`§12`/`§13`, "tier"/"high-impact tier," `CON-xx`, "cluster signal," "verdict," "merge_into"/"canonical key," "metadata," "the corpus," and don't teach "Confirm/Resolve/Decide" as named modes. Prefer plain outcomes — *keep it · it's the same as another concept · give it a clearer name · it doesn't belong* — and plain framing of the work ("most are quick confirmations; a few groups of closely-related concepts need one shared decision; a handful are worth a careful call"). Where the shipped UI still shows internal shorthand the reader will see (the `§11`-style strip, raw `CON-xx` ids, the mode chips), either gloss it in plain words here or leave it for the separate "soften in-UI shorthand" decision — do not silently present the jargon as expected knowledge. (User directive, 2026-05-28.)
+
+**Step 1: Replace `#onboardingModal` body**
+
+Find the modal body (grep `id="onboardingModal"`). Replace its contents (the inner HTML) with the 3-step shell:
+
+```html
+<dialog id="onboardingModal" class="wizard-intro">
+  <div class="intro-step" data-step="1">
+    <h2>Reviewing concepts together</h2>
+    <p>You're walking through <strong>208 concept candidates</strong> from our lesson library worksheet. Each one is something we might use to tag and find lessons by — your decisions decide which stay, which fold into other concepts, and which we drop.</p>
+    <p>Don't worry about reading every prose note. Claude has pre-filled suggestions where it can. Your job is to confirm or adjust.</p>
+  </div>
+  <div class="intro-step" data-step="2" hidden>
+    <h2>Three kinds of work</h2>
+    <ul class="intro-modes">
+      <li><strong>Confirm</strong> — most entries (§12 / §13). Claude suggested a verdict; just click <em>Agree</em> or pick something else.</li>
+      <li><strong>Resolve</strong> — 5 clusters of related concepts where one decision sets the shape for several members at once.</li>
+      <li><strong>Decide</strong> — 32 high-impact concepts (§11) that need your conscious call. No pre-filled radio; pick from a blank slate.</li>
+    </ul>
+    <p>The wizard routes each entry to the right mode automatically.</p>
+  </div>
+  <div class="intro-step" data-step="3" hidden>
+    <h2>Saving your work</h2>
+    <p>Your decisions auto-save to this browser <strong>every few seconds</strong> — the "Saved locally" badge at the top right confirms it.</p>
+    <p>When you're done (or want to take a break), open the Advanced menu and click <strong>Save &amp; Export markdown ↓</strong>. You'll get a file you can email to the team. You can also re-import it later to pick up where you left off.</p>
+    <p>That's it — let's go.</p>
+  </div>
+
+  <footer class="intro-footer">
+    <div class="step-indicator" aria-label="Step indicator">
+      <span class="dot" data-step="1"></span>
+      <span class="dot" data-step="2"></span>
+      <span class="dot" data-step="3"></span>
+    </div>
+    <div class="intro-actions">
+      <button type="button" class="btn ghost" id="introSkip">Skip intro</button>
+      <button type="button" class="btn ghost" id="introBack" disabled>← Back</button>
+      <button type="button" class="btn primary" id="introNext">Next →</button>
+    </div>
+  </footer>
+</dialog>
+```
+
+**Step 2: Extend onboarding JS helpers**
+
+Find `showOnboarding` / `dismissOnboarding` (grep `function showOnboarding\|function dismissOnboarding`). Replace with multi-step versions:
+
+```js
+let introStep = 1;
+
+function showOnboarding() {
+  const dlg = document.getElementById("onboardingModal");
+  if (!dlg) return;
+  introStep = 1;
+  syncIntroStep();
+  if (typeof dlg.showModal === "function") {
+    dlg.showModal();
+  } else {
+    dlg.setAttribute("open", "");
+  }
+}
+
+function dismissOnboarding(markAsSeen) {
+  const dlg = document.getElementById("onboardingModal");
+  if (!dlg) return;
+  if (typeof dlg.close === "function") {
+    dlg.close();
+  } else {
+    dlg.removeAttribute("open");
+  }
+  if (markAsSeen) {
+    try {
+      localStorage.setItem("intro_shown", "1");
+    } catch (_e) { /* localStorage may be unavailable */ }
+  }
+}
+
+function syncIntroStep() {
+  const dlg = document.getElementById("onboardingModal");
+  if (!dlg) return;
+  dlg.querySelectorAll(".intro-step").forEach((el) => {
+    const step = parseInt(el.dataset.step, 10);
+    if (step === introStep) {
+      el.removeAttribute("hidden");
+    } else {
+      el.setAttribute("hidden", "");
+    }
+  });
+  dlg.querySelectorAll(".step-indicator .dot").forEach((dot) => {
+    const step = parseInt(dot.dataset.step, 10);
+    dot.classList.toggle("active", step === introStep);
+  });
+  const backBtn = dlg.querySelector("#introBack");
+  const nextBtn = dlg.querySelector("#introNext");
+  backBtn.disabled = introStep === 1;
+  nextBtn.textContent = introStep === 3 ? "Get started" : "Next →";
+}
+
+function introNext() {
+  if (introStep === 3) {
+    dismissOnboarding(true);
+    return;
+  }
+  introStep += 1;
+  syncIntroStep();
+}
+
+function introBack() {
+  if (introStep === 1) return;
+  introStep -= 1;
+  syncIntroStep();
+}
+
+function maybeShowOnboarding() {
+  let shown = null;
+  try {
+    shown = localStorage.getItem("intro_shown");
+  } catch (_e) { shown = null; }
+  if (!shown) showOnboarding();
+}
+```
+
+Wire the button handlers in `init()`:
+
+```js
+document.getElementById("introNext")?.addEventListener("click", introNext);
+document.getElementById("introBack")?.addEventListener("click", introBack);
+document.getElementById("introSkip")?.addEventListener("click", () => dismissOnboarding(true));
+```
+
+**Step 3: Add CSS for the intro modal**
+
+Append to the CSS block:
+
+```css
+dialog.wizard-intro {
+  max-width: 560px;
+  padding: 24px 28px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+dialog.wizard-intro::backdrop {
+  background: rgba(20, 20, 20, 0.5);
+}
+
+dialog.wizard-intro h2 {
+  margin: 0 0 14px;
+  font-size: 20px;
+  color: var(--text-strong);
+}
+
+dialog.wizard-intro p,
+dialog.wizard-intro li {
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+dialog.wizard-intro .intro-modes {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+dialog.wizard-intro .intro-modes li {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: var(--panel-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+}
+
+dialog.wizard-intro .intro-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.step-indicator {
+  display: flex;
+  gap: 6px;
+}
+
+.step-indicator .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: background 120ms ease;
+}
+
+.step-indicator .dot.active {
+  background: var(--accent);
+}
+
+.intro-actions {
+  display: flex;
+  gap: 10px;
+}
+```
+
+**Step 4: Build + browser smoke**
+
+```bash
+python3 scripts/build-concepts-tool.py --build-html
+```
+
+Probes:
+
+**Probe 1 — Intro auto-opens on first session (no localStorage `intro_shown` key):**
+
+```js
+localStorage.removeItem("intro_shown");
+location.reload();
+// After reload
+const dlg = document.getElementById("onboardingModal");
+return { isOpen: dlg?.hasAttribute("open") || dlg?.open };
+```
+
+Expected: `isOpen: true`.
+
+**Probe 2 — Step navigation:**
+
+```js
+// Modal is open at step 1
+const step1 = document.querySelector(".intro-step[data-step='1']");
+const back = document.getElementById("introBack");
+const next = document.getElementById("introNext");
+const initial = {
+  step1Visible: !step1.hasAttribute("hidden"),
+  backDisabled: back.disabled,
+  nextText: next.textContent,
+};
+next.click();
+const step2 = document.querySelector(".intro-step[data-step='2']");
+const afterNext = {
+  step2Visible: !step2.hasAttribute("hidden"),
+  backDisabled: back.disabled,
+  nextText: next.textContent,
+};
+next.click();
+const step3 = document.querySelector(".intro-step[data-step='3']");
+const afterNext2 = {
+  step3Visible: !step3.hasAttribute("hidden"),
+  nextText: next.textContent,
+};
+return { initial, afterNext, afterNext2 };
+```
+
+Expected:
+```js
+{
+  initial: { step1Visible: true, backDisabled: true, nextText: "Next →" },
+  afterNext: { step2Visible: true, backDisabled: false, nextText: "Next →" },
+  afterNext2: { step3Visible: true, nextText: "Get started" }
+}
+```
+
+**Probe 3 — "Get started" on step 3 dismisses + marks shown:**
+
+```js
+document.getElementById("introNext").click();
+const dlg = document.getElementById("onboardingModal");
+return {
+  isOpen: dlg?.hasAttribute("open") || dlg?.open,
+  introShown: localStorage.getItem("intro_shown"),
+};
+```
+
+Expected: `isOpen: false`, `introShown: "1"`.
+
+**Probe 4 — Skip works:**
+
+```js
+localStorage.removeItem("intro_shown");
+showOnboarding();
+document.getElementById("introSkip").click();
+return {
+  isOpen: document.getElementById("onboardingModal").hasAttribute("open"),
+  introShown: localStorage.getItem("intro_shown"),
+};
+```
+
+Expected: `isOpen: false`, `introShown: "1"`.
+
+**Probe 5 — Advanced menu "Show wizard intro" re-opens regardless of localStorage:**
+
+```js
+// intro_shown is "1" from probe 3
+showOnboarding();
+return { isOpen: document.getElementById("onboardingModal").hasAttribute("open") };
+```
+
+Expected: `isOpen: true`.
+
+**Step 5: Status doc + commit**
+
+```bash
+git add scripts/concepts-worksheet-tool.template.html docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+tools(concepts-worksheet): wizard intro rewrite (3-step modal)
+
+M2.4 (Batch 2).
+
+Replaces the M1.4 single-paragraph onboarding stub with a 3-step intro
+modal per design §14:
+
+  1. 'What you're doing' — frames the 208-entry task in plain language
+  2. 'Three work types' — explains Confirm / Resolve / Decide in
+     plain language with a 1-2 line description each
+  3. 'Save your work' — explains auto-save, Save & Export, and Import
+
+Navigation: Back / Next / Skip buttons + step indicator dots. Modal
+auto-opens on first session (no localStorage 'intro_shown' key); Skip
+and step-3 'Get started' both mark intro as seen. Advanced menu's
+'Show wizard intro' re-opens regardless of state.
+
+CSS additions: dialog.wizard-intro layout + step-indicator dots +
+intro-modes left-bordered cards for the 3 modes.
+
+Copy is plain-language draft; user reviews before this commit lands
+(per user preference for plain language and active review).
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Milestone 2.5: Decision-debt counter polish (zero-state color)
+
+**Files:**
+- Modify: `scripts/concepts-worksheet-tool.template.html` — extend `updateDecisionDebt()` to tag the top-bar counter elements with `data-zero` when count drops to 0; add CSS for the zero-state color shift.
+
+**What this milestone does:**
+
+Two pieces:
+
+1. **Mismatch-recompute trigger verification** — M2.2 already wires `recomputeMismatchForEntry` into `onCommit`, which in turn fires `updateDecisionDebt`. M2.5 just verifies this chain via a probe (no new code unless the verification surfaces a gap).
+2. **Zero-state color shift** — when a counter (your call / to check / group decisions) hits 0, the corresponding `.debt-decide` / `.debt-confirm` / `.debt-resolve` counter span gets `data-zero="true"` set. CSS shifts the color from the current accent-red / muted-gray to a muted-green (`var(--keep)` token from existing palette) to give a low-key "this bucket is done" cue.
+
+The top-bar mismatch count stays OUT of the top bar per design §10/§441 (decide-later count is similarly kept out — same rationale for mismatch).
+
+**Step 1: Extend `updateDecisionDebt`**
+
+Find `updateDecisionDebt()` (~line 2340). It currently writes counts to the three counter elements. Add a `data-zero` toggle per element:
+
+```js
+function updateDecisionDebt() {
+  // ... existing count logic: locals `toDecide`, `toConfirm`, `unresolvedClusters` ...
+  document.getElementById("debtDecideCount").textContent = toDecide.toString();
+  document.getElementById("debtConfirmCount").textContent = toConfirm.toString();
+  document.getElementById("debtResolveCount").textContent = unresolvedClusters.toString();
+
+  // M2.5: zero-state color cue. Tag the counter SPAN (top-bar HTML classes:
+  // debt-decide / debt-confirm / debt-resolve). Do NOT rewrite the span's
+  // textContent — the plain labels are static HTML (set in M2.0) and the count
+  // lives in the inner <b id="debt*Count">; setting span.textContent would
+  // clobber that <b>.
+  document.querySelector(".debt-decide").dataset.zero  = toDecide === 0 ? "true" : "false";
+  document.querySelector(".debt-confirm").dataset.zero = toConfirm === 0 ? "true" : "false";
+  document.querySelector(".debt-resolve").dataset.zero = unresolvedClusters === 0 ? "true" : "false";
+  // ... existing progress-bar logic stays unchanged ...
+}
+```
+
+(The post-M1.17 `updateDecisionDebt` uses locals `toDecide` / `toConfirm` / `unresolvedClusters` and writes counts into the `<b id="debt*Count">` elements — verified against the template. The counter SPANs carry classes `debt-decide` / `debt-confirm` / `debt-resolve`; their plain labels are static HTML set in M2.0, so M2.5 adds only the `data-zero` tags.)
+
+**Step 2: Add zero-state CSS**
+
+Append to the CSS block:
+
+```css
+.debt-decide[data-zero="true"],
+.debt-confirm[data-zero="true"],
+.debt-resolve[data-zero="true"] {
+  color: var(--keep);
+  opacity: 0.7;
+}
+```
+
+**Step 3: Build + browser smoke**
+
+```bash
+python3 scripts/build-concepts-tool.py --build-html
+```
+
+Probes:
+
+**Probe 1 — Baseline: decide non-zero, no zero-state:**
+
+```js
+// Wipe state
+state = defaultState();
+saveState();
+updateDecisionDebt();
+const decideEl = document.querySelector(".debt-decide");
+return {
+  text: decideEl.textContent,
+  dataZero: decideEl.dataset.zero,
+  computedColor: getComputedStyle(decideEl).color,
+};
+```
+
+Expected: `text` contains "your call" with a non-zero count (e.g. "46 your call"); `dataZero: "false"`.
+
+**Probe 2 — Drive decide to zero:**
+
+```js
+// Mark every Decide-mode entry as committed (entryMode returns "Decide", capitalized)
+ENTRIES.forEach((e) => {
+  if (entryMode(e) === "Decide") {
+    state.entries[e.canonical_key] = { verdict: "keep" };
+  }
+});
+saveState();
+updateDecisionDebt();
+const decideEl = document.querySelector(".debt-decide");
+return {
+  text: decideEl.textContent,
+  dataZero: decideEl.dataset.zero,
+  computedColor: getComputedStyle(decideEl).color,
+};
+```
+
+Expected: `text: "0 your call"`, `dataZero: "true"`, computedColor different from probe 1 (greener / lower opacity).
+
+**Probe 3 — Mismatch recompute fires updateDecisionDebt:**
+
+```js
+// Set up: resolve CON-12 to option 2 (causes mismatches for non-merge committers)
+state.cluster_signals["CON-12"] = 2;
+// Commit narrative_writing with verdict=keep (will mismatch)
+const e = ENTRIES_BY_KEY.get("narrative_writing");
+const beforeCallCount = window.__updateDecisionDebtCalls || 0;
+window.__updateDecisionDebtCalls = beforeCallCount;
+// Patch updateDecisionDebt to record calls
+const _orig = updateDecisionDebt;
+window.updateDecisionDebt = function () {
+  window.__updateDecisionDebtCalls += 1;
+  return _orig.apply(this, arguments);
+};
+// Drive commit
+setEntryState("narrative_writing", { verdict: "keep" });
+recomputeMismatchForEntry(e);
+window.updateDecisionDebt = _orig;
+return { delta: window.__updateDecisionDebtCalls - beforeCallCount };
+```
+
+Expected: `delta` >= 1 (at minimum the `setEntryState` → `saveState` chain... but `setEntryState` doesn't call updateDecisionDebt directly. The `onCommit` call path does. So this probe specifically tests the recompute chain by NOT using onCommit. The recompute itself shouldn't call updateDecisionDebt directly per M2.2's code).
+
+Adjust: M2.5 doesn't add an updateDecisionDebt call to the mismatch path because counters don't surface mismatch. So this probe just confirms M2.2's contract (no surprise updateDecisionDebt firing). Expected: `delta: 0`. The verification is that `recomputeMismatchForEntry` does NOT trigger `updateDecisionDebt` — mismatch is invisible to the top-bar counters.
+
+If the user later wants mismatch surfaced in the top bar (despite design §10), that's a separate decision.
+
+**Step 4: Status doc + commit**
+
+```bash
+git add scripts/concepts-worksheet-tool.template.html docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+tools(concepts-worksheet): zero-state color for decision-debt counters
+
+M2.5 (Batch 2).
+
+Top-bar counters (your call / to check / group decisions) now toggle a
+data-zero attribute on their elements when the count reaches 0. CSS
+shifts color from accent-red / muted-gray to the muted-green keep
+token + slight opacity so the 'done' state reads as a low-key 'this
+bucket is empty' cue.
+
+Mismatch is intentionally NOT surfaced in the top bar: design §10 +
+§441 keep both decide-later and mismatch out of the calm top-bar
+strip (mismatch is highlighted in the review summary instead).
+
+Verified via probe that recomputeMismatchForEntry does not fire
+updateDecisionDebt — the mismatch flag and the top-bar counts are
+distinct concerns.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Milestone 2.6: Full smoke check gate (8/8)
+
+This is a verification milestone — only commits the status doc update. No code changes unless smoke surfaces a regression.
+
+**Run all 8 design §15 smoke checks** end-to-end against the M2.5 build:
+
+| # | Check | Batch-1 status | M2.6 expectation |
+|---|---|---|---|
+| 1 | Empty-export SHA invariant | PASS (M1.17) | PASS (no regressions) |
+| 2 | Decide-later semantics | PASS (M1.17) | PASS |
+| 3 | Pre-fill non-commit | PASS (M1.17) | PASS |
+| 4 | Commit roundtrip | PASS (M1.17) | PASS (now includes cluster_mismatch which is local-only — should NOT appear in roundtrip) |
+| 5 | Merge picker high-confidence shortcut | PASS (M1.17, but data-unreachable in Batch 1) | PASS + **now reachable** via cluster-derived prefill on Decide-mode members |
+| 6 | Cluster Resolve + member walk | DEFERRED | PASS — pick CON-12 option 2 → walk to narrative_writing → "Based on your earlier group decision: Fold into `writing`" → Agree → state writes merge+target atomically |
+| 7 | Mismatch flag | DEFERRED | PASS — pick CON-12 option 2 → commit narrative_writing with verdict=keep → callout renders + drawer auto-opens + state has cluster_mismatch="CON-12"; change CON-12 to option 0 → flag clears |
+| 8 | Merge-target extraction rate | PASS (M1.17) | PASS — parser untouched; baseline 53/78 (68%) unchanged |
+
+**Step 1: Run each check**
+
+For each check, the verification probe is identical to the Batch 1 M1.17 gate (smoke #1–5, #8) with the addition of two NEW checks:
+
+**#6 — Cluster Resolve + member walk:**
+
+```js
+state = defaultState();
+saveState();
+// Pick CON-12 option 2 (merge sub-types into writing)
+window.__test_setClusterState("CON-12", 2);
+// Walk to narrative_writing (§12, sub-type — should be Confirm-mode with cluster prefill)
+window.__test_jumpToEntryByKey("narrative_writing");
+const card = document.getElementById("wizardCard");
+const recHeadline = card.querySelector(".claude-rec h3, .rec-headline")?.textContent;
+const primaryBtn = card.querySelector(".primary-agree");
+return {
+  recHeadlineContains: recHeadline?.includes("Based on your earlier group decision"),
+  primaryBtnText: primaryBtn?.textContent,
+};
+```
+
+Expected:
+```js
+{
+  recHeadlineContains: true,
+  primaryBtnText: "✓ Agree — Fold into `writing`"
+}
+```
+
+Click the primary button and confirm `state.entries.narrative_writing` is `{ verdict: "merge", merge_into: "writing" }`. Also walk to `writing` (§11) and confirm it gets the "Based on your earlier group decision: Keep as concept" caption but no radio prefill (W17).
+
+**#7 — Mismatch flag:**
+
+```js
+state = defaultState();
+saveState();
+window.__test_setClusterState("CON-12", 2);
+window.__test_jumpToEntryByKey("narrative_writing");
+// Click "Pick something else" → "Keep as concept" (override cluster suggestion)
+document.querySelector("details.pick-other summary").click();
+Array.from(document.querySelectorAll('details.pick-other input[type="radio"]'))
+  .find(r => r.value === "keep").click();
+const ev = state.entries.narrative_writing;
+const calloutVisible = !!document.querySelector(".cluster-mismatch-callout");
+const drawerAutoOpen = autoOpenSet.has("narrative_writing");
+return { ev, calloutVisible, drawerAutoOpen };
+```
+
+Expected: `ev.verdict: "keep"`, `ev.cluster_mismatch: "CON-12"`, `calloutVisible: true`, `drawerAutoOpen: true`.
+
+Then change cluster answer to option 0 and confirm:
+
+```js
+window.__test_setClusterState("CON-12", 0);
+return { ev: state.entries.narrative_writing };
+```
+
+Expected: `ev: { verdict: "keep" }` (no cluster_mismatch field — recompute cleared it).
+
+**Step 2: Smoke check matrix fill**
+
+Update `docs/plans/2026-05-15-concepts-worksheet-wizard-status.md` smoke matrix to PASS for #1–8.
+
+**Step 3: Status doc + commit**
+
+```bash
+git add docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+docs(concepts-worksheet): M2.6 — full smoke gate 8/8 PASS
+
+M2.6 (Batch 2).
+
+All 8 design §15 smoke checks PASS against the M2.5 build. New checks
+#6 (cluster Resolve + member walk) and #7 (mismatch flag) both
+verified end-to-end via chrome-devtools-mcp probes. Other checks
+(#1–5, #8) re-verified with no regressions.
+
+Batch 2 SHIPPED.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
 
 ### Milestone 2.7: README + curriculum-team handoff doc update
 
-If `docs/plans/concepts-worksheet-form/README.md` exists (it does per the file map), update it with the wizard's keyboard shortcuts, the Confirm/Resolve/Decide framing, and the review summary's escape-hatch role. Make sure the "double-click HTML file" delivery contract still holds.
+**Files:**
+- Modify: `docs/plans/concepts-worksheet-form/README.md` — rewrite the "How to use" section for the wizard flow; document keyboard shortcuts (M1.13: K/M/N/D/L/Enter/←); document the Confirm/Resolve/Decide framing; document the review summary's role as the escape hatch.
 
-Files: `docs/plans/concepts-worksheet-form/README.md`.
+**What this milestone does:**
+
+Replaces the Batch 1 README content (which describes the long-scroll tool) with curriculum-team-facing docs for the wizard. Audience: a non-technical reviewer who's about to open the HTML file and start reviewing 208 entries.
+
+> **Plain-language constraint (same directive as M2.4) — applies to ALL README copy.** Keep the reader on **the concepts and whether/how each applies to the curriculum**, never on our build machinery. Avoid `§11`/`§12`/`§13`, "tier," `CON-xx`, "cluster signal," "verdict," "merge_into"/"canonical key," "metadata," "the corpus"; don't teach "Confirm/Resolve/Decide" as named modes. Describe what the reviewer *does* in plain outcomes — *keep it · it's the same as another concept · give it a clearer name · it doesn't belong*. Where the UI shows internal shorthand the reader can't avoid (the `§`-number strip, raw `CON-xx` ids, mode chips), translate it to plain words or flag it for the separate "soften in-UI shorthand" decision rather than teaching the jargon. (User directive, 2026-05-28.)
+
+**Step 1: Inspect current README**
+
+```bash
+ls -la docs/plans/concepts-worksheet-form/README.md 2>&1 || echo "MISSING"
+wc -l docs/plans/concepts-worksheet-form/README.md 2>&1 || echo "n/a"
+```
+
+If missing, create new. If present, Read to understand current content before rewriting.
+
+**Step 2: Write the new README**
+
+Target content (sections — adjust per current README baseline):
+
+```markdown
+# Concepts Worksheet Wizard — How to Use
+
+> A self-contained HTML tool for the curriculum team to review 208 concept candidates from the Stage 1 worksheet. Open the file in any modern browser; no install required.
+
+## Opening the tool
+
+Double-click `concepts-worksheet-tool.html`. It opens in your default browser. Everything runs locally — no network, no server.
+
+## What you're doing
+
+You're walking through 208 concept candidates one entry at a time. For each, you commit a verdict:
+
+- **Keep as concept** — yes, this is a concept worth using
+- **Fold into another** — this overlaps with another concept; merge them
+- **Add new concept** — this isn't on the list but should be (rare)
+- **Remove** — drop this; not useful for tagging
+
+Your decisions auto-save to this browser. When you're done (or want to take a break), click **Save & Export markdown ↓** in the Advanced menu to download a file you can email to the team.
+
+## Three modes the wizard routes you through
+
+The wizard automatically picks the right mode for each entry:
+
+- **Confirm** (most entries) — Claude has pre-filled a verdict; just click Agree or pick something else
+- **Resolve** (5 clusters) — a group of related concepts where one decision sets the shape for the whole group
+- **Decide** (32 high-impact entries) — high-stakes calls where you start from a blank radio
+
+## Keyboard shortcuts
+
+- **Enter** — confirm + advance (same as clicking Save·Next)
+- **←** — Previous step
+- **L** — Decide later (defer this entry; come back to it via the review summary)
+- **K** — Keep
+- **M** — Fold (Merge)
+- **N** — New
+- **D** — Drop
+
+## Review summary
+
+Click **Review so far** in the top bar at any time to see everything you've committed, grouped by verdict. The summary highlights:
+
+- ⚠ **Decide later** entries (you can resume these)
+- ⚠ **Differs from cluster decision** (places where your verdict disagrees with the cluster shape you picked — usually you have a reason, but worth a glance)
+
+Use **Save & Export markdown ↓** from the summary footer when ready.
+
+## Sharing your work
+
+The exported markdown file can be emailed to the team. If you want to resume later, open the tool again and click Advanced → **Import a saved markdown file…** to load your previous state.
+```
+
+**Step 3: Build (verify nothing else broke) + commit**
+
+```bash
+python3 scripts/build-concepts-tool.py --verify-only
+```
+
+Expected: existing parser output, no changes.
+
+```bash
+git add docs/plans/concepts-worksheet-form/README.md docs/plans/2026-05-15-concepts-worksheet-wizard-status.md
+git commit -m "$(cat <<'EOF'
+docs(concepts-worksheet): rewrite curriculum-team README for the wizard
+
+M2.7 (Batch 2).
+
+Replaces the Batch 1 long-scroll README with curriculum-team-facing
+docs for the wizard:
+- Opening the tool (double-click HTML file; local-only)
+- The 4 verdict choices in plain language
+- Confirm / Resolve / Decide framing (3 modes)
+- Keyboard shortcuts (K/M/N/D/L/Enter/←)
+- Review summary as the escape-hatch + Save & Export pattern
+- Import-a-saved-file workflow for resuming work
+
+Audience: non-technical reviewer about to open the file for the first
+time. No jargon; matches the user's plain-language preference and the
+Batch 1 wizard's calm-UI framing.
+
+Batch 2 fully closed.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
 
 ---
 
@@ -2542,7 +5258,14 @@ Files: `docs/plans/concepts-worksheet-form/README.md`.
 - **User reviews each milestone before commit** unless they explicitly waive review for a milestone.
 - **Hard rule: don't push to `main`**. Branch stays on `tools/concepts-worksheet-form`. No PR without explicit direction.
 - **Don't reopen W1–W21**. If any decision feels wrong during implementation, surface it to the user as a concern — don't unilaterally revise.
+- **Batch 2 gap resolutions** (resolved up-front before plan-writing, 2026-05-15):
+  - **M2.2 mismatch indicator** = yellow callout above Claude rec (mirrors theme-overlap callout from M1.8).
+  - **M2.3 review summary layout** = design §11 mock order; attention-needers (DECIDE LATER + DIFFERS) default-open when count > 0; FOLD grouped by merge target; sort by tier then canonical_key.
+  - **M2.5 counter polish** = minimal scope (recompute on mismatch verified + zero-state color shift); mismatch stays out of top bar per design §10/§441.
+  - **M2.1b CON-24 pick-one** = inline reveal in Resolve card; `state.cluster_parents` parallel map keeps `getClusterState`/`setClusterState` unchanged.
 
 ## Execution handoff
 
-**Plan complete and saved to `docs/plans/2026-05-15-concepts-worksheet-wizard-plan.md`.** Once user signs off, Batch 1 executes in this session, incrementally (M1.0 → M1.17), with rebuild + browser smoke after each milestone.
+**Batch 1 SHIPPED 2026-05-15** (M1.0 → M1.17, smoke gate PASS, commit `5630a69` + cleanup `16a3b7f`). Status doc at `docs/plans/2026-05-15-concepts-worksheet-wizard-status.md` is the source of truth for per-session progress; the Batch 1 execution kickoff at `docs/plans/2026-05-15-concepts-worksheet-wizard-execution-kickoff.md` (Batch 1-scoped) closed on M1.17.
+
+**Batch 2 plan finalized 2026-05-15** (M2.1 → M2.7 above). Execution will happen across multiple future sessions, one milestone per session in the kickoff-prompt pattern Batch 1 used. The durable Batch 2 per-milestone kickoff lives at `docs/plans/2026-05-15-concepts-worksheet-wizard-batch2-execution-kickoff.md` (parallel to the Batch 1 one); paste it at the start of each fresh session. Status doc continues; Batch 2 session log appends under the existing Session log heading.
