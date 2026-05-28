@@ -40,6 +40,12 @@ You are resuming a multi-session build in a fresh context (the user just `/clear
 - When context grows heavy after a chain of milestones, finish the current commit, then suggest the user `/clear` + re-run `/concepts-batch2` (this command re-primes automatically).
 - Run order: **M2.1 → M2.1b → M2.2 → M2.3 → M2.5 → M2.6 → M2.7**; **M2.4** floats (order-independent — do it anytime, with review).
 
+## Execution via workflow (calibrated 2026-05-28 — preferred for mechanical milestones)
+
+The M2.1 calibration (status-doc Session 18) proved a dynamic **Workflow** can do this work safely: a background subagent CAN drive chrome-devtools-mcp (ToolSearch-load `new_page`/`evaluate_script`/etc.), and a two-agent **executor → adversarial-verifier** pipeline returns verifiable evidence (empty-export SHA, probe values, diff) that the main loop checks before committing. This also keeps the main-loop context light (the heavy spec-reading + edits + browser probes live in the agents' fresh contexts).
+
+For each mechanical milestone you may either (a) run it directly in the main loop, or (b) orchestrate it as a **strictly sequential** Workflow (NEVER parallel — single shared browser + dependent edits). If using a workflow: the workflow must NOT commit; it edits the template + returns evidence; the **main loop independently reviews the `git diff` + re-confirms the empty-export SHA against `0c49a7a7…` before committing.** Stop the workflow before any prose/smoke-gate milestone (M2.4/M2.6/M2.7). Pre-read the milestone's spec yourself enough to know the expected probe values so you can verify the returned evidence. (Note: plan probe snippets reference non-existent `window.__test_*` helpers + stale selectors/tiers — instruct agents to use real globals + report ACTUAL observed values.)
+
 ## Always-on safety (NEVER relaxed, even on auto-proceed milestones)
 
 - **Empty-export SHA invariant every milestone:** `buildExportMarkdown()` on a clean state stays byte-identical to source — SHA-256 `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03`. If it moves on a display-only milestone, a string leaked into the export path — revert and find it before committing.
