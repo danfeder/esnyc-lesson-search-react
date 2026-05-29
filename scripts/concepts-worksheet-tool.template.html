@@ -1912,9 +1912,16 @@ function renderDecideStep(entry) {
   }
 
   // ---- Verdict radio group (blank — no pre-fill, even if cluster suggestion present) ----
+  // M3.1: the legend must not claim "no suggested answer" when a recommendation
+  // block was rendered above (the `prefill && prefill.verdict` branch). On these
+  // high-stakes cards we DO show a suggestion but leave the radio blank so the
+  // reviewer makes the call; say so instead of contradicting the visible rec.
   const fs = el("fieldset", { className: "verdict-options-group" });
+  const hasShownRec = !!(prefill && prefill.verdict);
   fs.appendChild(el("legend", {},
-    "Your call — there's no suggested answer here:"
+    hasShownRec
+      ? "Your call — confirm the suggestion above, or choose differently:"
+      : "Your call — there's no suggested answer here:"
   ));
   for (const v of ["keep", "merge", "drop"]) {
     const label = el("label", { className: "verdict-option" });
