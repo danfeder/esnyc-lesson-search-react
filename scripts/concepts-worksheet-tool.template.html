@@ -1298,6 +1298,12 @@ function getEntryState(key) {
 function setEntryState(key, patch) {
   const cur = state.entries[key] || {};
   state.entries[key] = { ...cur, ...patch };
+  // M3.2: committing a verdict clears any "Decide later" flag — an entry is
+  // either decided OR deferred, never both, so the review summary lists it in
+  // exactly one bucket.
+  if (patch.verdict && state.wizard && state.wizard.deferred) {
+    state.wizard.deferred = state.wizard.deferred.filter((id) => id !== key);
+  }
   saveState();
 }
 
@@ -2382,6 +2388,13 @@ function downloadFile(filename, content, mime) {
 function onExport() {
   const md = buildExportMarkdown();
   downloadFile(payload.worksheet_filename, md, "text/markdown;charset=utf-8");
+  // M3.5: confirm the download so reviewers don't re-click (it was silent
+  // before — the dry run found multiple duplicate exports).
+  alert(
+    "Saved to your Downloads folder as:\n" + payload.worksheet_filename
+    + "\n\nAttach this file to your email to the team. You can keep working — "
+    + "your progress stays saved in this browser."
+  );
 }
 
 function onDownloadJson() {
@@ -2908,9 +2921,31 @@ function renderClusterStep(signal) {
   const membersBlock = el("div", { className: "cluster-members" });
   membersBlock.appendChild(el("h3", {}, `Concepts in this group (${signal.members.length})`));
   const ul = el("ul");
+  // M3.3: reflect the group decision's carry-down so member rows don't read
+  // "(no decision yet)" after a group choice was made.
+  const verdictWord = (vd, target) => vd === "merge"
+    ? "fold into " + (target || "another")
+    : ({ keep: "keep", new: "add new", drop: "remove" }[vd] || vd);
   for (const memberKey of signal.members) {
     const memberEntry = ENTRIES_BY_KEY.get(memberKey);
-    const v = memberEntry ? (getEntryState(memberKey).verdict || "(no decision yet)") : "(not in worksheet)";
+    let v;
+    if (!memberEntry) {
+      v = "(not in worksheet)";
+    } else {
+      const st = getEntryState(memberKey);
+      if (st.verdict) {
+        v = verdictWord(st.verdict, st.merge_into);
+      } else {
+        const deriv = computeMemberDerivation(signal.id, getClusterState(signal.id), memberKey);
+        if (deriv && deriv.verdict) {
+          v = "group suggestion: " + verdictWord(deriv.verdict, deriv.merge_into);
+        } else if (deriv && deriv.info_only) {
+          v = "awaiting your group choice";
+        } else {
+          v = "(no decision yet)";
+        }
+      }
+    }
     const li = el("li", {});
     const peekBtn = el("button", {
       type: "button",
@@ -3027,7 +3062,10 @@ function renderReviewSummary() {
   // correct (no "entry:" prefix parsing). See navDefer + the M1.15 counts.
   const deferredEntries = (state.wizard.deferred || [])
     .map((id) => ENTRIES_BY_KEY.get(id))
-    .filter(Boolean);
+    .filter(Boolean)
+    // M3.2: belt-and-braces — never list a committed entry as "Decide later"
+    // (state mutations keep these mutually exclusive; this guards the display).
+    .filter((e) => !state.entries[e.canonical_key]?.verdict);
   const mismatchEntries = ENTRIES.filter((e) => state.entries[e.canonical_key]?.cluster_mismatch);
 
   card.appendChild(renderVerdictBucket("KEEP AS CONCEPT", "keep", keepEntries, /*defaultOpen*/ false));
@@ -3307,10 +3345,24 @@ function navDefer() {
   const step = currentStep();
   if (!step) return;
   const stepId = step.kind === "entry" ? step.id : step.id;  // both unique
+  // M3.2: "Decide later" and a committed verdict are mutually exclusive.
+  // Deferring an already-decided entry un-decides it (clears verdict + merge
+  // target + mismatch flag, refreshes the counters) so it shows in exactly one
+  // review-summary bucket. A typed note, if any, is preserved.
+  if (step.kind === "entry") {
+    const cur = state.entries[stepId];
+    if (cur && cur.verdict) {
+      delete cur.verdict;
+      delete cur.merge_into;
+      delete cur.cluster_mismatch;
+      if (Object.keys(cur).length === 0) delete state.entries[stepId];
+      updateDecisionDebt();
+    }
+  }
   if (!state.wizard.deferred.includes(stepId)) {
     state.wizard.deferred.push(stepId);
-    saveState();
   }
+  saveState();
   navStep(+1);
 }
 function onJumpToEntry(value) {
