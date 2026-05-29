@@ -542,6 +542,13 @@
     margin: 0;
     color: var(--text);
   }
+  .claude-rec-reframe {
+    margin: 0;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.5;
+  }
   .claude-rec-body-expanded {
     margin: 6px 0 0;
     color: var(--text);
@@ -1805,6 +1812,23 @@ function displayedPrefillForEntry(entry) {
   return null;
 }
 
+// M3.4: a group decision "overrides" an entry's own AI suggestion when the
+// displayed prefill is sourced from the group decision (W21 carry-down) AND
+// lands on a different verdict/target than the entry's own suggested_verdict.
+// In that case the entry's own claude_notes argue for the overridden
+// suggestion and would contradict the group-derived headline.
+const GROUP_OVERRIDE_REFRAME = "You grouped this with the concepts above, so it follows that group decision. Its own earlier note no longer applies.";
+
+function clusterOverridesOwnSuggestion(entry, prefill) {
+  if (!prefill || prefill.captionSource !== "Based on your earlier group decision") return false;
+  const ownV = entry.parsed.suggested_verdict || null;
+  if (!ownV) return false; // nothing of its own to override
+  if (ownV !== prefill.verdict) return true;
+  if (prefill.verdict === "merge"
+      && (entry.parsed.suggested_merge_target || null) !== (prefill.merge_into || null)) return true;
+  return false;
+}
+
 function renderConfirmStep(entry) {
   const key = entry.canonical_key;
   const prefill = displayedPrefillForEntry(entry);
@@ -1842,7 +1866,16 @@ function renderConfirmStep(entry) {
   const confirmMismatch = renderClusterMismatchCallout(entry);
   if (confirmMismatch) card.appendChild(confirmMismatch);
 
-  card.appendChild(renderClaudeRecommendation(entry, displayed, displayedTarget, captionSource));
+  // M3.4: during a "hold off" group state, suppress the (now-premature)
+  // per-concept suggestion block — the cluster-info caption above is the
+  // operative message. The Agree button + "Pick something else" still show
+  // (reviewer can continue with these answers in mind). On a group-override,
+  // keep the headline but reframe the now-stale reasoning.
+  const holdOff = !!prefill.clusterInfoCaption;
+  if (!holdOff) {
+    const override = clusterOverridesOwnSuggestion(entry, prefill);
+    card.appendChild(renderClaudeRecommendation(entry, displayed, displayedTarget, captionSource, override));
+  }
   card.appendChild(renderPrimaryAgreeAction(entry, displayed, displayedTarget));
   card.appendChild(renderPickSomethingElse(entry, displayed));
   card.appendChild(renderNotesDrawer(entry, /*forceOpen=*/false));
@@ -1856,6 +1889,8 @@ function renderDecideStep(entry) {
   const verdict = stateForEntry.verdict;
   const prefill = displayedPrefillForEntry(entry);
   const clusterInfo = prefill?.clusterInfoCaption || null;
+  const holdOff = !!clusterInfo;                                   // M3.4
+  const override = clusterOverridesOwnSuggestion(entry, prefill);  // M3.4
 
   const card = el("article", {
     className: "wizard-step entry-step decide-mode",
@@ -1892,7 +1927,12 @@ function renderDecideStep(entry) {
   // Claude / cluster recommendation if any — shown but radio stays blank.
   // (info-only prefills have verdict === null → fall to the notes branch; the
   //  .cluster-info-caption inserted above already carries their explanation.)
-  if (prefill && prefill.verdict) {
+  // M3.4: during a "hold off" group state, suppress the (now-premature)
+  // suggestion entirely; on a group-override, keep the headline but reframe
+  // the now-stale per-concept reasoning.
+  if (holdOff) {
+    // hold-off: the caption above is the operative message; show no suggestion.
+  } else if (prefill && prefill.verdict) {
     const v = prefill.verdict;
     const t = prefill.merge_into;
     const source = prefill.captionSource;                 // plain caption (W22) | "Claude recommends"
@@ -1902,7 +1942,9 @@ function renderDecideStep(entry) {
       el("strong", {}, `${source}: `),
       document.createTextNode(reviewerLabelWithTarget(v, v === "merge" ? (t || null) : null)),
     ));
-    if (entry.parsed.claude_notes) {
+    if (override) {
+      wrap.appendChild(el("p", { className: "claude-rec-reframe" }, GROUP_OVERRIDE_REFRAME));
+    } else if (entry.parsed.claude_notes) {
       const body = el("div", { className: "claude-rec-body-expanded" });
       body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
       wrap.appendChild(body);
@@ -1923,7 +1965,7 @@ function renderDecideStep(entry) {
   // high-stakes cards we DO show a suggestion but leave the radio blank so the
   // reviewer makes the call; say so instead of contradicting the visible rec.
   const fs = el("fieldset", { className: "verdict-options-group" });
-  const hasShownRec = !!(prefill && prefill.verdict);
+  const hasShownRec = !!(prefill && prefill.verdict) && !holdOff;  // M3.4: hold-off suppresses the shown rec
   fs.appendChild(el("legend", {},
     hasShownRec
       ? "Your call — confirm the suggestion above, or choose differently:"
@@ -2001,7 +2043,7 @@ function renderTierStrip(tier) {
   return strip;
 }
 
-function renderClaudeRecommendation(entry, displayed, target, captionSource) {
+function renderClaudeRecommendation(entry, displayed, target, captionSource, override) {
   const wrap = el("div", { className: "claude-rec" });
   const label = displayed
     ? reviewerLabelWithTarget(displayed, target)
@@ -2011,6 +2053,12 @@ function renderClaudeRecommendation(entry, displayed, target, captionSource) {
     el("strong", {}, `${captionSource}: `),
     document.createTextNode(label),
   ));
+  if (override) {
+    // M3.4: the entry's own reasoning argued a different suggestion; it's now
+    // stale under the group-derived headline. Reframe instead of showing it.
+    wrap.appendChild(el("p", { className: "claude-rec-reframe" }, GROUP_OVERRIDE_REFRAME));
+    return wrap;
+  }
   const summary = entry.parsed.claude_notes_summary || "";
   if (summary) {
     wrap.appendChild(el("p", { className: "claude-rec-summary" }, summary));
