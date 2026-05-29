@@ -439,33 +439,66 @@
     animation: flash-highlight 1200ms ease-out;
   }
 
-  /* ---------- Onboarding dialog (preserved) ---------- */
-  dialog.onboarding {
-    border: none;
-    border-radius: var(--radius);
-    padding: 0;
-    background: var(--panel);
-    box-shadow: 0 8px 28px -10px rgba(20, 20, 18, 0.32);
+  /* ---------- Wizard intro modal (3-step onboarding) ---------- */
+  dialog.wizard-intro {
     max-width: 560px;
+    padding: 24px 28px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 8px 28px -10px rgba(20, 20, 18, 0.32);
   }
-  dialog.onboarding::backdrop {
+  dialog.wizard-intro::backdrop {
     background: rgba(20, 20, 18, 0.55);
   }
-  dialog.onboarding .modal-body {
-    padding: 20px 22px 18px;
+  dialog.wizard-intro h2 {
+    margin: 0 0 14px;
+    font-size: 20px;
+    color: var(--text-strong);
   }
-  dialog.onboarding h2 {
-    margin: 0 0 8px;
-    font-size: 18px;
-  }
-  dialog.onboarding p {
-    margin: 0 0 12px;
+  dialog.wizard-intro p,
+  dialog.wizard-intro li {
+    font-size: 14.5px;
     line-height: 1.5;
   }
-  dialog.onboarding .modal-actions {
+  dialog.wizard-intro .intro-modes {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px;
+  }
+  dialog.wizard-intro .intro-modes li {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: var(--panel-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+  }
+  dialog.wizard-intro .intro-footer {
     display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .step-indicator {
+    display: flex;
+    gap: 6px;
+  }
+  .step-indicator .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: background 120ms ease;
+  }
+  .step-indicator .dot.active {
+    background: var(--accent);
+  }
+  .intro-actions {
+    display: flex;
+    gap: 10px;
   }
 
   /* ---------- Why-this-attention row (Decide mode) ---------- */
@@ -1108,15 +1141,41 @@
   </nav>
 </main>
 
-<dialog id="onboardingModal" class="onboarding">
-  <div class="modal-body">
-    <h2>Concepts Worksheet</h2>
-    <p>Walk through 208 concepts one at a time. Confirm Claude's calls, resolve five clusters, and pause on the few that matter.</p>
-    <p style="color: var(--muted); font-size: 12.5px;">(Full intro rewrite lands in Batch 2.)</p>
-    <div class="modal-actions">
-      <button class="btn primary" type="button" id="dismissOnboardingBtn">Get started</button>
-    </div>
+<dialog id="onboardingModal" class="wizard-intro">
+  <div class="intro-step" data-step="1">
+    <h2>Reviewing our lesson concepts</h2>
+    <p>This worksheet walks you through the <strong>208 concepts</strong> we use to tag and find lessons — things like <em>plant parts</em>, <em>measurement</em>, or <em>figurative language</em>. You'll go through them one at a time.</p>
+    <p>For each concept you decide what happens to it: <strong>keep it</strong>, <strong>fold it into</strong> a similar concept, <strong>add a new</strong> one, or <strong>remove it</strong> if it doesn't belong. Those decisions give the team a clean, trusted list to tag lessons against.</p>
+    <p>You don't have to read every note. We've suggested an answer wherever we could — your job is to confirm it or change it.</p>
   </div>
+  <div class="intro-step" data-step="2" hidden>
+    <h2>Three kinds of decisions</h2>
+    <ul class="intro-modes">
+      <li><strong>Quick check</strong> — Most concepts come with a suggested answer. Glance at it and either agree or pick something different.</li>
+      <li><strong>Your call</strong> — A handful come with no suggestion. These are the ones worth a careful look — you decide from a blank slate.</li>
+      <li><strong>Group decision</strong> — A few small groups of closely-related concepts are decided together: you make one choice for the group and it carries down to each concept in it.</li>
+    </ul>
+    <p>The worksheet sorts every concept into the right kind for you — you'll see a small label on each one. The counts at the top tell you how many of each are left.</p>
+  </div>
+  <div class="intro-step" data-step="3" hidden>
+    <h2>Saving and sharing your work</h2>
+    <p>Your decisions save to this browser automatically as you go — the <strong>Saved locally</strong> badge in the top corner confirms it. You can close the tab and come back later.</p>
+    <p>When you're done — or want to hand off — open the <strong>⚙ Advanced</strong> menu (top right) and choose <strong>Save &amp; Export markdown ↓</strong>. That gives you a file you can send to the team. To resume from a saved file, use <strong>Import a saved markdown file…</strong> in the same menu.</p>
+    <p>That's everything. Ready when you are.</p>
+  </div>
+
+  <footer class="intro-footer">
+    <div class="step-indicator" aria-label="Step indicator">
+      <span class="dot active" data-step="1"></span>
+      <span class="dot" data-step="2"></span>
+      <span class="dot" data-step="3"></span>
+    </div>
+    <div class="intro-actions">
+      <button type="button" class="btn ghost" id="introSkip">Skip intro</button>
+      <button type="button" class="btn ghost" id="introBack" disabled>← Back</button>
+      <button type="button" class="btn primary" id="introNext">Next →</button>
+    </div>
+  </footer>
 </dialog>
 
 <script id="dataPayload" type="application/json">__DATA_PAYLOAD__</script>
@@ -2439,10 +2498,45 @@ function maybeShowOnboarding() {
   if (!dismissed) showOnboarding();
 }
 
+let introStep = 1;
+
 function showOnboarding() {
   const dlg = document.getElementById("onboardingModal");
+  if (!dlg) return;
+  introStep = 1;
+  syncIntroStep();
   if (typeof dlg.showModal === "function") dlg.showModal();
   else dlg.setAttribute("open", "");
+}
+
+function syncIntroStep() {
+  const dlg = document.getElementById("onboardingModal");
+  if (!dlg) return;
+  dlg.querySelectorAll(".intro-step").forEach((stepEl) => {
+    const step = parseInt(stepEl.dataset.step, 10);
+    if (step === introStep) stepEl.removeAttribute("hidden");
+    else stepEl.setAttribute("hidden", "");
+  });
+  dlg.querySelectorAll(".step-indicator .dot").forEach((dot) => {
+    const step = parseInt(dot.dataset.step, 10);
+    dot.classList.toggle("active", step === introStep);
+  });
+  const backBtn = dlg.querySelector("#introBack");
+  const nextBtn = dlg.querySelector("#introNext");
+  if (backBtn) backBtn.disabled = introStep === 1;
+  if (nextBtn) nextBtn.textContent = introStep === 3 ? "Get started" : "Next →";
+}
+
+function introNext() {
+  if (introStep >= 3) { dismissOnboarding(true); return; }
+  introStep += 1;
+  syncIntroStep();
+}
+
+function introBack() {
+  if (introStep <= 1) return;
+  introStep -= 1;
+  syncIntroStep();
 }
 
 function dismissOnboarding(persist) {
@@ -2554,7 +2648,9 @@ function init() {
     ev.target.value = "";
   });
 
-  document.getElementById("dismissOnboardingBtn").addEventListener("click", () => dismissOnboarding(true));
+  document.getElementById("introNext")?.addEventListener("click", introNext);
+  document.getElementById("introBack")?.addEventListener("click", introBack);
+  document.getElementById("introSkip")?.addEventListener("click", () => dismissOnboarding(true));
   maybeShowOnboarding();
 
   // Keyboard shortcuts (Design §14)
