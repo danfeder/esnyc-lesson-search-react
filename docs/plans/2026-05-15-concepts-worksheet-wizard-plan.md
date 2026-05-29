@@ -5268,7 +5268,7 @@ A pre-handoff dry run (two role-play agents in a real browser — a non-technica
 | **M3.3** | Group ("Resolve") page member rows reflect the carry-down (e.g. "Volume → folds into Measurement") instead of "(no decision yet)" | group page contradicts the "carries down" promise | should-fix |
 | **M3.4** | When a group decision overrides a per-concept suggestion, suppress/reframe the now-stale per-concept note + the CON-24 "hold off" stale headline | "Fold into writing" headline over a "Recommend keep" note | should-fix |
 | **M3.5** | Confirmation after Save & Export (mirror the import alert) | silent export → duplicate downloads, no reassurance | should-fix |
-| **M3.6** | Keyboard-shortcut footgun — gate the verdict letter-keys (k/m/n/d) and/or add a discoverable hint so an accidental keypress can't silently override + flip card type with no undo | hidden destructive shortcuts | should-fix |
+| **M3.6** | Keyboard-shortcut footgun — gate the verdict letter-keys (k/m/n/d) and/or add a discoverable hint so an accidental keypress can't silently override + flip card type with no undo | hidden destructive shortcuts | ~~should-fix~~ **SKIPPED (won't-fix, user decision 2026-05-29)** |
 | **M3.7** | Friendly labels over `snake_case` keys in reviewer-facing spots (review summary, group member rows, Agree buttons, fold-picker placeholder, jump search) | raw keys shown inconsistently | should-fix |
 | **M3.8** | Nits bundle — "▸ ▸ more" double-arrow, "Agree — Fold into another" (unnamed target), "1 appearance(s)" plural (display only), "Download progress as JSON" clarity, 208-vs-213 step-count | nits | nit |
 | **M3.9** | Re-gate: full smoke (#1 SHA invariant MUST hold — all display-only) + a focused re-check of B1 (the legend) and the M3.2/M3.3/M3.4 fixes | regression guard | — |
@@ -5294,6 +5294,8 @@ When a group decision overrides a per-concept suggestion, the per-concept expand
 `onExport()` downloads silently (the menu just closes), so reviewers can't tell it worked and re-click → duplicate downloads. **Fix:** show a brief confirmation after export (mirror the existing import `alert`, or a toast), naming the downloaded file and reminding them to attach it to their email to the team. Display-only; SHA-safe.
 
 ### Milestone 3.6: Keyboard-shortcut footgun
+
+> **SKIPPED / WON'T-FIX — user decision 2026-05-29** ("i dont care about keyboard shortcuts for this"). Three paths were surfaced (remove all single-key shortcuts / drop only the dangerous k/m/n/d verdict keys / leave as-is); the user chose **leave as-is**. No code change. The silent-accidental-override risk below is accepted as a known limitation for this internal tool. Retained here for the record only; do NOT execute.
 
 The single-key verdict shortcuts (k/m/n/d) fire on entry steps with no on-screen hint and no undo — an accidental keypress silently overrides a Quick-check suggestion, flips the card type, and decrements a counter; `n` even assigned "add new concept" to an existing concept. **Fix (decision to surface):** for this non-technical audience either (a) gate the verdict letter-keys (require focus on the answer area, or drop k/m/n/d and keep only Enter/←/Decide-later), and/or (b) add a small discoverable "keyboard shortcuts" hint/legend. Recommend erring toward safety (gate or drop the destructive letter-keys) since accidental silent overrides are the hazard. Behavior + reviewer-facing copy.
 
