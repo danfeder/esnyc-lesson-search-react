@@ -151,6 +151,14 @@
   }
   .decision-debt .debt-confirm b { font-size: 14px; }
   .decision-debt .debt-resolve b { font-size: 13px; }
+  /* M2.5: when a bucket empties, shift its counter toward the muted-green
+     keep token + slight transparency as a low-key done cue. */
+  .debt-decide[data-zero="true"],
+  .debt-confirm[data-zero="true"],
+  .debt-resolve[data-zero="true"] {
+    color: var(--keep);
+    opacity: 0.7;
+  }
   .debt-bar {
     display: inline-block;
     width: 96px;
@@ -3242,6 +3250,15 @@ function updateDecisionDebt() {
   document.getElementById("debtDecideCount").textContent = toDecide.toString();
   document.getElementById("debtConfirmCount").textContent = toConfirm.toString();
   document.getElementById("debtResolveCount").textContent = unresolvedClusters.toString();
+
+  // M2.5: zero-state color cue. Tag the counter SPAN (classes debt-decide /
+  // debt-confirm / debt-resolve). Do NOT touch span.textContent — the plain
+  // labels are static HTML (M2.0) and the count lives in the inner bold
+  // element (debtDecideCount etc.); rewriting textContent would clobber it.
+  document.querySelector(".debt-decide").dataset.zero = toDecide === 0 ? "true" : "false";
+  document.querySelector(".debt-confirm").dataset.zero = toConfirm === 0 ? "true" : "false";
+  document.querySelector(".debt-resolve").dataset.zero = unresolvedClusters === 0 ? "true" : "false";
+
   // Progress bar tracks (1 - debt/total).
   const total = ENTRIES.length + CLUSTER_SIGNALS.length;
   const remaining = toDecide + toConfirm + unresolvedClusters;
