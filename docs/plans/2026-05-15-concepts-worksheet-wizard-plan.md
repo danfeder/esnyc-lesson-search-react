@@ -5253,6 +5253,64 @@ EOF
 
 ---
 
+## Batch 3 — tool polish (from the 2026-05-28 pre-handoff dry run)
+
+A pre-handoff dry run (two role-play agents in a real browser — a non-technical first-time reviewer + a curriculum domain skeptic) validated the wizard's structure (intro, group cards, review summary, auto-save, export fidelity, carry-down) but surfaced real issues the 8/8 smoke gate couldn't. **Batch 3 fixes the bounded, display-layer ones.** Two findings are out of Batch-3 scope and tracked separately:
+- **B2 — internal jargon in the per-concept reasoning** (`claude_notes` cite code paths, `D-Cx`/`CON-xx` codes, `§`-numbers, raw field names, lesson-id hashes). The dominant usability risk; the known deliberate M2.0 deferral. Its own initiative — see the `concepts-reasoning-rewrite` kickoff scaffold. The B2 rewrite absorbs the W3 jargon cleanup.
+- **W3 — content errors in the worksheet data** (e.g. `measurement`'s "anatomically more specific" copy-paste artifact from `plant_parts`). Lives in the source worksheet → owned by the metadata-rebuild track; folded into the B2 design (a rewrite pass surfaces + fixes them; genuine factual errors that ride into the export get a targeted source correction).
+
+**Carryover rules (same as Batch 2, never relaxed):** every fix is **display-only** — the empty-export SHA invariant (`0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03`) must stay byte-identical; **parser untouched**; **plain-language locked** (curriculum-team voice, no `§`/`CON-xx`/tier/verdict/cluster/canonical-key on screen); export vocab unchanged; stay on `tools/concepts-worksheet-form`, no push/PR; **never stage the generated HTML**. Reviewer-facing copy (M3.1 legend, M3.6 hint, M3.7 labels) is prose → show the user. Orchestrate substantive milestones via the workflow → main-loop-verify cadence; trivially small copy tweaks may run inline + main-loop browser-verified. All cited line numbers drift — `grep -n` the anchor first.
+
+| # | Fix | Dry-run finding | Severity |
+|---|---|---|---|
+| **M3.1** | Decide-mode ("Your call") legend made conditional — stop claiming "there's no suggested answer here" when a recommendation IS shown | "Your call" cards contradict themselves | blocker |
+| **M3.2** | Verdict ↔ "Decide later" mutually exclusive — each concept in exactly one review-summary bucket | one concept showed as both Removed + Decide-later | should-fix |
+| **M3.3** | Group ("Resolve") page member rows reflect the carry-down (e.g. "Volume → folds into Measurement") instead of "(no decision yet)" | group page contradicts the "carries down" promise | should-fix |
+| **M3.4** | When a group decision overrides a per-concept suggestion, suppress/reframe the now-stale per-concept note + the CON-24 "hold off" stale headline | "Fold into writing" headline over a "Recommend keep" note | should-fix |
+| **M3.5** | Confirmation after Save & Export (mirror the import alert) | silent export → duplicate downloads, no reassurance | should-fix |
+| **M3.6** | Keyboard-shortcut footgun — gate the verdict letter-keys (k/m/n/d) and/or add a discoverable hint so an accidental keypress can't silently override + flip card type with no undo | hidden destructive shortcuts | should-fix |
+| **M3.7** | Friendly labels over `snake_case` keys in reviewer-facing spots (review summary, group member rows, Agree buttons, fold-picker placeholder, jump search) | raw keys shown inconsistently | should-fix |
+| **M3.8** | Nits bundle — "▸ ▸ more" double-arrow, "Agree — Fold into another" (unnamed target), "1 appearance(s)" plural (display only), "Download progress as JSON" clarity, 208-vs-213 step-count | nits | nit |
+| **M3.9** | Re-gate: full smoke (#1 SHA invariant MUST hold — all display-only) + a focused re-check of B1 (the legend) and the M3.2/M3.3/M3.4 fixes | regression guard | — |
+
+### Milestone 3.1: "Your call" legend contradiction
+
+On Decide ("Your call") cards the radio legend (template ~line 1917) renders unconditionally as `"Your call — there's no suggested answer here:"` — but when the entry has a recommendation, the card ALSO renders a `💡 {source}: {label}` block right above it (`renderDecideStep`, the `if (prefill && prefill.verdict)` branch ~line 1889). The two flatly contradict. Root cause: M2.0 rewrote the original "no default" legend (which meant "no pre-filled radio — you must actively choose") into "there's no suggested answer here," which is false whenever a recommendation is shown. **Fix:** make the legend conditional on `prefill && prefill.verdict` — when a recommendation is shown, `"Your call — confirm the suggestion above, or choose differently:"`; otherwise keep `"Your call — there's no suggested answer here:"`. Display-only; SHA-safe. Verify on a §11 entry WITH a rec (e.g. `plant_parts`) and one without (a no-rec Decide entry, e.g. `biodiversity`).
+
+### Milestone 3.2: Verdict ↔ Decide-later mutual exclusivity
+
+`navDefer()` adds the step id to `state.wizard.deferred` without clearing any committed verdict, and committing a verdict doesn't remove the entry from `deferred` — so a concept can be both "decided" and "decide later," and the review summary lists it in two buckets. **Fix:** make the two states mutually exclusive (committing a verdict clears the deferred flag; deferring clears/!is-disallowed-on a committed verdict — pick the least-surprising rule) and ensure the review summary lists each concept in exactly one bucket. UI-state only; SHA-safe.
+
+### Milestone 3.3: Group page reflects carry-down
+
+The cluster ("Group decision") step's member list (`renderClusterStep` / the members block, M1.10) shows each member's own committed state, so after a group choice it still reads "(no decision yet)" even though the choice DID carry down (member cards show "Based on your earlier group decision: …"). **Fix:** render the derived suggestion on each member row (e.g. "Volume → folds into Measurement", "Measurement → kept") via `computeMemberDerivation`/`displayedPrefillForEntry`, so the group page matches the intro's promise. Display-only; SHA-safe.
+
+### Milestone 3.4: Group-override stale rationale
+
+When a group decision overrides a per-concept suggestion, the per-concept expanded note is unchanged — so a "Fold into `writing`" headline can sit above a "Recommend keep…" rationale (e.g. `how_to_writing` under CON-12 opt 2), and the CON-24 "Hold off — pending the main-concept pick" state still shows a concrete stale fold headline. **Fix:** when a cluster derivation overrides the entry's own suggestion, suppress or reframe the now-stale per-concept reasoning (e.g. "This is one of the writing concepts you chose to fold into the general Writing") and, during the CON-24 hold-off state, suppress the per-concept fold headline. Display-only; SHA-safe. (Note: this interacts with B2 — when the notes are rewritten plainly, the reframe logic still applies to whatever text is shown.)
+
+### Milestone 3.5: Export confirmation
+
+`onExport()` downloads silently (the menu just closes), so reviewers can't tell it worked and re-click → duplicate downloads. **Fix:** show a brief confirmation after export (mirror the existing import `alert`, or a toast), naming the downloaded file and reminding them to attach it to their email to the team. Display-only; SHA-safe.
+
+### Milestone 3.6: Keyboard-shortcut footgun
+
+The single-key verdict shortcuts (k/m/n/d) fire on entry steps with no on-screen hint and no undo — an accidental keypress silently overrides a Quick-check suggestion, flips the card type, and decrements a counter; `n` even assigned "add new concept" to an existing concept. **Fix (decision to surface):** for this non-technical audience either (a) gate the verdict letter-keys (require focus on the answer area, or drop k/m/n/d and keep only Enter/←/Decide-later), and/or (b) add a small discoverable "keyboard shortcuts" hint/legend. Recommend erring toward safety (gate or drop the destructive letter-keys) since accidental silent overrides are the hazard. Behavior + reviewer-facing copy.
+
+### Milestone 3.7: Friendly labels over snake_case keys
+
+Raw `snake_case` keys appear in reviewer-facing spots — the Review summary rows (`cultural_traditions` vs the friendly "Cultural Traditions" on cards), group member rows, Agree-button targets ("Fold into `microorganisms`"), the fold-picker placeholder ("Type canonical_key…"), and jump-search (matches keys only). The friendly `canonical_label` already exists. **Fix:** show the human label as primary in those spots (demote/drop the raw key), relabel the picker placeholder "Type a concept name…", and let jump-search match labels too. Display-only; SHA-safe (export still writes canonical_key). Several render sites → workflow-orchestrate.
+
+### Milestone 3.8: Nits bundle
+
+(a) the collapsed-rationale toggle renders "▸ ▸ more" (CSS `::before` arrow + literal "▸ more") — drop the stray arrow; (b) a Quick-check "Agree — Fold into another" with no named target — route to the picker or name the target rather than one-click-agreeing to an unnamed destination; (c) "1 appearances" → "1 appearance" (display only — the export keeps the source string, SHA-safe); (d) "Download progress as JSON" — clarify it's a technical/backup option, not the handoff file; (e) reconcile the 208-counters-vs-213-steps confusion (tooltip or label). Display-only; SHA-safe.
+
+### Milestone 3.9: Re-gate
+
+Re-run the full smoke gate — **#1 empty-export SHA invariant MUST still be `0c49a7a720d6e703d995bab9969e0a98d8f582aad7655dab1d3513bf4d06cd03`** (all Batch 3 fixes are display-only) — plus a focused re-check of B1 (the legend, both with-rec and no-rec) and the M3.2/M3.3/M3.4 behaviors. Update the smoke matrix + status doc; consider a second mini dry-run before handoff.
+
+---
+
 ## Execution notes
 
 - **No TodoWrite / Beads tracking** (kickoff rule + memory). This plan document is the task list; milestones are checked via commits + status doc updates.
