@@ -94,6 +94,13 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 
 ## Out-of-scope follow-ups captured here
 
+- **Drop `pr5a_heritage_rollback` (and later `pr5b_concepts_rollback`) in a cleanup migration
+  after PR 6 ships** (locked design §4.8). Tracked here so it isn't missed if PR 6 takes a
+  while. (Bot round 2 suggestion, accepted.)
+- **`guyanese` parent (`latin-american`) flagged by bot round 2** — Guyana is often grouped
+  culturally with the Caribbean. The parent is a curriculum-team verdict (locked; implementation
+  doesn't second-guess), but worth passing to the team before the filter-UI track surfaces the
+  hierarchy (PR 6+ / filter redesign).
 - 5 live rows carry pre-existing order-only column⇄metadata heritage diffs (lesson_ids in the
   probe file / evidence doc). Harmless under §J set-semantics; would self-heal on any future
   column write to those rows. Not PR 5a's to fix.
