@@ -98,10 +98,22 @@ each, source worksheet untouched:
 
 ### Session 3 — final dry run + handoff
 
-- [ ] One fresh-eyes role-play dry run (single agent, real browser, non-technical-reviewer lens);
+- [x] One fresh-eyes role-play dry run (single agent, real browser, non-technical-reviewer lens);
       fix anything trivial it finds.
-- [ ] Re-run the 8-check smoke gate (design §15) once; record results below.
-- [ ] Rebuild, confirm the artifact opens clean from `file://`, and hand the HTML + README to the user.
+- [x] Re-run the 8-check smoke gate (design §15) once; record results below.
+- [x] Rebuild, confirm the artifact opens clean from `file://`, and hand the HTML + README to the user.
+
+#### S3 dry-run outcome (2026-06-10)
+
+Verdict: **yes-with-friction, zero blockers**, console clean, all 208 plain-reasoning texts scanned
+jargon-free. Fixed inline (template + README): raw internal text in the theme-overlap callout
+(the one real plain-language leak — 3 entries); "cluster-signal answers" import alert (+ plural bug);
+"verdict" in the clear-progress confirm; intro/README "blank slate" claim contradicting notes that
+end with a lean; group-override reframe implying a reviewer note / "concepts above"; "wizard" in two
+button labels; and a confirm guard on "add new concept" (was a one-click silent overwrite of a saved
+decision; guard covers both step kinds + the N shortcut). Won't-fix (settled or non-trivial): radio
+commit-on-click semantics (§5), Agree-doesn't-auto-advance, quick-check badge morph on disagree,
+search exact-match-only jump, review-screen links for pending groups.
 
 ## Session notes
 
@@ -109,16 +121,19 @@ each, source worksheet untouched:
 - 2026-06-10 (S2): 208-note plain-reasoning sidecar shipped — 16-agent workflow rewrite, jargon scan
   0 hits (workflow + independent main-loop re-scan), 10/10 fidelity spot-check, sidecar 208/208,
   SHA `0c49a7a7…cd03` byte-identical, console clean, user approved 5-sample. W3 list recorded above.
+- 2026-06-10 (S3): fresh-eyes dry run (yes-with-friction, 0 blockers) → 7 trivial fixes in template +
+  README (see S3 outcome above); 8/8 smoke gate green on final build; SHA invariant + parser counts
+  unchanged; artifact opens clean from `file://`. Handoff: built HTML + README delivered to user.
 
 ## Final smoke-gate results (Session 3)
 
 | # | Check | Result |
 |---|---|---|
-| 1 | Empty-export SHA invariant | |
-| 2 | Decide-later semantics | |
-| 3 | Pre-fill non-commit | |
-| 4 | Commit roundtrip | |
-| 5 | Merge picker | |
-| 6 | Cluster resolve + member walk | |
-| 7 | Mismatch flag | |
-| 8 | Merge-target extraction rate | |
+| 1 | Empty-export SHA invariant | ✅ `0c49a7a7…cd03` byte-identical on fresh context, final build |
+| 2 | Decide-later semantics | ✅ `plant_parts` deferred → export `- verdict: <to_fill>`; listed under Decide later |
+| 3 | Pre-fill non-commit | ✅ `climate` Confirm step: prefill shown, ← Previous → verdict undefined, export `<to_fill>` |
+| 4 | Commit roundtrip | ✅ 5 agrees → export → state wiped → re-import via real FileReader path → identical |
+| 5 | Merge picker | ✅ `seasonal_eating` shortcut "→ Seasonality — Confirm" commits verdict + target atomically |
+| 6 | Cluster resolve + member walk | ✅ CON-12 "fold sub-types": `narrative_writing` prefilled merge→writing w/ group caption; `writing` member caption + blank radio |
+| 7 | Mismatch flag | ✅ override → `cluster_mismatch: CON-12`, notes drawer auto-opens, "Differs from" bucket lists it |
+| 8 | Merge-target extraction rate | ✅ 53 of 78 (68%) on final build |

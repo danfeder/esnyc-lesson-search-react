@@ -24,7 +24,7 @@ Those decisions give the team a clean, trusted list to tag lessons against.
 The tool sorts every concept into the right kind for you and shows a small label on each one. The counts along the top tell you how many of each are left.
 
 - **Quick check** — Most concepts come with a suggested answer. Glance at it, then either agree or pick something different. Each suggestion comes with a short reason, and a **more** link if you want the full explanation.
-- **Your call** — A handful come with no suggestion. These are the ones worth a careful look — you decide from a blank slate.
+- **Your call** — A handful need a closer look. The notes may lean one way, but nothing is filled in for you — the decision is yours.
 - **Group decision** — A few small groups of closely-related concepts are decided together. You make one choice for the group and it carries down to each concept in it. (If you later make a different choice for one of those concepts on its own, the tool flags it — both on the concept itself and on the **Review so far** screen — so you can double-check.)
 
 ## Moving through it
@@ -40,7 +40,7 @@ If you'd rather not reach for the mouse:
 - **Enter** — confirm and move to the next one (on *Your call* and *Group decision* steps, make your choice first)
 - **←** — go back
 - **L** — decide later
-- **K** keep it · **M** fold it into another · **N** add a new one · **D** remove it
+- **K** keep it · **M** fold it into another · **N** add a new one (asks you to confirm first) · **D** remove it
 
 (Shortcuts pause while you're typing in a note or text box.)
 

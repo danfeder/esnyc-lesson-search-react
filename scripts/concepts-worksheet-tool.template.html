@@ -1128,7 +1128,7 @@
         <input type="file" id="importInput" accept=".md,text/markdown,text/plain" class="hidden">
         <div class="menu-divider"></div>
         <div class="menu-hint">Help</div>
-        <button class="menu-item" id="showOnboardingBtn" type="button">Show wizard intro</button>
+        <button class="menu-item" id="showOnboardingBtn" type="button">Show the intro guide</button>
         <div class="menu-divider"></div>
         <div class="menu-hint">Reset</div>
         <button class="menu-item" id="clearStateBtn" type="button" style="color: var(--drop);">Clear all progress…</button>
@@ -1159,7 +1159,7 @@
     <h2>Three kinds of decisions</h2>
     <ul class="intro-modes">
       <li><strong>Quick check</strong> — Most concepts come with a suggested answer. Glance at it and either agree or pick something different.</li>
-      <li><strong>Your call</strong> — A handful come with no suggestion. These are the ones worth a careful look — you decide from a blank slate.</li>
+      <li><strong>Your call</strong> — A handful need a closer look. The notes may lean one way, but nothing is filled in for you — the decision is yours.</li>
       <li><strong>Group decision</strong> — A few small groups of closely-related concepts are decided together: you make one choice for the group and it carries down to each concept in it.</li>
     </ul>
     <p>The worksheet sorts every concept into the right kind for you — you'll see a small label on each one. The counts at the top tell you how many of each are left.</p>
@@ -1852,7 +1852,7 @@ function displayedPrefillForEntry(entry) {
 // lands on a different verdict/target than the entry's own suggested_verdict.
 // In that case the entry's own claude_notes argue for the overridden
 // suggestion and would contradict the group-derived headline.
-const GROUP_OVERRIDE_REFRAME = "You grouped this with the concepts above, so it follows that group decision. Its own earlier note no longer applies.";
+const GROUP_OVERRIDE_REFRAME = "This suggestion follows the group decision you made for these related concepts. The original write-up for this one pointed a different way, so it isn't shown here.";
 
 function clusterOverridesOwnSuggestion(entry, prefill) {
   if (!prefill || prefill.captionSource !== "Based on your earlier group decision") return false;
@@ -1946,7 +1946,10 @@ function renderDecideStep(entry) {
   // Theme-overlap callout (more prominent on Decide steps)
   if (entry.parsed.theme_overlap && entry.parsed.theme_overlap.flagged) {
     const cb = el("div", { className: "theme-overlap-callout" });
-    cb.innerHTML = `<strong>⚠ Also appears as a theme.</strong> ${renderInlineMarkdown(entry.parsed.theme_overlap.note)}`;
+    // S3 dry-run fix: the parsed note is internal-voice (file paths, decision
+    // codes) — show a fixed plain explanation instead. The raw note still
+    // travels untouched in the export.
+    cb.innerHTML = `<strong>⚠ Also appears as a theme.</strong> This name also shows up in the library's separate list of themes. The team will sort out that overlap later — here, just decide whether it earns its place as a concept.`;
     card.appendChild(cb);
   }
 
@@ -2004,7 +2007,7 @@ function renderDecideStep(entry) {
   fs.appendChild(el("legend", {},
     hasShownRec
       ? "Your call — confirm the suggestion above, or choose differently:"
-      : "Your call — there's no suggested answer here:"
+      : "Your call — nothing's filled in for you here:"
   ));
   for (const v of ["keep", "merge", "drop"]) {
     const label = el("label", { className: "verdict-option" });
@@ -2044,7 +2047,7 @@ function renderWhyAttention(entry) {
   } else if (entry.tier === "11") {
     reason = "A foundational concept — worth a careful look.";
   } else if (!entry.parsed.suggested_verdict) {
-    reason = "No suggested answer — your judgment needed.";
+    reason = "Nothing's filled in for you — your judgment needed.";
   }
   const wrap = el("div", { className: "why-attention" });
   if (reason) {
@@ -2207,11 +2210,26 @@ function onCommit(key) {
   renderCurrentStep();
 }
 
+// S3 dry-run fix: "add new concept" used to commit in one click, silently
+// replacing any saved decision. Confirm first — covers the link on both step
+// kinds and the N keyboard shortcut (all route through the two handlers below).
+function confirmAddNewVerdict(entry) {
+  const cur = state.entries[entry.canonical_key] || {};
+  const replaces = cur.verdict && cur.verdict !== "new"
+    ? ` This replaces your saved decision (“${reviewerLabelWithTarget(cur.verdict, cur.merge_into || null)}”).`
+    : "";
+  return confirm(
+    `Record “add new concept” for ${conceptDisplayName(entry.canonical_key)}?`
+    + `${replaces} A note box will open so you can describe the new concept.`
+  );
+}
+
 function onPickOtherVerdict(entry, v) {
   if (v === "merge") {
     openMergePicker(entry, entry.parsed.suggested_merge_target);
     return;
   }
+  if (v === "new" && !confirmAddNewVerdict(entry)) return;
   setEntryState(entry.canonical_key, { verdict: v });
   maybeAutoOpenNotesDrawer(entry, v, "override");
   onCommit(entry.canonical_key);
@@ -2222,6 +2240,7 @@ function onDecideVerdict(entry, v) {
     openMergePicker(entry, entry.parsed.suggested_merge_target);
     return;
   }
+  if (v === "new" && !confirmAddNewVerdict(entry)) return;
   setEntryState(entry.canonical_key, { verdict: v });
   // Auto-open notes drawer on new/drop and on override (M1.12)
   if (v === "new" || v === "drop") {
@@ -2543,8 +2562,8 @@ function onImport(file) {
       renderCurrentStep();
       updateDecisionDebt();
       alert(
-        `Imported. ${entryCount} entries updated; `
-        + `${clusterCount} cluster-signal answers.`
+        `Imported: ${entryCount} concept ${entryCount === 1 ? "decision" : "decisions"} `
+        + `and ${clusterCount} group ${clusterCount === 1 ? "decision" : "decisions"} restored.`
       );
     } catch (e) {
       console.error(e);
@@ -2611,7 +2630,7 @@ function parseClusterSignalsFromMarkdown(text) {
 // ---------- Clear state ----------
 
 function onClearState() {
-  if (!confirm("Clear ALL progress? This deletes every saved verdict and curriculum note from this browser. Cannot be undone.")) return;
+  if (!confirm("Clear ALL progress? This deletes every saved decision and note from this browser. Cannot be undone.")) return;
   state = defaultState();
   localStorage.removeItem(STORAGE_KEY);
   renderCurrentStep();
@@ -3121,7 +3140,7 @@ function closeReviewSummary() {
   // TRAP F: at the natural end of the wizard, renderEndScreen() delegates to
   // renderReviewSummary(), so the summary IS the end screen. If we just
   // re-render at the end sentinel (step_index === stepSequence.length), the
-  // summary renders again and "Back to wizard" appears to do nothing. Clamp
+  // summary renders again and "Back to reviewing" appears to do nothing. Clamp
   // back into the last real wizard step so Back lands on actual content.
   if (state.wizard.step_index >= stepSequence.length) {
     state.wizard.step_index = stepSequence.length - 1;
@@ -3189,7 +3208,7 @@ function renderReviewSummary() {
       el("button", {
         className: "btn ghost back-to-wizard",
         onclick: closeReviewSummary,
-      }, document.createTextNode("← Back to wizard")),
+      }, document.createTextNode("← Back to reviewing")),
       el("button", {
         className: "btn primary save-export",
         onclick: onExport,
