@@ -76,17 +76,38 @@ Supporting evidence for the (d) expectation (after == before exactly, per slug):
 
 ## Tier 3 — PROD
 
-### Before-census (run BEFORE approving the migration workflow) — TO FILL
+### Before-census (2026-06-11, post-merge `0b8057f`, pre-approval) ✅
 
-- [ ] (a) census recorded
-- [ ] (b) per-alias counts recorded (PROD may differ from TEST)
-- [ ] (c) before-sum + expected collisions computed
-- [ ] (d) per-slug reach recorded
-- [ ] (e) 'Native American' lesson_id list regenerated FROM PROD (do not reuse TEST ids)
-- [ ] expected rollback row count recorded
+PROD carries a few rows TEST lacks; deltas vs TEST noted.
 
-### After-apply — TO FILL
+- [x] (a) census: **77 distinct / 936 appearances** (TEST: 77 / 916); coverage probe — live
+      literals NOT in alias_map ∪ canonical labels — **zero rows**
+- [x] (b) per-alias: **43 appearances / 37 distinct rows** — African American diaspora 2 ·
+      Indigenous Peoples 1 · Indigenous/Native American 1 · Native American 5 · african 1 ·
+      americas 1 · asian 1 · caribbean 1 · **east-asian 4** (TEST 2) · eastern-european 1 ·
+      european 1 · **latin-american 5** (TEST 4) · levantine 2 · mediterranean 2 ·
+      middle-eastern 1 · north-american 13 · south-asian 3
+- [x] (c) before-sum **936**; expected dedup collisions **0** → expected after-sum **936**
+- [x] (d) per-slug reach: african 43 · americas 172 · asian 65 · caribbean 18 ·
+      central-asian 4 · east-asian 40 · eastern-european 4 · ethiopian 1 · european 56 ·
+      latin-american 82 · levantine 19 · mediterranean 45 · middle-eastern 27 · nigerian 2 ·
+      north-american 97 · south-asian 18 · southeast-asian 5 · west-african 15.
+      Expected after: identical except **european 56 → 57** (same kebab-only
+      `eastern-european` row mechanism as TEST, 1 row in PROD too)
+- [x] (e) 'Native American' lesson_ids regenerated FROM PROD — same 5 as TEST:
+      `0BxEc0RZeYtCicXRsbXUyaDNKSEU`, `12ZjWQaqW6hOPDo16zi9PN3iG92jI4KLz`,
+      `1dYfqKvRGyB45l5D-3KEN9Fx6-lFsNckvakBtMQq614k`, `1ggAWmeMm2AZoGXadfQjPzKMgZcYbTOyCiqUXdf0ZWrk`,
+      `1xaMyZf2OTGpX2GAD8-qgYADXHw1vTevByfs1bJ55lNs`
+- [x] expected rollback rows: **37**
 
-- [ ] full probe set (a)–(f) green
-- [ ] backup-table count == PROD expected
-- [ ] PR 5b is gated on this section being green
+### After-apply (2026-06-11, run `27384490534` — all 4 jobs green, no SASL flake) ✅
+
+- [x] (a) census = **60 distinct / 936 appearances**; non-canonical survivor probe = **zero rows**
+- [x] (b) alias appearances = **0 column / 0 metadata**
+- [x] (c) appearances = **936**; set_mismatch = **0** (PROD has no order-only mirror diffs at all)
+- [x] (d) per-slug reach identical to PROD before-census except **european 56 → 57** —
+      exactly the predicted kebab-only `eastern-european` parent-reach improvement
+- [x] (e) all 5 ex-'Native American' lessons fts_indigenous = **true**, arrays canonical
+- [x] (f) re-run UPDATE → **0 rows** (RETURNING-verified)
+- [x] backup table: **37 rows** (== PROD expected), RLS enabled, 0 policies
+- [x] **PR 5b is UN-GATED** — this section is green (2026-06-11)

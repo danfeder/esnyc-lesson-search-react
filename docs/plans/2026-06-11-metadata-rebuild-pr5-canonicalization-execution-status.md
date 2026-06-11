@@ -1,12 +1,16 @@
 # PR 5 — D4 Vocabulary Canonicalization — Execution Status
 
-**Last updated:** 2026-06-11 by Session 2 (PR 5a built + opened + TEST-verified)
+**Last updated:** 2026-06-11 by Session 2 (PR 5a SHIPPED + PROD-VERIFIED)
 
 ## Current State
 
-**Active PR: #504 — PR 5a heritage canonicalization, OPEN, TEST-verified, awaiting merge
-decision.** Tasks A.1–A.4 complete; A.5 is at step 4-5 (bot round 1 triaged, merge gated on
-user instruction). Branch `feat/pr5a-heritage-canonicalization`.
+**PR 5a is DONE: #504 merged to main (squash `0b8057f`, 2026-06-11 23:40 UTC) and
+PROD-verified — full probe set (a)–(f) green on PROD via MCP (run `27384490534`, all 4 jobs
+clean, no SASL flake). PR 5b (concepts canonicalization) is UN-GATED and is the next work.**
+PROD outcome: 37 rows rewritten (43 alias appearances), 936 appearances conserved, 60 distinct
+canonical values, european filter-slug reach 56→57 (predicted improvement), backup table
+`pr5a_heritage_rollback` 37 rows (RLS on, 0 policies; drop after PR 6 — tracked below).
+Full per-tier evidence: `2026-06-11-pr5a-heritage-rehearsal-evidence.md`.
 
 **What's on the PR:** vocab artifact `data/vocab/cultural-heritage.vocab.json` (71 canonicals /
 88 alias_map entries / provenance, emitted by the parser's new `--emit-json` mode with
@@ -33,9 +37,13 @@ filter reach (never decrease).
 exhaustive), 1 reject (snapshotted_at). Security & Dependencies CI failure is pre-existing
 npm-audit noise (fails on main; known @lhci/cli follow-up).
 
-**Next:** user merge decision → PROD migration approval → PROD before-census (regenerate
-'Native American' id list FROM PROD!) → apply → full probe set via `mcp__supabase-remote` →
-record in evidence doc. PR 5b is gated on PROD-green.
+**Next: PR 5b — concepts canonicalization** off fresh `main`. B-tasks get authored from the
+proven 5a mechanism (impl plan carries the Session-1 knowledge: concepts emitter reuses
+`build-concepts-tool.py` parse functions against the RETURNED verdict record; Appendix-A 1:1
+literal match; `sorting`→`sorting_and_categorization` rename; metadata-only rewrite, no flat
+column; 82 folds + 7 drops; subject keys untouched; remove emptied subject keys; backup table
+`pr5b_concepts_rollback`). Carry the two 5a probe learnings: SET-equality mirror checks;
+parent-expansion reach can increase. Scale: 663 live rows / 208 strings / 1912 appearances.
 
 **Design-lock outcomes (full evidence in design doc §4):** parser-driven JSON artifacts in
 `data/vocab/` (worksheet-specified shapes); migration-file mechanism with emitter-generated
@@ -70,12 +78,13 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 - Session 1 (2026-06-11): design doc §4 Draft → LOCKED (9 mechanism answers + filter-alignment
   finding); PR 5a tasks A.1–A.5 authored concrete; PR 5b carry-forward knowledge captured in
   impl plan; test plan made concrete.
-- Session 2 (2026-06-11): Tasks A.1–A.4 complete; PR #504 opened; TEST probes all green;
-  bot round 1 triaged.
+- Session 2 (2026-06-11): **PR 5a complete end-to-end** — Tasks A.1–A.5; PR #504 opened,
+  TEST-verified, 2 bot rounds triaged, merged (`0b8057f`), PROD-applied + PROD-verified
+  (probe set green, evidence doc fully filled). PR 5b un-gated.
 
 ## In flight
 
-- PR #504 (PR 5a) — open, TEST-verified, awaiting user merge decision + PROD approval.
+(none — next session starts PR 5b)
 
 ## Blocked
 
@@ -142,8 +151,20 @@ Major events:
 - Operational notes: local supabase storage container threw transient 502s on `db reset`
   (DB state fine each time — confirmed via debug log + MCP); TEST DB responsive throughout.
 
-Commits: `f240af6`, `789a9db`, `3b11c5a`, TEST-results docs commit, this status commit
-(docs commits pushed bundled, per feedback_no_docs_push_during_pr).
+Commits: `f240af6`, `789a9db`, `3b11c5a`, `5223f1a` (TEST results), `c2a6630` + `ad9ef39`
+(status/triage) — all squashed into main as `0b8057f`.
+
+Merge + PROD (same session, continued):
+- Bot round 2: "Approve with optional cleanup"; 6 findings triaged (2 repeats re-rejected,
+  2 rejected on investigation, 2 accepted as docs: rollback-drop tracking + the `guyanese`
+  parent question surfaced as a curriculum-team item). Round cap reached.
+- Squash-merged as `0b8057f` (auto-merge unavailable — repo setting off; direct merge clean).
+- PROD before-census run pre-approval (37 rows / 43 appearances; coverage zero-unresolved;
+  east-asian 4 + latin-american 5 vs TEST's 2 + 4 — PROD-only rows).
+- User approved run `27384490534`; ALL 4 JOBS GREEN — no SASL flake this time.
+- PROD after-probes (a)–(f) + backup: green; european 56→57 exactly as predicted; PROD has
+  zero order-only mirror diffs (TEST had 5).
+- Evidence doc fully filled across all three tiers; PR 5b un-gated.
 
 ### Session 1 — 2026-06-11 — design lock
 
