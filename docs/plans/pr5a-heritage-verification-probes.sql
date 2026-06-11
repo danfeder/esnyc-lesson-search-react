@@ -106,7 +106,13 @@ ORDER BY mv;
 -- =====================================================
 -- BEFORE: 916 appearances; expected dedup collisions 0 (no live row carries
 --         both an alias and its target).
--- AFTER:  916 appearances; mirror_mismatch must be 0.
+-- AFTER:  916 appearances; set_mismatch must be 0.
+-- NOTE (TEST after-probe 2026-06-11): the mirror check is SET equality, not
+-- byte equality. The §J trigger (_meta_array_matches_column) compares
+-- order-insensitively, and 5 live rows carry pre-existing order-only
+-- column⇄metadata differences (same value sets, none touched by this
+-- rewrite — none in pr5a_heritage_rollback). Byte-equality flags those 5;
+-- set-equality is the real invariant.
 
 SELECT
   (SELECT count(*) FROM lessons, unnest(cultural_heritage) v WHERE retired_at IS NULL) AS appearances,
@@ -114,7 +120,10 @@ SELECT
    WHERE l.retired_at IS NULL
      AND COALESCE(array_length(l.cultural_heritage, 1), 0) > 0
      AND (jsonb_typeof(l.metadata->'culturalHeritage') IS DISTINCT FROM 'array'
-          OR to_jsonb(l.cultural_heritage) <> l.metadata->'culturalHeritage')) AS mirror_mismatch;
+          OR (SELECT array_agg(x ORDER BY x) FROM unnest(l.cultural_heritage) x)
+             IS DISTINCT FROM
+             (SELECT array_agg(y ORDER BY y)
+              FROM jsonb_array_elements_text(l.metadata->'culturalHeritage') y))) AS set_mismatch;
 
 -- =====================================================
 -- Probe (d) — zero-orphan filter check (RPC expansion path)
@@ -122,8 +131,14 @@ SELECT
 -- Every filterDefinitions.ts heritage slug must reach the SAME row count
 -- after as before (kebab-tagged rows stay reachable via their Title Case
 -- twins, which sit in the same expansion; the 4 semantic-merge literals and
--- their targets appear in NO expansion — verified TEST 2026-06-11).
--- BEFORE == AFTER (TEST 2026-06-11):
+-- their targets appear in NO expansion — verified TEST 2026-06-11) — with
+-- ONE explained exception: 'european' gains +1 (54 → 55). The row tagged
+-- only kebab 'eastern-european' (lesson_4d119999d8d54a828d9cb217f6d98613)
+-- was reachable via the eastern-european slug but NOT via its PARENT
+-- 'european' (the parent expansion lacks the child's kebab variant); after
+-- the rewrite it carries 'Eastern European' and correctly surfaces under
+-- the parent. Strict improvement; no slug loses reach.
+-- BEFORE (TEST 2026-06-11):
 --   african 42 | americas 171 | asian 64 | caribbean 18 | central-asian 4
 --   east-asian 37 | eastern-european 4 | ethiopian 1 | european 54
 --   latin-american 81 | levantine 16 | mediterranean 44 | middle-eastern 24

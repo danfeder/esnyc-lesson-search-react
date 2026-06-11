@@ -51,15 +51,27 @@ Supporting evidence for the (d) expectation (after == before exactly, per slug):
 - Note: the Session-1 "~36 row-appearances" estimate refines to **42 appearances / 34 rows**
   (precise census above).
 
-### After-apply (CI applies on PR open) — TO FILL
+### After-apply (CI applied migration on PR #504 open; probes run 2026-06-11) ✅
 
-- [ ] (a) census = 60 distinct / 916 appearances; non-canonical survivor probe = zero rows
-- [ ] (b) per-alias = zero rows (column AND metadata variants)
-- [ ] (c) appearances = 916; mirror_mismatch = 0
-- [ ] (d) per-slug counts identical to before-census
-- [ ] (e) all 5 lesson_ids fts_indigenous = true
-- [ ] (f) re-run UPDATE → 0 rows
-- [ ] backup table: 34 rows, RLS enabled, 0 policies
+- [x] (a) census = **60 distinct / 916 appearances** (exactly as predicted); non-canonical
+      survivor probe = **zero rows**
+- [x] (b) per-alias = **zero rows** (column AND metadata variants)
+- [x] (c) appearances = **916**; set_mismatch = **0**. Investigation note: the original
+      byte-equality mirror probe flagged 5 rows — all pre-existing order-only column⇄metadata
+      differences (same value sets; `was_rewritten = false` for all 5, none in
+      `pr5a_heritage_rollback`): `0B9X3sp9nlAgmVmZpaFd6clptWTA`,
+      `1-1T0a4pCECA5e0ek7pcvFoTRa3-piEGwGHKWrsnxtUs`, `18AeFC5zkMbPid2BtdbUr-Q2IdH01o93g3XajMN-VEcs`,
+      `18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS`, `1gT5RObyuVItDDvq_URSt9jsfX-SUKsCk9qu2P840h2g`.
+      The §J trigger's `_meta_array_matches_column` is order-insensitive, so these pre-date
+      PR 5a; probe (c) corrected to set-equality (the real invariant).
+- [x] (d) per-slug counts identical to before-census **except `european` 54 → 55 (+1),
+      fully explained and a strict improvement**: `lesson_4d119999d8d54a828d9cb217f6d98613`
+      was tagged only kebab `eastern-european`, reachable via the eastern-european slug but
+      not its parent `european` (parent expansions lack child kebab variants); post-rewrite
+      it carries 'Eastern European' and surfaces under the parent. No slug lost reach.
+- [x] (e) all 5 lesson_ids fts_indigenous = **true** (arrays show 'Indigenous' canonical form)
+- [x] (f) re-run UPDATE → **0 rows** (RETURNING-verified)
+- [x] backup table: **34 rows, RLS enabled, 0 policies**
 - [ ] re-run after every fix-up round that touches DB state
 
 ## Tier 3 — PROD
