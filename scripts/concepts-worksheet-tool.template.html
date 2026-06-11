@@ -1,0 +1,3555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concepts Worksheet — Curriculum Team Review</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f7f6f1;
+    --panel: #ffffff;
+    --panel-soft: #fbfaf6;
+    --border: #e3e1d9;
+    --border-strong: #cfcdc4;
+    --text: #1a1a1a;
+    --text-strong: #0d0d0d;
+    --muted: #5e5e58;
+    --hint: #8a8a83;
+    --accent: #1f5a47;
+    --accent-soft: #d3e4d9;
+    --accent-strong: #133a2c;
+    --warn: #b45309;
+    --warn-soft: #fdf3da;
+    --warn-border: #e3b865;
+
+    /* Verdict colors */
+    --keep: #1f5a47;
+    --keep-soft: #d3e4d9;
+    --merge: #b25a1f;
+    --merge-soft: #f4dfc8;
+    --new: #1d4ed8;
+    --new-soft: #d6e1f7;
+    --drop: #a4143c;
+    --drop-soft: #f6d1da;
+
+    /* Tier strip tints (W10: §11 red-orange / §12 amber / §13 muted green) */
+    --tier-11: #b25a1f;
+    --tier-11-soft: #fce8d6;
+    --tier-12: #b45309;
+    --tier-12-soft: #fdf3da;
+    --tier-13: #1f5a47;
+    --tier-13-soft: #e6efea;
+
+    /* Mode chip tints (plan §2353: Confirm=gray-blue, Resolve=amber, Decide=red-orange) */
+    --mode-confirm: #4a5a6a;
+    --mode-confirm-soft: #e4e9ee;
+    --mode-resolve: #b45309;
+    --mode-resolve-soft: #fdf3da;
+    --mode-decide: #b0331d;
+    --mode-decide-soft: #fbe4dc;
+
+    /* Notes drawer tints */
+    --notes-bg: #fbfaf2;
+    --notes-bg-strong: #f3f1e3;
+    --notes-border: #d6d2c2;
+
+    --card-max: 720px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow-card: 0 1px 0 rgba(20, 20, 18, 0.04), 0 4px 12px -8px rgba(20, 20, 18, 0.08);
+    --shadow-panel: 0 1px 2px rgba(20, 20, 18, 0.04);
+    --shadow-overlay: 0 6px 22px -10px rgba(20, 20, 18, 0.22);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  body { min-height: 100vh; }
+  code, .mono {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+  .hidden { display: none !important; }
+
+  /* ---------- Top bar ---------- */
+  header.top {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-panel);
+  }
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 12px 24px;
+    flex-wrap: wrap;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+  }
+  .brand .subtitle {
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  .saved-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    font-size: 11.5px;
+  }
+  .saved-badge::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .saved-badge.dirty::before {
+    background: var(--warn);
+  }
+
+  /* Decision-debt counters (M1.5 wires real counts; M1.16 visual hierarchy) */
+  .decision-debt {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    font-size: 12.5px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .decision-debt b { color: var(--text-strong); }
+  /* Decide is the highest-priority counter — larger, accent-colored numeral */
+  .decision-debt .debt-decide { font-size: 13px; }
+  .decision-debt .debt-decide b {
+    font-size: 16px;
+    color: var(--mode-decide);
+  }
+  .decision-debt .debt-confirm b { font-size: 14px; }
+  .decision-debt .debt-resolve b { font-size: 13px; }
+  /* M2.5: when a bucket empties, shift its counter toward the muted-green
+     keep token + slight transparency as a low-key done cue. */
+  .debt-decide[data-zero="true"],
+  .debt-confirm[data-zero="true"],
+  .debt-resolve[data-zero="true"] {
+    color: var(--keep);
+    opacity: 0.7;
+  }
+  .debt-bar {
+    display: inline-block;
+    width: 96px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .debt-bar i {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transition: width 200ms ease;
+  }
+
+  /* Actions cluster (right-aligned) */
+  .actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+  .jump-input {
+    width: 200px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    font-size: 12.5px;
+    font-family: inherit;
+  }
+  .jump-input:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  /* ---------- Buttons (preserved) ---------- */
+  button.btn {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  button.btn:hover { background: var(--panel-soft); }
+  button.btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  button.btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  button.btn.primary:hover { background: var(--accent-strong); }
+  button.btn.ghost {
+    background: transparent;
+    border-color: var(--border);
+  }
+  button.btn.ghost:hover { background: var(--panel-soft); }
+  button.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* Advanced menu */
+  .advanced-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 260px;
+    background: var(--panel);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 6px 0;
+    display: none;
+    z-index: 40;
+  }
+  .advanced-menu.shown { display: block; }
+  .advanced-menu .menu-hint {
+    padding: 4px 14px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--hint);
+  }
+  .advanced-menu .menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .advanced-menu .menu-item:hover { background: var(--panel-soft); }
+  .advanced-menu .menu-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  /* ---------- Wizard layout (single-card) ---------- */
+  main.wizard-layout {
+    max-width: var(--card-max);
+    margin: 32px auto 80px;
+    padding: 0 16px;
+  }
+  .wizard-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 24px;
+    min-height: 280px;
+  }
+  .wizard-nav {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    align-items: center;
+  }
+  .wizard-nav #nextBtn { margin-left: auto; }
+
+  /* Step head: chip + step-of share row 1; title + key-row break to row 2/3 */
+  .step-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 14px;
+    margin-bottom: 4px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .step-tier-mode {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .step-of {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+  .step-placeholder {
+    color: var(--muted);
+    font-style: italic;
+  }
+  .step-head .step-title {
+    flex-basis: 100%;
+    margin: 8px 0 2px;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-strong);
+  }
+  .step-head .step-key-row {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .step-head .step-key-row code { color: var(--text-strong); }
+  .wizard-step h2 {
+    margin: 4px 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  /* ---------- Mode chips (filled in by M1.7+) ---------- */
+  .mode-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  /* Some renderers (cluster step §9) ship `mode-resolve` as a second class
+     instead of `data-mode="resolve"`; cover both spellings. */
+  .mode-chip[data-mode="confirm"],
+  .mode-chip.mode-confirm {
+    background: var(--mode-confirm-soft);
+    color: var(--mode-confirm);
+  }
+  .mode-chip[data-mode="resolve"],
+  .mode-chip.mode-resolve {
+    background: var(--mode-resolve-soft);
+    color: var(--mode-resolve);
+  }
+  .mode-chip[data-mode="decide"],
+  .mode-chip.mode-decide {
+    background: var(--mode-decide-soft);
+    color: var(--mode-decide);
+  }
+
+  /* ---------- Tier strip (full-width band inside card, plan §2354) ---------- */
+  .tier-strip {
+    display: block;
+    padding: 6px 12px;
+    margin: 8px 0 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 500;
+    border-left: 3px solid currentColor;
+  }
+  .tier-strip[data-tier="11"] {
+    background: var(--tier-11-soft);
+    color: var(--tier-11);
+  }
+  .tier-strip[data-tier="12"] {
+    background: var(--tier-12-soft);
+    color: var(--tier-12);
+  }
+  .tier-strip[data-tier="13"] {
+    background: var(--tier-13-soft);
+    color: var(--tier-13);
+  }
+
+  /* ---------- Collapsibles (preserved) ---------- */
+  details.collapsible {
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel-soft);
+  }
+  details.collapsible > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+    position: relative;
+    user-select: none;
+  }
+  details.collapsible > summary::-webkit-details-marker { display: none; }
+  details.collapsible > summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    color: var(--hint);
+  }
+  details.collapsible[open] > summary::before { content: "▾"; }
+  details.collapsible > .collapsible-body {
+    padding: 6px 12px 10px;
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  details.collapsible > .collapsible-body code {
+    background: var(--panel);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  details.collapsible.corpus-evidence > .collapsible-body {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  /* ---------- Flash highlight (preserved for jump-to-entry feedback) ---------- */
+  @keyframes flash-highlight {
+    0%   { box-shadow: 0 0 0 3px var(--accent); }
+    100% { box-shadow: var(--shadow-card); }
+  }
+  .wizard-card.flash {
+    animation: flash-highlight 1200ms ease-out;
+  }
+
+  /* ---------- Wizard intro modal (3-step onboarding) ---------- */
+  dialog.wizard-intro {
+    max-width: 560px;
+    padding: 24px 28px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 8px 28px -10px rgba(20, 20, 18, 0.32);
+  }
+  dialog.wizard-intro::backdrop {
+    background: rgba(20, 20, 18, 0.55);
+  }
+  dialog.wizard-intro h2 {
+    margin: 0 0 14px;
+    font-size: 20px;
+    color: var(--text-strong);
+  }
+  dialog.wizard-intro p,
+  dialog.wizard-intro li {
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  dialog.wizard-intro .intro-modes {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px;
+  }
+  dialog.wizard-intro .intro-modes li {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: var(--panel-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+  }
+  dialog.wizard-intro .intro-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .step-indicator {
+    display: flex;
+    gap: 6px;
+  }
+  .step-indicator .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: background 120ms ease;
+  }
+  .step-indicator .dot.active {
+    background: var(--accent);
+  }
+  .intro-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  /* ---------- Why-this-attention row (Decide mode) ---------- */
+  .why-attention {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .why-attention .why-label {
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .theme-overlap-callout {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    background: var(--warn-soft);
+    border: 1px solid var(--warn-border);
+    border-radius: var(--radius-sm);
+    color: var(--warn);
+    font-size: 13px;
+  }
+
+  /* ---------- Claude recommendation block ---------- */
+  .claude-rec {
+    margin: 8px 0 14px;
+    padding: 12px 14px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .claude-rec-headline {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    color: var(--text-strong);
+  }
+  .claude-rec-summary {
+    margin: 0;
+    color: var(--text);
+  }
+  .claude-rec-reframe {
+    margin: 0;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .claude-rec-body-expanded {
+    margin: 6px 0 0;
+    color: var(--text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .claude-rec-more {
+    margin-top: 6px;
+  }
+  .claude-rec-more > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 12.5px;
+    list-style: none;
+    user-select: none;
+  }
+  .claude-rec-more > summary::-webkit-details-marker { display: none; }
+  .claude-rec-more > summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    color: var(--hint);
+  }
+  .claude-rec-more[open] > summary::before { content: "▾"; }
+  .claude-rec-more-body {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+
+  /* ---------- Verdict options group (Decide radio fieldset) ---------- */
+  .verdict-options-group {
+    margin: 6px 0 12px;
+    padding: 10px 14px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+  }
+  .verdict-options-group legend {
+    padding: 0 6px;
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .verdict-options-group .verdict-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 14px 4px 0;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13.5px;
+  }
+  .verdict-options-group .verdict-option:hover {
+    background: var(--panel-soft);
+  }
+  .verdict-options-group .verdict-option input[type="radio"] {
+    accent-color: var(--accent);
+    margin: 0;
+  }
+
+  /* ---------- Primary action (Confirm "Agree" button row) ---------- */
+  .primary-action-row {
+    margin: 10px 0 12px;
+  }
+  .primary-action-row .muted {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+  }
+  button.btn.primary-agree {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14.5px;
+    font-weight: 600;
+  }
+
+  /* ---------- Pick something else (low-contrast expand) ---------- */
+  details.pick-other {
+    margin: 6px 0 12px;
+  }
+  details.pick-other > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 4px 0;
+    font-size: 13px;
+    color: var(--muted);
+    user-select: none;
+  }
+  details.pick-other > summary::-webkit-details-marker { display: none; }
+  details.pick-other > summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    color: var(--hint);
+  }
+  details.pick-other[open] > summary::before { content: "▾"; }
+  details.pick-other > summary:hover { color: var(--text); }
+  details.pick-other .verdict-options-group {
+    margin-top: 8px;
+    background: var(--panel-soft);
+  }
+  button.btn.linkish {
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    color: var(--muted);
+    font-size: 12.5px;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  button.btn.linkish:hover { color: var(--text); }
+
+  /* ---------- Merge picker (in-card panel) ---------- */
+  .merge-picker {
+    margin: 14px -4px 0;
+    padding: 14px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-overlay);
+  }
+  .merge-picker h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .merge-shortcut {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+  }
+  .merge-shortcut .muted {
+    margin: 0 0 6px;
+    color: var(--accent-strong);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .merge-shortcut-confirm {
+    width: 100%;
+    padding: 8px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .merge-picker > .muted {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin: 4px 0 6px;
+  }
+  .merge-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    font-size: 13px;
+  }
+  .merge-input:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  .merge-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  /* ---------- Merge aliases block (Confirm-mode evidence) ---------- */
+  .merge-aliases-block {
+    margin: 6px 0 12px;
+    padding: 8px 12px;
+    background: var(--panel-soft);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .merge-aliases-block .label {
+    font-weight: 600;
+    color: var(--text-strong);
+    margin-bottom: 2px;
+  }
+  .merge-aliases-block .count {
+    color: var(--hint);
+    margin-left: 4px;
+  }
+
+  /* ---------- Notes drawer (§8) ---------- */
+  details.notes-drawer {
+    margin: 12px 0 6px;
+    border: 1px solid var(--notes-border);
+    border-radius: var(--radius-sm);
+    background: var(--notes-bg);
+  }
+  details.notes-drawer > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--muted);
+    user-select: none;
+  }
+  details.notes-drawer > summary::-webkit-details-marker { display: none; }
+  details.notes-drawer > summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    color: var(--hint);
+  }
+  details.notes-drawer[open] > summary::before { content: "▾"; }
+  details.notes-drawer[open] {
+    background: var(--notes-bg-strong);
+  }
+  details.notes-drawer[open] > summary {
+    color: var(--text);
+    font-weight: 500;
+    padding-bottom: 4px;
+  }
+  .drawer-prompt {
+    margin: 0 12px 6px;
+    padding: 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  textarea.notes-input {
+    display: block;
+    width: calc(100% - 24px);
+    min-height: 72px;
+    margin: 0 12px 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--notes-border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+  textarea.notes-input:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  /* ---------- Cluster Resolve step (§9) ---------- */
+  .cluster-question {
+    margin: 8px 0 10px;
+    padding: 10px 12px;
+    background: var(--mode-resolve-soft);
+    border-left: 3px solid var(--mode-resolve);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--text-strong);
+    line-height: 1.5;
+  }
+  .cluster-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 0 14px;
+  }
+  .cluster-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    cursor: pointer;
+    font-size: 13.5px;
+    line-height: 1.4;
+  }
+  .cluster-option:hover {
+    background: var(--panel-soft);
+    border-color: var(--border-strong);
+  }
+  .cluster-option.selected {
+    background: var(--mode-resolve-soft);
+    border-color: var(--mode-resolve);
+  }
+  .cluster-option input[type="radio"] {
+    accent-color: var(--mode-resolve);
+    margin: 2px 0 0;
+  }
+  .cluster-option .option-text { flex: 1; }
+  .cluster-members {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .cluster-members > div:first-child {
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .cluster-members ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+  }
+  .cluster-members li {
+    margin: 3px 0;
+    line-height: 1.5;
+  }
+  button.member-peek {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--accent);
+  }
+  button.member-peek:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  /* ---------- CON-24 pick-one parent reveal (M2.1b) ---------- */
+  .con24-parent-picker {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--warn-border);
+    background: var(--warn-soft);
+    border-radius: var(--radius-sm);
+  }
+  .con24-parent-picker .reveal-prompt {
+    margin: 0 0 8px;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .con24-parent-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    cursor: pointer;
+  }
+  .con24-parent-label input[type="radio"] {
+    margin: 0;
+    accent-color: var(--mode-resolve);
+  }
+
+  /* Info-only "hold off, pending another decision" notice on an entry step.
+     Rendered in both Decide (M2.1) and Confirm (M2.1b) modes. */
+  .cluster-info-caption {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn-border);
+    border-radius: var(--radius-sm);
+    color: var(--warn);
+    font-size: 13px;
+  }
+
+  /* Cluster-mismatch callout (M2.2) — shown when a per-entry verdict
+     disagrees with the group decision derived for its cluster. */
+  .cluster-mismatch-callout {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-left: 3px solid var(--warn-border);
+    background: var(--warn-soft);
+    border-radius: var(--radius-sm);
+  }
+  .cluster-mismatch-callout .callout-headline {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .cluster-mismatch-callout .callout-detail {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  /* ---------- End screen (§10) ---------- */
+  .wizard-step.end-screen h2 {
+    font-size: 24px;
+    margin: 0 0 14px;
+    color: var(--text-strong);
+  }
+  .end-summary {
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+  .end-summary > div { margin: 0; }
+  .end-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  /* Note: renderEndScreen ships inline font-size/padding on the Save & Export
+     button (plan §2227-2266). Keep those inline values authoritative; this
+     rule just adds shared end-screen button color/weight so the inline
+     overrides win where present. */
+  .end-actions .btn.primary { font-weight: 600; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .top-row { padding: 10px 16px; gap: 10px; }
+    .jump-input { width: 140px; }
+    main.wizard-layout { margin: 16px auto 60px; padding: 0 12px; }
+    .wizard-card { padding: 18px; }
+    .step-head .step-title { font-size: 19px; }
+    .merge-picker { margin-left: -2px; margin-right: -2px; padding: 12px; }
+    .verdict-options-group .verdict-option { display: flex; margin-right: 0; }
+    .decision-debt { gap: 10px; }
+    .decision-debt .debt-decide b { font-size: 15px; }
+  }
+
+  /* ---------- Review summary (M2.3, design §11) ---------- */
+  .review-summary {
+    max-width: 760px;
+  }
+
+  .summary-header h2 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    color: var(--text-strong);
+  }
+
+  .summary-counts {
+    margin: 0 0 16px;
+    color: var(--muted);
+  }
+
+  .summary-bucket {
+    margin: 12px 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+  }
+
+  .summary-bucket > .bucket-summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    user-select: none;
+  }
+
+  .summary-bucket[open] > .bucket-summary {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .deferred-bucket > .bucket-summary,
+  .mismatch-bucket > .bucket-summary {
+    color: var(--warn);
+  }
+
+  .bucket-list {
+    margin: 0;
+    padding: 8px 14px 14px;
+    list-style: none;
+  }
+
+  .bucket-row {
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .bucket-row:last-child {
+    border-bottom: none;
+  }
+
+  .bucket-row .group-label {
+    font-weight: 500;
+    color: var(--text-strong);
+  }
+
+  /* TRAP B: the tier-tag span was removed from every bucket row (design §11
+     has no tier tags, and "§NN" is a forbidden on-screen code). The tier-tag
+     used to carry margin-left:auto to push the edit/resume link right; that
+     job now belongs to the link itself so it stays right-aligned. */
+  .bucket-row .btn.link.edit-link,
+  .bucket-row .btn.link.resume-link {
+    margin-left: auto;
+    padding: 0;
+    font-size: 13px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    text-decoration: underline dotted;
+    cursor: pointer;
+  }
+
+  .bucket-empty {
+    margin: 0;
+    padding: 10px 14px;
+    color: var(--hint);
+    font-style: italic;
+  }
+
+  .fold-target-group {
+    border-top: 1px dotted var(--border);
+    padding: 10px 14px;
+  }
+
+  .fold-target-group:first-of-type {
+    border-top: none;
+  }
+
+  .fold-target-header {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .summary-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+
+  .summary-footer .btn.primary {
+    font-size: 15px;
+    padding: 10px 20px;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <h1>Concepts Worksheet</h1>
+      <span class="subtitle">Curriculum Team Review</span>
+    </div>
+    <span class="saved-badge" id="savedBadge">Saved locally</span>
+    <div class="decision-debt" id="decisionDebt">
+      <span class="debt-decide"><b id="debtDecideCount">0</b> your call</span>
+      <span class="debt-confirm"><b id="debtConfirmCount">0</b> to check</span>
+      <span class="debt-resolve"><b id="debtResolveCount">0</b> group decisions</span>
+      <span class="debt-bar"><i id="debtBar" style="width: 0%"></i></span>
+    </div>
+    <div class="actions">
+      <div class="jump-to-entry">
+        <input type="search" class="jump-input" id="jumpInput"
+               placeholder="🔍 Jump to a concept…" list="all-canonical-keys"
+               autocomplete="off">
+      </div>
+      <button class="btn ghost" id="reviewSoFarBtn" type="button" disabled
+              title="Available in Batch 2">Review so far</button>
+      <button class="btn ghost" id="advancedBtn" type="button" aria-haspopup="menu">⚙ Advanced</button>
+      <div class="advanced-menu" id="advancedMenu" role="menu">
+        <div class="menu-hint">Import / Export</div>
+        <button class="menu-item" id="exportBtn" type="button">Save &amp; Export markdown ↓</button>
+        <button class="menu-item" id="importBtn" type="button">Import a saved markdown file…</button>
+        <button class="menu-item" id="downloadJsonBtn" type="button">Download a technical backup (JSON) — not the file to send</button>
+        <input type="file" id="importInput" accept=".md,text/markdown,text/plain" class="hidden">
+        <div class="menu-divider"></div>
+        <div class="menu-hint">Help</div>
+        <button class="menu-item" id="showOnboardingBtn" type="button">Show the intro guide</button>
+        <div class="menu-divider"></div>
+        <div class="menu-hint">Reset</div>
+        <button class="menu-item" id="clearStateBtn" type="button" style="color: var(--drop);">Clear all progress…</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wizard-layout">
+  <article class="wizard-card" id="wizardCard">
+    <!-- step content rendered by JS -->
+  </article>
+  <nav class="wizard-nav" id="wizardNav">
+    <button class="btn ghost" id="prevBtn" type="button">← Previous</button>
+    <button class="btn ghost" id="deferBtn" type="button">Decide later</button>
+    <button class="btn primary" id="nextBtn" type="button">Save · Next →</button>
+  </nav>
+</main>
+
+<dialog id="onboardingModal" class="wizard-intro">
+  <div class="intro-step" data-step="1">
+    <h2>Reviewing our lesson concepts</h2>
+    <p>This worksheet walks you through the <strong>208 concepts</strong> we use to tag and find lessons — things like <em>plant parts</em>, <em>measurement</em>, or <em>figurative language</em>. You'll go through them one at a time.</p>
+    <p>For each concept you decide what happens to it: <strong>keep it</strong>, <strong>fold it into</strong> a similar concept, <strong>add a new</strong> one, or <strong>remove it</strong> if it doesn't belong. Those decisions give the team a clean, trusted list to tag lessons against.</p>
+    <p>You don't have to read every note. We've suggested an answer wherever we could — your job is to confirm it or change it.</p>
+  </div>
+  <div class="intro-step" data-step="2" hidden>
+    <h2>Three kinds of decisions</h2>
+    <ul class="intro-modes">
+      <li><strong>Quick check</strong> — Most concepts come with a suggested answer. Glance at it and either agree or pick something different.</li>
+      <li><strong>Your call</strong> — A handful need a closer look. The notes may lean one way, but nothing is filled in for you — the decision is yours.</li>
+      <li><strong>Group decision</strong> — A few small groups of closely-related concepts are decided together: you make one choice for the group and it carries down to each concept in it.</li>
+    </ul>
+    <p>The worksheet sorts every concept into the right kind for you — you'll see a small label on each one. The counts at the top tell you how many of each are left.</p>
+  </div>
+  <div class="intro-step" data-step="3" hidden>
+    <h2>Saving and sharing your work</h2>
+    <p>Your decisions save to this browser automatically as you go — the <strong>Saved locally</strong> badge in the top corner confirms it. You can close the tab and come back later.</p>
+    <p>When you're done — or want to hand off — open the <strong>⚙ Advanced</strong> menu (top right) and choose <strong>Save &amp; Export markdown ↓</strong>. That gives you a file you can send to the team. To resume from a saved file, use <strong>Import a saved markdown file…</strong> in the same menu.</p>
+    <p>That's everything. Ready when you are.</p>
+  </div>
+
+  <footer class="intro-footer">
+    <div class="step-indicator" aria-label="Step indicator">
+      <span class="dot active" data-step="1"></span>
+      <span class="dot" data-step="2"></span>
+      <span class="dot" data-step="3"></span>
+    </div>
+    <div class="intro-actions">
+      <button type="button" class="btn ghost" id="introSkip">Skip intro</button>
+      <button type="button" class="btn ghost" id="introBack" disabled>← Back</button>
+      <button type="button" class="btn primary" id="introNext">Next →</button>
+    </div>
+  </footer>
+</dialog>
+
+<script id="dataPayload" type="application/json">__DATA_PAYLOAD__</script>
+
+<script>
+"use strict";
+
+// ---------- Constants & state keys ----------
+
+const STORAGE_KEY = "concepts-worksheet-state-v1";
+const ONBOARD_KEY = "concepts-worksheet-onboard-v1";
+
+const VERDICTS = ["keep", "merge", "new", "drop"];
+
+// Reviewer-facing labels (W8). Distinct from `verdictLabel()` (export
+// vocab: "keep / merge → / new / drop"), which stays untouched.
+// "Fold into another" is the standalone form (Pick something else radios
+// with no target picked yet); when a target IS known, use the helper
+// below so the label reads "Fold into `target`" (matches design §6.1/§6.3).
+const REVIEWER_LABELS = {
+  keep: "Keep as concept",
+  merge: "Fold into another",
+  new: "Add new concept",
+  drop: "Remove",
+};
+
+function reviewerLabelWithTarget(verdict, target) {
+  if (verdict === "merge" && target) return `Fold into ${conceptDisplayName(target)}`;
+  return REVIEWER_LABELS[verdict] || verdict;
+}
+
+// M3.7: reviewer-facing concept name — the friendly canonical_label, falling
+// back to the raw key for anything without one. Display-only; the export
+// still writes canonical_key everywhere.
+function conceptDisplayName(key) {
+  const e = ENTRIES_BY_KEY.get(key);
+  return (e && e.parsed.canonical_label) || key;
+}
+
+// S2 sidecar: prefer the plain-language rewrite (plain_reasoning) merged in
+// by the build when present; fall back to the original claude_notes.
+// Display-only — the export path never reads these.
+function reasoningText(entry) {
+  return entry.parsed.plain_reasoning || entry.parsed.claude_notes || "";
+}
+function reasoningSummary(entry) {
+  return entry.parsed.plain_reasoning
+    ? (entry.parsed.plain_reasoning_summary || "")
+    : (entry.parsed.claude_notes_summary || "");
+}
+
+// M3.7: resolve reviewer-typed text (friendly label OR raw key, any case)
+// back to a canonical_key. Labels are unique across the 208 entries
+// (verified 2026-06-10). Returns null when nothing matches.
+function resolveConceptKey(text) {
+  const v = (text || "").trim();
+  if (!v) return null;
+  if (ENTRIES_BY_KEY.has(v)) return v;
+  const lower = v.toLowerCase();
+  for (const e of ENTRIES) {
+    if ((e.parsed.canonical_label || "").toLowerCase() === lower) return e.canonical_key;
+    if (e.canonical_key.toLowerCase() === lower) return e.canonical_key;
+  }
+  return null;
+}
+
+// Plain task labels shown on the mode chip (W22). Internal mode names
+// (Confirm/Decide/Resolve) stay in routing, CSS classes, and dataset.mode.
+const MODE_CHIP_LABELS = {
+  Confirm: "Quick check",
+  Decide: "Your call",
+  Resolve: "Group decision",
+};
+
+// ---------- Load payload ----------
+
+const payload = JSON.parse(document.getElementById("dataPayload").textContent);
+const ENTRIES = payload.entries;
+const TIER_ORDER = payload.tier_order;
+const TIER_LABELS = payload.tier_labels;
+const TIER_FREQ_RANGE = payload.tier_freq_range;
+const SUBJECT_ORDER = payload.subject_order;
+const VERDICT_CAPTIONS = payload.verdict_captions;
+const FIELD_LABELS = payload.field_labels;
+const CLUSTER_SIGNALS = payload.cluster_signals;
+const RAW_MARKDOWN_LINES = payload.raw_markdown_lines;
+
+const ENTRIES_BY_KEY = new Map();
+for (const entry of ENTRIES) {
+  ENTRIES_BY_KEY.set(entry.canonical_key, entry);
+}
+
+const CLUSTER_MEMBERSHIP = new Map(); // canonical_key -> [{id, label}]
+for (const signal of CLUSTER_SIGNALS) {
+  for (const member of signal.members) {
+    if (!CLUSTER_MEMBERSHIP.has(member)) {
+      CLUSTER_MEMBERSHIP.set(member, []);
+    }
+    CLUSTER_MEMBERSHIP.get(member).push({ id: signal.id, label: signal.label });
+  }
+}
+
+// ---------- State management ----------
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    if (parsed.schema_version !== 1) return defaultState();
+    // Migrate older state that pre-dated the wizard block.
+    parsed.wizard = parsed.wizard || defaultState().wizard;
+    if (!parsed.cluster_parents) parsed.cluster_parents = {}; // M2.1b migration
+    return parsed;
+  } catch (e) {
+    console.warn("Failed to load state", e);
+    return defaultState();
+  }
+}
+
+function defaultState() {
+  return {
+    schema_version: 1,
+    entries: {}, // canonical_key -> { verdict, merge_into, curriculum_notes }
+    cluster_signals: {}, // CON-NN -> option_index
+    cluster_parents: {}, // CON-NN -> canonical_key (only set for CON-24 pick-one; M2.1b)
+    wizard: {
+      step_index: 0,
+      deferred: [], // array of step ids (entry canonical_keys or cluster CON-ids)
+    },
+  };
+}
+
+let saveDebounce = null;
+function saveState() {
+  setBadgeDirty(true);
+  if (saveDebounce) clearTimeout(saveDebounce);
+  saveDebounce = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setBadgeDirty(false);
+    } catch (e) {
+      console.error("Failed to save state", e);
+      setBadgeDirty(true, "Save failed");
+    }
+  }, 250);
+}
+
+function getEntryState(key) {
+  return state.entries[key] || {};
+}
+
+function setEntryState(key, patch) {
+  const cur = state.entries[key] || {};
+  state.entries[key] = { ...cur, ...patch };
+  // M3.2: committing a verdict clears any "Decide later" flag — an entry is
+  // either decided OR deferred, never both, so the review summary lists it in
+  // exactly one bucket.
+  if (patch.verdict && state.wizard && state.wizard.deferred) {
+    state.wizard.deferred = state.wizard.deferred.filter((id) => id !== key);
+  }
+  saveState();
+}
+
+function getClusterState(id) {
+  return state.cluster_signals[id];
+}
+
+function setClusterState(id, optionIndex) {
+  if (optionIndex === null || optionIndex === undefined) {
+    delete state.cluster_signals[id];
+  } else {
+    state.cluster_signals[id] = optionIndex;
+  }
+  saveState();
+  updateDecisionDebt();
+  recomputeMismatchForCluster(id); // M2.2: a group-decision change flips/clears member flags
+}
+
+// ---------- DOM utils ----------
+
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "className") node.className = v;
+    else if (k === "dataset") {
+      for (const [dk, dv] of Object.entries(v)) node.dataset[dk] = dv;
+    } else if (k.startsWith("on") && typeof v === "function") {
+      node.addEventListener(k.slice(2).toLowerCase(), v);
+    } else if (v !== null && v !== undefined && v !== false) {
+      // Some DOM properties are read-only getters (e.g. HTMLInputElement.list).
+      // Try direct assignment first, fall back to setAttribute on failure.
+      if (k in node) {
+        try {
+          node[k] = v;
+        } catch (_e) {
+          node.setAttribute(k, v);
+        }
+      } else {
+        node.setAttribute(k, v);
+      }
+    }
+  }
+  for (const child of children.flat()) {
+    if (child === null || child === undefined || child === false) continue;
+    node.appendChild(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[c]);
+}
+
+// Lightweight inline-markdown for claude_notes display (backticks, *italic*, **bold**).
+function renderInlineMarkdown(text) {
+  if (!text) return "";
+  let html = escapeHtml(text);
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/(?<![*])\*([^*\n]+)\*(?![*])/g, "<em>$1</em>");
+  return html;
+}
+
+// ---------- Entry status helpers ----------
+
+function entryFilled(key) {
+  const s = getEntryState(key);
+  if (!s.verdict || !VERDICTS.includes(s.verdict)) return false;
+  // Merge verdict requires a non-empty merge_into target to count as
+  // complete — otherwise the exported worksheet would carry verdict=merge
+  // with no target, which violates the parser's "merge_into required iff
+  // verdict==merge" invariant.
+  if (s.verdict === "merge") {
+    return !!(s.merge_into && s.merge_into.trim());
+  }
+  return true;
+}
+
+function entryVerdict(key) {
+  const s = getEntryState(key);
+  return s.verdict || "<to_fill>";
+}
+
+function entryMergeInto(key) {
+  return getEntryState(key).merge_into || "";
+}
+
+function entryNeedsMergeTarget(key) {
+  const s = getEntryState(key);
+  return s.verdict === "merge" && !(s.merge_into && s.merge_into.trim());
+}
+
+function verdictLabel(v) {
+  switch (v) {
+    case "keep": return "keep";
+    case "merge": return "merge →";
+    case "new": return "new";
+    case "drop": return "drop";
+    default: return v;
+  }
+}
+
+function tierReviewDepth(tier) {
+  // Per W10: §11 "review carefully" / §12 "confirm or adjust" / §13
+  // "quick pass; pause when unsure." Per-mode copy is owned by the step
+  // renderers (M1.7+); this helper stays for renderer convenience.
+  if (tier === "11") return "review carefully";
+  if (tier === "12") return "confirm or adjust";
+  return "quick pass; pause when unsure";
+}
+
+// ---------- Mode routing (design §3) ----------
+
+function entryMode(entry) {
+  // Mode routing per design §3. Returns "Confirm" or "Decide".
+  // (Resolve is a cluster-step mode, not per-entry.)
+  if (entry.tier === "11") return "Decide";
+  const theme = entry.parsed.theme_overlap;
+  if (theme && theme.flagged) return "Decide";
+  const hasAiRec = entry.parsed.suggested_verdict
+    && VERDICTS.includes(entry.parsed.suggested_verdict);
+  const hasClusterRec = !!clusterPrefillCandidate(entry); // M1.10
+  if (!hasAiRec && !hasClusterRec) return "Decide";
+  // Revisit-as-Decide: previously committed verdict differs from AI rec.
+  const committed = getEntryState(entry.canonical_key).verdict;
+  if (committed && committed !== entry.parsed.suggested_verdict) return "Decide";
+  return "Confirm";
+}
+
+// ---------- Cluster auto-prefill matrix (design §17 / W20) ----------
+//
+// Per-cluster, per-option mapping from a resolved Resolve answer to its
+// derived member prefills. Three shapes:
+//   { verdict: "keep"|"merge"|"drop"|"new", merge_into?: <canonical_key> }
+//       → actionable prefill; W21 routes through displayedPrefillForEntry
+//   { info_only: true, caption_text: "..." }
+//       → caption-only notice on the entry step; no radio prefill
+//   (absent)
+//       → no derivation; member walks with its own AI prefill (or none)
+//
+// §11 members never receive a radio prefill (W17). The caption surfaces
+// in Decide mode regardless of derivation shape.
+
+// ---------- Plain-language display for group (cluster) signals (W22) ----------
+// Tool-owned plain names / questions / option recaps for the 5 group signals.
+// The LOCKED worksheet data (signal.label / signal.question / signal.options)
+// stays the source of truth for export + import and is NEVER edited here; this
+// map only changes what the reviewer SEES in the Resolve step + review summary.
+// options[] is index-aligned with the locked signal.options.
+const CLUSTER_DISPLAY = {
+  "CON-12": {
+    name: "Writing concepts",
+    question: "How should the writing concepts be organized?",
+    options: [
+      "Keep Writing as a catch-all and keep each sub-type as its own concept",
+      "Drop the general Writing and keep only the specific writing types",
+      "Fold the specific writing types into the general Writing",
+    ],
+  },
+  "CON-16": {
+    name: "Indigenous concepts",
+    question: "These Indigenous concepts also come up in the heritage review. How should they be handled here?",
+    options: [
+      "Keep these as separate concepts here",
+      "Handle these in the heritage review instead",
+      "Drop these here and rely on the heritage review",
+    ],
+  },
+  "CON-22": {
+    name: "Reading concepts",
+    question: "How should the reading concepts be organized?",
+    options: [
+      "Keep all six as separate concepts",
+      "Fold the specific reading types into Reading",
+      "Drop the general Reading and keep the specific reading types",
+    ],
+  },
+  "CON-23": {
+    name: "Measurement concepts",
+    question: "Should Measurement stay separate from its four specific types, or absorb them?",
+    options: [
+      "Keep Measurement and the four specific types as separate concepts",
+      "Fold the specific types into Measurement",
+    ],
+  },
+  "CON-24": {
+    name: "Figurative-language concepts",
+    question: "How should the figurative-language concepts be organized?",
+    options: [
+      "Keep Figurative Language and the three specific types as separate concepts",
+      "Fold the specific types into Figurative Language",
+      "Keep just one main concept",
+    ],
+  },
+};
+
+// Display accessors — fall back to the locked signal data if an id/index is
+// ever missing (keeps the UI safe; never touches the export/import path).
+function clusterDisplayName(signal) {
+  const d = CLUSTER_DISPLAY[signal.id];
+  return (d && d.name) || signal.label;
+}
+function clusterDisplayQuestion(signal) {
+  const d = CLUSTER_DISPLAY[signal.id];
+  return (d && d.question) || signal.question;
+}
+function clusterDisplayOption(signal, idx) {
+  const d = CLUSTER_DISPLAY[signal.id];
+  return (d && d.options && d.options[idx]) || signal.options[idx] || `Option ${idx}`;
+}
+
+const CLUSTER_DERIVATIONS = {
+  // CON-12 — Writing-cluster canonical shape
+  // Members: writing, narrative_writing, opinion_writing, descriptive_writing,
+  //          how_to_writing, recipe_writing, informational_writing
+  "CON-12": {
+    // 0: Keep `writing` 8 as catch-all + sub-types stay canonical — no prefill
+    0: {},
+    // 1: Drop `writing` 8 + sub-types are the only canonicals
+    1: {
+      writing: { verdict: "drop" },
+    },
+    // 2: Merge sub-types into `writing` 8 catch-all
+    2: {
+      writing: { verdict: "keep" },
+      narrative_writing: { verdict: "merge", merge_into: "writing" },
+      opinion_writing: { verdict: "merge", merge_into: "writing" },
+      descriptive_writing: { verdict: "merge", merge_into: "writing" },
+      how_to_writing: { verdict: "merge", merge_into: "writing" },
+      recipe_writing: { verdict: "merge", merge_into: "writing" },
+      informational_writing: { verdict: "merge", merge_into: "writing" },
+    },
+  },
+  // CON-16 — Indigenous cross-field overlap
+  // Members: indigenous_knowledge, indigenous_stories, native_american_history
+  "CON-16": {
+    0: {}, // Keep concepts-side as separate singleton canonicals — no prefill
+    // 1: Reframe under heritage cluster — cross-field, no prefill but caption
+    1: {
+      indigenous_knowledge: {
+        info_only: true,
+        caption_text: "Hold off — this is pending the heritage review.",
+      },
+      indigenous_stories: {
+        info_only: true,
+        caption_text: "Hold off — this is pending the heritage review.",
+      },
+      native_american_history: {
+        info_only: true,
+        caption_text: "Hold off — this is pending the heritage review.",
+      },
+    },
+    // 2: Drop concepts-side and rely on heritage-side tagging
+    2: {
+      indigenous_knowledge: { verdict: "drop" },
+      indigenous_stories: { verdict: "drop" },
+      native_american_history: { verdict: "drop" },
+    },
+  },
+  // CON-22 — Reading-cluster boundary
+  // Members: reading, reading_comprehension, narrative_reading, biography_reading,
+  //          informational_text, biography
+  "CON-22": {
+    0: {}, // Keep all 6 as distinct canonicals
+    // 1: Merge specific reading sub-types into `reading`
+    1: {
+      reading: { verdict: "keep" },
+      reading_comprehension: { verdict: "merge", merge_into: "reading" },
+      narrative_reading: { verdict: "merge", merge_into: "reading" },
+      biography_reading: { verdict: "merge", merge_into: "reading" },
+      informational_text: { verdict: "merge", merge_into: "reading" },
+      biography: { verdict: "merge", merge_into: "reading" },
+    },
+    // 2: Drop generic `reading` and keep specific sub-types
+    2: {
+      reading: { verdict: "drop" },
+    },
+  },
+  // CON-23 — Measurement-cluster boundary
+  // Members: measurement, volume, area, weight, perimeter
+  "CON-23": {
+    0: {}, // Keep parent + 4 specifics as canonicals
+    // 1: Merge specific sub-types into `measurement` parent
+    1: {
+      measurement: { verdict: "keep" },
+      volume: { verdict: "merge", merge_into: "measurement" },
+      area: { verdict: "merge", merge_into: "measurement" },
+      weight: { verdict: "merge", merge_into: "measurement" },
+      perimeter: { verdict: "merge", merge_into: "measurement" },
+    },
+  },
+  // CON-24 — Figurative-language cluster
+  // Members: figurative_language, similes, descriptive_language, sensory_details
+  "CON-24": {
+    0: {}, // Keep parent + 3 specifics
+    // 1: Merge specifics into figurative_language
+    1: {
+      figurative_language: { verdict: "keep" },
+      similes: { verdict: "merge", merge_into: "figurative_language" },
+      descriptive_language: { verdict: "merge", merge_into: "figurative_language" },
+      sensory_details: { verdict: "merge", merge_into: "figurative_language" },
+    },
+    // 2: Pick one canonical — derivations depend on which parent was picked.
+    //    Pre-parent-pick: caption-only on every member.
+    //    Post-parent-pick: see computeMemberDerivation's CON-24 special-case
+    //    (it reads getClusterParent("CON-24") and computes derivations
+    //    based on the picked parent).
+    2: "CON-24_PICK_ONE",  // sentinel; computeMemberDerivation handles
+  },
+};
+
+// state.cluster_parents holds the chosen parent canonical for CON-24's
+// pick-one option (index 2). getClusterParent reads it; setClusterParent
+// (M2.1b) writes/clears it via the inline reveal in renderClusterStep.
+// computeMemberDerivation's CON-24 special-case consumes it: no parent →
+// info_only caption; parent set → parent gets keep, others merge into it.
+function getClusterParent(id) {
+  return (state.cluster_parents && state.cluster_parents[id]) || null;
+}
+
+function setClusterParent(id, parent) {
+  if (!parent) {
+    delete state.cluster_parents[id];
+  } else {
+    state.cluster_parents[id] = parent;
+  }
+  saveState();
+  recomputeMismatchForCluster(id); // M2.2: changing the picked parent shifts CON-24 member derivations
+}
+
+function computeMemberDerivation(signalId, optionIndex, memberKey) {
+  const table = CLUSTER_DERIVATIONS[signalId];
+  if (!table) return null;
+  const optionMap = table[optionIndex];
+  if (!optionMap) return null;
+  // CON-24 option 2 special case (pick-one canonical with deferred parent)
+  if (optionMap === "CON-24_PICK_ONE") {
+    const parent = getClusterParent(signalId); // M2.1b wires setClusterParent
+    if (!parent) {
+      // Pre-parent-pick: caption-only on every member
+      return {
+        info_only: true,
+        caption_text: "Hold off — this is pending the group's main-concept pick.",
+      };
+    }
+    // Post-parent-pick: parent gets keep; others merge into parent
+    if (memberKey === parent) return { verdict: "keep" };
+    return { verdict: "merge", merge_into: parent };
+  }
+  return optionMap[memberKey] || null;
+}
+
+function clusterPrefillCandidate(entry) {
+  // Walks CLUSTER_SIGNALS to find the signal whose member list contains
+  // this entry. If found and the cluster has a committed answer, returns
+  // either an actionable prefill or an info-only caption per design §17.
+  // Returns null when: no enclosing cluster, cluster unanswered, or no
+  // derivation for this member under the committed option.
+  for (const sig of CLUSTER_SIGNALS) {
+    if (!sig.members || !sig.members.includes(entry.canonical_key)) continue;
+    const cs = getClusterState(sig.id);
+    if (cs === undefined) return null;
+    const derivation = computeMemberDerivation(sig.id, cs, entry.canonical_key);
+    if (!derivation) return null;
+    return { from: sig.id, ...derivation };
+  }
+  return null;
+}
+
+// ---------- Cluster-mismatch detection (M2.2) ----------
+// A "mismatch" = the reviewer's committed per-entry verdict disagrees with
+// the shape derived from the group decision they made for the enclosing
+// cluster. The flag (state.entries[key].cluster_mismatch) stores the signal
+// id (e.g. "CON-12") for internal bookkeeping ONLY — it is never shown to the
+// reviewer and never exported (W22 plain-language + empty-export SHA invariant).
+
+// Returns the cluster signal id if entry's committed verdict disagrees with
+// the cluster derivation; null otherwise. Info-only cluster prefills
+// (CON-16 option 1, CON-24 pre-parent-pick) are NOT mismatches — they're
+// informational, not commitments.
+function checkClusterMismatch(entry) {
+  const ev = state.entries[entry.canonical_key];
+  if (!ev || !ev.verdict) return null;
+  const cp = clusterPrefillCandidate(entry);
+  if (!cp || cp.info_only || !cp.verdict) return null;
+  // Disagreement: different verdict, or same merge verdict but different target.
+  if (ev.verdict !== cp.verdict) return cp.from;
+  if (ev.verdict === "merge" && (ev.merge_into || "") !== (cp.merge_into || "")) return cp.from;
+  return null;
+}
+
+function recomputeMismatchForEntry(entry) {
+  const key = entry.canonical_key;
+  const cm = checkClusterMismatch(entry);
+  const ev = state.entries[key] || {};
+  if (cm && ev.cluster_mismatch !== cm) {
+    // New mismatch (or a different signal) — set flag + queue the auto-open.
+    state.entries[key] = { ...ev, cluster_mismatch: cm };
+    saveState();
+    maybeAutoOpenNotesDrawer(entry, ev.verdict, "cluster-mismatch");
+  } else if (!cm && ev.cluster_mismatch) {
+    // Stale mismatch — clear the flag (verdict now matches, or the group
+    // decision changed/cleared so there's nothing to mismatch against).
+    const cleaned = { ...ev };
+    delete cleaned.cluster_mismatch;
+    state.entries[key] = cleaned;
+    saveState();
+  }
+}
+
+function recomputeMismatchForCluster(signalId) {
+  const sig = CLUSTER_SIGNALS.find((s) => s.id === signalId);
+  if (!sig || !sig.members) return;
+  for (const memberKey of sig.members) {
+    const entry = ENTRIES_BY_KEY.get(memberKey);
+    if (entry) recomputeMismatchForEntry(entry);
+  }
+}
+
+// Reviewer-facing yellow callout shown above the recommendation block on
+// every visit to an entry whose verdict mismatches its group decision.
+// Plain-language (W22): no CON-xx id, no "cluster shape" — says "group
+// decision you made for these related concepts".
+function renderClusterMismatchCallout(entry) {
+  const ev = state.entries[entry.canonical_key];
+  if (!ev || !ev.cluster_mismatch) return null;
+  const cp = clusterPrefillCandidate(entry);
+  let shapeText = "a different choice";
+  if (cp && cp.verdict) {
+    shapeText = reviewerLabelWithTarget(cp.verdict, cp.merge_into || null);
+  }
+  return el("div", { className: "cluster-mismatch-callout" },
+    el("p", { className: "callout-headline" },
+      document.createTextNode("⚠ Heads up — this differs from the group decision you made for these related concepts.")
+    ),
+    el("p", { className: "callout-detail" },
+      document.createTextNode(`That group decision points to: ${shapeText}. There's a note open below if you want to capture why.`)
+    )
+  );
+}
+
+// ---------- Render entry step (Confirm = M1.7; Decide = M1.8) ----------
+
+// Single source of truth for "what pre-fill does this entry's Confirm step
+// display, and where does it come from." MUST be called by BOTH the renderer
+// and any commit path so the user can't commit a value different from what
+// the screen shows. Becomes load-bearing in Batch 2 when cluster pre-fill
+// (W21) outranks AI pre-fill on cluster member entries.
+function displayedPrefillForEntry(entry) {
+  const s = getEntryState(entry.canonical_key);
+  if (s.verdict) {
+    return {
+      verdict: s.verdict,
+      merge_into: s.merge_into || null,
+      captionSource: "Saved",
+      isCommitted: true,
+    };
+  }
+  const clusterPrefill = clusterPrefillCandidate(entry);
+  let clusterInfoCaption = null;
+  if (clusterPrefill) {
+    if (clusterPrefill.info_only) {
+      // Info-only — surface caption separately; fall through to AI prefill
+      clusterInfoCaption = clusterPrefill.caption_text;
+    } else if (clusterPrefill.verdict) {
+      return {
+        verdict: clusterPrefill.verdict,
+        merge_into: clusterPrefill.merge_into || null,
+        captionSource: "Based on your earlier group decision",  // plain (W22) — NOT "Suggested from CON-xx"; source shown via this text, not an emoji
+        isCommitted: false,
+        clusterInfoCaption: null,
+      };
+    }
+  }
+  if (entry.parsed.suggested_verdict) {
+    return {
+      verdict: entry.parsed.suggested_verdict,
+      merge_into: entry.parsed.suggested_merge_target || null,
+      captionSource: "Claude recommends",
+      isCommitted: false,
+      clusterInfoCaption,
+    };
+  }
+  if (clusterInfoCaption) {
+    return {
+      verdict: null,
+      merge_into: null,
+      captionSource: null,
+      isCommitted: false,
+      clusterInfoCaption,
+    };
+  }
+  return null;
+}
+
+// M3.4: a group decision "overrides" an entry's own AI suggestion when the
+// displayed prefill is sourced from the group decision (W21 carry-down) AND
+// lands on a different verdict/target than the entry's own suggested_verdict.
+// In that case the entry's own claude_notes argue for the overridden
+// suggestion and would contradict the group-derived headline.
+const GROUP_OVERRIDE_REFRAME = "This suggestion follows the group decision you made for these related concepts. The original write-up for this one pointed a different way, so it isn't shown here.";
+
+function clusterOverridesOwnSuggestion(entry, prefill) {
+  if (!prefill || prefill.captionSource !== "Based on your earlier group decision") return false;
+  const ownV = entry.parsed.suggested_verdict || null;
+  if (!ownV) return false; // nothing of its own to override
+  if (ownV !== prefill.verdict) return true;
+  if (prefill.verdict === "merge"
+      && (entry.parsed.suggested_merge_target || null) !== (prefill.merge_into || null)) return true;
+  return false;
+}
+
+function renderConfirmStep(entry) {
+  const key = entry.canonical_key;
+  const prefill = displayedPrefillForEntry(entry);
+  if (!prefill) return renderDecideStep(entry);
+  const displayed = prefill.verdict;
+  const displayedTarget = prefill.merge_into;
+  const captionSource = prefill.captionSource;
+
+  const card = el("article", {
+    className: "wizard-step entry-step confirm-mode",
+    dataset: { key, mode: "Confirm", tier: entry.tier },
+  });
+
+  card.appendChild(renderStepHead(entry, "Confirm"));
+  card.appendChild(renderTierStrip(entry.tier));
+
+  // Info-only group notice (e.g. "Hold off — pending the heritage review").
+  // M2.1 wired this into renderDecideStep only, but every info-only member is
+  // Confirm-routed in the real corpus, so surface it here too (M2.1b scope add).
+  const clusterInfo = prefill.clusterInfoCaption || null;
+  if (clusterInfo) {
+    card.appendChild(
+      el("p", { className: "cluster-info-caption" },
+        document.createTextNode(clusterInfo)
+      )
+    );
+  }
+
+  if (entry.parsed.merge_aliases && entry.parsed.merge_aliases.length > 0) {
+    card.appendChild(renderMergeAliases(entry));
+  }
+
+  // M2.2: yellow callout when this committed verdict disagrees with the
+  // group decision derived for its cluster.
+  const confirmMismatch = renderClusterMismatchCallout(entry);
+  if (confirmMismatch) card.appendChild(confirmMismatch);
+
+  // M3.4: during a "hold off" group state, suppress the (now-premature)
+  // per-concept suggestion block — the cluster-info caption above is the
+  // operative message. The Agree button + "Pick something else" still show
+  // (reviewer can continue with these answers in mind). On a group-override,
+  // keep the headline but reframe the now-stale reasoning.
+  const holdOff = !!prefill.clusterInfoCaption;
+  if (!holdOff) {
+    const override = clusterOverridesOwnSuggestion(entry, prefill);
+    card.appendChild(renderClaudeRecommendation(entry, displayed, displayedTarget, captionSource, override));
+  }
+  card.appendChild(renderPrimaryAgreeAction(entry, displayed, displayedTarget));
+  card.appendChild(renderPickSomethingElse(entry, displayed));
+  card.appendChild(renderNotesDrawer(entry, /*forceOpen=*/false));
+
+  return card;
+}
+
+function renderDecideStep(entry) {
+  const key = entry.canonical_key;
+  const stateForEntry = getEntryState(key);
+  const verdict = stateForEntry.verdict;
+  const prefill = displayedPrefillForEntry(entry);
+  const clusterInfo = prefill?.clusterInfoCaption || null;
+  const holdOff = !!clusterInfo;                                   // M3.4
+  const override = clusterOverridesOwnSuggestion(entry, prefill);  // M3.4
+
+  const card = el("article", {
+    className: "wizard-step entry-step decide-mode",
+    dataset: { key, mode: "Decide", tier: entry.tier },
+  });
+
+  card.appendChild(renderStepHead(entry, "Decide"));
+  card.appendChild(renderTierStrip(entry.tier));
+  if (clusterInfo) {
+    card.appendChild(
+      el("p", { className: "cluster-info-caption" },
+        document.createTextNode(clusterInfo)
+      )
+    );
+  }
+  card.appendChild(renderWhyAttention(entry));
+
+  // Theme-overlap callout (more prominent on Decide steps)
+  if (entry.parsed.theme_overlap && entry.parsed.theme_overlap.flagged) {
+    const cb = el("div", { className: "theme-overlap-callout" });
+    // S3 dry-run fix: the parsed note is internal-voice (file paths, decision
+    // codes) — show a fixed plain explanation instead. The raw note still
+    // travels untouched in the export.
+    cb.innerHTML = `<strong>⚠ Also appears as a theme.</strong> This name also shows up in the library's separate list of themes. The team will sort out that overlap later — here, just decide whether it earns its place as a concept.`;
+    card.appendChild(cb);
+  }
+
+  if (entry.parsed.merge_aliases && entry.parsed.merge_aliases.length > 0) {
+    card.appendChild(renderMergeAliases(entry));
+  }
+
+  // M2.2: yellow callout when this committed verdict disagrees with the
+  // group decision derived for its cluster.
+  const decideMismatch = renderClusterMismatchCallout(entry);
+  if (decideMismatch) card.appendChild(decideMismatch);
+
+  // Claude / cluster recommendation if any — shown but radio stays blank.
+  // (info-only prefills have verdict === null → fall to the notes branch; the
+  //  .cluster-info-caption inserted above already carries their explanation.)
+  // M3.4: during a "hold off" group state, suppress the (now-premature)
+  // suggestion entirely; on a group-override, keep the headline but reframe
+  // the now-stale per-concept reasoning.
+  if (holdOff) {
+    // hold-off: the caption above is the operative message; show no suggestion.
+  } else if (prefill && prefill.verdict) {
+    const v = prefill.verdict;
+    const t = prefill.merge_into;
+    const source = prefill.captionSource;                 // plain caption (W22) | "Claude recommends"
+    const wrap = el("div", { className: "claude-rec" });
+    wrap.appendChild(el("p", { className: "claude-rec-headline" },
+      el("span", {}, "💡 "),
+      el("strong", {}, `${source}: `),
+      document.createTextNode(reviewerLabelWithTarget(v, v === "merge" ? (t || null) : null)),
+    ));
+    if (override) {
+      wrap.appendChild(el("p", { className: "claude-rec-reframe" }, GROUP_OVERRIDE_REFRAME));
+    } else if (reasoningText(entry)) {
+      const body = el("div", { className: "claude-rec-body-expanded" });
+      body.innerHTML = renderInlineMarkdown(reasoningText(entry));
+      wrap.appendChild(body);
+    }
+    card.appendChild(wrap);
+  } else if (reasoningText(entry)) {
+    // No suggestion but notes exist — still show them.
+    const wrap = el("div", { className: "claude-rec" });
+    const body = el("div", { className: "claude-rec-body-expanded" });
+    body.innerHTML = renderInlineMarkdown(reasoningText(entry));
+    wrap.appendChild(body);
+    card.appendChild(wrap);
+  }
+
+  // ---- Verdict radio group (blank — no pre-fill, even if cluster suggestion present) ----
+  // M3.1: the legend must not claim "no suggested answer" when a recommendation
+  // block was rendered above (the `prefill && prefill.verdict` branch). On these
+  // high-stakes cards we DO show a suggestion but leave the radio blank so the
+  // reviewer makes the call; say so instead of contradicting the visible rec.
+  const fs = el("fieldset", { className: "verdict-options-group" });
+  const hasShownRec = !!(prefill && prefill.verdict) && !holdOff;  // M3.4: hold-off suppresses the shown rec
+  fs.appendChild(el("legend", {},
+    hasShownRec
+      ? "Your call — confirm the suggestion above, or choose differently:"
+      : "Your call — nothing's filled in for you here:"
+  ));
+  for (const v of ["keep", "merge", "drop"]) {
+    const label = el("label", { className: "verdict-option" });
+    label.appendChild(el("input", {
+      type: "radio",
+      name: `decide-${key}`,
+      checked: verdict === v,
+      onchange: () => onDecideVerdict(entry, v),
+    }));
+    label.appendChild(el("span", {}, REVIEWER_LABELS[v]));
+    fs.appendChild(label);
+  }
+  card.appendChild(fs);
+  const newLink = el("button", {
+    type: "button",
+    className: "btn linkish",
+    onclick: () => onDecideVerdict(entry, "new"),
+  }, "Less common: add new concept");
+  card.appendChild(newLink);
+
+  // Notes drawer (M1.12)
+  card.appendChild(renderNotesDrawer(entry, false));
+
+  return card;
+}
+
+function renderWhyAttention(entry) {
+  // Priority order per design §3.
+  const theme = entry.parsed.theme_overlap;
+  let reason = null;
+  if (theme && theme.flagged) {
+    reason = "Also shows up as a theme — double-check it belongs here as a concept.";
+  } else if (clusterPrefillCandidate(entry)) {
+    // Plain-language (W22): say "group," never "cluster." Reachable once a
+    // group decision is made (e.g. a §11 member like measurement after CON-23).
+    reason = "Part of a group you've already made a decision about — make sure this concept fits.";
+  } else if (entry.tier === "11") {
+    reason = "A foundational concept — worth a careful look.";
+  } else if (!entry.parsed.suggested_verdict) {
+    reason = "Nothing's filled in for you — your judgment needed.";
+  }
+  const wrap = el("div", { className: "why-attention" });
+  if (reason) {
+    wrap.appendChild(el("span", { className: "why-label" }, "Why this needs attention: "));
+    wrap.appendChild(document.createTextNode(reason));
+  }
+  return wrap;
+}
+
+function renderStepHead(entry, mode) {
+  const totalSteps = stepSequence.length;
+  const stepNum = state.wizard.step_index + 1;
+  const head = el("header", { className: "step-head" });
+  head.appendChild(el("span", { className: `mode-chip mode-${mode.toLowerCase()}` }, MODE_CHIP_LABELS[mode] || mode));
+  // M3.8e: the step total (213) exceeds the concept count (208) because the 5
+  // group-decision pages are steps too — say so on hover.
+  head.appendChild(el("span", {
+    className: "step-of",
+    title: stepCountHint(),
+  }, `step ${stepNum} of ${totalSteps}`));
+  head.appendChild(el("h2", { className: "step-title" },
+    entry.parsed.canonical_label || entry.canonical_key));
+  // M3.7: the raw snake_case key is no longer shown on the card — the friendly
+  // title above is the concept's name everywhere reviewers look.
+  const freq = entry.parsed.frequency_primary;
+  head.appendChild(el("div", { className: "step-key-row" },
+    el("span", { className: "step-meta" },
+      `${freq} appearance${freq === 1 ? "" : "s"} · ${entry.parsed.recommended_primary_subject || "—"}`),
+  ));
+  return head;
+}
+
+function stepCountHint() {
+  const clusterSteps = stepSequence.filter((s) => s.kind === "cluster").length;
+  return `${ENTRIES.length} concepts plus ${clusterSteps} group-decision pages = ${stepSequence.length} steps`;
+}
+
+function renderTierStrip(tier) {
+  const strip = el("div", { className: `tier-strip tier-strip-${tier}` });
+  if (tier === "11") strip.textContent = "Worth a careful look.";
+  else if (tier === "12") strip.textContent = "A quick confirm or adjust.";
+  else strip.textContent = "Quick pass — pause if something seems off.";
+  return strip;
+}
+
+function renderClaudeRecommendation(entry, displayed, target, captionSource, override) {
+  const wrap = el("div", { className: "claude-rec" });
+  const label = displayed
+    ? reviewerLabelWithTarget(displayed, target)
+    : "(no recommendation)";
+  wrap.appendChild(el("p", { className: "claude-rec-headline" },
+    el("span", {}, "💡 "),
+    el("strong", {}, `${captionSource}: `),
+    document.createTextNode(label),
+  ));
+  if (override) {
+    // M3.4: the entry's own reasoning argued a different suggestion; it's now
+    // stale under the group-derived headline. Reframe instead of showing it.
+    wrap.appendChild(el("p", { className: "claude-rec-reframe" }, GROUP_OVERRIDE_REFRAME));
+    return wrap;
+  }
+  const summary = reasoningSummary(entry);
+  if (summary) {
+    wrap.appendChild(el("p", { className: "claude-rec-summary" }, summary));
+  }
+  if (reasoningText(entry) && reasoningText(entry) !== summary) {
+    const more = el("details", { className: "claude-rec-more" });
+    // M3.8a: the arrow comes from the summary::before CSS — a literal "▸"
+    // here rendered a "▸ ▸ more" double arrow.
+    more.appendChild(el("summary", {}, "more"));
+    const body = el("div", { className: "claude-rec-more-body" });
+    body.innerHTML = renderInlineMarkdown(reasoningText(entry));
+    more.appendChild(body);
+    wrap.appendChild(more);
+  }
+  return wrap;
+}
+
+function renderPrimaryAgreeAction(entry, displayed, target) {
+  const key = entry.canonical_key;
+  const wrap = el("div", { className: "primary-action-row" });
+  if (!displayed) {
+    wrap.appendChild(el("p", { className: "muted" }, "(no pre-fill — pick below)"));
+    return wrap;
+  }
+  const label = reviewerLabelWithTarget(displayed, target);
+  // M3.8b: with no named target there's nothing concrete to "agree" to — the
+  // click opens the picker, so the button says that instead.
+  const btnText = (displayed === "merge" && !target)
+    ? "Choose which concept to fold this into…"
+    : `✓ Agree — ${label}`;
+  const btn = el("button", {
+    type: "button",
+    className: "btn primary primary-agree",
+    onclick: () => {
+      if (displayed === "merge" && !target) {
+        openMergePicker(entry, /*defaultTarget=*/null);
+        return;
+      }
+      const patch = { verdict: displayed };
+      if (displayed === "merge") patch.merge_into = target;
+      setEntryState(key, patch);
+      onCommit(key);
+    },
+  }, btnText);
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+function renderPickSomethingElse(entry, displayed) {
+  const key = entry.canonical_key;
+  const wrap = el("details", { className: "pick-other" });
+  wrap.appendChild(el("summary", {}, "Pick something else ▾"));
+  const group = el("div", { className: "verdict-options-group" });
+  for (const v of ["keep", "merge", "drop"]) {
+    if (v === displayed) continue;
+    const opt = el("label", { className: "verdict-option" });
+    opt.appendChild(el("input", {
+      type: "radio",
+      name: `pick-other-${key}`,
+      onchange: () => onPickOtherVerdict(entry, v),
+    }));
+    opt.appendChild(el("span", {}, REVIEWER_LABELS[v]));
+    group.appendChild(opt);
+  }
+  wrap.appendChild(group);
+  // "Less common: add new concept" link (W9)
+  const newLink = el("button", {
+    type: "button",
+    className: "btn linkish",
+    onclick: () => onPickOtherVerdict(entry, "new"),
+  }, "Less common: add new concept");
+  wrap.appendChild(newLink);
+  return wrap;
+}
+
+function renderMergeAliases(entry) {
+  const block = el("div", { className: "merge-aliases-block" });
+  block.appendChild(el("div", { className: "label" }, "Lessons also use these names for it:"));
+  const ul = el("ul");
+  for (const a of entry.parsed.merge_aliases) {
+    ul.appendChild(el("li", {},
+      el("span", {}, `“${a.alias}”`),
+      el("span", { className: "count" }, ` (${a.count})`),
+    ));
+  }
+  block.appendChild(ul);
+  return block;
+}
+
+// ---------- Commit + override handlers ----------
+
+function onCommit(key) {
+  // M2.2: detect/clear cluster mismatch on every commit path. Idempotent —
+  // if a caller (e.g. commitMerge) already ran recomputeMismatchForEntry, the
+  // flag already matches and this is a no-op.
+  const entry = ENTRIES_BY_KEY.get(key);
+  if (entry) recomputeMismatchForEntry(entry);
+  updateDecisionDebt();
+  renderCurrentStep();
+}
+
+// S3 dry-run fix: "add new concept" used to commit in one click, silently
+// replacing any saved decision. Confirm first — covers the link on both step
+// kinds and the N keyboard shortcut (all route through the two handlers below).
+function confirmAddNewVerdict(entry) {
+  const cur = state.entries[entry.canonical_key] || {};
+  const replaces = cur.verdict && cur.verdict !== "new"
+    ? ` This replaces your saved decision (“${reviewerLabelWithTarget(cur.verdict, cur.merge_into || null)}”).`
+    : "";
+  return confirm(
+    `Record “add new concept” for ${conceptDisplayName(entry.canonical_key)}?`
+    + `${replaces} A note box will open so you can describe the new concept.`
+  );
+}
+
+function onPickOtherVerdict(entry, v) {
+  if (v === "merge") {
+    openMergePicker(entry, entry.parsed.suggested_merge_target);
+    return;
+  }
+  if (v === "new" && !confirmAddNewVerdict(entry)) return;
+  setEntryState(entry.canonical_key, { verdict: v });
+  maybeAutoOpenNotesDrawer(entry, v, "override");
+  onCommit(entry.canonical_key);
+}
+
+function onDecideVerdict(entry, v) {
+  if (v === "merge") {
+    openMergePicker(entry, entry.parsed.suggested_merge_target);
+    return;
+  }
+  if (v === "new" && !confirmAddNewVerdict(entry)) return;
+  setEntryState(entry.canonical_key, { verdict: v });
+  // Auto-open notes drawer on new/drop and on override (M1.12)
+  if (v === "new" || v === "drop") {
+    maybeAutoOpenNotesDrawer(entry, v, "new-or-drop");
+  } else if (entry.parsed.suggested_verdict && v !== entry.parsed.suggested_verdict) {
+    maybeAutoOpenNotesDrawer(entry, v, "override");
+  }
+  onCommit(entry.canonical_key);
+}
+
+function openMergePicker(entry, defaultTarget) {
+  // Render the picker as a modal-style overlay inside the current step card.
+  // The wizard step card holds the picker; commit triggers re-render of the step.
+  const card = document.getElementById("wizardCard");
+  // Remove any existing picker
+  for (const old of card.querySelectorAll(".merge-picker")) old.remove();
+
+  const picker = el("div", { className: "merge-picker" });
+  picker.appendChild(el("h3", {}, `Fold ${conceptDisplayName(entry.canonical_key)} into…`));
+
+  if (defaultTarget && ENTRIES_BY_KEY.has(defaultTarget)) {
+    // High-confidence shortcut
+    const shortcut = el("div", { className: "merge-shortcut" });
+    shortcut.appendChild(el("p", {}, "Claude suggests:"));
+    const confirmBtn = el("button", {
+      type: "button",
+      className: "btn primary merge-shortcut-confirm",
+      onclick: () => commitMerge(entry.canonical_key, defaultTarget, picker),
+    }, `→ ${conceptDisplayName(defaultTarget)} — Confirm`);
+    shortcut.appendChild(confirmBtn);
+    picker.appendChild(shortcut);
+    picker.appendChild(el("p", { className: "muted" }, "Or pick a different concept ▾"));
+  }
+
+  // Autocomplete fallback. M3.7: reviewers type the friendly concept name
+  // (the datalist now carries labels); resolveConceptKey maps it back to the
+  // canonical_key for the actual commit.
+  const input = el("input", {
+    type: "text",
+    className: "merge-input",
+    placeholder: "Type a concept name…",
+    list: "all-canonical-keys",
+    autocomplete: "off",
+  });
+  picker.appendChild(input);
+
+  const actions = el("div", { className: "merge-actions" });
+  const cancelBtn = el("button", {
+    type: "button",
+    className: "btn ghost",
+    onclick: () => { picker.remove(); },
+  }, "Cancel");
+  const confirmBtn = el("button", {
+    type: "button",
+    className: "btn primary",
+    disabled: true,
+    onclick: () => commitMerge(entry.canonical_key, resolveConceptKey(input.value), picker),
+  }, "Confirm");
+  input.addEventListener("input", () => {
+    const resolved = resolveConceptKey(input.value);
+    confirmBtn.disabled = !resolved || resolved === entry.canonical_key;
+  });
+  actions.appendChild(cancelBtn);
+  actions.appendChild(confirmBtn);
+  picker.appendChild(actions);
+
+  card.appendChild(picker);
+  input.focus();
+}
+
+function commitMerge(key, target, pickerEl) {
+  if (!target || !ENTRIES_BY_KEY.has(target) || target === key) {
+    alert("That's not a concept this can fold into — try picking from the list that appears as you type.");
+    return;
+  }
+  setEntryState(key, { verdict: "merge", merge_into: target });
+  pickerEl.remove();
+  // Auto-open notes drawer when committed merge differs from Claude's suggestion.
+  // MUST run BEFORE onCommit so the auto-open marker is set before
+  // renderCurrentStep reads it. Agreement-with-suggestion does not auto-open.
+  const entry = ENTRIES_BY_KEY.get(key);
+  // M2.2: detect mismatch first. A cluster-mismatch auto-open takes precedence
+  // over the override prompt (different prompt text), so suppress the override
+  // auto-open when a mismatch flag was just set by the recompute.
+  recomputeMismatchForEntry(entry);
+  const isOverride = entry.parsed.suggested_verdict !== "merge"
+    || (entry.parsed.suggested_merge_target && target !== entry.parsed.suggested_merge_target);
+  if (isOverride && !state.entries[key]?.cluster_mismatch) {
+    maybeAutoOpenNotesDrawer(entry, "merge", "override");
+  }
+  onCommit(key);
+}
+
+function renderNotesDrawer(entry, forceOpen) {
+  const key = entry.canonical_key;
+  const cur = getEntryState(key).curriculum_notes || "";
+  const open = forceOpen || autoOpenSet.has(key) || cur.length > 0;
+  const drawer = el("details", { className: "notes-drawer", open });
+  drawer.appendChild(el("summary", {}, cur ? "✎ Note added (click to edit)" : "+ Add a note"));
+
+  const prompt = autoOpenPrompts.get(key);
+  if (prompt) {
+    drawer.appendChild(el("p", { className: "drawer-prompt" }, prompt));
+  }
+
+  const textarea = el("textarea", {
+    className: "notes-input",
+    placeholder: "Optional. Capture your thinking, especially for ambiguous calls.",
+    value: cur,
+    oninput: (ev) => onNotesChange(key, "curriculum_notes", ev.target.value),
+  });
+  drawer.appendChild(textarea);
+  return drawer;
+}
+
+// UI-only sets (not in state) tracking which entries should have the drawer
+// auto-opened on next render.
+const autoOpenSet = new Set();
+const autoOpenPrompts = new Map();
+
+function maybeAutoOpenNotesDrawer(entry, verdict, trigger) {
+  const key = entry.canonical_key;
+  let prompt = null;
+  if (trigger === "override") {
+    prompt = "Worth noting why?";
+  } else if (trigger === "new-or-drop") {
+    prompt = "Optional rationale for the team.";
+  } else if (trigger === "cluster-mismatch") {
+    // M2.2 — plain-language (W22): "group decision" not "cluster shape".
+    prompt = "Heads up — this differs from the group decision you made for these related concepts. Worth a quick note?";
+  }
+  if (prompt) {
+    autoOpenSet.add(key);
+    autoOpenPrompts.set(key, prompt);
+  }
+}
+
+function onNotesChange(key, field, value) {
+  setEntryState(key, { [field]: value });
+  // Note: setEntryState already calls saveState (debounced)
+}
+
+function renderClusterSignalsPanel() {
+  // Stub — filled in M1.10 (cluster Resolve step renderer).
+}
+
+// ---------- Datalist for merge_into autocomplete ----------
+
+function ensureCanonicalKeysDatalist() {
+  if (document.getElementById("all-canonical-keys")) return;
+  const dl = el("datalist", { id: "all-canonical-keys" });
+  // M3.7: option values are the friendly labels (what reviewers see + what
+  // gets inserted on pick). Both consumers translate back: onJumpToEntry
+  // matches labels, the merge picker resolves via resolveConceptKey.
+  for (const e of ENTRIES) {
+    dl.appendChild(el("option", { value: e.parsed.canonical_label || e.canonical_key }));
+  }
+  document.body.appendChild(dl);
+}
+
+// ---------- Saved badge ----------
+
+function setBadgeDirty(dirty, message) {
+  const badge = document.getElementById("savedBadge");
+  if (!badge) return;
+  badge.classList.toggle("dirty", dirty);
+  badge.textContent = dirty ? (message || "Saving…") : "Saved locally";
+}
+
+// ---------- Export to markdown ----------
+
+function buildExportMarkdown() {
+  // Walk raw_markdown_lines. For each line, check if any entry has a field
+  // whose lineno matches; if so, swap in the user-edited value. Otherwise
+  // emit the line unchanged.
+  const lineEdits = new Map(); // 1-based lineno -> replacement_line
+  const insertions = new Map(); // 1-based lineno -> list_of_extra_lines_after
+  function insertAfterLine(lineno, line) {
+    if (!insertions.has(lineno)) insertions.set(lineno, []);
+    insertions.get(lineno).push(line);
+  }
+
+  for (const entry of ENTRIES) {
+    const entryState = getEntryState(entry.canonical_key);
+    const verdict = entryState.verdict;
+    const curriculumNotes = entryState.curriculum_notes;
+    const mergeInto = entryState.merge_into;
+
+    if (verdict && VERDICTS.includes(verdict)) {
+      const fv = entry.fields.verdict;
+      if (fv) {
+        lineEdits.set(fv.lineno, `- verdict: ${verdict}`);
+      }
+    }
+
+    if (curriculumNotes !== undefined && curriculumNotes !== null) {
+      const fv = entry.fields.curriculum_notes;
+      if (fv) {
+        const trimmed = curriculumNotes.replace(/\n+/g, " ").trim();
+        const valueOut = trimmed === "" ? "<to_fill>" : trimmed;
+        lineEdits.set(fv.lineno, `- curriculum_notes: ${valueOut}`);
+      }
+    }
+
+    if (verdict === "merge" && mergeInto && mergeInto.trim()) {
+      // Insert / update merge_into. If the entry has no merge_into field
+      // already, append it after the merge_aliases line (or after
+      // theme_overlap if merge_aliases is missing).
+      const trimmed = mergeInto.trim();
+      const existing = entry.fields.merge_into;
+      if (existing) {
+        lineEdits.set(existing.lineno, `- merge_into: ${trimmed}`);
+      } else {
+        const anchorField = entry.fields.merge_aliases || entry.fields.theme_overlap;
+        if (anchorField) {
+          insertAfterLine(anchorField.lineno, `- merge_into: ${trimmed}`);
+        }
+      }
+    }
+  }
+
+  const out = [];
+  // Add cluster-signal verdict comments at the very top after the H1 if any
+  // are answered (so the maintainer sees them without having to scroll).
+  // We do this by injecting an HTML comment block AFTER the first line.
+  const clusterComments = clusterSignalCommentBlock();
+
+  for (let i = 0; i < RAW_MARKDOWN_LINES.length; i++) {
+    const lineno = i + 1;
+    const original = RAW_MARKDOWN_LINES[i];
+    if (lineEdits.has(lineno)) {
+      out.push(lineEdits.get(lineno));
+    } else {
+      out.push(original);
+    }
+    if (insertions.has(lineno)) {
+      for (const extra of insertions.get(lineno)) out.push(extra);
+    }
+    // Inject cluster-signal comment block right after the H1 title (line 1).
+    if (i === 0 && clusterComments) {
+      out.push(...clusterComments);
+    }
+  }
+  return out.join("\n") + "\n";
+}
+
+function clusterSignalCommentBlock() {
+  const answered = CLUSTER_SIGNALS.filter((s) => getClusterState(s.id) != null);
+  if (answered.length === 0) return null;
+  const lines = ["", "<!-- Cluster-signal verdicts captured by curriculum-team review tool:"];
+  for (const s of answered) {
+    const idx = getClusterState(s.id);
+    lines.push(`     - ${s.id} ${s.label}: ${s.options[idx]}`);
+  }
+  lines.push("-->");
+  return lines;
+}
+
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime || "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function onExport() {
+  const md = buildExportMarkdown();
+  downloadFile(payload.worksheet_filename, md, "text/markdown;charset=utf-8");
+  // M3.5: confirm the download so reviewers don't re-click (it was silent
+  // before — the dry run found multiple duplicate exports).
+  alert(
+    "Saved to your Downloads folder as:\n" + payload.worksheet_filename
+    + "\n\nAttach this file to your email to the team. You can keep working — "
+    + "your progress stays saved in this browser."
+  );
+}
+
+function onDownloadJson() {
+  const payloadOut = {
+    schema_version: 1,
+    saved_at: new Date().toISOString(),
+    state,
+  };
+  downloadFile("concepts-worksheet-progress.json", JSON.stringify(payloadOut, null, 2), "application/json");
+}
+
+// ---------- Import ----------
+
+function onImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const text = reader.result;
+      if (typeof text !== "string") throw new Error("Imported file is not text");
+      // Best-effort import: parse the markdown for per-entry edits + the
+      // cluster-signal comment block at the top. Legacy reviewer_note
+      // lines (W5: removed) are ignored without raising — see parser
+      // notes above.
+      const importedEntries = parseEntryEditsFromMarkdown(text);
+      const importedClusterSignals = parseClusterSignalsFromMarkdown(text);
+
+      let entryCount = 0;
+      for (const [key, patch] of Object.entries(importedEntries)) {
+        state.entries[key] = { ...(state.entries[key] || {}), ...patch };
+        entryCount++;
+      }
+      let clusterCount = 0;
+      for (const [id, optionIndex] of Object.entries(importedClusterSignals)) {
+        state.cluster_signals[id] = optionIndex;
+        clusterCount++;
+      }
+      saveState();
+      renderCurrentStep();
+      updateDecisionDebt();
+      alert(
+        `Imported: ${entryCount} concept ${entryCount === 1 ? "decision" : "decisions"} `
+        + `and ${clusterCount} group ${clusterCount === 1 ? "decision" : "decisions"} restored.`
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Import failed: " + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseEntryEditsFromMarkdown(text) {
+  const lines = text.split(/\r?\n/);
+  const result = {}; // canonical_key -> {verdict, curriculum_notes, merge_into}
+  let currentKey = null;
+  for (const line of lines) {
+    const heading = line.match(/^### `([^`]+)`\s*$/);
+    if (heading) {
+      currentKey = heading[1];
+      if (currentKey.startsWith("<")) currentKey = null; // skip placeholders
+      continue;
+    }
+    if (!currentKey) continue;
+    const fieldMatch = line.match(/^- (verdict|curriculum_notes|merge_into):\s*(.*?)\s*$/);
+    if (fieldMatch) {
+      const field = fieldMatch[1];
+      const value = fieldMatch[2];
+      // Skip placeholder rows so unmodified entries don't create empty
+      // shells in state.entries on roundtrip import.
+      if (value === "<to_fill>") continue;
+      if (field === "verdict" && !VERDICTS.includes(value)) continue;
+      if (!result[currentKey]) result[currentKey] = {};
+      result[currentKey][field] = value;
+    }
+  }
+  return result;
+}
+
+function parseClusterSignalsFromMarkdown(text) {
+  // The export injects an HTML comment block after the worksheet's H1 of the
+  // shape:
+  //
+  //   <!-- Cluster-signal verdicts captured by curriculum-team review tool:
+  //        - CON-12 Writing-cluster canonical shape: Keep `writing` 8 ...
+  //        - CON-22 Reading-cluster boundary: Keep all 6 as distinct canonicals
+  //   -->
+  //
+  // Parse those lines back into { "CON-12": option_index, ... }.
+  const result = {};
+  const match = text.match(/<!--\s*Cluster-signal verdicts[\s\S]*?-->/);
+  if (!match) return result;
+  const block = match[0];
+  const lineRe = /-\s+(CON-\d+)\b[^:]*:\s*(.+?)\s*$/gm;
+  let lineMatch;
+  while ((lineMatch = lineRe.exec(block)) !== null) {
+    const id = lineMatch[1];
+    const optionText = lineMatch[2].trim();
+    const signal = CLUSTER_SIGNALS.find((s) => s.id === id);
+    if (!signal) continue;
+    const idx = signal.options.findIndex((o) => o === optionText);
+    if (idx >= 0) result[id] = idx;
+  }
+  return result;
+}
+
+// ---------- Clear state ----------
+
+function onClearState() {
+  if (!confirm("Clear ALL progress? This deletes every saved decision and note from this browser. Cannot be undone.")) return;
+  state = defaultState();
+  localStorage.removeItem(STORAGE_KEY);
+  renderCurrentStep();
+  updateDecisionDebt();
+}
+
+// ---------- Onboarding ----------
+
+function maybeShowOnboarding() {
+  const dismissed = localStorage.getItem(ONBOARD_KEY);
+  if (!dismissed) showOnboarding();
+}
+
+let introStep = 1;
+
+function showOnboarding() {
+  const dlg = document.getElementById("onboardingModal");
+  if (!dlg) return;
+  introStep = 1;
+  syncIntroStep();
+  if (typeof dlg.showModal === "function") dlg.showModal();
+  else dlg.setAttribute("open", "");
+}
+
+function syncIntroStep() {
+  const dlg = document.getElementById("onboardingModal");
+  if (!dlg) return;
+  dlg.querySelectorAll(".intro-step").forEach((stepEl) => {
+    const step = parseInt(stepEl.dataset.step, 10);
+    if (step === introStep) stepEl.removeAttribute("hidden");
+    else stepEl.setAttribute("hidden", "");
+  });
+  dlg.querySelectorAll(".step-indicator .dot").forEach((dot) => {
+    const step = parseInt(dot.dataset.step, 10);
+    dot.classList.toggle("active", step === introStep);
+  });
+  const backBtn = dlg.querySelector("#introBack");
+  const nextBtn = dlg.querySelector("#introNext");
+  if (backBtn) backBtn.disabled = introStep === 1;
+  if (nextBtn) nextBtn.textContent = introStep === 3 ? "Get started" : "Next →";
+}
+
+function introNext() {
+  if (introStep >= 3) { dismissOnboarding(true); return; }
+  introStep += 1;
+  syncIntroStep();
+}
+
+function introBack() {
+  if (introStep <= 1) return;
+  introStep -= 1;
+  syncIntroStep();
+}
+
+function dismissOnboarding(persist) {
+  const dlg = document.getElementById("onboardingModal");
+  if (typeof dlg.close === "function") dlg.close();
+  else dlg.removeAttribute("open");
+  if (persist) localStorage.setItem(ONBOARD_KEY, "1");
+}
+
+// ---------- Advanced menu ----------
+
+function toggleAdvancedMenu(show) {
+  const menu = document.getElementById("advancedMenu");
+  if (show === undefined) menu.classList.toggle("shown");
+  else menu.classList.toggle("shown", show);
+}
+
+// ---------- Wire-up ----------
+
+function init() {
+  // Build step sequence (entries in tier order; cluster Resolve steps
+  // interleaved before their first member). Stubbed in M1.6.
+  buildStepSequence();
+
+  // Render the current step into #wizardCard. Stubbed in M1.6.
+  renderCurrentStep();
+  updateDecisionDebt();
+
+  // Top-bar buttons
+  document.getElementById("advancedBtn").addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    toggleAdvancedMenu();
+  });
+  document.addEventListener("click", (ev) => {
+    if (!ev.target.closest("#advancedMenu") && !ev.target.closest("#advancedBtn")) {
+      toggleAdvancedMenu(false);
+    }
+  });
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    onExport();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("importBtn").addEventListener("click", () => {
+    document.getElementById("importInput").click();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("importInput").addEventListener("change", (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    onImport(f);
+    ev.target.value = ""; // Reset so the same file can be re-imported.
+  });
+  document.getElementById("downloadJsonBtn").addEventListener("click", () => {
+    onDownloadJson();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("showOnboardingBtn").addEventListener("click", () => {
+    showOnboarding();
+    toggleAdvancedMenu(false);
+  });
+  document.getElementById("clearStateBtn").addEventListener("click", () => {
+    onClearState();
+    toggleAdvancedMenu(false);
+  });
+
+  // The end screen (M1.15) renders a second, more prominent Save & Export
+  // button. The Advanced menu item above is the always-available affordance
+  // that keeps the data-safety floor working across all in-flight milestones.
+
+  // M2.3: enable the top-bar "Review so far" button (stubbed disabled in
+  // M1.4). It opens the review summary mid-flow.
+  const reviewBtn = document.getElementById("reviewSoFarBtn");
+  if (reviewBtn) {
+    reviewBtn.disabled = false;
+    reviewBtn.removeAttribute("title"); // drop the "Available in Batch 2" tooltip
+    reviewBtn.addEventListener("click", openReviewSummary);
+  }
+
+  // Wizard navigation buttons
+  document.getElementById("prevBtn").addEventListener("click", () => navStep(-1));
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    // Next on a Confirm-mode entry doubles as the primary commit when nothing
+    // is committed yet (matches the ✓ Agree button). Use displayedPrefillForEntry
+    // — same helper the renderer uses — so render and commit can't drift.
+    const step = currentStep();
+    if (!step) return;
+    if (step.kind === "entry") {
+      const mode = entryMode(step.entry);
+      if (mode === "Confirm" && !entryFilled(step.id)) {
+        const prefill = displayedPrefillForEntry(step.entry);
+        if (!prefill) { navStep(+1); return; }
+        if (prefill.verdict === "merge" && !prefill.merge_into) {
+          openMergePicker(step.entry, null);
+          return;
+        }
+        const patch = { verdict: prefill.verdict };
+        if (prefill.verdict === "merge") patch.merge_into = prefill.merge_into;
+        setEntryState(step.id, patch);
+        onCommit(step.id);
+      }
+    }
+    navStep(+1);
+  });
+  document.getElementById("deferBtn").addEventListener("click", () => navDefer());
+
+  // Jump-to-entry (wired in M1.14)
+  ensureCanonicalKeysDatalist();
+  document.getElementById("jumpInput").addEventListener("change", (ev) => {
+    onJumpToEntry(ev.target.value);
+    ev.target.value = "";
+  });
+
+  document.getElementById("introNext")?.addEventListener("click", introNext);
+  document.getElementById("introBack")?.addEventListener("click", introBack);
+  document.getElementById("introSkip")?.addEventListener("click", () => dismissOnboarding(true));
+  maybeShowOnboarding();
+
+  // Keyboard shortcuts (Design §14)
+  //   ← / ArrowLeft → Previous
+  //   Enter         → Next (also commits if Save·Next is active)
+  //   L             → Decide later
+  //   K / M / N / D → verdict select (Confirm → onPickOtherVerdict; Decide → onDecideVerdict)
+  // Skip when the user is typing in an input/textarea, when a modifier is held,
+  // or when no step is active.
+  document.addEventListener("keydown", (ev) => {
+    const tag = (ev.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || ev.target.isContentEditable) return;
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    const step = currentStep();
+    if (!step) return;
+    switch (ev.key.toLowerCase()) {
+      case "arrowleft":
+        ev.preventDefault();
+        navStep(-1);
+        break;
+      case "enter":
+        ev.preventDefault();
+        document.getElementById("nextBtn").click();
+        break;
+      case "l":
+        ev.preventDefault();
+        navDefer();
+        break;
+      case "k":
+      case "m":
+      case "n":
+      case "d":
+        if (step.kind === "entry") {
+          ev.preventDefault();
+          const map = { k: "keep", m: "merge", n: "new", d: "drop" };
+          const v = map[ev.key.toLowerCase()];
+          if (entryMode(step.entry) === "Confirm") {
+            onPickOtherVerdict(step.entry, v);
+          } else {
+            onDecideVerdict(step.entry, v);
+          }
+        }
+        break;
+    }
+  });
+}
+
+// ---------- Step machine stubs (filled in M1.6+) ----------
+// Source of truth for current step is state.wizard.step_index (added in M1.6);
+// stepSequence is module-level for fast lookups inside renderers and nav.
+let stepSequence = [];
+function buildStepSequence() {
+  // Step sequence: entries in tier order, with each cluster's Resolve step
+  // interleaved BEFORE that cluster's first member encountered in the walk.
+  // Each step is { kind: "entry" | "cluster", id: <canonical_key or CON-id>, entry?, signal? }.
+  stepSequence = [];
+
+  // Index entries by tier in worksheet order.
+  const entriesInOrder = [];
+  for (const tier of TIER_ORDER) {
+    for (const entry of ENTRIES) {
+      if (entry.tier === tier) entriesInOrder.push(entry);
+    }
+  }
+
+  // Track which cluster signals have been emitted; emit each before its first
+  // member is encountered IN WIZARD ORDER (not in signal.members order).
+  // signal.members lists the "anchor" first by curation, but that anchor isn't
+  // necessarily the earliest-appearing member in tier-walk order — e.g., CON-22
+  // lists `reading` first but `reading_comprehension` is §12 and `reading` is
+  // §13, so the cluster should fire before `reading_comprehension`.
+  const clusterFirstMember = new Map(); // CON-id -> canonical_key
+  for (const signal of CLUSTER_SIGNALS) {
+    const memberSet = new Set(signal.members);
+    for (const entry of entriesInOrder) {
+      if (memberSet.has(entry.canonical_key)) {
+        clusterFirstMember.set(signal.id, entry.canonical_key);
+        break;
+      }
+    }
+  }
+  const emittedClusters = new Set();
+
+  for (const entry of entriesInOrder) {
+    // Emit cluster step if this entry is the first member of an un-emitted cluster.
+    for (const [clusterId, firstMember] of clusterFirstMember.entries()) {
+      if (emittedClusters.has(clusterId)) continue;
+      if (firstMember === entry.canonical_key) {
+        const signal = CLUSTER_SIGNALS.find((s) => s.id === clusterId);
+        stepSequence.push({ kind: "cluster", id: clusterId, signal });
+        emittedClusters.add(clusterId);
+      }
+    }
+    stepSequence.push({ kind: "entry", id: entry.canonical_key, entry });
+  }
+
+  // Clamp current step index in case state has stale value.
+  // Allow stepSequence.length as a valid index — that's the end-screen
+  // sentinel introduced in M1.15. Anything beyond that wraps back.
+  if (state.wizard.step_index > stepSequence.length) {
+    state.wizard.step_index = stepSequence.length - 1;
+  }
+  if (state.wizard.step_index < 0) state.wizard.step_index = 0;
+}
+
+function currentStep() {
+  return stepSequence[state.wizard.step_index];
+}
+
+function renderCurrentStep() {
+  const card = document.getElementById("wizardCard");
+  const nav = document.getElementById("wizardNav");
+  card.innerHTML = "";
+  // M2.3: when the review summary is open, render it into the existing
+  // #wizardCard host (TRAP E — same appendChild pattern as the end screen,
+  // NOT card.replaceWith). Hide the bottom nav; the summary has its own
+  // footer actions.
+  if (summaryOpen) {
+    card.appendChild(renderReviewSummary());
+    nav.classList.add("hidden");
+    return;
+  }
+  const step = currentStep();
+  if (!step) {
+    // End screen: step_index === stepSequence.length. Hide the bottom nav —
+    // end-screen has its own ← Back / Save & Export buttons; leaving
+    // Previous/Decide-later/Next visible would risk stale button state.
+    card.appendChild(renderEndScreen());
+    nav.classList.add("hidden");
+    return;
+  }
+  nav.classList.remove("hidden");
+  if (step.kind === "entry") {
+    const mode = entryMode(step.entry);
+    card.appendChild(renderEntryStep(step.entry, mode));
+  } else if (step.kind === "cluster") {
+    card.appendChild(renderClusterStep(step.signal));
+  }
+  updateNavButtonState();
+}
+
+function updateNavButtonState() {
+  // Prev: disabled on step 0. Next: disabled until step is "advanceable":
+  //   Decide-mode entry → needs verdict committed
+  //   Cluster → needs answer picked
+  //   Confirm-mode entry → always enabled (Next commits displayed pre-fill if not yet committed)
+  // Defer: enabled on every wizard step.
+  const step = currentStep();
+  document.getElementById("prevBtn").disabled = state.wizard.step_index <= 0;
+  if (!step) {
+    document.getElementById("nextBtn").disabled = true;
+    document.getElementById("deferBtn").disabled = true;
+    return;
+  }
+  if (step.kind === "cluster") {
+    const answered = getClusterState(step.id) !== undefined;
+    document.getElementById("nextBtn").disabled = !answered;
+    document.getElementById("deferBtn").disabled = false;
+    return;
+  }
+  // Entry step
+  const filled = entryFilled(step.id);
+  const mode = entryMode(step.entry);
+  if (mode === "Decide") {
+    document.getElementById("nextBtn").disabled = !filled;
+  } else {
+    document.getElementById("nextBtn").disabled = false;
+  }
+  document.getElementById("deferBtn").disabled = false;
+}
+
+function renderEntryStep(entry, mode) {
+  if (mode === "Confirm") return renderConfirmStep(entry);
+  return renderDecideStep(entry);
+}
+
+function renderClusterStep(signal) {
+  const stepNum = state.wizard.step_index + 1;
+  const totalSteps = stepSequence.length;
+  const card = el("article", {
+    className: "wizard-step cluster-step resolve-mode",
+    dataset: { id: signal.id, mode: "Resolve" },
+  });
+
+  const head = el("header", { className: "step-head" });
+  head.appendChild(el("span", { className: "mode-chip mode-resolve" }, MODE_CHIP_LABELS.Resolve));
+  head.appendChild(el("span", { className: "step-of", title: stepCountHint() }, `step ${stepNum} of ${totalSteps}`));
+  head.appendChild(el("h2", { className: "step-title" }, clusterDisplayName(signal)));
+  head.appendChild(el("div", { className: "step-key-row" },
+    el("span", { className: "step-meta" }, `${signal.members.length} concepts in this group`),
+  ));
+  card.appendChild(head);
+
+  card.appendChild(el("p", { className: "cluster-question" }, clusterDisplayQuestion(signal)));
+
+  const optionsContainer = el("div", { className: "cluster-options" });
+  signal.options.forEach((opt, idx) => {
+    const selected = getClusterState(signal.id) === idx;
+    const label = el("label", { className: "cluster-option" + (selected ? " selected" : "") });
+    label.appendChild(el("input", {
+      type: "radio",
+      name: `cluster-${signal.id}`,
+      checked: selected,
+      onchange: () => {
+        setClusterState(signal.id, idx);
+        onClusterCommit(signal.id);
+      },
+    }));
+    label.appendChild(el("span", { className: "option-text" }, clusterDisplayOption(signal, idx)));
+    optionsContainer.appendChild(label);
+  });
+
+  // M2.1b — CON-24 "pick one" inline reveal. The cluster step commits on radio
+  // change (no separate Confirm button), so the reveal keys off the COMMITTED
+  // option (getClusterState === 2), not a staged value. Picking a parent writes
+  // state.cluster_parents and re-renders; computeMemberDerivation then resolves
+  // the CON-24 members toward the chosen parent. Stale parent is cleared in
+  // onClusterCommit when the option flips away from 2.
+  if (signal.id === "CON-24" && getClusterState(signal.id) === 2) {
+    const reveal = el("div", { className: "con24-parent-picker" });
+    reveal.appendChild(
+      el("p", { className: "reveal-prompt" }, "Now pick the main concept to keep:")
+    );
+    const currentParent = getClusterParent("CON-24");
+    for (const parentKey of ["figurative_language", "descriptive_language"]) {
+      const radio = el("input", {
+        type: "radio",
+        name: "con24-parent",
+        value: parentKey,
+        checked: currentParent === parentKey,
+        onchange: () => {
+          setClusterParent("CON-24", parentKey);
+          renderCurrentStep();
+        },
+      });
+      const label = el("label", { className: "con24-parent-label" },
+        radio,
+        el("span", {}, conceptDisplayName(parentKey)),
+      );
+      reveal.appendChild(label);
+    }
+    optionsContainer.appendChild(reveal);
+  }
+
+  card.appendChild(optionsContainer);
+
+  // Members list (click to peek/jump)
+  const membersBlock = el("div", { className: "cluster-members" });
+  membersBlock.appendChild(el("h3", {}, `Concepts in this group (${signal.members.length})`));
+  const ul = el("ul");
+  // M3.3: reflect the group decision's carry-down so member rows don't read
+  // "(no decision yet)" after a group choice was made.
+  const verdictWord = (vd, target) => vd === "merge"
+    ? "fold into " + (target ? conceptDisplayName(target) : "another")
+    : ({ keep: "keep", new: "add new", drop: "remove" }[vd] || vd);
+  for (const memberKey of signal.members) {
+    const memberEntry = ENTRIES_BY_KEY.get(memberKey);
+    let v;
+    if (!memberEntry) {
+      v = "(not in worksheet)";
+    } else {
+      const st = getEntryState(memberKey);
+      if (st.verdict) {
+        v = verdictWord(st.verdict, st.merge_into);
+      } else {
+        const deriv = computeMemberDerivation(signal.id, getClusterState(signal.id), memberKey);
+        if (deriv && deriv.verdict) {
+          v = "group suggestion: " + verdictWord(deriv.verdict, deriv.merge_into);
+        } else if (deriv && deriv.info_only) {
+          v = "awaiting your group choice";
+        } else {
+          v = "(no decision yet)";
+        }
+      }
+    }
+    const li = el("li", {});
+    const peekBtn = el("button", {
+      type: "button",
+      className: "member-peek",
+      onclick: () => jumpToStepByEntryKey(memberKey),
+    }, conceptDisplayName(memberKey));
+    li.appendChild(peekBtn);
+    li.appendChild(document.createTextNode(` — ${v}`));
+    ul.appendChild(li);
+  }
+  membersBlock.appendChild(ul);
+  card.appendChild(membersBlock);
+
+  // Note drawer (open via + Add a note; auto-open behavior doesn't apply to cluster steps in Batch 1)
+  card.appendChild(renderClusterNotesDrawer(signal));
+
+  return card;
+}
+
+function onClusterCommit(signalId) {
+  // M2.1b — if CON-24's option flips away from "pick one" (index 2), drop any
+  // previously-chosen parent so it can't linger as zombie state. Runs before
+  // the re-render so member pre-fills recompute against the cleared parent.
+  if (signalId === "CON-24" && getClusterState("CON-24") !== 2) {
+    setClusterParent("CON-24", null);
+  }
+  updateDecisionDebt();
+  renderCurrentStep();
+  // Member pre-fills recompute lazily when each member step renders (M2.1).
+}
+
+function renderClusterNotesDrawer(signal) {
+  // Stub: cluster signals don't have a notes channel in the locked Batch 2
+  // plan (auto-prefill, mismatch detection, review summary, intro rewrite,
+  // counter polish, smoke gate, README handoff). The empty div keeps the
+  // cluster-step renderer's unconditional append stable. Remove the call
+  // site too if cluster Resolve never gains a notes affordance.
+  return el("div", { className: "cluster-notes-stub" });
+}
+
+function jumpToStepByEntryKey(key) {
+  for (let i = 0; i < stepSequence.length; i++) {
+    if (stepSequence[i].kind === "entry" && stepSequence[i].id === key) {
+      state.wizard.step_index = i;
+      saveState();
+      renderCurrentStep();
+      return;
+    }
+  }
+}
+
+// ---------- Review summary screen (M2.3, design §11) ----------
+// UI-only flag for whether the review summary is currently open. NOT
+// persisted — it's a transient view state. The wizard step_index is the
+// single source of truth for "where am I"; summaryOpen just overlays the
+// summary view on top of the current step.
+let summaryOpen = false;
+
+function openReviewSummary() {
+  summaryOpen = true;
+  renderCurrentStep();
+}
+
+function closeReviewSummary() {
+  summaryOpen = false;
+  // TRAP F: at the natural end of the wizard, renderEndScreen() delegates to
+  // renderReviewSummary(), so the summary IS the end screen. If we just
+  // re-render at the end sentinel (step_index === stepSequence.length), the
+  // summary renders again and "Back to reviewing" appears to do nothing. Clamp
+  // back into the last real wizard step so Back lands on actual content.
+  if (state.wizard.step_index >= stepSequence.length) {
+    state.wizard.step_index = stepSequence.length - 1;
+    saveState();
+  }
+  renderCurrentStep();
+}
+
+// Helper for cluster-row [edit] link — jump to the Resolve step for a signal.
+function jumpToStepByClusterId(signalId) {
+  const idx = stepSequence.findIndex((s) => s.kind === "cluster" && s.id === signalId);
+  if (idx >= 0) {
+    state.wizard.step_index = idx;
+    saveState();
+    renderCurrentStep();
+  }
+}
+
+function renderReviewSummary() {
+  // TRAP D: return a plain child element WITHOUT id="wizardCard". The host
+  // <article id="wizardCard"> already owns that id; renderCurrentStep appends
+  // this child into it. A duplicate id would break getElementById lookups.
+  const card = el("article", { className: "wizard-step review-summary" });
+
+  // ---- Header ----
+  const committedCount = ENTRIES.filter((e) => entryFilled(e.canonical_key)).length;
+  const totalCount = ENTRIES.length;
+  card.appendChild(
+    el("header", { className: "summary-header" },
+      el("h2", {}, document.createTextNode("Review your decisions")),
+      el("p", { className: "summary-counts" },
+        document.createTextNode(`${committedCount} of ${totalCount} concepts decided.`)
+      )
+    )
+  );
+
+  // ---- Buckets in design §11 mock order ----
+  const keepEntries = collectByVerdict("keep");
+  const foldEntries = collectByVerdict("merge");
+  const newEntries = collectByVerdict("new");
+  const dropEntries = collectByVerdict("drop");
+  // `state.wizard.deferred` holds BARE step ids — entry canonical_keys (e.g.
+  // "plant_parts") and cluster CON-ids (e.g. "CON-23"). A deferred cluster id
+  // simply misses ENTRIES_BY_KEY and drops out, so a straight lookup is
+  // correct (no "entry:" prefix parsing). See navDefer + the M1.15 counts.
+  const deferredEntries = (state.wizard.deferred || [])
+    .map((id) => ENTRIES_BY_KEY.get(id))
+    .filter(Boolean)
+    // M3.2: belt-and-braces — never list a committed entry as "Decide later"
+    // (state mutations keep these mutually exclusive; this guards the display).
+    .filter((e) => !state.entries[e.canonical_key]?.verdict);
+  const mismatchEntries = ENTRIES.filter((e) => state.entries[e.canonical_key]?.cluster_mismatch);
+
+  card.appendChild(renderVerdictBucket("KEEP AS CONCEPT", "keep", keepEntries, /*defaultOpen*/ false));
+  card.appendChild(renderFoldBucket(foldEntries, /*defaultOpen*/ false));
+  card.appendChild(renderVerdictBucket("ADD NEW CONCEPT", "new", newEntries, /*defaultOpen*/ false));
+  card.appendChild(renderVerdictBucket("REMOVE", "drop", dropEntries, /*defaultOpen*/ false));
+  card.appendChild(renderClusterBucket(/*defaultOpen*/ false));
+  card.appendChild(renderDeferredBucket(deferredEntries, /*defaultOpen*/ deferredEntries.length > 0));
+  card.appendChild(renderMismatchBucket(mismatchEntries, /*defaultOpen*/ mismatchEntries.length > 0));
+
+  // ---- Footer actions ----
+  card.appendChild(
+    el("div", { className: "summary-footer" },
+      el("button", {
+        className: "btn ghost back-to-wizard",
+        onclick: closeReviewSummary,
+      }, document.createTextNode("← Back to reviewing")),
+      el("button", {
+        className: "btn primary save-export",
+        onclick: onExport,
+      }, document.createTextNode("Save & Export ↓"))
+    )
+  );
+
+  return card;
+}
+
+// Helper: collect entries with a given committed verdict, sorted by tier
+// then canonical_key.
+function collectByVerdict(verdict) {
+  const matches = ENTRIES.filter((e) => state.entries[e.canonical_key]?.verdict === verdict);
+  matches.sort(sortByTierThenKey);
+  return matches;
+}
+
+// TRAP A: sort by tier using entry.tier (values "11"/"12"/"13") against
+// TIER_ORDER (the same values). The plan's parsed.tier / "§"-prefixed order
+// map does NOT exist in the real payload (parsed has no tier key).
+function sortByTierThenKey(a, b) {
+  const ai = TIER_ORDER.indexOf(a.tier);
+  const bi = TIER_ORDER.indexOf(b.tier);
+  const ra = ai < 0 ? 99 : ai;
+  const rb = bi < 0 ? 99 : bi;
+  if (ra !== rb) return ra - rb;
+  return a.canonical_key.localeCompare(b.canonical_key);
+}
+
+function renderVerdictBucket(title, verdict, entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket" });
+  details.open = !!defaultOpen;
+  const summary = el("summary", { className: "bucket-summary" },
+    document.createTextNode(`${title} (${entries.length})`)
+  );
+  details.appendChild(summary);
+
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+
+  const list = el("ul", { className: "bucket-list" });
+  for (const e of entries) {
+    // TRAP B: no tier-tag span on screen (design §11 has none; "§NN" is a
+    // forbidden on-screen code). Tiers are used only for sorting above.
+    const row = el("li", { className: "bucket-row" },
+      el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderFoldBucket(entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket fold-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`FOLD INTO ANOTHER (${entries.length})`)
+  ));
+
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+
+  // Group by merge target
+  const byTarget = {};
+  for (const e of entries) {
+    const target = state.entries[e.canonical_key].merge_into;
+    if (!byTarget[target]) byTarget[target] = [];
+    byTarget[target].push(e);
+  }
+  // Sort target groups alphabetically by target, members within by tier+key
+  const targets = Object.keys(byTarget).sort();
+  for (const target of targets) {
+    const group = el("div", { className: "fold-target-group" });
+    group.appendChild(
+      el("p", { className: "fold-target-header" },
+        document.createTextNode("Folding into "),
+        el("strong", {}, document.createTextNode(conceptDisplayName(target))),
+        document.createTextNode(` (${byTarget[target].length}):`)
+      )
+    );
+    const list = el("ul", { className: "bucket-list" });
+    byTarget[target].sort(sortByTierThenKey);
+    for (const e of byTarget[target]) {
+      // TRAP B: no tier-tag span.
+      const row = el("li", { className: "bucket-row" },
+        el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
+        document.createTextNode(" → "),
+        el("span", { className: "target" }, document.createTextNode(conceptDisplayName(target))),
+        el("button", {
+          className: "btn link edit-link",
+          onclick: () => {
+            closeReviewSummary();
+            jumpToStepByEntryKey(e.canonical_key);
+          },
+        }, document.createTextNode("edit ↗"))
+      );
+      list.appendChild(row);
+    }
+    group.appendChild(list);
+    details.appendChild(group);
+  }
+  return details;
+}
+
+function renderClusterBucket(defaultOpen) {
+  // TRAP C: "GROUP DECISIONS" (was "CLUSTER CHOICES").
+  const details = el("details", { className: "summary-bucket cluster-bucket" });
+  details.open = !!defaultOpen;
+  const answered = CLUSTER_SIGNALS.filter((s) => getClusterState(s.id) !== undefined);
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`GROUP DECISIONS (${answered.length} of ${CLUSTER_SIGNALS.length})`)
+  ));
+
+  if (answered.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("No group decisions made yet.")
+    ));
+    return details;
+  }
+
+  const list = el("ul", { className: "bucket-list" });
+  for (const s of answered) {
+    const idx = getClusterState(s.id);
+    const optLabel = clusterDisplayOption(s, idx);
+    // Plain-language (W22): show the tool-owned plain group name + option recap
+    // (CLUSTER_DISPLAY), not the locked signal.label/options. The raw CON-id is
+    // dropped. The locked data still drives export/import untouched.
+    // For CON-24 option 2, append the picked main concept in plain words.
+    let extra = "";
+    if (s.id === "CON-24" && idx === 2) {
+      const p = getClusterParent("CON-24");
+      if (p) extra = ` — keeping ${conceptDisplayName(p)}`;
+    }
+    const row = el("li", { className: "bucket-row" },
+      el("span", { className: "group-label" }, document.createTextNode(clusterDisplayName(s))),
+      document.createTextNode(` — ${optLabel}${extra}`),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByClusterId(s.id);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderDeferredBucket(entries, defaultOpen) {
+  const details = el("details", { className: "summary-bucket deferred-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`⚠ DECIDE LATER (${entries.length})`)
+  ));
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+  const list = el("ul", { className: "bucket-list" });
+  entries.sort(sortByTierThenKey);
+  for (const e of entries) {
+    // TRAP B: no tier-tag span.
+    const row = el("li", { className: "bucket-row" },
+      el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
+      el("button", {
+        className: "btn link resume-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("resume ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderMismatchBucket(entries, defaultOpen) {
+  // TRAP C: "⚠ DIFFERS FROM A GROUP DECISION" (was "...CLUSTER DECISION").
+  const details = el("details", { className: "summary-bucket mismatch-bucket" });
+  details.open = !!defaultOpen;
+  details.appendChild(el("summary", { className: "bucket-summary" },
+    document.createTextNode(`⚠ DIFFERS FROM A GROUP DECISION (${entries.length})`)
+  ));
+  if (entries.length === 0) {
+    details.appendChild(el("p", { className: "bucket-empty" },
+      document.createTextNode("None.")
+    ));
+    return details;
+  }
+  const list = el("ul", { className: "bucket-list" });
+  entries.sort(sortByTierThenKey);
+  for (const e of entries) {
+    const ev = state.entries[e.canonical_key];
+    const cp = clusterPrefillCandidate(e);
+    // TRAP C: NO "verdict" word, NO CON-id. Use plain reviewer labels.
+    const yourLabel = reviewerLabelWithTarget(ev.verdict, ev.merge_into || null);
+    const groupLabel = cp && !cp.info_only && cp.verdict
+      ? reviewerLabelWithTarget(cp.verdict, cp.merge_into || null)
+      : "(no current suggestion)";
+    const row = el("li", { className: "bucket-row" },
+      el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
+      document.createTextNode(" — you chose "),
+      document.createTextNode(yourLabel),
+      document.createTextNode("; the group decision points to "),
+      document.createTextNode(groupLabel),
+      el("button", {
+        className: "btn link edit-link",
+        onclick: () => {
+          closeReviewSummary();
+          jumpToStepByEntryKey(e.canonical_key);
+        },
+      }, document.createTextNode("edit ↗"))
+    );
+    list.appendChild(row);
+  }
+  details.appendChild(list);
+  return details;
+}
+
+function renderEndScreen() {
+  // M2.3: at the natural end of the wizard, render the full review summary
+  // rather than the M1.15 simple end screen. The summary's "Save & Export"
+  // button is the primary CTA from here.
+  return renderReviewSummary();
+}
+function navStep(delta) {
+  const newIndex = state.wizard.step_index + delta;
+  if (newIndex < 0) return;
+  if (newIndex > stepSequence.length) return;
+  state.wizard.step_index = newIndex;
+  saveState();
+  renderCurrentStep();
+}
+
+function navDefer() {
+  // Mark current step as deferred in UI-only set; advance without writing entry state.
+  const step = currentStep();
+  if (!step) return;
+  const stepId = step.kind === "entry" ? step.id : step.id;  // both unique
+  // M3.2: "Decide later" and a committed verdict are mutually exclusive.
+  // Deferring an already-decided entry un-decides it (clears verdict + merge
+  // target + mismatch flag, refreshes the counters) so it shows in exactly one
+  // review-summary bucket. A typed note, if any, is preserved.
+  if (step.kind === "entry") {
+    const cur = state.entries[stepId];
+    if (cur && cur.verdict) {
+      delete cur.verdict;
+      delete cur.merge_into;
+      delete cur.cluster_mismatch;
+      if (Object.keys(cur).length === 0) delete state.entries[stepId];
+      updateDecisionDebt();
+    }
+  }
+  if (!state.wizard.deferred.includes(stepId)) {
+    state.wizard.deferred.push(stepId);
+  }
+  saveState();
+  navStep(+1);
+}
+function onJumpToEntry(value) {
+  if (!value) return;
+  // M3.7: match key or friendly label, case-insensitively.
+  const lower = value.trim().toLowerCase();
+  let foundIndex = -1;
+  for (let i = 0; i < stepSequence.length; i++) {
+    const s = stepSequence[i];
+    if (s.kind === "entry" && (s.id.toLowerCase() === lower
+        || (s.entry.parsed.canonical_label || "").toLowerCase() === lower)) {
+      foundIndex = i;
+      break;
+    }
+    if (s.kind === "cluster" && s.id.toLowerCase() === lower) {
+      foundIndex = i;
+      break;
+    }
+  }
+  if (foundIndex < 0) {
+    alert(`Couldn't find "${value}" — try picking from the list that appears as you type.`);
+    return;
+  }
+  state.wizard.step_index = foundIndex;
+  saveState();
+  renderCurrentStep();
+}
+function updateDecisionDebt() {
+  let toDecide = 0;
+  let toConfirm = 0;
+  for (const entry of ENTRIES) {
+    const filled = entryFilled(entry.canonical_key);
+    if (filled) continue;
+    const mode = entryMode(entry);
+    if (mode === "Decide") toDecide++;
+    else toConfirm++;
+  }
+  let unresolvedClusters = 0;
+  for (const signal of CLUSTER_SIGNALS) {
+    if (getClusterState(signal.id) === undefined) unresolvedClusters++;
+  }
+  document.getElementById("debtDecideCount").textContent = toDecide.toString();
+  document.getElementById("debtConfirmCount").textContent = toConfirm.toString();
+  document.getElementById("debtResolveCount").textContent = unresolvedClusters.toString();
+
+  // M2.5: zero-state color cue. Tag the counter SPAN (classes debt-decide /
+  // debt-confirm / debt-resolve). Do NOT touch span.textContent — the plain
+  // labels are static HTML (M2.0) and the count lives in the inner bold
+  // element (debtDecideCount etc.); rewriting textContent would clobber it.
+  document.querySelector(".debt-decide").dataset.zero = toDecide === 0 ? "true" : "false";
+  document.querySelector(".debt-confirm").dataset.zero = toConfirm === 0 ? "true" : "false";
+  document.querySelector(".debt-resolve").dataset.zero = unresolvedClusters === 0 ? "true" : "false";
+
+  // Progress bar tracks (1 - debt/total).
+  const total = ENTRIES.length + CLUSTER_SIGNALS.length;
+  const remaining = toDecide + toConfirm + unresolvedClusters;
+  const pct = total > 0 ? (100 * (total - remaining) / total) : 0;
+  document.getElementById("debtBar").style.width = `${pct}%`;
+}
+
+init();
+</script>
+</body>
+</html>

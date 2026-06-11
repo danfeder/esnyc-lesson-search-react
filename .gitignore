@@ -172,3 +172,8 @@ scripts/sync-from-production.mjs
 
 # Design handoff bundles (gzipped tarballs, not source)
 cache/
+
+# Generated concepts-worksheet tool (rebuild via scripts/build-concepts-tool.py
+# --build-html; ~1.1 MB artifact). The README + template + parser are tracked;
+# the built HTML is not.
+docs/plans/concepts-worksheet-form/concepts-worksheet-tool.html
