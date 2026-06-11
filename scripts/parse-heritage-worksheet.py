@@ -4,8 +4,10 @@ Parse the Stage 1 heritage worksheet's per-value entries and emit the §16
 end-summary canonical-vocabulary table.
 
 Input:  docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md
-Output: 88-row 7-column markdown table (stdout by default), or in-place
-        replacement of the §16 table block (with --apply).
+Output: 88-row 7-column markdown table (stdout by default), in-place
+        replacement of the §16 table block (with --apply), or the PR 5a
+        machine-readable vocabulary artifact (with --emit-json PATH
+        --emit-date YYYY-MM-DD; design-doc §4.2 / worksheet §7 shape).
 
 Section selection: §11.X (Asian), §12.X (Americas), §13.X (African),
 §14.X (European), §15.X (Middle Eastern), §9.1.X (Cross-cluster Diaspora &
@@ -361,6 +363,122 @@ def verify_invariants(entries: list[Entry]) -> list[str]:
     return problems
 
 
+def resolved_canonical_key(entry: Entry) -> str:
+    """The canonical key an entry's corpus literal resolves to.
+
+    keep/new entries resolve to themselves; merge entries resolve to their
+    merge target. Heritage has no split/drop verdicts — anything else is a
+    hard error rather than a silent guess.
+    """
+    if entry.verdict in ("keep", "new"):
+        return entry.canonical_key
+    if entry.verdict == "merge":
+        if not entry.merge_into:
+            raise ValueError(
+                f"{entry.cluster}.{entry.idx}: verdict merge missing merge_into"
+            )
+        return entry.merge_into
+    raise ValueError(
+        f"{entry.cluster}.{entry.idx}: unsupported verdict {entry.verdict!r} for artifact emit"
+    )
+
+
+def build_artifact(
+    entries: list[Entry],
+    worksheet: Path,
+    source_commit: str,
+    emit_date: str,
+) -> dict:
+    """Build the PR 5a vocabulary artifact (worksheet §7 output shape +
+    provenance block). Fails loudly on any internal inconsistency — a silent
+    partial emit would poison the downstream migration generator.
+    """
+    errors: list[str] = []
+    ordered = sorted(entries, key=cluster_sort_key)
+
+    canonical_entries = [e for e in ordered if e.verdict in ("keep", "new")]
+    canonical_keys = {e.canonical_key for e in canonical_entries}
+
+    if len(canonical_entries) != 71:
+        errors.append(
+            f"canonical count: expected 71 keep/new entries, found {len(canonical_entries)}"
+        )
+
+    labels = [e.surface_label for e in canonical_entries]
+    for label in sorted({l for l in labels if labels.count(l) > 1}):
+        errors.append(f"duplicate canonical surface_label: {label!r}")
+
+    for e in ordered:
+        if e.parent is not None and e.parent not in canonical_keys:
+            errors.append(
+                f"{e.cluster}.{e.idx}: parent {e.parent!r} does not resolve to a canonical key"
+            )
+        if e.verdict == "merge" and e.merge_into not in canonical_keys:
+            errors.append(
+                f"{e.cluster}.{e.idx}: merge_into {e.merge_into!r} does not resolve to a canonical key"
+            )
+
+    alias_map: dict[str, str] = {}
+
+    def add_alias(literal: str, target_key: str, source: str) -> None:
+        existing = alias_map.get(literal)
+        if existing is not None and existing != target_key:
+            errors.append(
+                f"alias collision: {literal!r} maps to both {existing!r} and"
+                f" {target_key!r} (from {source})"
+            )
+            return
+        alias_map[literal] = target_key
+
+    for e in ordered:
+        try:
+            target = resolved_canonical_key(e)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
+        # (1) keep/new identity + (2) merge literal → target, both via the
+        # entry's surface_label (for kebab drift that IS the kebab string).
+        add_alias(e.surface_label, target, f"{e.cluster}.{e.idx} surface_label")
+        # (3) explicit aliases resolve to the same target.
+        for alias in e.aliases:
+            add_alias(alias, target, f"{e.cluster}.{e.idx} aliases[]")
+
+    for e in ordered:
+        if e.verdict == "merge" and e.surface_label not in alias_map:
+            errors.append(
+                f"{e.cluster}.{e.idx}: merge literal {e.surface_label!r} missing from alias_map"
+            )
+
+    if errors:
+        raise ValueError("\n".join(errors))
+
+    verdict_counts: dict[str, int] = {}
+    for e in ordered:
+        verdict_counts[e.verdict] = verdict_counts.get(e.verdict, 0) + 1
+
+    return {
+        "provenance": {
+            "source": str(worksheet.relative_to(REPO_ROOT)) if worksheet.is_relative_to(REPO_ROOT) else str(worksheet),
+            "source_commit": source_commit,
+            "verdict_counts": verdict_counts,
+            "emitted": emit_date,
+        },
+        "canonical": [
+            {
+                "key": e.canonical_key,
+                "label": e.surface_label,
+                "parent": e.parent,
+                "filter_ui_tier": e.filter_ui_tier,
+                "verdict": e.verdict,
+                "frequency": e.frequency,
+            }
+            for e in canonical_entries
+        ],
+        "alias_map": {k: alias_map[k] for k in sorted(alias_map)},
+        "drops": [],  # heritage worksheet has no drop verdicts
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -379,7 +497,23 @@ def main() -> int:
         action="store_true",
         help="Run invariant checks and exit; do not emit a table.",
     )
+    parser.add_argument(
+        "--emit-json",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="Write the PR 5a vocabulary artifact (canonical + alias_map + drops) to PATH.",
+    )
+    parser.add_argument(
+        "--emit-date",
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="Provenance emit date for --emit-json (passed explicitly; no ambient clock).",
+    )
     args = parser.parse_args()
+
+    if args.emit_json is not None and not args.emit_date:
+        parser.error("--emit-json requires --emit-date YYYY-MM-DD")
 
     entries = parse_worksheet(args.worksheet)
 
@@ -388,6 +522,42 @@ def main() -> int:
         for p in problems:
             print(f"INVARIANT FAILURE: {p}", file=sys.stderr)
         # Continue to emit the table even with failures so the diff is reviewable.
+
+    if args.emit_json is not None:
+        if problems:
+            print(
+                "error: refusing to emit artifact with invariant failures (see above).",
+                file=sys.stderr,
+            )
+            return 1
+        import subprocess
+
+        source_commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        try:
+            artifact = build_artifact(
+                entries, args.worksheet, source_commit, args.emit_date
+            )
+        except ValueError as exc:
+            print(f"ARTIFACT SELF-CHECK FAILURE:\n{exc}", file=sys.stderr)
+            return 1
+        args.emit_json.parent.mkdir(parents=True, exist_ok=True)
+        args.emit_json.write_text(
+            json.dumps(artifact, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(
+            f"Wrote {args.emit_json}: {len(artifact['canonical'])} canonical,"
+            f" {len(artifact['alias_map'])} alias_map entries,"
+            f" {len(artifact['drops'])} drops",
+            file=sys.stderr,
+        )
+        return 0
 
     if args.verify_only:
         # Summary distribution

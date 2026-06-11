@@ -1,0 +1,673 @@
+{
+  "provenance": {
+    "source": "docs/plans/2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md",
+    "source_commit": "9f2556d8f33375bdf0a61987ea96b7cd3fa960b8",
+    "verdict_counts": {
+      "keep": 51,
+      "new": 20,
+      "merge": 17
+    },
+    "emitted": "2026-06-11"
+  },
+  "canonical": [
+    {
+      "key": "asian",
+      "label": "Asian",
+      "parent": null,
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 63
+    },
+    {
+      "key": "east-asian",
+      "label": "East Asian",
+      "parent": "asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 35
+    },
+    {
+      "key": "south-asian",
+      "label": "South Asian",
+      "parent": "asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 15
+    },
+    {
+      "key": "southeast-asian",
+      "label": "Southeast Asian",
+      "parent": "asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 5
+    },
+    {
+      "key": "central-asian",
+      "label": "Central Asian",
+      "parent": "asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 4
+    },
+    {
+      "key": "chinese",
+      "label": "Chinese",
+      "parent": "east-asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 15
+    },
+    {
+      "key": "japanese",
+      "label": "Japanese",
+      "parent": "east-asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 9
+    },
+    {
+      "key": "indian",
+      "label": "Indian",
+      "parent": "south-asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 7
+    },
+    {
+      "key": "pakistani",
+      "label": "Pakistani",
+      "parent": "south-asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 4
+    },
+    {
+      "key": "uzbek",
+      "label": "Uzbek",
+      "parent": "central-asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 4
+    },
+    {
+      "key": "korean",
+      "label": "Korean",
+      "parent": "east-asian",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 3
+    },
+    {
+      "key": "vietnamese",
+      "label": "Vietnamese",
+      "parent": "southeast-asian",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 2
+    },
+    {
+      "key": "sri-lankan",
+      "label": "Sri Lankan",
+      "parent": "south-asian",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "malaysian",
+      "label": "Malaysian",
+      "parent": "southeast-asian",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 1
+    },
+    {
+      "key": "taiwanese",
+      "label": "Taiwanese",
+      "parent": "east-asian",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 1
+    },
+    {
+      "key": "americas",
+      "label": "Americas",
+      "parent": null,
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 170
+    },
+    {
+      "key": "north-american",
+      "label": "North American",
+      "parent": "americas",
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 83
+    },
+    {
+      "key": "latin-american",
+      "label": "Latin American",
+      "parent": "americas",
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 77
+    },
+    {
+      "key": "caribbean",
+      "label": "Caribbean",
+      "parent": "americas",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 17
+    },
+    {
+      "key": "mexican",
+      "label": "Mexican",
+      "parent": "latin-american",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 38
+    },
+    {
+      "key": "puerto-rican",
+      "label": "Puerto Rican",
+      "parent": "latin-american",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 4
+    },
+    {
+      "key": "salvadoran",
+      "label": "Salvadoran",
+      "parent": "latin-american",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 2
+    },
+    {
+      "key": "honduran",
+      "label": "Honduran",
+      "parent": "latin-american",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 2
+    },
+    {
+      "key": "cuban",
+      "label": "Cuban",
+      "parent": "caribbean",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 2
+    },
+    {
+      "key": "jamaican",
+      "label": "Jamaican",
+      "parent": "caribbean",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 2
+    },
+    {
+      "key": "peruvian",
+      "label": "Peruvian",
+      "parent": "latin-american",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 2
+    },
+    {
+      "key": "brazilian",
+      "label": "Brazilian",
+      "parent": "latin-american",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "ecuadorian",
+      "label": "Ecuadorian",
+      "parent": "latin-american",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "guyanese",
+      "label": "Guyanese",
+      "parent": "latin-american",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "central-american",
+      "label": "Central American",
+      "parent": "americas",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "south-american",
+      "label": "South American",
+      "parent": "americas",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "southern-united-states",
+      "label": "Southern United States",
+      "parent": "north-american",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "dominican",
+      "label": "Dominican",
+      "parent": "latin-american",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "african",
+      "label": "African",
+      "parent": null,
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 41
+    },
+    {
+      "key": "west-african",
+      "label": "West African",
+      "parent": "african",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 15
+    },
+    {
+      "key": "north-african",
+      "label": "North African",
+      "parent": "african",
+      "filter_ui_tier": "sub",
+      "verdict": "new",
+      "frequency": 2
+    },
+    {
+      "key": "east-african",
+      "label": "East African",
+      "parent": "african",
+      "filter_ui_tier": "sub",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "nigerian",
+      "label": "Nigerian",
+      "parent": "west-african",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 2
+    },
+    {
+      "key": "egyptian",
+      "label": "Egyptian",
+      "parent": "north-african",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 2
+    },
+    {
+      "key": "kenyan",
+      "label": "Kenyan",
+      "parent": "east-african",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 2
+    },
+    {
+      "key": "ethiopian",
+      "label": "Ethiopian",
+      "parent": "east-african",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 1
+    },
+    {
+      "key": "moroccan",
+      "label": "Moroccan",
+      "parent": "north-african",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "european",
+      "label": "European",
+      "parent": null,
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 53
+    },
+    {
+      "key": "mediterranean",
+      "label": "Mediterranean",
+      "parent": "european",
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 39
+    },
+    {
+      "key": "eastern-european",
+      "label": "Eastern European",
+      "parent": "european",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 3
+    },
+    {
+      "key": "italian",
+      "label": "Italian",
+      "parent": "mediterranean",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 24
+    },
+    {
+      "key": "spanish",
+      "label": "Spanish",
+      "parent": "mediterranean",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 5
+    },
+    {
+      "key": "ukrainian",
+      "label": "Ukrainian",
+      "parent": "eastern-european",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 3
+    },
+    {
+      "key": "greek",
+      "label": "Greek",
+      "parent": "mediterranean",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 2
+    },
+    {
+      "key": "irish",
+      "label": "Irish",
+      "parent": "european",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 2
+    },
+    {
+      "key": "russian",
+      "label": "Russian",
+      "parent": "eastern-european",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 1
+    },
+    {
+      "key": "french",
+      "label": "French",
+      "parent": "european",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "polish",
+      "label": "Polish",
+      "parent": "eastern-european",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "middle-eastern",
+      "label": "Middle Eastern",
+      "parent": null,
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 23
+    },
+    {
+      "key": "levantine",
+      "label": "Levantine",
+      "parent": "middle-eastern",
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 14
+    },
+    {
+      "key": "yemeni",
+      "label": "Yemeni",
+      "parent": "middle-eastern",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 3
+    },
+    {
+      "key": "persian",
+      "label": "Persian",
+      "parent": "middle-eastern",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 1
+    },
+    {
+      "key": "palestinian",
+      "label": "Palestinian",
+      "parent": "levantine",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 1
+    },
+    {
+      "key": "israeli",
+      "label": "Israeli",
+      "parent": "middle-eastern",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 1
+    },
+    {
+      "key": "lebanese",
+      "label": "Lebanese",
+      "parent": "levantine",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "syrian",
+      "label": "Syrian",
+      "parent": "levantine",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "jordanian",
+      "label": "Jordanian",
+      "parent": "levantine",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "indigenous-and-diaspora",
+      "label": "Indigenous and Diaspora",
+      "parent": null,
+      "filter_ui_tier": "top",
+      "verdict": "new",
+      "frequency": 57
+    },
+    {
+      "key": "african-american",
+      "label": "African American",
+      "parent": "indigenous-and-diaspora",
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 24
+    },
+    {
+      "key": "indigenous",
+      "label": "Indigenous",
+      "parent": "indigenous-and-diaspora",
+      "filter_ui_tier": "top",
+      "verdict": "keep",
+      "frequency": 24
+    },
+    {
+      "key": "lenape",
+      "label": "Lenape",
+      "parent": "indigenous",
+      "filter_ui_tier": "sub",
+      "verdict": "keep",
+      "frequency": 7
+    },
+    {
+      "key": "haudenosaunee",
+      "label": "Haudenosaunee",
+      "parent": "indigenous",
+      "filter_ui_tier": "internal",
+      "verdict": "new",
+      "frequency": 3
+    },
+    {
+      "key": "soul-food",
+      "label": "Soul Food",
+      "parent": "african-american",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "three-sisters-traditions",
+      "label": "Three Sisters traditions",
+      "parent": "indigenous",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "black-culinary-history",
+      "label": "Black culinary history",
+      "parent": "african-american",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    },
+    {
+      "key": "cajun-creole",
+      "label": "Cajun/Creole",
+      "parent": "indigenous-and-diaspora",
+      "filter_ui_tier": "internal",
+      "verdict": "keep",
+      "frequency": 0
+    }
+  ],
+  "alias_map": {
+    "African": "african",
+    "African American": "african-american",
+    "African American diaspora": "african-american",
+    "Americas": "americas",
+    "Asian": "asian",
+    "Black culinary history": "black-culinary-history",
+    "Brazilian": "brazilian",
+    "Cajun/Creole": "cajun-creole",
+    "Caribbean": "caribbean",
+    "Central American": "central-american",
+    "Central Asian": "central-asian",
+    "Chinese": "chinese",
+    "Cuban": "cuban",
+    "Dominican": "dominican",
+    "East African": "east-african",
+    "East Asian": "east-asian",
+    "Eastern European": "eastern-european",
+    "Ecuadorian": "ecuadorian",
+    "Egyptian": "egyptian",
+    "Ethiopian": "ethiopian",
+    "European": "european",
+    "French": "french",
+    "Greek": "greek",
+    "Guyanese": "guyanese",
+    "Haudenosaunee": "haudenosaunee",
+    "Honduran": "honduran",
+    "Indian": "indian",
+    "Indigenous": "indigenous",
+    "Indigenous Peoples": "indigenous",
+    "Indigenous and Diaspora": "indigenous-and-diaspora",
+    "Indigenous/Native American": "indigenous",
+    "Irish": "irish",
+    "Israeli": "israeli",
+    "Italian": "italian",
+    "Jamaican": "jamaican",
+    "Japanese": "japanese",
+    "Jordanian": "jordanian",
+    "Kenyan": "kenyan",
+    "Korean": "korean",
+    "Latin American": "latin-american",
+    "Lebanese": "lebanese",
+    "Lenape": "lenape",
+    "Levantine": "levantine",
+    "Malaysian": "malaysian",
+    "Mediterranean": "mediterranean",
+    "Mexican": "mexican",
+    "Middle Eastern": "middle-eastern",
+    "Moroccan": "moroccan",
+    "Native American": "indigenous",
+    "Nigerian": "nigerian",
+    "North African": "north-african",
+    "North American": "north-american",
+    "Pakistani": "pakistani",
+    "Palestinian": "palestinian",
+    "Persian": "persian",
+    "Peruvian": "peruvian",
+    "Polish": "polish",
+    "Puerto Rican": "puerto-rican",
+    "Russian": "russian",
+    "Salvadoran": "salvadoran",
+    "Soul Food": "soul-food",
+    "South American": "south-american",
+    "South Asian": "south-asian",
+    "Southeast Asian": "southeast-asian",
+    "Southern United States": "southern-united-states",
+    "Spanish": "spanish",
+    "Sri Lankan": "sri-lankan",
+    "Syrian": "syrian",
+    "Taiwanese": "taiwanese",
+    "Three Sisters traditions": "three-sisters-traditions",
+    "Ukrainian": "ukrainian",
+    "Uzbek": "uzbek",
+    "Vietnamese": "vietnamese",
+    "West African": "west-african",
+    "Yemeni": "yemeni",
+    "african": "african",
+    "americas": "americas",
+    "asian": "asian",
+    "caribbean": "caribbean",
+    "east-asian": "east-asian",
+    "eastern-european": "eastern-european",
+    "european": "european",
+    "latin-american": "latin-american",
+    "levantine": "levantine",
+    "mediterranean": "mediterranean",
+    "middle-eastern": "middle-eastern",
+    "north-american": "north-american",
+    "south-asian": "south-asian"
+  },
+  "drops": []
+}
