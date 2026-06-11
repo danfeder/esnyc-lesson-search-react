@@ -7,12 +7,11 @@
 **Active PR:** none — Session 1 (design lock) complete; design doc §4 is LOCKED, PR 5a tasks
 A.1–A.5 are authored concrete in the impl plan. Next session starts PR 5a execution.
 
-**Current task:** PR 5a Task A.1 (heritage vocab artifact emitter). Branch
-`feat/pr5a-heritage-canonicalization` cuts from `main` — Session 1 established PR 5a needs ONLY
-the heritage worksheet, which is in `main` since 2026-05-12; the unpushed concepts archive gates
-PR 5b only. OPEN ITEM for the user: how `tools/concepts-worksheet-form` (verdict archive
-`0c33808` + this track's scaffolding/design docs) reaches `main` — must resolve before PR 5b,
-and executor sessions need these docs on-disk (work from this branch or merge it first).
+**Current task:** PR 5a Task A.1 (heritage vocab artifact emitter), on branch
+`feat/pr5a-heritage-canonicalization` (cut from `main` at `e476f2b`, 2026-06-11). The
+branch-landing question is CLOSED: `tools/concepts-worksheet-form` merged to `main` via PR #503
+(squash `e476f2b`, 2026-06-11 — wizard tool + concepts verdict archive + this track's four-file
+scaffold). Both 5a and 5b inputs and docs are in `main`; no gating remains except 5b-waits-for-5a.
 
 **Design-lock outcomes (full evidence in design doc §4):** parser-driven JSON artifacts in
 `data/vocab/` (worksheet-specified shapes); migration-file mechanism with emitter-generated
