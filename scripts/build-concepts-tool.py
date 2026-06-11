@@ -76,6 +76,17 @@ DEFAULT_TEMPLATE = (
     / "scripts"
     / "concepts-worksheet-tool.template.html"
 )
+# Display-only sidecar: plain-language rewrites of the 208 claude_notes,
+# keyed by canonical_key. The source worksheet is never edited for these —
+# the build merges them in as `plain_reasoning` and the tool prefers that
+# field on screen, falling back to claude_notes. Export is untouched.
+DEFAULT_SIDECAR = (
+    REPO_ROOT
+    / "docs"
+    / "plans"
+    / "concepts-worksheet-form"
+    / "plain-reasoning.json"
+)
 DATA_PAYLOAD_PLACEHOLDER = "__DATA_PAYLOAD__"
 
 # Tier sections, in worksheet order.
@@ -682,7 +693,30 @@ def verify_invariants(entries: list[Entry]) -> list[str]:
 # ---------- Emit JSON payload ----------
 
 
-def entry_to_json(entry: Entry, valid_keys: set[str]) -> dict[str, Any]:
+def load_plain_reasoning(path: Path) -> dict[str, str]:
+    """Load the plain-language reasoning sidecar (key → rewritten text).
+
+    Missing file is fine (the tool falls back to claude_notes everywhere);
+    a malformed file is a hard error so a bad commit can't silently ship a
+    tool with partial plain text.
+    """
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in data.items()
+    ):
+        raise ValueError(
+            f"sidecar {path} must be a flat JSON object of canonical_key → text"
+        )
+    return data
+
+
+def entry_to_json(
+    entry: Entry,
+    valid_keys: set[str],
+    plain_reasoning: dict[str, str],
+) -> dict[str, Any]:
     """Serialize one Entry to the JSON payload shape consumed by the HTML tool."""
     fields_json: dict[str, dict[str, Any]] = {}
     for fname, fv in entry.fields.items():
@@ -694,6 +728,7 @@ def entry_to_json(entry: Entry, valid_keys: set[str]) -> dict[str, Any]:
 
     freq_raw = entry.field_value("frequency")
     primary_count, post_merge_total = parse_frequency(freq_raw)
+    plain_text = plain_reasoning.get(entry.canonical_key, "")
     return {
         "canonical_key": entry.canonical_key,
         "tier": entry.tier,
@@ -732,6 +767,8 @@ def entry_to_json(entry: Entry, valid_keys: set[str]) -> dict[str, Any]:
             "claude_notes_summary": extract_claude_notes_summary(
                 entry.field_value("claude_notes")
             ),
+            "plain_reasoning": plain_text,
+            "plain_reasoning_summary": extract_claude_notes_summary(plain_text),
             "curriculum_notes": entry.field_value("curriculum_notes"),
             "suggested_verdict": extract_suggested_verdict(
                 entry.field_value("claude_notes")
@@ -747,6 +784,7 @@ def entry_to_json(entry: Entry, valid_keys: set[str]) -> dict[str, Any]:
 def build_payload(
     entries: list[Entry],
     raw_lines: list[str],
+    plain_reasoning: dict[str, str],
 ) -> dict[str, Any]:
     valid_keys = {e.canonical_key for e in entries}
     return {
@@ -761,7 +799,9 @@ def build_payload(
         "field_labels": FIELD_LABELS,
         "cluster_signals": CLUSTER_SIGNAL_DEFINITIONS,
         "entry_count": len(entries),
-        "entries": [entry_to_json(e, valid_keys) for e in entries],
+        "entries": [
+            entry_to_json(e, valid_keys, plain_reasoning) for e in entries
+        ],
         "raw_markdown_lines": raw_lines,
     }
 
@@ -810,6 +850,12 @@ def main() -> int:
         help="Path to the HTML template (with --build-html).",
     )
     parser.add_argument(
+        "--sidecar",
+        type=Path,
+        default=DEFAULT_SIDECAR,
+        help="Path to the plain-reasoning sidecar JSON (missing file is OK).",
+    )
+    parser.add_argument(
         "--pretty",
         action="store_true",
         help="Pretty-print JSON output (default: compact).",
@@ -817,6 +863,7 @@ def main() -> int:
     args = parser.parse_args()
 
     entries, raw_lines = parse_worksheet(args.worksheet)
+    plain_reasoning = load_plain_reasoning(args.sidecar)
 
     problems = verify_invariants(entries)
     for problem in problems:
@@ -856,6 +903,24 @@ def main() -> int:
             file=sys.stderr,
         )
 
+    # Sidecar coverage report. Unknown keys (in sidecar but not parsed) are a
+    # hard problem — they mean a typo'd or stale canonical_key in the sidecar.
+    if plain_reasoning:
+        covered = sum(1 for e in entries if e.canonical_key in plain_reasoning)
+        unknown = sorted(set(plain_reasoning) - valid_keys)
+        print(
+            f"plain-reasoning sidecar: {covered} of {len(entries)} entries covered",
+            file=sys.stderr,
+        )
+        if unknown:
+            problems.append(
+                f"sidecar keys not in worksheet: {unknown}"
+            )
+            print(
+                f"INVARIANT FAILURE: sidecar keys not in worksheet: {unknown}",
+                file=sys.stderr,
+            )
+
     if args.verify_only:
         return 1 if problems else 0
 
@@ -876,7 +941,7 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 2
-        payload = build_payload(entries, raw_lines)
+        payload = build_payload(entries, raw_lines, plain_reasoning)
         # Compact JSON to keep the embedded payload small. The HTML parser
         # accepts any whitespace inside <script id="dataPayload"
         # type="application/json">.
@@ -895,7 +960,7 @@ def main() -> int:
         )
         return 0
 
-    payload = build_payload(entries, raw_lines)
+    payload = build_payload(entries, raw_lines, plain_reasoning)
     indent = 2 if args.pretty else None
     text = json.dumps(payload, ensure_ascii=False, indent=indent)
 

@@ -1222,6 +1222,18 @@ function conceptDisplayName(key) {
   return (e && e.parsed.canonical_label) || key;
 }
 
+// S2 sidecar: prefer the plain-language rewrite (plain_reasoning) merged in
+// by the build when present; fall back to the original claude_notes.
+// Display-only — the export path never reads these.
+function reasoningText(entry) {
+  return entry.parsed.plain_reasoning || entry.parsed.claude_notes || "";
+}
+function reasoningSummary(entry) {
+  return entry.parsed.plain_reasoning
+    ? (entry.parsed.plain_reasoning_summary || "")
+    : (entry.parsed.claude_notes_summary || "");
+}
+
 // M3.7: resolve reviewer-typed text (friendly label OR raw key, any case)
 // back to a canonical_key. Labels are unique across the 208 entries
 // (verified 2026-06-10). Returns null when nothing matches.
@@ -1967,17 +1979,17 @@ function renderDecideStep(entry) {
     ));
     if (override) {
       wrap.appendChild(el("p", { className: "claude-rec-reframe" }, GROUP_OVERRIDE_REFRAME));
-    } else if (entry.parsed.claude_notes) {
+    } else if (reasoningText(entry)) {
       const body = el("div", { className: "claude-rec-body-expanded" });
-      body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+      body.innerHTML = renderInlineMarkdown(reasoningText(entry));
       wrap.appendChild(body);
     }
     card.appendChild(wrap);
-  } else if (entry.parsed.claude_notes) {
+  } else if (reasoningText(entry)) {
     // No suggestion but notes exist — still show them.
     const wrap = el("div", { className: "claude-rec" });
     const body = el("div", { className: "claude-rec-body-expanded" });
-    body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+    body.innerHTML = renderInlineMarkdown(reasoningText(entry));
     wrap.appendChild(body);
     card.appendChild(wrap);
   }
@@ -2094,17 +2106,17 @@ function renderClaudeRecommendation(entry, displayed, target, captionSource, ove
     wrap.appendChild(el("p", { className: "claude-rec-reframe" }, GROUP_OVERRIDE_REFRAME));
     return wrap;
   }
-  const summary = entry.parsed.claude_notes_summary || "";
+  const summary = reasoningSummary(entry);
   if (summary) {
     wrap.appendChild(el("p", { className: "claude-rec-summary" }, summary));
   }
-  if (entry.parsed.claude_notes && entry.parsed.claude_notes !== summary) {
+  if (reasoningText(entry) && reasoningText(entry) !== summary) {
     const more = el("details", { className: "claude-rec-more" });
     // M3.8a: the arrow comes from the summary::before CSS — a literal "▸"
     // here rendered a "▸ ▸ more" double arrow.
     more.appendChild(el("summary", {}, "more"));
     const body = el("div", { className: "claude-rec-more-body" });
-    body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
+    body.innerHTML = renderInlineMarkdown(reasoningText(entry));
     more.appendChild(body);
     wrap.appendChild(more);
   }

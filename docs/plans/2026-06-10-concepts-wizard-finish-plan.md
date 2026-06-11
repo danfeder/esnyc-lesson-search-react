@@ -61,17 +61,40 @@ into the curriculum team's hands so they can decide the fate of the 208 Stage-1 
 
 ### Session 2 — plain-reasoning sidecar (B2 + W3)
 
-- [ ] Decide sidecar format + location (suggest: `docs/plans/concepts-worksheet-form/plain-reasoning.json`,
+- [x] Decide sidecar format + location (suggest: `docs/plans/concepts-worksheet-form/plain-reasoning.json`,
       keyed by `canonical_key`, values = rewritten note text; committed as source).
-- [ ] Generate rewrites for all 208 notes via a fan-out workflow (batches of concepts per agent;
+- [x] Generate rewrites for all 208 notes via a fan-out workflow (batches of concepts per agent;
       rewrite brief: curriculum-team voice, preserve the *reasoning substance* — what the concept is,
       why keep/fold/remove, what it overlaps with — drop code paths/IDs/§-refs/hashes; fix W3-style
       copy-paste artifacts).
-- [ ] Mechanical jargon scan over all 208 outputs (regex: `§|CON-\d|\.ts|\.py|D-C\d|<to_fill>|_[a-z]+_|[0-9a-f]{8,}|\bcanonical\b|\bcorpus\b|\bverdict\b|\btier\b`)
+- [x] Mechanical jargon scan over all 208 outputs (regex: `§|CON-\d|\.ts|\.py|D-C\d|<to_fill>|_[a-z]+_|[0-9a-f]{8,}|\bcanonical\b|\bcorpus\b|\bverdict\b|\btier\b`)
       + spot-check ~10 against their sources for fidelity.
-- [ ] Build script merges sidecar → `plain_reasoning` per entry; template displays it (with
+- [x] Build script merges sidecar → `plain_reasoning` per entry; template displays it (with
       `claude_notes` fallback); `--verify-only` counts + SHA invariant unchanged.
-- [ ] User reviews a sample (~5 rewrites, including `measurement`) → commit (sidecar + script + template).
+- [x] User reviews a sample (~5 rewrites, including `measurement`) → commit (sidecar + script + template).
+
+#### W3 — genuine source-worksheet inconsistencies (for the metadata-rebuild track, NOT patched here)
+
+Surfaced by the Session-2 rewrite agents while reworking the 208 notes; display text routes around
+each, source worksheet untouched:
+
+- `measurement`: "anatomically more specific" — copy-paste artifact from the Plant Parts note
+  (fixed in display text only).
+- `preservation`: "Post-merge total: 5 lessons" only adds up (3+1+1) if the lone Social Studies
+  lesson (Three Sisters Succotash) is included; the science-side merge described is 4.
+- `seasonal_cycles` / `seasonality`: alias list gives Seasonal Cycles a frequency of 6, but the
+  same note says "6 of 7 sampled seasonal cycles lessons" — the two figures may not reconcile.
+- `consumers`: note calls Producers a "long-tail singleton" while giving it a count of 2.
+- `tallying`: structured fold target is `counting`, but the note's own reasoning leans
+  `data_collection` — confirm which target was intended.
+- `phases_of_matter`: note cites an "alpha tie-break convention" while simultaneously justifying
+  the survivor by frequency ("higher frequency wins") — contradictory phrasing; the actual
+  Phases of Matter count is never stated.
+- `poetry`: "once each under Literacy/ELA and Arts" is ambiguous between 2 lessons and 1
+  double-tagged lesson.
+- Pattern (not an error, a worksheet-style gap): many long-tail notes never state the entry's OWN
+  count, only neighbors' counts — rewrites use qualitative phrasing ("rarely used") rather than
+  invented numbers.
 
 ### Session 3 — final dry run + handoff
 
@@ -83,6 +106,9 @@ into the curriculum team's hands so they can decide the fate of the 208 Stage-1 
 ## Session notes
 
 - 2026-06-10 (S1): plan adopted; sidecar + handoff decisions locked. M3.7 + M3.8 polish pass executed inline.
+- 2026-06-10 (S2): 208-note plain-reasoning sidecar shipped — 16-agent workflow rewrite, jargon scan
+  0 hits (workflow + independent main-loop re-scan), 10/10 fidelity spot-check, sidecar 208/208,
+  SHA `0c49a7a7…cd03` byte-identical, console clean, user approved 5-sample. W3 list recorded above.
 
 ## Final smoke-gate results (Session 3)
 
