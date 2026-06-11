@@ -1,26 +1,35 @@
 # PR 5 — D4 Vocabulary Canonicalization — Execution Status
 
-**Last updated:** 2026-06-11 by Session 0 (scaffolding)
+**Last updated:** 2026-06-11 by Session 1 (design lock)
 
 ## Current State
 
-**Active PR:** none — pre-Session-1 (scaffolding committed; design doc is Draft)
+**Active PR:** none — Session 1 (design lock) complete; design doc §4 is LOCKED, PR 5a tasks
+A.1–A.5 are authored concrete in the impl plan. Next session starts PR 5a execution.
 
-**Current task:** Session 1 = design-lock session. Answer design doc §4's 9 open mechanism
-questions (discovery reads/queries → locked answers → author concrete PR 5a tasks into the impl
-plan). NOT a code session.
+**Current task:** PR 5a Task A.1 (heritage vocab artifact emitter). Branch
+`feat/pr5a-heritage-canonicalization` cuts from `main` — Session 1 established PR 5a needs ONLY
+the heritage worksheet, which is in `main` since 2026-05-12; the unpushed concepts archive gates
+PR 5b only. OPEN ITEM for the user: how `tools/concepts-worksheet-form` (verdict archive
+`0c33808` + this track's scaffolding/design docs) reaches `main` — must resolve before PR 5b,
+and executor sessions need these docs on-disk (work from this branch or merge it first).
 
-**Branch:** scaffolding landed on `tools/concepts-worksheet-form` (the active working branch when
-this track spun up — also carries the concepts verdict archive `0c33808`). Session 1 should
-confirm with the user how this branch reaches `main` before/with PR 5a, since PR 5a's branch cuts
-from `main` and needs the verdict archive present.
+**Design-lock outcomes (full evidence in design doc §4):** parser-driven JSON artifacts in
+`data/vocab/` (worksheet-specified shapes); migration-file mechanism with emitter-generated
+VALUES mapping + in-migration rollback snapshot tables; heritage rewrite writes the flat COLUMN
+(normalize-trigger §J mirrors metadata — column wins, verified in `20260518000000`); concepts
+rewrite edits `metadata.academicConcepts` values in place (no flat column, shape + subject keys
+untouched); FTS auto-refreshes via trigger; live rows only (`retired_at IS NULL`); concepts'
+7 drops deleted from rows; heritage filter alignment expected ZERO `src/` change (proven by
+probe (d), not assumed).
 
-**Last commit on main:** (check at Session 1 start — `git log --oneline -3 main`)
-
-**Pre-Session-1 verification:** none. Inputs are ready: heritage worksheet verdicts in `main`
-since 2026-05-12 (PRs #491/#492); concepts verdict archive at
-`docs/plans/2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md` (commit `0c33808`,
-on `tools/concepts-worksheet-form`, validated: 119 keep / 82 merge / 7 drop, clean merge graph).
+**Key TEST-DB facts (2026-06-11 probes; re-verify at execution):** 772 rows total, 21 soft-
+retired. Heritage: column⇄metadata mirror EXACT on all 335 populated rows; 77 live distinct
+values / 916 appearances; ~36 row-appearances need rewriting (13 kebab literals + 4 semantic
+merges). Concepts: 684 rows object-shaped under exactly the 6 subject keys; live rows reproduce
+worksheet Appendix A verbatim (663 rows / 208 distinct / 1912 appearances = 100% verdict
+coverage); the 4 extra strings live only on retired rows. `academicIntegration.concepts`
+dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions carry neither key.
 
 ## Recent decisions worth carrying forward
 
@@ -29,14 +38,19 @@ on `tools/concepts-worksheet-form`, validated: 119 keep / 82 merge / 7 drop, cle
 - 2026-06-11 concepts merge-cycle resolutions (preservation survives; sorting survives as
   "Sorting and Categorization", key rename in PR 5b; seasonality absorbs seasonal family) are
   curriculum-team-direction-level decisions — implementation never reopens them.
+- 2026-06-11 Session 1 user confirmations: (1) rewrite LIVE rows only — retired imports keep
+  stale vocab, probes filter on `retired_at IS NULL`; (2) PR 5b rewrites concept STRINGS only —
+  no subject-key moves (recommended_primary_subject is PR 6 re-tag input).
 
 ## Done
 
-(empty — fill as work completes)
+- Session 1 (2026-06-11): design doc §4 Draft → LOCKED (9 mechanism answers + filter-alignment
+  finding); PR 5a tasks A.1–A.5 authored concrete; PR 5b carry-forward knowledge captured in
+  impl plan; test plan made concrete.
 
 ## In flight
 
-(none yet)
+(none — next session opens PR 5a)
 
 ## Blocked
 
@@ -60,6 +74,33 @@ on `tools/concepts-worksheet-form`, validated: 119 keep / 82 merge / 7 drop, cle
   2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md
 
 ## Session log
+
+### Session 1 — 2026-06-11 — design lock
+
+Major events:
+- Discovery: Explore agent traced every read/write/derive path for both fields (FTS trigger
+  `20260521000000`+`20260523000000`; normalize trigger `20260518000000` §J column-wins + §A
+  rescue + §V validation; `search_lessons` alias/expansion pipeline; edge-function raw-overlap
+  legacy path; parser internals). MCP probes on TEST established the corpus facts now in the
+  Current State header. TEST DB was cold-starting at session open (~several min of connection
+  timeouts before it woke).
+- Verified first-hand (not just agent-reported): `lessons_normalize_write` §J column-wins
+  behavior; §V validation scope (3 unrelated keys only); the `20260521000000` corpus-wide
+  `SET metadata = metadata` backfill precedent.
+- Load-bearing discovery wins: heritage column⇄metadata mirror is EXACT (write the column, let
+  the trigger mirror — no dual-write needed); live-row concepts coverage is exactly 100% of
+  Appendix A (the 212-vs-208 census delta is entirely the 21 retired rows); concepts keys are
+  not invertible to corpus literals (`colonialisms_impact` ↔ "colonialism's impact") → emitter
+  must match against Appendix A 1:1.
+- User decisions: live-rows-only scope; strings-only in 5b (both recommended options).
+- Design doc §4 rewritten Draft → LOCKED with evidence; §5 rollback section updated to match.
+  Impl plan: A.1–A.5 authored (emitter → migration generator → frontend no-op proof → probes +
+  rehearsal evidence → PR ritual); B.x carry-forward notes; concrete test plan.
+- Learnings for execution: the `20260520120000` season-timing repair exists because a corpus-wide
+  UPDATE once tripped a CHECK via the normalize trigger — local rehearsal must include a seeded
+  drift-row trigger test (in Task A.2 steps); backup tables need RLS enabled with no policies.
+
+Commits: (this session's single docs commit — design lock + impl plan + status)
 
 ### Session 0 — 2026-06-11 — scaffolding
 
