@@ -1114,7 +1114,7 @@
     <div class="actions">
       <div class="jump-to-entry">
         <input type="search" class="jump-input" id="jumpInput"
-               placeholder="🔍 Jump to entry…" list="all-canonical-keys"
+               placeholder="🔍 Jump to a concept…" list="all-canonical-keys"
                autocomplete="off">
       </div>
       <button class="btn ghost" id="reviewSoFarBtn" type="button" disabled
@@ -1124,7 +1124,7 @@
         <div class="menu-hint">Import / Export</div>
         <button class="menu-item" id="exportBtn" type="button">Save &amp; Export markdown ↓</button>
         <button class="menu-item" id="importBtn" type="button">Import a saved markdown file…</button>
-        <button class="menu-item" id="downloadJsonBtn" type="button">Download progress as JSON</button>
+        <button class="menu-item" id="downloadJsonBtn" type="button">Download a technical backup (JSON) — not the file to send</button>
         <input type="file" id="importInput" accept=".md,text/markdown,text/plain" class="hidden">
         <div class="menu-divider"></div>
         <div class="menu-hint">Help</div>
@@ -1210,8 +1210,31 @@ const REVIEWER_LABELS = {
 };
 
 function reviewerLabelWithTarget(verdict, target) {
-  if (verdict === "merge" && target) return `Fold into \`${target}\``;
+  if (verdict === "merge" && target) return `Fold into ${conceptDisplayName(target)}`;
   return REVIEWER_LABELS[verdict] || verdict;
+}
+
+// M3.7: reviewer-facing concept name — the friendly canonical_label, falling
+// back to the raw key for anything without one. Display-only; the export
+// still writes canonical_key everywhere.
+function conceptDisplayName(key) {
+  const e = ENTRIES_BY_KEY.get(key);
+  return (e && e.parsed.canonical_label) || key;
+}
+
+// M3.7: resolve reviewer-typed text (friendly label OR raw key, any case)
+// back to a canonical_key. Labels are unique across the 208 entries
+// (verified 2026-06-10). Returns null when nothing matches.
+function resolveConceptKey(text) {
+  const v = (text || "").trim();
+  if (!v) return null;
+  if (ENTRIES_BY_KEY.has(v)) return v;
+  const lower = v.toLowerCase();
+  for (const e of ENTRIES) {
+    if ((e.parsed.canonical_label || "").toLowerCase() === lower) return e.canonical_key;
+    if (e.canonical_key.toLowerCase() === lower) return e.canonical_key;
+  }
+  return null;
 }
 
 // Plain task labels shown on the mode chip (W22). Internal mode names
@@ -1471,9 +1494,9 @@ const CLUSTER_DISPLAY = {
     name: "Writing concepts",
     question: "How should the writing concepts be organized?",
     options: [
-      "Keep `writing` as a catch-all and keep each sub-type as its own concept",
-      "Drop the general `writing` and keep only the specific writing types",
-      "Fold the specific writing types into the general `writing`",
+      "Keep Writing as a catch-all and keep each sub-type as its own concept",
+      "Drop the general Writing and keep only the specific writing types",
+      "Fold the specific writing types into the general Writing",
     ],
   },
   "CON-16": {
@@ -1490,24 +1513,24 @@ const CLUSTER_DISPLAY = {
     question: "How should the reading concepts be organized?",
     options: [
       "Keep all six as separate concepts",
-      "Fold the specific reading types into `reading`",
-      "Drop the general `reading` and keep the specific reading types",
+      "Fold the specific reading types into Reading",
+      "Drop the general Reading and keep the specific reading types",
     ],
   },
   "CON-23": {
     name: "Measurement concepts",
-    question: "Should `measurement` stay separate from its four specific types, or absorb them?",
+    question: "Should Measurement stay separate from its four specific types, or absorb them?",
     options: [
-      "Keep `measurement` and the four specific types as separate concepts",
-      "Fold the specific types into `measurement`",
+      "Keep Measurement and the four specific types as separate concepts",
+      "Fold the specific types into Measurement",
     ],
   },
   "CON-24": {
     name: "Figurative-language concepts",
     question: "How should the figurative-language concepts be organized?",
     options: [
-      "Keep `figurative_language` and the three specific types as separate concepts",
-      "Fold the specific types into `figurative_language`",
+      "Keep Figurative Language and the three specific types as separate concepts",
+      "Fold the specific types into Figurative Language",
       "Keep just one main concept",
     ],
   },
@@ -2024,15 +2047,27 @@ function renderStepHead(entry, mode) {
   const stepNum = state.wizard.step_index + 1;
   const head = el("header", { className: "step-head" });
   head.appendChild(el("span", { className: `mode-chip mode-${mode.toLowerCase()}` }, MODE_CHIP_LABELS[mode] || mode));
-  head.appendChild(el("span", { className: "step-of" }, `step ${stepNum} of ${totalSteps}`));
+  // M3.8e: the step total (213) exceeds the concept count (208) because the 5
+  // group-decision pages are steps too — say so on hover.
+  head.appendChild(el("span", {
+    className: "step-of",
+    title: stepCountHint(),
+  }, `step ${stepNum} of ${totalSteps}`));
   head.appendChild(el("h2", { className: "step-title" },
     entry.parsed.canonical_label || entry.canonical_key));
+  // M3.7: the raw snake_case key is no longer shown on the card — the friendly
+  // title above is the concept's name everywhere reviewers look.
+  const freq = entry.parsed.frequency_primary;
   head.appendChild(el("div", { className: "step-key-row" },
-    el("code", {}, `\`${entry.canonical_key}\``),
     el("span", { className: "step-meta" },
-      `${entry.parsed.frequency_primary} appearances · ${entry.parsed.recommended_primary_subject || "—"}`),
+      `${freq} appearance${freq === 1 ? "" : "s"} · ${entry.parsed.recommended_primary_subject || "—"}`),
   ));
   return head;
+}
+
+function stepCountHint() {
+  const clusterSteps = stepSequence.filter((s) => s.kind === "cluster").length;
+  return `${ENTRIES.length} concepts plus ${clusterSteps} group-decision pages = ${stepSequence.length} steps`;
 }
 
 function renderTierStrip(tier) {
@@ -2065,7 +2100,9 @@ function renderClaudeRecommendation(entry, displayed, target, captionSource, ove
   }
   if (entry.parsed.claude_notes && entry.parsed.claude_notes !== summary) {
     const more = el("details", { className: "claude-rec-more" });
-    more.appendChild(el("summary", {}, "▸ more"));
+    // M3.8a: the arrow comes from the summary::before CSS — a literal "▸"
+    // here rendered a "▸ ▸ more" double arrow.
+    more.appendChild(el("summary", {}, "more"));
     const body = el("div", { className: "claude-rec-more-body" });
     body.innerHTML = renderInlineMarkdown(entry.parsed.claude_notes);
     more.appendChild(body);
@@ -2082,6 +2119,11 @@ function renderPrimaryAgreeAction(entry, displayed, target) {
     return wrap;
   }
   const label = reviewerLabelWithTarget(displayed, target);
+  // M3.8b: with no named target there's nothing concrete to "agree" to — the
+  // click opens the picker, so the button says that instead.
+  const btnText = (displayed === "merge" && !target)
+    ? "Choose which concept to fold this into…"
+    : `✓ Agree — ${label}`;
   const btn = el("button", {
     type: "button",
     className: "btn primary primary-agree",
@@ -2095,7 +2137,7 @@ function renderPrimaryAgreeAction(entry, displayed, target) {
       setEntryState(key, patch);
       onCommit(key);
     },
-  }, `✓ Agree — ${label}`);
+  }, btnText);
   wrap.appendChild(btn);
   return wrap;
 }
@@ -2129,12 +2171,12 @@ function renderPickSomethingElse(entry, displayed) {
 
 function renderMergeAliases(entry) {
   const block = el("div", { className: "merge-aliases-block" });
-  block.appendChild(el("div", { className: "label" }, "Merge aliases (proposed):"));
+  block.appendChild(el("div", { className: "label" }, "Lessons also use these names for it:"));
   const ul = el("ul");
   for (const a of entry.parsed.merge_aliases) {
     ul.appendChild(el("li", {},
-      el("code", {}, a.alias),
-      el("span", { className: "count" }, `(${a.count})`),
+      el("span", {}, `“${a.alias}”`),
+      el("span", { className: "count" }, ` (${a.count})`),
     ));
   }
   block.appendChild(ul);
@@ -2186,7 +2228,7 @@ function openMergePicker(entry, defaultTarget) {
   for (const old of card.querySelectorAll(".merge-picker")) old.remove();
 
   const picker = el("div", { className: "merge-picker" });
-  picker.appendChild(el("h3", {}, `Fold \`${entry.canonical_key}\` into…`));
+  picker.appendChild(el("h3", {}, `Fold ${conceptDisplayName(entry.canonical_key)} into…`));
 
   if (defaultTarget && ENTRIES_BY_KEY.has(defaultTarget)) {
     // High-confidence shortcut
@@ -2196,17 +2238,19 @@ function openMergePicker(entry, defaultTarget) {
       type: "button",
       className: "btn primary merge-shortcut-confirm",
       onclick: () => commitMerge(entry.canonical_key, defaultTarget, picker),
-    }, `→ ${defaultTarget} (high-confidence target) — Confirm`);
+    }, `→ ${conceptDisplayName(defaultTarget)} — Confirm`);
     shortcut.appendChild(confirmBtn);
     picker.appendChild(shortcut);
-    picker.appendChild(el("p", { className: "muted" }, "Or pick a different target ▾"));
+    picker.appendChild(el("p", { className: "muted" }, "Or pick a different concept ▾"));
   }
 
-  // Autocomplete fallback
+  // Autocomplete fallback. M3.7: reviewers type the friendly concept name
+  // (the datalist now carries labels); resolveConceptKey maps it back to the
+  // canonical_key for the actual commit.
   const input = el("input", {
     type: "text",
-    className: "merge-input mono",
-    placeholder: "Type canonical_key (autocomplete)…",
+    className: "merge-input",
+    placeholder: "Type a concept name…",
     list: "all-canonical-keys",
     autocomplete: "off",
   });
@@ -2222,11 +2266,11 @@ function openMergePicker(entry, defaultTarget) {
     type: "button",
     className: "btn primary",
     disabled: true,
-    onclick: () => commitMerge(entry.canonical_key, input.value.trim(), picker),
+    onclick: () => commitMerge(entry.canonical_key, resolveConceptKey(input.value), picker),
   }, "Confirm");
   input.addEventListener("input", () => {
-    const v = input.value.trim();
-    confirmBtn.disabled = !v || !ENTRIES_BY_KEY.has(v) || v === entry.canonical_key;
+    const resolved = resolveConceptKey(input.value);
+    confirmBtn.disabled = !resolved || resolved === entry.canonical_key;
   });
   actions.appendChild(cancelBtn);
   actions.appendChild(confirmBtn);
@@ -2238,7 +2282,7 @@ function openMergePicker(entry, defaultTarget) {
 
 function commitMerge(key, target, pickerEl) {
   if (!target || !ENTRIES_BY_KEY.has(target) || target === key) {
-    alert(`Invalid target: \`${target}\` is not a known canonical_key.`);
+    alert("That's not a concept this can fold into — try picking from the list that appears as you type.");
     return;
   }
   setEntryState(key, { verdict: "merge", merge_into: target });
@@ -2317,8 +2361,11 @@ function renderClusterSignalsPanel() {
 function ensureCanonicalKeysDatalist() {
   if (document.getElementById("all-canonical-keys")) return;
   const dl = el("datalist", { id: "all-canonical-keys" });
+  // M3.7: option values are the friendly labels (what reviewers see + what
+  // gets inserted on pick). Both consumers translate back: onJumpToEntry
+  // matches labels, the merge picker resolves via resolveConceptKey.
   for (const e of ENTRIES) {
-    dl.appendChild(el("option", { value: e.canonical_key, label: e.parsed.canonical_label || e.canonical_key }));
+    dl.appendChild(el("option", { value: e.parsed.canonical_label || e.canonical_key }));
   }
   document.body.appendChild(dl);
 }
@@ -2905,7 +2952,7 @@ function renderClusterStep(signal) {
 
   const head = el("header", { className: "step-head" });
   head.appendChild(el("span", { className: "mode-chip mode-resolve" }, MODE_CHIP_LABELS.Resolve));
-  head.appendChild(el("span", { className: "step-of" }, `step ${stepNum} of ${totalSteps}`));
+  head.appendChild(el("span", { className: "step-of", title: stepCountHint() }, `step ${stepNum} of ${totalSteps}`));
   head.appendChild(el("h2", { className: "step-title" }, clusterDisplayName(signal)));
   head.appendChild(el("div", { className: "step-key-row" },
     el("span", { className: "step-meta" }, `${signal.members.length} concepts in this group`),
@@ -2956,7 +3003,7 @@ function renderClusterStep(signal) {
       });
       const label = el("label", { className: "con24-parent-label" },
         radio,
-        el("code", {}, parentKey),
+        el("span", {}, conceptDisplayName(parentKey)),
       );
       reveal.appendChild(label);
     }
@@ -2972,7 +3019,7 @@ function renderClusterStep(signal) {
   // M3.3: reflect the group decision's carry-down so member rows don't read
   // "(no decision yet)" after a group choice was made.
   const verdictWord = (vd, target) => vd === "merge"
-    ? "fold into " + (target || "another")
+    ? "fold into " + (target ? conceptDisplayName(target) : "another")
     : ({ keep: "keep", new: "add new", drop: "remove" }[vd] || vd);
   for (const memberKey of signal.members) {
     const memberEntry = ENTRIES_BY_KEY.get(memberKey);
@@ -2997,9 +3044,9 @@ function renderClusterStep(signal) {
     const li = el("li", {});
     const peekBtn = el("button", {
       type: "button",
-      className: "member-peek mono",
+      className: "member-peek",
       onclick: () => jumpToStepByEntryKey(memberKey),
-    }, memberKey);
+    }, conceptDisplayName(memberKey));
     li.appendChild(peekBtn);
     li.appendChild(document.createTextNode(` — ${v}`));
     ul.appendChild(li);
@@ -3094,7 +3141,7 @@ function renderReviewSummary() {
     el("header", { className: "summary-header" },
       el("h2", {}, document.createTextNode("Review your decisions")),
       el("p", { className: "summary-counts" },
-        document.createTextNode(`${committedCount} of ${totalCount} entries committed.`)
+        document.createTextNode(`${committedCount} of ${totalCount} concepts decided.`)
       )
     )
   );
@@ -3181,7 +3228,7 @@ function renderVerdictBucket(title, verdict, entries, defaultOpen) {
     // TRAP B: no tier-tag span on screen (design §11 has none; "§NN" is a
     // forbidden on-screen code). Tiers are used only for sorting above.
     const row = el("li", { className: "bucket-row" },
-      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
       el("button", {
         className: "btn link edit-link",
         onclick: () => {
@@ -3224,7 +3271,7 @@ function renderFoldBucket(entries, defaultOpen) {
     group.appendChild(
       el("p", { className: "fold-target-header" },
         document.createTextNode("Folding into "),
-        el("code", {}, document.createTextNode(target)),
+        el("strong", {}, document.createTextNode(conceptDisplayName(target))),
         document.createTextNode(` (${byTarget[target].length}):`)
       )
     );
@@ -3233,9 +3280,9 @@ function renderFoldBucket(entries, defaultOpen) {
     for (const e of byTarget[target]) {
       // TRAP B: no tier-tag span.
       const row = el("li", { className: "bucket-row" },
-        el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+        el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
         document.createTextNode(" → "),
-        el("code", { className: "target" }, document.createTextNode(target)),
+        el("span", { className: "target" }, document.createTextNode(conceptDisplayName(target))),
         el("button", {
           className: "btn link edit-link",
           onclick: () => {
@@ -3279,7 +3326,7 @@ function renderClusterBucket(defaultOpen) {
     let extra = "";
     if (s.id === "CON-24" && idx === 2) {
       const p = getClusterParent("CON-24");
-      if (p) extra = ` — keeping ${p}`;
+      if (p) extra = ` — keeping ${conceptDisplayName(p)}`;
     }
     const row = el("li", { className: "bucket-row" },
       el("span", { className: "group-label" }, document.createTextNode(clusterDisplayName(s))),
@@ -3315,7 +3362,7 @@ function renderDeferredBucket(entries, defaultOpen) {
   for (const e of entries) {
     // TRAP B: no tier-tag span.
     const row = el("li", { className: "bucket-row" },
-      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
       el("button", {
         className: "btn link resume-link",
         onclick: () => {
@@ -3354,7 +3401,7 @@ function renderMismatchBucket(entries, defaultOpen) {
       ? reviewerLabelWithTarget(cp.verdict, cp.merge_into || null)
       : "(no current suggestion)";
     const row = el("li", { className: "bucket-row" },
-      el("code", { className: "key" }, document.createTextNode(e.canonical_key)),
+      el("span", { className: "key" }, document.createTextNode(conceptDisplayName(e.canonical_key))),
       document.createTextNode(" — you chose "),
       document.createTextNode(yourLabel),
       document.createTextNode("; the group decision points to "),
@@ -3415,21 +3462,23 @@ function navDefer() {
 }
 function onJumpToEntry(value) {
   if (!value) return;
-  // Match by canonical_key first; fall back to label.
+  // M3.7: match key or friendly label, case-insensitively.
+  const lower = value.trim().toLowerCase();
   let foundIndex = -1;
   for (let i = 0; i < stepSequence.length; i++) {
     const s = stepSequence[i];
-    if (s.kind === "entry" && (s.id === value || s.entry.parsed.canonical_label === value)) {
+    if (s.kind === "entry" && (s.id.toLowerCase() === lower
+        || (s.entry.parsed.canonical_label || "").toLowerCase() === lower)) {
       foundIndex = i;
       break;
     }
-    if (s.kind === "cluster" && s.id === value) {
+    if (s.kind === "cluster" && s.id.toLowerCase() === lower) {
       foundIndex = i;
       break;
     }
   }
   if (foundIndex < 0) {
-    alert(`No entry/cluster found for \`${value}\``);
+    alert(`Couldn't find "${value}" — try picking from the list that appears as you type.`);
     return;
   }
   state.wizard.step_index = foundIndex;

@@ -1,5 +1,9 @@
 # Concepts Worksheet Wizard — Execution Status
 
+> **FROZEN 2026-06-10.** This doc is history only — no further session logs land here.
+> The remaining work (old M3.7/M3.8/M3.9 + the B2 reasoning sidecar + handoff) moved to the slim
+> **`2026-06-10-concepts-wizard-finish-plan.md`**, which `/concepts-batch2` now points at.
+
 > **Plan:** `2026-05-15-concepts-worksheet-wizard-plan.md`
 > **Design:** `2026-05-15-concepts-worksheet-wizard-design.md`
 > **Per-milestone kickoff:** `2026-05-15-concepts-worksheet-wizard-execution-kickoff.md` ← paste at start of each fresh session
