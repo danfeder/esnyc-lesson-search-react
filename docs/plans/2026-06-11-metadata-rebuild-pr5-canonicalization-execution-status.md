@@ -1,17 +1,41 @@
 # PR 5 — D4 Vocabulary Canonicalization — Execution Status
 
-**Last updated:** 2026-06-11 by Session 1 (design lock)
+**Last updated:** 2026-06-11 by Session 2 (PR 5a built + opened + TEST-verified)
 
 ## Current State
 
-**Active PR:** none — Session 1 (design lock) complete; design doc §4 is LOCKED, PR 5a tasks
-A.1–A.5 are authored concrete in the impl plan. Next session starts PR 5a execution.
+**Active PR: #504 — PR 5a heritage canonicalization, OPEN, TEST-verified, awaiting merge
+decision.** Tasks A.1–A.4 complete; A.5 is at step 4-5 (bot round 1 triaged, merge gated on
+user instruction). Branch `feat/pr5a-heritage-canonicalization`.
 
-**Current task:** PR 5a Task A.1 (heritage vocab artifact emitter), on branch
-`feat/pr5a-heritage-canonicalization` (cut from `main` at `e476f2b`, 2026-06-11). The
-branch-landing question is CLOSED: `tools/concepts-worksheet-form` merged to `main` via PR #503
-(squash `e476f2b`, 2026-06-11 — wizard tool + concepts verdict archive + this track's four-file
-scaffold). Both 5a and 5b inputs and docs are in `main`; no gating remains except 5b-waits-for-5a.
+**What's on the PR:** vocab artifact `data/vocab/cultural-heritage.vocab.json` (71 canonicals /
+88 alias_map entries / provenance, emitted by the parser's new `--emit-json` mode with
+fail-loudly self-checks); deterministic generator `scripts/generate-heritage-rewrite-migration.py`;
+migration `20260611000000_pr5a_heritage_canonicalization.sql` (snapshot → rewrite → post-verify;
+idempotent); probe file + rehearsal evidence doc. Zero `src/` changes (predicted by design,
+proven: 577 unit tests pass untouched).
+
+**TEST verification (2026-06-11, post-CI-apply): ALL PROBES GREEN.** (a) 60 distinct / 916
+appearances, zero non-canonical survivors; (b) zero alias rows, column + metadata; (c) 916
+appearances, set_mismatch 0; (d) per-slug reach unchanged except `european` +1 — explained
+strict improvement (kebab-only `eastern-european` row now reachable via parent); (e) all 5
+ex-'Native American' lessons FTS-match 'Indigenous'; (f) idempotent (0 rows); backup table 34
+rows, RLS on, 0 policies.
+
+**Two probe-spec learnings (both corrected in the probe file, carry into PR 5b):**
+(1) mirror integrity is SET equality, not byte equality — 5 live TEST rows have pre-existing
+order-only column⇄metadata diffs (§J's `_meta_array_matches_column` is order-insensitive);
+(2) parent-slug expansions lack child kebab variants, so canonicalization can INCREASE parent
+filter reach (never decrease).
+
+**Bot round 1 (all four surfaces):** database-review clean; code-review 5 findings — triaged
+2 reject (style/below-bar), 1 already-done (evidence doc), 1 verified-no-action (slug list
+exhaustive), 1 reject (snapshotted_at). Security & Dependencies CI failure is pre-existing
+npm-audit noise (fails on main; known @lhci/cli follow-up).
+
+**Next:** user merge decision → PROD migration approval → PROD before-census (regenerate
+'Native American' id list FROM PROD!) → apply → full probe set via `mcp__supabase-remote` →
+record in evidence doc. PR 5b is gated on PROD-green.
 
 **Design-lock outcomes (full evidence in design doc §4):** parser-driven JSON artifacts in
 `data/vocab/` (worksheet-specified shapes); migration-file mechanism with emitter-generated
@@ -46,10 +70,12 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 - Session 1 (2026-06-11): design doc §4 Draft → LOCKED (9 mechanism answers + filter-alignment
   finding); PR 5a tasks A.1–A.5 authored concrete; PR 5b carry-forward knowledge captured in
   impl plan; test plan made concrete.
+- Session 2 (2026-06-11): Tasks A.1–A.4 complete; PR #504 opened; TEST probes all green;
+  bot round 1 triaged.
 
 ## In flight
 
-(none — next session opens PR 5a)
+- PR #504 (PR 5a) — open, TEST-verified, awaiting user merge decision + PROD approval.
 
 ## Blocked
 
@@ -57,11 +83,23 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 
 ## Decisions made during execution
 
-(none yet)
+- 2026-06-11 (S2): probe (c) mirror check corrected to SET equality (the §J invariant) after
+  the byte-equality version flagged 5 pre-existing order-only rows — none touched by the
+  rewrite. Probe file documents the 5 lesson_ids.
+- 2026-06-11 (S2): probe (d) `european` 54→55 accepted as explained improvement (parent
+  expansions lack child kebab variants; the kebab-only row gains parent-filter reach).
+- 2026-06-11 (S2): bot round 1 — rejected subprocess-import-placement + --emit-date validation
+  + snapshotted_at column (all below the "visible bug or DB risk" bar); slug-list exhaustiveness
+  verified against filterDefinitions.ts (18 = 5 parents + 13 children).
 
 ## Out-of-scope follow-ups captured here
 
-(none yet)
+- 5 live rows carry pre-existing order-only column⇄metadata heritage diffs (lesson_ids in the
+  probe file / evidence doc). Harmless under §J set-semantics; would self-heal on any future
+  column write to those rows. Not PR 5a's to fix.
+- `test:rls` has 2 pre-existing local-env scenario failures (`archive_duplicate_lesson`
+  validates-existence / prevents-self-archiving) — fail identically on baseline without the
+  PR 5a migration (stash-verified). Worth a look someday; not blocking.
 
 ## Pointers to durable context
 
@@ -73,6 +111,32 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
   2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md
 
 ## Session log
+
+### Session 2 — 2026-06-11 — PR 5a build + open + TEST verification
+
+Major events:
+- A.1: `--emit-json` mode on `parse-heritage-worksheet.py` (TDD: red on unrecognized flag;
+  negative tests — bogus verdict refuses emit, unresolvable merge_into trips self-check +
+  collision detector). Artifact emitted byte-stable; TEST coverage probe zero unresolved
+  literals. Commit `f240af6`.
+- A.2: generator + migration `20260611000000`. Local rehearsal: seeded drift row
+  `['Native American','Indigenous','north-american']` → `['Indigenous','North American']`,
+  mirror + FTS + backup verified, full-file re-run idempotent. Stash-tested test:rls baseline
+  to prove the 2 scenario failures pre-exist. Commit `789a9db`.
+- A.3: zero `src/` diff + 577 tests pass — design prediction held. (recorded, no commit needed)
+- A.4: probe file (literals mechanically diffed vs artifact — exact) + evidence doc with TEST
+  before-census (42 alias appearances / 34 rows — refines Session 1's "~36" estimate; zero
+  dedup collisions; per-slug reach + expansion-membership evidence). Commit `3b11c5a`.
+- A.5: pre-push reviewer (opus) — no blocking findings, 2 informational notes (both fail-safe
+  by construction). Pushed; PR #504 opened. CI applied migration to TEST; FULL PROBE SET GREEN
+  (with the set-equality + european+1 refinements above). Bot round 1 collected from all four
+  surfaces and triaged: db-review clean, code-review 5 findings (2 reject, 1 done, 1 verified,
+  1 reject), Security & Dependencies failure pre-existing on main.
+- Operational notes: local supabase storage container threw transient 502s on `db reset`
+  (DB state fine each time — confirmed via debug log + MCP); TEST DB responsive throughout.
+
+Commits: `f240af6`, `789a9db`, `3b11c5a`, TEST-results docs commit, this status commit
+(docs commits pushed bundled, per feedback_no_docs_push_during_pr).
 
 ### Session 1 — 2026-06-11 — design lock
 
