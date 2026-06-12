@@ -138,8 +138,10 @@ Supervisor-only (never delegated): user communication, anything
 (allowed without asking, but announce) / merge / PROD approval, bot-round
 triage recommendations, and all edits to the four scaffold docs. The
 PER-PR RITUAL stays supervisor-run (its pre-push reviewer dispatch is
-already a subagent). Prefer `model: "opus"` for substantive
-review/explore/design subagents per `feedback_opus_subagents.md`.
+already a subagent). Subagent model tiering per `feedback_opus_subagents.md`
+(updated 2026-06-12): Fable (or omit `model` = inherit) for judgment-heavy
+review/verification; Opus for spec'd executors; Sonnet for bulk sweeps;
+NEVER Haiku.
 
 If the session has a workflow/ultracode opt-in active, the Workflow tool
 is the preferred orchestration for fan-out phases (executor → adversarial
@@ -249,8 +251,9 @@ WHAT'S OK without asking:
 - Reading anything, running tests, running baseline checks
 - Read-only SQL via MCP (local/TEST freely; PROD read-only probes + censuses
   are expected — census PROD per the locked rule)
-- Dispatching review agents via the Agent tool (prefer `model: "opus"` for
-  substantive review/explore work per `feedback_opus_subagents.md`)
+- Dispatching review agents via the Agent tool (model tiering per
+  `feedback_opus_subagents.md`: Fable/inherit for judgment-heavy, Opus for
+  executors, Sonnet floor — never Haiku)
 - Small-sample LLM dry-runs (10-20 lessons, no DB writes)
 
 VERIFICATION BEFORE COMPLETION:
