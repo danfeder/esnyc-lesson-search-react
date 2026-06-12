@@ -220,7 +220,14 @@ export interface RepairOutcome {
 
 export interface RunRecord {
   id: string;
-  phase: 'main' | 'repair';
+  /**
+   * 'main' = the primary monolithic pass; 'repair' = a per-field Zod-failure
+   * re-run; 'fallback' = an automatic single retry of a refusal-stopped main
+   * call with the --fallback-model (carries that model id, so downstream
+   * consumers both USE it as the lesson's result — it is the latest record —
+   * and SEE it was not the primary model).
+   */
+  phase: 'main' | 'repair' | 'fallback';
   model: string;
   promptSchemaHash: string;
   /** Raw tool_use input (repair phase: the repair-merged object). */
@@ -334,7 +341,7 @@ export function computeCostUsd(model: string, usage: AnthropicUsage | null): num
 
 export function buildRunRecord(params: {
   id: string;
-  phase: 'main' | 'repair';
+  phase: 'main' | 'repair' | 'fallback';
   model: string;
   promptSchemaHash: string;
   rawInput: unknown;
@@ -377,7 +384,7 @@ export function buildRunRecord(params: {
 const runRecordLineSchema = z
   .object({
     id: z.string().min(1),
-    phase: z.enum(['main', 'repair']),
+    phase: z.enum(['main', 'repair', 'fallback']),
     model: z.string().min(1),
     promptSchemaHash: z.string().min(1),
     rawInput: z.unknown(),
@@ -463,6 +470,14 @@ export interface CurrentRunIdentity {
    * direct).
    */
   proxied: boolean;
+  /**
+   * The --fallback-model for this run (undefined when no fallback is wired).
+   * `phase: 'fallback'` records carry the FALLBACK model id, not the primary
+   * `model`, so they are matched against this field instead of `model`. When
+   * it is undefined (or set to a different model than the record's), the
+   * fallback record is NOT resume-skipped and its lesson re-runs the main pass.
+   */
+  fallbackModel?: string;
   /** id → sha256 of the CURRENT corpus body for that lesson. */
   bodyHashById: Map<string, string>;
 }
@@ -485,11 +500,24 @@ export function computeResumableIds(
     // (legacy records without the field read as direct).
     const recordProxied =
       record.effectiveBaseUrl !== undefined && record.effectiveBaseUrl !== DIRECT_BASE_URL;
+    // A `phase: 'fallback'` record carries the FALLBACK model id (not the
+    // primary `model`) and is ALWAYS forced-shape (the fallback call never
+    // uses --tool-choice-auto). So it matches the fallback model and its
+    // tool-choice identity is forced regardless of the run's --tool-choice-auto.
+    // Non-fallback records keep the exact previous identity rules verbatim —
+    // existing records' resume verdict is unchanged.
+    const isFallback = record.phase === 'fallback';
+    const modelMatches = isFallback
+      ? record.model === current.fallbackModel
+      : record.model === current.model;
+    const toolChoiceMatches = isFallback
+      ? record.toolChoice !== 'auto'
+      : (record.toolChoice === 'auto') === current.toolChoiceAuto;
     if (
       record.promptSchemaHash === current.promptSchemaHash &&
-      record.model === current.model &&
+      modelMatches &&
       record.strict === current.strict &&
-      (record.toolChoice === 'auto') === current.toolChoiceAuto &&
+      toolChoiceMatches &&
       recordProxied === current.proxied &&
       record.bodyHash === current.bodyHashById.get(id) &&
       record.error === null
@@ -765,6 +793,15 @@ interface Args {
    */
   toolChoiceAuto: boolean;
   /**
+   * Optional fallback model. When set, a MAIN-pass call that ends in a model
+   * REFUSAL (stop_reason: 'refusal') is automatically retried ONCE with this
+   * model — using the canonical FORCED tool_choice regardless of
+   * --tool-choice-auto — and the result is appended as a provenance-marked
+   * `phase: 'fallback'` record. Other errors keep the existing behavior.
+   * Undefined = no fallback.
+   */
+  fallbackModel?: string;
+  /**
    * Optional CLIProxyAPI base URL. When set, calls route through the proxy and
    * the API key source switches to ANTHROPIC_API_KEY (the proxy-side key);
    * normalized (trailing `/v1` stripped) before use. Undefined = direct API.
@@ -840,6 +877,10 @@ export function parseArgs(argv: string[]): Args {
       case '--tool-choice-auto':
         a.toolChoiceAuto = true;
         break;
+      case '--fallback-model':
+        a.fallbackModel = requireFlagValue(flag, next);
+        i++;
+        break;
       case '--base-url':
         a.baseUrl = requireFlagValue(flag, next);
         i++;
@@ -889,6 +930,19 @@ Flags:
                      BOTH the main and repair passes. For models that reject
                      forced tool_choice (claude-fable-5); the production
                      Opus/Sonnet shape stays forced-tool by default.
+  --fallback-model <id>
+                     refusal-only fallback: when a MAIN-pass call ends in a
+                     model refusal (stop_reason: refusal), retry that lesson
+                     ONCE with this model and append the result as a
+                     provenance-marked phase:'fallback' record (carrying this
+                     model id). The fallback call uses the canonical FORCED
+                     tool_choice even when the main pass runs --tool-choice-auto
+                     (the escape hatch is NOT applied to the fallback). Only a
+                     refusal triggers it — network/billing/max_tokens errors
+                     keep the existing errored-record behavior. --resume treats
+                     a clean fallback record as completed (matched against this
+                     model). Typical: --model claude-fable-5 --fallback-model
+                     claude-opus-4-7.
   --base-url <url>   route through a local CLIProxyAPI proxy to bill against
                      Claude Max (e.g. http://127.0.0.1:8317/api/provider/anthropic).
                      Do NOT include the trailing "/v1" — the SDK appends it; a
@@ -1082,7 +1136,7 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-interface CallResult {
+export interface CallResult {
   rawInput: unknown;
   usage: AnthropicUsage;
   latencyMs: number;
@@ -1109,6 +1163,19 @@ export class MissingToolUseError extends Error {
     this.usage = usage;
     this.stopReason = stopReason;
   }
+}
+
+/**
+ * The --fallback-model trigger predicate. Fallback fires ONLY when a main-pass
+ * call ended in a model REFUSAL — i.e. a MissingToolUseError whose stop_reason
+ * is exactly `'refusal'` (the API returns a refusal block instead of the
+ * forced tool call; a deterministic safety false-positive on innocuous content
+ * was observed for claude-fable-5 on the B3 answer key). Every other error
+ * (network, billing 400s, max_tokens, end_turn) keeps the existing errored-
+ * record behavior and does NOT trigger a fallback.
+ */
+export function isRefusalError(error: unknown): boolean {
+  return error instanceof MissingToolUseError && error.stopReason === 'refusal';
 }
 
 /** The slice of an API response the extractor needs (pure, unit-testable). */
@@ -1219,6 +1286,86 @@ async function callForcedTool(
   }
 }
 
+/**
+ * Runs the single automatic fallback retry of a refusal-stopped main call and
+ * builds its `phase: 'fallback'` record. Orchestration is pure apart from the
+ * injected `callFn` (the runner passes a closure over callForcedTool; tests
+ * pass a stub) — no network here, so the refusal→fallback flow is unit-tested.
+ *
+ * The fallback ALWAYS uses the canonical FORCED tool_choice (callFn is invoked
+ * with `false`), even when the main pass ran with --tool-choice-auto: the
+ * escape hatch exists only for models that reject forced tool_choice
+ * (claude-fable-5), and the fallback model (claude-opus-4-7) takes forced tool
+ * use. The resulting record therefore carries NO `toolChoice` marker (forced),
+ * the fallback model id, post-hoc Zod validation against the SAME result
+ * schema, and cost billed under the fallback model. A fallback that itself
+ * errors lands as a clean errored fallback record (usage preserved when the
+ * no-tool_use response was billed) — and, being errored, is not resumable.
+ */
+export async function runFallbackForRefusal(params: {
+  id: string;
+  fallbackModel: string;
+  promptSchemaHash: string;
+  bodyHash: string;
+  resultSchema: ReturnType<typeof buildResultSchema>;
+  effectiveBaseUrl: string;
+  strict: boolean;
+  /**
+   * Performs the actual fallback call. Receives `toolChoiceAuto` (always
+   * `false` here — forced). In the runner this is a closure over callForcedTool
+   * bound to the fallback model + the canonical (non-auto) tool.
+   */
+  callFn: (toolChoiceAuto: boolean) => Promise<CallResult>;
+  /**
+   * Whether the MAIN pass ran --tool-choice-auto. Captured only to make the
+   * "fallback ignores the escape hatch" contract explicit and testable; the
+   * fallback call is forced regardless of its value.
+   */
+  mainPassToolChoiceAuto?: boolean;
+}): Promise<RunRecord> {
+  try {
+    // ALWAYS forced — the fallback never inherits --tool-choice-auto.
+    const { rawInput: apiInput, usage, latencyMs, stopReason } = await params.callFn(false);
+    const { rawInput, normalizations } = normalizeRecordInput(apiInput);
+    const zod = validateRawInput(params.resultSchema, rawInput);
+    return buildRunRecord({
+      id: params.id,
+      phase: 'fallback',
+      model: params.fallbackModel,
+      promptSchemaHash: params.promptSchemaHash,
+      rawInput,
+      zod,
+      usage,
+      latencyMs,
+      error: null,
+      stopReason,
+      bodyHash: params.bodyHash,
+      strict: params.strict,
+      // Forced path → no toolChoice marker (mirrors the main forced path).
+      effectiveBaseUrl: params.effectiveBaseUrl,
+      normalizations,
+    });
+  } catch (e) {
+    const msg = errorMessage(e);
+    const billed = e instanceof MissingToolUseError ? e : null;
+    return buildRunRecord({
+      id: params.id,
+      phase: 'fallback',
+      model: params.fallbackModel,
+      promptSchemaHash: params.promptSchemaHash,
+      rawInput: null,
+      zod: { passed: false, fieldErrors: null },
+      usage: billed?.usage ?? null,
+      latencyMs: billed?.latencyMs ?? null,
+      error: msg,
+      stopReason: billed?.stopReason ?? null,
+      bodyHash: params.bodyHash,
+      strict: params.strict,
+      effectiveBaseUrl: params.effectiveBaseUrl,
+    });
+  }
+}
+
 function appendRecord(outputPath: string, record: RunRecord): void {
   appendFileSync(outputPath, `${JSON.stringify(record)}\n`, 'utf8');
 }
@@ -1293,6 +1440,7 @@ async function runMainPass(args: Args): Promise<void> {
       strict: args.strict,
       toolChoiceAuto: args.toolChoiceAuto,
       proxied: args.baseUrl !== undefined,
+      fallbackModel: args.fallbackModel,
       bodyHashById,
     });
     const before = lessons.length;
@@ -1321,6 +1469,7 @@ async function runMainPass(args: Args): Promise<void> {
   let zodPassed = 0;
   let zodFailed = 0;
   let errored = 0;
+  let fellBack = 0;
   let totalCostUsd = 0;
   const totalUsage: AnthropicUsage = {
     input_tokens: 0,
@@ -1341,6 +1490,9 @@ async function runMainPass(args: Args): Promise<void> {
 
   await mapWithConcurrency(lessons, args.concurrency, async (lesson) => {
     let record: RunRecord;
+    // Captured in the catch when a refusal triggers --fallback-model; appended
+    // AFTER the main errored record so the fallback wins as the latest record.
+    let fallbackRecord: RunRecord | null = null;
     const bodyHash = computeBodyHash(lesson.content_text);
     try {
       const {
@@ -1405,8 +1557,51 @@ async function runMainPass(args: Args): Promise<void> {
       });
       if (billed) addToTotals(billed.usage, record.costUsd);
       errored++;
+
+      // Refusal-only fallback: a MAIN-pass refusal (stop_reason: 'refusal')
+      // retries ONCE with --fallback-model, using the canonical FORCED
+      // tool_choice (never the --tool-choice-auto escape hatch — that exists
+      // only for the primary model that rejects forced tools). The errored
+      // main record is still written above (provenance of the refusal); the
+      // fallback record is appended after it, so it becomes the lesson's
+      // latest record for validate-output/scoring/--resume.
+      if (args.fallbackModel !== undefined && isRefusalError(e)) {
+        console.warn(
+          `  lesson ${lesson.id} refused by ${args.model} — falling back to ${args.fallbackModel}`
+        );
+        fallbackRecord = await runFallbackForRefusal({
+          id: lesson.id,
+          fallbackModel: args.fallbackModel,
+          promptSchemaHash,
+          bodyHash,
+          resultSchema,
+          effectiveBaseUrl,
+          strict: args.strict,
+          mainPassToolChoiceAuto: args.toolChoiceAuto,
+          // Forced tool_choice (toolChoiceAuto=false), forced tool definition.
+          callFn: (toolChoiceAuto) =>
+            callForcedTool(
+              client,
+              args.fallbackModel as string,
+              systemPrompt,
+              tool,
+              lesson.content_text,
+              toolChoiceAuto
+            ),
+        });
+        fellBack++;
+        if (fallbackRecord.usage) addToTotals(fallbackRecord.usage, fallbackRecord.costUsd);
+        if (fallbackRecord.error !== null) {
+          console.warn(
+            `  lesson ${lesson.id} fallback (${args.fallbackModel}) also failed: ${fallbackRecord.error}`
+          );
+        }
+      }
     }
+    // Main record first, then the fallback (if any) — so the fallback is the
+    // lesson's LATEST record (latestRecordById picks the last line per id).
     appendRecord(args.output, record);
+    if (fallbackRecord !== null) appendRecord(args.output, fallbackRecord);
     done++;
     if (done % 10 === 0 || done === lessons.length) {
       console.log(`  ${done}/${lessons.length} processed`);
@@ -1415,7 +1610,8 @@ async function runMainPass(args: Args): Promise<void> {
 
   console.log('');
   console.log(
-    `Done: ${zodPassed} Zod-passed, ${zodFailed} Zod-failed (repairable via --repair), ${errored} errored.`
+    `Done: ${zodPassed} Zod-passed, ${zodFailed} Zod-failed (repairable via --repair), ${errored} errored` +
+      `${args.fallbackModel !== undefined ? `, ${fellBack} fell back to ${args.fallbackModel}` : ''}.`
   );
   console.log(
     `Tokens: input=${totalUsage.input_tokens}  output=${totalUsage.output_tokens}  ` +

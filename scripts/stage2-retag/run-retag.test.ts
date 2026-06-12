@@ -47,6 +47,7 @@ import {
   fieldErrorsFromZod,
   filterCorpusByIds,
   isInsideArtifactsDir,
+  isRefusalError,
   latestRecordById,
   loadIdSet,
   mapWithConcurrency,
@@ -58,8 +59,10 @@ import {
   planRepairs,
   repairFieldSpec,
   resolveClientConfig,
+  runFallbackForRefusal,
   validateRawInput,
   type AnthropicUsage,
+  type CallResult,
   type RepairOutcome,
   type RunRecord,
 } from './run-retag';
@@ -1313,6 +1316,236 @@ describe('--ids flag (subset run over a JSONL/JSON id file)', () => {
       const { kept, missingIds } = filterCorpusByIds(lessons, ['x', 'y']);
       expect(kept).toEqual([]);
       expect(missingIds).toEqual(['x', 'y']);
+    });
+  });
+});
+
+describe('--fallback-model (refusal-only fallback with provenance-marked records)', () => {
+  const usage: AnthropicUsage = {
+    input_tokens: 6000,
+    output_tokens: 300,
+    cache_creation_input_tokens: 0,
+    cache_read_input_tokens: 6000,
+  };
+
+  describe('parseArgs', () => {
+    it('defaults fallbackModel to undefined (no fallback)', () => {
+      expect(parseArgs([]).fallbackModel).toBeUndefined();
+      expect(parseArgs(['--model', 'claude-fable-5']).fallbackModel).toBeUndefined();
+    });
+
+    it('captures the --fallback-model value', () => {
+      const args = parseArgs(['--model', 'claude-fable-5', '--fallback-model', 'claude-opus-4-7']);
+      expect(args.model).toBe('claude-fable-5');
+      expect(args.fallbackModel).toBe('claude-opus-4-7');
+    });
+
+    it('requires a value (and rejects a following flag as the value)', () => {
+      expect(() => parseArgs(['--fallback-model'])).toThrow(/--fallback-model requires a value/);
+      expect(() => parseArgs(['--fallback-model', '--resume'])).toThrow(
+        /--fallback-model requires a value/
+      );
+    });
+  });
+
+  describe('isRefusalError (the fallback trigger predicate)', () => {
+    it('is true ONLY for a MissingToolUseError whose stopReason is "refusal"', () => {
+      expect(isRefusalError(new MissingToolUseError(usage, 'refusal'))).toBe(true);
+    });
+
+    it('is false for a MissingToolUseError with a non-refusal stop_reason (max_tokens, end_turn)', () => {
+      expect(isRefusalError(new MissingToolUseError(usage, 'max_tokens'))).toBe(false);
+      expect(isRefusalError(new MissingToolUseError(usage, 'end_turn'))).toBe(false);
+      expect(isRefusalError(new MissingToolUseError(usage, null))).toBe(false);
+    });
+
+    it('is false for ordinary errors (network/billing 400s keep existing behavior)', () => {
+      expect(isRefusalError(new Error('socket hang up'))).toBe(false);
+      expect(isRefusalError(new Error('HTTP 400: credit balance too low'))).toBe(false);
+      expect(isRefusalError('not even an error')).toBe(false);
+    });
+  });
+
+  describe('runFallbackForRefusal (orchestrates the single fallback retry)', () => {
+    const fallbackResult: CallResult = {
+      rawInput: makeValidResult(),
+      usage: { input_tokens: 6200, output_tokens: 280 },
+      latencyMs: 4200,
+      stopReason: 'tool_use',
+    };
+
+    function baseParams(callFn: (toolChoiceAuto: boolean) => Promise<CallResult>) {
+      return {
+        id: 'lesson-seed-burst',
+        fallbackModel: 'claude-opus-4-7',
+        promptSchemaHash: 'hash-a',
+        bodyHash: 'body-h',
+        resultSchema,
+        effectiveBaseUrl: DIRECT_BASE_URL,
+        strict: false,
+        callFn,
+      };
+    }
+
+    it('appends a phase:"fallback" record carrying the fallback model + provenance', async () => {
+      const record = await runFallbackForRefusal(baseParams(async () => fallbackResult));
+      expect(record.phase).toBe('fallback');
+      expect(record.model).toBe('claude-opus-4-7');
+      expect(record.id).toBe('lesson-seed-burst');
+      expect(record.error).toBeNull();
+      expect(record.zod.passed).toBe(true);
+      expect(record.stopReason).toBe('tool_use');
+      // billed under the fallback model
+      expect(record.costUsd).toBeCloseTo(
+        computeCostUsd('claude-opus-4-7', fallbackResult.usage) ?? NaN,
+        10
+      );
+    });
+
+    it('uses the FORCED tool_choice even when the main pass ran --tool-choice-auto', async () => {
+      let sawToolChoiceAuto: boolean | undefined;
+      const record = await runFallbackForRefusal({
+        ...baseParams(async (toolChoiceAuto) => {
+          sawToolChoiceAuto = toolChoiceAuto;
+          return fallbackResult;
+        }),
+        // the main pass was auto (fable), but the fallback must NOT inherit it
+        mainPassToolChoiceAuto: true,
+      });
+      expect(sawToolChoiceAuto).toBe(false);
+      // forced path → no toolChoice marker on the fallback record
+      expect(record.toolChoice).toBeUndefined();
+      expect('toolChoice' in record).toBe(false);
+    });
+
+    it('records a fallback that itself errors (keeps usage when billed)', async () => {
+      const record = await runFallbackForRefusal(
+        baseParams(async () => {
+          throw new MissingToolUseError({ input_tokens: 10, output_tokens: 0 }, 'max_tokens');
+        })
+      );
+      expect(record.phase).toBe('fallback');
+      expect(record.model).toBe('claude-opus-4-7');
+      expect(record.error).toContain('no submit_tags tool_use block');
+      expect(record.usage).toEqual({ input_tokens: 10, output_tokens: 0 });
+      expect(record.zod.passed).toBe(false);
+    });
+  });
+
+  describe('computeResumableIds treats a successful fallback record as completed', () => {
+    const HASH = 'current-hash';
+    const PRIMARY = 'claude-fable-5';
+    const FALLBACK = 'claude-opus-4-7';
+
+    function jsonl(records: RunRecord[]): string {
+      return records.map((record) => JSON.stringify(record)).join('\n');
+    }
+
+    function identity(ids: string[], opts: { toolChoiceAuto?: boolean; fallbackModel?: string }) {
+      return {
+        promptSchemaHash: HASH,
+        model: PRIMARY,
+        strict: false,
+        toolChoiceAuto: opts.toolChoiceAuto ?? false,
+        proxied: false,
+        fallbackModel: opts.fallbackModel,
+        bodyHashById: defaultBodyHashes(ids),
+      };
+    }
+
+    it('a fallback-completed lesson is NOT re-run when --fallback-model matches', () => {
+      const records = parseRunRecords(
+        jsonl([
+          // the refusing main record (errored) ...
+          makeRecord({
+            id: 'refused',
+            promptSchemaHash: HASH,
+            model: PRIMARY,
+            toolChoice: 'auto',
+            error: 'response carried no submit_tags tool_use block (stop_reason: refusal)',
+            stopReason: 'refusal',
+          }),
+          // ... superseded by a clean fallback record (forced opus)
+          makeRecord({
+            id: 'refused',
+            phase: 'fallback',
+            promptSchemaHash: HASH,
+            model: FALLBACK,
+          }),
+        ])
+      );
+      // Primary run is --tool-choice-auto (fable) WITH --fallback-model opus-4-7.
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: FALLBACK })
+        )
+      ).toEqual(new Set(['refused']));
+    });
+
+    it('does NOT resume a fallback record when the run has no/another --fallback-model', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({ id: 'refused', phase: 'fallback', promptSchemaHash: HASH, model: FALLBACK }),
+        ])
+      );
+      // No fallback model this run → the fallback record's model matches nothing.
+      expect(computeResumableIds(records, identity(['refused'], { toolChoiceAuto: true }))).toEqual(
+        new Set()
+      );
+      // A DIFFERENT fallback model → still not resumable.
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: 'claude-sonnet-4-6' })
+        )
+      ).toEqual(new Set());
+    });
+
+    it('an errored fallback record is NOT resumable (re-runs like any errored record)', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({
+            id: 'refused',
+            phase: 'fallback',
+            promptSchemaHash: HASH,
+            model: FALLBACK,
+            error: 'response carried no submit_tags tool_use block (stop_reason: max_tokens)',
+          }),
+        ])
+      );
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: FALLBACK })
+        )
+      ).toEqual(new Set());
+    });
+
+    it('a fallback record is forced-shape: its toolChoice identity ignores the run --tool-choice-auto', () => {
+      // The fallback record has no toolChoice marker (forced). Even though the
+      // current run is --tool-choice-auto, the fallback record must still match.
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({ id: 'refused', phase: 'fallback', promptSchemaHash: HASH, model: FALLBACK }),
+        ])
+      );
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: FALLBACK })
+        )
+      ).toEqual(new Set(['refused']));
+    });
+  });
+
+  describe('parseRunRecords round-trips phase:"fallback" records', () => {
+    it('accepts the fallback phase in the line schema', () => {
+      const fallback = makeRecord({ id: 'r', phase: 'fallback', model: 'claude-opus-4-7' });
+      const parsed = parseRunRecords(JSON.stringify(fallback));
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].phase).toBe('fallback');
+      expect(parsed[0].model).toBe('claude-opus-4-7');
     });
   });
 });
