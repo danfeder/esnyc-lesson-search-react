@@ -147,8 +147,14 @@ Fold the code-shaped PR-A deferrals BEFORE any B3 runs so the runs ride fixed co
 - Also quantify from the key: **academic-strip amplification** (cases where `academic` was correct and the strip hurts) → decide recheck routing; **L14 heritage-ban failures** → decide code-side rule. Record both decisions in the status doc.
 - **Commit:** scoring script + scorecard artifact.
 
-### B4 — Full run `[USER GREEN-LIGHT — real-money full-corpus rule]`
-- Present B3 scorecard + final cost projection FIRST. On green-light: `run-retag.ts` over all 765 records + repair pass (proxy; resume-capable). validate-output must show **100% Zod-pass post-repair**.
+### B3.5 — Pre-B4 corpus prep (green-lit 2026-06-12 Session 8; the RUN stays separately gated)
+Three items, all must complete before B4 launches:
+- **B3.5a — Corpus-wide doc-surfaces capture** (~710 remaining live docs; 59 already swept Session 7 → `artifacts/prefill/header-filename-sweep.md`). Method proven: Drive filename via metadata; page headers via `inspect_doc_structure` (native Docs) / `word/header*.xml` (.docx). Chunk across multiple background agents (~80-100 docs each); merge into the doc-surfaces sidecar format B2.5 expects (1:1 with corpus ids); supervisor spot-checks a sample against Session-7 sweep rows. Output: full-corpus sidecar artifact.
+- **B3.5b — Full-corpus completeness screen** (3/60 key lessons were incomplete/non-lesson; expect ~35 corpus-wide). Heuristic pass over `corpus.jsonl` bodies (missing agenda/objectives/materials signature, stub length, non-lesson template) + agent review of flagged rows → plain-language candidate list with body evidence. **USER verdicts on candidates** (deletion follow-ups pattern from Session 7); confirmed non-lessons excluded from the run corpus (exclusions file precedent `9d4b626`).
+- **B3.5c — Fold the 3 Session-7 deletion verdicts** (L10 Celebrating Eid `…`, L21 Kitchen Appendices, L27 Three Sister Arepas — verbatim ids in `data/answer-key-exclusions.json` + rulings doc) into the corpus/export exclusions so B4 doesn't run them.
+
+### B4 — Full run `[USER GREEN-LIGHT — real-money full-corpus rule; prep green-lit, RUN gate still pending]`
+- Present B3 scorecard + final cost projection FIRST. On green-light: `run-retag.ts` over all live records post-B3.5 exclusions + repair pass (proxy; resume-capable). **Winner locked at B3 (2026-06-12): claude-fable-5 `--tool-choice-auto` with `--fallback-model claude-opus-4-7`** (refusal-only fallback, ruling Session 8). validate-output must show **100% Zod-pass post-repair** (fallback records count as their lesson's result).
 
 ### B5 — Apply artifacts
 - Full diff report + `prepare-apply.ts` emitting (i) staging data as SQL/CSV artifact, (ii) draft apply migration (PR-5 emitter precedent) with `pr6_retag_rollback` snapshot DDL + dual-write UPDATEs, (iii) spot-check worksheet (~50-100 sampled across changed / unchanged / weird buckets) for the user's Protocol-B review.
