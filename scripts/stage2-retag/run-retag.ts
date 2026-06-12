@@ -20,16 +20,29 @@
  *   --limit N           only process the first N corpus records (dry-run)
  *   --resume            skip ids already in the output JSONL whose latest
  *                       record carries the CURRENT prompt+schema hash, the
- *                       same model, the same --strict flag, the same lesson
- *                       body hash, and no error (a prompt/schema edit changes
- *                       the hash and invalidates resume-merging; a corpus
- *                       body change invalidates that lesson's record)
+ *                       same model, the same --strict flag, the same
+ *                       tool-choice shape, the same lesson body hash, and no
+ *                       error (a prompt/schema edit changes the hash and
+ *                       invalidates resume-merging; a corpus body change
+ *                       invalidates that lesson's record)
  *   --output <path>     output JSONL (default artifacts/retag-run.jsonl)
  *   --repair            repair mode: re-run ONLY Zod-failed fields of
  *                       existing records as per-field calls and append
  *                       merged, provenance-marked records (see below)
  *   --concurrency N     parallel API calls (default 5)
  *   --strict            set `strict: true` on the tool definition(s)
+ *   --tool-choice-auto  EXPERIMENT-ONLY escape hatch: send
+ *                       `tool_choice: {type:'auto'}` instead of the canonical
+ *                       forced shape, for BOTH the main pass and the repair
+ *                       pass, plus a system addendum instructing the model to
+ *                       call `submit_tags` exactly once and never answer in
+ *                       prose. Needed for models that reject forced tool_choice
+ *                       (e.g. claude-fable-5, whose always-on thinking is
+ *                       incompatible with `tool_choice: {type:'tool'}` and 400s
+ *                       "tool_choice forces tool use is not compatible with
+ *                       this model"). The production Opus/Sonnet shape stays
+ *                       forced-tool by default — this flag is for the A8 dry-run
+ *                       Fable contestant only.
  *   --help
  *
  * Output: appends one JSON line per lesson to the output file:
@@ -215,6 +228,14 @@ export interface RunRecord {
   /** Whether the tool definition(s) carried strict: true (--strict flag). */
   strict: boolean;
   /**
+   * The tool-choice shape this record was produced under. Present and set to
+   * `'auto'` only when the --tool-choice-auto escape hatch was used (the call
+   * sent `tool_choice: {type:'auto'}` + a system addendum); absent on the
+   * default forced-tool path, where it reads as the implicit `'forced'`.
+   * Part of the resume identity, mirroring `strict`.
+   */
+  toolChoice?: 'auto';
+  /**
    * The effective Anthropic SDK base URL this record was produced against:
    * the normalized `--base-url` value (e.g. the CLIProxyAPI proxy endpoint) or
    * the literal `'direct'` when no `--base-url` was passed. Lets artifacts
@@ -308,6 +329,8 @@ export function buildRunRecord(params: {
   stopReason: string | null;
   bodyHash: string;
   strict: boolean;
+  /** Only set on the --tool-choice-auto path; omitted on the default forced path. */
+  toolChoice?: 'auto';
   effectiveBaseUrl: string;
   repairs?: Record<string, RepairOutcome>;
   normalizations?: string[];
@@ -326,6 +349,7 @@ export function buildRunRecord(params: {
     stopReason: params.stopReason,
     bodyHash: params.bodyHash,
     strict: params.strict,
+    ...(params.toolChoice !== undefined ? { toolChoice: params.toolChoice } : {}),
     effectiveBaseUrl: params.effectiveBaseUrl,
     ...(params.repairs !== undefined ? { repairs: params.repairs } : {}),
     ...(params.normalizations !== undefined ? { normalizations: params.normalizations } : {}),
@@ -362,6 +386,7 @@ const runRecordLineSchema = z
     stopReason: z.string().nullable().optional(),
     bodyHash: z.string().optional(),
     strict: z.boolean().optional(),
+    toolChoice: z.literal('auto').optional(),
     effectiveBaseUrl: z.string().optional(),
     repairs: z.record(z.unknown()).optional(),
     normalizations: z.array(z.string()).optional(),
@@ -404,16 +429,25 @@ export interface CurrentRunIdentity {
   model: string;
   /** The current run's --strict flag (NOT part of the prompt+schema hash). */
   strict: boolean;
+  /**
+   * Whether the current run uses the --tool-choice-auto escape hatch. Part of
+   * the resume identity (mirroring `strict`): the call shape — tool_choice
+   * type AND the system addendum — differs from the forced path, so a record
+   * produced under the other shape must NOT be resume-skipped. A record's
+   * absent `toolChoice` reads as forced (false here).
+   */
+  toolChoiceAuto: boolean;
   /** id → sha256 of the CURRENT corpus body for that lesson. */
   bodyHashById: Map<string, string>;
 }
 
 /**
  * Ids `--resume` may skip: the latest record for the id carries the CURRENT
- * prompt+schema hash, the same model, the same strict flag, the same corpus
- * body hash, and completed without an API error. (Zod-failed records still
- * count as done — the repair pass owns those.) Any mismatch — including a
- * record written before bodyHash/strict existed — re-runs the lesson.
+ * prompt+schema hash, the same model, the same strict flag, the same
+ * tool-choice shape, the same corpus body hash, and completed without an API
+ * error. (Zod-failed records still count as done — the repair pass owns
+ * those.) Any mismatch — including a record written before
+ * bodyHash/strict/toolChoice existed — re-runs the lesson.
  */
 export function computeResumableIds(
   records: RunRecord[],
@@ -425,6 +459,7 @@ export function computeResumableIds(
       record.promptSchemaHash === current.promptSchemaHash &&
       record.model === current.model &&
       record.strict === current.strict &&
+      (record.toolChoice === 'auto') === current.toolChoiceAuto &&
       record.bodyHash === current.bodyHashById.get(id) &&
       record.error === null
     ) {
@@ -684,6 +719,12 @@ interface Args {
   concurrency: number;
   strict: boolean;
   /**
+   * EXPERIMENT-ONLY: send `tool_choice: {type:'auto'}` + a system addendum
+   * instead of the canonical forced `tool_choice: {type:'tool'}`, for models
+   * that reject forced tool use (claude-fable-5). Default false = forced.
+   */
+  toolChoiceAuto: boolean;
+  /**
    * Optional CLIProxyAPI base URL. When set, calls route through the proxy and
    * the API key source switches to ANTHROPIC_API_KEY (the proxy-side key);
    * normalized (trailing `/v1` stripped) before use. Undefined = direct API.
@@ -720,6 +761,7 @@ export function parseArgs(argv: string[]): Args {
     repair: false,
     concurrency: 5,
     strict: false,
+    toolChoiceAuto: false,
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -750,6 +792,9 @@ export function parseArgs(argv: string[]): Args {
         break;
       case '--strict':
         a.strict = true;
+        break;
+      case '--tool-choice-auto':
+        a.toolChoiceAuto = true;
         break;
       case '--base-url':
         a.baseUrl = requireFlagValue(flag, next);
@@ -784,6 +829,12 @@ Flags:
   --concurrency <N>  parallel API calls (default 5)
   --strict           set strict:true on the tool definition(s) (off by default;
                      Zod + repair remain the enforcement gate regardless)
+  --tool-choice-auto EXPERIMENT-ONLY escape hatch: send tool_choice:{type:'auto'}
+                     + a system addendum (call submit_tags exactly once, never
+                     answer in prose) instead of the canonical forced shape, for
+                     BOTH the main and repair passes. For models that reject
+                     forced tool_choice (claude-fable-5); the production
+                     Opus/Sonnet shape stays forced-tool by default.
   --base-url <url>   route through a local CLIProxyAPI proxy to bill against
                      Claude Max (e.g. http://127.0.0.1:8317/api/provider/anthropic).
                      Do NOT include the trailing "/v1" — the SDK appends it; a
@@ -937,9 +988,14 @@ export interface ForcedToolResponseShape {
 }
 
 /**
- * Pulls the forced tool_use input out of a response. Captures usage and
- * stop_reason BEFORE scanning content so the no-tool_use path can throw a
- * MissingToolUseError that still carries the billed usage.
+ * Pulls the submit_tags tool_use input out of a response. Scans the WHOLE
+ * content array for the first `tool_use` block named submit_tags, so it is
+ * robust to thinking/text blocks appearing alongside (or before) the tool
+ * call — the case the --tool-choice-auto path produces (auto choice + an
+ * always-thinking model like fable). Captures usage and stop_reason BEFORE
+ * scanning so the no-tool_use path can throw a MissingToolUseError that still
+ * carries the billed usage; that surfaces as a clean errored record rather
+ * than crashing the run.
  */
 export function extractForcedToolResult(response: ForcedToolResponseShape): {
   rawInput: unknown;
@@ -956,23 +1012,68 @@ export function extractForcedToolResult(response: ForcedToolResponseShape): {
   throw new MissingToolUseError(usage, stopReason);
 }
 
-/** One forced-tool call in the canonical shape; returns the raw tool input. */
+/**
+ * System addendum appended (only) on the --tool-choice-auto path. With
+ * `tool_choice: {type:'auto'}` the model is free to answer in prose, so this
+ * instruction is what keeps it calling the tool. Kept to two sentences and
+ * appended INTO the system text block before its cache_control breakpoint, so
+ * the cached prefix still ends at the same breakpoint (see buildMessageRequest).
+ */
+export const TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM =
+  `\n\nYou MUST respond by calling the \`${SUBMIT_TAGS_TOOL_NAME}\` tool exactly once with your selected values. ` +
+  'Do NOT answer in prose or explain your reasoning in the response text — the tool call is the only accepted output.';
+
+/**
+ * Builds the `messages.create` request for one call (pure, unit-testable, no
+ * network). Default (forced) path mirrors the canonical PROD shape verbatim:
+ * a single system text block + the single tool, EACH carrying
+ * `cache_control: {type:'ephemeral'}` (two breakpoints), and
+ * `tool_choice: {type:'tool'}`. The --tool-choice-auto escape hatch instead
+ * sends `tool_choice: {type:'auto'}` and appends TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM
+ * to the SAME system text block's text — the addendum sits before the system
+ * block's cache_control, so both breakpoints (system + tool) are preserved.
+ */
+export function buildMessageRequest(params: {
+  model: string;
+  systemPrompt: string;
+  tool: Anthropic.Messages.Tool | SubmitTagsTool;
+  body: string;
+  toolChoiceAuto: boolean;
+}): Anthropic.Messages.MessageCreateParamsNonStreaming {
+  const systemText = params.toolChoiceAuto
+    ? params.systemPrompt + TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM
+    : params.systemPrompt;
+  return {
+    model: params.model,
+    max_tokens: MAX_TOKENS,
+    system: [{ type: 'text', text: systemText, cache_control: { type: 'ephemeral' } }],
+    tools: [params.tool as Anthropic.Messages.Tool],
+    tool_choice: params.toolChoiceAuto
+      ? { type: 'auto' }
+      : { type: 'tool', name: SUBMIT_TAGS_TOOL_NAME },
+    messages: [{ role: 'user', content: params.body }],
+  };
+}
+
+/**
+ * One model call; returns the raw tool input. Forced-tool shape by default;
+ * the --tool-choice-auto escape hatch (toolChoiceAuto) switches to auto +
+ * system addendum (buildMessageRequest). Either way the response is scanned
+ * for the first `submit_tags` tool_use block (extractForcedToolResult), so
+ * thinking/text blocks alongside the tool call are tolerated.
+ */
 async function callForcedTool(
   client: Anthropic,
   model: string,
   systemPrompt: string,
   tool: Anthropic.Messages.Tool | SubmitTagsTool,
-  body: string
+  body: string,
+  toolChoiceAuto = false
 ): Promise<CallResult> {
   const startedAt = Date.now();
-  const response = await client.messages.create({
-    model,
-    max_tokens: MAX_TOKENS,
-    system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-    tools: [tool as Anthropic.Messages.Tool],
-    tool_choice: { type: 'tool', name: SUBMIT_TAGS_TOOL_NAME },
-    messages: [{ role: 'user', content: body }],
-  });
+  const response = await client.messages.create(
+    buildMessageRequest({ model, systemPrompt, tool, body, toolChoiceAuto })
+  );
   const latencyMs = Date.now() - startedAt;
   try {
     const extracted = extractForcedToolResult({
@@ -1035,6 +1136,7 @@ async function runMainPass(args: Args): Promise<void> {
       promptSchemaHash,
       model: args.model,
       strict: args.strict,
+      toolChoiceAuto: args.toolChoiceAuto,
       bodyHashById,
     });
     const before = lessons.length;
@@ -1055,6 +1157,7 @@ async function runMainPass(args: Args): Promise<void> {
   console.log(
     `Calling ${args.model} for ${lessons.length} lessons ` +
       `(concurrency ${args.concurrency}${args.strict ? ', strict tools' : ''}` +
+      `${args.toolChoiceAuto ? ', tool_choice auto' : ''}` +
       `${normalizedBaseUrl !== undefined ? `, via ${normalizedBaseUrl}` : ''}) → ${args.output}`
   );
 
@@ -1089,7 +1192,14 @@ async function runMainPass(args: Args): Promise<void> {
         usage,
         latencyMs,
         stopReason,
-      } = await callForcedTool(client, args.model, systemPrompt, tool, lesson.content_text);
+      } = await callForcedTool(
+        client,
+        args.model,
+        systemPrompt,
+        tool,
+        lesson.content_text,
+        args.toolChoiceAuto
+      );
       // Code-enforce the mechanical tagging rules the models ignore (R1/R4/R5)
       // BEFORE Zod, so validation + the repair pass + the apply gate all see
       // normalized values. Provenance is stamped on the record, never silent.
@@ -1108,6 +1218,7 @@ async function runMainPass(args: Args): Promise<void> {
         stopReason,
         bodyHash,
         strict: args.strict,
+        toolChoice: args.toolChoiceAuto ? 'auto' : undefined,
         effectiveBaseUrl,
         normalizations,
       });
@@ -1133,6 +1244,7 @@ async function runMainPass(args: Args): Promise<void> {
         stopReason: billed?.stopReason ?? null,
         bodyHash,
         strict: args.strict,
+        toolChoice: args.toolChoiceAuto ? 'auto' : undefined,
         effectiveBaseUrl,
       });
       if (billed) addToTotals(billed.usage, record.costUsd);
@@ -1215,6 +1327,7 @@ async function runRepairPass(args: Args): Promise<void> {
   const client = createApiClient(normalizedBaseUrl);
   console.log(
     `Repairing ${limited.length} record(s) with ${args.model} (concurrency ${args.concurrency}` +
+      `${args.toolChoiceAuto ? ', tool_choice auto' : ''}` +
       `${normalizedBaseUrl !== undefined ? `, via ${normalizedBaseUrl}` : ''}) → ${args.output}`
   );
 
@@ -1237,7 +1350,8 @@ async function runRepairPass(args: Args): Promise<void> {
           args.model,
           repairPrompt,
           repairTool,
-          lessonBody
+          lessonBody,
+          args.toolChoiceAuto
         );
         repairs[field] = {
           previous,
@@ -1299,6 +1413,7 @@ async function runRepairPass(args: Args): Promise<void> {
         stopReason: null,
         bodyHash: computeBodyHash(lessonBody),
         strict: args.strict,
+        toolChoice: args.toolChoiceAuto ? 'auto' : undefined,
         effectiveBaseUrl,
         repairs,
         normalizations,

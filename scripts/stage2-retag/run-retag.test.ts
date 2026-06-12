@@ -31,6 +31,8 @@ import {
   DIRECT_BASE_URL,
   MissingToolUseError,
   PRICING_PER_MTOK,
+  TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM,
+  buildMessageRequest,
   buildRepairTool,
   buildRunRecord,
   computeBodyHash,
@@ -296,11 +298,12 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
   const HASH = 'current-hash';
   const MODEL = 'claude-opus-4-7';
 
-  function identity(ids: string[], strict = false) {
+  function identity(ids: string[], strict = false, toolChoiceAuto = false) {
     return {
       promptSchemaHash: HASH,
       model: MODEL,
       strict,
+      toolChoiceAuto,
       bodyHashById: defaultBodyHashes(ids),
     };
   }
@@ -974,5 +977,195 @@ describe('fixture integrity (__fixtures__/run-output.fixture.jsonl, item 9)', ()
     // ghost Zod-passed under another model: skipped as passed, not as model mismatch.
     expect(ids).not.toContain('lesson-ghost');
     expect(plan.modelMismatch).toBe(0);
+  });
+});
+
+describe('--tool-choice-auto escape hatch (Fable experiment)', () => {
+  describe('flag parse', () => {
+    it('defaults toolChoiceAuto to false', () => {
+      expect(parseArgs([]).toolChoiceAuto).toBe(false);
+      expect(parseArgs(['--model', 'claude-fable-5']).toolChoiceAuto).toBe(false);
+    });
+
+    it('sets toolChoiceAuto when --tool-choice-auto is passed', () => {
+      expect(parseArgs(['--tool-choice-auto']).toolChoiceAuto).toBe(true);
+      expect(
+        parseArgs(['--model', 'claude-fable-5', '--tool-choice-auto', '--limit', '3'])
+          .toolChoiceAuto
+      ).toBe(true);
+    });
+
+    it('is a boolean flag (takes no value) and coexists with other flags', () => {
+      const args = parseArgs(['--tool-choice-auto', '--strict', '--concurrency', '1']);
+      expect(args.toolChoiceAuto).toBe(true);
+      expect(args.strict).toBe(true);
+      expect(args.concurrency).toBe(1);
+    });
+  });
+
+  describe('buildMessageRequest (system addendum + cache breakpoints)', () => {
+    it('forced default: canonical shape, NO addendum, two cache breakpoints intact', () => {
+      const req = buildMessageRequest({
+        model: 'claude-opus-4-8',
+        systemPrompt,
+        tool,
+        body: 'lesson body',
+        toolChoiceAuto: false,
+      });
+      expect(req.tool_choice).toEqual({ type: 'tool', name: 'submit_tags' });
+      const systemBlocks = req.system as Array<{ text: string; cache_control?: unknown }>;
+      expect(systemBlocks).toHaveLength(1);
+      // No addendum on the forced path: system text is byte-identical to the prompt.
+      expect(systemBlocks[0].text).toBe(systemPrompt);
+      expect(systemBlocks[0].text).not.toContain(TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM.trim());
+      // Breakpoint 1: system block carries cache_control.
+      expect(systemBlocks[0].cache_control).toEqual({ type: 'ephemeral' });
+      // Breakpoint 2: the tool carries its own cache_control (unchanged).
+      expect((req.tools?.[0] as { cache_control?: unknown }).cache_control).toEqual({
+        type: 'ephemeral',
+      });
+      expect(req.messages).toEqual([{ role: 'user', content: 'lesson body' }]);
+    });
+
+    it('auto path: tool_choice auto + addendum appended INTO the cached system block', () => {
+      const req = buildMessageRequest({
+        model: 'claude-fable-5',
+        systemPrompt,
+        tool,
+        body: 'lesson body',
+        toolChoiceAuto: true,
+      });
+      expect(req.tool_choice).toEqual({ type: 'auto' });
+      const systemBlocks = req.system as Array<{ text: string; cache_control?: unknown }>;
+      // Still a SINGLE system block (the addendum is concatenated, not a new block).
+      expect(systemBlocks).toHaveLength(1);
+      // Addendum present, and the original prompt is the unchanged prefix.
+      expect(systemBlocks[0].text).toBe(systemPrompt + TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM);
+      expect(systemBlocks[0].text.startsWith(systemPrompt)).toBe(true);
+      expect(systemBlocks[0].text).toContain('submit_tags');
+      expect(systemBlocks[0].text).toContain('Do NOT answer in prose');
+      // Breakpoint 1 preserved: the addendum sits BEFORE the system block's
+      // cache_control (it is inside the same cached block).
+      expect(systemBlocks[0].cache_control).toEqual({ type: 'ephemeral' });
+      // Breakpoint 2 preserved: tool cache_control still present.
+      expect((req.tools?.[0] as { cache_control?: unknown }).cache_control).toEqual({
+        type: 'ephemeral',
+      });
+    });
+
+    it('addendum is short (~2 sentences) and names the tool + the prose ban', () => {
+      const sentences = TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM.trim().split(/(?<=[.!?])\s+/);
+      expect(sentences.length).toBeLessThanOrEqual(2);
+      expect(TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM).toContain('submit_tags');
+      expect(TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM.toLowerCase()).toContain('exactly once');
+    });
+  });
+
+  describe('extraction robustness (auto responses carry thinking/text alongside tool_use)', () => {
+    const usage: AnthropicUsage = { input_tokens: 7000, output_tokens: 4096 };
+
+    it('finds the tool_use after [thinking, text] blocks (auto choice)', () => {
+      const result = extractForcedToolResult({
+        content: [
+          { type: 'thinking' },
+          { type: 'text' },
+          { type: 'tool_use', name: 'submit_tags', input: { tags: ['x'] } },
+        ],
+        usage,
+        stop_reason: 'tool_use',
+      });
+      expect(result.rawInput).toEqual({ tags: ['x'] });
+    });
+
+    it('errors (does not crash) when the auto response has only thinking/text, no tool_use', () => {
+      let thrown: unknown;
+      try {
+        extractForcedToolResult({
+          content: [{ type: 'thinking' }, { type: 'text' }],
+          usage,
+          stop_reason: 'end_turn',
+        });
+      } catch (e) {
+        thrown = e;
+      }
+      expect(thrown).toBeInstanceOf(MissingToolUseError);
+      const error = thrown as MissingToolUseError;
+      // The error string surfaces clearly on the errored record.
+      expect(error.message).toContain('no submit_tags tool_use block');
+      expect(error.usage).toEqual(usage);
+    });
+  });
+
+  describe('provenance on the run record', () => {
+    function recordWith(toolChoice: 'auto' | undefined): RunRecord {
+      return buildRunRecord({
+        id: 'lesson-fable',
+        phase: 'main',
+        model: 'claude-fable-5',
+        promptSchemaHash: 'h',
+        rawInput: makeValidResult(),
+        zod: { passed: true, fieldErrors: null },
+        usage: null,
+        latencyMs: null,
+        error: null,
+        stopReason: 'tool_use',
+        bodyHash: 'b',
+        strict: false,
+        toolChoice,
+        effectiveBaseUrl: DIRECT_BASE_URL,
+      });
+    }
+
+    it('stamps toolChoice:"auto" when the flag is set', () => {
+      expect(recordWith('auto').toolChoice).toBe('auto');
+    });
+
+    it('omits toolChoice on the default forced path (reads as forced)', () => {
+      const record = recordWith(undefined);
+      expect(record.toolChoice).toBeUndefined();
+      expect('toolChoice' in record).toBe(false);
+    });
+
+    it('round-trips through parseRunRecords (line schema accepts toolChoice:"auto")', () => {
+      const parsed = parseRunRecords(JSON.stringify(recordWith('auto')));
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].toolChoice).toBe('auto');
+    });
+  });
+
+  describe('resume identity treats tool-choice shape like --strict', () => {
+    const HASH = 'current-hash';
+    const MODEL = 'claude-fable-5';
+
+    function jsonl(records: RunRecord[]): string {
+      return records.map((record) => JSON.stringify(record)).join('\n');
+    }
+
+    function identity(ids: string[], toolChoiceAuto: boolean) {
+      return {
+        promptSchemaHash: HASH,
+        model: MODEL,
+        strict: false,
+        toolChoiceAuto,
+        bodyHashById: defaultBodyHashes(ids),
+      };
+    }
+
+    it('an auto-shape run does NOT resume a forced-shape record (and vice versa)', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({ id: 'forced', promptSchemaHash: HASH, model: MODEL }), // no toolChoice = forced
+          makeRecord({ id: 'auto', promptSchemaHash: HASH, model: MODEL, toolChoice: 'auto' }),
+        ])
+      );
+      // Current run = forced → only the forced record is resumable.
+      expect(computeResumableIds(records, identity(['forced', 'auto'], false))).toEqual(
+        new Set(['forced'])
+      );
+      // Current run = auto → only the auto record is resumable.
+      expect(computeResumableIds(records, identity(['forced', 'auto'], true))).toEqual(
+        new Set(['auto'])
+      );
+    });
   });
 });
