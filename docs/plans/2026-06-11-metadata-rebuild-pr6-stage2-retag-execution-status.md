@@ -20,6 +20,7 @@
 
 - 2026-06-11 (scaffolding): **field scope (OQ2) deferred to the Session 2 walkthrough** by user choice, with a Session 1 PROD census of the ~8 smaller vocab fields as the evidence input.
 - 2026-06-11 (scaffolding): track scaffolded in design-lock mode — the mechanism lock reopening is the walkthrough's first question (OQ1), per the exploration doc; nothing pre-decided.
+- 2026-06-11 (scaffolding, post-review): **execution model = supervisor + fresh-context subagents** (user directive, generalized from the PR 5 kickoff into the templates + this track's kickoff). Session boundary = supervisor context budget, not task count; status header checkpointed after each verified task; OQ1-OQ13 tagged `[user-verdict]` vs `[evidence-lockable]` — verdict questions are never locked without the user.
 
 ## Done
 

@@ -83,8 +83,68 @@ design lock (OQ13).
 7. `npm run type-check && npm run lint` — confirm a clean baseline.
    If it fails, diagnose first. If the failure is unrelated to the current
    branch/task, report it and ask before changing unrelated files.
-8. Tell me where you are and what task is next. Don't start coding until
-   I confirm orientation.
+8. Tell me where you are and what task is next. Don't start coding or
+   dispatch the first executor subagent until I confirm orientation.
+
+# EXECUTION MODE — SUPERVISOR + FRESH-CONTEXT SUBAGENTS
+
+This session runs as a SUPERVISOR. You own orientation, user-facing
+checkpoints, decisions, verification, and status-file bookkeeping — but
+impl-plan tasks (and Session-1 evidence-gathering items) are EXECUTED by
+dispatched subagents (Agent tool) that start with fresh context. The goal:
+keep supervisor context light so one session carries several tasks before
+a /clear + kickoff re-paste is needed.
+
+Supervisor context discipline:
+- Delegate anything that needs bulk reading (multi-file exploration, long
+  doc/log reads, large diffs, the taggingv3 sample inspection, the corpus
+  audits) to a subagent that returns conclusions — the supervisor consumes
+  summaries, not file dumps. Exception: the exploration doc + design doc
+  are supervisor reading (they're decision inputs, not bulk data).
+- One impl-plan task (or one evidence item) per executor dispatch — never
+  bundle two into one agent.
+- Verify in the main loop before accepting any executor's result — this is
+  LOAD-BEARING (`feedback_workflow_orchestration.md`: supervisor
+  verification has caught real agent misses). Re-run the task's CHEAP
+  verification commands yourself (self-checks, type-check/lint, the key
+  MCP probe), inspect `git log` / `git show --stat`, spot-check the
+  artifact. Don't re-read everything the agent read.
+- **Checkpoint as you go:** refresh the status doc's Current State header
+  after EACH verified task, not only at session end — so an unplanned
+  /clear at any point loses nothing.
+- When context is getting heavy, run the session-end ritual and hand off
+  to a fresh session. Don't START a new dispatch unless you can also
+  afford its verification + status update.
+
+Per executor dispatch, the subagent prompt MUST contain (it never sees
+this kickoff):
+- The four doc paths + the task/evidence-item ID, with instruction to READ
+  the design doc + relevant impl-plan section from disk before acting.
+- A digest of the DATA SAFETY / MIGRATION DISCIPLINE blocks, the LOCKED
+  decisions, and the NEVER list.
+- Which skills the task requires (e.g. `database-migrations`, TDD).
+- Boundaries: committing on the feature branch is OK; NEVER push, open a
+  PR, touch PROD (writes; read-only PROD probes are OK where the task
+  needs a census), run full-corpus LLM passes, or edit the design doc /
+  impl plan / status file / kickoff — the supervisor owns those.
+- "If blocked, or anything on disk contradicts the locked design, STOP and
+  report back with what you found — do not improvise." (Subagents cannot
+  ask the user questions.)
+- Required report format: what was done, commits made, verification
+  commands run + their ACTUAL output.
+
+Supervisor-only (never delegated): user communication, anything
+`[user-verdict]` (the Session-2 walkthrough especially), push / PR open
+(allowed without asking, but announce) / merge / PROD approval, bot-round
+triage recommendations, and all edits to the four scaffold docs. The
+PER-PR RITUAL stays supervisor-run (its pre-push reviewer dispatch is
+already a subagent). Prefer `model: "opus"` for substantive
+review/explore/design subagents per `feedback_opus_subagents.md`.
+
+If the session has a workflow/ultracode opt-in active, the Workflow tool
+is the preferred orchestration for fan-out phases (executor → adversarial
+verifier per `feedback_workflow_orchestration.md`); the same context
+discipline and supervisor-verify gate apply.
 
 # LOCKED DECISIONS — do NOT re-debate
 
@@ -205,11 +265,14 @@ TDD WHERE APPROPRIATE:
 
 # SESSION SCOPE
 
-Default: ONE task per session, or a small group of trivially-related tasks.
-Stop at natural commit boundaries. Don't try to ship an entire PR in one
-session unless it's tiny. If you finish a task with cycles to spare and the
-next task is small + independent, do it. If the next task is substantive,
-end the session.
+Under supervisor + subagent execution, a session carries AS MANY tasks as
+supervisor context comfortably allows: dispatch → verify → checkpoint the
+status header, then next task. The session boundary is supervisor context
+budget, NOT task count. Always stop for: any user-gated decision (merge,
+PROD approval, the full-corpus run green-light, `[user-verdict]` design
+questions), any anomaly needing user judgment, or supervisor context
+growing heavy (then session-end ritual + hand off to a fresh session).
+Stop at natural commit boundaries — never hand off mid-task.
 
 # SESSION-END RITUAL (do this LAST, every session)
 
@@ -223,6 +286,7 @@ end the session.
    - **Append a session log entry** (commit hashes + task IDs, decisions,
      process learnings).
    - **Update recent-decisions roll-up + out-of-scope follow-ups.**
+   The SUPERVISOR owns this file — subagents never write it.
 4. Commit the status file (and any kickoff edits if rituals changed). If a
    PR is open, bundle docs commits with the next fix-up push — don't burn a
    CI cycle on docs-only (`feedback_no_docs_push_during_pr.md`).
@@ -258,10 +322,14 @@ If the design doc's Status line still says "Draft": you are in the
 design-lock sessions. Session 1 = evidence gathering (the impl plan's
 "Session 1-2 work list": PROD census of smaller fields, content_text audit,
 token-economics dry-run, taggingv3 sample inspection, Batch retention check,
-call-shape confirmation). Session 2 = the mechanism re-decision walkthrough
-with the user (read the exploration doc end-to-end first; user is decision
-authority; plain language per `feedback_plain_language.md`). Lock answers
-into the design doc, flip Status to Locked, author the impl plan's concrete
-tasks. No implementation code until then.
+call-shape confirmation) — run it supervisor-style, one evidence item per
+subagent where the item is bulk work. Session 2 = the mechanism re-decision
+walkthrough with the user (read the exploration doc end-to-end first; user
+is decision authority; plain language per `feedback_plain_language.md`).
+Respect the OQ tags: `[evidence-lockable]` questions may be locked from
+evidence with a one-line rationale; `[user-verdict]` questions get evidence
++ a recommendation, and the USER decides — never lock those unilaterally.
+Lock answers into the design doc, flip Status to Locked, author the impl
+plan's concrete tasks. No implementation code until then.
 
 <!-- ===== END OF KICKOFF BODY ===== -->
