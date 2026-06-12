@@ -26,11 +26,17 @@ Mechanism notes (design doc 2026-06-11-…-pr5-canonicalization-design.md §4.1)
   in provenance.
 * alias_map keys are corpus literals, values are canonical keys (worksheet
   §10 contract). Drops are the 7 drop entries' corpus literals.
+* POST_WORKSHEET_ADDENDA: verdicts issued AFTER the worksheet round for
+  literals its census never saw (the census matched TEST; PROD carried rows
+  TEST lacked). Each addendum folds a literal into an existing keep key and
+  is recorded in provenance. The committed 5b migration predates the addenda
+  and is NOT regenerated (pushed history); each addendum ships in its own
+  follow-up migration.
 
 Self-checks (fail loudly, no silent emit): verdict counts 119/82/7; every
 merge_into resolves to a keep key after the rename; alias_map covers exactly
-the 201 non-drop literals; labels unique; appearance sum == 1912; subjects
-restricted to the 6 canonical subject keys.
+the 201 non-drop worksheet literals + the addenda; labels unique; appearance
+sum == 1912; subjects restricted to the 6 canonical subject keys.
 """
 
 from __future__ import annotations
@@ -69,6 +75,19 @@ EXPECTED_TOTAL_APPEARANCES = 1912
 # "Sorting and Categorization" in-file, the KEY rename was deferred to here).
 RENAMES = {"sorting": "sorting_and_categorization"}
 RENAME_EXPECTED_LABELS = {"sorting": "Sorting and Categorization"}
+
+# Post-worksheet verdict addenda: literal → existing keep key. The worksheet
+# census matched TEST, which lacks some PROD rows; literals discovered on
+# PROD afterward get individual verdicts from the verdict authority (the
+# user, acting as curriculum stakeholder) and land here, not in the
+# (read-only) returned worksheet.
+#   urban revitalization → advocacy: verdict 2026-06-12 at the PR 5b PROD
+#   before-census (1 appearance, PROD-only lesson "Seed Bursts"
+#   1NqjpqXV8soDQs2W9HonavtlxQT4MbFI0H7pUdnH-mEI). Precedent: the worksheet
+#   folded `community activism` → advocacy; this lesson is community-garden
+#   activism ("changemakers", "movements to revitalize urban communities").
+#   Applied by migration 20260613000000.
+POST_WORKSHEET_ADDENDA = {"urban revitalization": "advocacy"}
 
 # Appendix A per-subject sections: heading → canonical subject key.
 APPENDIX_SECTION_RE = re.compile(
@@ -291,11 +310,27 @@ def build_artifact(
     expected_alias_entries = EXPECTED_DISTINCT_LITERALS - EXPECTED_VERDICT_COUNTS["drop"]
     if len(alias_map) != expected_alias_entries:
         errors.append(
-            f"alias_map: expected {expected_alias_entries} entries,"
+            f"alias_map: expected {expected_alias_entries} worksheet entries,"
             f" found {len(alias_map)}"
         )
     if len(drops) != EXPECTED_VERDICT_COUNTS["drop"]:
         errors.append(f"drops: expected 7 literals, found {len(drops)}: {drops}")
+
+    # ---- post-worksheet addenda (validated against worksheet-derived state) ----
+    for lit, target in sorted(POST_WORKSHEET_ADDENDA.items()):
+        if lit in alias_map or lit in drops:
+            errors.append(
+                f"addendum {lit!r} collides with a worksheet literal — it"
+                f" belongs in the worksheet round, not the addenda"
+            )
+            continue
+        if target not in keep_keys:
+            errors.append(
+                f"addendum {lit!r}: target {target!r} is not a keep key"
+            )
+            continue
+        alias_map[lit] = target
+
     overlap = set(alias_map) & set(drops)
     if overlap:
         errors.append(f"literals in both alias_map and drops: {sorted(overlap)}")
@@ -312,6 +347,10 @@ def build_artifact(
             "verdict_counts": dict(sorted(verdict_counts.items())),
             "emitted": emit_date,
             "renames": dict(RENAMES),
+            "addenda": {
+                k: POST_WORKSHEET_ADDENDA[k]
+                for k in sorted(POST_WORKSHEET_ADDENDA)
+            },
         },
         "canonical": sorted(canonical, key=lambda c: c["key"]),
         "alias_map": {k: alias_map[k] for k in sorted(alias_map)},
