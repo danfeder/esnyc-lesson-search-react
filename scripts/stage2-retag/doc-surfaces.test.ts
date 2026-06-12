@@ -48,12 +48,12 @@ describe('data/doc-surfaces.json (checked-in sidecar)', () => {
   it('carries a top-level provenance block citing the 2026-06-12 Drive sweep', () => {
     expect(parsed._provenance.source).toContain('Drive');
     expect(parsed._provenance.source).toContain('2026-06-12');
-    // corpus-wide capture is flagged as still pending before B4
-    expect(JSON.stringify(parsed._provenance).toLowerCase()).toContain('pending');
+    // corpus-wide capture completed in B3.5a (2026-06-12)
+    expect(JSON.stringify(parsed._provenance).toLowerCase()).toContain('complete');
   });
 
-  it('has exactly 57 surviving (non-excluded) key lessons', () => {
-    expect(Object.keys(parsed.surfaces)).toHaveLength(57);
+  it('carries the full-corpus capture: 758 lessons (765 corpus − 5 excluded-unswept − 2 dead-link docs)', () => {
+    expect(Object.keys(parsed.surfaces)).toHaveLength(758);
   });
 
   it('excludes the 3 answer-key-exclusions ids', () => {
@@ -65,13 +65,14 @@ describe('data/doc-surfaces.json (checked-in sidecar)', () => {
     }
   });
 
-  it('matches every id present in answer-key.final.jsonl (1:1)', () => {
+  it('covers every id present in answer-key.final.jsonl (superset since the B3.5a corpus-wide capture)', () => {
     const finalIds = readFileSync(path.join(MODULE_DIR, 'artifacts/answer-key.final.jsonl'), 'utf8')
       .split('\n')
       .filter((line) => line.trim() !== '')
       .map((line) => (JSON.parse(line) as { id: string }).id);
-    const surfaceIds = Object.keys(parsed.surfaces);
-    expect(new Set(surfaceIds)).toEqual(new Set(finalIds));
+    for (const id of finalIds) {
+      expect(parsed.surfaces[id], `answer-key id ${id} missing from sidecar`).toBeDefined();
+    }
   });
 
   it('stores unfilled-template / no-header lessons with header: null', () => {
@@ -133,7 +134,7 @@ describe('loadDocSurfaces', () => {
   it('returns a Map keyed by lesson id', () => {
     const map = loadDocSurfaces();
     expect(map).toBeInstanceOf(Map);
-    expect(map.size).toBe(57);
+    expect(map.size).toBe(758);
     const l11 = map.get('lesson_727ff8bd39e44c7eaa1439302f02c93a');
     expect(l11?.filename).toBe('I spy...in the garden! Indoors 3K/PK');
   });
