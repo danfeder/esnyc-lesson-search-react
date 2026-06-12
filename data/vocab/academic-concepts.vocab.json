@@ -1,15 +1,18 @@
 {
   "provenance": {
     "source": "docs/plans/2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md",
-    "source_commit": "f3f050f0c1f1d12f2a9e1525957025481374261e",
+    "source_commit": "96df268ca33720d1d630a0bdceef3999f5b76b51",
     "verdict_counts": {
       "drop": 7,
       "keep": 119,
       "merge": 82
     },
-    "emitted": "2026-06-11",
+    "emitted": "2026-06-12",
     "renames": {
       "sorting": "sorting_and_categorization"
+    },
+    "addenda": {
+      "urban revitalization": "advocacy"
     }
   },
   "canonical": [
@@ -1046,6 +1049,7 @@
     "tool use": "tool_use",
     "trade routes": "trade_routes",
     "unit rates": "ratios",
+    "urban revitalization": "advocacy",
     "visual arts": "visual_arts",
     "vocabulary development": "vocabulary_development",
     "volume": "measurement",
