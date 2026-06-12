@@ -1,0 +1,148 @@
+{
+  "provenance": {
+    "task": "B1 — answer-key sampler adversarial bucket",
+    "authored": "2026-06-12",
+    "design_ref": "docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md §4 OQ6 (Protocol A)",
+    "seed_galleries": [
+      "docs/plans/pr6-stage2-retag-evidence/oq6-v3-baseline-and-eval-protocols.md §3 failure gallery",
+      "scripts/stage2-retag/artifacts/dryrun-notes-opus-r1.md (PR-A dry-run escalations; per-lesson full IDs)",
+      "scripts/stage2-retag/artifacts/dryrun-notes.md (PR-A fable-r3 escalations)"
+    ],
+    "id_mapping_note": "The two dry-run note files use DIFFERENT L-numberings (r1 stratification order vs the later fable-r3 file order); the prose L-numbers are NOT interchangeable. Every ID below is anchored to a FULL lesson_id citation in dryrun-notes-opus-r1.md's per-lesson sections (which cite full IDs inline), then verified present in artifacts/corpus.jsonl, never inferred from an L-number alone.",
+    "class_coverage": {
+      "cosmetics-craft-suspect": 3,
+      "craft-food-hybrid": 1,
+      "closing-tasting-conflation": 4,
+      "same-titled-family": 3,
+      "grade-fabrication": 1,
+      "grade-faithful-counter-case": 1,
+      "same-titled-inconsistency": 1,
+      "heritage-ban": 2,
+      "r4-concepts-integration-conflict": 2,
+      "table-marker-body": 3
+    },
+    "class_coverage_note": "Required floors per B1 spec: heritage-ban >= 2, table-marker >= 2, r4-conflict >= 2. Each met. IDs are unique across classes; a lesson that exhibits more than one class (e.g. the Cajun twins are BOTH heritage-suspect AND R4-misaligned) is assigned a single primary class so it appears exactly once."
+  },
+  "adversarial": [
+    {
+      "id": "1UOqNBD4kfdZth-hyfkGvYat_lVxgIscn",
+      "title": "Lotion & Agar Soap - MS",
+      "reason": "Cosmetics lesson v3-tagged cooking/basic-prep with soap ingredients as mainIngredients; body says the product is NOT for eating. Should be craft. (oq6 §3.1, the cleanest cosmetics→craft case.)",
+      "class": "cosmetics-craft-suspect"
+    },
+    {
+      "id": "1f1FVc2FsYYwFtCFWDRAxSfsT3BcPC1E5",
+      "title": "Lotion & Agar Soap - K",
+      "reason": "K-variant sibling of the MS cosmetics lesson with the same cooking-tag shape; same-titled pair tests both cosmetics→craft AND cross-variant consistency. (oq6 §3.1.)",
+      "class": "cosmetics-craft-suspect"
+    },
+    {
+      "id": "1EeGQSd0L2YohAapYIjqZy9tT2EK0cEXVU6ugltSaNwg",
+      "title": "Dr. Carver Lotion-Making",
+      "reason": "Craft+food hybrid (lotion-making PLUS Hoppin' John burgers eaten) flattened to cooking-only; the headline craft activity has no representation. Judgment case, not rule-following. (oq6 §3.2.)",
+      "class": "craft-food-hybrid"
+    },
+    {
+      "id": "1B-4jTGPsOXmFJp-q-4JpMJ3e7Qw5I92aOxtgWHD6UNU",
+      "title": "Farm Workers & Pesticides",
+      "reason": "Garden/social-justice lesson whose only food contact is a closing 'seasonal tasting'; PROD carries [cooking,garden] with empty cooking fields — internally contradictory. One of the 3 documented both→garden fixes. (oq6 §3.3.)",
+      "class": "closing-tasting-conflation"
+    },
+    {
+      "id": "1dTMg_5AdKV5cJNnt7_L2cXhTK9fmJr8U",
+      "title": "Roots",
+      "reason": "Garden lesson that finishes with 'a tasting, ideally of an edible root'; same both→garden tasting-conflation as Farm Workers. (oq6 §3.3.)",
+      "class": "closing-tasting-conflation"
+    },
+    {
+      "id": "1tYdCp_VLcX-ymleYFMRBj20Pzf4U7j912gg_k_-yMko",
+      "title": "Plant Families",
+      "reason": "Garden lesson with a closing tasting; the third documented both→garden tasting-conflation case (the calibration-strong one per oq6 §3.8). Tests the rule does NOT over-fire on genuine garden lessons. (oq6 §3.3/§3.8.)",
+      "class": "closing-tasting-conflation"
+    },
+    {
+      "id": "0BzCUl-9h7sgESGZ0MThTY0NBYVE",
+      "title": "Seed Dispersal",
+      "reason": "One of three same-titled 'Seed Dispersal' rows v3 classified inconsistently (different seasons/themes/activity_type across identical-family lessons). This variant is garden-only. (oq6 §3.4.)",
+      "class": "same-titled-family"
+    },
+    {
+      "id": "1X7HadA1WaR-hNBFIHvAUsFKborDGE5eT3Lhg5Dp9CEI",
+      "title": "Seed Dispersal",
+      "reason": "The 7-8 'Seed Dispersal' variant v3 tagged cookingSkills:['Tasting'] (off-vocab) → became a [cooking,garden] row, where the only food is toasted-sunflower-seed tasting. Same-titled family + tasting=cooking. (oq6 §3.4.)",
+      "class": "same-titled-family"
+    },
+    {
+      "id": "1BQdTnCzvCWc7u6MA9ey1HFm-H1g-fXdcgGXFU_Fxzww",
+      "title": "3 Sisters Tacos",
+      "reason": "v3 fabricated all 11 grades (3K-8) at confidence 95 for a knife-and-burner lesson whose body declares NO grades. The canonical grade-fabrication case; under source-doc-claim policy the grades row should be empty. (oq6 §3.5.)",
+      "class": "grade-fabrication"
+    },
+    {
+      "id": "19jKdVhI31juzrkZg6H4pZpWGzwzUZmeW",
+      "title": "Pupusas & Curtido",
+      "reason": "Counter-case to 3 Sisters Tacos: header literally reads '3K-8th Grade', so the wide span is FAITHFUL to source. Tests the grade policy distinguishes fabricated spans from source-claimed ones. (oq6 §3.6.)",
+      "class": "grade-faithful-counter-case"
+    },
+    {
+      "id": "1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4",
+      "title": "Planting in Patterns",
+      "reason": "PROD survivor of five same-titled 'Planting in Patterns' rows v3 tagged with materially different format/SEL/coreComp; carries the minority 'Single period' format judgment. Tests cross-variant consistency. (oq6 §3.7.)",
+      "class": "same-titled-inconsistency"
+    },
+    {
+      "id": "18aRAD5iY1YxcaqTUZBhflNDAstEAHumK",
+      "title": "Kitchen Tool Identification Game",
+      "reason": "Matching game whose only food is 'Enjoy a tasting!' with teacher-washed fruit; dry-run model still tagged [cooking,academic] + basic-prep (tasting≠cooking violated). Correct answer is likely [academic] alone. (dryrun-notes-opus-r1 §L1.)",
+      "class": "closing-tasting-conflation"
+    },
+    {
+      "id": "1PgqX2FsSZIF3dIlv4CS1DvLS5WtzCaw7lQb4JcpQ9AQ",
+      "title": "Plant Part Olympics",
+      "reason": "The only food is a 'Plant Part Smoothie' tasting list (no prep step); dry-run model tagged [cooking,academic]+basic-prep AND missed garden. Tasting=cooking + missed-garden. (dryrun-notes-opus-r1 §L8.)",
+      "class": "same-titled-family"
+    },
+    {
+      "id": "1NLUEYTsHFabANLKFdNgQTuf1rqTPoVdjVJpXTLgr2Xc",
+      "title": "Chana Chawal and Raita",
+      "reason": "Heritage ancestor pile-on: body explicitly Pakistani, but the dry-run added South Asian + Asian ancestors the body never works at. Heritage-ban / over-broadening class. (dryrun-notes-opus-r1 §L6.)",
+      "class": "heritage-ban"
+    },
+    {
+      "id": "1-QgkHyLPDzZrNRkmX3pjNFjT9GBOsBROalNbVvAMKck",
+      "title": "Food Workers' Rights",
+      "reason": "Labor-rights lesson where the dry-run inferred African American (from a Bed-Stuy address + BLM bandana) + Mexican (churros passing mention) heritages — pure demographic inference, no heritage taught. The worst heritage-ban failure (the 'L14' class). (dryrun-notes-opus-r1 §L14.)",
+      "class": "heritage-ban"
+    },
+    {
+      "id": "14fk_yAGgoUM0I7iJDOKaSdZrww1HHPPj",
+      "title": "Cajun Black Eyed Peas Sliders (3rd-5th)",
+      "reason": "R4 conflict: Math + Arts carry academic_concepts while ABSENT from academic_integration (internal misalignment). Also a heritage edge (West African beyond the body's 'Africa') and twin-of the 6th-8th row. Primary class R4. (dryrun-notes-opus-r1 §L2.)",
+      "class": "r4-concepts-integration-conflict"
+    },
+    {
+      "id": "1JNKJikW1P1lCE4zlt0_2S4F2mNIRF7qm",
+      "title": "Cajun Black Eyed Peas Sliders (6th-8th)",
+      "reason": "R4 conflict: academic_integration [Social Studies,Health,Literacy/ELA] while concepts carry Math/Science/Arts — the worst concepts⇄integration misalignment of the run; reconcile-direction adjudication case. Twin of the 3rd-5th row. (dryrun-notes-opus-r1 §L3.)",
+      "class": "r4-concepts-integration-conflict"
+    },
+    {
+      "id": "lesson_f2466c648cb44ed597d5b49f2d51ffbd",
+      "title": "Worms K-1",
+      "reason": "[Table]-marker extracted body; a later dry-run round fabricated season [Spring] on this year-round worm-bin lesson. Table-extraction-noise robustness + season fabrication. (dryrun-notes-opus-r1 §L10; dryrun-notes.md season-regression note.)",
+      "class": "table-marker-body"
+    },
+    {
+      "id": "lesson_df09326b3497429cad55727f6d59d477",
+      "title": "Sensory Scavenger Hunt and Orientation",
+      "reason": "[Table]/pipe-marker extracted body; tests the model reads table cells as content (orientation tag + Beginning-of-year observance both depend on cells). (dryrun-notes-opus-r1 §L9.)",
+      "class": "table-marker-body"
+    },
+    {
+      "id": "lesson_c257c458adb549c3ad5ffe25aef9a776",
+      "title": "Wild Soda",
+      "reason": "[Table]-marker extracted body; cooking+garden hybrid with heritage values traceable to the body's own tag row. Tests table-extraction robustness on a multi-axis lesson + grade restraint ('age this down' but no stated grades → []). (dryrun-notes-opus-r1 §L13.)",
+      "class": "table-marker-body"
+    }
+  ]
+}

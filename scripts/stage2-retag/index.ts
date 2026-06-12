@@ -22,7 +22,11 @@
  *   - validate-output.ts      — A7: run-level output validation summary.
  *   - generate-diff-report.ts — A7: per-field corpus diff + plain-language
  *                               markdown report (Protocol-B artifact).
- *   - prepare-apply.ts        — lands in PR B (apply artifacts; not here).
+ *   - sample-answer-key.ts    — B1: Protocol-A answer-key sampler (stratified
+ *                               random + checked-in adversarial) → emits
+ *                               answer-key-sample.jsonl + answer-key-worksheet.md;
+ *                               also parses a filled worksheet → answer-key.final.jsonl.
+ *   - prepare-apply.ts        — lands later in PR B (apply artifacts; not here).
  *
  * This file remains the dedicated type-check + lint surface target (OQ12).
  */

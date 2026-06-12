@@ -1,0 +1,19 @@
+{
+  "provenance": {
+    "task": "fixture"
+  },
+  "adversarial": [
+    {
+      "id": "fixture-l00",
+      "title": "Fixture Lesson 0",
+      "reason": "valid",
+      "class": "x"
+    },
+    {
+      "id": "THIS-ID-DOES-NOT-EXIST",
+      "title": "Ghost",
+      "reason": "unknown id",
+      "class": "x"
+    }
+  ]
+}
