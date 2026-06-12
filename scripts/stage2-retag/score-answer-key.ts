@@ -34,7 +34,11 @@
  * Gates (impl plan B3): for the winning model —
  *   1. per-field F1 >= v3 on EVERY field;
  *   2. macroF1 >= 0.7;
- *   3. per-value recall >= 0.5 (lists each failing value).
+ *   3. per-value recall >= 0.5 — but the recall floor ONLY gates values whose
+ *      answer-key support (truthCount) is >= 2 (user ruling 2026-06-12,
+ *      Session 8). Support-1 singletons are reported in a non-gating
+ *      informational section (hit count + each missed singleton's lesson id),
+ *      never failing the gate.
  *
  * Reporting only: no API calls, no DB access.
  */
@@ -136,6 +140,12 @@ export interface FieldScore {
   f1: number | null;
   /** Per-value metrics (recall is the B3 gate-3 figure). */
   perValue: PerValueMetrics[];
+  /**
+   * For each value, the sorted key lesson ids that carry it (the answer-key
+   * "support" set). Length === PerValueMetrics.truthCount. Used by the Gate-3
+   * singleton reporting to name the one lesson behind a missed support-1 value.
+   */
+  valueKeyLessonIds: Record<string, string[]>;
 }
 
 export interface ContestantScore {
@@ -173,19 +183,25 @@ export function scoreContestant(
     const truth: string[][] = [];
     const predictions: string[][] = [];
     const vocab = new Set<string>();
+    // value → sorted key lesson ids carrying it (the answer-key support set).
+    const valueKeyLessonIds: Record<string, string[]> = {};
     for (const keyRecord of key) {
       const truthTokens = extractFieldTokens(field, keyRecord);
       const contestant = byId.get(keyRecord.id);
       const predTokens = contestant ? extractFieldTokens(field, contestant) : [];
       truth.push(truthTokens);
       predictions.push(predTokens);
-      for (const t of truthTokens) vocab.add(t);
+      for (const t of truthTokens) {
+        vocab.add(t);
+        (valueKeyLessonIds[t] ??= []).push(keyRecord.id);
+      }
       for (const t of predTokens) vocab.add(t);
     }
+    for (const ids of Object.values(valueKeyLessonIds)) ids.sort();
     const metrics = computeMetrics(predictions, truth, [...vocab].sort());
     const f1 = Number.isNaN(metrics.micro.f1) ? null : metrics.micro.f1;
     if (f1 !== null) definedF1.push(f1);
-    fields[field] = { field, f1, perValue: metrics.perValue };
+    fields[field] = { field, f1, perValue: metrics.perValue, valueKeyLessonIds };
   }
 
   const macroF1 =
@@ -210,13 +226,33 @@ export interface GateResults {
   };
   /** Gate 2: macroF1 >= 0.7. */
   macroF1: { passed: boolean; value: number; floor: number };
-  /** Gate 3: per-value recall >= 0.5 (failing values listed). */
+  /**
+   * Gate 3 (amended 2026-06-12, Session 8): the recall floor ONLY gates values
+   * whose answer-key support (truthCount) is >= 2. Support-1 singletons are
+   * reported in `singletons` but never fail the gate. Each failing value carries
+   * its `support` (the count of key lessons holding it, all >= 2 here).
+   */
   recall: {
     passed: boolean;
     floor: number;
-    failingValues: Array<{ field: string; value: string; recall: number }>;
+    /** Minimum answer-key support for a value to be gated by the recall floor. */
+    supportFloor: number;
+    failingValues: Array<{ field: string; value: string; recall: number; support: number }>;
+  };
+  /**
+   * Informational (NON-gating): support-1 values for the winner. `hits` is the
+   * count the contestant recovered (recall 1); `misses` names each unrecovered
+   * singleton with its single key lesson id.
+   */
+  singletons: {
+    total: number;
+    hits: number;
+    misses: Array<{ field: string; value: string; lessonId: string }>;
   };
 }
+
+/** A value is gated by the Gate-3 recall floor only at this answer-key support. */
+export const SUPPORT_FLOOR = 2;
 
 /** Compares a (defined) winner F1 against v3: winner must be >= v3. A null
  *  winner F1 is treated as 0 vs a defined v3; both-null is not a failure. */
@@ -234,11 +270,30 @@ export function evaluateGates(winner: ContestantScore, v3: ContestantScore): Gat
     if (fieldBelowV3(w, baseline)) failingFields.push({ field, winner: w, v3: baseline });
   }
 
-  const failingValues: Array<{ field: string; value: string; recall: number }> = [];
+  const failingValues: Array<{ field: string; value: string; recall: number; support: number }> =
+    [];
+  const singletonMisses: Array<{ field: string; value: string; lessonId: string }> = [];
+  let singletonTotal = 0;
+  let singletonHits = 0;
   for (const field of SCORED_FIELDS) {
-    for (const pv of winner.fields[field]?.perValue ?? []) {
-      if (pv.recall !== null && pv.recall < RECALL_FLOOR) {
-        failingValues.push({ field, value: pv.value, recall: pv.recall });
+    const fieldScore = winner.fields[field];
+    for (const pv of fieldScore?.perValue ?? []) {
+      // Answer-key support = the number of key lessons carrying the value.
+      const support = pv.truthCount;
+      if (support === 1) {
+        // Singleton: informational only — never gates. recall is 1 (hit) or 0 (miss).
+        singletonTotal++;
+        if (pv.recall === 1) {
+          singletonHits++;
+        } else {
+          const lessonId = fieldScore?.valueKeyLessonIds[pv.value]?.[0] ?? '';
+          singletonMisses.push({ field, value: pv.value, lessonId });
+        }
+        continue;
+      }
+      // Gating values (support >= 2): apply the recall floor.
+      if (support >= SUPPORT_FLOOR && pv.recall !== null && pv.recall < RECALL_FLOOR) {
+        failingValues.push({ field, value: pv.value, recall: pv.recall, support });
       }
     }
   }
@@ -247,7 +302,13 @@ export function evaluateGates(winner: ContestantScore, v3: ContestantScore): Gat
   return {
     perFieldVsV3: { passed: failingFields.length === 0, failingFields },
     macroF1: { passed: macroPassed, value: winner.macroF1, floor: MACRO_F1_FLOOR },
-    recall: { passed: failingValues.length === 0, floor: RECALL_FLOOR, failingValues },
+    recall: {
+      passed: failingValues.length === 0,
+      floor: RECALL_FLOOR,
+      supportFloor: SUPPORT_FLOOR,
+      failingValues,
+    },
+    singletons: { total: singletonTotal, hits: singletonHits, misses: singletonMisses },
   };
 }
 
@@ -355,20 +416,48 @@ export function renderScorecardMarkdown(
   lines.push('');
 
   lines.push(
-    `### Gate 3 — per-value recall ≥ ${RECALL_FLOOR}: ${gates.recall.passed ? 'PASS' : 'FAIL'}`
+    `### Gate 3 — per-value recall ≥ ${RECALL_FLOOR} (gates values with answer-key support ≥ ${gates.recall.supportFloor}): ${gates.recall.passed ? 'PASS' : 'FAIL'}`
+  );
+  lines.push('');
+  lines.push(
+    `The recall floor only gates values appearing in ≥ ${gates.recall.supportFloor} key lessons. ` +
+      `Support-1 singletons are reported below but do not fail this gate.`
   );
   lines.push('');
   if (gates.recall.failingValues.length === 0) {
-    lines.push(`No value falls below the ${RECALL_FLOOR} recall floor.`);
+    lines.push(
+      `No support-≥${gates.recall.supportFloor} value falls below the ${RECALL_FLOOR} recall floor.`
+    );
   } else {
     lines.push(
-      `${gates.recall.failingValues.length} value(s) below the ${RECALL_FLOOR} recall floor:`
+      `${gates.recall.failingValues.length} value(s) (support ≥ ${gates.recall.supportFloor}) below the ${RECALL_FLOOR} recall floor:`
     );
     lines.push('');
-    lines.push('| Field | Value | recall |');
-    lines.push('| --- | --- | --- |');
+    lines.push('| Field | Value | recall | support |');
+    lines.push('| --- | --- | --- | --- |');
     for (const f of gates.recall.failingValues) {
-      lines.push(`| ${f.field} | ${f.value} | ${f.recall.toFixed(3)} |`);
+      lines.push(`| ${f.field} | ${f.value} | ${f.recall.toFixed(3)} | ${f.support} |`);
+    }
+  }
+  lines.push('');
+
+  // Singletons (informational, non-gating): support-1 values for the winner.
+  lines.push(`### Singletons (informational — support-1 values, non-gating)`);
+  lines.push('');
+  lines.push(
+    `\`${winningLabel}\` recovered ${gates.singletons.hits}/${gates.singletons.total} ` +
+      `singleton value(s) (values appearing in exactly one key lesson).`
+  );
+  lines.push('');
+  if (gates.singletons.misses.length === 0) {
+    lines.push('All singleton values were recovered.');
+  } else {
+    lines.push(`Missed singleton(s):`);
+    lines.push('');
+    lines.push('| Field | Value | Lesson |');
+    lines.push('| --- | --- | --- |');
+    for (const m of gates.singletons.misses) {
+      lines.push(`| ${m.field} | ${m.value} | ${m.lessonId} |`);
     }
   }
   lines.push('');
@@ -499,8 +588,9 @@ Flags:
   --help
 
 Gates (winning model = the first --run label, or v3 if no runs): per-field F1 ≥
-v3 everywhere; macroF1 ≥ ${MACRO_F1_FLOOR}; per-value recall ≥ ${RECALL_FLOOR}.
-Reporting only: no API calls, no DB access.
+v3 everywhere; macroF1 ≥ ${MACRO_F1_FLOOR}; per-value recall ≥ ${RECALL_FLOOR}
+for values with answer-key support ≥ ${SUPPORT_FLOOR} (support-1 singletons are
+reported but do not gate). Reporting only: no API calls, no DB access.
 `;
 
 /** The JSON sidecar path for a markdown output path (swap/append .json). */

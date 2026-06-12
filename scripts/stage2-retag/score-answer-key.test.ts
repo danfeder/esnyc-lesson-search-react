@@ -317,3 +317,112 @@ describe('scorecard emission', () => {
     expect(json.gates.recall).toBeDefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Gate-3 amendment (user ruling 2026-06-12 Session 8): the recall floor only
+// GATES values whose answer-key support (truthCount) is >= 2. Support-1
+// singletons are NOT gated, but ARE reported in an informational section.
+// ---------------------------------------------------------------------------
+
+/**
+ * Four key lessons over `garden_skills` exercising controlled support counts:
+ *   - "Composting": L1 + L2  → support 2 (GATING)
+ *   - "Mulching":   L1       → support 1 (singleton)
+ *   - "Watering":   L3       → support 1 (singleton)
+ *   - "Pruning":    L4       → support 1 (singleton)
+ * Every other scored field is empty everywhere (so they contribute no values).
+ */
+function gardenOnlyKeyLesson(id: string, gardenSkills: string[]): KeyRecord {
+  return {
+    id,
+    activity_type: [],
+    tags: [],
+    season_timing: [],
+    cultural_responsiveness_features: [],
+    cultural_heritage: [],
+    academic_integration: [],
+    social_emotional_learning: [],
+    core_competencies: [],
+    cooking_methods: [],
+    observances_holidays: [],
+    garden_skills: gardenSkills,
+    academic_concepts: {},
+    grade_levels: [],
+  };
+}
+
+const gateKey: KeyRecord[] = [
+  gardenOnlyKeyLesson('L1', ['Composting', 'Mulching']),
+  gardenOnlyKeyLesson('L2', ['Composting']),
+  gardenOnlyKeyLesson('L3', ['Watering']),
+  gardenOnlyKeyLesson('L4', ['Pruning']),
+];
+
+/**
+ * Contestant that:
+ *   - misses "Composting" entirely (recall 0, support 2) → MUST fail Gate 3
+ *   - hits singletons "Mulching" (L1) + "Pruning" (L4)
+ *   - misses singleton "Watering" (L3, recall 0, support 1) → reported, NOT gated
+ */
+const gateContestantRecords = [
+  gardenOnlyKeyLesson('L1', ['Mulching']),
+  gardenOnlyKeyLesson('L2', []),
+  gardenOnlyKeyLesson('L3', []),
+  gardenOnlyKeyLesson('L4', ['Pruning']),
+];
+
+describe('Gate 3 amendment — recall floor gates support>=2 values only', () => {
+  const gateV3 = scoreContestant('v3', gateKey, gateContestantRecords);
+  const gateWinner = scoreContestant('winner', gateKey, gateContestantRecords);
+  const gates = evaluateGates(gateWinner, gateV3);
+
+  it('(a) a support-1 value with recall 0 does NOT fail Gate 3', () => {
+    // "Watering" has support 1 and recall 0 in the contestant — it must NOT
+    // appear among the gating recall failures.
+    const watering = gates.recall.failingValues.find((f) => f.value === 'Watering');
+    expect(watering).toBeUndefined();
+  });
+
+  it('(b) a support-2 value with recall < 0.5 DOES fail Gate 3', () => {
+    const composting = gates.recall.failingValues.find((f) => f.value === 'Composting');
+    expect(composting).toBeDefined();
+    expect(composting?.recall).toBeLessThan(0.5);
+    expect(gates.recall.passed).toBe(false);
+  });
+
+  it('every gating recall failure has answer-key support >= 2', () => {
+    for (const f of gates.recall.failingValues) {
+      expect(f.support).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('(c) the singleton section reports hits and misses for the winner', () => {
+    // 3 singletons total (Mulching, Watering, Pruning); 2 hit (Mulching, Pruning),
+    // 1 missed (Watering on L3).
+    expect(gates.singletons.total).toBe(3);
+    expect(gates.singletons.hits).toBe(2);
+    const wateringMiss = gates.singletons.misses.find((m) => m.value === 'Watering');
+    expect(wateringMiss).toBeDefined();
+    expect(wateringMiss?.field).toBe('garden_skills');
+    expect(wateringMiss?.lessonId).toBe('L3');
+    expect(gates.singletons.misses).toHaveLength(1);
+  });
+
+  it('renders the amended Gate 3 rule and a singleton section in the markdown', () => {
+    const md = renderScorecardMarkdown([gateV3, gateWinner], 'winner', gateV3);
+    // Gate section states the amended rule explicitly (support >= 2).
+    expect(md).toMatch(/support\s*[>≥]=?\s*2/i);
+    // A singleton informational section renders with the hit count + missed value.
+    expect(md).toMatch(/singleton/i);
+    expect(md).toContain('2/3');
+    expect(md).toContain('Watering');
+    expect(md).toContain('L3');
+  });
+
+  it('the JSON sidecar carries the singleton section', () => {
+    const json = buildScorecardJson([gateV3, gateWinner], 'winner', gateV3);
+    expect(json.gates.singletons.total).toBe(3);
+    expect(json.gates.singletons.hits).toBe(2);
+    expect(json.gates.singletons.misses[0].value).toBe('Watering');
+  });
+});
