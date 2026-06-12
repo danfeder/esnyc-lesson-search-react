@@ -12,7 +12,7 @@
  * SDK client, since the SDK refuses construction under jsdom without
  * dangerouslyAllowBrowser, which production must never set).
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,12 +41,14 @@ import {
   computeCostUsd,
   computePromptSchemaHash,
   computeResumableIds,
+  excludeCorpusIds,
   extractFieldPromptSection,
   extractForcedToolResult,
   extractRepairedValue,
   fieldErrorsFromZod,
   filterCorpusByIds,
   isInsideArtifactsDir,
+  loadCorpusExclusions,
   isRefusalError,
   latestRecordById,
   loadIdSet,
@@ -1546,6 +1548,84 @@ describe('--fallback-model (refusal-only fallback with provenance-marked records
       expect(parsed).toHaveLength(1);
       expect(parsed[0].phase).toBe('fallback');
       expect(parsed[0].model).toBe('claude-opus-4-7');
+    });
+  });
+});
+
+describe('corpus exclusions (B3.5c — deletion-slated lessons skipped in the run path)', () => {
+  describe('loadCorpusExclusions (reads the checked-in exclusions file → ordered entries)', () => {
+    it('returns the excluded entries from a well-formed file', () => {
+      const entries = loadCorpusExclusions(
+        path.join(FIXTURES_DIR, 'corpus-exclusions.fixture.json')
+      );
+      expect(entries.map((e) => e.id)).toEqual(['fix-1', 'fix-2']);
+      expect(entries[0].title).toBe('Fixture One');
+      expect(entries[0].reason).toBe('fixture row');
+    });
+
+    it('throws on a duplicate id within the list', () => {
+      const tmp = path.join(FIXTURES_DIR, 'corpus-exclusions.dup.tmp.json');
+      writeFileSync(
+        tmp,
+        JSON.stringify({
+          provenance: {},
+          excluded: [
+            { id: 'x', title: 'X', reason: 'r' },
+            { id: 'x', title: 'X again', reason: 'r' },
+          ],
+        })
+      );
+      try {
+        expect(() => loadCorpusExclusions(tmp)).toThrow(/duplicate id: x/);
+      } finally {
+        rmSync(tmp, { force: true });
+      }
+    });
+
+    it('throws when an entry is missing a required field (loud, never silent)', () => {
+      const tmp = path.join(FIXTURES_DIR, 'corpus-exclusions.bad.tmp.json');
+      writeFileSync(tmp, JSON.stringify({ provenance: {}, excluded: [{ id: 'x', title: 'X' }] }));
+      try {
+        expect(() => loadCorpusExclusions(tmp)).toThrow();
+      } finally {
+        rmSync(tmp, { force: true });
+      }
+    });
+
+    it('loads the real checked-in data/corpus-exclusions.json with the 3 deletion verdicts', () => {
+      const entries = loadCorpusExclusions(path.join(MODULE_DIR, 'data/corpus-exclusions.json'));
+      expect(entries).toHaveLength(3);
+      // ids must match the answer-key-exclusions.json source verbatim.
+      const answerKey = JSON.parse(
+        readFileSync(path.join(MODULE_DIR, 'data/answer-key-exclusions.json'), 'utf8')
+      ) as { excluded: Array<{ id: string }> };
+      expect(entries.map((e) => e.id).sort()).toEqual(answerKey.excluded.map((e) => e.id).sort());
+    });
+  });
+
+  describe('excludeCorpusIds (drops excluded lessons, reports which were hit)', () => {
+    const lessons = [
+      { id: 'a', content_text: 'A' },
+      { id: 'b', content_text: 'B' },
+      { id: 'c', content_text: 'C' },
+    ];
+
+    it('removes excluded lessons and preserves corpus order', () => {
+      const { kept, excludedHits } = excludeCorpusIds(lessons, new Set(['b']));
+      expect(kept.map((l) => l.id)).toEqual(['a', 'c']);
+      expect(excludedHits).toEqual(['b']);
+    });
+
+    it('returns all lessons and no hits when nothing is excluded', () => {
+      const { kept, excludedHits } = excludeCorpusIds(lessons, new Set());
+      expect(kept.map((l) => l.id)).toEqual(['a', 'b', 'c']);
+      expect(excludedHits).toEqual([]);
+    });
+
+    it('ignores excluded ids that are not in the corpus (no spurious hit)', () => {
+      const { kept, excludedHits } = excludeCorpusIds(lessons, new Set(['b', 'zzz']));
+      expect(kept.map((l) => l.id)).toEqual(['a', 'c']);
+      expect(excludedHits).toEqual(['b']);
     });
   });
 });

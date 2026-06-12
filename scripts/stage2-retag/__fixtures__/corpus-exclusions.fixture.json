@@ -1,0 +1,12 @@
+{
+  "provenance": {
+    "task": "fixture for loadCorpusExclusions tests — not a real exclusions list",
+    "authored": "2026-06-12",
+    "ruling_ref": "test fixture",
+    "effect": "exercises the loader/parse path only"
+  },
+  "excluded": [
+    { "id": "fix-1", "title": "Fixture One", "reason": "fixture row" },
+    { "id": "fix-2", "title": "Fixture Two", "reason": "fixture row" }
+  ]
+}

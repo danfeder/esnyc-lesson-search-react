@@ -1,0 +1,26 @@
+{
+  "provenance": {
+    "task": "PR 6b — corpus/run-scoped deletion exclusions (B3.5c)",
+    "authored": "2026-06-12",
+    "ruling_ref": "docs/plans/2026-06-12-pr6b-answer-key-verification-rulings.md §A24 + §F (Removals)",
+    "effect": "These lessons are EXCLUDED from the B4 full-corpus re-tag run (run-retag.ts). The runner skips them before --ids/--limit/--resume and logs how many corpus records were dropped. Mirrors data/answer-key-exclusions.json (answer-key-scoped); this file is the corpus/run-scoped equivalent.",
+    "follow_up": "All three are slated for corpus deletion (incomplete / non-lesson docs); cleanup track with the 23 imported drops; pre-delete FK checklist applies. B3.5b (completeness screen) will ADD more excluded ids here after user verdicts — data-only change."
+  },
+  "excluded": [
+    {
+      "id": "13vpumvgEgzO7jUWdEHamEjXWwOxvQ_KFHaeMVUKvQDo",
+      "title": "Celebrating Eid: Understanding Muslim culture & tradition",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    },
+    {
+      "id": "1Ufs0zXqshdkXE4J0V8fOPWxqi42T2IlFdsei0ESm7PE",
+      "title": "Kitchen Lesson Plan Appendices",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    },
+    {
+      "id": "1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag",
+      "title": "Three Sister Arepas",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    }
+  ]
+}

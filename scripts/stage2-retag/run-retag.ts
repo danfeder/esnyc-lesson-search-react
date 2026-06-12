@@ -144,6 +144,14 @@ const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS_DIR = path.join(MODULE_DIR, 'artifacts');
 const CORPUS_PATH = path.join(ARTIFACTS_DIR, 'corpus.jsonl');
 const DEFAULT_OUTPUT_PATH = path.join(ARTIFACTS_DIR, 'retag-run.jsonl');
+/**
+ * Checked-in list of corpus ids the B4 full-corpus run must SKIP — lessons the
+ * user ruled incomplete/non-lesson and slated for corpus deletion (B3.5c, and
+ * B3.5b's completeness-screen verdicts as they land). The runner loads this
+ * unconditionally and drops matching corpus records before --ids/--limit/
+ * --resume. Growth is a data-only edit: add rows to data/corpus-exclusions.json.
+ */
+export const DEFAULT_CORPUS_EXCLUSIONS_PATH = path.join(MODULE_DIR, 'data/corpus-exclusions.json');
 
 /**
  * Output budget for the ~13-property monolithic response. The PROD per-field
@@ -956,6 +964,11 @@ Env (direct API, no --base-url): ANTHROPIC_CONSOLE_API_KEY required (from
      proxy-side key and 401s against the direct API.
 Env (--base-url set): ANTHROPIC_API_KEY required (the proxy-side key).
 
+Corpus exclusions (B3.5c): lessons listed in data/corpus-exclusions.json
+  (user-ruled incomplete/non-lesson, slated for corpus deletion) are ALWAYS
+  dropped before --ids/--limit/--resume, with a one-line skip count logged.
+  Growing the list is a data-only edit to that file.
+
 Deferred A8 live check (single command, needs Console credits):
   npx tsx scripts/stage2-retag/run-retag.ts --limit 3 --concurrency 1
   (record 1 pays the cache write; records 2-3 must show cache_read_input_tokens > 0)
@@ -1036,6 +1049,63 @@ export function filterCorpusByIds<T extends { id: string }>(
   const kept = lessons.filter((lesson) => requested.has(lesson.id));
   const missingIds = requestedIds.filter((id) => !present.has(id));
   return { kept, missingIds };
+}
+
+// ---------------------------------------------------------------------------
+// Corpus exclusions (B3.5c — deletion-slated lessons skipped in the run path)
+// ---------------------------------------------------------------------------
+
+const corpusExclusionEntrySchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  reason: z.string().min(1),
+});
+
+/** One excluded lesson (id + human-readable title + ruling reason). */
+export type CorpusExclusionEntry = z.infer<typeof corpusExclusionEntrySchema>;
+
+const corpusExclusionsFileSchema = z.object({
+  provenance: z.record(z.unknown()),
+  excluded: z.array(corpusExclusionEntrySchema),
+});
+
+/**
+ * Loads the checked-in corpus-exclusions file — lessons the user ruled
+ * incomplete/non-lesson and slated for corpus deletion, which the B4 run must
+ * skip. Returns the entries in file order; rejects a duplicate id (a typo in
+ * the data file must fail loudly, never silently drop the wrong lesson). The
+ * file format is the same shape as data/answer-key-exclusions.json, so adding
+ * more verdicts (B3.5b) is a data-only edit.
+ */
+export function loadCorpusExclusions(filePath: string): CorpusExclusionEntry[] {
+  const parsed = corpusExclusionsFileSchema.parse(JSON.parse(readFileSync(filePath, 'utf8')));
+  const seen = new Set<string>();
+  for (const entry of parsed.excluded) {
+    if (seen.has(entry.id)) {
+      throw new Error(`corpus exclusions list has a duplicate id: ${entry.id}`);
+    }
+    seen.add(entry.id);
+  }
+  return parsed.excluded;
+}
+
+/**
+ * Drops excluded lessons from a corpus list. Returns the kept lessons in corpus
+ * order plus the excluded ids that were actually present (so the operator log
+ * reflects real drops, not stale exclusions entries for lessons absent from the
+ * corpus). Excluded ids not in the corpus are silently ignored.
+ */
+export function excludeCorpusIds<T extends { id: string }>(
+  lessons: T[],
+  excludedIds: Set<string>
+): { kept: T[]; excludedHits: string[] } {
+  const kept: T[] = [];
+  const excludedHits: string[] = [];
+  for (const lesson of lessons) {
+    if (excludedIds.has(lesson.id)) excludedHits.push(lesson.id);
+    else kept.push(lesson);
+  }
+  return { kept, excludedHits };
 }
 
 // ---------------------------------------------------------------------------
@@ -1407,10 +1477,22 @@ async function runMainPass(args: Args): Promise<void> {
   // byte-identical (no block appended); a missing sidecar warns once and adds
   // nothing, so the full-corpus run is unchanged before the corpus-wide capture.
   const docSurfaces = loadDocSurfaces();
-  const corpus = loadCorpus().map((lesson) => ({
+  const rawCorpus = loadCorpus().map((lesson) => ({
     ...lesson,
     content_text: appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
   }));
+  // Drop deletion-slated lessons (B3.5c) BEFORE --ids/--limit/--resume so the
+  // B4 full-corpus run never tags an incomplete/non-lesson doc. Data-only to
+  // grow: add rows to data/corpus-exclusions.json.
+  const exclusions = loadCorpusExclusions(DEFAULT_CORPUS_EXCLUSIONS_PATH);
+  const excludedIds = new Set(exclusions.map((e) => e.id));
+  const { kept: corpus, excludedHits } = excludeCorpusIds(rawCorpus, excludedIds);
+  if (excludedHits.length > 0) {
+    console.log(
+      `Corpus exclusions: skipping ${excludedHits.length} deletion-slated lesson(s) ` +
+        `(incomplete/non-lesson, ruling §A24/§F): ${excludedHits.join(', ')}`
+    );
+  }
   const bodyHashById = new Map(
     corpus.map((lesson) => [lesson.id, computeBodyHash(lesson.content_text)])
   );
@@ -1817,11 +1899,18 @@ async function main(): Promise<void> {
     // the identical body and its bodyHash matches the main-pass record's (no
     // spurious bodyMismatch skips). See runMainPass for the §A20 rationale.
     const docSurfaces = loadDocSurfaces();
+    // Mirror the main pass: deletion-slated lessons (B3.5c) are not in the run
+    // corpus, so they are not available to repair either.
+    const excludedIds = new Set(
+      loadCorpusExclusions(DEFAULT_CORPUS_EXCLUSIONS_PATH).map((e) => e.id)
+    );
     lessonBodyById = new Map(
-      loadCorpus().map((lesson) => [
-        lesson.id,
-        appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
-      ])
+      loadCorpus()
+        .filter((lesson) => !excludedIds.has(lesson.id))
+        .map((lesson) => [
+          lesson.id,
+          appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
+        ])
     );
     await runRepairPass(args);
   } else {
