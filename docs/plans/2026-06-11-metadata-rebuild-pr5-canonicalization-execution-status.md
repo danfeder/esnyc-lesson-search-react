@@ -88,6 +88,12 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 
 ## Recent decisions worth carrying forward
 
+- 2026-06-11 (post-Session 3, user decision): execution switches to SUPERVISOR + FRESH-CONTEXT
+  SUBAGENTS from Session 4 — each impl-plan task runs in a dispatched Agent with fresh context;
+  the main session orients, verifies (load-bearing), owns user-gated checkpoints + this status
+  file, and may carry multiple tasks per session. Mechanics are in the kickoff prompt's
+  EXECUTION MODE section.
+
 - 2026-06-11 strategic scope locked via user Q&A: heritage+concepts only / two PRs heritage-first /
   data + keep-filters-working. See design doc §3.
 - 2026-06-11 concepts merge-cycle resolutions (preservation survives; sorting survives as
