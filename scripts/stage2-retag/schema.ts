@@ -45,9 +45,16 @@ export const DEFAULT_MODEL = 'claude-opus-4-8';
 
 /**
  * Token budget for the cached prefix (system prompt + tool schema). The
- * impl plan expects ~6-8K; exceeding ~10K means stop and reassess cost.
+ * impl plan expects ~6-8K own-prefix; exceeding budget means stop and
+ * reassess cost. Raised 10K → 12K on 2026-06-12: when count_tokens routes
+ * through the CLIProxyAPI proxy, the measured number includes the cloak's
+ * ~1.4K injected prompt (measured 1,359 tokens on the 2026-06-12 probe),
+ * which the original 10K budget — set for direct-API counting — did not
+ * anticipate. Own-prefix budget is effectively still ~10.5K. The r2 prompt
+ * measured 10,890 via proxy ≈ 9.5K own; cost impact +$5-7 on the full-run
+ * projection, reassessed and accepted (supervisor, 2026-06-12).
  */
-export const TOKEN_MASS_BUDGET_TOKENS = 10_000;
+export const TOKEN_MASS_BUDGET_TOKENS = 12_000;
 
 /**
  * Minimum cacheable prefix per model family (prompt-caching docs, verified
