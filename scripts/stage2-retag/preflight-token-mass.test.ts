@@ -42,6 +42,17 @@ describe('assessCacheFloor', () => {
     expect(assessCacheFloor('claude-opus-4-7', 6274).level).toBe('pass');
   });
 
+  it('resolves the current default Opus (claude-opus-4-8) to the opus 4096-token floor', () => {
+    // The default model swapped to claude-opus-4-8; assessCacheFloor matches on
+    // the 'opus' substring, so 4-8 must land on the same floor as 4-7.
+    const verdict = assessCacheFloor('claude-opus-4-8', OPUS_THRESHOLD);
+    expect(verdict.level).toBe('pass');
+    expect(verdict.floor).toBe(OPUS_MIN_CACHEABLE_PREFIX_TOKENS);
+    expect(assessCacheFloor('claude-opus-4-8', OPUS_MIN_CACHEABLE_PREFIX_TOKENS).level).toBe(
+      'fail'
+    );
+  });
+
   it('FAILS opus-family prefixes below floor + 5% margin', () => {
     const verdict = assessCacheFloor('claude-opus-4-7', OPUS_THRESHOLD - 1);
     expect(verdict.level).toBe('fail');

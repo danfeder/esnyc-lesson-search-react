@@ -16,7 +16,7 @@
  * (`mapWithConcurrency`, eval-script precedent).
  *
  * Flags:
- *   --model <id>        default claude-opus-4-7
+ *   --model <id>        default claude-opus-4-8
  *   --limit N           only process the first N corpus records (dry-run)
  *   --resume            skip ids already in the output JSONL whose latest
  *                       record carries the CURRENT prompt+schema hash, the
@@ -138,7 +138,9 @@ export const MAX_TOKENS = 4096;
 /**
  * Published per-MTok pricing (USD), verified 2026-06-12 against the
  * Anthropic models/pricing documentation:
- *   claude-opus-4-7:   $5 input / $25 output
+ *   claude-opus-4-8:   $5 input / $25 output (current Opus, the default model)
+ *   claude-opus-4-7:   $5 input / $25 output (identical pricing to 4.8;
+ *                      retained — E3 baseline + older artifacts reference it)
  *   claude-sonnet-4-6: $3 input / $15 output
  * Cache economics (prompt-caching docs): cache WRITE = 1.25x input for the
  * 5-minute TTL (`cache_control: {type:'ephemeral'}`, what this runner uses);
@@ -150,6 +152,7 @@ export const PRICING_PER_MTOK: Record<
   string,
   { input: number; output: number; cacheWrite5m: number; cacheRead: number }
 > = {
+  'claude-opus-4-8': { input: 5, output: 25, cacheWrite5m: 6.25, cacheRead: 0.5 },
   'claude-opus-4-7': { input: 5, output: 25, cacheWrite5m: 6.25, cacheRead: 0.5 },
   'claude-sonnet-4-6': { input: 3, output: 15, cacheWrite5m: 3.75, cacheRead: 0.3 },
 };

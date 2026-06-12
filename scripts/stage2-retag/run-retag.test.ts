@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  DEFAULT_MODEL,
   GRADE_LEVELS,
   RESULT_PROPERTIES,
   buildResultSchema,
@@ -175,6 +176,20 @@ describe('computeCostUsd', () => {
   it('returns null for null usage or unknown models', () => {
     expect(computeCostUsd('claude-opus-4-7', null)).toBeNull();
     expect(computeCostUsd('some-unknown-model', usage)).toBeNull();
+  });
+
+  it('prices claude-opus-4-8 (the default contestant) identically to claude-opus-4-7', () => {
+    expect(PRICING_PER_MTOK['claude-opus-4-8']).toEqual({
+      input: 5,
+      output: 25,
+      cacheWrite5m: 6.25,
+      cacheRead: 0.5,
+    });
+    expect(PRICING_PER_MTOK['claude-opus-4-8']).toEqual(PRICING_PER_MTOK['claude-opus-4-7']);
+    expect(computeCostUsd('claude-opus-4-8', usage)).toBeCloseTo(
+      computeCostUsd('claude-opus-4-7', usage) ?? NaN,
+      10
+    );
   });
 });
 
@@ -811,6 +826,11 @@ describe('parseArgs hardening', () => {
     expect(args.limit).toBe(3);
     expect(args.concurrency).toBe(1);
     expect(() => parseArgs(['--bogus'])).toThrow(/unknown flag/);
+  });
+
+  it('defaults --model to the current Opus (claude-opus-4-8)', () => {
+    expect(DEFAULT_MODEL).toBe('claude-opus-4-8');
+    expect(parseArgs([]).model).toBe('claude-opus-4-8');
   });
 });
 

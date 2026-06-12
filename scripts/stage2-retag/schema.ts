@@ -37,8 +37,11 @@ const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 export const SUBMIT_TAGS_TOOL_NAME = 'submit_tags';
 
-/** Default run model (mirrors the PROD call sites + impl-plan A6 default). */
-export const DEFAULT_MODEL = 'claude-opus-4-7';
+/** Default run model: the current Opus (user decision 2026-06-12). Opus 4.8
+ *  has identical pricing to 4.7 ($5/$25 in/out) and the same tokenizer +
+ *  4,096-token cache floor, so the cost projection and cache guards are
+ *  unaffected by the swap. claude-opus-4-7 stays a valid priced contestant. */
+export const DEFAULT_MODEL = 'claude-opus-4-8';
 
 /**
  * Token budget for the cached prefix (system prompt + tool schema). The
