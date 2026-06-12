@@ -45,7 +45,7 @@ All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans
 | C | `feat/pr6c-stage2-retag-apply` | Apply migration (rollback snapshot, dual-write), Who's-Who body repair, embeddings regen | PROD via CI | user spot-check sign-off (Protocol B) + CI approval |
 | D | `feat/pr6d-search-synonyms` | `search_synonyms` population from run artifacts | PROD via CI | CI approval |
 | E | `feat/pr6e-stage2-cleanup` | Drop `pr5a_heritage_rollback` + `pr5b_concepts_rollback` + `pr6_retag_rollback` (+ staging); observances→fixed; filterDefinitions updates; Zod enum closing + enums.json regen + edge-mirror sync; stale-Python comment cleanup | PROD via CI | C PROD-verified first (PR 5 design §4.8) |
-| F (rider) | `feat/pr6f-second-pass` | cooking_skills + main_ingredients re-tag when mini-worksheet returns | PROD via CI | worksheet returned + same B/C gates, miniature |
+| F (rider) | `feat/pr6f-second-pass` | cooking_skills + main_ingredients re-tag (vocab DECIDED 2026-06-12, team skipped) | PROD via CI | same B/C gates, miniature; no external blocker |
 
 **Pre-flight reads (every implementation PR, refresh against current code):** the design doc §4; `docs/plans/pr6-stage2-retag-evidence/oq1-call-shape-confirmation.md` (the verified call shape — §2 table is the spec); `src/types/lessonMetadata.zod.ts`; `scripts/eval-llm-tagging-prompt.ts`; `scripts/CLAUDE.md`; `supabase/functions/process-submission/index.ts` (mirror, don't extend); heritage §16 + concepts returned worksheet + `oq2-smaller-fields-census.md` (vocab inputs).
 
@@ -145,7 +145,17 @@ All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans
 
 ## PR F (rider, deferred) — second pass
 
-Mini-worksheet (cooking_skills + main_ingredients + the `guyanese`-parent question) goes OUT to the curriculum team during PR A/B; PR F runs when it returns: vocab module extension → miniature B/C cycle (answer-key delta optional, diff + user gate + apply migration). Not a blocker for E.
+**Vocab DECIDED 2026-06-12** — the mini-worksheet was decided in an in-session user
+walkthrough instead of going to the team (user choice: skip the team entirely; the
+`guyanese` question resolved Both). Decision record:
+`docs/plans/2026-06-12-metadata-rebuild-stage1-cooking-skills-ingredients-worksheet-decided.md`
+— cooking_skills 23 entries (incl. a consolidated general **Knife skills** absorbing
+the five specific cuts + knife safety); main_ingredients 24 groups + **two-level**
+group/specifics tagging (34 starter specifics; Potatoes under Root vegetables;
+no "Other" catch-all). PR F = vocab module extension (incl. two-level parent mapping,
+a NEW shape the vocab module doesn't carry yet) → miniature B/C cycle (answer-key
+delta optional, diff + user gate + apply migration). User confirmed two-rounds
+(NOT folded into the 12-field main pass) 2026-06-12. Unblocked; not a blocker for E.
 
 ---
 
