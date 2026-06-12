@@ -197,7 +197,7 @@ export interface RunRecord {
 export function computePromptSchemaHash(systemPrompt: string, tool: SubmitTagsTool): string {
   return createHash('sha256')
     .update(systemPrompt)
-    .update(' ')
+    .update('\u0000')
     .update(JSON.stringify(tool))
     .digest('hex');
 }
