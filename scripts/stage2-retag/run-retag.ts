@@ -135,6 +135,7 @@ import {
   type SubmitTagsTool,
 } from './schema';
 import { normalizeRecordInput } from './normalize';
+import { appendDocSurfaces, loadDocSurfaces } from './doc-surfaces';
 import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
 
 dotenv.config({ path: '.env.local' });
@@ -1156,7 +1157,16 @@ async function runMainPass(args: Args): Promise<void> {
   const promptSchemaHash = computePromptSchemaHash(systemPrompt, baseTool);
   const resultSchema = buildResultSchema(vocab);
 
-  const corpus = loadCorpus();
+  // Append the source-document surfaces (Drive filename + page header) to each
+  // lesson body BEFORE hashing/sending — these carry grade/season claims that
+  // content_text lacks (ruling §A20). Lessons absent from the sidecar are
+  // byte-identical (no block appended); a missing sidecar warns once and adds
+  // nothing, so the full-corpus run is unchanged before the corpus-wide capture.
+  const docSurfaces = loadDocSurfaces();
+  const corpus = loadCorpus().map((lesson) => ({
+    ...lesson,
+    content_text: appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
+  }));
   const bodyHashById = new Map(
     corpus.map((lesson) => [lesson.id, computeBodyHash(lesson.content_text)])
   );
@@ -1476,7 +1486,16 @@ async function main(): Promise<void> {
   }
   warnIfOutsideArtifacts(args.output);
   if (args.repair) {
-    lessonBodyById = new Map(loadCorpus().map((lesson) => [lesson.id, lesson.content_text]));
+    // Surface bodies the same way the main pass does, so the repair pass sends
+    // the identical body and its bodyHash matches the main-pass record's (no
+    // spurious bodyMismatch skips). See runMainPass for the §A20 rationale.
+    const docSurfaces = loadDocSurfaces();
+    lessonBodyById = new Map(
+      loadCorpus().map((lesson) => [
+        lesson.id,
+        appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
+      ])
+    );
     await runRepairPass(args);
   } else {
     await runMainPass(args);

@@ -1,0 +1,240 @@
+{
+  "_provenance": {
+    "source": "2026-06-12 Drive filename + page-header sweep (scripts/stage2-retag/artifacts/prefill/header-filename-sweep.md)",
+    "description": "Per-lesson Google Drive filename + page-header text for the answer-key sample lessons. Grade/season claims that live in filenames and page headers (which lessons.content_text lacks) are source-doc claims the re-tag pipeline must honor (ruling §A20). header is null when the doc had no header part, an unfilled ESYNYC template header, or a blank header segment.",
+    "authored": "2026-06-12",
+    "ruling_ref": "docs/plans/2026-06-12-pr6b-answer-key-verification-rulings.md §A20 + §E",
+    "excluded_note": "The 3 answer-key-exclusions.json lessons (slated for corpus deletion) are intentionally absent.",
+    "corpus_wide_capture": "PENDING — this sidecar covers only the answer-key sample lessons; a corpus-wide filename/header capture is required before B4 (full-corpus run)."
+  },
+  "surfaces": {
+    "1HkHvHBFdGRIu0dJ1GmBiq4OzEXrmRW60odAvls55gZ0": {
+      "filename": "Garden Tasks",
+      "header": "Self Contained K-2 / Indoor and Outdoor"
+    },
+    "0B25CqYCC7OfbcER6OXFDWWRUbDQ": {
+      "filename": "All About the Garden Lesson.docx",
+      "header": null
+    },
+    "1q78Gpy8f9L1gXvJ8h2GvurXs9eaFMyIM": {
+      "filename": "Kuku Sabzi Lesson plan.docx",
+      "header": "All Grades / Spring / Indoor"
+    },
+    "1RY1H0XMEOYQtCk0mV7xaKYBPzoDqBm2m": {
+      "filename": "Composting PreK/K.docx",
+      "header": "PreK-1 / Fall/Winter / Indoor"
+    },
+    "1ASkYeKJRJaQrSFlqQU3BStblC4tIVgBXUFystjahWh0": {
+      "filename": "Watersheds",
+      "header": null
+    },
+    "1qJCcCWrm3NReG8SXRDfOTabBMUmf5Em8": {
+      "filename": "3rd Grade Fossil Fuels.docx",
+      "header": "3rd Grade / All Seasons / Indoor"
+    },
+    "19Tg4I9XywohpcrdBZ77vaBgyIdYhxGo0bk3FpSUcE2Y": {
+      "filename": "Legend of the 3 sisters",
+      "header": null
+    },
+    "lesson_362e8be6fa894f5381f85297d42944f1": {
+      "filename": "Stuffed Dates",
+      "header": null
+    },
+    "1pr_smjbuuDV8blmQHYplR34Dp7-VxcAsuCbjubrwnOs": {
+      "filename": "Similes",
+      "header": "6th Grade/Winter / Indoor"
+    },
+    "lesson_727ff8bd39e44c7eaa1439302f02c93a": {
+      "filename": "I spy...in the garden! Indoors 3K/PK",
+      "header": "3K/PK / Fall/Spring / Indoors / Year B"
+    },
+    "0BxEc0RZeYtCidmQwN3pPdmcweE0": {
+      "filename": "2015 May - Herbs as Medicine copy.docx",
+      "header": "March"
+    },
+    "1kweucRDWEFk_Hi5LM_9M9DebTwKVZ6U0nhO8oM15sFk": {
+      "filename": "Lesson #6, Grade 6-8 2022-23: Hispanic Heritage Month: Esquites",
+      "header": "Grade 6-8 / Season Fall / Indicate: Indoor/Outdoor / Year 1"
+    },
+    "1OLfezTbT0voh-Km85VIkJiuOmhju7CiF9kGSKb8JnXs": {
+      "filename": "Garlic Bread & Garlic Planting",
+      "header": "All Grades / Fall / Indoor and Outdoor"
+    },
+    "1v2wi77AhwX-YAo0dUhpofOsRORS6bRwAJPc-0B1C8WE": {
+      "filename": "Thermal Energy Experiment",
+      "header": "6th Grade / Winter / Indoor"
+    },
+    "lesson_3aaa27c0096a48368cde2804832ad07c": {
+      "filename": "Food Miles (How Food Moves) 25-26",
+      "header": "4th-5th Grade / All Year / Indoor / Year B"
+    },
+    "lesson_7d34e6ab88b64d8a855507ac6c47db20": {
+      "filename": "Compost Relay & Stew",
+      "header": "3K-8th Grades / Fall/Winter / Indoor/Outdoor"
+    },
+    "1nzZC51049bxqfXYRxWX5Z-TwEL-8uS4H1nbWX7cgPFk": {
+      "filename": "Five Senses Scavenger Hunt- 3k-k",
+      "header": "3K-K / Summer"
+    },
+    "1_u1GSf5QuGNz_6Xl_PBMX82CegoLCS000Pd9ZKHh0Mw": {
+      "filename": "Health Discussion Topics",
+      "header": "Middle School/All seasons / Indoor"
+    },
+    "1vnOYmF90vIaodnDkjLtXQdSLoLdE38HALLK8OfcwntM": {
+      "filename": "Gardening & the Environment",
+      "header": "7th - 8th Grade / Fall - September / Indicate: Indoor/Outdoor / Indicate: Year A/Year B"
+    },
+    "1plNjC3IK0wR57TvxUKl-OrxxOwrGdrRG": {
+      "filename": "Lesson Plan_Seasonal Sides.docx",
+      "header": "3K-8th Grade / Fall/Winter / Heat"
+    },
+    "1tVWgHidAxvsPRMW2aJXd6YcFP9w0kbK6uOj_nbpu-KM": {
+      "filename": "4th Grade Food Miles Lesson",
+      "header": "4th Grade / Fall/Winter / Indoor"
+    },
+    "1hwLrvv9CUTx2rw2UMTDhqmLXQTd0hEsxan3HvNpPwa8": {
+      "filename": "Applesauce lesson plan",
+      "header": "3K-3rd Grade / Winter / Indoor"
+    },
+    "11ialYB913qPqDiVMfppjDJt588C49vmQxZjUWRwCTbY": {
+      "filename": "Food of Peru",
+      "header": "Middle School / Fall/Winter / Indoor"
+    },
+    "1TIdOY4gmdmqGUYzMIigDodoeiMSIMOuqJdYHH8QLL7c": {
+      "filename": "3-5 first September Lesson plan EK",
+      "header": "Grade New 3-5 / Season Fall / Indicate: Indoor/ Outdoor / Indicate: Year 1 / For recipes note: A, B, C, D / EK"
+    },
+    "1bmjJf9tTDt5y28DB0xszcouBQKr0Ud8ZdkNtelNCURE": {
+      "filename": "BCCS Plant Parts Lesson",
+      "header": "Grade: 3K, Pre-K, K, 1,2,3 / Any season / Indoor / Year 1"
+    },
+    "1RcuAcHgStjdTUlodk5Lq8Yg3QH2UHmXAPL5uzKwHekk": {
+      "filename": "Za'atar with Roasted Potatoes Lesson Plan",
+      "header": null
+    },
+    "1VdSjKXnC33YNrhzBrCS_P4g2dP3nZrjnA53rBizPesw": {
+      "filename": "Lesson #7, Grade 6-8 2022-23: Hispanic Heritage Month: Baleadas",
+      "header": "Grade 6-8 / Season Fall / Indicate: Indoor/Outdoor / Year 1"
+    },
+    "1DjKZHzxEZXodIjzInPgMYiYgAqANekN3-8yyIknq8z8": {
+      "filename": "Summer @ 109: 3-4 Worms and Compost",
+      "header": "3rd-4th Grade / Summer / Indoor/Outdoor"
+    },
+    "lesson_f8c1e48f16784cbab04db0a109a9d1c6": {
+      "filename": "Rainsticks lesson 3K/PK",
+      "header": "Grade 3K/PK / Season: Spring / Indicate: Indoor/Outdoor / Indicate: Year A"
+    },
+    "1aqSoaGDAVFvSWjZJeKAEIkHvPdrWKsxq": {
+      "filename": "Black Bean Burgers.docx",
+      "header": "6th-8th Grade / Spring / Indoor"
+    },
+    "1DdaCvc-EWgpVEHQLfngJnMUrHO3TsRRRfdMRsG9XX0o": {
+      "filename": "Newly Freed Americans",
+      "header": "8th Grade / Fall/Winter / Indoor"
+    },
+    "18QfepPy6pZxm4YfHA5vw18ab4DodkLkT": {
+      "filename": "Soil Components and Layers.docx",
+      "header": "3rd-8th Grade / Fall/Winter / Indoor/Outdoor"
+    },
+    "195HJX4JZMAxXC_A3xOUHfNStZl1iAnZ6XgeMGW1sho4": {
+      "filename": "Lesson Plan - Pesto Pizza",
+      "header": null
+    },
+    "1dXzaZv3yFh5wlHxkkZPPCrQdJWsXT5-tvGA4CP3yNuY": {
+      "filename": "Do we Recognize these Logos",
+      "header": "Middle School / Fall/Winter / Indoor"
+    },
+    "1HHuEkR4gaoN7_Q7mlcteiDQ93glIfluzHF9sZSfZ0k8": {
+      "filename": "3K/Pk Lesson about the Garden in the Summer",
+      "header": "3K/Pre-K / Summer / Outdoor / Year B"
+    },
+    "1JcQB3OaA0ws5SoJwanWrSOxAZHGuc7Xt": {
+      "filename": "Three Sister Enchiladas Lesson Plan (2020).docx",
+      "header": "All Grades / Fall / Indoor"
+    },
+    "lesson_21119471ac47403e89286545e8036d94": {
+      "filename": "4th-5th Grade Interconnection & Native American Traditions Lesson Plan",
+      "header": "4th Grade / All Seasons / Outdoor/Indoor"
+    },
+    "1UOqNBD4kfdZth-hyfkGvYat_lVxgIscn": {
+      "filename": "Lotion & Agar Soap - MS.docx",
+      "header": "Grade: MS / Winter 2022 / Indoor - Kitchen"
+    },
+    "1f1FVc2FsYYwFtCFWDRAxSfsT3BcPC1E5": {
+      "filename": "Lotion & Agar Soap - K.docx",
+      "header": "Grade: K / Winter 2022 / Indoor - Kitchen"
+    },
+    "1EeGQSd0L2YohAapYIjqZy9tT2EK0cEXVU6ugltSaNwg": {
+      "filename": "Dr. Carver Lotion-Making",
+      "header": "Elementary / Spring / Indoor/ Greenhouse"
+    },
+    "1B-4jTGPsOXmFJp-q-4JpMJ3e7Qw5I92aOxtgWHD6UNU": {
+      "filename": "3. Farm Workers and Pesticides, 2-day lesson--D22",
+      "header": "4th-5th / Spring / Indoor/Outdoor / Year B"
+    },
+    "1dTMg_5AdKV5cJNnt7_L2cXhTK9fmJr8U": {
+      "filename": "PK Roots.docx",
+      "header": "PK / All Seasons / Indoor/Outdoor"
+    },
+    "1tYdCp_VLcX-ymleYFMRBj20Pzf4U7j912gg_k_-yMko": {
+      "filename": "March 1st Gr. Plant Families",
+      "header": null
+    },
+    "0BzCUl-9h7sgESGZ0MThTY0NBYVE": {
+      "filename": "April Gr. 3 Seed Dispersal",
+      "header": "March 3rd Grade"
+    },
+    "1X7HadA1WaR-hNBFIHvAUsFKborDGE5eT3Lhg5Dp9CEI": {
+      "filename": "Seed Dispersal",
+      "header": null
+    },
+    "1BQdTnCzvCWc7u6MA9ey1HFm-H1g-fXdcgGXFU_Fxzww": {
+      "filename": "3 Sisters Chips & Salsa 2022",
+      "header": null
+    },
+    "19jKdVhI31juzrkZg6H4pZpWGzwzUZmeW": {
+      "filename": "Lesson Plan_Pupusas & Curtido.docx",
+      "header": "3K-8th Grade / Fall/Winter/Spring/Summer / Heat/No Heat"
+    },
+    "1l2xxZKHe1VxKG9RovqhaqrVjoz1VOnsy-pObtCqqGV4": {
+      "filename": "Kindergarten Planting in Patterns Lesson",
+      "header": "Kindergarten / Spring / Outdoor"
+    },
+    "18aRAD5iY1YxcaqTUZBhflNDAstEAHumK": {
+      "filename": "Kitchen Tool Identification.docx",
+      "header": "Middle School / Fall / Indoor"
+    },
+    "1PgqX2FsSZIF3dIlv4CS1DvLS5WtzCaw7lQb4JcpQ9AQ": {
+      "filename": "Plant Part Olympics",
+      "header": "1st-2nd /October / Indoor"
+    },
+    "1NLUEYTsHFabANLKFdNgQTuf1rqTPoVdjVJpXTLgr2Xc": {
+      "filename": "Chana Chawal and Raita Lesson Plan",
+      "header": null
+    },
+    "1-QgkHyLPDzZrNRkmX3pjNFjT9GBOsBROalNbVvAMKck": {
+      "filename": "Food Workers' Rights",
+      "header": "Grade: Middle School / Season: Winter / Indoor"
+    },
+    "14fk_yAGgoUM0I7iJDOKaSdZrww1HHPPj": {
+      "filename": "Cajun Black Eyed Peas Sliders 3rd-5th.docx",
+      "header": "3rd-5tth [sic] Grade / Winter"
+    },
+    "1JNKJikW1P1lCE4zlt0_2S4F2mNIRF7qm": {
+      "filename": "Cajun Black Eyed Peas Sliders 6th - 8th.docx",
+      "header": "6th-8th Grade / Winter"
+    },
+    "lesson_f2466c648cb44ed597d5b49f2d51ffbd": {
+      "filename": "Worms K-1",
+      "header": null
+    },
+    "lesson_df09326b3497429cad55727f6d59d477": {
+      "filename": "Sensory Scavenger Hunt Lesson",
+      "header": "PK-2 / Fall / Outdoor / Year B"
+    },
+    "lesson_c257c458adb549c3ad5ffe25aef9a776": {
+      "filename": "Wild Soda",
+      "header": "Grades 6-7 / Fall/Spring / Indoor/Outdoor / Year B"
+    }
+  }
+}
