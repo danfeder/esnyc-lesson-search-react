@@ -49,6 +49,41 @@ Sequence:
 7. `npm run type-check && npm run lint` — confirm clean baseline before changing anything.
 8. Tell me where you are and what task is next. Don't start until I confirm orientation.
 
+# EXECUTION MODE — SUPERVISOR + FRESH-CONTEXT SUBAGENTS (adopted after Session 3, user decision)
+
+This session runs as a SUPERVISOR. You do the orientation, the user-facing checkpoints, the
+verification, and the status-file bookkeeping yourself — but each impl-plan task is EXECUTED
+by a dispatched subagent (Agent tool) that starts with fresh context. This keeps the main
+context light, so one session can carry several tasks without degrading.
+
+Per task:
+1. Dispatch ONE executor subagent (general-purpose; default model inheritance — never downgrade
+   executors or reviewers to a smaller model). Its prompt must contain:
+   - The four doc paths (kickoff / design / impl plan / status) + the task ID (e.g. "Task B.2"),
+     with instruction to READ the design doc and its task section from disk before acting.
+   - A digest of this prompt's DATA SAFETY + MIGRATION DISCIPLINE blocks, the LOCKED decisions,
+     and the NEVER list — copied in, because the subagent never sees this prompt.
+   - Which skills the task requires (e.g. `database-migrations` before touching
+     supabase/migrations/; TDD for parser/emitter work).
+   - Boundaries: committing on the feature branch is OK; NEVER push, open a PR, touch PROD, or
+     edit the verdict worksheets / design doc / impl plan / status file — the supervisor owns
+     those.
+   - "If blocked, or anything on disk contradicts the locked design, STOP and report back with
+     what you found — do not improvise." (Subagents cannot ask the user questions.)
+   - Required report format: what was done, commits made, verification commands run + their
+     actual output.
+2. VERIFY in the main loop before accepting — this is LOAD-BEARING
+   (feedback_workflow_orchestration: supervisor verification has caught real agent misses).
+   Re-run the task's cheap verification commands yourself (script self-checks, type-check/lint,
+   the key MCP probe), inspect `git log` / `git show --stat`, spot-check the artifact. Only
+   then mark the task done.
+3. Everything user-facing stays in the main loop: orientation confirm, push + PR open
+   (allowed without asking, but announce), bot-round triage recommendations, merge, PROD
+   approval, and all status-file updates.
+
+The PER-PR RITUAL below stays supervisor-run (its pre-push reviewer dispatch is already a
+subagent; bot triage and TEST/PROD MCP verification are supervisor work).
+
 # LOCKED DECISIONS — do NOT re-debate
 
 (New concrete evidence can reopen; generic "could be better" cannot.)
@@ -118,8 +153,11 @@ VERIFICATION BEFORE COMPLETION:
 
 # SESSION SCOPE
 
-One task per session, or a small group of trivially-related tasks. Stop at natural commit
-boundaries. Finish-with-cycles + next task small → do it; next task substantive → end session.
+Under supervisor + subagent execution, a session may carry MULTIPLE tasks: dispatch → verify →
+brief status note, then next task. One impl-plan task per subagent dispatch — never bundle two
+tasks into one agent. Still stop for: any user-gated decision (merge, PROD approval), any
+anomaly needing user judgment, or supervisor context growing heavy (then do the session-end
+ritual and hand off to a fresh session).
 
 # SESSION-END RITUAL (do this LAST, every session)
 
@@ -127,6 +165,7 @@ boundaries. Finish-with-cycles + next task small → do it; next task substantiv
 2. `git status && git log --oneline -5` — confirm what landed.
 3. Update the execution status file: refresh Current State header (~300-500 words); append session
    log entry (commits + decisions + learnings); update decisions roll-up + out-of-scope list.
+   The SUPERVISOR owns this file — subagents never write it.
 4. Commit the status file (bundle with the session's work commit when a PR is open — don't push
    docs-only commits during an open PR per feedback_no_docs_push_during_pr).
 5. At each new-PR boundary: archive the prior PR's session-log entries to
@@ -136,5 +175,6 @@ boundaries. Finish-with-cycles + next task small → do it; next task substantiv
 # RIGHT NOW
 
 Read this prompt → status file → design doc → impl plan (current task) → run baseline checks →
-tell me where you are and what's next. If the design doc still says Draft, this is Session 1
-(design lock): work the §4 question list, no code.
+tell me where you are and what's next. Don't dispatch the first executor subagent until I
+confirm orientation. If the design doc still says Draft, this is Session 1 (design lock):
+work the §4 question list, no code.

@@ -3,10 +3,10 @@
 > **For Claude:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan
 > task-by-task.
 >
-> **STATUS: PR 5a TASKS AUTHORED (Session 1, 2026-06-11).** Design doc is LOCKED; §4 has the
-> mechanism decisions + evidence. PR 5a tasks below are concrete; PR 5b tasks stay coarse until
-> 5a is PROD-verified (locked staging decision). Verify every snippet against current code before
-> applying — line numbers and trigger definitions drift.
+> **STATUS: PR 5b TASKS AUTHORED (Session 3, 2026-06-11) — PR 5a SHIPPED + PROD-VERIFIED
+> (#504 → `0b8057f`).** Design doc is LOCKED; §4 has the mechanism decisions + evidence.
+> B-tasks below are concrete, authored from the proven 5a mechanism. Verify every snippet
+> against current code before applying — line numbers and trigger definitions drift.
 
 **Goal:** Rewrite every populated `culturalHeritage` and `academicConcepts` value in the lesson
 corpus to its Stage-1-locked canonical form, and ship the durable alias → canonical vocabulary
@@ -237,33 +237,238 @@ Commit with A.2 or separately: `docs(pr5a): verification probes + rehearsal evid
 
 ## PR 5b — Concepts canonicalization
 
-**Branch:** `feat/pr5b-concepts-canonicalization`
+**Branch:** `feat/pr5b-concepts-canonicalization` — cut from `main`. Precondition MET: the
+returned verdict record is in `main` since PR #503 (`e476f2b`, 2026-06-11); PR 5a is
+PROD-verified (#504 → `0b8057f`, probes (a)–(f) green on PROD).
 
-**Pre-flight reads:**
-- `docs/plans/2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md` (provenance
-  header + the 8 resolution notes)
-- Parser internals of `scripts/build-concepts-tool.py` (`parse_worksheet`, field extraction)
-- PR 3a migration(s) that added `academicConcepts` to `search_vector`
+**Pre-flight reads (verify against current code; line numbers drift):**
+- `docs/plans/2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md` — provenance
+  header (3 conflict resolutions + 5 cluster-signal verdicts), §10 (output contract incl. the
+  JSON shape), Appendix A (the 208 v3-baseline corpus literals with per-subject counts)
+- `scripts/build-concepts-tool.py` — `parse_worksheet` (~line 509), `verify_invariants`
+  (~line 604), `parse_merge_aliases` (~line 405), `Entry` dataclass (~line 341)
+- `scripts/parse-heritage-worksheet.py` `--emit-json` section + `data/vocab/cultural-heritage.vocab.json`
+  (the proven artifact pattern: provenance/canonical/alias_map/drops)
+- `scripts/generate-heritage-rewrite-migration.py` + migration `20260611000000_pr5a_heritage_canonicalization.sql`
+  (the proven generator/migration pattern)
+- `supabase/migrations/20260521000000_search_vector_with_concepts.sql` +
+  `20260523000000_flatten_academic_concepts_safer.sql` (FTS trigger fires on `UPDATE OF metadata`;
+  `_flatten_academic_concepts` feeds subject keys + values into weight C)
+- `supabase/migrations/20260518000000_activity_type_multi_select.sql` `lessons_normalize_write`
+  (§A `academicIntegration.concepts` rescue — verified inert corpus-wide; §V validates 3 unrelated
+  keys only; §J is heritage-only — concepts has NO flat column, so no mirror concerns)
 
-**Precondition:** `tools/concepts-worksheet-form` (carries the returned verdict record,
-`0c33808`) must reach `main` before this branch cuts.
+**Key corpus facts (TEST probes 2026-06-11; re-verify at execution):**
+- 663 live rows with concepts / 208 distinct strings / 1912 appearances — exactly Appendix A
+  (100% verdict coverage). The 4 extra strings live only on the 21 retired rows (out of scope).
+- Verdicts: 119 keep / 82 merge / 7 drop. No `new` verdicts. Merge graph validated at archive
+  time: every `merge_into` target is itself a keep (no chains; `seasonal_changes` inbound folds
+  were re-pointed to `seasonality` at archive time).
+- Drop literals (8 appearances total): `discussion` (2), `design` (1), `food systems` (1),
+  `garden topics` (1), `general exploration` (1), `historical context` (1), `plant science` (1).
+- 8 strings appear under 2 subjects (Appendix A.7) — alias mapping is subject-agnostic; the 216
+  (subject, string) pairs collapse to 208 distinct strings.
+- Stored literals are lowercase; canonical labels are Title Case — so unlike 5a's 17 pairs,
+  essentially EVERY appearance rewrites (~201 non-identity pairs). The generator still filters
+  identity pairs mechanically rather than assuming.
 
-### Tasks B.x — authored after 5a is PROD-verified, from the proven 5a mechanism
+**Two 5a probe learnings to carry (already corrected in the 5a probe file):**
+1. Array-content comparisons are SET equality, not byte equality, wherever order isn't load-bearing.
+2. (Heritage-specific, no 5b analog: parent-slug filter reach can increase. Concepts is not a
+   filter field — no probe (d) analog at all; see B.4.)
 
-Session-1 knowledge to carry into B-task authoring (don't re-derive):
-- Emitter: new script reusing `build-concepts-tool.py` parse functions, pointed at the RETURNED
-  file; recovers corpus literals by normalized match against Appendix A (must be 1:1 for all 208
-  strings or fail); `sorting` → `sorting_and_categorization` key rename is a documented special
-  case at emit time; label "Sorting and Categorization".
-- Rewrite target: `metadata.academicConcepts` ONLY (no flat column). Map each array element
-  through alias_map → canonical **surface label** (Title Case — nearly every appearance changes
-  case); dedupe within each subject array (folds collide with co-tags); delete the 7 drops;
-  remove subject keys whose arrays become empty; subject keys otherwise UNTOUCHED
-  (user-confirmed). Live rows only.
-- FTS refreshes via trigger (`UPDATE OF metadata`); `_flatten_academic_concepts`
-  (`20260523000000`) feeds both subject keys and values into `search_vector` weight C.
-- Scale: 663 live rows with concepts, 208 distinct strings, 1912 appearances; 82 folds +
-  7 drops; backup table `pr5b_concepts_rollback`.
+### Task B.1: Concepts vocab artifact emitter
+
+**Files:**
+- Create: `scripts/emit-concepts-vocab.py`
+- Create: `data/vocab/academic-concepts.vocab.json` (committed emitter output)
+
+**Step 1:** New script (TDD per the test plan: start with the self-checks failing on a
+deliberately-corrupted in-memory copy, then the real file passing). It loads
+`scripts/build-concepts-tool.py` via `importlib.util.spec_from_file_location` (hyphenated
+filename is not import-able as a module name) and reuses `parse_worksheet` +
+`verify_invariants` + `parse_merge_aliases`. Default `--worksheet` is the RETURNED file
+(`docs/plans/2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md`) — NEVER the
+unfilled 2026-05-12 source. `--emit-json PATH` + `--emit-date` flags mirror the heritage
+emitter (no ambient clock).
+
+**Step 2:** Parse Appendix A (sections A.1–A.6) from the same file: every `` `literal` (count) ``
+pair under each subject heading → 216 (subject, literal, count) tuples / 208 distinct literals /
+sum 1912. Hard-fail if any of those three totals differs.
+
+**Step 3:** Corpus-literal recovery — match each of the 208 entries to its Appendix A literal by
+normalized comparison (lowercase, strip every non-alphanumeric character from both the entry's
+`canonical_key` and the literal; e.g. `colonialisms_impact` ↔ `colonialism's impact`,
+`how_to_writing` ↔ `how-to writing`, `biotic_abiotic_factors` ↔ `biotic/abiotic factors`).
+The match must be exactly 1:1 across all 208 entries ↔ 208 literals; any unmatched entry,
+unmatched literal, or double-match is a hard error.
+
+**Step 4:** Build the artifact (worksheet §10 shape + provenance header, 5a pattern):
+
+```python
+artifact = {
+    "provenance": {
+        "source": "docs/plans/2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md",
+        "source_commit": "<git rev-parse HEAD at emit time>",
+        "verdict_counts": {"keep": 119, "merge": 82, "drop": 7},
+        "emitted": "<--emit-date>",
+        "renames": {"sorting": "sorting_and_categorization"},  # the one PR-5b key rename
+    },
+    "canonical": [  # keep entries ONLY (concepts has no `new` verdicts)
+        {"key": ..., "label": e.canonical_label, "primary_subject": ...,
+         "secondary_subjects": [...], "frequency": ...}
+    ],
+    "alias_map": {},  # corpus literal -> canonical key; built below
+    "drops": [],      # the 7 drop entries' corpus literals
+}
+```
+
+alias_map construction: (1) every keep entry's corpus literal → its own key; (2) every merge
+entry's corpus literal → its `merge_into` key. **`sorting` rename special case:** the keep
+entry headed `` `sorting` `` emits key `sorting_and_categorization` (label is already
+"Sorting and Categorization" in the returned file — hard-fail if not, guards a stale file);
+`categorization`'s `merge_into: sorting` re-points to `sorting_and_categorization`; the corpus
+literal `sorting` maps to `sorting_and_categorization` in alias_map.
+
+**Step 5:** Self-checks (fail loudly, no silent emit): canonical count == 119; merge count == 82;
+drops == 7 with exactly the literals listed in the corpus facts above; every `merge_into`
+resolves to a canonical (keep) key after the rename; alias_map has exactly 201 entries
+(208 − 7 drops); labels unique among canonicals; no literal appears in both alias_map and drops;
+appearance sum == 1912.
+
+**Step 6:** Run `--verify-only` against the returned file (parser invariants must pass — the
+returned file keeps the 32/39/137 tier structure), then emit
+`data/vocab/academic-concepts.vocab.json`. Spot-check: `seasonal eating` → `seasonality`;
+`categorization` → `sorting_and_categorization`; `colonialism's impact` → `colonialisms_impact`
+(keep, label "Colonialism's Impact" — verify actual label from the file, don't assume);
+`garden topics` in drops.
+
+**Step 7:** Corpus-coverage probe on TEST (acceptance test; literals generated FROM the artifact,
+never hand-typed — feedback_verbatim_identifiers_in_probes):
+
+```sql
+-- expect zero rows back: every live concept string resolves through alias_map ∪ drops
+SELECT v, count(*) FROM lessons l,
+  jsonb_each(l.metadata->'academicConcepts') s(subj, arr),
+  jsonb_array_elements_text(arr) v
+WHERE l.retired_at IS NULL
+  AND jsonb_typeof(l.metadata->'academicConcepts') = 'object'
+  AND v NOT IN (<alias_map keys + drops, generated from the JSON>)
+GROUP BY v;
+```
+
+**Step 8:** Commit: `tools(pr5b): concepts vocab artifact emitter + academic-concepts.vocab.json`
+
+### Task B.2: Rewrite migration (generator + migration file)
+
+**Files:**
+- Create: `scripts/generate-concepts-rewrite-migration.py` (reads the vocab JSON, prints the
+  full migration SQL deterministically — mapping VALUES list never hand-typed)
+- Create: `supabase/migrations/20260612000000_pr5b_concepts_canonicalization.sql` (generator
+  output, committed). **Invoke the `database-migrations` skill first.** Latest existing prefix
+  is `20260611000000_pr5a...` — the next-day prefix `20260612000000` sorts safely after it
+  (re-check `ls supabase/migrations | grep -E '^2026' | sort | tail -3` at execution).
+
+**Migration structure (generator template; adapts the 5a template to jsonb-only):**
+
+```sql
+-- 1) Rollback snapshot (idempotent: ON CONFLICT DO NOTHING)
+CREATE TABLE IF NOT EXISTS public.pr5b_concepts_rollback (
+  lesson_id text PRIMARY KEY,
+  metadata_academicconcepts jsonb
+);
+ALTER TABLE public.pr5b_concepts_rollback ENABLE ROW LEVEL SECURITY;  -- no policies: service-role only
+INSERT INTO public.pr5b_concepts_rollback (lesson_id, metadata_academicconcepts)
+SELECT l.lesson_id, l.metadata->'academicConcepts'
+FROM public.lessons l
+WHERE l.retired_at IS NULL
+  AND jsonb_typeof(l.metadata->'academicConcepts') = 'object'
+  AND EXISTS (  -- contains ≥1 non-identity-rewritable or dropped literal
+    SELECT 1 FROM jsonb_each(l.metadata->'academicConcepts') s(subj, arr),
+                  jsonb_array_elements_text(arr) v
+    WHERE v IN (<non-identity alias literals + drop literals>))
+ON CONFLICT (lesson_id) DO NOTHING;
+
+-- 2) Rewrite metadata.academicConcepts in place:
+--    per subject key: map each element through alias_map (literal → canonical LABEL),
+--    delete drop literals, dedupe preserving first-occurrence order;
+--    remove subject keys whose arrays become empty;
+--    if the whole object becomes empty, remove the academicConcepts key entirely
+--    (matches the corpus convention that rows without concepts lack the key).
+--    Subject keys are otherwise UNTOUCHED (no moves — locked §4.5).
+--    FTS refreshes via update_lesson_search_vector_trigger (UPDATE OF metadata).
+UPDATE public.lessons l SET metadata = <rebuilt> WHERE <row contains ≥1 alias-or-drop literal>;
+
+-- 3) Post-verify DO block: RAISE EXCEPTION if any non-identity literal or drop literal
+--    survives on live rows; also RAISE if any subject array is empty or any
+--    academicConcepts object is empty (the emptied-key cleanup must have caught them).
+```
+
+Generator self-checks (5a pattern): every alias target key resolves to a canonical entry; every
+RHS is a canonical surface label distinct from its LHS (identity pairs filtered mechanically);
+drop list == the artifact's 7 drops; pair count logged and compared to 208 − 7 − <identity count>.
+
+**Steps:** generate → read the generated SQL end-to-end → local rehearsal: `supabase db reset` +
+`npm run test:rls`, then seed local lessons covering the three edge shapes — (i) fold-collision
+dedup: `{"Science": ["adaptations", "adaptation", "garden topics"]}` →
+`{"Science": ["Adaptations"]}`; (ii) full-empty: `{"Science": ["garden topics"]}` →
+`academicConcepts` key removed; (iii) cross-subject: same literal under two subject keys rewrites
+under both, no cross-subject dedup — verify FTS regenerates (search_vector changes) and re-running
+the UPDATE matches 0 rows (idempotency). Commit:
+`feat(pr5b): concepts canonicalization migration (rollback snapshot + alias rewrite + drops)`
+
+### Task B.3: Frontend no-op verification
+
+Concepts is not a filter field (`filterDefinitions.ts` has no academicConcepts category), so the
+expected `src/` diff is ZERO — prove it: `npm run test` (full unit suite passes untouched) and
+record in the status doc that the branch diff contains no `src/` changes. If anything in `src/`
+turns out to need touching, STOP — that contradicts the locked design; surface to the user.
+
+### Task B.4: Probe set + rehearsal evidence
+
+**Files:**
+- Create: `docs/plans/pr5b-concepts-verification-probes.sql` (literals generated from the
+  artifact JSON; before/after expected values as comments)
+- Create: `docs/plans/2026-06-11-pr5b-concepts-rehearsal-evidence.md` (TEST before-census,
+  expected-after computed, filled in as each tier applies)
+
+Probe set (adapts 5a's (a)–(f); **no probe (d) filter-reach analog** — concepts feeds FTS only,
+not a sidebar filter; in its place a subject-key integrity probe):
+(a) live distinct concept-string census across all subject arrays — after == exactly the set of
+    canonical labels that have ≥1 corpus appearance (computable from the artifact + before-census);
+(b) per-alias appearance counts — before: recorded; after: zero appearances of ANY non-identity
+    literal or drop literal (metadata only — there is no flat column for concepts);
+(c) appearance conservation — after-sum == before-sum − drop appearances (8 expected on TEST)
+    − fold-collision dedups (computed from before-state: same-subject-array co-occurrence of a
+    fold source with its target or a sibling source);
+(d′) subject-key integrity — per-subject-key row counts unchanged EXCEPT rows whose key emptied
+    (expected lesson_ids computed from before-state); zero empty arrays; zero empty
+    academicConcepts objects; shape still object-of-arrays on every live row;
+(e) FTS smoke — `search_lessons` for a canonicalized term matches the lessons its pre-rewrite
+    alias matched (pick from the artifact: e.g. lessons tagged `seasonal eating` before must
+    FTS-match 'Seasonality' after; 'Sorting and Categorization' matches the ex-`sorting` +
+    ex-`categorization` lessons);
+(f) idempotency — re-run the UPDATE, expect "UPDATE 0".
+Backup-table check: `pr5b_concepts_rollback` row count == rows matched by the rewrite WHERE;
+RLS enabled, 0 policies.
+
+Commit with B.2 or separately: `docs(pr5b): verification probes + rehearsal evidence scaffold`
+
+### Task B.5: PR ritual → TEST → merge → PROD
+
+Same ritual as A.5, with 5b specifics:
+1. Pre-push: `npm run type-check && npm run lint`; code-reviewer agent (opus) on
+   `git diff main...HEAD`; rebuttal pass; fix-ups BEFORE push.
+2. Push, `gh pr create` (body: design-doc link, probe plan, rollback path, scale numbers).
+3. CI applies migration to TEST. Run the FULL probe file via `mcp__supabase-test__execute_sql`;
+   record in the evidence doc. Re-run after EVERY fix-up round that touches DB state.
+4. Four-surface bot triage; round-cap 2.
+5. Merge on user instruction. Run the PROD before-census BEFORE approving the PROD workflow
+   (5a pattern: PROD counts can differ from TEST — record them, recompute expected-after).
+   Expect possible SASL flake (rerun via `gh run rerun --failed`).
+6. PROD verify via `mcp__supabase-remote__execute_sql`: full probe set + backup-table check;
+   record in evidence doc. This closes PR 5; the rollback-table drops (5a + 5b) stay tracked
+   in the status doc for the post-PR-6 cleanup migration.
 
 ---
 

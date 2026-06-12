@@ -1,0 +1,1069 @@
+{
+  "provenance": {
+    "source": "docs/plans/2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md",
+    "source_commit": "f3f050f0c1f1d12f2a9e1525957025481374261e",
+    "verdict_counts": {
+      "drop": 7,
+      "keep": 119,
+      "merge": 82
+    },
+    "emitted": "2026-06-11",
+    "renames": {
+      "sorting": "sorting_and_categorization"
+    }
+  },
+  "canonical": [
+    {
+      "key": "adaptations",
+      "label": "Adaptations",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 5
+    },
+    {
+      "key": "advertising",
+      "label": "Advertising",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "advocacy",
+      "label": "Advocacy",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "animal_needs",
+      "label": "Animal Needs",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 5
+    },
+    {
+      "key": "animal_welfare",
+      "label": "Animal Welfare",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "argumentation",
+      "label": "Argumentation",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "bilingual_education",
+      "label": "Bilingual Education",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 4
+    },
+    {
+      "key": "biodiversity",
+      "label": "Biodiversity",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 7
+    },
+    {
+      "key": "cellular_respiration",
+      "label": "Cellular Respiration",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "chemical_reactions",
+      "label": "Chemical Reactions",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "circulatory_system",
+      "label": "Circulatory System",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "civil_rights_movement",
+      "label": "Civil Rights Movement",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "climate",
+      "label": "Climate",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "climate_change",
+      "label": "Climate Change",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "colonialisms_impact",
+      "label": "Colonialism's Impact",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 12
+    },
+    {
+      "key": "community_systems",
+      "label": "Community Systems",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 15
+    },
+    {
+      "key": "companion_planting",
+      "label": "Companion Planting",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 13
+    },
+    {
+      "key": "comparative_writing",
+      "label": "Comparative Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "counting",
+      "label": "Counting",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 20
+    },
+    {
+      "key": "creative_writing",
+      "label": "Creative Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "cultural_narratives",
+      "label": "Cultural Narratives",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 8
+    },
+    {
+      "key": "cultural_traditions",
+      "label": "Cultural Traditions",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 206
+    },
+    {
+      "key": "data_collection",
+      "label": "Data Collection",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 19
+    },
+    {
+      "key": "debate",
+      "label": "Debate",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "decomposition",
+      "label": "Decomposition",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 47
+    },
+    {
+      "key": "descriptive_writing",
+      "label": "Descriptive Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "drawing",
+      "label": "Drawing",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 9
+    },
+    {
+      "key": "ecosystems",
+      "label": "Ecosystems",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 73
+    },
+    {
+      "key": "engineering",
+      "label": "Engineering",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "environmental_justice",
+      "label": "Environmental Justice",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "environmental_stewardship",
+      "label": "Environmental Stewardship",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "estimation",
+      "label": "Estimation",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 15
+    },
+    {
+      "key": "factory_farming",
+      "label": "Factory Farming",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "farm_labor",
+      "label": "Farm Labor",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "feedback_systems",
+      "label": "Feedback Systems",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "fermentation",
+      "label": "Fermentation",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "figurative_language",
+      "label": "Figurative Language",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "food_presentation",
+      "label": "Food Presentation",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "food_processing",
+      "label": "Food Processing",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "food_webs",
+      "label": "Food Webs",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 11
+    },
+    {
+      "key": "fractions",
+      "label": "Fractions",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 9
+    },
+    {
+      "key": "garden_exploration",
+      "label": "Garden Exploration",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 4
+    },
+    {
+      "key": "geography",
+      "label": "Geography",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 56
+    },
+    {
+      "key": "germination",
+      "label": "Germination",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "global_connections",
+      "label": "Global Connections",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 4
+    },
+    {
+      "key": "graphing",
+      "label": "Graphing",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "habitats",
+      "label": "Habitats",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 4
+    },
+    {
+      "key": "harvesting",
+      "label": "Harvesting",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "healthy_choices",
+      "label": "Healthy Choices",
+      "primary_subject": "Health",
+      "secondary_subjects": [],
+      "frequency": 30
+    },
+    {
+      "key": "historical_figures",
+      "label": "Historical Figures",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 69
+    },
+    {
+      "key": "history_of_the_american_west",
+      "label": "History of the American West",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "homeostasis",
+      "label": "Homeostasis",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "how_to_writing",
+      "label": "How-to Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 5
+    },
+    {
+      "key": "hydration",
+      "label": "Hydration",
+      "primary_subject": "Health",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "imaginary_play",
+      "label": "Imaginary Play",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "immigration_stories",
+      "label": "Immigration Stories",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 34
+    },
+    {
+      "key": "indigenous_knowledge",
+      "label": "Indigenous Knowledge",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "legumes",
+      "label": "Legumes",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "letter_writing",
+      "label": "Letter Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "life_cycles",
+      "label": "Life Cycles",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 43
+    },
+    {
+      "key": "literary_elements",
+      "label": "Literary Elements",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "measurement",
+      "label": "Measurement",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 66
+    },
+    {
+      "key": "mechanical_energy",
+      "label": "Mechanical Energy",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "microorganisms",
+      "label": "Microorganisms",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "movement",
+      "label": "Movement",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 4
+    },
+    {
+      "key": "music",
+      "label": "Music",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 6
+    },
+    {
+      "key": "narrative_writing",
+      "label": "Narrative Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "native_american_history",
+      "label": "Native American History",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "novel_connections",
+      "label": "Novel Connections",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "nutrition_education",
+      "label": "Nutrition Education",
+      "primary_subject": "Health",
+      "secondary_subjects": [],
+      "frequency": 107
+    },
+    {
+      "key": "observation",
+      "label": "Observation",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 6
+    },
+    {
+      "key": "opinion_writing",
+      "label": "Opinion Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "patterns",
+      "label": "Patterns",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "performance",
+      "label": "Performance",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "persuasive_writing",
+      "label": "Persuasive Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 4
+    },
+    {
+      "key": "pests",
+      "label": "Pests",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "phases_of_matter",
+      "label": "Phases of Matter",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "photojournalism",
+      "label": "Photojournalism",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "photosynthesis",
+      "label": "Photosynthesis",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 8
+    },
+    {
+      "key": "plant_growth",
+      "label": "Plant Growth",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 9
+    },
+    {
+      "key": "plant_identification",
+      "label": "Plant Identification",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 5
+    },
+    {
+      "key": "plant_needs",
+      "label": "Plant Needs",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 41
+    },
+    {
+      "key": "plant_parts",
+      "label": "Plant Parts",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 239
+    },
+    {
+      "key": "plant_reproduction",
+      "label": "Plant Reproduction",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "planting",
+      "label": "Planting",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "poetry",
+      "label": "Poetry",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [
+        "Arts"
+      ],
+      "frequency": 2
+    },
+    {
+      "key": "pollinators",
+      "label": "Pollinators",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 28
+    },
+    {
+      "key": "preservation",
+      "label": "Preservation",
+      "primary_subject": "Science",
+      "secondary_subjects": [
+        "Social Studies"
+      ],
+      "frequency": 4
+    },
+    {
+      "key": "problem_solving",
+      "label": "Problem Solving",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "public_speaking",
+      "label": "Public Speaking",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "ratios",
+      "label": "Ratios",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "read_aloud",
+      "label": "Read-Aloud",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "reading",
+      "label": "Reading",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "recipe_reading",
+      "label": "Recipe Reading",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 69
+    },
+    {
+      "key": "recipe_scaling",
+      "label": "Recipe Scaling",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "research",
+      "label": "Research",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "root_vegetables",
+      "label": "Root Vegetables",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "scientific_method",
+      "label": "Scientific Method",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "seasonality",
+      "label": "Seasonality",
+      "primary_subject": "Science",
+      "secondary_subjects": [
+        "Health",
+        "Social Studies"
+      ],
+      "frequency": 11
+    },
+    {
+      "key": "seed_dispersal",
+      "label": "Seed Dispersal",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 3
+    },
+    {
+      "key": "seeds",
+      "label": "Seeds",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 13
+    },
+    {
+      "key": "sensory_details",
+      "label": "Sensory Details",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "sensory_exploration",
+      "label": "Sensory Exploration",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 11
+    },
+    {
+      "key": "sequencing",
+      "label": "Sequencing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "slavery",
+      "label": "Slavery",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "social_justice_issues",
+      "label": "Social Justice Issues",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 5
+    },
+    {
+      "key": "soil_science",
+      "label": "Soil Science",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 44
+    },
+    {
+      "key": "sorting_and_categorization",
+      "label": "Sorting and Categorization",
+      "primary_subject": "Math",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "sound",
+      "label": "Sound",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "spices",
+      "label": "Spices",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "storytelling",
+      "label": "Storytelling",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 76
+    },
+    {
+      "key": "thermal_energy",
+      "label": "Thermal Energy",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 12
+    },
+    {
+      "key": "tool_use",
+      "label": "Tool Use",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 2
+    },
+    {
+      "key": "trade_routes",
+      "label": "Trade Routes",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 16
+    },
+    {
+      "key": "visual_arts",
+      "label": "Visual Arts",
+      "primary_subject": "Arts",
+      "secondary_subjects": [],
+      "frequency": 76
+    },
+    {
+      "key": "vocabulary_development",
+      "label": "Vocabulary Development",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 59
+    },
+    {
+      "key": "voting",
+      "label": "Voting",
+      "primary_subject": "Social Studies",
+      "secondary_subjects": [],
+      "frequency": 1
+    },
+    {
+      "key": "water_cycles",
+      "label": "Water Cycles",
+      "primary_subject": "Science",
+      "secondary_subjects": [],
+      "frequency": 17
+    },
+    {
+      "key": "writing",
+      "label": "Writing",
+      "primary_subject": "Literacy/ELA",
+      "secondary_subjects": [],
+      "frequency": 8
+    }
+  ],
+  "alias_map": {
+    "Indigenous knowledge": "indigenous_knowledge",
+    "Indigenous stories": "cultural_narratives",
+    "Native American history": "native_american_history",
+    "adaptation": "adaptations",
+    "adaptations": "adaptations",
+    "advertising": "advertising",
+    "advocacy": "advocacy",
+    "animal needs": "animal_needs",
+    "animal welfare": "animal_welfare",
+    "area": "measurement",
+    "argumentation": "argumentation",
+    "argumentative writing": "persuasive_writing",
+    "beneficial insect identification": "pollinators",
+    "bilingual education": "bilingual_education",
+    "biodiversity": "biodiversity",
+    "biography": "reading",
+    "biography reading": "reading",
+    "biotic/abiotic factors": "ecosystems",
+    "cardiovascular system": "circulatory_system",
+    "categorization": "sorting_and_categorization",
+    "cellular respiration": "cellular_respiration",
+    "chemical reactions": "chemical_reactions",
+    "circulatory system": "circulatory_system",
+    "civil rights movement": "civil_rights_movement",
+    "climate": "climate",
+    "climate change": "climate_change",
+    "colonialism's impact": "colonialisms_impact",
+    "coloring": "visual_arts",
+    "colors of plants": "plant_parts",
+    "community": "community_systems",
+    "community activism": "advocacy",
+    "community building": "community_systems",
+    "community systems": "community_systems",
+    "companion planting": "companion_planting",
+    "comparative writing": "comparative_writing",
+    "consumers": "food_webs",
+    "counting": "counting",
+    "craft activity": "visual_arts",
+    "creative writing": "creative_writing",
+    "cultural narratives": "cultural_narratives",
+    "cultural traditions": "cultural_traditions",
+    "dance": "movement",
+    "data collection": "data_collection",
+    "debate": "debate",
+    "decomposition": "decomposition",
+    "descriptive language": "vocabulary_development",
+    "descriptive writing": "descriptive_writing",
+    "drawing": "drawing",
+    "ecosystems": "ecosystems",
+    "engineering": "engineering",
+    "environmental impact": "environmental_justice",
+    "environmental justice": "environmental_justice",
+    "environmental stewardship": "environmental_stewardship",
+    "erosion": "soil_science",
+    "estimation": "estimation",
+    "factory farming": "factory_farming",
+    "family traditions": "cultural_traditions",
+    "farm labor": "farm_labor",
+    "feedback systems": "feedback_systems",
+    "fermentation": "fermentation",
+    "figurative language": "figurative_language",
+    "food marketing": "advertising",
+    "food memory": "cultural_narratives",
+    "food presentation": "food_presentation",
+    "food preservation": "preservation",
+    "food processing": "food_processing",
+    "food webs": "food_webs",
+    "fractions": "fractions",
+    "garden exploration": "garden_exploration",
+    "geography": "geography",
+    "germination": "germination",
+    "global connections": "global_connections",
+    "graphing": "graphing",
+    "growing cycles": "plant_growth",
+    "growth patterns": "plant_growth",
+    "habitats": "habitats",
+    "harvest": "harvesting",
+    "harvesting": "harvesting",
+    "healthy choices": "healthy_choices",
+    "historical figures": "historical_figures",
+    "history of the American West": "history_of_the_american_west",
+    "holidays": "cultural_traditions",
+    "homeostasis": "homeostasis",
+    "how-to writing": "how_to_writing",
+    "hydration": "hydration",
+    "identifying plants": "plant_identification",
+    "imaginary play": "imaginary_play",
+    "immigration stories": "immigration_stories",
+    "informational text": "reading",
+    "informational writing": "how_to_writing",
+    "instrument making": "music",
+    "international food traditions": "cultural_traditions",
+    "legumes": "legumes",
+    "letter writing": "letter_writing",
+    "life cycles": "life_cycles",
+    "literary elements": "literary_elements",
+    "macromolecules": "nutrition_education",
+    "macronutrients": "nutrition_education",
+    "map reading": "geography",
+    "measurement": "measurement",
+    "mechanical energy": "mechanical_energy",
+    "microbiome": "microorganisms",
+    "microorganisms": "microorganisms",
+    "movement": "movement",
+    "music": "music",
+    "narrative reading": "reading",
+    "narrative writing": "narrative_writing",
+    "national and religious holidays": "cultural_traditions",
+    "note-taking": "research",
+    "novel connections": "novel_connections",
+    "nutrition": "nutrition_education",
+    "nutrition education": "nutrition_education",
+    "observation": "observation",
+    "opinion writing": "opinion_writing",
+    "organizing ideas": "research",
+    "painting": "visual_arts",
+    "patterns": "patterns",
+    "performance": "performance",
+    "perimeter": "measurement",
+    "persuasive writing": "persuasive_writing",
+    "pests": "pests",
+    "phases of matter": "phases_of_matter",
+    "photojournalism": "photojournalism",
+    "photosynthesis": "photosynthesis",
+    "plant ID": "plant_identification",
+    "plant adaptation": "adaptations",
+    "plant adaptations": "adaptations",
+    "plant and animal similarities": "life_cycles",
+    "plant growth": "plant_growth",
+    "plant identification": "plant_identification",
+    "plant needs": "plant_needs",
+    "plant nutrition": "plant_needs",
+    "plant parts": "plant_parts",
+    "plant reproduction": "plant_reproduction",
+    "plant-based proteins": "nutrition_education",
+    "planting": "planting",
+    "poetry": "poetry",
+    "pollinators": "pollinators",
+    "preservation": "preservation",
+    "problem solving": "problem_solving",
+    "producers": "food_webs",
+    "protein": "nutrition_education",
+    "public speaking": "public_speaking",
+    "puppet making": "visual_arts",
+    "puppetry": "visual_arts",
+    "ratios": "ratios",
+    "read-aloud": "read_aloud",
+    "reading": "reading",
+    "reading comprehension": "reading",
+    "recipe reading": "recipe_reading",
+    "recipe scaling": "recipe_scaling",
+    "recipe selection": "recipe_reading",
+    "recipe writing": "how_to_writing",
+    "research": "research",
+    "root vegetables": "root_vegetables",
+    "roots": "plant_parts",
+    "scaling": "recipe_scaling",
+    "scientific claims": "scientific_method",
+    "scientific method": "scientific_method",
+    "seasonal change": "seasonality",
+    "seasonal changes": "seasonality",
+    "seasonal cycles": "seasonality",
+    "seasonal eating": "seasonality",
+    "seasonality": "seasonality",
+    "seasons": "seasonality",
+    "seed dispersal": "seed_dispersal",
+    "seed starting": "seeds",
+    "seeds": "seeds",
+    "sensory details": "sensory_details",
+    "sensory exploration": "sensory_exploration",
+    "sequencing": "sequencing",
+    "similes": "figurative_language",
+    "simple machines": "engineering",
+    "slavery": "slavery",
+    "social justice": "social_justice_issues",
+    "social justice issues": "social_justice_issues",
+    "soil": "soil_science",
+    "soil science": "soil_science",
+    "song": "music",
+    "sorting": "sorting_and_categorization",
+    "sound": "sound",
+    "spacing": "planting",
+    "spices": "spices",
+    "states of matter": "phases_of_matter",
+    "storytelling": "storytelling",
+    "tallying": "counting",
+    "taste": "sensory_exploration",
+    "thermal energy": "thermal_energy",
+    "tool use": "tool_use",
+    "trade routes": "trade_routes",
+    "unit rates": "ratios",
+    "visual arts": "visual_arts",
+    "vocabulary development": "vocabulary_development",
+    "volume": "measurement",
+    "voting": "voting",
+    "water cycles": "water_cycles",
+    "weather": "climate",
+    "weight": "measurement",
+    "writing": "writing",
+    "writing claims": "persuasive_writing",
+    "yeast": "fermentation"
+  },
+  "drops": [
+    "design",
+    "discussion",
+    "food systems",
+    "garden topics",
+    "general exploration",
+    "historical context",
+    "plant science"
+  ]
+}
