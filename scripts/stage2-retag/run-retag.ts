@@ -143,9 +143,13 @@ export const MAX_TOKENS = 4096;
  *   claude-opus-4-7:   $5 input / $25 output (identical pricing to 4.8;
  *                      retained — E3 baseline + older artifacts reference it)
  *   claude-sonnet-4-6: $3 input / $15 output
+ *   claude-fable-5:    $10 input / $50 output (user-requested experimental
+ *                      contestant 2026-06-12; thinking is always on and its
+ *                      tokens bill as output, so per-lesson output mass runs
+ *                      higher than Opus on the same task)
  * Cache economics (prompt-caching docs): cache WRITE = 1.25x input for the
  * 5-minute TTL (`cache_control: {type:'ephemeral'}`, what this runner uses);
- * cache READ = 0.1x input. Both dry-run contestants (impl-plan A8) are
+ * cache READ = 0.1x input. All dry-run contestants (impl-plan A8) are
  * covered; an unknown model yields `costUsd: null` rather than a wrong
  * number.
  */
@@ -156,6 +160,7 @@ export const PRICING_PER_MTOK: Record<
   'claude-opus-4-8': { input: 5, output: 25, cacheWrite5m: 6.25, cacheRead: 0.5 },
   'claude-opus-4-7': { input: 5, output: 25, cacheWrite5m: 6.25, cacheRead: 0.5 },
   'claude-sonnet-4-6': { input: 3, output: 15, cacheWrite5m: 3.75, cacheRead: 0.3 },
+  'claude-fable-5': { input: 10, output: 50, cacheWrite5m: 12.5, cacheRead: 1 },
 };
 
 // ---------------------------------------------------------------------------
