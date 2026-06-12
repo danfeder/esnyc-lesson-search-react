@@ -126,34 +126,53 @@ Appendix A's intentional capitalization — `Indigenous knowledge`, `Indigenous 
 - [x] backup table: **663 rows, RLS enabled, 0 policies**
 - [ ] re-run after every fix-up round that touches DB state (none yet — round 0 probes above)
 
-## Tier 3 — PROD (TODO — Task B.5)
+## Tier 3 — PROD (2026-06-12, run 27387525608)
 
-### Before-census (TODO — run post-merge, BEFORE approving the PROD workflow)
+### Before-census ✅ (run post-merge, BEFORE the PROD workflow approval)
 
-PROD counts can differ from TEST (5a precedent: PROD carried a few rows TEST lacked).
-Re-run the full before-probe set via `mcp__supabase-remote__execute_sql`; record everything
-below and RECOMPUTE the expected-after values from PROD's own before-state (do NOT reuse the
-TEST numbers); regenerate the probe (e) lesson_id lists and the emptied-key lesson_ids FROM
-PROD output.
+- [x] (a) census: **676 rows / 209 distinct / 1962 appearances** (TEST: 663 / 208 / 1912 —
+      PROD carries 13 live concepts rows TEST lacks; 5a precedent confirmed at larger scale)
+- [x] (b) literals-outside-artifact check: **ONE hit — `urban revitalization` (1 appearance)**,
+      on lesson `1NqjpqXV8soDQs2W9HonavtlxQT4MbFI0H7pUdnH-mEI` "Seed Bursts" (2025-08-07,
+      PROD-only row; PROD has TWO live Seed Bursts lessons — near-duplicate pair, the
+      2025-07-10 one `1HuffJuy_-bVzIAm4GxzBhG3gOtiRoAKBBapswfhZrCg` is fully covered).
+      **STOP condition triggered and surfaced to the user 2026-06-12; user decision: apply
+      now, flag leftover** — the value got no worksheet verdict (the worksheet census matched
+      TEST, which lacks this row); the migration passes unknown values through untouched, so
+      apply is safe; resolution deferred to a curriculum-team verdict (rides with PR 6 re-tag
+      or a tiny follow-up migration). Tracked in the execution status doc.
+- [x] drop appearances: **8** (design 1, discussion 2, food systems 1, garden topics 1,
+      general exploration 1, historical context 1, plant science 1) — identical to TEST
+- [x] fold-collision dedups: **31 across 28 arrays / 28 lessons** — identical to TEST
+- [x] keys that will empty: **2** — same two lessons as TEST
+      (`1cH_8eRYyGYLfAMROmDowd8aPddx1tDMoUxTM0QBR42s` Science; `1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M`
+      sole-key Science → whole object removed)
+- [x] per-subject before: Arts 96 | Health 105 | Literacy/ELA 209 | Math 100 | Science 477 |
+      Social Studies 259; shape integrity 0/0/0/0
+- [x] rewrite-WHERE match count: **676** (every live concepts row carries ≥1 alias/drop literal;
+      the Seed Bursts stray row still matches via its three covered values)
+- [x] FTS smoke inputs: same 7 `seasonal eating` lesson_ids as TEST; `sorting` + `categorization`
+      both on All About Seeds `1eACw5KxzBWrZlqretq7FbjxnVm8jqXaf` — verified live on PROD
+- [x] expected-after recomputed from PROD: **675 rows / 120 distinct (119 canonical + 1 flagged
+      leftover) / 1923 appearances (1962 − 8 − 31)**; Science 477→475; rollback 676 rows
 
-- [ ] (a) census (TEST: 663 / 208 / 1912)
-- [ ] (b) per-literal census + literals-outside-artifact check (MUST be zero — if PROD carries
-      a live literal the artifact lacks, STOP: that's a coverage gap, not a probe tweak)
-- [ ] drop appearances + detail (TEST: 8 / 7 rows)
-- [ ] fold-collision dedups + detail (TEST: 31 / 28 arrays)
-- [ ] keys that will empty / objects that will be removed (TEST: 2 keys / 1 object)
-- [ ] per-subject-key row counts + shape integrity
-- [ ] rewrite-WHERE match count = expected rollback rows (TEST: 663)
-- [ ] FTS smoke input lesson_ids (regenerate from PROD)
-- [ ] expected-after values recomputed from PROD before-state
+### After-apply ✅ ALL PROBES GREEN (2026-06-12, post-approval, via mcp__supabase-remote__execute_sql)
 
-### After-apply (TODO — after PROD migration workflow approved + applied)
-
-- [ ] (a) census + non-canonical survivor probe
-- [ ] (b) zero alias/drop rows
-- [ ] (c) appearance conservation vs PROD expected-after
-- [ ] (d′) per-subject counts + shape + removed-key check
-- [ ] (e) FTS smoke (PROD lesson_ids)
-- [ ] (f) idempotency (re-run UPDATE → 0 rows)
-- [ ] backup table row count == PROD expected, RLS enabled, 0 policies
-- [ ] PR 5 closes; pr5b_concepts_rollback drop stays tracked for the post-PR-6 cleanup migration
+- [x] (a) census = **675 / 120 / 1923** (exact); non-canonical survivor probe returns exactly
+      `urban revitalization` ×1 — the flagged leftover, nothing else
+- [x] (b) zero appearances of any of the 208 alias/drop literals
+- [x] (c) 1923 = 1962 − 8 − 31 ✓
+- [x] (d′) Arts 96 | Health 105 | Literacy/ELA 209 | Math 100 | **Science 475** | Social Studies 259;
+      shape 0/0/0/0; Soul Food Sunday `1voTO…` lacks the academicConcepts key;
+      `1cH_8e…` Science key gone, concepts = `{"Literacy/ELA": ["How-to Writing", "Research"]}`;
+      Seed Bursts `1Nqjpq…` = `{"Science": ["Planting", "Pollinators"], "Social Studies":
+      ["Community Systems", "urban revitalization"]}` — covered values rewritten, stray passed
+      through exactly as predicted
+- [x] (e) e1: all 7 rows fts_seasonality = true; e2: All About Seeds
+      fts_sorting_and_categorization = true
+- [x] (f) idempotency: post-verify DO block passed in the workflow apply; probe (b) zero-literal
+      result ⇒ the rewrite WHERE matches 0 rows (write-path re-run proven locally in B.2)
+- [x] backup table: **676 rows, RLS enabled, 0 policies**
+- [x] **PR 5 closes.** `pr5b_concepts_rollback` (and 5a's) drop stays tracked for the
+      post-PR-6 cleanup migration; the `urban revitalization` leftover + Seed Bursts duplicate
+      pair + TEST-missing-13-PROD-rows drift are tracked in the execution status doc.

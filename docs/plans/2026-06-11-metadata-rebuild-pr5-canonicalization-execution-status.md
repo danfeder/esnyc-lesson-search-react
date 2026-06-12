@@ -1,37 +1,41 @@
 # PR 5 — D4 Vocabulary Canonicalization — Execution Status
 
-**Last updated:** 2026-06-11 by Session 3 (PR 5b B-tasks authored; B.1 DONE)
+**Last updated:** 2026-06-12 by Session 4 (PR 5b SHIPPED + PROD-VERIFIED — **PR 5 initiative
+COMPLETE**)
 
 ## Current State
 
-**PR 5b is IN FLIGHT on branch `feat/pr5b-concepts-canonicalization` (cut from `main` at
-`d7b9ef4`). B-tasks B.1–B.5 are authored concrete in the impl plan (commit `f3f050f`); Task
-B.1 is DONE (commit `76f2714`). Next task: B.2 — migration generator + migration file + local
-rehearsal.** No PR opened yet; nothing pushed.
+**PR 5 IS DONE. Both halves shipped and PROD-verified: 5a (#504 → `0b8057f`) and 5b (#505 →
+`17d0da1`, squash-merged 2026-06-12, PROD run `27387525608` all jobs green, no SASL flake).**
+No further PR 5 work remains. What's left behind for later tracks is listed under
+"Out-of-scope follow-ups" below — most notably the **`urban revitalization` leftover**
+(PROD-only concept value that got no worksheet verdict; user decision 2026-06-12: apply now,
+flag for a curriculum-team verdict), the two rollback tables to drop after PR 6, and the
+Seed Bursts duplicate pair.
 
-**B.1 outcome:** `scripts/emit-concepts-vocab.py` (loads `build-concepts-tool.py` via
-importlib — hyphenated filename; `sys.modules` registration required for dataclass
-resolution) + committed artifact `data/vocab/academic-concepts.vocab.json`: 119 canonical /
-201 alias_map entries / 7 drops; provenance records the `sorting`→`sorting_and_categorization`
-rename. Negative tests all refuse loudly (corrupted verdict, broken merge_into, the UNFILLED
-source worksheet); emit is byte-stable; spot-checks green (`seasonal eating`→`seasonality`,
-`categorization`→`sorting_and_categorization`, `colonialism's impact`→`colonialisms_impact`;
-drops = design / discussion / food systems / garden topics / general exploration / historical
-context / plant science). **TEST coverage probe: ZERO unresolved literals; corpus facts
-re-confirmed live (663 rows / 208 distinct / 1912 appearances — still exactly Appendix A).**
-Zero identity literal→label pairs — all 201 aliases are real rewrites (lowercase → Title
-Case), so the migration's VALUES list carries all 201.
+**PR 5b PROD outcome:** 676 rows rewritten / 1962→1923 appearances (−8 drops, −31
+fold-collision dedups) / 209→120 distinct (119 canonical Title Case labels + the 1 flagged
+leftover); Science subject-key reach 477→475 (the two predicted emptied keys — same two
+lessons as TEST); Soul Food Sunday lost its `academicConcepts` key entirely (sole-key
+all-drop row); backup table `pr5b_concepts_rollback` 676 rows (RLS on, 0 policies). FTS smoke
+green (Seasonality ×7, Sorting and Categorization ×1). Full three-tier evidence:
+`2026-06-11-pr5b-concepts-rehearsal-evidence.md`.
 
-**B.2 next (authored, not started):** generator `scripts/generate-concepts-rewrite-migration.py`
-→ migration `20260612000000_pr5b_concepts_canonicalization.sql` (next-day prefix sorts after
-5a's `20260611000000`; re-check at execution). jsonb-only rewrite of
-`metadata.academicConcepts`: literal→LABEL per subject array, delete 7 drops, dedupe
-first-occurrence, remove emptied subject keys, **remove the academicConcepts key entirely if
-the whole object empties** (minor mechanism decision recorded Session 3 — matches the corpus
-convention that concept-less rows lack the key). Backup table `pr5b_concepts_rollback`
-(lesson_id PK + jsonb), RLS on / no policies. Local rehearsal seeds three edge shapes:
-fold-collision dedup, full-empty row, cross-subject literal. Probes (B.4): no filter-reach
-analog (concepts isn't a filter field); replaced by a subject-key-integrity probe (d′).
+**The coverage-gap discovery (load-bearing for future vocab worksheets):** PROD carries 13
+live concepts rows TEST lacks (676 vs 663); exactly one introduced a literal outside the
+worksheet's 208 — `urban revitalization` on PROD-only lesson "Seed Bursts" (`1NqjpqXV…`).
+The worksheet's Appendix A census matched TEST exactly, so a TEST-derived census CAN miss
+PROD-only literals. **Future Stage 1 worksheets for the ~8 smaller vocab fields must census
+PROD, not TEST.** The migration design held: unknown values pass through untouched; post-verify
+doesn't trip; the apply was provably safe with the stray aboard.
+
+**What shipped in 5b:** vocab artifact `data/vocab/academic-concepts.vocab.json` (119/201/7,
+emitted from the returned worksheet with fail-loudly self-checks, byte-stable); deterministic
+generator `scripts/generate-concepts-rewrite-migration.py`; migration
+`20260612000000_pr5b_concepts_canonicalization.sql` (snapshot → jsonb in-place rewrite →
+post-verify DO block; idempotent; emptied subject keys removed; fully-emptied objects lose the
+key); probe file + three-tier evidence doc. Zero `src/` changes (predicted, proven: 577 unit
+tests untouched; concepts is not a filter field).
 
 **PR 5a is DONE: #504 merged to main (squash `0b8057f`, 2026-06-11 23:40 UTC) and
 PROD-verified — full probe set (a)–(f) green on PROD via MCP (run `27384490534`, all 4 jobs
@@ -113,11 +117,15 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
   (probe set green, evidence doc fully filled). PR 5b un-gated.
 - Session 3 (2026-06-11): B.1–B.5 authored concrete into the impl plan (`f3f050f`); Task B.1
   done (`76f2714` — emitter + artifact + TEST coverage probe zero unresolved).
+- Session 4 (2026-06-11/12, supervisor + subagent mode): **PR 5b complete end-to-end** —
+  B.2 (`442fb70`), B.3 (no-op proven), B.4 (`4245832`), B.5: PR #505 opened, TEST probes all
+  green, 1 bot round (zero accepted findings), squash-merged `17d0da1`, PROD before-census
+  caught the `urban revitalization` coverage gap (user: apply + flag), PROD applied
+  (run `27387525608`) + full after-probe set green. **PR 5 initiative complete.**
 
 ## In flight
 
-- PR 5b on `feat/pr5b-concepts-canonicalization` — B.1 done; B.2 (generator + migration +
-  local rehearsal) is next. Not pushed, no PR yet.
+(none — initiative complete)
 
 ## Blocked
 
@@ -139,7 +147,19 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 
 ## Out-of-scope follow-ups captured here
 
-- **Drop `pr5a_heritage_rollback` (and later `pr5b_concepts_rollback`) in a cleanup migration
+- **`urban revitalization` needs a curriculum-team verdict (keep/fold/drop).** PROD-only
+  concept value (1 appearance, lesson "Seed Bursts" `1NqjpqXV8soDQs2W9HonavtlxQT4MbFI0H7pUdnH-mEI`,
+  Social Studies array) that the worksheet never saw — it survives the 5b rewrite as the single
+  non-canonical lowercase value on PROD (distinct census reads 120, not 119, until resolved).
+  User decision 2026-06-12: apply now, flag. Resolution rides with PR 6 re-tag or a one-row
+  follow-up migration once the team rules.
+- **PROD has TWO live "Seed Bursts" lessons** (`1HuffJuy…` 2025-07-10 + `1NqjpqXV…` 2025-08-07,
+  different metadata) — near-duplicate pair for the dedup track.
+- **TEST is missing 13 live PROD concepts rows** (676 vs 663) — TEST/PROD content drift, 5a
+  precedent confirmed at larger scale. Consequence worth promoting: **future Stage 1 vocab
+  worksheets (the ~8 smaller fields) must census PROD, not TEST**, or they can miss PROD-only
+  literals exactly like this one.
+- **Drop `pr5a_heritage_rollback` AND `pr5b_concepts_rollback` in a cleanup migration
   after PR 6 ships** (locked design §4.8). Tracked here so it isn't missed if PR 6 takes a
   while. (Bot round 2 suggestion, accepted.)
 - **`guyanese` parent (`latin-american`) flagged by bot round 2** — Guyana is often grouped
@@ -163,6 +183,48 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
   2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md
 
 ## Session log
+
+### Session 4 — 2026-06-11/12 — PR 5b B.2→B.5: build, ship, PROD-verify (supervisor + subagent mode)
+
+First session under the supervisor + fresh-context-subagent execution mode; it carried the
+entire remainder of PR 5b.
+
+Major events:
+- B.2 (executor subagent, verified in main loop): generator + migration `20260612000000`.
+  Supervisor verification re-ran the generator (byte-identical to committed SQL) and
+  mechanically cross-checked all four literal lists against the artifact (201 pairs / 7 drops /
+  208-literal snapshot IN-list + DO-array / no canonical label in the bad set). Local rehearsal:
+  three edge shapes + FTS regen + `UPDATE 0`. Commit `442fb70`.
+- B.3 (run directly by supervisor — pure verification): zero `src/` diff, 577/577 tests pass.
+- B.4 (executor subagent, verified in main loop): probe file + evidence doc with TEST
+  before-census (663/208/1912; 8 drop appearances; 31 fold-collision dedups on 28 lessons;
+  2 keys-that-empty). Supervisor re-ran the TEST census first-hand. Commit `4245832`.
+- B.5 pre-push review: 1 accepted finding (row-level probe for the science-key-emptied lesson,
+  `a50de54`) — note the reviewer's suggested expected value was wrong; verified against TEST
+  before accepting. 3 rejected (one factually wrong "dead code" claim — both variables are
+  used; 2 below-bar).
+- **Verbatim-identifiers near-miss (2nd-order):** in writing that probe fix-up I hand-derived
+  expected label "Informational Writing"; the artifact actually folds `informational writing`
+  → "How-to Writing". Caught by the TEST after-probe (migration was correct throughout);
+  comment fixed in `2a9ff9f`. Expected VALUES in probe comments are identifiers too — generate
+  them from the artifact like everything else.
+- PR #505: TEST apply clean; FULL probe set green (662/119/1873, Science 467→465, both
+  row-level checks, FTS e1+e2, backup 663/RLS/0). Bot round 1 across all four surfaces:
+  review 2 "Approve — no changes required"; zero accepted findings (rejections documented in
+  the PR conversation summary above); Security Audit failure = pre-existing npm-audit noise.
+  Squash-merged as `17d0da1` on user instruction.
+- **PROD before-census triggered the documented STOP condition:** literals-outside-artifact
+  found `urban revitalization` (1 appearance, PROD-only lesson "Seed Bursts" — PROD has two
+  live Seed Bursts rows; TEST lacks 13 PROD concepts rows, so the TEST-matching worksheet
+  census never saw it). Surfaced with options; **user decision: apply now, flag leftover.**
+  Expected-after recomputed from PROD's own before-state (675/120/1923, Science 477→475,
+  rollback 676) — dedups (31/28) and drops (8) were coincidentally identical to TEST.
+- PROD run `27387525608` approved by user; all jobs green, no SASL flake. Full PROD after-probe
+  set green including the Seed Bursts row showing covered values rewritten + stray passthrough
+  exactly as predicted. Evidence doc fully filled across all three tiers. **PR 5 closed.**
+
+Commits: `442fb70`, `4245832`, `a50de54`, `2a9ff9f` (all squashed into main as `17d0da1`),
+plus this closeout docs commit on main.
 
 ### Session 3 — 2026-06-11 — PR 5b B-task authoring + B.1 (emitter + artifact)
 
