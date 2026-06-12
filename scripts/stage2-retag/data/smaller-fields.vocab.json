@@ -1,0 +1,86 @@
+{
+  "provenance": {
+    "locked_by": "docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md §4 OQ2 (Session-2 walkthrough, user-locked 2026-06-11) + supervisor resolution 2026-06-12 (End-of-year merge yields 16 observances; 'End of year celebrations' survives)",
+    "spelling_sources": [
+      "src/utils/filterDefinitions.ts",
+      "docs/plans/pr6-stage2-retag-evidence/oq2-smaller-fields-census.md §1/§5"
+    ],
+    "emitted": "2026-06-12",
+    "notes": [
+      "core_competencies: stray stored value 'Food Justice' (1 lesson) folds into 'Social Justice' per the walkthrough lock — NOT a canonical value.",
+      "cooking_methods: canonical FORM is the stored-dominant kebab regime ('basic-prep', 'stovetop', 'oven' — census §5.4); the UI-config Title forms match 0 stored appearances. 'basic-prep-only' folds into 'basic-prep'; 'no-cook' (4 lessons) folds per the walkthrough lock — neither is canonical.",
+      "observances_holidays: the configured 17-option list contains the near-dupe pair 'End of year' / 'End of year celebrations'; the locked merge keeps 'End of year celebrations' → 16 canonical values. Stored case-twin 'Earth month' folds into the configured 'Earth Month'. Field closes to this fixed list (PR 6e).",
+      "garden_skills: canonical FORM is the stored-dominant Title-Case label regime (census §5.6: labels ≈ 83% of appearances) — the 22 configured METADATA_CONFIGS.gardenSkills labels (zero-usage 'Crop rotation' kept per lock) + walkthrough adds 'Stewardship tasks' (35 lessons) + 'Sensory exploration' (28 as 'sensory-exploration') = 24."
+    ]
+  },
+  "fields": {
+    "academic_integration": [
+      "Math",
+      "Science",
+      "Literacy/ELA",
+      "Social Studies",
+      "Health",
+      "Arts"
+    ],
+    "social_emotional_learning": [
+      "Relationship skills",
+      "Self-awareness",
+      "Responsible decision-making",
+      "Self-management",
+      "Social awareness"
+    ],
+    "core_competencies": [
+      "Environmental and Community Stewardship",
+      "Social Justice",
+      "Social-Emotional Intelligence",
+      "Garden Skills and Related Academic Content",
+      "Kitchen Skills and Related Academic Content",
+      "Culturally Responsive Education"
+    ],
+    "cooking_methods": ["basic-prep", "stovetop", "oven"],
+    "observances_holidays": [
+      "AAPI Heritage Month",
+      "Black History Month",
+      "Hispanic/Latinx Heritage Month",
+      "Indigenous Peoples' Month",
+      "Women's History Month",
+      "Pride",
+      "Earth Month",
+      "Thanksgiving",
+      "Lunar New Year",
+      "New Year",
+      "Ramadan",
+      "Eid",
+      "Juneteenth",
+      "School Food Hero Day",
+      "Beginning of year",
+      "End of year celebrations"
+    ],
+    "garden_skills": [
+      "Planting",
+      "Seed starting",
+      "Transplanting",
+      "Watering techniques",
+      "Harvesting",
+      "Composting",
+      "Mulching",
+      "Soil preparation and care",
+      "Weeding",
+      "Cover cropping",
+      "Garden planning",
+      "Companion planting",
+      "Crop rotation",
+      "Observing plant parts",
+      "Identifying plants",
+      "Pest identification",
+      "Beneficial insect identification",
+      "Pollinator observation",
+      "Seed saving",
+      "Tool use and maintenance",
+      "Preservation techniques",
+      "Garden exploration",
+      "Stewardship tasks",
+      "Sensory exploration"
+    ]
+  }
+}
