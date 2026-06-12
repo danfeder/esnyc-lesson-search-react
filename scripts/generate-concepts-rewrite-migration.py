@@ -61,9 +61,18 @@ def sql_quote(value: str) -> str:
 
 
 def build_pairs(artifact: dict) -> tuple[list[tuple[str, str]], list[str], int]:
-    """Return (non-identity alias→label pairs, sorted drop literals, identity count)."""
+    """Return (non-identity alias→label pairs, sorted drop literals, identity count).
+
+    Post-worksheet addenda (artifact provenance.addenda) are EXCLUDED: each
+    addendum ships in its own follow-up migration (e.g. 20260613000000), and
+    excluding them keeps the regenerated SQL BODY identical to the committed
+    20260612000000 PR 5b migration, which predates the addenda. (Only the
+    artifact-provenance header comment lines — source_commit / emitted —
+    move with artifact re-emits.)
+    """
     errors: list[str] = []
     label_by_key = {c["key"]: c["label"] for c in artifact["canonical"]}
+    addenda = artifact.get("provenance", {}).get("addenda", {})
 
     labels = [c["label"] for c in artifact["canonical"]]
     if len(set(labels)) != len(labels):
@@ -84,6 +93,8 @@ def build_pairs(artifact: dict) -> tuple[list[tuple[str, str]], list[str], int]:
     pairs: list[tuple[str, str]] = []
     identity_count = 0
     for literal, target_key in sorted(artifact["alias_map"].items()):
+        if literal in addenda:
+            continue  # ships in its own follow-up migration (see docstring)
         label = label_by_key.get(target_key)
         if label is None:
             errors.append(
@@ -159,9 +170,11 @@ def main() -> int:
         print(f"GENERATOR SELF-CHECK FAILURE:\n{exc}", file=sys.stderr)
         return 1
 
+    addenda_count = len(artifact.get("provenance", {}).get("addenda", {}))
     print(
         f"self-check OK: {len(pairs)} non-identity pairs"
-        f" (identity filtered: {identity_count}); drops: {len(drops)}",
+        f" (identity filtered: {identity_count};"
+        f" addenda excluded: {addenda_count}); drops: {len(drops)}",
         file=sys.stderr,
     )
 
