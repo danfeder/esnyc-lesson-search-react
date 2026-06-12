@@ -216,6 +216,21 @@ WHERE lesson_id IN (
   '1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M'
 );
 
+-- AFTER only: the row whose Science key must be GONE while its other key
+-- survives canonicalized (lesson_id verbatim from the TEST before-probe;
+-- PROD: regenerate from the PROD before-probe). TEST before-state:
+--   {"Science": ["garden topics", "plant science"],
+--    "Literacy/ELA": ["informational writing", "organizing ideas", "research"]}
+-- Expect after: has_science_key = false; concepts =
+--   {"Literacy/ELA": ["Informational Writing", "Research"]}
+-- (both Science values are drops; 'organizing ideas' + 'research' fold-collide
+-- to "Research", first-occurrence dedup — compare Literacy/ELA as a SET).
+SELECT lesson_id,
+       metadata->'academicConcepts' ? 'Science' AS has_science_key,
+       metadata->'academicConcepts' AS concepts
+FROM lessons
+WHERE lesson_id = '1cH_8eRYyGYLfAMROmDowd8aPddx1tDMoUxTM0QBR42s';
+
 -- =====================================================
 -- Probe (e) — FTS smoke
 -- =====================================================
