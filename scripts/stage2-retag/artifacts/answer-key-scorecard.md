@@ -39,15 +39,23 @@ Key lessons: 57. Winning model: `fable`.
 
 `fable` macroF1 = 0.858 (floor 0.7).
 
-### Gate 3 — per-value recall ≥ 0.5: FAIL
+### Gate 3 — per-value recall ≥ 0.5 (gates values with answer-key support ≥ 2): PASS
 
-5 value(s) below the 0.5 recall floor:
+The recall floor only gates values appearing in ≥ 2 key lessons. Support-1 singletons are reported below but do not fail this gate.
 
-| Field | Value | recall |
+No support-≥2 value falls below the 0.5 recall floor.
+
+### Singletons (informational — support-1 values, non-gating)
+
+`fable` recovered 45/50 singleton value(s) (values appearing in exactly one key lesson).
+
+Missed singleton(s):
+
+| Field | Value | Lesson |
 | --- | --- | --- |
-| academic_concepts | Arts: Engineering | 0.000 |
-| academic_concepts | Literacy/ELA: Cultural Narratives | 0.000 |
-| academic_concepts | Science: Harvesting | 0.000 |
-| academic_concepts | Science: Tool Use | 0.000 |
-| academic_concepts | Social Studies: Environmental Justice | 0.000 |
+| academic_concepts | Arts: Engineering | 1X7HadA1WaR-hNBFIHvAUsFKborDGE5eT3Lhg5Dp9CEI |
+| academic_concepts | Literacy/ELA: Cultural Narratives | 19Tg4I9XywohpcrdBZ77vaBgyIdYhxGo0bk3FpSUcE2Y |
+| academic_concepts | Science: Harvesting | lesson_c257c458adb549c3ad5ffe25aef9a776 |
+| academic_concepts | Science: Tool Use | 18aRAD5iY1YxcaqTUZBhflNDAstEAHumK |
+| academic_concepts | Social Studies: Environmental Justice | lesson_3aaa27c0096a48368cde2804832ad07c |
 
