@@ -6,13 +6,17 @@
  * record-shape construction, --resume id-skipping against a synthetic
  * output JSONL, prompt+schema hash stability, repair-merge logic (a
  * forced-bad-enum fixture routes the right field through repair and merges
- * provenance-marked), and cost arithmetic.
+ * provenance-marked), cost arithmetic, and the --base-url proxy plumbing
+ * (flag parse, normalizeBaseUrl /v1 strip, and the API-key-source selection —
+ * resolveClientConfig, a jsdom-safe pure helper that does NOT construct the
+ * SDK client, since the SDK refuses construction under jsdom without
+ * dangerouslyAllowBrowser, which production must never set).
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   GRADE_LEVELS,
@@ -23,6 +27,7 @@ import {
 } from './schema';
 import { loadVocab } from './vocab';
 import {
+  DIRECT_BASE_URL,
   MissingToolUseError,
   PRICING_PER_MTOK,
   buildRepairTool,
@@ -39,11 +44,13 @@ import {
   latestRecordById,
   mapWithConcurrency,
   mergeRepairedFields,
+  normalizeBaseUrl,
   parseArgs,
   parseRunRecords,
   planRepairCandidates,
   planRepairs,
   repairFieldSpec,
+  resolveClientConfig,
   validateRawInput,
   type AnthropicUsage,
   type RepairOutcome,
@@ -95,6 +102,7 @@ function makeRecord(overrides: Partial<RunRecord>): RunRecord {
     stopReason: null,
     bodyHash: 'hash-body',
     strict: false,
+    effectiveBaseUrl: DIRECT_BASE_URL,
     completedAt: '2026-06-12T00:00:00.000Z',
     ...overrides,
   };
@@ -191,6 +199,7 @@ describe('buildRunRecord', () => {
       stopReason: 'tool_use',
       bodyHash: 'body-9',
       strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
     });
     expect(record).toMatchObject({
       id: 'lesson-9',
@@ -205,6 +214,7 @@ describe('buildRunRecord', () => {
       stopReason: 'tool_use',
       bodyHash: 'body-9',
       strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
     });
     expect(record.costUsd).toBeCloseTo(computeCostUsd('claude-opus-4-7', usage) ?? NaN, 10);
     expect(Number.isNaN(Date.parse(record.completedAt))).toBe(false);
@@ -235,11 +245,13 @@ describe('buildRunRecord', () => {
       stopReason: null,
       bodyHash: 'body-9',
       strict: true,
+      effectiveBaseUrl: 'http://127.0.0.1:8317/api/provider/anthropic',
       repairs,
     });
     expect(record.phase).toBe('repair');
     expect(record.strict).toBe(true);
     expect(record.repairs).toEqual(repairs);
+    expect(record.effectiveBaseUrl).toBe('http://127.0.0.1:8317/api/provider/anthropic');
   });
 
   it('computes cost from usage on error records too (billed no-tool_use path)', () => {
@@ -257,6 +269,7 @@ describe('buildRunRecord', () => {
       stopReason: 'max_tokens',
       bodyHash: 'body-9',
       strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
     });
     expect(record.usage).toEqual(usage);
     expect(record.costUsd).toBeCloseTo(computeCostUsd('claude-opus-4-7', usage) ?? NaN, 10);
@@ -798,6 +811,101 @@ describe('parseArgs hardening', () => {
     expect(args.limit).toBe(3);
     expect(args.concurrency).toBe(1);
     expect(() => parseArgs(['--bogus'])).toThrow(/unknown flag/);
+  });
+});
+
+describe('--base-url flag parsing (CLIProxyAPI proxy path)', () => {
+  it('defaults baseUrl to undefined (direct API)', () => {
+    expect(parseArgs([]).baseUrl).toBeUndefined();
+    expect(parseArgs(['--model', 'claude-opus-4-7']).baseUrl).toBeUndefined();
+  });
+
+  it('captures the proxy base URL value', () => {
+    const args = parseArgs(['--base-url', 'http://127.0.0.1:8317/api/provider/anthropic']);
+    expect(args.baseUrl).toBe('http://127.0.0.1:8317/api/provider/anthropic');
+  });
+
+  it('requires a value (and rejects a following flag as the value)', () => {
+    expect(() => parseArgs(['--base-url'])).toThrow(/--base-url requires a value/);
+    expect(() => parseArgs(['--base-url', '--resume'])).toThrow(/--base-url requires a value/);
+  });
+});
+
+describe('normalizeBaseUrl (trailing-/v1 SDK trap)', () => {
+  it('leaves the canonical proxy URL untouched', () => {
+    expect(normalizeBaseUrl('http://127.0.0.1:8317/api/provider/anthropic')).toBe(
+      'http://127.0.0.1:8317/api/provider/anthropic'
+    );
+  });
+
+  it('strips a trailing /v1 (the SDK appends it itself)', () => {
+    expect(normalizeBaseUrl('http://127.0.0.1:8317/api/provider/anthropic/v1')).toBe(
+      'http://127.0.0.1:8317/api/provider/anthropic'
+    );
+  });
+
+  it('strips a trailing /v1/ with its slash', () => {
+    expect(normalizeBaseUrl('http://127.0.0.1:8317/api/provider/anthropic/v1/')).toBe(
+      'http://127.0.0.1:8317/api/provider/anthropic'
+    );
+  });
+
+  it('trims a bare trailing slash without touching the path', () => {
+    expect(normalizeBaseUrl('http://127.0.0.1:8317/api/provider/anthropic/')).toBe(
+      'http://127.0.0.1:8317/api/provider/anthropic'
+    );
+  });
+
+  it('does not strip a path segment that merely contains v1 mid-path', () => {
+    expect(normalizeBaseUrl('http://example.com/v1/anthropic')).toBe(
+      'http://example.com/v1/anthropic'
+    );
+  });
+});
+
+describe('resolveClientConfig (key-source switch + baseURL plumbing)', () => {
+  // Asserts the Anthropic constructor config WITHOUT building the SDK client
+  // (the SDK refuses to construct under the repo-default jsdom env without
+  // dangerouslyAllowBrowser, which production must never set). No network.
+  const savedConsole = process.env.ANTHROPIC_CONSOLE_API_KEY;
+  const savedProxy = process.env.ANTHROPIC_API_KEY;
+
+  afterEach(() => {
+    if (savedConsole === undefined) delete process.env.ANTHROPIC_CONSOLE_API_KEY;
+    else process.env.ANTHROPIC_CONSOLE_API_KEY = savedConsole;
+    if (savedProxy === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = savedProxy;
+  });
+
+  it('default (no base URL) uses the CONSOLE key and adds NO baseURL (direct API)', () => {
+    process.env.ANTHROPIC_CONSOLE_API_KEY = 'console-key-direct';
+    process.env.ANTHROPIC_API_KEY = 'proxy-key-should-not-be-used';
+    const config = resolveClientConfig();
+    expect(config.apiKey).toBe('console-key-direct');
+    expect(config.baseURL).toBeUndefined();
+  });
+
+  it('default throws when the CONSOLE key is missing (does NOT fall back to the proxy key)', () => {
+    delete process.env.ANTHROPIC_CONSOLE_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'proxy-key';
+    expect(() => resolveClientConfig()).toThrow(/ANTHROPIC_CONSOLE_API_KEY missing/);
+  });
+
+  it('proxy path uses ANTHROPIC_API_KEY and passes the baseURL through', () => {
+    process.env.ANTHROPIC_CONSOLE_API_KEY = 'console-key-should-not-be-used';
+    process.env.ANTHROPIC_API_KEY = 'proxy-key-max-billing';
+    const url = 'http://127.0.0.1:8317/api/provider/anthropic';
+    const config = resolveClientConfig(url);
+    expect(config.apiKey).toBe('proxy-key-max-billing');
+    expect(config.baseURL).toBe(url);
+  });
+
+  it('proxy path throws when ANTHROPIC_API_KEY is missing (does NOT fall back to the console key)', () => {
+    process.env.ANTHROPIC_CONSOLE_API_KEY = 'console-key';
+    delete process.env.ANTHROPIC_API_KEY;
+    expect(() => resolveClientConfig('http://127.0.0.1:8317/api/provider/anthropic')).toThrow(
+      /ANTHROPIC_API_KEY missing/
+    );
   });
 });
 

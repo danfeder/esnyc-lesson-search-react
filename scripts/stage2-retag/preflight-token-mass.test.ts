@@ -8,9 +8,14 @@
  * cache_control breakpoints silently no-op and the cost projection is
  * invalid, so the preflight FAILS for opus and WARNS for sonnet.
  */
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { CACHE_FLOOR_MARGIN, assessCacheFloor } from './preflight-token-mass';
+import {
+  CACHE_FLOOR_MARGIN,
+  assessCacheFloor,
+  parsePreflightArgs,
+  preflightTokenMass,
+} from './preflight-token-mass';
 import {
   OPUS_MIN_CACHEABLE_PREFIX_TOKENS,
   SONNET_MIN_CACHEABLE_PREFIX_TOKENS,
@@ -81,5 +86,50 @@ describe('assessCacheFloor', () => {
     expect(staticEstimate).toBeGreaterThanOrEqual(OPUS_MIN_CACHEABLE_PREFIX_TOKENS);
     const verdict = assessCacheFloor('claude-opus-4-7', staticEstimate);
     expect(verdict.level).toBe(staticEstimate >= OPUS_THRESHOLD ? 'pass' : 'fail');
+  });
+});
+
+describe('parsePreflightArgs (--base-url proxy flag)', () => {
+  it('defaults baseUrl to undefined when no flags are given', () => {
+    expect(parsePreflightArgs([]).baseUrl).toBeUndefined();
+  });
+
+  it('captures the proxy base URL value', () => {
+    const args = parsePreflightArgs(['--base-url', 'http://127.0.0.1:8317/api/provider/anthropic']);
+    expect(args.baseUrl).toBe('http://127.0.0.1:8317/api/provider/anthropic');
+  });
+
+  it('requires a value and rejects unknown flags', () => {
+    expect(() => parsePreflightArgs(['--base-url'])).toThrow(/--base-url requires a value/);
+    expect(() => parsePreflightArgs(['--bogus'])).toThrow(/unknown flag/);
+  });
+});
+
+describe('preflightTokenMass key-source switch (pre-network env guards)', () => {
+  // These assert the key-source branch WITHOUT a network call: each variant
+  // deletes the required key so the function throws its env-guard before
+  // constructing the client / hitting count_tokens. No real API traffic.
+  const savedConsole = process.env.ANTHROPIC_CONSOLE_API_KEY;
+  const savedProxy = process.env.ANTHROPIC_API_KEY;
+
+  afterEach(() => {
+    if (savedConsole === undefined) delete process.env.ANTHROPIC_CONSOLE_API_KEY;
+    else process.env.ANTHROPIC_CONSOLE_API_KEY = savedConsole;
+    if (savedProxy === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = savedProxy;
+  });
+
+  it('direct path requires ANTHROPIC_CONSOLE_API_KEY (not the proxy key)', async () => {
+    delete process.env.ANTHROPIC_CONSOLE_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'proxy-key-present';
+    await expect(preflightTokenMass()).rejects.toThrow(/ANTHROPIC_CONSOLE_API_KEY missing/);
+  });
+
+  it('proxy path requires ANTHROPIC_API_KEY (not the console key)', async () => {
+    process.env.ANTHROPIC_CONSOLE_API_KEY = 'console-key-present';
+    delete process.env.ANTHROPIC_API_KEY;
+    await expect(
+      preflightTokenMass('http://127.0.0.1:8317/api/provider/anthropic')
+    ).rejects.toThrow(/ANTHROPIC_API_KEY missing/);
   });
 });

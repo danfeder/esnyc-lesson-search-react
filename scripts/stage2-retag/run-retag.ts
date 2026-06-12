@@ -66,6 +66,17 @@
  * ANTHROPIC_API_KEY, which is the CLIProxyAPI proxy-side key and 401s
  * against the direct API (Session-1 finding).
  *
+ * Optional proxy path (`--base-url <url>`): routes calls through a local
+ * CLIProxyAPI proxy (billing against Claude Max) instead of the direct
+ * Anthropic API. When set, the API key SOURCE switches to ANTHROPIC_API_KEY
+ * (the proxy-side key) — the exact inverse of the default. The expected proxy
+ * value is `http://127.0.0.1:8317/api/provider/anthropic`; the SDK appends
+ * `/v1/...`, so a trailing `/v1` is stripped (with a stderr warning) by
+ * normalizeBaseUrl to avoid the double-`/v1` 404 trap (project memory). The
+ * effective base URL (or `direct` when unset) is stamped on every output
+ * record's provenance so proxy-billed runs are distinguishable in artifacts.
+ * When `--base-url` is absent, behavior is byte-for-byte unchanged.
+ *
  * DEFERRED LIVE CHECK (task A8, single command — Console credits required):
  *
  *   npx tsx scripts/stage2-retag/run-retag.ts --limit 3 --concurrency 1
@@ -194,10 +205,20 @@ export interface RunRecord {
   bodyHash: string;
   /** Whether the tool definition(s) carried strict: true (--strict flag). */
   strict: boolean;
+  /**
+   * The effective Anthropic SDK base URL this record was produced against:
+   * the normalized `--base-url` value (e.g. the CLIProxyAPI proxy endpoint) or
+   * the literal `'direct'` when no `--base-url` was passed. Lets artifacts
+   * distinguish proxy-billed runs (Claude Max) from direct-API runs.
+   */
+  effectiveBaseUrl: string;
   /** Repair phase only: per-field provenance for every attempted repair. */
   repairs?: Record<string, RepairOutcome>;
   completedAt: string;
 }
+
+/** Provenance sentinel stamped on records produced against the direct API. */
+export const DIRECT_BASE_URL = 'direct';
 
 // ---------------------------------------------------------------------------
 // Pure helpers (unit-tested in run-retag.test.ts — no network)
@@ -270,6 +291,7 @@ export function buildRunRecord(params: {
   stopReason: string | null;
   bodyHash: string;
   strict: boolean;
+  effectiveBaseUrl: string;
   repairs?: Record<string, RepairOutcome>;
 }): RunRecord {
   return {
@@ -286,6 +308,7 @@ export function buildRunRecord(params: {
     stopReason: params.stopReason,
     bodyHash: params.bodyHash,
     strict: params.strict,
+    effectiveBaseUrl: params.effectiveBaseUrl,
     ...(params.repairs !== undefined ? { repairs: params.repairs } : {}),
     completedAt: new Date().toISOString(),
   };
@@ -320,6 +343,7 @@ const runRecordLineSchema = z
     stopReason: z.string().nullable().optional(),
     bodyHash: z.string().optional(),
     strict: z.boolean().optional(),
+    effectiveBaseUrl: z.string().optional(),
     repairs: z.record(z.unknown()).optional(),
     completedAt: z.string(),
   })
@@ -639,6 +663,12 @@ interface Args {
   repair: boolean;
   concurrency: number;
   strict: boolean;
+  /**
+   * Optional CLIProxyAPI base URL. When set, calls route through the proxy and
+   * the API key source switches to ANTHROPIC_API_KEY (the proxy-side key);
+   * normalized (trailing `/v1` stripped) before use. Undefined = direct API.
+   */
+  baseUrl?: string;
   help: boolean;
 }
 
@@ -701,6 +731,10 @@ export function parseArgs(argv: string[]): Args {
       case '--strict':
         a.strict = true;
         break;
+      case '--base-url':
+        a.baseUrl = requireFlagValue(flag, next);
+        i++;
+        break;
       case '--help':
       case '-h':
         a.help = true;
@@ -730,11 +764,18 @@ Flags:
   --concurrency <N>  parallel API calls (default 5)
   --strict           set strict:true on the tool definition(s) (off by default;
                      Zod + repair remain the enforcement gate regardless)
+  --base-url <url>   route through a local CLIProxyAPI proxy to bill against
+                     Claude Max (e.g. http://127.0.0.1:8317/api/provider/anthropic).
+                     Do NOT include the trailing "/v1" — the SDK appends it; a
+                     trailing "/v1" is stripped with a stderr warning. When set,
+                     the API key source switches to ANTHROPIC_API_KEY (the
+                     proxy-side key); unset = direct API + ANTHROPIC_CONSOLE_API_KEY.
   --help
 
-Env: ANTHROPIC_CONSOLE_API_KEY required (from .env.local). Do NOT use
-     ANTHROPIC_API_KEY — it is the CLIProxyAPI proxy-side key and 401s
-     against the direct API.
+Env (direct API, no --base-url): ANTHROPIC_CONSOLE_API_KEY required (from
+     .env.local). Do NOT use ANTHROPIC_API_KEY — it is the CLIProxyAPI
+     proxy-side key and 401s against the direct API.
+Env (--base-url set): ANTHROPIC_API_KEY required (the proxy-side key).
 
 Deferred A8 live check (single command, needs Console credits):
   npx tsx scripts/stage2-retag/run-retag.ts --limit 3 --concurrency 1
@@ -764,7 +805,55 @@ function loadCorpus(): CorpusRecord[] {
     });
 }
 
-function createApiClient(): Anthropic {
+/**
+ * Normalizes a CLIProxyAPI base URL: strips a single trailing `/v1` (with or
+ * without a trailing slash) and warns, because the Anthropic SDK appends
+ * `/v1/...` itself — leaving `/v1` on the base URL produces a double-`/v1`
+ * 404 (documented SDK trap, project memory). Trailing slashes are trimmed.
+ * Returns the URL unchanged when there is nothing to strip.
+ */
+export function normalizeBaseUrl(baseUrl: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, '');
+  if (/\/v1$/.test(trimmed)) {
+    const stripped = trimmed.replace(/\/v1$/, '');
+    console.warn(
+      `note: --base-url ended in "/v1" — stripping it (the SDK appends "/v1/..." itself). ` +
+        `Using ${stripped}`
+    );
+    return stripped;
+  }
+  return trimmed;
+}
+
+/**
+ * Resolves the Anthropic constructor config from an ALREADY-NORMALIZED base URL
+ * (callers run normalizeBaseUrl once and pass the result). Pure + side-effect-
+ * free apart from reading process.env, so it is unit-testable without
+ * constructing the SDK client (the SDK refuses to construct under a jsdom
+ * global without dangerouslyAllowBrowser).
+ *
+ * Direct path (normalizedBaseUrl undefined): the canonical `{ apiKey }` against
+ * ANTHROPIC_CONSOLE_API_KEY — no baseURL key, byte-for-byte unchanged. Proxy
+ * path (set): switches the key SOURCE to ANTHROPIC_API_KEY (the CLIProxyAPI
+ * proxy-side key; the direct-API key 401s against the proxy — Session-1
+ * finding) AND adds the baseURL. Throws a descriptive error when the required
+ * key for the chosen path is missing.
+ */
+export function resolveClientConfig(normalizedBaseUrl?: string): {
+  apiKey: string;
+  baseURL?: string;
+} {
+  if (normalizedBaseUrl !== undefined) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        'ANTHROPIC_API_KEY missing from .env.local — required when --base-url routes ' +
+          'through the CLIProxyAPI proxy (it is the proxy-side key; the direct-API ' +
+          'ANTHROPIC_CONSOLE_API_KEY 401s against the proxy).'
+      );
+    }
+    return { apiKey, baseURL: normalizedBaseUrl };
+  }
   const apiKey = process.env.ANTHROPIC_CONSOLE_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -772,9 +861,18 @@ function createApiClient(): Anthropic {
         'it is the CLIProxyAPI proxy-side key and 401s against the direct API).'
     );
   }
-  // Bare constructor (canonical shape); no maxRetries override = SDK default
-  // retries (429/5xx only — billing 400s are never retried).
-  return new Anthropic({ apiKey });
+  return { apiKey };
+}
+
+/**
+ * Builds the Anthropic client. Direct path is the canonical bare
+ * `new Anthropic({ apiKey })` (no baseURL) = byte-for-byte unchanged; proxy
+ * path adds the baseURL and uses the proxy-side key (see resolveClientConfig).
+ * No maxRetries override either way = SDK default retries (429/5xx only —
+ * billing 400s are never retried).
+ */
+export function createApiClient(normalizedBaseUrl?: string): Anthropic {
+  return new Anthropic(resolveClientConfig(normalizedBaseUrl));
 }
 
 function errorMessage(e: unknown): string {
@@ -929,12 +1027,15 @@ async function runMainPass(args: Args): Promise<void> {
     return;
   }
 
-  const client = createApiClient();
+  const normalizedBaseUrl = args.baseUrl !== undefined ? normalizeBaseUrl(args.baseUrl) : undefined;
+  const effectiveBaseUrl = normalizedBaseUrl ?? DIRECT_BASE_URL;
+  const client = createApiClient(normalizedBaseUrl);
   mkdirSync(path.dirname(args.output), { recursive: true });
 
   console.log(
     `Calling ${args.model} for ${lessons.length} lessons ` +
-      `(concurrency ${args.concurrency}${args.strict ? ', strict tools' : ''}) → ${args.output}`
+      `(concurrency ${args.concurrency}${args.strict ? ', strict tools' : ''}` +
+      `${normalizedBaseUrl !== undefined ? `, via ${normalizedBaseUrl}` : ''}) → ${args.output}`
   );
 
   let done = 0;
@@ -984,6 +1085,7 @@ async function runMainPass(args: Args): Promise<void> {
         stopReason,
         bodyHash,
         strict: args.strict,
+        effectiveBaseUrl,
       });
       addToTotals(usage, record.costUsd);
       if (zod.passed) zodPassed++;
@@ -1007,6 +1109,7 @@ async function runMainPass(args: Args): Promise<void> {
         stopReason: billed?.stopReason ?? null,
         bodyHash,
         strict: args.strict,
+        effectiveBaseUrl,
       });
       if (billed) addToTotals(billed.usage, record.costUsd);
       errored++;
@@ -1083,9 +1186,12 @@ async function runRepairPass(args: Args): Promise<void> {
     return;
   }
 
-  const client = createApiClient();
+  const normalizedBaseUrl = args.baseUrl !== undefined ? normalizeBaseUrl(args.baseUrl) : undefined;
+  const effectiveBaseUrl = normalizedBaseUrl ?? DIRECT_BASE_URL;
+  const client = createApiClient(normalizedBaseUrl);
   console.log(
-    `Repairing ${limited.length} record(s) with ${args.model} (concurrency ${args.concurrency}) → ${args.output}`
+    `Repairing ${limited.length} record(s) with ${args.model} (concurrency ${args.concurrency}` +
+      `${normalizedBaseUrl !== undefined ? `, via ${normalizedBaseUrl}` : ''}) → ${args.output}`
   );
 
   let nowPassing = 0;
@@ -1165,6 +1271,7 @@ async function runRepairPass(args: Args): Promise<void> {
         stopReason: null,
         bodyHash: computeBodyHash(lessonBody),
         strict: args.strict,
+        effectiveBaseUrl,
         repairs,
       })
     );

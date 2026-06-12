@@ -22,6 +22,13 @@
  * which is the CLIProxyAPI proxy-side key and 401s against the direct API
  * (Session-1 finding). Single attempt, no retries: safe against a
  * zero-credit Console account.
+ *
+ * Optional proxy path (`--base-url <url>`): routes the count_tokens call
+ * through a local CLIProxyAPI proxy (billing against Claude Max). When set,
+ * the API key source switches to ANTHROPIC_API_KEY (the proxy-side key) and a
+ * trailing `/v1` is stripped (the SDK appends `/v1/...`; project-memory trap).
+ * Expected value: `http://127.0.0.1:8317/api/provider/anthropic`. Unset =
+ * direct API + ANTHROPIC_CONSOLE_API_KEY, byte-for-byte unchanged.
  */
 import dotenv from 'dotenv';
 import Anthropic from '@anthropic-ai/sdk';
@@ -37,6 +44,7 @@ import {
   estimateTokenMass,
   loadSystemPrompt,
 } from './schema';
+import { normalizeBaseUrl } from './run-retag';
 import { loadVocab } from './vocab';
 
 dotenv.config({ path: '.env.local' });
@@ -98,32 +106,78 @@ export function assessCacheFloor(model: string, prefixTokens: number): CacheFloo
 /**
  * Runs one `count_tokens` call over the exact run-call shape and returns the
  * measured input tokens (prompt + tool + the tiny sample body).
+ *
+ * Direct path (normalizedBaseUrl undefined): byte-for-byte unchanged — bare
+ * client against ANTHROPIC_CONSOLE_API_KEY. Proxy path (set): passes the
+ * baseURL AND switches the key source to ANTHROPIC_API_KEY (the proxy-side
+ * key). The caller is responsible for normalizing the URL (trailing-/v1 strip).
+ * maxRetries: 0 either way — exactly one attempt, never loop against the account.
  */
-export async function preflightTokenMass(): Promise<number> {
-  const apiKey = process.env.ANTHROPIC_CONSOLE_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      'ANTHROPIC_CONSOLE_API_KEY missing from .env.local (do NOT use ANTHROPIC_API_KEY — ' +
-        'it is the CLIProxyAPI proxy-side key and 401s against the direct API).'
-    );
+export async function preflightTokenMass(normalizedBaseUrl?: string): Promise<number> {
+  let client: Anthropic;
+  if (normalizedBaseUrl !== undefined) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        'ANTHROPIC_API_KEY missing from .env.local — required when --base-url routes ' +
+          'through the CLIProxyAPI proxy (it is the proxy-side key; the direct-API ' +
+          'ANTHROPIC_CONSOLE_API_KEY 401s against the proxy).'
+      );
+    }
+    client = new Anthropic({ apiKey, baseURL: normalizedBaseUrl, maxRetries: 0 });
+  } else {
+    const apiKey = process.env.ANTHROPIC_CONSOLE_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        'ANTHROPIC_CONSOLE_API_KEY missing from .env.local (do NOT use ANTHROPIC_API_KEY — ' +
+          'it is the CLIProxyAPI proxy-side key and 401s against the direct API).'
+      );
+    }
+    client = new Anthropic({ apiKey, maxRetries: 0 });
   }
-  // maxRetries: 0 — exactly one attempt, never loop against the account.
-  const client = new Anthropic({ apiKey, maxRetries: 0 });
   const response = await client.messages.countTokens(
     buildTokenCountRequest(loadVocab(), SAMPLE_BODY)
   );
   return response.input_tokens;
 }
 
+/**
+ * Parses the preflight's flags. Only `--base-url <url>` is supported (the
+ * preflight is otherwise argument-free). Mirrors run-retag's flag style.
+ */
+export function parsePreflightArgs(argv: string[]): { baseUrl?: string } {
+  const out: { baseUrl?: string } = {};
+  for (let i = 0; i < argv.length; i++) {
+    const flag = argv[i];
+    const next = argv[i + 1];
+    if (flag === '--base-url') {
+      if (next === undefined || next.startsWith('--')) {
+        throw new Error('flag --base-url requires a value');
+      }
+      out.baseUrl = next;
+      i++;
+    } else {
+      throw new Error(`unknown flag: ${flag} (only --base-url is supported)`);
+    }
+  }
+  return out;
+}
+
 async function main(): Promise<void> {
+  const args = parsePreflightArgs(process.argv.slice(2));
+  const normalizedBaseUrl = args.baseUrl !== undefined ? normalizeBaseUrl(args.baseUrl) : undefined;
+
   const prompt = loadSystemPrompt();
   const tool = buildSubmitTagsTool(loadVocab());
   const staticEstimate = estimateTokenMass(prompt, tool);
   console.log(`Static estimate (chars/4, prompt + serialized tool): ~${staticEstimate} tokens`);
+  if (normalizedBaseUrl !== undefined) {
+    console.log(`Routing count_tokens via CLIProxyAPI proxy: ${normalizedBaseUrl}`);
+  }
 
   let measured: number | null = null;
   try {
-    measured = await preflightTokenMass();
+    measured = await preflightTokenMass(normalizedBaseUrl);
     console.log(`count_tokens measured (prompt + tool + tiny sample body): ${measured} tokens`);
   } catch (error) {
     console.warn(
