@@ -110,17 +110,21 @@ Appendix A's intentional capitalization — `Indigenous knowledge`, `Indigenous 
 | `1zbfn_WweqPwJD_we1vyGzaVTVLRvtXOaICLEpKwHxjg` | Social Studies | 1 | cultural traditions + family traditions → Cultural Traditions |
 | `1zYSlW4BcZajmrZMuhUiRt6zd7hpQWdDFr4SMCuEhG48` | Arts | 1 | puppetry + visual arts → Visual Arts |
 
-### After-apply (TODO — Task B.5, after CI applies the migration on PR open)
+### After-apply ✅ ALL PROBES GREEN (2026-06-11, post-CI-apply, via mcp__supabase-test__execute_sql)
 
-- [ ] (a) census = 662 rows / 119 distinct / 1873 appearances; non-canonical survivor probe = zero rows
-- [ ] (b) per-alias/drop = zero rows
-- [ ] (c) appearances = 1873
-- [ ] (d′) per-subject counts: Science 465, all others unchanged; shape 0/0/0/0;
-      `1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M` lacks the academicConcepts key
-- [ ] (e) e1: all 7 rows fts_seasonality = true; e2: fts_sorting_and_categorization = true
-- [ ] (f) re-run UPDATE → 0 rows
-- [ ] backup table: 663 rows, RLS enabled, 0 policies
-- [ ] re-run after every fix-up round that touches DB state
+- [x] (a) census = **662 rows / 119 distinct / 1873 appearances** (exact); non-canonical survivor probe = **zero rows**
+- [x] (b) per-alias/drop = **zero rows** (none of the 208 literals survives)
+- [x] (c) appearances = **1873** = 1912 − 8 drops − 31 fold-collision dedups
+- [x] (d′) per-subject counts: Arts 95 | Health 101 | Literacy/ELA 205 | Math 95 | **Science 465** | Social Studies 253 (all as expected); shape 0/0/0/0;
+      `1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M` lacks the academicConcepts key (has_concepts_key = false);
+      `1cH_8eRYyGYLfAMROmDowd8aPddx1tDMoUxTM0QBR42s` Science key gone, concepts = `{"Literacy/ELA": ["How-to Writing", "Research"]}`
+      — **probe-spec correction:** the probe file's original expected value hand-derived "Informational Writing"; the artifact folds
+      `informational writing` → `how_to_writing` ("How-to Writing"). Migration correct; comment fixed in the probe file.
+- [x] (e) e1: all 7 rows fts_seasonality = **true**; e2: fts_sorting_and_categorization = **true** (All About Seeds)
+- [x] (f) idempotency: migration's post-verify DO block passed at CI apply; probe (b)'s zero-literal result means the
+      UPDATE's WHERE now matches 0 rows (write-path re-run proven locally in B.2: `UPDATE 0`)
+- [x] backup table: **663 rows, RLS enabled, 0 policies**
+- [ ] re-run after every fix-up round that touches DB state (none yet — round 0 probes above)
 
 ## Tier 3 — PROD (TODO — Task B.5)
 

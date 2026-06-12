@@ -222,9 +222,10 @@ WHERE lesson_id IN (
 --   {"Science": ["garden topics", "plant science"],
 --    "Literacy/ELA": ["informational writing", "organizing ideas", "research"]}
 -- Expect after: has_science_key = false; concepts =
---   {"Literacy/ELA": ["Informational Writing", "Research"]}
--- (both Science values are drops; 'organizing ideas' + 'research' fold-collide
--- to "Research", first-occurrence dedup — compare Literacy/ELA as a SET).
+--   {"Literacy/ELA": ["How-to Writing", "Research"]}
+-- (both Science values are drops; 'informational writing' folds to
+-- "How-to Writing"; 'organizing ideas' + 'research' fold-collide to
+-- "Research", first-occurrence dedup — compare Literacy/ELA as a SET).
 SELECT lesson_id,
        metadata->'academicConcepts' ? 'Science' AS has_science_key,
        metadata->'academicConcepts' AS concepts
