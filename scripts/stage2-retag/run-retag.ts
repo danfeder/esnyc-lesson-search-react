@@ -20,8 +20,10 @@
  *   --limit N           only process the first N corpus records (dry-run)
  *   --resume            skip ids already in the output JSONL whose latest
  *                       record carries the CURRENT prompt+schema hash, the
- *                       same model, and no error (a prompt/schema edit
- *                       changes the hash and invalidates resume-merging)
+ *                       same model, the same --strict flag, the same lesson
+ *                       body hash, and no error (a prompt/schema edit changes
+ *                       the hash and invalidates resume-merging; a corpus
+ *                       body change invalidates that lesson's record)
  *   --output <path>     output JSONL (default artifacts/retag-run.jsonl)
  *   --repair            repair mode: re-run ONLY Zod-failed fields of
  *                       existing records as per-field calls and append
@@ -33,7 +35,8 @@
  * Output: appends one JSON line per lesson to the output file:
  *   { id, phase: 'main'|'repair', model, promptSchemaHash, rawInput,
  *     zod: { passed, fieldErrors }, usage (incl. cache_creation/cache_read
- *     counters), costUsd, latencyMs, error, repairs? (repair phase only,
+ *     counters), costUsd, latencyMs, error, stopReason, bodyHash (sha256 of
+ *     the lesson body actually sent), strict, repairs? (repair phase only,
  *     per-field provenance), completedAt }
  *
  * Repair pass (`--repair`): for every latest-per-id record that completed
@@ -178,6 +181,19 @@ export interface RunRecord {
   costUsd: number | null;
   latencyMs: number | null;
   error: string | null;
+  /**
+   * API stop_reason ('tool_use' on the happy path; whatever the API returned
+   * on a no-tool_use response; null when no response arrived or for repair
+   * records, which aggregate several per-field calls).
+   */
+  stopReason: string | null;
+  /**
+   * sha256 of the lesson body actually sent (the corpus content_text). Lets
+   * --resume and --repair detect that the corpus body changed under a record.
+   */
+  bodyHash: string;
+  /** Whether the tool definition(s) carried strict: true (--strict flag). */
+  strict: boolean;
   /** Repair phase only: per-field provenance for every attempted repair. */
   repairs?: Record<string, RepairOutcome>;
   completedAt: string;
@@ -200,6 +216,11 @@ export function computePromptSchemaHash(systemPrompt: string, tool: SubmitTagsTo
     .update('\u0000')
     .update(JSON.stringify(tool))
     .digest('hex');
+}
+
+/** sha256 hex of a lesson body string (stamped on every RunRecord). */
+export function computeBodyHash(body: string): string {
+  return createHash('sha256').update(body).digest('hex');
 }
 
 /** Groups Zod issues by top-level property ('_root' for object-level issues). */
@@ -246,6 +267,9 @@ export function buildRunRecord(params: {
   usage: AnthropicUsage | null;
   latencyMs: number | null;
   error: string | null;
+  stopReason: string | null;
+  bodyHash: string;
+  strict: boolean;
   repairs?: Record<string, RepairOutcome>;
 }): RunRecord {
   return {
@@ -259,6 +283,9 @@ export function buildRunRecord(params: {
     costUsd: computeCostUsd(params.model, params.usage),
     latencyMs: params.latencyMs,
     error: params.error,
+    stopReason: params.stopReason,
+    bodyHash: params.bodyHash,
+    strict: params.strict,
     ...(params.repairs !== undefined ? { repairs: params.repairs } : {}),
     completedAt: new Date().toISOString(),
   };
@@ -287,6 +314,12 @@ const runRecordLineSchema = z
     costUsd: z.number().nullable(),
     latencyMs: z.number().nullable(),
     error: z.string().nullable(),
+    // Optional in the line schema so pre-existing output files (written
+    // before these fields existed) still parse; the runner writes them on
+    // every record, and resume/repair treat their absence as a mismatch.
+    stopReason: z.string().nullable().optional(),
+    bodyHash: z.string().optional(),
+    strict: z.boolean().optional(),
     repairs: z.record(z.unknown()).optional(),
     completedAt: z.string(),
   })
@@ -321,22 +354,34 @@ export function latestRecordById(records: RunRecord[]): Map<string, RunRecord> {
   return byId;
 }
 
+/** The current run's identity, against which records are resume/repair-matched. */
+export interface CurrentRunIdentity {
+  promptSchemaHash: string;
+  model: string;
+  /** The current run's --strict flag (NOT part of the prompt+schema hash). */
+  strict: boolean;
+  /** id → sha256 of the CURRENT corpus body for that lesson. */
+  bodyHashById: Map<string, string>;
+}
+
 /**
  * Ids `--resume` may skip: the latest record for the id carries the CURRENT
- * prompt+schema hash, the same model, and completed without an API error.
- * (Zod-failed records still count as done — the repair pass owns those.)
- * Hash or model mismatches re-run the lesson.
+ * prompt+schema hash, the same model, the same strict flag, the same corpus
+ * body hash, and completed without an API error. (Zod-failed records still
+ * count as done — the repair pass owns those.) Any mismatch — including a
+ * record written before bodyHash/strict existed — re-runs the lesson.
  */
 export function computeResumableIds(
   records: RunRecord[],
-  currentHash: string,
-  model: string
+  current: CurrentRunIdentity
 ): Set<string> {
   const resumable = new Set<string>();
   for (const [id, record] of latestRecordById(records)) {
     if (
-      record.promptSchemaHash === currentHash &&
-      record.model === model &&
+      record.promptSchemaHash === current.promptSchemaHash &&
+      record.model === current.model &&
+      record.strict === current.strict &&
+      record.bodyHash === current.bodyHashById.get(id) &&
       record.error === null
     ) {
       resumable.add(id);
@@ -350,6 +395,89 @@ export function planRepairs(zod: ZodOutcome): string[] {
   if (zod.passed || zod.fieldErrors === null) return [];
   const failed = new Set(Object.keys(zod.fieldErrors));
   return RESULT_PROPERTIES.filter((property) => failed.has(property));
+}
+
+export interface RepairPlan {
+  candidates: Array<{ record: RunRecord; fields: string[] }>;
+  /** Zod-failed records skipped for a stale prompt+schema hash. */
+  staleHash: number;
+  /** Zod-failed records skipped because they ran under a different model. */
+  modelMismatch: number;
+  /** The distinct other models seen on model-mismatch skips (sorted). */
+  mismatchedModels: string[];
+  /** Records skipped because the current corpus body hash differs from the
+   *  record's bodyHash (only checked when bodyHashById is provided). */
+  bodyMismatch: number;
+  /** Records whose rawInput is not a plain object (nothing to merge into). */
+  nonObjectIds: string[];
+  /** Zod-failed candidates with ZERO repairable fields (e.g. only `_root`
+   *  errors) — surfaced so the operator sees why nothing was repaired. */
+  zeroFieldRecords: Array<{ id: string; rootErrors: string[] }>;
+}
+
+/**
+ * Selects the repair-pass candidates out of the latest-per-id records.
+ *
+ * A record is repair-eligible iff it failed Zod AND its rawInput is a usable
+ * plain object — EXCEPT main-phase records with a non-null error (those have
+ * no usable output and re-run via the main pass instead). Repair-phase
+ * records whose error aggregates transient per-field failures stay eligible:
+ * their rawInput is the merged object, and the failed fields can be retried.
+ * Stale prompt+schema hash, a different model, or (when bodyHashById is
+ * given) a changed corpus body each skip the record, counted for warnings.
+ */
+export function planRepairCandidates(
+  latestById: Map<string, RunRecord>,
+  currentHash: string,
+  model: string,
+  bodyHashById?: Map<string, string>
+): RepairPlan {
+  const plan: RepairPlan = {
+    candidates: [],
+    staleHash: 0,
+    modelMismatch: 0,
+    mismatchedModels: [],
+    bodyMismatch: 0,
+    nonObjectIds: [],
+    zeroFieldRecords: [],
+  };
+  const otherModels = new Set<string>();
+  for (const record of latestById.values()) {
+    if (record.zod.passed) continue;
+    if (record.phase === 'main' && record.error !== null) continue;
+    if (record.promptSchemaHash !== currentHash) {
+      plan.staleHash++;
+      continue;
+    }
+    if (record.model !== model) {
+      plan.modelMismatch++;
+      otherModels.add(record.model);
+      continue;
+    }
+    if (
+      typeof record.rawInput !== 'object' ||
+      record.rawInput === null ||
+      Array.isArray(record.rawInput)
+    ) {
+      plan.nonObjectIds.push(record.id);
+      continue;
+    }
+    if (bodyHashById !== undefined && record.bodyHash !== bodyHashById.get(record.id)) {
+      plan.bodyMismatch++;
+      continue;
+    }
+    const fields = planRepairs(record.zod);
+    if (fields.length === 0) {
+      plan.zeroFieldRecords.push({
+        id: record.id,
+        rootErrors: record.zod.fieldErrors?._root ?? [],
+      });
+      continue;
+    }
+    plan.candidates.push({ record, fields });
+  }
+  plan.mismatchedModels = [...otherModels].sort();
+  return plan;
 }
 
 /**
@@ -456,7 +584,10 @@ export function extractRepairedValue(field: string, input: Record<string, unknow
 /**
  * Merges successful repairs into the record's raw tool input. Fields whose
  * repair call errored keep their previous (failed) value so the failure
- * stays visible.
+ * stays visible. Top-level keys outside RESULT_PROPERTIES are STRIPPED —
+ * they are never legitimate under the forced tool schema (the Zod result
+ * schema is `.strict()`), and dropping them lets a record whose only
+ * object-level problem is an extra key converge to Zod-pass after repair.
  */
 export function mergeRepairedFields(
   rawInput: unknown,
@@ -465,7 +596,11 @@ export function mergeRepairedFields(
   if (typeof rawInput !== 'object' || rawInput === null || Array.isArray(rawInput)) {
     throw new Error('cannot merge repairs into a non-object rawInput');
   }
-  const merged: Record<string, unknown> = { ...(rawInput as Record<string, unknown>) };
+  const allowed = new Set<string>(RESULT_PROPERTIES);
+  const merged: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(rawInput as Record<string, unknown>)) {
+    if (allowed.has(key)) merged[key] = value;
+  }
   for (const [field, outcome] of Object.entries(repairs)) {
     if (outcome.error === null) merged[field] = outcome.repaired;
   }
@@ -507,6 +642,26 @@ interface Args {
   help: boolean;
 }
 
+/** Throws unless a value-taking flag actually has a value (not another flag). */
+export function requireFlagValue(flag: string, next: string | undefined): string {
+  if (next === undefined || next.startsWith('--')) {
+    throw new Error(`flag ${flag} requires a value (use --help for usage)`);
+  }
+  return next;
+}
+
+/** Throws unless a numeric flag's value is an integer >= min. */
+export function requireIntFlag(flag: string, next: string | undefined, min: number): number {
+  const raw = requireFlagValue(flag, next);
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < min) {
+    throw new Error(
+      `flag ${flag} requires an integer >= ${min}, got: ${raw} (use --help for usage)`
+    );
+  }
+  return value;
+}
+
 export function parseArgs(argv: string[]): Args {
   const a: Args = {
     model: DEFAULT_MODEL,
@@ -522,25 +677,25 @@ export function parseArgs(argv: string[]): Args {
     const next = argv[i + 1];
     switch (flag) {
       case '--model':
-        a.model = next;
+        a.model = requireFlagValue(flag, next);
         i++;
         break;
       case '--limit':
-        a.limit = parseInt(next, 10);
+        a.limit = requireIntFlag(flag, next, 1);
         i++;
         break;
       case '--resume':
         a.resume = true;
         break;
       case '--output':
-        a.output = next;
+        a.output = requireFlagValue(flag, next);
         i++;
         break;
       case '--repair':
         a.repair = true;
         break;
       case '--concurrency':
-        a.concurrency = parseInt(next, 10);
+        a.concurrency = requireIntFlag(flag, next, 1);
         i++;
         break;
       case '--strict':
@@ -567,7 +722,8 @@ Flags:
   --model <id>       Anthropic model ID (default ${DEFAULT_MODEL})
   --limit <N>        only process the first N corpus records (dry-run)
   --resume           skip ids already in the output JSONL (same prompt+schema
-                     hash + same model + no error; a prompt edit re-runs all)
+                     hash + model + strict flag + lesson body hash + no error;
+                     a prompt edit re-runs all, a body edit re-runs that lesson)
   --output <path>    output JSONL (default scripts/stage2-retag/artifacts/retag-run.jsonl)
   --repair           repair mode: per-field re-runs of Zod-failed fields,
                      merged + provenance-marked (appends phase:'repair' records)
@@ -630,6 +786,56 @@ interface CallResult {
   rawInput: unknown;
   usage: AnthropicUsage;
   latencyMs: number;
+  stopReason: string | null;
+}
+
+/**
+ * Typed error for a response that carried no submit_tags tool_use block.
+ * The response WAS billed, so the usage (and stop_reason, which says why the
+ * model stopped — e.g. 'max_tokens') ride on the error for the error record.
+ */
+export class MissingToolUseError extends Error {
+  readonly usage: AnthropicUsage;
+  readonly stopReason: string | null;
+  /** Set by callForcedTool once the round-trip latency is known. */
+  latencyMs: number | null = null;
+
+  constructor(usage: AnthropicUsage, stopReason: string | null) {
+    super(
+      `response carried no ${SUBMIT_TAGS_TOOL_NAME} tool_use block ` +
+        `(stop_reason: ${stopReason ?? 'null'})`
+    );
+    this.name = 'MissingToolUseError';
+    this.usage = usage;
+    this.stopReason = stopReason;
+  }
+}
+
+/** The slice of an API response the extractor needs (pure, unit-testable). */
+export interface ForcedToolResponseShape {
+  content: Array<{ type: string; name?: string; input?: unknown }>;
+  usage: AnthropicUsage;
+  stop_reason: string | null;
+}
+
+/**
+ * Pulls the forced tool_use input out of a response. Captures usage and
+ * stop_reason BEFORE scanning content so the no-tool_use path can throw a
+ * MissingToolUseError that still carries the billed usage.
+ */
+export function extractForcedToolResult(response: ForcedToolResponseShape): {
+  rawInput: unknown;
+  usage: AnthropicUsage;
+  stopReason: string | null;
+} {
+  const usage = response.usage;
+  const stopReason = response.stop_reason ?? null;
+  for (const block of response.content) {
+    if (block.type === 'tool_use' && block.name === SUBMIT_TAGS_TOOL_NAME) {
+      return { rawInput: block.input, usage, stopReason };
+    }
+  }
+  throw new MissingToolUseError(usage, stopReason);
 }
 
 /** One forced-tool call in the canonical shape; returns the raw tool input. */
@@ -650,16 +856,36 @@ async function callForcedTool(
     messages: [{ role: 'user', content: body }],
   });
   const latencyMs = Date.now() - startedAt;
-  for (const block of response.content) {
-    if (block.type === 'tool_use' && block.name === SUBMIT_TAGS_TOOL_NAME) {
-      return { rawInput: block.input, usage: response.usage as AnthropicUsage, latencyMs };
-    }
+  try {
+    const extracted = extractForcedToolResult({
+      content: response.content,
+      usage: response.usage as AnthropicUsage,
+      stop_reason: response.stop_reason,
+    });
+    return { ...extracted, latencyMs };
+  } catch (e) {
+    if (e instanceof MissingToolUseError) e.latencyMs = latencyMs;
+    throw e;
   }
-  throw new Error(`response carried no ${SUBMIT_TAGS_TOOL_NAME} tool_use block`);
 }
 
 function appendRecord(outputPath: string, record: RunRecord): void {
   appendFileSync(outputPath, `${JSON.stringify(record)}\n`, 'utf8');
+}
+
+/** True when a resolved path lands inside scripts/stage2-retag/artifacts/. */
+export function isInsideArtifactsDir(filePath: string): boolean {
+  return path.resolve(filePath).startsWith(ARTIFACTS_DIR + path.sep);
+}
+
+/** One-line warning when an output path is outside the gitignored artifacts dir. */
+export function warnIfOutsideArtifacts(filePath: string): void {
+  if (!isInsideArtifactsDir(filePath)) {
+    console.warn(
+      `note: output path ${path.resolve(filePath)} is outside scripts/stage2-retag/artifacts/ ` +
+        'and will NOT be gitignored.'
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -678,12 +904,21 @@ async function runMainPass(args: Args): Promise<void> {
   const promptSchemaHash = computePromptSchemaHash(systemPrompt, baseTool);
   const resultSchema = buildResultSchema(vocab);
 
-  let lessons = loadCorpus();
+  const corpus = loadCorpus();
+  const bodyHashById = new Map(
+    corpus.map((lesson) => [lesson.id, computeBodyHash(lesson.content_text)])
+  );
+  let lessons = corpus;
   if (args.limit !== undefined) lessons = lessons.slice(0, args.limit);
 
   if (args.resume && existsSync(args.output)) {
     const existing = parseRunRecords(readFileSync(args.output, 'utf8'));
-    const resumable = computeResumableIds(existing, promptSchemaHash, args.model);
+    const resumable = computeResumableIds(existing, {
+      promptSchemaHash,
+      model: args.model,
+      strict: args.strict,
+      bodyHashById,
+    });
     const before = lessons.length;
     lessons = lessons.filter((lesson) => !resumable.has(lesson.id));
     console.log(`Resume: skipping ${before - lessons.length} already-completed ids.`);
@@ -714,10 +949,21 @@ async function runMainPass(args: Args): Promise<void> {
     cache_read_input_tokens: 0,
   };
 
+  const addToTotals = (usage: AnthropicUsage, costUsd: number | null): void => {
+    totalUsage.input_tokens += usage.input_tokens;
+    totalUsage.output_tokens += usage.output_tokens;
+    totalUsage.cache_creation_input_tokens =
+      (totalUsage.cache_creation_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
+    totalUsage.cache_read_input_tokens =
+      (totalUsage.cache_read_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0);
+    totalCostUsd += costUsd ?? 0;
+  };
+
   await mapWithConcurrency(lessons, args.concurrency, async (lesson) => {
     let record: RunRecord;
+    const bodyHash = computeBodyHash(lesson.content_text);
     try {
-      const { rawInput, usage, latencyMs } = await callForcedTool(
+      const { rawInput, usage, latencyMs, stopReason } = await callForcedTool(
         client,
         args.model,
         systemPrompt,
@@ -735,19 +981,19 @@ async function runMainPass(args: Args): Promise<void> {
         usage,
         latencyMs,
         error: null,
+        stopReason,
+        bodyHash,
+        strict: args.strict,
       });
-      totalUsage.input_tokens += usage.input_tokens;
-      totalUsage.output_tokens += usage.output_tokens;
-      totalUsage.cache_creation_input_tokens =
-        (totalUsage.cache_creation_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
-      totalUsage.cache_read_input_tokens =
-        (totalUsage.cache_read_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0);
-      totalCostUsd += record.costUsd ?? 0;
+      addToTotals(usage, record.costUsd);
       if (zod.passed) zodPassed++;
       else zodFailed++;
     } catch (e) {
       const msg = errorMessage(e);
       console.warn(`  lesson ${lesson.id} failed: ${msg}`);
+      // A MissingToolUseError response WAS billed — keep its usage + cost on
+      // the error record instead of recording usage: null.
+      const billed = e instanceof MissingToolUseError ? e : null;
       record = buildRunRecord({
         id: lesson.id,
         phase: 'main',
@@ -755,10 +1001,14 @@ async function runMainPass(args: Args): Promise<void> {
         promptSchemaHash,
         rawInput: null,
         zod: { passed: false, fieldErrors: null },
-        usage: null,
-        latencyMs: null,
+        usage: billed?.usage ?? null,
+        latencyMs: billed?.latencyMs ?? null,
         error: msg,
+        stopReason: billed?.stopReason ?? null,
+        bodyHash,
+        strict: args.strict,
       });
+      if (billed) addToTotals(billed.usage, record.costUsd);
       errored++;
     }
     appendRecord(args.output, record);
@@ -795,30 +1045,39 @@ async function runRepairPass(args: Args): Promise<void> {
   }
   const latest = latestRecordById(parseRunRecords(readFileSync(args.output, 'utf8')));
 
-  const candidates: Array<{ record: RunRecord; fields: string[] }> = [];
-  let staleHash = 0;
-  for (const record of latest.values()) {
-    if (record.error !== null || record.zod.passed) continue;
-    if (record.promptSchemaHash !== promptSchemaHash) {
-      staleHash++;
-      continue;
-    }
-    const fields = planRepairs(record.zod);
-    if (fields.length === 0) continue;
-    if (typeof record.rawInput !== 'object' || record.rawInput === null) {
-      console.warn(`  ${record.id}: non-object rawInput, not repairable`);
-      continue;
-    }
-    candidates.push({ record, fields });
-  }
-  if (staleHash > 0) {
+  const bodyHashById = new Map(
+    [...lessonBodyById].map(([id, body]) => [id, computeBodyHash(body)])
+  );
+  const plan = planRepairCandidates(latest, promptSchemaHash, args.model, bodyHashById);
+  if (plan.staleHash > 0) {
     console.warn(
-      `Skipping ${staleHash} Zod-failed record(s) with a stale prompt+schema hash — ` +
+      `Skipping ${plan.staleHash} Zod-failed record(s) with a stale prompt+schema hash — ` +
         're-run the main pass for those instead of repairing.'
     );
   }
+  if (plan.modelMismatch > 0) {
+    console.warn(
+      `Skipping ${plan.modelMismatch} Zod-failed record(s) from a different model ` +
+        `(${plan.mismatchedModels.join(', ')}) — pass --model <m> to repair them.`
+    );
+  }
+  if (plan.bodyMismatch > 0) {
+    console.warn(
+      `Skipping ${plan.bodyMismatch} record(s) whose corpus body changed since the run ` +
+        '(bodyHash mismatch) — re-run the main pass for those instead of repairing.'
+    );
+  }
+  for (const id of plan.nonObjectIds) {
+    console.warn(`  ${id}: non-object rawInput, not repairable`);
+  }
+  for (const zeroField of plan.zeroFieldRecords) {
+    console.warn(
+      `  ${zeroField.id}: Zod-failed but no per-field repair is possible — _root errors: ` +
+        `${zeroField.rootErrors.length > 0 ? zeroField.rootErrors.join('; ') : '(none recorded)'}`
+    );
+  }
 
-  const limited = args.limit !== undefined ? candidates.slice(0, args.limit) : candidates;
+  const limited = args.limit !== undefined ? plan.candidates.slice(0, args.limit) : plan.candidates;
   if (limited.length === 0) {
     console.log('Nothing to repair.');
     return;
@@ -859,12 +1118,14 @@ async function runRepairPass(args: Args): Promise<void> {
           error: null,
         };
       } catch (e) {
+        // A MissingToolUseError response WAS billed — keep its usage + cost.
+        const billed = e instanceof MissingToolUseError ? e : null;
         repairs[field] = {
           previous,
           repaired: null,
-          usage: null,
-          costUsd: null,
-          latencyMs: null,
+          usage: billed?.usage ?? null,
+          costUsd: computeCostUsd(args.model, billed?.usage ?? null),
+          latencyMs: billed?.latencyMs ?? null,
           error: errorMessage(e),
         };
       }
@@ -899,6 +1160,11 @@ async function runRepairPass(args: Args): Promise<void> {
         usage,
         latencyMs,
         error: firstError,
+        // Repair records aggregate several per-field calls — no single
+        // stop_reason applies, so it is null by design.
+        stopReason: null,
+        bodyHash: computeBodyHash(lessonBody),
+        strict: args.strict,
         repairs,
       })
     );
@@ -923,6 +1189,7 @@ async function main(): Promise<void> {
     console.log(HELP);
     return;
   }
+  warnIfOutsideArtifacts(args.output);
   if (args.repair) {
     lessonBodyById = new Map(loadCorpus().map((lesson) => [lesson.id, lesson.content_text]));
     await runRepairPass(args);

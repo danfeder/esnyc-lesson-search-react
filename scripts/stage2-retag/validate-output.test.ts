@@ -22,8 +22,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseRunRecords } from './run-retag';
-import { formatRunSummary, parseCorpusIndex, summarizeRun } from './validate-output';
+import { parseRunRecords, type RunRecord } from './run-retag';
+import { formatRunSummary, parseArgs, parseCorpusIndex, summarizeRun } from './validate-output';
 
 const FIXTURES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '__fixtures__');
 
@@ -60,6 +60,20 @@ describe('summarizeRun — record counts', () => {
   it('tallies models and prompt+schema hashes across all records', () => {
     expect(summary.models).toEqual({ 'claude-opus-4-7': 6, 'claude-mystery': 1 });
     expect(summary.promptSchemaHashes).toEqual({ 'hash-current': 7 });
+  });
+
+  it('counts strict-tool records (all fixture records ran non-strict)', () => {
+    expect(summary.strictRecords).toBe(0);
+  });
+
+  it('counts records with strict: true', () => {
+    const strictRecord: RunRecord = {
+      ...runRecords[0],
+      id: 'lesson-strict',
+      strict: true,
+    };
+    const withStrict = summarizeRun([...runRecords, strictRecord], corpus);
+    expect(withStrict.strictRecords).toBe(1);
   });
 });
 
@@ -165,5 +179,22 @@ describe('formatRunSummary', () => {
   it('lists the error inventory', () => {
     expect(text).toContain('HTTP 400: credit balance too low');
     expect(text).toContain('lesson-errored');
+  });
+
+  it('shows the strict-tool record count', () => {
+    expect(text).toMatch(/Strict-tool records:\s+0 of 7/);
+  });
+});
+
+describe('parseArgs hardening', () => {
+  it('throws when a value-taking flag is missing its value', () => {
+    expect(() => parseArgs(['--run'])).toThrow(/--run requires a value/);
+    expect(() => parseArgs(['--corpus', '--help'])).toThrow(/--corpus requires a value/);
+    expect(() => parseArgs(['--summary-out'])).toThrow(/--summary-out requires a value/);
+  });
+
+  it('accepts valid values and still rejects unknown flags', () => {
+    expect(parseArgs(['--run', '/tmp/r.jsonl']).run).toBe('/tmp/r.jsonl');
+    expect(() => parseArgs(['--bogus'])).toThrow(/unknown flag/);
   });
 });

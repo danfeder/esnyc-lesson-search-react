@@ -28,7 +28,13 @@ import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
-import { latestRecordById, parseRunRecords, type RunRecord } from './run-retag';
+import {
+  latestRecordById,
+  parseRunRecords,
+  requireFlagValue,
+  warnIfOutsideArtifacts,
+  type RunRecord,
+} from './run-retag';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS_DIR = path.join(MODULE_DIR, 'artifacts');
@@ -73,6 +79,8 @@ export interface RunSummary {
   /** Record counts per model / per prompt+schema hash, across all records. */
   models: Record<string, number>;
   promptSchemaHashes: Record<string, number>;
+  /** Records produced with strict: true tool definitions (--strict runs). */
+  strictRecords: number;
   /**
    * Latest record per lesson, bucketed exclusively: Zod-passed; Zod-failed
    * but output present (repairable / reviewable); no usable output (API
@@ -139,6 +147,7 @@ export function summarizeRun(records: RunRecord[], corpus: CorpusIndexEntry[]): 
   };
   let mainRecords = 0;
   let repairRecords = 0;
+  let strictRecords = 0;
   let totalCostUsd = 0;
   let recordsWithoutCost = 0;
   let recordsNowPassing = 0;
@@ -153,6 +162,9 @@ export function summarizeRun(records: RunRecord[], corpus: CorpusIndexEntry[]): 
     models[record.model] = (models[record.model] ?? 0) + 1;
     promptSchemaHashes[record.promptSchemaHash] =
       (promptSchemaHashes[record.promptSchemaHash] ?? 0) + 1;
+    // === true: records parsed from pre-strict-field output files count as
+    // non-strict rather than crashing the tally.
+    if (record.strict === true) strictRecords++;
 
     if (record.usage) {
       usage.input_tokens += record.usage.input_tokens;
@@ -220,6 +232,7 @@ export function summarizeRun(records: RunRecord[], corpus: CorpusIndexEntry[]): 
     unknownInRun,
     models,
     promptSchemaHashes,
+    strictRecords,
     latest: { zodPassed, zodFailedWithOutput, noUsableOutput },
     zodFailuresByField,
     repair: { recordsNowPassing, recordsStillFailing, fields: repairFields },
@@ -297,6 +310,7 @@ export function formatRunSummary(summary: RunSummary): string {
       .join(', ');
   lines.push(`Models: ${renderTally(summary.models)}`);
   lines.push(`Prompt+schema hashes: ${renderTally(summary.promptSchemaHashes)}`);
+  lines.push(`Strict-tool records:  ${summary.strictRecords} of ${summary.totalRecords}`);
 
   lines.push('');
   lines.push('Usage totals (all records):');
@@ -347,15 +361,15 @@ export function parseArgs(argv: string[]): Args {
     const next = argv[i + 1];
     switch (flag) {
       case '--run':
-        args.run = next;
+        args.run = requireFlagValue(flag, next);
         i++;
         break;
       case '--corpus':
-        args.corpus = next;
+        args.corpus = requireFlagValue(flag, next);
         i++;
         break;
       case '--summary-out':
-        args.summaryOut = next;
+        args.summaryOut = requireFlagValue(flag, next);
         i++;
         break;
       case '--help':
@@ -392,6 +406,7 @@ function main(): void {
     console.log(HELP);
     return;
   }
+  warnIfOutsideArtifacts(args.summaryOut);
   const records = parseRunRecords(readFileSync(args.run, 'utf8'));
   const corpus = parseCorpusIndex(readFileSync(args.corpus, 'utf8'));
   const summary = summarizeRun(records, corpus);

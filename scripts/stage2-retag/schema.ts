@@ -47,6 +47,16 @@ export const DEFAULT_MODEL = 'claude-opus-4-7';
 export const TOKEN_MASS_BUDGET_TOKENS = 10_000;
 
 /**
+ * Minimum cacheable prefix per model family (prompt-caching docs, verified
+ * 2026-06-12): prefixes BELOW the floor silently don't cache — no error,
+ * `cache_creation_input_tokens` stays 0 and every call pays full input
+ * price, which invalidates this pipeline's cache-based cost projection.
+ * Opus-family floor is 4096 tokens; Sonnet 4.6 is 2048.
+ */
+export const OPUS_MIN_CACHEABLE_PREFIX_TOKENS = 4096;
+export const SONNET_MIN_CACHEABLE_PREFIX_TOKENS = 2048;
+
+/**
  * Authoritative grade tokens, copied VERBATIM from
  * `FILTER_CONFIGS.gradeLevels.options[].value` in
  * `src/utils/filterDefinitions.ts` (schema.test.ts asserts equality against

@@ -40,7 +40,13 @@ import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
-import { latestRecordById, parseRunRecords, type RunRecord } from './run-retag';
+import {
+  latestRecordById,
+  parseRunRecords,
+  requireFlagValue,
+  warnIfOutsideArtifacts,
+  type RunRecord,
+} from './run-retag';
 import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -180,7 +186,10 @@ export function parseCorpusRecords(jsonlText: string): CorpusDiffRecord[] {
 /**
  * Diffs two value sets. Values present on both sides are unchanged; an old
  * value and a new value that are equal case-insensitively are paired as a
- * casing fix (one-to-one); everything left is a semantic add or drop.
+ * casing fix (one-to-one); a dropped value whose lowercase form SURVIVES in
+ * the new set (a within-side case twin collapsing to one canonical spelling,
+ * e.g. ["Earth month","Earth Month"] → ["Earth Month"]) is also a casing
+ * fix, not a semantic removal; everything left is a semantic add or drop.
  */
 export function diffValueSets(oldValues: string[], newValues: string[]): SetDiff {
   const oldSet = new Set(oldValues);
@@ -198,13 +207,30 @@ export function diffValueSets(oldValues: string[], newValues: string[]): SetDiff
     addsByLower.set(lower, bucket);
   }
 
+  // First surviving new-side spelling per lowercase form (for case-twin dedup).
+  const newByLower = new Map<string, string>();
+  for (const value of newValues) {
+    const lower = value.toLowerCase();
+    if (!newByLower.has(lower)) newByLower.set(lower, value);
+  }
+
   const casingFixes: ValueChange[] = [];
   const dropped: string[] = [];
   for (const drop of rawDrops) {
     const bucket = addsByLower.get(drop.toLowerCase());
     const paired = bucket?.shift();
-    if (paired !== undefined) casingFixes.push({ from: drop, to: paired });
-    else dropped.push(drop);
+    if (paired !== undefined) {
+      casingFixes.push({ from: drop, to: paired });
+      continue;
+    }
+    const survivor = newByLower.get(drop.toLowerCase());
+    if (survivor !== undefined) {
+      // Within-side case-twin dedup: the value survives under another
+      // spelling — formatting cleanup, not a semantic removal.
+      casingFixes.push({ from: drop, to: survivor });
+      continue;
+    }
+    dropped.push(drop);
   }
   const added = [...addsByLower.values()].flat();
 
@@ -637,15 +663,15 @@ export function parseArgs(argv: string[]): Args {
     const next = argv[i + 1];
     switch (flag) {
       case '--run':
-        args.run = next;
+        args.run = requireFlagValue(flag, next);
         i++;
         break;
       case '--corpus':
-        args.corpus = next;
+        args.corpus = requireFlagValue(flag, next);
         i++;
         break;
       case '--out':
-        args.out = next;
+        args.out = requireFlagValue(flag, next);
         i++;
         break;
       case '--help':
@@ -681,6 +707,7 @@ function main(): void {
     console.log(HELP);
     return;
   }
+  warnIfOutsideArtifacts(args.out);
   const corpusRecords = parseCorpusRecords(readFileSync(args.corpus, 'utf8'));
   const runRecords = parseRunRecords(readFileSync(args.run, 'utf8'));
   const report = buildDiffReport(corpusRecords, runRecords, loadVocab());

@@ -8,23 +8,40 @@
  * forced-bad-enum fixture routes the right field through repair and merges
  * provenance-marked), and cost arithmetic.
  */
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
-import { GRADE_LEVELS, buildResultSchema, buildSubmitTagsTool, loadSystemPrompt } from './schema';
+import {
+  GRADE_LEVELS,
+  RESULT_PROPERTIES,
+  buildResultSchema,
+  buildSubmitTagsTool,
+  loadSystemPrompt,
+} from './schema';
 import { loadVocab } from './vocab';
 import {
+  MissingToolUseError,
   PRICING_PER_MTOK,
   buildRepairTool,
   buildRunRecord,
+  computeBodyHash,
   computeCostUsd,
   computePromptSchemaHash,
   computeResumableIds,
   extractFieldPromptSection,
+  extractForcedToolResult,
   extractRepairedValue,
   fieldErrorsFromZod,
+  isInsideArtifactsDir,
+  latestRecordById,
   mapWithConcurrency,
   mergeRepairedFields,
+  parseArgs,
   parseRunRecords,
+  planRepairCandidates,
   planRepairs,
   repairFieldSpec,
   validateRawInput,
@@ -32,6 +49,9 @@ import {
   type RepairOutcome,
   type RunRecord,
 } from './run-retag';
+
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = path.join(MODULE_DIR, '__fixtures__');
 
 const vocab = loadVocab();
 const systemPrompt = loadSystemPrompt();
@@ -72,9 +92,17 @@ function makeRecord(overrides: Partial<RunRecord>): RunRecord {
     costUsd: null,
     latencyMs: null,
     error: null,
+    stopReason: null,
+    bodyHash: 'hash-body',
+    strict: false,
     completedAt: '2026-06-12T00:00:00.000Z',
     ...overrides,
   };
+}
+
+/** id → the makeRecord default body hash, for resume/repair identity params. */
+function defaultBodyHashes(ids: string[]): Map<string, string> {
+  return new Map(ids.map((id) => [id, 'hash-body']));
 }
 
 describe('computePromptSchemaHash', () => {
@@ -160,6 +188,9 @@ describe('buildRunRecord', () => {
       usage,
       latencyMs: 1234,
       error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
     });
     expect(record).toMatchObject({
       id: 'lesson-9',
@@ -171,6 +202,9 @@ describe('buildRunRecord', () => {
       usage,
       latencyMs: 1234,
       error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
     });
     expect(record.costUsd).toBeCloseTo(computeCostUsd('claude-opus-4-7', usage) ?? NaN, 10);
     expect(Number.isNaN(Date.parse(record.completedAt))).toBe(false);
@@ -198,16 +232,50 @@ describe('buildRunRecord', () => {
       usage: null,
       latencyMs: null,
       error: null,
+      stopReason: null,
+      bodyHash: 'body-9',
+      strict: true,
       repairs,
     });
     expect(record.phase).toBe('repair');
+    expect(record.strict).toBe(true);
     expect(record.repairs).toEqual(repairs);
+  });
+
+  it('computes cost from usage on error records too (billed no-tool_use path)', () => {
+    const usage: AnthropicUsage = { input_tokens: 7000, output_tokens: 4096 };
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-7',
+      promptSchemaHash: 'abc',
+      rawInput: null,
+      zod: { passed: false, fieldErrors: null },
+      usage,
+      latencyMs: 9000,
+      error: 'response carried no submit_tags tool_use block (stop_reason: max_tokens)',
+      stopReason: 'max_tokens',
+      bodyHash: 'body-9',
+      strict: false,
+    });
+    expect(record.usage).toEqual(usage);
+    expect(record.costUsd).toBeCloseTo(computeCostUsd('claude-opus-4-7', usage) ?? NaN, 10);
+    expect(record.stopReason).toBe('max_tokens');
   });
 });
 
 describe('parseRunRecords + computeResumableIds (--resume)', () => {
   const HASH = 'current-hash';
   const MODEL = 'claude-opus-4-7';
+
+  function identity(ids: string[], strict = false) {
+    return {
+      promptSchemaHash: HASH,
+      model: MODEL,
+      strict,
+      bodyHashById: defaultBodyHashes(ids),
+    };
+  }
 
   function jsonl(records: RunRecord[], extraLines: string[] = []): string {
     return [...records.map((record) => JSON.stringify(record)), ...extraLines].join('\n');
@@ -222,7 +290,7 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
         makeRecord({ id: 'd', promptSchemaHash: HASH, model: 'claude-sonnet-4-6' }),
       ])
     );
-    expect(computeResumableIds(records, HASH, MODEL)).toEqual(new Set(['a']));
+    expect(computeResumableIds(records, identity(['a', 'b', 'c', 'd']))).toEqual(new Set(['a']));
   });
 
   it('counts Zod-failed (but not errored) records as resumable — repair owns those', () => {
@@ -236,7 +304,7 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
         }),
       ])
     );
-    expect(computeResumableIds(records, HASH, MODEL)).toEqual(new Set(['z']));
+    expect(computeResumableIds(records, identity(['z']))).toEqual(new Set(['z']));
   });
 
   it('later lines win: an errored record re-run successfully becomes resumable', () => {
@@ -248,7 +316,44 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
         makeRecord({ id: 'b', promptSchemaHash: HASH, model: MODEL, error: 'late failure' }),
       ])
     );
-    expect(computeResumableIds(records, HASH, MODEL)).toEqual(new Set(['a']));
+    expect(computeResumableIds(records, identity(['a', 'b']))).toEqual(new Set(['a']));
+  });
+
+  it('requires strict equality with the current run flag (mirrors model equality)', () => {
+    const records = parseRunRecords(
+      jsonl([
+        makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL, strict: false }),
+        makeRecord({ id: 'b', promptSchemaHash: HASH, model: MODEL, strict: true }),
+      ])
+    );
+    expect(computeResumableIds(records, identity(['a', 'b'], false))).toEqual(new Set(['a']));
+    expect(computeResumableIds(records, identity(['a', 'b'], true))).toEqual(new Set(['b']));
+  });
+
+  it('requires the record bodyHash to match the CURRENT corpus body hash', () => {
+    const records = parseRunRecords(
+      jsonl([
+        makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL, bodyHash: 'hash-body' }),
+        makeRecord({ id: 'b', promptSchemaHash: HASH, model: MODEL, bodyHash: 'old-body-hash' }),
+      ])
+    );
+    // b's corpus body changed since the run → re-run it.
+    expect(computeResumableIds(records, identity(['a', 'b']))).toEqual(new Set(['a']));
+    // an id missing from the current corpus is never resumable.
+    expect(computeResumableIds(records, identity(['b']))).toEqual(new Set());
+  });
+
+  it('treats records written before bodyHash/strict existed as non-resumable', () => {
+    const legacy = { ...makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL }) } as Record<
+      string,
+      unknown
+    >;
+    delete legacy.bodyHash;
+    delete legacy.strict;
+    delete legacy.stopReason;
+    const records = parseRunRecords(JSON.stringify(legacy));
+    expect(records).toHaveLength(1); // still parses (optional in the line schema)
+    expect(computeResumableIds(records, identity(['a']))).toEqual(new Set());
   });
 
   it('ignores malformed lines without crashing', () => {
@@ -259,7 +364,17 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
       )
     );
     expect(records).toHaveLength(1);
-    expect(computeResumableIds(records, HASH, MODEL)).toEqual(new Set(['a']));
+    expect(computeResumableIds(records, identity(['a']))).toEqual(new Set(['a']));
+  });
+});
+
+describe('computeBodyHash', () => {
+  it('is a stable sha256 hex digest of the body string', () => {
+    expect(computeBodyHash('Pre K lesson about roots and shoots.')).toBe(
+      'b1ec60d74f183a675c5b917af4752075cbdef51d654a8ba842ebceac3bfbd5d2'
+    );
+    expect(computeBodyHash('a')).toMatch(/^[0-9a-f]{64}$/);
+    expect(computeBodyHash('a')).not.toBe(computeBodyHash('b'));
   });
 });
 
@@ -423,6 +538,196 @@ describe('mergeRepairedFields (repair-merge logic)', () => {
     expect(() => mergeRepairedFields(null, {})).toThrow(/non-object/);
     expect(() => mergeRepairedFields([], {})).toThrow(/non-object/);
   });
+
+  it('strips top-level keys outside RESULT_PROPERTIES so repair can converge', () => {
+    const bad: Record<string, unknown> = {
+      ...makeValidResult(),
+      cooking_methods: ['microwave'],
+      bogus_field: ['never legitimate under the forced tool schema'],
+    };
+    expect(validateRawInput(resultSchema, bad).passed).toBe(false);
+    const merged = mergeRepairedFields(bad, {
+      cooking_methods: {
+        previous: bad.cooking_methods,
+        repaired: [vocab.cooking_methods.values[0]],
+        usage: null,
+        costUsd: null,
+        latencyMs: null,
+        error: null,
+      },
+    });
+    expect('bogus_field' in merged).toBe(false);
+    expect(validateRawInput(resultSchema, merged).passed).toBe(true);
+  });
+});
+
+describe('planRepairCandidates (repair candidate selection)', () => {
+  const HASH = 'current-hash';
+  const MODEL = 'claude-opus-4-7';
+  const failedZod = { passed: false, fieldErrors: { tags: ['tags.0: Invalid enum value'] } };
+  const objectInput = { tags: ['bad value'] };
+
+  function plan(records: RunRecord[], bodyHashById?: Map<string, string>) {
+    return planRepairCandidates(latestRecordById(records), HASH, MODEL, bodyHashById);
+  }
+
+  it('selects Zod-failed records with object rawInput as candidates', () => {
+    const result = plan([
+      makeRecord({ id: 'a', promptSchemaHash: HASH, zod: failedZod, rawInput: objectInput }),
+    ]);
+    expect(result.candidates.map((c) => c.record.id)).toEqual(['a']);
+    expect(result.candidates[0].fields).toEqual(['tags']);
+  });
+
+  it('skips Zod-passed records', () => {
+    const result = plan([makeRecord({ id: 'a', promptSchemaHash: HASH, rawInput: objectInput })]);
+    expect(result.candidates).toEqual([]);
+  });
+
+  it('skips main-phase records with an error (no usable output)', () => {
+    const result = plan([
+      makeRecord({
+        id: 'a',
+        phase: 'main',
+        promptSchemaHash: HASH,
+        zod: { passed: false, fieldErrors: null },
+        rawInput: null,
+        error: 'HTTP 400: boom',
+      }),
+    ]);
+    expect(result.candidates).toEqual([]);
+    expect(result.nonObjectIds).toEqual([]);
+  });
+
+  it('keeps repair-phase records with a transient error ELIGIBLE (merged rawInput is usable)', () => {
+    const result = plan([
+      makeRecord({
+        id: 'a',
+        phase: 'repair',
+        promptSchemaHash: HASH,
+        zod: failedZod,
+        rawInput: objectInput,
+        error: 'HTTP 500: overloaded',
+      }),
+    ]);
+    expect(result.candidates.map((c) => c.record.id)).toEqual(['a']);
+    expect(result.candidates[0].fields).toEqual(['tags']);
+  });
+
+  it('skips and counts stale prompt+schema hashes', () => {
+    const result = plan([
+      makeRecord({ id: 'a', promptSchemaHash: 'stale', zod: failedZod, rawInput: objectInput }),
+    ]);
+    expect(result.candidates).toEqual([]);
+    expect(result.staleHash).toBe(1);
+  });
+
+  it('skips and counts records from a different model (item 2)', () => {
+    const result = plan([
+      makeRecord({
+        id: 'a',
+        promptSchemaHash: HASH,
+        model: 'claude-sonnet-4-6',
+        zod: failedZod,
+        rawInput: objectInput,
+      }),
+    ]);
+    expect(result.candidates).toEqual([]);
+    expect(result.modelMismatch).toBe(1);
+    expect(result.mismatchedModels).toEqual(['claude-sonnet-4-6']);
+  });
+
+  it('skips non-object rawInput (string / array) with the id surfaced', () => {
+    const result = plan([
+      makeRecord({ id: 'a', promptSchemaHash: HASH, zod: failedZod, rawInput: 'not an object' }),
+      makeRecord({ id: 'b', promptSchemaHash: HASH, zod: failedZod, rawInput: ['array'] }),
+    ]);
+    expect(result.candidates).toEqual([]);
+    expect(result.nonObjectIds.sort()).toEqual(['a', 'b']);
+  });
+
+  it('skips and counts body-hash mismatches when bodyHashById is provided (item 6)', () => {
+    const records = [
+      makeRecord({ id: 'a', promptSchemaHash: HASH, zod: failedZod, rawInput: objectInput }),
+      makeRecord({
+        id: 'b',
+        promptSchemaHash: HASH,
+        zod: failedZod,
+        rawInput: objectInput,
+        bodyHash: 'old-body-hash',
+      }),
+    ];
+    const result = plan(records, defaultBodyHashes(['a', 'b']));
+    expect(result.candidates.map((c) => c.record.id)).toEqual(['a']);
+    expect(result.bodyMismatch).toBe(1);
+  });
+
+  it('surfaces Zod-failed candidates with zero repairable fields and their _root errors (item 3b)', () => {
+    const result = plan([
+      makeRecord({
+        id: 'a',
+        promptSchemaHash: HASH,
+        zod: {
+          passed: false,
+          fieldErrors: { _root: ["(object): Unrecognized key(s) in object: 'bogus_field'"] },
+        },
+        rawInput: { ...makeValidResult(), bogus_field: [] },
+      }),
+    ]);
+    expect(result.candidates).toEqual([]);
+    expect(result.zeroFieldRecords).toEqual([
+      { id: 'a', rootErrors: ["(object): Unrecognized key(s) in object: 'bogus_field'"] },
+    ]);
+  });
+});
+
+describe('extractForcedToolResult (no-tool_use typed error, item 5)', () => {
+  const usage: AnthropicUsage = {
+    input_tokens: 7000,
+    output_tokens: 4096,
+    cache_creation_input_tokens: 0,
+    cache_read_input_tokens: 6000,
+  };
+
+  it('returns rawInput + usage + stopReason on the happy path', () => {
+    const result = extractForcedToolResult({
+      content: [{ type: 'tool_use', name: 'submit_tags', input: { tags: [] } }],
+      usage,
+      stop_reason: 'tool_use',
+    });
+    expect(result).toEqual({ rawInput: { tags: [] }, usage, stopReason: 'tool_use' });
+  });
+
+  it('throws a MissingToolUseError carrying the billed usage + stop_reason', () => {
+    let thrown: unknown;
+    try {
+      extractForcedToolResult({
+        content: [{ type: 'text' }],
+        usage,
+        stop_reason: 'max_tokens',
+      });
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(MissingToolUseError);
+    const error = thrown as MissingToolUseError;
+    expect(error.usage).toEqual(usage);
+    expect(error.stopReason).toBe('max_tokens');
+    expect(error.message).toContain('no submit_tags tool_use block');
+    expect(error.message).toContain('max_tokens');
+    // costUsd is computable from the carried usage (what the error record stores).
+    expect(computeCostUsd('claude-opus-4-7', error.usage)).not.toBeNull();
+  });
+
+  it('ignores tool_use blocks with a different tool name', () => {
+    expect(() =>
+      extractForcedToolResult({
+        content: [{ type: 'tool_use', name: 'some_other_tool', input: {} }],
+        usage,
+        stop_reason: 'tool_use',
+      })
+    ).toThrow(MissingToolUseError);
+  });
 });
 
 describe('extractFieldPromptSection', () => {
@@ -455,5 +760,91 @@ describe('mapWithConcurrency', () => {
       return n * 10;
     });
     expect(results).toEqual([50, 40, 30, 20, 10]);
+  });
+});
+
+describe('prompt/schema contract (item 10)', () => {
+  it.each([...RESULT_PROPERTIES])(
+    'extractFieldPromptSection succeeds for %s (pins the prompt contract through A8 iterations)',
+    (field) => {
+      const section = extractFieldPromptSection(systemPrompt, field);
+      expect(section).toContain(`### ${field}`);
+      expect(section).toContain('## Field-by-field rules');
+    }
+  );
+});
+
+describe('parseArgs hardening', () => {
+  it('throws when a value-taking flag is missing its value', () => {
+    expect(() => parseArgs(['--model'])).toThrow(/--model requires a value/);
+    expect(() => parseArgs(['--output'])).toThrow(/--output requires a value/);
+    expect(() => parseArgs(['--model', '--resume'])).toThrow(/--model requires a value/);
+    expect(() => parseArgs(['--output', '--repair'])).toThrow(/--output requires a value/);
+  });
+
+  it('throws on non-integer or out-of-range numeric flags', () => {
+    expect(() => parseArgs(['--limit', '0'])).toThrow(/--limit requires an integer >= 1/);
+    expect(() => parseArgs(['--limit', '2.5'])).toThrow(/--limit requires an integer >= 1/);
+    expect(() => parseArgs(['--limit', 'abc'])).toThrow(/--limit requires an integer >= 1/);
+    expect(() => parseArgs(['--concurrency', '-3'])).toThrow(
+      /--concurrency requires an integer >= 1/
+    );
+    expect(() => parseArgs(['--concurrency'])).toThrow(/--concurrency requires a value/);
+  });
+
+  it('accepts valid values and still rejects unknown flags', () => {
+    const args = parseArgs(['--model', 'claude-sonnet-4-6', '--limit', '3', '--concurrency', '1']);
+    expect(args.model).toBe('claude-sonnet-4-6');
+    expect(args.limit).toBe(3);
+    expect(args.concurrency).toBe(1);
+    expect(() => parseArgs(['--bogus'])).toThrow(/unknown flag/);
+  });
+});
+
+describe('isInsideArtifactsDir (output-path hygiene)', () => {
+  it('accepts paths under scripts/stage2-retag/artifacts/ and flags everything else', () => {
+    expect(isInsideArtifactsDir(path.join(MODULE_DIR, 'artifacts', 'retag-run.jsonl'))).toBe(true);
+    expect(isInsideArtifactsDir(path.join(MODULE_DIR, 'artifacts', 'sub', 'x.jsonl'))).toBe(true);
+    expect(isInsideArtifactsDir('/tmp/retag-run.jsonl')).toBe(false);
+    expect(isInsideArtifactsDir(path.join(MODULE_DIR, 'retag-run.jsonl'))).toBe(false);
+  });
+});
+
+describe('fixture integrity (__fixtures__/run-output.fixture.jsonl, item 9)', () => {
+  const fixtureRecords = parseRunRecords(
+    readFileSync(path.join(FIXTURES_DIR, 'run-output.fixture.jsonl'), 'utf8')
+  );
+
+  it('recorded zod.passed matches ACTUAL validation for every object-rawInput record', () => {
+    let checked = 0;
+    for (const record of fixtureRecords) {
+      if (typeof record.rawInput !== 'object' || record.rawInput === null) continue;
+      checked++;
+      expect(
+        validateRawInput(resultSchema, record.rawInput).passed,
+        `fixture record ${record.id} (${record.phase}) claims zod.passed=${record.zod.passed}`
+      ).toBe(record.zod.passed);
+    }
+    expect(checked).toBeGreaterThanOrEqual(5);
+  });
+
+  it("lesson-weird's transient-500 repair record is repair-ELIGIBLE under the new filter (item 1)", () => {
+    const plan = planRepairCandidates(
+      latestRecordById(fixtureRecords),
+      'hash-current',
+      'claude-opus-4-7'
+    );
+    const ids = plan.candidates.map((c) => c.record.id);
+    expect(ids).toContain('lesson-weird');
+    const weird = plan.candidates.find((c) => c.record.id === 'lesson-weird');
+    expect(weird?.record.phase).toBe('repair');
+    expect(weird?.record.error).toBe('HTTP 500: overloaded');
+    expect(weird?.fields).toEqual(['activity_type', 'tags']);
+    // soup repaired to Zod-pass and errored has no usable output — neither is a candidate.
+    expect(ids).not.toContain('lesson-soup');
+    expect(ids).not.toContain('lesson-errored');
+    // ghost Zod-passed under another model: skipped as passed, not as model mismatch.
+    expect(ids).not.toContain('lesson-ghost');
+    expect(plan.modelMismatch).toBe(0);
   });
 });

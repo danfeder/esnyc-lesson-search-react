@@ -10,7 +10,9 @@
  *     Life Cycles, Arts drops Visual Arts.
  *   lesson-soup  — cooking_methods casing-only (Stovetop→stovetop, via the
  *     repair record); academic_integration adds Social Studies;
- *     academic_concepts: null → Social Studies: Food Traditions.
+ *     academic_concepts: null → Social Studies: Cultural Traditions;
+ *     cultural_heritage semantic swap (Native American → Indigenous, the
+ *     canonical spelling).
  *   lesson-weird — tags: casing fix (Plant Based→plant based) + semantic add
  *     (Garden Fresh); record is Zod-failed but has output (included with a
  *     warning).
@@ -26,6 +28,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDiffReport,
   diffValueSets,
+  parseArgs,
   parseCorpusRecords,
   renderMarkdown,
   type FieldDiff,
@@ -75,12 +78,27 @@ describe('diffValueSets', () => {
     expect(diffValueSets(['x'], []).dropped).toEqual(['x']);
   });
 
-  it('pairs duplicate-cased values one-to-one', () => {
-    // Two case-variants collapsing to one canonical value: one pairing, one drop.
+  it('routes within-side case-twin dedup into casing fixes, not semantic drops (item 8)', () => {
+    // Two case-variants collapsing to the surviving canonical spelling:
+    // a formatting cleanup, NOT a semantic removal.
+    const diff = diffValueSets(['Earth month', 'Earth Month'], ['Earth Month']);
+    expect(diff.unchanged).toEqual(['Earth Month']);
+    expect(diff.casingFixes).toEqual([{ from: 'Earth month', to: 'Earth Month' }]);
+    expect(diff.dropped).toEqual([]);
+    expect(diff.added).toEqual([]);
+  });
+
+  it('case-twin dedup also pairs against an unchanged survivor', () => {
     const diff = diffValueSets(['Winter', 'winter'], ['Winter']);
     expect(diff.unchanged).toEqual(['Winter']);
+    expect(diff.casingFixes).toEqual([{ from: 'winter', to: 'Winter' }]);
+    expect(diff.dropped).toEqual([]);
+  });
+
+  it('a genuinely removed value (no case twin surviving) stays a semantic drop', () => {
+    const diff = diffValueSets(['Earth month', 'Earth Month'], []);
+    expect(diff.dropped.sort()).toEqual(['Earth Month', 'Earth month']);
     expect(diff.casingFixes).toEqual([]);
-    expect(diff.dropped).toEqual(['winter']);
   });
 });
 
@@ -197,6 +215,14 @@ describe('buildDiffReport — per-field counts', () => {
     expect(field('academic_integration').addedValueCounts).toEqual({ 'Social Studies': 1 });
   });
 
+  it('treats a canonical-spelling swap as semantic, not casing (cultural_heritage)', () => {
+    const f = field('cultural_heritage');
+    expect(f.lessonsChangedSemantic).toBe(1); // soup: Native American → Indigenous
+    expect(f.lessonsCasingOnly).toBe(0);
+    expect(f.addedValueCounts).toEqual({ Indigenous: 1 });
+    expect(f.droppedValueCounts).toEqual({ 'Native American': 1 });
+  });
+
   it('partitions every compared lesson into exactly one bucket per field', () => {
     for (const f of report.fields) {
       expect(f.lessonsUnchanged + f.lessonsChangedSemantic + f.lessonsCasingOnly).toBe(
@@ -218,7 +244,7 @@ describe('buildDiffReport — academic_concepts (subject-keyed object)', () => {
   it('prefixes value tallies with the subject', () => {
     expect(f.addedValueCounts).toEqual({
       'Science: Life Cycles': 1,
-      'Social Studies: Food Traditions': 1,
+      'Social Studies: Cultural Traditions': 1,
     });
     expect(f.droppedValueCounts).toEqual({ 'Arts: Visual Arts': 1 });
   });
@@ -228,7 +254,7 @@ describe('buildDiffReport — academic_concepts (subject-keyed object)', () => {
     expect(roots?.subjects?.Science.added).toEqual(['Life Cycles']);
     expect(roots?.subjects?.Arts.dropped).toEqual(['Visual Arts']);
     const soup = f.changedLessons.find((l) => l.id === 'lesson-soup');
-    expect(soup?.subjects?.['Social Studies'].added).toEqual(['Food Traditions']);
+    expect(soup?.subjects?.['Social Studies'].added).toEqual(['Cultural Traditions']);
   });
 });
 
@@ -273,5 +299,18 @@ describe('renderMarkdown — plain-language report', () => {
   it('shows per-subject academic-concepts detail', () => {
     expect(md).toContain('Science: Life Cycles');
     expect(md).toContain('Arts: Visual Arts');
+  });
+});
+
+describe('parseArgs hardening', () => {
+  it('throws when a value-taking flag is missing its value', () => {
+    expect(() => parseArgs(['--run'])).toThrow(/--run requires a value/);
+    expect(() => parseArgs(['--corpus', '--help'])).toThrow(/--corpus requires a value/);
+    expect(() => parseArgs(['--out'])).toThrow(/--out requires a value/);
+  });
+
+  it('accepts valid values and still rejects unknown flags', () => {
+    expect(parseArgs(['--out', '/tmp/report.md']).out).toBe('/tmp/report.md');
+    expect(() => parseArgs(['--bogus'])).toThrow(/unknown flag/);
   });
 });
