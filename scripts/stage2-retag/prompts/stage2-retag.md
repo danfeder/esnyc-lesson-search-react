@@ -14,24 +14,34 @@ Call the `submit_tags` tool exactly once. Every property is required on every ca
 
 - **Evidence over plausibility.** Tag a value only when the body clearly supports it. A value that is merely plausible, age-typical, or thematically adjacent does NOT get tagged. False positives are worse than false negatives.
 - **Tag THIS body independently.** The library contains same-titled lesson variants whose content genuinely differs (different grades, different activities, different recipes). Tag each lesson independently from its own body — never assume a title implies the same tags as another lesson.
-- **Tasting is not cooking.** A short tasting at the end of a garden or discussion lesson does not make it a cooking lesson, does not add cooking methods, and does not add kitchen skills. Cooking requires students to actually prepare food in a substantial activity block.
+- **Tasting is not cooking.** A short tasting at the end of a garden or discussion lesson does not make it a cooking lesson, does not add cooking methods, and does not add kitchen skills. Cooking requires students to actually prepare food in a substantial activity block. Apply this mechanically: the test is whether the Agenda contains a step where STUDENTS prepare food. A listed tasting/closing snack, teacher-only prep ("wash fruit for tasting"), or kitchen tools in a materials list does not satisfy it.
+- **Thin-body guard.** Some bodies are metadata stubs — header fields with no agenda or teaching narrative. For these, transcribe what the header states and STOP. Tag only what the text explicitly supports; do not pad inference fields (cultural_responsiveness_features, SEL beyond a stated list, academic concepts beyond named skills) from a stub, because no teaching practice is visible to ground them.
 
 ## Field-by-field rules
 
 ### activity_type — at least one value
 
-Captures what students do AND (for `garden`) what the lesson is about.
+Captures what students DO (the activity mode), AND — for `garden` only — what the lesson is about. Work through this as a decision procedure, in order:
 
-- **`cooking`** — students prepare food hands-on in a substantial block (typically 10+ minutes): knife work, mixing, assembling a recipe, baking. Tasting is not cooking. Food must be produced: a lesson where students make soap, lotion, salves, herb sachets, or other cosmetics or crafts using kitchen tools and recipe-like steps is `craft`, NOT `cooking`.
-- **`garden`** — hybrid tag, fires two ways: (1) activity — students do hands-on horticulture or outdoor garden work (planting, watering, harvesting, composting), or are physically in the garden observing, identifying, or sketching; (2) topic — the lesson's subject matter is food, agriculture, gardening, garden ecosystems, food systems, food cultures, food workers, food traditions, or food distribution, even with no hands-on garden activity.
+1. **Tag the activity modes the body shows.** Scan the Agenda's activity blocks and tag each hands-on mode students actually do — `cooking`, `garden`, `craft` — using the per-tag rules below. A lesson can carry more than one of these (a garden-and-cook lesson is `[garden, cooking]`).
+2. **Decide `academic` LAST, by elimination.** If you have already tagged `cooking`, `garden`, or `craft`, you are DONE — never add `academic` to them. `academic` appears only ALONE, for the rare lesson where none of the other three apply. A cooking lesson with strong literacy or math content is still just `cooking` — the academic content belongs in `academic_integration`, not here; a garden lesson that does a lot of reading is still just `garden`. Do NOT treat `academic` as "this lesson has academic content" — that is what `academic_integration` is for. `academic` never co-occurs with any other tag.
+
+   _Negative example:_ a cooking lesson built around a read-aloud and recipe-fraction math is `[cooking]`, NOT `[cooking, academic]`. The reading and math are recorded under `academic_integration`/`academic_concepts`.
+
+Per-mode rules:
+
+- **`cooking`** — students prepare food hands-on in a substantial block (typically 10+ minutes): knife work, mixing, assembling a recipe, baking. Apply the tasting≠cooking test mechanically: scan the Agenda for a step where STUDENTS prepare food. If no such step exists, do NOT tag `cooking` — even if the lesson lists a tasting menu (e.g. "Tasting: Plant Part Smoothie"), mentions teacher prep ("wash fruit for tasting"), or names kitchen tools in a materials list. A tools-identification game or a plant lesson with a closing tasting is NOT cooking. Food must be produced by students: a lesson where students make soap, lotion, salves, herb sachets, or other cosmetics or crafts using kitchen tools and recipe-like steps is `craft`, NOT `cooking`.
+- **`garden`** — hybrid tag, fires two ways: (1) activity — students do hands-on horticulture or outdoor garden work (planting, watering, harvesting, composting), or are physically in the garden observing, identifying, or sketching; (2) topic — the lesson's subject matter is plants, agriculture, gardening, or garden ecosystems (how plants grow, plant parts, soil, pollinators, the garden as a system), even with no hands-on garden activity. The topic arm covers gardening/agriculture as subject matter, NOT every food-adjacent discussion: a lesson that discusses food systems, food workers, food labor, or food distribution with no gardening or plant/agriculture subject matter is NOT `garden` on that basis — it is `academic` (activity_type reflects the activity mode, not the lesson's broad subject matter).
 - **`craft`** — students make a tangible non-food object in a substantial block: collage, mural, puppet, cyanotype, decorated apron, soap, lotion. A 5-minute icebreaker sketch does not qualify.
-- **`academic`** — mode-exclusive fallback, rare. Only when none of the other three apply: no hands-on cooking/craft, no garden activity, AND the topic is not food/agriculture/garden-related. `academic` never co-occurs with any other tag.
+- **`academic`** — mode-exclusive fallback, rare; assigned only by the elimination step above. A food-systems or food-workers discussion lesson with no cooking, craft, or gardening activity is `academic`.
 
 ### grade_levels — source-doc claim ONLY
 
 Record exactly the grades the lesson itself states (header line, "Grades:" field, a grade-level matrix or table). Expand explicitly stated ranges: "Grades 3-5" → 3, 4, 5; "K-2" → K, 1, 2. "Pre-K" maps to PK.
 
-If the body states no grades anywhere, return an empty array. NEVER infer grades from age-appropriateness, vocabulary level, activity difficulty, or what feels right for the content. A silent document gets no grades.
+Named grade bands are source-doc claims too — expand them via this fixed mapping (use these exact tokens): "Middle School" → 6, 7, 8; "Elementary" → K, 1, 2, 3, 4, 5; "Lower Elementary" → K, 1, 2; "Upper Elementary" → 3, 4, 5; "All Grades" → 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8 (the full configured grade list). The eleven valid grade tokens are exactly: 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8.
+
+If the body states no grades or band anywhere, return an empty array. NEVER infer grades from age-appropriateness, vocabulary level, activity difficulty, or what feels right for the content. A truly silent document gets no grades. (A document that states a band is NOT silent — expand the band.)
 
 ### tags
 
@@ -44,7 +54,9 @@ Tag the seasons (Fall, Winter, Spring, Summer) the lesson explicitly claims, or 
 
 ### cultural_heritage
 
-Tag the heritages the lesson genuinely engages — a recipe's cultural origin taught as such, a cultural tradition or foodway studied, a community's history centered in the lesson. Prefer the most specific canonical value the body supports (a Dominican sancocho lesson is tagged with the Dominican value, not just a broad regional one; add broader values only when the body itself works at that level). A passing mention of a country or food name is not engagement — empty array is common.
+Tag the heritages the lesson genuinely engages — a recipe's cultural origin taught as such, a cultural tradition or foodway studied, a community's history centered in the lesson. The lesson must be culturally ABOUT the cuisine or culture. Prefer the most specific canonical value the body supports (a Dominican sancocho lesson is tagged with the Dominican value, not just a broad regional one; add broader values only when the body itself works at that level). A passing mention of a country or food name is not engagement — empty array is common.
+
+NEVER infer heritage from indirect signals. Specifically: never infer a heritage from a person's neighborhood, address, appearance, name, or other demographic detail; never tag a heritage for a passing food mention ("churros, a Mexican dessert" inside a labor lesson is NOT Mexican heritage); and a botanical-origin statement ("cowpeas were domesticated in Africa") is plant geography, not cultural engagement — it does not support a West African or African heritage tag. When in doubt, return an empty array.
 
 ### cultural_responsiveness_features
 
@@ -60,9 +72,11 @@ For EACH of the six subjects, report the academic concepts the lesson teaches, i
 
 - **`framework`** — canonical concept names from the schema's enum (the library's framework vocabulary). Only concepts the lesson actually teaches or has students practice.
 - **`everyday`** — the same concepts in everyday words: short, plain phrases a teacher or parent would actually type into a search box ("how plants make food", "where seeds come from", "fractions in recipes"). No jargon, no enum constraint.
-- **`synonym_pairs`** — explicit links: each pair maps one everyday phrase to the one framework concept it expresses. Every framework concept you tag should appear in at least one pair when a natural everyday phrasing exists. These pairs feed the library's search synonyms.
+- **`synonym_pairs`** — explicit links: each pair maps one everyday phrase to the one framework concept it expresses. Discipline: every pair's `everyday` string must be COPIED VERBATIM from this subject's own `everyday` array (same response), and every pair's `framework` from this subject's own `framework` array — do not introduce a phrase in a pair that is not in the corresponding list. Every framework concept you tag should appear in at least one pair whenever a sensible everyday counterpart exists. (An everyday phrase that maps to no framework concept may stay unpaired; a framework concept should not be left unpaired when a natural everyday phrasing exists.) These pairs feed the library's search synonyms.
 
 Subjects with no concepts get empty arrays for all three. The subject placement should match where the concept is taught (photosynthesis under Science, recipe fractions under Math).
+
+Consistency requirement (both directions): a subject carries framework concepts if and only if it appears in `academic_integration`. If you tag concepts under a subject, that subject must be in `academic_integration`; conversely, if a concept feels real but the subject does not merit the `academic_integration` tag, the concept is below the substantive bar — drop it.
 
 ### social_emotional_learning
 
@@ -82,4 +96,6 @@ Tag an observance only when the lesson is explicitly built around or tied to it 
 
 ### garden_skills
 
-Tag the garden skills students hands-on practice or that the lesson explicitly teaches as a focus (a planting lesson where students also briefly water gets Planting; add Watering techniques only if watering is taught/practiced as a skill, not as incidental care).
+garden_skills describe GARDEN practice — only tag them for activities happening in or about a garden. A skill-shaped activity that happens in the kitchen or classroom without garden material or garden context does NOT get a garden_skills tag: smelling cooking spices, washing produce, or an indoor game with plant pictures is not Sensory exploration / Harvesting / Garden exploration. A cooking lesson where nobody visits the garden gets an empty array, even when its recipe discusses crops or soil.
+
+Within a garden context, tag the garden skills students hands-on practice or that the lesson explicitly teaches as a focus (a planting lesson where students also briefly water gets Planting; add Watering techniques only if watering is taught/practiced as a skill, not as incidental care).
