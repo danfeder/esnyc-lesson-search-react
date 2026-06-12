@@ -21,10 +21,13 @@
  *   --resume            skip ids already in the output JSONL whose latest
  *                       record carries the CURRENT prompt+schema hash, the
  *                       same model, the same --strict flag, the same
- *                       tool-choice shape, the same lesson body hash, and no
- *                       error (a prompt/schema edit changes the hash and
+ *                       tool-choice shape, the same proxy participation
+ *                       (--base-url set vs direct), the same lesson body hash,
+ *                       and no error (a prompt/schema edit changes the hash and
  *                       invalidates resume-merging; a corpus body change
- *                       invalidates that lesson's record)
+ *                       invalidates that lesson's record; proxy and direct
+ *                       runs never resume-merge — the proxy cloak injects
+ *                       ~1.4K tokens, a materially different effective prompt)
  *   --output <path>     output JSONL (default artifacts/retag-run.jsonl)
  *   --repair            repair mode: re-run ONLY Zod-failed fields of
  *                       existing records as per-field calls and append
@@ -148,6 +151,16 @@ const DEFAULT_OUTPUT_PATH = path.join(ARTIFACTS_DIR, 'retag-run.jsonl');
  * under the non-streaming SDK-timeout guidance (~16K).
  */
 export const MAX_TOKENS = 4096;
+
+/**
+ * Output budget for the --tool-choice-auto path only. fable's always-on
+ * thinking bills as output and shares this cap, so a verbose-thinking lesson
+ * could hit max_tokens before the model ever emits the tool_use block —
+ * producing a billed, errored (MissingToolUseError) record. 8192 gives the
+ * thinking headroom while staying under the non-streaming SDK-timeout
+ * guidance (~16K). The forced path stays at MAX_TOKENS (4096) untouched.
+ */
+export const MAX_TOKENS_TOOL_CHOICE_AUTO = 8192;
 
 /**
  * Published per-MTok pricing (USD), verified 2026-06-12 against the
@@ -439,6 +452,16 @@ export interface CurrentRunIdentity {
    * absent `toolChoice` reads as forced (false here).
    */
   toolChoiceAuto: boolean;
+  /**
+   * Whether the current run routes through the CLIProxyAPI proxy (--base-url
+   * set). Part of the resume identity (mirroring `strict`/`toolChoiceAuto`):
+   * the proxy cloak injects ~1.4K tokens proxy-side, so proxied and direct
+   * calls run under materially different effective prompts and must NOT be
+   * resume-merged. A record is proxied iff its `effectiveBaseUrl` is present
+   * AND not the `'direct'` sentinel (legacy records without the field read as
+   * direct).
+   */
+  proxied: boolean;
   /** id → sha256 of the CURRENT corpus body for that lesson. */
   bodyHashById: Map<string, string>;
 }
@@ -446,10 +469,10 @@ export interface CurrentRunIdentity {
 /**
  * Ids `--resume` may skip: the latest record for the id carries the CURRENT
  * prompt+schema hash, the same model, the same strict flag, the same
- * tool-choice shape, the same corpus body hash, and completed without an API
- * error. (Zod-failed records still count as done — the repair pass owns
- * those.) Any mismatch — including a record written before
- * bodyHash/strict/toolChoice existed — re-runs the lesson.
+ * tool-choice shape, the same proxy participation, the same corpus body hash,
+ * and completed without an API error. (Zod-failed records still count as done
+ * — the repair pass owns those.) Any mismatch — including a record written
+ * before bodyHash/strict/toolChoice existed — re-runs the lesson.
  */
 export function computeResumableIds(
   records: RunRecord[],
@@ -457,11 +480,16 @@ export function computeResumableIds(
 ): Set<string> {
   const resumable = new Set<string>();
   for (const [id, record] of latestRecordById(records)) {
+    // A record is proxied iff effectiveBaseUrl is present AND not 'direct'
+    // (legacy records without the field read as direct).
+    const recordProxied =
+      record.effectiveBaseUrl !== undefined && record.effectiveBaseUrl !== DIRECT_BASE_URL;
     if (
       record.promptSchemaHash === current.promptSchemaHash &&
       record.model === current.model &&
       record.strict === current.strict &&
       (record.toolChoice === 'auto') === current.toolChoiceAuto &&
+      recordProxied === current.proxied &&
       record.bodyHash === current.bodyHashById.get(id) &&
       record.error === null
     ) {
@@ -823,8 +851,11 @@ Flags:
   --model <id>       Anthropic model ID (default ${DEFAULT_MODEL})
   --limit <N>        only process the first N corpus records (dry-run)
   --resume           skip ids already in the output JSONL (same prompt+schema
-                     hash + model + strict flag + lesson body hash + no error;
-                     a prompt edit re-runs all, a body edit re-runs that lesson)
+                     hash + model + strict flag + tool-choice shape + proxy
+                     participation + lesson body hash + no error; a prompt edit
+                     re-runs all, a body edit re-runs that lesson; proxy and
+                     direct runs never resume-merge — the cloak injects ~1.4K
+                     tokens proxy-side)
   --output <path>    output JSONL (default scripts/stage2-retag/artifacts/retag-run.jsonl)
   --repair           repair mode: per-field re-runs of Zod-failed fields,
                      merged + provenance-marked (appends phase:'repair' records)
@@ -1047,7 +1078,7 @@ export function buildMessageRequest(params: {
     : params.systemPrompt;
   return {
     model: params.model,
-    max_tokens: MAX_TOKENS,
+    max_tokens: params.toolChoiceAuto ? MAX_TOKENS_TOOL_CHOICE_AUTO : MAX_TOKENS,
     system: [{ type: 'text', text: systemText, cache_control: { type: 'ephemeral' } }],
     tools: [params.tool as Anthropic.Messages.Tool],
     tool_choice: params.toolChoiceAuto
@@ -1139,6 +1170,7 @@ async function runMainPass(args: Args): Promise<void> {
       model: args.model,
       strict: args.strict,
       toolChoiceAuto: args.toolChoiceAuto,
+      proxied: args.baseUrl !== undefined,
       bodyHashById,
     });
     const before = lessons.length;

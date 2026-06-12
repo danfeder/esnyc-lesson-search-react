@@ -29,6 +29,8 @@ import {
 import { loadVocab } from './vocab';
 import {
   DIRECT_BASE_URL,
+  MAX_TOKENS,
+  MAX_TOKENS_TOOL_CHOICE_AUTO,
   MissingToolUseError,
   PRICING_PER_MTOK,
   TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM,
@@ -298,12 +300,13 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
   const HASH = 'current-hash';
   const MODEL = 'claude-opus-4-7';
 
-  function identity(ids: string[], strict = false, toolChoiceAuto = false) {
+  function identity(ids: string[], strict = false, toolChoiceAuto = false, proxied = false) {
     return {
       promptSchemaHash: HASH,
       model: MODEL,
       strict,
       toolChoiceAuto,
+      proxied,
       bodyHashById: defaultBodyHashes(ids),
     };
   }
@@ -359,6 +362,49 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
     );
     expect(computeResumableIds(records, identity(['a', 'b'], false))).toEqual(new Set(['a']));
     expect(computeResumableIds(records, identity(['a', 'b'], true))).toEqual(new Set(['b']));
+  });
+
+  it('requires matching proxy participation (mirrors strict/toolChoiceAuto)', () => {
+    const PROXY = 'http://127.0.0.1:8317/api/provider/anthropic';
+    const records = parseRunRecords(
+      jsonl([
+        makeRecord({
+          id: 'direct',
+          promptSchemaHash: HASH,
+          model: MODEL,
+          effectiveBaseUrl: DIRECT_BASE_URL,
+        }),
+        makeRecord({
+          id: 'proxied',
+          promptSchemaHash: HASH,
+          model: MODEL,
+          effectiveBaseUrl: PROXY,
+        }),
+      ])
+    );
+    // Current run = direct → only the direct record is resumable.
+    expect(
+      computeResumableIds(records, identity(['direct', 'proxied'], false, false, false))
+    ).toEqual(new Set(['direct']));
+    // Current run = proxied → only the proxied record is resumable.
+    expect(
+      computeResumableIds(records, identity(['direct', 'proxied'], false, false, true))
+    ).toEqual(new Set(['proxied']));
+  });
+
+  it('treats a legacy record without effectiveBaseUrl as direct', () => {
+    const legacy = { ...makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL }) } as Record<
+      string,
+      unknown
+    >;
+    delete legacy.effectiveBaseUrl;
+    const records = parseRunRecords(JSON.stringify(legacy));
+    expect(records).toHaveLength(1);
+    // A direct current run resumes it; a proxied current run does not.
+    expect(computeResumableIds(records, identity(['a'], false, false, false))).toEqual(
+      new Set(['a'])
+    );
+    expect(computeResumableIds(records, identity(['a'], false, false, true))).toEqual(new Set());
   });
 
   it('requires the record bodyHash to match the CURRENT corpus body hash', () => {
@@ -1013,6 +1059,8 @@ describe('--tool-choice-auto escape hatch (Fable experiment)', () => {
         toolChoiceAuto: false,
       });
       expect(req.tool_choice).toEqual({ type: 'tool', name: 'submit_tags' });
+      // Forced path keeps the canonical 4096 cap untouched.
+      expect(req.max_tokens).toBe(MAX_TOKENS);
       const systemBlocks = req.system as Array<{ text: string; cache_control?: unknown }>;
       expect(systemBlocks).toHaveLength(1);
       // No addendum on the forced path: system text is byte-identical to the prompt.
@@ -1036,6 +1084,9 @@ describe('--tool-choice-auto escape hatch (Fable experiment)', () => {
         toolChoiceAuto: true,
       });
       expect(req.tool_choice).toEqual({ type: 'auto' });
+      // Auto path gets the 8192 headroom (fable's always-on thinking shares the cap).
+      expect(req.max_tokens).toBe(MAX_TOKENS_TOOL_CHOICE_AUTO);
+      expect(MAX_TOKENS_TOOL_CHOICE_AUTO).toBeGreaterThan(MAX_TOKENS);
       const systemBlocks = req.system as Array<{ text: string; cache_control?: unknown }>;
       // Still a SINGLE system block (the addendum is concatenated, not a new block).
       expect(systemBlocks).toHaveLength(1);
@@ -1147,6 +1198,7 @@ describe('--tool-choice-auto escape hatch (Fable experiment)', () => {
         model: MODEL,
         strict: false,
         toolChoiceAuto,
+        proxied: false,
         bodyHashById: defaultBodyHashes(ids),
       };
     }
