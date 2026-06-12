@@ -1592,14 +1592,24 @@ describe('corpus exclusions (B3.5c — deletion-slated lessons skipped in the ru
       }
     });
 
-    it('loads the real checked-in data/corpus-exclusions.json with the 3 deletion verdicts', () => {
+    it('loads the real checked-in data/corpus-exclusions.json with the B3.5c + B3.5b verdicts', () => {
       const entries = loadCorpusExclusions(path.join(MODULE_DIR, 'data/corpus-exclusions.json'));
-      expect(entries).toHaveLength(3);
-      // ids must match the answer-key-exclusions.json source verbatim.
+      // 3 original B3.5c deletion verdicts (= the answer-key-exclusions.json set)
+      // + 9 added from the B3.5b completeness-screen user verdicts (7 user-ruled
+      // non-lessons/drafts + 2 metadata-card records whose Doc 404'd in Drive).
+      expect(entries).toHaveLength(12);
+      // The 3 B3.5c ids must still be a SUBSET (the corpus list is the
+      // answer-key set PLUS the B3.5b additions; it no longer equals it).
       const answerKey = JSON.parse(
         readFileSync(path.join(MODULE_DIR, 'data/answer-key-exclusions.json'), 'utf8')
       ) as { excluded: Array<{ id: string }> };
-      expect(entries.map((e) => e.id).sort()).toEqual(answerKey.excluded.map((e) => e.id).sort());
+      const corpusIds = new Set(entries.map((e) => e.id));
+      for (const { id } of answerKey.excluded) {
+        expect(corpusIds.has(id)).toBe(true);
+      }
+      // The 2 re-extraction-fallback ids (Doc 404'd) must be present.
+      expect(corpusIds.has('1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX')).toBe(true);
+      expect(corpusIds.has('1SDsLLHlfBqIHSxvVVQrbOk96hlOkxOse')).toBe(true);
     });
   });
 
