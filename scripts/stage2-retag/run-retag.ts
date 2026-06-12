@@ -744,6 +744,15 @@ export async function mapWithConcurrency<T, R>(
 interface Args {
   model: string;
   limit?: number;
+  /**
+   * Optional path to a JSON array of ids OR a JSONL file whose records carry an
+   * `id` field. When set, the runner processes ONLY corpus records whose id is
+   * in that set (intersection); ids requested but absent from the corpus warn
+   * to stderr. Composes with --limit (limit applies AFTER the id filter),
+   * --resume, and --repair. Intended use: the answer-key subset run, e.g.
+   * `--ids scripts/stage2-retag/artifacts/answer-key.final.jsonl`.
+   */
+  ids?: string;
   resume: boolean;
   output: string;
   repair: boolean;
@@ -807,6 +816,10 @@ export function parseArgs(argv: string[]): Args {
         a.limit = requireIntFlag(flag, next, 1);
         i++;
         break;
+      case '--ids':
+        a.ids = requireFlagValue(flag, next);
+        i++;
+        break;
       case '--resume':
         a.resume = true;
         break;
@@ -851,6 +864,13 @@ Usage:
 Flags:
   --model <id>       Anthropic model ID (default ${DEFAULT_MODEL})
   --limit <N>        only process the first N corpus records (dry-run)
+  --ids <path>       process ONLY corpus records whose id is in this file: a
+                     JSON array of id strings OR a JSONL file whose records
+                     carry an "id" field (e.g. answer-key.final.jsonl). Shape
+                     detected by the first non-whitespace char. Requested ids
+                     absent from the corpus warn to stderr. Composes with
+                     --limit (limit applies AFTER the id filter), --resume, and
+                     --repair (which restricts to the same id subset).
   --resume           skip ids already in the output JSONL (same prompt+schema
                      hash + model + strict flag + tool-choice shape + proxy
                      participation + lesson body hash + no error; a prompt edit
@@ -885,7 +905,84 @@ Env (--base-url set): ANTHROPIC_API_KEY required (the proxy-side key).
 Deferred A8 live check (single command, needs Console credits):
   npx tsx scripts/stage2-retag/run-retag.ts --limit 3 --concurrency 1
   (record 1 pays the cache write; records 2-3 must show cache_read_input_tokens > 0)
+
+Answer-key subset run (B3 — the 57 key lessons only):
+  npx tsx scripts/stage2-retag/run-retag.ts \\
+    --ids scripts/stage2-retag/artifacts/answer-key.final.jsonl \\
+    --model <id> [--tool-choice-auto] [--base-url <proxy>] --output <path>
 `;
+
+// ---------------------------------------------------------------------------
+// --ids subset loading (pure, unit-tested — no filesystem)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses an --ids file's TEXT into an ordered, de-duplicated id list. The shape
+ * is detected by the first non-whitespace character: `[` → a JSON array of
+ * strings; anything else → JSONL records each carrying a string `id` field
+ * (the answer-key.final.jsonl shape). Blank JSONL lines are skipped. Throws on
+ * an empty file, a non-string array element, a record without a string `id`,
+ * or malformed JSON — a bad --ids file must fail loudly, never silently run an
+ * unintended subset.
+ */
+export function loadIdSet(text: string): string[] {
+  const trimmed = text.trim();
+  if (trimmed === '') throw new Error('--ids file is empty');
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  const push = (id: string): void => {
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  };
+  if (trimmed[0] === '[') {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (!Array.isArray(parsed)) {
+      throw new Error('--ids file is a JSON value but not an array of strings');
+    }
+    for (const element of parsed) {
+      if (typeof element !== 'string' || element === '') {
+        throw new Error(
+          `--ids JSON array contains a non-string (or empty) element: ${JSON.stringify(element)}`
+        );
+      }
+      push(element);
+    }
+    return ids;
+  }
+  for (const line of trimmed.split('\n')) {
+    if (line.trim() === '') continue;
+    const raw: unknown = JSON.parse(line);
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      throw new Error(`--ids JSONL line is not an object: ${line.slice(0, 80)}`);
+    }
+    const id = (raw as Record<string, unknown>).id;
+    if (typeof id !== 'string' || id === '') {
+      throw new Error(
+        `--ids JSONL record lacks a non-empty string "id" field: ${line.slice(0, 80)}`
+      );
+    }
+    push(id);
+  }
+  return ids;
+}
+
+/**
+ * Intersects a corpus list with a requested id set. Returns the kept lessons in
+ * CORPUS order (stable downstream ordering) plus the requested ids absent from
+ * the corpus, in REQUEST order (so the operator's warning lists them as typed).
+ */
+export function filterCorpusByIds<T extends { id: string }>(
+  lessons: T[],
+  requestedIds: string[]
+): { kept: T[]; missingIds: string[] } {
+  const requested = new Set(requestedIds);
+  const present = new Set(lessons.map((lesson) => lesson.id));
+  const kept = lessons.filter((lesson) => requested.has(lesson.id));
+  const missingIds = requestedIds.filter((id) => !present.has(id));
+  return { kept, missingIds };
+}
 
 // ---------------------------------------------------------------------------
 // API plumbing
@@ -1171,6 +1268,21 @@ async function runMainPass(args: Args): Promise<void> {
     corpus.map((lesson) => [lesson.id, computeBodyHash(lesson.content_text)])
   );
   let lessons = corpus;
+  // --ids: restrict to the intersection of the corpus with the requested id
+  // set (e.g. the 57-lesson answer-key subset). Applied BEFORE --limit so the
+  // limit caps the filtered set, and before --resume so resume only skips
+  // within the chosen subset. Requested ids absent from the corpus warn.
+  if (args.ids !== undefined) {
+    const requestedIds = loadIdSet(readFileSync(args.ids, 'utf8'));
+    const { kept, missingIds } = filterCorpusByIds(lessons, requestedIds);
+    lessons = kept;
+    console.log(`--ids: ${requestedIds.length} requested → ${lessons.length} present in corpus.`);
+    if (missingIds.length > 0) {
+      console.warn(
+        `  warning: ${missingIds.length} requested id(s) not in the corpus: ${missingIds.join(', ')}`
+      );
+    }
+  }
   if (args.limit !== undefined) lessons = lessons.slice(0, args.limit);
 
   if (args.resume && existsSync(args.output)) {
@@ -1326,7 +1438,26 @@ async function runRepairPass(args: Args): Promise<void> {
   if (!existsSync(args.output)) {
     throw new Error(`--repair needs an existing output file: ${args.output}`);
   }
-  const latest = latestRecordById(parseRunRecords(readFileSync(args.output, 'utf8')));
+  let latest = latestRecordById(parseRunRecords(readFileSync(args.output, 'utf8')));
+
+  // --ids: restrict the repair pass to records whose id is in the requested set
+  // (mirrors the main pass's subset behavior). Requested ids absent from the
+  // run output warn; the candidate planner then works over the filtered map.
+  if (args.ids !== undefined) {
+    const requestedIds = loadIdSet(readFileSync(args.ids, 'utf8'));
+    const requested = new Set(requestedIds);
+    const filtered = new Map([...latest].filter(([id]) => requested.has(id)));
+    const missingIds = requestedIds.filter((id) => !latest.has(id));
+    console.log(
+      `--ids: ${requestedIds.length} requested → ${filtered.size} present in run output.`
+    );
+    if (missingIds.length > 0) {
+      console.warn(
+        `  warning: ${missingIds.length} requested id(s) not in the run output: ${missingIds.join(', ')}`
+      );
+    }
+    latest = filtered;
+  }
 
   const bodyHashById = new Map(
     [...lessonBodyById].map(([id, body]) => [id, computeBodyHash(body)])

@@ -45,8 +45,10 @@ import {
   extractForcedToolResult,
   extractRepairedValue,
   fieldErrorsFromZod,
+  filterCorpusByIds,
   isInsideArtifactsDir,
   latestRecordById,
+  loadIdSet,
   mapWithConcurrency,
   mergeRepairedFields,
   normalizeBaseUrl,
@@ -1218,6 +1220,99 @@ describe('--tool-choice-auto escape hatch (Fable experiment)', () => {
       expect(computeResumableIds(records, identity(['forced', 'auto'], true))).toEqual(
         new Set(['auto'])
       );
+    });
+  });
+});
+
+describe('--ids flag (subset run over a JSONL/JSON id file)', () => {
+  describe('parseArgs', () => {
+    it('defaults ids to undefined (full corpus)', () => {
+      expect(parseArgs([]).ids).toBeUndefined();
+      expect(parseArgs(['--model', 'claude-fable-5']).ids).toBeUndefined();
+    });
+
+    it('captures the --ids path value', () => {
+      const args = parseArgs(['--ids', 'scripts/stage2-retag/artifacts/answer-key.final.jsonl']);
+      expect(args.ids).toBe('scripts/stage2-retag/artifacts/answer-key.final.jsonl');
+    });
+
+    it('requires a value (and rejects a following flag as the value)', () => {
+      expect(() => parseArgs(['--ids'])).toThrow(/--ids requires a value/);
+      expect(() => parseArgs(['--ids', '--resume'])).toThrow(/--ids requires a value/);
+    });
+
+    it('composes with --limit, --resume, --repair', () => {
+      const args = parseArgs(['--ids', 'key.jsonl', '--limit', '5', '--resume', '--repair']);
+      expect(args.ids).toBe('key.jsonl');
+      expect(args.limit).toBe(5);
+      expect(args.resume).toBe(true);
+      expect(args.repair).toBe(true);
+    });
+  });
+
+  describe('loadIdSet (detects JSON array vs JSONL by first non-whitespace char)', () => {
+    it('parses a JSON array of strings', () => {
+      expect(loadIdSet('["a", "b", "c"]')).toEqual(['a', 'b', 'c']);
+    });
+
+    it('parses a JSON array with surrounding whitespace/newlines', () => {
+      expect(loadIdSet('\n  [\n  "a",\n  "b"\n]\n')).toEqual(['a', 'b']);
+    });
+
+    it('parses JSONL records carrying an `id` field', () => {
+      const jsonl = '{"id":"a","activity_type":["garden"]}\n{"id":"b"}\n';
+      expect(loadIdSet(jsonl)).toEqual(['a', 'b']);
+    });
+
+    it('skips blank JSONL lines', () => {
+      expect(loadIdSet('{"id":"a"}\n\n  \n{"id":"b"}\n')).toEqual(['a', 'b']);
+    });
+
+    it('dedupes repeated ids preserving first-seen order', () => {
+      expect(loadIdSet('["a","b","a","c"]')).toEqual(['a', 'b', 'c']);
+      expect(loadIdSet('{"id":"a"}\n{"id":"b"}\n{"id":"a"}\n')).toEqual(['a', 'b']);
+    });
+
+    it('throws on an empty file', () => {
+      expect(() => loadIdSet('   \n  ')).toThrow(/empty/i);
+    });
+
+    it('throws when a JSON array contains a non-string element', () => {
+      expect(() => loadIdSet('["a", 3, "b"]')).toThrow(/string/i);
+    });
+
+    it('throws when a JSONL record lacks a string `id`', () => {
+      expect(() => loadIdSet('{"id":"a"}\n{"activity_type":[]}\n')).toThrow(/id/i);
+    });
+
+    it('throws on malformed JSONL', () => {
+      expect(() => loadIdSet('{"id":"a"}\nnot json\n')).toThrow();
+    });
+  });
+
+  describe('filterCorpusByIds (intersection + missing report)', () => {
+    const lessons = [
+      { id: 'a', content_text: 'A' },
+      { id: 'b', content_text: 'B' },
+      { id: 'c', content_text: 'C' },
+    ];
+
+    it('keeps only corpus records whose id is in the set (corpus order preserved)', () => {
+      const { kept, missingIds } = filterCorpusByIds(lessons, ['c', 'a']);
+      expect(kept.map((l) => l.id)).toEqual(['a', 'c']);
+      expect(missingIds).toEqual([]);
+    });
+
+    it('reports requested ids absent from the corpus (request order preserved)', () => {
+      const { kept, missingIds } = filterCorpusByIds(lessons, ['a', 'zzz', 'b', 'qqq']);
+      expect(kept.map((l) => l.id)).toEqual(['a', 'b']);
+      expect(missingIds).toEqual(['zzz', 'qqq']);
+    });
+
+    it('returns an empty kept set when no ids intersect', () => {
+      const { kept, missingIds } = filterCorpusByIds(lessons, ['x', 'y']);
+      expect(kept).toEqual([]);
+      expect(missingIds).toEqual(['x', 'y']);
     });
   });
 });
