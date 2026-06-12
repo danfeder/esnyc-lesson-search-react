@@ -13,7 +13,7 @@
 
 **Goal:** Re-tag the full live corpus (**767 lessons**, `retired_at IS NULL`) from lesson bodies against the locked canonical vocabulary — 12 fields in the main pass — with per-field enum enforcement, an answer-key eval gate ("beats v3"), a user-gated staged apply with rollback, embeddings regeneration, `search_synonyms` population (PR 3b), and cleanup of the PR 5 + PR 6 rollback tables. cooking_skills + main_ingredients follow in a second pass after a curriculum-team mini-worksheet.
 
-**Architecture (locked):** TypeScript+Zod batch runner at `scripts/stage2-retag/` — export-corpus / run-retag / validate-output / generate-diff-report / prepare-apply — one **monolithic** enum-forced call per lesson, **synchronous** API, model picked empirically (claude-opus-4-7 vs claude-sonnet-4-6 on the answer key). Mirrors (never extends) the canonical call shape verified in `docs/plans/pr6-stage2-retag-evidence/oq1-call-shape-confirmation.md`: bare `new Anthropic({apiKey})`, `max_tokens` sized for ~12-field output, `system` array block + single forced tool each carrying `cache_control: {type:'ephemeral'}`, enums inline in `input_schema`, `tool_choice: {type:'tool', name:'submit_tags'}`, single user turn = lesson body, post-hoc Zod validation (enum adherence is NOT server-guaranteed), per-record usage accounting (eval-script plumbing, incl. `cache_creation/cache_read` counters).
+**Architecture (locked):** TypeScript+Zod batch runner at `scripts/stage2-retag/` — export-corpus / run-retag / validate-output / generate-diff-report / prepare-apply — one **monolithic** enum-forced call per lesson, **synchronous** API, model picked empirically (claude-opus-4-8 vs claude-sonnet-4-6 on the answer key; Opus contestant moved 4-7→4-8 on 2026-06-12 — identical pricing/tokenizer, no API changes). Mirrors (never extends) the canonical call shape verified in `docs/plans/pr6-stage2-retag-evidence/oq1-call-shape-confirmation.md`: bare `new Anthropic({apiKey})`, `max_tokens` sized for ~12-field output, `system` array block + single forced tool each carrying `cache_control: {type:'ephemeral'}`, enums inline in `input_schema`, `tool_choice: {type:'tool', name:'submit_tags'}`, single user turn = lesson body, post-hoc Zod validation (enum adherence is NOT server-guaranteed), per-record usage accounting (eval-script plumbing, incl. `cache_creation/cache_read` counters).
 
 **The 12 main-pass fields + vocab sources:**
 
@@ -91,7 +91,7 @@ All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans
 
 ### A6 — Runner
 - `scripts/stage2-retag/run-retag.ts`: reads `corpus.jsonl`, calls the API per lesson (canonical shape per the oq1 artifact §2 — two `cache_control` breakpoints: tool + system; body as single user turn), concurrency 5 (`mapWithConcurrency` precedent from the eval script), SDK default retries.
-- Flags: `--model` (default `claude-opus-4-7`), `--limit N` (dry-run), `--resume` (skip ids already in output JSONL), `--output` path.
+- Flags: `--model` (default `claude-opus-4-8` since 2026-06-12; was 4-7), `--limit N` (dry-run), `--resume` (skip ids already in output JSONL), `--output` path.
 - Appends one JSONL record per lesson: id, model, prompt+schema hash, raw tool_use input, Zod parse result, usage (incl. cache counters), per-record cost, latency, error.
 - Repair pass: `--repair` mode re-runs ONLY Zod-failed fields as per-field calls (today's PROD shape verbatim — single-field tool, same prompt section) and merges results.
 - API key: `ANTHROPIC_CONSOLE_API_KEY` from `.env.local` (the `ANTHROPIC_API_KEY` there is the CLIProxyAPI proxy-side key and 401s against the direct API — Session-1 finding). Check at execution whether `strict: true` tool mode is available on SDK ^0.95 — if yes, evaluate enabling it (the dry-run saw enum non-enforcement inflate outputs without it); Zod + repair pass remains the backstop regardless.
@@ -106,7 +106,7 @@ All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans
 
 ### A8 — Dry-run + iteration (≤20 lessons; allowed without further approval)
 - Run `--limit 15` (stratified ids from the corpus by body length), inspect every record against its body, iterate the prompt (document each iteration in `artifacts/dryrun-notes.md`), re-run validate + diff on the dry-run slice.
-- Capture measured per-lesson token mass + projected 767-lesson cost for both `claude-opus-4-7` and `claude-sonnet-4-6` (one 15-lesson run each — both contestants' prompts must be final-identical).
+- Capture measured per-lesson token mass + projected 767-lesson cost for both `claude-opus-4-8` and `claude-sonnet-4-6` (one 15-lesson run each — both contestants' prompts must be final-identical; the 2026-06-12 4-7 dry-run stays as the E3-comparable baseline).
 - **Verify:** all dry-run records Zod-pass (after repair at most); projected cost within ~2× of the $24/$14 design estimates — if not, stop and report.
 - **Commit:** `feat(stage2-retag): dry-run artifacts + cost confirmation`
 
