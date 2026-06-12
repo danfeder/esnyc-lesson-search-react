@@ -1036,3 +1036,13 @@ Empirical query of TEST DB against the audit-cited examples + corpus-level prove
 **Commits:**
 
 - `e167832` — `docs(metadata-rebuild): walkthrough session 9 — D8 phase-2 dropped (audit-cited errors are v3-inheritance, not reviewer judgment) + Stage 2 reviewer-validation UX added as deferred walk`
+
+---
+
+## Addendum — D-S2: Stage 2 re-tag mechanism re-decision (2026-06-11)
+
+**Decision:** The foundation-phase lock "Anthropic SDK + Pydantic via Python adapter from `taggingv3/gpt_tagger/`" was REOPENED (per the five-point evidence in `docs/plans/2026-05-13-stage2-retag-mechanism-exploration.md` §3) and CHANGED to: **TypeScript + Zod batch runner at `scripts/stage2-retag/`**, monolithic enum-forced call per lesson, synchronous API, 767-lesson live corpus. Full per-question locks (OQ1-OQ13: field scope, eval protocol, grade ground-truth policy, apply/rollback mechanism, synonyms, embeddings, check surface, 5-PR breakdown, plus six small-field vocabulary locks) live in `docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md` §4.
+
+**Reasoning:** (1) the canonical Zod schema header names Stage 2 as a TypeScript consumer; (2) Pydantic hand-sync is acknowledged maintenance debt; (3) `taggingv3` reuse measured at ~15-20%, not "swap the SDK"; (4) two PROD-running TS demonstrations of the exact call shape exist; (5) v3 output quality was mediocre (flagged 0/831 lessons for review; confidence anti-correlated with quality). Token economics measured 2026-06-11: monolithic $23.76 vs per-field $220.60 (Opus sync, 767 lessons) — per-field prefixes sit under Opus's 4,096-token cache minimum.
+
+**Downstream implications:** foundation impl plan line 11 + PR 6+ section amended this date; `scripts/generate-enums-json.ts:6-7` and `src/types/lessonMetadata.zod.ts` sync-discipline comments still reference the old Python mechanism (doc-drift cleanup rides PR 6's PR A/E); SQL CHECK constraints for newly locked small-field enums land only AFTER the apply canonicalizes data (PR C/E); decision authority for all [user-verdict] locks: Daniel Feder, Session-2 walkthrough 2026-06-11.

@@ -8,7 +8,7 @@
 
 **Design reference:** `docs/plans/2026-05-03-metadata-rebuild-foundation-design.md`. Read it before starting any task. Decision journal (authoritative WHY): `docs/plans/2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md`.
 
-**Tech Stack:** TypeScript / React 19 / Vite (frontend), Supabase / PostgreSQL (database), Deno (edge functions), Vitest + Playwright (testing), Anthropic SDK + Pydantic (LLM tagging pipeline; Pydantic via Python adapter from `/Users/danfeder/cCode/taggingv3/gpt_tagger/`).
+**Tech Stack:** TypeScript / React 19 / Vite (frontend), Supabase / PostgreSQL (database), Deno (edge functions), Vitest + Playwright (testing), Anthropic SDK + TypeScript/Zod (LLM tagging pipeline at `scripts/stage2-retag/`; mechanism lock reopened-and-changed 2026-06-11 in the PR 6 design walkthrough — see `docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md`; `/Users/danfeder/cCode/taggingv3/gpt_tagger/` is reference material only).
 
 **Sub-skills to invoke (per phase):**
 - `superpowers:test-driven-development` — every code-bearing task is test-first
@@ -855,16 +855,16 @@ Standard. PROD MCP verification mandatory after every applied migration.
 
 ## PR 6+ — Stage 2 corpus re-tag
 
-**Status:** TBD — depends on PR 5 + Stage 1 closure. Timing intentionally flexible per Cross-cutting Scope 3.
+**Status:** ACTIVE — design locked 2026-06-11. Superseded by its own four-file scaffold: design `docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md` (all 13 OQs locked), implementation plan + kickoff + execution status alongside it. The text below replaced the original Python-adaptation approach when the mechanism lock was reopened-and-changed (2026-06-11 walkthrough; evidence in `docs/plans/2026-05-13-stage2-retag-mechanism-exploration.md` §3 + `docs/plans/pr6-stage2-retag-evidence/`).
 
-**Approach:**
-1. Adapt `/Users/danfeder/cCode/taggingv3/gpt_tagger/` Python infrastructure: swap OpenAI for Anthropic; extend Pydantic validators to all 17 fields.
-2. Run on post-drop ~749-lesson corpus.
-3. Spot-check ~50-100 sampled lessons (sampling protocol TBD: random / stratified-by-activity-type / targeted-at-audit-found).
-4. Re-tag DIFF view vs. fresh-tag review (TBD).
-5. Cost ~$200-300; 1-2 sessions of pipeline engineering.
+**Approach (locked):**
+1. TypeScript+Zod batch runner at `scripts/stage2-retag/` mirroring (not extending) the canonical `process-submission` call shape; `taggingv3` mined as baseline-to-beat reference only.
+2. One monolithic enum-forced call per lesson, synchronous API, over the 767-lesson live corpus (`retired_at IS NULL`; measured 2026-06-11 — not ~749/751); 12 fields now, cooking_skills + main_ingredients in a second pass after a curriculum-team mini-worksheet.
+3. Eval: pre-run ~60-lesson answer key (agent pre-fill + user verify) scoring v3 AND the new pipeline; "beats v3" = per-field F1 ≥ v3 everywhere + macroF1 ≥ 0.7 + per-value recall ≥ 0.5; model (Opus vs Sonnet) picked empirically.
+4. Apply: staged artifacts + diff audit + user spot-check gate → rollback-protected CI migration → embeddings regen; PR 3b synonyms from the same run outputs.
+5. Cost: measured-projection ≈ $24 (Opus sync) for the main pass — not the original $200-300 estimate.
 
-<!-- TBD: full plan when prerequisites land. -->
+<!-- Detailed tasks live in the PR 6 scaffold's implementation plan. -->
 
 ---
 

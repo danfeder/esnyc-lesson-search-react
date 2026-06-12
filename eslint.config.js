@@ -15,7 +15,15 @@ export default [
       'node_modules/**',
       '*.config.js',
       'vite.config.ts',
-      'scripts/**',
+      // Ignore scripts/ EXCEPT the stage2-retag runner, which gets the
+      // standard TS rules (OQ12 dedicated check surface). Flat-config global
+      // ignores cannot be un-ignored by later config objects, so the
+      // exception must be a negation pattern here. Empirically, negations
+      // after 'scripts/**' do NOT re-include (the glob swallows the
+      // directories themselves); the working pattern is 'scripts/*'
+      // (ignore direct children) + re-include the one subdirectory.
+      'scripts/*',
+      '!scripts/stage2-retag/',
       'supabase/functions/**',
       'temp-debug-files/**',
       '.eslintrc.*',
