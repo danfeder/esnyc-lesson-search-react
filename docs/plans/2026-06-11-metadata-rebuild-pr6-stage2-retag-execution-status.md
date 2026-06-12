@@ -1,12 +1,14 @@
 # PR 6 — Stage 2 Corpus Re-tag (PR 3b folds in) Execution Status
 
-**Last updated:** 2026-06-11 by Session 1 (evidence gathering, in progress)
+**Last updated:** 2026-06-12 by Session 3 (PR A execution, overnight autonomous)
 
 ## Current State
 
-**Active PR:** none — not yet branched (design-lock mode; no pipeline code until design doc flips to Locked).
+**Active PR:** none yet — PR A in progress on `feat/pr6a-stage2-retag-pipeline` (PR opens at A9).
 
-**Current task:** **Sessions 1 + 2 COMPLETE (same day, 2026-06-11) — DESIGN LOCKED.** All 7 evidence items gathered + adversarially verified; all 13 OQs decided by the user in the Session-2 walkthrough (4 AskUserQuestion rounds). Design doc Status = **LOCKED**; per-OQ lock lines + Session-1 evidence section written in; foundation impl plan (line 11 + PR 6+ section) amended; decision journal D-S2 card appended; **implementation plan rewritten with concrete tasks** (PR A full detail; B medium; C/D/E outlines refined at cycle start; F rider). **Next session: execute PR A** — branch `feat/pr6a-stage2-retag-pipeline`, tasks A1-A9 (tsx pin → check surface → vocab module TDD → corpus export (765 records) → schema TDD → runner → validate/diff TDD → ≤20-lesson dry-run → ritual + PR). The headline locks: TS+Zod runner, monolithic, sync API, 12 fields now (cooking_skills + main_ingredients via team mini-worksheet → rider PR F), Protocol A+B eval with user gating everything, grades = source-doc claim only, 5-PR breakdown. Mini-worksheet for the team (cooking_skills + main_ingredients + guyanese-parent) should go OUT during PR A/B. Optional leftover: V3 cache-confirmation rerun (~$5.50) blocked on Console credit top-up — no decision depends on it.
+**Session 3 progress (2026-06-12, overnight autonomous — user-authorized until 6:20am ET):** A1 ✅ `2503b01` (tsx ^4.22.4 pinned). A2 ✅ `091fb60` (check surface: `tsconfig.scripts.json` incl. `scripts/lib`, `type-check` chains `type-check:scripts`; ESLint ignore narrowed to `scripts/*` + `!scripts/stage2-retag/` — negation after `scripts/**` empirically does NOT re-include; gates proven to bite). Both adversarially verified + supervisor-verified. **Next: A3 (vocab TDD) → A4 (corpus export).** A4 note: no PROD service key on disk (`.env` points local) — export authenticates with PROD URL + publishable anon key, 765-record hard gate, STOP on mismatch. A8 risk: Console credits were exhausted Session 1 — probe with 1 lesson before the 15-lesson runs; if blocked, hold PR A unopened and switch to user-authorized fallback work (docs cleanup audit + simplification groundwork + frontend/UX notes + working-efficiency review, analysis-only artifacts off-branch) + draft the curriculum mini-worksheet.
+
+**Sessions 1 + 2 (2026-06-11) — DESIGN LOCKED.** All 7 evidence items gathered + adversarially verified; all 13 OQs decided by the user in the Session-2 walkthrough (4 AskUserQuestion rounds). Design doc Status = **LOCKED**; per-OQ lock lines + Session-1 evidence section written in; foundation impl plan (line 11 + PR 6+ section) amended; decision journal D-S2 card appended; **implementation plan rewritten with concrete tasks** (PR A full detail; B medium; C/D/E outlines refined at cycle start; F rider). **Next session: execute PR A** — branch `feat/pr6a-stage2-retag-pipeline`, tasks A1-A9 (tsx pin → check surface → vocab module TDD → corpus export (765 records) → schema TDD → runner → validate/diff TDD → ≤20-lesson dry-run → ritual + PR). The headline locks: TS+Zod runner, monolithic, sync API, 12 fields now (cooking_skills + main_ingredients via team mini-worksheet → rider PR F), Protocol A+B eval with user gating everything, grades = source-doc claim only, 5-PR breakdown. Mini-worksheet for the team (cooking_skills + main_ingredients + guyanese-parent) should go OUT during PR A/B. Optional leftover: V3 cache-confirmation rerun (~$5.50) blocked on Console credit top-up — no decision depends on it.
 
 **Headline Session-1 findings** (full detail in `docs/plans/pr6-stage2-retag-evidence/`):
 - **Live corpus = 767 lessons, not ~751.** 788 total − 21 `import:*` retirements; ~751 reproduces only on TEST (772/751 today). Definitional locked decision unaffected; resize plan text + cost projections to 767.
@@ -18,9 +20,9 @@
 - Verifier corrections to carry: cookingSkills configured list = 27 options (not 28), mainIngredients = 44 (not 45) — no downstream effect on drift percentages; E4's "validator fabricated tags at scale" softened to "fabrication designed in MetadataO4Mini variant; generation-level non-enforcement proven"; E2's "772 unexplained" → it's today's TEST count.
 - Operational: the exploration doc has non-UTF8 bytes — `grep` sees it as binary and silently returns nothing; use `grep -a`.
 
-**Branch:** main (not yet branched)
+**Branch:** `feat/pr6a-stage2-retag-pipeline` (off main at `d693e19`; main itself is 5 docs-only commits ahead of origin — user aware, push not yet authorized)
 
-**Last commit on main:** `e5cc8ec` — docs(pr6-stage2-retag): supervisor+subagent execution model (main is ahead of origin/main by 2 unpushed scaffolding commits — user aware, push not yet authorized)
+**Last commit on branch:** `091fb60` — feat(stage2-retag): dedicated type-check + lint surface for the runner (OQ12)
 
 **Pre-next-PR verification (if any):** none yet. Inherited substrate state: PROD concepts census 675 / 119 / 1923 zero non-canonical; `pr5a_heritage_rollback` (37) + `pr5b_concepts_rollback` (676) live until this track's cleanup PR.
 
