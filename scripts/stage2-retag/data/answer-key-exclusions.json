@@ -1,0 +1,26 @@
+{
+  "provenance": {
+    "task": "PR 6b — answer-key removals (user verdicts, §A24/§F of the rulings doc)",
+    "authored": "2026-06-12",
+    "ruling_ref": "docs/plans/2026-06-12-pr6b-answer-key-verification-rulings.md §A24 + §F (Removals) + §E follow-up 1",
+    "effect": "These lesson sections are present in the sampled worksheet but are EXCLUDED from answer-key.final.jsonl. The key drops from 60 sampled to 57 surviving records.",
+    "follow_up": "All three are slated for corpus deletion (incomplete / non-lesson docs); cleanup track with the 23 imported drops; pre-delete FK checklist applies."
+  },
+  "excluded": [
+    {
+      "id": "13vpumvgEgzO7jUWdEHamEjXWwOxvQ_KFHaeMVUKvQDo",
+      "title": "Celebrating Eid: Understanding Muslim culture & tradition",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    },
+    {
+      "id": "1Ufs0zXqshdkXE4J0V8fOPWxqi42T2IlFdsei0ESm7PE",
+      "title": "Kitchen Lesson Plan Appendices",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    },
+    {
+      "id": "1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag",
+      "title": "Three Sister Arepas",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    }
+  ]
+}

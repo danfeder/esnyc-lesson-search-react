@@ -60,3 +60,30 @@ Read this lesson's body from `answer-key-sample.jsonl` (id `lesson-fixture-b`).
 | Grades the document itself claims <!-- f:grade_levels --> |  |  |
 
 ---
+
+### Lesson 3 — Fixture Excluded Lesson
+
+<!-- lesson-id: lesson-fixture-excluded -->
+
+- **id:** `lesson-fixture-excluded`
+- **bucket:** random (stratum: cooking::Q1)
+
+Read this lesson's body from `answer-key-sample.jsonl` (id `lesson-fixture-excluded`).
+
+| Field | DRAFT | CONFIRMED |
+|---|---|---|
+| Activity Type <!-- f:activity_type --> | cooking | cooking |
+| Lesson Type <!-- f:tags --> |  |  |
+| Season & Timing <!-- f:season_timing --> |  |  |
+| Cultural Responsiveness Features <!-- f:cultural_responsiveness_features --> |  |  |
+| Cultural Heritage <!-- f:cultural_heritage --> |  |  |
+| Academic Concepts <!-- f:academic_concepts --> |  |  |
+| Academic Integration <!-- f:academic_integration --> |  |  |
+| Social-Emotional Learning <!-- f:social_emotional_learning --> |  |  |
+| Core Competencies <!-- f:core_competencies --> |  |  |
+| Cooking Methods <!-- f:cooking_methods --> |  |  |
+| Observances & Holidays <!-- f:observances_holidays --> |  |  |
+| Garden Skills <!-- f:garden_skills --> |  |  |
+| Grades the document itself claims <!-- f:grade_levels --> |  |  |
+
+---

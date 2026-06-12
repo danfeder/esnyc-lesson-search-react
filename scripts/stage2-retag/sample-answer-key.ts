@@ -48,6 +48,7 @@ export const DEFAULT_RANDOM_TOTAL = 40;
 
 const DEFAULT_CORPUS_PATH = path.join(MODULE_DIR, 'artifacts/corpus.jsonl');
 const DEFAULT_ADVERSARIAL_PATH = path.join(MODULE_DIR, 'data/answer-key-adversarial.json');
+const DEFAULT_EXCLUSIONS_PATH = path.join(MODULE_DIR, 'data/answer-key-exclusions.json');
 const DEFAULT_OUT_DIR = path.join(MODULE_DIR, 'artifacts');
 
 const SAMPLE_FILENAME = 'answer-key-sample.jsonl';
@@ -141,6 +142,41 @@ export function loadAdversarial(filePath: string, corpusIds: Set<string>): Adver
     }
   }
   return parsed.adversarial;
+}
+
+// ---------------------------------------------------------------------------
+// Exclusions list (sampled lessons the user removed from the answer key)
+// ---------------------------------------------------------------------------
+
+export const exclusionEntrySchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  reason: z.string().min(1),
+});
+
+export type ExclusionEntry = z.infer<typeof exclusionEntrySchema>;
+
+const exclusionsFileSchema = z.object({
+  provenance: z.record(z.unknown()),
+  excluded: z.array(exclusionEntrySchema),
+});
+
+/**
+ * Loads the checked-in exclusions list — lessons that were sampled into the
+ * worksheet but which the user removed from the answer key (incomplete /
+ * non-lesson docs, per the PR-6b verification rulings). Returns the set of
+ * excluded ids. Rejects duplicate ids within the list.
+ */
+export function loadExclusions(filePath: string): Set<string> {
+  const parsed = exclusionsFileSchema.parse(JSON.parse(readFileSync(filePath, 'utf8')));
+  const ids = new Set<string>();
+  for (const entry of parsed.excluded) {
+    if (ids.has(entry.id)) {
+      throw new Error(`exclusions list has a duplicate id: ${entry.id}`);
+    }
+    ids.add(entry.id);
+  }
+  return ids;
 }
 
 // ---------------------------------------------------------------------------
@@ -547,8 +583,13 @@ const LESSON_ID_RE = /<!--\s*lesson-id:\s*(\S+)\s*-->/;
  * section is delimited by a `<!-- lesson-id: X -->` anchor; each field row
  * carries an `<!-- f:field -->` anchor. CONFIRMED (4th cell) wins; if blank,
  * the DRAFT (3rd cell) is used. Unfilled fields become empty arrays / `{}`.
+ *
+ * `excluded` (optional) is a set of lesson ids the user removed from the answer
+ * key (incomplete / non-lesson docs). Excluded sections are skipped — they
+ * never become records — so the caller can produce a key smaller than the
+ * sampled worksheet.
  */
-export function parseFilledWorksheet(markdown: string): FinalLabelRecord[] {
+export function parseFilledWorksheet(markdown: string, excluded?: Set<string>): FinalLabelRecord[] {
   const records: FinalLabelRecord[] = [];
   let current: FinalLabelRecord | null = null;
 
@@ -577,7 +618,9 @@ export function parseFilledWorksheet(markdown: string): FinalLabelRecord[] {
     const idMatch = line.match(LESSON_ID_RE);
     if (idMatch) {
       finalize();
-      current = blank(idMatch[1]);
+      // An excluded lesson's section is parsed but never collected: set current
+      // to null so its field rows are ignored and finalize() pushes nothing.
+      current = excluded?.has(idMatch[1]) ? null : blank(idMatch[1]);
       continue;
     }
     if (!current) continue;
@@ -756,20 +799,36 @@ export function run(opts: {
   };
 }
 
-/** Converter entry point: filled worksheet → answer-key.final.jsonl. */
+/**
+ * Converter entry point: filled worksheet → answer-key.final.jsonl.
+ *
+ * `exclusionsPath` defaults to the checked-in PR-6b exclusions file. Lessons
+ * listed there are sampled into the worksheet but removed from the answer key
+ * (user verdicts: incomplete / non-lesson docs). Pass an explicit path (e.g. a
+ * fixture) to override, or a path to an empty `excluded` list to keep all. The
+ * ids that were actually skipped (present in both the worksheet and the
+ * exclusions list) are returned as `skippedIds`.
+ */
 export function parseWorksheetToFinal(
   worksheetPath: string,
-  outDir: string
+  outDir: string,
+  exclusionsPath: string = DEFAULT_EXCLUSIONS_PATH
 ): {
   finalPath: string;
   recordCount: number;
+  skippedIds: string[];
 } {
   const markdown = readFileSync(worksheetPath, 'utf8');
-  const records = parseFilledWorksheet(markdown);
+  const excluded = loadExclusions(exclusionsPath);
+  const allIds = new Set(parseFilledWorksheet(markdown).map((r) => r.id));
+  const records = parseFilledWorksheet(markdown, excluded);
+  // Only ids that are BOTH in the worksheet and the exclusions list count as
+  // actually skipped (so a stale exclusions entry doesn't show as skipped).
+  const skippedIds = [...excluded].filter((id) => allIds.has(id)).sort();
   mkdirSync(outDir, { recursive: true });
   const finalPath = path.join(outDir, FINAL_FILENAME);
   writeFileSync(finalPath, records.map((r) => JSON.stringify(r)).join('\n') + '\n');
-  return { finalPath, recordCount: records.length };
+  return { finalPath, recordCount: records.length, skippedIds };
 }
 
 function main(): void {
@@ -779,11 +838,16 @@ function main(): void {
     return;
   }
   if (args.parse) {
-    const { finalPath, recordCount } = parseWorksheetToFinal(
+    const { finalPath, recordCount, skippedIds } = parseWorksheetToFinal(
       args.parse,
       args.outDir ?? DEFAULT_OUT_DIR
     );
     process.stdout.write(`parsed ${recordCount} labeled lessons → ${finalPath}\n`);
+    if (skippedIds.length > 0) {
+      process.stdout.write(
+        `  skipped ${skippedIds.length} excluded lesson(s): ${skippedIds.join(', ')}\n`
+      );
+    }
     return;
   }
   const result = run({

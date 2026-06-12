@@ -23,6 +23,7 @@ import {
   bodyLengthQuartiles,
   buildSampleRecords,
   loadAdversarial,
+  loadExclusions,
   mulberry32,
   parseArgs,
   parseFilledWorksheet,
@@ -350,6 +351,70 @@ describe('parseWorksheetToFinal converter', () => {
       .filter((l) => l.trim() !== '')
       .map((l) => JSON.parse(l) as { id: string });
     expect(written[0].id).toBe('lesson-fixture-a');
+    rmSync(outDir, { recursive: true, force: true });
+  });
+});
+
+describe('loadExclusions', () => {
+  it('loads the checked-in fixture exclusions list', () => {
+    const ids = loadExclusions(
+      path.join(MODULE_DIR, '__fixtures__/answer-key-exclusions.fixture.json')
+    );
+    expect(ids.has('lesson-fixture-excluded')).toBe(true);
+    expect(ids.size).toBe(1);
+  });
+
+  it('loads the real PR-6b exclusions list (3 user-verdict removals)', () => {
+    const ids = loadExclusions(path.join(MODULE_DIR, 'data/answer-key-exclusions.json'));
+    expect(ids.size).toBe(3);
+    expect(ids.has('13vpumvgEgzO7jUWdEHamEjXWwOxvQ_KFHaeMVUKvQDo')).toBe(true);
+    expect(ids.has('1Ufs0zXqshdkXE4J0V8fOPWxqi42T2IlFdsei0ESm7PE')).toBe(true);
+    expect(ids.has('1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag')).toBe(true);
+  });
+});
+
+describe('parseFilledWorksheet exclusions', () => {
+  it('skips excluded ids when an exclusion set is supplied', () => {
+    const filled = readFileSync(
+      path.join(MODULE_DIR, '__fixtures__/answer-key-worksheet-filled.fixture.md'),
+      'utf8'
+    );
+    const excluded = new Set(['lesson-fixture-excluded']);
+    const all = parseFilledWorksheet(filled);
+    const kept = parseFilledWorksheet(filled, excluded);
+    // The full parse sees all three; the excluded parse drops exactly one.
+    expect(all.map((r) => r.id)).toContain('lesson-fixture-excluded');
+    expect(kept.map((r) => r.id)).not.toContain('lesson-fixture-excluded');
+    expect(kept).toHaveLength(all.length - 1);
+  });
+
+  it('is a no-op when no exclusion set is supplied (back-compat)', () => {
+    const filled = readFileSync(
+      path.join(MODULE_DIR, '__fixtures__/answer-key-worksheet-filled.fixture.md'),
+      'utf8'
+    );
+    const records = parseFilledWorksheet(filled);
+    expect(records.map((r) => r.id)).toContain('lesson-fixture-excluded');
+  });
+});
+
+describe('parseWorksheetToFinal exclusions', () => {
+  it('honors the exclusions file and reports skipped ids + final count', () => {
+    const outDir = path.join(MODULE_DIR, '__fixtures__/.tmp-final-excl');
+    const result = parseWorksheetToFinal(
+      path.join(MODULE_DIR, '__fixtures__/answer-key-worksheet-filled.fixture.md'),
+      outDir,
+      path.join(MODULE_DIR, '__fixtures__/answer-key-exclusions.fixture.json')
+    );
+    // Fixture worksheet has 3 lessons; 1 is excluded → 2 survive.
+    expect(result.recordCount).toBe(2);
+    expect(result.skippedIds).toEqual(['lesson-fixture-excluded']);
+    const written = readFileSync(result.finalPath, 'utf8')
+      .split('\n')
+      .filter((l) => l.trim() !== '')
+      .map((l) => JSON.parse(l) as { id: string });
+    expect(written.map((r) => r.id)).not.toContain('lesson-fixture-excluded');
+    expect(written).toHaveLength(2);
     rmSync(outDir, { recursive: true, force: true });
   });
 });

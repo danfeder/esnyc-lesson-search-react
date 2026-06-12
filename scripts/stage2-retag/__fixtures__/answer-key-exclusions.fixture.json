@@ -1,0 +1,12 @@
+{
+  "provenance": {
+    "task": "fixture — exercises the answer-key exclusions loader + parser exclusion"
+  },
+  "excluded": [
+    {
+      "id": "lesson-fixture-excluded",
+      "title": "Fixture Excluded Lesson",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    }
+  ]
+}
