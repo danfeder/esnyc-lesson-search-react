@@ -118,6 +118,7 @@ import {
   loadSystemPrompt,
   type SubmitTagsTool,
 } from './schema';
+import { normalizeRecordInput } from './normalize';
 import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
 
 dotenv.config({ path: '.env.local' });
@@ -217,6 +218,14 @@ export interface RunRecord {
   effectiveBaseUrl: string;
   /** Repair phase only: per-field provenance for every attempted repair. */
   repairs?: Record<string, RepairOutcome>;
+  /**
+   * Deterministic mechanical-rule normalizations applied to this record's
+   * rawInput before Zod validation (see ./normalize). Each entry names a rule
+   * (subject-scoped rules append `:<subject>`). Omitted/absent on records
+   * written before normalization existed; empty when nothing was changed.
+   * NEVER silent — every code-enforced edit is recorded here.
+   */
+  normalizations?: string[];
   completedAt: string;
 }
 
@@ -296,6 +305,7 @@ export function buildRunRecord(params: {
   strict: boolean;
   effectiveBaseUrl: string;
   repairs?: Record<string, RepairOutcome>;
+  normalizations?: string[];
 }): RunRecord {
   return {
     id: params.id,
@@ -313,6 +323,7 @@ export function buildRunRecord(params: {
     strict: params.strict,
     effectiveBaseUrl: params.effectiveBaseUrl,
     ...(params.repairs !== undefined ? { repairs: params.repairs } : {}),
+    ...(params.normalizations !== undefined ? { normalizations: params.normalizations } : {}),
     completedAt: new Date().toISOString(),
   };
 }
@@ -348,6 +359,7 @@ const runRecordLineSchema = z
     strict: z.boolean().optional(),
     effectiveBaseUrl: z.string().optional(),
     repairs: z.record(z.unknown()).optional(),
+    normalizations: z.array(z.string()).optional(),
     completedAt: z.string(),
   })
   .passthrough();
@@ -1067,13 +1079,16 @@ async function runMainPass(args: Args): Promise<void> {
     let record: RunRecord;
     const bodyHash = computeBodyHash(lesson.content_text);
     try {
-      const { rawInput, usage, latencyMs, stopReason } = await callForcedTool(
-        client,
-        args.model,
-        systemPrompt,
-        tool,
-        lesson.content_text
-      );
+      const {
+        rawInput: apiInput,
+        usage,
+        latencyMs,
+        stopReason,
+      } = await callForcedTool(client, args.model, systemPrompt, tool, lesson.content_text);
+      // Code-enforce the mechanical tagging rules the models ignore (R1/R4/R5)
+      // BEFORE Zod, so validation + the repair pass + the apply gate all see
+      // normalized values. Provenance is stamped on the record, never silent.
+      const { rawInput, normalizations } = normalizeRecordInput(apiInput);
       const zod = validateRawInput(resultSchema, rawInput);
       record = buildRunRecord({
         id: lesson.id,
@@ -1089,6 +1104,7 @@ async function runMainPass(args: Args): Promise<void> {
         bodyHash,
         strict: args.strict,
         effectiveBaseUrl,
+        normalizations,
       });
       addToTotals(usage, record.costUsd);
       if (zod.passed) zodPassed++;
@@ -1240,7 +1256,11 @@ async function runRepairPass(args: Args): Promise<void> {
       }
     }
 
-    const merged = mergeRepairedFields(record.rawInput, repairs);
+    const mergedRaw = mergeRepairedFields(record.rawInput, repairs);
+    // Re-apply the mechanical rules: a repaired field (e.g. a re-generated
+    // activity_type or academic_concepts) can re-introduce an R1/R4/R5
+    // violation, so normalization runs again on the merged object.
+    const { rawInput: merged, normalizations } = normalizeRecordInput(mergedRaw);
     const zod = validateRawInput(resultSchema, merged);
     const outcomes = Object.values(repairs);
     const usage: AnthropicUsage = {
@@ -1276,6 +1296,7 @@ async function runRepairPass(args: Args): Promise<void> {
         strict: args.strict,
         effectiveBaseUrl,
         repairs,
+        normalizations,
       })
     );
     if (zod.passed) nowPassing++;

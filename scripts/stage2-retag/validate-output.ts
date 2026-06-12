@@ -93,6 +93,19 @@ export interface RunSummary {
   };
   /** Per-top-level-field Zod failure counts, from latest records only. */
   zodFailuresByField: Record<string, number>;
+  /**
+   * Code-enforced mechanical-rule normalizations (R1/R4/R5; see ./normalize),
+   * counted from LATEST records, aggregated by BASE rule name (subject-scoped
+   * `rule:subject` entries roll up under `rule`). Makes deterministic
+   * enforcement visible in dry-run output.
+   */
+  normalizations: Record<string, number>;
+  /**
+   * Count of LATEST records carrying at least one academic_integration subject
+   * that has NO framework concepts (R4 leaves these alone — they may be
+   * legitimate — but flags them for human review).
+   */
+  integrationWithoutConcepts: number;
   repair: {
     recordsNowPassing: number;
     recordsStillFailing: number;
@@ -132,6 +145,37 @@ export function parseCorpusIndex(jsonlText: string): CorpusIndexEntry[] {
 
 /** Loose shape for the repairs provenance map (run-retag writes richer). */
 const repairOutcomeSchema = z.object({ error: z.string().nullable() }).passthrough();
+
+/**
+ * R4 flag: does this record's output carry an academic_integration subject
+ * with no framework concepts? The normalizer leaves these in place (they may
+ * be legitimate), so the summary surfaces them for human review.
+ */
+function hasIntegrationWithoutConcepts(rawInput: unknown): boolean {
+  if (typeof rawInput !== 'object' || rawInput === null || Array.isArray(rawInput)) return false;
+  const record = rawInput as Record<string, unknown>;
+  const integration = record.academic_integration;
+  if (!Array.isArray(integration)) return false;
+  const concepts =
+    typeof record.academic_concepts === 'object' &&
+    record.academic_concepts !== null &&
+    !Array.isArray(record.academic_concepts)
+      ? (record.academic_concepts as Record<string, unknown>)
+      : {};
+  return integration.some((subject) => {
+    if (typeof subject !== 'string') return false;
+    const subjectConcepts = concepts[subject];
+    if (
+      typeof subjectConcepts !== 'object' ||
+      subjectConcepts === null ||
+      Array.isArray(subjectConcepts)
+    ) {
+      return true; // integrated subject with no concepts object at all
+    }
+    const framework = (subjectConcepts as Record<string, unknown>).framework;
+    return !Array.isArray(framework) || framework.length === 0;
+  });
+}
 
 export function summarizeRun(records: RunRecord[], corpus: CorpusIndexEntry[]): RunSummary {
   const corpusById = new Map(corpus.map((entry) => [entry.id, entry]));
@@ -198,6 +242,8 @@ export function summarizeRun(records: RunRecord[], corpus: CorpusIndexEntry[]): 
   let zodFailedWithOutput = 0;
   let noUsableOutput = 0;
   const zodFailuresByField: Record<string, number> = {};
+  const normalizations: Record<string, number> = {};
+  let integrationWithoutConcepts = 0;
   for (const record of latest.values()) {
     if (record.zod.passed) {
       zodPassed++;
@@ -211,6 +257,12 @@ export function summarizeRun(records: RunRecord[], corpus: CorpusIndexEntry[]): 
         zodFailuresByField[fieldName] = (zodFailuresByField[fieldName] ?? 0) + 1;
       }
     }
+    // Normalization provenance: aggregate `rule:subject` entries by base rule.
+    for (const entry of record.normalizations ?? []) {
+      const baseRule = entry.split(':', 1)[0];
+      normalizations[baseRule] = (normalizations[baseRule] ?? 0) + 1;
+    }
+    if (hasIntegrationWithoutConcepts(record.rawInput)) integrationWithoutConcepts++;
   }
 
   const missingFromRun = corpus
@@ -235,6 +287,8 @@ export function summarizeRun(records: RunRecord[], corpus: CorpusIndexEntry[]): 
     strictRecords,
     latest: { zodPassed, zodFailedWithOutput, noUsableOutput },
     zodFailuresByField,
+    normalizations,
+    integrationWithoutConcepts,
     repair: { recordsNowPassing, recordsStillFailing, fields: repairFields },
     usage,
     totalCostUsd,
@@ -285,6 +339,20 @@ export function formatRunSummary(summary: RunSummary): string {
     lines.push('Zod failures by field (latest records):');
     for (const [fieldName, count] of failureFields) lines.push(`  ${fieldName}: ${count}`);
   }
+
+  const normRules = Object.entries(summary.normalizations).sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0])
+  );
+  lines.push('');
+  lines.push('Code-enforced normalizations (latest records):');
+  if (normRules.length === 0) {
+    lines.push('  (none applied)');
+  } else {
+    for (const [rule, count] of normRules) lines.push(`  ${rule}: ${count}`);
+  }
+  lines.push(
+    `  Records w/ integration subject lacking concepts (R4 flag): ${summary.integrationWithoutConcepts}`
+  );
 
   lines.push('');
   lines.push('Repair pass:');

@@ -246,7 +246,12 @@ export function buildSubmitTagsTool(vocab: Stage2Vocab): SubmitTagsTool {
   };
 
   const properties: Record<string, EnumArraySchema | ConceptsObjectSchema> = {
-    activity_type: enumArray(vocab, 'activity_type', 'Activity Type — at least one applies.', 1),
+    activity_type: enumArray(
+      vocab,
+      'activity_type',
+      'Activity Type — the modes students DO (cooking, garden, craft). Tag every mode that applies. Use `academic` ONLY by elimination, when none of cooking/garden/craft apply — never alongside them; the academic content of a hands-on lesson belongs in academic_integration, not here.',
+      1
+    ),
     tags: enumArray(vocab, 'tags', 'Lesson Type tags.'),
     season_timing: enumArray(vocab, 'season_timing', 'Seasons the lesson claims or depends on.'),
     cultural_responsiveness_features: enumArray(

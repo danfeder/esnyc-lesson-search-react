@@ -47,6 +47,7 @@ import {
   warnIfOutsideArtifacts,
   type RunRecord,
 } from './run-retag';
+import { normalizeRecordInput } from './normalize';
 import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -405,11 +406,15 @@ export function buildDiffReport(
       continue;
     }
     if (!record.zod.passed) zodFailedIncluded++;
+    // Diff (and any downstream apply-prep) compares NORMALIZED values: the
+    // runner already normalizes before persisting, and re-applying is
+    // idempotent, so this also corrects any pre-normalization legacy record.
+    const { rawInput } = normalizeRecordInput(record.rawInput);
     compared.push({
       id: corpusRecord.id,
       title: corpusRecord.title,
       corpus: corpusRecord,
-      rawInput: record.rawInput as Record<string, unknown>,
+      rawInput: rawInput as Record<string, unknown>,
     });
   }
   missingFromRun.sort((a, b) => a.id.localeCompare(b.id));

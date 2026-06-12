@@ -186,6 +186,60 @@ describe('formatRunSummary', () => {
   });
 });
 
+describe('summarizeRun — normalization provenance (code-enforced rules)', () => {
+  // Build a tiny synthetic run on top of a passing fixture record so the
+  // normalization tallies are isolated from the rest of the fixture.
+  const base = runRecords[0]; // lesson-roots, main, Zod-passed
+  const withNorms: RunRecord[] = [
+    {
+      ...base,
+      id: 'lesson-roots',
+      normalizations: ['academic-exclusivity-strip', 'concepts-integration-add:Math'],
+      rawInput: {
+        academic_integration: ['Math', 'Health'],
+        academic_concepts: {
+          Math: { framework: ['Measurement'], everyday: [], synonym_pairs: [] },
+          Health: { framework: [], everyday: [], synonym_pairs: [] },
+        },
+      },
+    },
+    {
+      ...base,
+      id: 'lesson-soup',
+      normalizations: ['concepts-integration-add:Science', 'synonym-pair-drop:Science'],
+      rawInput: { academic_integration: ['Science'], academic_concepts: {} },
+    },
+  ];
+  const normSummary = summarizeRun(withNorms, corpus);
+
+  it('tallies normalization-rule applications by base rule across latest records', () => {
+    expect(normSummary.normalizations).toEqual({
+      'academic-exclusivity-strip': 1,
+      'concepts-integration-add': 2,
+      'synonym-pair-drop': 1,
+    });
+  });
+
+  it('counts records with an integration subject that carries no framework concepts (R4 flag)', () => {
+    // lesson-roots: Health is integrated but has empty framework; lesson-soup:
+    // Science is integrated but its academic_concepts has no Science entry at
+    // all. Both records are flagged → 2.
+    expect(normSummary.integrationWithoutConcepts).toBe(2);
+  });
+
+  it('reports zero normalizations when no record carries the field', () => {
+    expect(summary.normalizations).toEqual({});
+    expect(summary.integrationWithoutConcepts).toBe(0);
+  });
+
+  it('renders the normalization tallies and the R4 flag in the text summary', () => {
+    const text = formatRunSummary(normSummary);
+    expect(text).toMatch(/academic-exclusivity-strip:\s*1/);
+    expect(text).toMatch(/concepts-integration-add:\s*2/);
+    expect(text).toMatch(/integration subject lacking concepts \(R4 flag\):\s*2/);
+  });
+});
+
 describe('parseArgs hardening', () => {
   it('throws when a value-taking flag is missing its value', () => {
     expect(() => parseArgs(['--run'])).toThrow(/--run requires a value/);

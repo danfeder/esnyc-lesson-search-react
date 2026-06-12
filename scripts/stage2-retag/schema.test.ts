@@ -136,6 +136,17 @@ describe('enum-array properties', () => {
     expect(enumProp('activity_type').minItems).toBe(1);
   });
 
+  it('activity_type description states the academic-exclusivity decision rule', () => {
+    const desc = enumProp('activity_type').description ?? '';
+    // The old "at least one applies" wording actively invited multi-tagging.
+    expect(desc).not.toMatch(/at least one applies/i);
+    // It must communicate the by-elimination, mutually-exclusive `academic`
+    // rule (code-enforced now, but the prompt/schema should agree).
+    expect(desc).toMatch(/academic/i);
+    expect(desc).toMatch(/cooking/i);
+    expect(desc).toMatch(/never|only|alone/i);
+  });
+
   it('every other array allows empty ("none" is legitimate)', () => {
     for (const field of [
       ...ENUM_ARRAY_FIELDS.filter((f) => f !== 'activity_type'),
