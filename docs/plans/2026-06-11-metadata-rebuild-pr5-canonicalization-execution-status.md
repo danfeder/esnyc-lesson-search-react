@@ -1,8 +1,37 @@
 # PR 5 — D4 Vocabulary Canonicalization — Execution Status
 
-**Last updated:** 2026-06-11 by Session 2 (PR 5a SHIPPED + PROD-VERIFIED)
+**Last updated:** 2026-06-11 by Session 3 (PR 5b B-tasks authored; B.1 DONE)
 
 ## Current State
+
+**PR 5b is IN FLIGHT on branch `feat/pr5b-concepts-canonicalization` (cut from `main` at
+`d7b9ef4`). B-tasks B.1–B.5 are authored concrete in the impl plan (commit `f3f050f`); Task
+B.1 is DONE (commit `76f2714`). Next task: B.2 — migration generator + migration file + local
+rehearsal.** No PR opened yet; nothing pushed.
+
+**B.1 outcome:** `scripts/emit-concepts-vocab.py` (loads `build-concepts-tool.py` via
+importlib — hyphenated filename; `sys.modules` registration required for dataclass
+resolution) + committed artifact `data/vocab/academic-concepts.vocab.json`: 119 canonical /
+201 alias_map entries / 7 drops; provenance records the `sorting`→`sorting_and_categorization`
+rename. Negative tests all refuse loudly (corrupted verdict, broken merge_into, the UNFILLED
+source worksheet); emit is byte-stable; spot-checks green (`seasonal eating`→`seasonality`,
+`categorization`→`sorting_and_categorization`, `colonialism's impact`→`colonialisms_impact`;
+drops = design / discussion / food systems / garden topics / general exploration / historical
+context / plant science). **TEST coverage probe: ZERO unresolved literals; corpus facts
+re-confirmed live (663 rows / 208 distinct / 1912 appearances — still exactly Appendix A).**
+Zero identity literal→label pairs — all 201 aliases are real rewrites (lowercase → Title
+Case), so the migration's VALUES list carries all 201.
+
+**B.2 next (authored, not started):** generator `scripts/generate-concepts-rewrite-migration.py`
+→ migration `20260612000000_pr5b_concepts_canonicalization.sql` (next-day prefix sorts after
+5a's `20260611000000`; re-check at execution). jsonb-only rewrite of
+`metadata.academicConcepts`: literal→LABEL per subject array, delete 7 drops, dedupe
+first-occurrence, remove emptied subject keys, **remove the academicConcepts key entirely if
+the whole object empties** (minor mechanism decision recorded Session 3 — matches the corpus
+convention that concept-less rows lack the key). Backup table `pr5b_concepts_rollback`
+(lesson_id PK + jsonb), RLS on / no policies. Local rehearsal seeds three edge shapes:
+fold-collision dedup, full-empty row, cross-subject literal. Probes (B.4): no filter-reach
+analog (concepts isn't a filter field); replaced by a subject-key-integrity probe (d′).
 
 **PR 5a is DONE: #504 merged to main (squash `0b8057f`, 2026-06-11 23:40 UTC) and
 PROD-verified — full probe set (a)–(f) green on PROD via MCP (run `27384490534`, all 4 jobs
@@ -37,13 +66,8 @@ filter reach (never decrease).
 exhaustive), 1 reject (snapshotted_at). Security & Dependencies CI failure is pre-existing
 npm-audit noise (fails on main; known @lhci/cli follow-up).
 
-**Next: PR 5b — concepts canonicalization** off fresh `main`. B-tasks get authored from the
-proven 5a mechanism (impl plan carries the Session-1 knowledge: concepts emitter reuses
-`build-concepts-tool.py` parse functions against the RETURNED verdict record; Appendix-A 1:1
-literal match; `sorting`→`sorting_and_categorization` rename; metadata-only rewrite, no flat
-column; 82 folds + 7 drops; subject keys untouched; remove emptied subject keys; backup table
-`pr5b_concepts_rollback`). Carry the two 5a probe learnings: SET-equality mirror checks;
-parent-expansion reach can increase. Scale: 663 live rows / 208 strings / 1912 appearances.
+(The PR 5b carry-forward knowledge formerly summarized here is now fully authored into the
+impl plan's B.1–B.5 tasks — the impl plan is the execution source of truth for 5b.)
 
 **Design-lock outcomes (full evidence in design doc §4):** parser-driven JSON artifacts in
 `data/vocab/` (worksheet-specified shapes); migration-file mechanism with emitter-generated
@@ -81,10 +105,13 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 - Session 2 (2026-06-11): **PR 5a complete end-to-end** — Tasks A.1–A.5; PR #504 opened,
   TEST-verified, 2 bot rounds triaged, merged (`0b8057f`), PROD-applied + PROD-verified
   (probe set green, evidence doc fully filled). PR 5b un-gated.
+- Session 3 (2026-06-11): B.1–B.5 authored concrete into the impl plan (`f3f050f`); Task B.1
+  done (`76f2714` — emitter + artifact + TEST coverage probe zero unresolved).
 
 ## In flight
 
-(none — next session starts PR 5b)
+- PR 5b on `feat/pr5b-concepts-canonicalization` — B.1 done; B.2 (generator + migration +
+  local rehearsal) is next. Not pushed, no PR yet.
 
 ## Blocked
 
@@ -92,6 +119,9 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 
 ## Decisions made during execution
 
+- 2026-06-11 (S3): all-drop rows lose the `academicConcepts` key entirely (not left as `{}`)
+  when the rewrite empties the whole object — matches the corpus convention that concept-less
+  rows lack the key. Reversible until B.2 generates the migration.
 - 2026-06-11 (S2): probe (c) mirror check corrected to SET equality (the §J invariant) after
   the byte-equality version flagged 5 pre-existing order-only rows — none touched by the
   rewrite. Probe file documents the 5 lesson_ids.
@@ -127,6 +157,38 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
   2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md
 
 ## Session log
+
+### Session 3 — 2026-06-11 — PR 5b B-task authoring + B.1 (emitter + artifact)
+
+Major events:
+- B-tasks B.1–B.5 authored concrete into the impl plan from the proven 5a mechanism, after
+  re-reading the returned worksheet's §10 contract + Appendix A structure + the 5a
+  emitter/generator/migration trio. Verdict counts grep-confirmed in the returned file
+  (119/82/7; 82 `merge_into` lines). Branch `feat/pr5b-concepts-canonicalization` cut from
+  `main` (`d7b9ef4`). Commit `f3f050f`.
+- B.1: `scripts/emit-concepts-vocab.py` written TDD-style (red: script absent → negative
+  fixtures → green). Implementation notes: `build-concepts-tool.py` loaded via
+  `importlib.util.spec_from_file_location` AND registered in `sys.modules` before
+  `exec_module` (Python 3.14 dataclass resolution fails without the registry entry);
+  normalized matching is lowercase-alphanumerics-only on BOTH key and literal (bridges
+  `colonialisms_impact`↔"colonialism's impact", `how_to_writing`↔"how-to writing",
+  `biotic_abiotic_factors`↔"biotic/abiotic factors"); one secondary-subject value carries a
+  "(conditional)" qualifier — emitter strips trailing parentheticals before validating against
+  the 6 canonical subjects.
+- Negative tests (all refuse, exit 1): seasonality verdict flipped to `<to_fill>` (trips
+  verdict-count + merge-resolution + alias-count checks); `categorization` merge_into broken
+  to a nonexistent key; the UNFILLED 2026-05-12 source worksheet (208 unsupported verdicts).
+- Artifact emitted byte-stable: 119 canonical / 201 alias_map / 7 drops; zero identity
+  literal→label pairs (every alias is a real rewrite). TEST acceptance probe: zero unresolved
+  literals corpus-wide; 663/208/1912 re-confirmed exactly. Commit `76f2714`.
+- Decision (minor mechanism, recorded for B.2): when a row's entire academicConcepts object
+  empties (all-drop rows), the migration removes the key entirely rather than leaving `{}` —
+  matches the corpus convention that concept-less rows lack the key. Flagged here for user
+  visibility; reversible until B.2 generates the migration.
+- Operational note: zsh ate an unquoted `===` separator mid-test-script (`=cmd` expansion) —
+  one negative-test run had to be re-run; no impact on results.
+
+Commits: `f3f050f` (B-task authoring), `76f2714` (B.1), plus this status commit.
 
 ### Session 2 — 2026-06-11 — PR 5a build + open + TEST verification
 
