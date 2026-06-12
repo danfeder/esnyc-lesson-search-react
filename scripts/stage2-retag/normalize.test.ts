@@ -58,6 +58,51 @@ describe('normalizeRecordInput — R1 academic exclusivity', () => {
 });
 
 // ---------------------------------------------------------------------------
+// R6 — garden_skills cleared when activity_type lacks `garden`
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — R6 garden_skills non-garden clear', () => {
+  it('clears garden_skills when activity_type does NOT include garden', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      activity_type: ['cooking'],
+      garden_skills: ['Planting seeds', 'Harvesting'],
+    });
+    expect((rawInput as { garden_skills: string[] }).garden_skills).toEqual([]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.gardenSkillsNonGardenClear);
+  });
+
+  it('leaves garden_skills untouched when activity_type includes garden', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      activity_type: ['garden'],
+      garden_skills: ['Planting seeds', 'Harvesting'],
+    });
+    expect((rawInput as { garden_skills: string[] }).garden_skills).toEqual([
+      'Planting seeds',
+      'Harvesting',
+    ]);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.gardenSkillsNonGardenClear);
+  });
+
+  it('leaves garden_skills untouched for a multi-value activity_type that includes garden', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      activity_type: ['cooking', 'garden'],
+      garden_skills: ['Planting seeds'],
+    });
+    expect((rawInput as { garden_skills: string[] }).garden_skills).toEqual(['Planting seeds']);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.gardenSkillsNonGardenClear);
+  });
+
+  it('records NO marker when non-garden activity_type already has empty garden_skills', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      activity_type: ['cooking'],
+      garden_skills: [],
+    });
+    expect((rawInput as { garden_skills: string[] }).garden_skills).toEqual([]);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.gardenSkillsNonGardenClear);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // R4 — academic_concepts ⇄ academic_integration reconciliation
 // ---------------------------------------------------------------------------
 
