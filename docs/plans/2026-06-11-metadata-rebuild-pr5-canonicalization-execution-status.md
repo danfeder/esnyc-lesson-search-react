@@ -6,12 +6,13 @@ COMPLETE**)
 ## Current State
 
 **PR 5 IS DONE. Both halves shipped and PROD-verified: 5a (#504 → `0b8057f`) and 5b (#505 →
-`17d0da1`, squash-merged 2026-06-12, PROD run `27387525608` all jobs green, no SASL flake).**
-No further PR 5 work remains. What's left behind for later tracks is listed under
-"Out-of-scope follow-ups" below — most notably the **`urban revitalization` leftover**
-(PROD-only concept value that got no worksheet verdict; user decision 2026-06-12: apply now,
-flag for a curriculum-team verdict), the two rollback tables to drop after PR 6, and the
-Seed Bursts duplicate pair.
+`17d0da1`, squash-merged 2026-06-12, PROD run `27387525608` all jobs green, no SASL flake) —
+plus follow-up PR #506 (migration `20260613000000`, PROD run `27388980129`) which settled the
+one census leftover: `urban revitalization` folded → Advocacy by user verdict. The live PROD
+concepts corpus is FULLY canonical: 675 rows / 119 distinct labels / 1923 appearances, zero
+non-canonical values.** No further PR 5 work remains. What's left for later tracks is under
+"Out-of-scope follow-ups" below — the two rollback tables to drop after PR 6, the Seed Bursts
+duplicate pair (dedup track), and the census-PROD-not-TEST rule for future worksheets.
 
 **PR 5b PROD outcome:** 676 rows rewritten / 1962→1923 appearances (−8 drops, −31
 fold-collision dedups) / 209→120 distinct (119 canonical Title Case labels + the 1 flagged
@@ -147,12 +148,16 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
 
 ## Out-of-scope follow-ups captured here
 
-- **`urban revitalization` needs a curriculum-team verdict (keep/fold/drop).** PROD-only
-  concept value (1 appearance, lesson "Seed Bursts" `1NqjpqXV8soDQs2W9HonavtlxQT4MbFI0H7pUdnH-mEI`,
-  Social Studies array) that the worksheet never saw — it survives the 5b rewrite as the single
-  non-canonical lowercase value on PROD (distinct census reads 120, not 119, until resolved).
-  User decision 2026-06-12: apply now, flag. Resolution rides with PR 6 re-tag or a one-row
-  follow-up migration once the team rules.
+- ~~**`urban revitalization` needs a curriculum-team verdict**~~ **RESOLVED 2026-06-12, same
+  session:** user (verdict authority) ruled fold → `advocacy` per the worksheet's
+  `community activism` → Advocacy precedent. Shipped as PR #506 (squash `<see git log>`,
+  migration `20260613000000`, PROD run `27388980129` green). Emitter gained
+  `POST_WORKSHEET_ADDENDA` (validated, recorded in `provenance.addenda`; the 5b generator
+  excludes addenda so the committed 5b migration regenerates body-identically). **PROD
+  after-probes: Seed Bursts = `{"Science": ["Planting", "Pollinators"], "Social Studies":
+  ["Community Systems", "Advocacy"]}`, FTS matches; census 675 / 119 / 1923, zero
+  non-canonical values — the corpus is now FULLY canonical.** TEST was a structural no-op
+  (lesson is PROD-only). Rollback table unchanged at 676 (pre-5b original is the snapshot).
 - **PROD has TWO live "Seed Bursts" lessons** (`1HuffJuy…` 2025-07-10 + `1NqjpqXV…` 2025-08-07,
   different metadata) — near-duplicate pair for the dedup track.
 - **TEST is missing 13 live PROD concepts rows** (676 vs 663) — TEST/PROD content drift, 5a
@@ -183,6 +188,25 @@ dual-source is empty corpus-wide (rescue trigger inert). In-flight submissions c
   2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md
 
 ## Session log
+
+### Session 4 continuation — 2026-06-12 — `urban revitalization` fold (PR #506)
+
+Same session, immediately after the 5b closeout: user chose to settle the flagged leftover now
+rather than defer. Verdict (user as authority): fold → `advocacy`, recommended on the
+worksheet's `community activism` → Advocacy precedent after reading the lesson (community-garden
+activism, "changemakers"). Implementation run directly by the supervisor (small, post-initiative):
+- Emitter `POST_WORKSHEET_ADDENDA` mechanism (negative-tested: bad target / worksheet collision /
+  drop collision all refuse); artifact regenerated 202 aliases byte-stable with
+  `provenance.addenda`.
+- Migration `20260613000000` (next-day prefix — local clock still 06-11): reuses
+  `pr5b_concepts_rollback` ON CONFLICT no-op; single-pair 5b-shape rewrite; post-verify.
+  Local rehearsal: plain fold + Advocacy-collision dedup + FTS + `UPDATE 0`.
+- Pre-push review caught a REAL finding: the 5b generator's pair-count check broke against the
+  202-alias artifact. Fixed addenda-aware (generator excludes addenda; 5b migration verified to
+  regenerate body-identically — only provenance header comments move).
+- PR #506: TEST no-op verified; bot LGTM (zero accepted findings); merged; PROD run
+  `27388980129` green; after-probes: census **675 / 119 / 1923, zero non-canonical** — corpus
+  fully canonical. PR 5's end-state goal now holds with no exceptions.
 
 ### Session 4 — 2026-06-11/12 — PR 5b B.2→B.5: build, ship, PROD-verify (supervisor + subagent mode)
 
