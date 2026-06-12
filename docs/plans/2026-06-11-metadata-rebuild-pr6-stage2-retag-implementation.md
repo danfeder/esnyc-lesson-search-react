@@ -22,7 +22,7 @@
 | activity_type, tags, season_timing, cultural_responsiveness_features | `src/types/generated/enums.json` (4 PR-1 enums) |
 | cultural_heritage | `data/vocab/cultural-heritage.vocab.json` (§16 88-row table) — adapter needed: `{provenance, canonical[], alias_map, drops}` → flat list |
 | academic_concepts (framework + everyday, per D5) | `data/vocab/academic-concepts.vocab.json` — same adapter |
-| academic_integration (6), social_emotional_learning (5), core_competencies (6), cooking_methods (3), observances_holidays (17), garden_skills (24) | NEW `scripts/stage2-retag/data/smaller-fields.vocab.json`, assembled in task A3 from filterDefinitions + the walkthrough locks (design doc §4 OQ2). **Copy value spellings from `filterDefinitions.ts` + the census artifact — never from memory.** |
+| academic_integration (6), social_emotional_learning (5), core_competencies (6), cooking_methods (3), observances_holidays (16 — ratified 2026-06-12, see design §4 OQ2), garden_skills (24) | NEW `scripts/stage2-retag/data/smaller-fields.vocab.json`, assembled in task A3 from filterDefinitions + the walkthrough locks (design doc §4 OQ2). **Copy value spellings from `filterDefinitions.ts` + the census artifact — never from memory.** |
 
 **Design reference:** `docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md` (§4 locks + Session-1 evidence). Read before any task.
 
@@ -140,7 +140,7 @@ All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans
 ## PR E — Cleanup (outline; gated on C PROD-verified, per PR 5 design §4.8)
 
 - E1 Migration: drop `pr5a_heritage_rollback` (37 rows), `pr5b_concepts_rollback` (676), `pr6_retag_rollback`, + any staging table.
-- E2 Code: observances field `creatable` → fixed list; filterDefinitions updates per the vocab locks (garden-skills +2, cooking methods labels, observances 17); close the 6 small-field enums in `lessonMetadata.zod.ts` + regenerate `enums.json` + sync the edge `_shared/metadataSchemas.ts` mirror (equivalence test enforces); clean the stale Python-mechanism comments (`scripts/generate-enums-json.ts:6-7`, `lessonMetadata.zod.ts` sync paragraph).
+- E2 Code: observances field `creatable` → fixed list; filterDefinitions updates per the vocab locks (garden-skills +2, cooking methods labels, observances 16 — End-of-year pair merged, ratified 2026-06-12); close the 6 small-field enums in `lessonMetadata.zod.ts` + regenerate `enums.json` + sync the edge `_shared/metadataSchemas.ts` mirror (equivalence test enforces); clean the stale Python-mechanism comments (`scripts/generate-enums-json.ts:6-7`, `lessonMetadata.zod.ts` sync paragraph).
 - E3 Track close-out: initiative retrospective per kickoff session-end ritual; update foundation status doc Current State; lift follow-ups to memory.
 
 ## PR F (rider, deferred) — second pass
