@@ -1,7 +1,7 @@
 # PR 6b — Answer-key verification walkthrough: user rulings record
 
 **Date:** 2026-06-12 (Session 7, interactive)
-**Status:** IN PROGRESS — cluster rulings + heritage one-offs + pass rounds 1-3 (L1-L12) done; L13-L60 pending (waiting on header/filename sweep)
+**Status:** COMPLETE 2026-06-12 — all 16 pass rounds done; ALL 57 surviving lessons user-verified (3 removed); corrections list final (§F)
 **Who:** USER = decision authority (OQ8 lock); supervisor presented evidence + recommendations.
 
 These rulings are (a) corrections to the B2 pre-fill worksheet that produce
@@ -75,8 +75,53 @@ These rulings are (a) corrections to the B2 pre-fill worksheet that produce
 - L45 Roots: + Weeding (A11). L49 Tacos: + Lenape. L50 Pupusas: − Spanish − Mexican.
 - L56/L57 Cajun twins: confirmed as drafted (A10).
 
+## E2. Additional policy rulings (pass rounds 4-16)
+
+| # | Ruling | Detail |
+|---|---|---|
+| A21 | **"All Seasons"/"All Year"/"Any season" headers → tag ALL FOUR seasons** | No year-round vocab value exists; all-four keeps the lesson findable under every season filter. Empty stays "doc says nothing." Applied: L6, L16, L19, L28, L40, L45, L50 (enumerated). |
+| A22 | **Cross-surface conflicts → UNION** | Body vs header vs filename claims union (Applesauce Fall+Winter; Interconnection grades 4-5; Scavenger Hunt 3K-2). |
+| A23 | **Food-systems topic ≠ garden: both food-miles lessons are ACADEMIC** | Refines A13 — the garden topic arm needs genuinely garden/agriculture content; L16 flipped back to academic (keeps its header grade/season adds; Garden Skills competency drops). |
+| A24 | **Incomplete/non-lesson docs → REMOVE from corpus** (user verdicts) | L10 Celebrating Eid, L21 Kitchen Appendices, L27 Three Sister Arepas. Key = 57. Full-corpus completeness screen logged as follow-up. |
+| A25 | Per-lesson user exceptions | L2 keeps grade 3 (CCSS exception); L36 Pesto Pizza gains **Italian** heritage (brief-origins exception); L6 gains **Climate Change** (not-in-depth override). |
+
+## F. FINAL corrections list (vs the pre-fill drafts) — the apply spec
+
+Removals: **L10, L21, L27** (excluded from key with reasons; corpus-deletion follow-ups).
+
+| L | Change |
+|---|---|
+| L6 | + Climate Change (Science concept); season → all four |
+| L8 | heritage + Middle Eastern |
+| L11 | grades → 3K, PK; season → Fall, Spring |
+| L12 | + Health integration + Healthy Choices concept |
+| L16 | grades + 4, 5; season → all four; activity → academic; − Garden Skills competency |
+| L17 | season + Fall, Winter |
+| L19 | season → all four |
+| L24 | heritage + North American; season → Fall, Winter |
+| L26 | heritage → empty (strike Middle Eastern) |
+| L28 | season → all four |
+| L32 | grades + 3K, PK |
+| L36 | heritage + Italian |
+| L37 | activity → academic; cooking_methods → empty; − Kitchen Skills competency |
+| L39 | activity → cooking only; − Garden Skills competency |
+| L40 | grades + 4, 5; season → all four |
+| L41, L42 | heritage + African American |
+| L43 | heritage + Soul Food + Southern United States |
+| L44 | heritage + Mexican + Central American |
+| L45 | garden_skills + Weeding; season → all four |
+| L49 | heritage + Lenape |
+| L50 | heritage − Spanish, − Mexican; season → all four |
+| L53 | season + Fall |
+| L59 | season + Fall (grades stay 3K-2 union) |
+| L60 | grades + 6, 7; season + Fall, Spring |
+
+All other cells: **confirmed as drafted** (incl. all CRF + SEL stamps kept per A1/A3). L2 grades [3] = draft unchanged (exception ruling).
+
 ## E. Follow-ups logged
 
-1. **DELETE `lesson_…UKvQDo` (Celebrating Eid, L10)** from the corpus — incomplete lesson plan (user verdict). Goes to the cleanup track with the 23 imported drops; pre-delete FK checklist applies. Corpus 767 → 766.
-2. **NEW B-task (pre-B3): filename + page-header capture** — fetch Drive filename + page header for all corpus lessons; include both in runner input; re-check key grades/seasons against the 59-lesson sweep.
-3. DB `lessons.title` loses filename suffixes (e.g. "Indoors 3K/PK") — title-freshness audit candidate for the cleanup track.
+1. **DELETE from corpus (3 user verdicts): `Celebrating Eid` (L10), `Kitchen Lesson Plan Appendices` (L21), `Three Sister Arepas` (L27)** — incomplete/non-lesson docs. Cleanup track with the 23 imported drops; pre-delete FK checklist applies. Corpus 767 → 764.
+2. **NEW pre-B3 B-task: filename + page-header capture** — 59-lesson sweep DONE (`artifacts/prefill/header-filename-sweep.md`; method: inspect_doc_structure for native docs, header*.xml for .docx); corpus-wide capture + runner-input change required before B4. Key lessons' values already folded in (§F).
+3. DB `lessons.title` loses filename suffixes (e.g. "Indoors 3K/PK") — title-freshness audit candidate.
+4. **Full-corpus completeness screen** before B4: 3 of 60 key lessons (5%) were incomplete/non-lesson docs → the 767 corpus likely holds ~35 more; screen + user review pre-run or as cleanup.
+5. L49 stale Drive filename ("3 Sisters Chips & Salsa 2022" for the tacos lesson) — hygiene note.
