@@ -383,7 +383,7 @@ describe('token-mass guard', () => {
   it('buildTokenCountRequest mirrors the canonical call shape (no max_tokens)', () => {
     const body = 'Lesson body sample';
     const req = buildTokenCountRequest(vocab, body);
-    expect(req.model).toBe('claude-opus-4-8');
+    expect(req.model).toBe('claude-opus-4-7');
     expect(req.system).toEqual([
       { type: 'text', text: loadSystemPrompt(), cache_control: { type: 'ephemeral' } },
     ]);

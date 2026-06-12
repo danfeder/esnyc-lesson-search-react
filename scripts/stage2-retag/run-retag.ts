@@ -16,7 +16,7 @@
  * (`mapWithConcurrency`, eval-script precedent).
  *
  * Flags:
- *   --model <id>        default claude-opus-4-8
+ *   --model <id>        default claude-opus-4-7
  *   --limit N           only process the first N corpus records (dry-run)
  *   --resume            skip ids already in the output JSONL whose latest
  *                       record carries the CURRENT prompt+schema hash, the
@@ -152,7 +152,9 @@ export const MAX_TOKENS = 4096;
 /**
  * Published per-MTok pricing (USD), verified 2026-06-12 against the
  * Anthropic models/pricing documentation:
- *   claude-opus-4-8:   $5 input / $25 output (current Opus, the default model)
+ *   claude-opus-4-8:   $5 input / $25 output (dropped from the PR-B eval
+ *                      2026-06-12 on the r3 comparison; entry retained — r2/r3
+ *                      artifacts reference it)
  *   claude-opus-4-7:   $5 input / $25 output (identical pricing to 4.8;
  *                      retained — E3 baseline + older artifacts reference it)
  *   claude-sonnet-4-6: $3 input / $15 output

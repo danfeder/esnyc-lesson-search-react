@@ -37,11 +37,14 @@ const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 export const SUBMIT_TAGS_TOOL_NAME = 'submit_tags';
 
-/** Default run model: the current Opus (user decision 2026-06-12). Opus 4.8
- *  has identical pricing to 4.7 ($5/$25 in/out) and the same tokenizer +
- *  4,096-token cache floor, so the cost projection and cache guards are
- *  unaffected by the swap. claude-opus-4-7 stays a valid priced contestant. */
-export const DEFAULT_MODEL = 'claude-opus-4-8';
+/** Default run model (user decision 2026-06-12, REVERTED from 4-8 same day on
+ *  the r3 four-model comparison): claude-opus-4-7 is the surviving forced-tool
+ *  contestant — 4-8 repeated model-attributable fabrication signatures across
+ *  two runs (season, garden_skills, heritage over-reach) and was dropped from
+ *  the PR-B eval. claude-fable-5 (the primary contestant) cannot be the bare
+ *  default: it rejects forced tool_choice and requires --tool-choice-auto.
+ *  4-7/4-8 share pricing ($5/$25), tokenizer, and the 4096 cache floor. */
+export const DEFAULT_MODEL = 'claude-opus-4-7';
 
 /**
  * Token budget for the cached prefix (system prompt + tool schema). The

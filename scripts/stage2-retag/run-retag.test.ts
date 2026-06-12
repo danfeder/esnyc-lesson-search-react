@@ -180,7 +180,7 @@ describe('computeCostUsd', () => {
     expect(computeCostUsd('some-unknown-model', usage)).toBeNull();
   });
 
-  it('prices claude-opus-4-8 (the default contestant) identically to claude-opus-4-7', () => {
+  it('prices claude-opus-4-8 identically to claude-opus-4-7 (entry retained for r2/r3 artifacts)', () => {
     expect(PRICING_PER_MTOK['claude-opus-4-8']).toEqual({
       input: 5,
       output: 25,
@@ -831,9 +831,9 @@ describe('parseArgs hardening', () => {
     expect(() => parseArgs(['--bogus'])).toThrow(/unknown flag/);
   });
 
-  it('defaults --model to the current Opus (claude-opus-4-8)', () => {
-    expect(DEFAULT_MODEL).toBe('claude-opus-4-8');
-    expect(parseArgs([]).model).toBe('claude-opus-4-8');
+  it('defaults --model to claude-opus-4-7 (r3 comparison verdict 2026-06-12)', () => {
+    expect(DEFAULT_MODEL).toBe('claude-opus-4-7');
+    expect(parseArgs([]).model).toBe('claude-opus-4-7');
   });
 });
 
