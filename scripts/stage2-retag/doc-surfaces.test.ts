@@ -11,7 +11,7 @@
  * artifacts (the sweep file + the worksheet L#→id map + the exclusions file),
  * never from memory.
  */
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,15 +65,20 @@ describe('data/doc-surfaces.json (checked-in sidecar)', () => {
     }
   });
 
-  it('covers every id present in answer-key.final.jsonl (superset since the B3.5a corpus-wide capture)', () => {
-    const finalIds = readFileSync(path.join(MODULE_DIR, 'artifacts/answer-key.final.jsonl'), 'utf8')
-      .split('\n')
-      .filter((line) => line.trim() !== '')
-      .map((line) => (JSON.parse(line) as { id: string }).id);
-    for (const id of finalIds) {
-      expect(parsed.surfaces[id], `answer-key id ${id} missing from sidecar`).toBeDefined();
+  // Reads the gitignored artifacts/answer-key.final.jsonl; skip in clean checkouts (CI) where it is absent.
+  const ANSWER_KEY_FINAL_PATH = path.join(MODULE_DIR, 'artifacts/answer-key.final.jsonl');
+  it.skipIf(!existsSync(ANSWER_KEY_FINAL_PATH))(
+    'covers every id present in answer-key.final.jsonl (superset since the B3.5a corpus-wide capture)',
+    () => {
+      const finalIds = readFileSync(ANSWER_KEY_FINAL_PATH, 'utf8')
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+        .map((line) => (JSON.parse(line) as { id: string }).id);
+      for (const id of finalIds) {
+        expect(parsed.surfaces[id], `answer-key id ${id} missing from sidecar`).toBeDefined();
+      }
     }
-  });
+  );
 
   it('stores unfilled-template / no-header lessons with header: null', () => {
     // L8 Stuffed Dates and L58 Worms K-1 are unfilled ESYNYC templates.

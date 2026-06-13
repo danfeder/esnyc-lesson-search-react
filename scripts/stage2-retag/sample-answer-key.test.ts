@@ -12,7 +12,7 @@
  *     slots, grades row, DRAFT/CONFIRMED columns, body NOT inlined)
  *   - worksheet → final.jsonl parse round-trip on a fixture
  */
-import { readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -171,11 +171,16 @@ describe('loadAdversarial', () => {
   const corpus = loadFixtureCorpus();
   const corpusIds = new Set(corpus.map((r) => r.id));
 
-  it('loads and validates against a corpus id set', () => {
+  // These two cases read the gitignored artifacts/corpus.jsonl (real corpus id set);
+  // skip in clean checkouts (CI) where the artifact is absent.
+  const CORPUS_PATH = path.join(MODULE_DIR, 'artifacts/corpus.jsonl');
+  const hasCorpus = existsSync(CORPUS_PATH);
+
+  it.skipIf(!hasCorpus)('loads and validates against a corpus id set', () => {
     // The real adversarial file references real-corpus ids; validate it
     // against the REAL corpus id set so the checked-in file is exercised.
     const realCorpusIds = new Set(
-      readFileSync(path.join(MODULE_DIR, 'artifacts/corpus.jsonl'), 'utf8')
+      readFileSync(CORPUS_PATH, 'utf8')
         .split('\n')
         .filter((l) => l.trim() !== '')
         .map((l) => (JSON.parse(l) as { id: string }).id)
@@ -193,9 +198,9 @@ describe('loadAdversarial', () => {
     }
   });
 
-  it('meets the required adversarial-class floors', () => {
+  it.skipIf(!hasCorpus)('meets the required adversarial-class floors', () => {
     const realCorpusIds = new Set(
-      readFileSync(path.join(MODULE_DIR, 'artifacts/corpus.jsonl'), 'utf8')
+      readFileSync(CORPUS_PATH, 'utf8')
         .split('\n')
         .filter((l) => l.trim() !== '')
         .map((l) => (JSON.parse(l) as { id: string }).id)
