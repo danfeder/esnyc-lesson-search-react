@@ -302,6 +302,49 @@ describe('renderMarkdown — plain-language report', () => {
   });
 });
 
+describe('buildDiffReport — corpus exclusions', () => {
+  it('drops excluded corpus lessons from the diff entirely (not compared, not missing)', () => {
+    // lesson-missing has no run record; without exclusions it shows up under
+    // missingFromRun. As an excluded (deletion-slated) lesson it must vanish
+    // from the report completely — it was never run on purpose.
+    const excluded = new Set(['lesson-missing']);
+    const r = buildDiffReport(corpus, runRecords, vocab, excluded);
+    expect(r.corpusLessons).toBe(4); // 5 corpus rows minus the 1 excluded
+    expect(r.excludedLessons).toBe(1);
+    expect(r.missingFromRun.map((m) => m.id)).not.toContain('lesson-missing');
+    expect(r.missingFromRun.map((m) => m.id)).toEqual(['lesson-errored']);
+    // The compared set is unaffected (the excluded lesson had no run record).
+    expect(r.comparedLessons).toBe(3);
+  });
+
+  it('only counts exclusions that are actually present in the corpus', () => {
+    const excluded = new Set(['lesson-missing', 'not-in-corpus']);
+    const r = buildDiffReport(corpus, runRecords, vocab, excluded);
+    expect(r.excludedLessons).toBe(1); // only lesson-missing was present
+  });
+
+  it('defaults to no exclusions when the argument is omitted', () => {
+    const r = buildDiffReport(corpus, runRecords, vocab);
+    expect(r.corpusLessons).toBe(5);
+    expect(r.excludedLessons).toBe(0);
+    expect(r.missingFromRun.map((m) => m.id)).toContain('lesson-missing');
+  });
+
+  it('surfaces the exclusion count in the rendered report when nonzero', () => {
+    const r = buildDiffReport(corpus, runRecords, vocab, new Set(['lesson-missing']));
+    const md = renderMarkdown(r);
+    expect(md).toMatch(/excluded from the run/i);
+    expect(md).toContain('1');
+  });
+});
+
+describe('parseArgs — exclusions flag', () => {
+  it('accepts --exclusions and rejects it without a value', () => {
+    expect(parseArgs(['--exclusions', '/tmp/excl.json']).exclusions).toBe('/tmp/excl.json');
+    expect(() => parseArgs(['--exclusions'])).toThrow(/--exclusions requires a value/);
+  });
+});
+
 describe('parseArgs hardening', () => {
   it('throws when a value-taking flag is missing its value', () => {
     expect(() => parseArgs(['--run'])).toThrow(/--run requires a value/);
