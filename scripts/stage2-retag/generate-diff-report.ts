@@ -257,11 +257,78 @@ function isNoChange(diff: SetDiff): boolean {
 // Report building (pure)
 // ---------------------------------------------------------------------------
 
-interface ComparedLesson {
+export interface ComparedLesson {
   id: string;
   title: string;
   corpus: CorpusDiffRecord;
   rawInput: Record<string, unknown>;
+}
+
+/**
+ * Selects the diffable/applyable lessons out of the corpus + run output, using
+ * the SAME record-selection rules the diff report applies:
+ *   - corpus exclusions dropped first (deletion-slated / non-lesson rows);
+ *   - latest run record per id wins (later JSONL lines supersede earlier ones,
+ *     so a repair/fallback record supersedes its failed main record);
+ *   - a lesson with no record, or whose latest record has no usable object
+ *     rawInput (API error), is reported as missing — NOT compared;
+ *   - every compared lesson's rawInput is normalized via normalizeRecordInput
+ *     (idempotent; the runner already normalized, this also corrects any
+ *     pre-normalization legacy record), so staging applies the same values the
+ *     diff report shows.
+ *
+ * Both buildDiffReport and prepare-apply build on this so the diff a human
+ * reviews and the tags an apply migration writes can never drift apart.
+ */
+export function selectComparedLessons(
+  corpusRecords: CorpusDiffRecord[],
+  runRecords: RunRecord[],
+  excludedIds: Set<string> = new Set()
+): {
+  compared: ComparedLesson[];
+  missingFromRun: MissingLesson[];
+  unknownInRun: string[];
+  corpusLessonsKept: number;
+  excludedLessons: number;
+  zodFailedIncluded: number;
+} {
+  const { kept: corpusRecordsKept, excludedHits } = excludeCorpusIds(corpusRecords, excludedIds);
+  const latest = latestRecordById(runRecords);
+  const corpusIds = new Set(corpusRecordsKept.map((record) => record.id));
+
+  const compared: ComparedLesson[] = [];
+  const missingFromRun: MissingLesson[] = [];
+  let zodFailedIncluded = 0;
+  for (const corpusRecord of corpusRecordsKept) {
+    const record = latest.get(corpusRecord.id);
+    if (!record) {
+      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-record' });
+      continue;
+    }
+    if (typeof record.rawInput !== 'object' || record.rawInput === null) {
+      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-output' });
+      continue;
+    }
+    if (!record.zod.passed) zodFailedIncluded++;
+    const { rawInput } = normalizeRecordInput(record.rawInput);
+    compared.push({
+      id: corpusRecord.id,
+      title: corpusRecord.title,
+      corpus: corpusRecord,
+      rawInput: rawInput as Record<string, unknown>,
+    });
+  }
+  missingFromRun.sort((a, b) => a.id.localeCompare(b.id));
+  const unknownInRun = [...latest.keys()].filter((id) => !corpusIds.has(id)).sort();
+
+  return {
+    compared,
+    missingFromRun,
+    unknownInRun,
+    corpusLessonsKept: corpusRecordsKept.length,
+    excludedLessons: excludedHits.length,
+    zodFailedIncluded,
+  };
 }
 
 function newFlatValues(rawInput: Record<string, unknown>, field: string): string[] {
@@ -402,37 +469,14 @@ export function buildDiffReport(
   vocab: Stage2Vocab,
   excludedIds: Set<string> = new Set()
 ): DiffReport {
-  const { kept: corpusRecordsKept, excludedHits } = excludeCorpusIds(corpusRecords, excludedIds);
-  const latest = latestRecordById(runRecords);
-  const corpusIds = new Set(corpusRecordsKept.map((record) => record.id));
-
-  const compared: ComparedLesson[] = [];
-  const missingFromRun: MissingLesson[] = [];
-  let zodFailedIncluded = 0;
-  for (const corpusRecord of corpusRecordsKept) {
-    const record = latest.get(corpusRecord.id);
-    if (!record) {
-      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-record' });
-      continue;
-    }
-    if (typeof record.rawInput !== 'object' || record.rawInput === null) {
-      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-output' });
-      continue;
-    }
-    if (!record.zod.passed) zodFailedIncluded++;
-    // Diff (and any downstream apply-prep) compares NORMALIZED values: the
-    // runner already normalizes before persisting, and re-applying is
-    // idempotent, so this also corrects any pre-normalization legacy record.
-    const { rawInput } = normalizeRecordInput(record.rawInput);
-    compared.push({
-      id: corpusRecord.id,
-      title: corpusRecord.title,
-      corpus: corpusRecord,
-      rawInput: rawInput as Record<string, unknown>,
-    });
-  }
-  missingFromRun.sort((a, b) => a.id.localeCompare(b.id));
-  const unknownInRun = [...latest.keys()].filter((id) => !corpusIds.has(id)).sort();
+  const {
+    compared,
+    missingFromRun,
+    unknownInRun,
+    corpusLessonsKept,
+    excludedLessons,
+    zodFailedIncluded,
+  } = selectComparedLessons(corpusRecords, runRecords, excludedIds);
 
   const fields = MAIN_PASS_FIELDS.map((field) =>
     field === 'academic_concepts'
@@ -441,8 +485,8 @@ export function buildDiffReport(
   );
 
   return {
-    corpusLessons: corpusRecordsKept.length,
-    excludedLessons: excludedHits.length,
+    corpusLessons: corpusLessonsKept,
+    excludedLessons,
     comparedLessons: compared.length,
     zodFailedIncluded,
     missingFromRun,
