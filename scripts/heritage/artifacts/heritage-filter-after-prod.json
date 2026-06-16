@@ -17,8 +17,9 @@
   },
   "gateVerdict": {
     "rule": "Every one of the 31 options must return same-or-greater than the C1.0 baseline (never fewer).",
-    "result": "ESCALATE — 29 HEAL, 1 SAME-net (north-american, latin-american, central-asian, african, west-african, eastern-european, levantine count as SAME), and 1 OPTION with a -1 numeric DECREASE (mediterranean 45->44).",
+    "result": "PASS — with one documented correction (USER-APPROVED 2026-06-16, Session 16). 21 HEAL, 9 SAME, and 1 numeric -1 (mediterranean 45->44) that is a vocab-aligned correction (Moroccan re-homed to North African, not Mediterranean), NOT lesson loss. Executor correctly stopped on the decrease per the hard boundary; supervisor re-verified root cause against live PROD; user approved recording PASS-with-correction.",
     "strictPass": false,
+    "adjudicatedVerdict": "PASS_WITH_CORRECTION (user-approved 2026-06-16)",
     "decreases": 1,
     "heals": 21,
     "same": 9,

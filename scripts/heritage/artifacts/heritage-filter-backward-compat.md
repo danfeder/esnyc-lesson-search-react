@@ -6,7 +6,11 @@
 **Match path (faithful to `search_lessons`):** `lessons.cultural_heritage && <expanded labels> AND retired_at IS NULL`.
 **Sanity anchors match the baseline exactly:** PROD = 767 live / 788 total / 339 with heritage.
 
-## Gate verdict: ESCALATE (29 heals/same + 1 numeric −1 that is a *correction, not a loss*)
+## Gate verdict: PASS — with one documented correction (USER-APPROVED 2026-06-16, Session 16)
+
+> **Adjudication:** the executor correctly STOPPED on the single −1 per the "any decrease ⇒ stop" hard boundary and escalated. The supervisor independently re-verified the root cause against live PROD (the dropped lesson is `Moroccan Carrot Salad, Two Ways`, tagged `[Moroccan, North African, African]`, no Mediterranean-proper tag, still surfaced under african/north-african, not retired). The user reviewed and **approved recording the gate as PASS with this one noted Moroccan-under-Mediterranean correction** — it is a vocab-aligned fix (locked §16 vocab homes Moroccan under North African, not Mediterranean), not filter narrowing; the lesson remains discoverable under its correct heritage. Original escalation summary retained below for the record.
+
+### Original run summary (29 heals/same + 1 numeric −1 that is a *correction, not a loss*)
 
 - **21 HEAL** (new > old) — including 13 previously-broken options that returned 0 today (the slug-vs-label footgun) now healing: chinese 0→15, japanese 0→10, mexican 0→38, italian 0→25, african-american 0→27, indigenous 0→31, indigenous-and-diaspora 0→58, etc. The keystone heals all land (Asian 65→74, Americas 172→199).
 - **9 SAME** (new == old): central-asian, north-american, latin-american, african, west-african, eastern-european, levantine — already fully-expanded today, unchanged.
