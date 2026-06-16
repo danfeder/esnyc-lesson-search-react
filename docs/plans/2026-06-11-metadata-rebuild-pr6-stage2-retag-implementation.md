@@ -191,14 +191,54 @@ Three items, all must complete before B4 launches:
 - **C1.9 — Backward-compat verification (the apply gate).** Re-run the C1.0 baseline against the NEW filter on current PROD data (local → TEST after CI applies → PROD read-only): **every parent returns same-or-greater, never fewer.** Capture the after-table; the diff is the recorded gate evidence (expect heals like Asian 65→74).
 - **C1.10 — Per-PR ritual → open PR C1.** Pre-push code-reviewer dispatch on `git diff main...HEAD` + rebuttal pass + fix-ups; `npm run type-check && npm run lint`; push `feat/pr6c1-heritage-filter`; `gh pr create`. CI applies migration to TEST → verify via `mcp__supabase-test__execute_sql`. Bot rounds + triage. **Merge USER-GATED; PROD migration approval USER-GATED.**
 
-## PR C2 — Apply + embeddings (outline; refine at C2 cycle start; `database-migrations` skill mandatory)
+## PR C2 — Apply + embeddings (REFINED 2026-06-16 at C2 cycle start; Session 18 recon + PROD census + user decisions; `database-migrations` skill mandatory)
 
-> **HERITAGE PIVOT 2026-06-16 (now specified):** heritage is stored **specific-only** (Option B) — the run's specific tags minus the targeted drops (U-5/U-8/U-12 via manifest) and minus the C1-design-flagged error corrections (verify against `full-run.fable.jsonl`: Arroz con Gandules spurious `South Asian`; two Salsa Toasts → `[]`), stored as-is (NO parent-expansion), plus a post-apply assertion that no AA/Indigenous row carries `North American`. The recursive filter that makes specific-only safe ships first in **PR C1**. The other 11 fields' dual-write is unchanged.
+> **HERITAGE PIVOT 2026-06-16 (specified + recon-verified):** heritage is stored **specific-only** (Option B) — the run's specific tags minus the targeted drops, stored as-is (NO parent-expansion), plus a post-apply assertion that no AA/Indigenous row carries `North American`. The recursive filter that makes specific-only safe shipped in **PR C1** (live on PROD). The other 11 fields' dual-write is unchanged.
+>
+> **Session-18 recon headline (verified against `full-run.fable.jsonl` + PROD):** `prepare-apply.ts` already stages heritage specific-only with NO chain expansion (it's just one of the 11 `FLAT_FIELDS`; `newFlatValues` copies the run array verbatim) → **the pivot needs NO emitter expansion change**; the only heritage work is the corrections manifest below. The `academic_concepts` JSONB-only exception (`column: null`) holds.
 
-- C2.1 Migration (single file, idempotent): create `pr6_retag_rollback` snapshotting all about-to-change rows (12 columns + metadata) → apply dual-writes from the staged data (**heritage = specific-only per the pivot**) → repair Who's-Who `content_text` (body from the PR-A export artifact) → add SQL CHECK constraints for the newly locked small-field enums (AFTER data is canonical — ordering is load-bearing) → analyze.
-- C2.2 Rehearse: `supabase db reset` locally + `npm run test:rls`; PR opens → CI applies to TEST → verify via `mcp__supabase-test__execute_sql` (TEST validates mechanics; PROD MCP validates coverage — TEST is missing rows).
-- C2.3 Merge → user approves PROD migration in CI → **PROD MCP verification with VERBATIM identifiers copied from the migration file** (counts per field, rollback-table row count, Who's-Who body length, spot lessons from the diff, the U-1 integrity assertion). Known SASL flake: rerun pattern per memory.
-- C2.4 Embeddings regen (existing regen script precedent): TEST first, then PROD; verify embedding count + freshness timestamps via MCP.
+**Locked targeted corrections (verbatim ids + before→after, all confirmed against the run file in Session 18):**
+| Ref | Lesson | id | run heritage → C2 target |
+|---|---|---|---|
+| U-5 | Fattoush | `1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI` | `[Middle Eastern,Levantine,Lebanese,Syrian,Jordanian,Palestinian,Israeli]` → **drop Israeli + Jordanian** = `[Middle Eastern,Levantine,Lebanese,Syrian,Palestinian]` |
+| U-8 | Alternative Proteins | `1yTTJr3D9B6iljmmqdqtWUf6WnpRm683_` | `[Italian,European]` → **set `[]`** |
+| U-12 | Intro to Salad Project | `1V2Xt4cB9K19aItujCO8lrshz1YDSW022Okln4jI0ij8` | `[Middle Eastern]` → **set `[]`** |
+| C1-flag | Arroz con Gandules / Apple Jicama Slaw | `1VShcRmcQCpjPrrltCpytiHeuAgHuIb311EOIoSctnmU` | `[Puerto Rican,Caribbean,Latin American,South Asian]` → **drop South Asian** |
+
+> **ID CORRECTION:** the heritage-rebuild design doc named `055b000b…` for the Arroz fix — that id does NOT exist in the corpus (0 grep matches). The real spurious-`South Asian` row is `1VShcRmc…` (verified). **Salsa Toasts: NO action** (user decision 2026-06-16) — of 3 Salsa rows, two are already `[]` and the third `14MTTw-8EGeW0BMghM8C8imcWlKXB7P1q-SH-84m7E8U` carries `[Latin American]` which is a defensible tag, not an error.
+
+**Other Session-18 decisions baked into the tasks:**
+- **Small-field CHECK constraints: INCLUDED in C2** (user decision). PROD census proved it's safe: all 113 live rows with non-canonical small-field values are in the 753-corpus → the apply canonicalizes every one (live residue = **0**). The ONLY straggler is **1 retired row** `15T4wU94xT3r-dRx-WJq9XD2-ySg2HKaz` ("Children's Aid Society: Food Justice Program") carrying `Food Justice` in `core_competencies` → a 1-row vocab-aligned fold (`Food Justice`→`Social Justice`) makes the whole table canonical. (NOT the big full-corpus canonicalization originally feared.)
+- **Embeddings: 1-ROW regen only** (user decision). The embedding input is title+summary+body (verified in `generate-embeddings` edge fn + both regen scripts) — it does NOT include the 12 metadata fields. C2's only `content_text` change is Who's-Who → re-embed that 1 row; everything else's embedding input is unchanged. (Metadata-in-embeddings is logged as a separate evaluated follow-up — see status doc out-of-scope.)
+
+**Migration file:** `supabase/migrations/20260617000000_pr6c2_retag_apply.sql` (floor = `20260616000000_heritage_recursive_expansion.sql`, confirmed; `20260617…` sorts after).
+
+### C2.1 — Corrections manifest + emitter wiring (TDD)
+- **Create** `scripts/stage2-retag/data/heritage-corrections.json` — the 4 corrections above (provenance: register U-5/U-8/U-12 + C1 map Arroz; Session-18 verification). Shape: `{provenance, corrections:[{id, field:"cultural_heritage", drop:[…] | set:[…], ref}]}`. Prefer `set` where the full target is known.
+- **Modify** `scripts/stage2-retag/prepare-apply.ts` — add `loadHeritageCorrections` (mirror `loadCorpusExclusions`); apply drops/sets to `fields['cultural_heritage']` **BEFORE change-detection** (so a drop-only row, e.g. U-12 `[Middle Eastern]`→`[]`, is detected as changed and staged). Flows into CSV + staging SQL + draft migration identically (single source).
+- **Modify** `scripts/stage2-retag/prepare-apply.test.ts` — TDD RED→GREEN: U-5 drops the 2, U-8/U-12 clear, Arroz drops South Asian, drop-only change detection fires.
+- **Regenerate** artifacts (`npx tsx prepare-apply.ts`); spot-check the 4 lessons' staged heritage.
+- **Verify:** `npm run type-check && npm run lint && npx vitest run scripts/stage2-retag/prepare-apply.test.ts`.
+
+### C2.2 — The C2 apply migration (`database-migrations` skill MANDATORY; idempotent single file)
+Sections in **load-bearing order**:
+1. `pr6_retag_rollback` DDL (+ RLS enabled, no policies = service-role-only) — **extend the B5 snapshot to also capture `content_text`** (for the Who's-Who rollback).
+2. Snapshot `INSERT … SELECT … WHERE lesson_id IN (<changing ids> ∪ Who's-Who ∪ the retired `15T4wU94…`) ON CONFLICT DO NOTHING` (PR-5a precedent; preserves the first pre-apply snapshot on re-run).
+3. Per-lesson dual-write `UPDATE`s from the **corrected** staged data (text[] column + `jsonb_set` metadata; `academic_concepts` JSONB-only; heritage specific-only). Hand-port the regenerated `pr6-retag-apply.draft.sql` (the draft is a never-executed template).
+4. Who's-Who `content_text` repair: `UPDATE lessons SET content_text=<body literal> WHERE lesson_id='1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg' AND length(content_text) < 1000` (body from `scripts/stage2-retag/artifacts/whos-who-body.txt` / `corpus.jsonl` line 431; guard makes it idempotent/no-op once repaired).
+5. **Retired fold-fix:** `UPDATE lessons SET core_competencies = array_replace(core_competencies,'Food Justice','Social Justice'), metadata = jsonb_set(...) WHERE lesson_id='15T4wU94xT3r-dRx-WJq9XD2-ySg2HKaz'` (the lone retired non-canonical row; makes the table canonical for the CHECK).
+6. **Six small-field CHECK constraints** — AFTER data is canonical. Idempotent `DO $$ … pg_constraint existence check … ADD CONSTRAINT valid_<field> CHECK (col IS NULL OR col <@ ARRAY[…]::text[])` per `20260515000000_metadata_value_validation.sql` precedent. Fields + vocab from `scripts/stage2-retag/data/smaller-fields.vocab.json`: `academic_integration`(6), `social_emotional_learning`(5), `core_competencies`(6), `cooking_methods`(3), `observances_holidays`(16), `garden_skills`(24). (heritage + academic_concepts get NO CHECK.)
+7. **U-1 integrity assertion** (`DO $$` hard-fail): no live lesson stores `North American` alongside any `indigenous-and-diaspora`-subtree label (AA / Indigenous / Cajun-Creole / Soul Food / Black culinary history / Three Sisters / Indigenous and Diaspora). Assert on the column (optionally the `metadata->culturalHeritage` mirror too).
+8. `ANALYZE public.lessons;`
+- **Verify locally:** `supabase db reset && npm run test:rls`; then a local MCP census = the 6 small fields all canonical (the Session-18 census query, expecting 0 non-canonical) + the 4 heritage corrections present + U-1 = 0.
+
+### C2.3 — TEST rehearsal + PROD apply
+- PR opens → CI applies to TEST → verify with `mcp__supabase-test__execute_sql` (mechanics; PROD MCP validates coverage — TEST is missing rows).
+- Merge → user approves PROD migration → **PROD MCP verify with VERBATIM ids copied from the migration file** (`feedback_verbatim_identifiers_in_probes`): per-field change counts, `pr6_retag_rollback` row count, Who's-Who `length(content_text)` ≈ 3,300, the 4 heritage-correction arrays, the retired fold-fix, the 6 CHECK constraints exist + the all-canonical census returns 0, U-1 = 0. Known SASL flake → rerun pattern per memory.
+
+### C2.4 — Embeddings regen (1 row — Who's-Who only)
+- Re-embed ONLY `1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg` (its `content_text` changed). Reuse `scripts/generate-embeddings.mjs --lesson-ids=` (or equivalent) — TEST first, then PROD (`--i-mean-prod`). No full-corpus regen (the other 766 rows' embedding input is unchanged).
+- **Verify:** MCP — that row's embedding freshness timestamp updated; corpus-wide embedding count unchanged (no nulls introduced).
 
 ## PR D — `search_synonyms` population (outline)
 
