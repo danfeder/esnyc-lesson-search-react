@@ -6,6 +6,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   // First, specify ignores (must be first in the array)
@@ -114,6 +115,20 @@ export default [
     files: ['**/*.js'],
     rules: {
       '@typescript-eslint/no-var-requires': 'off',
+    },
+  },
+  // Standalone Node DB-test scripts under the (un-ignored) heritage dir. These
+  // mirror scripts/test-rls-policies.mjs (which lives under the ignored
+  // scripts/* and is never linted); since scripts/heritage/ is opted IN for the
+  // C1.1 generator, the .mjs test here gets linted too and needs Node globals.
+  {
+    files: ['scripts/heritage/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
     },
   },
 ];
