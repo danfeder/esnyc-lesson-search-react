@@ -11,6 +11,17 @@
 > **For Claude:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans`
 > to implement this plan task-by-task.
 
+> **▶▶ HERITAGE PIVOT 2026-06-16 (Session 12) — affects the PR breakdown + PR C.**
+> User chose **Option B** for heritage: store **specific-only** tags + rebuild the
+> live filter for complete recursive expansion (one source of truth = the §16
+> `cultural-heritage.vocab.json`). Filter-first, open-ended maintenance window.
+> A **NEW heritage-filter-rebuild PR lands BEFORE the apply** (see revised table
+> row C0). PR C's heritage handling changes from full-chain dual-write to
+> specific-only (the other 11 fields are unchanged). **Exact tasks are authored
+> in the heritage-filter-rebuild design pass (next session, brainstorming-first)
+> — NO filter/apply code until that design is checkpointed.** Design-doc banner +
+> execution-status pivot block hold the rationale.
+
 **Goal:** Re-tag the full live corpus (**767 lessons**, `retired_at IS NULL`) from lesson bodies against the locked canonical vocabulary — 12 fields in the main pass — with per-field enum enforcement, an answer-key eval gate ("beats v3"), a user-gated staged apply with rollback, embeddings regeneration, `search_synonyms` population (PR 3b), and cleanup of the PR 5 + PR 6 rollback tables. cooking_skills + main_ingredients follow in a second pass after a curriculum-team mini-worksheet.
 
 **Architecture (locked):** TypeScript+Zod batch runner at `scripts/stage2-retag/` — export-corpus / run-retag / validate-output / generate-diff-report / prepare-apply — one **monolithic** enum-forced call per lesson, **synchronous** API, model picked empirically — **contestants per the 2026-06-12 r3 comparison: claude-fable-5 (primary; requires `--tool-choice-auto` — Fable rejects forced tool_choice) vs claude-opus-4-7 (challenger; the bare default) on the answer key. 4-8 and Sonnet dropped (full evidence in the run artifacts' dryrun-notes.md).** Mirrors (never extends) the canonical call shape verified in `docs/plans/pr6-stage2-retag-evidence/oq1-call-shape-confirmation.md`: bare `new Anthropic({apiKey})`, `max_tokens` sized for ~12-field output, `system` array block + single forced tool each carrying `cache_control: {type:'ephemeral'}`, enums inline in `input_schema`, `tool_choice: {type:'tool', name:'submit_tags'}`, single user turn = lesson body, post-hoc Zod validation (enum adherence is NOT server-guaranteed), per-record usage accounting (eval-script plumbing, incl. `cache_creation/cache_read` counters).
@@ -36,13 +47,14 @@
 
 All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans/pr6-stage2-retag-evidence/`); walkthrough locked OQ1-OQ13. One optional leftover: the V3 shared-prefix cache-confirmation rerun (~$5.50) is blocked on a Console credit top-up — purely confirmatory, no decision depends on it.
 
-## PR breakdown (locked, OQ13)
+## PR breakdown (locked OQ13 — **REVISED 2026-06-16 by the heritage pivot; C0 inserted, C amended**)
 
 | PR | Branch | Contains | DB writes | Gate |
 |---|---|---|---|---|
 | A | `feat/pr6a-stage2-retag-pipeline` | Runner + check surface + dry-run ≤20 lessons | none | normal review |
 | B | `feat/pr6b-stage2-retag-fullrun` | Answer key + eval scoring + full run artifacts + diff + apply artifacts + register adjudication | none | **user green-light before the full run**; "beats v3" bar |
-| C | `feat/pr6c-stage2-retag-apply` | Apply migration (rollback snapshot, dual-write), Who's-Who body repair, embeddings regen | PROD via CI | user spot-check sign-off (Protocol B) + CI approval |
+| **C0 (NEW, heritage pivot)** | TBD (e.g. `feat/pr6c0-heritage-filter`) | **Heritage filter rebuild — tasks authored in the design pass.** Unify 3 hierarchy sources → 1 (§16 vocab); recursive `expand_cultural_heritage` in `search_lessons` RPC; UI/`filterDefinitions` alignment; retire legacy `filterConstants.CULTURAL_HIERARCHY`; E2E. **NO data change** → backward-compatible with current full-chain corpus. | PROD via CI (RPC/migration) | design checkpoint + verify on current PROD data + CI approval |
+| C | `feat/pr6c-stage2-retag-apply` | Apply migration (rollback snapshot, dual-write) — **heritage stored specific-only (pivot), other 11 fields unchanged**; targeted drops U-5/U-8/U-12 via manifest; post-apply U-1 integrity assertion; Who's-Who `content_text` repair; embeddings regen | PROD via CI | user spot-check sign-off (Protocol B) + CI approval; **lands after C0 verified** |
 | D | `feat/pr6d-search-synonyms` | `search_synonyms` population from run artifacts | PROD via CI | CI approval |
 | E | `feat/pr6e-stage2-cleanup` | Drop `pr5a_heritage_rollback` + `pr5b_concepts_rollback` + `pr6_retag_rollback` (+ staging); observances→fixed; filterDefinitions updates; Zod enum closing + enums.json regen + edge-mirror sync; stale-Python comment cleanup | PROD via CI | C PROD-verified first (PR 5 design §4.8) |
 | F (rider) | `feat/pr6f-second-pass` | cooking_skills + main_ingredients re-tag (vocab DECIDED 2026-06-12, team skipped) | PROD via CI | same B/C gates, miniature; no external blocker |
@@ -165,6 +177,8 @@ Three items, all must complete before B4 launches:
 ### B7 — Ritual → PR B (artifacts + registers; still no DB writes).
 
 ## PR C — Apply + embeddings (outline; refine at cycle start; `database-migrations` skill mandatory)
+
+> **HERITAGE PIVOT 2026-06-16:** the C1 line below still reads as full-chain dual-write — **for heritage that is now superseded by Option B (specific-only storage).** C0 (heritage filter rebuild) lands first. PR C's heritage = the run's specific tags minus the targeted drops (U-5/U-8/U-12 via manifest), stored as-is (no parent-expansion), plus a post-apply assertion that no AA/Indigenous row carries `North American`. The other 11 fields' dual-write is unchanged. Re-specify C1's heritage portion in the design pass.
 
 - C1 Migration (single file, idempotent): create `pr6_retag_rollback` snapshotting all about-to-change rows (12 columns + metadata) → apply dual-writes from the staged data → repair Who's-Who `content_text` (body from the PR-A export artifact) → add SQL CHECK constraints for the newly locked small-field enums (AFTER data is canonical — ordering is load-bearing) → analyze.
 - C2 Rehearse: `supabase db reset` locally + `npm run test:rls`; PR opens → CI applies to TEST → verify via `mcp__supabase-test__execute_sql` (TEST validates mechanics; PROD MCP validates coverage — TEST is missing rows).
