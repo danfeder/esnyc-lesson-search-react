@@ -1,18 +1,12 @@
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { useSearchStore } from '@/stores/searchStore';
 import type { FacetCounts } from '@/utils/facetCounts';
+import type { HeritageOption } from '@/utils/heritageHierarchy.generated';
 import { cn } from '@/utils/cn';
 import { IntFilterSection } from './IntFilterSection';
 
 interface IntCulturalHeritageSectionProps {
   counts: FacetCounts;
-}
-
-/** Minimal recursive shape of a cultural-heritage option node. */
-interface HeritageNode {
-  value: string;
-  label: string;
-  children?: HeritageNode[];
 }
 
 /** Per-tier indent step (px). Depth 1 keeps the legacy 20px child indent. */
@@ -38,7 +32,7 @@ export function IntCulturalHeritageSection({ counts }: IntCulturalHeritageSectio
   const activeCount = selected.length;
   const countFor = (value: string) => counts.culturalHeritage[value] ?? 0;
 
-  const renderNode = (node: HeritageNode, depth: number) => (
+  const renderNode = (node: HeritageOption, depth: number) => (
     <div key={node.value}>
       <label
         className={cn('int-check', depth > 0 && 'int-check--child')}
@@ -59,7 +53,7 @@ export function IntCulturalHeritageSection({ counts }: IntCulturalHeritageSectio
 
   return (
     <IntFilterSection label={cfg.label} count={activeCount}>
-      {(cfg.options as HeritageNode[]).map((node) => renderNode(node, 0))}
+      {(cfg.options as HeritageOption[]).map((node) => renderNode(node, 0))}
     </IntFilterSection>
   );
 }
