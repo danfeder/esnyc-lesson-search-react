@@ -41,7 +41,10 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import {
+  DEFAULT_CORPUS_EXCLUSIONS_PATH,
+  excludeCorpusIds,
   latestRecordById,
+  loadCorpusExclusions,
   parseRunRecords,
   requireFlagValue,
   warnIfOutsideArtifacts,
@@ -122,6 +125,9 @@ export interface MissingLesson {
 
 export interface DiffReport {
   corpusLessons: number;
+  /** Corpus lessons dropped before diffing because they are on the run's
+   *  exclusion list (deletion-slated / non-lesson — never tagged). */
+  excludedLessons: number;
   comparedLessons: number;
   /** Compared lessons whose latest record failed Zod (values shown as-is). */
   zodFailedIncluded: number;
@@ -251,11 +257,78 @@ function isNoChange(diff: SetDiff): boolean {
 // Report building (pure)
 // ---------------------------------------------------------------------------
 
-interface ComparedLesson {
+export interface ComparedLesson {
   id: string;
   title: string;
   corpus: CorpusDiffRecord;
   rawInput: Record<string, unknown>;
+}
+
+/**
+ * Selects the diffable/applyable lessons out of the corpus + run output, using
+ * the SAME record-selection rules the diff report applies:
+ *   - corpus exclusions dropped first (deletion-slated / non-lesson rows);
+ *   - latest run record per id wins (later JSONL lines supersede earlier ones,
+ *     so a repair/fallback record supersedes its failed main record);
+ *   - a lesson with no record, or whose latest record has no usable object
+ *     rawInput (API error), is reported as missing — NOT compared;
+ *   - every compared lesson's rawInput is normalized via normalizeRecordInput
+ *     (idempotent; the runner already normalized, this also corrects any
+ *     pre-normalization legacy record), so staging applies the same values the
+ *     diff report shows.
+ *
+ * Both buildDiffReport and prepare-apply build on this so the diff a human
+ * reviews and the tags an apply migration writes can never drift apart.
+ */
+export function selectComparedLessons(
+  corpusRecords: CorpusDiffRecord[],
+  runRecords: RunRecord[],
+  excludedIds: Set<string> = new Set()
+): {
+  compared: ComparedLesson[];
+  missingFromRun: MissingLesson[];
+  unknownInRun: string[];
+  corpusLessonsKept: number;
+  excludedLessons: number;
+  zodFailedIncluded: number;
+} {
+  const { kept: corpusRecordsKept, excludedHits } = excludeCorpusIds(corpusRecords, excludedIds);
+  const latest = latestRecordById(runRecords);
+  const corpusIds = new Set(corpusRecordsKept.map((record) => record.id));
+
+  const compared: ComparedLesson[] = [];
+  const missingFromRun: MissingLesson[] = [];
+  let zodFailedIncluded = 0;
+  for (const corpusRecord of corpusRecordsKept) {
+    const record = latest.get(corpusRecord.id);
+    if (!record) {
+      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-record' });
+      continue;
+    }
+    if (typeof record.rawInput !== 'object' || record.rawInput === null) {
+      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-output' });
+      continue;
+    }
+    if (!record.zod.passed) zodFailedIncluded++;
+    const { rawInput } = normalizeRecordInput(record.rawInput);
+    compared.push({
+      id: corpusRecord.id,
+      title: corpusRecord.title,
+      corpus: corpusRecord,
+      rawInput: rawInput as Record<string, unknown>,
+    });
+  }
+  missingFromRun.sort((a, b) => a.id.localeCompare(b.id));
+  const unknownInRun = [...latest.keys()].filter((id) => !corpusIds.has(id)).sort();
+
+  return {
+    compared,
+    missingFromRun,
+    unknownInRun,
+    corpusLessonsKept: corpusRecordsKept.length,
+    excludedLessons: excludedHits.length,
+    zodFailedIncluded,
+  };
 }
 
 function newFlatValues(rawInput: Record<string, unknown>, field: string): string[] {
@@ -383,42 +456,27 @@ function finalizeFieldDiff(result: FieldDiff): void {
   result.changedLessons.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
 }
 
-/** Builds the full diff report (pure; markdown rendering is separate). */
+/**
+ * Builds the full diff report (pure; markdown rendering is separate).
+ *
+ * `excludedIds` (default empty) drops deletion-slated / non-lesson rows from
+ * the corpus BEFORE diffing — those lessons were intentionally never sent to
+ * the run, so they must not surface as "missing", merely as an excluded count.
+ */
 export function buildDiffReport(
   corpusRecords: CorpusDiffRecord[],
   runRecords: RunRecord[],
-  vocab: Stage2Vocab
+  vocab: Stage2Vocab,
+  excludedIds: Set<string> = new Set()
 ): DiffReport {
-  const latest = latestRecordById(runRecords);
-  const corpusIds = new Set(corpusRecords.map((record) => record.id));
-
-  const compared: ComparedLesson[] = [];
-  const missingFromRun: MissingLesson[] = [];
-  let zodFailedIncluded = 0;
-  for (const corpusRecord of corpusRecords) {
-    const record = latest.get(corpusRecord.id);
-    if (!record) {
-      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-record' });
-      continue;
-    }
-    if (typeof record.rawInput !== 'object' || record.rawInput === null) {
-      missingFromRun.push({ id: corpusRecord.id, title: corpusRecord.title, reason: 'no-output' });
-      continue;
-    }
-    if (!record.zod.passed) zodFailedIncluded++;
-    // Diff (and any downstream apply-prep) compares NORMALIZED values: the
-    // runner already normalizes before persisting, and re-applying is
-    // idempotent, so this also corrects any pre-normalization legacy record.
-    const { rawInput } = normalizeRecordInput(record.rawInput);
-    compared.push({
-      id: corpusRecord.id,
-      title: corpusRecord.title,
-      corpus: corpusRecord,
-      rawInput: rawInput as Record<string, unknown>,
-    });
-  }
-  missingFromRun.sort((a, b) => a.id.localeCompare(b.id));
-  const unknownInRun = [...latest.keys()].filter((id) => !corpusIds.has(id)).sort();
+  const {
+    compared,
+    missingFromRun,
+    unknownInRun,
+    corpusLessonsKept,
+    excludedLessons,
+    zodFailedIncluded,
+  } = selectComparedLessons(corpusRecords, runRecords, excludedIds);
 
   const fields = MAIN_PASS_FIELDS.map((field) =>
     field === 'academic_concepts'
@@ -427,7 +485,8 @@ export function buildDiffReport(
   );
 
   return {
-    corpusLessons: corpusRecords.length,
+    corpusLessons: corpusLessonsKept,
+    excludedLessons,
     comparedLessons: compared.length,
     zodFailedIncluded,
     missingFromRun,
@@ -602,6 +661,12 @@ export function renderMarkdown(report: DiffReport): string {
   lines.push('## Coverage');
   lines.push('');
   lines.push(`- Lessons in the corpus export: ${report.corpusLessons}`);
+  if (report.excludedLessons > 0) {
+    lines.push(
+      `- Lessons excluded from the run (deletion-slated / not lessons, so never ` +
+        `re-tagged): ${report.excludedLessons}`
+    );
+  }
   lines.push(
     `- Lessons with a usable proposed tagging (compared below): ${report.comparedLessons}`
   );
@@ -653,6 +718,7 @@ interface Args {
   run: string;
   corpus: string;
   out: string;
+  exclusions: string;
   help: boolean;
 }
 
@@ -661,6 +727,7 @@ export function parseArgs(argv: string[]): Args {
     run: DEFAULT_RUN_PATH,
     corpus: DEFAULT_CORPUS_PATH,
     out: DEFAULT_OUT_PATH,
+    exclusions: DEFAULT_CORPUS_EXCLUSIONS_PATH,
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -677,6 +744,10 @@ export function parseArgs(argv: string[]): Args {
         break;
       case '--out':
         args.out = requireFlagValue(flag, next);
+        i++;
+        break;
+      case '--exclusions':
+        args.exclusions = requireFlagValue(flag, next);
         i++;
         break;
       case '--help':
@@ -701,6 +772,8 @@ Flags:
   --run <path>     run-output JSONL (default scripts/stage2-retag/artifacts/retag-run.jsonl)
   --corpus <path>  corpus JSONL (default scripts/stage2-retag/artifacts/corpus.jsonl)
   --out <path>     markdown report path (default scripts/stage2-retag/artifacts/diff-report.md)
+  --exclusions <path>  corpus-exclusions JSON; excluded lessons are dropped from the
+                       diff (default scripts/stage2-retag/data/corpus-exclusions.json)
   --help
 
 Reporting only: no API calls, no DB access.
@@ -715,7 +788,8 @@ function main(): void {
   warnIfOutsideArtifacts(args.out);
   const corpusRecords = parseCorpusRecords(readFileSync(args.corpus, 'utf8'));
   const runRecords = parseRunRecords(readFileSync(args.run, 'utf8'));
-  const report = buildDiffReport(corpusRecords, runRecords, loadVocab());
+  const excludedIds = new Set(loadCorpusExclusions(args.exclusions).map((entry) => entry.id));
+  const report = buildDiffReport(corpusRecords, runRecords, loadVocab(), excludedIds);
 
   mkdirSync(path.dirname(args.out), { recursive: true });
   writeFileSync(args.out, renderMarkdown(report), 'utf8');

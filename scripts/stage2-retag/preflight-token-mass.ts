@@ -56,7 +56,14 @@ const SAMPLE_BODY = '(preflight sample body)';
 export const CACHE_FLOOR_MARGIN = 1.05;
 
 export interface CacheFloorVerdict {
-  level: 'pass' | 'warn' | 'fail';
+  /**
+   * pass = clears the family floor; warn = sonnet below floor (non-fatal);
+   * fail = opus below floor (fatal); unknown = no cacheable-floor data for the
+   * model family (e.g. claude-fable-5). `unknown` is deliberately NOT `pass`:
+   * an unknown-family preflight cannot be a real pass, so the call site renders
+   * it as a distinct non-fatal warning rather than a green check.
+   */
+  level: 'pass' | 'warn' | 'fail' | 'unknown';
   /** The model family's cacheable floor (null when the family is unknown). */
   floor: number | null;
   /** floor + 5% margin — the value the estimate must meet (null when unknown). */
@@ -68,13 +75,14 @@ export interface CacheFloorVerdict {
  * Compares a prefix token estimate against the model family's minimum
  * cacheable length + 5% margin. Below the threshold: FAIL for opus-family
  * models (the run's economics assume cache reads), WARN for sonnet.
- * Unknown families pass with a check-manually note.
+ * Unknown families return `unknown` (not a silent pass) with a check-manually
+ * note, so the preflight surfaces them as a distinct non-fatal warning.
  */
 export function assessCacheFloor(model: string, prefixTokens: number): CacheFloorVerdict {
   const family = model.includes('opus') ? 'opus' : model.includes('sonnet') ? 'sonnet' : null;
   if (family === null) {
     return {
-      level: 'pass',
+      level: 'unknown',
       floor: null,
       threshold: null,
       message: `no cache-floor data for model ${model} — check the prompt-caching docs manually.`,
@@ -141,23 +149,56 @@ export async function preflightTokenMass(normalizedBaseUrl?: string): Promise<nu
   return response.input_tokens;
 }
 
+const HELP = `
+Stage 2 re-tag cached-prefix token-mass preflight (impl-plan A5 guard).
+
+Measures the system prompt + monolithic submit_tags tool via count_tokens and
+runs two guards: a ~${TOKEN_MASS_BUDGET_TOKENS}-token budget ceiling and the
+model family's cacheable-prefix floor (FAIL for opus below floor, WARN for
+sonnet, UNKNOWN for other families). Offline, both guards fall back to the
+static chars/4 estimate.
+
+Usage:
+  npx tsx scripts/stage2-retag/preflight-token-mass.ts [flags]
+
+Flags:
+  --base-url <url>   route the count_tokens call through a local CLIProxyAPI
+                     proxy to bill against Claude Max (e.g.
+                     http://127.0.0.1:8317/api/provider/anthropic). Do NOT
+                     include the trailing "/v1" — the SDK appends it; a trailing
+                     "/v1" is stripped with a stderr warning. When set, the API
+                     key source switches to ANTHROPIC_API_KEY (the proxy-side
+                     key); unset = direct API + ANTHROPIC_CONSOLE_API_KEY.
+  --help, -h         show this help and exit
+
+Env (direct API, no --base-url): ANTHROPIC_CONSOLE_API_KEY required (from
+     .env.local). Do NOT use ANTHROPIC_API_KEY — it is the CLIProxyAPI
+     proxy-side key and 401s against the direct API.
+Env (--base-url set): ANTHROPIC_API_KEY required (the proxy-side key).
+`;
+
 /**
- * Parses the preflight's flags. Only `--base-url <url>` is supported (the
+ * Parses the preflight's flags: `--base-url <url>` and `--help`/`-h` (the
  * preflight is otherwise argument-free). Mirrors run-retag's flag style.
+ * `--help` short-circuits, so it is honored even alongside an incomplete
+ * value flag.
  */
-export function parsePreflightArgs(argv: string[]): { baseUrl?: string } {
-  const out: { baseUrl?: string } = {};
+export function parsePreflightArgs(argv: string[]): { baseUrl?: string; help: boolean } {
+  const out: { baseUrl?: string; help: boolean } = { help: false };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const next = argv[i + 1];
-    if (flag === '--base-url') {
+    if (flag === '--help' || flag === '-h') {
+      out.help = true;
+      return out;
+    } else if (flag === '--base-url') {
       if (next === undefined || next.startsWith('--')) {
         throw new Error('flag --base-url requires a value');
       }
       out.baseUrl = next;
       i++;
     } else {
-      throw new Error(`unknown flag: ${flag} (only --base-url is supported)`);
+      throw new Error(`unknown flag: ${flag} (only --base-url and --help are supported)`);
     }
   }
   return out;
@@ -165,6 +206,10 @@ export function parsePreflightArgs(argv: string[]): { baseUrl?: string } {
 
 async function main(): Promise<void> {
   const args = parsePreflightArgs(process.argv.slice(2));
+  if (args.help) {
+    console.log(HELP);
+    return;
+  }
   const normalizedBaseUrl = args.baseUrl !== undefined ? normalizeBaseUrl(args.baseUrl) : undefined;
 
   const prompt = loadSystemPrompt();
@@ -204,6 +249,13 @@ async function main(): Promise<void> {
   }
   if (verdict.level === 'warn') {
     console.warn(`Cache-floor WARNING for ${DEFAULT_MODEL} (${basis}): ${verdict.message}`);
+  } else if (verdict.level === 'unknown') {
+    // Not a pass: the model family has no documented cacheable floor, so the
+    // cache economics can't be verified here. Non-fatal, but visibly distinct.
+    console.warn(
+      `Cache-floor UNKNOWN for ${DEFAULT_MODEL} (${basis}): ${verdict.message} ` +
+        'The cache-floor guard could not run — this is NOT a pass.'
+    );
   } else {
     console.log(`Cache-floor guard PASSED for ${DEFAULT_MODEL} (${basis}): ${verdict.message}`);
   }

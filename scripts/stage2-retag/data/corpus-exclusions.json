@@ -1,0 +1,81 @@
+{
+  "provenance": {
+    "task": "PR 6b — corpus/run-scoped deletion exclusions (B3.5c)",
+    "authored": "2026-06-12",
+    "ruling_ref": "docs/plans/2026-06-12-pr6b-answer-key-verification-rulings.md §A24 + §F (Removals)",
+    "effect": "These lessons are EXCLUDED from the B4 full-corpus re-tag run (run-retag.ts). The runner skips them before --ids/--limit/--resume and logs how many corpus records were dropped. Mirrors data/answer-key-exclusions.json (answer-key-scoped); this file is the corpus/run-scoped equivalent.",
+    "follow_up": "All three are slated for corpus deletion (incomplete / non-lesson docs); cleanup track with the 23 imported drops; pre-delete FK checklist applies. B3.5b (completeness screen) will ADD more excluded ids here after user verdicts — data-only change.",
+    "b35b_addendum": "2026-06-12 — added 9 entries from the B3.5b completeness-screen user verdicts (scripts/stage2-retag/artifacts/completeness-screen.md): 5 high-confidence non-lessons + 2 half-written drafts (user verdict), plus 2 'metadata card' records whose underlying Google Doc 404'd in Drive so re-extraction was impossible (re-extraction-failed fallback, pre-authorized). The other 4 metadata-card records were re-extracted from their live Docs via data/body-overrides.json instead of excluded."
+  },
+  "excluded": [
+    {
+      "id": "13vpumvgEgzO7jUWdEHamEjXWwOxvQ_KFHaeMVUKvQDo",
+      "title": "Celebrating Eid: Understanding Muslim culture & tradition",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    },
+    {
+      "id": "1Ufs0zXqshdkXE4J0V8fOPWxqi42T2IlFdsei0ESm7PE",
+      "title": "Kitchen Lesson Plan Appendices",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    },
+    {
+      "id": "1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag",
+      "title": "Three Sister Arepas",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson — slated for corpus deletion"
+    },
+    {
+      "id": "1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M",
+      "title": "Soul Food Sunday",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson (B3.5b completeness screen) — slated for corpus deletion review",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (EXCLUDE — high confidence #1; untouched master template)"
+    },
+    {
+      "id": "1LxGEdGyjFmsWtnhLbqb__ifhIoxTU7kXUeQdCHkf8Aw",
+      "title": "Flowers",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson (B3.5b completeness screen) — slated for corpus deletion review",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (EXCLUDE — high confidence #2; blank template, header only)"
+    },
+    {
+      "id": "1w0c7tESqksEPlQL-Fj1tpTL3i2ofmN_Agq-UwwqErBE",
+      "title": "Sandor Katz: Food Hero",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson (B3.5b completeness screen) — slated for corpus deletion review",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (EXCLUDE — high confidence #3; abandoned draft, placeholder agenda)"
+    },
+    {
+      "id": "1qFG6f3CdmVqjeTJ_Xfv_y2cITHd6beOeCycIZKV73mE",
+      "title": "Italy / Pesto",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson (B3.5b completeness screen) — slated for corpus deletion review",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (EXCLUDE — high confidence #4; abandoned draft, sentences cut off mid-thought)"
+    },
+    {
+      "id": "1QiqNPrXEpDXt7Hmc8uMC8hWCSNfhi3qacbIuVzqZxZA",
+      "title": "Juneteenth and Cultural Awareness Through Cooking",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson (B3.5b completeness screen) — slated for corpus deletion review",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (EXCLUDE — high confidence #5; structural twin of Celebrating Eid)"
+    },
+    {
+      "id": "1HWSlL8xio3QQkculHrVLA0EvEBSU4Th_tEZU4pXiD4Q",
+      "title": "Nigeria / Red Bean Stew",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson (B3.5b completeness screen) — slated for corpus deletion review",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (BORDERLINE Group B #7; half-written draft, core activity stops mid-sentence)"
+    },
+    {
+      "id": "1WOgtZT6tIQs4DQxVZxG9drU1BgNaFCBdt87NKJX01Fs",
+      "title": "Honduras and Baleadas",
+      "reason": "user verdict 2026-06-12: incomplete/non-lesson (B3.5b completeness screen) — slated for corpus deletion review",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (BORDERLINE Group B #8; half-written draft, cooking step 2 blank)"
+    },
+    {
+      "id": "1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX",
+      "title": "Equivalent Ratios",
+      "reason": "re-extraction failed 2026-06-12: underlying Google Doc returns 404/not-found in Drive (both get_drive_file_content and get_doc_content) — corpus content_text is a machine-written tag-summary card, not recoverable; excluded per pre-authorized B3.5b re-extraction fallback",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (BORDERLINE Group A metadata card; doc inaccessible, exclusion fallback)"
+    },
+    {
+      "id": "1SDsLLHlfBqIHSxvVVQrbOk96hlOkxOse",
+      "title": "Mindful Eating",
+      "reason": "re-extraction failed 2026-06-12: underlying Google Doc returns 404/not-found in Drive (both get_drive_file_content and get_doc_content; pre-warned) — corpus content_text is a machine-written tag-summary card, not recoverable; excluded per pre-authorized B3.5b re-extraction fallback",
+      "provenance_note": "scripts/stage2-retag/artifacts/completeness-screen.md (BORDERLINE Group A metadata card; doc inaccessible, exclusion fallback)"
+    }
+  ]
+}

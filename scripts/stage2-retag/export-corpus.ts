@@ -65,6 +65,21 @@ const OUTPUT_PATH = path.join(ARTIFACTS_DIR, 'corpus.jsonl');
 const WHOS_WHO_BODY_PATH = path.join(ARTIFACTS_DIR, 'whos-who-body.txt');
 
 /**
+ * B3.5b body-override sidecar directory + manifest (generalizes the OQ5
+ * Who's-Who single override). Each override id's real lesson body — fetched
+ * READ-ONLY from its live Google Doc out-of-band — lives in an untracked
+ * sidecar at `artifacts/body-overrides/<id>.txt`; the tracked manifest at
+ * `data/body-overrides.json` lists the ids (so adding an override is a
+ * data-only edit + a new sidecar). The export substitutes the sidecar body
+ * for the stored content_text, exactly like Who's-Who.
+ */
+const BODY_OVERRIDES_DIR = path.join(ARTIFACTS_DIR, 'body-overrides');
+export const BODY_OVERRIDES_MANIFEST_PATH = path.join(MODULE_DIR, 'data/body-overrides.json');
+
+/** Per-override min body length sanity guard (mirrors the Who's-Who guard). */
+export const MIN_OVERRIDE_BODY_CHARS = 2000;
+
+/**
  * MCP census, 2026-06-12 (mcp__supabase-remote__execute_sql, PROD):
  *   SELECT count(*) FROM lessons WHERE retired_at IS NULL;  -- 767
  * The export hard-fails if the fetched row count differs.
@@ -82,7 +97,7 @@ const EXPECTED_EXPORT_ROWS = EXPECTED_LIVE_ROWS - GHOST_STUB_LESSON_IDS.size; //
 /** OQ5 body override — Who's Who in the Food System (verbatim id). */
 const WHOS_WHO_LESSON_ID = '1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg';
 /** Stored stub is 462 chars; the live Doc body is ~3,300. */
-const MIN_WHOS_WHO_BODY_CHARS = 2000;
+const MIN_WHOS_WHO_BODY_CHARS = MIN_OVERRIDE_BODY_CHARS;
 
 const PAGE_SIZE = 200;
 
@@ -93,6 +108,100 @@ const PAGE_SIZE = 200;
  */
 export function normalizeBody(text: string): string {
   return text.split('\u000B').join('').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+// ---------------------------------------------------------------------------
+// Body overrides (B3.5b — generalizes the OQ5 Who's-Who single override)
+// ---------------------------------------------------------------------------
+
+const bodyOverrideEntrySchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  doc_type: z.string().min(1),
+  fetched_chars: z.number(),
+});
+
+/** One body-override entry from the tracked manifest. */
+export type BodyOverrideEntry = z.infer<typeof bodyOverrideEntrySchema>;
+
+const bodyOverridesManifestSchema = z.object({
+  provenance: z.record(z.unknown()),
+  overrides: z.array(bodyOverrideEntrySchema),
+});
+
+/**
+ * Loads the tracked body-overrides manifest (data/body-overrides.json) — the
+ * list of corpus records whose stored content_text is a stub/tag-card and must
+ * be replaced by a sidecar body at export time. Returns the entries in file
+ * order; rejects a duplicate id (a typo must fail loudly, never silently
+ * override the wrong lesson's body). Same shape contract as
+ * loadCorpusExclusions, so adding an override is a data-only edit.
+ */
+export function loadBodyOverridesManifest(filePath: string): BodyOverrideEntry[] {
+  const parsed = bodyOverridesManifestSchema.parse(JSON.parse(readFileSync(filePath, 'utf8')));
+  const seen = new Set<string>();
+  for (const entry of parsed.overrides) {
+    if (seen.has(entry.id)) {
+      throw new Error(`body-overrides manifest has a duplicate id: ${entry.id}`);
+    }
+    seen.add(entry.id);
+  }
+  return parsed.overrides;
+}
+
+/**
+ * Reads, normalizes, and min-length-guards an override sidecar body (the OQ5
+ * Who's-Who guard, generalized). Throws a descriptive error when the sidecar
+ * is missing (the operator must fetch the live Google Doc first) or stub-sized
+ * (looks like the import-failure stub, not the real body).
+ */
+export function loadOverrideBody(
+  sidecarPath: string,
+  minChars: number = MIN_OVERRIDE_BODY_CHARS
+): string {
+  let raw: string;
+  try {
+    raw = readFileSync(sidecarPath, 'utf8');
+  } catch {
+    throw new Error(
+      `missing sidecar ${sidecarPath} — fetch the live Google Doc body (READ-ONLY, ` +
+        `df@esynyc.org) and save it there before exporting`
+    );
+  }
+  const body = normalizeBody(raw).trim();
+  if (body.length < minChars) {
+    throw new Error(
+      `override sidecar ${sidecarPath} body is ${body.length} chars (< ${minChars}) — ` +
+        `looks like an import-failure stub or tag-card, not the live Doc body`
+    );
+  }
+  return body;
+}
+
+/** Sidecar path for a manifest-driven override id. */
+export function overrideSidecarPath(id: string): string {
+  return path.join(BODY_OVERRIDES_DIR, `${id}.txt`);
+}
+
+/**
+ * Builds the id → override-body map: the OQ5 Who's-Who override (its dedicated
+ * sidecar) plus every manifest-driven B3.5b override (its `<id>.txt` sidecar).
+ * Each body is read + normalized + min-length-guarded via loadOverrideBody. A
+ * manifest id colliding with the built-in Who's-Who id fails loudly.
+ */
+export function loadBodyOverrides(
+  manifestPath: string = BODY_OVERRIDES_MANIFEST_PATH
+): Map<string, string> {
+  const overrides = new Map<string, string>();
+  // OQ5 built-in: Who's Who in the Food System.
+  overrides.set(WHOS_WHO_LESSON_ID, loadOverrideBody(WHOS_WHO_BODY_PATH, MIN_WHOS_WHO_BODY_CHARS));
+  for (const entry of loadBodyOverridesManifest(manifestPath)) {
+    if (overrides.has(entry.id)) {
+      throw new Error(`body-overrides manifest id ${entry.id} collides with a built-in override`);
+    }
+    overrides.set(entry.id, loadOverrideBody(overrideSidecarPath(entry.id)));
+  }
+  return overrides;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,26 +264,6 @@ function createReadOnlyLessonsSource(url: string, anonKey: string): ReadOnlyLess
 // Export
 // ---------------------------------------------------------------------------
 
-function loadWhosWhoBody(): string {
-  let raw: string;
-  try {
-    raw = readFileSync(WHOS_WHO_BODY_PATH, 'utf8');
-  } catch {
-    throw new Error(
-      `missing sidecar ${WHOS_WHO_BODY_PATH} — fetch the live Google Doc body for ` +
-        `${WHOS_WHO_LESSON_ID} per oq5-content-text-audit.md §8.6 before exporting`
-    );
-  }
-  const body = normalizeBody(raw).trim();
-  if (body.length < MIN_WHOS_WHO_BODY_CHARS) {
-    throw new Error(
-      `Who's-Who sidecar body is ${body.length} chars (< ${MIN_WHOS_WHO_BODY_CHARS}) — ` +
-        `looks like the 462-char import-failure stub, not the live Doc body`
-    );
-  }
-  return body;
-}
-
 async function main(): Promise<void> {
   const url = process.env.STAGE2_SUPABASE_URL;
   const anonKey = process.env.STAGE2_SUPABASE_ANON_KEY;
@@ -184,7 +273,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const whosWhoBody = loadWhosWhoBody();
+  // OQ5 Who's-Who override + B3.5b manifest-driven overrides, all loaded,
+  // normalized, and min-length-guarded BEFORE any DB read.
+  const bodyOverrides = loadBodyOverrides();
   const source = createReadOnlyLessonsSource(url, anonKey);
 
   console.log(`🔄 Exporting live corpus from ${url} (read-only, anon key)...`);
@@ -212,15 +303,16 @@ async function main(): Promise<void> {
     );
   }
 
-  let whosWhoExported = false;
+  const overridesApplied = new Set<string>();
   const lines: string[] = [];
   for (const row of rows) {
     if (GHOST_STUB_LESSON_IDS.has(row.lesson_id)) continue;
 
     let body: string;
-    if (row.lesson_id === WHOS_WHO_LESSON_ID) {
-      body = whosWhoBody;
-      whosWhoExported = true;
+    const overrideBody = bodyOverrides.get(row.lesson_id);
+    if (overrideBody !== undefined) {
+      body = overrideBody;
+      overridesApplied.add(row.lesson_id);
     } else {
       body = normalizeBody(row.content_text);
     }
@@ -240,8 +332,15 @@ async function main(): Promise<void> {
     lines.push(JSON.stringify(record));
   }
 
-  if (!whosWhoExported) {
-    throw new Error(`Who's-Who row ${WHOS_WHO_LESSON_ID} not found in the live corpus`);
+  // Every loaded override MUST have matched a live corpus row — a manifest id
+  // (or the built-in Who's-Who id) absent from the corpus is a stale/typo'd
+  // override and must fail loudly, not silently no-op.
+  const missingOverrides = [...bodyOverrides.keys()].filter((id) => !overridesApplied.has(id));
+  if (missingOverrides.length > 0) {
+    throw new Error(
+      `body-override id(s) not found in the live corpus: ${missingOverrides.join(', ')} — ` +
+        `stale or mistyped override entry; STOP and investigate`
+    );
   }
   if (lines.length !== EXPECTED_EXPORT_ROWS) {
     throw new Error(
@@ -255,7 +354,7 @@ async function main(): Promise<void> {
   console.log(`✅ Wrote ${lines.length} records to ${OUTPUT_PATH}`);
   console.log(`   excluded ghost stubs: ${[...GHOST_STUB_LESSON_IDS].join(', ')}`);
   console.log(
-    `   Who's-Who body: ${whosWhoBody.length} chars (live-Doc sidecar, not the 462-char stub)`
+    `   body overrides applied (${overridesApplied.size}): ${[...overridesApplied].join(', ')}`
   );
 }
 

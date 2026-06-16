@@ -135,6 +135,7 @@ import {
   type SubmitTagsTool,
 } from './schema';
 import { normalizeRecordInput } from './normalize';
+import { appendDocSurfaces, loadDocSurfaces } from './doc-surfaces';
 import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
 
 dotenv.config({ path: '.env.local' });
@@ -143,6 +144,14 @@ const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS_DIR = path.join(MODULE_DIR, 'artifacts');
 const CORPUS_PATH = path.join(ARTIFACTS_DIR, 'corpus.jsonl');
 const DEFAULT_OUTPUT_PATH = path.join(ARTIFACTS_DIR, 'retag-run.jsonl');
+/**
+ * Checked-in list of corpus ids the B4 full-corpus run must SKIP — lessons the
+ * user ruled incomplete/non-lesson and slated for corpus deletion (B3.5c, and
+ * B3.5b's completeness-screen verdicts as they land). The runner loads this
+ * unconditionally and drops matching corpus records before --ids/--limit/
+ * --resume. Growth is a data-only edit: add rows to data/corpus-exclusions.json.
+ */
+export const DEFAULT_CORPUS_EXCLUSIONS_PATH = path.join(MODULE_DIR, 'data/corpus-exclusions.json');
 
 /**
  * Output budget for the ~13-property monolithic response. The PROD per-field
@@ -219,7 +228,14 @@ export interface RepairOutcome {
 
 export interface RunRecord {
   id: string;
-  phase: 'main' | 'repair';
+  /**
+   * 'main' = the primary monolithic pass; 'repair' = a per-field Zod-failure
+   * re-run; 'fallback' = an automatic single retry of a refusal-stopped main
+   * call with the --fallback-model (carries that model id, so downstream
+   * consumers both USE it as the lesson's result — it is the latest record —
+   * and SEE it was not the primary model).
+   */
+  phase: 'main' | 'repair' | 'fallback';
   model: string;
   promptSchemaHash: string;
   /** Raw tool_use input (repair phase: the repair-merged object). */
@@ -333,7 +349,7 @@ export function computeCostUsd(model: string, usage: AnthropicUsage | null): num
 
 export function buildRunRecord(params: {
   id: string;
-  phase: 'main' | 'repair';
+  phase: 'main' | 'repair' | 'fallback';
   model: string;
   promptSchemaHash: string;
   rawInput: unknown;
@@ -376,7 +392,7 @@ export function buildRunRecord(params: {
 const runRecordLineSchema = z
   .object({
     id: z.string().min(1),
-    phase: z.enum(['main', 'repair']),
+    phase: z.enum(['main', 'repair', 'fallback']),
     model: z.string().min(1),
     promptSchemaHash: z.string().min(1),
     rawInput: z.unknown(),
@@ -462,6 +478,14 @@ export interface CurrentRunIdentity {
    * direct).
    */
   proxied: boolean;
+  /**
+   * The --fallback-model for this run (undefined when no fallback is wired).
+   * `phase: 'fallback'` records carry the FALLBACK model id, not the primary
+   * `model`, so they are matched against this field instead of `model`. When
+   * it is undefined (or set to a different model than the record's), the
+   * fallback record is NOT resume-skipped and its lesson re-runs the main pass.
+   */
+  fallbackModel?: string;
   /** id → sha256 of the CURRENT corpus body for that lesson. */
   bodyHashById: Map<string, string>;
 }
@@ -484,11 +508,24 @@ export function computeResumableIds(
     // (legacy records without the field read as direct).
     const recordProxied =
       record.effectiveBaseUrl !== undefined && record.effectiveBaseUrl !== DIRECT_BASE_URL;
+    // A `phase: 'fallback'` record carries the FALLBACK model id (not the
+    // primary `model`) and is ALWAYS forced-shape (the fallback call never
+    // uses --tool-choice-auto). So it matches the fallback model and its
+    // tool-choice identity is forced regardless of the run's --tool-choice-auto.
+    // Non-fallback records keep the exact previous identity rules verbatim —
+    // existing records' resume verdict is unchanged.
+    const isFallback = record.phase === 'fallback';
+    const modelMatches = isFallback
+      ? record.model === current.fallbackModel
+      : record.model === current.model;
+    const toolChoiceMatches = isFallback
+      ? record.toolChoice !== 'auto'
+      : (record.toolChoice === 'auto') === current.toolChoiceAuto;
     if (
       record.promptSchemaHash === current.promptSchemaHash &&
-      record.model === current.model &&
+      modelMatches &&
       record.strict === current.strict &&
-      (record.toolChoice === 'auto') === current.toolChoiceAuto &&
+      toolChoiceMatches &&
       recordProxied === current.proxied &&
       record.bodyHash === current.bodyHashById.get(id) &&
       record.error === null
@@ -743,6 +780,15 @@ export async function mapWithConcurrency<T, R>(
 interface Args {
   model: string;
   limit?: number;
+  /**
+   * Optional path to a JSON array of ids OR a JSONL file whose records carry an
+   * `id` field. When set, the runner processes ONLY corpus records whose id is
+   * in that set (intersection); ids requested but absent from the corpus warn
+   * to stderr. Composes with --limit (limit applies AFTER the id filter),
+   * --resume, and --repair. Intended use: the answer-key subset run, e.g.
+   * `--ids scripts/stage2-retag/artifacts/answer-key.final.jsonl`.
+   */
+  ids?: string;
   resume: boolean;
   output: string;
   repair: boolean;
@@ -754,6 +800,15 @@ interface Args {
    * that reject forced tool use (claude-fable-5). Default false = forced.
    */
   toolChoiceAuto: boolean;
+  /**
+   * Optional fallback model. When set, a MAIN-pass call that ends in a model
+   * REFUSAL (stop_reason: 'refusal') is automatically retried ONCE with this
+   * model — using the canonical FORCED tool_choice regardless of
+   * --tool-choice-auto — and the result is appended as a provenance-marked
+   * `phase: 'fallback'` record. Other errors keep the existing behavior.
+   * Undefined = no fallback.
+   */
+  fallbackModel?: string;
   /**
    * Optional CLIProxyAPI base URL. When set, calls route through the proxy and
    * the API key source switches to ANTHROPIC_API_KEY (the proxy-side key);
@@ -806,6 +861,10 @@ export function parseArgs(argv: string[]): Args {
         a.limit = requireIntFlag(flag, next, 1);
         i++;
         break;
+      case '--ids':
+        a.ids = requireFlagValue(flag, next);
+        i++;
+        break;
       case '--resume':
         a.resume = true;
         break;
@@ -825,6 +884,10 @@ export function parseArgs(argv: string[]): Args {
         break;
       case '--tool-choice-auto':
         a.toolChoiceAuto = true;
+        break;
+      case '--fallback-model':
+        a.fallbackModel = requireFlagValue(flag, next);
+        i++;
         break;
       case '--base-url':
         a.baseUrl = requireFlagValue(flag, next);
@@ -850,6 +913,13 @@ Usage:
 Flags:
   --model <id>       Anthropic model ID (default ${DEFAULT_MODEL})
   --limit <N>        only process the first N corpus records (dry-run)
+  --ids <path>       process ONLY corpus records whose id is in this file: a
+                     JSON array of id strings OR a JSONL file whose records
+                     carry an "id" field (e.g. answer-key.final.jsonl). Shape
+                     detected by the first non-whitespace char. Requested ids
+                     absent from the corpus warn to stderr. Composes with
+                     --limit (limit applies AFTER the id filter), --resume, and
+                     --repair (which restricts to the same id subset).
   --resume           skip ids already in the output JSONL (same prompt+schema
                      hash + model + strict flag + tool-choice shape + proxy
                      participation + lesson body hash + no error; a prompt edit
@@ -868,6 +938,19 @@ Flags:
                      BOTH the main and repair passes. For models that reject
                      forced tool_choice (claude-fable-5); the production
                      Opus/Sonnet shape stays forced-tool by default.
+  --fallback-model <id>
+                     refusal-only fallback: when a MAIN-pass call ends in a
+                     model refusal (stop_reason: refusal), retry that lesson
+                     ONCE with this model and append the result as a
+                     provenance-marked phase:'fallback' record (carrying this
+                     model id). The fallback call uses the canonical FORCED
+                     tool_choice even when the main pass runs --tool-choice-auto
+                     (the escape hatch is NOT applied to the fallback). Only a
+                     refusal triggers it — network/billing/max_tokens errors
+                     keep the existing errored-record behavior. --resume treats
+                     a clean fallback record as completed (matched against this
+                     model). Typical: --model claude-fable-5 --fallback-model
+                     claude-opus-4-7.
   --base-url <url>   route through a local CLIProxyAPI proxy to bill against
                      Claude Max (e.g. http://127.0.0.1:8317/api/provider/anthropic).
                      Do NOT include the trailing "/v1" — the SDK appends it; a
@@ -881,10 +964,149 @@ Env (direct API, no --base-url): ANTHROPIC_CONSOLE_API_KEY required (from
      proxy-side key and 401s against the direct API.
 Env (--base-url set): ANTHROPIC_API_KEY required (the proxy-side key).
 
+Corpus exclusions (B3.5c): lessons listed in data/corpus-exclusions.json
+  (user-ruled incomplete/non-lesson, slated for corpus deletion) are ALWAYS
+  dropped before --ids/--limit/--resume, with a one-line skip count logged.
+  Growing the list is a data-only edit to that file.
+
 Deferred A8 live check (single command, needs Console credits):
   npx tsx scripts/stage2-retag/run-retag.ts --limit 3 --concurrency 1
   (record 1 pays the cache write; records 2-3 must show cache_read_input_tokens > 0)
+
+Answer-key subset run (B3 — the 57 key lessons only):
+  npx tsx scripts/stage2-retag/run-retag.ts \\
+    --ids scripts/stage2-retag/artifacts/answer-key.final.jsonl \\
+    --model <id> [--tool-choice-auto] [--base-url <proxy>] --output <path>
 `;
+
+// ---------------------------------------------------------------------------
+// --ids subset loading (pure, unit-tested — no filesystem)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses an --ids file's TEXT into an ordered, de-duplicated id list. The shape
+ * is detected by the first non-whitespace character: `[` → a JSON array of
+ * strings; anything else → JSONL records each carrying a string `id` field
+ * (the answer-key.final.jsonl shape). Blank JSONL lines are skipped. Throws on
+ * an empty file, a non-string array element, a record without a string `id`,
+ * or malformed JSON — a bad --ids file must fail loudly, never silently run an
+ * unintended subset.
+ */
+export function loadIdSet(text: string): string[] {
+  const trimmed = text.trim();
+  if (trimmed === '') throw new Error('--ids file is empty');
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  const push = (id: string): void => {
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  };
+  if (trimmed[0] === '[') {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (!Array.isArray(parsed)) {
+      throw new Error('--ids file is a JSON value but not an array of strings');
+    }
+    for (const element of parsed) {
+      if (typeof element !== 'string' || element === '') {
+        throw new Error(
+          `--ids JSON array contains a non-string (or empty) element: ${JSON.stringify(element)}`
+        );
+      }
+      push(element);
+    }
+    return ids;
+  }
+  for (const line of trimmed.split('\n')) {
+    if (line.trim() === '') continue;
+    const raw: unknown = JSON.parse(line);
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      throw new Error(`--ids JSONL line is not an object: ${line.slice(0, 80)}`);
+    }
+    const id = (raw as Record<string, unknown>).id;
+    if (typeof id !== 'string' || id === '') {
+      throw new Error(
+        `--ids JSONL record lacks a non-empty string "id" field: ${line.slice(0, 80)}`
+      );
+    }
+    push(id);
+  }
+  return ids;
+}
+
+/**
+ * Intersects a corpus list with a requested id set. Returns the kept lessons in
+ * CORPUS order (stable downstream ordering) plus the requested ids absent from
+ * the corpus, in REQUEST order (so the operator's warning lists them as typed).
+ */
+export function filterCorpusByIds<T extends { id: string }>(
+  lessons: T[],
+  requestedIds: string[]
+): { kept: T[]; missingIds: string[] } {
+  const requested = new Set(requestedIds);
+  const present = new Set(lessons.map((lesson) => lesson.id));
+  const kept = lessons.filter((lesson) => requested.has(lesson.id));
+  const missingIds = requestedIds.filter((id) => !present.has(id));
+  return { kept, missingIds };
+}
+
+// ---------------------------------------------------------------------------
+// Corpus exclusions (B3.5c — deletion-slated lessons skipped in the run path)
+// ---------------------------------------------------------------------------
+
+const corpusExclusionEntrySchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  reason: z.string().min(1),
+});
+
+/** One excluded lesson (id + human-readable title + ruling reason). */
+export type CorpusExclusionEntry = z.infer<typeof corpusExclusionEntrySchema>;
+
+const corpusExclusionsFileSchema = z.object({
+  provenance: z.record(z.unknown()),
+  excluded: z.array(corpusExclusionEntrySchema),
+});
+
+/**
+ * Loads the checked-in corpus-exclusions file — lessons the user ruled
+ * incomplete/non-lesson and slated for corpus deletion, which the B4 run must
+ * skip. Returns the entries in file order; rejects a duplicate id (a typo in
+ * the data file must fail loudly, never silently drop the wrong lesson). The
+ * file format is the same shape as data/answer-key-exclusions.json, so adding
+ * more verdicts (B3.5b) is a data-only edit.
+ */
+export function loadCorpusExclusions(filePath: string): CorpusExclusionEntry[] {
+  const parsed = corpusExclusionsFileSchema.parse(JSON.parse(readFileSync(filePath, 'utf8')));
+  const seen = new Set<string>();
+  for (const entry of parsed.excluded) {
+    if (seen.has(entry.id)) {
+      throw new Error(`corpus exclusions list has a duplicate id: ${entry.id}`);
+    }
+    seen.add(entry.id);
+  }
+  return parsed.excluded;
+}
+
+/**
+ * Drops excluded lessons from a corpus list. Returns the kept lessons in corpus
+ * order plus the excluded ids that were actually present (so the operator log
+ * reflects real drops, not stale exclusions entries for lessons absent from the
+ * corpus). Excluded ids not in the corpus are silently ignored.
+ */
+export function excludeCorpusIds<T extends { id: string }>(
+  lessons: T[],
+  excludedIds: Set<string>
+): { kept: T[]; excludedHits: string[] } {
+  const kept: T[] = [];
+  const excludedHits: string[] = [];
+  for (const lesson of lessons) {
+    if (excludedIds.has(lesson.id)) excludedHits.push(lesson.id);
+    else kept.push(lesson);
+  }
+  return { kept, excludedHits };
+}
 
 // ---------------------------------------------------------------------------
 // API plumbing
@@ -984,7 +1206,7 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-interface CallResult {
+export interface CallResult {
   rawInput: unknown;
   usage: AnthropicUsage;
   latencyMs: number;
@@ -1011,6 +1233,19 @@ export class MissingToolUseError extends Error {
     this.usage = usage;
     this.stopReason = stopReason;
   }
+}
+
+/**
+ * The --fallback-model trigger predicate. Fallback fires ONLY when a main-pass
+ * call ended in a model REFUSAL — i.e. a MissingToolUseError whose stop_reason
+ * is exactly `'refusal'` (the API returns a refusal block instead of the
+ * forced tool call; a deterministic safety false-positive on innocuous content
+ * was observed for claude-fable-5 on the B3 answer key). Every other error
+ * (network, billing 400s, max_tokens, end_turn) keeps the existing errored-
+ * record behavior and does NOT trigger a fallback.
+ */
+export function isRefusalError(error: unknown): boolean {
+  return error instanceof MissingToolUseError && error.stopReason === 'refusal';
 }
 
 /** The slice of an API response the extractor needs (pure, unit-testable). */
@@ -1121,6 +1356,86 @@ async function callForcedTool(
   }
 }
 
+/**
+ * Runs the single automatic fallback retry of a refusal-stopped main call and
+ * builds its `phase: 'fallback'` record. Orchestration is pure apart from the
+ * injected `callFn` (the runner passes a closure over callForcedTool; tests
+ * pass a stub) — no network here, so the refusal→fallback flow is unit-tested.
+ *
+ * The fallback ALWAYS uses the canonical FORCED tool_choice (callFn is invoked
+ * with `false`), even when the main pass ran with --tool-choice-auto: the
+ * escape hatch exists only for models that reject forced tool_choice
+ * (claude-fable-5), and the fallback model (claude-opus-4-7) takes forced tool
+ * use. The resulting record therefore carries NO `toolChoice` marker (forced),
+ * the fallback model id, post-hoc Zod validation against the SAME result
+ * schema, and cost billed under the fallback model. A fallback that itself
+ * errors lands as a clean errored fallback record (usage preserved when the
+ * no-tool_use response was billed) — and, being errored, is not resumable.
+ */
+export async function runFallbackForRefusal(params: {
+  id: string;
+  fallbackModel: string;
+  promptSchemaHash: string;
+  bodyHash: string;
+  resultSchema: ReturnType<typeof buildResultSchema>;
+  effectiveBaseUrl: string;
+  strict: boolean;
+  /**
+   * Performs the actual fallback call. Receives `toolChoiceAuto` (always
+   * `false` here — forced). In the runner this is a closure over callForcedTool
+   * bound to the fallback model + the canonical (non-auto) tool.
+   */
+  callFn: (toolChoiceAuto: boolean) => Promise<CallResult>;
+  /**
+   * Whether the MAIN pass ran --tool-choice-auto. Captured only to make the
+   * "fallback ignores the escape hatch" contract explicit and testable; the
+   * fallback call is forced regardless of its value.
+   */
+  mainPassToolChoiceAuto?: boolean;
+}): Promise<RunRecord> {
+  try {
+    // ALWAYS forced — the fallback never inherits --tool-choice-auto.
+    const { rawInput: apiInput, usage, latencyMs, stopReason } = await params.callFn(false);
+    const { rawInput, normalizations } = normalizeRecordInput(apiInput);
+    const zod = validateRawInput(params.resultSchema, rawInput);
+    return buildRunRecord({
+      id: params.id,
+      phase: 'fallback',
+      model: params.fallbackModel,
+      promptSchemaHash: params.promptSchemaHash,
+      rawInput,
+      zod,
+      usage,
+      latencyMs,
+      error: null,
+      stopReason,
+      bodyHash: params.bodyHash,
+      strict: params.strict,
+      // Forced path → no toolChoice marker (mirrors the main forced path).
+      effectiveBaseUrl: params.effectiveBaseUrl,
+      normalizations,
+    });
+  } catch (e) {
+    const msg = errorMessage(e);
+    const billed = e instanceof MissingToolUseError ? e : null;
+    return buildRunRecord({
+      id: params.id,
+      phase: 'fallback',
+      model: params.fallbackModel,
+      promptSchemaHash: params.promptSchemaHash,
+      rawInput: null,
+      zod: { passed: false, fieldErrors: null },
+      usage: billed?.usage ?? null,
+      latencyMs: billed?.latencyMs ?? null,
+      error: msg,
+      stopReason: billed?.stopReason ?? null,
+      bodyHash: params.bodyHash,
+      strict: params.strict,
+      effectiveBaseUrl: params.effectiveBaseUrl,
+    });
+  }
+}
+
 function appendRecord(outputPath: string, record: RunRecord): void {
   appendFileSync(outputPath, `${JSON.stringify(record)}\n`, 'utf8');
 }
@@ -1156,11 +1471,47 @@ async function runMainPass(args: Args): Promise<void> {
   const promptSchemaHash = computePromptSchemaHash(systemPrompt, baseTool);
   const resultSchema = buildResultSchema(vocab);
 
-  const corpus = loadCorpus();
+  // Append the source-document surfaces (Drive filename + page header) to each
+  // lesson body BEFORE hashing/sending — these carry grade/season claims that
+  // content_text lacks (ruling §A20). Lessons absent from the sidecar are
+  // byte-identical (no block appended); a missing sidecar warns once and adds
+  // nothing, so the full-corpus run is unchanged before the corpus-wide capture.
+  const docSurfaces = loadDocSurfaces();
+  const rawCorpus = loadCorpus().map((lesson) => ({
+    ...lesson,
+    content_text: appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
+  }));
+  // Drop deletion-slated lessons (B3.5c) BEFORE --ids/--limit/--resume so the
+  // B4 full-corpus run never tags an incomplete/non-lesson doc. Data-only to
+  // grow: add rows to data/corpus-exclusions.json.
+  const exclusions = loadCorpusExclusions(DEFAULT_CORPUS_EXCLUSIONS_PATH);
+  const excludedIds = new Set(exclusions.map((e) => e.id));
+  const { kept: corpus, excludedHits } = excludeCorpusIds(rawCorpus, excludedIds);
+  if (excludedHits.length > 0) {
+    console.log(
+      `Corpus exclusions: skipping ${excludedHits.length} deletion-slated lesson(s) ` +
+        `(incomplete/non-lesson, ruling §A24/§F): ${excludedHits.join(', ')}`
+    );
+  }
   const bodyHashById = new Map(
     corpus.map((lesson) => [lesson.id, computeBodyHash(lesson.content_text)])
   );
   let lessons = corpus;
+  // --ids: restrict to the intersection of the corpus with the requested id
+  // set (e.g. the 57-lesson answer-key subset). Applied BEFORE --limit so the
+  // limit caps the filtered set, and before --resume so resume only skips
+  // within the chosen subset. Requested ids absent from the corpus warn.
+  if (args.ids !== undefined) {
+    const requestedIds = loadIdSet(readFileSync(args.ids, 'utf8'));
+    const { kept, missingIds } = filterCorpusByIds(lessons, requestedIds);
+    lessons = kept;
+    console.log(`--ids: ${requestedIds.length} requested → ${lessons.length} present in corpus.`);
+    if (missingIds.length > 0) {
+      console.warn(
+        `  warning: ${missingIds.length} requested id(s) not in the corpus: ${missingIds.join(', ')}`
+      );
+    }
+  }
   if (args.limit !== undefined) lessons = lessons.slice(0, args.limit);
 
   if (args.resume && existsSync(args.output)) {
@@ -1171,6 +1522,7 @@ async function runMainPass(args: Args): Promise<void> {
       strict: args.strict,
       toolChoiceAuto: args.toolChoiceAuto,
       proxied: args.baseUrl !== undefined,
+      fallbackModel: args.fallbackModel,
       bodyHashById,
     });
     const before = lessons.length;
@@ -1199,6 +1551,7 @@ async function runMainPass(args: Args): Promise<void> {
   let zodPassed = 0;
   let zodFailed = 0;
   let errored = 0;
+  let fellBack = 0;
   let totalCostUsd = 0;
   const totalUsage: AnthropicUsage = {
     input_tokens: 0,
@@ -1219,6 +1572,9 @@ async function runMainPass(args: Args): Promise<void> {
 
   await mapWithConcurrency(lessons, args.concurrency, async (lesson) => {
     let record: RunRecord;
+    // Captured in the catch when a refusal triggers --fallback-model; appended
+    // AFTER the main errored record so the fallback wins as the latest record.
+    let fallbackRecord: RunRecord | null = null;
     const bodyHash = computeBodyHash(lesson.content_text);
     try {
       const {
@@ -1283,8 +1639,51 @@ async function runMainPass(args: Args): Promise<void> {
       });
       if (billed) addToTotals(billed.usage, record.costUsd);
       errored++;
+
+      // Refusal-only fallback: a MAIN-pass refusal (stop_reason: 'refusal')
+      // retries ONCE with --fallback-model, using the canonical FORCED
+      // tool_choice (never the --tool-choice-auto escape hatch — that exists
+      // only for the primary model that rejects forced tools). The errored
+      // main record is still written above (provenance of the refusal); the
+      // fallback record is appended after it, so it becomes the lesson's
+      // latest record for validate-output/scoring/--resume.
+      if (args.fallbackModel !== undefined && isRefusalError(e)) {
+        console.warn(
+          `  lesson ${lesson.id} refused by ${args.model} — falling back to ${args.fallbackModel}`
+        );
+        fallbackRecord = await runFallbackForRefusal({
+          id: lesson.id,
+          fallbackModel: args.fallbackModel,
+          promptSchemaHash,
+          bodyHash,
+          resultSchema,
+          effectiveBaseUrl,
+          strict: args.strict,
+          mainPassToolChoiceAuto: args.toolChoiceAuto,
+          // Forced tool_choice (toolChoiceAuto=false), forced tool definition.
+          callFn: (toolChoiceAuto) =>
+            callForcedTool(
+              client,
+              args.fallbackModel as string,
+              systemPrompt,
+              tool,
+              lesson.content_text,
+              toolChoiceAuto
+            ),
+        });
+        fellBack++;
+        if (fallbackRecord.usage) addToTotals(fallbackRecord.usage, fallbackRecord.costUsd);
+        if (fallbackRecord.error !== null) {
+          console.warn(
+            `  lesson ${lesson.id} fallback (${args.fallbackModel}) also failed: ${fallbackRecord.error}`
+          );
+        }
+      }
     }
+    // Main record first, then the fallback (if any) — so the fallback is the
+    // lesson's LATEST record (latestRecordById picks the last line per id).
     appendRecord(args.output, record);
+    if (fallbackRecord !== null) appendRecord(args.output, fallbackRecord);
     done++;
     if (done % 10 === 0 || done === lessons.length) {
       console.log(`  ${done}/${lessons.length} processed`);
@@ -1293,7 +1692,8 @@ async function runMainPass(args: Args): Promise<void> {
 
   console.log('');
   console.log(
-    `Done: ${zodPassed} Zod-passed, ${zodFailed} Zod-failed (repairable via --repair), ${errored} errored.`
+    `Done: ${zodPassed} Zod-passed, ${zodFailed} Zod-failed (repairable via --repair), ${errored} errored` +
+      `${args.fallbackModel !== undefined ? `, ${fellBack} fell back to ${args.fallbackModel}` : ''}.`
   );
   console.log(
     `Tokens: input=${totalUsage.input_tokens}  output=${totalUsage.output_tokens}  ` +
@@ -1316,7 +1716,26 @@ async function runRepairPass(args: Args): Promise<void> {
   if (!existsSync(args.output)) {
     throw new Error(`--repair needs an existing output file: ${args.output}`);
   }
-  const latest = latestRecordById(parseRunRecords(readFileSync(args.output, 'utf8')));
+  let latest = latestRecordById(parseRunRecords(readFileSync(args.output, 'utf8')));
+
+  // --ids: restrict the repair pass to records whose id is in the requested set
+  // (mirrors the main pass's subset behavior). Requested ids absent from the
+  // run output warn; the candidate planner then works over the filtered map.
+  if (args.ids !== undefined) {
+    const requestedIds = loadIdSet(readFileSync(args.ids, 'utf8'));
+    const requested = new Set(requestedIds);
+    const filtered = new Map([...latest].filter(([id]) => requested.has(id)));
+    const missingIds = requestedIds.filter((id) => !latest.has(id));
+    console.log(
+      `--ids: ${requestedIds.length} requested → ${filtered.size} present in run output.`
+    );
+    if (missingIds.length > 0) {
+      console.warn(
+        `  warning: ${missingIds.length} requested id(s) not in the run output: ${missingIds.join(', ')}`
+      );
+    }
+    latest = filtered;
+  }
 
   const bodyHashById = new Map(
     [...lessonBodyById].map(([id, body]) => [id, computeBodyHash(body)])
@@ -1476,7 +1895,23 @@ async function main(): Promise<void> {
   }
   warnIfOutsideArtifacts(args.output);
   if (args.repair) {
-    lessonBodyById = new Map(loadCorpus().map((lesson) => [lesson.id, lesson.content_text]));
+    // Surface bodies the same way the main pass does, so the repair pass sends
+    // the identical body and its bodyHash matches the main-pass record's (no
+    // spurious bodyMismatch skips). See runMainPass for the §A20 rationale.
+    const docSurfaces = loadDocSurfaces();
+    // Mirror the main pass: deletion-slated lessons (B3.5c) are not in the run
+    // corpus, so they are not available to repair either.
+    const excludedIds = new Set(
+      loadCorpusExclusions(DEFAULT_CORPUS_EXCLUSIONS_PATH).map((e) => e.id)
+    );
+    lessonBodyById = new Map(
+      loadCorpus()
+        .filter((lesson) => !excludedIds.has(lesson.id))
+        .map((lesson) => [
+          lesson.id,
+          appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
+        ])
+    );
     await runRepairPass(args);
   } else {
     await runMainPass(args);

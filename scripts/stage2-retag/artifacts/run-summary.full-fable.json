@@ -1,0 +1,172 @@
+{
+  "corpusLessons": 765,
+  "uniqueIdsInRun": 753,
+  "totalRecords": 764,
+  "mainRecords": 760,
+  "repairRecords": 4,
+  "missingFromRun": [
+    {
+      "id": "13vpumvgEgzO7jUWdEHamEjXWwOxvQ_KFHaeMVUKvQDo",
+      "title": "Celebrating Eid: Understanding Muslim culture & tradition"
+    },
+    {
+      "id": "1HWSlL8xio3QQkculHrVLA0EvEBSU4Th_tEZU4pXiD4Q",
+      "title": "Nigeria / Red Bean Stew"
+    },
+    {
+      "id": "1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX",
+      "title": "Equivalent Ratios"
+    },
+    {
+      "id": "1LxGEdGyjFmsWtnhLbqb__ifhIoxTU7kXUeQdCHkf8Aw",
+      "title": "Flowers"
+    },
+    {
+      "id": "1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag",
+      "title": "Three Sister Arepas"
+    },
+    {
+      "id": "1qFG6f3CdmVqjeTJ_Xfv_y2cITHd6beOeCycIZKV73mE",
+      "title": "Italy / Pesto"
+    },
+    {
+      "id": "1QiqNPrXEpDXt7Hmc8uMC8hWCSNfhi3qacbIuVzqZxZA",
+      "title": "Juneteenth and Cultural Awareness Through Cooking"
+    },
+    {
+      "id": "1SDsLLHlfBqIHSxvVVQrbOk96hlOkxOse",
+      "title": "Mindful Eating"
+    },
+    {
+      "id": "1Ufs0zXqshdkXE4J0V8fOPWxqi42T2IlFdsei0ESm7PE",
+      "title": "Kitchen Lesson Plan Appendices"
+    },
+    {
+      "id": "1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M",
+      "title": "Soul Food Sunday"
+    },
+    {
+      "id": "1w0c7tESqksEPlQL-Fj1tpTL3i2ofmN_Agq-UwwqErBE",
+      "title": "Sandor Katz: Food Hero"
+    },
+    {
+      "id": "1WOgtZT6tIQs4DQxVZxG9drU1BgNaFCBdt87NKJX01Fs",
+      "title": "Honduras and Baleadas"
+    }
+  ],
+  "unknownInRun": [],
+  "models": {
+    "claude-fable-5": 757,
+    "claude-opus-4-7": 7
+  },
+  "promptSchemaHashes": {
+    "d561226e9ea2f0da6ee97d9293a9084a6e4e99e5bd460f67567d8232acb5a070": 764
+  },
+  "strictRecords": 0,
+  "latest": {
+    "zodPassed": 753,
+    "zodFailedWithOutput": 0,
+    "noUsableOutput": 0
+  },
+  "zodFailuresByField": {},
+  "normalizations": {
+    "concepts-integration-add": 41,
+    "garden-skills-nongarden-clear": 42,
+    "synonym-pair-drop": 21,
+    "academic-exclusivity-strip": 3
+  },
+  "integrationWithoutConcepts": 2,
+  "repair": {
+    "recordsNowPassing": 4,
+    "recordsStillFailing": 0,
+    "fields": {
+      "academic_concepts": {
+        "attempted": 4,
+        "succeeded": 4,
+        "failed": 0
+      },
+      "activity_type": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "tags": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "season_timing": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "cultural_responsiveness_features": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "cultural_heritage": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "academic_integration": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "social_emotional_learning": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "core_competencies": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "cooking_methods": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "observances_holidays": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "garden_skills": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      },
+      "grade_levels": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 102087,
+    "output_tokens": 1640994,
+    "cache_creation_input_tokens": 2876614,
+    "cache_read_input_tokens": 2981355
+  },
+  "totalCostUsd": 121.28016825000006,
+  "recordsWithoutCost": 0,
+  "errors": [
+    {
+      "message": "response carried no submit_tags tool_use block (stop_reason: refusal)",
+      "count": 6,
+      "ids": [
+        "1_WlZmDJv8Ql-sCLlOyxr2qL4zeb1GQda",
+        "18SdRTm5OmYYQT-lfGISMlph5ZMjMttp0m_lrnAwP5ZM",
+        "1X7HadA1WaR-hNBFIHvAUsFKborDGE5eT3Lhg5Dp9CEI",
+        "1yw4frO1jV9UahiQjBvAD9nzJuqPzOV_r-MAIdapzgAI",
+        "lesson_cb08bb36feb44659a416c763b499aff6",
+        "1_WlZmDJv8Ql-sCLlOyxr2qL4zeb1GQda"
+      ]
+    }
+  ]
+}

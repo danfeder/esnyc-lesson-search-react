@@ -24,6 +24,13 @@
  *        `framework` string is not in that subject's `framework` array, is
  *        DROPPED. Garbage pairs are worse than fewer pairs (they feed the
  *        search_synonyms PR).
+ *   R6 — garden_skills exclusivity. garden_skills only makes sense when the
+ *        lesson is (partly) a garden activity. When the predicted
+ *        `activity_type` does NOT include `garden`, `garden_skills` is cleared
+ *        to an empty array. User ruling 2026-06-12 on B3 answer-key evidence:
+ *        in all 14 cases where a model emitted garden_skills on a non-garden
+ *        activity_type, the user-verified key had garden_skills EMPTY (zero
+ *        harm cases). Mirrors R1 — activity mode governs the dependent field.
  *
  * normalizeRecordInput is PURE (no mutation of its argument), IDEMPOTENT
  * (re-normalizing normalized output is a no-op), and NEVER silent (every
@@ -43,6 +50,8 @@ export const NORMALIZATION_RULES = {
   conceptsIntegrationAdd: 'concepts-integration-add',
   /** R5 — dropped one or more ungrounded synonym pairs for a subject. */
   synonymPairDrop: 'synonym-pair-drop',
+  /** R6 — cleared garden_skills because activity_type lacks `garden`. */
+  gardenSkillsNonGardenClear: 'garden-skills-nongarden-clear',
 } as const;
 
 export interface NormalizationResult {
@@ -55,6 +64,7 @@ export interface NormalizationResult {
 
 const ACTIVITY_MODE_TAGS = ['cooking', 'garden', 'craft'] as const;
 const ACADEMIC_TAG = 'academic';
+const GARDEN_TAG = 'garden';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -79,6 +89,24 @@ function applyAcademicExclusivity(work: Record<string, unknown>, normalizations:
     work.activity_type = activityType.filter((tag) => tag !== ACADEMIC_TAG);
     normalizations.push(NORMALIZATION_RULES.academicExclusivityStrip);
   }
+}
+
+/**
+ * R6 — clear garden_skills when the predicted activity_type does not include
+ * `garden`. Only fires (and only records the rule) when garden_skills is
+ * non-empty, so an already-empty field on a non-garden lesson is a no-op.
+ */
+function applyGardenSkillsNonGardenClear(
+  work: Record<string, unknown>,
+  normalizations: string[]
+): void {
+  const gardenSkills = work.garden_skills;
+  if (!isStringArray(gardenSkills) || gardenSkills.length === 0) return;
+  const activityType = work.activity_type;
+  if (!isStringArray(activityType)) return;
+  if (activityType.includes(GARDEN_TAG)) return;
+  work.garden_skills = [];
+  normalizations.push(NORMALIZATION_RULES.gardenSkillsNonGardenClear);
 }
 
 /**
@@ -160,6 +188,7 @@ export function normalizeRecordInput(rawInput: unknown): NormalizationResult {
   const normalizations: string[] = [];
 
   applyAcademicExclusivity(work, normalizations);
+  applyGardenSkillsNonGardenClear(work, normalizations);
   applyConceptsIntegrationReconcile(work, normalizations);
   applySynonymPairLint(work, normalizations);
 

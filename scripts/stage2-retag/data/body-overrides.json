@@ -1,0 +1,41 @@
+{
+  "provenance": {
+    "task": "PR 6b — B3.5b body-override re-extraction (metadata-card records)",
+    "authored": "2026-06-12",
+    "ruling_ref": "scripts/stage2-retag/artifacts/completeness-screen.md (BORDERLINE Group A: six 'metadata card' bodies) + user verdict 2026-06-12 (supervisor session)",
+    "effect": "These corpus records' stored content_text is a machine-written TAG-SUMMARY card (title + short description + lists of grades/themes/ingredients/skills), NOT lesson text — re-tagging it would read the old tags back circularly. The REAL lesson body was fetched READ-ONLY from each record's underlying live Google Doc (df@esynyc.org) and is supplied to export-corpus.ts as a sidecar at artifacts/body-overrides/<id>.txt (untracked, like artifacts/whos-who-body.txt). The export script substitutes the sidecar body for the stored content_text at export time. NO database write — the PROD content_text repair, if any, rides a later PR.",
+    "fetch_method": "Long ids = native Google Docs (get_doc_content). Short ids = .docx Office files (get_drive_file_content). Bodies normalized via export-corpus.ts normalizeBody (strip \\x0B, normalize \\r\\n/\\r to \\n).",
+    "fallback_note": "Two other Group-A metadata-card records (Equivalent Ratios 1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX, Mindful Eating 1SDsLLHlfBqIHSxvVVQrbOk96hlOkxOse) 404'd in Drive and could NOT be re-extracted; they are in data/corpus-exclusions.json instead (pre-authorized re-extraction fallback). The two Fattoush docs are a known near-duplicate pair — identical bodies are expected; both stay.",
+    "min_body_chars": "export-corpus.ts enforces a per-override minimum-length sanity guard (MIN_OVERRIDE_BODY_CHARS) and refuses to run if a sidecar is missing or stub-sized, mirroring the Who's-Who guard."
+  },
+  "overrides": [
+    {
+      "id": "1vDebvrcoPdDcoooLnpF64P3ade4l8ZRqVkfSlEAyYts",
+      "title": "Fattoush",
+      "doc_type": "native_google_doc",
+      "fetched_chars": 3381,
+      "note": "Real, complete lesson (summary/objectives/agenda/materials/prep). Native Google Doc. Near-duplicate of 1YeRlyncgM-gMS-Aica2Fk7wjBsRN9-K6 (the famous dedup pair)."
+    },
+    {
+      "id": "1YeRlyncgM-gMS-Aica2Fk7wjBsRN9-K6",
+      "title": "Fattoush",
+      "doc_type": "docx_office_file",
+      "fetched_chars": 3385,
+      "note": "Real, complete lesson. .docx Office file (body inlined as one paragraph). Near-duplicate of 1vDebvrcoPdDcoooLnpF64P3ade4l8ZRqVkfSlEAyYts."
+    },
+    {
+      "id": "1I-62V3w_VT2EycS03QXR-YiX_xe9xTwo10JHBk8o3vs",
+      "title": "Plant Part Salad",
+      "doc_type": "native_google_doc",
+      "fetched_chars": 4025,
+      "note": "Real, complete K-5 lesson (aim/materials/vocabulary/opening circle/guessing game/dressing prep/closing). Native Google Doc."
+    },
+    {
+      "id": "1P8fqhHyo7FIzysTkrh628cbOfkpYAQw1",
+      "title": "Plant Part Stir Fry",
+      "doc_type": "docx_office_file",
+      "fetched_chars": 2833,
+      "note": "Real, complete lesson (summary/objectives/agenda/three-table activity/materials/prep). .docx Office file."
+    }
+  ]
+}

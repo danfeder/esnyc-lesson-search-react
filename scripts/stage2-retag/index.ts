@@ -22,7 +22,17 @@
  *   - validate-output.ts      — A7: run-level output validation summary.
  *   - generate-diff-report.ts — A7: per-field corpus diff + plain-language
  *                               markdown report (Protocol-B artifact).
- *   - prepare-apply.ts        — lands in PR B (apply artifacts; not here).
+ *   - sample-answer-key.ts    — B1: Protocol-A answer-key sampler (stratified
+ *                               random + checked-in adversarial) → emits
+ *                               answer-key-sample.jsonl + answer-key-worksheet.md;
+ *                               also parses a filled worksheet → answer-key.final.jsonl.
+ *   - prepare-apply.ts        — B5b: apply-artifact emitter. Turns the full
+ *                               run + corpus into staging data (SQL/CSV), a
+ *                               DRAFT apply migration (pr6_retag_rollback
+ *                               snapshot + dual-write UPDATEs; TEXT artifact,
+ *                               never executed, not under supabase/migrations/),
+ *                               and a plain-language spot-check worksheet. No
+ *                               DB access.
  *
  * This file remains the dedicated type-check + lint surface target (OQ12).
  */

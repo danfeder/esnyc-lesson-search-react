@@ -115,15 +115,54 @@ All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans
 
 ---
 
-## PR B — Answer key + full run + apply artifacts (medium detail; refine at cycle start)
+## PR B — Answer key + full run + apply artifacts — REFINED 2026-06-12 (cycle start)
 
-- **B1** `sample-answer-key.ts`: ~60 lessons = ~40 stratified-random (by activity_type × body length) + ~20 adversarial seeded from `oq6-v3-baseline-and-eval-protocols.md`'s failure gallery (same-titled families, cosmetics suspects, closing-tasting lessons, wide-grade recipes). Emits a plain-language labeling worksheet (pattern: the two prior worksheets).
-- **B2** Answer-key fill: agent pre-fills draft labels per field from bodies; **user verifies/corrects** (OQ8 lock — no curriculum-team dependency). Locked grade policy applies.
-- **B3** Eval scoring: score THREE contestants against the key — v3's existing PROD tags, the new pipeline on **claude-fable-5** (primary, `--tool-choice-auto`), the new pipeline on **claude-opus-4-7** (challenger) — per the 2026-06-12 r3 four-model comparison (4-8 + Sonnet dropped); reusing `scripts/lib/evalMetrics` + the eval-script harness. **Gates:** new pipeline (winning model) must meet per-field F1 ≥ v3 on every re-tagged field AND macroF1 ≥ 0.7 AND per-value recall ≥ 0.5. Model with the better quality/cost picture wins; record the choice in the status doc.
-- **B4** Full run: **USER GREEN-LIGHT REQUIRED (real-money, full-corpus rule)** — present the B3 scorecard + final cost projection first. Then `run-retag.ts` over all 765 exported records + repair pass; validate-output summary must show 100% Zod-pass post-repair.
-- **B5** Apply artifacts: full diff report + `prepare-apply.ts` emitting (i) the staging data as SQL/CSV artifact, (ii) the draft apply migration (PR-5 emitter precedent) with `pr6_retag_rollback` snapshot DDL + dual-write UPDATEs, (iii) the spot-check worksheet (~50-100 sampled lessons across the three buckets: changed / unchanged / weird) for the user's Protocol-B review.
-- **B6** Register adjudication: agent pass walks all 74 audit signals (24 CON-NN + 50 heritage) against the NEW tags; marks resolved-by-retag vs still-open in the registers; surfaces judgment calls (CON-16 etc.) to the user. Docs-only edits.
-- **B7** Ritual → PR B (artifacts + registers; still no DB writes).
+Branch `feat/pr6b-stage2-retag-run` (off `f982d1a`). **No DB writes anywhere in PR B.** Contestants: **claude-fable-5 primary (`--tool-choice-auto`) + claude-opus-4-7 challenger**; ALL runs via the CLIProxyAPI proxy (`--base-url http://127.0.0.1:8317/api/provider/anthropic`; proxy must be RUNNING; results not path-interchangeable with direct API; pull-latest before runs).
+
+### B0 — Deferred small-fix bundle (code; TDD where logic changes) — NEW at refinement
+Fold the code-shaped PR-A deferrals BEFORE any B3 runs so the runs ride fixed code:
+- **Repair-pass toolChoice gate symmetry** (`run-retag.ts`): main pass honors `--tool-choice-auto`, repair pass behavior must match it symmetrically (resume-identity aware — changing repair call shape must not silently invalidate resume).
+- **Cache-floor labeling for unknown families** (`preflight-token-mass.ts` `assessCacheFloor`): unknown-family (fable) currently returns `level: 'pass'` — give it a distinct level/label so a fable preflight isn't a silent pass.
+- **`preflight-token-mass.ts --help`** (mirror run-retag's usage block).
+- **Repair-pass prompt review**: o47's garden_skills fabrications concentrated in REPAIR records across all 3 rounds — review/tighten the per-field repair prompt; record the conclusion in `artifacts/dryrun-notes.md`.
+- `strict:true`: NO action (API rejects `uniqueItems` in the strict subset — recorded; revisit only on schema restructure).
+- **Verify:** full suite green (≥285), `type-check` both surfaces, `lint`. **Commit:** `fix(stage2-retag): PR-A deferral bundle — repair toolChoice symmetry, cache-floor labeling, preflight --help`
+
+### B1 — Answer-key sampler + labeling worksheet — TDD
+- `scripts/stage2-retag/sample-answer-key.ts`, deterministic (recorded seed) over `artifacts/corpus.jsonl` (765 records):
+  - **~40 stratified-random**: strata = current activity_type (from the corpus snapshot's PROD tags) × body-length quartile.
+  - **~20 adversarial**: hand-listed IDs in checked-in `data/answer-key-adversarial.json`, seeded from `oq6-v3-baseline-and-eval-protocols.md`'s failure gallery (same-titled families, cosmetics suspects, closing-tasting lessons, wide-grade recipes) PLUS the PR-A escalations: ≥2 L14-class heritage-ban cases, ≥2 `[Table]`-marker bodies (fable fabricated a season on one), ≥2 R4 reconcile-direction cases (academic_concepts⇄academicIntegration conflicts).
+  - Emits `artifacts/answer-key-sample.jsonl` (IDs + bodies + current tags) + `artifacts/answer-key-worksheet.md` (plain-language per-lesson labeling sheets, pattern of the two prior worksheets; 12 fields + grades source-doc-claim column; per-field vocab lists inlined).
+- TDD: stratification determinism, bucket counts, adversarial inclusion, worksheet rendering.
+- **Commit:** `feat(stage2-retag): answer-key sampler + labeling worksheet (TDD)`
+
+### B2 — Answer-key fill: agent pre-fill + USER verification `[user-gated]`
+- Supervisor dispatches pre-fill agent(s) reading the 60 bodies, drafting labels per field into the worksheet draft column WITH per-label body-quote evidence. Locked grade policy: source-doc claim only; silent docs gradeless.
+- **R4 adjudication rides here**: for reconcile-direction cases the key records the CORRECT direction; outcome decides whether `normalize.ts`'s adds-integration reconcile flips to drop-concept (code follow-up lands in B2 if needed, BEFORE B3 runs).
+- **USER verifies/corrects every sheet** (OQ8 lock). Confirmed worksheet → `artifacts/answer-key.final.jsonl` via a small converter (part of B1's tooling).
+
+### B3 — Contestant runs + eval scoring `[USER COST APPROVAL]`
+- Pipeline runs on the 60 key lessons: fable + o47 via proxy (estimate from r3 measured rates: ~$10 + ~$4 — exceeds the ≤20-lesson dry-run allowance, so explicit user OK before running).
+- Score THREE contestants against the key: v3 (= current PROD tags in the corpus snapshot), fable, o47 — reusing `scripts/lib/evalMetrics`; per-field F1 / macroF1 / per-value recall. **Gates:** winning model per-field F1 ≥ v3 everywhere AND macroF1 ≥ 0.7 AND per-value recall ≥ 0.5.
+- Also quantify from the key: **academic-strip amplification** (cases where `academic` was correct and the strip hurts) → decide recheck routing; **L14 heritage-ban failures** → decide code-side rule. Record both decisions in the status doc.
+- **Commit:** scoring script + scorecard artifact.
+
+### B3.5 — Pre-B4 corpus prep (green-lit 2026-06-12 Session 8; the RUN stays separately gated)
+Three items, all must complete before B4 launches:
+- **B3.5a — Corpus-wide doc-surfaces capture** (~710 remaining live docs; 59 already swept Session 7 → `artifacts/prefill/header-filename-sweep.md`). Method proven: Drive filename via metadata; page headers via `inspect_doc_structure` (native Docs) / `word/header*.xml` (.docx). Chunk across multiple background agents (~80-100 docs each); merge into the doc-surfaces sidecar format B2.5 expects (1:1 with corpus ids); supervisor spot-checks a sample against Session-7 sweep rows. Output: full-corpus sidecar artifact.
+- **B3.5b — Full-corpus completeness screen** (3/60 key lessons were incomplete/non-lesson; expect ~35 corpus-wide). Heuristic pass over `corpus.jsonl` bodies (missing agenda/objectives/materials signature, stub length, non-lesson template) + agent review of flagged rows → plain-language candidate list with body evidence. **USER verdicts on candidates** (deletion follow-ups pattern from Session 7); confirmed non-lessons excluded from the run corpus (exclusions file precedent `9d4b626`).
+- **B3.5c — Fold the 3 Session-7 deletion verdicts** (L10 Celebrating Eid `…`, L21 Kitchen Appendices, L27 Three Sister Arepas — verbatim ids in `data/answer-key-exclusions.json` + rulings doc) into the corpus/export exclusions so B4 doesn't run them.
+
+### B4 — Full run `[USER GREEN-LIGHT — real-money full-corpus rule; prep green-lit, RUN gate still pending]`
+- Present B3 scorecard + final cost projection FIRST. On green-light: `run-retag.ts` over all live records post-B3.5 exclusions + repair pass (proxy; resume-capable). **Winner locked at B3 (2026-06-12): claude-fable-5 `--tool-choice-auto` with `--fallback-model claude-opus-4-7`** (refusal-only fallback, ruling Session 8). validate-output must show **100% Zod-pass post-repair** (fallback records count as their lesson's result).
+
+### B5 — Apply artifacts
+- Full diff report + `prepare-apply.ts` emitting (i) staging data as SQL/CSV artifact, (ii) draft apply migration (PR-5 emitter precedent) with `pr6_retag_rollback` snapshot DDL + dual-write UPDATEs, (iii) spot-check worksheet (~50-100 sampled across changed / unchanged / weird buckets) for the user's Protocol-B review.
+
+### B6 — Register adjudication
+- Agent pass walks all 74 audit signals (24 CON-NN + 50 heritage) against the NEW tags; marks resolved-by-retag vs still-open in the registers; surfaces judgment calls (CON-16 etc.) to the user. Docs-only edits.
+
+### B7 — Ritual → PR B (artifacts + registers; still no DB writes).
 
 ## PR C — Apply + embeddings (outline; refine at cycle start; `database-migrations` skill mandatory)
 

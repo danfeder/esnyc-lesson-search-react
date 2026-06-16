@@ -78,10 +78,14 @@ describe('assessCacheFloor', () => {
     expect(verdict.message).toContain('cost projection is invalid');
   });
 
-  it('passes unknown model families with a check-manually note', () => {
-    const verdict = assessCacheFloor('claude-haiku-4-5', 100);
-    expect(verdict.level).toBe('pass');
+  it("labels unknown model families 'unknown' (not a silent pass) with a check-manually note", () => {
+    // fable (and any non-opus/sonnet family) has no documented cacheable floor:
+    // the verdict must be visibly distinct from a real 'pass' so the preflight
+    // renders it as a non-fatal warning, not a green check.
+    const verdict = assessCacheFloor('claude-fable-5', 100);
+    expect(verdict.level).toBe('unknown');
     expect(verdict.floor).toBeNull();
+    expect(verdict.threshold).toBeNull();
     expect(verdict.message).toContain('check the prompt-caching docs manually');
   });
 
@@ -113,6 +117,14 @@ describe('parsePreflightArgs (--base-url proxy flag)', () => {
   it('requires a value and rejects unknown flags', () => {
     expect(() => parsePreflightArgs(['--base-url'])).toThrow(/--base-url requires a value/);
     expect(() => parsePreflightArgs(['--bogus'])).toThrow(/unknown flag/);
+  });
+
+  it('sets help on --help / -h and defaults it to false', () => {
+    expect(parsePreflightArgs([]).help).toBe(false);
+    expect(parsePreflightArgs(['--help']).help).toBe(true);
+    expect(parsePreflightArgs(['-h']).help).toBe(true);
+    // --help short-circuits before any value-flag validation, so it coexists.
+    expect(parsePreflightArgs(['--help', '--base-url']).help).toBe(true);
   });
 });
 

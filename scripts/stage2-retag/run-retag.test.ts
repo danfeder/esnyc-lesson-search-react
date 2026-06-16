@@ -12,7 +12,7 @@
  * SDK client, since the SDK refuses construction under jsdom without
  * dangerouslyAllowBrowser, which production must never set).
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,12 +41,17 @@ import {
   computeCostUsd,
   computePromptSchemaHash,
   computeResumableIds,
+  excludeCorpusIds,
   extractFieldPromptSection,
   extractForcedToolResult,
   extractRepairedValue,
   fieldErrorsFromZod,
+  filterCorpusByIds,
   isInsideArtifactsDir,
+  loadCorpusExclusions,
+  isRefusalError,
   latestRecordById,
+  loadIdSet,
   mapWithConcurrency,
   mergeRepairedFields,
   normalizeBaseUrl,
@@ -56,8 +61,10 @@ import {
   planRepairs,
   repairFieldSpec,
   resolveClientConfig,
+  runFallbackForRefusal,
   validateRawInput,
   type AnthropicUsage,
+  type CallResult,
   type RepairOutcome,
   type RunRecord,
 } from './run-retag';
@@ -1218,6 +1225,417 @@ describe('--tool-choice-auto escape hatch (Fable experiment)', () => {
       expect(computeResumableIds(records, identity(['forced', 'auto'], true))).toEqual(
         new Set(['auto'])
       );
+    });
+  });
+});
+
+describe('--ids flag (subset run over a JSONL/JSON id file)', () => {
+  describe('parseArgs', () => {
+    it('defaults ids to undefined (full corpus)', () => {
+      expect(parseArgs([]).ids).toBeUndefined();
+      expect(parseArgs(['--model', 'claude-fable-5']).ids).toBeUndefined();
+    });
+
+    it('captures the --ids path value', () => {
+      const args = parseArgs(['--ids', 'scripts/stage2-retag/artifacts/answer-key.final.jsonl']);
+      expect(args.ids).toBe('scripts/stage2-retag/artifacts/answer-key.final.jsonl');
+    });
+
+    it('requires a value (and rejects a following flag as the value)', () => {
+      expect(() => parseArgs(['--ids'])).toThrow(/--ids requires a value/);
+      expect(() => parseArgs(['--ids', '--resume'])).toThrow(/--ids requires a value/);
+    });
+
+    it('composes with --limit, --resume, --repair', () => {
+      const args = parseArgs(['--ids', 'key.jsonl', '--limit', '5', '--resume', '--repair']);
+      expect(args.ids).toBe('key.jsonl');
+      expect(args.limit).toBe(5);
+      expect(args.resume).toBe(true);
+      expect(args.repair).toBe(true);
+    });
+  });
+
+  describe('loadIdSet (detects JSON array vs JSONL by first non-whitespace char)', () => {
+    it('parses a JSON array of strings', () => {
+      expect(loadIdSet('["a", "b", "c"]')).toEqual(['a', 'b', 'c']);
+    });
+
+    it('parses a JSON array with surrounding whitespace/newlines', () => {
+      expect(loadIdSet('\n  [\n  "a",\n  "b"\n]\n')).toEqual(['a', 'b']);
+    });
+
+    it('parses JSONL records carrying an `id` field', () => {
+      const jsonl = '{"id":"a","activity_type":["garden"]}\n{"id":"b"}\n';
+      expect(loadIdSet(jsonl)).toEqual(['a', 'b']);
+    });
+
+    it('skips blank JSONL lines', () => {
+      expect(loadIdSet('{"id":"a"}\n\n  \n{"id":"b"}\n')).toEqual(['a', 'b']);
+    });
+
+    it('dedupes repeated ids preserving first-seen order', () => {
+      expect(loadIdSet('["a","b","a","c"]')).toEqual(['a', 'b', 'c']);
+      expect(loadIdSet('{"id":"a"}\n{"id":"b"}\n{"id":"a"}\n')).toEqual(['a', 'b']);
+    });
+
+    it('throws on an empty file', () => {
+      expect(() => loadIdSet('   \n  ')).toThrow(/empty/i);
+    });
+
+    it('throws when a JSON array contains a non-string element', () => {
+      expect(() => loadIdSet('["a", 3, "b"]')).toThrow(/string/i);
+    });
+
+    it('throws when a JSONL record lacks a string `id`', () => {
+      expect(() => loadIdSet('{"id":"a"}\n{"activity_type":[]}\n')).toThrow(/id/i);
+    });
+
+    it('throws on malformed JSONL', () => {
+      expect(() => loadIdSet('{"id":"a"}\nnot json\n')).toThrow();
+    });
+  });
+
+  describe('filterCorpusByIds (intersection + missing report)', () => {
+    const lessons = [
+      { id: 'a', content_text: 'A' },
+      { id: 'b', content_text: 'B' },
+      { id: 'c', content_text: 'C' },
+    ];
+
+    it('keeps only corpus records whose id is in the set (corpus order preserved)', () => {
+      const { kept, missingIds } = filterCorpusByIds(lessons, ['c', 'a']);
+      expect(kept.map((l) => l.id)).toEqual(['a', 'c']);
+      expect(missingIds).toEqual([]);
+    });
+
+    it('reports requested ids absent from the corpus (request order preserved)', () => {
+      const { kept, missingIds } = filterCorpusByIds(lessons, ['a', 'zzz', 'b', 'qqq']);
+      expect(kept.map((l) => l.id)).toEqual(['a', 'b']);
+      expect(missingIds).toEqual(['zzz', 'qqq']);
+    });
+
+    it('returns an empty kept set when no ids intersect', () => {
+      const { kept, missingIds } = filterCorpusByIds(lessons, ['x', 'y']);
+      expect(kept).toEqual([]);
+      expect(missingIds).toEqual(['x', 'y']);
+    });
+  });
+});
+
+describe('--fallback-model (refusal-only fallback with provenance-marked records)', () => {
+  const usage: AnthropicUsage = {
+    input_tokens: 6000,
+    output_tokens: 300,
+    cache_creation_input_tokens: 0,
+    cache_read_input_tokens: 6000,
+  };
+
+  describe('parseArgs', () => {
+    it('defaults fallbackModel to undefined (no fallback)', () => {
+      expect(parseArgs([]).fallbackModel).toBeUndefined();
+      expect(parseArgs(['--model', 'claude-fable-5']).fallbackModel).toBeUndefined();
+    });
+
+    it('captures the --fallback-model value', () => {
+      const args = parseArgs(['--model', 'claude-fable-5', '--fallback-model', 'claude-opus-4-7']);
+      expect(args.model).toBe('claude-fable-5');
+      expect(args.fallbackModel).toBe('claude-opus-4-7');
+    });
+
+    it('requires a value (and rejects a following flag as the value)', () => {
+      expect(() => parseArgs(['--fallback-model'])).toThrow(/--fallback-model requires a value/);
+      expect(() => parseArgs(['--fallback-model', '--resume'])).toThrow(
+        /--fallback-model requires a value/
+      );
+    });
+  });
+
+  describe('isRefusalError (the fallback trigger predicate)', () => {
+    it('is true ONLY for a MissingToolUseError whose stopReason is "refusal"', () => {
+      expect(isRefusalError(new MissingToolUseError(usage, 'refusal'))).toBe(true);
+    });
+
+    it('is false for a MissingToolUseError with a non-refusal stop_reason (max_tokens, end_turn)', () => {
+      expect(isRefusalError(new MissingToolUseError(usage, 'max_tokens'))).toBe(false);
+      expect(isRefusalError(new MissingToolUseError(usage, 'end_turn'))).toBe(false);
+      expect(isRefusalError(new MissingToolUseError(usage, null))).toBe(false);
+    });
+
+    it('is false for ordinary errors (network/billing 400s keep existing behavior)', () => {
+      expect(isRefusalError(new Error('socket hang up'))).toBe(false);
+      expect(isRefusalError(new Error('HTTP 400: credit balance too low'))).toBe(false);
+      expect(isRefusalError('not even an error')).toBe(false);
+    });
+  });
+
+  describe('runFallbackForRefusal (orchestrates the single fallback retry)', () => {
+    const fallbackResult: CallResult = {
+      rawInput: makeValidResult(),
+      usage: { input_tokens: 6200, output_tokens: 280 },
+      latencyMs: 4200,
+      stopReason: 'tool_use',
+    };
+
+    function baseParams(callFn: (toolChoiceAuto: boolean) => Promise<CallResult>) {
+      return {
+        id: 'lesson-seed-burst',
+        fallbackModel: 'claude-opus-4-7',
+        promptSchemaHash: 'hash-a',
+        bodyHash: 'body-h',
+        resultSchema,
+        effectiveBaseUrl: DIRECT_BASE_URL,
+        strict: false,
+        callFn,
+      };
+    }
+
+    it('appends a phase:"fallback" record carrying the fallback model + provenance', async () => {
+      const record = await runFallbackForRefusal(baseParams(async () => fallbackResult));
+      expect(record.phase).toBe('fallback');
+      expect(record.model).toBe('claude-opus-4-7');
+      expect(record.id).toBe('lesson-seed-burst');
+      expect(record.error).toBeNull();
+      expect(record.zod.passed).toBe(true);
+      expect(record.stopReason).toBe('tool_use');
+      // billed under the fallback model
+      expect(record.costUsd).toBeCloseTo(
+        computeCostUsd('claude-opus-4-7', fallbackResult.usage) ?? NaN,
+        10
+      );
+    });
+
+    it('uses the FORCED tool_choice even when the main pass ran --tool-choice-auto', async () => {
+      let sawToolChoiceAuto: boolean | undefined;
+      const record = await runFallbackForRefusal({
+        ...baseParams(async (toolChoiceAuto) => {
+          sawToolChoiceAuto = toolChoiceAuto;
+          return fallbackResult;
+        }),
+        // the main pass was auto (fable), but the fallback must NOT inherit it
+        mainPassToolChoiceAuto: true,
+      });
+      expect(sawToolChoiceAuto).toBe(false);
+      // forced path → no toolChoice marker on the fallback record
+      expect(record.toolChoice).toBeUndefined();
+      expect('toolChoice' in record).toBe(false);
+    });
+
+    it('records a fallback that itself errors (keeps usage when billed)', async () => {
+      const record = await runFallbackForRefusal(
+        baseParams(async () => {
+          throw new MissingToolUseError({ input_tokens: 10, output_tokens: 0 }, 'max_tokens');
+        })
+      );
+      expect(record.phase).toBe('fallback');
+      expect(record.model).toBe('claude-opus-4-7');
+      expect(record.error).toContain('no submit_tags tool_use block');
+      expect(record.usage).toEqual({ input_tokens: 10, output_tokens: 0 });
+      expect(record.zod.passed).toBe(false);
+    });
+  });
+
+  describe('computeResumableIds treats a successful fallback record as completed', () => {
+    const HASH = 'current-hash';
+    const PRIMARY = 'claude-fable-5';
+    const FALLBACK = 'claude-opus-4-7';
+
+    function jsonl(records: RunRecord[]): string {
+      return records.map((record) => JSON.stringify(record)).join('\n');
+    }
+
+    function identity(ids: string[], opts: { toolChoiceAuto?: boolean; fallbackModel?: string }) {
+      return {
+        promptSchemaHash: HASH,
+        model: PRIMARY,
+        strict: false,
+        toolChoiceAuto: opts.toolChoiceAuto ?? false,
+        proxied: false,
+        fallbackModel: opts.fallbackModel,
+        bodyHashById: defaultBodyHashes(ids),
+      };
+    }
+
+    it('a fallback-completed lesson is NOT re-run when --fallback-model matches', () => {
+      const records = parseRunRecords(
+        jsonl([
+          // the refusing main record (errored) ...
+          makeRecord({
+            id: 'refused',
+            promptSchemaHash: HASH,
+            model: PRIMARY,
+            toolChoice: 'auto',
+            error: 'response carried no submit_tags tool_use block (stop_reason: refusal)',
+            stopReason: 'refusal',
+          }),
+          // ... superseded by a clean fallback record (forced opus)
+          makeRecord({
+            id: 'refused',
+            phase: 'fallback',
+            promptSchemaHash: HASH,
+            model: FALLBACK,
+          }),
+        ])
+      );
+      // Primary run is --tool-choice-auto (fable) WITH --fallback-model opus-4-7.
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: FALLBACK })
+        )
+      ).toEqual(new Set(['refused']));
+    });
+
+    it('does NOT resume a fallback record when the run has no/another --fallback-model', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({ id: 'refused', phase: 'fallback', promptSchemaHash: HASH, model: FALLBACK }),
+        ])
+      );
+      // No fallback model this run → the fallback record's model matches nothing.
+      expect(computeResumableIds(records, identity(['refused'], { toolChoiceAuto: true }))).toEqual(
+        new Set()
+      );
+      // A DIFFERENT fallback model → still not resumable.
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: 'claude-sonnet-4-6' })
+        )
+      ).toEqual(new Set());
+    });
+
+    it('an errored fallback record is NOT resumable (re-runs like any errored record)', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({
+            id: 'refused',
+            phase: 'fallback',
+            promptSchemaHash: HASH,
+            model: FALLBACK,
+            error: 'response carried no submit_tags tool_use block (stop_reason: max_tokens)',
+          }),
+        ])
+      );
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: FALLBACK })
+        )
+      ).toEqual(new Set());
+    });
+
+    it('a fallback record is forced-shape: its toolChoice identity ignores the run --tool-choice-auto', () => {
+      // The fallback record has no toolChoice marker (forced). Even though the
+      // current run is --tool-choice-auto, the fallback record must still match.
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({ id: 'refused', phase: 'fallback', promptSchemaHash: HASH, model: FALLBACK }),
+        ])
+      );
+      expect(
+        computeResumableIds(
+          records,
+          identity(['refused'], { toolChoiceAuto: true, fallbackModel: FALLBACK })
+        )
+      ).toEqual(new Set(['refused']));
+    });
+  });
+
+  describe('parseRunRecords round-trips phase:"fallback" records', () => {
+    it('accepts the fallback phase in the line schema', () => {
+      const fallback = makeRecord({ id: 'r', phase: 'fallback', model: 'claude-opus-4-7' });
+      const parsed = parseRunRecords(JSON.stringify(fallback));
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].phase).toBe('fallback');
+      expect(parsed[0].model).toBe('claude-opus-4-7');
+    });
+  });
+});
+
+describe('corpus exclusions (B3.5c — deletion-slated lessons skipped in the run path)', () => {
+  describe('loadCorpusExclusions (reads the checked-in exclusions file → ordered entries)', () => {
+    it('returns the excluded entries from a well-formed file', () => {
+      const entries = loadCorpusExclusions(
+        path.join(FIXTURES_DIR, 'corpus-exclusions.fixture.json')
+      );
+      expect(entries.map((e) => e.id)).toEqual(['fix-1', 'fix-2']);
+      expect(entries[0].title).toBe('Fixture One');
+      expect(entries[0].reason).toBe('fixture row');
+    });
+
+    it('throws on a duplicate id within the list', () => {
+      const tmp = path.join(FIXTURES_DIR, 'corpus-exclusions.dup.tmp.json');
+      writeFileSync(
+        tmp,
+        JSON.stringify({
+          provenance: {},
+          excluded: [
+            { id: 'x', title: 'X', reason: 'r' },
+            { id: 'x', title: 'X again', reason: 'r' },
+          ],
+        })
+      );
+      try {
+        expect(() => loadCorpusExclusions(tmp)).toThrow(/duplicate id: x/);
+      } finally {
+        rmSync(tmp, { force: true });
+      }
+    });
+
+    it('throws when an entry is missing a required field (loud, never silent)', () => {
+      const tmp = path.join(FIXTURES_DIR, 'corpus-exclusions.bad.tmp.json');
+      writeFileSync(tmp, JSON.stringify({ provenance: {}, excluded: [{ id: 'x', title: 'X' }] }));
+      try {
+        expect(() => loadCorpusExclusions(tmp)).toThrow();
+      } finally {
+        rmSync(tmp, { force: true });
+      }
+    });
+
+    it('loads the real checked-in data/corpus-exclusions.json with the B3.5c + B3.5b verdicts', () => {
+      const entries = loadCorpusExclusions(path.join(MODULE_DIR, 'data/corpus-exclusions.json'));
+      // 3 original B3.5c deletion verdicts (= the answer-key-exclusions.json set)
+      // + 9 added from the B3.5b completeness-screen user verdicts (7 user-ruled
+      // non-lessons/drafts + 2 metadata-card records whose Doc 404'd in Drive).
+      expect(entries).toHaveLength(12);
+      // The 3 B3.5c ids must still be a SUBSET (the corpus list is the
+      // answer-key set PLUS the B3.5b additions; it no longer equals it).
+      const answerKey = JSON.parse(
+        readFileSync(path.join(MODULE_DIR, 'data/answer-key-exclusions.json'), 'utf8')
+      ) as { excluded: Array<{ id: string }> };
+      const corpusIds = new Set(entries.map((e) => e.id));
+      for (const { id } of answerKey.excluded) {
+        expect(corpusIds.has(id)).toBe(true);
+      }
+      // The 2 re-extraction-fallback ids (Doc 404'd) must be present.
+      expect(corpusIds.has('1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX')).toBe(true);
+      expect(corpusIds.has('1SDsLLHlfBqIHSxvVVQrbOk96hlOkxOse')).toBe(true);
+    });
+  });
+
+  describe('excludeCorpusIds (drops excluded lessons, reports which were hit)', () => {
+    const lessons = [
+      { id: 'a', content_text: 'A' },
+      { id: 'b', content_text: 'B' },
+      { id: 'c', content_text: 'C' },
+    ];
+
+    it('removes excluded lessons and preserves corpus order', () => {
+      const { kept, excludedHits } = excludeCorpusIds(lessons, new Set(['b']));
+      expect(kept.map((l) => l.id)).toEqual(['a', 'c']);
+      expect(excludedHits).toEqual(['b']);
+    });
+
+    it('returns all lessons and no hits when nothing is excluded', () => {
+      const { kept, excludedHits } = excludeCorpusIds(lessons, new Set());
+      expect(kept.map((l) => l.id)).toEqual(['a', 'b', 'c']);
+      expect(excludedHits).toEqual([]);
+    });
+
+    it('ignores excluded ids that are not in the corpus (no spurious hit)', () => {
+      const { kept, excludedHits } = excludeCorpusIds(lessons, new Set(['b', 'zzz']));
+      expect(kept.map((l) => l.id)).toEqual(['a', 'c']);
+      expect(excludedHits).toEqual(['b']);
     });
   });
 });

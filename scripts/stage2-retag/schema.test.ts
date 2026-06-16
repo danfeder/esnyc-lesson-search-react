@@ -357,6 +357,8 @@ describe('system prompt (prompts/stage2-retag.md)', () => {
     ['everyday↔framework synonym pairs', /synonym/i],
     ['CRF Brown framework semantics', /Brown/],
     ['extraction table markers are content', /\[Table\]/],
+    ['heritage mention-vs-about rule (B3 ban-case seed)', /Mention vs\. about/],
+    ['heritage feature-only example stays empty', /a featured dish is not cultural engagement/],
   ] as const)('carries the locked policy: %s', (_label, pattern) => {
     expect(prompt).toMatch(pattern);
   });
