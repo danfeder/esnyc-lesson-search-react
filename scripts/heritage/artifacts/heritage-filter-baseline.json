@@ -1,0 +1,396 @@
+{
+  "capturedAt": "2026-06-16",
+  "task": "PR C1.0 — Capture ground truth + backward-compat baseline (READ-ONLY)",
+  "source": "PROD mcp__supabase-remote",
+  "notes": [
+    "countToday is the FAITHFUL filter result: it matches search_lessons' own WHERE clause, which includes `AND l.retired_at IS NULL`. The keystone (Asian=65) holds ONLY with this clause; without it Asian=68 (3 retired lessons). countTodayIncludingRetired is captured for diagnostics.",
+    "Heritage match path verified against live search_lessons def: expanded_cultures := expand_cultural_heritage(_alias_cultural_heritage(filter_cultures)); then `l.cultural_heritage && expanded_cultures`. Faithful to the design doc keystone.",
+    "13 of the 31 options return 0 today (chinese, japanese, korean, indian, pakistani, uzbek, mexican, puerto-rican, north-african, east-african, italian, indigenous-and-diaspora, african-american, indigenous, lenape, mediterranean-children, etc.). Root cause = the SLUG-vs-LABEL footgun: _alias_cultural_heritage only hardcodes the 18 current-UI slugs; any other slug falls through ELSE ARRAY[x] and stays a slug, so `&&` against Title-Case-label storage matches nothing. These zeros are real/faithful baseline; the C1 rebuild heals them (e.g. chinese 0->15, mexican 0->38).",
+    "DB hierarchy table shape is (id int, parent text, children text[]) using Title-Case labels (not key/parent_key). expand_cultural_heritage matches `WHERE parent = ANY(cultures)`, expanding one tier only; table contains phantoms (German, Turkish, Thai, Filipino, Moroccan) absent from vocab.json top+sub set."
+  ],
+  "functionDefs": {
+    "search_lessons": "CREATE OR REPLACE FUNCTION public.search_lessons(search_query text DEFAULT NULL::text, filter_grade_levels text[] DEFAULT NULL::text[], filter_themes text[] DEFAULT NULL::text[], filter_seasons text[] DEFAULT NULL::text[], filter_competencies text[] DEFAULT NULL::text[], filter_cultures text[] DEFAULT NULL::text[], filter_location text[] DEFAULT NULL::text[], filter_activity_type text[] DEFAULT NULL::text[], filter_lesson_format text DEFAULT NULL::text, filter_academic text[] DEFAULT NULL::text[], filter_sel text[] DEFAULT NULL::text[], filter_cooking_method text[] DEFAULT NULL::text[], filter_tags text[] DEFAULT NULL::text[], page_size integer DEFAULT 20, page_offset integer DEFAULT 0)\n RETURNS TABLE(lesson_id text, title text, summary text, file_link text, grade_levels text[], metadata jsonb, confidence jsonb, rank double precision, total_count bigint)\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  expanded_query    text;\n  expanded_cultures text[];\n  total_results     bigint;\nBEGIN\n  -- Synonym expansion for FTS\n  IF search_query IS NOT NULL AND search_query <> '' THEN\n    expanded_query := expand_search_with_synonyms(search_query);\n  ELSE\n    expanded_query := NULL;\n  END IF;\n\n  -- Cultural heritage: alias FIRST, then expand to children.\n  IF filter_cultures IS NOT NULL AND array_length(filter_cultures, 1) > 0 THEN\n    expanded_cultures := expand_cultural_heritage(_alias_cultural_heritage(filter_cultures));\n  ELSE\n    expanded_cultures := NULL;\n  END IF;\n\n  -- Total count (count and result queries share WHERE)\n  SELECT COUNT(*) INTO total_results\n  FROM lessons l\n  WHERE\n    (search_query IS NULL OR search_query = '' OR (\n      l.search_vector @@ to_tsquery('english', expanded_query) OR\n      l.title   % search_query OR\n      l.summary % search_query\n    ))\n    AND (filter_grade_levels IS NULL OR array_length(filter_grade_levels, 1) IS NULL OR\n         l.grade_levels && filter_grade_levels)\n    AND (filter_themes IS NULL OR array_length(filter_themes, 1) IS NULL OR\n         l.thematic_categories && filter_themes)\n    AND (filter_seasons IS NULL OR array_length(filter_seasons, 1) IS NULL OR\n         l.season_timing && filter_seasons)\n    AND (filter_competencies IS NULL OR array_length(filter_competencies, 1) IS NULL OR\n         l.core_competencies && filter_competencies)\n    AND (expanded_cultures IS NULL OR array_length(expanded_cultures, 1) IS NULL OR\n         l.cultural_heritage && expanded_cultures)\n    AND (filter_location IS NULL OR array_length(filter_location, 1) IS NULL OR\n         l.location_requirements && filter_location)\n    AND (filter_activity_type IS NULL OR array_length(filter_activity_type, 1) IS NULL OR\n         l.activity_type && _alias_activity_type(filter_activity_type))\n    -- (filter_lesson_format WHERE clause removed — D3 lessonFormat field dropped.\n    --  Parameter retained as a compat bridge; ignored by this body.)\n    AND (filter_academic IS NULL OR array_length(filter_academic, 1) IS NULL OR\n         l.academic_integration && filter_academic)\n    AND (filter_sel IS NULL OR array_length(filter_sel, 1) IS NULL OR\n         l.social_emotional_learning && filter_sel)\n    AND (filter_cooking_method IS NULL OR array_length(filter_cooking_method, 1) IS NULL OR\n         _match_cooking_methods(l.cooking_methods, filter_cooking_method))\n    AND (filter_tags IS NULL OR array_length(filter_tags, 1) IS NULL OR\n         l.tags && filter_tags)\n    -- NEW (PR 4): exclude soft-retired imports from user-facing search.\n    AND l.retired_at IS NULL;\n\n  -- Paginated result rows\n  RETURN QUERY\n  SELECT\n    l.lesson_id,\n    l.title,\n    l.summary,\n    l.file_link,\n    l.grade_levels,\n    -- Per-field COALESCE metadata reconstruction. Same as 20260514000000.\n    --\n    -- COLUMNS INCLUDED (post-D3):\n    --   thematic_categories, season_timing, location_requirements,\n    --   core_competencies, cultural_heritage, activity_type,\n    --   cooking_methods, academic_integration, social_emotional_learning\n    COALESCE(l.metadata, '{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object(\n      'thematicCategories',      CASE WHEN COALESCE(array_length(l.thematic_categories, 1), 0) > 0       THEN to_jsonb(l.thematic_categories)       END,\n      'seasonTiming',            CASE WHEN COALESCE(array_length(l.season_timing, 1), 0) > 0             THEN to_jsonb(l.season_timing)             END,\n      'locationRequirements',    CASE WHEN COALESCE(array_length(l.location_requirements, 1), 0) > 0     THEN to_jsonb(l.location_requirements)     END,\n      'coreCompetencies',        CASE WHEN COALESCE(array_length(l.core_competencies, 1), 0) > 0         THEN to_jsonb(l.core_competencies)         END,\n      'culturalHeritage',        CASE WHEN COALESCE(array_length(l.cultural_heritage, 1), 0) > 0         THEN to_jsonb(l.cultural_heritage)         END,\n      -- 'lessonFormat' overlay key removed — D3.\n      'activityType',            CASE WHEN COALESCE(array_length(l.activity_type, 1), 0) > 0             THEN to_jsonb(l.activity_type)             END,\n      'cookingMethods',          CASE WHEN COALESCE(array_length(l.cooking_methods, 1), 0) > 0           THEN to_jsonb(l.cooking_methods)           END,\n      'academicIntegration',     CASE WHEN COALESCE(array_length(l.academic_integration, 1), 0) > 0      THEN to_jsonb(l.academic_integration)      END,\n      'socialEmotionalLearning', CASE WHEN COALESCE(array_length(l.social_emotional_learning, 1), 0) > 0 THEN to_jsonb(l.social_emotional_learning) END,\n      'academicConcepts',        CASE\n                                   WHEN jsonb_typeof(l.metadata->'academicIntegration') = 'object'\n                                    AND l.metadata->'academicIntegration' ? 'concepts'\n                                   THEN l.metadata->'academicIntegration'->'concepts'\n                                 END\n    )) AS metadata,\n    l.confidence,\n    CASE\n      WHEN search_query IS NOT NULL AND search_query <> '' THEN\n        GREATEST(\n          COALESCE(ts_rank(l.search_vector, to_tsquery('english', expanded_query)), 0),\n          COALESCE(similarity(l.title,   search_query), 0),\n          COALESCE(similarity(l.summary, search_query), 0) * 0.8\n        )::double precision\n      ELSE 0::double precision\n    END AS rank,\n    total_results\n  FROM lessons l\n  WHERE\n    (search_query IS NULL OR search_query = '' OR (\n      l.search_vector @@ to_tsquery('english', expanded_query) OR\n      l.title   % search_query OR\n      l.summary % search_query\n    ))\n    AND (filter_grade_levels IS NULL OR array_length(filter_grade_levels, 1) IS NULL OR\n         l.grade_levels && filter_grade_levels)\n    AND (filter_themes IS NULL OR array_length(filter_themes, 1) IS NULL OR\n         l.thematic_categories && filter_themes)\n    AND (filter_seasons IS NULL OR array_length(filter_seasons, 1) IS NULL OR\n         l.season_timing && filter_seasons)\n    AND (filter_competencies IS NULL OR array_length(filter_competencies, 1) IS NULL OR\n         l.core_competencies && filter_competencies)\n    AND (expanded_cultures IS NULL OR array_length(expanded_cultures, 1) IS NULL OR\n         l.cultural_heritage && expanded_cultures)\n    AND (filter_location IS NULL OR array_length(filter_location, 1) IS NULL OR\n         l.location_requirements && filter_location)\n    AND (filter_activity_type IS NULL OR array_length(filter_activity_type, 1) IS NULL OR\n         l.activity_type && _alias_activity_type(filter_activity_type))\n    -- (filter_lesson_format WHERE clause removed — D3.)\n    AND (filter_academic IS NULL OR array_length(filter_academic, 1) IS NULL OR\n         l.academic_integration && filter_academic)\n    AND (filter_sel IS NULL OR array_length(filter_sel, 1) IS NULL OR\n         l.social_emotional_learning && filter_sel)\n    AND (filter_cooking_method IS NULL OR array_length(filter_cooking_method, 1) IS NULL OR\n         _match_cooking_methods(l.cooking_methods, filter_cooking_method))\n    AND (filter_tags IS NULL OR array_length(filter_tags, 1) IS NULL OR\n         l.tags && filter_tags)\n    -- NEW (PR 4): exclude soft-retired imports from user-facing search.\n    AND l.retired_at IS NULL\n  ORDER BY\n    rank DESC,\n    COALESCE((l.confidence->>'overall')::float, 0) DESC,\n    l.title ASC\n  LIMIT page_size\n  OFFSET page_offset;\nEND;\n$function$\n",
+    "_alias_cultural_heritage": "CREATE OR REPLACE FUNCTION public._alias_cultural_heritage(p_values text[])\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT ARRAY(\n    SELECT DISTINCT v\n    FROM unnest(coalesce(p_values, ARRAY[]::text[])) AS x,\n    LATERAL (\n      SELECT unnest(\n        CASE x\n          -- Top-level\n          WHEN 'asian'             THEN ARRAY['asian', 'Asian']\n          WHEN 'americas'          THEN ARRAY['americas', 'Americas']\n          WHEN 'african'           THEN ARRAY['african', 'African']\n          WHEN 'european'          THEN ARRAY['european', 'European']\n          WHEN 'middle-eastern'    THEN ARRAY['middle-eastern', 'Middle Eastern']\n          -- Asian children\n          WHEN 'east-asian'        THEN ARRAY['east-asian', 'East Asian']\n          WHEN 'southeast-asian'   THEN ARRAY['southeast-asian', 'Southeast Asian']\n          WHEN 'south-asian'       THEN ARRAY['south-asian', 'South Asian']\n          WHEN 'central-asian'     THEN ARRAY['central-asian', 'Central Asian']\n          -- Americas children\n          WHEN 'latin-american'    THEN ARRAY['latin-american', 'Latin American']\n          WHEN 'caribbean'         THEN ARRAY['caribbean', 'Caribbean']\n          WHEN 'north-american'    THEN ARRAY['north-american', 'North American']\n          -- African children\n          WHEN 'west-african'      THEN ARRAY['west-african', 'West African']\n          WHEN 'ethiopian'         THEN ARRAY['ethiopian', 'Ethiopian']\n          WHEN 'nigerian'          THEN ARRAY['nigerian', 'Nigerian']\n          -- European children\n          WHEN 'eastern-european'  THEN ARRAY['eastern-european', 'Eastern European']\n          WHEN 'mediterranean'     THEN ARRAY['mediterranean', 'Mediterranean']\n          -- Middle Eastern children\n          WHEN 'levantine'         THEN ARRAY['levantine', 'Levantine']\n          ELSE ARRAY[x]\n        END\n      ) AS v\n    ) AS expanded\n  );\n$function$\n",
+    "expand_cultural_heritage": "CREATE OR REPLACE FUNCTION public.expand_cultural_heritage(cultures text[])\n RETURNS text[]\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    expanded TEXT[] := cultures;\n    hierarchy_record RECORD;\nBEGIN\n    -- Add child cultures for any parent cultures selected\n    FOR hierarchy_record IN \n        SELECT * FROM cultural_heritage_hierarchy \n        WHERE parent = ANY(cultures)\n    LOOP\n        expanded := expanded || hierarchy_record.children;\n    END LOOP;\n    \n    -- Remove duplicates\n    RETURN ARRAY(SELECT DISTINCT unnest(expanded));\nEND;\n$function$\n"
+  },
+  "functionOverloadCheck": {
+    "search_lessons": 1,
+    "_alias_cultural_heritage": 1,
+    "expand_cultural_heritage": 1
+  },
+  "hierarchyTableRows": [
+    {
+      "id": 4,
+      "parent": "African",
+      "children": [
+        "West African",
+        "East African",
+        "North African",
+        "Ethiopian",
+        "Nigerian",
+        "Moroccan"
+      ]
+    },
+    {
+      "id": 1,
+      "parent": "Asian",
+      "children": [
+        "Chinese",
+        "Japanese",
+        "Korean",
+        "Vietnamese",
+        "Thai",
+        "Indian",
+        "Filipino"
+      ]
+    },
+    {
+      "id": 3,
+      "parent": "European",
+      "children": [
+        "Italian",
+        "French",
+        "Spanish",
+        "German",
+        "Greek",
+        "Eastern European"
+      ]
+    },
+    {
+      "id": 2,
+      "parent": "Latin American",
+      "children": [
+        "Mexican",
+        "Puerto Rican",
+        "Dominican",
+        "Cuban",
+        "Central American",
+        "South American"
+      ]
+    },
+    {
+      "id": 6,
+      "parent": "Mediterranean",
+      "children": [
+        "Italian",
+        "Greek",
+        "Spanish",
+        "Turkish",
+        "Moroccan"
+      ]
+    },
+    {
+      "id": 5,
+      "parent": "Middle Eastern",
+      "children": [
+        "Turkish",
+        "Lebanese",
+        "Israeli",
+        "Persian"
+      ]
+    }
+  ],
+  "sanityAnchors": {
+    "totalLessons": 767,
+    "lessonsWithHeritage": 339,
+    "totalLessonsIncludingRetired": 788,
+    "lessonsWithHeritageIncludingRetired": 345
+  },
+  "options": [
+    {
+      "key": "asian",
+      "label": "Asian",
+      "parent": null,
+      "tier": "top",
+      "countToday": 65,
+      "countTodayIncludingRetired": 68
+    },
+    {
+      "key": "east-asian",
+      "label": "East Asian",
+      "parent": "asian",
+      "tier": "sub",
+      "countToday": 40,
+      "countTodayIncludingRetired": 40
+    },
+    {
+      "key": "south-asian",
+      "label": "South Asian",
+      "parent": "asian",
+      "tier": "sub",
+      "countToday": 18,
+      "countTodayIncludingRetired": 18
+    },
+    {
+      "key": "southeast-asian",
+      "label": "Southeast Asian",
+      "parent": "asian",
+      "tier": "sub",
+      "countToday": 5,
+      "countTodayIncludingRetired": 5
+    },
+    {
+      "key": "central-asian",
+      "label": "Central Asian",
+      "parent": "asian",
+      "tier": "sub",
+      "countToday": 4,
+      "countTodayIncludingRetired": 4
+    },
+    {
+      "key": "chinese",
+      "label": "Chinese",
+      "parent": "east-asian",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "japanese",
+      "label": "Japanese",
+      "parent": "east-asian",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "indian",
+      "label": "Indian",
+      "parent": "south-asian",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "pakistani",
+      "label": "Pakistani",
+      "parent": "south-asian",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "uzbek",
+      "label": "Uzbek",
+      "parent": "central-asian",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "korean",
+      "label": "Korean",
+      "parent": "east-asian",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "americas",
+      "label": "Americas",
+      "parent": null,
+      "tier": "top",
+      "countToday": 172,
+      "countTodayIncludingRetired": 175
+    },
+    {
+      "key": "north-american",
+      "label": "North American",
+      "parent": "americas",
+      "tier": "top",
+      "countToday": 97,
+      "countTodayIncludingRetired": 99
+    },
+    {
+      "key": "latin-american",
+      "label": "Latin American",
+      "parent": "americas",
+      "tier": "top",
+      "countToday": 82,
+      "countTodayIncludingRetired": 87
+    },
+    {
+      "key": "caribbean",
+      "label": "Caribbean",
+      "parent": "americas",
+      "tier": "sub",
+      "countToday": 18,
+      "countTodayIncludingRetired": 18
+    },
+    {
+      "key": "mexican",
+      "label": "Mexican",
+      "parent": "latin-american",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "puerto-rican",
+      "label": "Puerto Rican",
+      "parent": "latin-american",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "african",
+      "label": "African",
+      "parent": null,
+      "tier": "top",
+      "countToday": 43,
+      "countTodayIncludingRetired": 45
+    },
+    {
+      "key": "west-african",
+      "label": "West African",
+      "parent": "african",
+      "tier": "sub",
+      "countToday": 15,
+      "countTodayIncludingRetired": 15
+    },
+    {
+      "key": "north-african",
+      "label": "North African",
+      "parent": "african",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "east-african",
+      "label": "East African",
+      "parent": "african",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "european",
+      "label": "European",
+      "parent": null,
+      "tier": "top",
+      "countToday": 57,
+      "countTodayIncludingRetired": 59
+    },
+    {
+      "key": "mediterranean",
+      "label": "Mediterranean",
+      "parent": "european",
+      "tier": "top",
+      "countToday": 45,
+      "countTodayIncludingRetired": 48
+    },
+    {
+      "key": "eastern-european",
+      "label": "Eastern European",
+      "parent": "european",
+      "tier": "sub",
+      "countToday": 4,
+      "countTodayIncludingRetired": 4
+    },
+    {
+      "key": "italian",
+      "label": "Italian",
+      "parent": "mediterranean",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "middle-eastern",
+      "label": "Middle Eastern",
+      "parent": null,
+      "tier": "top",
+      "countToday": 27,
+      "countTodayIncludingRetired": 27
+    },
+    {
+      "key": "levantine",
+      "label": "Levantine",
+      "parent": "middle-eastern",
+      "tier": "top",
+      "countToday": 19,
+      "countTodayIncludingRetired": 19
+    },
+    {
+      "key": "indigenous-and-diaspora",
+      "label": "Indigenous and Diaspora",
+      "parent": null,
+      "tier": "top",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "african-american",
+      "label": "African American",
+      "parent": "indigenous-and-diaspora",
+      "tier": "top",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "indigenous",
+      "label": "Indigenous",
+      "parent": "indigenous-and-diaspora",
+      "tier": "top",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    },
+    {
+      "key": "lenape",
+      "label": "Lenape",
+      "parent": "indigenous",
+      "tier": "sub",
+      "countToday": 0,
+      "countTodayIncludingRetired": 0
+    }
+  ],
+  "currentUiOptions": {
+    "slugsSentToday": [
+      "asian",
+      "east-asian",
+      "southeast-asian",
+      "south-asian",
+      "central-asian",
+      "americas",
+      "latin-american",
+      "caribbean",
+      "north-american",
+      "african",
+      "west-african",
+      "ethiopian",
+      "nigerian",
+      "european",
+      "eastern-european",
+      "mediterranean",
+      "middle-eastern",
+      "levantine"
+    ],
+    "count": 18,
+    "slugsNotInVocab": [],
+    "driftNotes": [
+      "All 18 current-UI option values exist as vocab keys (zero slug-name drift).",
+      "STRUCTURAL drift: UI nests `ethiopian` and `nigerian` directly under `african`; vocab.json parents them under `east-african` and `west-african` (both internal tier). Matches design doc S1.",
+      "UI OMITS these vocab top+sub options entirely (return 0 today, will appear after rebuild): [\"chinese\",\"japanese\",\"indian\",\"pakistani\",\"uzbek\",\"korean\",\"mexican\",\"puerto-rican\",\"north-african\",\"east-african\",\"italian\",\"indigenous-and-diaspora\",\"african-american\",\"indigenous\",\"lenape\"]",
+      "UI exposes 18 option entries (5 region parents + 13 children). vocab top+sub set is 31. The rebuild grows the visible set and adds the Indigenous and Diaspora / African American / Indigenous groups."
+    ],
+    "omittedVocabTopSubKeys": [
+      "chinese",
+      "japanese",
+      "indian",
+      "pakistani",
+      "uzbek",
+      "korean",
+      "mexican",
+      "puerto-rican",
+      "north-african",
+      "east-african",
+      "italian",
+      "indigenous-and-diaspora",
+      "african-american",
+      "indigenous",
+      "lenape"
+    ]
+  }
+}

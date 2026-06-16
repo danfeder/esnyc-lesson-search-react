@@ -4,5 +4,9 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["scripts/stage2-retag/**/*.ts", "scripts/lib/**/*.ts"]
+  "include": [
+    "scripts/stage2-retag/**/*.ts",
+    "scripts/heritage/**/*.ts",
+    "scripts/lib/**/*.ts"
+  ]
 }

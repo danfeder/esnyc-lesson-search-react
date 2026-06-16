@@ -6,6 +6,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   // First, specify ignores (must be first in the array)
@@ -15,15 +16,17 @@ export default [
       'node_modules/**',
       '*.config.js',
       'vite.config.ts',
-      // Ignore scripts/ EXCEPT the stage2-retag runner, which gets the
-      // standard TS rules (OQ12 dedicated check surface). Flat-config global
-      // ignores cannot be un-ignored by later config objects, so the
-      // exception must be a negation pattern here. Empirically, negations
+      // Ignore scripts/ EXCEPT the lint-clean subdirectories (the stage2-retag
+      // runner — OQ12 dedicated check surface — and the heritage filter
+      // generator — PR C1.1), which get the standard TS rules. Flat-config
+      // global ignores cannot be un-ignored by later config objects, so the
+      // exceptions must be negation patterns here. Empirically, negations
       // after 'scripts/**' do NOT re-include (the glob swallows the
       // directories themselves); the working pattern is 'scripts/*'
-      // (ignore direct children) + re-include the one subdirectory.
+      // (ignore direct children) + re-include each opted-in subdirectory.
       'scripts/*',
       '!scripts/stage2-retag/',
+      '!scripts/heritage/',
       'supabase/functions/**',
       'temp-debug-files/**',
       '.eslintrc.*',
@@ -112,6 +115,20 @@ export default [
     files: ['**/*.js'],
     rules: {
       '@typescript-eslint/no-var-requires': 'off',
+    },
+  },
+  // Standalone Node DB-test scripts under the (un-ignored) heritage dir. These
+  // mirror scripts/test-rls-policies.mjs (which lives under the ignored
+  // scripts/* and is never linted); since scripts/heritage/ is opted IN for the
+  // C1.1 generator, the .mjs test here gets linted too and needs Node globals.
+  {
+    files: ['scripts/heritage/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
     },
   },
 ];

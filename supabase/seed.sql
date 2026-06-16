@@ -173,16 +173,13 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- SAMPLE CULTURAL HERITAGE HIERARCHY
+-- CULTURAL HERITAGE HIERARCHY
 -- =====================================================
-
-INSERT INTO cultural_heritage_hierarchy (parent, children)
-VALUES
-  ('Latin American', ARRAY['Mexican', 'Caribbean']),
-  ('European', ARRAY['Italian', 'French']),
-  ('Asian', ARRAY['Chinese', 'Japanese', 'Korean']),
-  ('African', ARRAY['West African', 'Ethiopian'])
-ON CONFLICT DO NOTHING;
+-- The hierarchy table is now seeded authoritatively by migration
+-- 20260616000000_heritage_recursive_expansion.sql with the full 71-row vocab
+-- tree (key, label, parent_key) from data/vocab/cultural-heritage.vocab.json.
+-- The old sample insert against the (parent, children) shape was removed when
+-- the table shape changed (PR C1.2); no seed-time insert is needed here.
 
 -- =====================================================
 -- SAMPLE SUBMISSION (for testing review workflow)

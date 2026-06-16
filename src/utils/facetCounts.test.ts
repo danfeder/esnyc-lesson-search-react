@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import type { Lesson } from '@/types';
+import type { Lesson, LessonMetadata } from '@/types';
 import { computeFacetCounts } from './facetCounts';
 
-function makeLesson(overrides: Partial<Lesson> & { id: string }): Lesson {
+type LessonOverrides = Partial<Omit<Lesson, 'metadata'>> & {
+  id: string;
+  metadata?: Partial<LessonMetadata>;
+};
+
+function makeLesson(overrides: LessonOverrides): Lesson {
   return {
     lessonId: overrides.id,
     title: 'Lesson ' + overrides.id,
@@ -66,7 +71,9 @@ describe('computeFacetCounts', () => {
     expect(counts.activityType).toEqual({ 'cooking-only': 1, both: 1 });
     expect(counts.location).toEqual({ Indoor: 2, Outdoor: 1 });
     expect(counts.thematicCategories).toEqual({ 'Garden Basics': 1 });
-    expect(counts.culturalHeritage).toEqual({ 'east-asian': 1 });
+    // Heritage is expansion-aware: a lesson tagged with the slug `east-asian`
+    // credits east-asian AND its ancestor asian (see dedicated cases below).
+    expect(counts.culturalHeritage).toEqual({ 'east-asian': 1, asian: 1 });
     expect(counts.seasonTiming).toEqual({ Fall: 1 });
     expect(counts.cookingMethods).toEqual({ Stovetop: 1 });
     expect(counts.socialEmotionalLearning).toEqual({ 'Self-awareness': 1 });
@@ -101,5 +108,82 @@ describe('computeFacetCounts', () => {
     const lessons = [makeLesson({ id: 'a', gradeLevels: ['3'] })];
     expect(() => computeFacetCounts(lessons)).not.toThrow();
     expect(computeFacetCounts(lessons).thematicCategories).toEqual({});
+  });
+
+  describe('culturalHeritage — slug-keyed, expansion-aware counts (C1.6)', () => {
+    it('keys by SLUG even when storage uses the Title-Case label (the prod bug)', () => {
+      // Stored verbatim as Title-Case "Mexican"; the badge looks up by slug.
+      const lessons = [makeLesson({ id: 'a', metadata: { culturalHeritage: ['Mexican'] } })];
+      const counts = computeFacetCounts(lessons);
+      // Was 0/undefined before C1.6 (label-keyed map vs slug lookup).
+      expect(counts.culturalHeritage['mexican']).toBe(1);
+      // Mexican also credits its ancestors latin-american and americas.
+      expect(counts.culturalHeritage['latin-american']).toBe(1);
+      expect(counts.culturalHeritage['americas']).toBe(1);
+    });
+
+    it('credits a deep label up its full ancestor chain', () => {
+      // Chinese → east-asian → asian
+      const lessons = [makeLesson({ id: 'a', metadata: { culturalHeritage: ['Chinese'] } })];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.culturalHeritage['chinese']).toBe(1);
+      expect(counts.culturalHeritage['east-asian']).toBe(1);
+      expect(counts.culturalHeritage['asian']).toBe(1);
+    });
+
+    it('does NOT double-count a shared ancestor when a lesson is tagged with two siblings', () => {
+      // Chinese + Japanese both roll up through east-asian → asian; the shared
+      // ancestors must count the lesson ONCE (distinct-lesson semantics).
+      const lessons = [
+        makeLesson({ id: 'a', metadata: { culturalHeritage: ['Chinese', 'Japanese'] } }),
+      ];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.culturalHeritage['chinese']).toBe(1);
+      expect(counts.culturalHeritage['japanese']).toBe(1);
+      expect(counts.culturalHeritage['east-asian']).toBe(1); // not 2
+      expect(counts.culturalHeritage['asian']).toBe(1); // not 2
+    });
+
+    it('credits an internal-tier label up through its hidden ancestors', () => {
+      // Soul Food (internal) → african-american → indigenous-and-diaspora
+      const lessons = [makeLesson({ id: 'a', metadata: { culturalHeritage: ['Soul Food'] } })];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.culturalHeritage['soul-food']).toBe(1);
+      expect(counts.culturalHeritage['african-american']).toBe(1);
+      expect(counts.culturalHeritage['indigenous-and-diaspora']).toBe(1);
+    });
+
+    it('counts distinct lessons across a parent and its descendants', () => {
+      // Three lessons, all rolling up to asian via different leaves.
+      const lessons = [
+        makeLesson({ id: 'a', metadata: { culturalHeritage: ['Chinese'] } }),
+        makeLesson({ id: 'b', metadata: { culturalHeritage: ['Japanese'] } }),
+        makeLesson({ id: 'c', metadata: { culturalHeritage: ['Indian'] } }), // south-asian → asian
+      ];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.culturalHeritage['asian']).toBe(3);
+      expect(counts.culturalHeritage['east-asian']).toBe(2);
+      expect(counts.culturalHeritage['south-asian']).toBe(1);
+      expect(counts.culturalHeritage['indian']).toBe(1);
+    });
+
+    it('accepts slug-form storage too (already-canonical values pass through)', () => {
+      const lessons = [makeLesson({ id: 'a', metadata: { culturalHeritage: ['mexican'] } })];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.culturalHeritage['mexican']).toBe(1);
+      expect(counts.culturalHeritage['americas']).toBe(1);
+    });
+
+    it('does not lose an unknown/phantom value (best-effort self-only credit, no crash)', () => {
+      const lessons = [
+        makeLesson({ id: 'a', metadata: { culturalHeritage: ['Klingon', 'Mexican'] } }),
+      ];
+      const counts = computeFacetCounts(lessons);
+      // Unknown value credited verbatim, self only, no ancestors.
+      expect(counts.culturalHeritage['Klingon']).toBe(1);
+      // Known value still expands.
+      expect(counts.culturalHeritage['mexican']).toBe(1);
+      expect(counts.culturalHeritage['americas']).toBe(1);
+    });
   });
 });

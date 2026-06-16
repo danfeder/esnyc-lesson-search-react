@@ -1,4 +1,10 @@
-// Type definitions for filter options
+import { culturalHeritageOptions } from '@/utils/heritageHierarchy.generated';
+
+// Type definitions for filter options.
+// `children` is recursive: a nested option may itself have nested children,
+// so the cultural-heritage tree can be 3-4 tiers deep (Americas › Latin
+// American › Mexican). See heritageHierarchy.generated.ts (generated from
+// data/vocab/cultural-heritage.vocab.json).
 interface FilterOption {
   value: string;
   label: string;
@@ -124,49 +130,11 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   culturalHeritage: {
     label: 'Cultural Heritage',
     type: 'hierarchical',
-    options: [
-      {
-        value: 'asian',
-        label: 'Asian',
-        children: [
-          { value: 'east-asian', label: 'East Asian' },
-          { value: 'southeast-asian', label: 'Southeast Asian' },
-          { value: 'south-asian', label: 'South Asian' },
-          { value: 'central-asian', label: 'Central Asian' },
-        ],
-      },
-      {
-        value: 'americas',
-        label: 'Americas',
-        children: [
-          { value: 'latin-american', label: 'Latin American' },
-          { value: 'caribbean', label: 'Caribbean' },
-          { value: 'north-american', label: 'North American' },
-        ],
-      },
-      {
-        value: 'african',
-        label: 'African',
-        children: [
-          { value: 'west-african', label: 'West African' },
-          { value: 'ethiopian', label: 'Ethiopian' },
-          { value: 'nigerian', label: 'Nigerian' },
-        ],
-      },
-      {
-        value: 'european',
-        label: 'European',
-        children: [
-          { value: 'eastern-european', label: 'Eastern European' },
-          { value: 'mediterranean', label: 'Mediterranean' },
-        ],
-      },
-      {
-        value: 'middle-eastern',
-        label: 'Middle Eastern',
-        children: [{ value: 'levantine', label: 'Levantine' }],
-      },
-    ],
+    // Generated from data/vocab/cultural-heritage.vocab.json (top + sub tiers;
+    // `internal` nodes are hidden in the UI but still match via the recursive
+    // DB expansion). Regenerate via:
+    //   npx tsx scripts/heritage/generate-heritage-hierarchy.ts
+    options: culturalHeritageOptions,
   },
 
   academicIntegration: {
