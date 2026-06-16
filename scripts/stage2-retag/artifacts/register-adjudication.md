@@ -38,6 +38,31 @@ Each of the 74 register rows maps to exactly ONE category (authoritative per-row
 
 ## ▶ USER VERDICT NEEDED (13 signals) — supervisor hand-off
 
+**✅ VERDICTS RECORDED — 2026-06-15 walkthrough (Session 11; user = decision authority).** All 13 settled below. No re-runs — the $121 B4 run is final; these are dispositions only. The user closed **every** "log a future vocab/filter-UI follow-up" option, so **no new future-track items** result — only the 3 targeted PR-C apply-time fixes (U-5, U-8, U-12).
+
+| Q | Signals folded | Verdict | Disposition for PR C |
+|---|---|---|---|
+| U-1 | AME-01, X-02, X-03, X-07 | **Accept identity-anchor** | Apply run as-is; PR-C parent-expansion must NOT add `North American` to African-American / Indigenous leaves (they root under the Indigenous-and-Diaspora cluster). |
+| U-2 | CON-16 | **Keep both axes** | Apply as-is; heritage + concepts Indigenous tagging stay independent; no vocab change. |
+| U-3 | EUR-14 | **Accept direct Irish→European** | Apply as-is; no sub-region created/logged. |
+| U-4 | ME-05 (sub-region half) | **Accept direct chains** | Apply as-is; no Arabian-Peninsula / Iranian sub-region created/logged. |
+| U-5 | ME-09 | **Trim over-stacked Fattoush** | TARGETED FIX — `1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI`: drop `Israeli` + `Jordanian` (verify body support vs run file), keep Lebanese/Syrian/Palestinian/Levantine/Middle Eastern. |
+| U-6 | ME-08 | **Accept regional spread** | Apply as-is; no pan-Muslim / Islamic cross-cluster tag created/logged. |
+| U-7 | EUR-01 | **Confirm the drop** | Apply as-is; bare `European` stays empty `[]`. |
+| U-8 | EUR-02, EUR-07, ME-04 | **Content-not-vehicle + trim outlier** | TARGETED FIX — Alternative Proteins (EUR-07; `15MzdlS…`/`1yTTJr3…` — confirm which is Alternative Proteins at PR C): drop leftover `Italian` + `European`. Other rows already dropped — apply as-is. |
+| U-9 | AME-06, EUR-11 | **Accept Latin American + Spanish** | Apply as-is; Mediterranean/European stay dropped. |
+| U-10 | EUR-13 | **Accept as-is** | Apply `[Latin American, Mexican, Central American, Spanish]` as-is. |
+| U-11 | AFR-07 | **Accept re-derived spread** | Apply as-is; spurious `African` resolved. |
+| U-12 | ME-03 | **Drop Middle Eastern** | TARGETED FIX — Intro to the Salad Project `1V2Xt4c…`: drop `Middle Eastern` (forward-reference only, no delivery). |
+| U-13 | CON-06 | **Confirm broad bucket** | Apply as-is; `community_systems` stays a single broad canonical. |
+
+**PR-C targeted apply-time fixes (the only 3 rows where apply ≠ run output) — resolve verbatim IDs against `full-run.fable.jsonl` before the migration emits each change:**
+1. **U-5** Fattoush `1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI` — drop `Israeli` + `Jordanian`.
+2. **U-8** Alternative Proteins (EUR-07) — drop `Italian` + `European`.
+3. **U-12** Intro to the Salad Project `1V2Xt4c…` — drop `Middle Eastern`.
+
+---
+
 Plain-language. Each item: the question, what the re-tag actually produced (status quo), and the options.
 
 ### U-1 — Should African-American and Indigenous lessons also carry "North American"? (AME-01, plus the concentrated evidence in X-02, X-03, X-07)
