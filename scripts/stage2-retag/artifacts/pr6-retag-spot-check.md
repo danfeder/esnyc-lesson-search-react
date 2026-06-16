@@ -1,0 +1,977 @@
+# Stage 2 re-tag — spot-check worksheet
+
+A sample of lessons to review before the new tags are applied. Nothing has been changed in the database yet — this is a preview. Each lesson below shows the tags the re-tagging run **proposes** to give it. For a full old-vs-new comparison of every lesson, see the diff report.
+
+Sample: 90 lessons (seed `20260612`, reproducible). Grouped into three buckets so you see heavy changes, light changes, and the tricky edge cases.
+
+## Lessons that change a lot (30)
+
+These lessons gain or lose three or more tag fields. Check that the new tags match what the lesson is actually about.
+
+- **Insects: Pests, Pollinators, & Proteins** (`1BDcQHoHO-tUMXK_fV5hjC-VQmtRZ-aj1`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Academic Integration:** "Science" → "Science", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Responsible decision-making"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Environmental and Community Stewardship", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Planting", "Beneficial insect identification", "Pest identification" → "Planting", "Garden exploration", "Beneficial insect identification"
+  - **Academic Concepts:** Arts: _(none)_ → "Visual Arts"; Science: "Ecosystems", "Pollinators", "Plant Parts" → "Pollinators", "Pests", "Ecosystems", "Food Webs", "Habitats", "Life Cycles", "Planting", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Animal Life Cycles and Adaptations** (`1QNvw2_DVlrd8079Jwgyfb8jQzjho1Ut5`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Spring", "Summer", "Winter" → _(none)_
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles" → "Promotes student-centered instruction"
+  - **Academic Integration:** "Science" → "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness" → _(none)_
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Social-Emotional Intelligence" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Vocabulary Development", "Sequencing"; Science: "Life Cycles", "Adaptations", "Ecosystems" → "Adaptations", "Life Cycles", "Observation", "Sorting and Categorization"
+- **Sweet and Sour Roots, Two Ways** (`1xdz4aJqRcHYaAluj-x3C0VoQRM3UNy-gERUvpuOuwcM`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Winter", "Spring"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles" → "Promotes student-centered instruction", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science" → "Science", "Math", "Literacy/ELA", "Arts"
+  - **Social-Emotional Learning:** "Self-awareness", "Responsible decision-making" → "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content" → "Kitchen Skills and Related Academic Content", "Environmental and Community Stewardship"
+  - **Cooking Methods:** "oven" → "basic-prep", "oven"
+  - **Garden Skills:** "Identifying plants", "Observing plant parts" → _(none)_
+  - **Academic Concepts:** Arts: _(none)_ → "Drawing"; Literacy/ELA: _(none)_ → "Recipe Reading", "Vocabulary Development"; Math: _(none)_ → "Measurement"; Science: "Root Vegetables", "Seasonality" → "Plant Parts", "Root Vegetables", "Seasonality", "Sensory Exploration", "Observation", "Preservation"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2, 3, 4, 5
+- **Harvesting and Weight** (`1uJV8xVyH95GQO1gVcnllbhv7kUgnfK6P9BrC0Ao4aBg`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum"
+  - **Academic Integration:** "Math", "Science" → "Math", "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content"
+  - **Garden Skills:** "Harvesting", "Identifying plants" → "Harvesting", "Sensory exploration", "Garden exploration"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Vocabulary Development"; Math: "Measurement", "Counting" → "Measurement", "Estimation"; Science: "Harvesting" → "Harvesting", "Seasonality", "Sensory Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): K
+- **Butterflies** (`1WKXLADkrfgZ7462f3JKfHNV-trHtuNtmo3i6Gq-PqeA`)
+  - **Activity Type:** "garden" → "craft"
+  - **Season & Timing:** "Fall", "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Academic Integration:** "Science", "Arts" → "Science", "Literacy/ELA", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Beneficial insect identification" → _(none)_
+  - **Academic Concepts:** Arts: "Visual Arts"; Literacy/ELA: _(none)_ → "Read-Aloud", "Sequencing"; Science: "Life Cycles", "Pollinators" → "Life Cycles", "Pollinators", "Animal Needs"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1
+- **Insect Detectives** (`lesson_8bce4ab6a0e6441b8ca1a49d620f5532`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** _(none)_ → "Fall", "Spring"
+  - **Cultural Responsiveness Features:** _(none)_ → "Communicates high expectations", "Promotes student-centered instruction"
+  - **Academic Integration:** "science" → "Science"
+  - **Social-Emotional Learning:** "self-awareness", "social-awareness" → "Self-management", "Self-awareness"
+  - **Core Competencies:** "environmental-stewardship", "garden-skills" → "Environmental and Community Stewardship", "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Garden Skills:** "sensory-exploration" → "Garden exploration", "Beneficial insect identification", "Pest identification", "Sensory exploration"
+  - **Academic Concepts:** Science: _(none)_ → "Habitats", "Observation", "Garden Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5
+- **Worm Breakfast Recipe** (`17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall", "Spring" → _(none)_
+  - **Cultural Responsiveness Features:** "Communicates high expectations"
+  - **Academic Integration:** "Science", "Math" → "Math", "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills"
+  - **Core Competencies:** "Environmental and Community Stewardship", "Garden Skills and Related Academic Content" → "Environmental and Community Stewardship", "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content"
+  - **Garden Skills:** "Composting", "Observing plant parts" → "Composting", "Tool use and maintenance"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Recipe Reading"; Math: "Fractions", "Measurement"; Science: "Decomposition", "Soil Science" → "Decomposition", "Animal Needs"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1
+- **Seedfolks Scavenger Hunt** (`11fRuAW3y5-__hKlk-L_rBv1f_waGpMo5urCGo7cc9to`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall", "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Literacy/ELA", "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Garden Skills and Related Academic Content", "Environmental and Community Stewardship", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Observing plant parts", "Identifying plants", "Harvesting", "Composting", "Tool use and maintenance" → "Garden exploration", "Sensory exploration", "Harvesting", "Composting", "Watering techniques", "Tool use and maintenance", "Stewardship tasks"
+  - **Academic Concepts:** Literacy/ELA: "Vocabulary Development", "Novel Connections" → "Novel Connections", "Reading", "Vocabulary Development"; Science: "Plant Parts" → "Garden Exploration", "Sensory Exploration", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **K-2 Garden Tasks** (`1QfQnwMEhSLMwZ64WgW6MVG6aAX1o5ii_XkxLobFUrns`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Positions teacher as facilitator" → _(none)_
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Self-awareness", "Responsible decision-making" → "Self-management"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Environmental and Community Stewardship"
+  - **Garden Skills:** "Planting", "Harvesting", "Seed saving", "Identifying plants" → "Watering techniques", "Harvesting", "Planting", "Seed starting", "Seed saving", "Identifying plants", "Sensory exploration", "Garden exploration", "Stewardship tasks"
+  - **Academic Concepts:** Science: "Plant Parts", "Life Cycles" → "Garden Exploration", "Harvesting", "Planting", "Plant Identification", "Sensory Exploration", "Plant Growth", "Seeds"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2
+- **Welcome and Exploration: How humans work in the garden** (`lesson_cc0a5cb454f04aa0aaa5a30a33dac44b`)
+  - **Activity Type:** "garden" → "garden", "cooking"
+  - **Lesson Type:** _(none)_ → "orientation"
+  - **Season & Timing:** _(none)_ → "Fall"
+  - **Cultural Responsiveness Features:** _(none)_ → "Promotes student-centered instruction", "Positions teacher as facilitator"
+  - **Academic Integration:** "social-studies", "science" → "Science", "Social Studies"
+  - **Social-Emotional Learning:** "relationship-skills", "self-management", "self-awareness" → "Self-management", "Relationship skills", "Self-awareness"
+  - **Core Competencies:** "environmental-stewardship", "garden-skills" → "Environmental and Community Stewardship", "Garden Skills and Related Academic Content"
+  - **Cooking Methods:** _(none)_ → "basic-prep"
+  - **Observances & Holidays:** _(none)_ → "Beginning of year"
+  - **Garden Skills:** "harvesting", "composting", "pest-identification", "pollinator-observation", "preservation", "sensory-exploration" → "Stewardship tasks", "Composting", "Watering techniques", "Weeding", "Pollinator observation", "Harvesting", "Tool use and maintenance", "Garden exploration"
+  - **Academic Concepts:** Science: _(none)_ → "Garden Exploration", "Tool Use", "Decomposition", "Pollinators"; Social Studies: _(none)_ → "Farm Labor", "Community Systems"
+  - **Grade Levels** (reviewed separately, no before/after): 4, 5, 6, 7, 8
+- **The Three Sisters** (`1XlUFSs_ls80ONwWgGCPHHA8re4kfmzgL`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Reshapes curriculum"
+  - **Cultural Heritage:** "Indigenous", "North American", "Americas" → "Indigenous", "Three Sisters traditions"
+  - **Academic Integration:** "Science", "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Garden Skills:** "Planting", "Garden planning" → "Planting", "Seed starting", "Companion planting"
+  - **Academic Concepts:** Literacy/ELA: "Storytelling", "Cultural Narratives" → "Read-Aloud", "Reading"; Science: "Companion Planting", "Plant Growth" → "Companion Planting", "Planting", "Plant Growth"; Social Studies: "Cultural Traditions", "Native American History" → "Native American History", "Indigenous Knowledge", "Cultural Narratives"
+  - **Grade Levels** (reviewed separately, no before/after): 3
+- **Mixed Greens and Cornbread** (`1sn_6veDzL8P0fyHIrGIRRpD5BPp86ZuOB2CR7wnDF6Q`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Winter" → _(none)_
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction", "Reshapes curriculum" → "Promotes student-centered instruction"
+  - **Cultural Heritage:** "African American", "North American", "Americas" → _(none)_
+  - **Academic Integration:** "Science", "Health" → "Health", "Science", "Math", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-awareness", "Relationship skills" → "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "oven", "stovetop", "basic-prep-only" → "basic-prep", "stovetop", "oven"
+  - **Observances & Holidays:** "Black History Month" → _(none)_
+  - **Garden Skills:** "Identifying plants" → _(none)_
+  - **Academic Concepts:** Health: "Nutrition Education" → "Nutrition Education", "Healthy Choices"; Literacy/ELA: _(none)_ → "Recipe Reading"; Math: _(none)_ → "Measurement"; Science: "Plant Parts"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Teamwork Challenge** (`1QDKfp6mC3uRwMfHSnGyeGX8L270dSN1KxFx3ZBDvZXc`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction" → "Promotes student-centered instruction"
+  - **Cultural Heritage:** "North American", "Americas" → _(none)_
+  - **Academic Integration:** "Math", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making" → "Relationship skills", "Self-management", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "oven" → "basic-prep", "oven"
+  - **Academic Concepts:** Literacy/ELA: "Recipe Reading" → "Recipe Reading", "Sequencing"; Math: "Measurement" → "Measurement", "Fractions"
+  - **Grade Levels** (reviewed separately, no before/after): 8
+- **Apple and Jicama Slaw** (`1CDRvyQOjp2ZkMnB47Qhk1ZllNZj7RLuw-D-si5cKOlI`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture" → _(none)_
+  - **Cultural Heritage:** "Mexican", "Latin American", "Americas" → _(none)_
+  - **Academic Integration:** "Science", "Social Studies" → "Math", "Science", "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Self-awareness" → "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "basic-prep"
+  - **Observances & Holidays:** _(none)_ → "Beginning of year"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Recipe Reading"; Math: _(none)_ → "Measurement", "Sorting and Categorization"; Science: "Plant Parts" → "Plant Parts", "Climate"; Social Studies: "Geography"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+- **Green Room Survival Guide** (`1KNYzg30n3jMmv6BqJlT8zcfVX8lamwhIM0WtSP18ArY`)
+  - **Activity Type:** "cooking"
+  - **Lesson Type:** _(none)_ → "orientation"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture", "Reshapes curriculum"
+  - **Academic Integration:** "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Academic Concepts:** Literacy/ELA: "Writing", "Vocabulary Development" → "How-to Writing", "Recipe Reading", "Vocabulary Development"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **AAPI Heritage Month - Philippines & Lumpia** (`1vtacAdf80q9FyZ4dEEzWmVLdycRmgJ7_MSRbrweoGwA`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture", "Reshapes curriculum"
+  - **Cultural Heritage:** "Asian", "Southeast Asian"
+  - **Academic Integration:** "Social Studies" → "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "oven", "stovetop" → "basic-prep"
+  - **Observances & Holidays:** "AAPI Heritage Month"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Recipe Reading"; Social Studies: "Cultural Traditions", "Colonialism's Impact", "Geography" → "Geography", "Colonialism's Impact", "Cultural Traditions", "Global Connections"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Eat the Rainbow: Red** (`1qlwQLN_WX_BUzSZuxFhAvxjb_b95pW6V`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Fall", "Winter", "Spring"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Academic Integration:** "Science", "Math" → "Math", "Science", "Health", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Garden Skills:** "Observing plant parts" → _(none)_
+  - **Academic Concepts:** Arts: _(none)_ → "Music", "Performance"; Health: _(none)_ → "Healthy Choices", "Sensory Exploration"; Math: "Measurement", "Counting" → "Measurement"; Science: "Plant Needs" → "Plant Needs", "Plant Growth"
+  - **Grade Levels** (reviewed separately, no before/after): PK
+- **Food Marketing** (`1YnlgMvzSZPf62gHtWozhokKR47TOZUkf`)
+  - **Activity Type:** "cooking" → "cooking", "craft"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles" → "Promotes student-centered instruction"
+  - **Academic Integration:** "Health", "Social Studies", "Arts" → "Health", "Literacy/ELA", "Arts"
+  - **Social-Emotional Learning:** "Self-awareness" → "Responsible decision-making", "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Arts: "Visual Arts" → "Drawing", "Visual Arts"; Health: "Nutrition Education", "Healthy Choices" → "Advertising", "Healthy Choices"; Literacy/ELA: _(none)_ → "Persuasive Writing"; Social Studies: "Advertising" → _(none)_
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **How Do Seeds Turn into Plants?** (`1czcU78YP5rfa2Nkf_CvtMQQPfjObEE_AMB0YcjkGIJg`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction"
+  - **Academic Integration:** "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-awareness" → _(none)_
+  - **Core Competencies:** "Garden Skills and Related Academic Content"
+  - **Garden Skills:** "Observing plant parts", "Seed saving" → "Observing plant parts", "Seed starting", "Sensory exploration"
+  - **Academic Concepts:** Literacy/ELA: "Vocabulary Development" → "Reading", "Vocabulary Development"; Science: "Plant Parts", "Life Cycles" → "Seeds", "Germination", "Life Cycles", "Plant Parts", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 6, 7, 8
+- **Making Potting Soil with 3K-K** (`103KB5-ciAEHWVDI1r02KjR3No2WSzazE`)
+  - **Activity Type:** "garden", "cooking"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum" → "Reshapes curriculum", "Promotes student-centered instruction"
+  - **Academic Integration:** "Science" → "Science", "Math", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Garden Skills:** "Soil preparation and care", "Composting" → "Soil preparation and care", "Sensory exploration"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Read-Aloud", "Recipe Reading"; Math: _(none)_ → "Measurement", "Counting"; Science: "Soil Science", "Plant Parts" → "Soil Science", "Sensory Exploration", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K
+- **Types of Energy** (`1-FhCLI8tF1VdM7DT_Mb55CQsZthpXReYCA1ipA1A0sU`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Cultural Heritage:** "Latin American", "Americas" → _(none)_
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Science: "Thermal Energy" → "Thermal Energy", "Mechanical Energy", "Sound"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Spring and Summer Plants** (`1zQSzYL0c5Txt5RPNtL4RRU0xSmxuA4VdR8YVHcPcUAY`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction" → "Encourages learning within the context of culture"
+  - **Cultural Heritage:** "Mexican", "Latin American", "Asian", "Japanese", "Americas" → "Mexican", "Japanese", "Indigenous", "Jamaican"
+  - **Academic Integration:** "Science", "Social Studies", "Literacy/ELA" → "Science", "Social Studies"
+  - **Social-Emotional Learning:** "Social awareness", "Self-awareness" → _(none)_
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Garden Skills:** "Planting", "Harvesting", "Identifying plants" → "Seed starting", "Planting"
+  - **Academic Concepts:** Literacy/ELA: "Vocabulary Development" → _(none)_; Science: "Plant Needs", "Plant Growth" → "Plant Needs", "Climate", "Seasonality", "Seeds", "Planting", "Seed Dispersal"; Social Studies: "Geography", "Cultural Traditions" → "Geography", "Global Connections", "Indigenous Knowledge"
+  - **Grade Levels** (reviewed separately, no before/after): 3
+- **Whole Wheat Pancakes (Farm to Table)** (`1YOlzlDoNFDbIsRxyDxN-hevNmxDT4jNMIuIN3ju4P8A`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Spring", "Summer", "Winter" → _(none)_
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science", "Math", "Literacy/ELA" → "Science", "Literacy/ELA", "Health", "Math", "Social Studies"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "stovetop" → "basic-prep"
+  - **Academic Concepts:** Health: _(none)_ → "Nutrition Education", "Healthy Choices"; Literacy/ELA: "Recipe Reading" → "Read-Aloud", "Recipe Reading", "Sequencing"; Math: "Measurement"; Science: "Food Processing"; Social Studies: _(none)_ → "Community Systems"
+  - **Grade Levels** (reviewed separately, no before/after): 3, 4, 5
+- **Welcome Back Chickpea Pizza** (`1W-b6yZffHse2dS9goYk5Jf8evyfECE2r`)
+  - **Activity Type:** "cooking"
+  - **Lesson Type:** _(none)_ → "orientation"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Cultural Heritage:** "Mediterranean", "European" → _(none)_
+  - **Academic Integration:** "Science", "Health" → _(none)_
+  - **Social-Emotional Learning:** "Self-management", "Responsible decision-making"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "oven" → "basic-prep", "oven"
+  - **Observances & Holidays:** _(none)_ → "Beginning of year"
+  - **Academic Concepts:** Health: "Nutrition Education" → _(none)_; Science: "Plant Parts" → _(none)_
+  - **Grade Levels** (reviewed separately, no before/after): 1, 2, 3, 4, 5, 6, 7
+- **School Food Heroes** (`1nbnwFytunU5eIfH7IpqfM1wXrqEeU6marG3o6lOBJdM`)
+  - **Activity Type:** "academic" → "craft"
+  - **Season & Timing:** "Fall", "Spring", "Summer", "Winter" → "Spring"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Promotes student-centered instruction" → _(none)_
+  - **Academic Integration:** "Literacy/ELA", "Social Studies", "Arts"
+  - **Social-Emotional Learning:** "Social awareness", "Relationship skills" → "Social awareness"
+  - **Core Competencies:** "Social-Emotional Intelligence", "Culturally Responsive Education" → "Social-Emotional Intelligence", "Environmental and Community Stewardship"
+  - **Observances & Holidays:** "School Food Hero Day"
+  - **Academic Concepts:** Arts: "Visual Arts" → "Drawing"; Literacy/ELA: "Storytelling" → "Letter Writing", "Writing"; Social Studies: "Community Systems"
+  - **Grade Levels** (reviewed separately, no before/after): 1, 2, 3, 4, 5
+- **Alternative Proteins** (`1yTTJr3D9B6iljmmqdqtWUf6WnpRm683_`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Reshapes curriculum"
+  - **Cultural Heritage:** "Italian", "Mediterranean", "European" → "Italian", "European"
+  - **Academic Integration:** "Science", "Health", "Social Studies" → "Science", "Health", "Math", "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Environmental and Community Stewardship", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Academic Concepts:** Health: "Nutrition Education" → "Nutrition Education", "Healthy Choices"; Literacy/ELA: _(none)_ → "Recipe Reading"; Math: _(none)_ → "Measurement"; Science: "Plant Parts" → "Pollinators", "Nutrition Education", "Climate Change"; Social Studies: "Cultural Traditions" → "Geography", "Global Connections", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Moroccan Carrot Salad, Two Ways** (`1LyuuuF-GNwUfVIgxrR_3NQLCEbD59GkfFN145WeTk3Q`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles" → "Encourages learning within the context of culture", "Promotes student-centered instruction"
+  - **Cultural Heritage:** "African", "North African", "Moroccan"
+  - **Academic Integration:** "Science", "Math" → "Math", "Science", "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness" → _(none)_
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Kitchen Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Cooking Methods:** "oven" → "basic-prep", "oven"
+  - **Garden Skills:** "Identifying plants" → _(none)_
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Recipe Reading", "Vocabulary Development"; Math: "Measurement"; Science: "Plant Parts" → "Root Vegetables", "Plant Parts", "Preservation", "Seasonality"; Social Studies: _(none)_ → "Geography", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2, 3, 4, 5
+- **October Seed Saving** (`1k7KqowpILVoRe-X0sOiOtcwJyC8_fJ17nwLu-DW5_r4`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction", "Reshapes curriculum" → "Encourages learning within the context of culture", "Promotes positive perspectives on parents and families"
+  - **Cultural Heritage:** "Kenyan", "African" → "African", "East African", "Kenyan"
+  - **Academic Integration:** "Science", "Social Studies", "Literacy/ELA", "Math" → "Science", "Literacy/ELA", "Social Studies", "Arts"
+  - **Social-Emotional Learning:** "Self-awareness", "Social awareness" → _(none)_
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Environmental and Community Stewardship", "Culturally Responsive Education"
+  - **Garden Skills:** "Seed saving", "Harvesting", "Identifying plants" → "Seed saving", "Harvesting", "Composting"
+  - **Academic Concepts:** Arts: _(none)_ → "Drawing"; Literacy/ELA: "Storytelling" → "Read-Aloud", "Reading", "Vocabulary Development"; Math: "Counting", "Estimation" → _(none)_; Science: "Plant Parts", "Life Cycles" → "Seeds", "Sorting and Categorization", "Observation"; Social Studies: "Cultural Traditions", "Immigration Stories" → "Historical Figures", "Immigration Stories", "Global Connections", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): 3
+- **Chickpea Salad** (`1GXPRwyORgQy1Cf6P0kMA0vkaU3Z-T5Klvzi93hZciaQ`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum"
+  - **Cultural Heritage:** "North American", "Americas" → _(none)_
+  - **Academic Integration:** "Health", "Math" → "Health"
+  - **Social-Emotional Learning:** "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Health: "Nutrition Education", "Healthy Choices"; Math: "Measurement" → _(none)_
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+- **Kitchen & Garden Intro** (`1cS3llhLF1k2bwgwz1f62fWk938evVGRE9crGuAWT3_g`)
+  - **Activity Type:** "cooking", "garden"
+  - **Lesson Type:** _(none)_ → "orientation"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Incorporates different individual and cultural learning styles", "Reshapes curriculum", "Positions teacher as facilitator" → "Promotes student-centered instruction", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science" → _(none)_
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness" → "Relationship skills", "Responsible decision-making", "Self-management"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content", "Environmental and Community Stewardship"
+  - **Cooking Methods:** "basic-prep"
+  - **Observances & Holidays:** _(none)_ → "Beginning of year"
+  - **Garden Skills:** "Weeding", "Watering techniques", "Composting", "Harvesting" → "Weeding", "Watering techniques", "Composting", "Soil preparation and care", "Harvesting", "Stewardship tasks"
+  - **Academic Concepts:** Science: "Plant Parts" → _(none)_
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+
+## Lessons that barely change (or not at all) (30)
+
+These lessons keep most of their tags. Confirm nothing useful was dropped.
+
+- **Food Workers' Rights** (`1-QgkHyLPDzZrNRkmX3pjNFjT9GBOsBROalNbVvAMKck`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Cultural Heritage:** "North American", "Americas" → "African American", "Latin American", "Mexican", "Ecuadorian"
+  - **Academic Integration:** "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Social awareness"
+  - **Core Competencies:** "Social Justice", "Social-Emotional Intelligence"
+  - **Academic Concepts:** Literacy/ELA: "Storytelling", "Cultural Narratives" → "Reading", "Narrative Writing", "Public Speaking", "Storytelling"; Social Studies: "Immigration Stories", "Cultural Traditions", "Historical Figures" → "Social Justice Issues", "Farm Labor", "Immigration Stories", "Advocacy"
+  - **Grade Levels** (reviewed separately, no before/after): 6, 7, 8
+- **Who's Who in the Food System** (`1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction", "Reshapes curriculum"
+  - **Academic Integration:** "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills", "Social awareness"
+  - **Core Competencies:** "Social Justice", "Social-Emotional Intelligence", "Culturally Responsive Education" → "Social Justice", "Social-Emotional Intelligence"
+  - **Academic Concepts:** Literacy/ELA: "Storytelling" → "Reading"; Social Studies: "Cultural Traditions", "Social Justice Issues" → "Farm Labor", "Social Justice Issues", "Community Systems"
+  - **Grade Levels** (reviewed separately, no before/after): 6, 7, 8
+- **Phases of Matter** (`1UTDfWr9QtytiIERZ-yQJXgjIjed5FMkAMXDPe-kquZw`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "oven" → "basic-prep", "oven"
+  - **Academic Concepts:** Science: "Phases of Matter"
+  - **Grade Levels** (reviewed separately, no before/after): 7
+- **Foods From Around the World: Mexico** (`1u84NuJq0TStf_mZlUtht2OjNnf8bKkSbBuwEBkDSCfI`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Encourages learning within the context of culture", "Promotes student-centered instruction"
+  - **Cultural Heritage:** "Mexican", "Latin American", "Americas" → "Mexican", "Latin American"
+  - **Academic Integration:** "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: "Recipe Reading" → "Read-Aloud", "Recipe Reading"; Social Studies: "Cultural Traditions", "Geography" → "Geography", "Cultural Traditions", "Global Connections", "Immigration Stories"
+  - **Grade Levels** (reviewed separately, no before/after): 5
+- **Thermal Energy Experiment** (`1v2wi77AhwX-YAo0dUhpofOsRORS6bRwAJPc-0B1C8WE`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Reshapes curriculum"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content"
+  - **Academic Concepts:** Science: "Thermal Energy" → "Thermal Energy", "Scientific Method", "Observation", "Data Collection"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Fossil Fuels** (`1qJCcCWrm3NReG8SXRDfOTabBMUmf5Em8`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Social awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content" → "Environmental and Community Stewardship", "Social-Emotional Intelligence"
+  - **Academic Concepts:** Science: "Thermal Energy", "Ecosystems" → "Environmental Stewardship", "Climate Change"
+  - **Grade Levels** (reviewed separately, no before/after): 3
+- **Spring Special Spot and Signs of Spring Scavenger Hunt** (`1CSPiEww-2bIuRRyPnbZAqG8K_8D1kw7hr85RSRJACSk`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Observing plant parts", "Identifying plants" → "Garden exploration", "Sensory exploration"
+  - **Academic Concepts:** Arts: "Drawing", "Observation" → "Drawing"; Science: "Seasonality", "Climate" → "Seasonality", "Observation", "Sensory Exploration", "Garden Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): K
+- **Food Webs** (`18c3H1c92Dv95kfdZlEe5D0HdbNGdWO4B`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Incorporates different individual and cultural learning styles", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Academic Concepts:** Science: "Food Webs", "Ecosystems", "Decomposition"
+  - **Grade Levels** (reviewed separately, no before/after): 3
+- **Fruit Salad Challenge** (`19CMwluTwweSei-u_gCvoerBrGG839U_Al7a4ORiZKa8`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: "How-to Writing", "Vocabulary Development" → "Comparative Writing", "Opinion Writing", "Vocabulary Development", "Sensory Details"
+  - **Grade Levels** (reviewed separately, no before/after): 6, 7, 8
+- **Green Room Store** (`1BisLdLgLY0Y2_kIcJnMizpmEy9V6fnx2`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Literacy/ELA", "Math"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Academic Concepts:** Literacy/ELA: "Vocabulary Development" → "Vocabulary Development", "Recipe Reading", "Imaginary Play", "Bilingual Education"; Math: "Counting", "Measurement" → "Counting"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Winter Fruit Salad (Seasonality)** (`1EPkNrvYIN_1pGe7zRjikBwIo2FcfNVxa3QADs26qYf8`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: "Storytelling" → "Read-Aloud", "Vocabulary Development", "Recipe Reading"; Science: "Seasonality"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+- **Garden Celebration: Culmination of Plant Parts and Seasons** (`1Sh9vw7Co-Y5Sl4q-l4e1zUEojDscaxgof8AnWwlMI9A`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness"
+  - **Core Competencies:** "Environmental and Community Stewardship", "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Observances & Holidays:** "End of year celebrations"
+  - **Garden Skills:** "Watering techniques", "Observing plant parts", "Identifying plants" → "Watering techniques", "Observing plant parts", "Tool use and maintenance", "Stewardship tasks"
+  - **Academic Concepts:** Science: "Plant Parts", "Plant Needs", "Seasonality" → "Seasonality", "Plant Parts", "Plant Needs", "Plant Growth"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK
+- **Foods From Around the World: Pakistan** (`1d2ELOzXFQ2h8bIgluCdDXvpmpYXIi2IlFtmZbkmy_HI`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Encourages learning within the context of culture", "Promotes student-centered instruction"
+  - **Cultural Heritage:** "Asian", "South Asian", "Pakistani"
+  - **Academic Integration:** "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: "Recipe Reading" → "Read-Aloud", "Recipe Reading", "Vocabulary Development"; Social Studies: "Cultural Traditions", "Geography" → "Geography", "Cultural Traditions", "Global Connections", "Immigration Stories"
+  - **Grade Levels** (reviewed separately, no before/after): 5
+- **Eat the Rainbow: Purple** (`1s10FiZW7qM_IhOUDiY2Wk9yJ4Zewcpy-`)
+  - **Activity Type:** "cooking" → "cooking", "craft"
+  - **Season & Timing:** "Fall", "Winter", "Spring"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Academic Integration:** "Health", "Arts", "Science"
+  - **Social-Emotional Learning:** "Self-management", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Arts: "Visual Arts", "Food Presentation" → "Visual Arts", "Food Presentation", "Music"; Health: "Nutrition Education", "Healthy Choices"; Science: "Plant Parts" → "Sensory Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): PK
+- **Kimchi Fried Rice** (`1QDAJZuriEeMXCl4rlT2m2Ykee3BRcnsyj2ArB5qping`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture"
+  - **Cultural Heritage:** "Asian", "East Asian", "Korean"
+  - **Academic Integration:** "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Academic Concepts:** Literacy/ELA: "Reading" → "Read-Aloud", "Reading", "Recipe Reading"; Social Studies: "Cultural Traditions" → "Historical Figures", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Foods From Around the World: Ukraine** (`1-AYK5D4_VEmu2ZWgFtaJItK_rn3hhoEK8YdPr_F0Ows`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Encourages learning within the context of culture", "Promotes student-centered instruction"
+  - **Cultural Heritage:** "European", "Eastern European", "Ukrainian"
+  - **Academic Integration:** "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: "Recipe Reading" → "Read-Aloud", "Recipe Reading", "Vocabulary Development"; Social Studies: "Cultural Traditions", "Geography" → "Geography", "Cultural Traditions", "Immigration Stories", "Global Connections"
+  - **Grade Levels** (reviewed separately, no before/after): 5
+- **Phase Changes** (`1QFb9wDbN3MyIAOeM9z7ZNy-Zb7xPH2yC`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter", "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Reshapes curriculum"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Academic Concepts:** Science: "Phases of Matter"
+  - **Grade Levels** (reviewed separately, no before/after): 7
+- **Chilled Cucumber and Tahini Soup with Spicy Pumpkin Seeds** (`13nUlv33cUEy2yjjzCARmrlCIHO4oDwQxyCNHVyUtKGk`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Summer", "Fall"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture" → "Encourages learning within the context of culture", "Promotes positive perspectives on parents and families"
+  - **Cultural Heritage:** "Levantine", "Middle Eastern" → "Middle Eastern", "Palestinian"
+  - **Academic Integration:** "Social Studies"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Social Studies: "Geography", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2, 3, 4, 5
+- **Hydroponics** (`1kYWPuSBCWHVdY-rwsbMJC8J3EMOPno_G`)
+  - **Activity Type:** "garden", "cooking"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Reshapes curriculum"
+  - **Academic Integration:** "Science", "Math"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills"
+  - **Core Competencies:** "Environmental and Community Stewardship", "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "basic-prep"
+  - **Garden Skills:** "Planting", "Harvesting", "Observing plant parts" → "Planting", "Seed starting", "Harvesting", "Tool use and maintenance"
+  - **Academic Concepts:** Math: "Measurement", "Data Collection"; Science: "Plant Parts", "Life Cycles", "Ecosystems" → "Scientific Method", "Plant Growth", "Plant Needs", "Observation", "Planting", "Harvesting", "Seeds"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Cooking Methods** (`16whz2Sn5FL0qo_fKTV1Er4jUpA4xX37bMKc3_6MDGqQ`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Reshapes curriculum"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "stovetop", "oven"
+  - **Academic Concepts:** Science: "Thermal Energy" → "Observation", "Thermal Energy"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Expert’s Guide to Gardening: Weeding & Clearing** (`1Ck6V2TB3qvgmK3h6vVGp_FMGtKQDz6FVoBWjjj-Vm2M`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Reshapes curriculum"
+  - **Academic Integration:** "Literacy/ELA", "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Garden Skills and Related Academic Content", "Environmental and Community Stewardship"
+  - **Garden Skills:** "Weeding", "Soil preparation and care", "Stewardship tasks"
+  - **Academic Concepts:** Literacy/ELA: "How-to Writing" → "Writing", "How-to Writing"; Science: "Plant Needs" → "Plant Needs", "Seasonality"
+  - **Grade Levels** (reviewed separately, no before/after): 2
+- **Flower Anatomy & Broccoli Salad** (`14h7-Ot1LaOC1q01AZx3_seBIpV5YTuSY`)
+  - **Activity Type:** "cooking", "garden"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Social awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Garden Skills:** "Observing plant parts"
+  - **Academic Concepts:** Science: "Plant Parts", "Pollinators" → "Plant Parts", "Plant Reproduction", "Pollinators", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Expert’s Guide to Gardening: Watering and Weeding** (`117dIoZ0oEp4TQdzDWnS3EXkvP0rLjvDr_U__A65VoQk`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Promotes student-centered instruction", "Reshapes curriculum"
+  - **Academic Integration:** "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Garden Skills and Related Academic Content", "Environmental and Community Stewardship"
+  - **Garden Skills:** "Watering techniques", "Weeding", "Stewardship tasks"
+  - **Academic Concepts:** Literacy/ELA: "How-to Writing" → "Writing", "How-to Writing"; Science: "Plant Needs"
+  - **Grade Levels** (reviewed separately, no before/after): 2
+- **Food Roots Lesson** (`113uxucSb35_m5yZ2GQeRWlzEuDWivLJ_G5LNgOx_vRc`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Communicates high expectations", "Reshapes curriculum"
+  - **Academic Integration:** "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Self-awareness", "Relationship skills", "Self-management"
+  - **Core Competencies:** "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Academic Concepts:** Literacy/ELA: "Storytelling", "Cultural Narratives" → "Narrative Writing", "Storytelling", "Read-Aloud", "Creative Writing", "Public Speaking", "Sensory Details"; Social Studies: "Cultural Traditions", "Immigration Stories" → "Cultural Narratives", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): 6, 7, 8
+- **Breakfast around the World / Israeli Salad (Intro to Global Unit)** (`18oKyXzj8zydRDEtQvZ68USr144_9vfMJhckXNo6NFVk`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles"
+  - **Cultural Heritage:** "Middle Eastern", "Israeli"
+  - **Academic Integration:** "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: "Recipe Reading" → "Read-Aloud", "Recipe Reading", "Vocabulary Development"; Social Studies: "Cultural Traditions", "Geography" → "Geography", "Cultural Traditions", "Global Connections"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Thermal Energy Sort** (`1L61UC08VAvm4c395uZe3QFHOCXOj4c1rYXoBr-RO8w4`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Academic Concepts:** Science: "Thermal Energy" → "Thermal Energy", "Sorting and Categorization", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Food Webs** (`1PJDsQ0vRviNdY64ny3ZoytCGDuWRjP__Yo9lMFhMh_o`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Incorporates different individual and cultural learning styles", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Science: "Food Webs", "Photosynthesis"
+  - **Grade Levels** (reviewed separately, no before/after): 8
+- **Blind Cooking** (`1BZJ0LHTN_tKBT4JtR-cynAUPAkjGNZQ6hhzoa5e7OUU`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Incorporates different individual and cultural learning styles", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Academic Integration:** "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Literacy/ELA: "Vocabulary Development", "Descriptive Writing" → "Sensory Details", "Descriptive Writing", "Vocabulary Development", "Recipe Reading"
+  - **Grade Levels** (reviewed separately, no before/after): 6
+- **Seed Sorting, Greater Than or Less Than** (`1kFyghgNIAzktCjT5kRijYKY3qtg--4NS`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Math", "Science"
+  - **Social-Emotional Learning:** "Self-management", "Responsible decision-making"
+  - **Core Competencies:** "Garden Skills and Related Academic Content"
+  - **Garden Skills:** "Seed saving", "Identifying plants" → "Sensory exploration", "Observing plant parts"
+  - **Academic Concepts:** Math: "Counting", "Data Collection", "Estimation" → "Counting", "Sorting and Categorization"; Science: "Seeds" → "Seeds", "Observation", "Sensory Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): 1
+- **Foods From Around the World: Intro Lesson** (`1p-OKyRxUgFVkGZaq4DFA7wIvRd5-FVWZmnQngPaE0p8`)
+  - **Activity Type:** "academic"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Encourages learning within the context of culture", "Promotes student-centered instruction"
+  - **Academic Integration:** "Literacy/ELA", "Social Studies" → "Literacy/ELA", "Social Studies", "Arts"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Academic Concepts:** Arts: _(none)_ → "Drawing"; Literacy/ELA: "Storytelling", "Cultural Narratives" → "Narrative Writing", "Sensory Details", "Storytelling", "Public Speaking"; Social Studies: "Cultural Traditions" → "Cultural Traditions", "Cultural Narratives", "Immigration Stories", "Global Connections"
+  - **Grade Levels** (reviewed separately, no before/after): 5
+
+## Weird / edge-case lessons (worth a closer look) (30)
+
+Something about these needed extra handling — a validation problem, a model refusal that the backup model rescued, or an automatic clean-up rule that edited the tags. Look closely; they are the most likely to need a fix before applying.
+
+- **Tortilla Española** (`1N7gRmGohK_fCtpiHemQTl1-Bpg-hwOF9`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Cultural Heritage:** "Spanish", "Mediterranean", "European" → "Spanish", "European"
+  - **Academic Integration:** "Science" → "Science", "Literacy/ELA", "Social Studies", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Garden Skills:** "Harvesting" → _(none)_
+  - **Academic Concepts:** Arts: _(none)_ → "Drawing"; Literacy/ELA: _(none)_ → "Reading", "Read-Aloud", "Descriptive Writing"; Science: "Plant Parts", "Life Cycles" → "Life Cycles", "Seasonality", "Sequencing", "Plant Identification"; Social Studies: _(none)_ → "Cultural Traditions", "Global Connections"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+- **Roots Lesson - Middle School** (`1yw4frO1jV9UahiQjBvAD9nzJuqPzOV_r-MAIdapzgAI`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction" → "Encourages learning within the context of culture", "Promotes student-centered instruction", "Promotes positive perspectives on parents and families"
+  - **Academic Integration:** "Science", "Literacy/ELA" → "Science", "Literacy/ELA", "Social Studies", "Arts"
+  - **Social-Emotional Learning:** "Self-awareness", "Relationship skills" → "Self-awareness", "Social awareness", "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Culturally Responsive Education", "Environmental and Community Stewardship"
+  - **Garden Skills:** "Planting", "Observing plant parts", "Identifying plants" → "Planting", "Observing plant parts", "Identifying plants", "Soil preparation and care", "Weeding", "Tool use and maintenance"
+  - **Academic Concepts:** Arts: _(none)_ → "Drawing"; Literacy/ELA: "Storytelling" → "Narrative Writing", "Storytelling", "Read-Aloud", "Vocabulary Development"; Science: "Plant Parts" → "Plant Parts", "Plant Growth", "Planting", "Observation", "Scientific Method", "Life Cycles"; Social Studies: _(none)_ → "Cultural Traditions", "Cultural Narratives"
+  - **Grade Levels** (reviewed separately, no before/after): 6, 7, 8
+- **All About Pumpkins** (`1vlKyiIiQPjoJ3Ek790STQlN9Ie87bYNbENpPa52S8Bg`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Communicates high expectations"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-management"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content" → "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "oven" → "basic-prep", "oven"
+  - **Garden Skills:** "Observing plant parts", "Identifying plants" → _(none)_
+  - **Academic Concepts:** Science: "Plant Parts", "Life Cycles" → "Plant Parts", "Seeds", "Seasonality", "Observation", "Sensory Exploration", "Life Cycles"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1
+- **Compost** (`1RY1H0XMEOYQtCk0mV7xaKYBPzoDqBm2m`)
+  - **Activity Type:** "garden" → "academic"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum", "Positions teacher as facilitator" → _(none)_
+  - **Academic Integration:** "Science" → "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness" → _(none)_
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education" → "Environmental and Community Stewardship", "Garden Skills and Related Academic Content"
+  - **Garden Skills:** "Composting", "Sorting", "Stewardship tasks" → _(none)_
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Read-Aloud"; Science: "Decomposition", "Soil Science" → "Decomposition", "Sorting and Categorization", "Environmental Stewardship"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1
+- **Who lives in the garden? 3K/PK** (`1dqVb1CXvx_YVQ3cH8UuoGxYZ5A2MzU-bi8n4fZqBTXQ`)
+  - **Activity Type:** "garden"
+  - **Lesson Type:** _(none)_ → "orientation"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum" → "Reshapes curriculum", "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science" → "Science", "Literacy/ELA", "Math"
+  - **Social-Emotional Learning:** "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content" → "Garden Skills and Related Academic Content", "Environmental and Community Stewardship"
+  - **Cooking Methods:** _(none)_ → "basic-prep"
+  - **Observances & Holidays:** _(none)_ → "Beginning of year"
+  - **Garden Skills:** "Identifying plants", "Observing plant parts", "Stewardship tasks" → "Garden exploration", "Sensory exploration", "Stewardship tasks", "Composting"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Read-Aloud"; Math: _(none)_ → "Sorting and Categorization"; Science: "Ecosystems", "Plant Parts" → "Garden Exploration", "Habitats", "Animal Needs", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK
+- **Seed Saving** (`1C4REdzYpDhJIgiyXwTiTnPppPNv5c92b_l3a21MDCxI`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science", "Arts"
+  - **Social-Emotional Learning:** "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content"
+  - **Garden Skills:** "Seed saving", "Harvesting" → "Seed saving", "Composting", "Harvesting"
+  - **Academic Concepts:** Arts: "Visual Arts" → "Movement", "Drawing"; Science: "Life Cycles", "Plant Parts" → "Life Cycles", "Seeds", "Pollinators", "Plant Reproduction", "Plant Growth"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3
+- **Kimbap - Korean Sushi Roll** (`1fGNDBbufPOmeTGmk57mEyD_tlYdKXTnW`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Cultural Heritage:** "Asian", "East Asian", "Korean"
+  - **Academic Integration:** "Social Studies" → "Social Studies", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Arts: _(none)_ → "Food Presentation"; Social Studies: "Cultural Traditions" → "Cultural Traditions", "Geography"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2
+- **Insect Parts** (`1EPe0QtQ0_4GJxnkOTuxWy0t7-y_UY2jt`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Academic Integration:** "Science", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Responsible decision-making"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Beneficial insect identification" → "Garden exploration", "Beneficial insect identification"
+  - **Academic Concepts:** Arts: "Visual Arts" → "Visual Arts", "Drawing"; Science: "Pollinators", "Ecosystems" → "Pollinators", "Ecosystems", "Food Webs", "Observation", "Habitats"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Plant Part Study** (`15AIy8oARrM6w5IcVTiZhelROmHcv5iSI`)
+  - **Activity Type:** "garden" → "academic"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum" → "Reshapes curriculum", "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science", "Arts"
+  - **Social-Emotional Learning:** "Self-management"
+  - **Core Competencies:** "Garden Skills and Related Academic Content" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Observing plant parts", "Identifying plants" → _(none)_
+  - **Academic Concepts:** Arts: "Visual Arts", "Music" → "Drawing", "Music"; Science: "Plant Parts" → "Plant Parts", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1
+- **Roots** (`lesson_d4dda9480bc14c658352e00a2a49d02c`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** _(none)_ → "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** _(none)_ → "Promotes student-centered instruction"
+  - **Academic Integration:** "science" → "Science", "Arts"
+  - **Social-Emotional Learning:** "self-management", "social-awareness" → "Self-management"
+  - **Core Competencies:** "garden-skills" → "Garden Skills and Related Academic Content"
+  - **Garden Skills:** "weeding" → "Weeding", "Harvesting", "Observing plant parts", "Sensory exploration", "Tool use and maintenance", "Garden exploration"
+  - **Academic Concepts:** Arts: _(none)_ → "Movement"; Science: _(none)_ → "Plant Parts", "Plant Needs", "Root Vegetables", "Sensory Exploration", "Observation", "Garden Exploration", "Harvesting"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK
+- **Plant Adaptations** (`19cmmLjw3qraNUdF-9YUfyjYZveLY2jqL`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science" → "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management" → "Self-management", "Social awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Environmental and Community Stewardship"
+  - **Garden Skills:** "Identifying plants", "Observing plant parts" → "Observing plant parts", "Sensory exploration", "Garden exploration"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Vocabulary Development"; Science: "Adaptations", "Plant Parts" → "Adaptations", "Observation", "Habitats"
+  - **Grade Levels** (reviewed separately, no before/after): 3
+- **Pumpkin Pie Energy Bites** (`1UUgPjsSA6N-JnHMk8TNC2UzqZQz50-RcmP54V7U2kIY`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Spring", "Summer", "Winter" → _(none)_
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction"
+  - **Academic Integration:** "Science" → "Science", "Health", "Math", "Arts"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Arts: _(none)_ → "Drawing"; Health: _(none)_ → "Nutrition Education", "Healthy Choices"; Math: _(none)_ → "Sorting and Categorization"; Science: "Plant Parts" → "Seeds", "Plant Growth"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+- **Plant Life Cycle** (`1Bpg8H3y_CHtZ3gqSfoCjm0rldcaGxGOq`)
+  - **Activity Type:** "garden" → "craft"
+  - **Season & Timing:** "Fall", "Winter", "Spring"
+  - **Cultural Responsiveness Features:** "Reshapes curriculum" → "Reshapes curriculum", "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science", "Arts" → "Science", "Arts", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-management"
+  - **Core Competencies:** "Garden Skills and Related Academic Content" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Observing plant parts", "Identifying plants" → _(none)_
+  - **Academic Concepts:** Arts: "Drawing", "Movement"; Literacy/ELA: _(none)_ → "Sequencing"; Science: "Life Cycles", "Plant Parts" → "Life Cycles", "Seeds", "Germination", "Plant Growth", "Plant Parts", "Pollinators", "Decomposition"
+  - **Grade Levels** (reviewed separately, no before/after): K
+- **Mexican Street Corn Salad (Esquites)** (`1z6FCSrVdvFhcui0UKoJMPw5vwfy9iHUd2hC67bEhE5o`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Lesson Type:** _(none)_ → "orientation"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Communicates high expectations" → "Communicates high expectations", "Encourages learning within the context of culture"
+  - **Cultural Heritage:** "Mexican", "Latin American", "Americas" → "Mexican", "Latin American"
+  - **Academic Integration:** "Social Studies", "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making", "Self-awareness" → "Relationship skills", "Self-management", "Self-awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "basic-prep"
+  - **Observances & Holidays:** "Hispanic/Latinx Heritage Month" → "Hispanic/Latinx Heritage Month", "Beginning of year"
+  - **Garden Skills:** "Harvesting" → _(none)_
+  - **Academic Concepts:** Science: "Plant Parts" → "Seasonality"; Social Studies: "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): 3, 4, 5
+- **Aloo Gobi (Pre-K-2)** (`1mSiEfFWtu_D2cg1A0X4K8hcas-p040hoXB16p-hPAkM`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Spring" → "Winter", "Spring"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles" → "Encourages learning within the context of culture", "Promotes student-centered instruction"
+  - **Cultural Heritage:** "Indian", "South Asian", "Asian" → "Asian", "South Asian", "Indian", "Pakistani"
+  - **Academic Integration:** "Science", "Math", "Literacy/ELA" → "Math", "Science", "Literacy/ELA", "Social Studies"
+  - **Social-Emotional Learning:** "Relationship skills", "Self-awareness" → "Relationship skills", "Self-management"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence" → "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Garden Skills:** "Identifying plants" → _(none)_
+  - **Academic Concepts:** Literacy/ELA: "Recipe Reading", "Vocabulary Development" → "Read-Aloud", "Vocabulary Development"; Math: "Measurement", "Counting" → "Measurement", "Counting", "Problem Solving", "Sorting and Categorization"; Science: "Plant Parts" → "Plant Parts", "Root Vegetables", "Seasonality"; Social Studies: _(none)_ → "Cultural Traditions", "Geography"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2
+- **Yemeni Fasoulia** (`1ulDJYHIEKOqidEYl9gQ2xsBFEVhI2alJ`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Promotes positive perspectives on parents and families", "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles", "Reshapes curriculum", "Positions teacher as facilitator"
+  - **Cultural Heritage:** "Yemeni", "Middle Eastern"
+  - **Academic Integration:** "Social Studies", "Science" → "Science", "Social Studies", "Literacy/ELA", "Health"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making", "Self-awareness", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "oven", "stovetop" → "basic-prep", "stovetop", "oven"
+  - **Academic Concepts:** Health: _(none)_ → "Nutrition Education"; Literacy/ELA: _(none)_ → "Recipe Reading"; Science: "Plant Parts" → "Microorganisms", "Fermentation"; Social Studies: "Cultural Traditions", "Geography" → "Geography", "Global Connections", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Summer Scavenger Hunt** (`1Ju0BjlCu9t9W_SuQCJnVruaVZxj8r0FhjcMmbwJTPI0`)
+  - **Activity Type:** "garden"
+  - **Lesson Type:** _(none)_ → "orientation"
+  - **Season & Timing:** "Fall", "Summer" → "Summer"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Positions teacher as facilitator", "Reshapes curriculum"
+  - **Academic Integration:** "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making", "Self-management", "Self-awareness" → "Relationship skills", "Responsible decision-making", "Self-awareness"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Environmental and Community Stewardship" → "Environmental and Community Stewardship", "Social-Emotional Intelligence", "Garden Skills and Related Academic Content"
+  - **Observances & Holidays:** _(none)_ → "Beginning of year"
+  - **Garden Skills:** "Weeding", "Watering techniques", "Harvesting", "Identifying plants" → "Garden exploration", "Watering techniques", "Weeding", "Composting", "Stewardship tasks", "Tool use and maintenance"
+  - **Academic Concepts:** Science: "Plant Parts", "Sensory Exploration" → "Garden Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): 3, 4
+- **All About Compost** (`1Dkx1Q--fGzGDCAu3kx5OTsuRa_lRY2agdiMqyfn2VpI`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** _(none)_ → "Communicates high expectations", "Promotes student-centered instruction"
+  - **Academic Integration:** "science" → "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "self-management" → "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "environmental-stewardship", "garden-skills" → "Social-Emotional Intelligence", "Garden Skills and Related Academic Content"
+  - **Garden Skills:** "composting" → "Composting", "Planting", "Sensory exploration", "Garden exploration"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Read-Aloud"; Science: "Decomposition", "Soil Science", "Ecosystems" → "Decomposition", "Soil Science", "Plant Needs", "Observation"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, 1, 2, 3, 4, 5
+- **Seed Dispersal** (`1_WlZmDJv8Ql-sCLlOyxr2qL4zeb1GQda`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science" → "Science", "Literacy/ELA", "Arts"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education"
+  - **Cooking Methods:** _(none)_ → "basic-prep"
+  - **Garden Skills:** "Observing plant parts", "Identifying plants" → "Observing plant parts", "Seed saving"
+  - **Academic Concepts:** Arts: _(none)_ → "Visual Arts"; Literacy/ELA: _(none)_ → "Reading", "Vocabulary Development"; Science: "Plant Needs", "Adaptations", "Seed Dispersal" → "Seed Dispersal", "Adaptations", "Seeds", "Plant Reproduction", "Engineering", "Scientific Method"
+  - **Grade Levels** (reviewed separately, no before/after): 2, 3
+- **Elementary Introduction to Pollination** (`1OTWsMqlZ6xubbc53zT7V8wq7B-lhOW1BvmI0i_odT4c`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** "Spring"
+  - **Cultural Responsiveness Features:** "Positions teacher as facilitator", "Promotes student-centered instruction"
+  - **Academic Integration:** "Science", "Arts", "Literacy/ELA" → "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence", "Environmental and Community Stewardship"
+  - **Garden Skills:** "Beneficial insect identification", "Observing plant parts" → "Garden exploration", "Sensory exploration"
+  - **Academic Concepts:** Arts: "Visual Arts" → _(none)_; Literacy/ELA: "Vocabulary Development"; Science: "Pollinators", "Plant Parts", "Life Cycles" → "Pollinators", "Plant Reproduction", "Life Cycles", "Seeds", "Sensory Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5
+- **Area and Perimeter in the Garden** (`1Ga5rm_Xh1IhMeEV25f7b0OJe4RIWeu9I`)
+  - **Activity Type:** "garden"
+  - **Season & Timing:** "Fall", "Winter"
+  - **Cultural Responsiveness Features:** "Incorporates different individual and cultural learning styles", "Reshapes curriculum"
+  - **Academic Integration:** "Math", "Science"
+  - **Social-Emotional Learning:** "Self-management", "Relationship skills"
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Culturally Responsive Education" → "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Garden Skills:** "Planting", "Garden planning" → "Seed starting", "Planting"
+  - **Academic Concepts:** Math: "Measurement" → "Measurement", "Problem Solving"; Science: "Plant Needs" → "Seeds", "Planting"
+  - **Grade Levels** (reviewed separately, no before/after): 4
+- **Whole Wheat Pizza** (`1VeiRoBU-ljikWKg_jXQfiAgr_2d1yyxhS57JM5Hej-E`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Winter"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction" → "Promotes student-centered instruction"
+  - **Cultural Heritage:** "Italian", "Mediterranean", "European" → _(none)_
+  - **Academic Integration:** "Math", "Science" → "Math", "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Cooking Methods:** "oven", "stovetop" → "basic-prep", "stovetop"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Sequencing", "Narrative Writing"; Math: "Fractions", "Measurement"; Science: "Plant Parts" → "Preservation", "Food Processing"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+- **Plant Part Salad 2 - Buttermilk Dressing** (`1Ks-y9PWIktUAGwrekBvnfPW1xt3NRdRGKjB90pFAT6g`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Spring", "Summer" → "Spring"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles" → "Promotes student-centered instruction"
+  - **Academic Integration:** "Science" → "Science", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Self-awareness", "Relationship skills" → _(none)_
+  - **Core Competencies:** "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "basic-prep"
+  - **Garden Skills:** "Identifying plants", "Observing plant parts" → _(none)_
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Recipe Reading", "How-to Writing"; Science: "Plant Parts"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2, 3, 4, 5
+- **Booker T. Whatley’s CSA(Photos of Booker T. Whatley may be restricted use)** (`lesson_8c5da70b69304d49ac94e80d22b09011`)
+  - **Activity Type:** "garden" → "garden", "craft"
+  - **Season & Timing:** _(none)_ → "Spring", "Fall"
+  - **Cultural Responsiveness Features:** _(none)_ → "Encourages learning within the context of culture", "Reshapes curriculum"
+  - **Cultural Heritage:** _(none)_ → "African American"
+  - **Academic Integration:** "social-studies" → "Social Studies", "Literacy/ELA", "Science"
+  - **Social-Emotional Learning:** "relationship-skills", "self-management" → "Relationship skills", "Social awareness"
+  - **Core Competencies:** "environmental-stewardship", "social-justice", "garden-skills", "culturally-responsive" → "Environmental and Community Stewardship", "Social Justice", "Garden Skills and Related Academic Content", "Social-Emotional Intelligence"
+  - **Observances & Holidays:** "Black History Month" → _(none)_
+  - **Garden Skills:** "harvesting" → "Harvesting", "Tool use and maintenance", "Stewardship tasks"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Reading", "Read-Aloud"; Science: _(none)_ → "Harvesting"; Social Studies: _(none)_ → "Historical Figures", "Community Systems", "Farm Labor"
+  - **Grade Levels** (reviewed separately, no before/after): 4, 5
+- **Three Sisters Empanadas** (`1dYfqKvRGyB45l5D-3KEN9Fx6-lFsNckvakBtMQq614k`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Fall" → "Spring"
+  - **Cultural Responsiveness Features:** "Encourages learning within the context of culture", "Promotes student-centered instruction", "Reshapes curriculum" → "Encourages learning within the context of culture", "Incorporates different individual and cultural learning styles"
+  - **Cultural Heritage:** "Indigenous", "Latin American", "Americas" → "Indigenous", "Three Sisters traditions", "Latin American", "Spanish"
+  - **Academic Integration:** "Science", "Social Studies", "Literacy/ELA" → "Science", "Social Studies", "Health", "Math", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making", "Self-awareness" → _(none)_
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Cooking Methods:** "oven" → "basic-prep", "oven"
+  - **Garden Skills:** "Harvesting", "Identifying plants" → _(none)_
+  - **Academic Concepts:** Health: _(none)_ → "Nutrition Education"; Literacy/ELA: "Recipe Reading"; Math: _(none)_ → "Measurement"; Science: "Plant Parts" → "Companion Planting"; Social Studies: "Cultural Traditions", "Historical Figures" → "Native American History", "Indigenous Knowledge", "Cultural Traditions", "Global Connections"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Mural Painting 101: Beautifying the Garden** (`lesson_d352a03cea784f46bbda2a545c9de44a`)
+  - **Activity Type:** "garden" → "craft"
+  - **Season & Timing:** _(none)_ → "Fall", "Spring"
+  - **Cultural Responsiveness Features:** _(none)_ → "Encourages learning within the context of culture", "Promotes student-centered instruction"
+  - **Academic Integration:** "arts" → "Arts", "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "self-awareness", "social-awareness" → "Self-awareness", "Social awareness", "Relationship skills"
+  - **Core Competencies:** "environmental-stewardship", "social-justice", "culturally-responsive" → "Environmental and Community Stewardship", "Social Justice", "Culturally Responsive Education", "Social-Emotional Intelligence"
+  - **Garden Skills:** "sensory-exploration" → _(none)_
+  - **Academic Concepts:** Arts: _(none)_ → "Visual Arts", "Drawing"; Literacy/ELA: _(none)_ → "Read-Aloud"; Social Studies: _(none)_ → "Social Justice Issues", "Advocacy", "Community Systems", "Environmental Stewardship", "Cultural Traditions", "Voting"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **Black Bean Dip (Mobile Education)** (`1j7ptyI-On9NHUejvvovsaT_2IZexwUxW29WqtCr63bM`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Winter", "Spring", "Summer"
+  - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Positions teacher as facilitator"
+  - **Cultural Heritage:** "Mexican", "Latin American", "Caribbean", "Americas" → "Latin American", "Central American", "Mexican", "Cuban"
+  - **Academic Integration:** "Literacy/ELA", "Health" → "Health", "Literacy/ELA", "Science"
+  - **Social-Emotional Learning:** "Relationship skills", "Responsible decision-making", "Social awareness"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Social-Emotional Intelligence", "Culturally Responsive Education"
+  - **Cooking Methods:** "basic-prep"
+  - **Academic Concepts:** Health: "Nutrition Education" → "Nutrition Education", "Healthy Choices"; Literacy/ELA: "Recipe Reading" → "Recipe Reading", "Sequencing"; Science: _(none)_ → "Sensory Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8
+- **All About Pumpkins** (`lesson_011467fd86fa4339a745803f8643fe84`)
+  - **Activity Type:** "academic" → "cooking"
+  - **Season & Timing:** _(none)_ → "Fall"
+  - **Cultural Responsiveness Features:** _(none)_ → "Communicates high expectations"
+  - **Academic Integration:** "science" → "Science", "Math"
+  - **Social-Emotional Learning:** "self-management" → "Relationship skills", "Self-management"
+  - **Core Competencies:** "garden-skills", "kitchen-skills" → "Garden Skills and Related Academic Content", "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** _(none)_ → "basic-prep", "oven"
+  - **Academic Concepts:** Math: _(none)_ → "Counting", "Estimation", "Measurement"; Science: _(none)_ → "Plant Parts", "Seeds", "Sensory Exploration", "Observation", "Seasonality", "Life Cycles"
+  - **Grade Levels** (reviewed separately, no before/after): 3K, PK, K, 1
+- **Greens Two Ways** (`1On8vQmMEq5bYpX51aCVnV6--o9pl1ktRvg6eMPJYyZk`)
+  - **Activity Type:** "cooking", "garden" → "cooking"
+  - **Season & Timing:** "Fall"
+  - **Cultural Responsiveness Features:** "Promotes student-centered instruction", "Incorporates different individual and cultural learning styles"
+  - **Academic Integration:** "Science", "Math" → "Math", "Science", "Literacy/ELA", "Health", "Arts"
+  - **Social-Emotional Learning:** "Self-awareness", "Relationship skills" → "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Garden Skills and Related Academic Content" → "Kitchen Skills and Related Academic Content"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Garden Skills:** "Harvesting", "Identifying plants" → _(none)_
+  - **Academic Concepts:** Arts: _(none)_ → "Music", "Drawing"; Health: _(none)_ → "Nutrition Education", "Healthy Choices"; Literacy/ELA: _(none)_ → "Recipe Reading", "Vocabulary Development"; Math: "Measurement", "Estimation" → "Ratios", "Measurement", "Estimation"; Science: "Plant Parts", "Water Cycles" → "Water Cycles", "Phases of Matter", "Plant Identification", "Plant Parts", "Observation", "Seasonality", "Sensory Exploration"
+  - **Grade Levels** (reviewed separately, no before/after): PK, K, 1, 2, 3, 4, 5
+- **Arroz con Gandules** (`18b977UbveLAzs1crIsZ1Jj9GZIQw5f-ACgtgpM35cmw`)
+  - **Activity Type:** "cooking"
+  - **Season & Timing:** "Fall", "Spring", "Summer", "Winter" → _(none)_
+  - **Cultural Responsiveness Features:** "Positions teacher as facilitator" → "Positions teacher as facilitator", "Encourages learning within the context of culture", "Promotes positive perspectives on parents and families"
+  - **Cultural Heritage:** "Puerto Rican", "Caribbean", "Latin American", "Americas" → "Puerto Rican", "Caribbean", "Latin American"
+  - **Academic Integration:** "Social Studies", "Math" → "Math", "Social Studies", "Literacy/ELA"
+  - **Social-Emotional Learning:** "Relationship skills"
+  - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education"
+  - **Cooking Methods:** "stovetop" → "basic-prep", "stovetop"
+  - **Academic Concepts:** Literacy/ELA: _(none)_ → "Recipe Reading"; Math: "Measurement"; Social Studies: "Geography", "Cultural Traditions"
+  - **Grade Levels** (reviewed separately, no before/after): K, 1, 2, 3, 4, 5
+
