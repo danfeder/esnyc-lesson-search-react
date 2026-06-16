@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Lesson, LessonMetadata } from '@/types';
+import { aliasToSlug, ancestorsBySlug } from '@/utils/heritageAncestry.generated';
 
 /**
  * Filter keys whose values appear as facets in the internal sidebar.
@@ -88,18 +89,62 @@ const KEYS: readonly FacetFilterKey[] = [
 ] as const;
 
 /**
+ * Tally one lesson's Cultural Heritage values into a SLUG-keyed,
+ * expansion-aware bucket (C1.6).
+ *
+ * Stored heritage values are Title-Case labels (e.g. "Mexican", "Soul Food")
+ * while the filter UI looks up badge counts by kebab slug ("mexican"), so a
+ * verbatim tally renders every badge blank. We instead:
+ *   1. normalize each stored value (label OR slug) → canonical slug;
+ *   2. expand that slug → `{self ∪ all ancestors}` (e.g. chinese → east-asian →
+ *      asian), so a parent badge reflects all of its descendants;
+ *   3. union every expanded slug into ONE Set for the lesson before counting,
+ *      so a lesson tagged both Chinese and Japanese credits `asian` exactly
+ *      once (distinct-lesson semantics — no double-count).
+ *
+ * An unknown/phantom value (not in the vocab alias map) is credited under its
+ * verbatim key, self only, so it is never silently lost.
+ */
+function tallyHeritage(lesson: Lesson, bucket: Record<string, number>): void {
+  const stored = lesson.metadata.culturalHeritage ?? [];
+  const slugsForLesson = new Set<string>();
+  for (const value of stored) {
+    const slug = aliasToSlug[value];
+    if (slug === undefined) {
+      // Best-effort: keep the unknown value (self only, no ancestors).
+      slugsForLesson.add(value);
+      continue;
+    }
+    for (const ancestor of ancestorsBySlug[slug] ?? [slug]) {
+      slugsForLesson.add(ancestor);
+    }
+  }
+  for (const slug of slugsForLesson) {
+    bucket[slug] = (bucket[slug] ?? 0) + 1;
+  }
+}
+
+/**
  * Compute facet counts over a set of lessons — one `{ value: count }` bucket
  * per filter category. Pure function; safe to call from a useMemo.
+ *
+ * Every category except `culturalHeritage` is a verbatim per-value tally.
+ * `culturalHeritage` is special-cased (slug-keyed + expansion-aware) so its
+ * badge counts render and parent nodes reflect their descendants — see
+ * `tallyHeritage`. (`activityType` has the same slug-vs-label class of bug; it
+ * is a separate tracked follow-up and intentionally untouched here.)
  */
 export function computeFacetCounts(lessons: Lesson[]): FacetCounts {
   const counts = EMPTY_COUNTS();
   for (const lesson of lessons) {
     for (const key of KEYS) {
+      if (key === 'culturalHeritage') continue; // handled by tallyHeritage
       const bucket = counts[key];
       for (const value of valuesForKey(lesson, key)) {
         bucket[value] = (bucket[value] ?? 0) + 1;
       }
     }
+    tallyHeritage(lesson, counts.culturalHeritage);
   }
   return counts;
 }

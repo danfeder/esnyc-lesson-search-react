@@ -26,7 +26,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildHeritageOptions,
+  buildAliasToSlug,
+  buildAncestorsBySlug,
   renderGeneratedTs,
+  renderAncestryTs,
   renderSeedSql,
   loadVocab,
   type HeritageOption,
@@ -36,6 +39,7 @@ import {
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const GENERATED_TS_PATH = path.join(REPO_ROOT, 'src/utils/heritageHierarchy.generated.ts');
+const ANCESTRY_TS_PATH = path.join(REPO_ROOT, 'src/utils/heritageAncestry.generated.ts');
 const SEED_SQL_PATH = path.join(
   REPO_ROOT,
   'scripts/heritage/artifacts/heritage-hierarchy-seed.sql'
@@ -220,6 +224,52 @@ describe('heritage hierarchy generator — SQL seed fragment (Output B)', () => 
       .slice(0, firstNonRootIdx)
       .filter((line) => /,\s*NULL\)/.test(line)).length;
     expect(rootLineCount).toBe(6);
+  });
+});
+
+describe('heritage hierarchy generator — ancestry artifact (Output C, C1.6)', () => {
+  const aliasToSlug = buildAliasToSlug(vocab);
+  const ancestorsBySlug = buildAncestorsBySlug(vocab);
+
+  it('aliasToSlug maps Title-Case labels to canonical slugs (label normalizer)', () => {
+    expect(aliasToSlug['Mexican']).toBe('mexican');
+    expect(aliasToSlug['Soul Food']).toBe('soul-food');
+    expect(aliasToSlug['Chinese']).toBe('chinese');
+    // alias-only label variants resolve too
+    expect(aliasToSlug['Native American']).toBe('indigenous');
+    expect(aliasToSlug['African American diaspora']).toBe('african-american');
+  });
+
+  it('aliasToSlug is self-mapping for every canonical slug (slug-form input passes through)', () => {
+    for (const node of vocab.canonical) {
+      expect(aliasToSlug[node.key]).toBe(node.key);
+    }
+  });
+
+  it('ancestorsBySlug covers ALL 71 nodes incl. internal', () => {
+    expect(Object.keys(ancestorsBySlug).length).toBe(vocab.canonical.length);
+    expect(vocab.canonical.length).toBe(71);
+  });
+
+  it('each ancestry list starts with the node itself, then walks UP to the root', () => {
+    // chinese → east-asian → asian (top/sub chain)
+    expect(ancestorsBySlug['chinese']).toEqual(['chinese', 'east-asian', 'asian']);
+    // mexican → latin-american → americas
+    expect(ancestorsBySlug['mexican']).toEqual(['mexican', 'latin-american', 'americas']);
+    // soul-food (internal) → african-american → indigenous-and-diaspora
+    expect(ancestorsBySlug['soul-food']).toEqual([
+      'soul-food',
+      'african-american',
+      'indigenous-and-diaspora',
+    ]);
+    // a root maps to just itself
+    expect(ancestorsBySlug['asian']).toEqual(['asian']);
+  });
+
+  it('regenerated ancestry TS artifact is byte-identical to the committed file', async () => {
+    const committed = readFileSync(ANCESTRY_TS_PATH, 'utf8');
+    const regenerated = await renderAncestryTs(vocab);
+    expect(regenerated).toBe(committed);
   });
 });
 
