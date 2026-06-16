@@ -191,7 +191,12 @@ export function scoreContestant(
       const predTokens = contestant ? extractFieldTokens(field, contestant) : [];
       truth.push(truthTokens);
       predictions.push(predTokens);
-      for (const t of truthTokens) {
+      // computeMetrics counts truthCount once per LESSON (set semantics), so a
+      // lesson must contribute its id AT MOST ONCE per value here — dedup the
+      // truth tokens before recording the support set, even if a key cell
+      // repeats a token (e.g. grade_levels ['K','K','1']). This keeps the
+      // documented invariant Length(valueKeyLessonIds[v]) === truthCount.
+      for (const t of new Set(truthTokens)) {
         vocab.add(t);
         (valueKeyLessonIds[t] ??= []).push(keyRecord.id);
       }

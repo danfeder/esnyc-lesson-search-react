@@ -426,3 +426,41 @@ describe('Gate 3 amendment — recall floor gates support>=2 values only', () =>
     expect(json.gates.singletons.misses[0].value).toBe('Watering');
   });
 });
+
+// ---------------------------------------------------------------------------
+// valueKeyLessonIds invariant: a lesson contributes its id AT MOST ONCE per
+// value, even when a key cell repeats a truth token (e.g. grade_levels
+// ['K','K','1']). computeMetrics counts truthCount once per LESSON, so the
+// documented invariant "Length === PerValueMetrics.truthCount" must hold.
+// ---------------------------------------------------------------------------
+
+describe('valueKeyLessonIds dedup (repeated token in a key cell)', () => {
+  it('records a lesson id at most once per value when the key cell repeats a token', () => {
+    const repeatedKey: KeyRecord[] = [
+      {
+        id: 'L1',
+        activity_type: [],
+        tags: [],
+        season_timing: [],
+        cultural_responsiveness_features: [],
+        cultural_heritage: [],
+        academic_integration: [],
+        social_emotional_learning: [],
+        core_competencies: [],
+        cooking_methods: [],
+        observances_holidays: [],
+        garden_skills: [],
+        academic_concepts: {},
+        // The key cell repeats 'K' — one LESSON, two occurrences.
+        grade_levels: ['K', 'K', '1'],
+      },
+    ];
+    const score = scoreContestant('test', repeatedKey, repeatedKey);
+    const grade = score.fields.grade_levels;
+    const k = grade.perValue.find((p) => p.value === 'K');
+    expect(k?.truthCount).toBe(1);
+    // Invariant: valueKeyLessonIds[value].length === truthCount.
+    expect(grade.valueKeyLessonIds['K']).toHaveLength(1);
+    expect(grade.valueKeyLessonIds['K']).toEqual(['L1']);
+  });
+});

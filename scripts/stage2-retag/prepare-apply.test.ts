@@ -238,6 +238,14 @@ describe('renderStagingSql', () => {
     expect(sql).toContain(`'lesson-soup'`);
     expect(sql).toContain(`'lesson-weird'`);
   });
+
+  it('guards the zero-row case instead of emitting a malformed VALUES;', () => {
+    const sql = renderStagingSql([], vocab);
+    // A dangling INSERT ... VALUES followed only by a semicolon is invalid
+    // Postgres. It must NOT appear; a guard comment must take its place.
+    expect(sql).not.toMatch(/VALUES\s*;/);
+    expect(sql).toContain('-- (no staged rows)');
+  });
 });
 
 // ---------------------------------------------------------------------------

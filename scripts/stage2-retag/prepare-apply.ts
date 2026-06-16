@@ -33,11 +33,16 @@
  * the same "new" values the diff report shows the human.
  *
  * grade_levels: the run output carries a proposed grade_levels list (e.g.
- * ["K"]). It IS part of the apply — staged and written by the draft migration
- * (column grade_levels + metadata->gradeLevels) — but it has NO old-vs-new diff
- * in the diff report (the corpus snapshot carries no current grade values), so
- * it is reviewed separately at the apply step. The worksheet shows the proposed
- * grades without a "from" side.
+ * ["K"]). It is STAGED for every lesson, but it does NOT drive change detection:
+ * changeMagnitude deliberately excludes it (the corpus snapshot carries no
+ * current grade to diff against), and only rows where changeMagnitude > 0 are
+ * snapshotted + written by the draft apply. So the proposed grade is carried
+ * into the draft apply ONLY for rows that otherwise change another field; a row
+ * whose sole difference is grade is not written here. Authoritative grade
+ * reconciliation is PR C's responsibility (design OQ6 — grades are the
+ * source-doc claim, resolved at apply time), not this preview emitter's. With
+ * no old-vs-new diff, the worksheet shows the proposed grades without a "from"
+ * side, flagged as reviewed separately.
  *
  * NO API calls, NO DB access. Pure local file IO.
  */
@@ -193,7 +198,11 @@ function comparedToStagingRow(
   const gradeLevels = newFlatValues(lesson.rawInput, 'grade_levels');
   fields.grade_levels = gradeLevels;
   // grade_levels has no current corpus value, so it is NOT counted toward the
-  // change magnitude (we cannot know if it changed). It is applied regardless.
+  // change magnitude (we cannot know if it changed). It is staged and carried
+  // into the draft apply only for rows that ALSO change another field (apply
+  // runs over changed = changeMagnitude > 0 rows); a row whose sole difference
+  // is grade is not written here. Authoritative grade reconciliation is PR C's
+  // job (design OQ6 — grade = source-doc claim, resolved at apply time).
 
   const academicConcepts = flattenConcepts(lesson.rawInput);
   const currentConcepts = normalizeCorpusConcepts(lesson.corpus.academicConcepts);
@@ -340,19 +349,25 @@ export function renderStagingSql(rows: StagingRow[], _vocab: Stage2Vocab): strin
     'academic_concepts',
     'changed',
   ];
-  lines.push(`INSERT INTO ${STAGING_TABLE} (${columns.join(', ')}) VALUES`);
-  const valueRows = rows.map((r) => {
-    const cells = [
-      sqlTextLiteral(r.id),
-      sqlTextLiteral(r.title),
-      ...FLAT_FIELDS.map((f) => sqlTextArrayLiteral(r.fields[f] ?? [])),
-      sqlTextArrayLiteral(r.gradeLevels),
-      sqlJsonbLiteral(r.academicConcepts),
-      r.changed ? 'true' : 'false',
-    ];
-    return `  (${cells.join(', ')})`;
-  });
-  lines.push(`${valueRows.join(',\n')};`);
+  // A VALUES clause with zero tuples is invalid Postgres — guard the empty
+  // case with a comment (mirrors the draft-migration builder's no-rows guard).
+  if (rows.length === 0) {
+    lines.push('-- (no staged rows)');
+  } else {
+    lines.push(`INSERT INTO ${STAGING_TABLE} (${columns.join(', ')}) VALUES`);
+    const valueRows = rows.map((r) => {
+      const cells = [
+        sqlTextLiteral(r.id),
+        sqlTextLiteral(r.title),
+        ...FLAT_FIELDS.map((f) => sqlTextArrayLiteral(r.fields[f] ?? [])),
+        sqlTextArrayLiteral(r.gradeLevels),
+        sqlJsonbLiteral(r.academicConcepts),
+        r.changed ? 'true' : 'false',
+      ];
+      return `  (${cells.join(', ')})`;
+    });
+    lines.push(`${valueRows.join(',\n')};`);
+  }
   lines.push('');
   return `${lines.join('\n')}\n`;
 }
