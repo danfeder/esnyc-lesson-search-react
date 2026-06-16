@@ -183,6 +183,44 @@ describe('heritage hierarchy generator — SQL seed fragment (Output B)', () => 
     // cajun-creole label is "Cajun/Creole" (slash, no quote) — ensure it appears verbatim.
     expect(sql).toContain("('cajun-creole', 'Cajun/Creole', 'indigenous-and-diaspora')");
   });
+
+  it('emits rows in topological (parents-before-children) order: every parent_key appears in an EARLIER row', () => {
+    // Parse the emitted VALUES rows in document order: (key, label, parent_key).
+    // The migration folds this fragment in as a SINGLE multi-row INSERT, so FK
+    // satisfaction does NOT depend on row order — but emitting parents before
+    // children is the robust, self-documenting seed order and lets the test
+    // assert a deterministic topological invariant.
+    const rowRe = /^\s*\('([^']+)',\s*'(?:[^']|'')*',\s*(NULL|'[^']+')\)/gm;
+    const rows: { key: string; parentKey: string | null }[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = rowRe.exec(sql)) !== null) {
+      const parentKey = m[2] === 'NULL' ? null : m[2].slice(1, -1);
+      rows.push({ key: m[1], parentKey });
+    }
+    // Sanity: we parsed every node.
+    expect(rows.length).toBe(vocab.canonical.length);
+
+    const seenKeys = new Set<string>();
+    for (const row of rows) {
+      if (row.parentKey !== null) {
+        expect(seenKeys.has(row.parentKey)).toBe(true);
+      }
+      seenKeys.add(row.key);
+    }
+  });
+
+  it('emits all 6 roots (NULL parent_key) before any non-root row (depth-0 first)', () => {
+    const firstNonRootIdx = sql
+      .split('\n')
+      .filter((line) => /^\s*\('/.test(line))
+      .findIndex((line) => !/,\s*NULL\)/.test(line));
+    const rootLineCount = sql
+      .split('\n')
+      .filter((line) => /^\s*\('/.test(line))
+      .slice(0, firstNonRootIdx)
+      .filter((line) => /,\s*NULL\)/.test(line)).length;
+    expect(rootLineCount).toBe(6);
+  });
 });
 
 describe('heritage hierarchy generator — drift guard (anti-drift contract)', () => {
