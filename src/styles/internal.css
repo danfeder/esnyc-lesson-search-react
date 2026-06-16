@@ -230,8 +230,10 @@
 .int-check-label { flex: 1; }
 .int-check-count { color: var(--color-esy-ink-50); font-size: 11px; font-variant-numeric: tabular-nums; }
 
-/* Nested subregion rows under a parent cultural-heritage region. */
-.int-check--child { padding-left: 20px; font-size: 12px; }
+/* Nested rows under a parent cultural-heritage region. Indentation is applied
+   per-depth via an inline paddingLeft (depth * 20px) in the component so the
+   tree can nest to arbitrary depth; this class only carries the smaller type. */
+.int-check--child { font-size: 12px; }
 
 .int-grades {
   display: flex; flex-wrap: wrap; gap: 4px;

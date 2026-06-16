@@ -1,0 +1,69 @@
+{
+  "capturedAt": "2026-06-16",
+  "task": "PR C1.9 — Backward-compat PROD-read-only verification (the apply gate)",
+  "source": "NEW expansion derived from LOCAL real expand_cultural_heritage(_alias_cultural_heritage(...)) (C1.2 applied locally); counts run READ-ONLY against PROD mcp__supabase-remote.",
+  "method": [
+    "For each of the 31 baseline options, the NEW expanded label-set was produced by the REAL deployed-locally function path, exactly as search_lessons feeds it: expand_cultural_heritage(_alias_cultural_heritage(ARRAY[slug])). The tree (71-row cultural_heritage_hierarchy) is data-independent, so the local function yields the exact label-set the rebuilt PROD filter will match on.",
+    "Cross-checked 5 representative options (asian, african-american, indigenous-and-diaspora, levantine, north-american) against an independent WITH RECURSIVE CTE over the seed table — all sets_match = true (no local-migration drift).",
+    "NEW count per option = SELECT count(*) FROM lessons WHERE cultural_heritage && <expanded labels> AND retired_at IS NULL — the SAME match path the C1.0 baseline used (faithful to search_lessons' WHERE: `l.cultural_heritage && expanded_cultures AND l.retired_at IS NULL`).",
+    "OLD count per option = baseline `countToday` from heritage-filter-baseline.json (the live `&&` heritage path on the OLD 6-row flat table + one-tier expand)."
+  ],
+  "sanityAnchors": {
+    "prodTotalLessonsLive": 767,
+    "prodTotalLessonsAll": 788,
+    "prodLessonsWithHeritageLive": 339,
+    "matchesBaselineAnchors": true,
+    "note": "PROD anchors match the C1.0 baseline exactly (767 / 788 / 339) — same corpus, apples-to-apples."
+  },
+  "gateVerdict": {
+    "rule": "Every one of the 31 options must return same-or-greater than the C1.0 baseline (never fewer).",
+    "result": "PASS — with one documented correction (USER-APPROVED 2026-06-16, Session 16). 21 HEAL, 9 SAME, and 1 numeric -1 (mediterranean 45->44) that is a vocab-aligned correction (Moroccan re-homed to North African, not Mediterranean), NOT lesson loss. Executor correctly stopped on the decrease per the hard boundary; supervisor re-verified root cause against live PROD; user approved recording PASS-with-correction.",
+    "strictPass": false,
+    "adjudicatedVerdict": "PASS_WITH_CORRECTION (user-approved 2026-06-16)",
+    "decreases": 1,
+    "heals": 21,
+    "same": 9,
+    "decreaseDetail": "mediterranean 45 -> 44 (-1). ROOT CAUSE: the OLD 6-row flat table cross-parented 'Moroccan' under BOTH 'Mediterranean' and 'African' (and carried phantom 'Turkish'). The NEW vocab.json single-source-of-truth tree parents 'Moroccan' correctly under north-african -> african only (NOT Mediterranean) and has zero 'Turkish' nodes. The single affected lesson — 'Moroccan Carrot Salad, Two Ways' (1LyuuuF-GNwUfVIgxrR_3NQLCEbD59GkfFN145WeTk3Q, tagged [Moroccan, North African, African]) — is NOT lost: it still surfaces under `african` (43->43) and `north-african` (0->3, it is one of those 3). This is the correction of a factually-wrong OLD cross-parenting, not lesson loss / filter narrowing. Per the C1.9 hard boundary (any decrease => STOP + report), this is flagged for supervisor adjudication rather than auto-classified PASS.",
+    "noLessonLoss": "No lesson is removed from the heritage filter system by the rebuild. The mediterranean -1 reflects ONE lesson re-homed from a wrong parent to its correct parent; it remains reachable via african / north-african."
+  },
+  "options": [
+    { "key": "asian",                   "label": "Asian",                   "tier": "top", "oldCount": 65,  "newCount": 74,  "delta": 9,  "classification": "HEAL" },
+    { "key": "east-asian",              "label": "East Asian",              "tier": "sub", "oldCount": 40,  "newCount": 42,  "delta": 2,  "classification": "HEAL" },
+    { "key": "south-asian",             "label": "South Asian",             "tier": "sub", "oldCount": 18,  "newCount": 19,  "delta": 1,  "classification": "HEAL" },
+    { "key": "southeast-asian",         "label": "Southeast Asian",         "tier": "sub", "oldCount": 5,   "newCount": 6,   "delta": 1,  "classification": "HEAL" },
+    { "key": "central-asian",           "label": "Central Asian",           "tier": "sub", "oldCount": 4,   "newCount": 4,   "delta": 0,  "classification": "SAME" },
+    { "key": "chinese",                 "label": "Chinese",                 "tier": "sub", "oldCount": 0,   "newCount": 15,  "delta": 15, "classification": "HEAL" },
+    { "key": "japanese",                "label": "Japanese",                "tier": "sub", "oldCount": 0,   "newCount": 10,  "delta": 10, "classification": "HEAL" },
+    { "key": "indian",                  "label": "Indian",                  "tier": "sub", "oldCount": 0,   "newCount": 7,   "delta": 7,  "classification": "HEAL" },
+    { "key": "pakistani",               "label": "Pakistani",               "tier": "sub", "oldCount": 0,   "newCount": 4,   "delta": 4,  "classification": "HEAL" },
+    { "key": "uzbek",                   "label": "Uzbek",                   "tier": "sub", "oldCount": 0,   "newCount": 4,   "delta": 4,  "classification": "HEAL" },
+    { "key": "korean",                  "label": "Korean",                  "tier": "sub", "oldCount": 0,   "newCount": 3,   "delta": 3,  "classification": "HEAL" },
+    { "key": "americas",                "label": "Americas",                "tier": "top", "oldCount": 172, "newCount": 199, "delta": 27, "classification": "HEAL" },
+    { "key": "north-american",          "label": "North American",          "tier": "top", "oldCount": 97,  "newCount": 97,  "delta": 0,  "classification": "SAME" },
+    { "key": "latin-american",          "label": "Latin American",          "tier": "top", "oldCount": 82,  "newCount": 82,  "delta": 0,  "classification": "SAME" },
+    { "key": "caribbean",               "label": "Caribbean",               "tier": "sub", "oldCount": 18,  "newCount": 19,  "delta": 1,  "classification": "HEAL" },
+    { "key": "mexican",                 "label": "Mexican",                 "tier": "sub", "oldCount": 0,   "newCount": 38,  "delta": 38, "classification": "HEAL" },
+    { "key": "puerto-rican",            "label": "Puerto Rican",            "tier": "sub", "oldCount": 0,   "newCount": 4,   "delta": 4,  "classification": "HEAL" },
+    { "key": "african",                 "label": "African",                 "tier": "top", "oldCount": 43,  "newCount": 43,  "delta": 0,  "classification": "SAME" },
+    { "key": "west-african",            "label": "West African",            "tier": "sub", "oldCount": 15,  "newCount": 15,  "delta": 0,  "classification": "SAME" },
+    { "key": "north-african",           "label": "North African",           "tier": "sub", "oldCount": 0,   "newCount": 3,   "delta": 3,  "classification": "HEAL" },
+    { "key": "east-african",            "label": "East African",            "tier": "sub", "oldCount": 0,   "newCount": 4,   "delta": 4,  "classification": "HEAL" },
+    { "key": "european",                "label": "European",                "tier": "top", "oldCount": 57,  "newCount": 61,  "delta": 4,  "classification": "HEAL" },
+    { "key": "mediterranean",           "label": "Mediterranean",           "tier": "top", "oldCount": 45,  "newCount": 44,  "delta": -1, "classification": "DECREASE", "decreaseNote": "OLD table wrongly cross-parented Moroccan under Mediterranean; new vocab tree homes Moroccan under north-african. Affected lesson 'Moroccan Carrot Salad, Two Ways' still reachable via african / north-african. Correction, not loss." },
+    { "key": "eastern-european",        "label": "Eastern European",        "tier": "sub", "oldCount": 4,   "newCount": 4,   "delta": 0,  "classification": "SAME" },
+    { "key": "italian",                 "label": "Italian",                 "tier": "sub", "oldCount": 0,   "newCount": 25,  "delta": 25, "classification": "HEAL" },
+    { "key": "middle-eastern",          "label": "Middle Eastern",          "tier": "top", "oldCount": 27,  "newCount": 29,  "delta": 2,  "classification": "HEAL" },
+    { "key": "levantine",               "label": "Levantine",               "tier": "top", "oldCount": 19,  "newCount": 19,  "delta": 0,  "classification": "SAME" },
+    { "key": "indigenous-and-diaspora", "label": "Indigenous and Diaspora", "tier": "top", "oldCount": 0,   "newCount": 58,  "delta": 58, "classification": "HEAL" },
+    { "key": "african-american",        "label": "African American",        "tier": "top", "oldCount": 0,   "newCount": 27,  "delta": 27, "classification": "HEAL" },
+    { "key": "indigenous",              "label": "Indigenous",              "tier": "top", "oldCount": 0,   "newCount": 31,  "delta": 31, "classification": "HEAL" },
+    { "key": "lenape",                  "label": "Lenape",                  "tier": "sub", "oldCount": 0,   "newCount": 7,   "delta": 7,  "classification": "HEAL" }
+  ],
+  "expansionSamples": {
+    "note": "NEW expanded label-sets came from the REAL local expand_cultural_heritage(_alias_cultural_heritage(ARRAY[key])). 3 examples:",
+    "asian": ["Korean","Chinese","Pakistani","Japanese","Vietnamese","Central Asian","Malaysian","Uzbek","Indian","Southeast Asian","Taiwanese","Asian","South Asian","Sri Lankan","East Asian"],
+    "african-american": ["Black culinary history","African American","Soul Food"],
+    "indigenous-and-diaspora": ["Black culinary history","Three Sisters traditions","African American","Indigenous and Diaspora","Haudenosaunee","Lenape","Cajun/Creole","Soul Food","Indigenous"]
+  },
+  "writeSafety": "ZERO PROD writes. All PROD MCP calls were SELECT-only (count queries + sanity anchors + the mediterranean diagnostic). No apply_migration, no DDL, no DML against any database."
+}

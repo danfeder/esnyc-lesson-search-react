@@ -1,4 +1,5 @@
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
+import { buildCultureLabelMap } from '@/utils/filterUtils';
 import { useSearchStore } from '@/stores/searchStore';
 import type { SearchFilters } from '@/types';
 
@@ -10,19 +11,8 @@ interface ActivePill {
   label: string;
 }
 
-// Flat lookup of value → label across every hierarchical cultural-heritage
-// option (parent + children).
-function buildCultureLabelMap(): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const opt of FILTER_CONFIGS.culturalHeritage.options) {
-    out[opt.value] = opt.label;
-    for (const child of opt.children ?? []) {
-      out[child.value] = child.label;
-    }
-  }
-  return out;
-}
-
+// Recursive value → label lookup across the full cultural-heritage tree
+// (every tier, not just direct children).
 const CULTURE_LABELS = buildCultureLabelMap();
 
 function labelFor(key: FilterKey, value: string): string {

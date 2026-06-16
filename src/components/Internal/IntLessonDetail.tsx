@@ -1,20 +1,9 @@
 import { ExternalLink } from 'lucide-react';
 import type { Lesson } from '@/types';
-import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
-import { intActivityLabel, intGradesLabel } from './IntListRow';
+import { culturalLabel, intActivityLabel, intGradesLabel } from './IntListRow';
 
 interface IntLessonDetailProps {
   lesson: Lesson;
-}
-
-function culturalLabel(value: string): string {
-  for (const region of FILTER_CONFIGS.culturalHeritage.options) {
-    if (region.value === value) return region.label;
-    for (const child of region.children ?? []) {
-      if (child.value === value) return child.label;
-    }
-  }
-  return value;
 }
 
 function academicSelected(ai: Lesson['metadata']['academicIntegration']): string[] {

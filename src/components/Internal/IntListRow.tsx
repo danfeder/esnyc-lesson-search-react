@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
-import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
+import { buildCultureLabelMap } from '@/utils/filterUtils';
 import { cn } from '@/utils/cn';
 
 type ActivityClass = 'cook' | 'grow' | 'both' | 'academic';
@@ -25,14 +25,12 @@ export function intGradesLabel(grades: string[] | undefined): string {
   return `${grades[0]}–${grades[grades.length - 1]}`;
 }
 
-function culturalLabel(value: string): string {
-  for (const region of FILTER_CONFIGS.culturalHeritage.options) {
-    if (region.value === value) return region.label;
-    for (const child of region.children ?? []) {
-      if (child.value === value) return child.label;
-    }
-  }
-  return value;
+// Recursive value → label lookup across the full cultural-heritage tree
+// (every tier, not just direct children).
+const CULTURE_LABELS = buildCultureLabelMap();
+
+export function culturalLabel(value: string): string {
+  return CULTURE_LABELS[value] ?? value;
 }
 
 interface IntListRowProps {
