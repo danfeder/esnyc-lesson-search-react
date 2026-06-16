@@ -15,12 +15,11 @@
 > User chose **Option B** for heritage: store **specific-only** tags + rebuild the
 > live filter for complete recursive expansion (one source of truth = the §16
 > `cultural-heritage.vocab.json`). Filter-first, open-ended maintenance window.
-> A **NEW heritage-filter-rebuild PR lands BEFORE the apply** (see revised table
-> row C0). PR C's heritage handling changes from full-chain dual-write to
-> specific-only (the other 11 fields are unchanged). **Exact tasks are authored
-> in the heritage-filter-rebuild design pass (next session, brainstorming-first)
-> — NO filter/apply code until that design is checkpointed.** Design-doc banner +
-> execution-status pivot block hold the rationale.
+> A **NEW heritage-filter-rebuild PR (C1) lands BEFORE the apply (C2)** (see revised
+> table + the full PR C1 task list below). The apply's heritage handling changes from
+> full-chain dual-write to specific-only (the other 11 fields are unchanged).
+> **Design COMPLETE + LOCKED 2026-06-16** (`docs/plans/2026-06-16-heritage-filter-rebuild-design.md`);
+> PR C1 tasks authored below. Design-doc banner + execution-status pivot block hold the rationale.
 
 **Goal:** Re-tag the full live corpus (**767 lessons**, `retired_at IS NULL`) from lesson bodies against the locked canonical vocabulary — 12 fields in the main pass — with per-field enum enforcement, an answer-key eval gate ("beats v3"), a user-gated staged apply with rollback, embeddings regeneration, `search_synonyms` population (PR 3b), and cleanup of the PR 5 + PR 6 rollback tables. cooking_skills + main_ingredients follow in a second pass after a curriculum-team mini-worksheet.
 
@@ -47,14 +46,14 @@
 
 All 7 evidence items gathered + adversarially verified (artifacts in `docs/plans/pr6-stage2-retag-evidence/`); walkthrough locked OQ1-OQ13. One optional leftover: the V3 shared-prefix cache-confirmation rerun (~$5.50) is blocked on a Console credit top-up — purely confirmatory, no decision depends on it.
 
-## PR breakdown (locked OQ13 — **REVISED 2026-06-16 by the heritage pivot; C0 inserted, C amended**)
+## PR breakdown (locked OQ13 — **REVISED 2026-06-16 by the heritage pivot; filter PR C1 inserted, apply renamed C2** — supersedes the earlier "C0/C" sketch; see `2026-06-16-heritage-filter-rebuild-design.md`)
 
 | PR | Branch | Contains | DB writes | Gate |
 |---|---|---|---|---|
 | A | `feat/pr6a-stage2-retag-pipeline` | Runner + check surface + dry-run ≤20 lessons | none | normal review |
 | B | `feat/pr6b-stage2-retag-fullrun` | Answer key + eval scoring + full run artifacts + diff + apply artifacts + register adjudication | none | **user green-light before the full run**; "beats v3" bar |
-| **C0 (NEW, heritage pivot)** | TBD (e.g. `feat/pr6c0-heritage-filter`) | **Heritage filter rebuild — tasks authored in the design pass.** Unify 3 hierarchy sources → 1 (§16 vocab); recursive `expand_cultural_heritage` in `search_lessons` RPC; UI/`filterDefinitions` alignment; retire legacy `filterConstants.CULTURAL_HIERARCHY`; E2E. **NO data change** → backward-compatible with current full-chain corpus. | PROD via CI (RPC/migration) | design checkpoint + verify on current PROD data + CI approval |
-| C | `feat/pr6c-stage2-retag-apply` | Apply migration (rollback snapshot, dual-write) — **heritage stored specific-only (pivot), other 11 fields unchanged**; targeted drops U-5/U-8/U-12 via manifest; post-apply U-1 integrity assertion; Who's-Who `content_text` repair; embeddings regen | PROD via CI | user spot-check sign-off (Protocol B) + CI approval; **lands after C0 verified** |
+| **C1 (NEW, heritage pivot)** | `feat/pr6c1-heritage-filter` | **Heritage filter rebuild — full tasks authored 2026-06-16 (design pass), see below.** Generator (vocab.json → committed TS artifact + SQL seed); recreate `cultural_heritage_hierarchy` as full tree + recursive `expand_cultural_heritage`; regen `filterDefinitions` to ~31 nested options; rewrite `IntCulturalHeritageSection` to recurse; retire orphaned `filterConstants.CULTURAL_HIERARCHY`; unit + E2E. **NO lesson-data writes** → backward-compatible with current full-chain corpus (keystone-proven superset). | PROD via CI (table/RPC migration) | design checkpoint ✅ + verify same-or-greater counts on current PROD data + CI approval |
+| C2 | `feat/pr6c-stage2-retag-apply` (existing) | Apply migration (rollback snapshot, dual-write) — **heritage stored specific-only (pivot), other 11 fields unchanged**; targeted drops U-5/U-8/U-12 via manifest + map-surfaced error corrections; post-apply U-1 integrity assertion; Who's-Who `content_text` repair; embeddings regen. **Internal tasks renumbered C2.1–C2.4.** | PROD via CI | user spot-check sign-off (Protocol B) + CI approval; **lands after C1 verified** |
 | D | `feat/pr6d-search-synonyms` | `search_synonyms` population from run artifacts | PROD via CI | CI approval |
 | E | `feat/pr6e-stage2-cleanup` | Drop `pr5a_heritage_rollback` + `pr5b_concepts_rollback` + `pr6_retag_rollback` (+ staging); observances→fixed; filterDefinitions updates; Zod enum closing + enums.json regen + edge-mirror sync; stale-Python comment cleanup | PROD via CI | C PROD-verified first (PR 5 design §4.8) |
 | F (rider) | `feat/pr6f-second-pass` | cooking_skills + main_ingredients re-tag (vocab DECIDED 2026-06-12, team skipped) | PROD via CI | same B/C gates, miniature; no external blocker |
@@ -176,21 +175,37 @@ Three items, all must complete before B4 launches:
 
 ### B7 — Ritual → PR B (artifacts + registers; still no DB writes).
 
-## PR C — Apply + embeddings (outline; refine at cycle start; `database-migrations` skill mandatory)
+## PR C1 — Heritage filter rebuild (full detail) — authored 2026-06-16 (design pass)
 
-> **HERITAGE PIVOT 2026-06-16:** the C1 line below still reads as full-chain dual-write — **for heritage that is now superseded by Option B (specific-only storage).** C0 (heritage filter rebuild) lands first. PR C's heritage = the run's specific tags minus the targeted drops (U-5/U-8/U-12 via manifest), stored as-is (no parent-expansion), plus a post-apply assertion that no AA/Indigenous row carries `North American`. The other 11 fields' dual-write is unchanged. Re-specify C1's heritage portion in the design pass.
+> **REQUIRED reads before any task:** `docs/plans/2026-06-16-heritage-filter-rebuild-design.md` (authoritative); `data/vocab/cultural-heritage.vocab.json`; the live defs of `cultural_heritage_hierarchy`, `expand_cultural_heritage`, `_alias_cultural_heritage`, `search_lessons` (latest defining migration in `supabase/migrations/` + PROD `pg_get_functiondef`); `src/utils/filterDefinitions.ts` (heritage block ~L124-170); `src/components/Internal/IntCulturalHeritageSection.tsx`; `src/utils/facetCounts.ts` + `src/utils/filterUtils.ts` (heritage helpers). **Branch:** `feat/pr6c1-heritage-filter` off the current tip (carries the design + pivot doc commits). **NO lesson-data writes anywhere in C1.** `database-migrations` skill MANDATORY for C1.2.
 
-- C1 Migration (single file, idempotent): create `pr6_retag_rollback` snapshotting all about-to-change rows (12 columns + metadata) → apply dual-writes from the staged data → repair Who's-Who `content_text` (body from the PR-A export artifact) → add SQL CHECK constraints for the newly locked small-field enums (AFTER data is canonical — ordering is load-bearing) → analyze.
-- C2 Rehearse: `supabase db reset` locally + `npm run test:rls`; PR opens → CI applies to TEST → verify via `mcp__supabase-test__execute_sql` (TEST validates mechanics; PROD MCP validates coverage — TEST is missing rows).
-- C3 Merge → user approves PROD migration in CI → **PROD MCP verification with VERBATIM identifiers copied from the migration file** (counts per field, rollback-table row count, Who's-Who body length, spot lessons from the diff). Known SASL flake: rerun pattern per memory.
-- C4 Embeddings regen (existing regen script precedent): TEST first, then PROD; verify embedding count + freshness timestamps via MCP.
+- **C1.0 — Capture ground truth + backward-compat baseline (read-only).** Pull live defs of the 3 functions + `SELECT * FROM cultural_heritage_hierarchy` via PROD MCP. Build the **before-counts baseline**: for every current top+sub heritage option, the count of lessons that match it today (use `search_lessons`'s own heritage path / the `&&` expanded match against current PROD data). Save as an artifact (`scripts/heritage/artifacts/heritage-filter-baseline.json`). This is the C1.9 gate evidence. No code change.
+- **C1.1 — Generator script — TDD.** Create `scripts/heritage/generate-heritage-hierarchy.ts` reading `cultural-heritage.vocab.json`; emits (a) committed `src/utils/heritageHierarchy.generated.ts` — the nested `culturalHeritage` options (vocab `top`+`sub` tiers only, `internal` excluded, nested by `parent_key`, kebab `value`/Title `label`); (b) committed `supabase/migrations/<seed>.sql` body / a `.sql` fragment with all ~71 `(key,label,parent_key)` rows for C1.2. Tests: output matches a vocab-derived fixture; roots/tiers correct; `internal` excluded from the UI artifact but present in the seed; **drift guard** (re-run == committed artifact, byte-identical). Register under `tsconfig.scripts.json` + ESLint scope (extend the stage2 check surface if needed).
+- **C1.2 — Hierarchy table + recursive expansion migration** (`database-migrations` skill; date prefix sorts after floor `20260613000000_…`). One idempotent migration: recreate `cultural_heritage_hierarchy` as `(key text PRIMARY KEY, label text NOT NULL, parent_key text REFERENCES cultural_heritage_hierarchy(key))` + reseed from C1.1's SQL; rewrite `expand_cultural_heritage` as `WITH RECURSIVE` returning input nodes **plus all transitive descendants, resolved to `label`** for the existing `&&` overlap; **preserve the `search_lessons` integration** (same set-of-labels contract feeding `l.cultural_heritage && expanded_cultures`). FIRST confirm no other DB object references the old table's columns (grep migrations + scan `pg_get_functiondef`). Local `supabase db reset` + `npm run test:rls`.
+- **C1.3 — Expansion tests — TDD (DB, write FAILING-against-old first).** Prove the regression is caught: author tests that select a top region and expect a lesson stored with ONLY a deep descendant (specific-only fixture rows in a local seed) — these FAIL on the old one-tier function, PASS on the recursive one. Cover: parent→all descendants incl. tradition leaves (Soul Food under African American); slug-input matches label-stored data (the bridge); `internal` nodes still match. Local Supabase.
+- **C1.4 — UI options regen + recursive type.** Point `filterDefinitions.ts` `culturalHeritage.options` at `heritageHierarchy.generated.ts`. Make the option/`FilterConfig` type's `children` recursive (`children?: HierarchicalOption[]`). Update consumers that assumed 2 levels — `filterUtils.ts` (`isParentCultureSelected`/`getCultureChildren` → recurse), `facetCounts.ts`, active-pills. Unit tests for the recursive helpers.
+- **C1.5 — Component rewrite (nested render).** Rewrite `IntCulturalHeritageSection.tsx` to render the nested tree recursively with depth-based indent (extend `int-check--child` styling per depth). Preserve per-node checkbox toggle + facet counts. Verify visually (`npm run dev` / chrome-devtools MCP screenshot of the heritage section).
+- **C1.6 — Facet-count coherence (NEWLY SURFACED — decide, don't silently skip).** Today facet counts are per-stored-value; after C2 (specific-only) a parent's *direct-tag* count drops even though the filter returns the expanded set, so the number beside "Asian" could read low vs. the result count. For C1 (current full-chain data) counts are still accurate. **Decision to make in C1:** make parent counts expansion-aware (count = lessons matching the expanded set) vs. accept direct-tag counts + document. Cheap-if-done-via-the-same-expansion; measure and choose. Record the decision in the design doc.
+- **C1.7 — Retire orphaned `CULTURAL_HIERARCHY`.** Grep-confirm zero live importers; delete the constant (+ now-dead helpers) from `src/utils/filterConstants.ts`; type-check + lint green.
+- **C1.8 — E2E (Playwright).** Select a top region (e.g. Asian) → results include a lesson tagged only with a deep descendant; select a newly-added group (African American) → returns its lessons; nested checkboxes render + toggle. Runs against the deploy preview per the CI E2E pattern.
+- **C1.9 — Backward-compat verification (the apply gate).** Re-run the C1.0 baseline against the NEW filter on current PROD data (local → TEST after CI applies → PROD read-only): **every parent returns same-or-greater, never fewer.** Capture the after-table; the diff is the recorded gate evidence (expect heals like Asian 65→74).
+- **C1.10 — Per-PR ritual → open PR C1.** Pre-push code-reviewer dispatch on `git diff main...HEAD` + rebuttal pass + fix-ups; `npm run type-check && npm run lint`; push `feat/pr6c1-heritage-filter`; `gh pr create`. CI applies migration to TEST → verify via `mcp__supabase-test__execute_sql`. Bot rounds + triage. **Merge USER-GATED; PROD migration approval USER-GATED.**
+
+## PR C2 — Apply + embeddings (outline; refine at C2 cycle start; `database-migrations` skill mandatory)
+
+> **HERITAGE PIVOT 2026-06-16 (now specified):** heritage is stored **specific-only** (Option B) — the run's specific tags minus the targeted drops (U-5/U-8/U-12 via manifest) and minus the C1-design-flagged error corrections (verify against `full-run.fable.jsonl`: Arroz con Gandules spurious `South Asian`; two Salsa Toasts → `[]`), stored as-is (NO parent-expansion), plus a post-apply assertion that no AA/Indigenous row carries `North American`. The recursive filter that makes specific-only safe ships first in **PR C1**. The other 11 fields' dual-write is unchanged.
+
+- C2.1 Migration (single file, idempotent): create `pr6_retag_rollback` snapshotting all about-to-change rows (12 columns + metadata) → apply dual-writes from the staged data (**heritage = specific-only per the pivot**) → repair Who's-Who `content_text` (body from the PR-A export artifact) → add SQL CHECK constraints for the newly locked small-field enums (AFTER data is canonical — ordering is load-bearing) → analyze.
+- C2.2 Rehearse: `supabase db reset` locally + `npm run test:rls`; PR opens → CI applies to TEST → verify via `mcp__supabase-test__execute_sql` (TEST validates mechanics; PROD MCP validates coverage — TEST is missing rows).
+- C2.3 Merge → user approves PROD migration in CI → **PROD MCP verification with VERBATIM identifiers copied from the migration file** (counts per field, rollback-table row count, Who's-Who body length, spot lessons from the diff, the U-1 integrity assertion). Known SASL flake: rerun pattern per memory.
+- C2.4 Embeddings regen (existing regen script precedent): TEST first, then PROD; verify embedding count + freshness timestamps via MCP.
 
 ## PR D — `search_synonyms` population (outline)
 
 - D1 Distill everyday↔framework pairs from the PR-B run artifacts (concepts dual-vocab output); dedupe; emit population migration (idempotent upserts).
 - D2 Same TEST-verify → merge → PROD-approve → PROD MCP verify cycle. Smoke the smart-search edge function reads the new rows (PR 3a Option B path).
 
-## PR E — Cleanup (outline; gated on C PROD-verified, per PR 5 design §4.8)
+## PR E — Cleanup (outline; gated on C2 PROD-verified, per PR 5 design §4.8)
 
 - E1 Migration: drop `pr5a_heritage_rollback` (37 rows), `pr5b_concepts_rollback` (676), `pr6_retag_rollback`, + any staging table.
 - E2 Code: observances field `creatable` → fixed list; filterDefinitions updates per the vocab locks (garden-skills +2, cooking methods labels, observances 16 — End-of-year pair merged, ratified 2026-06-12); close the 6 small-field enums in `lessonMetadata.zod.ts` + regenerate `enums.json` + sync the edge `_shared/metadataSchemas.ts` mirror (equivalence test enforces); clean the stale Python-mechanism comments (`scripts/generate-enums-json.ts:6-7`, `lessonMetadata.zod.ts` sync paragraph).
