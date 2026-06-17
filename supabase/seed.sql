@@ -82,11 +82,11 @@ VALUES
     ARRAY['Garden', 'Kitchen'],
     ARRAY['Plant Science', 'Nutrition'],
     ARRAY['Spring', 'Summer'],
-    ARRAY['Teamwork', 'Following Instructions'],
+    ARRAY['Garden Skills and Related Academic Content', 'Kitchen Skills and Related Academic Content'],
     ARRAY['Italian', 'Mexican'],
     ARRAY['Science', 'Math'],
-    ARRAY['Patience', 'Responsibility'],
-    ARRAY['Raw/No Cook']
+    ARRAY['Relationship skills', 'Responsible decision-making'],
+    ARRAY['basic-prep']
   ),
   (
     'LESSON-002',
@@ -98,11 +98,11 @@ VALUES
     ARRAY['Kitchen'],
     ARRAY['Food Science', 'Chemistry'],
     ARRAY['Fall', 'Winter', 'Spring', 'Summer'],
-    ARRAY['Measuring', 'Following Instructions'],
+    ARRAY['Kitchen Skills and Related Academic Content'],
     ARRAY['European'],
     ARRAY['Science', 'Math'],
-    ARRAY['Patience'],
-    ARRAY['Baking']
+    ARRAY['Self-management'],
+    ARRAY['oven']
   ),
   (
     'LESSON-003',
@@ -114,10 +114,10 @@ VALUES
     ARRAY['Garden', 'Outdoor Classroom'],
     ARRAY['Environmental Science', 'Ecology'],
     ARRAY['Fall', 'Spring'],
-    ARRAY['Observation', 'Teamwork'],
+    ARRAY['Environmental and Community Stewardship', 'Garden Skills and Related Academic Content'],
     ARRAY[]::text[],
     ARRAY['Science'],
-    ARRAY['Environmental Awareness'],
+    ARRAY['Social awareness'],
     ARRAY[]::text[]
   ),
   (
@@ -130,11 +130,11 @@ VALUES
     ARRAY['Kitchen'],
     ARRAY['Cultural Heritage', 'Nutrition'],
     ARRAY['Summer', 'Fall'],
-    ARRAY['Knife Skills', 'Following Recipes'],
+    ARRAY['Kitchen Skills and Related Academic Content', 'Culturally Responsive Education'],
     ARRAY['Mexican', 'Latin American'],
     ARRAY['Social Studies', 'Health'],
-    ARRAY['Cultural Appreciation'],
-    ARRAY['Raw/No Cook', 'Chopping/Mixing']
+    ARRAY['Social awareness'],
+    ARRAY['basic-prep']
   ),
   (
     'LESSON-005',
@@ -146,10 +146,10 @@ VALUES
     ARRAY['Greenhouse', 'Indoor Classroom'],
     ARRAY['Plant Science'],
     ARRAY['Spring'],
-    ARRAY['Fine Motor Skills', 'Observation'],
+    ARRAY['Garden Skills and Related Academic Content'],
     ARRAY[]::text[],
     ARRAY['Science'],
-    ARRAY['Patience', 'Wonder'],
+    ARRAY['Self-awareness', 'Self-management'],
     ARRAY[]::text[]
   )
 ON CONFLICT (lesson_id) DO UPDATE SET
