@@ -31,7 +31,12 @@ import {
   sqlTextArrayLiteral,
   sqlJsonbLiteral,
   parseArgs,
+  applyHeritageCorrection,
+  loadHeritageCorrections,
+  buildGradeDiff,
+  renderGradeDiffMarkdown,
   type StagingRow,
+  type HeritageCorrection,
 } from './prepare-apply';
 import { buildDiffReport, parseCorpusRecords } from './generate-diff-report';
 import { parseRunRecords } from './run-retag';
@@ -45,8 +50,11 @@ const vocab = loadVocab();
 const corpus = parseCorpusRecords(corpusText);
 const runRecords = parseRunRecords(runText);
 
-function staging(excluded: Set<string> = new Set()): StagingRow[] {
-  return buildStagingRows(corpus, runRecords, vocab, excluded);
+function staging(
+  excluded: Set<string> = new Set(),
+  corrections: Map<string, HeritageCorrection> = new Map()
+): StagingRow[] {
+  return buildStagingRows(corpus, runRecords, vocab, excluded, corrections);
 }
 
 function row(id: string, excluded: Set<string> = new Set()): StagingRow {
@@ -418,5 +426,312 @@ describe('parseArgs', () => {
     const args = parseArgs(['--seed', '99', '--per-bucket', '25']);
     expect(args.seed).toBe(99);
     expect(args.perBucket).toBe(25);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.1 — Heritage corrections (the 4 LOCKED targeted drops/sets)
+// ---------------------------------------------------------------------------
+
+describe('applyHeritageCorrection', () => {
+  it('DROPs the listed values, keeping the rest in order (U-5 Fattoush)', () => {
+    const run = [
+      'Middle Eastern',
+      'Levantine',
+      'Lebanese',
+      'Syrian',
+      'Jordanian',
+      'Palestinian',
+      'Israeli',
+    ];
+    expect(applyHeritageCorrection(run, { drop: ['Israeli', 'Jordanian'] })).toEqual([
+      'Middle Eastern',
+      'Levantine',
+      'Lebanese',
+      'Syrian',
+      'Palestinian',
+    ]);
+  });
+
+  it('DROPs a single value, keeping the other three (Arroz con Gandules)', () => {
+    const run = ['Puerto Rican', 'Caribbean', 'Latin American', 'South Asian'];
+    expect(applyHeritageCorrection(run, { drop: ['South Asian'] })).toEqual([
+      'Puerto Rican',
+      'Caribbean',
+      'Latin American',
+    ]);
+  });
+
+  it('SETs the value to the empty array (U-8 Alternative Proteins)', () => {
+    expect(applyHeritageCorrection(['Italian', 'European'], { set: [] })).toEqual([]);
+  });
+
+  it('SETs the value to the empty array (U-12 Intro to Salad Project)', () => {
+    expect(applyHeritageCorrection(['Middle Eastern'], { set: [] })).toEqual([]);
+  });
+
+  it('is a no-op for a drop value that is absent (idempotent / defensive)', () => {
+    expect(applyHeritageCorrection(['Mexican'], { drop: ['South Asian'] })).toEqual(['Mexican']);
+  });
+});
+
+describe('loadHeritageCorrections (committed manifest)', () => {
+  const manifestPath = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    'data',
+    'heritage-corrections.json'
+  );
+  const corrections = loadHeritageCorrections(manifestPath);
+
+  it('loads the original 4 LOCKED corrections keyed by lesson id', () => {
+    expect(corrections.has('1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI')).toBe(true);
+    expect(corrections.has('1yTTJr3D9B6iljmmqdqtWUf6WnpRm683_')).toBe(true);
+    expect(corrections.has('1V2Xt4cB9K19aItujCO8lrshz1YDSW022Okln4jI0ij8')).toBe(true);
+    expect(corrections.has('1VShcRmcQCpjPrrltCpytiHeuAgHuIb311EOIoSctnmU')).toBe(true);
+  });
+
+  it('loads the 7 C2 North-American-drop corrections (U-1 resolution)', () => {
+    // The re-tag output left the generic 'North American' label alongside an
+    // Indigenous-subtree label on these 7 lessons. Each carries a DROP of
+    // 'North American' so the U-1 identity anchor holds (supervisor PROD-probe
+    // finding 2026-06-16). 4 original + 7 = 11 total.
+    expect(corrections.size).toBe(11);
+    const northAmericanDropIds = [
+      '12yRCn3m298kp_ID-baEGYsHYP48f2zfFrGYbFnzdpLM',
+      '12ZjWQaqW6hOPDo16zi9PN3iG92jI4KLz',
+      '16mgyKO8H_9s58p4mH1WuyCgswGKhti0h',
+      '1ggAWmeMm2AZoGXadfQjPzKMgZcYbTOyCiqUXdf0ZWrk',
+      '1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN',
+      'lesson_03de6aa8ce094d0b9fd6518830e3eae7',
+      'lesson_341634b793bd4fb69528013dbcd5d259',
+    ];
+    for (const id of northAmericanDropIds) {
+      const correction = corrections.get(id);
+      expect(correction, `missing correction for ${id}`).toBeDefined();
+      expect(correction).toEqual({ drop: ['North American'] });
+    }
+  });
+
+  it('the North-American drop keeps the Indigenous label, removing only the generic tag', () => {
+    // Berry Rosehip Bars staged [Indigenous, North American, Indigenous and
+    // Diaspora] → dropping 'North American' must keep both Indigenous labels.
+    const berry = corrections.get('12yRCn3m298kp_ID-baEGYsHYP48f2zfFrGYbFnzdpLM')!;
+    expect(
+      applyHeritageCorrection(['Indigenous', 'North American', 'Indigenous and Diaspora'], berry)
+    ).toEqual(['Indigenous', 'Indigenous and Diaspora']);
+    // Three Sisters Soup staged [Indigenous, Three Sisters traditions, North
+    // American] → keep the two Indigenous-subtree labels.
+    const threeSisters = corrections.get('1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN')!;
+    expect(
+      applyHeritageCorrection(
+        ['Indigenous', 'Three Sisters traditions', 'North American'],
+        threeSisters
+      )
+    ).toEqual(['Indigenous', 'Three Sisters traditions']);
+  });
+
+  it('U-5 Fattoush drops Israeli + Jordanian', () => {
+    const fattoush = corrections.get('1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI')!;
+    expect(
+      applyHeritageCorrection(
+        [
+          'Middle Eastern',
+          'Levantine',
+          'Lebanese',
+          'Syrian',
+          'Jordanian',
+          'Palestinian',
+          'Israeli',
+        ],
+        fattoush
+      )
+    ).toEqual(['Middle Eastern', 'Levantine', 'Lebanese', 'Syrian', 'Palestinian']);
+  });
+
+  it('U-8 + U-12 clear heritage to empty', () => {
+    const u8 = corrections.get('1yTTJr3D9B6iljmmqdqtWUf6WnpRm683_')!;
+    const u12 = corrections.get('1V2Xt4cB9K19aItujCO8lrshz1YDSW022Okln4jI0ij8')!;
+    expect(applyHeritageCorrection(['Italian', 'European'], u8)).toEqual([]);
+    expect(applyHeritageCorrection(['Middle Eastern'], u12)).toEqual([]);
+  });
+
+  it('Arroz drops South Asian, keeping the other three', () => {
+    const arroz = corrections.get('1VShcRmcQCpjPrrltCpytiHeuAgHuIb311EOIoSctnmU')!;
+    expect(
+      applyHeritageCorrection(['Puerto Rican', 'Caribbean', 'Latin American', 'South Asian'], arroz)
+    ).toEqual(['Puerto Rican', 'Caribbean', 'Latin American']);
+  });
+});
+
+describe('buildStagingRows with heritage corrections', () => {
+  it('applies a DROP to a staged lesson before change detection', () => {
+    // lesson-soup's run heritage is ["Indigenous"]; drop it → [].
+    const corrections = new Map<string, HeritageCorrection>([
+      ['lesson-soup', { drop: ['Indigenous'] }],
+    ]);
+    const r = staging(new Set(), corrections).find((x) => x.id === 'lesson-soup')!;
+    expect(r.fields.cultural_heritage).toEqual([]);
+  });
+
+  it('applies a SET to a staged lesson', () => {
+    const corrections = new Map<string, HeritageCorrection>([
+      ['lesson-soup', { set: ['Mexican'] }],
+    ]);
+    const r = staging(new Set(), corrections).find((x) => x.id === 'lesson-soup')!;
+    expect(r.fields.cultural_heritage).toEqual(['Mexican']);
+  });
+
+  it('a North-American drop stages the surviving Indigenous label, still CHANGED (U-1 resolution)', () => {
+    // The C2 U-1 fix drops the generic 'North American' label from re-tagged
+    // Indigenous lessons. lesson-soup's run heritage is ["Indigenous"]; dropping
+    // 'North American' (absent here) leaves the Indigenous identity label intact
+    // and the row stays changed (corpus ["Native American"] vs run ["Indigenous"]),
+    // so the corrected heritage flows into the apply.
+    const corrections = new Map<string, HeritageCorrection>([
+      ['lesson-soup', { drop: ['North American'] }],
+    ]);
+    const r = staging(new Set(), corrections).find((x) => x.id === 'lesson-soup')!;
+    expect(r.fields.cultural_heritage).toEqual(['Indigenous']);
+    expect(r.fields.cultural_heritage).not.toContain('North American');
+    expect(r.changed).toBe(true);
+  });
+
+  it('a drop-to-empty change keeps the row staged as CHANGED (drop-only detection fires)', () => {
+    // lesson-soup's CURRENT corpus heritage is ["Native American"] and the run
+    // proposes ["Indigenous"]. Dropping the run's "Indigenous" → [] is STILL a
+    // change vs the corpus ["Native American"], so the row must stay changed and
+    // be staged for the apply (else U-8/U-12 silently vanish from the apply).
+    const corrections = new Map<string, HeritageCorrection>([
+      ['lesson-soup', { drop: ['Indigenous'] }],
+    ]);
+    const r = staging(new Set(), corrections).find((x) => x.id === 'lesson-soup')!;
+    expect(r.fields.cultural_heritage).toEqual([]);
+    expect(r.changed).toBe(true);
+  });
+
+  it('the corrected heritage flows identically into staging SQL + draft migration', () => {
+    const corrections = new Map<string, HeritageCorrection>([
+      ['lesson-soup', { drop: ['Indigenous'] }],
+    ]);
+    const rows = staging(new Set(), corrections);
+    const report = buildDiffReport(corpus, runRecords, vocab);
+    const sql = renderStagingSql(rows, vocab);
+    const migration = buildApplyMigrationSql(rows, vocab, report);
+    // lesson-soup's heritage column must NOT carry the dropped 'Indigenous'
+    // anywhere downstream. (Other lessons retain their own heritage.)
+    const soupSql = sql.split('\n').find((l) => l.includes('lesson-soup'))!;
+    expect(soupSql).not.toContain("'Indigenous'");
+    // The draft migration's UPDATE for lesson-soup also must not carry it.
+    const soupUpdateIdx = migration.indexOf("WHERE lesson_id = 'lesson-soup'");
+    const soupBlock = migration.slice(Math.max(0, soupUpdateIdx - 2000), soupUpdateIdx);
+    expect(soupBlock).not.toContain(`'Indigenous'`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.1 — Grade guard (DATA SAFETY: never blank an existing grade)
+// ---------------------------------------------------------------------------
+
+describe('applyUpdate grade guard', () => {
+  const report = buildDiffReport(corpus, runRecords, vocab);
+
+  it('writes grade_levels (column + metadata gradeLevels) when grades are non-empty', () => {
+    // lesson-roots has grade_levels ["PK"] → both writes present.
+    const r = row('lesson-roots');
+    expect(r.gradeLevels).toEqual(['PK']);
+    const sql = buildApplyMigrationSql([r], vocab, report);
+    expect(sql).toContain('grade_levels =');
+    expect(sql).toContain('gradeLevels');
+  });
+
+  it('OMITs both grade writes for a row whose staged grade is empty', () => {
+    // Force an empty-grade staging row that still changes another field, so the
+    // apply runs over it. The grade guard must preserve the existing PROD grade
+    // by writing NOTHING for grade_levels / gradeLevels on that row.
+    const emptyGradeRow: StagingRow = makeRow({
+      id: 'empty-grade',
+      gradeLevels: [],
+      changed: true,
+      fields: { season_timing: ['Winter'] },
+    });
+    const sql = buildApplyMigrationSql([emptyGradeRow], vocab, report);
+    // Scope to the per-row UPDATE statement (the rollback DDL + commented-out
+    // rollback recipe legitimately mention grade_levels / r.grade_levels — those
+    // are the snapshot column + restore template, not a per-row write).
+    const updateStart = sql.indexOf('UPDATE public.lessons SET');
+    const updateEnd = sql.indexOf(';', updateStart);
+    const updateStmt = sql.slice(updateStart, updateEnd + 1);
+    // No grade_levels column assignment, no gradeLevels jsonb_set in the UPDATE.
+    expect(updateStmt).not.toMatch(/grade_levels\s*=/);
+    expect(updateStmt).not.toContain('gradeLevels');
+    // But it still wrote the changing field (so the row is not dropped).
+    expect(updateStmt).toContain('season_timing =');
+  });
+
+  it('NEVER emits an empty grade_levels clause across the full fixture run', () => {
+    // Across the whole staged set, an `ARRAY[]::text[]` assigned to grade_levels
+    // (or a gradeLevels jsonb_set with an empty array) must never appear — that
+    // is exactly the blank-the-grade bug the guard prevents.
+    const sql = buildApplyMigrationSql(staging(), vocab, report);
+    expect(sql).not.toContain('grade_levels = ARRAY[]::text[]');
+    expect(sql).not.toContain("'{gradeLevels}', '[]'::jsonb");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.1 — Grade diff review artifact (before/after Protocol-B surface)
+// ---------------------------------------------------------------------------
+
+describe('buildGradeDiff', () => {
+  // before census: lesson-roots currently has no grades on PROD (changes to PK);
+  // lesson-soup currently has ["K"] but the run staged none (preserved).
+  const before = new Map<string, string[]>([
+    ['lesson-roots', []],
+    ['lesson-soup', ['K']],
+    ['lesson-weird', ['1', '2']],
+  ]);
+
+  it('lists a row whose grade is written as a CHANGE when before != after', () => {
+    const rows = staging();
+    const diff = buildGradeDiff(rows, before);
+    const rootsChange = diff.changes.find((c) => c.id === 'lesson-roots');
+    expect(rootsChange).toBeDefined();
+    expect(rootsChange!.before).toEqual([]);
+    expect(rootsChange!.after).toEqual(['PK']);
+  });
+
+  it('classifies an empty-staged-grade row as PRESERVED, never as a write', () => {
+    // Build a staging set where lesson-soup has empty staged grades.
+    const soup = makeRow({ id: 'lesson-soup', gradeLevels: [], changed: true });
+    const diff = buildGradeDiff([soup], before);
+    expect(diff.preserved.map((p) => p.id)).toContain('lesson-soup');
+    expect(diff.changes.map((c) => c.id)).not.toContain('lesson-soup');
+    // its preserved 'before' is the existing PROD value, untouched.
+    expect(diff.preserved.find((p) => p.id === 'lesson-soup')!.before).toEqual(['K']);
+  });
+
+  it('does NOT list a written row whose before == after as a change', () => {
+    // lesson-roots staged ["PK"]; if before already ["PK"], it is a no-op write.
+    const beforeSame = new Map<string, string[]>([['lesson-roots', ['PK']]]);
+    const diff = buildGradeDiff([row('lesson-roots')], beforeSame);
+    expect(diff.changes.map((c) => c.id)).not.toContain('lesson-roots');
+    expect(diff.unchanged.map((u) => u.id)).toContain('lesson-roots');
+  });
+});
+
+describe('renderGradeDiffMarkdown', () => {
+  const before = new Map<string, string[]>([
+    ['lesson-roots', []],
+    ['lesson-weird', ['1', '2']],
+  ]);
+
+  it('is plain-language markdown with before → after for each change', () => {
+    const diff = buildGradeDiff(staging(), before);
+    const md = renderGradeDiffMarkdown(diff);
+    expect(md).toContain('# ');
+    expect(md.toLowerCase()).toContain('grade');
+    expect(md).toContain('→');
+    // the count of written grade changes is reported.
+    expect(md).toContain(String(diff.changes.length));
   });
 });

@@ -211,12 +211,52 @@ MIGRATION DISCIPLINE:
   one. Run `ls supabase/migrations | sort | tail -3` first. ASCII gotcha:
   digits < underscore, so `20260615140000_x` sorts BEFORE `20260615_x`;
   when colliding with a same-day `YYYYMMDD_` file, use the next day's date.
+- **GATE 2 (Codex, pre-TEST):** before opening the PR / applying any migration
+  to TEST, run a Codex adversarial review of the migration SQL (`/codex:adversarial-review
+  --base main --scope branch "<focus: idempotency, section ordering, quoting/escaping,
+  RLS/grants, rollback completeness, any table-wide constraint vs un-migrated/retired
+  rows>"`). Triage + fix-up before push. ADDITIVE to the `database-migrations` skill,
+  local `db reset`/`test:rls`, and TEST/PROD MCP verification — does NOT replace them.
+  See the CODEX ADVERSARIAL REVIEW block below.
+
+CODEX ADVERSARIAL REVIEW (independent model-family gate — adopted Session 18):
+Codex (gpt-5.5/xhigh) is a DIFFERENT model family than the Claude reviewers /
+executors / supervisor, so it catches a different failure distribution. It is
+USER-invoked via slash commands (they are `disable-model-invocation` — the
+supervisor CANNOT fire them from the Skill tool): `/codex:adversarial-review
+[--base <ref>] [--scope auto|working-tree|branch] [focus…]`, `/codex:review`,
+`/codex:status`, `/codex:result`, `/codex:cancel`, `/codex:rescue`. When the
+supervisor is driving a gate autonomously (no user in the loop), run the wrapped
+companion via Bash — it is exactly what the slash command executes:
+`node "$CLAUDE_PLUGIN_ROOT/scripts/codex-companion.mjs" adversarial-review --base <ref> --scope branch "<focus>"`
+(prefer Claude `run_in_background:true` for long runs, then pull results via the
+companion's `result`/`status` = `/codex:status` + `/codex:result`; model/effort
+inherit gpt-5.5/xhigh from `~/.codex/config.toml`). Triage Codex findings with the
+SAME discipline as bot reviews (`feedback_bot_review_investigation.md`): written
+rebuttal pass on EVERY finding; default-reject hardening that fails the
+user-visible-bug-or-DB-risk bar (GPT over-suggests defensive hardening too). Codex
+is an INDEPENDENT input — it does NOT replace the supervisor-verify gate or user
+judgment. Calibrate to stakes (skip on a trivial docs-only PR already covered by
+the bots).
+- GATE 1 (plan-lock): after authoring or locking a design doc / a substantial
+  impl-plan PR section, and BEFORE dispatching build executors, Codex-review the
+  plan (scoped to the plan commit/diff; focus: assumptions, IDs/specifics-vs-reality,
+  data-safety, ordering/feasibility, inconsistency with the locked design). Fold
+  accepted findings in BEFORE building. Session-18 proof: Codex caught a reversed
+  embeddings decision + a 33-row grade-blank that the recon + 4 PROD censuses +
+  supervisor-verify ALL missed.
+- GATE 2 (pre-TEST migration): see MIGRATION DISCIPLINE above.
+- GATE 3 (pre-push): see PER-PR step 1 below — run a Codex review in parallel with
+  the Claude code-reviewer; dedupe + rebuttal-pass both.
 
 PER-PR RITUAL (every PR, every time — compact checklist; the canonical
 detail lives in the auto-loaded feedback memories cited per step):
 1. Pre-push: DISPATCH a code-reviewer agent on `git diff main...HEAD` —
-   the agent reads, not you. Rebuttal-pass its findings; fix-ups BEFORE
-   push. Re-dispatch on every subsequent push.
+   the agent reads, not you — AND, in parallel, **GATE 3: a Codex
+   adversarial review** of the same diff (`/codex:adversarial-review --base
+   main`, different model family). Dedupe + rebuttal-pass BOTH; fix-ups
+   BEFORE push. Re-dispatch on every subsequent push. (Calibrate: skip the
+   Codex pass on a trivial docs-only PR already covered by the bots.)
    (`feedback_bot_review_investigation.md`)
 2. `npm run type-check && npm run lint`, push, `gh pr create`.
 3. Wait for external bot reviewers — they ARE the second pass.

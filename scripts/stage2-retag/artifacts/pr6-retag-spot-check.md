@@ -282,7 +282,7 @@ These lessons gain or lose three or more tag fields. Check that the new tags mat
   - **Activity Type:** "cooking"
   - **Season & Timing:** "Spring", "Summer"
   - **Cultural Responsiveness Features:** "Communicates high expectations", "Encourages learning within the context of culture", "Promotes student-centered instruction", "Reshapes curriculum"
-  - **Cultural Heritage:** "Italian", "Mediterranean", "European" → "Italian", "European"
+  - **Cultural Heritage:** "Italian", "Mediterranean", "European" → _(none)_
   - **Academic Integration:** "Science", "Health", "Social Studies" → "Science", "Health", "Math", "Social Studies", "Literacy/ELA"
   - **Social-Emotional Learning:** "Self-management", "Relationship skills", "Responsible decision-making"
   - **Core Competencies:** "Kitchen Skills and Related Academic Content", "Culturally Responsive Education" → "Kitchen Skills and Related Academic Content", "Environmental and Community Stewardship", "Culturally Responsive Education", "Social-Emotional Intelligence"
