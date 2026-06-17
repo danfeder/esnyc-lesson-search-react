@@ -35,7 +35,8 @@
 --        non-canonical row (makes the whole table canonical for the CHECKs).
 --   (6)  Six small-field CHECK constraints — added AFTER the data is canonical
 --        (ordering load-bearing). heritage + academic_concepts get NO CHECK.
---   (7)  U-1 integrity assertion (DERIVED forbidden-label set, hard-fail).
+--   (7)  U-1 integrity assertion (DERIVED forbidden-label set, hard-fail;
+--        scoped past the 12 deletion-slated corpus-exclusions).
 --   (8)  ANALYZE public.lessons.
 --
 -- =====================================================
@@ -1517,7 +1518,7 @@ UPDATE public.lessons SET
   tags = ARRAY[]::text[],
   season_timing = ARRAY[]::text[],
   cultural_responsiveness_features = ARRAY['Encourages learning within the context of culture']::text[],
-  cultural_heritage = ARRAY['Indigenous','North American','Indigenous and Diaspora']::text[],
+  cultural_heritage = ARRAY['Indigenous','Indigenous and Diaspora']::text[],
   academic_integration = ARRAY['Math','Literacy/ELA','Social Studies']::text[],
   social_emotional_learning = ARRAY['Relationship skills']::text[],
   core_competencies = ARRAY['Kitchen Skills and Related Academic Content','Culturally Responsive Education']::text[],
@@ -1525,7 +1526,7 @@ UPDATE public.lessons SET
   observances_holidays = ARRAY['Indigenous Peoples'' Month']::text[],
   garden_skills = ARRAY[]::text[],
   grade_levels = ARRAY['PK','K','1','2','3','4','5']::text[],
-  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","North American","Indigenous and Diaspora"]'::jsonb, true), '{academicIntegration}', '["Math","Literacy/ELA","Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Relationship skills"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Math":["Measurement","Counting","Data Collection"],"Literacy/ELA":["Reading","Vocabulary Development","Recipe Reading","Sensory Details"],"Social Studies":["Indigenous Knowledge","Native American History","Cultural Traditions","Environmental Stewardship"]}'::jsonb, true)
+  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","Indigenous and Diaspora"]'::jsonb, true), '{academicIntegration}', '["Math","Literacy/ELA","Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Relationship skills"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Math":["Measurement","Counting","Data Collection"],"Literacy/ELA":["Reading","Vocabulary Development","Recipe Reading","Sensory Details"],"Social Studies":["Indigenous Knowledge","Native American History","Cultural Traditions","Environmental Stewardship"]}'::jsonb, true)
 WHERE lesson_id = '12yRCn3m298kp_ID-baEGYsHYP48f2zfFrGYbFnzdpLM';
 
 UPDATE public.lessons SET
@@ -1533,7 +1534,7 @@ UPDATE public.lessons SET
   tags = ARRAY[]::text[],
   season_timing = ARRAY['Fall','Winter','Spring','Summer']::text[],
   cultural_responsiveness_features = ARRAY['Encourages learning within the context of culture','Incorporates different individual and cultural learning styles','Reshapes curriculum']::text[],
-  cultural_heritage = ARRAY['Indigenous','North American']::text[],
+  cultural_heritage = ARRAY['Indigenous']::text[],
   academic_integration = ARRAY['Social Studies']::text[],
   social_emotional_learning = ARRAY['Self-management','Relationship skills','Self-awareness','Responsible decision-making','Social awareness']::text[],
   core_competencies = ARRAY['Kitchen Skills and Related Academic Content','Culturally Responsive Education','Social-Emotional Intelligence']::text[],
@@ -1541,7 +1542,7 @@ UPDATE public.lessons SET
   observances_holidays = ARRAY[]::text[],
   garden_skills = ARRAY[]::text[],
   grade_levels = ARRAY['2','3']::text[],
-  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '["Fall","Winter","Spring","Summer"]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Incorporates different individual and cultural learning styles","Reshapes curriculum"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","North American"]'::jsonb, true), '{academicIntegration}', '["Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Self-management","Relationship skills","Self-awareness","Responsible decision-making","Social awareness"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '[]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["2","3"]'::jsonb, true), '{academicConcepts}', '{"Social Studies":["Native American History","History of the American West","Cultural Traditions","Indigenous Knowledge","Food Processing"]}'::jsonb, true)
+  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '["Fall","Winter","Spring","Summer"]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Incorporates different individual and cultural learning styles","Reshapes curriculum"]'::jsonb, true), '{culturalHeritage}', '["Indigenous"]'::jsonb, true), '{academicIntegration}', '["Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Self-management","Relationship skills","Self-awareness","Responsible decision-making","Social awareness"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '[]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["2","3"]'::jsonb, true), '{academicConcepts}', '{"Social Studies":["Native American History","History of the American West","Cultural Traditions","Indigenous Knowledge","Food Processing"]}'::jsonb, true)
 WHERE lesson_id = '12ZjWQaqW6hOPDo16zi9PN3iG92jI4KLz';
 
 UPDATE public.lessons SET
@@ -2092,7 +2093,7 @@ UPDATE public.lessons SET
   tags = ARRAY[]::text[],
   season_timing = ARRAY['Fall','Winter','Spring','Summer']::text[],
   cultural_responsiveness_features = ARRAY['Encourages learning within the context of culture']::text[],
-  cultural_heritage = ARRAY['Indigenous and Diaspora','Indigenous','North American']::text[],
+  cultural_heritage = ARRAY['Indigenous and Diaspora','Indigenous']::text[],
   academic_integration = ARRAY['Social Studies','Literacy/ELA']::text[],
   social_emotional_learning = ARRAY['Social awareness','Responsible decision-making']::text[],
   core_competencies = ARRAY['Culturally Responsive Education','Kitchen Skills and Related Academic Content','Garden Skills and Related Academic Content','Social Justice','Social-Emotional Intelligence']::text[],
@@ -2100,7 +2101,7 @@ UPDATE public.lessons SET
   observances_holidays = ARRAY[]::text[],
   garden_skills = ARRAY['Garden exploration','Sensory exploration']::text[],
   grade_levels = ARRAY['4']::text[],
-  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["garden","cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '["Fall","Winter","Spring","Summer"]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture"]'::jsonb, true), '{culturalHeritage}', '["Indigenous and Diaspora","Indigenous","North American"]'::jsonb, true), '{academicIntegration}', '["Social Studies","Literacy/ELA"]'::jsonb, true), '{socialEmotionalLearning}', '["Social awareness","Responsible decision-making"]'::jsonb, true), '{coreCompetencies}', '["Culturally Responsive Education","Kitchen Skills and Related Academic Content","Garden Skills and Related Academic Content","Social Justice","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '[]'::jsonb, true), '{gardenSkills}', '["Garden exploration","Sensory exploration"]'::jsonb, true), '{gradeLevels}', '["4"]'::jsonb, true), '{academicConcepts}', '{"Literacy/ELA":["Read-Aloud","Reading"],"Social Studies":["Native American History","Colonialism''s Impact","Indigenous Knowledge","Cultural Traditions"]}'::jsonb, true)
+  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["garden","cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '["Fall","Winter","Spring","Summer"]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture"]'::jsonb, true), '{culturalHeritage}', '["Indigenous and Diaspora","Indigenous"]'::jsonb, true), '{academicIntegration}', '["Social Studies","Literacy/ELA"]'::jsonb, true), '{socialEmotionalLearning}', '["Social awareness","Responsible decision-making"]'::jsonb, true), '{coreCompetencies}', '["Culturally Responsive Education","Kitchen Skills and Related Academic Content","Garden Skills and Related Academic Content","Social Justice","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '[]'::jsonb, true), '{gardenSkills}', '["Garden exploration","Sensory exploration"]'::jsonb, true), '{gradeLevels}', '["4"]'::jsonb, true), '{academicConcepts}', '{"Literacy/ELA":["Read-Aloud","Reading"],"Social Studies":["Native American History","Colonialism''s Impact","Indigenous Knowledge","Cultural Traditions"]}'::jsonb, true)
 WHERE lesson_id = '16mgyKO8H_9s58p4mH1WuyCgswGKhti0h';
 
 UPDATE public.lessons SET
@@ -4965,7 +4966,7 @@ UPDATE public.lessons SET
   tags = ARRAY[]::text[],
   season_timing = ARRAY[]::text[],
   cultural_responsiveness_features = ARRAY['Encourages learning within the context of culture','Promotes student-centered instruction','Reshapes curriculum']::text[],
-  cultural_heritage = ARRAY['Indigenous','North American']::text[],
+  cultural_heritage = ARRAY['Indigenous']::text[],
   academic_integration = ARRAY['Literacy/ELA','Social Studies','Arts']::text[],
   social_emotional_learning = ARRAY['Self-awareness','Social awareness','Relationship skills']::text[],
   core_competencies = ARRAY['Kitchen Skills and Related Academic Content','Culturally Responsive Education','Social-Emotional Intelligence']::text[],
@@ -4973,7 +4974,7 @@ UPDATE public.lessons SET
   observances_holidays = ARRAY['Indigenous Peoples'' Month']::text[],
   garden_skills = ARRAY[]::text[],
   grade_levels = ARRAY['PK','K','1','2','3','4','5']::text[],
-  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Promotes student-centered instruction","Reshapes curriculum"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","North American"]'::jsonb, true), '{academicIntegration}', '["Literacy/ELA","Social Studies","Arts"]'::jsonb, true), '{socialEmotionalLearning}', '["Self-awareness","Social awareness","Relationship skills"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","stovetop"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Literacy/ELA":["Read-Aloud","Storytelling","Sensory Details","Writing"],"Social Studies":["Native American History","Cultural Traditions","Cultural Narratives"],"Arts":["Drawing"]}'::jsonb, true)
+  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Promotes student-centered instruction","Reshapes curriculum"]'::jsonb, true), '{culturalHeritage}', '["Indigenous"]'::jsonb, true), '{academicIntegration}', '["Literacy/ELA","Social Studies","Arts"]'::jsonb, true), '{socialEmotionalLearning}', '["Self-awareness","Social awareness","Relationship skills"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","stovetop"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Literacy/ELA":["Read-Aloud","Storytelling","Sensory Details","Writing"],"Social Studies":["Native American History","Cultural Traditions","Cultural Narratives"],"Arts":["Drawing"]}'::jsonb, true)
 WHERE lesson_id = '1ggAWmeMm2AZoGXadfQjPzKMgZcYbTOyCiqUXdf0ZWrk';
 
 UPDATE public.lessons SET
@@ -10713,7 +10714,7 @@ UPDATE public.lessons SET
   tags = ARRAY[]::text[],
   season_timing = ARRAY['Fall']::text[],
   cultural_responsiveness_features = ARRAY['Encourages learning within the context of culture','Promotes student-centered instruction','Incorporates different individual and cultural learning styles','Reshapes curriculum']::text[],
-  cultural_heritage = ARRAY['Indigenous','Three Sisters traditions','North American']::text[],
+  cultural_heritage = ARRAY['Indigenous','Three Sisters traditions']::text[],
   academic_integration = ARRAY['Science','Social Studies']::text[],
   social_emotional_learning = ARRAY['Self-management','Relationship skills','Responsible decision-making']::text[],
   core_competencies = ARRAY['Kitchen Skills and Related Academic Content','Garden Skills and Related Academic Content','Culturally Responsive Education']::text[],
@@ -10721,7 +10722,7 @@ UPDATE public.lessons SET
   observances_holidays = ARRAY['Indigenous Peoples'' Month']::text[],
   garden_skills = ARRAY[]::text[],
   grade_levels = ARRAY['3K','PK','K','1','2','3','4','5']::text[],
-  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '["Fall"]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Promotes student-centered instruction","Incorporates different individual and cultural learning styles","Reshapes curriculum"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","Three Sisters traditions","North American"]'::jsonb, true), '{academicIntegration}', '["Science","Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Self-management","Relationship skills","Responsible decision-making"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Garden Skills and Related Academic Content","Culturally Responsive Education"]'::jsonb, true), '{cookingMethods}', '["basic-prep","stovetop"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["3K","PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Science":["Companion Planting","Legumes","Plant Growth"],"Social Studies":["Indigenous Knowledge","Cultural Traditions","Geography"]}'::jsonb, true)
+  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '["Fall"]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Promotes student-centered instruction","Incorporates different individual and cultural learning styles","Reshapes curriculum"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","Three Sisters traditions"]'::jsonb, true), '{academicIntegration}', '["Science","Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Self-management","Relationship skills","Responsible decision-making"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Garden Skills and Related Academic Content","Culturally Responsive Education"]'::jsonb, true), '{cookingMethods}', '["basic-prep","stovetop"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["3K","PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Science":["Companion Planting","Legumes","Plant Growth"],"Social Studies":["Indigenous Knowledge","Cultural Traditions","Geography"]}'::jsonb, true)
 WHERE lesson_id = '1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN';
 
 UPDATE public.lessons SET
@@ -10793,7 +10794,7 @@ UPDATE public.lessons SET
   tags = ARRAY[]::text[],
   season_timing = ARRAY[]::text[],
   cultural_responsiveness_features = ARRAY['Encourages learning within the context of culture','Promotes student-centered instruction']::text[],
-  cultural_heritage = ARRAY['Indigenous','North American']::text[],
+  cultural_heritage = ARRAY['Indigenous']::text[],
   academic_integration = ARRAY['Math','Literacy/ELA','Social Studies','Arts']::text[],
   social_emotional_learning = ARRAY['Relationship skills','Social awareness']::text[],
   core_competencies = ARRAY['Kitchen Skills and Related Academic Content','Culturally Responsive Education','Environmental and Community Stewardship','Social-Emotional Intelligence']::text[],
@@ -10801,7 +10802,7 @@ UPDATE public.lessons SET
   observances_holidays = ARRAY['Indigenous Peoples'' Month']::text[],
   garden_skills = ARRAY[]::text[],
   grade_levels = ARRAY['3K','PK','K','1','2','3','4','5']::text[],
-  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Promotes student-centered instruction"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","North American"]'::jsonb, true), '{academicIntegration}', '["Math","Literacy/ELA","Social Studies","Arts"]'::jsonb, true), '{socialEmotionalLearning}', '["Relationship skills","Social awareness"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education","Environmental and Community Stewardship","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["3K","PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Math":["Measurement","Counting","Voting","Data Collection"],"Literacy/ELA":["Recipe Reading","Reading","Vocabulary Development","Sensory Details"],"Social Studies":["Native American History","Indigenous Knowledge","Environmental Stewardship","Cultural Traditions","Geography"],"Arts":["Drawing"]}'::jsonb, true)
+  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Encourages learning within the context of culture","Promotes student-centered instruction"]'::jsonb, true), '{culturalHeritage}', '["Indigenous"]'::jsonb, true), '{academicIntegration}', '["Math","Literacy/ELA","Social Studies","Arts"]'::jsonb, true), '{socialEmotionalLearning}', '["Relationship skills","Social awareness"]'::jsonb, true), '{coreCompetencies}', '["Kitchen Skills and Related Academic Content","Culturally Responsive Education","Environmental and Community Stewardship","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","oven"]'::jsonb, true), '{observancesHolidays}', '["Indigenous Peoples'' Month"]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["3K","PK","K","1","2","3","4","5"]'::jsonb, true), '{academicConcepts}', '{"Math":["Measurement","Counting","Voting","Data Collection"],"Literacy/ELA":["Recipe Reading","Reading","Vocabulary Development","Sensory Details"],"Social Studies":["Native American History","Indigenous Knowledge","Environmental Stewardship","Cultural Traditions","Geography"],"Arts":["Drawing"]}'::jsonb, true)
 WHERE lesson_id = 'lesson_03de6aa8ce094d0b9fd6518830e3eae7';
 
 UPDATE public.lessons SET
@@ -11017,7 +11018,7 @@ UPDATE public.lessons SET
   tags = ARRAY[]::text[],
   season_timing = ARRAY[]::text[],
   cultural_responsiveness_features = ARRAY['Communicates high expectations','Encourages learning within the context of culture']::text[],
-  cultural_heritage = ARRAY['Indigenous','North American']::text[],
+  cultural_heritage = ARRAY['Indigenous']::text[],
   academic_integration = ARRAY['Math','Literacy/ELA','Social Studies']::text[],
   social_emotional_learning = ARRAY['Relationship skills','Social awareness']::text[],
   core_competencies = ARRAY['Social Justice','Kitchen Skills and Related Academic Content','Culturally Responsive Education','Social-Emotional Intelligence']::text[],
@@ -11025,7 +11026,7 @@ UPDATE public.lessons SET
   observances_holidays = ARRAY[]::text[],
   garden_skills = ARRAY[]::text[],
   grade_levels = ARRAY['K','1','4','5','6','7','8']::text[],
-  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Communicates high expectations","Encourages learning within the context of culture"]'::jsonb, true), '{culturalHeritage}', '["Indigenous","North American"]'::jsonb, true), '{academicIntegration}', '["Math","Literacy/ELA","Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Relationship skills","Social awareness"]'::jsonb, true), '{coreCompetencies}', '["Social Justice","Kitchen Skills and Related Academic Content","Culturally Responsive Education","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","stovetop"]'::jsonb, true), '{observancesHolidays}', '[]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["K","1","4","5","6","7","8"]'::jsonb, true), '{academicConcepts}', '{"Math":["Measurement"],"Literacy/ELA":["Recipe Reading","Reading"],"Social Studies":["Indigenous Knowledge","Cultural Traditions","Geography"]}'::jsonb, true)
+  metadata = jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{activityType}', '["cooking"]'::jsonb, true), '{tags}', '[]'::jsonb, true), '{seasonTiming}', '[]'::jsonb, true), '{culturalResponsivenessFeatures}', '["Communicates high expectations","Encourages learning within the context of culture"]'::jsonb, true), '{culturalHeritage}', '["Indigenous"]'::jsonb, true), '{academicIntegration}', '["Math","Literacy/ELA","Social Studies"]'::jsonb, true), '{socialEmotionalLearning}', '["Relationship skills","Social awareness"]'::jsonb, true), '{coreCompetencies}', '["Social Justice","Kitchen Skills and Related Academic Content","Culturally Responsive Education","Social-Emotional Intelligence"]'::jsonb, true), '{cookingMethods}', '["basic-prep","stovetop"]'::jsonb, true), '{observancesHolidays}', '[]'::jsonb, true), '{gardenSkills}', '[]'::jsonb, true), '{gradeLevels}', '["K","1","4","5","6","7","8"]'::jsonb, true), '{academicConcepts}', '{"Math":["Measurement"],"Literacy/ELA":["Recipe Reading","Reading"],"Social Studies":["Indigenous Knowledge","Cultural Traditions","Geography"]}'::jsonb, true)
 WHERE lesson_id = 'lesson_341634b793bd4fb69528013dbcd5d259';
 
 UPDATE public.lessons SET
@@ -12406,10 +12407,17 @@ END $$;
 --     evolves and cannot omit a leaf (the Codex finding this section fixes).
 --     Checked on BOTH the cultural_heritage text[] column AND the
 --     metadata->'culturalHeritage' JSONB mirror.
+--     SCOPING (user verdict 2026-06-16): the 12 corpus-exclusions.json
+--     deletion-slated non-lessons are excluded from this assertion — they were
+--     NOT re-tagged (out of this apply's data scope; the deletion track owns
+--     them). The lone real-data violator surfaced by the supervisor's read-only
+--     PROD probe (Soul Food Sunday) is one of the 12. The assertion still
+--     hard-fails on ANY real, re-tagged lesson on either surface.
 -- =====================================================
 DO $$
 DECLARE
   v_forbidden text[];
+  v_excluded text[];
   v_col_violations bigint;
   v_meta_violations bigint;
 BEGIN
@@ -12420,14 +12428,38 @@ BEGIN
     RAISE EXCEPTION 'U-1 assertion could not derive the Indigenous-and-Diaspora label set from expand_cultural_heritage(); aborting apply.';
   END IF;
 
-  -- Column side: live rows carrying 'North American' AND any derived label.
+  -- the 12 corpus-exclusions.json deletion-slated non-lessons (out of re-tag
+  -- scope, user verdict 2026-06-16). They were NOT re-tagged and are handled by
+  -- the separate deletion track; the lone remaining U-1 violator on real data
+  -- (Soul Food Sunday, 1voTOBrqiz...) is one of them. They are scoped OUT of the
+  -- assertion below so this apply does not abort on data it never touched. The
+  -- assertion still hard-fails on ANY real (re-tagged) lesson, on both surfaces.
+  v_excluded := ARRAY[
+    '13vpumvgEgzO7jUWdEHamEjXWwOxvQ_KFHaeMVUKvQDo',
+    '1Ufs0zXqshdkXE4J0V8fOPWxqi42T2IlFdsei0ESm7PE',
+    '1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag',
+    '1voTOBrqizCtSDbkVdDiEt3MUE51jtm1GTKtrM-4H18M',
+    '1LxGEdGyjFmsWtnhLbqb__ifhIoxTU7kXUeQdCHkf8Aw',
+    '1w0c7tESqksEPlQL-Fj1tpTL3i2ofmN_Agq-UwwqErBE',
+    '1qFG6f3CdmVqjeTJ_Xfv_y2cITHd6beOeCycIZKV73mE',
+    '1QiqNPrXEpDXt7Hmc8uMC8hWCSNfhi3qacbIuVzqZxZA',
+    '1HWSlL8xio3QQkculHrVLA0EvEBSU4Th_tEZU4pXiD4Q',
+    '1WOgtZT6tIQs4DQxVZxG9drU1BgNaFCBdt87NKJX01Fs',
+    '1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX',
+    '1SDsLLHlfBqIHSxvVVQrbOk96hlOkxOse'
+  ]::text[];
+
+  -- Column side: live rows carrying 'North American' AND any derived label
+  -- (excluding the deletion-slated corpus-exclusions, which are out of scope).
   SELECT count(*) INTO v_col_violations
   FROM public.lessons l
   WHERE l.retired_at IS NULL
     AND 'North American' = ANY(l.cultural_heritage)
-    AND l.cultural_heritage && v_forbidden;
+    AND l.cultural_heritage && v_forbidden
+    AND l.lesson_id <> ALL(v_excluded);
 
-  -- Metadata mirror side: same check against metadata->'culturalHeritage'.
+  -- Metadata mirror side: same check against metadata->'culturalHeritage'
+  -- (same corpus-exclusion scoping).
   SELECT count(*) INTO v_meta_violations
   FROM public.lessons l
   WHERE l.retired_at IS NULL
@@ -12437,14 +12469,15 @@ BEGIN
       SELECT 1
       FROM jsonb_array_elements_text(l.metadata->'culturalHeritage') AS v(label)
       WHERE v.label = ANY(v_forbidden)
-    );
+    )
+    AND l.lesson_id <> ALL(v_excluded);
 
   IF v_col_violations > 0 OR v_meta_violations > 0 THEN
     RAISE EXCEPTION 'U-1 integrity assertion FAILED: % live row(s) carry North American + an Indigenous-and-Diaspora identity label on the column, % on the metadata mirror. Forbidden set = %.',
       v_col_violations, v_meta_violations, array_to_string(v_forbidden, ', ');
   END IF;
 
-  RAISE NOTICE 'U-1 assertion passed (0 column / 0 metadata violations) against derived set: %', array_to_string(v_forbidden, ', ');
+  RAISE NOTICE 'U-1 assertion passed (0 column / 0 metadata violations, excluding % deletion-slated corpus-exclusions) against derived set: %', array_length(v_excluded, 1), array_to_string(v_forbidden, ', ');
 END $$;
 
 

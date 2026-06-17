@@ -483,12 +483,51 @@ describe('loadHeritageCorrections (committed manifest)', () => {
   );
   const corrections = loadHeritageCorrections(manifestPath);
 
-  it('loads the 4 LOCKED corrections keyed by lesson id', () => {
-    expect(corrections.size).toBe(4);
+  it('loads the original 4 LOCKED corrections keyed by lesson id', () => {
     expect(corrections.has('1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI')).toBe(true);
     expect(corrections.has('1yTTJr3D9B6iljmmqdqtWUf6WnpRm683_')).toBe(true);
     expect(corrections.has('1V2Xt4cB9K19aItujCO8lrshz1YDSW022Okln4jI0ij8')).toBe(true);
     expect(corrections.has('1VShcRmcQCpjPrrltCpytiHeuAgHuIb311EOIoSctnmU')).toBe(true);
+  });
+
+  it('loads the 7 C2 North-American-drop corrections (U-1 resolution)', () => {
+    // The re-tag output left the generic 'North American' label alongside an
+    // Indigenous-subtree label on these 7 lessons. Each carries a DROP of
+    // 'North American' so the U-1 identity anchor holds (supervisor PROD-probe
+    // finding 2026-06-16). 4 original + 7 = 11 total.
+    expect(corrections.size).toBe(11);
+    const northAmericanDropIds = [
+      '12yRCn3m298kp_ID-baEGYsHYP48f2zfFrGYbFnzdpLM',
+      '12ZjWQaqW6hOPDo16zi9PN3iG92jI4KLz',
+      '16mgyKO8H_9s58p4mH1WuyCgswGKhti0h',
+      '1ggAWmeMm2AZoGXadfQjPzKMgZcYbTOyCiqUXdf0ZWrk',
+      '1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN',
+      'lesson_03de6aa8ce094d0b9fd6518830e3eae7',
+      'lesson_341634b793bd4fb69528013dbcd5d259',
+    ];
+    for (const id of northAmericanDropIds) {
+      const correction = corrections.get(id);
+      expect(correction, `missing correction for ${id}`).toBeDefined();
+      expect(correction).toEqual({ drop: ['North American'] });
+    }
+  });
+
+  it('the North-American drop keeps the Indigenous label, removing only the generic tag', () => {
+    // Berry Rosehip Bars staged [Indigenous, North American, Indigenous and
+    // Diaspora] → dropping 'North American' must keep both Indigenous labels.
+    const berry = corrections.get('12yRCn3m298kp_ID-baEGYsHYP48f2zfFrGYbFnzdpLM')!;
+    expect(
+      applyHeritageCorrection(['Indigenous', 'North American', 'Indigenous and Diaspora'], berry)
+    ).toEqual(['Indigenous', 'Indigenous and Diaspora']);
+    // Three Sisters Soup staged [Indigenous, Three Sisters traditions, North
+    // American] → keep the two Indigenous-subtree labels.
+    const threeSisters = corrections.get('1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN')!;
+    expect(
+      applyHeritageCorrection(
+        ['Indigenous', 'Three Sisters traditions', 'North American'],
+        threeSisters
+      )
+    ).toEqual(['Indigenous', 'Three Sisters traditions']);
   });
 
   it('U-5 Fattoush drops Israeli + Jordanian', () => {
@@ -540,6 +579,21 @@ describe('buildStagingRows with heritage corrections', () => {
     ]);
     const r = staging(new Set(), corrections).find((x) => x.id === 'lesson-soup')!;
     expect(r.fields.cultural_heritage).toEqual(['Mexican']);
+  });
+
+  it('a North-American drop stages the surviving Indigenous label, still CHANGED (U-1 resolution)', () => {
+    // The C2 U-1 fix drops the generic 'North American' label from re-tagged
+    // Indigenous lessons. lesson-soup's run heritage is ["Indigenous"]; dropping
+    // 'North American' (absent here) leaves the Indigenous identity label intact
+    // and the row stays changed (corpus ["Native American"] vs run ["Indigenous"]),
+    // so the corrected heritage flows into the apply.
+    const corrections = new Map<string, HeritageCorrection>([
+      ['lesson-soup', { drop: ['North American'] }],
+    ]);
+    const r = staging(new Set(), corrections).find((x) => x.id === 'lesson-soup')!;
+    expect(r.fields.cultural_heritage).toEqual(['Indigenous']);
+    expect(r.fields.cultural_heritage).not.toContain('North American');
+    expect(r.changed).toBe(true);
   });
 
   it('a drop-to-empty change keeps the row staged as CHANGED (drop-only detection fires)', () => {
