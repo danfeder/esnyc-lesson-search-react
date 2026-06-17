@@ -1,0 +1,41 @@
+{
+  "provenance": {
+    "task": "PR 6 C2.1 — targeted cultural_heritage corrections applied to the Stage-2 re-tag output BEFORE the apply.",
+    "authored": "2026-06-16",
+    "ruling_ref": "B6 register adjudication (register-adjudication.md 'USER VERDICT NEEDED'): U-5 / U-8 / U-12 user verdicts 2026-06-15 (Session 11); Arroz from the PR-C1 heritage-filter map error-candidate flag.",
+    "verification": "All 4 ids + their run cultural_heritage arrays cross-checked verbatim against scripts/stage2-retag/artifacts/full-run.fable.jsonl in Session 18 AND re-verified in this C2.1 build (each id present exactly once; run heritage matched the before-column exactly).",
+    "id_correction": "The heritage-rebuild design doc originally named id 055b000b… for the Arroz fix; that id does NOT exist in the corpus (0 matches). The real spurious-South-Asian row is 1VShcRmc… (verified). Salsa Toasts get NO correction (user decision 2026-06-16).",
+    "policy": "Heritage is stored specific-only (PR C1 recursive filter makes that safe). These corrections drop/clear specific spurious tags; they apply to fields['cultural_heritage'] BEFORE change-detection so a drop-to-empty row is still detected as changed and staged.",
+    "effect": "prepare-apply.ts applies each correction to the run's cultural_heritage before building the staging row; the corrected value flows identically into the staging CSV/SQL and the draft apply migration (single source)."
+  },
+  "corrections": [
+    {
+      "id": "1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI",
+      "title": "Fattoush",
+      "field": "cultural_heritage",
+      "drop": ["Israeli", "Jordanian"],
+      "ref": "register U-5 (Fattoush): run [Middle Eastern,Levantine,Lebanese,Syrian,Jordanian,Palestinian,Israeli] → drop Israeli + Jordanian = [Middle Eastern,Levantine,Lebanese,Syrian,Palestinian]"
+    },
+    {
+      "id": "1yTTJr3D9B6iljmmqdqtWUf6WnpRm683_",
+      "title": "Alternative Proteins",
+      "field": "cultural_heritage",
+      "set": [],
+      "ref": "register U-8 / EUR-07 (Alternative Proteins): run [Italian,European] → set [] (no cultural heritage)"
+    },
+    {
+      "id": "1V2Xt4cB9K19aItujCO8lrshz1YDSW022Okln4jI0ij8",
+      "title": "Intro to Salad Project",
+      "field": "cultural_heritage",
+      "set": [],
+      "ref": "register U-12 (Intro to Salad Project): run [Middle Eastern] → set [] (no cultural heritage)"
+    },
+    {
+      "id": "1VShcRmcQCpjPrrltCpytiHeuAgHuIb311EOIoSctnmU",
+      "title": "Arroz con Gandules / Apple Jicama Slaw",
+      "field": "cultural_heritage",
+      "drop": ["South Asian"],
+      "ref": "PR C1 heritage-filter map flag (Arroz con Gandules): run [Puerto Rican,Caribbean,Latin American,South Asian] → drop spurious South Asian = [Puerto Rican,Caribbean,Latin American]"
+    }
+  ]
+}

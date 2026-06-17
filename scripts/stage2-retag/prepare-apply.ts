@@ -50,6 +50,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { z } from 'zod';
+
 import {
   DEFAULT_CORPUS_EXCLUSIONS_PATH,
   loadCorpusExclusions,
@@ -77,6 +79,12 @@ const DEFAULT_STAGING_SQL_PATH = path.join(ARTIFACTS_DIR, 'pr6-retag-staging.sql
 const DEFAULT_STAGING_CSV_PATH = path.join(ARTIFACTS_DIR, 'pr6-retag-staging.csv');
 const DEFAULT_MIGRATION_PATH = path.join(ARTIFACTS_DIR, 'pr6-retag-apply.draft.sql');
 const DEFAULT_WORKSHEET_PATH = path.join(ARTIFACTS_DIR, 'pr6-retag-spot-check.md');
+const DEFAULT_GRADE_DIFF_PATH = path.join(ARTIFACTS_DIR, 'pr6-retag-grade-diff.md');
+/** The committed heritage-corrections manifest (the 4 LOCKED targeted drops/sets). */
+const DEFAULT_HERITAGE_CORRECTIONS_PATH = path.join(MODULE_DIR, 'data/heritage-corrections.json');
+/** The committed pre-apply PROD grade_levels census (the "before" side of the
+ *  grade diff — the corpus snapshot carries no current grades). */
+const DEFAULT_PROD_GRADES_CENSUS_PATH = path.join(MODULE_DIR, 'data/prod-grades-census.json');
 
 const ROLLBACK_TABLE = 'public.pr6_retag_rollback';
 const STAGING_TABLE = 'public.pr6_retag_staging';
@@ -87,6 +95,90 @@ const FLAT_FIELDS = MAIN_PASS_FIELDS.filter(
   (field): field is Exclude<(typeof MAIN_PASS_FIELDS)[number], 'academic_concepts'> =>
     field !== 'academic_concepts'
 );
+
+// ---------------------------------------------------------------------------
+// Heritage corrections (C2.1 — the 4 LOCKED targeted drops/sets)
+// ---------------------------------------------------------------------------
+
+/**
+ * One targeted cultural_heritage correction: either DROP the listed values from
+ * the run's heritage array, or SET the heritage array to an explicit value
+ * (`set: []` clears it). Exactly one of `drop` / `set` is present per entry.
+ */
+export type HeritageCorrection = { drop: string[] } | { set: string[] };
+
+const heritageCorrectionEntrySchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string().optional(),
+    field: z.literal('cultural_heritage'),
+    drop: z.array(z.string().min(1)).optional(),
+    set: z.array(z.string().min(1)).optional(),
+    ref: z.string().optional(),
+  })
+  .refine(
+    (entry) => (entry.drop === undefined) !== (entry.set === undefined),
+    'each correction must have exactly one of `drop` or `set`'
+  );
+
+const heritageCorrectionsFileSchema = z.object({
+  provenance: z.record(z.unknown()),
+  corrections: z.array(heritageCorrectionEntrySchema),
+});
+
+/**
+ * Loads the checked-in heritage-corrections manifest (the 4 LOCKED targeted
+ * drops/sets, verbatim-verified against the run file) into an id→correction
+ * map. Mirrors loadCorpusExclusions: rejects a duplicate id loudly (a typo must
+ * never silently apply the wrong drop to the wrong lesson). Only the
+ * cultural_heritage field is supported (field: literal).
+ */
+export function loadHeritageCorrections(filePath: string): Map<string, HeritageCorrection> {
+  const parsed = heritageCorrectionsFileSchema.parse(JSON.parse(readFileSync(filePath, 'utf8')));
+  const map = new Map<string, HeritageCorrection>();
+  for (const entry of parsed.corrections) {
+    if (map.has(entry.id)) {
+      throw new Error(`heritage corrections manifest has a duplicate id: ${entry.id}`);
+    }
+    map.set(entry.id, entry.drop !== undefined ? { drop: entry.drop } : { set: entry.set! });
+  }
+  return map;
+}
+
+/**
+ * Applies one correction to a heritage value array (pure):
+ *   - DROP: remove the listed values, preserving the order of the rest;
+ *   - SET: replace the array wholesale with the given value.
+ * Used BEFORE change-detection so a drop-to-empty (e.g. U-12 [Middle Eastern]→[])
+ * is still detected as a change vs the corpus and staged for the apply.
+ */
+export function applyHeritageCorrection(
+  values: string[],
+  correction: HeritageCorrection
+): string[] {
+  if ('set' in correction) return [...correction.set];
+  const drop = new Set(correction.drop);
+  return values.filter((v) => !drop.has(v));
+}
+
+const prodGradesCensusFileSchema = z.object({
+  provenance: z.record(z.unknown()),
+  grades: z.record(z.union([z.array(z.string()), z.null()])),
+});
+
+/**
+ * Loads the committed pre-apply PROD grade census (id→current grade_levels) into
+ * a Map for the grade-diff "before" side. A `null` value (lesson absent from
+ * PROD at capture) normalizes to [] so the diff treats it as "no current grade".
+ */
+export function loadProdGradesCensus(filePath: string): Map<string, string[]> {
+  const parsed = prodGradesCensusFileSchema.parse(JSON.parse(readFileSync(filePath, 'utf8')));
+  const map = new Map<string, string[]>();
+  for (const [id, grades] of Object.entries(parsed.grades)) {
+    map.set(id, grades ?? []);
+  }
+  return map;
+}
 
 // ---------------------------------------------------------------------------
 // Staging row shape
@@ -181,14 +273,23 @@ function normalizeCorpusConcepts(raw: Record<string, string[]>): Record<string, 
 
 function comparedToStagingRow(
   lesson: ComparedLesson,
-  source: { zodPassed: boolean; phase: 'main' | 'repair' | 'fallback'; normalizationCount: number }
+  source: { zodPassed: boolean; phase: 'main' | 'repair' | 'fallback'; normalizationCount: number },
+  correction?: HeritageCorrection
 ): StagingRow {
   const fields: Record<string, string[]> = {};
   const currentFields: Record<string, string[]> = {};
   let changeMagnitude = 0;
 
   for (const field of FLAT_FIELDS) {
-    const newValues = newFlatValues(lesson.rawInput, field);
+    let newValues = newFlatValues(lesson.rawInput, field);
+    // C2.1: apply the targeted heritage correction (drop/set) to the run's
+    // cultural_heritage BEFORE change-detection, so a drop-to-empty row (e.g.
+    // U-12 [Middle Eastern]→[]) is still detected as changed vs the corpus and
+    // staged. The corrected value is the single source for CSV + staging SQL +
+    // draft migration downstream (everything reads fields[field]).
+    if (field === 'cultural_heritage' && correction) {
+      newValues = applyHeritageCorrection(newValues, correction);
+    }
     const oldValues = lesson.corpus.flat[field] ?? [];
     fields[field] = newValues;
     currentFields[field] = oldValues;
@@ -234,7 +335,8 @@ export function buildStagingRows(
   corpusRecords: CorpusDiffRecord[],
   runRecords: RunRecord[],
   _vocab: Stage2Vocab,
-  excludedIds: Set<string> = new Set()
+  excludedIds: Set<string> = new Set(),
+  heritageCorrections: Map<string, HeritageCorrection> = new Map()
 ): StagingRow[] {
   const { compared } = selectComparedLessons(corpusRecords, runRecords, excludedIds);
   // selectComparedLessons drops the source-record provenance, so recover the
@@ -244,11 +346,15 @@ export function buildStagingRows(
   for (const record of runRecords) latest.set(record.id, record);
   return compared.map((lesson) => {
     const record = latest.get(lesson.id);
-    return comparedToStagingRow(lesson, {
-      zodPassed: record?.zod.passed ?? false,
-      phase: record?.phase ?? 'main',
-      normalizationCount: record?.normalizations?.length ?? 0,
-    });
+    return comparedToStagingRow(
+      lesson,
+      {
+        zodPassed: record?.zod.passed ?? false,
+        phase: record?.phase ?? 'main',
+        normalizationCount: record?.normalizations?.length ?? 0,
+      },
+      heritageCorrections.get(lesson.id)
+    );
   });
 }
 
@@ -434,15 +540,25 @@ function rollbackSnapshotInsert(rows: StagingRow[]): string[] {
 function applyUpdate(row: StagingRow, vocab: Stage2Vocab): string[] {
   const setClauses: string[] = [];
 
-  // Flat columns (11 enum fields + grade_levels).
+  // grade guard (C2.1 — DATA SAFETY): grade_levels is a user-facing filter and
+  // the run captured no grade for ~25 rows. Writing those as [] would BLANK the
+  // existing PROD grade. So when the staged grade is empty/absent, OMIT BOTH the
+  // grade_levels column write AND the gradeLevels jsonb_set — the existing value
+  // is preserved untouched. Non-empty grades still write normally (the
+  // authoritative source-doc claim per OQ6).
+  const writeGrades = row.gradeLevels.length > 0;
+
+  // Flat columns (11 enum fields). grade_levels appended only when non-empty.
   for (const field of FLAT_FIELDS) {
     setClauses.push(`  ${field} = ${sqlTextArrayLiteral(row.fields[field] ?? [])}`);
   }
-  setClauses.push(`  grade_levels = ${sqlTextArrayLiteral(row.gradeLevels)}`);
+  if (writeGrades) {
+    setClauses.push(`  grade_levels = ${sqlTextArrayLiteral(row.gradeLevels)}`);
+  }
 
   // metadata JSONB: chain jsonb_set for every camelCase key (the 11 flat fields'
-  // keys + gradeLevels + academicConcepts). academic_concepts contributes ONLY
-  // its JSONB key (no text[] column write above).
+  // keys + gradeLevels [guarded] + academicConcepts). academic_concepts
+  // contributes ONLY its JSONB key (no text[] column write above).
   let metaExpr = "COALESCE(metadata, '{}'::jsonb)";
   for (const field of FLAT_FIELDS) {
     const fieldVocab: FieldVocab = vocab[field];
@@ -450,7 +566,9 @@ function applyUpdate(row: StagingRow, vocab: Stage2Vocab): string[] {
       row.fields[field] ?? []
     )}, true)`;
   }
-  metaExpr = `jsonb_set(${metaExpr}, '{gradeLevels}', ${sqlJsonbLiteral(row.gradeLevels)}, true)`;
+  if (writeGrades) {
+    metaExpr = `jsonb_set(${metaExpr}, '{gradeLevels}', ${sqlJsonbLiteral(row.gradeLevels)}, true)`;
+  }
   metaExpr = `jsonb_set(${metaExpr}, '{${vocab.academic_concepts.jsonbKey}}', ${sqlJsonbLiteral(
     row.academicConcepts
   )}, true)`;
@@ -767,6 +885,126 @@ export function renderSpotCheckWorksheet(
 }
 
 // ---------------------------------------------------------------------------
+// Grade diff (C2.1 — the before/after Protocol-B review surface)
+// ---------------------------------------------------------------------------
+
+export interface GradeChange {
+  id: string;
+  title: string;
+  before: string[];
+  after: string[];
+}
+
+export interface GradePreserved {
+  id: string;
+  title: string;
+  before: string[];
+}
+
+export interface GradeDiff {
+  /** Rows whose grade IS written (non-empty staged grade) AND differs from the
+   *  current PROD value — the substantive grade changes to review. */
+  changes: GradeChange[];
+  /** Rows whose grade IS written but matches the current value (no-op write). */
+  unchanged: GradePreserved[];
+  /** Rows whose staged grade is empty/absent → the grade guard preserves the
+   *  existing PROD value (never blanked). */
+  preserved: GradePreserved[];
+}
+
+/**
+ * Builds the grade diff from the staging rows + a before-census (id→current PROD
+ * grade_levels). The corpus snapshot carries no current grade, so `before` is a
+ * read-only PROD/TEST census supplied by the caller. Classification mirrors the
+ * apply's grade guard exactly:
+ *   - empty staged grade → preserved (guard writes nothing; existing kept);
+ *   - non-empty staged grade differing from current → a change (written);
+ *   - non-empty staged grade equal to current → unchanged (no-op write).
+ * A row missing from `before` is treated as currently having no grade ([]).
+ */
+export function buildGradeDiff(rows: StagingRow[], before: Map<string, string[]>): GradeDiff {
+  const changes: GradeChange[] = [];
+  const unchanged: GradePreserved[] = [];
+  const preserved: GradePreserved[] = [];
+  for (const row of rows) {
+    const cur = before.get(row.id) ?? [];
+    if (row.gradeLevels.length === 0) {
+      preserved.push({ id: row.id, title: row.title, before: cur });
+    } else if (setsEqual(cur, row.gradeLevels)) {
+      unchanged.push({ id: row.id, title: row.title, before: cur });
+    } else {
+      changes.push({ id: row.id, title: row.title, before: cur, after: row.gradeLevels });
+    }
+  }
+  return { changes, unchanged, preserved };
+}
+
+/** Joins a grade list for display ("(none)" when empty). */
+function gradeList(values: string[]): string {
+  return values.length === 0 ? '(none)' : values.join(', ');
+}
+
+/**
+ * Renders the grade diff as a plain-language markdown review surface. Lists
+ * every WRITTEN grade change (before → after — these re-derive a user-facing
+ * filter from the source-doc claims per OQ6), the count of no-op writes, and the
+ * preserved (empty-grade) rows the guard never blanks.
+ */
+export function renderGradeDiffMarkdown(diff: GradeDiff): string {
+  const lines: string[] = [];
+  lines.push('# Stage 2 re-tag — grade-levels diff (review before applying)');
+  lines.push('');
+  lines.push(
+    'Grade levels are a user-facing filter. The re-tagging run re-derives them ' +
+      'from each lesson body (the grades the lesson itself claims). Nothing has ' +
+      'been changed in the database yet — this is a preview.'
+  );
+  lines.push('');
+  lines.push(
+    '**Safety rule (grade guard):** when the run found NO grade for a lesson, the ' +
+      'apply writes nothing for that lesson’s grades — the existing value is kept, ' +
+      'never blanked. Those rows are listed at the bottom for transparency.'
+  );
+  lines.push('');
+  lines.push(
+    `Summary: **${diff.changes.length}** grade changes written, ` +
+      `**${diff.unchanged.length}** written unchanged (already matched), ` +
+      `**${diff.preserved.length}** preserved (no grade in the run → kept as-is).`
+  );
+  lines.push('');
+
+  lines.push(`## Grade changes (${diff.changes.length})`);
+  lines.push('');
+  lines.push('These lessons get a new set of grade levels. Check the new grades match the lesson.');
+  lines.push('');
+  if (diff.changes.length === 0) {
+    lines.push('_None._');
+  } else {
+    for (const c of diff.changes) {
+      lines.push(`- **${c.title}** (\`${c.id}\`): ${gradeList(c.before)} → ${gradeList(c.after)}`);
+    }
+  }
+  lines.push('');
+
+  lines.push(`## Preserved — no grade in the run, existing value kept (${diff.preserved.length})`);
+  lines.push('');
+  lines.push(
+    'The run found no grade for these. The apply leaves their current grades untouched ' +
+      '(the guard never writes an empty grade).'
+  );
+  lines.push('');
+  if (diff.preserved.length === 0) {
+    lines.push('_None._');
+  } else {
+    for (const p of diff.preserved) {
+      lines.push(`- **${p.title}** (\`${p.id}\`): kept ${gradeList(p.before)}`);
+    }
+  }
+  lines.push('');
+  return `${lines.join('\n')}\n`;
+}
+
+// ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
@@ -779,6 +1017,9 @@ export interface Args {
   migration: string;
   worksheet: string;
   diffReport?: string;
+  corrections: string;
+  gradesCensus: string;
+  gradeDiff: string;
   seed: number;
   perBucket: number;
   help: boolean;
@@ -793,6 +1034,9 @@ export function parseArgs(argv: string[]): Args {
     stagingCsv: DEFAULT_STAGING_CSV_PATH,
     migration: DEFAULT_MIGRATION_PATH,
     worksheet: DEFAULT_WORKSHEET_PATH,
+    corrections: DEFAULT_HERITAGE_CORRECTIONS_PATH,
+    gradesCensus: DEFAULT_PROD_GRADES_CENSUS_PATH,
+    gradeDiff: DEFAULT_GRADE_DIFF_PATH,
     seed: 20260612,
     perBucket: 30,
     help: false,
@@ -827,6 +1071,18 @@ export function parseArgs(argv: string[]): Args {
         break;
       case '--worksheet':
         args.worksheet = requireFlagValue(flag, next);
+        i++;
+        break;
+      case '--corrections':
+        args.corrections = requireFlagValue(flag, next);
+        i++;
+        break;
+      case '--grades-census':
+        args.gradesCensus = requireFlagValue(flag, next);
+        i++;
+        break;
+      case '--grade-diff':
+        args.gradeDiff = requireFlagValue(flag, next);
         i++;
         break;
       case '--seed':
@@ -864,12 +1120,17 @@ Flags:
   --staging-csv <path>  staging CSV artifact (default artifacts/pr6-retag-staging.csv)
   --migration <path>    DRAFT apply migration text (default artifacts/pr6-retag-apply.draft.sql)
   --worksheet <path>    spot-check worksheet (default artifacts/pr6-retag-spot-check.md)
+  --corrections <path>  heritage-corrections manifest (default data/heritage-corrections.json)
+  --grades-census <path> pre-apply PROD grade census (default data/prod-grades-census.json)
+  --grade-diff <path>   grade before/after review artifact (default artifacts/pr6-retag-grade-diff.md)
   --seed <n>            spot-check RNG seed (default 20260612)
   --per-bucket <n>      spot-check samples per bucket (default 30 → ~90 total)
   --help
 
 Reporting only: no API calls, no DB access. The emitted .sql is a TEXT ARTIFACT,
-never executed; the real migration is PR C's job.
+never executed; the real migration is PR C's job. The 4 LOCKED heritage
+corrections are applied to the run's cultural_heritage BEFORE change-detection;
+the grade guard never writes an empty grade (preserves the existing PROD value).
 `;
 
 function main(): void {
@@ -878,7 +1139,13 @@ function main(): void {
     console.log(HELP);
     return;
   }
-  for (const out of [args.stagingSql, args.stagingCsv, args.migration, args.worksheet]) {
+  for (const out of [
+    args.stagingSql,
+    args.stagingCsv,
+    args.migration,
+    args.worksheet,
+    args.gradeDiff,
+  ]) {
     warnIfOutsideArtifacts(out);
   }
 
@@ -886,12 +1153,21 @@ function main(): void {
   const corpus = parseCorpusRecords(readFileSync(args.corpus, 'utf8'));
   const runRecords = parseRunRecords(readFileSync(args.run, 'utf8'));
   const excludedIds = new Set(loadCorpusExclusions(args.exclusions).map((entry) => entry.id));
+  const heritageCorrections = loadHeritageCorrections(args.corrections);
+  const prodGrades = loadProdGradesCensus(args.gradesCensus);
 
-  const rows = buildStagingRows(corpus, runRecords, vocab, excludedIds);
+  const rows = buildStagingRows(corpus, runRecords, vocab, excludedIds, heritageCorrections);
   const report = buildDiffReport(corpus, runRecords, vocab, excludedIds);
   const samples = sampleSpotCheck(rows, report, { seed: args.seed, perBucket: args.perBucket });
+  const gradeDiff = buildGradeDiff(rows, prodGrades);
 
-  for (const out of [args.stagingSql, args.stagingCsv, args.migration, args.worksheet]) {
+  for (const out of [
+    args.stagingSql,
+    args.stagingCsv,
+    args.migration,
+    args.worksheet,
+    args.gradeDiff,
+  ]) {
     mkdirSync(path.dirname(out), { recursive: true });
   }
   writeFileSync(args.stagingSql, renderStagingSql(rows, vocab), 'utf8');
@@ -902,15 +1178,20 @@ function main(): void {
     renderSpotCheckWorksheet(samples, vocab, { seed: args.seed, total: samples.length }),
     'utf8'
   );
+  writeFileSync(args.gradeDiff, renderGradeDiffMarkdown(gradeDiff), 'utf8');
 
   const changing = rows.filter((r) => r.changed).length;
   console.log(
     `prepare-apply: ${rows.length} staged lessons (${changing} changing), ` +
-      `${samples.length} spot-check samples.\n` +
+      `${samples.length} spot-check samples; ` +
+      `${heritageCorrections.size} heritage corrections applied.\n` +
+      `  grades: ${gradeDiff.changes.length} changed / ${gradeDiff.unchanged.length} same-written / ` +
+      `${gradeDiff.preserved.length} preserved (guard kept existing).\n` +
       `  staging SQL  → ${args.stagingSql}\n` +
       `  staging CSV  → ${args.stagingCsv}\n` +
       `  draft migration → ${args.migration}\n` +
-      `  spot-check worksheet → ${args.worksheet}`
+      `  spot-check worksheet → ${args.worksheet}\n` +
+      `  grade diff → ${args.gradeDiff}`
   );
 }
 
