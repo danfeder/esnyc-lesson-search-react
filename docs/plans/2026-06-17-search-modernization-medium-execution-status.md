@@ -1,26 +1,30 @@
 # Search Modernization (Medium Package) Execution Status
 
-**Last updated:** 2026-06-18 by Session 2 (S0.2 gold FROZEN + triple-verified; S0.3 unblocked)
+**Last updated:** 2026-06-18 by Session 3 (S0.3 harness + S0.4 baseline built+verified+committed; pre-push review done; S0 ready to ship)
 
 ## Current State
 
-**Active PR:** none open yet — **S0 (eval harness)** in progress on branch `feat/search-eval-s0`.
+**Active PR:** none open yet — **S0 (eval harness) is BUILD-COMPLETE + pre-push-reviewed** on `feat/search-eval-s0`; next action = push + open the S0 PR.
 
-**Current task:** S0.2 **DONE + committed** (`97ed020`). `scripts/search-eval/queries.json` (35 entries, two-tier cluster gold) is **FROZEN and triple-verified**. **NEXT = S0.3** (the harness script `run-search-eval.ts`) — now unblocked (TEST anon creds wired + smoke-proven, see below).
+**S0 status: DONE (S0.1–S0.4), ready to ship.** The eval harness — the measurement gate every later PR depends on — is built, verified, committed.
+- **S0.1** `metrics.ts` cluster-aware ranking module; **S0.3 fix** added pure `rankMovement()`. 76 vitest cases.
+- **S0.2** `queries.json` 35-entry two-tier gold — FROZEN, triple-verified, product-owner-confirmed. **Do not edit gold without re-verifying + re-confirming with the product owner.**
+- **S0.3** `run-search-eval.ts` (read-only tsx harness) + pure `predicate.ts` + `readonly-guard.ts` (+tests). `npm run eval:search`; `SEARCH_EVAL_TARGET=local|test|prod` (default test). Built + adversarially-verified via workflow `wf_e9c31225-5be` (verdict pass, 0 findings) then supervisor-re-verified (independent recall@10=6/7 hand-check on `decomposition`; read-only source audit; content_hash dup-decoupling confirmed via the November twin).
+- **S0.4** `baseline.json` + `scorecards/test.md` captured on TEST (snapshot 2026-06-18, corpus 745); byte-reproducible; `--write-baseline` idempotent.
+- **Commits:** `6f6fb7c` (harness + baseline, S0.3+S0.4) + `00e0e7d` (pre-push review fix-up).
 
-**S0.2 closeout (Session 2):**
-- **Deep verification (the owed re-check):** 8-agent live re-derivation workflow (`wf_5521dc30-78d`) + adversarial completeness critic + supervisor 4-query spot-check. **All PASS, zero failures** — every oracle re-run verbatim on TEST, all PRIMARY titles return live rows (build-rule-6 clean), all twins co-clustered, all EXCLUDEs absent, isolation sets exact by **bidirectional set-equality** (29/42/25; q31≡q10), all pinned counts zero-drift, q22 sentinel top-10 jaccard 1.0, corpus 745.
-- **q12 supervisor pick RESOLVED** (user/product-owner-confirmed): 5 activity-based PRIMARY clusters (Compost Relay; Compost Relay & Stew twin; Plant Part Olympics; Teamwork Challenge; Teamwork in the Garden); acceptable empty. `_candidatePool`/`_needsSupervisorPick` removed.
-- **Independent Codex cross-check** (different model family, raw-row snapshot at `.tmp/codex-goldset-review/pools.json`): caught **1 REAL spec-vs-data divergence** — q34 had carried q05's *acceptable* tier, but spec line 179 scores q34 "vs the q05-07 PRIMARY" only → **q34 acceptableClusters emptied** (inert for frozen-recall; *all 8 same-family agents had normalized it away* — validates the cross-family pass). Rejected 1 false alarm (q23 maxTotalCount=600 is a guard-ceiling above current=586, by spec line 174).
-- q27 degenerate 'Unknown' ghost row KEPT (user decision, documented); q03 indentation tidied; `_snapshot` note refreshed.
+**Pre-push review DONE (Session 3):** Claude code-reviewer + Codex GATE-3 (independent model family). 4 findings, all rebuttal-passed → 3 fixed, 1 documented:
+- [Codex HIGH] G3 rank-movement dropped absent→ranked transitions (the primary S2 success case). Fixed via tested `rankMovement()` (absent = beyond-window PAGE_SIZE+1). **Without this, S2's G3 lift would have read as near-zero.**
+- [Codex MED] `--write-baseline` now ignores any existing baseline → deterministic capture (verified: writing twice = byte-identical).
+- [Claude] over-broad denominator now reads `_snapshot.searchableCorpus` at runtime (single source of truth), not a hardcoded 745.
+- [Claude, documented] `predicate.ts` `splitTopLevel` doesn't decode the SQL `''` escape — inert today (no apostrophe predicate) + fails LOUD (errored table), so documented, not fixed.
+- Committed `baseline.json`/`scorecard` byte-unchanged by the fix (movement fix is inert at S0 where baseline==current).
 
-**S0.3 unblocked (this session):** the harness is a standalone `tsx` script needing a Supabase **anon client** (can't use MCP). `.env` TEST keys were stale (ref `epedjebjemztzdyhqace`, deleted project). Fetched the live TEST anon key via MCP `get_publishable_keys` (ref `rxgajgmphciuaqzvwmox`) → **refreshed `.env` `TEST_SUPABASE_ANON_KEY` + added `TEST_SUPABASE_URL`** (local, gitignored). Smoke-tested: anon → `search_lessons` RPC works (`'compost'` → total_count 178). Target→creds convention for the harness: local=`VITE_*`, test=`TEST_SUPABASE_URL`+`TEST_SUPABASE_ANON_KEY`, prod=`PROD_*`. **`TEST_SUPABASE_SERVICE_KEY` is STILL stale (untouched) — use MCP for any write/admin TEST work.** See memory [[project_test_key_stale]].
+**Baseline tells the expected PRE-FIX story (honest gate):** G2 explosion captured (q01/q32=744/742, q02=744 — S1 must crush); G1 gaps (decay=1, rotting-food recall@10=0, typo=2, kimchi=1 — S3 targets); G3 isolation=0 (q10 isoHits@50=0 — S2 targets); strong lexical baselines + clean controls (q07=0.857, sentinel jaccard=1.0, garden 586 within max 600).
 
-**Then:** S0.3 harness (read-only, own `assertReadOnly`, G2-normalized scoring, sentinel/predicate/isolation handling, `npm run eval:search`) → S0.4 capture TEST baseline + commit → close S0.
+**NEXT:** push `feat/search-eval-s0` + open the S0 PR (per-PR ritual: external bots → four-surface triage → fix-ups). S0 has NO DB/`src/` change → no TEST-DB-before-merge gate; E2E should pass unchanged. After S0 merges → **S1** (G2 frontend `parseSearchQuery` — flip the `resolveCall` seam, see `run-search-eval.ts` `// S1.4`). The status-doc edit + the kickoff/scaffold are bundled into the S0 PR push (no docs-only CI burn).
 
-**Branch:** `feat/search-eval-s0` — cut **fresh from `main`** this session (per kickoff), with the 3 docs commits cherry-picked over (`57d5619` C2-closeout, `8eb1479` scaffold, `3b1239f` GATE-1 fold) + kickoff sync (`6dae620`). The legacy `feat/pr6d-search-synonyms` is abandoned. NOTE: S0's eventual PR will carry the C2-closeout parent-track doc edit to main (harmless/accurate bookkeeping).
-
-**S0.1 commits:** `93bcaa0` (ranking-metric module + 28 vitest cases + tsconfig.scripts include) + `9afbe5e` (verifier-finding comment fix). Files: `scripts/search-eval/metrics.ts` (pure `hitRateAtK`=recall@k / `top1Relevant` / `mrr`=per-query RR / `overBroad`), `metrics.test.ts`, `tsconfig.scripts.json`. Locked metric semantics live in the design + the module's doc comments. Verified: vitest 28/28, type-check + lint clean, adversarial verifier = pass.
+**Branch:** `feat/search-eval-s0` (fresh from `main`; 3 scaffold-docs commits + kickoff sync cherry-picked over; legacy `feat/pr6d-search-synonyms` abandoned). S0's PR carries the C2-closeout parent-track doc edit to main (harmless/accurate bookkeeping). `TEST_SUPABASE_*` anon creds wired in gitignored `.env`; `TEST_SUPABASE_SERVICE_KEY` still stale — MCP for any TEST write/admin (see [[project_test_key_stale]]).
 
 **Last commit on main:** `e4d7830` (PR 6 C2 — Stage-2 re-tag apply; metadata-rebuild APPLY phase complete + PROD-verified).
 
@@ -54,6 +58,23 @@
 - Archive: `2026-06-17-search-modernization-medium-execution-status-archive.md` (created when needed)
 
 ## Recent session log
+
+### Session 3 — 2026-06-18 — S0.3 harness + S0.4 baseline built+verified+committed; S0 pre-push-reviewed
+
+Commits on `feat/search-eval-s0`: `6f6fb7c` (harness + TEST baseline, S0.3+S0.4) + `00e0e7d` (pre-push review fix-up) + this status-doc commit.
+
+Major events:
+- **S0.3 harness built via `Workflow` `wf_e9c31225-5be`** (executor → adversarial-verifier). Executor wrote `run-search-eval.ts` + pure `predicate.ts` + `readonly-guard.ts` (+tests) per an on-disk build brief (`.tmp/s03-executor-brief.md`); verifier verdict = pass, 0 findings (re-ran all checks, hand-checked a metric, audited read-only + predicate faithfulness + q09 special-case). Supervisor independently re-verified: re-ran 114 tests + eval (0 errored/35), hand-checked `decomposition` recall@10 = 6/7 = 0.857 against live TEST top-10, audited the read-only guarantee in source, and confirmed the dup-flood/gold cluster decoupling (the November twin has DISTINCT content_hash → dupFlood=0 correct).
+- **Substrate prereqs confirmed live (TEST):** `search_lessons` 15-arg signature; `lessons.content_hash` + array cols (`main_ingredients`/`core_competencies`/`cultural_heritage`/`social_emotional_learning`) anon-readable; **anon REST works over HTTPS from a node/tsx process** (RPC + SELECT) — the harness uses a real anon client, NOT MCP; the TEST anon key is a JWT (role=anon) so the guard decodes + asserts it.
+- **S0.4 baseline captured on TEST** (`--write-baseline`), byte-reproducible across re-runs; `baseline.json` + `scorecards/test.md` committed (stable per-target filename for git-diffable deltas).
+- **Pre-push review (per-PR ritual step 1):** dispatched a Claude `feature-dev:code-reviewer` + Codex GATE-3 adversarial-review (`codex-companion.mjs`, independent model family) in parallel on the S0 diff. 4 findings, rebuttal-passed; 3 fixed (Codex-HIGH G3 absent→ranked movement via tested `rankMovement()`; Codex-MED deterministic `--write-baseline`; Claude corpus-size single-source), 1 documented-not-fixed (predicate `''` escape — inert + fails-loud). Committed artifacts byte-unchanged by the fix; 121 tests green.
+
+Learnings (promote to feedback memories at PR-cycle archival):
+- **Cross-family GATE-3 earns its keep again:** Codex (different family) found the HIGH-severity G3 movement bug that the same-family Claude reviewer AND the workflow's adversarial verifier both missed — the harness would have under-reported S2's core signal. Mirrors the S0.2 q34 catch: different-model-family review finds *shared blind spots* fan-out redundancy can't. Keep GATE-3 Codex on every search-PR pre-push.
+- **Harness determinism is a real review axis:** a stateful `--write-baseline` (reading the prior baseline while writing the new one) silently weakens the "reproducible gate" claim. For any committed measurement artifact, test idempotency (write twice → identical) explicitly.
+- **Point executors at an on-disk build brief** (`.tmp/s03-executor-brief.md`) instead of embedding the full spec in the workflow prompt — keeps workflow-script literals small (avoids the JS-parser gotcha) and gives the executor a single authoritative reference.
+
+NEXT: push + open the S0 PR → external-bot triage → merge (user-gated) → S1.
 
 ### Session 2 — 2026-06-18 — S0.2 gold FROZEN + triple-verified; S0.3 unblocked
 
