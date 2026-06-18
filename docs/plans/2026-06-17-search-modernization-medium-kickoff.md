@@ -40,14 +40,20 @@ aren't typed-searchable, **G5** there's no eval set. This track grew out of the 
 # SESSION-START RITUAL (do this FIRST, every session)
 
 1. Read this whole prompt.
-2. Read the execution status file — Current State header is enough for orientation.
-3. Read the design doc end-to-end. Settled decisions are NOT debatable (see LOCKED below).
-4. Read the impl plan from the task you're starting through the next 1–2 tasks.
-5. `git status --short --branch && git branch --show-current && git log --oneline -10` — confirm
+2. Read root `CLAUDE.md`; before editing files in a directory with its own `CLAUDE.md`, read that
+   directory guidance too.
+3. Read the execution status file — Current State header is enough for orientation.
+4. Read the design doc end-to-end. Settled decisions are NOT debatable (see LOCKED below).
+5. Read the impl plan from the task you're starting through the next 1–2 tasks.
+6. `git status --short --branch && git branch --show-current && git log --oneline -10` — confirm
    git matches the status file; if they diverge, trust git, then fix the status file first.
-6. If the worktree is dirty, identify whether changes are part of this track before touching them.
-7. `npm run type-check && npm run lint` — confirm a clean baseline.
-8. Tell me where you are and what's next. Don't start coding / dispatch the first executor until I
+7. If the worktree is dirty, identify whether changes are part of this track before touching them.
+8. Before coding a PR task, confirm the branch matches the impl plan. For S0, use
+   `feat/search-eval-s0` cut fresh from `main`, not the legacy `feat/pr6d-search-synonyms` branch.
+9. `npm run type-check && npm run lint` — confirm a clean baseline. If it fails, diagnose first. If
+   the failure is unrelated to the current branch/task, report it and ask before changing unrelated
+   files.
+10. Tell me where you are and what's next. Don't start coding / dispatch the first executor until I
    confirm orientation.
 
 # EXECUTION MODE — SUPERVISOR + FRESH-CONTEXT SUBAGENTS
@@ -61,16 +67,19 @@ impl task per dispatch. If ultracode/workflow is on, the Workflow tool is the pr
 orchestration for fan-out phases (executor → adversarial verifier).
 
 Per executor dispatch, the subagent prompt MUST contain (it never sees this kickoff): the four
-doc paths + task ID (read design + task section from disk first); a digest of DATA SAFETY /
-MIGRATION DISCIPLINE + LOCKED decisions + the NEVER list; required skills; boundaries (commit on
-the feature branch OK; NEVER push/PR/PROD/edit-scaffold-docs); "if blocked or disk contradicts
-the locked design, STOP and report — don't improvise"; required report format (what was done,
-commits, verification commands + ACTUAL output). Subagent tiering: Fable/inherit for
-judgment-heavy review, Opus for spec'd executors, Sonnet for bulk — never Haiku.
+active scaffold doc paths (kickoff/design/implementation/status; archive only when relevant) +
+task ID (read design + task section from disk first); a digest of DATA SAFETY / MIGRATION
+DISCIPLINE + LOCKED decisions + the NEVER list; required skills; boundaries (commit on the feature
+branch OK; NEVER push/PR/PROD/edit-scaffold-docs); "if blocked or disk contradicts the locked
+design, STOP and report — don't improvise"; required report format (what was done, commits,
+verification commands + ACTUAL output). Subagent tiering: Fable/inherit for judgment-heavy review,
+Opus for spec'd executors, Sonnet for bulk — never Haiku.
 
 Supervisor-only (never delegated): user communication, `[user-verdict]` calls, push / PR open
 (announce) / merge / PROD approval, the **collaborative gold-set authoring (S0)**, bot-round
-triage, and all edits to the four scaffold docs.
+triage, and all edits to the four scaffold docs. Never fabricate `idealLessonIds` or derive them
+circularly from current search results; stop at S0.2 for user/product-owner confirmation of the
+high-value gold sets.
 
 # LOCKED DECISIONS — do NOT re-debate (full set in the design doc)
 
@@ -170,9 +179,12 @@ data-safety / bot-review-investigation / comment-surfaces / per-round-test-db-ve
 
 # RIGHT NOW
 
-Read this → design doc → impl plan from the current task → status file → baseline checks → tell me
-where you are and what's next. Don't start coding until I confirm. The design Status is **Locked**,
-so this is execution, not design-lock. Next up: GATE 1 Codex review of the design doc (if not yet
-done), then S0 (eval harness) — with the gold set built collaboratively with the user.
+Read this → root `CLAUDE.md` → status file → design doc → impl plan from the current task →
+branch/worktree check → baseline checks → tell me where you are and what's next. Don't start coding
+until I confirm. The design Status is **Locked**, so this is execution, not design-lock. Follow the
+execution status file's Current State as source of truth. As of 2026-06-17, GATE 1 is done and
+folded; next is S0.1. Do not re-run completed gates unless the status file says they are stale or
+invalid. Before coding S0, confirm/cut the fresh `feat/search-eval-s0` branch from `main`; do not
+implement S0 on the legacy `feat/pr6d-search-synonyms` branch.
 
 <!-- ===== END OF KICKOFF BODY ===== -->
