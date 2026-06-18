@@ -1,12 +1,12 @@
 # Search Modernization (Medium Package) Execution Status
 
-**Last updated:** 2026-06-18 by Session 4 (S0 MERGED as PR #511; S1 cycle started on `feat/search-g2-frontend`)
+**Last updated:** 2026-06-18 by Session 5 (S1.3 grade chip DONE + verified; S1.4 next) on `feat/search-g2-frontend`
 
 ## Current State
 
-**Active PR:** none open yet — **S0 is MERGED to `main`**; S1 (G2 frontend) building on `feat/search-g2-frontend`. **S1.1 + S1.2 DONE.** S1.1 (`7f29eba`): pure `parseSearchQuery` + 34 tests. S1.2: wired into `useLessonSearch.ts` — `search_query` now uses `cleanedQuery`, `filter_grade_levels` uses `effectiveGradeLevels` (explicit user grade filter WINS over detected); hook return shape UNCHANGED (chip seam is S1.3); 5-case `useLessonSearch.wiring.test.tsx`. Supervisor-verified both: independent module probe + diff read + targeted re-run (16/16) + full-suite no-regression (1272 green). **S1.3 (removable grade chip) is next.**
+**Active PR:** none open yet — **S0 is MERGED to `main`**; S1 (G2 frontend) building on `feat/search-g2-frontend`. **S1.1 + S1.2 + S1.3 DONE.** S1.1 (`7f29eba`): pure `parseSearchQuery` + 34 tests. S1.2 (`d14fec9`): wired into `useLessonSearch.ts` — `search_query`←`cleanedQuery`, `filter_grade_levels`←`effectiveGradeLevels` (explicit user grade filter WINS over detected); hook return shape UNCHANGED. **S1.3 (`60f1a40`):** removable auto-grade chip folded into `IntActivePills.tsx` — NOT a hook return-shape change (supervisor revised the earlier lean): the component derives auto-grades from the same pure `parseSearchQuery(filters.query)` and mirrors the hook's explicit-wins guard so the chip never claims a grade the hook didn't apply. Dismiss = `setFilters({ query: cleanedQuery })` → rewrites the box (via Header's existing `localQuery`←`filters.query` sync, `Header.tsx:193-195`) + broadens to all grades. Label `Grade 3 · auto` / `Grades K, 1, 2 · auto` (one combined chip). +7 vitest (124 Internal green). Built via executor→verifier workflow `wf_97c13781-39b`; supervisor-verified (re-read diff + independently re-ran type-check/lint/vitest). **S1.4 (eval delta + E2E) is next — the last S1 task before the per-PR ritual.**
 
-**S1.3 dismiss-behavior — supervisor recommendation to confirm at S1.3 start:** the cleanest, stateless removal is `setFilters({ query: cleanedQuery })` on chip dismiss (rewrite the box to the already-cleaned term, e.g. "compost") — `parseSearchQuery` then routes nothing, the chip disappears, and the search broadens to all-grade. No extra suppression flag/state needed. S1.3 must also expose the auto-applied grades from the hook (the deferred return-shape change) so `SearchPage.tsx` can render the chip; `useLessonSearch` is consumed only at `SearchPage.tsx:43`. The grade-routing BEHAVIOR is already LIVE-correct after S1.2 — the chip is the UX affordance that makes it visible/reversible.
+**S1.4 (NEXT) — eval delta + E2E:** flip `scripts/search-eval/run-search-eval.ts` `resolveCall()` (line 244, marked `// S1.4`) from returning raw `{ search_query: entry.query }` to applying `parseSearchQuery(entry.query)` → `{ search_query: cleanedQuery || raw-fallback, filter_grade_levels: detectedGrades }` (import the pure module by relative path — it's alias-free, so the tsx harness imports the exact code the hook uses). Re-run `npm run eval:search` (target TEST) and commit the scorecard delta: must show **G2 lift** on the normalized G2 cases (raw explosion → focused, actual call == `expectedNormalizedCall`), **single-term queries unchanged**, **no control-query regression** beyond the tolerance band. Do NOT overwrite the S0 `baseline.json` (it is the raw-explosion reference the delta is measured against — confirm the harness's capture-vs-compare flag before running). Extend `e2e/search.spec.ts`: `compost lesson for 3rd grade` → focused set + the `· auto` grade chip visible + removable; single-term search unchanged. Then the per-PR ritual (pre-push code-reviewer + GATE-3 Codex in parallel → push → `gh pr create` → four-surface triage).
 
 **S0 (eval harness) — DONE + MERGED.** PR #511 squash-merged to `main` 2026-06-18 18:10Z as `69c68e4`. The measurement gate is now on `main`: `scripts/search-eval/` (cluster-aware `metrics.ts` + read-only tsx `run-search-eval.ts` + `predicate.ts` + `readonly-guard.ts` + 35-entry two-tier `queries.json` + committed TEST `baseline.json` + `scorecards/test.md`), `npm run eval:search`, `SEARCH_EVAL_TARGET=local|test|prod` (default test). External review: `claude-review` **Approve** (5 non-blocking nits, all default-rejected as below-bar for an internal read-only tool) + `performance-review` pass. The Security Audit CI failure was the **pre-existing npm-audit pattern** (S0 added ZERO deps — `package-lock.json` unchanged vs main; one-line `package.json` script add), non-blocking, fails identically on main. Full S0 detail + session logs 0–3 → `…-execution-status-archive.md`.
 
@@ -21,7 +21,7 @@
 - q33 `seeds grades K-2` → `seeds` + `["K","1","2"]` (range expansion along canonical order)
 Valid grades = `['3K','PK','K','1','2','3','4','5','6','7','8']` (filterDefinitions.ts:63-79 / scripts/CLAUDE.md). Module MUST be **pure/alias-free** (no `@/`, no `import.meta.env`) so the tsx harness imports the same code. Safety invariants: explicit grade cue required (never route a bare digit); ordinal+`grade(s)`/`grader(s)`/`kindergarten`/`pre-k`/`3k` cues; explicit user grade filter wins (S1.2 wiring); always strip the routed grade token from the FTS term; never strip filler to empty (keep last content token); false-positive guards `three sisters garden` + `grade a vegetables`.
 
-**NEXT after S1.1:** S1.2 wire into `useLessonSearch.ts` (search_query line ~102, filter_grade_levels line ~103, rpc line ~129; explicit-filter-wins) → S1.3 removable grade chip UI (LOCKED design: visible, removable) → S1.4 flip `resolveCall` + re-run `eval:search` on TEST, commit scorecard delta (must show G2 lift, single-term unchanged, no control regression) + extend `e2e/search.spec.ts`. Then per-PR ritual (pre-push reviewer + GATE-3 Codex → push → four-surface triage).
+**Status: S1.1–S1.3 are DONE; S1.4 is next** (full S1.4 plan in the S1.4 paragraph near the top of Current State). The S1.1 contract block above is retained as the `parseSearchQuery` reference.
 
 **Branch:** `feat/search-g2-frontend` (fresh from `main`). No DB change in S1 → no TEST-DB-before-merge gate; ships via Netlify, one-deploy revert. `.env` TEST anon creds wired (gitignored) for `eval:search`.
 
@@ -36,7 +36,7 @@ Valid grades = `['3K','PK','K','1','2','3','4','5','6','7','8']` (filterDefiniti
 - **G3 per-field by measured value** — ship SEL; CC/AI only if the S2 scorecard shows lift.
 - **Synonyms (S3):** small (~12–18) single-token `oneway` everyday→official, hard-filtered, eval-gated; bulk 5,163-pair load RETIRED (wrong mechanism). Rollback = exact-tuple `DELETE`.
 - **Gold set FROZEN + product-owner-confirmed** (on main in `queries.json`) — do NOT edit gold values without re-verifying + re-confirming with the product owner. (Full freeze provenance in archive.)
-- **Grade chip = visible + removable** (LOCKED design §5; confirmed by user at S1 start 2026-06-18).
+- **Grade chip = visible + removable** (LOCKED design §5; confirmed by user at S1 start 2026-06-18). **S1.3 sub-decisions confirmed by user 2026-06-18:** dismiss **rewrites the box to the cleaned term** (`setFilters({ query: cleanedQuery })`, stateless — no suppression flag); chip lives **in the existing `IntActivePills` row** labeled `· auto` (one combined chip for ranges). Supervisor revised the build to fold into `IntActivePills` (no `useLessonSearch` return-shape change) — simpler + keeps the hook pure.
 - **Cross-family GATE-3 Codex earns its keep** on search PRs (caught the HIGH G3 metric bug + the q34 gold divergence in S0) — keep it in every search-PR pre-push ritual. (Promoted to [[feedback_pr_bot_review_workflow]].)
 
 ## Out-of-scope follow-ups captured here
@@ -54,6 +54,18 @@ Valid grades = `['3K','PK','K','1','2','3','4','5','6','7','8']` (filterDefiniti
 - Investigation + plan provenance: memory `project_search_modernization.md`; runs `wf_fb08aeb5-3e4` (investigation) + `wf_6156054d-320` (plan panel); Codex `019ed86a` + `019ed885`.
 
 ## Recent session log
+
+### Session 5 — 2026-06-18 — S1.3 grade chip DONE + verified
+
+Branch: `feat/search-g2-frontend`. Continued S1 from S1.2.
+
+Major events:
+- **Orientation:** git ⇄ status agreed (S1.1 `7f29eba`, S1.2 `d14fec9`); clean type-check + lint baseline. Read design §5 + impl S1.3/S1.4 + all four code seams (`useLessonSearch.ts`, `SearchPage.tsx:43`, `searchStore.ts`, `IntActivePills.tsx`, `Header.tsx` HeaderSearch).
+- **S1.3 sub-decisions surfaced to user** (impl plan flags S1.3 as a user-decision). User confirmed: dismiss **rewrites the box to cleaned term**; chip **in the pills row labeled `· auto`**. (User asked for a plain-language re-explanation first — see learnings.)
+- **Supervisor design revision:** folded the chip into `IntActivePills` (derives auto-grades via the same pure `parseSearchQuery` + mirrors the hook's explicit-wins guard) instead of changing the `useLessonSearch` return shape — simpler, keeps the hook pure, no Header change (verified Header's `localQuery`←`filters.query` `useEffect` makes the box rewrite "for free").
+- **S1.3 DONE** (commit `60f1a40`): built via executor→adversarial-verifier workflow `wf_97c13781-39b` (both pass; verifier verdict `pass`, 2 LOW non-blocking notes: grade-only dismiss clears box = intentional per parser; optional extra test coverage). Files: `IntActivePills.tsx` (+chip) + new `IntActivePills.test.tsx` (7 tests). Supervisor-verified: re-read full diff (guard mirrors `useLessonSearch.ts:95-99` exactly; commit scope = only the 2 files, zero forbidden paths), independently re-ran type-check (clean) + lint (clean) + vitest (7/7 + 124 Internal green).
+
+NEXT: S1.4 — flip harness `resolveCall` to apply `parseSearchQuery` + re-run `eval:search` on TEST + commit scorecard delta (G2 lift, no control regression) + extend `e2e/search.spec.ts`. Then the per-PR ritual.
 
 ### Session 4 — 2026-06-18 — S0 MERGED (PR #511); S1 cycle started
 
