@@ -7,6 +7,7 @@
   "include": [
     "scripts/stage2-retag/**/*.ts",
     "scripts/heritage/**/*.ts",
-    "scripts/lib/**/*.ts"
+    "scripts/lib/**/*.ts",
+    "scripts/search-eval/**/*.ts"
   ]
 }
