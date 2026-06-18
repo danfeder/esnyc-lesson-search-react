@@ -18,7 +18,8 @@ import { hitRateAtK, mrr, overBroad, top1Relevant } from './metrics';
 
 describe('hitRateAtK — recall@k', () => {
   it('counts distinct gold ids found among the first k results', () => {
-    // 2 of 4 gold ids appear in the first 3 results -> 0.5
+    // gold 'c' is at index 3 (outside k=3), so only 'b' of the 4 gold ids
+    // appears in the first 3 results -> 1/4 = 0.25
     const results = ['a', 'b', 'x', 'c'];
     const gold = ['b', 'c', 'd', 'e'];
     expect(hitRateAtK(results, gold, 3)).toBeCloseTo(1 / 4, 10); // only 'b' in first 3
