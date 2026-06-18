@@ -1,12 +1,12 @@
 # Search Modernization (Medium Package) Execution Status
 
-**Last updated:** 2026-06-17 by Session 1 (S0.1 shipped)
+**Last updated:** 2026-06-18 by Session 1 (S0.2 dual review → scoring-model upgrade)
 
 ## Current State
 
 **Active PR:** none open yet — **S0 (eval harness)** in progress on branch `feat/search-eval-s0`.
 
-**Current task:** S0.1 **DONE + supervisor-verified**. **Next: S0.2 — query set + gold `idealLessonIds` (COLLABORATIVE — needs the user/product-owner; not delegable, never fabricated).** GATE 1 (Codex plan review) was DONE + folded last session.
+**Current task:** S0.2 in progress. S0.1 base metric module shipped (`93bcaa0`/`9afbe5e`). **The S0.2 query-set + gold went through a DUAL adversarial review** (Claude 4-lens fan-out `wf_8a2690f3-c67` + independent Codex read-only `bjwa14g6e`, both against the live TEST corpus). Both converged: the locked simple metric (hit@10 vs flat id list) would give **false readings in ≥4 ways** → **user APPROVED a scoring-model upgrade 2026-06-18** (two-tier cluster gold, per-query scoring families, G2-normalized scoring, G3 rank-movement, q22 sentinel-not-gold, dup-flood guard, + coverage/robustness queries → ~32). Design §4 + impl S0.1–S0.4 updated to match (this session). **NEXT:** (a) **S0.1-extend** — rework metrics.ts to cluster-aware + new functions (TDD; delegable); (b) assemble the two-tier gold (primary/acceptable clusters) from the dual-review adjudication and get product-owner sign-off; (c) S0.3 harness + S0.4 baseline. Codex CANNOT reach TEST directly (both `.env` keys stale, no psql conn string, CLI on PROD) — reviews ran on a supervisor-built data snapshot at `.tmp/codex-goldset-review/`. GATE 1 was done+folded earlier.
 
 **Branch:** `feat/search-eval-s0` — cut **fresh from `main`** this session (per kickoff), with the 3 docs commits cherry-picked over (`57d5619` C2-closeout, `8eb1479` scaffold, `3b1239f` GATE-1 fold) + kickoff sync (`6dae620`). The legacy `feat/pr6d-search-synonyms` is abandoned. NOTE: S0's eventual PR will carry the C2-closeout parent-track doc edit to main (harmless/accurate bookkeeping).
 
@@ -20,6 +20,7 @@
 
 ## Recent decisions worth carrying forward
 
+- **Scoring-model upgrade (2026-06-18, user-approved) — the eval must not give false readings.** Dual adversarial review (Claude 4-lens + Codex) found the simple hit@10-vs-flat-id design would lie in ≥4 ways. Adopted: (1) **two-tier cluster gold** (twins=one cluster, primary=counted / acceptable=not-penalized) — resolves the Claude-vs-Codex relevance disagreements without nDCG; (2) **per-query scoring families** (frozen-recall / frozen-precision / predicate / g3-isolation / sentinel / control-maxcount); (3) **G2 scored on the normalized `parseSearchQuery` call**, not raw (else G2 reads "broken" forever); (4) **G3 scored by rank-movement** of the tag-but-no-lexical-mention isolation sets (RDM=29/SM=42/SJ=25), `isolationHits@50` — NOT top-10 recall; (5) **q22 `compost worms soil` = stability sentinel excluded from quality** (freezing today's top-10 as gold violates engine-independence); (6) **dup-flood guard** (`duplicateFloodCount`/dedup-aware precision). Coverage adds: `mexican food`, `apple`, `food waste`, `making good choices` (combined G1+G3, labeled) + a robustness pack (grade-wording variants, 1 typo, `kimchi`). SEL: keep exact-label probes AND add everyday phrasings.
 - **PR D RETIRED → this track.** Bulk 5,163-pair synonym load is wrong-mechanism (whitespace CHECK + token matcher). Repurposed: small curated single-word bridge (S3) now; bulk map → deferred semantic tier.
 - **G2 fix = frontend** (`parseSearchQuery.ts`), filler/grade only; the deeper server-side OR→AND is DEFERRED + documented (design §9) to return to (user decision 2026-06-17).
 - **Eval harness gates everything** and ships first; baseline captured on TEST; ranking scorer written fresh (computeMetrics is classification-only).

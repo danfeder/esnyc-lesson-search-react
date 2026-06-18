@@ -36,24 +36,43 @@
 
 **Pre-flight reads:** `supabase/functions/smart-search/index.ts` (token/expansion intent to mirror in queries, NOT the engine), the `search_lessons` body (`pg_get_functiondef` — return columns: `lesson_id,title,…,rank,total_count`), `src/hooks/useLessonSearch.ts:88-134`, `scripts/lib/evalMetrics.ts` (confirm `computeMetrics` is classification-only → scorer is fresh), `scripts/heritage/test-heritage-expansion.mjs:60-80` (the local-only/write harness NOT to mirror), `package.json` scripts block, `src/lib/supabase.ts` (anon client pattern).
 
-### Task S0.1 (TDD): fresh ranking-metric module
-- Create `scripts/search-eval/metrics.ts` (pure functions): `hitRateAtK(resultIds, goldIds, k)`, `top1Relevant(resultIds, goldIds)`, `mrr(resultIds, goldIds)`, `overBroad(totalCount, corpusSize, threshold)`. Vitest in `scripts/search-eval/metrics.test.ts` — failing-first. (TS, run by tsx/vitest — see S0.3 for the runtime decision.)
-- **GATE-1 fix:** add `scripts/search-eval/**/*.ts` to `tsconfig.scripts.json` `include` (currently only `stage2-retag`/`heritage`/`lib`) so these files are covered by `npm run type-check`.
-- Verify: `npx vitest run scripts/search-eval/metrics.test.ts` green; `npm run type-check`.
+> **Scoring model upgraded 2026-06-18** after the S0.2 dual adversarial review (Claude 4-lens + Codex). The metric module from the first pass (commit `93bcaa0`: `hitRateAtK`/`top1Relevant`/`mrr`/`overBroad`, flat-id) is the FOUNDATION; S0.1 now EXTENDS it to cluster-aware + two-tier + G3-isolation + dup-guard per design §4. Read design §4 "Scoring families" before implementing.
 
-### Task S0.2: query set + gold sets (COLLABORATIVE — supervisor + user)
-- Create `scripts/search-eval/queries.json`: ~25–30 entries `{id, query, intent, category, provenance, idealLessonIds?, idealPredicate?, maxTotalCount?}`. Categories per design §4 (gap cases, vocab/SEL discriminating, teacher intents, controls incl. ≥1 multi-meaningful-term).
-- For the ~8 highest-value queries: **build the frozen `idealLessonIds` with the user** (supervisor proposes a generous oracle SELECT, user prunes to truly-relevant). The rest use `idealPredicate`.
-- Verify: JSON parses; supervisor confirms every entry has a provenance tag and a gold mechanism.
+### Task S0.1 (TDD): extend the ranking-metric module to the upgraded scoring model
+Refactor `scripts/search-eval/metrics.ts` so gold-bearing functions operate on **clusters** (`string[][]`; a singleton `[id]` is the simple case, twins share a cluster). Keep behavior-equivalent for singletons. Pure functions, never throw, TDD (extend `metrics.test.ts`, failing-first for each new function):
+- `recallAtK(topIds: string[], goldClusters: string[][], k): number` — clusters with ≥1 id in top-k / #clusters (empty gold → NaN). (generalizes `hitRateAtK`.)
+- `precisionAtK(topIds, relevantClusters: string[][], k): number` — **distinct** relevant clusters appearing in top-k / k (dedup-aware: duplicate twins can't inflate it). `relevantClusters` = primary ∪ acceptable.
+- `top1Relevant(topIds, primaryClusters): boolean` — result #1 belongs to a primary cluster.
+- `mrr(topIds, primaryClusters): number` — reciprocal rank of first primary-cluster hit.
+- `duplicateFloodCount(topIds, k, clusterKeyOf: (id)=>string): number` — # of top-k slots that are a 2nd+ member of any content cluster (UX alarm; clusterKeyOf maps id→content-hash key, supplied by the harness).
+- `isolationHitsAtK(topIds, isolationIds: string[], k): number` — # isolation lessons in top-k (G3, k=50).
+- `firstRankOf(topIds, targetIds: string[]): number | null` — 1-based rank of the first target id (G3 first-isolation rank/MRR; null if absent).
+- `ranksOf(topIds, targetIds: string[]): (number|null)[]` — per-target 1-based ranks (for median/best rank-movement across runs).
+- `jaccard(a: string[], b: string[]): number` — set overlap for the q22 sentinel.
+- keep `overBroad(totalCount, corpusSize, threshold)` unchanged.
+- tsconfig include for `scripts/search-eval/**/*.ts` already added (commit `93bcaa0`).
+- Verify: `npx vitest run scripts/search-eval/metrics.test.ts` green (incl. cluster + dedup + isolation edge cases); `npm run type-check && npm run lint`.
+
+### Task S0.2: query set + two-tier gold (COLLABORATIVE — supervisor + user; relevance adjudication already done from the dual review)
+- Create `scripts/search-eval/queries.json`: ~32 entries. Per-entry shape:
+  `{ id, query, intent, category, provenance, scoring: "frozen-recall"|"frozen-precision"|"predicate"|"g3-isolation"|"sentinel"|"control-maxcount", primaryClusters?: string[][], acceptableClusters?: string[][], predicate?: {description, sql}, isolationIds?: string[], normalizedCall?: {search_query, filter_grade_levels}, maxTotalCount?: number, snapshot?: {...}, provenanceNote }`.
+- Clusters carry **content-twins together**; primary vs acceptable per the dual-review adjudication (design §4). Predicate entries carry a concrete, snapshot-pinned, re-tag-survivable `sql` definition with sampled FP/FN noted. G3 entries carry the `isolationIds` (tag-but-no-lexical-mention sets, human-audited). G2 entries carry the expected `normalizedCall`. q22 = `sentinel` (excluded from quality score).
+- **Pin a dated TEST snapshot** (counts + the snapshot date/commit) in a header block of queries.json.
+- **The product owner signs off** the primary/acceptable cluster lists before they're frozen.
+- Verify: JSON parses; every entry has provenance + a scoring family + its required fields; supervisor + user confirm the gold.
 
 ### Task S0.3: the harness script
-- Create `scripts/search-eval/run-search-eval.ts` (**TS, run via `npx tsx`** — GATE-1 fix: a plain `.mjs`/`node` script can't import the TS `parseSearchQuery` module S1 needs; the repo convention is `npx tsx scripts/*.ts`): read-only, anon key, env-targetable (`SEARCH_EVAL_TARGET=local|test|prod`), its OWN `assertReadOnly` guard (refuse if a write client/service key is configured), calls `supabase.rpc('search_lessons', {search_query, page_size:50, ...})` per query, computes metrics, writes `scorecards/<target>-<n>.md` + updates `baseline.json` on an explicit `--write-baseline` flag only. Tolerates missing gold ids (reports, never crashes).
+- Create `scripts/search-eval/run-search-eval.ts` (**TS, run via `npx tsx`**): read-only, anon key, env-targetable (`SEARCH_EVAL_TARGET=local|test|prod`), its OWN `assertReadOnly` guard (refuse if a write client/service key is configured). Per query:
+  - **G2 normalized scoring:** import + apply `parseSearchQuery` (once S1 exists) to derive `{search_query, filter_grade_levels}`; at S0 baseline `parseSearchQuery` doesn't exist yet, so record the raw call AND mark the expected normalizedCall so the S1 delta is attributable.
+  - call `supabase.rpc('search_lessons', {search_query, page_size:50, ...})`; fetch `content_hash` (or equivalent) for returned ids to build the dup cluster-key map; compute the metrics for the entry's scoring family.
+  - **g3-isolation** queries page to 50; compute `isolationHits@50` + `firstRankOf` + `ranksOf` (rank-movement vs baseline). **sentinel** computes `jaccard` vs stored snapshot + total_count band, reported OUTSIDE the quality score. **predicate** evaluates the pinned predicate over the top-10.
+  - writes `scorecards/<target>-<n>.md` (quality scores + the separately-reported sentinel/dup-flood diagnostics) + updates `baseline.json` only on `--write-baseline`. Tolerates missing gold ids (reports, never crashes).
 - Add `"eval:search": "npx tsx scripts/search-eval/run-search-eval.ts"` to `package.json`.
-- Verify: `npm run eval:search` (target TEST) prints a scorecard; no writes (confirm via a read-only role / guard); `npm run type-check` covers the new files (tsconfig include from S0.1).
+- Verify: `npm run eval:search` (target TEST) prints a scorecard; no writes (confirm via guard); `npm run type-check && npm run lint`.
 
 ### Task S0.4: capture baseline + commit
-- Capture `baseline.json` on **TEST** (`--write-baseline`, `SEARCH_EVAL_TARGET=test`); commit script + queries + baseline + scorecard. Commit: `feat(search-eval): read-only eval harness + committed TEST baseline (S0)`.
-- Verify: `npm run type-check && npm run lint`; baseline reproduces green on a clean re-run against TEST.
+- Capture `baseline.json` on **TEST** (`--write-baseline`, `SEARCH_EVAL_TARGET=test`); commit script + queries + baseline + scorecard. Commit: `feat(search-eval): read-only eval harness + two-tier gold + committed TEST baseline (S0)`.
+- Verify: `npm run type-check && npm run lint`; baseline reproduces stable on a clean re-run against TEST.
 
 ---
 
