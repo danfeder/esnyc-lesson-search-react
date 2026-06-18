@@ -6,7 +6,15 @@
 
 **Active PR:** none open yet — **S0 (eval harness)** in progress on branch `feat/search-eval-s0`.
 
-**Current task:** S0.2 in progress (assembling two-tier gold for product-owner sign-off). S0.1 base metric module shipped (`93bcaa0`/`9afbe5e`); **S0.1-extend** (cluster-aware + two-tier + G3-isolation + dup-guard, 69 vitest cases) shipped + verified (`634b754`, executor→verifier `wf_e6c12a91-bd4`). Twin finding: the 12 empty-summary `lesson_…` rows in the pools are REAL searchable near-dupes (3.3–10.5KB content + vector), so they cluster with their twin (recall counts the pair once). Only 1 true content_hash cluster corpus-wide (3 "Unknown" ghosts, not in any gold). **The S0.2 query-set + gold went through a DUAL adversarial review** (Claude 4-lens fan-out `wf_8a2690f3-c67` + independent Codex read-only `bjwa14g6e`, both against the live TEST corpus). Both converged: the locked simple metric (hit@10 vs flat id list) would give **false readings in ≥4 ways** → **user APPROVED a scoring-model upgrade 2026-06-18** (two-tier cluster gold, per-query scoring families, G2-normalized scoring, G3 rank-movement, q22 sentinel-not-gold, dup-flood guard, + coverage/robustness queries → ~32). Design §4 + impl S0.1–S0.4 updated to match (this session). **NEXT:** (a) **S0.1-extend** — rework metrics.ts to cluster-aware + new functions (TDD; delegable); (b) assemble the two-tier gold (primary/acceptable clusters) from the dual-review adjudication and get product-owner sign-off; (c) S0.3 harness + S0.4 baseline. Codex CANNOT reach TEST directly (both `.env` keys stale, no psql conn string, CLI on PROD) — reviews ran on a supervisor-built data snapshot at `.tmp/codex-goldset-review/`. GATE 1 was done+folded earlier.
+**Current task:** S0.2 nearly done — `scripts/search-eval/queries.json` (35 entries, two-tier cluster gold) BUILT from the approved provenance spec live against TEST + product-owner-approved gold (`8316f96`). S0.1 base (`93bcaa0`/`9afbe5e`) + S0.1-extend (cluster-aware metrics, 69 vitest, `634b754`) done+verified.
+
+**⛔ BLOCKING — do these FIRST next session before S0.3:**
+1. **DEEPER verification of queries.json** — this session did only a LIGHT verify (workflow verifier `wf_b779e095-7bd` returned PASS: all 208 gold ids exist non-retired on TEST, tiers match spec, twins clustered, isolation counts 29/42/25, no fabrication, JSON+schema valid, zero issues). Per user instruction, next session RE-RUNS the full check itself (re-derive a sample of oracle pools via `mcp__supabase-test__execute_sql`; confirm ids/tiers/twins/isolation/maxTotalCounts; JSON schema) before touching the harness. Do NOT skip.
+2. **q12 `teamwork and cooperation` supervisor pick (collaborative — needs user).** Build left it `_needsSupervisorPick:true`, `primaryClusters:[]`, with a 34-row `_candidatePool` in queries.json. Pick the genuinely-collaborative-by-design lessons (spec seeds: Compost Relay [+twin], Plant Part Olympics, Teamwork Challenge, Teamwork in the Garden) → confirm with user → write q12 primaryClusters.
+
+**Then:** S0.3 harness (`run-search-eval.ts`, G2-normalized scoring, sentinel/predicate/isolation handling) → S0.4 capture TEST baseline + commit → close S0.
+
+Twin finding (carry): the empty-summary `lesson_…` rows are REAL searchable near-dupes (3.3–10.5KB content), clustered with their twin; only 1 true content_hash cluster corpus-wide (3 "Unknown" ghosts, not in gold). **The S0.2 query-set + gold went through a DUAL adversarial review** (Claude 4-lens fan-out `wf_8a2690f3-c67` + independent Codex read-only `bjwa14g6e`, both against the live TEST corpus). Both converged: the locked simple metric (hit@10 vs flat id list) would give **false readings in ≥4 ways** → **user APPROVED a scoring-model upgrade 2026-06-18** (two-tier cluster gold, per-query scoring families, G2-normalized scoring, G3 rank-movement, q22 sentinel-not-gold, dup-flood guard, + coverage/robustness queries → ~32). Design §4 + impl S0.1–S0.4 updated to match (this session). **NEXT:** (a) **S0.1-extend** — rework metrics.ts to cluster-aware + new functions (TDD; delegable); (b) assemble the two-tier gold (primary/acceptable clusters) from the dual-review adjudication and get product-owner sign-off; (c) S0.3 harness + S0.4 baseline. Codex CANNOT reach TEST directly (both `.env` keys stale, no psql conn string, CLI on PROD) — reviews ran on a supervisor-built data snapshot at `.tmp/codex-goldset-review/`. GATE 1 was done+folded earlier.
 
 **Branch:** `feat/search-eval-s0` — cut **fresh from `main`** this session (per kickoff), with the 3 docs commits cherry-picked over (`57d5619` C2-closeout, `8eb1479` scaffold, `3b1239f` GATE-1 fold) + kickoff sync (`6dae620`). The legacy `feat/pr6d-search-synonyms` is abandoned. NOTE: S0's eventual PR will carry the C2-closeout parent-track doc edit to main (harmless/accurate bookkeeping).
 
@@ -43,6 +51,23 @@
 - Archive: `2026-06-17-search-modernization-medium-execution-status-archive.md` (created when needed)
 
 ## Recent session log
+
+### Session 1 — 2026-06-17/18 — S0.1 + S0.1-extend shipped; S0.2 gold built (dual-reviewed)
+
+Commits on `feat/search-eval-s0` (cut fresh from `main`, 3 scaffold docs cherry-picked over): `93bcaa0`+`9afbe5e` (S0.1 metric base), `634b754` (S0.1-extend cluster-aware metrics), `ce148cf` (scoring-model upgrade docs), `f203c96` (gold provenance spec + S0.1-extend checkpoint), `8316f96` (queries.json), + status-doc commits.
+
+Major events:
+- **S0.1** ranking-metric module (TDD) + **S0.1-extend** to the upgraded scoring model — both executor→adversarial-verifier workflows, both supervisor-re-verified (69 vitest green).
+- **S0.2 dual adversarial review** of the query set + gold: Claude 4-lens fan-out (`wf_8a2690f3-c67`) + independent **Codex** read-only (`bjwa14g6e`). Codex couldn't reach TEST (both `.env` keys stale, no psql conn string, CLI on PROD) → reviewed a supervisor-built data snapshot (`.tmp/codex-goldset-review/`). psql WAS installed (`/opt/homebrew/opt/libpq/bin/psql` 18.4) but unusable without a TEST conn string.
+- Reviews converged: simple metric design would give false readings in ≥4 ways → **user-approved scoring-model upgrade** (see Recent decisions). Folded into design §4 + impl + a committed `scripts/search-eval/gold-provenance.md` build spec.
+- **queries.json built** (35 entries) by a fresh-context executor live against TEST (`wf_b779e095-7bd`), LIGHT-verified PASS.
+
+Learnings (promote to feedback memories at next PR-cycle archival):
+- **Codex DB access pattern:** Codex (`codex exec --sandbox read-only -o <file>`) is a strong independent reviewer but has NO live TEST access here; feed it a supervisor-built snapshot. Both `.env` TEST keys (anon+service) are stale/deleted-project — REST 401s; the live TEST project is MCP-only.
+- **Workflow gotcha:** huge prompt template literals can trip the JS parser ("Unexpected token … TS syntax"); keep agent prompts SHORT and point them at on-disk spec files (`gold-provenance.md`) instead of embedding everything.
+- **Concept tags ARE indexed** → using concept-tag membership as binary gold is a soft-circularity; resolved by human-adjudicated two-tier gold + concept tag as candidate-generator only.
+
+NEXT: deeper queries.json verify (owed) + q12 pick → S0.3 harness → S0.4 baseline.
 
 ### Session 0 — 2026-06-17 — scaffolding
 
