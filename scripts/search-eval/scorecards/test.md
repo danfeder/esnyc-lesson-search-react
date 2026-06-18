@@ -15,10 +15,10 @@
 
 | Metric | Value |
 |---|---|
-| Mean recall@10 (frozen-recall) | 0.642 |
+| Mean recall@10 (frozen-recall) | 0.728 |
 | Mean precision@10 (frozen-precision) | 0.833 |
 | Predicate pass-rate | 0.688 (11/16) |
-| Corpus MRR (mean RR over frozen queries) | 0.846 |
+| Corpus MRR (mean RR over frozen queries) | 0.923 |
 | maxTotalCount violations | 1 |
 | normalized-call mismatches | 0 |
 | Dup-flood alarms (dupFlood>0) | 0 |
@@ -29,7 +29,7 @@
 | id | query | total | recall@10 | top1 | RR | dupFlood | uniqContentP@10 | maxCount ok |
 |---|---|---|---|---|---|---|---|---|
 | q01 | compost lesson for 3rd grade | 87 | 1.000 | true | 1.000 | 0 | 1.000 | true |
-| q05 | decay | 1 | 0.000 | false | 0.000 | 0 | 0.100 | n/a |
+| q05 | decay | 60 | 0.857 | true | 1.000 | 0 | 1.000 | n/a |
 | q06 | rotting food | 567 | 0.000 | false | 0.000 | 0 | 1.000 | true |
 | q07 | decomposition | 59 | 0.857 | true | 1.000 | 0 | 1.000 | n/a |
 | q08 | pickling | 14 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
