@@ -1,20 +1,20 @@
 # Search Modernization (Medium Package) Execution Status
 
-**Last updated:** 2026-06-17 by Session 0 (scaffolding)
+**Last updated:** 2026-06-17 by Session 1 (S0.1 shipped)
 
 ## Current State
 
-**Active PR:** none yet — scaffolding complete; **S0 (eval harness)** is next.
+**Active PR:** none open yet — **S0 (eval harness)** in progress on branch `feat/search-eval-s0`.
 
-**Current task:** S0 / Task S0.1 (not yet started). **GATE 1 (Codex plan review) is DONE — 3 findings, all accepted + folded** (see Recent decisions). S0 is now clear to build. S0's gold-set authoring is **collaborative** (user + supervisor build the ~8 high-value ideal-result sets together) — not delegable.
+**Current task:** S0.1 **DONE + supervisor-verified**. **Next: S0.2 — query set + gold `idealLessonIds` (COLLABORATIVE — needs the user/product-owner; not delegable, never fabricated).** GATE 1 (Codex plan review) was DONE + folded last session.
 
-**Branch:** `feat/pr6d-search-synonyms` (carries the Session-19 closeout commit `6d9928b` + the scaffolding commit). NOTE: branch name is a legacy from the retired PR D; a fresh `feat/search-eval-s0` branch should be cut from `main` for S0 (decide at S0 start — the scaffolding docs commit can ride either).
+**Branch:** `feat/search-eval-s0` — cut **fresh from `main`** this session (per kickoff), with the 3 docs commits cherry-picked over (`57d5619` C2-closeout, `8eb1479` scaffold, `3b1239f` GATE-1 fold) + kickoff sync (`6dae620`). The legacy `feat/pr6d-search-synonyms` is abandoned. NOTE: S0's eventual PR will carry the C2-closeout parent-track doc edit to main (harmless/accurate bookkeeping).
 
-**Last commit on branch:** (scaffolding commit — added this session)
+**S0.1 commits:** `93bcaa0` (ranking-metric module + 28 vitest cases + tsconfig.scripts include) + `9afbe5e` (verifier-finding comment fix). Files: `scripts/search-eval/metrics.ts` (pure `hitRateAtK`=recall@k / `top1Relevant` / `mrr`=per-query RR / `overBroad`), `metrics.test.ts`, `tsconfig.scripts.json`. Locked metric semantics live in the design + the module's doc comments. Verified: vitest 28/28, type-check + lint clean, adversarial verifier = pass.
 
 **Last commit on main:** `e4d7830` (PR 6 C2 — Stage-2 re-tag apply; metadata-rebuild APPLY phase complete + PROD-verified).
 
-**Pre-next-PR verification (if any):** none — GATE 1 complete + folded. Next session starts S0 (eval harness = a `tsx`-run TS script per the GATE-1 fix).
+**Substrate facts (TEST, where the baseline captures):** corpus = **766 lessons**; `search_lessons(search_query text, …12 filter args…, page_size int DEFAULT 20, page_offset int DEFAULT 0)` returns `lesson_id text, title, summary, file_link, grade_levels, metadata jsonb, confidence jsonb, rank double precision, total_count bigint`. `lesson_id` is **text**. These feed the `overBroad` threshold + the S0.3 harness RPC call + S0.2 oracle SELECTs.
 
 **Substrate state:** Search is LIVE on PROD and healthy. Concepts ARE indexed (`update_lesson_search_vector` trigger). Public engine = `search_lessons` RPC. Gaps confirmed firsthand: G1 (everyday words), G2 (multi-word explosion), G3 (SEL/CC/AI not typed-searchable), G5 (no eval set). No search change has shipped yet.
 
