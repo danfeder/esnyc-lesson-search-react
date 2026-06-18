@@ -58,8 +58,9 @@ const ORDINAL_MAP: Record<string, string> = {
 };
 
 // Spelled-out numbers usable after "grade(s)" -> grade value.
+// "zero" is intentionally absent — grade 0 doesn't exist in this schema (and a
+// bare digit never routes without an explicit grade cue anyway).
 const NUMBER_WORD_MAP: Record<string, string> = {
-  zero: '0', // out-of-range on purpose (ignored downstream)
   one: '1',
   two: '2',
   three: '3',

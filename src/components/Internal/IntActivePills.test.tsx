@@ -1,5 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { renderHook } from '@testing-library/react';
+import { render, screen, fireEvent, act, renderHook } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { IntActivePills } from './IntActivePills';
 import { useSearchStore } from '@/stores/searchStore';
