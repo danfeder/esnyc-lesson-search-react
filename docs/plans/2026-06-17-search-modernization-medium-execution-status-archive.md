@@ -53,3 +53,43 @@ Major events:
 - Investigation (5-lens workflow + adversarial verify + independent Codex) established the corrected search architecture + gaps; user chose "Medium"; PR D retired.
 - Design judge-panel (5 plans + critique + synthesis) + independent Codex plan produced the locked sequence/decisions.
 - Scaffolded the four-file plan (design Locked + status + impl + kickoff). GATE 1 Codex review of the design → folded.
+
+---
+
+## PR S1 cycle (G2 frontend query preprocessing) — MERGED 2026-06-18 as PR #512 (squash `05581d8`)
+
+S1 shipped the frontend G2 fix: a pure, alias-free `src/utils/parseSearchQuery.ts` that strips filler + routes explicit grade cues into `filter_grade_levels`, wired into `useLessonSearch.ts` (search_query←cleanedQuery, filter_grade_levels←effectiveGradeLevels with explicit-user-grade-WINS) and surfaced as a removable `· auto` grade chip in `IntActivePills.tsx`. The eval harness `resolveCall` was flipped to apply `parseSearchQuery` so the gate measures real end-to-end behavior. No DB change → shipped via Netlify (one-deploy revert). Merged 2026-06-18 21:08Z.
+
+**S1 EVAL GATE PASSED decisively (TEST):** G2 cases collapsed from raw explosion to focused sets — q01/q32 `compost lesson for 3rd grade(rs)` 744/742→**87** (recall .667→1.000, top1 F→T, MRR .200→1.000); q02 garden 744→257; q03 worm-composting 270→91 (predicate 8/10→10/10); q04 seeds-first-grade 745→251 and q33 seeds-K-2 685→300 both flipped predicate FAIL→10/10 PASS. Aggregate: recall@10 .575→.642, predicate 9/16→11/16, MRR .723→.846, precision@10 flat .833; maxTotalCount violations 0, sentinel jaccard 1.000, every non-G2/control query byte-identical = NO regression. `baseline.json` deliberately NOT re-captured (frozen S0 raw + G3 rank-movement reference).
+
+### S1 recent-decisions (historical — now shipped on main)
+
+- **G2 fix = frontend** (`parseSearchQuery.ts`), filler/grade only; deeper server-side OR→AND DEFERRED + documented (design §9) (user 2026-06-17). Module MUST be pure/alias-free so frontend hook + tsx eval harness import the same code.
+- **Grade chip = visible + removable** (LOCKED design §5; confirmed by user at S1 start). **S1.3 sub-decisions confirmed by user 2026-06-18:** dismiss **rewrites the box to the cleaned term** (`setFilters({ query: cleanedQuery })`, stateless — no suppression flag); chip lives **in the existing `IntActivePills` row** labeled `· auto` (one combined chip for ranges). Supervisor revised the build to fold into `IntActivePills` (no `useLessonSearch` return-shape change) — simpler + keeps the hook pure (Header's existing `localQuery`←`filters.query` `useEffect` makes the box rewrite "for free").
+- **Explicit user grade filter WINS** over detected grades (S1.2 wiring); the chip mirrors the hook's explicit-wins guard so it never claims a grade the hook didn't apply.
+- **Out-of-scope follow-up (rejected for S1):** expose `detectedGrades`/`autoGrades` from the `useLessonSearch` return shape so `IntActivePills` consumes the hook's computed values instead of independently re-calling `parseSearchQuery`. Rejected — the duplication is two calls to the SAME pure function guarded identically (cannot diverge); cross-ref comment makes the coupling explicit. Revisit only if grade-routing grows stateful/asymmetric.
+- **Cross-family GATE-3 Codex earned its keep AGAIN on S1** (2 medium, both real + accepted) — promoted to [[feedback_pr_bot_review_workflow]] as the 3rd confirmed search-PR cycle.
+
+### Session log — S1 cycle
+
+#### Session 5 — 2026-06-18 — S1.3 chip + S1.4 eval-gate + full per-PR ritual + PR #512 MERGED
+
+Commits on `feat/search-g2-frontend`: `60f1a40` (S1.3 chip + 7 vitest), `52f7677` (S1.4 harness flip + 2 grade-chip E2E + scorecard delta), `644dd97` (GATE-3 fix-up — punctuation/range robustness + `callsEqual` harness assertion, TDD workflow `wf_81fc868a-b41`), `268855c` (round-1 bot fix-up, workflow `wf_2f67c26f-f58`), `1b74ec3` (docs), + final cosmetic-sweep commit. Squash-merged to main as `05581d8` (PR #512).
+
+Major events:
+- **S1.3 grade chip** folded into `IntActivePills.tsx` via executor→adversarial-verifier workflow `wf_97c13781-39b`; supervisor-verified (guard mirrors `useLessonSearch.ts:95-99` exactly; re-ran type-check/lint/vitest 7/7 + 124 Internal green). Label `Grade 3 · auto` / `Grades K, 1, 2 · auto`. Dismiss = `setFilters({ query: cleanedQuery })`.
+- **S1.4 harness flip** (supervisor-direct, gate-critical): `resolveCall` applies `parseSearchQuery` via relative import. Ran `eval:search` on TEST → decisive G2 lift, zero control regression (numbers above). 2 grade-chip E2E pass locally vs TEST data (Opus executor wrote, supervisor committed atomically). `baseline.json` untouched.
+- **Pre-push ritual:** Claude `feature-dev:code-reviewer` clean (7 invariants hold, 2 non-defects rebutted). **GATE-3 Codex = 2 medium, BOTH real + accepted** → fix-up `644dd97` (punctuation-tolerant grade-cue matching + cue-gated 3-token spaced/word range branch; `callsEqual` normalized-call assertion + alarm). Supervisor-verified: 42/42 parser tests, eval mismatches 0, G2 frozen totals unchanged (87/257/91/251/300), scorecard byte-identical, module purity intact.
+- **PR #512 round-1 triage** (all 4 surfaces): `claude-review` pass+comment, formal CHANGES_REQUESTED, 6 line comments → consolidated fix-up `268855c` (memoize chip derivation w/ hooks BEFORE early return, honest `parseSearchQuery(raw: string|null|undefined)` signature, module-scope `WORD_SEPARATORS`, E2E `data-testid="auto-grade-chip"`, grade-only dismiss test, explicit-wins cross-ref comment). Behavior-preserving — eval byte-identical (md5 `00de6cd…`), 50 unit + 2 E2E green. Rejected: the "call out-of-scope" non-bug, the hook return-shape refactor (deliberate design), the "Kindergarten" relabel (consistency w/ existing "Grade K" pills).
+- **Round-2 = APPROVED** (claude[bot] upgraded CHANGES_REQUESTED→APPROVED 2026-06-18 20:44Z). Round-2 findings cosmetic-only (dead `zero:'0'` map entry; duplicate `@testing-library/react` import) → user opted to sweep both before merge (behavior-preserving, eval byte-identical). Round-capped.
+- **Merged** (user-gated) 21:08Z. CI all green except the pre-existing Security Audit (zero deps added; fails identically on main).
+
+#### Session 4 — 2026-06-18 — S0 MERGED (PR #511); S1 cycle started; S1.1 + S1.2 shipped
+
+Commits on `feat/search-g2-frontend`: `7f29eba` (S1.1 pure `parseSearchQuery` + 34 tests), `d14fec9` (S1.2 wire into `useLessonSearch.ts` + `useLessonSearch.wiring.test.tsx` 5 cases) + bookkeeping.
+
+Major events:
+- **Session-start divergence caught:** prior header said "push + open S0 PR" but PR #511 was already OPEN. Trusted git. Four-surface triage: `claude-review` Approve (5 nits) + `performance-review` pass; Security Audit = pre-existing npm-audit (proved zero new deps). All 5 nits default-rejected.
+- **Merged PR #511** (user-gated) — squash `69c68e4`. PR-cycle archival of S0 (created the archive; promoted 2 learnings: cross-family GATE-3 + on-disk executor brief).
+- **S1.1** pure `parseSearchQuery` via executor→adversarial-verifier `wf_4fa5ea7b-e96`; supervisor-verified (34 vitest + tsx probe = 6/6 frozen gold + 5/5 false-positive guards).
+- **S1.2** wired into `useLessonSearch.ts` via `wf_77263ad6-8d3` (executor→verifier). Minimal non-breaking edit (import + 4 derived lines + 2 param swaps; queryKey + return shape untouched). Supervisor-verified: no raw `filters.query` leak; 16/16 targeted tests + full suite 1272 green.
