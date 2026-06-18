@@ -1,5 +1,6 @@
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { buildCultureLabelMap } from '@/utils/filterUtils';
+import { parseSearchQuery } from '@/utils/parseSearchQuery';
 import { useSearchStore } from '@/stores/searchStore';
 import type { SearchFilters } from '@/types';
 
@@ -47,7 +48,15 @@ export function IntActivePills() {
   const removeFilter = useSearchStore((s) => s.removeFilter);
 
   const pills = collectPills(filters);
-  if (pills.length === 0) return null;
+
+  // Mirror the hook's grade-routing (explicit-wins) so the chip never claims a
+  // grade the search didn't actually apply: an explicit user grade filter wins,
+  // suppressing the auto-detected grades.
+  const { cleanedQuery, detectedGrades } = parseSearchQuery(filters.query ?? '');
+  const hasExplicitGrade = (filters.gradeLevels?.length ?? 0) > 0;
+  const autoGrades = hasExplicitGrade ? [] : detectedGrades;
+
+  if (pills.length === 0 && autoGrades.length === 0) return null;
 
   const remove = (pill: ActivePill) => {
     if (pill.key === 'query') {
@@ -58,6 +67,15 @@ export function IntActivePills() {
       setFilters({ [pill.key]: '' } as Partial<SearchFilters>);
     }
   };
+
+  const autoGradeLabel =
+    autoGrades.length === 1
+      ? `Grade ${autoGrades[0]} · auto`
+      : `Grades ${autoGrades.join(', ')} · auto`;
+
+  // Dismissing the auto chip rewrites the box to the cleaned term, which routes
+  // no grade on the next parse — broadening to all grades and removing the chip.
+  const dismissAutoGrade = () => setFilters({ query: cleanedQuery });
 
   return (
     <div className="int-pills">
@@ -80,6 +98,29 @@ export function IntActivePills() {
           </button>
         </span>
       ))}
+      {autoGrades.length > 0 && (
+        <span key="auto-grade" className="int-pill">
+          {autoGradeLabel}
+          <button
+            type="button"
+            onClick={dismissAutoGrade}
+            aria-label="Remove auto-applied grade filter and search all grades"
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </span>
+      )}
     </div>
   );
 }
