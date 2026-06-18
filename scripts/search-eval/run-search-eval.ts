@@ -42,6 +42,7 @@ import {
   mrr,
   overBroad,
   precisionAtK,
+  rankMovement,
   ranksOf,
   recallAtK,
   top1Relevant,
@@ -57,7 +58,9 @@ dotenv.config({ path: '.env' });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const CORPUS_SIZE = 745; // queries.json _snapshot.searchableCorpus
+// Corpus size is read from queries.json `_snapshot.searchableCorpus` at runtime
+// (the single source of truth) and threaded into scoreQuery — never hardcoded,
+// so a future snapshot refresh can't leave a stale over-broad denominator.
 const PAGE_SIZE = 50;
 const OVERBROAD_THRESHOLD = 0.5;
 
@@ -288,13 +291,6 @@ function flattenClusters(clusters: string[][] | undefined): string[] {
   return clusters.flat();
 }
 
-function median(nums: number[]): number | null {
-  if (nums.length === 0) return null;
-  const sorted = [...nums].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-}
-
 /** Score one query against its returned rows + fetched lesson rows. */
 function scoreQuery(
   entry: QueryEntry,
@@ -302,6 +298,7 @@ function scoreQuery(
   rowByid: Map<string, PredicateRow>,
   clusterKeyOf: (id: string) => string,
   baseline: BaselineFile | null,
+  corpusSize: number,
 ): QueryResult {
   const topIds = rpc.rows.map((r) => r.lesson_id);
   const result: QueryResult = {
@@ -382,25 +379,22 @@ function scoreQuery(
       result.isolationHits10 = isolationHitsAtK(topIds, iso, 10); // secondary signal
       result.isolationFirstRank = firstRankOf(topIds, iso);
       result.isolationRanks = ranksOf(topIds, iso);
-      // rank-movement vs baseline (median & best change of PRESENT ranks).
+      // rank-movement vs baseline. Absent (null) is treated as beyond the
+      // fetched window (PAGE_SIZE + 1) inside rankMovement, so a tag-only lesson
+      // that was ABSENT at baseline and becomes RANKED after typed-field
+      // indexing (the primary S2 success case) registers as a positive move
+      // rather than being dropped. No baseline (S0 first run / --write-baseline)
+      // -> null movement.
       const rawBaselineRanks = baseline?.queries?.[entry.id]?.isolationRanks;
       const baselineRanks: (number | null)[] | null = Array.isArray(rawBaselineRanks)
         ? (rawBaselineRanks as (number | null)[])
         : null;
-      if (baselineRanks && baselineRanks.length === result.isolationRanks.length) {
-        const deltas: number[] = [];
-        for (let i = 0; i < result.isolationRanks.length; i++) {
-          const now = result.isolationRanks[i];
-          const before = baselineRanks[i];
-          if (now != null && before != null) {
-            // positive = moved UP (smaller rank number) since baseline.
-            deltas.push(before - now);
-          }
-        }
-        result.rankMovementMedian = median(deltas);
-        result.rankMovementBest = deltas.length > 0 ? Math.max(...deltas) : null;
+      if (baselineRanks) {
+        const mv = rankMovement(result.isolationRanks, baselineRanks, PAGE_SIZE + 1);
+        result.rankMovementMedian = mv.median;
+        result.rankMovementBest = mv.best;
       } else {
-        result.rankMovementMedian = null; // no baseline (S0 first run)
+        result.rankMovementMedian = null;
         result.rankMovementBest = null;
       }
       addRelevanceDiagnostics();
@@ -418,7 +412,7 @@ function scoreQuery(
       break;
     }
     case 'control-maxcount': {
-      result.overBroad = overBroad(rpc.totalCount, CORPUS_SIZE, OVERBROAD_THRESHOLD);
+      result.overBroad = overBroad(rpc.totalCount, corpusSize, OVERBROAD_THRESHOLD);
       break;
     }
   }
@@ -713,9 +707,13 @@ async function main(): Promise<void> {
   const { _snapshot: snapshot, queries } = queriesFile;
 
   // Load baseline.json if present (for G3 rank-movement deltas); absent is fine.
+  // When --write-baseline is set we DELIBERATELY ignore any existing baseline so
+  // that the captured baseline is deterministic — scoring is never relative to a
+  // prior baseline, so a refresh from a checkout that already has the committed
+  // baseline produces byte-identical output (the S0.4 reproducibility guarantee).
   const baselinePath = join(__dirname, 'baseline.json');
   let baseline: BaselineFile | null = null;
-  if (existsSync(baselinePath)) {
+  if (!writeBaseline && existsSync(baselinePath)) {
     baseline = JSON.parse(readFileSync(baselinePath, 'utf8')) as BaselineFile;
   }
 
@@ -766,7 +764,7 @@ async function main(): Promise<void> {
       }
       const clusterKeyOf = (id: string): string => hashByid.get(id) ?? id;
 
-      results.push(scoreQuery(entry, rpc, rowByid, clusterKeyOf, baseline));
+      results.push(scoreQuery(entry, rpc, rowByid, clusterKeyOf, baseline, snapshot.searchableCorpus));
     } catch (err) {
       // Never let one bad query crash the run.
       results.push({

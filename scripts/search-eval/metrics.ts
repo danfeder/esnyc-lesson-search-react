@@ -254,3 +254,49 @@ export function overBroad(totalCount: number, corpusSize: number, threshold: num
   if (corpusSize <= 0) return false;
   return totalCount / corpusSize > threshold;
 }
+
+/**
+ * rankMovement — summarize how a set of target lessons moved between a BASELINE
+ * run and the CURRENT run, given their per-target 1-based ranks (null = absent
+ * from the fetched window). Inputs are aligned by index (same target order).
+ *
+ * Absent (null) is treated as `beyondRank` (e.g. PAGE_SIZE + 1) so that the
+ * primary G3 success case — a tag-only lesson ABSENT at baseline becoming RANKED
+ * after typed-field indexing (null -> rank) — registers as positive movement
+ * instead of being dropped. Symmetrically, ranked -> absent registers as a
+ * negative move. Targets absent in BOTH runs carry no signal and are skipped
+ * (so they don't dilute the median with zeros).
+ *
+ *   delta_i       = effective(baselineRanks[i]) - effective(currentRanks[i])   (positive = moved UP)
+ *   effective(r)  = r == null ? beyondRank : r
+ *
+ * Returns { median, best } over the contributing deltas (best = max = the
+ * largest upward move). Both null when nothing contributes — all targets absent
+ * in both runs, or a length mismatch (treated as "no comparable baseline").
+ * Pure; never throws. NOTE: for null<->ranked transitions the magnitude is a
+ * LOWER BOUND (the true off-window rank is unknown beyond `beyondRank`); the
+ * SIGN and the into/out-of-window detection are exact, which is what G3 needs.
+ */
+export function rankMovement(
+  currentRanks: (number | null)[],
+  baselineRanks: (number | null)[],
+  beyondRank: number,
+): { median: number | null; best: number | null } {
+  if (currentRanks.length !== baselineRanks.length) return { median: null, best: null };
+
+  const deltas: number[] = [];
+  for (let i = 0; i < currentRanks.length; i++) {
+    const now = currentRanks[i];
+    const before = baselineRanks[i];
+    if (now == null && before == null) continue; // absent in both -> no signal
+    const nowEff = now == null ? beyondRank : now;
+    const beforeEff = before == null ? beyondRank : before;
+    deltas.push(beforeEff - nowEff);
+  }
+  if (deltas.length === 0) return { median: null, best: null };
+
+  const sorted = [...deltas].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const med = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  return { median: med, best: Math.max(...deltas) };
+}

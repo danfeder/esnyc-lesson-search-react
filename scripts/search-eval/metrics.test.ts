@@ -24,6 +24,7 @@ import {
   mrr,
   overBroad,
   precisionAtK,
+  rankMovement,
   ranksOf,
   recallAtK,
   top1Relevant,
@@ -417,5 +418,59 @@ describe('overBroad', () => {
   it('is true at the upper threshold of 1.0 only when count exceeds corpus', () => {
     expect(overBroad(100, 100, 1)).toBe(false);
     expect(overBroad(101, 100, 1)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// rankMovement — baseline->current movement of G3 isolation lessons
+// (the absent->ranked case is the primary S2 success signal; it must register)
+// ---------------------------------------------------------------------------
+describe('rankMovement', () => {
+  const BEYOND = 51; // PAGE_SIZE + 1 sentinel for "absent from the fetched window"
+
+  it('counts absent->ranked as a positive move (the primary G3/S2 success case)', () => {
+    // baseline: absent (null); current: rank 30 -> moved up by (51 - 30) = 21.
+    const mv = rankMovement([30], [null], BEYOND);
+    expect(mv.median).toBe(21);
+    expect(mv.best).toBe(21);
+  });
+
+  it('counts ranked->absent as a negative move (regression)', () => {
+    // baseline rank 10; current absent -> (10 - 51) = -41.
+    const mv = rankMovement([null], [10], BEYOND);
+    expect(mv.median).toBe(-41);
+    expect(mv.best).toBe(-41);
+  });
+
+  it('computes ranked->ranked movement directly (positive = moved up)', () => {
+    // 40 -> 5 = +35 ; 3 -> 8 = -5. median of [-5, 35] = 15 ; best = 35.
+    const mv = rankMovement([5, 8], [40, 3], BEYOND);
+    expect(mv.median).toBe(15);
+    expect(mv.best).toBe(35);
+  });
+
+  it('skips targets absent in BOTH runs (no signal, no median dilution)', () => {
+    // only the 2nd target moves (null->20); the 1st (null->null) is skipped.
+    const mv = rankMovement([null, 20], [null, null], BEYOND);
+    expect(mv.median).toBe(31); // 51 - 20, computed over a single contributing delta
+    expect(mv.best).toBe(31);
+  });
+
+  it('returns nulls when every target is absent in both runs', () => {
+    const mv = rankMovement([null, null], [null, null], BEYOND);
+    expect(mv.median).toBeNull();
+    expect(mv.best).toBeNull();
+  });
+
+  it('returns nulls on a length mismatch (no comparable baseline)', () => {
+    const mv = rankMovement([1, 2, 3], [1, 2], BEYOND);
+    expect(mv.median).toBeNull();
+    expect(mv.best).toBeNull();
+  });
+
+  it('reports zero movement when ranks are identical (stable engine)', () => {
+    const mv = rankMovement([5, 12, null], [5, 12, null], BEYOND);
+    expect(mv.median).toBe(0); // [0, 0] over the two ranked targets; both-null skipped
+    expect(mv.best).toBe(0);
   });
 });

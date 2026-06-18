@@ -112,6 +112,14 @@ function splitTopLevel(expr: string, operator: 'AND' | 'OR'): string[] {
   for (let i = 0; i < expr.length; i++) {
     const ch = expr[i];
     if (ch === "'") {
+      // KNOWN LIMITATION: this toggles on every single-quote and does NOT decode
+      // the SQL `''` escape for a literal apostrophe. No frozen queries.json
+      // predicate uses an apostrophe, so this is currently inert. If a future
+      // predicate introduces one (e.g. a possessive cultural term), the split
+      // mis-detects and the term parser then throws on the malformed leaf —
+      // surfacing LOUDLY in the scorecard's "Errored queries" table, never a
+      // silent wrong score. Add `''`-escape handling here (and value-unescape in
+      // the `= ANY`/ILIKE leaf parsers) at that point.
       inQuote = !inQuote;
       continue;
     }
