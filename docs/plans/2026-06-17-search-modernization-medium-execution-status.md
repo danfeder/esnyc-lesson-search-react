@@ -1,20 +1,22 @@
 # Search Modernization (Medium Package) Execution Status
 
-**Last updated:** 2026-06-18 by Session 1 (S0.2 dual review → scoring-model upgrade)
+**Last updated:** 2026-06-18 by Session 2 (S0.2 gold FROZEN + triple-verified; S0.3 unblocked)
 
 ## Current State
 
 **Active PR:** none open yet — **S0 (eval harness)** in progress on branch `feat/search-eval-s0`.
 
-**Current task:** S0.2 nearly done — `scripts/search-eval/queries.json` (35 entries, two-tier cluster gold) BUILT from the approved provenance spec live against TEST + product-owner-approved gold (`8316f96`). S0.1 base (`93bcaa0`/`9afbe5e`) + S0.1-extend (cluster-aware metrics, 69 vitest, `634b754`) done+verified.
+**Current task:** S0.2 **DONE + committed** (`97ed020`). `scripts/search-eval/queries.json` (35 entries, two-tier cluster gold) is **FROZEN and triple-verified**. **NEXT = S0.3** (the harness script `run-search-eval.ts`) — now unblocked (TEST anon creds wired + smoke-proven, see below).
 
-**⛔ BLOCKING — do these FIRST next session before S0.3:**
-1. **DEEPER verification of queries.json** — this session did only a LIGHT verify (workflow verifier `wf_b779e095-7bd` returned PASS: all 208 gold ids exist non-retired on TEST, tiers match spec, twins clustered, isolation counts 29/42/25, no fabrication, JSON+schema valid, zero issues). Per user instruction, next session RE-RUNS the full check itself (re-derive a sample of oracle pools via `mcp__supabase-test__execute_sql`; confirm ids/tiers/twins/isolation/maxTotalCounts; JSON schema) before touching the harness. Do NOT skip.
-2. **q12 `teamwork and cooperation` supervisor pick (collaborative — needs user).** Build left it `_needsSupervisorPick:true`, `primaryClusters:[]`, with a 34-row `_candidatePool` in queries.json. Pick the genuinely-collaborative-by-design lessons (spec seeds: Compost Relay [+twin], Plant Part Olympics, Teamwork Challenge, Teamwork in the Garden) → confirm with user → write q12 primaryClusters.
+**S0.2 closeout (Session 2):**
+- **Deep verification (the owed re-check):** 8-agent live re-derivation workflow (`wf_5521dc30-78d`) + adversarial completeness critic + supervisor 4-query spot-check. **All PASS, zero failures** — every oracle re-run verbatim on TEST, all PRIMARY titles return live rows (build-rule-6 clean), all twins co-clustered, all EXCLUDEs absent, isolation sets exact by **bidirectional set-equality** (29/42/25; q31≡q10), all pinned counts zero-drift, q22 sentinel top-10 jaccard 1.0, corpus 745.
+- **q12 supervisor pick RESOLVED** (user/product-owner-confirmed): 5 activity-based PRIMARY clusters (Compost Relay; Compost Relay & Stew twin; Plant Part Olympics; Teamwork Challenge; Teamwork in the Garden); acceptable empty. `_candidatePool`/`_needsSupervisorPick` removed.
+- **Independent Codex cross-check** (different model family, raw-row snapshot at `.tmp/codex-goldset-review/pools.json`): caught **1 REAL spec-vs-data divergence** — q34 had carried q05's *acceptable* tier, but spec line 179 scores q34 "vs the q05-07 PRIMARY" only → **q34 acceptableClusters emptied** (inert for frozen-recall; *all 8 same-family agents had normalized it away* — validates the cross-family pass). Rejected 1 false alarm (q23 maxTotalCount=600 is a guard-ceiling above current=586, by spec line 174).
+- q27 degenerate 'Unknown' ghost row KEPT (user decision, documented); q03 indentation tidied; `_snapshot` note refreshed.
 
-**Then:** S0.3 harness (`run-search-eval.ts`, G2-normalized scoring, sentinel/predicate/isolation handling) → S0.4 capture TEST baseline + commit → close S0.
+**S0.3 unblocked (this session):** the harness is a standalone `tsx` script needing a Supabase **anon client** (can't use MCP). `.env` TEST keys were stale (ref `epedjebjemztzdyhqace`, deleted project). Fetched the live TEST anon key via MCP `get_publishable_keys` (ref `rxgajgmphciuaqzvwmox`) → **refreshed `.env` `TEST_SUPABASE_ANON_KEY` + added `TEST_SUPABASE_URL`** (local, gitignored). Smoke-tested: anon → `search_lessons` RPC works (`'compost'` → total_count 178). Target→creds convention for the harness: local=`VITE_*`, test=`TEST_SUPABASE_URL`+`TEST_SUPABASE_ANON_KEY`, prod=`PROD_*`. **`TEST_SUPABASE_SERVICE_KEY` is STILL stale (untouched) — use MCP for any write/admin TEST work.** See memory [[project_test_key_stale]].
 
-Twin finding (carry): the empty-summary `lesson_…` rows are REAL searchable near-dupes (3.3–10.5KB content), clustered with their twin; only 1 true content_hash cluster corpus-wide (3 "Unknown" ghosts, not in gold). **The S0.2 query-set + gold went through a DUAL adversarial review** (Claude 4-lens fan-out `wf_8a2690f3-c67` + independent Codex read-only `bjwa14g6e`, both against the live TEST corpus). Both converged: the locked simple metric (hit@10 vs flat id list) would give **false readings in ≥4 ways** → **user APPROVED a scoring-model upgrade 2026-06-18** (two-tier cluster gold, per-query scoring families, G2-normalized scoring, G3 rank-movement, q22 sentinel-not-gold, dup-flood guard, + coverage/robustness queries → ~32). Design §4 + impl S0.1–S0.4 updated to match (this session). **NEXT:** (a) **S0.1-extend** — rework metrics.ts to cluster-aware + new functions (TDD; delegable); (b) assemble the two-tier gold (primary/acceptable clusters) from the dual-review adjudication and get product-owner sign-off; (c) S0.3 harness + S0.4 baseline. Codex CANNOT reach TEST directly (both `.env` keys stale, no psql conn string, CLI on PROD) — reviews ran on a supervisor-built data snapshot at `.tmp/codex-goldset-review/`. GATE 1 was done+folded earlier.
+**Then:** S0.3 harness (read-only, own `assertReadOnly`, G2-normalized scoring, sentinel/predicate/isolation handling, `npm run eval:search`) → S0.4 capture TEST baseline + commit → close S0.
 
 **Branch:** `feat/search-eval-s0` — cut **fresh from `main`** this session (per kickoff), with the 3 docs commits cherry-picked over (`57d5619` C2-closeout, `8eb1479` scaffold, `3b1239f` GATE-1 fold) + kickoff sync (`6dae620`). The legacy `feat/pr6d-search-synonyms` is abandoned. NOTE: S0's eventual PR will carry the C2-closeout parent-track doc edit to main (harmless/accurate bookkeeping).
 
@@ -22,12 +24,13 @@ Twin finding (carry): the empty-summary `lesson_…` rows are REAL searchable ne
 
 **Last commit on main:** `e4d7830` (PR 6 C2 — Stage-2 re-tag apply; metadata-rebuild APPLY phase complete + PROD-verified).
 
-**Substrate facts (TEST, where the baseline captures):** corpus = **766 lessons**; `search_lessons(search_query text, …12 filter args…, page_size int DEFAULT 20, page_offset int DEFAULT 0)` returns `lesson_id text, title, summary, file_link, grade_levels, metadata jsonb, confidence jsonb, rank double precision, total_count bigint`. `lesson_id` is **text**. These feed the `overBroad` threshold + the S0.3 harness RPC call + S0.2 oracle SELECTs.
+**Substrate facts (TEST, where the baseline captures):** corpus = **766 total rows / 745 searchable** (`retired_at IS NULL`; 21 retired) — the eval scores against **745** (the prior "766 lessons" note conflated total-vs-searchable). `search_lessons(search_query text, + 13 filter args ALL DEFAULT NULL, page_size int DEFAULT 20, page_offset int DEFAULT 0)` returns `lesson_id text, title, summary, file_link, grade_levels, metadata jsonb, confidence jsonb, rank double precision, total_count bigint`. `lesson_id` is **text**; `total_count` is identical on every row. **anon can call the RPC** (smoke-proven). These feed the `overBroad` threshold + the S0.3 harness RPC call + S0.2 oracle SELECTs.
 
 **Substrate state:** Search is LIVE on PROD and healthy. Concepts ARE indexed (`update_lesson_search_vector` trigger). Public engine = `search_lessons` RPC. Gaps confirmed firsthand: G1 (everyday words), G2 (multi-word explosion), G3 (SEL/CC/AI not typed-searchable), G5 (no eval set). No search change has shipped yet.
 
 ## Recent decisions worth carrying forward
 
+- **S0.2 gold FROZEN (2026-06-18) — verified 3 ways before freezing.** Deep 8-agent live re-derivation + critic + supervisor spot-check (all PASS) AND an independent Codex cross-check (raw-row snapshot). q12 = 5 activity-based primaries (user/product-owner pick); q27 ghost row kept (user); q34 acceptable emptied (Codex catch — spec line 179). The gold is now the trustworthy gate; **do not edit `queries.json` gold values without re-running the verification + re-confirming with the product owner.**
 - **Scoring-model upgrade (2026-06-18, user-approved) — the eval must not give false readings.** Dual adversarial review (Claude 4-lens + Codex) found the simple hit@10-vs-flat-id design would lie in ≥4 ways. Adopted: (1) **two-tier cluster gold** (twins=one cluster, primary=counted / acceptable=not-penalized) — resolves the Claude-vs-Codex relevance disagreements without nDCG; (2) **per-query scoring families** (frozen-recall / frozen-precision / predicate / g3-isolation / sentinel / control-maxcount); (3) **G2 scored on the normalized `parseSearchQuery` call**, not raw (else G2 reads "broken" forever); (4) **G3 scored by rank-movement** of the tag-but-no-lexical-mention isolation sets (RDM=29/SM=42/SJ=25), `isolationHits@50` — NOT top-10 recall; (5) **q22 `compost worms soil` = stability sentinel excluded from quality** (freezing today's top-10 as gold violates engine-independence); (6) **dup-flood guard** (`duplicateFloodCount`/dedup-aware precision). Coverage adds: `mexican food`, `apple`, `food waste`, `making good choices` (combined G1+G3, labeled) + a robustness pack (grade-wording variants, 1 typo, `kimchi`). SEL: keep exact-label probes AND add everyday phrasings.
 - **PR D RETIRED → this track.** Bulk 5,163-pair synonym load is wrong-mechanism (whitespace CHECK + token matcher). Repurposed: small curated single-word bridge (S3) now; bulk map → deferred semantic tier.
 - **G2 fix = frontend** (`parseSearchQuery.ts`), filler/grade only; the deeper server-side OR→AND is DEFERRED + documented (design §9) to return to (user decision 2026-06-17).
@@ -51,6 +54,23 @@ Twin finding (carry): the empty-summary `lesson_…` rows are REAL searchable ne
 - Archive: `2026-06-17-search-modernization-medium-execution-status-archive.md` (created when needed)
 
 ## Recent session log
+
+### Session 2 — 2026-06-18 — S0.2 gold FROZEN + triple-verified; S0.3 unblocked
+
+Commit on `feat/search-eval-s0`: `97ed020` (freeze + deep-verify S0.2 gold) + this status-doc commit.
+
+Major events:
+- **Deep verification of `queries.json`** (the owed re-check, blocking item #1): `Workflow` fan-out `wf_5521dc30-78d` = 8 fresh-context agents re-deriving every oracle live on TEST (one per gold family) + adversarial completeness critic; then supervisor 4-query MCP spot-check. **All PASS, zero failures.**
+- **q12 supervisor pick** (blocking item #2, collaborative): user/product-owner-confirmed 5 activity-based PRIMARY clusters; q27 ghost row kept; q03 indentation tidied. Frozen via a precise text-splice (preserved all other entry formatting).
+- **Independent Codex pass** (user recommendation): chose the **raw-row-snapshot** approach over psql (Codex companion runs read-only/no-network sandbox; for gold verification the data-fetch layer isn't the risk — the reasoning layer is). Built `.tmp/codex-goldset-review/pools.json` via a Sonnet snapshot-builder, ran `codex-companion.mjs task --effort high`. Codex caught **1 real finding** (q34 acceptable tier — fixed) + **1 false alarm** (q23 guard-ceiling — rejected with rebuttal).
+- **S0.3 credential prereq resolved:** `.env` TEST keys were stale (ref `epedjebjemztzdyhqace`); fetched live TEST anon key via MCP, refreshed `.env` (`TEST_SUPABASE_ANON_KEY` + new `TEST_SUPABASE_URL`, gitignored), smoke-tested anon→`search_lessons` RPC (compost=178). Updated memory [[project_test_key_stale]].
+
+Learnings (promote to feedback memories at PR-cycle archival):
+- **Cross-family verification earns its keep:** the Codex pass found a real spec-vs-data divergence (q34) that ALL 8 same-family Claude verifiers had collectively normalized away (they treated q05≡q34 full-identity as correct). Different-model-family review catches *shared* misreadings that fan-out redundancy cannot.
+- **Codex DB-access reality:** the companion's review/task path is read-only sandbox with **network disabled by default**, so live psql/DB queries from Codex aren't turnkey. For data-verification tasks, feed Codex a supervisor-built **raw-row snapshot** (exact oracle SQL + raw rows) and let it re-derive — independent at the reasoning layer, which is where the risk is. psql-for-Codex deferred to S2/S3 migration reviews if ever needed.
+- **Harness can't use MCP:** the standalone `tsx` harness needs a real anon Supabase client; MCP is supervisor-only. The live TEST anon key is fetchable via MCP `get_publishable_keys`.
+
+NEXT: S0.3 harness (`run-search-eval.ts`) → S0.4 TEST baseline + commit → close S0.
 
 ### Session 1 — 2026-06-17/18 — S0.1 + S0.1-extend shipped; S0.2 gold built (dual-reviewed)
 
