@@ -24,10 +24,21 @@
 --   DROP FUNCTION removes the function's grants automatically -- no separate
 --   REVOKE is needed (a post-DROP REVOKE would error on a missing function).
 --
--- Rollback hazard note:
---   20260521000000's commented rollback block restores a prior trigger that
---   delegated to this helper. If that historical rollback is ever performed,
---   recreate this function FIRST using the ROLLBACK block below.
+-- Rollback ordering (IMPORTANT) -- a combined-state rollback is self-contained
+-- ONLY if migrations are undone in reverse chronological order. Several
+-- migrations after 20260521000000 redefine update_lesson_search_vector() and/or
+-- this helper, so a rollback that targets 20260521000000 must first undo
+-- everything applied after it, newest-first:
+--   1. THIS migration (20260618130000): run the ROLLBACK block below to
+--      recreate public.generate_lesson_search_vector() WITH its grants.
+--   2. 20260618000000_search_vector_add_sel.sql: run ITS rollback block.
+--   3. 20260521000000_search_vector_with_concepts.sql: run ITS rollback block --
+--      it restores a prior trigger that delegates to the helper recreated in
+--      step 1, so the helper is present exactly when that step needs it.
+-- Do NOT run 20260521000000's rollback in isolation after this DROP: the helper
+-- would be missing and the restored trigger would fail on the next lesson write.
+-- (This file's note is the durable record of that ordering; the already-applied
+-- 20260521000000 cannot be edited to point back here.)
 
 -- =====================================================
 -- CHANGES

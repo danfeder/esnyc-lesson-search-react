@@ -89,7 +89,7 @@ useEffect(() => {
 
 ## 🔍 Legacy: Algolia (Removed)
 
-Algolia was removed from this project. Search now uses PostgreSQL full-text search with synonym/typo expansion. See `supabase/functions/search-lessons/` for the current implementation.
+Algolia was removed from this project. Public search uses the PostgreSQL `search_lessons` RPC (full-text search with synonym/typo expansion via `expand_search_with_synonyms`); the `smart-search` edge function only powers zero-result suggestions. See `src/lib/search.ts` (`getSearchRpcName`) and `src/hooks/useLessonSearch.ts`. (The standalone `search-lessons` edge fn was retired in the search-modernization dead-code cleanup.)
 
 ## 📊 Sentry Error Tracking
 

@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   smoke:
-    name: Smoke 11 PROD edge functions
+    name: Smoke 10 PROD edge functions
     runs-on: ubuntu-latest
     # Local script runs in ~10 s; cap generously to absorb cold-start +
     # GitHub-side variance. Network stalls or a hung CLI surface fast.
