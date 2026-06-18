@@ -19,7 +19,7 @@
 | Mean precision@10 (frozen-precision) | 0.833 |
 | Predicate pass-rate | 0.688 (11/16) |
 | Corpus MRR (mean RR over frozen queries) | 0.846 |
-| maxTotalCount violations | 0 |
+| maxTotalCount violations | 1 |
 | normalized-call mismatches | 0 |
 | Dup-flood alarms (dupFlood>0) | 0 |
 | G3-isolation queries | 4 |
@@ -34,7 +34,7 @@
 | q07 | decomposition | 59 | 0.857 | true | 1.000 | 0 | 1.000 | n/a |
 | q08 | pickling | 14 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q12 | teamwork and cooperation | 44 | 0.400 | true | 1.000 | 0 | 1.000 | n/a |
-| q14 | knife skills | 650 | 0.875 | true | 1.000 | 0 | 1.000 | n/a |
+| q14 | knife skills | 693 | 0.875 | true | 1.000 | 0 | 1.000 | n/a |
 | q16 | photosynthesis | 11 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q32 | compost lesson for third graders | 87 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q34 | decompasition | 2 | 0.286 | true | 1.000 | 0 | 0.200 | n/a |
@@ -72,10 +72,10 @@
 
 | id | query | total | isoHits@50 | isoHits@10 | firstRank | rankMoveMedian | rankMoveBest | maxCount ok |
 |---|---|---|---|---|---|---|---|---|
-| q10 | responsible decision-making | 612 | 0 | 0 | n/a | n/a | n/a | n/a |
-| q11 | self management skills | 651 | 3 | 0 | 34 | 0.000 | 0.000 | n/a |
-| q27 | social justice | 653 | 8 | 0 | 12 | 0.000 | 0.000 | true |
-| q31 | making good choices | 696 | 5 | 1 | 10 | 0.000 | 0.000 | n/a |
+| q10 | responsible decision-making | 625 | 0 | 0 | n/a | n/a | n/a | n/a |
+| q11 | self management skills | 703 | 3 | 0 | 11 | 14.500 | 40.000 | n/a |
+| q27 | social justice | 659 | 8 | 0 | 12 | 1.000 | 3.000 | false |
+| q31 | making good choices | 697 | 6 | 1 | 10 | 0.000 | 4.000 | n/a |
 
 ## control-maxcount
 
@@ -97,7 +97,9 @@ _None._
 
 ### maxTotalCount violations
 
-_None._
+| id | query | totalCount | maxTotalCount |
+|---|---|---|---|
+| q27 | social justice | 659 | 653 |
 
 ### normalized-call mismatches (parser drift vs frozen fixture)
 
