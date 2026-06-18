@@ -17,6 +17,66 @@ describe('parseSearchQuery', () => {
     });
   });
 
+  // --- GATE-3 robustness: punctuation-tolerant cues + spaced/word ranges ---
+  describe('GATE-3 robustness — punctuation + spaced/word ranges', () => {
+    it('tolerates trailing "?" on the grade word ("3rd grade?")', () => {
+      expect(parseSearchQuery('compost lesson for 3rd grade?')).toEqual({
+        cleanedQuery: 'compost',
+        detectedGrades: ['3'],
+      });
+    });
+
+    it('tolerates trailing "." on "third graders."', () => {
+      expect(parseSearchQuery('compost lesson for third graders.')).toEqual({
+        cleanedQuery: 'compost',
+        detectedGrades: ['3'],
+      });
+    });
+
+    it('tolerates trailing "!" on "kindergarten!"', () => {
+      expect(parseSearchQuery('garden lessons for kindergarten!')).toEqual({
+        cleanedQuery: 'garden',
+        detectedGrades: ['K'],
+      });
+    });
+
+    it('parses a hyphen-with-spaces range "grades K - 2"', () => {
+      expect(parseSearchQuery('seeds grades K - 2')).toEqual({
+        cleanedQuery: 'seeds',
+        detectedGrades: ['K', '1', '2'],
+      });
+    });
+
+    it('parses a word range "grades 3 to 5"', () => {
+      expect(parseSearchQuery('seeds grades 3 to 5')).toEqual({
+        cleanedQuery: 'seeds',
+        detectedGrades: ['3', '4', '5'],
+      });
+    });
+
+    it('parses a word range "grades 3 through 5"', () => {
+      expect(parseSearchQuery('seeds grades 3 through 5')).toEqual({
+        cleanedQuery: 'seeds',
+        detectedGrades: ['3', '4', '5'],
+      });
+    });
+
+    it('does NOT treat a spaced range with no grade cue as a range ("seeds K - 2")', () => {
+      // No "grade(s)" cue precedes the range -> route nothing (same rule as bare "K-2").
+      const result = parseSearchQuery('seeds K - 2');
+      expect(result.detectedGrades).toEqual([]);
+    });
+
+    it('routes the single grade when "to" has no valid endpoint after it ("grade 3 to make compost")', () => {
+      // "to make" is not a range: no valid endpoint after the "to" separator ->
+      // fall through to single grade 3. "to" is not filler, so it stays as content.
+      expect(parseSearchQuery('grade 3 to make compost')).toEqual({
+        cleanedQuery: 'to make compost',
+        detectedGrades: ['3'],
+      });
+    });
+  });
+
   // --- False-positive guards: must NOT route a grade ---
   describe('false-positive guards (never route a grade)', () => {
     it('does not route a cardinal "three" (no grade cue)', () => {

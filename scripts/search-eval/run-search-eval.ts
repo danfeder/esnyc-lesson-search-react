@@ -136,6 +136,10 @@ interface QueryResult {
   returned: number;
   errored?: string; // error message if the query failed
   expectedNormalizedCall?: { search_query: string; filter_grade_levels?: string[] };
+  // S1.4 GATE-3: the parser-derived call actually made, + whether it drifted from
+  // the frozen fixture entry.normalizedCall (only set for entries that carry one).
+  actualNormalizedCall?: { search_query: string; filter_grade_levels?: string[] };
+  normalizedCallMismatch?: boolean;
   // relevance diagnostics (frozen-recall / frozen-precision)
   recallAt10?: number;
   precisionAt10?: number;
@@ -255,6 +259,28 @@ function resolveCall(entry: QueryEntry): {
   };
   if (detectedGrades.length > 0) call.filter_grade_levels = detectedGrades;
   return call;
+}
+
+/**
+ * Deep-compare two normalized calls (S1.4 GATE-3 drift guard). Two calls are
+ * equal iff their search_query strings match exactly AND their grade lists have
+ * the same elements in the same order (missing / empty grades == no grades).
+ * Pure helper — used to assert the parser-derived call still matches the frozen
+ * fixture entry.normalizedCall so parser drift is caught and the scorecard stays
+ * honest. NO mismatch is expected today (this is a latent alarm).
+ */
+function callsEqual(
+  a: { search_query: string; filter_grade_levels?: string[] },
+  b: { search_query: string; filter_grade_levels?: string[] },
+): boolean {
+  if (a.search_query !== b.search_query) return false;
+  const ga = a.filter_grade_levels ?? [];
+  const gb = b.filter_grade_levels ?? [];
+  if (ga.length !== gb.length) return false;
+  for (let i = 0; i < ga.length; i++) {
+    if (ga[i] !== gb[i]) return false;
+  }
+  return true;
 }
 
 async function runSearch(
@@ -467,6 +493,7 @@ interface Aggregate {
   maxTotalCountViolations: number;
   dupFloodAlarms: number;
   g3Count: number;
+  normalizedCallMismatches: number;
 }
 
 function computeAggregate(results: QueryResult[]): Aggregate {
@@ -500,6 +527,9 @@ function computeAggregate(results: QueryResult[]): Aggregate {
     maxTotalCountViolations: valid.filter((r) => r.withinMaxTotalCount === false).length,
     dupFloodAlarms: valid.filter((r) => (r.dupFlood ?? 0) > 0).length,
     g3Count: valid.filter((r) => r.scoring === 'g3-isolation').length,
+    // S1.4 GATE-3 drift alarm — counted over ALL results (an errored entry can
+    // still carry a frozen normalizedCall whose parser-derived call drifted).
+    normalizedCallMismatches: results.filter((r) => r.normalizedCallMismatch === true).length,
   };
 }
 
@@ -534,6 +564,7 @@ function buildScorecard(
   lines.push(`| Predicate pass-rate | ${r3(agg.predicatePassRate)} (${agg.predicatePassed}/${agg.predicateTotal}) |`);
   lines.push(`| Corpus MRR (mean RR over frozen queries) | ${r3(agg.corpusMrr)} |`);
   lines.push(`| maxTotalCount violations | ${agg.maxTotalCountViolations} |`);
+  lines.push(`| normalized-call mismatches | ${agg.normalizedCallMismatches} |`);
   lines.push(`| Dup-flood alarms (dupFlood>0) | ${agg.dupFloodAlarms} |`);
   lines.push(`| G3-isolation queries | ${agg.g3Count} |`);
   lines.push('');
@@ -657,6 +688,31 @@ function buildScorecard(
   }
   lines.push('');
 
+  // S1.4 GATE-3: surface any drift between the parser-derived call and the frozen
+  // fixture call so a reviewer sees exactly what moved. None expected today.
+  const fmtCall = (c?: { search_query: string; filter_grade_levels?: string[] }): string => {
+    if (!c) return 'n/a';
+    const grades = c.filter_grade_levels && c.filter_grade_levels.length > 0
+      ? `[${c.filter_grade_levels.join(',')}]`
+      : '[]';
+    return `q=\`${c.search_query}\` grades=${grades}`;
+  };
+  const mismatchRows = results.filter((r) => r.normalizedCallMismatch === true);
+  lines.push('### normalized-call mismatches (parser drift vs frozen fixture)');
+  lines.push('');
+  if (mismatchRows.length) {
+    lines.push('| id | query | actual (parser) | expected (fixture) |');
+    lines.push('|---|---|---|---|');
+    for (const r of mismatchRows) {
+      lines.push(
+        `| ${r.id} | ${r.query} | ${fmtCall(r.actualNormalizedCall)} | ${fmtCall(r.expectedNormalizedCall)} |`,
+      );
+    }
+  } else {
+    lines.push('_None._');
+  }
+  lines.push('');
+
   const erroredRows = results.filter((r) => r.errored);
   lines.push('### Errored queries');
   lines.push('');
@@ -681,10 +737,20 @@ function buildBaseline(
 ): BaselineFile {
   const queries: Record<string, Record<string, unknown>> = {};
   for (const r of results) {
-    const { id, query, category, expectedNormalizedCall, ...metrics } = r;
+    const {
+      id,
+      query,
+      category,
+      expectedNormalizedCall,
+      actualNormalizedCall,
+      normalizedCallMismatch,
+      ...metrics
+    } = r;
     void query;
     void category;
     void expectedNormalizedCall;
+    void actualNormalizedCall;
+    void normalizedCallMismatch;
     queries[id] = metrics as Record<string, unknown>;
   }
   return {
@@ -777,7 +843,16 @@ async function main(): Promise<void> {
       }
       const clusterKeyOf = (id: string): string => hashByid.get(id) ?? id;
 
-      results.push(scoreQuery(entry, rpc, rowByid, clusterKeyOf, baseline, snapshot.searchableCorpus));
+      const scored = scoreQuery(entry, rpc, rowByid, clusterKeyOf, baseline, snapshot.searchableCorpus);
+      // S1.4 GATE-3: assert the parser-derived call still equals the frozen
+      // fixture call. Only entries that carry a normalizedCall are checked; a
+      // mismatch is a latent ALARM surfaced in the aggregate + scorecard (it
+      // never changes resolveCall behavior nor exits non-zero).
+      if (entry.normalizedCall) {
+        scored.actualNormalizedCall = call;
+        scored.normalizedCallMismatch = !callsEqual(call, entry.normalizedCall);
+      }
+      results.push(scored);
     } catch (err) {
       // Never let one bad query crash the run.
       results.push({
@@ -817,6 +892,7 @@ async function main(): Promise<void> {
   console.log(`predicate pass-rate:                   ${r3(agg.predicatePassRate)} (${agg.predicatePassed}/${agg.predicateTotal})`);
   console.log(`corpus MRR (mean RR over frozen):      ${r3(agg.corpusMrr)}`);
   console.log(`maxTotalCount violations:              ${agg.maxTotalCountViolations}`);
+  console.log(`normalized-call mismatches:            ${agg.normalizedCallMismatches}`);
   console.log(`dup-flood alarms (dupFlood>0):         ${agg.dupFloodAlarms}`);
   console.log(`G3-isolation queries:                  ${agg.g3Count}`);
   const sentinel = results.find((r) => r.scoring === 'sentinel');

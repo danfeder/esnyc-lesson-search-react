@@ -108,15 +108,29 @@ export function parseSearchQuery(raw: string): ParsedSearchQuery {
     return { cleanedQuery: '', detectedGrades: [] };
   }
 
-  // Tokenize on whitespace, preserving the original token for reconstruction.
+  // Tokenize on whitespace, preserving the ORIGINAL token for reconstruction.
   const tokens = trimmedRaw.split(' ');
-  const lower = tokens.map((t) => t.toLowerCase());
+  // MATCHING form per token: lowercase, then strip leading/trailing non-[a-z0-9]
+  // chars while PRESERVING internal hyphens (so "k-2" survives but "grade?" ->
+  // "grade", "graders." -> "graders"). Used for ALL cue / filler / endpoint /
+  // range matching. The original tokens[] are kept for cleanedQuery reconstruction.
+  const norm = tokens.map((t) => t.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ''));
+
+  // Word separators usable in a THREE-token spaced/word range after an endpoint:
+  // "grades 3 to 5", "grades 3 through 5". The dash forms ("grades K - 2") are
+  // handled separately because a standalone "-"/"–" token normalizes to '' (all
+  // chars are non-[a-z0-9] and get stripped).
+  const WORD_SEPARATORS = new Set<string>(['to', 'through', 'thru']);
+  // A token at index i is a valid range separator iff its NORMALIZED form is a
+  // word separator, OR the original token is a pure hyphen / en-dash run.
+  const isRangeSeparator = (i: number): boolean =>
+    WORD_SEPARATORS.has(norm[i]) || /^[-–]+$/.test(tokens[i]);
 
   const detected: string[] = [];
   // Indices of tokens consumed by grade routing (stripped from cleanedQuery).
   const consumed = new Set<number>();
 
-  const isGradeWord = (i: number) => lower[i] === 'grade' || lower[i] === 'grades';
+  const isGradeWord = (i: number) => norm[i] === 'grade' || norm[i] === 'grades';
 
   // A standalone-cue endpoint may be a range "lo-hi" (e.g. "k-2", "3-5") or a single value.
   // Returns the routed grades from a token, or null if it is not a self-contained range/standalone.
@@ -131,7 +145,7 @@ export function parseSearchQuery(raw: string): ParsedSearchQuery {
 
   for (let i = 0; i < tokens.length; i++) {
     if (consumed.has(i)) continue;
-    const tok = lower[i];
+    const tok = norm[i];
 
     // --- Standalone cues (no preceding "grade(s)" needed) ---
     // kindergarten -> K
@@ -160,7 +174,7 @@ export function parseSearchQuery(raw: string): ParsedSearchQuery {
 
     // ordinal + grade word: "3rd grade", "first grade", "2nd graders", "third graders"
     if (ORDINAL_MAP[tok] && i + 1 < tokens.length) {
-      const next = lower[i + 1];
+      const next = norm[i + 1];
       if (next === 'grade' || next === 'grades' || next === 'grader' || next === 'graders') {
         detected.push(ORDINAL_MAP[tok]);
         consumed.add(i);
@@ -169,11 +183,11 @@ export function parseSearchQuery(raw: string): ParsedSearchQuery {
       }
     }
 
-    // "grade(s)" + (number | ordinal | spelled-number | range)
+    // "grade(s)" + (range | spaced/word range | number | ordinal | spelled-number)
     if (isGradeWord(i) && i + 1 < tokens.length) {
-      const nextTok = lower[i + 1];
+      const nextTok = norm[i + 1];
 
-      // range as a single token after grade(s): "grades K-2", "grades 3-5"
+      // (a) self-contained range as a single token after grade(s): "grades K-2", "grades 3-5"
       const range = rangeFromToken(nextTok);
       if (range && range.length > 0) {
         detected.push(...range);
@@ -182,7 +196,26 @@ export function parseSearchQuery(raw: string): ParsedSearchQuery {
         continue;
       }
 
-      // single grade value after grade(s)
+      // (b) THREE-token spaced/word range: endpoint @ i+1, SEPARATOR @ i+2, endpoint @ i+3.
+      //     "grades K - 2", "grades 3 to 5", "grades 3 through 5". Requires BOTH a
+      //     valid separator AND a valid endpoint after it, else fall through to single.
+      if (i + 3 < tokens.length) {
+        const ep1 = endpointToGrade(nextTok);
+        const ep2 = endpointToGrade(norm[i + 3]);
+        if (ep1 && ep2 && isRangeSeparator(i + 2)) {
+          const spacedRange = expandRange(ep1, ep2);
+          if (spacedRange.length > 0) {
+            detected.push(...spacedRange);
+            consumed.add(i);
+            consumed.add(i + 1);
+            consumed.add(i + 2);
+            consumed.add(i + 3);
+            continue;
+          }
+        }
+      }
+
+      // (c) single grade value after grade(s)
       const single = endpointToGrade(nextTok);
       if (single && VALID_GRADE_SET.has(single)) {
         detected.push(single);
@@ -203,11 +236,13 @@ export function parseSearchQuery(raw: string): ParsedSearchQuery {
     .filter((g) => VALID_GRADE_SET.has(g))
     .sort((a, b) => CANONICAL_INDEX[a] - CANONICAL_INDEX[b]);
 
-  // Build cleanedQuery: drop consumed (grade) tokens, then drop filler tokens.
+  // Build cleanedQuery: drop consumed (grade) tokens, then drop filler tokens
+  // (filler matched on the punctuation-stripped form; content tokens keep their
+  // original punctuation — FTS handles it).
   const kept: string[] = [];
   for (let i = 0; i < tokens.length; i++) {
     if (consumed.has(i)) continue;
-    if (FILLER.has(lower[i])) continue;
+    if (FILLER.has(norm[i])) continue;
     kept.push(tokens[i]);
   }
   let cleanedQuery = kept.join(' ').replace(/\s+/g, ' ').trim();

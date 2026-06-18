@@ -20,6 +20,7 @@
 | Predicate pass-rate | 0.688 (11/16) |
 | Corpus MRR (mean RR over frozen queries) | 0.846 |
 | maxTotalCount violations | 0 |
+| normalized-call mismatches | 0 |
 | Dup-flood alarms (dupFlood>0) | 0 |
 | G3-isolation queries | 4 |
 
@@ -95,6 +96,10 @@
 _None._
 
 ### maxTotalCount violations
+
+_None._
+
+### normalized-call mismatches (parser drift vs frozen fixture)
 
 _None._
 
