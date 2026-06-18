@@ -1,0 +1,746 @@
+{
+  "_snapshot": {
+    "db": "test",
+    "project_ref": "rxgajgmphciuaqzvwmox",
+    "date": "2026-06-18",
+    "searchableCorpus": 745,
+    "retiredExcluded": true,
+    "notes": "All gold derived live from the TEST DB per scripts/search-eval/gold-provenance.md (product-owner-approved 2026-06-18). searchableCorpus = live total_count of public.search_lessons(NULL, ...) and equals count(*) WHERE retired_at IS NULL (both 745). Clusters built by normalized title (lowercased, trimmed, whitespace-collapsed, vertical-tab dropped, & -> and, trailing dup-suffix stripped) plus the spec's explicit twin-pairs; twins counted as one cluster. *Clusters values are string[][] (array of clusters, each an array of lesson_ids). All maxTotalCount guards and sentinel/control counts are LIVE total_counts pinned at snapshot. q12 supervisor pick RESOLVED 2026-06-18 (user/product-owner-confirmed): 5 activity-based PRIMARY clusters frozen (Compost Relay; Compost Relay & Stew twin; Plant Part Olympics; Teamwork Challenge; Teamwork in the Garden). q27 retains its degenerate 'Unknown' ghost row by explicit decision. Deep-verified live 2026-06-18 (8-agent workflow + critic + supervisor spot-check; all PASS). Lesson_ids re-derived live from TEST via the oracle SQL; none invented."
+  },
+  "queries": [
+    {
+      "id": "q01",
+      "query": "compost lesson for 3rd grade",
+      "intent": "Grade-routed compost lessons for grade 3 (G2 grade-router target).",
+      "category": "G2",
+      "provenance": "gold-provenance.md FROZEN q01; oracle: grade-3 compost (title/summary ILIKE compost, '3' = ANY(grade_levels)). PRIMARY title list per spec. EXCLUDE 'PS 109 Garden Jobs, 10/31-11/2, Plan A'.",
+      "provenanceNote": "frozen-recall, G2 grade-routed. maxTotalCount = live raw total_count of 'compost lesson for 3rd grade' (744) as baseline-explosion marker; the S1 fix must drop it far below. All PRIMARY titles returned a row.",
+      "scoring": "frozen-recall",
+      "normalizedCall": { "search_query": "compost", "filter_grade_levels": ["3"] },
+      "maxTotalCount": 744,
+      "primaryClusters": [
+        ["1Dkx1Q--fGzGDCAu3kx5OTsuRa_lRY2agdiMqyfn2VpI"],
+        ["1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38"],
+        ["lesson_7d34e6ab88b64d8a855507ac6c47db20", "1730LjSjM6rScDdd0uqVm1JHFsiomc3yi"],
+        ["1DjKZHzxEZXodIjzInPgMYiYgAqANekN3-8yyIknq8z8"],
+        ["lesson_2d73f8c9c05d47a080578b8df46417f5"],
+        ["1Hoa5V9Zsj7AA9r268_S-8mjoghae3vH9"]
+      ],
+      "acceptableClusters": []
+    },
+    {
+      "id": "q02",
+      "query": "garden lessons for kindergarten",
+      "intent": "Garden lessons routed to grade K (G2 grade-router predicate).",
+      "category": "G2",
+      "provenance": "gold-provenance.md PREDICATE q02. normalizedCall {garden, [K]}. Predicate: >=7/10 of top-10 have 'garden' in title/summary OR 'Garden Skills' core_competency.",
+      "provenanceNote": "predicate. maxTotalCount = live raw total_count of 'garden lessons for kindergarten' (744) as baseline-explosion marker for the G2 router.",
+      "scoring": "predicate",
+      "normalizedCall": { "search_query": "garden", "filter_grade_levels": ["K"] },
+      "maxTotalCount": 744,
+      "predicate": {
+        "description": ">=7/10 of top-10 have 'garden' in title/summary OR carry the 'Garden Skills' core_competency.",
+        "sql": "title ILIKE '%garden%' OR summary ILIKE '%garden%' OR 'Garden Skills' = ANY(core_competencies)"
+      }
+    },
+    {
+      "id": "q03",
+      "query": "worm composting for 2nd graders",
+      "intent": "Worm/compost lessons routed to grade 2 (G2 grade-router predicate).",
+      "category": "G2",
+      "provenance": "gold-provenance.md PREDICATE q03. normalizedCall {worm composting, [2]}. Predicate: >=7/10 top-10 about worms/compost.",
+      "provenanceNote": "predicate. maxTotalCount pinned live = 270 (spec '~25' refers to the grade-2-filtered result the router should yield; raw unfiltered 'worm composting for 2nd graders' total_count is 270 today and is the baseline-explosion marker the S1 router must collapse). DEVIATION NOTE: spec text says 'maxTotalCount ~25'; live raw total_count is 270, so the guard is pinned to the live raw baseline (270) per build rule 5 ('isolation/control counts are re-measured live and pinned'). The ~25 is the post-router expectation, recorded in normalizedCall.",
+      "scoring": "predicate",
+      "normalizedCall": { "search_query": "worm composting", "filter_grade_levels": ["2"] },
+      "maxTotalCount": 270,
+      "predicate": {
+        "description": ">=7/10 top-10 about worms/compost (title/summary ILIKE worm|compost).",
+        "sql": "title ILIKE '%worm%' OR title ILIKE '%compost%' OR summary ILIKE '%worm%' OR summary ILIKE '%compost%'"
+      }
+    },
+    {
+      "id": "q04",
+      "query": "a lesson about seeds for first grade",
+      "intent": "Seed lessons routed to grade 1 (G2 grade-router predicate).",
+      "category": "G2",
+      "provenance": "gold-provenance.md PREDICATE q04. normalizedCall {seeds, [1]}. Predicate: >=7/10 top-10 seeds.",
+      "provenanceNote": "predicate.",
+      "scoring": "predicate",
+      "normalizedCall": { "search_query": "seeds", "filter_grade_levels": ["1"] },
+      "predicate": {
+        "description": ">=7/10 top-10 about seeds (title/summary ILIKE seed).",
+        "sql": "title ILIKE '%seed%' OR summary ILIKE '%seed%'"
+      }
+    },
+    {
+      "id": "q05",
+      "query": "decay",
+      "intent": "Decomposition concept via everyday-vocab term 'decay' (G1 synonym target). SHARED gold with q06/q07.",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q05/q06/q07 SHARED gold; oracle: title/summary/academicConcepts ILIKE decompos. PRIMARY + ACCEPTABLE title lists per spec.",
+      "provenanceNote": "frozen-recall (recall@10 + top1 + mrr vs PRIMARY). All PRIMARY titles returned a row.",
+      "scoring": "frozen-recall",
+      "primaryClusters": [
+        ["1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4"],
+        ["1UCyriRP14jUWMetMP6Olivo6XTS3COl14Et8dtpmkPs"],
+        ["lesson_d73c3abe21f04406b664d7a9d899859c"],
+        ["lesson_a689a2c8fc7b4f2daabc6ecbaf4fdce3"],
+        ["1XLqd7Hrxr-lacieyRdaVsSBIdOOj-k4QW-Du8Dk3VXE", "1Hrjix7fb6KQEVKwegeWLkoiUx8fIWpO1UBKEU0ni2QU"],
+        ["1Us8lS78zALqD9be_Wj-cIO3uhbBd8m94ougM6NDqPTc"],
+        ["1AWwvEhoiiipYR5vzf5lTQKwTqu7NzEjE314V1_3zWlY"]
+      ],
+      "acceptableClusters": [
+        ["0BwC8Pf3ZwAXjLXYwc3FQbS1ZMHc"],
+        ["17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c", "lesson_9d3fa2495f2f41bd9946eec528198210"],
+        ["1wS7hhLPp7jv1mvZyeSjfCXHBp84k6UA6ONcoEyYk0DM"],
+        ["1wp71sAPQQycFDAHX_k-Tk8fpzz-bb2FW", "lesson_2004c1a511fe41b58e58f1aefd339773"],
+        ["0B-haDqSHcXMCZEdqQmkyZ3otQmNBM2dBbXhzODdJMkxKUjJn"],
+        ["1_i0zHlSi0RQfsV5Z3VNTPti7w_rg2w8Dx7Z30co0KCg"]
+      ]
+    },
+    {
+      "id": "q06",
+      "query": "rotting food",
+      "intent": "Decomposition concept via everyday phrase 'rotting food' (G1 synonym target). SHARED gold with q05/q07.",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q05/q06/q07 SHARED gold; same PRIMARY/ACCEPTABLE as q05. q06 also carries a maxTotalCount guard.",
+      "provenanceNote": "frozen-recall. maxTotalCount = live total_count of 'rotting food' (567); q06's job is that a fix must surface decomposition lessons, NOT just flood. All PRIMARY titles returned a row.",
+      "scoring": "frozen-recall",
+      "maxTotalCount": 567,
+      "primaryClusters": [
+        ["1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4"],
+        ["1UCyriRP14jUWMetMP6Olivo6XTS3COl14Et8dtpmkPs"],
+        ["lesson_d73c3abe21f04406b664d7a9d899859c"],
+        ["lesson_a689a2c8fc7b4f2daabc6ecbaf4fdce3"],
+        ["1XLqd7Hrxr-lacieyRdaVsSBIdOOj-k4QW-Du8Dk3VXE", "1Hrjix7fb6KQEVKwegeWLkoiUx8fIWpO1UBKEU0ni2QU"],
+        ["1Us8lS78zALqD9be_Wj-cIO3uhbBd8m94ougM6NDqPTc"],
+        ["1AWwvEhoiiipYR5vzf5lTQKwTqu7NzEjE314V1_3zWlY"]
+      ],
+      "acceptableClusters": [
+        ["0BwC8Pf3ZwAXjLXYwc3FQbS1ZMHc"],
+        ["17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c", "lesson_9d3fa2495f2f41bd9946eec528198210"],
+        ["1wS7hhLPp7jv1mvZyeSjfCXHBp84k6UA6ONcoEyYk0DM"],
+        ["1wp71sAPQQycFDAHX_k-Tk8fpzz-bb2FW", "lesson_2004c1a511fe41b58e58f1aefd339773"],
+        ["0B-haDqSHcXMCZEdqQmkyZ3otQmNBM2dBbXhzODdJMkxKUjJn"],
+        ["1_i0zHlSi0RQfsV5Z3VNTPti7w_rg2w8Dx7Z30co0KCg"]
+      ]
+    },
+    {
+      "id": "q07",
+      "query": "decomposition",
+      "intent": "Decomposition concept via the canonical term (lexical baseline / SHARED gold with q05/q06).",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q05/q06/q07 SHARED gold; same PRIMARY/ACCEPTABLE as q05.",
+      "provenanceNote": "frozen-recall. All PRIMARY titles returned a row.",
+      "scoring": "frozen-recall",
+      "primaryClusters": [
+        ["1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4"],
+        ["1UCyriRP14jUWMetMP6Olivo6XTS3COl14Et8dtpmkPs"],
+        ["lesson_d73c3abe21f04406b664d7a9d899859c"],
+        ["lesson_a689a2c8fc7b4f2daabc6ecbaf4fdce3"],
+        ["1XLqd7Hrxr-lacieyRdaVsSBIdOOj-k4QW-Du8Dk3VXE", "1Hrjix7fb6KQEVKwegeWLkoiUx8fIWpO1UBKEU0ni2QU"],
+        ["1Us8lS78zALqD9be_Wj-cIO3uhbBd8m94ougM6NDqPTc"],
+        ["1AWwvEhoiiipYR5vzf5lTQKwTqu7NzEjE314V1_3zWlY"]
+      ],
+      "acceptableClusters": [
+        ["0BwC8Pf3ZwAXjLXYwc3FQbS1ZMHc"],
+        ["17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c", "lesson_9d3fa2495f2f41bd9946eec528198210"],
+        ["1wS7hhLPp7jv1mvZyeSjfCXHBp84k6UA6ONcoEyYk0DM"],
+        ["1wp71sAPQQycFDAHX_k-Tk8fpzz-bb2FW", "lesson_2004c1a511fe41b58e58f1aefd339773"],
+        ["0B-haDqSHcXMCZEdqQmkyZ3otQmNBM2dBbXhzODdJMkxKUjJn"],
+        ["1_i0zHlSi0RQfsV5Z3VNTPti7w_rg2w8Dx7Z30co0KCg"]
+      ]
+    },
+    {
+      "id": "q08",
+      "query": "pickling",
+      "intent": "Pickling / fermentation / preservation lessons (small-pool recall).",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q08; oracle: title/summary/cooking_methods ILIKE pickl|ferment|preserv|kimchi|sauerkraut. PRIMARY/ACCEPTABLE per spec; preservation-adjacent -> acceptable tier.",
+      "provenanceNote": "frozen-recall (small pool). 'Food Preservation' twin = two rows (populated + empty-summary). All PRIMARY titles returned a row.",
+      "scoring": "frozen-recall",
+      "primaryClusters": [
+        ["1R6DqXH9XvSvZq9B0106w0CHtS3kvuJNX53taROiZZBE"],
+        ["1yUHWKsyYlQoHqmOuuX4IttgvcVY5uDOeJwsKAwjco9s"],
+        ["14JdOakN4HRDb_auGVrz9hAWHPcgpp9BjEEqN1YJhgOg"]
+      ],
+      "acceptableClusters": [
+        ["lesson_bf1f76835a7446f78bfa843b7cbb99dd", "1QLiWw08Qi5CSB6uMwwm27WDgMNG-LMhtqOu6z85VRkk"],
+        ["lesson_5a9dc306522d41b0b290259210b2fef9"],
+        ["1w0c7tESqksEPlQL-Fj1tpTL3i2ofmN_Agq-UwwqErBE"],
+        ["1dHaRJiE9FINj3Jud0L_qMrKuFibtDimhZ0f_ssl_VMI"],
+        ["1jS-jjcZs0zF-WSwzkrgryefL2kiBepp2ahvqQzzQodI"]
+      ]
+    },
+    {
+      "id": "q09",
+      "query": "bugs that pollinate flowers",
+      "intent": "Pollinator CONTROL query: must stay pollinator-themed (not a G1 target).",
+      "category": "control",
+      "provenance": "gold-provenance.md PREDICATE/CONTROL q09. CONTROL: >=8/10 of top-10 pollinator-themed = in q15 primary UNION acceptable.",
+      "provenanceNote": "predicate (control). Predicate evaluates membership of top-10 in the q15 primary-union-acceptable gold sets.",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=8/10 top-10 are pollinator-themed, i.e. members of q15 primaryClusters UNION acceptableClusters.",
+        "sql": "lesson_id IN (q15.primaryClusters UNION q15.acceptableClusters flattened)"
+      }
+    },
+    {
+      "id": "q10",
+      "query": "responsible decision-making",
+      "intent": "Anchor SEL probe: would indexing the social_emotional_learning typed array surface tag-only lessons? Isolation set.",
+      "category": "G3",
+      "provenance": "gold-provenance.md G3-ISOLATION q10; oracle: 'Responsible decision-making' = ANY(social_emotional_learning) AND no lexical 'responsible decision' in title/summary/content_text. HUMAN-AUDIT: tags are provenance, audited as relevance truth.",
+      "provenanceNote": "g3-isolation (isolationHits@50 + firstRankOf + ranksOf; top-10 secondary). isolationIds count pinned LIVE = 29 (spec ~29).",
+      "scoring": "g3-isolation",
+      "isolationIds": [
+        "0B5_wrFVyDBsILXFtb04xOWZYQjQ",
+        "0B9X3sp9nlAgmVmZpaFd6clptWTA",
+        "1_u1GSf5QuGNz_6Xl_PBMX82CegoLCS000Pd9ZKHh0Mw",
+        "1-1zPGScv5yaJwfSlgIxtaPJaqw8zVExiMh3OizLnye8",
+        "10QIYILxb1r-2252Sd1_jg58SLgmHWElg09FFr4WAa5E",
+        "12afDXwtfouvdhbJWIlpB07gF2L-N0KDg9Ws_OXqcca0",
+        "18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS",
+        "18LGHGw5bid1uFmapJbJlSUlwX4-h7oUGNoZ-nu47egM",
+        "1bjiET8ffFpU5_gCMgJBiTDPuHhE0lCPGBnv72LXzrW4",
+        "1CMOg0xDu650zM2Pnnhy1EMB4r25fLs9Nx7h7AJVVYdE",
+        "1cS3llhLF1k2bwgwz1f62fWk938evVGRE9crGuAWT3_g",
+        "1dXzaZv3yFh5wlHxkkZPPCrQdJWsXT5-tvGA4CP3yNuY",
+        "1eQF5NWcYwKxoswPigPABqleFqY3kDFoWxWmu0Ke-urQ",
+        "1F9HMi267ePLvdQUys_rOe1wuna6NhP9ScssgXA4gufE",
+        "1gCY7UTLfFeOI7wK4GjZTOyQO67R95L9E",
+        "1Hoa5V9Zsj7AA9r268_S-8mjoghae3vH9",
+        "1iwA2l4QPsqXJqu5lP8Ix5BarlTjIhxTQ",
+        "1NKjrltsfTTjAT5IZKGHiiovZvRcvhfJx6rPVn-lbYFM",
+        "1qOAiHnYteeSZZKHAqW9c5z1YlbLQqGRlWZIW3KQ4Vss",
+        "1qwbgUIiZgmzrK-hQIJZaieaZTnq1sLev-YKHDnncQXM",
+        "1RM7nAa2-TOk2znpk6CvfpuU7D8-iQ1Y1eAcE8dTk-9U",
+        "1TRoy2OrEWmCo_ufnfWMRUOThxx2xvZcEnxRCCeO92-c",
+        "1UuTbP_4V0UhFCUjKKkHy7qaED4ZoyWHCMoHF70VflC4",
+        "1VeiRoBU-ljikWKg_jXQfiAgr_2d1yyxhS57JM5Hej-E",
+        "1xAHtAr8-faQdQW0eEoA_CL1pcySGhzsWguOj9e5R3UQ",
+        "1xQebmPuWM1ZFPnfDCekLW5qSatOXSoDtJKWRvJQPGnU",
+        "1YnlgMvzSZPf62gHtWozhokKR47TOZUkf",
+        "1zdTTjTfKsBywIhhf5rcFTQDaI-JhXRmEn_lw_CEFX9I",
+        "lesson_c257c458adb549c3ad5ffe25aef9a776"
+      ]
+    },
+    {
+      "id": "q11",
+      "query": "self management skills",
+      "intent": "SEL probe confounded lexically today (9/10); isolation is the clean indexing signal.",
+      "category": "G3",
+      "provenance": "gold-provenance.md G3-ISOLATION q11; oracle: 'Self-management' = ANY(social_emotional_learning) AND no lexical 'self-management'/'self management' in title/summary/content_text.",
+      "provenanceNote": "g3-isolation. isolationIds count pinned LIVE = 42 (spec ~42).",
+      "scoring": "g3-isolation",
+      "isolationIds": [
+        "0B5_wrFVyDBsILXFtb04xOWZYQjQ",
+        "0BwC8Pf3ZwAXjN04xRGEwcl9Cd0k",
+        "0BxEc0RZeYtCiUGNLaHJQSUFoQVE",
+        "13vpumvgEgzO7jUWdEHamEjXWwOxvQ_KFHaeMVUKvQDo",
+        "14MTTw-8EGeW0BMghM8C8imcWlKXB7P1q-SH-84m7E8U",
+        "15uTWnv3aOIIeOLAhCjiA-9cG9xZlBKONpMZt-oyJYEQ",
+        "19Sjs7Fz7Z8ToT421a3VVT_j8_b-KUXAp",
+        "19XMMer_ySnCJ5LnWxCKW-lVhCDKW_S7E6neckOOQ_WU",
+        "1A34UK78EbtdHIVeiVe0lNiLJaJ557y-JlS_o673-hmw",
+        "1aR8TJy6wbqotVca6i3aazfACXM_7UvrxUYHEFAjJWiE",
+        "1bEoQ5a8y8wHIsNQsEGJh-F1scPUtF1mkFj9o5jooAJM",
+        "1CMOg0xDu650zM2Pnnhy1EMB4r25fLs9Nx7h7AJVVYdE",
+        "1cS3llhLF1k2bwgwz1f62fWk938evVGRE9crGuAWT3_g",
+        "1dHNasB4vEvH8G_OIy5Y7kVTOjXSovx_qLUGVB2UYk-M",
+        "1eCHiTX_hiu_zy-5cuzyVvAWpbhkqCZTWaQog8Edhk_c",
+        "1ejnMz5mRDOi4NIPakPgEpKCKpnPz7yx-SAg07-FlTr4",
+        "1eMFj5YDDAcR6yfLsPC-rhPf1se_Dr17OK-zxTBdZzcM",
+        "1eqwPqe-b3yL59iy8tBSWyxwM1cDoIyNURl6mpuiTews",
+        "1EyUZUgWrURvJ_tKKdhMakD7xY5C1COcNkvdks72ZI1I",
+        "1fGNDBbufPOmeTGmk57mEyD_tlYdKXTnW",
+        "1FUV91GHRSx5T0w2VYJgZlZjqid4vU7-Ic-Hra6rV5Q8",
+        "1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg",
+        "1HkHvHBFdGRIu0dJ1GmBiq4OzEXrmRW60odAvls55gZ0",
+        "1i-jRBvEt7y6JAIeoiGDsX7J75sok1BV4BXZbD-vYlp4",
+        "1JATiVuztETGhMlX6Z9rflKy150-0qMSzeGHAsN6fNaE",
+        "1jQ55nluV9e2p1y1LO1jDOfDtnMihXqCk7Hz9bSSeeBc",
+        "1LSEGMUYjXZX5J24AitIpVHWvKpiLC5tmAtEQAfSub1I",
+        "1lSvAkdCD6Ql4YmORG4tWcJonpTzBsNp08hhwKlIStY0",
+        "1LXCU2AiYQwASen0OYGlTWj4qP0drkEmlQtLDaF9dSqY",
+        "1ms4TxvW79FtHz9GDfJO7H1ay6r8akuxPLSbO1qRvs_4",
+        "1mSiEfFWtu_D2cg1A0X4K8hcas-p040hoXB16p-hPAkM",
+        "1olvVADiZt-jO3KhD72MhfPNSmiqPG95iPlrgRbsS63I",
+        "1QDKfp6mC3uRwMfHSnGyeGX8L270dSN1KxFx3ZBDvZXc",
+        "1QfQnwMEhSLMwZ64WgW6MVG6aAX1o5ii_XkxLobFUrns",
+        "1QiqNPrXEpDXt7Hmc8uMC8hWCSNfhi3qacbIuVzqZxZA",
+        "1RM7nAa2-TOk2znpk6CvfpuU7D8-iQ1Y1eAcE8dTk-9U",
+        "1TEXzjuE2Nj9OmmTxqJpRp-UW3pbMIgdLzZqsXpr7M9k",
+        "1XmlwEXQSNwb3hLmG6b6T9ruNAsUbiLaCZvtip3EdH1s",
+        "1z6FCSrVdvFhcui0UKoJMPw5vwfy9iHUd2hC67bEhE5o",
+        "1zJ9YkEXYPu4YVOJTwGJsYT2iUOUSYYhq",
+        "lesson_d73c3abe21f04406b664d7a9d899859c",
+        "lesson_e8fa030e63bf4a9cb13b95448a3450c0"
+      ]
+    },
+    {
+      "id": "q12",
+      "query": "teamwork and cooperation",
+      "intent": "Collaborative-by-design lessons (teamwork/cooperation activities).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q12. Oracle: title ILIKE relay|olympic|team|together|community OR summary ILIKE work together|as a team|cooperat|collaborat|partner. SUPERVISOR PICK (product-owner/user-confirmed 2026-06-18): from the 34-row oracle pool, PRIMARY = genuinely collaborative-by-design (activity-based cooperation) lessons; community-belonging and incidental-text matches excluded.",
+      "provenanceNote": "frozen-recall, SMALL gold. Supervisor-adjudicated 2026-06-18 (user-confirmed): 5 PRIMARY clusters = Compost Relay; Compost Relay & Stew (twin); Plant Part Olympics; Teamwork Challenge; Teamwork in the Garden. acceptableClusters intentionally empty (frozen-recall). All 6 primary ids verified live + non-retired on TEST.",
+      "scoring": "frozen-recall",
+      "primaryClusters": [
+        ["1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38"],
+        ["lesson_7d34e6ab88b64d8a855507ac6c47db20", "1730LjSjM6rScDdd0uqVm1JHFsiomc3yi"],
+        ["1PgqX2FsSZIF3dIlv4CS1DvLS5WtzCaw7lQb4JcpQ9AQ"],
+        ["1QDKfp6mC3uRwMfHSnGyeGX8L270dSN1KxFx3ZBDvZXc"],
+        ["1lSvAkdCD6Ql4YmORG4tWcJonpTzBsNp08hhwKlIStY0"]
+      ],
+      "acceptableClusters": []
+    },
+    {
+      "id": "q13",
+      "query": "three sisters garden",
+      "intent": "Three Sisters companion-planting / cultural lessons (precision).",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q13; oracle: title ILIKE three sister|3 sister OR cultural_heritage 'Three Sisters traditions' OR content_text ILIKE three sisters. PRIMARY = every Three/3 Sister(s) title + Three Sister Arepas + BIODIVERSITY. ACCEPTABLE/EXCLUDE per spec.",
+      "provenanceNote": "frozen-precision (precision@10 [primary+acceptable] + top1/mrr vs PRIMARY). 'Three Sisters Tacos, 4th-PS 311' kept SEPARATE from 'Three Sisters Tacos' per spec line 20. EXCLUDE Pesticides/Bean Dips/Staple Foods: Amaranth; 'Compost Relay & Stew' (content_text-only match) also excluded. All PRIMARY titles returned a row.",
+      "scoring": "frozen-precision",
+      "primaryClusters": [
+        ["1S_zIVPNORzjlZbmmm89reX2GFZFV1uwAM6B2mqa7B0U"],
+        ["1BQdTnCzvCWc7u6MA9ey1HFm-H1g-fXdcgGXFU_Fxzww"],
+        ["19Tg4I9XywohpcrdBZ77vaBgyIdYhxGo0bk3FpSUcE2Y"],
+        ["1AVz6xA4ZJO7mT3oWSJ2unIiY0APuj9yg"],
+        ["13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA"],
+        ["1XlUFSs_ls80ONwWgGCPHHA8re4kfmzgL"],
+        ["1eMFj5YDDAcR6yfLsPC-rhPf1se_Dr17OK-zxTBdZzcM"],
+        ["1q1icjk5Pgdtqp1EFwU7vNmd07SzrnWfeAYTYqIs59ag"],
+        ["lesson_7888524cfdfc48f2bb5379e4edb28742", "1Vq5KMCGiH_PxhZ88tyRrgnxUChgiNd75El49aimP4yQ"],
+        ["1dYfqKvRGyB45l5D-3KEN9Fx6-lFsNckvakBtMQq614k"],
+        ["1JcQB3OaA0ws5SoJwanWrSOxAZHGuc7Xt"],
+        ["13uPiVU50hQcj_Ho1vEhfJmVeK8BFTqb-0BdHmx-wIdg"],
+        ["1zYSlW4BcZajmrZMuhUiRt6zd7hpQWdDFr4SMCuEhG48", "lesson_769f32694684408fbacbe1b02fc9d8a0"],
+        ["1VYlTlYBqXiaIa1Tu9d9ZX8dI9YtYETH35bhDl8W3fgA"],
+        ["1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN"],
+        ["1w_JBTJYmqF0qcXiOtV_nV32nphCjD8uEYRSHdHyROFE"],
+        ["1fNjAzV9JZhGsVCvQZui8jtoSfcSBEiNkU9yhTg55lEQ"],
+        ["0BxbI_EfhfAWTWUdnV1RTTF9WaE0"],
+        ["1dHNasB4vEvH8G_OIy5Y7kVTOjXSovx_qLUGVB2UYk-M"]
+      ],
+      "acceptableClusters": [
+        ["1hlnX5VDqvm83un6VT_B_OpJ08bZ9uN-KlS_lVYkqOE8"],
+        ["0BwC8Pf3ZwAXjVTZsQVBuMUs3T2M"],
+        ["0BxEc0RZeYtCicXRsbXUyaDNKSEU"],
+        ["0BwC8Pf3ZwAXjMmRRd0xWTUQ0U1U"],
+        ["1CJ1G4KSQHYTmQp3DJjDuYrZeSlVx3IYmCNJGYV-oqiQ"]
+      ]
+    },
+    {
+      "id": "q14",
+      "query": "knife skills",
+      "intent": "Lessons that TEACH knife skills (teaching-only recall, not every knife-tagged recipe).",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q14; oracle: title/summary ILIKE knife OR cooking_skills ILIKE knife. PRIMARY = teaching-focused; ACCEPTABLE per spec; all other knife-tagged recipes EXCLUDE.",
+      "provenanceNote": "frozen-recall (teaching-only). All PRIMARY titles returned a row.",
+      "scoring": "frozen-recall",
+      "primaryClusters": [
+        ["1xJQXoNiCrfycSmPcvzpHPiK73u8M1QRqDFg0TYYGT_M"],
+        ["1LMlCebsrli4L9ed2kEUrFUinjYpNGQ2H0E99jkrRGnw"],
+        ["1VopeukPABPXfPNpelqpzrVTnBmj-KMauFyeZ68a62BQ"],
+        ["1NnjoeztiUEqcOwfduLqA4NYUrpS405q-"],
+        ["1d0ialxuX90WarbOqoWK5jcVS27hGj7eR"],
+        ["1YOJ1pRdApcO0q0dfbP-JjM6NhLFiDKEf"],
+        ["1i84KNGaRDLMPQpQc8LN6ZqDop0BLyPSQ"],
+        ["18LGHGw5bid1uFmapJbJlSUlwX4-h7oUGNoZ-nu47egM"]
+      ],
+      "acceptableClusters": [
+        ["1kSgjpijAnIVj2ocA_UHc3ggMT2cdk8Z7"],
+        ["1CMOg0xDu650zM2Pnnhy1EMB4r25fLs9Nx7h7AJVVYdE"]
+      ]
+    },
+    {
+      "id": "q15",
+      "query": "pollinators",
+      "intent": "Pollination lessons (precision; bee/butterfly/monarch confounders excluded).",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q15; oracle: academicConcepts ILIKE pollinat OR title ILIKE pollinat|butterfl|monarch|'bee '|bees|honeybee. PRIMARY/ACCEPTABLE/EXCLUDE per spec.",
+      "provenanceNote": "frozen-precision. 'Bees & Pollination' and 'Bees and Pollination' share a normalized title (build rule 2: & -> and) and are merged into ONE primary cluster; spec lists both titles. 'Bees & Blueberries' <-> 'Bees and Blueberries' is an explicit twin-pair. 'Butterflies' twin = two rows. All PRIMARY titles returned a row.",
+      "scoring": "frozen-precision",
+      "primaryClusters": [
+        ["1GRwdy72vU9H6xe7txN6D3zwUnSzLyC0Z", "lesson_3f33219774294a47bc7ba0afd5f29311"],
+        ["1d5L9ARkIeBj7VyrV-4x9xtC-V4QbRb3U", "1vY0gOo9IooV6W9uAVYskU1G0byTHEfzIPHnFMGPKQQo"],
+        ["1OTWsMqlZ6xubbc53zT7V8wq7B-lhOW1BvmI0i_odT4c"],
+        ["1lfH8xM8MZtOtYf7EIXqw7I29Gpd90_s2GBMW9KWmE28"],
+        ["1Ps9Uvd1cYmq76REd7ogC0NOgVzNnpW4RcLppUaY0CJE"],
+        ["1U37lyK4-ywV1d-NQmj__f3gFdLAvIuDh8P30UC9mwFE"],
+        ["1xA88OeHAL5csyB1zfUwvQaibMNdryE7c"],
+        ["1fHAR1HOSD0CTmyQkbhR8zTNwhAWfcnJn"]
+      ],
+      "acceptableClusters": [
+        ["1WKXLADkrfgZ7462f3JKfHNV-trHtuNtmo3i6Gq-PqeA", "lesson_be063faef5704613af4fa8dda5864e88"],
+        ["1vtc3aoMtnG3sv0JkFqVaCX3Oj3EaqooN"],
+        ["1hVoq2yXrmiqKKpepkJ6EHU4zvAeosljCcM2fnN8kjDA"],
+        ["1qFdSvp0F1MJoBxkfucvjTayzGwuMjPRF"],
+        ["1VBsAgrgmBMNQJv7YIjSj3rLuR5g2NcWQI_UdrJqRQeY"],
+        ["1ZynAlPlWZsqiotLYrT7PTASgINLs30N7ETVQYp-AWYQ"],
+        ["14h7-Ot1LaOC1q01AZx3_seBIpV5YTuSY"],
+        ["1p3oD2B_agsHWYJAdOJYBNqIBK6fO0Lay"],
+        ["1BDcQHoHO-tUMXK_fV5hjC-VQmtRZ-aj1"],
+        ["18mN19miNouyDynPnIAh9IPXt1WfQPoHj"]
+      ]
+    },
+    {
+      "id": "q16",
+      "query": "photosynthesis",
+      "intent": "Photosynthesis lessons (recall).",
+      "category": "G1",
+      "provenance": "gold-provenance.md FROZEN q16; oracle: title/summary ILIKE photosynth OR academicConcepts ILIKE photosynth. PRIMARY/ACCEPTABLE/EXCLUDE per spec.",
+      "provenanceNote": "frozen-recall. All PRIMARY titles returned a row.",
+      "scoring": "frozen-recall",
+      "primaryClusters": [
+        ["1INdvs5mkzUtkXZHMo0h0sBueEelxn0ov"],
+        ["1J1ghuNNBGsbbVydOoWvfJwIMCignE2qc"],
+        ["1Yx7Yp7W90p_XqfF-n3M78MblwCsQykbjVAFAofwT6GM"]
+      ],
+      "acceptableClusters": [
+        ["1quejMyRwvd1YerJBW09hzoaiFmkmrDPN"],
+        ["1PJDsQ0vRviNdY64ny3ZoytCGDuWRjP__Yo9lMFhMh_o"]
+      ]
+    },
+    {
+      "id": "q17",
+      "query": "seed saving",
+      "intent": "Seed-saving lessons (predicate).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q17. Predicate: >=7/10 top-10 about seed saving.",
+      "provenanceNote": "predicate.",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=7/10 top-10 about seed saving (title/summary ILIKE 'seed' AND (ILIKE 'sav' OR 'collect' OR 'harvest')).",
+        "sql": "(title ILIKE '%seed%' OR summary ILIKE '%seed%') AND (title ILIKE '%sav%' OR summary ILIKE '%sav%' OR title ILIKE '%collect%' OR summary ILIKE '%collect%' OR title ILIKE '%harvest%' OR summary ILIKE '%harvest%')"
+      }
+    },
+    {
+      "id": "q18",
+      "query": "taste test",
+      "intent": "Tasting / taste-test lessons (predicate).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q18. Predicate: >=7/10 top-10 tasting.",
+      "provenanceNote": "predicate.",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=7/10 top-10 about tasting (title/summary ILIKE 'tast').",
+        "sql": "title ILIKE '%tast%' OR summary ILIKE '%tast%'"
+      }
+    },
+    {
+      "id": "q19",
+      "query": "pumpkin",
+      "intent": "Pumpkin lessons (predicate, single-ingredient).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q19. Predicate: >=7/10 top-10 pumpkin.",
+      "provenanceNote": "predicate.",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=7/10 top-10 about pumpkin (title/summary/main_ingredients ILIKE 'pumpkin').",
+        "sql": "title ILIKE '%pumpkin%' OR summary ILIKE '%pumpkin%' OR EXISTS(SELECT 1 FROM unnest(main_ingredients) mi WHERE mi ILIKE '%pumpkin%')"
+      }
+    },
+    {
+      "id": "q20",
+      "query": "cooking with tomatoes",
+      "intent": "Tomato cooking lessons (predicate, multi-word).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q20. Predicate: >=6/10 top-10 tomato cooking.",
+      "provenanceNote": "predicate.",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=6/10 top-10 about tomato cooking (title/summary/main_ingredients ILIKE 'tomato').",
+        "sql": "title ILIKE '%tomato%' OR summary ILIKE '%tomato%' OR EXISTS(SELECT 1 FROM unnest(main_ingredients) mi WHERE mi ILIKE '%tomato%')"
+      }
+    },
+    {
+      "id": "q21",
+      "query": "compost",
+      "intent": "Single-term compost control: must stay tight (precision).",
+      "category": "control",
+      "provenance": "gold-provenance.md FROZEN q21; oracle: title/summary ILIKE compost. PRIMARY/ACCEPTABLE per spec.",
+      "provenanceNote": "frozen-precision (single-term control). maxTotalCount = live total_count of 'compost' (178); single-term compost must stay tight. All PRIMARY titles returned a row.",
+      "scoring": "frozen-precision",
+      "maxTotalCount": 178,
+      "primaryClusters": [
+        ["1Dkx1Q--fGzGDCAu3kx5OTsuRa_lRY2agdiMqyfn2VpI"],
+        ["1RY1H0XMEOYQtCk0mV7xaKYBPzoDqBm2m"],
+        ["1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38"],
+        ["1730LjSjM6rScDdd0uqVm1JHFsiomc3yi", "lesson_7d34e6ab88b64d8a855507ac6c47db20"],
+        ["1iUmZQtejAbOYDkxNhEj47s_O0a5qvo7OskHw2-KhCP4"],
+        ["1DjKZHzxEZXodIjzInPgMYiYgAqANekN3-8yyIknq8z8"],
+        ["lesson_2d73f8c9c05d47a080578b8df46417f5"]
+      ],
+      "acceptableClusters": [
+        ["1HkHvHBFdGRIu0dJ1GmBiq4OzEXrmRW60odAvls55gZ0"],
+        ["1CE324nZDL2kz_4P5TwDuvoX7Zx_NMwUz"],
+        ["0BwC8Pf3ZwAXjLXYwc3FQbS1ZMHc"],
+        ["17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c"],
+        ["1aR8TJy6wbqotVca6i3aazfACXM_7UvrxUYHEFAjJWiE"],
+        ["1eEd1a3R8E3vqbcXUQJ-Diht81xOJDdRJIBQbF5CiBa4"]
+      ]
+    },
+    {
+      "id": "q22",
+      "query": "compost worms soil",
+      "intent": "Multi-term sentinel: stability watchdog, EXCLUDED from the quality score.",
+      "category": "sentinel",
+      "provenance": "gold-provenance.md CONTROL/SENTINEL q22. Pin today's top-10 lesson_ids + total_count. Report jaccard(current top-10, snapshot) + total_count delta; alarm if jaccard<0.8 or count outside +/-10%.",
+      "provenanceNote": "sentinel (EXCLUDED from quality score). snapshot.topIds + total_count pinned LIVE (count 278; spec ~278). Reported OUTSIDE the quality score.",
+      "scoring": "sentinel",
+      "snapshot": {
+        "totalCount": 278,
+        "topIds": [
+          "lesson_2d73f8c9c05d47a080578b8df46417f5",
+          "1DjKZHzxEZXodIjzInPgMYiYgAqANekN3-8yyIknq8z8",
+          "1RY1H0XMEOYQtCk0mV7xaKYBPzoDqBm2m",
+          "1iUmZQtejAbOYDkxNhEj47s_O0a5qvo7OskHw2-KhCP4",
+          "17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c",
+          "1_i0zHlSi0RQfsV5Z3VNTPti7w_rg2w8Dx7Z30co0KCg",
+          "0BwC8Pf3ZwAXjLXYwc3FQbS1ZMHc",
+          "1wp71sAPQQycFDAHX_k-Tk8fpzz-bb2FW",
+          "1qOAiHnYteeSZZKHAqW9c5z1YlbLQqGRlWZIW3KQ4Vss",
+          "1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38"
+        ]
+      }
+    },
+    {
+      "id": "q23",
+      "query": "garden",
+      "intent": "Single-term broad control: catches accidental widening (OR->AND deferred, so 'garden' stays broad).",
+      "category": "control",
+      "provenance": "gold-provenance.md CONTROL/SENTINEL q23. Pin total_count (586); maxTotalCount guard ~600.",
+      "provenanceNote": "control-maxcount. total_count pinned LIVE = 586 (spec ~586); maxTotalCount = 600 per spec guard (catches accidental widening).",
+      "scoring": "control-maxcount",
+      "maxTotalCount": 600,
+      "snapshot": { "totalCount": 586 }
+    },
+    {
+      "id": "q24",
+      "query": "tomato",
+      "intent": "Single-term tomato control (predicate).",
+      "category": "control",
+      "provenance": "gold-provenance.md PREDICATE q24. Predicate control: >=6/10 top-10 tomato.",
+      "provenanceNote": "predicate (control).",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=6/10 top-10 about tomato (title/summary/main_ingredients ILIKE 'tomato').",
+        "sql": "title ILIKE '%tomato%' OR summary ILIKE '%tomato%' OR EXISTS(SELECT 1 FROM unnest(main_ingredients) mi WHERE mi ILIKE '%tomato%')"
+      }
+    },
+    {
+      "id": "q25",
+      "query": "salad",
+      "intent": "Single-term salad control (predicate).",
+      "category": "control",
+      "provenance": "gold-provenance.md PREDICATE q25. Predicate control: >=6/10 top-10 salad.",
+      "provenanceNote": "predicate (control).",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=6/10 top-10 about salad (title/summary ILIKE 'salad').",
+        "sql": "title ILIKE '%salad%' OR summary ILIKE '%salad%'"
+      }
+    },
+    {
+      "id": "q26",
+      "query": "herbs",
+      "intent": "Herb lessons control (predicate).",
+      "category": "control",
+      "provenance": "gold-provenance.md PREDICATE q26. Predicate control: >=6/10 top-10 herb(s).",
+      "provenanceNote": "predicate (control).",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=6/10 top-10 about herbs (title/summary/main_ingredients ILIKE 'herb' OR 'basil' OR 'mint' OR 'cilantro').",
+        "sql": "title ILIKE '%herb%' OR summary ILIKE '%herb%' OR title ILIKE '%basil%' OR summary ILIKE '%basil%' OR title ILIKE '%mint%' OR summary ILIKE '%mint%' OR title ILIKE '%cilantro%' OR summary ILIKE '%cilantro%' OR EXISTS(SELECT 1 FROM unnest(main_ingredients) mi WHERE mi ILIKE '%herb%' OR mi ILIKE '%basil%' OR mi ILIKE '%mint%' OR mi ILIKE '%cilantro%')"
+      }
+    },
+    {
+      "id": "q27",
+      "query": "social justice",
+      "intent": "Core-competency (CC) probe: saturated 10/10 lexically today; isolation = clean 'would indexing CC help'.",
+      "category": "G3",
+      "provenance": "gold-provenance.md G3-ISOLATION q27; oracle: 'Social Justice' = ANY(core_competencies) AND no lexical 'justice' in title/summary/content_text. maxTotalCount guard (over-broad today).",
+      "provenanceNote": "g3-isolation. isolationIds count pinned LIVE = 25 (spec ~25, exact match). maxTotalCount = live total_count of 'social justice' (653; spec ~653, over-broad). Includes the known degenerate 'Unknown' ghost row (1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU) kept intentionally (user-confirmed 2026-06-18) to preserve oracle-SQL reproducibility (25 ids match the oracle exactly); it carries the Social Justice CC tag and won't rank, so it is a tiny honest deflation, not a false positive.",
+      "scoring": "g3-isolation",
+      "maxTotalCount": 653,
+      "isolationIds": [
+        "0BxEc0RZeYtCiQ29XeFdxcnNSNTg",
+        "1_NNwq4o0N7p7e5jL70Bo-j1ryl4ym6USXHfoCQSsGow",
+        "10VASBkheY2wLqM6A81N6yLjwY0lMGbcFcQ7MElBYqEY",
+        "12RwHjP24TfPdpBJh__p22vg3vMGkG31DEN0tKz4BxfQ",
+        "14wTm_zkFDwSqkUBJj01zdY2Lq1D6-eXdj6BQcZwOrQ4",
+        "16mgyKO8H_9s58p4mH1WuyCgswGKhti0h",
+        "181y-Semcur6u9swSHkHiPCWqqf2IMADX",
+        "18AeFC5zkMbPid2BtdbUr-Q2IdH01o93g3XajMN-VEcs",
+        "18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS",
+        "1bVDe707ybEfXjRhURKAmvdArp200ufJDnAxp3xx_qzw",
+        "1dXzaZv3yFh5wlHxkkZPPCrQdJWsXT5-tvGA4CP3yNuY",
+        "1eFmMW_gk1dR2uEpUWTVHylQAB7-OSAIKNfwc07Dbmgg",
+        "1F9HMi267ePLvdQUys_rOe1wuna6NhP9ScssgXA4gufE",
+        "1HuffJuy_-bVzIAm4GxzBhG3gOtiRoAKBBapswfhZrCg",
+        "1IxkjYeOmhz2M_MC_Cbzj8vJMnLNVA5UX56CGi6E_Ap8",
+        "1K1tlc3--Dv061Qi1A1AKOGW6_L19VXSTRtKHfe73bjY",
+        "1KyXnFLsxDwzrB9Z_ROdXZYetpQKpb5g_",
+        "1l7A2jTOeXN5rV-dOhb6eH59URYlCYK8BF8K-xsd_ut8",
+        "1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU",
+        "1LYziMRy2LTXb4W1nTpjrDCk6J73XILqo",
+        "1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg",
+        "1NHQd8BVmNECNgkMV4FeJjC5fzMxi-Pcp",
+        "1qTGQcuxoW6erfUZvXAoFPaYeXnoMxf8dcjSdKNTRO8U",
+        "1u2kn0lEbeRsF7P340khtFl7TV1G9Xe1teh7QEkWIv58",
+        "1uDDPxAKSjEPYMU36W80bEbSMa_YuuGPNw62CXFGD6hM"
+      ]
+    },
+    {
+      "id": "q28",
+      "query": "mexican food",
+      "intent": "Cuisine/culture coverage: Mexican/Latin American lessons (predicate).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q28. Predicate: >=6/10 top-10 carry Mexican/Latin American cultural_heritage OR a Mexican-dish title. maxTotalCount guard.",
+      "provenanceNote": "predicate. maxTotalCount = live total_count of 'mexican food' (567, over-broad baseline).",
+      "scoring": "predicate",
+      "maxTotalCount": 567,
+      "predicate": {
+        "description": ">=6/10 top-10 carry Mexican/Latin American cultural_heritage OR a Mexican-dish title (e.g. taco, enchilada, pico de gallo, tostada, arepa, pupusa, mole, salsa).",
+        "sql": "EXISTS(SELECT 1 FROM unnest(cultural_heritage) ch WHERE ch ILIKE '%mexic%' OR ch ILIKE '%latin%') OR title ILIKE '%taco%' OR title ILIKE '%enchilada%' OR title ILIKE '%pico de gallo%' OR title ILIKE '%tostada%' OR title ILIKE '%pupusa%' OR title ILIKE '%mole%' OR title ILIKE '%salsa%' OR title ILIKE '%arepa%'"
+      }
+    },
+    {
+      "id": "q29",
+      "query": "apple",
+      "intent": "Single-term apple control (predicate + maxTotalCount sanity).",
+      "category": "control",
+      "provenance": "gold-provenance.md PREDICATE q29. Predicate control: >=6/10 top-10 apple. maxTotalCount sanity.",
+      "provenanceNote": "predicate (control). maxTotalCount = live total_count of 'apple' (64, sanity band).",
+      "scoring": "predicate",
+      "maxTotalCount": 64,
+      "predicate": {
+        "description": ">=6/10 top-10 about apple (title/summary/main_ingredients ILIKE 'apple').",
+        "sql": "title ILIKE '%apple%' OR summary ILIKE '%apple%' OR EXISTS(SELECT 1 FROM unnest(main_ingredients) mi WHERE mi ILIKE '%apple%')"
+      }
+    },
+    {
+      "id": "q30",
+      "query": "food waste",
+      "intent": "Food-waste / compost / decomposition lessons (predicate).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q30. Predicate: >=6/10 top-10 about compost/decomposition/food-waste.",
+      "provenanceNote": "predicate.",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=6/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+      }
+    },
+    {
+      "id": "q31",
+      "query": "making good choices",
+      "intent": "Combined G1+G3: needs the synonym bridge to 'responsible decision-making' AND typed-array indexing. Do NOT use to prove indexing alone.",
+      "category": "G1+G3",
+      "provenance": "gold-provenance.md G3-ISOLATION q31; measurement set = the q10 RDM isolation set. LABELED combined G1+G3.",
+      "provenanceNote": "g3-isolation, LABELED combined G1+G3. isolationIds reuse the q10 RDM isolation set (29 ids); flagged so it is NOT used to prove indexing alone.",
+      "scoring": "g3-isolation",
+      "_combinedG1G3": true,
+      "_isolationSource": "q10",
+      "isolationIds": [
+        "0B5_wrFVyDBsILXFtb04xOWZYQjQ",
+        "0B9X3sp9nlAgmVmZpaFd6clptWTA",
+        "1_u1GSf5QuGNz_6Xl_PBMX82CegoLCS000Pd9ZKHh0Mw",
+        "1-1zPGScv5yaJwfSlgIxtaPJaqw8zVExiMh3OizLnye8",
+        "10QIYILxb1r-2252Sd1_jg58SLgmHWElg09FFr4WAa5E",
+        "12afDXwtfouvdhbJWIlpB07gF2L-N0KDg9Ws_OXqcca0",
+        "18IhN8D7FYW-0rfXk-X3JpwNTTOILXblS",
+        "18LGHGw5bid1uFmapJbJlSUlwX4-h7oUGNoZ-nu47egM",
+        "1bjiET8ffFpU5_gCMgJBiTDPuHhE0lCPGBnv72LXzrW4",
+        "1CMOg0xDu650zM2Pnnhy1EMB4r25fLs9Nx7h7AJVVYdE",
+        "1cS3llhLF1k2bwgwz1f62fWk938evVGRE9crGuAWT3_g",
+        "1dXzaZv3yFh5wlHxkkZPPCrQdJWsXT5-tvGA4CP3yNuY",
+        "1eQF5NWcYwKxoswPigPABqleFqY3kDFoWxWmu0Ke-urQ",
+        "1F9HMi267ePLvdQUys_rOe1wuna6NhP9ScssgXA4gufE",
+        "1gCY7UTLfFeOI7wK4GjZTOyQO67R95L9E",
+        "1Hoa5V9Zsj7AA9r268_S-8mjoghae3vH9",
+        "1iwA2l4QPsqXJqu5lP8Ix5BarlTjIhxTQ",
+        "1NKjrltsfTTjAT5IZKGHiiovZvRcvhfJx6rPVn-lbYFM",
+        "1qOAiHnYteeSZZKHAqW9c5z1YlbLQqGRlWZIW3KQ4Vss",
+        "1qwbgUIiZgmzrK-hQIJZaieaZTnq1sLev-YKHDnncQXM",
+        "1RM7nAa2-TOk2znpk6CvfpuU7D8-iQ1Y1eAcE8dTk-9U",
+        "1TRoy2OrEWmCo_ufnfWMRUOThxx2xvZcEnxRCCeO92-c",
+        "1UuTbP_4V0UhFCUjKKkHy7qaED4ZoyWHCMoHF70VflC4",
+        "1VeiRoBU-ljikWKg_jXQfiAgr_2d1yyxhS57JM5Hej-E",
+        "1xAHtAr8-faQdQW0eEoA_CL1pcySGhzsWguOj9e5R3UQ",
+        "1xQebmPuWM1ZFPnfDCekLW5qSatOXSoDtJKWRvJQPGnU",
+        "1YnlgMvzSZPf62gHtWozhokKR47TOZUkf",
+        "1zdTTjTfKsBywIhhf5rcFTQDaI-JhXRmEn_lw_CEFX9I",
+        "lesson_c257c458adb549c3ad5ffe25aef9a776"
+      ]
+    },
+    {
+      "id": "q32",
+      "query": "compost lesson for third graders",
+      "intent": "Robustness: G2 grade-router variant of q01 using the spelled-out ordinal 'third graders'.",
+      "category": "G2",
+      "provenance": "gold-provenance.md ROBUSTNESS q32. normalizedCall {compost, [3]}; same PRIMARY gold as q01; tests router on spelled-out ordinal.",
+      "provenanceNote": "frozen-recall, robustness variant of q01. PRIMARY clusters identical to q01 (re-derived live, same grade-3 compost set).",
+      "scoring": "frozen-recall",
+      "normalizedCall": { "search_query": "compost", "filter_grade_levels": ["3"] },
+      "primaryClusters": [
+        ["1Dkx1Q--fGzGDCAu3kx5OTsuRa_lRY2agdiMqyfn2VpI"],
+        ["1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38"],
+        ["lesson_7d34e6ab88b64d8a855507ac6c47db20", "1730LjSjM6rScDdd0uqVm1JHFsiomc3yi"],
+        ["1DjKZHzxEZXodIjzInPgMYiYgAqANekN3-8yyIknq8z8"],
+        ["lesson_2d73f8c9c05d47a080578b8df46417f5"],
+        ["1Hoa5V9Zsj7AA9r268_S-8mjoghae3vH9"]
+      ],
+      "acceptableClusters": []
+    },
+    {
+      "id": "q33",
+      "query": "seeds grades K-2",
+      "intent": "Robustness: G2 grade-RANGE variant; routes to K/1/2 (predicate).",
+      "category": "G2",
+      "provenance": "gold-provenance.md ROBUSTNESS q33. normalizedCall {seeds, [K,1,2]}; predicate >=7/10 seeds.",
+      "provenanceNote": "predicate, grade-range robustness variant.",
+      "scoring": "predicate",
+      "normalizedCall": { "search_query": "seeds", "filter_grade_levels": ["K", "1", "2"] },
+      "predicate": {
+        "description": ">=7/10 top-10 about seeds (title/summary ILIKE seed).",
+        "sql": "title ILIKE '%seed%' OR summary ILIKE '%seed%'"
+      }
+    },
+    {
+      "id": "q34",
+      "query": "decompasition",
+      "intent": "Robustness: typo of 'decomposition'; tests typo/synonym expansion against the decomposition PRIMARY gold.",
+      "category": "G1",
+      "provenance": "gold-provenance.md ROBUSTNESS q34. scoring=frozen-recall vs the q05-07 decomposition PRIMARY. Pin baseline behavior.",
+      "provenanceNote": "frozen-recall vs q05/q06/q07 PRIMARY (typo handling). PRIMARY clusters mirror q05/q07. acceptableClusters intentionally EMPTY: spec line 179 scores q34 'vs the q05-07 decomposition PRIMARY' only (recall@primary); the acceptable tier is inert for frozen-recall and is not carried into the typo probe. (Tightened 2026-06-18 after independent Codex cross-check flagged the spec-vs-data divergence — all 8 same-family verifiers had normalized it away.)",
+      "scoring": "frozen-recall",
+      "primaryClusters": [
+        ["1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4"],
+        ["1UCyriRP14jUWMetMP6Olivo6XTS3COl14Et8dtpmkPs"],
+        ["lesson_d73c3abe21f04406b664d7a9d899859c"],
+        ["lesson_a689a2c8fc7b4f2daabc6ecbaf4fdce3"],
+        ["1XLqd7Hrxr-lacieyRdaVsSBIdOOj-k4QW-Du8Dk3VXE", "1Hrjix7fb6KQEVKwegeWLkoiUx8fIWpO1UBKEU0ni2QU"],
+        ["1Us8lS78zALqD9be_Wj-cIO3uhbBd8m94ougM6NDqPTc"],
+        ["1AWwvEhoiiipYR5vzf5lTQKwTqu7NzEjE314V1_3zWlY"]
+      ],
+      "acceptableClusters": []
+    },
+    {
+      "id": "q35",
+      "query": "kimchi",
+      "intent": "Extra-cuisine robustness: kimchi/Korean/fermentation lessons (predicate).",
+      "category": "G1",
+      "provenance": "gold-provenance.md ROBUSTNESS q35. Predicate: >=5/10 top-10 about kimchi/Korean/fermentation.",
+      "provenanceNote": "predicate, extra-cuisine robustness.",
+      "scoring": "predicate",
+      "predicate": {
+        "description": ">=5/10 top-10 about kimchi/Korean/fermentation (title/summary ILIKE 'kimchi' OR cultural_heritage Korean OR fermentation).",
+        "sql": "title ILIKE '%kimchi%' OR summary ILIKE '%kimchi%' OR title ILIKE '%ferment%' OR summary ILIKE '%ferment%' OR EXISTS(SELECT 1 FROM unnest(cultural_heritage) ch WHERE ch ILIKE '%korean%')"
+      }
+    }
+  ]
+}
