@@ -49,6 +49,11 @@ import {
 } from './metrics';
 import { evaluatePredicate, parsePredicateThreshold, type PredicateRow } from './predicate';
 import { assertReadOnly } from './readonly-guard';
+// S1.4: the public G2 fix is frontend (parseSearchQuery). The harness imports the
+// EXACT same pure, alias-free module the search hook uses (src/utils/parseSearchQuery.ts)
+// so the eval scores the real normalized call (cleaned search_query + routed grades) —
+// keeping the gate honest about end-to-end app behavior.
+import { parseSearchQuery } from '../../src/utils/parseSearchQuery';
 
 // Load env exactly like backfill-embeddings.ts (dotenv; never shell-source —
 // .env may contain a multiline JSON value, GOOGLE_SERVICE_ACCOUNT_JSON).
@@ -232,16 +237,24 @@ interface RpcResult {
 }
 
 /**
- * resolveCall — the S1.4 seam. At S0 there is NO parseSearchQuery yet, so we
- * ALWAYS call with the RAW query and no grade filter. For attributable S1
- * deltas, the expected normalizedCall is recorded on the result.
+ * resolveCall — the S1.4 seam (now LIVE). Applies the shipped frontend G2 fix
+ * (parseSearchQuery) so the harness scores the same normalized call the search
+ * hook makes (useLessonSearch.ts): a cleaned FTS term + routed grade filter.
+ * The expected normalizedCall stays recorded on the result for an attributable diff.
  */
 function resolveCall(entry: QueryEntry): {
   search_query: string;
   filter_grade_levels?: string[];
 } {
-  // S1.4: replace with parseSearchQuery(entry.query) -> { cleanedQuery, detectedGrades }.
-  return { search_query: entry.query };
+  // Apply parseSearchQuery exactly as the search hook does. No eval query is
+  // grade-only, so cleanedQuery is always non-empty here (== the hook's
+  // `cleanedQuery || undefined` for every entry in this set).
+  const { cleanedQuery, detectedGrades } = parseSearchQuery(entry.query);
+  const call: { search_query: string; filter_grade_levels?: string[] } = {
+    search_query: cleanedQuery,
+  };
+  if (detectedGrades.length > 0) call.filter_grade_levels = detectedGrades;
+  return call;
 }
 
 async function runSearch(
@@ -508,7 +521,7 @@ function buildScorecard(
   lines.push('');
   lines.push(`- **Snapshot date:** ${snapshot.date} (gold frozen from DB \`${snapshot.db}\`, ref \`${snapshot.project_ref}\`)`);
   lines.push(`- **Corpus size:** ${snapshot.searchableCorpus} (searchable, retired-excluded)`);
-  lines.push(`- **Run note:** raw queries (S0 baseline; NO parseSearchQuery yet — G2 entries scored on the RAW explosion call, expectedNormalizedCall recorded for the S1 delta).`);
+  lines.push(`- **Run note:** normalized queries (S1: parseSearchQuery APPLIED — G2 entries scored on the cleaned search_query + routed filter_grade_levels; expectedNormalizedCall is the call actually made).`);
   lines.push(`- **Baseline for rank-movement:** ${hadBaseline ? 'present (G3 movement computed)' : 'absent (first run — G3 movement = n/a)'}`);
   lines.push('');
 

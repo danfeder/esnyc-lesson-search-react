@@ -8,17 +8,17 @@
 
 - **Snapshot date:** 2026-06-18 (gold frozen from DB `test`, ref `rxgajgmphciuaqzvwmox`)
 - **Corpus size:** 745 (searchable, retired-excluded)
-- **Run note:** raw queries (S0 baseline; NO parseSearchQuery yet — G2 entries scored on the RAW explosion call, expectedNormalizedCall recorded for the S1 delta).
+- **Run note:** normalized queries (S1: parseSearchQuery APPLIED — G2 entries scored on the cleaned search_query + routed filter_grade_levels; expectedNormalizedCall is the call actually made).
 - **Baseline for rank-movement:** present (G3 movement computed)
 
 ## Aggregate quality summary (sentinel EXCLUDED)
 
 | Metric | Value |
 |---|---|
-| Mean recall@10 (frozen-recall) | 0.575 |
+| Mean recall@10 (frozen-recall) | 0.642 |
 | Mean precision@10 (frozen-precision) | 0.833 |
-| Predicate pass-rate | 0.563 (9/16) |
-| Corpus MRR (mean RR over frozen queries) | 0.723 |
+| Predicate pass-rate | 0.688 (11/16) |
+| Corpus MRR (mean RR over frozen queries) | 0.846 |
 | maxTotalCount violations | 0 |
 | Dup-flood alarms (dupFlood>0) | 0 |
 | G3-isolation queries | 4 |
@@ -27,7 +27,7 @@
 
 | id | query | total | recall@10 | top1 | RR | dupFlood | uniqContentP@10 | maxCount ok |
 |---|---|---|---|---|---|---|---|---|
-| q01 | compost lesson for 3rd grade | 744 | 0.667 | false | 0.200 | 0 | 1.000 | true |
+| q01 | compost lesson for 3rd grade | 87 | 1.000 | true | 1.000 | 0 | 1.000 | true |
 | q05 | decay | 1 | 0.000 | false | 0.000 | 0 | 0.100 | n/a |
 | q06 | rotting food | 567 | 0.000 | false | 0.000 | 0 | 1.000 | true |
 | q07 | decomposition | 59 | 0.857 | true | 1.000 | 0 | 1.000 | n/a |
@@ -35,7 +35,7 @@
 | q12 | teamwork and cooperation | 44 | 0.400 | true | 1.000 | 0 | 1.000 | n/a |
 | q14 | knife skills | 650 | 0.875 | true | 1.000 | 0 | 1.000 | n/a |
 | q16 | photosynthesis | 11 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
-| q32 | compost lesson for third graders | 742 | 0.667 | false | 0.200 | 0 | 1.000 | n/a |
+| q32 | compost lesson for third graders | 87 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q34 | decompasition | 2 | 0.286 | true | 1.000 | 0 | 0.200 | n/a |
 
 ## frozen-precision
@@ -50,9 +50,9 @@
 
 | id | query | total | satisfied/considered | threshold | pass | maxCount ok |
 |---|---|---|---|---|---|---|
-| q02 | garden lessons for kindergarten | 744 | 8/10 | 7 | true | true |
-| q03 | worm composting for 2nd graders | 270 | 8/10 | 7 | true | true |
-| q04 | a lesson about seeds for first grade | 745 | 4/10 | 7 | false | n/a |
+| q02 | garden lessons for kindergarten | 257 | 10/10 | 7 | true | true |
+| q03 | worm composting for 2nd graders | 91 | 10/10 | 7 | true | true |
+| q04 | a lesson about seeds for first grade | 251 | 10/10 | 7 | true | n/a |
 | q09 | bugs that pollinate flowers | 174 | 9/10 | 8 | true | n/a |
 | q17 | seed saving | 578 | 5/10 | 7 | false | n/a |
 | q18 | taste test | 503 | 7/10 | 7 | true | n/a |
@@ -64,7 +64,7 @@
 | q28 | mexican food | 567 | 8/10 | 6 | true | true |
 | q29 | apple | 64 | 10/10 | 6 | true | true |
 | q30 | food waste | 568 | 2/10 | 6 | false | n/a |
-| q33 | seeds grades K-2 | 685 | 6/10 | 7 | false | n/a |
+| q33 | seeds grades K-2 | 300 | 10/10 | 7 | true | n/a |
 | q35 | kimchi | 1 | 1/1 | 5 | false | n/a |
 
 ## g3-isolation

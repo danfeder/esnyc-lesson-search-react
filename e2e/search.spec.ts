@@ -105,4 +105,45 @@ test.describe('Search Functionality', () => {
     // Should find garden results regardless of case
     await expect(page.locator('text=/garden/i').first()).toBeVisible({ timeout: 10000 });
   });
+
+  test('auto-detected grade chip appears for a multi-word query and is removable', async ({
+    page,
+  }) => {
+    const searchBar = page.getByPlaceholder(/search/i);
+
+    // Multi-word query: filler is stripped and the grade is routed into a filter,
+    // which renders the auto-detected grade chip.
+    await searchBar.fill('compost lesson for 3rd grade');
+    await searchBar.press('Enter');
+    await page.waitForLoadState('networkidle');
+
+    // The auto-grade chip should appear (pill text contains both "Grade 3" and "auto").
+    const chip = page.locator('.int-pill', { hasText: /grade 3.*auto/i });
+    await expect(chip).toBeVisible({ timeout: 10000 });
+
+    // Compost-related results should appear.
+    await expect(page.locator('text=/compost/i').first()).toBeVisible({ timeout: 10000 });
+
+    // Dismiss the chip via its remove button.
+    await page.getByRole('button', { name: /remove auto-applied grade filter/i }).click();
+
+    // The auto chip is gone and the search box was rewritten to the cleaned term.
+    await expect(page.locator('.int-pill', { hasText: /grade 3.*auto/i })).toHaveCount(0);
+    await expect(searchBar).toHaveValue('compost');
+  });
+
+  test('single-term search shows no auto grade chip', async ({ page }) => {
+    const searchBar = page.getByPlaceholder(/search/i);
+
+    // A single-term query has no grade to detect, so no auto chip should render.
+    await searchBar.fill('compost');
+    await searchBar.press('Enter');
+    await page.waitForLoadState('networkidle');
+
+    // Compost-related results should appear.
+    await expect(page.locator('text=/compost/i').first()).toBeVisible({ timeout: 10000 });
+
+    // The "· auto" marker only ever appears on the auto-grade chip; assert none exist.
+    await expect(page.locator('.int-pill', { hasText: /· auto/i })).toHaveCount(0);
+  });
 });
