@@ -31,6 +31,12 @@ const CANONICAL_INDEX: Record<string, number> = Object.fromEntries(
 // Filler stoplist — small, conservative, whole-token, case-insensitive.
 const FILLER = new Set<string>(['lesson', 'lessons', 'for', 'about', 'a', 'an', 'the']);
 
+// Word separators usable in a THREE-token spaced/word range after an endpoint:
+// "grades 3 to 5", "grades 3 through 5". The dash forms ("grades K - 2") are
+// handled separately because a standalone "-"/"–" token normalizes to '' (all
+// chars are non-[a-z0-9] and get stripped).
+const WORD_SEPARATORS = new Set<string>(['to', 'through', 'thru']);
+
 // Ordinal words/abbreviations -> grade value '1'..'8'.
 const ORDINAL_MAP: Record<string, string> = {
   first: '1',
@@ -98,7 +104,7 @@ export interface ParsedSearchQuery {
   detectedGrades: string[];
 }
 
-export function parseSearchQuery(raw: string): ParsedSearchQuery {
+export function parseSearchQuery(raw: string | null | undefined): ParsedSearchQuery {
   if (raw == null || typeof raw !== 'string') {
     return { cleanedQuery: '', detectedGrades: [] };
   }
@@ -116,13 +122,9 @@ export function parseSearchQuery(raw: string): ParsedSearchQuery {
   // range matching. The original tokens[] are kept for cleanedQuery reconstruction.
   const norm = tokens.map((t) => t.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ''));
 
-  // Word separators usable in a THREE-token spaced/word range after an endpoint:
-  // "grades 3 to 5", "grades 3 through 5". The dash forms ("grades K - 2") are
-  // handled separately because a standalone "-"/"–" token normalizes to '' (all
-  // chars are non-[a-z0-9] and get stripped).
-  const WORD_SEPARATORS = new Set<string>(['to', 'through', 'thru']);
   // A token at index i is a valid range separator iff its NORMALIZED form is a
-  // word separator, OR the original token is a pure hyphen / en-dash run.
+  // word separator (module-level WORD_SEPARATORS), OR the original token is a
+  // pure hyphen / en-dash run. Closes over tokens/norm by design.
   const isRangeSeparator = (i: number): boolean =>
     WORD_SEPARATORS.has(norm[i]) || /^[-–]+$/.test(tokens[i]);
 

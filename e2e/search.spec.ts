@@ -117,9 +117,10 @@ test.describe('Search Functionality', () => {
     await searchBar.press('Enter');
     await page.waitForLoadState('networkidle');
 
-    // The auto-grade chip should appear (pill text contains both "Grade 3" and "auto").
-    const chip = page.locator('.int-pill', { hasText: /grade 3.*auto/i });
+    // The auto-grade chip should appear (text contains both "Grade 3" and "auto").
+    const chip = page.getByTestId('auto-grade-chip');
     await expect(chip).toBeVisible({ timeout: 10000 });
+    await expect(chip).toHaveText(/grade 3.*auto/i);
 
     // Compost-related results should appear.
     await expect(page.locator('text=/compost/i').first()).toBeVisible({ timeout: 10000 });
@@ -128,7 +129,7 @@ test.describe('Search Functionality', () => {
     await page.getByRole('button', { name: /remove auto-applied grade filter/i }).click();
 
     // The auto chip is gone and the search box was rewritten to the cleaned term.
-    await expect(page.locator('.int-pill', { hasText: /grade 3.*auto/i })).toHaveCount(0);
+    await expect(page.getByTestId('auto-grade-chip')).toHaveCount(0);
     await expect(searchBar).toHaveValue('compost');
   });
 
@@ -143,7 +144,7 @@ test.describe('Search Functionality', () => {
     // Compost-related results should appear.
     await expect(page.locator('text=/compost/i').first()).toBeVisible({ timeout: 10000 });
 
-    // The "· auto" marker only ever appears on the auto-grade chip; assert none exist.
-    await expect(page.locator('.int-pill', { hasText: /· auto/i })).toHaveCount(0);
+    // The auto-grade chip carries the "· auto" marker; assert none exist.
+    await expect(page.getByTestId('auto-grade-chip')).toHaveCount(0);
   });
 });

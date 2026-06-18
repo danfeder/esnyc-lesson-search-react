@@ -76,6 +76,27 @@ describe('IntActivePills', () => {
       // Cleaned term = filler ("lesson"/"for") + routed grade ("3rd grade") stripped.
       expect(getFilters().query).toBe('compost');
     });
+
+    it('dismissing a grade-only auto chip clears the search box entirely', () => {
+      // "3rd grade" parses to cleanedQuery '' + detectedGrades ['3']: the whole
+      // query was the grade cue, so dismissing the chip empties the box.
+      setFilters({ query: '3rd grade', gradeLevels: [] });
+      const { rerender } = render(<IntActivePills />);
+
+      // The grade-only query still surfaces the auto chip (reachable via testid).
+      expect(screen.getByTestId('auto-grade-chip')).toBeInTheDocument();
+      expect(screen.getByText('Grade 3 · auto')).toBeInTheDocument();
+
+      const removeBtn = screen.getByRole('button', { name: AUTO_CHIP_REMOVE_LABEL });
+      act(() => {
+        fireEvent.click(removeBtn);
+      });
+
+      // Box is cleared (cleanedQuery was '') and the chip no longer renders.
+      expect(getFilters().query).toBe('');
+      rerender(<IntActivePills />);
+      expect(screen.queryByTestId('auto-grade-chip')).not.toBeInTheDocument();
+    });
   });
 
   describe('regression — existing pills', () => {

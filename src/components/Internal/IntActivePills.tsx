@@ -1,3 +1,4 @@
+import { useMemo, useCallback } from 'react';
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { buildCultureLabelMap } from '@/utils/filterUtils';
 import { parseSearchQuery } from '@/utils/parseSearchQuery';
@@ -49,12 +50,25 @@ export function IntActivePills() {
 
   const pills = collectPills(filters);
 
-  // Mirror the hook's grade-routing (explicit-wins) so the chip never claims a
-  // grade the search didn't actually apply: an explicit user grade filter wins,
-  // suppressing the auto-detected grades.
-  const { cleanedQuery, detectedGrades } = parseSearchQuery(filters.query ?? '');
+  // Mirrors useLessonSearch's effectiveGradeLevels explicit-wins guard — both
+  // call the same pure parseSearchQuery, so the routing logic cannot diverge.
+  // Intentional duplication (avoids a hook return-shape change); keep the two
+  // guards in sync. An explicit user grade filter wins, suppressing the
+  // auto-detected grades so the chip never claims a grade the search didn't apply.
+  const { cleanedQuery, detectedGrades } = useMemo(
+    () => parseSearchQuery(filters.query ?? ''),
+    [filters.query]
+  );
   const hasExplicitGrade = (filters.gradeLevels?.length ?? 0) > 0;
   const autoGrades = hasExplicitGrade ? [] : detectedGrades;
+
+  // Dismissing the auto chip rewrites the box to the cleaned term, which routes
+  // no grade on the next parse — broadening to all grades and removing the chip.
+  // Declared before the early return so hook order stays stable across renders.
+  const dismissAutoGrade = useCallback(
+    () => setFilters({ query: cleanedQuery }),
+    [setFilters, cleanedQuery]
+  );
 
   if (pills.length === 0 && autoGrades.length === 0) return null;
 
@@ -72,10 +86,6 @@ export function IntActivePills() {
     autoGrades.length === 1
       ? `Grade ${autoGrades[0]} · auto`
       : `Grades ${autoGrades.join(', ')} · auto`;
-
-  // Dismissing the auto chip rewrites the box to the cleaned term, which routes
-  // no grade on the next parse — broadening to all grades and removing the chip.
-  const dismissAutoGrade = () => setFilters({ query: cleanedQuery });
 
   return (
     <div className="int-pills">
@@ -99,7 +109,7 @@ export function IntActivePills() {
         </span>
       ))}
       {autoGrades.length > 0 && (
-        <span key="auto-grade" className="int-pill">
+        <span data-testid="auto-grade-chip" className="int-pill">
           {autoGradeLabel}
           <button
             type="button"
