@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { getSearchRpcName } from '@/lib/search';
+import { parseSearchQuery } from '@/utils/parseSearchQuery';
 import type { Lesson, LessonMetadata, SearchFilters } from '@/types';
 
 interface UseLessonSearchOptions {
@@ -88,6 +89,15 @@ function mapRowToLesson(row: RpcRow): Lesson {
 export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptions) {
   const rpcName = getSearchRpcName();
 
+  // Preprocess the raw search box term: strip filler + route grade cues (S1.2).
+  // Pure + deterministic from `filters`, so the existing queryKey still fully
+  // determines the derived RPC call (caching stays correct).
+  const { cleanedQuery, detectedGrades } = parseSearchQuery(filters.query ?? '');
+  // Safety invariant (design §5): an explicit user grade filter ALWAYS wins over
+  // a grade detected in the free-text query.
+  const hasExplicitGradeFilter = (filters.gradeLevels?.length ?? 0) > 0;
+  const effectiveGradeLevels = hasExplicitGradeFilter ? filters.gradeLevels : detectedGrades;
+
   return useInfiniteQuery<PageResult, Error>({
     queryKey: ['lesson-search', rpcName, filters, pageSize],
     initialPageParam: 0,
@@ -99,8 +109,8 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
       const currentPage = (pageParam as number) || 0;
 
       const searchParams: Record<string, SearchParamValue> = {
-        search_query: filters.query || undefined,
-        filter_grade_levels: filters.gradeLevels?.length ? filters.gradeLevels : undefined,
+        search_query: cleanedQuery || undefined,
+        filter_grade_levels: effectiveGradeLevels?.length ? effectiveGradeLevels : undefined,
         filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : undefined,
         // Season filter: RPC expects `filter_seasons`
         filter_seasons: filters.seasonTiming?.length ? filters.seasonTiming : undefined,

@@ -4,7 +4,9 @@
 
 ## Current State
 
-**Active PR:** none open yet — **S0 is MERGED to `main`**; S1 (G2 frontend) build is starting on `feat/search-g2-frontend`.
+**Active PR:** none open yet — **S0 is MERGED to `main`**; S1 (G2 frontend) building on `feat/search-g2-frontend`. **S1.1 + S1.2 DONE.** S1.1 (`7f29eba`): pure `parseSearchQuery` + 34 tests. S1.2: wired into `useLessonSearch.ts` — `search_query` now uses `cleanedQuery`, `filter_grade_levels` uses `effectiveGradeLevels` (explicit user grade filter WINS over detected); hook return shape UNCHANGED (chip seam is S1.3); 5-case `useLessonSearch.wiring.test.tsx`. Supervisor-verified both: independent module probe + diff read + targeted re-run (16/16) + full-suite no-regression (1272 green). **S1.3 (removable grade chip) is next.**
+
+**S1.3 dismiss-behavior — supervisor recommendation to confirm at S1.3 start:** the cleanest, stateless removal is `setFilters({ query: cleanedQuery })` on chip dismiss (rewrite the box to the already-cleaned term, e.g. "compost") — `parseSearchQuery` then routes nothing, the chip disappears, and the search broadens to all-grade. No extra suppression flag/state needed. S1.3 must also expose the auto-applied grades from the hook (the deferred return-shape change) so `SearchPage.tsx` can render the chip; `useLessonSearch` is consumed only at `SearchPage.tsx:43`. The grade-routing BEHAVIOR is already LIVE-correct after S1.2 — the chip is the UX affordance that makes it visible/reversible.
 
 **S0 (eval harness) — DONE + MERGED.** PR #511 squash-merged to `main` 2026-06-18 18:10Z as `69c68e4`. The measurement gate is now on `main`: `scripts/search-eval/` (cluster-aware `metrics.ts` + read-only tsx `run-search-eval.ts` + `predicate.ts` + `readonly-guard.ts` + 35-entry two-tier `queries.json` + committed TEST `baseline.json` + `scorecards/test.md`), `npm run eval:search`, `SEARCH_EVAL_TARGET=local|test|prod` (default test). External review: `claude-review` **Approve** (5 non-blocking nits, all default-rejected as below-bar for an internal read-only tool) + `performance-review` pass. The Security Audit CI failure was the **pre-existing npm-audit pattern** (S0 added ZERO deps — `package-lock.json` unchanged vs main; one-line `package.json` script add), non-blocking, fails identically on main. Full S0 detail + session logs 0–3 → `…-execution-status-archive.md`.
 
@@ -63,6 +65,9 @@ Major events:
 - **Merged PR #511** (user-gated) — squash `69c68e4` to `main`; branch deleted; merge verified (state=MERGED, files on main).
 - **PR-cycle archival:** created the archive doc (S0 detail + sessions 0–3); promoted 2 learnings to feedback memories ([[feedback_pr_bot_review_workflow]] cross-family GATE-3; [[feedback_workflow_orchestration]] on-disk executor brief); refreshed this Current State for S1.
 
-NEXT: S1.1 (TDD `parseSearchQuery`) via executor→verifier workflow → supervisor-verify → S1.2 wiring → S1.3 chip → S1.4 eval delta + E2E → per-PR ritual.
+- **S1.1 DONE** (commit `7f29eba`): pure `parseSearchQuery` built via executor→adversarial-verifier workflow (`wf_4fa5ea7b-e96`). Supervisor-verified: re-ran 34 vitest + type-check + lint; independent tsx probe = 6/6 frozen gold + 5/5 false-positive guards + edges. Verifier's 3 low findings all benign.
+- **S1.2 DONE** (this commit): wired `parseSearchQuery` into `useLessonSearch.ts` via workflow `wf_77263ad6-8d3` (executor→verifier, both pass). Minimal non-breaking edit (import + 4 derived lines + 2 param swaps; queryKey + return shape untouched). New `useLessonSearch.wiring.test.tsx` (5 cases incl. explicit-wins + grade-only). Supervisor-verified: read the diff (no raw `filters.query` leak — referenced only to feed the parser), re-ran targeted tests (16/16) + type-check + lint; verifier ran full suite (1272 green, zero regression) + independently re-probed the module.
+
+NEXT: S1.3 removable grade chip (expose auto-applied grades from the hook + render in SearchPage + dismiss via `setFilters({query: cleanedQuery})` — confirm) + E2E → S1.4 flip harness `resolveCall` + eval delta on TEST (must show G2 lift) → per-PR ritual.
 
 > Earlier sessions (0–3, the full S0 build cycle) are archived in `…-execution-status-archive.md`.
