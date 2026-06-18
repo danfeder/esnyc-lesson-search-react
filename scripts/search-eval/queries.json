@@ -5,7 +5,7 @@
     "date": "2026-06-18",
     "searchableCorpus": 745,
     "retiredExcluded": true,
-    "notes": "All gold derived live from the TEST DB per scripts/search-eval/gold-provenance.md (product-owner-approved 2026-06-18). searchableCorpus = live total_count of public.search_lessons(NULL, ...) and equals count(*) WHERE retired_at IS NULL (both 745). Clusters built by normalized title (lowercased, trimmed, whitespace-collapsed, vertical-tab dropped, & -> and, trailing dup-suffix stripped) plus the spec's explicit twin-pairs; twins counted as one cluster. *Clusters values are string[][] (array of clusters, each an array of lesson_ids). All maxTotalCount guards and sentinel/control counts are LIVE total_counts pinned at snapshot. q12 is NOT auto-frozen: it carries _needsSupervisorPick + _candidatePool for the residual relevance call. Lesson_ids re-derived live from TEST via the oracle SQL; none invented."
+    "notes": "All gold derived live from the TEST DB per scripts/search-eval/gold-provenance.md (product-owner-approved 2026-06-18). searchableCorpus = live total_count of public.search_lessons(NULL, ...) and equals count(*) WHERE retired_at IS NULL (both 745). Clusters built by normalized title (lowercased, trimmed, whitespace-collapsed, vertical-tab dropped, & -> and, trailing dup-suffix stripped) plus the spec's explicit twin-pairs; twins counted as one cluster. *Clusters values are string[][] (array of clusters, each an array of lesson_ids). All maxTotalCount guards and sentinel/control counts are LIVE total_counts pinned at snapshot. q12 supervisor pick RESOLVED 2026-06-18 (user/product-owner-confirmed): 5 activity-based PRIMARY clusters frozen (Compost Relay; Compost Relay & Stew twin; Plant Part Olympics; Teamwork Challenge; Teamwork in the Garden). q27 retains its degenerate 'Unknown' ghost row by explicit decision. Deep-verified live 2026-06-18 (8-agent workflow + critic + supervisor spot-check; all PASS). Lesson_ids re-derived live from TEST via the oracle SQL; none invented."
   },
   "queries": [
     {
@@ -50,7 +50,7 @@
       "category": "G2",
       "provenance": "gold-provenance.md PREDICATE q03. normalizedCall {worm composting, [2]}. Predicate: >=7/10 top-10 about worms/compost.",
       "provenanceNote": "predicate. maxTotalCount pinned live = 270 (spec '~25' refers to the grade-2-filtered result the router should yield; raw unfiltered 'worm composting for 2nd graders' total_count is 270 today and is the baseline-explosion marker the S1 router must collapse). DEVIATION NOTE: spec text says 'maxTotalCount ~25'; live raw total_count is 270, so the guard is pinned to the live raw baseline (270) per build rule 5 ('isolation/control counts are re-measured live and pinned'). The ~25 is the post-router expectation, recorded in normalizedCall.",
-        "scoring": "predicate",
+      "scoring": "predicate",
       "normalizedCall": { "search_query": "worm composting", "filter_grade_levels": ["2"] },
       "maxTotalCount": 270,
       "predicate": {
@@ -281,50 +281,19 @@
     {
       "id": "q12",
       "query": "teamwork and cooperation",
-      "intent": "Collaborative-by-design lessons (teamwork). Residual relevance call: needs a supervisor primary pick.",
+      "intent": "Collaborative-by-design lessons (teamwork/cooperation activities).",
       "category": "G1",
-      "provenance": "gold-provenance.md PREDICATE q12. Oracle: title ILIKE relay|olympic|team|together|community OR summary ILIKE work together|as a team|cooperat|collaborat|partner. Build agent surfaces the pool to the SUPERVISOR for a quick primary pick (genuinely collaborative-by-design lessons, e.g. Compost Relay, Plant Part Olympics) -- do NOT auto-freeze.",
-      "provenanceNote": "frozen-recall, SMALL gold. NOT auto-frozen: _needsSupervisorPick=true, _candidatePool holds the full oracle pool with snippets. primaryClusters intentionally empty until the supervisor adjudicates.",
+      "provenance": "gold-provenance.md PREDICATE q12. Oracle: title ILIKE relay|olympic|team|together|community OR summary ILIKE work together|as a team|cooperat|collaborat|partner. SUPERVISOR PICK (product-owner/user-confirmed 2026-06-18): from the 34-row oracle pool, PRIMARY = genuinely collaborative-by-design (activity-based cooperation) lessons; community-belonging and incidental-text matches excluded.",
+      "provenanceNote": "frozen-recall, SMALL gold. Supervisor-adjudicated 2026-06-18 (user-confirmed): 5 PRIMARY clusters = Compost Relay; Compost Relay & Stew (twin); Plant Part Olympics; Teamwork Challenge; Teamwork in the Garden. acceptableClusters intentionally empty (frozen-recall). All 6 primary ids verified live + non-retired on TEST.",
       "scoring": "frozen-recall",
-      "_needsSupervisorPick": true,
-      "primaryClusters": [],
-      "acceptableClusters": [],
-      "_candidatePool": [
-        { "lesson_id": "1--zJNW0DZBiogPJvNw65XQlItZ7h2FHelNrHPFNK3Yw", "title": "Community Gardens & Food Justice" },
-        { "lesson_id": "1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38", "title": "Compost Relay" },
-        { "lesson_id": "1730LjSjM6rScDdd0uqVm1JHFsiomc3yi", "title": "Compost Relay & Stew" },
-        { "lesson_id": "lesson_7d34e6ab88b64d8a855507ac6c47db20", "title": "Compost Relay & Stew" },
-        { "lesson_id": "1JYc3BYK-ZbYBcYQSUPKrFR3ocLhjnBRiFXFj3EV3CmE", "title": "Cooking with Seeds: Ful Medames" },
-        { "lesson_id": "1t6oKO1wyQjRdVqTRsp-aKNfQ-vEL87LwZWNfNqwej6Y", "title": "Corn Celebration" },
-        { "lesson_id": "1y9sMsAlX2mF1Ywbsq_wneNydU7BDZjwnEkIIOCKbPL8", "title": "December Holiday traditions" },
-        { "lesson_id": "1EF0k2KcKGNhH6I8dgh26G_WcwQVKkgLoozSYNzV5U5s", "title": "Family Meal Project" },
-        { "lesson_id": "1tnlR6WrzPkbfsNaUnisicyUlcv4SZ5QlO3iG4UoIybo", "title": "Fannie Lou Hamer" },
-        { "lesson_id": "15MzdlSDCvHEWEDsD83ukH9Y49qj-MNcfdjtcpdAna3w", "title": "Following Instructions" },
-        { "lesson_id": "1kSBxM0_MYqMQwXCRrSVD8_IB_g4kBfAuob2wBFK-HGs", "title": "Go, Grow, Glow Grain Salad" },
-        { "lesson_id": "1KNYzg30n3jMmv6BqJlT8zcfVX8lamwhIM0WtSP18ArY", "title": "Green Room Survival Guide" },
-        { "lesson_id": "1hPyHTpBbeonUJJirMkcbRbRytiJY-KpXY3SgO74TZEM", "title": "Holiday Snacks" },
-        { "lesson_id": "1jQ55nluV9e2p1y1LO1jDOfDtnMihXqCk7Hz9bSSeeBc", "title": "June Garden Community Play" },
-        { "lesson_id": "1yEsYn9h5dVwV0eu4wGD_y4E22FXn7Xj2VUgb9MuAHDc", "title": "Macaroni and Cheese" },
-        { "lesson_id": "1rwjyCJ7i7WelQhfAVmxP_8kx-8no7KdmE94v0ExqNRw", "title": "Making Tostones" },
-        { "lesson_id": "17MEeMT7CWyareeKsrPFyDfeURWMrYCNMjmVMVBTobX0", "title": "Meet the Green Room" },
-        { "lesson_id": "1F4O28qo1Xyi8RpG2BItpISuxxZQ2GBX47lQI_6AwTWQ", "title": "Munch Madness" },
-        { "lesson_id": "0BwC8Pf3ZwAXjS3JwZUFpbVlETzA", "title": "Our Garden and Kitchen Community" },
-        { "lesson_id": "1JRUHeRL6Ttr5hGyvdU-a5uqsjZC7fBWx", "title": "Our Garden Community" },
-        { "lesson_id": "lesson_36981b6fe32741629a2ddca67acb3ac2", "title": "Our Garden Community" },
-        { "lesson_id": "1PgqX2FsSZIF3dIlv4CS1DvLS5WtzCaw7lQb4JcpQ9AQ", "title": "Plant Part Olympics" },
-        { "lesson_id": "17upoxUN1PvxQ8VqOOVD-_lx16etNxNM09o5X-hKQzI8", "title": "Plant Part Salad 3- Best Green Team Dressing" },
-        { "lesson_id": "1UUgPjsSA6N-JnHMk8TNC2UzqZQz50-RcmP54V7U2kIY", "title": "Pumpkin Pie Energy Bites" },
-        { "lesson_id": "1TNen8KVizYd-al0B8XTA9wY-3s5O6Rm8aJQDWPhpz7k", "title": "Red Drinks for Juneteenth" },
-        { "lesson_id": "1Cj-iXBv_-EE4blTLhBngUNjYtsSUUTFWcXTRRTXOLD8", "title": "Red Foods for Juneteenth" },
-        { "lesson_id": "1HPlsYxxlLedPhVzJETkI62iz3JW9q7ytnVMKXAswiHM", "title": "Rice Paddy Modeling" },
-        { "lesson_id": "1r9Vj-2OyukvvJP6hqRerPbgvuqoLJ9e2", "title": "Seedfolks Soup" },
-        { "lesson_id": "19Hr45XM6UigCYW0A5BF2Ja_-UA53z-xznv6_tLmyKTs", "title": "Sweet Potato Biscuits" },
-        { "lesson_id": "1QDKfp6mC3uRwMfHSnGyeGX8L270dSN1KxFx3ZBDvZXc", "title": "Teamwork Challenge" },
-        { "lesson_id": "1lSvAkdCD6Ql4YmORG4tWcJonpTzBsNp08hhwKlIStY0", "title": "Teamwork in the Garden" },
-        { "lesson_id": "1P8rs1bUmdlj_lKDPQSnMr1QANW-KnTWAuEAc-UbEDVw", "title": "Trail Mix - Greater Than Less Than" },
-        { "lesson_id": "0B-haDqSHcXMCZEdqQmkyZ3otQmNBM2dBbXhzODdJMkxKUjJn", "title": "Worm Structure and Function" },
-        { "lesson_id": "188Ph9s6OEdUgNQScQOxGiqAtvNd2r78X", "title": "Zahawig" }
-      ]
+      "primaryClusters": [
+        ["1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38"],
+        ["lesson_7d34e6ab88b64d8a855507ac6c47db20", "1730LjSjM6rScDdd0uqVm1JHFsiomc3yi"],
+        ["1PgqX2FsSZIF3dIlv4CS1DvLS5WtzCaw7lQb4JcpQ9AQ"],
+        ["1QDKfp6mC3uRwMfHSnGyeGX8L270dSN1KxFx3ZBDvZXc"],
+        ["1lSvAkdCD6Ql4YmORG4tWcJonpTzBsNp08hhwKlIStY0"]
+      ],
+      "acceptableClusters": []
     },
     {
       "id": "q13",
@@ -594,7 +563,7 @@
       "intent": "Core-competency (CC) probe: saturated 10/10 lexically today; isolation = clean 'would indexing CC help'.",
       "category": "G3",
       "provenance": "gold-provenance.md G3-ISOLATION q27; oracle: 'Social Justice' = ANY(core_competencies) AND no lexical 'justice' in title/summary/content_text. maxTotalCount guard (over-broad today).",
-      "provenanceNote": "g3-isolation. isolationIds count pinned LIVE = 25 (spec ~25, exact match). maxTotalCount = live total_count of 'social justice' (653; spec ~653, over-broad).",
+      "provenanceNote": "g3-isolation. isolationIds count pinned LIVE = 25 (spec ~25, exact match). maxTotalCount = live total_count of 'social justice' (653; spec ~653, over-broad). Includes the known degenerate 'Unknown' ghost row (1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU) kept intentionally (user-confirmed 2026-06-18) to preserve oracle-SQL reproducibility (25 ids match the oracle exactly); it carries the Social Justice CC tag and won't rank, so it is a tiny honest deflation, not a false positive.",
       "scoring": "g3-isolation",
       "maxTotalCount": 653,
       "isolationIds": [
@@ -747,7 +716,7 @@
       "intent": "Robustness: typo of 'decomposition'; tests typo/synonym expansion against the decomposition PRIMARY gold.",
       "category": "G1",
       "provenance": "gold-provenance.md ROBUSTNESS q34. scoring=frozen-recall vs the q05-07 decomposition PRIMARY. Pin baseline behavior.",
-      "provenanceNote": "frozen-recall vs q05/q06/q07 PRIMARY (typo handling). PRIMARY clusters mirror q05.",
+      "provenanceNote": "frozen-recall vs q05/q06/q07 PRIMARY (typo handling). PRIMARY clusters mirror q05/q07. acceptableClusters intentionally EMPTY: spec line 179 scores q34 'vs the q05-07 decomposition PRIMARY' only (recall@primary); the acceptable tier is inert for frozen-recall and is not carried into the typo probe. (Tightened 2026-06-18 after independent Codex cross-check flagged the spec-vs-data divergence — all 8 same-family verifiers had normalized it away.)",
       "scoring": "frozen-recall",
       "primaryClusters": [
         ["1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4"],
@@ -758,14 +727,7 @@
         ["1Us8lS78zALqD9be_Wj-cIO3uhbBd8m94ougM6NDqPTc"],
         ["1AWwvEhoiiipYR5vzf5lTQKwTqu7NzEjE314V1_3zWlY"]
       ],
-      "acceptableClusters": [
-        ["0BwC8Pf3ZwAXjLXYwc3FQbS1ZMHc"],
-        ["17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c", "lesson_9d3fa2495f2f41bd9946eec528198210"],
-        ["1wS7hhLPp7jv1mvZyeSjfCXHBp84k6UA6ONcoEyYk0DM"],
-        ["1wp71sAPQQycFDAHX_k-Tk8fpzz-bb2FW", "lesson_2004c1a511fe41b58e58f1aefd339773"],
-        ["0B-haDqSHcXMCZEdqQmkyZ3otQmNBM2dBbXhzODdJMkxKUjJn"],
-        ["1_i0zHlSi0RQfsV5Z3VNTPti7w_rg2w8Dx7Z30co0KCg"]
-      ]
+      "acceptableClusters": []
     },
     {
       "id": "q35",
