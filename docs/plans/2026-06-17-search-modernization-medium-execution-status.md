@@ -6,7 +6,7 @@
 
 **Active PR:** none yet — scaffolding complete; **S0 (eval harness)** is next.
 
-**Current task:** S0 / Task S0.1 (not yet started). Before any S0 code: **GATE 1 — Codex review of this design doc** is pending (the plan-lock gate), then build S0. S0's gold-set authoring is **collaborative** (user + supervisor build the ~8 high-value ideal-result sets together) — not delegable.
+**Current task:** S0 / Task S0.1 (not yet started). **GATE 1 (Codex plan review) is DONE — 3 findings, all accepted + folded** (see Recent decisions). S0 is now clear to build. S0's gold-set authoring is **collaborative** (user + supervisor build the ~8 high-value ideal-result sets together) — not delegable.
 
 **Branch:** `feat/pr6d-search-synonyms` (carries the Session-19 closeout commit `6d9928b` + the scaffolding commit). NOTE: branch name is a legacy from the retired PR D; a fresh `feat/search-eval-s0` branch should be cut from `main` for S0 (decide at S0 start — the scaffolding docs commit can ride either).
 
@@ -14,7 +14,7 @@
 
 **Last commit on main:** `e4d7830` (PR 6 C2 — Stage-2 re-tag apply; metadata-rebuild APPLY phase complete + PROD-verified).
 
-**Pre-next-PR verification (if any):** GATE 1 Codex review of the design doc before building S0 (user-directed plan-gating + kickoff GATE 1).
+**Pre-next-PR verification (if any):** none — GATE 1 complete + folded. Next session starts S0 (eval harness = a `tsx`-run TS script per the GATE-1 fix).
 
 **Substrate state:** Search is LIVE on PROD and healthy. Concepts ARE indexed (`update_lesson_search_vector` trigger). Public engine = `search_lessons` RPC. Gaps confirmed firsthand: G1 (everyday words), G2 (multi-word explosion), G3 (SEL/CC/AI not typed-searchable), G5 (no eval set). No search change has shipped yet.
 
@@ -25,6 +25,7 @@
 - **Eval harness gates everything** and ships first; baseline captured on TEST; ranking scorer written fresh (computeMetrics is classification-only).
 - **G3 per-field by measured value** — ship SEL; CC/AI only if the scorecard shows lift.
 - **Gold set is collaborative** — user signs off ~8 ideal-result lists; this is the one human dependency that makes the eval trustworthy.
+- **GATE 1 fold (3 Codex findings, all repo-verified):** (1) eval harness must be a **`.ts` run via `npx tsx`** (repo convention; a `.mjs`/`node` script can't import the TS `parseSearchQuery`) + add `scripts/search-eval/**` to `tsconfig.scripts.json`; `parseSearchQuery` must be pure/alias-free so both frontend + harness import it. (2) PR-E rider must run **`supabase functions delete search-lessons`** for TEST+PROD — it's deployed ACTIVE v22 and the deploy workflow never undeploys on dir-delete. (3) S3 synonym rollback = **exact-tuple `DELETE`** (no tag column exists on `search_synonyms`).
 
 ## Out-of-scope follow-ups captured here
 

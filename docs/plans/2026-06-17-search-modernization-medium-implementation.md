@@ -37,7 +37,8 @@
 **Pre-flight reads:** `supabase/functions/smart-search/index.ts` (token/expansion intent to mirror in queries, NOT the engine), the `search_lessons` body (`pg_get_functiondef` — return columns: `lesson_id,title,…,rank,total_count`), `src/hooks/useLessonSearch.ts:88-134`, `scripts/lib/evalMetrics.ts` (confirm `computeMetrics` is classification-only → scorer is fresh), `scripts/heritage/test-heritage-expansion.mjs:60-80` (the local-only/write harness NOT to mirror), `package.json` scripts block, `src/lib/supabase.ts` (anon client pattern).
 
 ### Task S0.1 (TDD): fresh ranking-metric module
-- Create `scripts/search-eval/metrics.mjs` (pure functions): `hitRateAtK(resultIds, goldIds, k)`, `top1Relevant(resultIds, goldIds)`, `mrr(resultIds, goldIds)`, `overBroad(totalCount, corpusSize, threshold)`. Vitest in `scripts/search-eval/metrics.test.ts` (or the repo's test location) — failing-first.
+- Create `scripts/search-eval/metrics.ts` (pure functions): `hitRateAtK(resultIds, goldIds, k)`, `top1Relevant(resultIds, goldIds)`, `mrr(resultIds, goldIds)`, `overBroad(totalCount, corpusSize, threshold)`. Vitest in `scripts/search-eval/metrics.test.ts` — failing-first. (TS, run by tsx/vitest — see S0.3 for the runtime decision.)
+- **GATE-1 fix:** add `scripts/search-eval/**/*.ts` to `tsconfig.scripts.json` `include` (currently only `stage2-retag`/`heritage`/`lib`) so these files are covered by `npm run type-check`.
 - Verify: `npx vitest run scripts/search-eval/metrics.test.ts` green; `npm run type-check`.
 
 ### Task S0.2: query set + gold sets (COLLABORATIVE — supervisor + user)
@@ -46,9 +47,9 @@
 - Verify: JSON parses; supervisor confirms every entry has a provenance tag and a gold mechanism.
 
 ### Task S0.3: the harness script
-- Create `scripts/search-eval/run-search-eval.mjs`: read-only, anon key, env-targetable (`SEARCH_EVAL_TARGET=local|test|prod`), its OWN `assertReadOnly` guard (refuse if a write client/service key is configured), calls `supabase.rpc('search_lessons', {search_query, page_size:50, ...})` per query, computes metrics, writes `scorecards/<target>-<n>.md` + updates `baseline.json` on an explicit `--write-baseline` flag only. Tolerates missing gold ids (reports, never crashes).
-- Add `"eval:search": "node scripts/search-eval/run-search-eval.mjs"` to `package.json`.
-- Verify: `npm run eval:search` (target TEST) prints a scorecard; no writes (confirm via a read-only role / guard).
+- Create `scripts/search-eval/run-search-eval.ts` (**TS, run via `npx tsx`** — GATE-1 fix: a plain `.mjs`/`node` script can't import the TS `parseSearchQuery` module S1 needs; the repo convention is `npx tsx scripts/*.ts`): read-only, anon key, env-targetable (`SEARCH_EVAL_TARGET=local|test|prod`), its OWN `assertReadOnly` guard (refuse if a write client/service key is configured), calls `supabase.rpc('search_lessons', {search_query, page_size:50, ...})` per query, computes metrics, writes `scorecards/<target>-<n>.md` + updates `baseline.json` on an explicit `--write-baseline` flag only. Tolerates missing gold ids (reports, never crashes).
+- Add `"eval:search": "npx tsx scripts/search-eval/run-search-eval.ts"` to `package.json`.
+- Verify: `npm run eval:search` (target TEST) prints a scorecard; no writes (confirm via a read-only role / guard); `npm run type-check` covers the new files (tsconfig include from S0.1).
 
 ### Task S0.4: capture baseline + commit
 - Capture `baseline.json` on **TEST** (`--write-baseline`, `SEARCH_EVAL_TARGET=test`); commit script + queries + baseline + scorecard. Commit: `feat(search-eval): read-only eval harness + committed TEST baseline (S0)`.
@@ -65,6 +66,7 @@
 **Pre-flight reads:** `src/hooks/useLessonSearch.ts:88-134` (searchParams assembly: `search_query` line 102, `filter_grade_levels` line 103, `rpc` line 129), `src/utils/filterDefinitions.ts` (valid grade values + labels), `src/stores/*` search store (where `filters.gradeLevels` lives), the SearchBar/SearchPage components (chip placement).
 
 ### Task S1.1 (TDD): `src/utils/parseSearchQuery.ts`
+- **Must be a pure, dependency-free module** (GATE-1 fix): no `@/` alias imports, no `import.meta.env`, no other src deps — so the `tsx` eval harness (S0.3) imports the exact same code the frontend hook uses. If it needs grade-vocab values, inline them or import from a plain constants module that is itself alias-free.
 - `parseSearchQuery(raw: string): { cleanedQuery: string; detectedGrades: string[] }`. Filler stoplist (`lesson`,`lessons`,`for`,`about`,`a`,`the`,…); grade-cue detection requiring an explicit cue ("grade"/"grades"/ordinal/"kindergarten"/"pre-k"/"3k") → map to valid values `['3K','PK','K','1'..'8']`; **never route a bare digit**; never strip to empty (keep last content token). Vitest: positives, false-positives (`three sisters garden`, `grade a vegetables`), grade-only, 3K/PK edge.
 - Verify: `npx vitest run` for the new test green; `npm run type-check`.
 
@@ -77,7 +79,7 @@
 - Verify: E2E + manual smoke.
 
 ### Task S1.4: eval delta + E2E
-- Update `run-search-eval.mjs` to import + apply `parseSearchQuery` before the RPC (keeps the gate honest about real app behavior); re-run `eval:search` on TEST; commit the scorecard delta (must show G2 lift, single-term queries unchanged, no control regression beyond the tolerance band).
+- Update `run-search-eval.ts` to import + apply `parseSearchQuery` before the RPC (now feasible — tsx + pure module; keeps the gate honest about real app behavior); re-run `eval:search` on TEST; commit the scorecard delta (must show G2 lift, single-term queries unchanged, no control regression beyond the tolerance band).
 - Add/extend `e2e/search.spec.ts`: "compost lesson for 3rd grade" → focused set + grade chip.
 - Commit: `feat(search): G2 frontend query preprocessing — filler strip + grade routing (S1)`.
 
@@ -113,7 +115,7 @@
 - Verify: each candidate's everyday term is a true synonym of the official concept (no `worms→decomposition`).
 
 ### Task S3.2: idempotent migration + eval gating
-- `INSERT … SELECT … WHERE NOT EXISTS` on `(term, synonym_type, synonyms)`, `synonym_type='oneway'`, each row tagged for clean `DELETE` rollback (precedent: `20260522000000`).
+- `INSERT … SELECT … WHERE NOT EXISTS` on `(term, synonym_type, synonyms)`, `synonym_type='oneway'` (precedent: `20260522000000`). **GATE-1 fix — rollback = exact-tuple `DELETE`:** the down/rollback block deletes only rows matching the exact `(term, synonym_type, synonyms)` tuples inserted (same VALUES list). The table has no tag/source column — do NOT add one or `DELETE` by bare `term`.
 - GATE 2 Codex; TEST verify rows load + `expand_search_with_synonyms` picks them up; per-batch `eval:search` lift with **no control regression**. **Ship only net-positive; else abandon the PR.**
 - Explicitly supersedes PR-D's D2 (smoke `expand_search_with_synonyms`, NOT smart-search).
 
@@ -123,7 +125,7 @@
 
 **NEW addition to PR-E** (E1/E2/E3 don't currently scope it). Gated after C2 AND S2 are PROD-verified (so the trigger provably no longer references the twin).
 - `DROP FUNCTION public.generate_lesson_search_vector(text,text,text[],text[],text[],text[],text[],text[],text[],text)` + `REVOKE` its anon/authenticated/PUBLIC grants. Pre-drop: `pg_depend` + repo grep confirm no caller.
-- Delete `supabase/functions/search-lessons/` (unused; its own source says no live frontend caller). Follow the edge-fn deletion ordering hazard note in memory (drain queued deploy runs).
+- **Retire the `search-lessons` edge fn (GATE-1 fix — it is deployed ACTIVE v22 on PROD; the deploy workflow discovers dirs via `find … -type d` and only ever runs `supabase functions deploy`, never delete — so deleting the repo dir alone leaves the function LIVE):** (a) delete `supabase/functions/search-lessons/`; (b) run `supabase functions delete search-lessons` for TEST **and** PROD through the approved path; (c) MCP-verify removal via `mcp__supabase-{test,remote}__list_edge_functions` (slug absent). Follow the edge-fn deletion ordering hazard note in memory (drain queued deploy runs that pre-date the retirement merge).
 - Verify: `eval:search` no-op regression proof; `db reset` + `test:rls` clean.
 
 ---
