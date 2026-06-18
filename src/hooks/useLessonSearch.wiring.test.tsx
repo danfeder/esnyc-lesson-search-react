@@ -1,0 +1,109 @@
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Mock the Supabase client with an `rpc` we can inspect. The global setup mock
+// does not expose `rpc`, so we override per-file (same pattern as
+// lesson-search.infinite.test.tsx).
+const rpcMock = vi.fn();
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rpc: (...args: any[]) => rpcMock(...args),
+  },
+}));
+
+// Import after the mock is registered.
+import { useLessonSearch } from '@/hooks/useLessonSearch';
+import type { SearchFilters } from '@/types';
+
+const EMPTY_FILTERS: SearchFilters = {
+  query: '',
+  gradeLevels: [],
+  thematicCategories: [],
+  seasonTiming: [],
+  coreCompetencies: [],
+  culturalHeritage: [],
+  location: [],
+  activityType: [],
+  tags: [],
+  academicIntegration: [],
+  socialEmotionalLearning: [],
+  cookingMethods: [],
+};
+
+function makeFilters(overrides: Partial<SearchFilters>): SearchFilters {
+  return { ...EMPTY_FILTERS, ...overrides };
+}
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return React.createElement(QueryClientProvider, { client: queryClient }, children);
+  };
+}
+
+/** Render the hook and return the params object passed to supabase.rpc on the first call. */
+async function getRpcParams(filters: SearchFilters): Promise<Record<string, unknown>> {
+  renderHook(() => useLessonSearch({ filters }), { wrapper: createWrapper() });
+  await waitFor(() => {
+    expect(rpcMock).toHaveBeenCalled();
+  });
+  return rpcMock.mock.calls[0][1] as Record<string, unknown>;
+}
+
+describe('useLessonSearch — parseSearchQuery wiring (S1.2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: a successful single-page RPC response.
+    rpcMock.mockResolvedValue({ data: [], error: null });
+  });
+
+  it('routes a grade cue: strips it from search_query and applies it as filter_grade_levels', async () => {
+    const params = await getRpcParams(makeFilters({ query: 'compost lesson for 3rd grade' }));
+
+    // "lesson", "for", and the routed "3rd grade" tokens are stripped from the term.
+    expect(params.search_query).toBe('compost');
+    // Detected grade applied (no explicit user grade filter present).
+    expect(params.filter_grade_levels).toEqual(['3']);
+  });
+
+  it('explicit grade filter WINS over a grade detected in the query text', async () => {
+    const params = await getRpcParams(
+      makeFilters({ query: 'compost lesson for 3rd grade', gradeLevels: ['5'] })
+    );
+
+    // The routed grade token is still stripped from the search term...
+    expect(params.search_query).toBe('compost');
+    // ...but the explicit user filter is used, NOT the detected ['3'].
+    expect(params.filter_grade_levels).toEqual(['5']);
+    expect(params.filter_grade_levels).not.toEqual(['3']);
+  });
+
+  it('plain single-term query: passes through unchanged with no auto-applied grade', async () => {
+    const params = await getRpcParams(makeFilters({ query: 'compost' }));
+
+    expect(params.search_query).toBe('compost');
+    // No grade cue → no detected grade → omitted (undefined), not [].
+    expect(params.filter_grade_levels).toBeUndefined();
+  });
+
+  it('grade-only query: empty cleaned term → search_query undefined, show-all-of-grade applied', async () => {
+    const params = await getRpcParams(makeFilters({ query: '3rd grade' }));
+
+    // Nothing left after routing the grade cue → undefined (not '').
+    expect(params.search_query).toBeUndefined();
+    // The detected grade is still applied so the user sees all of that grade.
+    expect(params.filter_grade_levels).toEqual(['3']);
+  });
+
+  it('empty query with no filters: search_query and filter_grade_levels both omitted', async () => {
+    const params = await getRpcParams(makeFilters({ query: '' }));
+
+    expect(params.search_query).toBeUndefined();
+    expect(params.filter_grade_levels).toBeUndefined();
+  });
+});

@@ -49,6 +49,11 @@ import {
 } from './metrics';
 import { evaluatePredicate, parsePredicateThreshold, type PredicateRow } from './predicate';
 import { assertReadOnly } from './readonly-guard';
+// S1.4: the public G2 fix is frontend (parseSearchQuery). The harness imports the
+// EXACT same pure, alias-free module the search hook uses (src/utils/parseSearchQuery.ts)
+// so the eval scores the real normalized call (cleaned search_query + routed grades) —
+// keeping the gate honest about end-to-end app behavior.
+import { parseSearchQuery } from '../../src/utils/parseSearchQuery';
 
 // Load env exactly like backfill-embeddings.ts (dotenv; never shell-source —
 // .env may contain a multiline JSON value, GOOGLE_SERVICE_ACCOUNT_JSON).
@@ -131,6 +136,10 @@ interface QueryResult {
   returned: number;
   errored?: string; // error message if the query failed
   expectedNormalizedCall?: { search_query: string; filter_grade_levels?: string[] };
+  // S1.4 GATE-3: the parser-derived call actually made, + whether it drifted from
+  // the frozen fixture entry.normalizedCall (only set for entries that carry one).
+  actualNormalizedCall?: { search_query: string; filter_grade_levels?: string[] };
+  normalizedCallMismatch?: boolean;
   // relevance diagnostics (frozen-recall / frozen-precision)
   recallAt10?: number;
   precisionAt10?: number;
@@ -232,16 +241,46 @@ interface RpcResult {
 }
 
 /**
- * resolveCall — the S1.4 seam. At S0 there is NO parseSearchQuery yet, so we
- * ALWAYS call with the RAW query and no grade filter. For attributable S1
- * deltas, the expected normalizedCall is recorded on the result.
+ * resolveCall — the S1.4 seam (now LIVE). Applies the shipped frontend G2 fix
+ * (parseSearchQuery) so the harness scores the same normalized call the search
+ * hook makes (useLessonSearch.ts): a cleaned FTS term + routed grade filter.
+ * The expected normalizedCall stays recorded on the result for an attributable diff.
  */
 function resolveCall(entry: QueryEntry): {
   search_query: string;
   filter_grade_levels?: string[];
 } {
-  // S1.4: replace with parseSearchQuery(entry.query) -> { cleanedQuery, detectedGrades }.
-  return { search_query: entry.query };
+  // Apply parseSearchQuery exactly as the search hook does. No eval query is
+  // grade-only, so cleanedQuery is always non-empty here (== the hook's
+  // `cleanedQuery || undefined` for every entry in this set).
+  const { cleanedQuery, detectedGrades } = parseSearchQuery(entry.query);
+  const call: { search_query: string; filter_grade_levels?: string[] } = {
+    search_query: cleanedQuery,
+  };
+  if (detectedGrades.length > 0) call.filter_grade_levels = detectedGrades;
+  return call;
+}
+
+/**
+ * Deep-compare two normalized calls (S1.4 GATE-3 drift guard). Two calls are
+ * equal iff their search_query strings match exactly AND their grade lists have
+ * the same elements in the same order (missing / empty grades == no grades).
+ * Pure helper — used to assert the parser-derived call still matches the frozen
+ * fixture entry.normalizedCall so parser drift is caught and the scorecard stays
+ * honest. NO mismatch is expected today (this is a latent alarm).
+ */
+function callsEqual(
+  a: { search_query: string; filter_grade_levels?: string[] },
+  b: { search_query: string; filter_grade_levels?: string[] },
+): boolean {
+  if (a.search_query !== b.search_query) return false;
+  const ga = a.filter_grade_levels ?? [];
+  const gb = b.filter_grade_levels ?? [];
+  if (ga.length !== gb.length) return false;
+  for (let i = 0; i < ga.length; i++) {
+    if (ga[i] !== gb[i]) return false;
+  }
+  return true;
 }
 
 async function runSearch(
@@ -454,6 +493,7 @@ interface Aggregate {
   maxTotalCountViolations: number;
   dupFloodAlarms: number;
   g3Count: number;
+  normalizedCallMismatches: number;
 }
 
 function computeAggregate(results: QueryResult[]): Aggregate {
@@ -487,6 +527,9 @@ function computeAggregate(results: QueryResult[]): Aggregate {
     maxTotalCountViolations: valid.filter((r) => r.withinMaxTotalCount === false).length,
     dupFloodAlarms: valid.filter((r) => (r.dupFlood ?? 0) > 0).length,
     g3Count: valid.filter((r) => r.scoring === 'g3-isolation').length,
+    // S1.4 GATE-3 drift alarm — counted over ALL results (an errored entry can
+    // still carry a frozen normalizedCall whose parser-derived call drifted).
+    normalizedCallMismatches: results.filter((r) => r.normalizedCallMismatch === true).length,
   };
 }
 
@@ -508,7 +551,7 @@ function buildScorecard(
   lines.push('');
   lines.push(`- **Snapshot date:** ${snapshot.date} (gold frozen from DB \`${snapshot.db}\`, ref \`${snapshot.project_ref}\`)`);
   lines.push(`- **Corpus size:** ${snapshot.searchableCorpus} (searchable, retired-excluded)`);
-  lines.push(`- **Run note:** raw queries (S0 baseline; NO parseSearchQuery yet — G2 entries scored on the RAW explosion call, expectedNormalizedCall recorded for the S1 delta).`);
+  lines.push(`- **Run note:** normalized queries (S1: parseSearchQuery APPLIED — G2 entries scored on the cleaned search_query + routed filter_grade_levels; expectedNormalizedCall is the call actually made).`);
   lines.push(`- **Baseline for rank-movement:** ${hadBaseline ? 'present (G3 movement computed)' : 'absent (first run — G3 movement = n/a)'}`);
   lines.push('');
 
@@ -521,6 +564,7 @@ function buildScorecard(
   lines.push(`| Predicate pass-rate | ${r3(agg.predicatePassRate)} (${agg.predicatePassed}/${agg.predicateTotal}) |`);
   lines.push(`| Corpus MRR (mean RR over frozen queries) | ${r3(agg.corpusMrr)} |`);
   lines.push(`| maxTotalCount violations | ${agg.maxTotalCountViolations} |`);
+  lines.push(`| normalized-call mismatches | ${agg.normalizedCallMismatches} |`);
   lines.push(`| Dup-flood alarms (dupFlood>0) | ${agg.dupFloodAlarms} |`);
   lines.push(`| G3-isolation queries | ${agg.g3Count} |`);
   lines.push('');
@@ -644,6 +688,31 @@ function buildScorecard(
   }
   lines.push('');
 
+  // S1.4 GATE-3: surface any drift between the parser-derived call and the frozen
+  // fixture call so a reviewer sees exactly what moved. None expected today.
+  const fmtCall = (c?: { search_query: string; filter_grade_levels?: string[] }): string => {
+    if (!c) return 'n/a';
+    const grades = c.filter_grade_levels && c.filter_grade_levels.length > 0
+      ? `[${c.filter_grade_levels.join(',')}]`
+      : '[]';
+    return `q=\`${c.search_query}\` grades=${grades}`;
+  };
+  const mismatchRows = results.filter((r) => r.normalizedCallMismatch === true);
+  lines.push('### normalized-call mismatches (parser drift vs frozen fixture)');
+  lines.push('');
+  if (mismatchRows.length) {
+    lines.push('| id | query | actual (parser) | expected (fixture) |');
+    lines.push('|---|---|---|---|');
+    for (const r of mismatchRows) {
+      lines.push(
+        `| ${r.id} | ${r.query} | ${fmtCall(r.actualNormalizedCall)} | ${fmtCall(r.expectedNormalizedCall)} |`,
+      );
+    }
+  } else {
+    lines.push('_None._');
+  }
+  lines.push('');
+
   const erroredRows = results.filter((r) => r.errored);
   lines.push('### Errored queries');
   lines.push('');
@@ -668,10 +737,20 @@ function buildBaseline(
 ): BaselineFile {
   const queries: Record<string, Record<string, unknown>> = {};
   for (const r of results) {
-    const { id, query, category, expectedNormalizedCall, ...metrics } = r;
+    const {
+      id,
+      query,
+      category,
+      expectedNormalizedCall,
+      actualNormalizedCall,
+      normalizedCallMismatch,
+      ...metrics
+    } = r;
     void query;
     void category;
     void expectedNormalizedCall;
+    void actualNormalizedCall;
+    void normalizedCallMismatch;
     queries[id] = metrics as Record<string, unknown>;
   }
   return {
@@ -764,7 +843,16 @@ async function main(): Promise<void> {
       }
       const clusterKeyOf = (id: string): string => hashByid.get(id) ?? id;
 
-      results.push(scoreQuery(entry, rpc, rowByid, clusterKeyOf, baseline, snapshot.searchableCorpus));
+      const scored = scoreQuery(entry, rpc, rowByid, clusterKeyOf, baseline, snapshot.searchableCorpus);
+      // S1.4 GATE-3: assert the parser-derived call still equals the frozen
+      // fixture call. Only entries that carry a normalizedCall are checked; a
+      // mismatch is a latent ALARM surfaced in the aggregate + scorecard (it
+      // never changes resolveCall behavior nor exits non-zero).
+      if (entry.normalizedCall) {
+        scored.actualNormalizedCall = call;
+        scored.normalizedCallMismatch = !callsEqual(call, entry.normalizedCall);
+      }
+      results.push(scored);
     } catch (err) {
       // Never let one bad query crash the run.
       results.push({
@@ -804,6 +892,7 @@ async function main(): Promise<void> {
   console.log(`predicate pass-rate:                   ${r3(agg.predicatePassRate)} (${agg.predicatePassed}/${agg.predicateTotal})`);
   console.log(`corpus MRR (mean RR over frozen):      ${r3(agg.corpusMrr)}`);
   console.log(`maxTotalCount violations:              ${agg.maxTotalCountViolations}`);
+  console.log(`normalized-call mismatches:            ${agg.normalizedCallMismatches}`);
   console.log(`dup-flood alarms (dupFlood>0):         ${agg.dupFloodAlarms}`);
   console.log(`G3-isolation queries:                  ${agg.g3Count}`);
   const sentinel = results.find((r) => r.scoring === 'sentinel');
