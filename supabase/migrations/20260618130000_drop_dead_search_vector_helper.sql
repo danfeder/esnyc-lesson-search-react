@@ -1,0 +1,71 @@
+-- =====================================================
+-- Migration: 20260618130000_drop_dead_search_vector_helper.sql
+-- =====================================================
+-- Description:
+--   PR-E (Search Modernization — dead-code retirement). Drop the orphaned
+--   helper public.generate_lesson_search_vector(text, text, text[]x7, text).
+--
+--   The live search vector is built by public.update_lesson_search_vector()
+--   (migration 20260521000000_search_vector_with_concepts.sql, extended by
+--   20260618000000_search_vector_add_sel.sql), which INLINES all weighting and
+--   no longer delegates to this helper. The helper is the dead "twin" that the
+--   metadata-rebuild superseded.
+--
+--   Read-only proof on BOTH environments (TEST + PROD, 2026-06-18):
+--     sql_body_callers       = 0  (no pg_proc body references it)
+--     hard_dependents (n)    = 0  (no pg_depend deptype='n' rows -> plain DROP safe)
+--     live_trigger_refs_twin = 0  (update_lesson_search_vector() does not call it)
+--   Repo grep: no caller in src/ -- every hit is a schema-snapshot doc, the
+--   already-applied 20251001 baseline, this twin's own comments, or generated
+--   types. src/lib/search.ts getSearchRpcName() hardcodes 'search_lessons'.
+--
+--   Effect is catalog-only: no table/trigger/row changes; lessons.search_vector
+--   is untouched, so `npm run eval:search` must be a byte-for-byte no-op.
+--   DROP FUNCTION removes the function's grants automatically -- no separate
+--   REVOKE is needed (a post-DROP REVOKE would error on a missing function).
+--
+-- Rollback hazard note:
+--   20260521000000's commented rollback block restores a prior trigger that
+--   delegated to this helper. If that historical rollback is ever performed,
+--   recreate this function FIRST using the ROLLBACK block below.
+
+-- =====================================================
+-- CHANGES
+-- =====================================================
+
+DROP FUNCTION IF EXISTS public.generate_lesson_search_vector(
+  text, text, text[], text[], text[], text[], text[], text[], text[], text
+);
+
+-- =====================================================
+-- ROLLBACK (keep as comments) -- restores the helper exactly as it was on
+-- PROD/TEST 2026-06-18 (captured verbatim via pg_get_functiondef), incl. grants.
+-- =====================================================
+-- CREATE OR REPLACE FUNCTION public.generate_lesson_search_vector(
+--   p_title text, p_summary text, p_main_ingredients text[], p_garden_skills text[],
+--   p_cooking_skills text[], p_thematic_categories text[], p_cultural_heritage text[],
+--   p_observances_holidays text[], p_tags text[], p_content_text text)
+--  RETURNS tsvector
+--  LANGUAGE plpgsql
+--  IMMUTABLE
+-- AS $function$
+-- BEGIN
+--   RETURN
+--     setweight(to_tsvector('english', COALESCE(p_title, '')), 'A') ||
+--     setweight(to_tsvector('english', COALESCE(p_summary, '')), 'B') ||
+--     setweight(to_tsvector('english', COALESCE(array_to_string(p_main_ingredients, ' '), '')), 'B') ||
+--     setweight(to_tsvector('english', COALESCE(array_to_string(p_observances_holidays, ' '), '')), 'B') ||
+--     setweight(to_tsvector('english', COALESCE(array_to_string(p_tags, ' '), '')), 'B') ||
+--     setweight(to_tsvector('english',
+--       COALESCE(array_to_string(p_garden_skills, ' '), '') || ' ' ||
+--       COALESCE(array_to_string(p_cooking_skills, ' '), '') || ' ' ||
+--       COALESCE(array_to_string(p_thematic_categories, ' '), '') || ' ' ||
+--       COALESCE(array_to_string(p_cultural_heritage, ' '), '')
+--     ), 'C') ||
+--     setweight(to_tsvector('english', COALESCE(p_content_text, '')), 'D');
+-- END;
+-- $function$;
+-- -- Restore grants (CREATE already grants EXECUTE to PUBLIC by default):
+-- GRANT EXECUTE ON FUNCTION public.generate_lesson_search_vector(
+--   text, text, text[], text[], text[], text[], text[], text[], text[], text
+-- ) TO anon, authenticated, service_role;

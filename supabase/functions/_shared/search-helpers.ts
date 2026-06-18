@@ -1,9 +1,11 @@
 /**
- * Shared search helpers for search-lessons and smart-search edge functions.
+ * Shared search helpers for the smart-search edge function.
  *
- * Both functions query `lessons_with_metadata`, apply filters/sorting/pagination,
- * and transform rows to the frontend Lesson shape.  This module extracts the
- * duplicated logic so bug-fixes only need to happen once.
+ * smart-search queries `lessons_with_metadata`, applies filters/sorting/
+ * pagination, and transforms rows to the frontend Lesson shape. (The
+ * search-lessons edge fn that previously shared this module was retired in the
+ * search-modernization dead-code cleanup; public search uses the
+ * search_lessons RPC.)
  */
 
 // deno-lint-ignore-file no-explicit-any
