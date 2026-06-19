@@ -120,7 +120,7 @@ export function canonicalizeReviewMetadata(meta: ReviewMetadata): ReviewMetadata
     const value = out[field];
     if (!Array.isArray(value)) continue; // undefined / non-array → leave as-is
     (out[field] as string[]) = value.map((el) =>
-      typeof el === 'string' && el in map ? map[el] : el
+      typeof el === 'string' && Object.prototype.hasOwnProperty.call(map, el) ? map[el] : el
     );
   }
 

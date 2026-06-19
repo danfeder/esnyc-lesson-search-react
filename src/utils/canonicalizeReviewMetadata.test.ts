@@ -189,6 +189,22 @@ describe('canonicalizeReviewMetadata', () => {
       expect(result.gardenSkills).toEqual(['Planting', 'some-future-skill']);
     });
 
+    it('passes Object.prototype key names through unchanged (own-property lookup only)', () => {
+      // Guards the `hasOwnProperty.call` lookup: a bare `el in map` would match
+      // inherited keys like 'toString'/'constructor' and replace them with native
+      // function objects. None occur in the controlled vocab, but the lookup must
+      // stay own-property-only so any such value survives verbatim.
+      const result = canonicalizeReviewMetadata({
+        academicIntegration: ['toString', 'constructor', 'hasOwnProperty', 'math'],
+      });
+      expect(result.academicIntegration).toEqual([
+        'toString',
+        'constructor',
+        'hasOwnProperty',
+        'Math',
+      ]);
+    });
+
     it('applies cheap defensive folds for cookingMethods and observancesHolidays', () => {
       const result = canonicalizeReviewMetadata({
         cookingMethods: ['basic-prep-only', 'no-cook', 'stovetop'],
