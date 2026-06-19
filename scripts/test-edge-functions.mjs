@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * Daily smoke test for all 11 deployed edge functions.
+ * Daily smoke test for all 10 deployed edge functions.
  *
  * Two tiers:
- *   1. Full smoke (4 fns) — POST a real payload and assert response shape.
+ *   1. Full smoke (3 fns) — POST a real payload and assert response shape.
  *      Catches business-logic regressions on top of deploy regressions.
- *      Functions: smart-search, search-lessons, detect-duplicates,
- *      generate-embeddings.
+ *      Functions: smart-search, detect-duplicates, generate-embeddings.
  *   2. Health check (7 fns) — OPTIONS preflight, expect non-404 / non-5xx.
  *      Catches "function not deployed" (404) and module-load crashes (5xx)
  *      without exercising side-effecting code paths. Does NOT catch latent
@@ -72,15 +71,6 @@ const FULL_SMOKE = [
     },
   },
   {
-    name: 'search-lessons',
-    payload: { query: 'garden', limit: 5, page: 1 },
-    assert: (json) => {
-      if (!Array.isArray(json.lessons)) throw new Error('lessons not an array');
-      if (typeof json.totalCount !== 'number') throw new Error('totalCount not a number');
-      if (json.totalCount <= 0) throw new Error(`totalCount=${json.totalCount}, expected > 0`);
-    },
-  },
-  {
     name: 'detect-duplicates',
     payload: {
       // submissionId omitted on purpose — see file header.
@@ -120,7 +110,7 @@ const HEALTH_CHECK = [
 
 // Per-request timeout. Sequential execution means one hung endpoint would
 // otherwise block every subsequent check until the job-level 5-min cap
-// killed the run with no per-function visibility. 15 s × 11 ≈ 2.75 min
+// killed the run with no per-function visibility. 15 s × 10 ≈ 2.5 min
 // worst case, still under the cap.
 const FETCH_TIMEOUT_MS = 15_000;
 

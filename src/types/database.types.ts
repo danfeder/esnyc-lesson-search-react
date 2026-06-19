@@ -1346,21 +1346,6 @@ export type Database = {
           title: string;
         }[];
       };
-      generate_lesson_search_vector: {
-        Args: {
-          p_content_text: string;
-          p_cooking_skills: string[];
-          p_cultural_heritage: string[];
-          p_garden_skills: string[];
-          p_main_ingredients: string[];
-          p_observances_holidays: string[];
-          p_summary: string;
-          p_tags: string[];
-          p_thematic_categories: string[];
-          p_title: string;
-        };
-        Returns: unknown;
-      };
       get_canonical_lesson_id: {
         Args: { p_lesson_id: string };
         Returns: string;
