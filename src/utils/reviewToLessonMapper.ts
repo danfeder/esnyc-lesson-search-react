@@ -20,9 +20,25 @@
  * Round-trip property: `lessonToReview(reviewToLesson(x))` equals `x` for
  * every valid review payload (tested in `reviewToLessonMapper.test.ts`).
  */
-import type { LessonMetadataValidated } from '@/types/lessonMetadata.zod';
+import type {
+  LessonMetadataValidated,
+  AcademicIntegrationValue,
+  CoreCompetenciesValue,
+  CookingMethodsValue,
+  GardenSkillsValue,
+  ObservancesHolidaysValue,
+  SocialEmotionalLearningValue,
+} from '@/types/lessonMetadata.zod';
 import type { ReviewFormPayloadValidated } from '@/types/reviewFormPayload.zod';
 
+/**
+ * The 6 small-field vocabularies are closed enums on the lesson side (PR 6e)
+ * but stay open `string[]` on the review-form side until E2b closes
+ * `reviewFormPayloadSchema`. This mapper is a behaviour-preserving identity
+ * copy (no runtime validation), so during the E2a→E2b window we assert the
+ * narrowed element types at the boundary. After E2b closes the review side,
+ * these casts become no-ops and can be removed.
+ */
 export function reviewToLesson(input: ReviewFormPayloadValidated): LessonMetadataValidated {
   const out: LessonMetadataValidated = {};
 
@@ -46,19 +62,19 @@ export function reviewToLesson(input: ReviewFormPayloadValidated): LessonMetadat
     out.gradeLevels = input.gradeLevels;
   }
   if (input.coreCompetencies && input.coreCompetencies.length > 0) {
-    out.coreCompetencies = input.coreCompetencies;
+    out.coreCompetencies = input.coreCompetencies as CoreCompetenciesValue[];
   }
   if (input.socialEmotionalLearning && input.socialEmotionalLearning.length > 0) {
-    out.socialEmotionalLearning = input.socialEmotionalLearning;
+    out.socialEmotionalLearning = input.socialEmotionalLearning as SocialEmotionalLearningValue[];
   }
   if (input.cookingMethods && input.cookingMethods.length > 0) {
-    out.cookingMethods = input.cookingMethods;
+    out.cookingMethods = input.cookingMethods as CookingMethodsValue[];
   }
   if (input.mainIngredients && input.mainIngredients.length > 0) {
     out.mainIngredients = input.mainIngredients;
   }
   if (input.gardenSkills && input.gardenSkills.length > 0) {
-    out.gardenSkills = input.gardenSkills;
+    out.gardenSkills = input.gardenSkills as GardenSkillsValue[];
   }
   if (input.cookingSkills && input.cookingSkills.length > 0) {
     out.cookingSkills = input.cookingSkills;
@@ -67,10 +83,10 @@ export function reviewToLesson(input: ReviewFormPayloadValidated): LessonMetadat
     out.culturalHeritage = input.culturalHeritage;
   }
   if (input.academicIntegration && input.academicIntegration.length > 0) {
-    out.academicIntegration = input.academicIntegration;
+    out.academicIntegration = input.academicIntegration as AcademicIntegrationValue[];
   }
   if (input.observancesHolidays && input.observancesHolidays.length > 0) {
-    out.observancesHolidays = input.observancesHolidays;
+    out.observancesHolidays = input.observancesHolidays as ObservancesHolidaysValue[];
   }
   if (input.culturalResponsivenessFeatures && input.culturalResponsivenessFeatures.length > 0) {
     out.culturalResponsivenessFeatures = input.culturalResponsivenessFeatures;

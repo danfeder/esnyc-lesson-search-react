@@ -4,6 +4,12 @@ import {
   TAG_VALUES as canonicalTags,
   SEASON_TIMING_VALUES as canonicalSeason,
   CULTURAL_RESPONSIVENESS_FEATURE_VALUES as canonicalCRF,
+  ACADEMIC_INTEGRATION_VALUES as canonicalAcademicIntegration,
+  SOCIAL_EMOTIONAL_LEARNING_VALUES as canonicalSEL,
+  CORE_COMPETENCIES_VALUES as canonicalCoreCompetencies,
+  COOKING_METHODS_VALUES as canonicalCookingMethods,
+  OBSERVANCES_HOLIDAYS_VALUES as canonicalObservances,
+  GARDEN_SKILLS_VALUES as canonicalGardenSkills,
   lessonMetadataSchema as canonicalLessonSchema,
 } from './lessonMetadata.zod';
 import { reviewFormPayloadSchema as canonicalReviewSchema } from './reviewFormPayload.zod';
@@ -13,6 +19,12 @@ import {
   TAG_VALUES as sharedTags,
   SEASON_TIMING_VALUES as sharedSeason,
   CULTURAL_RESPONSIVENESS_FEATURE_VALUES as sharedCRF,
+  ACADEMIC_INTEGRATION_VALUES as sharedAcademicIntegration,
+  SOCIAL_EMOTIONAL_LEARNING_VALUES as sharedSEL,
+  CORE_COMPETENCIES_VALUES as sharedCoreCompetencies,
+  COOKING_METHODS_VALUES as sharedCookingMethods,
+  OBSERVANCES_HOLIDAYS_VALUES as sharedObservances,
+  GARDEN_SKILLS_VALUES as sharedGardenSkills,
   lessonMetadataSchema as sharedLessonSchema,
   reviewFormPayloadSchema as sharedReviewSchema,
 } from '../../supabase/functions/_shared/metadataSchemas';
@@ -39,6 +51,24 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
     });
     it('cultural_responsiveness_features values match', () => {
       expect([...sharedCRF]).toEqual([...canonicalCRF]);
+    });
+    it('academic_integration values match', () => {
+      expect([...sharedAcademicIntegration]).toEqual([...canonicalAcademicIntegration]);
+    });
+    it('social_emotional_learning values match', () => {
+      expect([...sharedSEL]).toEqual([...canonicalSEL]);
+    });
+    it('core_competencies values match', () => {
+      expect([...sharedCoreCompetencies]).toEqual([...canonicalCoreCompetencies]);
+    });
+    it('cooking_methods values match', () => {
+      expect([...sharedCookingMethods]).toEqual([...canonicalCookingMethods]);
+    });
+    it('observances_holidays values match', () => {
+      expect([...sharedObservances]).toEqual([...canonicalObservances]);
+    });
+    it('garden_skills values match', () => {
+      expect([...sharedGardenSkills]).toEqual([...canonicalGardenSkills]);
     });
   });
 
@@ -70,14 +100,14 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
         seasonTiming: ['Fall'],
         culturalResponsivenessFeatures: ['Reshapes curriculum'],
         thematicCategories: ['Plants'],
-        coreCompetencies: ['Cooking'],
+        coreCompetencies: ['Kitchen Skills and Related Academic Content'],
         culturalHeritage: ['Mexican'],
         locationRequirements: ['Indoor'],
         mainIngredients: ['Tomatoes'],
         gradeLevels: ['3'],
         gardenSkills: ['Planting'],
         cookingSkills: ['Mixing'],
-        cookingMethods: ['Stovetop'],
+        cookingMethods: ['stovetop'],
         observancesHolidays: ['Lunar New Year'],
         socialEmotionalLearning: ['Self-management'],
         academicIntegration: ['Math'],
@@ -106,6 +136,13 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { seasonTiming: ['fall'] },
       { culturalResponsivenessFeatures: ['Communication of high expectations'] },
       { activityType: 'cooking' }, // canonical wants array, not string
+      // 6 small fields closed PR 6e — off-vocab values now rejected.
+      { academicIntegration: ['math'] }, // legacy slug, canonical is Title 'Math'
+      { socialEmotionalLearning: ['self-management'] }, // legacy slug, canonical 'Self-management'
+      { coreCompetencies: ['Cooking'] }, // not a canonical core competency
+      { cookingMethods: ['Stovetop'] }, // canonical is kebab 'stovetop'
+      { observancesHolidays: ['Not A Holiday'] },
+      { gardenSkills: ['planting'] }, // legacy slug, canonical Title 'Planting'
     ];
     it.each(invalid)('rejects %j', (fixture) => {
       const c = canonicalLessonSchema.safeParse(fixture);

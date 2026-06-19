@@ -23,5 +23,77 @@
     "Incorporates different individual and cultural learning styles",
     "Reshapes curriculum",
     "Positions teacher as facilitator"
+  ],
+  "academic_integration": [
+    "Math",
+    "Science",
+    "Literacy/ELA",
+    "Social Studies",
+    "Health",
+    "Arts"
+  ],
+  "social_emotional_learning": [
+    "Relationship skills",
+    "Self-awareness",
+    "Responsible decision-making",
+    "Self-management",
+    "Social awareness"
+  ],
+  "core_competencies": [
+    "Environmental and Community Stewardship",
+    "Social Justice",
+    "Social-Emotional Intelligence",
+    "Garden Skills and Related Academic Content",
+    "Kitchen Skills and Related Academic Content",
+    "Culturally Responsive Education"
+  ],
+  "cooking_methods": [
+    "basic-prep",
+    "stovetop",
+    "oven"
+  ],
+  "observances_holidays": [
+    "AAPI Heritage Month",
+    "Black History Month",
+    "Hispanic/Latinx Heritage Month",
+    "Indigenous Peoples' Month",
+    "Women's History Month",
+    "Pride",
+    "Earth Month",
+    "Thanksgiving",
+    "Lunar New Year",
+    "New Year",
+    "Ramadan",
+    "Eid",
+    "Juneteenth",
+    "School Food Hero Day",
+    "Beginning of year",
+    "End of year celebrations"
+  ],
+  "garden_skills": [
+    "Planting",
+    "Seed starting",
+    "Transplanting",
+    "Watering techniques",
+    "Harvesting",
+    "Composting",
+    "Mulching",
+    "Soil preparation and care",
+    "Weeding",
+    "Cover cropping",
+    "Garden planning",
+    "Companion planting",
+    "Crop rotation",
+    "Observing plant parts",
+    "Identifying plants",
+    "Pest identification",
+    "Beneficial insect identification",
+    "Pollinator observation",
+    "Seed saving",
+    "Tool use and maintenance",
+    "Preservation techniques",
+    "Garden exploration",
+    "Stewardship tasks",
+    "Sensory exploration"
   ]
 }
