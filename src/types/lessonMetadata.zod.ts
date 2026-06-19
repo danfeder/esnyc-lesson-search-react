@@ -11,20 +11,28 @@
  * lessonToReview}Mapper.ts` mirror the SQL translation in
  * `complete_review_atomic` (see migration 20260428000003 lines 142-167).
  *
- * Closed-enum coverage in this scaffold:
- *   - activity_type (D2 — 4 values; D2.1 retired 'both' 2026-05-06)
- *   - tags (D2 + D7 — 2 values)
- *   - season_timing (existing valid_seasons CHECK — 4 values)
- *   - cultural_responsiveness_features (D9 — 7 master-list features)
+ * Closed-enum coverage:
+ *   Foundation phase (PR 1):
+ *     - activity_type (D2 — 4 values; D2.1 retired 'both' 2026-05-06)
+ *     - tags (D2 + D7 — 2 values)
+ *     - season_timing (existing valid_seasons CHECK — 4 values)
+ *     - cultural_responsiveness_features (D9 — 7 master-list features)
+ *   Small fields closed in PR 6e (canonical vocab locked OQ2 2026-06-12):
+ *     - academic_integration (array branch only — object branch stays open)
+ *     - social_emotional_learning, core_competencies, cooking_methods,
+ *       observances_holidays, garden_skills
  *
- * Other vocabulary fields stay open `z.array(z.string())` until Stage 1
- * worksheets close them in PR 5+ (see design doc §5).
+ * Still genuinely open `z.array(z.string())`: thematicCategories,
+ * culturalHeritage, locationRequirements (later worksheets), and
+ * mainIngredients, gradeLevels, cookingSkills (deferred to PR F).
  *
  * Sync discipline: this file is the canonical source. `enums.json` is
- * generated from it via `scripts/generate-enums-json.ts`. SQL CHECK
- * constraints + Pydantic mirrors are hand-synced from `enums.json` with
- * `-- SOURCE: enums.json["<key>"]` comment markers. See validator
- * architecture doc Decision 6 for sync-test details.
+ * generated from it via `scripts/generate-enums-json.ts`. The edge mirror
+ * `supabase/functions/_shared/metadataSchemas.ts` and the SQL CHECK
+ * constraints are hand-synced from these value lists; the equivalence test
+ * (`edgeSharedSchemas.equivalence.test.ts`) enforces lock-step parity with
+ * the edge mirror. See validator architecture doc Decision 6 for sync-test
+ * details.
  */
 import { z } from 'zod';
 
@@ -53,6 +61,88 @@ export const CULTURAL_RESPONSIVENESS_FEATURE_VALUES = [
   'Positions teacher as facilitator',
 ] as const;
 
+// -----------------------------------------------------------------------------
+// 6 small-field vocabularies closed in PR 6e. Values copied VERBATIM from
+// scripts/stage2-retag/data/smaller-fields.vocab.json (byte-identical to the
+// live PROD CHECK arrays in 20260617000000_pr6c2_retag_apply.sql §6).
+// academic_integration / SEL / core_competencies = Title-case; cooking_methods
+// = kebab; garden_skills = Title-case.
+// -----------------------------------------------------------------------------
+
+export const ACADEMIC_INTEGRATION_VALUES = [
+  'Math',
+  'Science',
+  'Literacy/ELA',
+  'Social Studies',
+  'Health',
+  'Arts',
+] as const;
+
+export const SOCIAL_EMOTIONAL_LEARNING_VALUES = [
+  'Relationship skills',
+  'Self-awareness',
+  'Responsible decision-making',
+  'Self-management',
+  'Social awareness',
+] as const;
+
+export const CORE_COMPETENCIES_VALUES = [
+  'Environmental and Community Stewardship',
+  'Social Justice',
+  'Social-Emotional Intelligence',
+  'Garden Skills and Related Academic Content',
+  'Kitchen Skills and Related Academic Content',
+  'Culturally Responsive Education',
+] as const;
+
+export const COOKING_METHODS_VALUES = ['basic-prep', 'stovetop', 'oven'] as const;
+
+export const OBSERVANCES_HOLIDAYS_VALUES = [
+  'AAPI Heritage Month',
+  'Black History Month',
+  'Hispanic/Latinx Heritage Month',
+  "Indigenous Peoples' Month",
+  "Women's History Month",
+  'Pride',
+  'Earth Month',
+  'Thanksgiving',
+  'Lunar New Year',
+  'New Year',
+  'Ramadan',
+  'Eid',
+  'Juneteenth',
+  'School Food Hero Day',
+  'Beginning of year',
+  'End of year celebrations',
+] as const;
+
+export const GARDEN_SKILLS_VALUES = [
+  'Planting',
+  'Seed starting',
+  'Transplanting',
+  'Watering techniques',
+  'Harvesting',
+  'Composting',
+  'Mulching',
+  'Soil preparation and care',
+  'Weeding',
+  'Cover cropping',
+  'Garden planning',
+  'Companion planting',
+  'Crop rotation',
+  'Observing plant parts',
+  'Identifying plants',
+  'Pest identification',
+  'Beneficial insect identification',
+  'Pollinator observation',
+  'Seed saving',
+  'Tool use and maintenance',
+  'Preservation techniques',
+  'Garden exploration',
+  'Stewardship tasks',
+  'Sensory exploration',
+] as const;
+
 // =============================================================================
 // Closed-enum Zod types
 // =============================================================================
@@ -61,11 +151,23 @@ export const ActivityTypeEnum = z.enum(ACTIVITY_TYPE_VALUES);
 export const TagEnum = z.enum(TAG_VALUES);
 export const SeasonTimingEnum = z.enum(SEASON_TIMING_VALUES);
 export const CulturalResponsivenessFeatureEnum = z.enum(CULTURAL_RESPONSIVENESS_FEATURE_VALUES);
+export const AcademicIntegrationEnum = z.enum(ACADEMIC_INTEGRATION_VALUES);
+export const SocialEmotionalLearningEnum = z.enum(SOCIAL_EMOTIONAL_LEARNING_VALUES);
+export const CoreCompetenciesEnum = z.enum(CORE_COMPETENCIES_VALUES);
+export const CookingMethodsEnum = z.enum(COOKING_METHODS_VALUES);
+export const ObservancesHolidaysEnum = z.enum(OBSERVANCES_HOLIDAYS_VALUES);
+export const GardenSkillsEnum = z.enum(GARDEN_SKILLS_VALUES);
 
 export type ActivityTypeValue = z.infer<typeof ActivityTypeEnum>;
 export type TagValue = z.infer<typeof TagEnum>;
 export type SeasonTimingValue = z.infer<typeof SeasonTimingEnum>;
 export type CulturalResponsivenessFeatureValue = z.infer<typeof CulturalResponsivenessFeatureEnum>;
+export type AcademicIntegrationValue = z.infer<typeof AcademicIntegrationEnum>;
+export type SocialEmotionalLearningValue = z.infer<typeof SocialEmotionalLearningEnum>;
+export type CoreCompetenciesValue = z.infer<typeof CoreCompetenciesEnum>;
+export type CookingMethodsValue = z.infer<typeof CookingMethodsEnum>;
+export type ObservancesHolidaysValue = z.infer<typeof ObservancesHolidaysEnum>;
+export type GardenSkillsValue = z.infer<typeof GardenSkillsEnum>;
 
 // =============================================================================
 // AcademicIntegration sub-shape (PROD has both array and object regimes).
@@ -77,7 +179,10 @@ const academicIntegrationObjectSchema = z.object({
   selected: z.array(z.string()),
 });
 
-const academicIntegrationSchema = z.union([z.array(z.string()), academicIntegrationObjectSchema]);
+const academicIntegrationSchema = z.union([
+  z.array(AcademicIntegrationEnum),
+  academicIntegrationObjectSchema,
+]);
 
 // =============================================================================
 // Canonical lesson metadata schema. All fields optional to match runtime
@@ -92,19 +197,24 @@ export const lessonMetadataSchema = z.object({
   seasonTiming: z.array(SeasonTimingEnum).optional(),
   culturalResponsivenessFeatures: z.array(CulturalResponsivenessFeatureEnum).optional(),
 
-  // Open-string-array placeholders — tighten as Stage 1 worksheets land in PR 5+.
+  // Closed small-field vocabularies (locked PR 6e).
+  coreCompetencies: z.array(CoreCompetenciesEnum).optional(),
+  gardenSkills: z.array(GardenSkillsEnum).optional(),
+  cookingMethods: z.array(CookingMethodsEnum).optional(),
+  observancesHolidays: z.array(ObservancesHolidaysEnum).optional(),
+  socialEmotionalLearning: z.array(SocialEmotionalLearningEnum).optional(),
+  // academicIntegration: array branch closed PR 6e; object branch preserved.
+  academicIntegration: academicIntegrationSchema.optional(),
+
+  // Open-string-array placeholders. thematicCategories / culturalHeritage /
+  // locationRequirements stay open pending later worksheets; mainIngredients /
+  // gradeLevels / cookingSkills deferred to PR F.
   thematicCategories: z.array(z.string()).optional(),
-  coreCompetencies: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
   locationRequirements: z.array(z.string()).optional(),
   mainIngredients: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  gardenSkills: z.array(z.string()).optional(),
   cookingSkills: z.array(z.string()).optional(),
-  cookingMethods: z.array(z.string()).optional(),
-  observancesHolidays: z.array(z.string()).optional(),
-  socialEmotionalLearning: z.array(z.string()).optional(),
-  academicIntegration: academicIntegrationSchema.optional(),
   academicConcepts: z.record(z.string(), z.array(z.string())).optional(),
 
   // Single-string fields.

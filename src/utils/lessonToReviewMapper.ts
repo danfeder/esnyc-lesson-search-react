@@ -16,7 +16,7 @@
  * { concepts, selected } object regimes. Review form is string[] only;
  * this mapper extracts `selected` from the object form.
  */
-import type { LessonMetadataValidated } from '@/types/lessonMetadata.zod';
+import type { LessonMetadataValidated, AcademicIntegrationValue } from '@/types/lessonMetadata.zod';
 import type { ReviewFormPayloadValidated } from '@/types/reviewFormPayload.zod';
 
 export function lessonToReview(input: LessonMetadataValidated): ReviewFormPayloadValidated {
@@ -77,7 +77,11 @@ export function lessonToReview(input: LessonMetadataValidated): ReviewFormPayloa
         out.academicIntegration = input.academicIntegration;
       }
     } else if (input.academicIntegration.selected.length > 0) {
-      out.academicIntegration = input.academicIntegration.selected;
+      // The object form's `selected` is canonical `string[]` (the object
+      // sub-schema keeps it open); the review field is now the closed
+      // AcademicIntegrationEnum[] (PR 6e E2b). This identity copy is
+      // behaviour-preserving, so narrow at the boundary.
+      out.academicIntegration = input.academicIntegration.selected as AcademicIntegrationValue[];
     }
   }
 

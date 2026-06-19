@@ -10,6 +10,7 @@ import { sanitizeContent } from '@/utils/sanitize';
 import { FEATURES } from '@/utils/featureFlags';
 import type { ReviewMetadata } from '@/types';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
+import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
@@ -428,7 +429,18 @@ export function ReviewDetail() {
 
       if (reviews && reviews.length > 0) {
         const review = reviews[0];
-        setMetadata(reAddActivityTypeSuffix((review.tagged_metadata as ReviewMetadata) || {}));
+        // PR 6e E2c: legacy `tagged_metadata` rows (113 PROD, all approve_new)
+        // store pre-canonical SLUG forms for the 6 small-vocab fields. After
+        // E2b closed `reviewFormPayloadSchema`, reopening one without
+        // canonicalizing would render the legacy selections deselected AND
+        // reject re-save. Canonicalize the 6 vocab fields here, then let
+        // reAddActivityTypeSuffix handle activityType (disjoint fields). No
+        // DB write — the forensic rows stay legacy on disk.
+        setMetadata(
+          reAddActivityTypeSuffix(
+            canonicalizeReviewMetadata((review.tagged_metadata as ReviewMetadata) || {})
+          )
+        );
         const existingDecision = review.decision as string;
         if (
           existingDecision === 'approve_new' ||
@@ -520,10 +532,14 @@ export function ReviewDetail() {
     // save path only — keeping form state in UI-slug form lets IntPillGroup
     // match the stored value back to its slug option (otherwise the freshly-
     // clicked pill visually deselects on next render).
-    const payload: ReviewMetadata = {
+    // PR 6e E2c: universal safety net — canonicalize the 6 small-vocab fields
+    // immediately before the closed-schema validation regardless of how the
+    // form was populated (e.g. a residual legacy slug that survived the load
+    // path, or a future bug). Already-canonical values pass through unchanged.
+    const payload: ReviewMetadata = canonicalizeReviewMetadata({
       ...metadata,
       activityType: metadata.activityType?.map((s) => s.replace(/-only$/, '')),
-    };
+    });
 
     // PR 1 Task 1.5: defense-in-depth Zod validation against the same
     // reviewFormPayloadSchema the complete-review edge function enforces.
@@ -1039,7 +1055,11 @@ export function ReviewDetail() {
                     <label className="adm-label adm-label-req" htmlFor={inputIds.gardenSkills}>
                       Garden skills
                     </label>
-                    <CreatableSelect
+                    {/* Non-creatable Select: gardenSkills is a closed enum (24 */}
+                    {/* canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
+                    {/* CreatableSelect would invite reviewer-typed values that */}
+                    {/* the save path rejects. */}
+                    <Select
                       inputId={inputIds.gardenSkills}
                       classNamePrefix="adm-rs"
                       isMulti
@@ -1070,7 +1090,11 @@ export function ReviewDetail() {
                   <label className="adm-label" htmlFor={inputIds.observances}>
                     Observances &amp; holidays
                   </label>
-                  <CreatableSelect
+                  {/* Non-creatable Select: observancesHolidays is a closed enum */}
+                  {/* (16 canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
+                  {/* CreatableSelect would invite reviewer-typed values that */}
+                  {/* the save path rejects. */}
+                  <Select
                     inputId={inputIds.observances}
                     classNamePrefix="adm-rs"
                     isMulti

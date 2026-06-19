@@ -165,10 +165,13 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   cookingMethods: {
     label: 'Cooking Methods',
     type: 'multiple',
+    // Canonical kebab values (PR 6e — locked smaller-fields.vocab.json). Stored
+    // PROD data is kebab; the facet badge buckets by the stored value, so the
+    // option `value` MUST be kebab for the count lookup + reviewer save to match.
     options: [
-      { value: 'Basic prep only', label: 'Basic prep only' },
-      { value: 'Stovetop', label: 'Stovetop' },
-      { value: 'Oven', label: 'Oven' },
+      { value: 'basic-prep', label: 'Basic prep' },
+      { value: 'stovetop', label: 'Stovetop' },
+      { value: 'oven', label: 'Oven' },
     ],
   },
 };
@@ -237,34 +240,40 @@ export const METADATA_CONFIGS: Record<string, FilterConfig> = {
   gardenSkills: {
     label: 'Garden Skills',
     type: 'multiple',
+    // Canonical Title-Case values (PR 6e — locked smaller-fields.vocab.json).
+    // value === label so stored canonical values round-trip in the reviewer
+    // control and survive the now-closed gardenSkills enum / DB CHECK. 24 total
+    // (the 22 prior labels + 'Stewardship tasks' + 'Sensory exploration').
     options: [
       // Planting & Growing
-      { value: 'planting', label: 'Planting' },
-      { value: 'seed-starting', label: 'Seed starting' },
-      { value: 'transplanting', label: 'Transplanting' },
-      { value: 'watering-techniques', label: 'Watering techniques' },
-      { value: 'harvesting', label: 'Harvesting' },
+      { value: 'Planting', label: 'Planting' },
+      { value: 'Seed starting', label: 'Seed starting' },
+      { value: 'Transplanting', label: 'Transplanting' },
+      { value: 'Watering techniques', label: 'Watering techniques' },
+      { value: 'Harvesting', label: 'Harvesting' },
       // Garden Care
-      { value: 'composting', label: 'Composting' },
-      { value: 'mulching', label: 'Mulching' },
-      { value: 'soil-preparation', label: 'Soil preparation and care' },
-      { value: 'weeding', label: 'Weeding' },
-      { value: 'cover-cropping', label: 'Cover cropping' },
+      { value: 'Composting', label: 'Composting' },
+      { value: 'Mulching', label: 'Mulching' },
+      { value: 'Soil preparation and care', label: 'Soil preparation and care' },
+      { value: 'Weeding', label: 'Weeding' },
+      { value: 'Cover cropping', label: 'Cover cropping' },
       // Planning & Design
-      { value: 'garden-planning', label: 'Garden planning' },
-      { value: 'companion-planting', label: 'Companion planting' },
-      { value: 'crop-rotation', label: 'Crop rotation' },
+      { value: 'Garden planning', label: 'Garden planning' },
+      { value: 'Companion planting', label: 'Companion planting' },
+      { value: 'Crop rotation', label: 'Crop rotation' },
       // Observation & Identification
-      { value: 'observing-plant-parts', label: 'Observing plant parts' },
-      { value: 'identifying-plants', label: 'Identifying plants' },
-      { value: 'pest-identification', label: 'Pest identification' },
-      { value: 'beneficial-insect-id', label: 'Beneficial insect identification' },
-      { value: 'pollinator-observation', label: 'Pollinator observation' },
+      { value: 'Observing plant parts', label: 'Observing plant parts' },
+      { value: 'Identifying plants', label: 'Identifying plants' },
+      { value: 'Pest identification', label: 'Pest identification' },
+      { value: 'Beneficial insect identification', label: 'Beneficial insect identification' },
+      { value: 'Pollinator observation', label: 'Pollinator observation' },
       // Advanced Skills
-      { value: 'seed-saving', label: 'Seed saving' },
-      { value: 'tool-maintenance', label: 'Tool use and maintenance' },
-      { value: 'preservation', label: 'Preservation techniques' },
-      { value: 'garden-exploration', label: 'Garden exploration' },
+      { value: 'Seed saving', label: 'Seed saving' },
+      { value: 'Tool use and maintenance', label: 'Tool use and maintenance' },
+      { value: 'Preservation techniques', label: 'Preservation techniques' },
+      { value: 'Garden exploration', label: 'Garden exploration' },
+      { value: 'Stewardship tasks', label: 'Stewardship tasks' },
+      { value: 'Sensory exploration', label: 'Sensory exploration' },
     ],
   },
 
@@ -307,10 +316,12 @@ export const METADATA_CONFIGS: Record<string, FilterConfig> = {
     ],
   },
 
-  // Suggested values for optional fields (used with CreatableSelect)
+  // Closed vocabulary (PR 6e — locked smaller-fields.vocab.json, 16 values).
+  // type 'multiple' (non-creatable) so reviewers can't type an off-vocab
+  // holiday that the now-closed observancesHolidays enum / DB CHECK rejects.
   observancesHolidays: {
     label: 'Observances & Holidays',
-    type: 'creatable',
+    type: 'multiple',
     options: [
       { value: 'AAPI Heritage Month', label: 'AAPI Heritage Month' },
       { value: 'Black History Month', label: 'Black History Month' },
@@ -327,7 +338,6 @@ export const METADATA_CONFIGS: Record<string, FilterConfig> = {
       { value: 'Juneteenth', label: 'Juneteenth' },
       { value: 'School Food Hero Day', label: 'School Food Hero Day' },
       { value: 'Beginning of year', label: 'Beginning of year' },
-      { value: 'End of year', label: 'End of year' },
       { value: 'End of year celebrations', label: 'End of year celebrations' },
     ],
   },

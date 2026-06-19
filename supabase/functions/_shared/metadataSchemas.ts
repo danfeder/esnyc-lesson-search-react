@@ -38,6 +38,83 @@ export const CULTURAL_RESPONSIVENESS_FEATURE_VALUES = [
   'Positions teacher as facilitator',
 ] as const;
 
+// 6 small-field vocabularies closed in PR 6e — MUST match
+// src/types/lessonMetadata.zod.ts (verbatim from smaller-fields.vocab.json).
+
+export const ACADEMIC_INTEGRATION_VALUES = [
+  'Math',
+  'Science',
+  'Literacy/ELA',
+  'Social Studies',
+  'Health',
+  'Arts',
+] as const;
+
+export const SOCIAL_EMOTIONAL_LEARNING_VALUES = [
+  'Relationship skills',
+  'Self-awareness',
+  'Responsible decision-making',
+  'Self-management',
+  'Social awareness',
+] as const;
+
+export const CORE_COMPETENCIES_VALUES = [
+  'Environmental and Community Stewardship',
+  'Social Justice',
+  'Social-Emotional Intelligence',
+  'Garden Skills and Related Academic Content',
+  'Kitchen Skills and Related Academic Content',
+  'Culturally Responsive Education',
+] as const;
+
+export const COOKING_METHODS_VALUES = ['basic-prep', 'stovetop', 'oven'] as const;
+
+export const OBSERVANCES_HOLIDAYS_VALUES = [
+  'AAPI Heritage Month',
+  'Black History Month',
+  'Hispanic/Latinx Heritage Month',
+  "Indigenous Peoples' Month",
+  "Women's History Month",
+  'Pride',
+  'Earth Month',
+  'Thanksgiving',
+  'Lunar New Year',
+  'New Year',
+  'Ramadan',
+  'Eid',
+  'Juneteenth',
+  'School Food Hero Day',
+  'Beginning of year',
+  'End of year celebrations',
+] as const;
+
+export const GARDEN_SKILLS_VALUES = [
+  'Planting',
+  'Seed starting',
+  'Transplanting',
+  'Watering techniques',
+  'Harvesting',
+  'Composting',
+  'Mulching',
+  'Soil preparation and care',
+  'Weeding',
+  'Cover cropping',
+  'Garden planning',
+  'Companion planting',
+  'Crop rotation',
+  'Observing plant parts',
+  'Identifying plants',
+  'Pest identification',
+  'Beneficial insect identification',
+  'Pollinator observation',
+  'Seed saving',
+  'Tool use and maintenance',
+  'Preservation techniques',
+  'Garden exploration',
+  'Stewardship tasks',
+  'Sensory exploration',
+] as const;
+
 // =============================================================================
 // Closed-enum Zod types
 // =============================================================================
@@ -46,6 +123,12 @@ export const ActivityTypeEnum = z.enum(ACTIVITY_TYPE_VALUES);
 export const TagEnum = z.enum(TAG_VALUES);
 export const SeasonTimingEnum = z.enum(SEASON_TIMING_VALUES);
 export const CulturalResponsivenessFeatureEnum = z.enum(CULTURAL_RESPONSIVENESS_FEATURE_VALUES);
+export const AcademicIntegrationEnum = z.enum(ACADEMIC_INTEGRATION_VALUES);
+export const SocialEmotionalLearningEnum = z.enum(SOCIAL_EMOTIONAL_LEARNING_VALUES);
+export const CoreCompetenciesEnum = z.enum(CORE_COMPETENCIES_VALUES);
+export const CookingMethodsEnum = z.enum(COOKING_METHODS_VALUES);
+export const ObservancesHolidaysEnum = z.enum(OBSERVANCES_HOLIDAYS_VALUES);
+export const GardenSkillsEnum = z.enum(GARDEN_SKILLS_VALUES);
 
 // =============================================================================
 // AcademicIntegration sub-shape (canonical-keys path).
@@ -57,7 +140,7 @@ const academicIntegrationObjectSchema = z.object({
 });
 
 const academicIntegrationCanonicalSchema = z.union([
-  z.array(z.string()),
+  z.array(AcademicIntegrationEnum),
   academicIntegrationObjectSchema,
 ]);
 
@@ -72,18 +155,21 @@ export const lessonMetadataSchema = z.object({
   seasonTiming: z.array(SeasonTimingEnum).optional(),
   culturalResponsivenessFeatures: z.array(CulturalResponsivenessFeatureEnum).optional(),
 
+  // Closed small-field vocabularies (locked PR 6e — mirror src/types).
+  coreCompetencies: z.array(CoreCompetenciesEnum).optional(),
+  gardenSkills: z.array(GardenSkillsEnum).optional(),
+  cookingMethods: z.array(CookingMethodsEnum).optional(),
+  observancesHolidays: z.array(ObservancesHolidaysEnum).optional(),
+  socialEmotionalLearning: z.array(SocialEmotionalLearningEnum).optional(),
+  academicIntegration: academicIntegrationCanonicalSchema.optional(),
+
+  // Still-open string arrays.
   thematicCategories: z.array(z.string()).optional(),
-  coreCompetencies: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
   locationRequirements: z.array(z.string()).optional(),
   mainIngredients: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  gardenSkills: z.array(z.string()).optional(),
   cookingSkills: z.array(z.string()).optional(),
-  cookingMethods: z.array(z.string()).optional(),
-  observancesHolidays: z.array(z.string()).optional(),
-  socialEmotionalLearning: z.array(z.string()).optional(),
-  academicIntegration: academicIntegrationCanonicalSchema.optional(),
   academicConcepts: z.record(z.string(), z.array(z.string())).optional(),
 
   duration: z.string().optional(),
@@ -110,17 +196,19 @@ export const reviewFormPayloadSchema = z.object({
   season: z.array(SeasonTimingEnum).optional(),
   culturalResponsivenessFeatures: z.array(CulturalResponsivenessFeatureEnum).optional(),
 
+  // Closed small-field vocabularies (locked PR 6e E2b — mirror src/types).
+  coreCompetencies: z.array(CoreCompetenciesEnum).optional(),
+  socialEmotionalLearning: z.array(SocialEmotionalLearningEnum).optional(),
+  cookingMethods: z.array(CookingMethodsEnum).optional(),
+  gardenSkills: z.array(GardenSkillsEnum).optional(),
+  academicIntegration: z.array(AcademicIntegrationEnum).optional(),
+  observancesHolidays: z.array(ObservancesHolidaysEnum).optional(),
+
   themes: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  coreCompetencies: z.array(z.string()).optional(),
-  socialEmotionalLearning: z.array(z.string()).optional(),
-  cookingMethods: z.array(z.string()).optional(),
   mainIngredients: z.array(z.string()).optional(),
-  gardenSkills: z.array(z.string()).optional(),
   cookingSkills: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
-  academicIntegration: z.array(z.string()).optional(),
-  observancesHolidays: z.array(z.string()).optional(),
 
   processingNotes: z.string().optional(),
   summary: z.string().optional(),
