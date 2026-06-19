@@ -196,17 +196,19 @@ export const reviewFormPayloadSchema = z.object({
   season: z.array(SeasonTimingEnum).optional(),
   culturalResponsivenessFeatures: z.array(CulturalResponsivenessFeatureEnum).optional(),
 
+  // Closed small-field vocabularies (locked PR 6e E2b — mirror src/types).
+  coreCompetencies: z.array(CoreCompetenciesEnum).optional(),
+  socialEmotionalLearning: z.array(SocialEmotionalLearningEnum).optional(),
+  cookingMethods: z.array(CookingMethodsEnum).optional(),
+  gardenSkills: z.array(GardenSkillsEnum).optional(),
+  academicIntegration: z.array(AcademicIntegrationEnum).optional(),
+  observancesHolidays: z.array(ObservancesHolidaysEnum).optional(),
+
   themes: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  coreCompetencies: z.array(z.string()).optional(),
-  socialEmotionalLearning: z.array(z.string()).optional(),
-  cookingMethods: z.array(z.string()).optional(),
   mainIngredients: z.array(z.string()).optional(),
-  gardenSkills: z.array(z.string()).optional(),
   cookingSkills: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
-  academicIntegration: z.array(z.string()).optional(),
-  observancesHolidays: z.array(z.string()).optional(),
 
   processingNotes: z.string().optional(),
   summary: z.string().optional(),

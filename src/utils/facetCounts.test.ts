@@ -52,7 +52,7 @@ describe('computeFacetCounts', () => {
           locationRequirements: ['Indoor'],
           thematicCategories: ['Garden Basics'],
           seasonTiming: ['Fall'],
-          cookingMethods: ['Stovetop'],
+          cookingMethods: ['stovetop'],
           socialEmotionalLearning: ['Self-awareness'],
         },
       }),
@@ -75,7 +75,7 @@ describe('computeFacetCounts', () => {
     // credits east-asian AND its ancestor asian (see dedicated cases below).
     expect(counts.culturalHeritage).toEqual({ 'east-asian': 1, asian: 1 });
     expect(counts.seasonTiming).toEqual({ Fall: 1 });
-    expect(counts.cookingMethods).toEqual({ Stovetop: 1 });
+    expect(counts.cookingMethods).toEqual({ stovetop: 1 });
     expect(counts.socialEmotionalLearning).toEqual({ 'Self-awareness': 1 });
   });
 

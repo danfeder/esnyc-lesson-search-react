@@ -14,7 +14,13 @@
  *   - TS: `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`
  *
  * Closed-enum scope mirrors `lessonMetadata.zod.ts`: activityType (array),
- * season (array), culturalResponsivenessFeatures (array). Other vocabulary
+ * season (array), culturalResponsivenessFeatures (array), and — closed in
+ * PR 6e E2b — the 6 small-field vocabularies academicIntegration,
+ * socialEmotionalLearning, coreCompetencies, cookingMethods,
+ * observancesHolidays, gardenSkills. The review side reuses the enums exported
+ * by `lessonMetadata.zod.ts` so the two never drift. academicIntegration on
+ * the review side is a plain `string[]` (not the lesson-side object|array
+ * union), so it closes to `z.array(AcademicIntegrationEnum)`. Other vocabulary
  * fields stay open until Stage 1 worksheets close them.
  *
  * Note: `tags` (orientation / bilingual_handouts) is not currently exposed
@@ -27,6 +33,12 @@ import {
   ActivityTypeEnum,
   SeasonTimingEnum,
   CulturalResponsivenessFeatureEnum,
+  AcademicIntegrationEnum,
+  SocialEmotionalLearningEnum,
+  CoreCompetenciesEnum,
+  CookingMethodsEnum,
+  ObservancesHolidaysEnum,
+  GardenSkillsEnum,
 } from './lessonMetadata.zod';
 
 export const reviewFormPayloadSchema = z.object({
@@ -38,19 +50,23 @@ export const reviewFormPayloadSchema = z.object({
   season: z.array(SeasonTimingEnum).optional(),
   culturalResponsivenessFeatures: z.array(CulturalResponsivenessFeatureEnum).optional(),
 
+  // Closed small-field vocabularies (locked PR 6e E2b — reuse the lesson-side
+  // enums so review and lesson never drift). academicIntegration is a plain
+  // string[] on the review side, so it closes to the array form directly.
+  coreCompetencies: z.array(CoreCompetenciesEnum).optional(),
+  socialEmotionalLearning: z.array(SocialEmotionalLearningEnum).optional(),
+  cookingMethods: z.array(CookingMethodsEnum).optional(),
+  gardenSkills: z.array(GardenSkillsEnum).optional(),
+  academicIntegration: z.array(AcademicIntegrationEnum).optional(),
+  observancesHolidays: z.array(ObservancesHolidaysEnum).optional(),
+
   // Open-string-array fields (review-form key names where they diverge from
   // canonical — see translation rules above).
   themes: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  coreCompetencies: z.array(z.string()).optional(),
-  socialEmotionalLearning: z.array(z.string()).optional(),
-  cookingMethods: z.array(z.string()).optional(),
   mainIngredients: z.array(z.string()).optional(),
-  gardenSkills: z.array(z.string()).optional(),
   cookingSkills: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
-  academicIntegration: z.array(z.string()).optional(),
-  observancesHolidays: z.array(z.string()).optional(),
 
   // Free-form pass-through.
   processingNotes: z.string().optional(),

@@ -167,7 +167,10 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
         season: ['Fall'],
         themes: ['Plants'],
         gradeLevels: ['3', '4', '5'],
-        coreCompetencies: ['Cooking', 'Gardening'],
+        coreCompetencies: [
+          'Kitchen Skills and Related Academic Content',
+          'Garden Skills and Related Academic Content',
+        ],
       },
       // All-fields-populated fixture — drift protection. See lessonMetadata
       // counterpart above for rationale.
@@ -178,9 +181,9 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
         culturalResponsivenessFeatures: ['Reshapes curriculum'],
         themes: ['Plants'],
         gradeLevels: ['3'],
-        coreCompetencies: ['Cooking'],
+        coreCompetencies: ['Kitchen Skills and Related Academic Content'],
         socialEmotionalLearning: ['Self-management'],
-        cookingMethods: ['Stovetop'],
+        cookingMethods: ['stovetop'],
         mainIngredients: ['Tomatoes'],
         gardenSkills: ['Planting'],
         cookingSkills: ['Mixing'],
@@ -205,6 +208,13 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { activityType: ['both'] }, // 'both' retired (D2.1)
       { season: 'Spring' }, // string instead of array
       { season: ['fall'] }, // wrong case
+      // 6 small fields closed PR 6e E2b on the review side — off-vocab rejected.
+      { academicIntegration: ['math'] }, // legacy slug, canonical Title 'Math'
+      { socialEmotionalLearning: ['self-management'] }, // legacy slug
+      { coreCompetencies: ['Cooking'] }, // not a canonical core competency
+      { cookingMethods: ['Stovetop'] }, // canonical is kebab 'stovetop'
+      { observancesHolidays: ['End of year'] }, // merged into 'End of year celebrations'
+      { gardenSkills: ['planting'] }, // legacy slug, canonical Title 'Planting'
     ];
     it.each(invalid)('rejects %j', (fixture) => {
       const c = canonicalReviewSchema.safeParse(fixture);

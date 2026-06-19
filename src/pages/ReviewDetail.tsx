@@ -1039,7 +1039,11 @@ export function ReviewDetail() {
                     <label className="adm-label adm-label-req" htmlFor={inputIds.gardenSkills}>
                       Garden skills
                     </label>
-                    <CreatableSelect
+                    {/* Non-creatable Select: gardenSkills is a closed enum (24 */}
+                    {/* canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
+                    {/* CreatableSelect would invite reviewer-typed values that */}
+                    {/* the save path rejects. */}
+                    <Select
                       inputId={inputIds.gardenSkills}
                       classNamePrefix="adm-rs"
                       isMulti
@@ -1070,7 +1074,11 @@ export function ReviewDetail() {
                   <label className="adm-label" htmlFor={inputIds.observances}>
                     Observances &amp; holidays
                   </label>
-                  <CreatableSelect
+                  {/* Non-creatable Select: observancesHolidays is a closed enum */}
+                  {/* (16 canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
+                  {/* CreatableSelect would invite reviewer-typed values that */}
+                  {/* the save path rejects. */}
+                  <Select
                     inputId={inputIds.observances}
                     classNamePrefix="adm-rs"
                     isMulti
