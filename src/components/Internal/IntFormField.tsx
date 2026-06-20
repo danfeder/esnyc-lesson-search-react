@@ -23,16 +23,36 @@ export function IntFormField({
   children,
 }: IntFormFieldProps) {
   const generatedId = useId();
-  const fieldId = htmlFor ?? generatedId;
 
-  // If children is a single element without an id, inject our fieldId so the
-  // <label htmlFor> wires up correctly for screen readers.
+  // A single valid-element child is the only case we can wire control-level
+  // ARIA onto. Strings, fragments, and arrays are rendered as-is.
+  const singleChild = isValidElement(children) ? children : null;
+  const childProps = singleChild
+    ? (singleChild.props as { id?: string; 'aria-describedby'?: string })
+    : null;
+
+  // Prefer an explicit htmlFor, then the child's own id, then a generated one,
+  // so explicit-id children still wire up label/describedby correctly.
+  const fieldId = htmlFor ?? childProps?.id ?? generatedId;
+
+  // Stable id for the hint/error <p> (harmless even when nothing references it).
+  const descId = `${fieldId}-desc`;
+  const hasDescription = Boolean(error || hint);
+
+  // If a single element child is passed, wire in the field id (when it lacks
+  // one) plus required/invalid state and a describedby link to the hint/error.
   let renderedChild = children;
-  if (isValidElement(children)) {
-    const childProps = children.props as { id?: string };
-    if (!childProps.id) {
-      renderedChild = cloneElement(children, { id: fieldId } as Partial<typeof childProps>);
-    }
+  if (singleChild && childProps) {
+    const describedByIds = [childProps['aria-describedby'], hasDescription ? descId : undefined]
+      .filter(Boolean)
+      .join(' ');
+
+    renderedChild = cloneElement(singleChild, {
+      ...(childProps.id ? {} : { id: fieldId }),
+      'aria-required': required || undefined,
+      'aria-invalid': error ? true : undefined,
+      'aria-describedby': describedByIds || undefined,
+    } as Partial<typeof childProps>);
   }
 
   return (
@@ -42,9 +62,13 @@ export function IntFormField({
       </label>
       {renderedChild}
       {error ? (
-        <p className={cn('adm-hint', 'adm-hint--error')}>{error}</p>
+        <p id={descId} className={cn('adm-hint', 'adm-hint--error')}>
+          {error}
+        </p>
       ) : hint ? (
-        <p className="adm-hint">{hint}</p>
+        <p id={descId} className="adm-hint">
+          {hint}
+        </p>
       ) : null}
     </div>
   );

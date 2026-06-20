@@ -82,4 +82,60 @@ describe('IntFormField', () => {
     expect(screen.getByText('Just text')).toBeInTheDocument();
     expect(screen.getByText('plain string content')).toBeInTheDocument();
   });
+
+  it('wires aria-required/invalid/describedby onto a single input with required + error', () => {
+    render(
+      <IntFormField label="Email" required error="Invalid email">
+        <input data-testid="control" type="email" />
+      </IntFormField>
+    );
+    const input = screen.getByTestId('control');
+    const errorEl = screen.getByText('Invalid email');
+
+    expect(input).toHaveAttribute('aria-required', 'true');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    // aria-describedby points at the error/hint <p>'s id
+    const describedBy = input.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(errorEl).toHaveAttribute('id', describedBy);
+  });
+
+  it('points aria-describedby at the hint <p> when a hint (no error) is present', () => {
+    render(
+      <IntFormField label="Email" hint="We never share this">
+        <input data-testid="control" type="email" />
+      </IntFormField>
+    );
+    const input = screen.getByTestId('control');
+    const hintEl = screen.getByText('We never share this');
+    expect(input).toHaveAttribute('aria-describedby', hintEl.id);
+    expect(hintEl.id).toBeTruthy();
+  });
+
+  it('omits aria-required/invalid when not required and no error', () => {
+    render(
+      <IntFormField label="Email">
+        <input data-testid="control" type="email" />
+      </IntFormField>
+    );
+    const input = screen.getByTestId('control');
+    expect(input).not.toHaveAttribute('aria-required');
+    expect(input).not.toHaveAttribute('aria-invalid');
+    // no hint/error <p> rendered → no describedby reference
+    expect(input).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('merges aria-describedby with an existing one the child already carries', () => {
+    render(
+      <IntFormField label="Email" error="Invalid email">
+        <input data-testid="control" type="email" aria-describedby="external-help" />
+      </IntFormField>
+    );
+    const input = screen.getByTestId('control');
+    const errorEl = screen.getByText('Invalid email');
+    const describedBy = input.getAttribute('aria-describedby') ?? '';
+    const ids = describedBy.split(/\s+/);
+    expect(ids).toContain('external-help');
+    expect(ids).toContain(errorEl.id);
+  });
 });
