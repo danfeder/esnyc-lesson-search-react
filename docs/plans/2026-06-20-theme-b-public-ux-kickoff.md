@@ -97,13 +97,14 @@ CODEX ADVERSARIAL REVIEW (the plugin IS installed — use it): Codex is a differ
 - GATE 1 (plan-lock) already done for W1a (design Gate A folded 2026-06-20). For PR3/PR4: GATE 1B (review the authored tasks) after locking design §4 questions, before dispatching executors.
 - GATE 2 (pre-TEST migration): see MIGRATION DISCIPLINE.
 - GATE 3 (pre-push): see PER-PR step 1.
+- GATE 4 (Codex 2nd opinion on bot-review findings): see PER-PR step 5 — fires every bot round where a bot surfaces a real suggested change.
 
 PER-PR RITUAL (every PR — compact; canonical detail in the cited auto-loaded memories):
 1. Pre-push: DISPATCH a code-reviewer agent on `git diff main...HEAD` (the agent reads, not you) AND GATE 3 a Codex adversarial review (`codex:codex-rescue`, different family) in parallel. Dedupe + rebuttal-pass; fix-ups BEFORE push. Re-dispatch on every subsequent push. (`feedback_bot_review_investigation.md`)
 2. `npm run check` + `npm run test:run`, push, `gh pr create`.
 3. Wait for external bot reviewers — they ARE the second pass.
 4. Collect findings from ALL FOUR PR surfaces (issue-comments, review summaries, line-comments, checks/failed-run logs). "0 findings" needs evidence from all four. (`feedback_pr_comment_surfaces.md` — exact gh commands; the `/pr-triage` skill automates it)
-5. Investigate + rebuttal-pass EVERY finding; default-reject hardening below the bar; surface accept/reject recommendations BEFORE applying. (`feedback_pr_bot_review_workflow.md`)
+5. Investigate + rebuttal-pass EVERY finding; default-reject hardening below the bar. **GATE 4 (Codex 2nd opinion on bot findings — user-requested 2026-06-20):** whenever a review bot surfaces a *real suggested change* (any finding you're inclined to ACCEPT, plus any non-trivial suggested change you're inclined to reject), dispatch a Codex 2nd opinion (`codex:codex-rescue`, different model family) on the finding + the relevant code + your rebuttal verdict BEFORE finalizing — Codex is an independent input, triage its take with the same rebuttal discipline (`feedback_bot_review_investigation.md`). Then surface accept/reject recommendations reconciled across {bot finding · your rebuttal · Codex} BEFORE applying. Pure-nit findings with no code change (e.g. "approve") don't need Codex. (`feedback_pr_bot_review_workflow.md`)
 6. Consolidated fix-up commits — never amend pushed commits. Don't push a docs-only commit during an open PR cycle (`feedback_no_docs_push_during_pr.md`) — bundle it with the next fix-up.
 7. Re-verify TEST DB after every round touching DB-applied state (PR3 only). (`feedback_per_round_test_db_verification.md`)
 8. Round-cap after 2 bot rounds; a 3rd is critical-bugs-only.

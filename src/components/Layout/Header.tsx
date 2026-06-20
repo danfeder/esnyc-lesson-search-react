@@ -66,7 +66,7 @@ export const Header: React.FC<HeaderProps> = () => {
           <img src="/icons/icon-sprout-green.png" alt="" />
           <div className="int-brand-text">
             ESYNYC
-            <small>Lesson Library · Internal</small>
+            <small>Lesson Library</small>
           </div>
         </Link>
 

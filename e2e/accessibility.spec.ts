@@ -13,6 +13,10 @@ test.describe('Accessibility', () => {
   test('page has main landmark', async ({ page }) => {
     const main = page.locator('main, [role="main"]');
     await expect(main.first()).toBeVisible();
+    // Regression guard for the nested-<main> fix (SearchPage's inner <main> was
+    // downgraded to <div id="main-content">): the app shell must expose exactly
+    // one <main> landmark on the search route — a second would re-nest landmarks.
+    await expect(page.getByRole('main')).toHaveCount(1);
   });
 
   test('search input has accessible label', async ({ page }) => {
@@ -90,6 +94,33 @@ test.describe('Accessibility', () => {
 
     // Verify focus actually moved to a different element
     expect(secondFocusedId).not.toBe(firstFocusedId);
+  });
+
+  test('filter checkboxes are keyboard-focusable and in the a11y tree', async ({ page }) => {
+    // §3.2 regression guard: `.int-check input { display:none }` removed every
+    // filter checkbox from the focus order AND the accessibility tree, so 10 of
+    // 11 filter categories were unreachable by keyboard / screen reader. The fix
+    // is an sr-only clip (visually hidden, still focusable + role-exposed).
+    //
+    // The Activity Type section is a real `.int-check` section (NOT the Grade
+    // pills) and renders default-open, so its option checkboxes are present and
+    // not `hidden`. Be defensive: expand it if a future default flips it closed.
+    const sectionHeader = page.getByRole('button', { name: /^Activity Type(\s+\d+)?$/ });
+    await expect(sectionHeader).toBeVisible({ timeout: 15000 });
+    if ((await sectionHeader.getAttribute('aria-expanded')) === 'false') {
+      await sectionHeader.click();
+      await expect(sectionHeader).toHaveAttribute('aria-expanded', 'true');
+    }
+
+    // With display:none on the input, getByRole('checkbox') cannot find it (not
+    // in the role tree) and .focus() cannot land on it -> this FAILS today.
+    // No `.first()`: the Activity Type "Cooking" option is the only checkbox whose
+    // accessible name matches /cooking/i in the expanded role tree, so toHaveCount(1)
+    // is a genuine assertion (a future 2nd match should fail loudly, not be masked).
+    const cookingCheckbox = page.getByRole('checkbox', { name: /cooking/i });
+    await expect(cookingCheckbox).toHaveCount(1);
+    await cookingCheckbox.focus();
+    await expect(cookingCheckbox).toBeFocused();
   });
 
   test('page has sufficient text content', async ({ page }) => {

@@ -21,6 +21,26 @@ export type FacetFilterKey =
 
 export type FacetCounts = Record<FacetFilterKey, Record<string, number>>;
 
+/**
+ * Activity Type is stored as bare nouns (`cooking`/`garden`/`academic`/`craft`)
+ * but the sidebar badge looks up the option SLUG from `filterDefinitions.ts`
+ * (`cooking-only`/…). Bucket counts under the slug so the lookup hits (mirrors
+ * the slug-keying in `tallyHeritage`). Unknowns fall back to their verbatim
+ * value (`?? noun`) so nothing is silently lost — and a stray `'both'` (retired
+ * 2026-05-06, zero rows in PROD) buckets harmlessly rather than fanning out.
+ *
+ * The slug VALUES below are the canonical option values in `filterDefinitions.ts`
+ * (`FILTER_CONFIGS.activityType.options`); keep them in sync if an activity type
+ * is added. (We map explicitly rather than deriving from the option LABELs, to
+ * avoid coupling this data-side bucketing to display copy.)
+ */
+const ACTIVITY_TYPE_SLUG_BY_NOUN: Record<string, string> = {
+  cooking: 'cooking-only',
+  garden: 'garden-only',
+  academic: 'academic-only',
+  craft: 'craft-only',
+};
+
 const EMPTY_COUNTS = (): FacetCounts => ({
   gradeLevels: {},
   tags: {},
@@ -50,7 +70,9 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
       // → "Out-of-scope follow-ups captured here" → "Lesson Type (tags) facet count badge always shows 0".
       return [];
     case 'activityType':
-      return meta.activityType ?? [];
+      // Map each stored noun → its sidebar slug so the badge lookup hits;
+      // verbatim fallback for unknowns (no `'both'` fan-out — see C69).
+      return (meta.activityType ?? []).map((noun) => ACTIVITY_TYPE_SLUG_BY_NOUN[noun] ?? noun);
     case 'location':
       return meta.locationRequirements ?? [];
     case 'thematicCategories':
@@ -128,11 +150,10 @@ function tallyHeritage(lesson: Lesson, bucket: Record<string, number>): void {
  * Compute facet counts over a set of lessons — one `{ value: count }` bucket
  * per filter category. Pure function; safe to call from a useMemo.
  *
- * Every category except `culturalHeritage` is a verbatim per-value tally.
- * `culturalHeritage` is special-cased (slug-keyed + expansion-aware) so its
- * badge counts render and parent nodes reflect their descendants — see
- * `tallyHeritage`. (`activityType` has the same slug-vs-label class of bug; it
- * is a separate tracked follow-up and intentionally untouched here.)
+ * Most categories are a verbatim per-value tally. Two are key-remapped so the
+ * sidebar badge lookup hits: `culturalHeritage` is slug-keyed + expansion-aware
+ * (see `tallyHeritage`), and `activityType` maps its stored bare noun → the
+ * option slug in `valuesForKey` (C69, mirrors the heritage slug-keying).
  */
 export function computeFacetCounts(lessons: Lesson[]): FacetCounts {
   const counts = EMPTY_COUNTS();
