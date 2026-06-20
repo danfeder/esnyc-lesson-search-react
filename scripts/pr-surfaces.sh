@@ -42,10 +42,14 @@ gh api "repos/{owner}/{repo}/pulls/$PR/comments" \
   --jq '.[] | {user: .user.login, path, line, body}' 2>/dev/null \
   || echo "(none / error)"
 
-hr "4/4  CI / CHECKS (gh pr checks) + failed-run logs"
-gh pr checks "$PR" || true   # gh exits non-zero when any check is failing/pending
-fail_links=$(gh pr checks "$PR" --json name,state,link \
-  --jq '.[] | select(.state=="FAILURE" or .state=="ERROR") | .link' 2>/dev/null || true)
+hr "4/4  CI / CHECKS + failed-run logs"
+# Fetch once. `gh pr checks` exits non-zero when any check is failing/pending but
+# still emits the JSON on stdout, so capture stdout and ignore the exit code.
+checks_json=$(gh pr checks "$PR" --json name,state,link 2>/dev/null) || true
+[[ -z "${checks_json:-}" ]] && checks_json='[]'
+printf '%s\n' "$checks_json" | jq -r '.[] | "  [\(.state)] \(.name)"' 2>/dev/null || echo "(no checks reported)"
+fail_links=$(printf '%s\n' "$checks_json" \
+  | jq -r '.[] | select(.state=="FAILURE" or .state=="ERROR") | .link' 2>/dev/null || true)
 if [[ -n "${fail_links:-}" ]]; then
   run_ids=$(printf '%s\n' "$fail_links" | grep -oE 'runs/[0-9]+' | grep -oE '[0-9]+' | sort -u)
   for rid in $run_ids; do
