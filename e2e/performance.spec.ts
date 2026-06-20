@@ -96,6 +96,11 @@ test.describe('Responsive Design', () => {
     const searchBar = page.getByPlaceholder(/search/i);
     await expect(searchBar).toBeVisible();
 
+    // C57: the mobile filter trigger must be reachable at 375px (it is the
+    // ONLY way to open filters on a phone). Regression guard for the CSS
+    // source-order bug that hid it at every width.
+    await expect(page.getByRole('button', { name: /open filters/i })).toBeVisible();
+
     // Content should fit within viewport (no horizontal scroll needed)
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     expect(bodyWidth).toBeLessThanOrEqual(VIEWPORT.MOBILE.width + VIEWPORT_TOLERANCE);
@@ -117,6 +122,10 @@ test.describe('Responsive Design', () => {
 
     const searchBar = page.getByPlaceholder(/search/i);
     await expect(searchBar).toBeVisible();
+
+    // C57: the mobile filter trigger is mobile-only — guard the inverse so a
+    // future change can't make it leak onto desktop where the sidebar is shown.
+    await expect(page.getByRole('button', { name: /open filters/i })).toBeHidden();
   });
 
   test('content reflows on resize', async ({ page }) => {

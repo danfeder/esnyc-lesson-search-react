@@ -488,6 +488,26 @@
   font-size: 11px;
 }
 
+/* --- Mobile filter trigger base rule (hidden on desktop) ------------
+   MUST precede the <768px @media override below: equal specificity (0,1,0)
+   means later source order wins, so the base display:none has to come first
+   for the media query's display:inline-flex to take effect at <768px (C57). */
+.int-mobile-filter-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-esy-white);
+  border: 1px solid var(--color-esy-ink-30);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--color-esy-ink-70);
+}
+
 /* --- Mobile (<768px): hide desktop sidebar; drawer handles filters --- */
 @media (max-width: 767px) {
   .int-topbar { padding: 0 16px; gap: 12px; }
@@ -716,22 +736,13 @@
   outline-offset: -2px;
 }
 
-/* --- Mobile filter trigger (hidden on desktop, shown via media query) */
-.int-mobile-filter-btn {
-  display: none;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-esy-white);
-  border: 1px solid var(--color-esy-ink-30);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 700;
-  color: var(--color-esy-ink-70);
-}
+/* --- Mobile filter trigger (hidden on desktop, shown via media query) --
+   NOTE: the base display:none rule lives BEFORE the <768px @media block
+   (~line 491) on purpose. Both rules are equal specificity (0,1,0) and a
+   media query adds no weight, so source order decides the cascade — the
+   base rule MUST precede the override or the button is hidden at every
+   width (C57). Keep these :hover / -count siblings here; only the base
+   display rule is order-sensitive. */
 .int-mobile-filter-btn:hover {
   border-color: var(--color-esy-ink);
   color: var(--color-esy-ink);
