@@ -101,6 +101,15 @@ test.describe('Responsive Design', () => {
     // source-order bug that hid it at every width.
     await expect(page.getByRole('button', { name: /open filters/i })).toBeVisible();
 
+    // §4.8: the toolbar must not overflow horizontally on narrow viewports.
+    // Pre-fix, .int-toolbar-right was never restacked under 768px, so the
+    // toolbar's content was wider than its box (density switcher clipped,
+    // count text wrapping to ~4 lines). Element-scoped overflow check.
+    const toolbar = page.locator('.int-toolbar');
+    await expect(toolbar).toBeVisible();
+    const toolbarOverflow = await toolbar.evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(toolbarOverflow).toBeLessThanOrEqual(1); // allow sub-pixel rounding
+
     // Content should fit within viewport (no horizontal scroll needed)
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     expect(bodyWidth).toBeLessThanOrEqual(VIEWPORT.MOBILE.width + VIEWPORT_TOLERANCE);

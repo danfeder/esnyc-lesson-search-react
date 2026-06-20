@@ -550,6 +550,18 @@
   .int-mobile-filter-btn {
     display: inline-flex;
   }
+  /* §4.8: restack the toolbar so the right cluster drops onto its own row
+     below the result count instead of overflowing horizontally. Without
+     this the row stays single-line (justify-content:space-between +
+     margin-left:auto) and the density switcher is clipped off-screen. */
+  .int-toolbar {
+    flex-wrap: wrap;
+  }
+  .int-toolbar-right {
+    margin-left: 0;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 /* --- Empty state ---------------------------------------------------- */
