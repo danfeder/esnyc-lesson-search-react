@@ -1,20 +1,22 @@
 # Theme B — Public "Broken-Windows" UX Execution Status
 
-**Last updated:** 2026-06-20 by Session 4 (PR2 #523 bot round 1 triaged + fixed → `5edc7e7` pushed; awaiting bot round 2)
+**Last updated:** 2026-06-20 by Session 4 (PR2 #523 bot rounds 1 + 2 triaged + fixed → `5edc7e7`/`2980c3f`; round-cap reached → MERGE is the next gate, user-gated)
 
 ## Current State
 
 **Prior PR shipped:** PR 1 (W1a-cosmetic-a11y) = **GitHub PR #522 MERGED 2026-06-20 16:54 UTC → `main` @ `19d99b7`** (2 bot rounds + Codex GATE-4; merge user-gated). Full PR1 detail (Tasks 1.1–1.6 Done + Sessions 0/1/2 logs) moved to `…-execution-status-archive.md` — grep there, don't read it whole.
 
-**Active PR:** PR 2 — **W1a-behavior = GitHub PR #523 OPEN** (https://github.com/danfeder/esnyc-lesson-search-react/pull/523). Branch `feat/theme-b-w1a-behavior` off `main` @ `19d99b7`. The last W1a PR; W1a is **Locked**. Net-new frontend code, **no DB**. All 4 tasks shipped + supervisor-verified; pre-push dual-family gate done; **bot round 1 triaged + fixed (`5edc7e7`)**; round 2 pending.
+**Active PR:** PR 2 — **W1a-behavior = GitHub PR #523 OPEN** (https://github.com/danfeder/esnyc-lesson-search-react/pull/523). Branch `feat/theme-b-w1a-behavior` off `main` @ `19d99b7`. The last W1a PR; W1a is **Locked**. Net-new frontend code, **no DB**. All 4 tasks shipped + supervisor-verified; pre-push dual-family gate done; **bot rounds 1 (`5edc7e7`) + 2 (`2980c3f`) triaged + fixed. 2-round cap reached.**
 
-**Current task (NEXT SESSION):** **PR #523 bot-review round 2.** The round-1 fix-up push (`5edc7e7`) will re-trigger the auto-bots; wait for CI/deploy-preview/E2E + the fresh bot pass, then `/pr-triage 523` across ALL FOUR surfaces again. Rebuttal-pass every finding; **GATE 4** (Codex via `codex:codex-rescue`, return-inline) on any real suggested change. **Round-cap is now in effect — round 2 is the LAST full round; a round 3 would be critical-bugs-only.** If clean (likely — round 1 was all minor, 2 accepted/2 rejected) → **surface the merge decision to the user (merge is user-gated).** On merge: PR-cycle archival, then PR3 (W1b) — design-lock §4 Q1–Q5 first.
+**Current task (NEXT):** **MERGE PR #523 — user-gated.** User chose (2026-06-20) "surface merge after a green push": wait for CI/E2E to go green on the round-2 head, then the user makes the explicit merge call. **No round-3 full triage** unless a *critical* bug surfaces (round-cap). On merge → PR-cycle archival (move PR2 Session 3/4 entries into the archive; audit for promotable learnings) → **PR3 (W1b)** — design-lock §4 Q1–Q5 first (GATE 1B), the one search-RPC migration (TEST-DB-gated, GATE 2 on the SQL).
 
-**Round 1 outcome (2026-06-20, Session 4):** only `claude[bot]` reviewed (3 surfaces; no CodeRabbit/Sourcery). 4 findings, all minor (bot's own verdict: "nothing blocks merge"). Triaged {bot · supervisor rebuttal · Codex GATE 4 — unanimous}: **ACCEPT** (A) `inputRef` dead code in LessonSearchPicker (removed decl + `ref` prop; `useRef` import stays); **ACCEPT** (D) IntListSkeleton double-ARIA (dropped redundant `aria-label`, kept sr-only span as the live-region content; re-targeted 2 search-page tests by text content since `role="status"` has no name-from-content + the announcer shares the role). **WON'T-FIX** (B) ArrowUp APG return-to-input (locked §5 clamp/no-wrap, documented, internal-only, no a11y blocker) + (C) inline `getMatches` (pure nit). Codex agreed with all three verdicts, flagged no missed issues. Security-Audit FAILURE = expected-red npm-audit noise (not a code finding). All fixes RED→GREEN-adjacent: full suite **1371/1371**, `npm run check` clean.
+**Round 1 outcome (Session 4):** only `claude[bot]` (3 surfaces). 4 findings, all minor ("nothing blocks merge"). {bot · rebuttal · Codex GATE 4 — unanimous}: **ACCEPT** (A) `inputRef` dead code; **ACCEPT** (D) IntListSkeleton double-ARIA (dropped `aria-label`, kept sr-only span; re-targeted 2 tests by text content). **WON'T-FIX** (B) ArrowUp APG + (C) inline `getMatches`. Fixed in `5edc7e7`; suite 1371/1371.
 
-**Branch:** `feat/theme-b-w1a-behavior` (off `19d99b7`). 6 code commits: `382521a` (2.1 C59), `d2f968b` (2.2 C14), `4769866` (2.3 C79), `234388c` (2.4 §3.4), `5f2954c` (pre-push fix-ups), `5edc7e7` (bot round-1 fix-ups). All pushed once this session's push lands.
+**Round 2 outcome (Session 4):** `claude[bot]` self-contradicted (review summary CHANGES_REQUESTED vs its own issue-comment "Approve to merge"). 6 findings. {bot · rebuttal · Codex GATE 4 — unanimous on all 5 substantive; Codex improved R2-6}: **ACCEPT** (R2-1) skeleton `aria-busy` drop (on a live region it defers the announce until it flips false, but the skeleton unmounts → announce could be swallowed); **ACCEPT** (R2-3) IntFormField cast widened to `AriaAttributes & {id?}` (aria-required/invalid were type-unchecked); **ACCEPT** (R2-6) ScreenReaderAnnouncer announced a STALE count mid-transition — C59 gated its other stale consumers but missed the announcer; added a `suppressed` prop wired `isPending || isPlaceholderData` (Codex: isPending also kills the cold-load false "0 lessons"), +2 RED→GREEN tests. **WON'T-FIX** (R2-2) ArrowUp re-raise (locked §5); (R2-4) picker stale-state-after-clear (REAL but PRE-EXISTING, out of C79 scope → follow-up); (R2-5) inline `getMatches` (nit). Fixed in `2980c3f`; suite **1373/1373**, `npm run check` clean. Security-Audit FAILURE = expected-red npm-audit noise.
 
-**Last commit on branch:** `5edc7e7` (code round-1 fix-ups), pushed bundled with the Session 4 status-doc commit (this file).
+**Branch:** `feat/theme-b-w1a-behavior` (off `19d99b7`). 7 code commits: `382521a` (2.1 C59), `d2f968b` (2.2 C14), `4769866` (2.3 C79), `234388c` (2.4 §3.4), `5f2954c` (pre-push fix-ups), `5edc7e7` (bot round-1), `2980c3f` (bot round-2). Plus docs commits (status/archive/kickoff) bundled into pushes.
+
+**Last commit on branch:** `2980c3f` (code round-2 fix-ups), pushed bundled with the Session-4 round-2 status-doc commit (this file).
 
 **Pre-push gate outcome (2026-06-20):** Claude code-reviewer + Codex GATE 3 (`codex:codex-rescue`, different family) in parallel on `main...HEAD` (docs excluded). Codex's first dispatch backgrounded its output (flaky async handoff); a focused retry returned inline. **4 findings, all ACCEPTED + fixed in `5f2954c`** (each RED→GREEN): (1) **§3.4 density-switcher vanish** [Claude] — passing raw `view='split'` to IntToolbar in the 768–1099px band hid the list-only `IntDensitySwitcher` (`if view!=='list' return null`) AND left no view radio highlighted; fix = pass `effectiveView`. Bigger than the supervisor's flagged "highlight nuance." (2) **C79 dangling `aria-controls`** [Codex F1] — `aria-controls={isOpen ? listboxId : undefined}`. (3) **C79 nested `<button>` in `role="option"`** [Codex F2] — made the `<li>` the click target (canonical listbox; lint clean, click test unbroken). (4) **C59 false "No more results to load"** [Codex F3] — `InfiniteScrollTrigger` forced `hasMore=false` during `isPlaceholderData` while stale rows showed → terminal copy flashed; fix = hide the whole trigger during placeholder. Claude+Codex DISAGREED on F1 (Claude: "accepted APG pattern"; Codex: violation) — sided with Codex's fix (unambiguously correct, zero downside). Codex independently confirmed the C59 state machine, `useMediaQuery`, and IntFormField ARIA are clean.
 
@@ -66,6 +68,9 @@
 
 - W1b `LessonMetadata.tags` type gap: `database.types.ts:256` has `tags` but `src/types/index.ts` `LessonMetadata` does not — part of C84 path-a (W1b Q5).
 - C14 IntPillGroup ARIA-forwarding: if PR2 ships default (b), file this as a flagged follow-up (pill-group controls only get wrapper-level `id`/`aria-label`, not control-level ARIA).
+- **LessonSearchPicker stale state after select→clear (R2-4, deferred from PR2):** after a select→clear cycle the local `query`/`results`/`hasQueried` persist (onClear is a parent callback that only nulls `selected`; nothing resets local state), so the old results list + "can't find" affordance reappear without the user typing. REAL but PRE-EXISTING (C79 added only `activeIndex`/`collapsed`); fixing it = a state-lifecycle change beyond C79's keyboard-nav scope. Codex confirmed pre-existing + deferral defensible (the retained results can even help a user pick a different match after clearing a mistake). Fix later with a reset on `selected→null` (effect or in the consumers' clear handlers) + a test.
+- **ArrowUp APG return-to-input (R2-2, recurring bot flag — NOT a bug):** the auto-bot flagged this both rounds; current behavior (clamp at index 0 / no-wrap, `Math.max(i-1,0)`) is the LOCKED design §5, documented inline, internal-only picker, no keyboard trap (Codex ×2 agreed). If a future wave wants strict WAI-ARIA APG, change to `(i) => (i <= 0 ? -1 : i - 1)` (ArrowUp at the first option deselects back to the input) — but that's a design change, surface to the user first; do NOT let the recurring bot flag drive an unilateral edit.
+- **Toolbar visual count stale during placeholder (Codex round-2 missed-issue — INTENDED, not a bug):** `SearchPage.tsx:103` passes the stale `totalCount` to `IntToolbar` un-gated during `isPlaceholderData`. Left as-is on purpose: a stale count next to the stale rows it describes is *coherent* (the bot's own report called it "correct UX"); only the live-region announcer (R2-6) needed gating because it double-*fires*. Noted so a future reviewer doesn't "fix" the toolbar count and desync it from the visible rows.
 
 ## Pointers to durable context
 
@@ -78,7 +83,7 @@
 
 ## Session log
 
-### Session 4 — 2026-06-20 — PR #523 bot-review round 1 triaged + fixed
+### Session 4 — 2026-06-20 — PR #523 bot-review rounds 1 + 2 triaged + fixed (round-cap reached → merge-ready)
 
 Supervisor session. Oriented (git matched the status file; baseline `npm run check` clean; the 2 prior local docs commits `8bde5cb`+`21da0b0` confirmed unpushed/ahead). PR #523 CI: all green except the expected-red Security Audit and 2 expected SKIPs; all 4 auto-review bots ran.
 
@@ -88,11 +93,20 @@ Supervisor session. Oriented (git matched the status file; baseline `npm run che
 - **Applied** A + D as one consolidated fix-up (`5edc7e7`). Subtlety handled: dropping the skeleton's `aria-label` broke `getByRole('status', {name})` in 2 tests (role="status" has no name-from-content + the announcer shares the role) → re-targeted by `getByText(/loading lessons/i).closest('[role="status"]')`. **Full suite 1371/1371**, `npm run check` clean.
 - Pushed `5edc7e7` + this Session-4 status commit (bundling the prior 2 local docs commits — no docs-only CI cycle).
 
-Decisions / learnings:
-- **Pre-push gate calibration:** judged a full GATE-3 re-dispatch disproportionate for a 6-line, bot-derived, Codex-GATE-4-vetted fix-up; self-reviewed the diff instead. GATE 4 effectively covered the different-family review for these exact changes.
-- **GATE 4 unanimous + Codex inline:** the explicit "return findings INLINE, do not background" instruction worked first try (contrast Session 3's flake).
+**Round 2** (same session, after the `5edc7e7` push re-triggered the auto-bots):
+- All 4 auto-review bots re-ran SUCCESS on `8839e11`. (Background-poller gotcha: a `gh ... --jq 'test("review")'` filter crashes on rollup entries whose `.name` is null — the Netlify StatusContext uses `.context` — producing empty output that reads as a false "0 in progress." Guard with `select(.name != null and (.name|test(...)))` + a non-empty check.)
+- Four-surface re-triage: the bot **self-contradicted** — its review summary was CHANGES_REQUESTED while its own issue-comment report said "Approve to merge." 6 findings (2 re-raises of round-1 rejects).
+- Rebuttal + **GATE 4** (Codex, return-inline, no flake): unanimous on all 5 substantive findings; Codex *improved* R2-6 (suppress on `isPending || isPlaceholderData`, not just placeholder, to also kill the cold-load false "0 lessons") and noted the toolbar visual count is intentionally stale (left as-is).
+- **ACCEPT R2-1/R2-3/R2-6** (user approved "apply all 3 incl. R2-6"), **WON'T-FIX R2-2/R2-4/R2-5**. R2-6 was TDD'd (2 RED→GREEN announcer tests). Fixed in `2980c3f`; suite 1371→**1373**, `npm run check` clean.
+- User chose **"surface merge after a green push"** — round-cap reached, no round-3 full triage unless a critical bug appears.
 
-Next session picks up at: **PR #523 bot-review round 2** (the LAST full round per the 2-round cap) — wait for the auto-bots on `5edc7e7`, re-triage all four surfaces, GATE 4 any real finding. If clean → surface the merge decision (user-gated). On merge → PR-cycle archival + PR3 (W1b) design-lock §4 Q1–Q5.
+Decisions / learnings:
+- **Pre-push gate calibration:** judged a full GATE-3 re-dispatch disproportionate for the bot-derived, Codex-GATE-4-vetted fix-ups (both rounds); self-reviewed the diffs instead. GATE 4 covered the different-family review for these exact changes.
+- **GATE 4 unanimous + Codex inline (×2):** the explicit "return findings INLINE, do not background" instruction worked first try both rounds (contrast Session 3's flake). Strong candidate to promote to a feedback memory.
+- **Bot self-contradiction across surfaces** (round 2: CHANGES_REQUESTED summary vs "approve" issue-comment) is exactly the four-surface-triage rationale — never trust one surface.
+- **R2-6 was a genuine miss in C59's own pattern** (gated siblings, missed the announcer) — the bot + Codex earned their keep on a real public a11y regression, not just nits.
+
+Next picks up at: **MERGE PR #523** (user-gated) once CI/E2E green on `2980c3f`. On merge → PR-cycle archival (Sessions 3/4 → archive) + PR3 (W1b) design-lock §4 Q1–Q5 (GATE 1B) → the one TEST-DB-gated search-RPC migration (GATE 2 on the SQL).
 
 ### Session 3 — 2026-06-20 — PR2 built + pre-push-gated + opened as PR #523
 
