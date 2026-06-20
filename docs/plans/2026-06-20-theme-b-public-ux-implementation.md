@@ -329,7 +329,11 @@ hide the SPLIT control there. Design: 2026-06-20-theme-b-public-ux-design.md §5
 
 ## PR 3 — W1b-search-rpc  *(LOCKED 2026-06-20 — §4 Q1–Q5 resolved; tasks authored below)*
 
-**Branch:** `feat/theme-b-w1b-search-rpc`
+> **⚙️ SPLIT into two PRs for safe rollout (Session 6, user verdict 2026-06-20).** Codex GATE 3 found a PROD deploy-ordering hazard (the frontend auto-deploys on merge before the manual-approval migration applies → a combined PR would 500 public search in the window). So:
+> - **PR3a = Task 3.1 only** (migration `20260620000000` + the `order_by?: string` types delta). Branch `feat/theme-b-w1b-search-rpc`. The migration is backward-compatible (`order_by DEFAULT 'relevance'`), so the unchanged frontend keeps working. Ships + reaches PROD first.
+> - **PR3b = Task 3.2 only** (the client wiring below). Ships AFTER PR3a's migration is live + verified on PROD. Source commit preserved on `feat/theme-b-w1b-frontend` (`9988bd0`); for the PR, cherry-pick the frontend changes onto a fresh branch off post-merge `main`.
+
+**Branch:** `feat/theme-b-w1b-search-rpc` (PR3a = migration) · `feat/theme-b-w1b-frontend` (PR3b = frontend)
 
 **What ships (scope):** one `search_lessons` migration — C136 (`&`/operator crash), C58 (real server-side sort: **relevance / title / modified only — `grade` option removed**), C11 (ghost-ID exclusion + deterministic order), location-Both expansion — plus the C58 client wiring (the `order_by` param). **C84 / tags exposure is DEFERRED out of W1b** (design §4 Q5 + §9; user verdict 2026-06-20 — tags predate the metadata rebuild and need a data-quality audit first). The PR1 `IntSidebar` tags-badge suppression **stays**; the tags *filter* still works.
 

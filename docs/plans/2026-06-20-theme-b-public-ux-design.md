@@ -170,7 +170,10 @@ Theme B (Wave 1)
 |---|---|---|---|
 | 1 | **W1a-cosmetic-a11y** | C57, §3.2 checkbox-a11y, copy/a11y one-liners (×4), C69, C84-suppress, §4.8 toolbar-overflow | Near-zero. CSS + small TS + facet map. No DB. Frontend-only revert. |
 | 2 | **W1a-behavior** | C59 (+ new `IntListSkeleton`), C14, C79, §3.4 split-view (+ new `useMediaQuery`) | Low. Net-new component + first `keepPreviousData`. No DB. |
-| 3 | **W1b-search-rpc** | C136, C58 (relevance/title/modified — grade option removed), C11, location-Both. **(C84 tags exposure DEFERRED — Q5.)** | **Medium — hottest RPC.** One migration (**DROP+CREATE** — `order_by` adds a param, §6), TEST-DB-gated; PROD-verify after. |
+| 3a | **W1b-search-rpc (migration)** | C136, C58 server side (`order_by`), C11, location-Both. **(C84 tags DEFERRED — Q5.)** | **Medium — hottest RPC.** One migration (**DROP+CREATE**, §6), TEST-DB-gated; PROD-verify after. Frontend UNCHANGED → backward-compatible. |
+| 3b | **W1b client sort wiring** | C58 frontend (`order_by` param + queryKey + page-reset; remove grade option). | Low. Pure-frontend. **Ships AFTER 3a is PROD-live** (split 2026-06-20 — see below). |
+
+> **PR3 split into 3a (migration) + 3b (frontend), 2026-06-20 (Session 6, user verdict).** Codex GATE 3 caught a deploy-ordering hazard: `ci.yml` auto-deploys the frontend to PROD on merge (gated only by `test`) while `migrate-production.yml` holds the migration for manual approval — a combined PR would let the new frontend (sending `order_by`) hit the old 15-arg RPC → PGRST202 → public-search outage window. Splitting = expand/contract: the backward-compatible migration lands on PROD first (old frontend still works via `DEFAULT 'relevance'`), then the frontend ships. **General rule for this repo: a migration that adds a param the frontend will send must reach PROD before that frontend deploys — split the PR.**
 | 4 | **W1c-url-state** | C114/C157 | Low-med. Pure-frontend; sync-loop care; WIP as reference only. |
 
 ### Gap risk between PRs
