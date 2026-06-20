@@ -483,6 +483,126 @@ describe('SearchPage Integration', () => {
     });
   });
 
+  describe('Loading State (C59)', () => {
+    it('shows the loading skeleton (not "No matches") while the first search is pending', async () => {
+      // A never-resolving RPC keeps the query in the cold-load `isPending` state.
+      rpcMock.mockReturnValueOnce(new Promise(() => {}));
+
+      renderWithProviders(<SearchPage />);
+
+      // The cold-load skeleton renders...
+      await waitFor(() => {
+        // The skeleton's loading announcement lives in an sr-only text node
+        // inside a role="status" live region (no aria-label — see IntListSkeleton).
+        expect(screen.getByText(/loading lessons/i).closest('[role="status"]')).toBeInTheDocument();
+      });
+      // ...and the false-negative "No matches"/"No results" empty state does NOT.
+      expect(screen.queryByRole('heading', { name: /no matches/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /no results/i })).not.toBeInTheDocument();
+    });
+
+    it('suppresses the load-more affordance while showing placeholder data mid-transition', async () => {
+      // First query: a page of 1 row out of total_count 50 → hasNextPage, so the
+      // keyboard "Load more results" affordance renders.
+      const firstRow = createTestLesson({ lesson_id: 'first', total_count: 50 });
+      let resolveSecond: ((value: { data: unknown; error: null }) => void) | undefined;
+      rpcMock.mockResolvedValueOnce({ data: [firstRow], error: null }).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecond = resolve;
+          })
+      );
+
+      renderWithProviders(<SearchPage />);
+
+      // Load-more affordance present once the first (settled) page is showing.
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /load more results/i })).toBeInTheDocument();
+      });
+
+      // Change the filter → a NEW, in-flight query. keepPreviousData keeps the
+      // 'first' row visible (placeholder), but the load-more affordance must be
+      // suppressed so the sentinel can't paginate the stale list.
+      const store = useSearchStore.getState();
+      store.setFilters({ gradeLevels: ['5'] });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('button', { name: /load more results/i })
+        ).not.toBeInTheDocument();
+      });
+      // The previous result stays on screen (no blank/false "No matches").
+      expect(screen.getByText('Test Lesson Title')).toBeInTheDocument();
+
+      resolveSecond?.({
+        data: [createTestLesson({ lesson_id: 'second', total_count: 1 })],
+        error: null,
+      });
+    });
+
+    it('does not flash "No more results to load" over stale rows mid-transition', async () => {
+      // First query: one row of total_count 50 → hasNextPage true, so the
+      // settled state shows the load-more affordance (NOT the terminal copy).
+      const firstRow = createTestLesson({ lesson_id: 'first', total_count: 50 });
+      let resolveSecond: ((value: { data: unknown; error: null }) => void) | undefined;
+      rpcMock.mockResolvedValueOnce({ data: [firstRow], error: null }).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecond = resolve;
+          })
+      );
+
+      renderWithProviders(<SearchPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /load more results/i })).toBeInTheDocument();
+      });
+
+      // Change the filter → in-flight refetch; keepPreviousData keeps 'first'
+      // visible. The trigger forces hasMore=false during placeholder, which —
+      // if the trigger still rendered — would flash "No more results to load"
+      // over the stale rows. The whole trigger must be hidden instead.
+      const store = useSearchStore.getState();
+      store.setFilters({ gradeLevels: ['5'] });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('button', { name: /load more results/i })
+        ).not.toBeInTheDocument();
+      });
+      // Stale row still visible, but NO false terminal "No more results" copy.
+      expect(screen.getByText('Test Lesson Title')).toBeInTheDocument();
+      expect(screen.queryByText(/no more results to load/i)).not.toBeInTheDocument();
+
+      resolveSecond?.({
+        data: [createTestLesson({ lesson_id: 'second', total_count: 1 })],
+        error: null,
+      });
+    });
+
+    it('does not flash a suggestions panel while the first search is pending', async () => {
+      const store = useSearchStore.getState();
+      store.setFilters({ query: 'pizza' });
+
+      // Pending RPC: totalCount is 0 only because data is absent, not because the
+      // search genuinely returned zero — the suggestions panel must not mis-fire.
+      rpcMock.mockReturnValueOnce(new Promise(() => {}));
+      functionsInvokeMock.mockResolvedValueOnce({
+        data: { suggestions: ['cooking', 'gardening'] },
+        error: null,
+      });
+
+      renderWithProviders(<SearchPage />);
+
+      await waitFor(() => {
+        // The skeleton's loading announcement lives in an sr-only text node
+        // inside a role="status" live region (no aria-label — see IntListSkeleton).
+        expect(screen.getByText(/loading lessons/i).closest('[role="status"]')).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/No results found/i)).not.toBeInTheDocument();
+    });
+  });
+
   describe('Empty State', () => {
     it('shows zero results when search returns empty', async () => {
       const store = useSearchStore.getState();

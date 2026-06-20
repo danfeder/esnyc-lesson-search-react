@@ -9,6 +9,7 @@ import {
   IntEmptyState,
   IntLessonDrawer,
   IntListRow,
+  IntListSkeleton,
   IntMobileFilterDrawer,
   IntSidebar,
   IntSplitDetail,
@@ -17,6 +18,7 @@ import {
 import { useSearchStore } from '@/stores/searchStore';
 import { useLessonSearch } from '@/hooks/useLessonSearch';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useFacetCounts } from '@/utils/facetCounts';
 import type { Lesson, SearchFilters, ViewState } from '@/types';
 
@@ -40,7 +42,16 @@ export const SearchPage: React.FC = () => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isMobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const { data, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useLessonSearch({
+  const {
+    data,
+    isError,
+    error,
+    isPending,
+    isPlaceholderData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLessonSearch({
     filters,
     pageSize: viewState.resultsPerPage,
   });
@@ -56,22 +67,35 @@ export const SearchPage: React.FC = () => {
   const suggestions = suggestionsData?.suggestions || [];
 
   const handleLoadMore = useCallback(async () => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    // C59: never fetch the next page while showing placeholder data — the
+    // current list belongs to the prior query, so paginating it is wrong.
+    if (!hasNextPage || isFetchingNextPage || isPlaceholderData) return;
     await fetchNextPage();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData]);
 
   const activeFilterCount = countActiveFilters(filters);
   const hasQuery = !!filters.query?.trim();
   const view = viewState.view;
   const density = viewState.density;
   const selectedId = selectedLesson?.lessonId ?? null;
-  const isSplit = view === 'split';
+  // §3.4: split view is a desktop-only affordance — the detail rail is
+  // CSS-hidden below 1100px. Coerce the EFFECTIVE view to non-split when narrow
+  // (non-destructive: the stored `view` preference is left untouched, so a
+  // return to a wide screen restores split) and route the drawer path instead.
+  const isWide = useMediaQuery('(min-width: 1100px)');
+  const isSplit = view === 'split' && isWide;
   const isGrid = view === 'grid';
+  // The layout attribute mirrors the EFFECTIVE view so the grid never reserves a
+  // 3rd column for a split rail that isn't rendered below 1100px.
+  const effectiveView = view === 'split' && !isWide ? 'list' : view;
 
   return (
-    <div className="int-shell-root" data-view={view} data-density={density}>
+    <div className="int-shell-root" data-view={effectiveView} data-density={density}>
       <SkipLink />
-      <ScreenReaderAnnouncer totalCount={totalCount} />
+      {/* C59: totalCount lags one fetch under keepPreviousData (and is `|| 0`
+          on cold load) — suppress the live-region announcement until settled so
+          screen readers hear the real count once, not a stale/zero one. */}
+      <ScreenReaderAnnouncer totalCount={totalCount} suppressed={isPending || isPlaceholderData} />
 
       <div className="int-shell">
         <IntSidebar counts={counts} />
@@ -83,8 +107,14 @@ export const SearchPage: React.FC = () => {
             query={filters.query}
             activeFilterCount={activeFilterCount}
             sortBy={viewState.sortBy}
-            view={view}
+            // §3.4: pass the EFFECTIVE view (split→list below 1100px) so the
+            // view switcher highlights List and the list-only density switcher
+            // still renders; raw `view='split'` would strand both. Stored
+            // preference is untouched (allowSplit also hides the dead Split
+            // option), so a return to a wide screen restores split.
+            view={effectiveView}
             density={density}
+            allowSplit={isWide}
             onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
             onViewChange={(v) => setViewState({ view: v })}
             onDensityChange={(d) => setViewState({ density: d })}
@@ -108,13 +138,20 @@ export const SearchPage: React.FC = () => {
             </div>
           )}
 
-          {!isError && lessons.length === 0 ? (
+          {!isError && isPending ? (
+            // C59: cold load (no cached/placeholder data) — show the skeleton,
+            // never a false "No matches". With keepPreviousData a refetch keeps
+            // the prior rows instead of reaching this branch.
+            <IntListSkeleton />
+          ) : !isError && lessons.length === 0 ? (
             <IntEmptyState
               title={hasQuery || activeFilterCount > 0 ? 'No matches' : 'No results'}
+              // Neutral hint when nothing is queried/filtered — the "Try removing
+              // a filter" copy is nonsensical with no active filters (C59).
               hint={
                 hasQuery || activeFilterCount > 0
                   ? 'Try removing a filter or broadening your search.'
-                  : 'Loading lessons…'
+                  : 'No lessons to show.'
               }
             />
           ) : isGrid ? (
@@ -132,37 +169,50 @@ export const SearchPage: React.FC = () => {
             </div>
           )}
 
-          {totalCount === 0 && hasQuery && suggestions.length > 0 && (
-            <div
-              className="int-empty"
-              style={{ marginTop: 12, borderStyle: 'solid', textAlign: 'left' }}
-            >
-              <div className="flex items-start gap-2">
-                <Lightbulb
-                  className="mt-0.5 flex-shrink-0"
-                  style={{ color: 'var(--color-esy-green)', width: 18, height: 18 }}
-                />
-                <div>
-                  <p className="font-medium mb-2">No results found. Try these suggestions:</p>
-                  <div className="int-pills">
-                    {suggestions.map((s, index) => (
-                      <button
-                        key={`sugg-${index}-${s}`}
-                        type="button"
-                        onClick={() => setFilters({ query: s })}
-                        className="int-pill"
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {s}
-                      </button>
-                    ))}
+          {/* C59: only after the data settles — totalCount lags one fetch under
+              keepPreviousData, so gating on a stale 0 here would flash/mis-fire
+              the suggestions panel mid-transition. */}
+          {!isPending &&
+            !isPlaceholderData &&
+            totalCount === 0 &&
+            hasQuery &&
+            suggestions.length > 0 && (
+              <div
+                className="int-empty"
+                style={{ marginTop: 12, borderStyle: 'solid', textAlign: 'left' }}
+              >
+                <div className="flex items-start gap-2">
+                  <Lightbulb
+                    className="mt-0.5 flex-shrink-0"
+                    style={{ color: 'var(--color-esy-green)', width: 18, height: 18 }}
+                  />
+                  <div>
+                    <p className="font-medium mb-2">No results found. Try these suggestions:</p>
+                    <div className="int-pills">
+                      {suggestions.map((s, index) => (
+                        <button
+                          key={`sugg-${index}-${s}`}
+                          type="button"
+                          onClick={() => setFilters({ query: s })}
+                          className="int-pill"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {lessons.length > 0 && (
+          {lessons.length > 0 && !isPlaceholderData && (
+            // C59: hide the whole trigger during a filter-changed refetch
+            // (placeholder rows are the PREVIOUS query's). This both stops the
+            // sentinel firing fetchNextPage against stale data AND avoids the
+            // trigger's "No more results to load" terminal copy flashing over
+            // those stale rows when hasMore would be forced false. It reappears
+            // with the correct hasMore once the fresh page resolves.
             <InfiniteScrollTrigger
               onLoadMore={handleLoadMore}
               isLoading={isFetchingNextPage}

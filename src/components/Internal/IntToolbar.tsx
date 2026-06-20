@@ -12,6 +12,8 @@ interface IntToolbarProps {
   sortBy: SortBy;
   view: ResultView;
   density: ResultDensity;
+  /** §3.4: gate the desktop-only Split view option (hidden below 1100px). */
+  allowSplit?: boolean;
   onSortChange: (sort: SortBy) => void;
   onViewChange: (view: ResultView) => void;
   onDensityChange: (density: ResultDensity) => void;
@@ -32,6 +34,7 @@ export function IntToolbar({
   sortBy,
   view,
   density,
+  allowSplit = true,
   onSortChange,
   onViewChange,
   onDensityChange,
@@ -63,7 +66,7 @@ export function IntToolbar({
             </option>
           ))}
         </select>
-        <IntViewSwitcher value={view} onChange={onViewChange} />
+        <IntViewSwitcher value={view} onChange={onViewChange} allowSplit={allowSplit} />
         <IntDensitySwitcher value={density} view={view} onChange={onDensityChange} />
         <IntMobileFilterButton
           activeFilterCount={activeFilterCount}

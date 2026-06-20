@@ -43,6 +43,7 @@ export { IntLessonDrawer } from './IntLessonDrawer';
 export { IntLessonSpecCard } from './IntLessonSpecCard';
 export type { IntLessonSpecCardProps } from './IntLessonSpecCard';
 export { IntListRow, intActivityLabel, intGradesLabel } from './IntListRow';
+export { IntListSkeleton } from './IntListSkeleton';
 export { IntMetadataDiff } from './IntMetadataDiff';
 export type {
   IntDiffField,

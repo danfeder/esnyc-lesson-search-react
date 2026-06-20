@@ -10,12 +10,19 @@ const OPTIONS: { value: ResultView; label: string }[] = [
 interface IntViewSwitcherProps {
   value: ResultView;
   onChange: (view: ResultView) => void;
+  /**
+   * §3.4: Split is a desktop-only affordance (the detail rail is CSS-hidden
+   * below 1100px). When false, the Split option is omitted so narrow users
+   * can't pick a dead-end view. Defaults to true.
+   */
+  allowSplit?: boolean;
 }
 
-export function IntViewSwitcher({ value, onChange }: IntViewSwitcherProps) {
+export function IntViewSwitcher({ value, onChange, allowSplit = true }: IntViewSwitcherProps) {
+  const options = allowSplit ? OPTIONS : OPTIONS.filter((option) => option.value !== 'split');
   return (
     <div className="int-switch" role="radiogroup" aria-label="Result view">
-      {OPTIONS.map((option) => (
+      {options.map((option) => (
         <button
           key={option.value}
           type="button"

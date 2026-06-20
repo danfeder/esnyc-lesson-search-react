@@ -68,6 +68,7 @@ export default [
         HTMLFormElement: 'readonly',
         MouseEvent: 'readonly',
         Event: 'readonly',
+        MediaQueryListEvent: 'readonly',
         Node: 'readonly',
         Response: 'readonly',
         Deno: 'readonly',

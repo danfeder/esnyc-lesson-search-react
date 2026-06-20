@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { getSearchRpcName } from '@/lib/search';
 import { parseSearchQuery } from '@/utils/parseSearchQuery';
@@ -145,6 +145,12 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
       const lessons = rows.map(mapRowToLesson);
       return { lessons, totalCount };
     },
+    // C59: keep the prior results on screen while a queryKey change (debounced
+    // keystroke / filter toggle) refetches, instead of blanking `data` and
+    // flashing a false "No matches". `isPending` then stays true ONLY on cold
+    // load (no cached or placeholder data), letting SearchPage cleanly tell a
+    // cold load (show skeleton) apart from a refetch (keep prior results).
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
