@@ -7,7 +7,8 @@
 npm run dev               # Start dev server (localhost:5173)
 npm run type-check        # Required before commits
 npm run lint:fix          # Auto-fix ESLint issues
-npm run test              # Run all tests
+npm run test:run          # Run all tests once (plain `npm run test` is vitest WATCH mode — it never exits; do not use in agents/CI)
+npm run check             # type-check + lint in one shot (the mandated pre-PR pair)
 npm run build             # Production build
 
 # Database
@@ -17,7 +18,7 @@ supabase db push          # Apply migrations
 supabase db reset         # Reset database
 
 # E2E Tests
-npm run test:e2e          # Run E2E tests (requires local dev server)
+npm run test:e2e          # Run E2E tests (Playwright auto-starts the dev server; see playwright.config.ts webServer)
 npm run test:e2e:headed   # Run with visible browser
 npm run test:e2e:ui       # Run with Playwright UI
 ```
@@ -92,12 +93,14 @@ E2E tests run in CI on every PR using Playwright against Netlify deploy previews
 **Before pushing any branch or creating a PR, ALWAYS run:**
 
 ```bash
-npm run type-check && npm run lint
+npm run check     # = type-check + lint
 ```
 
 If lint errors exist, fix with `npm run lint:fix` then re-run the check.
 
 This catches issues that CI will fail on (like `sessionStorage` → `window.sessionStorage`).
+
+The full local validation loop — `npm run type-check`, `npm run lint`, `npm run test:run` — is fast (all three finish in well under a minute on the full suite), so there's no reason for an agent to skip any of them or hedge. Run all three.
 
 ## Core Constraints
 
@@ -114,10 +117,7 @@ This catches issues that CI will fail on (like `sessionStorage` → `window.sess
 
 Defined in `src/utils/filterDefinitions.ts`. Consult stakeholders before adding or removing filters.
 
-See `filterDefinitions.ts` for the current list of filters and their configurations. Key features:
-- **Single-select filters**: Activity Type, Location, Season & Timing, Lesson Format, Cooking Methods
-- **Multi-select filters**: Grade Levels, Thematic Categories, Core Competencies, Academic Integration, Social-Emotional Learning
-- **Hierarchical filter**: Cultural Heritage (parent selection includes all children)
+Each filter declares its own type in `src/utils/filterDefinitions.ts` (`single` | `multiple` | `hierarchical` | `creatable`) — **treat that file as authoritative; do not trust an inlined list here.** As of 2026-06, only **Location** is single-select and **Cultural Heritage** is hierarchical (parent selection includes all children); the remaining facet filters are multi-select. (Note: there is no `lessonFormat` filter — `lessonFormat` exists only as a metadata field on lesson rows.)
 
 ## Tech Stack
 
@@ -168,10 +168,10 @@ Reset `currentPage` to 1 whenever filters change.
 ## Database
 
 ### Key Tables
-- `lessons` - 831 lesson plans with FTS
+- `lessons` - lesson plans with FTS (row count drifts — query the table, don't trust a number in docs)
 - `user_profiles` - Users with roles
 - `lesson_submissions` - Teacher submissions
-- `duplicate_pairs` - Duplicate detection
+- `duplicate_resolutions` / `canonical_lessons` - duplicate detection & resolution state (also `duplicate_group_dismissals`)
 
 ### Role Hierarchy
 `super_admin > admin > reviewer > teacher`
@@ -189,11 +189,6 @@ SELECT is_admin(auth.uid());
 | RLS policy violation | Check role with `is_admin(auth.uid())` |
 | Module not found | Use `@/` imports |
 | VITE_* undefined | Add `VITE_` prefix |
-
-## Current Status
-
-- Google Docs API: Working in production
-- OpenAI embeddings: Working in production
 
 ## Documentation
 

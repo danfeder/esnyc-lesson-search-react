@@ -124,6 +124,16 @@ debug-*/
 .claude/settings.local.json
 .mcp.json
 
+# Beads tracker artifacts (Dolt DB, export state, lock files). The tracker is
+# being retired; these are local-only generated artifacts that should never be
+# committed (a `git add -A` would otherwise sweep them in).
+.beads/dolt/
+.beads/export-state/
+.beads/*.lock
+
+# Misc local scratch
+.tmp/
+
 # Data files
 *.csv
 data/*.json

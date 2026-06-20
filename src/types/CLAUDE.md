@@ -1,5 +1,7 @@
 # TypeScript Guidelines
 
+> **`database.types.ts` is generated, not hand-written** (`npm run db:types` / `db:types:remote`), and is ~1,600 lines. **Don't read it whole** — `grep` for the specific table/column/type name you need. Never hand-edit it; regenerate from the schema instead.
+
 ## Naming Conventions
 
 | Type | Suffix | Example |
