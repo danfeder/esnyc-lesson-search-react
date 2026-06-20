@@ -48,7 +48,9 @@ describe('computeFacetCounts', () => {
         metadata: {
           coreCompetencies: ['garden'],
           culturalHeritage: ['east-asian'],
-          activityType: ['cooking-only'],
+          // Stored verbatim as the bare noun (what real rows carry), NOT the
+          // slug the sidebar looks up — see the dedicated activityType block.
+          activityType: ['cooking'],
           locationRequirements: ['Indoor'],
           thematicCategories: ['Garden Basics'],
           seasonTiming: ['Fall'],
@@ -61,14 +63,15 @@ describe('computeFacetCounts', () => {
         metadata: {
           coreCompetencies: ['garden', 'kitchen'],
           culturalHeritage: [],
-          activityType: ['both'],
+          activityType: ['garden'],
           locationRequirements: ['Indoor', 'Outdoor'],
         },
       }),
     ];
     const counts = computeFacetCounts(lessons);
     expect(counts.coreCompetencies).toEqual({ garden: 2, kitchen: 1 });
-    expect(counts.activityType).toEqual({ 'cooking-only': 1, both: 1 });
+    // Bucket is keyed by the sidebar's option slug, not the stored noun.
+    expect(counts.activityType).toEqual({ 'cooking-only': 1, 'garden-only': 1 });
     expect(counts.location).toEqual({ Indoor: 2, Outdoor: 1 });
     expect(counts.thematicCategories).toEqual({ 'Garden Basics': 1 });
     // Heritage is expansion-aware: a lesson tagged with the slug `east-asian`
@@ -184,6 +187,52 @@ describe('computeFacetCounts', () => {
       // Known value still expands.
       expect(counts.culturalHeritage['mexican']).toBe(1);
       expect(counts.culturalHeritage['americas']).toBe(1);
+    });
+  });
+
+  describe('activityType — slug-keyed counts (C69)', () => {
+    it('keys by the option SLUG even though storage uses the bare noun (the prod bug)', () => {
+      // Real rows store bare nouns (cooking/garden/academic/craft); the sidebar
+      // badge looks up `counts.activityType[opt.value]` where opt.value is the
+      // slug ('cooking-only', …). A verbatim tally rendered every badge blank.
+      const lessons = [makeLesson({ id: 'a', metadata: { activityType: ['cooking'] } })];
+      const counts = computeFacetCounts(lessons);
+      // Was 0/undefined before C69 (noun-keyed bucket vs slug lookup).
+      expect(counts.activityType['cooking-only']).toBe(1);
+    });
+
+    it('maps each of the four nouns to its sidebar slug', () => {
+      const lessons = [
+        makeLesson({ id: 'a', metadata: { activityType: ['cooking'] } }),
+        makeLesson({ id: 'b', metadata: { activityType: ['garden'] } }),
+        makeLesson({ id: 'c', metadata: { activityType: ['academic'] } }),
+        makeLesson({ id: 'd', metadata: { activityType: ['craft'] } }),
+      ];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.activityType).toEqual({
+        'cooking-only': 1,
+        'garden-only': 1,
+        'academic-only': 1,
+        'craft-only': 1,
+      });
+    });
+
+    it('keeps a stray `both` VERBATIM — no fan-out into cooking-only + garden-only', () => {
+      // `both` was retired (D2.1, 2026-05-06) and PROD carries zero. The locked
+      // design rejects a synthetic `both → [cooking-only, garden-only]` fan-out
+      // (speculative dead code + the only thing that could double-count a
+      // lesson). A stray value buckets verbatim via the unknown fallback.
+      const lessons = [makeLesson({ id: 'a', metadata: { activityType: ['both'] } })];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.activityType.both).toBe(1);
+      expect(counts.activityType['cooking-only']).toBeUndefined();
+      expect(counts.activityType['garden-only']).toBeUndefined();
+    });
+
+    it('counts each lesson once per distinct slug for a multi-noun array (no dedupe needed)', () => {
+      const lessons = [makeLesson({ id: 'a', metadata: { activityType: ['cooking', 'garden'] } })];
+      const counts = computeFacetCounts(lessons);
+      expect(counts.activityType).toEqual({ 'cooking-only': 1, 'garden-only': 1 });
     });
   });
 });
