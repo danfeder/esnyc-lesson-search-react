@@ -1447,6 +1447,7 @@ export type Database = {
           filter_sel?: string[];
           filter_tags?: string[];
           filter_themes?: string[];
+          order_by?: string;
           page_offset?: number;
           page_size?: number;
           search_query?: string;
