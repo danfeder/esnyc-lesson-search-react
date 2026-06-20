@@ -92,6 +92,30 @@ test.describe('Accessibility', () => {
     expect(secondFocusedId).not.toBe(firstFocusedId);
   });
 
+  test('filter checkboxes are keyboard-focusable and in the a11y tree', async ({ page }) => {
+    // §3.2 regression guard: `.int-check input { display:none }` removed every
+    // filter checkbox from the focus order AND the accessibility tree, so 10 of
+    // 11 filter categories were unreachable by keyboard / screen reader. The fix
+    // is an sr-only clip (visually hidden, still focusable + role-exposed).
+    //
+    // The Activity Type section is a real `.int-check` section (NOT the Grade
+    // pills) and renders default-open, so its option checkboxes are present and
+    // not `hidden`. Be defensive: expand it if a future default flips it closed.
+    const sectionHeader = page.getByRole('button', { name: /^Activity Type(\s+\d+)?$/ });
+    await expect(sectionHeader).toBeVisible({ timeout: 15000 });
+    if ((await sectionHeader.getAttribute('aria-expanded')) === 'false') {
+      await sectionHeader.click();
+      await expect(sectionHeader).toHaveAttribute('aria-expanded', 'true');
+    }
+
+    // With display:none on the input, getByRole('checkbox') cannot find it (not
+    // in the role tree) and .focus() cannot land on it -> this FAILS today.
+    const cookingCheckbox = page.getByRole('checkbox', { name: /cooking/i }).first();
+    await expect(cookingCheckbox).toHaveCount(1);
+    await cookingCheckbox.focus();
+    await expect(cookingCheckbox).toBeFocused();
+  });
+
   test('page has sufficient text content', async ({ page }) => {
     // Verify page has meaningful content loaded
     const bodyText = await page.textContent('body');
