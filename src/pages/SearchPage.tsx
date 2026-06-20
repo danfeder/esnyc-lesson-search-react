@@ -18,6 +18,7 @@ import {
 import { useSearchStore } from '@/stores/searchStore';
 import { useLessonSearch } from '@/hooks/useLessonSearch';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useFacetCounts } from '@/utils/facetCounts';
 import type { Lesson, SearchFilters, ViewState } from '@/types';
 
@@ -77,11 +78,19 @@ export const SearchPage: React.FC = () => {
   const view = viewState.view;
   const density = viewState.density;
   const selectedId = selectedLesson?.lessonId ?? null;
-  const isSplit = view === 'split';
+  // §3.4: split view is a desktop-only affordance — the detail rail is
+  // CSS-hidden below 1100px. Coerce the EFFECTIVE view to non-split when narrow
+  // (non-destructive: the stored `view` preference is left untouched, so a
+  // return to a wide screen restores split) and route the drawer path instead.
+  const isWide = useMediaQuery('(min-width: 1100px)');
+  const isSplit = view === 'split' && isWide;
   const isGrid = view === 'grid';
+  // The layout attribute mirrors the EFFECTIVE view so the grid never reserves a
+  // 3rd column for a split rail that isn't rendered below 1100px.
+  const effectiveView = view === 'split' && !isWide ? 'list' : view;
 
   return (
-    <div className="int-shell-root" data-view={view} data-density={density}>
+    <div className="int-shell-root" data-view={effectiveView} data-density={density}>
       <SkipLink />
       <ScreenReaderAnnouncer totalCount={totalCount} />
 
@@ -97,6 +106,7 @@ export const SearchPage: React.FC = () => {
             sortBy={viewState.sortBy}
             view={view}
             density={density}
+            allowSplit={isWide}
             onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
             onViewChange={(v) => setViewState({ view: v })}
             onDensityChange={(d) => setViewState({ density: d })}
