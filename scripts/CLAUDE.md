@@ -210,11 +210,6 @@ console.log('Edge function response:', result);
 - Imports in batches of 50
 - Uses upsert to handle duplicates
 
-### sync-algolia.js
-- Requires `ALGOLIA_ADMIN_API_KEY` (not search key)
-- Transforms snake_case to camelCase
-- Configures facets for filtering
-
 ### test-rls-policies.mjs
 - Tests all tables for RLS enablement
 - Checks policy counts
@@ -234,7 +229,6 @@ SUPABASE_SERVICE_ROLE_KEY=xxx  # Admin access
 
 # Optional based on script
 VITE_SUPABASE_ANON_KEY=xxx     # For testing
-ALGOLIA_ADMIN_API_KEY=xxx      # For search sync
 OPENAI_API_KEY=xxx              # For embeddings (future)
 ```
 

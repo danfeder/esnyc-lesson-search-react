@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# pr-surfaces.sh — dump ALL FOUR PR feedback surfaces for a PR in one shot.
+#
+# Bot reviewers (claude-review, CodeRabbit, …) and CI post findings on DIFFERENT
+# GitHub surfaces. Querying only one (e.g. pulls/N/comments — the line-comment
+# endpoint) silently misses the others and produces false "0 findings" reports.
+# This bundles all four so a triage pass sees everything.
+#
+# Read-only: only `gh` GET calls, no mutations. `gh` auto-detects owner/repo from
+# the current repo, so run it from anywhere inside the working tree.
+#
+# Usage: scripts/pr-surfaces.sh <PR-number>
+#        (or invoke the /pr-triage command, which calls this and adds the
+#         per-finding rebuttal pass)
+
+set -uo pipefail
+
+PR="${1:-}"
+if [[ -z "$PR" ]]; then
+  echo "Usage: scripts/pr-surfaces.sh <PR-number>" >&2
+  exit 2
+fi
+
+for dep in gh jq; do
+  if ! command -v "$dep" >/dev/null 2>&1; then
+    echo "error: required tool '$dep' not found on PATH" >&2
+    exit 1
+  fi
+done
+if ! gh auth status >/dev/null 2>&1; then
+  echo "error: gh is not authenticated (run 'gh auth login') — aborting so we don't emit a misleadingly-empty triage" >&2
+  exit 1
+fi
+
+hr() { printf '\n========== %s ==========\n' "$1"; }
+
+hr "1/4  ISSUE-COMMENTS (gh pr view --comments) — where bots post their full reports"
+gh pr view "$PR" --comments || echo "(none / error)"
+
+hr "2/4  REVIEW SUMMARIES (pulls/$PR/reviews) — APPROVE / REQUEST_CHANGES / COMMENTED"
+gh api "repos/{owner}/{repo}/pulls/$PR/reviews" \
+  --jq '.[] | {user: .user.login, state, submitted_at, body}' 2>/dev/null \
+  || echo "(none / error)"
+
+hr "3/4  REVIEW-LINE COMMENTS (pulls/$PR/comments) — inline annotations on specific lines"
+gh api "repos/{owner}/{repo}/pulls/$PR/comments" \
+  --jq '.[] | {user: .user.login, path, line, body}' 2>/dev/null \
+  || echo "(none / error)"
+
+hr "4/4  CI / CHECKS + failed-run logs"
+# Fetch once. `gh pr checks` exits non-zero when any check is failing/pending but
+# still emits the JSON on stdout, so capture stdout and ignore the exit code.
+checks_json=$(gh pr checks "$PR" --json name,state,link 2>/dev/null) || true
+[[ -z "${checks_json:-}" ]] && checks_json='[]'
+printf '%s\n' "$checks_json" | jq -r '.[] | "  [\(.state)] \(.name)"' 2>/dev/null || echo "(no checks reported)"
+fail_links=$(printf '%s\n' "$checks_json" \
+  | jq -r '.[] | select(.state=="FAILURE" or .state=="ERROR") | .link' 2>/dev/null || true)
+if [[ -n "${fail_links:-}" ]]; then
+  # Anchor to the GitHub Actions URL shape so a non-Actions check link that merely
+  # contains "runs/<n>" elsewhere can't trigger a spurious `gh run view`.
+  run_ids=$(printf '%s\n' "$fail_links" | grep -oE 'actions/runs/[0-9]+' | grep -oE '[0-9]+' | sort -u)
+  for rid in $run_ids; do
+    hr "   failed run $rid (gh run view --log-failed)"
+    gh run view "$rid" --log-failed 2>/dev/null || echo "(could not fetch log for run $rid)"
+  done
+else
+  echo "(no failed checks)"
+fi
+
+hr "DONE — treat any '0 findings' conclusion as a claim requiring evidence from ALL FOUR surfaces"

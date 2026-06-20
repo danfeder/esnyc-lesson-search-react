@@ -181,23 +181,35 @@ const {
 
 ## 🗂️ Current Pages Reference
 
-### Public Pages
+`src/pages/*.tsx` is the source of truth — run `ls src/pages/*.tsx` for the authoritative, current list, since this inventory drifts as pages are added. As of 2026-06 there are 18 page components:
+
+### Public
 - **SearchPage** - Main search interface, no auth
-- **LessonModal** - Lesson details overlay
 
-### Auth Required
+### Auth & account flows
+- **AcceptInvitation** - Accept an admin/reviewer invitation
+- **ResetPassword** - Password-reset flow
+- **VerifySetup** - Post-signup account setup/verification
 - **UserProfile** - User's profile and settings
-- **SubmissionPage** - Submit new lessons
 
-### Admin Pages
-- **AdminDashboard** - Admin overview
-- **AdminUsers** - User management
-- **AdminAnalytics** - Usage statistics
-- **AdminDuplicates** - Duplicate resolution
+### Teacher / submission
+- **SubmissionPage** - Submission entry point
+- **NewSubmissionForm** - New-lesson submission form
+- **RevisingSubmissionForm** - Revise a returned submission
 
-### Reviewer Pages
+### Reviewer
 - **ReviewDashboard** - Submissions list
 - **ReviewDetail** - Individual review interface
+
+### Admin
+- **AdminDashboard** - Admin overview
+- **AdminUsers** - User management
+- **AdminUserDetail** - Single-user detail
+- **AdminInvitations** - Invitations list
+- **AdminInviteUser** - Send a new invitation
+- **AdminAnalytics** - Usage statistics
+- **AdminDuplicates** - Duplicate resolution
+- **AdminDuplicateReview** - Duplicate-review detail
 
 ## ⚠️ Page-Specific Critical Notes
 
