@@ -8,8 +8,8 @@ This prompt is pasted at the start of every session in this work — assume no p
 The public lesson-search page — the only surface a teacher sees — has a cluster of outright-broken behaviors, all verified live against `main` @ `4e06e63` by a 10-agent discovery pass (2026-06-20) and Gate-A-reviewed. Theme B fixes them as Wave 1 of the campaign, in three risk-tiered sub-waves. W1a (pure-frontend) ships first as two PRs.
 
 4 sequential PRs:
-  PR 1 (W1a-cosmetic-a11y): C57 mobile filters · §3.2 checkbox a11y · copy/a11y one-liners (·Internal wordmark, SR announcer, dialog name, nested `<main>`) · C69 activityType badge · C84 suppress tags badge. Near-zero risk, no DB.
-  PR 2 (W1a-behavior): C59 search loading-state (+ new IntListSkeleton) · C14 IntFormField ARIA · C79 LessonSearchPicker keyboard nav. Net-new code, no DB.
+  PR 1 (W1a-cosmetic-a11y): C57 mobile filters · §3.2 checkbox a11y · copy/a11y one-liners (·Internal wordmark, SR announcer, dialog name, nested `<main>`) · C69 activityType badge · C84 suppress tags badge · §4.8 toolbar-overflow restack. Near-zero risk, no DB.
+  PR 2 (W1a-behavior): C59 search loading-state (+ new IntListSkeleton) · C14 IntFormField ARIA · C79 LessonSearchPicker keyboard nav · §3.4 split-view dead-end fix (+ new useMediaQuery hook). Net-new code, no DB.
   PR 3 (W1b-search-rpc): ONE `search_lessons` migration — C136 (`&` crash) · C58 real sort · C11 ghost exclusion + deterministic order · location-Both · C84 path-a (expose tags). **SKELETON — lock design §4 Q1–Q5 first.** TEST-DB-gated.
   PR 4 (W1c-url-state): C114/C157 URL persistence. **SKELETON — lock design §4 Q6–Q8 first.** Pure-frontend.
 
@@ -66,10 +66,12 @@ This session has an ultracode/Workflow opt-in active: for fan-out phases (e.g. d
 - **C69 = counting-side slug↔noun map in `facetCounts.ts`** (mirror `tallyHeritage`); **NO `'both'` fan-out** (retired; verbatim fallback); **fix the masking test fixtures**; do NOT change `filterDefinitions.ts` option values.
 - **Nested-`<main>` = downgrade SearchPage's inner `<main>` to `<div id="main-content" className="int-main" tabIndex={-1}>`; keep App's `<main>`.** SkipLink stays search-route-only (app-wide skip link is out of scope).
 - **C79 is internal-only** (submitter + reviewer); goes in PR2.
+- **§4.8 toolbar-overflow + §3.4 split-view are IN W1a** (folded 2026-06-20; review-only, no roadmap C-id). §4.8 (CSS restack of `.int-toolbar` <768px) → PR1. §3.4 → PR2.
+- **§3.4 fix = approach (b), non-destructive:** new `useMediaQuery` hook (none exists); `isSplit = view === 'split' && isWide` (≥1100px) so the drawer renders below the breakpoint; hide/disable the SPLIT control when narrow; **do NOT mutate the stored `view`** (keep the user's split preference for when they return to a wide screen).
 - **W1b migration is DROP FUNCTION + CREATE (not body-only CREATE OR REPLACE) IF `order_by` lands** — adding a param changes the signature (precedent `20260514000000`).
 
 Out of scope (captured in design §9 — do NOT scope-creep):
-  - Split-view dead-end <1100px (review §3.4) + toolbar overflow <768px (§4.8) — public P1/P2 NOT in the roadmap's Wave 1; flagged for a future wave.
+  - (Split-view dead-end §3.4 + toolbar overflow §4.8 are NO LONGER out of scope — folded into W1a 2026-06-20: §4.8→PR1, §3.4→PR2.)
   - Reviewer-side fixes (summary field, UserProfile titles, ReviewDashboard pagination, AI-draft chips, draft persistence) — Wave 5.
   - ReviewDetail decomposition (§3.8) — Wave 5, page-level tests first.
   - Closed-vocabulary selects (§3.9) — timed to Stage-2 vocab.

@@ -27,8 +27,8 @@
 
 | PR | Title | Branch | Contains | Notes |
 |---|---|---|---|---|
-| 1 | W1a-cosmetic-a11y | `feat/theme-b-w1a-cosmetic-a11y` | C57, §3.2 checkbox-a11y, copy/a11y one-liners, C69, C84-suppress | Near-zero risk. CSS + small TS + facet map. No DB. |
-| 2 | W1a-behavior | `feat/theme-b-w1a-behavior` | C59 (+ new `IntListSkeleton`), C14, C79 | Low risk. Net-new component + first `keepPreviousData`. No DB. |
+| 1 | W1a-cosmetic-a11y | `feat/theme-b-w1a-cosmetic-a11y` | C57, §3.2 checkbox-a11y, copy/a11y one-liners, C69, C84-suppress, §4.8 toolbar-overflow | Near-zero risk. CSS + small TS + facet map. No DB. |
+| 2 | W1a-behavior | `feat/theme-b-w1a-behavior` | C59 (+ new `IntListSkeleton`), C14, C79, §3.4 split-view (+ new `useMediaQuery`) | Low risk. Net-new components + first `keepPreviousData`. No DB. |
 | 3 | W1b-search-rpc | `feat/theme-b-w1b-search-rpc` | C136, C58, C11, location-Both, C84 path-a | **SKELETON — lock §4 Q1–Q5 at PR-cycle start.** Migration, TEST-DB-gated. |
 | 4 | W1c-url-state | `feat/theme-b-w1c-url-state` | C114/C157 | **SKELETON — lock §4 Q6–Q8 at PR-cycle start.** Pure-frontend. |
 
@@ -43,7 +43,7 @@
 **Why its own PR:** all low-blast-radius edits that should land fast and safe, separate from PR2's net-new skeleton + keyboard code.
 
 **Pre-flight: read these files first (verify line numbers haven't drifted):**
-- `src/styles/internal.css` (the `.int-mobile-filter-btn` rules ~514/~720; `.int-check input` ~208; `.int-main` ~261)
+- `src/styles/internal.css` (the `.int-mobile-filter-btn` rules ~514/~720; `.int-check input` ~208; `.int-main` ~261; `.int-toolbar` ~266 / `.int-toolbar-right` ~678; the `@media (max-width:767px)` block ~492)
 - `src/components/Internal/IntSidebar.tsx` (CHECKBOX_KEYS map + per-option badge ~90-105)
 - `src/utils/facetCounts.ts` (`valuesForKey` ~43-53; tally ~137-150; `tallyHeritage` ~108-125 as the map precedent)
 - `src/utils/facetCounts.test.ts` (the activityType fixtures ~51/~71 to correct)
@@ -188,7 +188,27 @@ only; W1b exposes tags in the RPC and makes it a real count.
 Design: 2026-06-20-theme-b-public-ux-design.md §5 C84."
 ```
 
-**End of PR 1:** run the PER-PR RITUAL (kickoff). `npm run check` + `npm run test:run` + the C57 e2e green.
+### Task 1.6: §4.8 — toolbar overflow restack on narrow viewports
+
+**Files:** Edit `src/styles/internal.css`; Edit `e2e/performance.spec.ts`
+
+**Step 1 (E2E-first):** in `e2e/performance.spec.ts` mobile test (@375px), add an assertion that `.int-toolbar` does not overflow horizontally (e.g. `scrollWidth <= clientWidth`, or that the density control is visible/not clipped). Watch it FAIL.
+
+**Step 2 (fix):** in the `@media (max-width:767px)` block of `internal.css` (the same block touched for C57), restack the toolbar — `flex-wrap` `.int-toolbar` so `.int-toolbar-right` drops below `.int-toolbar-left` (collapsing/hiding the density switcher on mobile is acceptable). CSS-only.
+
+**Step 3: Verify** — `npm run check` clean; the §4.8 e2e assertion GREEN; eyeball at ~500px (no clipped density switcher, count text not wrapping to 4 lines).
+
+**Step 4: Commit**
+```bash
+git add src/styles/internal.css e2e/performance.spec.ts
+git commit -m "fix(search): §4.8 — restack toolbar on narrow viewports
+
+.int-toolbar-right was never restacked under 768px, so the toolbar
+overflowed horizontally (density switcher clipped, count wrapped). Wrap
+the toolbar to two rows on mobile. Design: 2026-06-20-theme-b-public-ux-design.md §5 §4.8."
+```
+
+**End of PR 1:** run the PER-PR RITUAL (kickoff). `npm run check` + `npm run test:run` + the C57/§4.8 e2e green.
 
 ---
 
@@ -204,6 +224,7 @@ Design: 2026-06-20-theme-b-public-ux-design.md §5 C84."
 - `src/components/Internal/IntEmptyState.tsx`, `src/components/Internal/IntListRow.tsx` (skeleton should match it), `src/components/Internal/index.ts` (the barrel — SearchPage imports `IntEmptyState` etc. through it, so a new `IntListSkeleton` must be exported here), `src/__tests__/integration/search-page.test.tsx` (~486 Empty State block + `rpcMock` harness)
 - `src/components/Internal/IntFormField.tsx` + `IntFormField.test.tsx`; `src/components/Internal/IntPillGroup.tsx`
 - `src/components/LessonSearchPicker.tsx` + `LessonSearchPicker.test.tsx`
+- (§3.4) `src/pages/SearchPage.tsx` (`isSplit` ~68; split layout ~176; drawer `!isSplit` ~182-183), `src/components/Internal/IntToolbar.tsx` (the view switcher / SPLIT radio), `src/stores/searchStore.ts` (partialize persists `view` ~179-183), `src/hooks/` (NO `useMediaQuery`/`matchMedia` hook exists — net-new), `src/styles/internal.css` (`.int-detail` hidden <1100px)
 - `src/pages/CLAUDE.md` (loading-state mandate), `src/components/CLAUDE.md` (~40-49 animate-pulse convention)
 
 ### Task 2.1: C59 — loading state (placeholderData + isPending skeleton)
@@ -276,7 +297,33 @@ Arrow/Enter/Escape + aria-activedescendant for the submitter + reviewer
 dup-search picker (internal surfaces). Design: 2026-06-20-theme-b-public-ux-design.md §5 C79."
 ```
 
-**End of PR 2:** PER-PR RITUAL. Full `npm run check` + `npm run test:run` + a manual pass through one submission-revise search and one reviewer dup-search with the keyboard.
+### Task 2.4: §3.4 — split-view dead-end below 1100px (approach b, non-destructive)
+
+**Sub-skill:** `superpowers:test-driven-development`
+
+**Files:** Create `src/hooks/useMediaQuery.ts`; Edit `src/pages/SearchPage.tsx`, `src/components/Internal/IntToolbar.tsx`; Edit/create tests.
+
+**Step 1 (TDD):** add a `SearchPage` render test (mock `window.matchMedia`) — with `view: 'split'` + a narrow viewport (matchMedia `(min-width: 1100px)` → false), assert the lesson **drawer** renders (not the dead split rail) and the SPLIT view control is hidden/disabled; with a wide viewport assert the split layout renders + SPLIT enabled. Watch it FAIL.
+
+**Step 2 (hook):** create `src/hooks/useMediaQuery.ts` — a standard SSR-safe `useMediaQuery(query: string): boolean` (subscribe to `matchMedia` change events, return current match). No such hook exists today.
+
+**Step 3 (fix, approach b):** in `SearchPage.tsx`, compute `const isWide = useMediaQuery('(min-width: 1100px)')` and change `const isSplit = view === 'split'` → `const isSplit = view === 'split' && isWide`. This routes the `!isSplit` drawer path below 1100px (no dead end). In `IntToolbar.tsx`, hide/disable the SPLIT option in the view switcher when `!isWide`. **Do NOT mutate the stored `view`** — coerce only the effective render + control state so a returning wide-screen user keeps their split preference.
+
+**Step 4: Verify** — `npm run check` clean; `npm run test:run` green; manual: set split view on a wide window, resize below 1100px → clicking a row opens the drawer (not nothing); resize back → split returns.
+
+**Step 5: Commit**
+```bash
+git add src/hooks/useMediaQuery.ts src/pages/SearchPage.tsx src/components/Internal/IntToolbar.tsx <test files>
+git commit -m "fix(search): §3.4 — split view no longer dead-ends below 1100px
+
+Split view chosen on a laptop left tablet users (<1100px) clicking rows
+with nothing shown (detail rail CSS-hidden, drawer only renders when
+!isSplit), and it persisted across reloads. Add a useMediaQuery hook;
+coerce the effective view to non-split below 1100px (non-destructive) and
+hide the SPLIT control there. Design: 2026-06-20-theme-b-public-ux-design.md §5 §3.4."
+```
+
+**End of PR 2:** PER-PR RITUAL. Full `npm run check` + `npm run test:run` + a manual pass through one submission-revise search and one reviewer dup-search with the keyboard, plus a resize across the 1100px breakpoint in split view.
 
 ---
 
@@ -328,9 +375,10 @@ dup-search picker (internal surfaces). Design: 2026-06-20-theme-b-public-ux-desi
 - `search-page.test.tsx` (~486) — C59: skeleton-not-"No matches" on pending; suggestions don't mis-fire mid-transition; infinite-scroll trigger inert during placeholder.
 - `IntFormField.test.tsx` — C14: aria-required/invalid/describedby on the single-input path.
 - `LessonSearchPicker.test.tsx` — C79: arrow/Enter/Escape + roles; existing click/excludeRetired/stale-discard untouched.
+- new `SearchPage` render test (mock `matchMedia`) — §3.4: split+narrow renders the drawer (not the dead rail) + SPLIT control hidden; split+wide renders the split layout.
 
 ### E2E (Playwright)
-- `e2e/performance.spec.ts` — C57: Filters button visible @375px, hidden @desktop.
+- `e2e/performance.spec.ts` — C57: Filters button visible @375px, hidden @desktop. §4.8: `.int-toolbar` no horizontal overflow @375px (density control not clipped).
 - §3.2 / dialog-name / nested-main — a keyboard/a11y assertion (extend or add an a11y spec).
 
 ### RLS

@@ -12,17 +12,18 @@
 
 **Last commit on branch:** (none — nothing branched).
 
-**Last commit on main:** `4e06e63` (docs: deferred-work roadmap, PR #519) — **plus** the Theme B scaffolding commit (design + impl + kickoff + status), landing this session.
+**Last commit on main:** scaffold merged via **PR #520 → `ef8cc0f`**; a follow-up docs commit folds in §4.8 + §3.4 (responsive additions) — landing this session.
 
 **Pre-next-PR verification (if any):** none yet.
 
-**Status of the work:** Scaffolding complete and **Gate-A-reviewed** (two independent adversarial reviews — Codex + Claude — folded into the design doc 2026-06-20). **W1a is Locked and ready to execute.** PR3 (W1b) and PR4 (W1c) are design-lock skeletons — their tasks get authored after the design doc's §4 open questions are locked at each PR-cycle start. Recommended next step: `/clear`, paste the kickoff, start PR1 Task 1.1.
+**Status of the work:** Scaffolding complete, on `main`, **Gate-A-reviewed** (design doc, Codex + Claude) **+ Gate-B-reviewed** (impl plan + kickoff, Codex); all findings folded. Two review-only responsive bugs (§4.8 toolbar overflow, §3.4 split-view dead-end) folded into W1a per user (§4.8→PR1, §3.4→PR2). **W1a is Locked and ready to execute** (PR1 = Tasks 1.1–1.6; PR2 = Tasks 2.1–2.4). PR3 (W1b) + PR4 (W1c) are design-lock skeletons — tasks authored after design §4 questions lock at each PR-cycle start. Recommended next step: `/clear`, paste the kickoff, start PR1 Task 1.1.
 
 ## Recent decisions worth carrying forward
 
 - **User decisions (2026-06-20, before scaffolding):** (1) include checkbox a11y §3.2 in W1a PR1; (2) C84 = suppress tags badge now (PR1) + make-real in W1b; (3) W1a = two PRs split by risk.
 - **Gate A folded (2026-06-20):** C58 migration is DROP+CREATE not body-only (signature change); nested-`<main>` fix is downgrade-SearchPage-inner-to-div (not move-id-to-App), SkipLink stays search-only; C59 needs neutral empty hint + infinite-scroll guard + intended-stale-during-refetch; C14 honestly scoped (IntPillGroup not covered); C69 drop the speculative `'both'` fan-out; C84 renders blank not "(0)"; C11 exclude by exact ghost IDs (`20260508000000:109`).
 - **Gate B folded (2026-06-20, Codex on impl + kickoff):** `InfiniteScrollTrigger` is in `src/components/Common/` (NOT `Internal/`); new `IntListSkeleton` must be exported from the `src/components/Internal/index.ts` barrel (+ in the commit); Task 1.4 keeps a dedicated `['both']`-stays-verbatim no-fan-out test; kickoff orientation reads the status file before the impl-plan task; PR3 lock label de-conflated (C136 sanitize ≠ location-Both).
+- **Responsive fold-in (2026-06-20, user-approved):** §4.8 toolbar-overflow (→ PR1, Task 1.6, CSS) and §3.4 split-view dead-end (→ PR2, Task 2.4, approach (b): new `useMediaQuery` hook + non-destructive effective-view coercion + hide SPLIT control below 1100px). Both review-only (no roadmap C-id), both verified live vs `main`. Moved out of out-of-scope.
 - **Header copy** is the one `[user-verdict]` inside W1a — confirm the exact public wordmark string with the user before committing Task 1.3 (default `"Lesson Library"`).
 
 ## Done
@@ -43,7 +44,7 @@
 
 ## Out-of-scope follow-ups captured here
 
-- **Split-view dead-end <1100px** (review §3.4, a real P1) and **toolbar overflow <768px** (§4.8) are public bugs the roadmap's Wave 1 did NOT list. Flagged for a future wave — surface to the user when Theme B closes.
+- ~~Split-view dead-end §3.4 + toolbar overflow §4.8~~ — folded INTO W1a 2026-06-20 (§4.8→PR1 Task 1.6, §3.4→PR2 Task 2.4); no longer out of scope.
 - W1b `LessonMetadata.tags` type gap: `database.types.ts:256` has `tags` but `src/types/index.ts` `LessonMetadata` does not — part of C84 path-a.
 
 ## Pointers to durable context
@@ -65,4 +66,6 @@ Major events:
 - User locked the 3 scope/sequencing decisions (checkbox-a11y in, C84 suppress-then-real, 2-PR split).
 - Authored the four scaffold docs; **Gate A** = two adversarial reviews (Codex + Claude) on the design doc, folded ~16 findings (no BLOCKERs to the W1a foundation; the C58/C14/nested-main/C59 precision fixes are in the design doc).
 - **Gate B** = Codex adversarial review of the impl plan + kickoff (user-requested), folded 6 findings (no BLOCKERs) — 2 were confirmed wrong-as-written code facts (InfiniteScrollTrigger path, barrel export).
+- Scaffold pushed + merged via PR #520 (`ef8cc0f`, `--admin` docs-only).
+- **Responsive fold-in** (user-approved): §4.8 toolbar overflow → PR1 (Task 1.6); §3.4 split-view dead-end → PR2 (Task 2.4, approach b). Both verified live vs `main`; updated across all four scaffold docs; shipping as a follow-up docs PR.
 - Next: `/clear` → paste kickoff → PR1 Task 1.1.

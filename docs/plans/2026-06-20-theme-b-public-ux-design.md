@@ -21,7 +21,7 @@ This design doc covers all three so the sequencing and the cross-wave couplings 
 
 ## 2. Goals / failure modes this closes
 
-1. **A phone user can open and use filters.** (review §3.1 / C57) Today the only mobile filter trigger is `display:none` at every width due to CSS source order. This is the single most user-visible breakage.
+1. **A phone/tablet user can open and use the page without dead ends.** (review §3.1/§4.8/§3.4) Today the only mobile filter trigger is `display:none` at every width due to CSS source order (C57 — the single most user-visible breakage); the toolbar overflows horizontally <768px (§4.8); and split view chosen on a laptop becomes a permanent dead end on a tablet <1100px (§3.4). *(§4.8 and §3.4 are review-only findings folded into W1a on 2026-06-20 — no roadmap C-id.)*
 2. **Keyboard and screen-reader users can operate the filters.** (review §3.2; bundled into W1a per user decision 2026-06-20) Today only Grade pills work; the other 10 categories are out of the focus order and a11y tree.
 3. **Search never shows a false negative.** (review §3.5 / C59) Every queryKey change blanks the result list and renders "No matches" until the RPC returns; cold load shows the contradictory "No results" + "Loading lessons…".
 4. **Filter count badges tell the truth.** (review §4.3 / C69, C84) activityType badges are always blank (slug-vs-noun key mismatch); tags badges are always blank (RPC doesn't return tags). Note: the badge renders `{count || ''}` — a count of 0 shows as an *empty/blank* span, not literally "(0)". A blank badge on a working filter is worse than no badge — it reads as "0 matches" and discourages filter use.
@@ -38,9 +38,9 @@ Success is checkable: each item below names the exact file:line and the test tha
 Theme B (Wave 1)
 ├─ W1a  pure-frontend, no migration ........... 2 PRs, ship FIRST
 │   ├─ PR1  "broken windows" CSS + copy + a11y + facet badges   (near-zero risk)
-│   │       C57 · §3.2 checkbox-a11y · copy/a11y one-liners · C69 · C84(suppress)
+│   │       C57 · §3.2 checkbox-a11y · copy/a11y one-liners · C69 · C84(suppress) · §4.8 toolbar-overflow
 │   └─ PR2  search reliability + form/picker a11y               (net-new code)
-│           C59 (placeholderData + skeleton) · C14 (IntFormField ARIA) · C79 (picker keyboard)
+│           C59 (placeholderData + skeleton) · C14 (IntFormField ARIA) · C79 (picker keyboard) · §3.4 split-view
 │
 ├─ W1b  ONE search_lessons migration, TEST-DB-gated ........... 1 PR  (after W1a)
 │       C136 (& crash) · C58 (real sort) · C11 (ghost exclusion + deterministic order)
@@ -111,6 +111,11 @@ Theme B (Wave 1)
 - Note: the old finding's cooking-methods half ("Stovetop vs lowercase, never match") is **already fixed** (PR 6e kebab-ized the option values); do not re-touch it.
 - Test: an `IntSidebar` render test (none exists today) asserting the Lesson Type section renders **no count span / empty count text** — assert absence of the `.int-check-count` element, **NOT** the absence of the string "(0)" (which never appears, so that assertion would pass vacuously). `facetCounts.test.ts` already proves the cooking-methods path is correct (template ~line 78).
 
+**§4.8 — toolbar overflow on narrow viewports** (PUBLIC; review §4.8; review-only, no roadmap C-id; folded into W1a 2026-06-20)
+- Cause: `.int-toolbar` (`internal.css:266`) / `.int-toolbar-right` (`internal.css:678`) — the `@media (max-width:767px)` block adjusts padding but never restacks `.int-toolbar-right`, so at ~500px the toolbar overflows horizontally (measured scrollWidth 603 vs clientWidth 468), the density switcher is clipped, and the result-count text wraps to ~4 stacked lines.
+- **Fix (locked):** in the SAME `@media (max-width:767px)` block touched for C57, restack the toolbar — `flex-wrap` `.int-toolbar` so `.int-toolbar-right` drops below `.int-toolbar-left` (collapsing/hiding the density switcher on mobile is acceptable power-user polish). CSS-only, one file (`internal.css`). Naturally co-located with the C57 reorder.
+- Test: extend the C57 e2e (`e2e/performance.spec.ts` mobile @375px) to assert no horizontal overflow (e.g. `.int-toolbar` `scrollWidth <= clientWidth`, or the density control visible/wrapped not clipped). Effort S, risk low.
+
 ### PR2 — Search reliability + form/picker a11y (`feat/theme-b-w1a-behavior`)
 
 **C59 — false "No matches" flash / no loading state** (PUBLIC; review §3.5)
@@ -134,6 +139,11 @@ Theme B (Wave 1)
 - Open detail to settle at execution (small, executor may lock from evidence): **Escape semantics** — clear query vs. collapse list vs. (in ReviewDetail) collapse the whole search panel. Default: component-local clear/collapse + keep focus in input; expose an optional `onEscape`/`onClose` callback only if the reviewer panel needs the panel-collapse behavior.
 - Test: extend `LessonSearchPicker.test.tsx` (already mocks supabase + uses `user-event`; ~11 `it()` blocks) — type → ArrowDown asserts `aria-activedescendant`/`aria-selected`; Enter calls `onSelect` with the active result (not a click); Escape collapses + keeps input focus; assert the combobox/listbox/option roles. **Regression guard (Gate A):** the refactor turns each result `<li><button onClick></button></li>` into a `<li role="option">` — the existing `'calls onSelect when a result … is clicked'` test must keep finding/activating the option via the *same* accessible query (or be deliberately updated, not incidentally broken). Do not disturb the `excludeRetired`, stale-response-discard, debounce, or can't-find-affordance tests.
 
+**§3.4 — split-view dead-end below 1100px** (PUBLIC, a real P1; review §3.4; review-only, no roadmap C-id; folded into W1a 2026-06-20)
+- Cause: `SearchPage.tsx:68` `const isSplit = view === 'split'`; the split layout renders at `:176` but the lesson drawer only renders when `!isSplit` (`:182-183`); the split detail rail (`.int-detail`) is CSS-hidden <1100px. Because `view` is persisted (`searchStore.ts:179-183`), a user who chose split view on a laptop and reopens on a tablet clicks a row and sees nothing — and the broken state survives reloads.
+- **Fix (locked: approach (b) — coerce the *effective* view, non-destructive):** add a small `useMediaQuery` hook (**NONE exists in the repo** — net-new, e.g. `src/hooks/useMediaQuery.ts`). Compute `isWide = useMediaQuery('(min-width: 1100px)')` and make the split conditional viewport-aware: `const isSplit = view === 'split' && isWide` — so below 1100px the `!isSplit` drawer path renders (no dead end). Also hide/disable the SPLIT option in the view switcher (`IntToolbar`) when `!isWide`. **Do NOT mutate the stored `view`** — coerce only the effective render + control state, so a user returning to a wide screen keeps their split preference. *(Rejected (a) "render the drawer in split+narrow": leaves a confusing half-state; (b) is cleaner — split is a desktop-only affordance.)*
+- Test: a `SearchPage` render test (mock `matchMedia`) — with `view:'split'` + narrow viewport, the drawer renders (not the dead split rail) and the SPLIT control is hidden/disabled; with wide viewport, the split layout renders and SPLIT is enabled. Effort S–M, risk low.
+
 ## 6. W1b / W1c — scoped (lock at PR-cycle start)
 
 **W1b** is a single migration rebuilding `search_lessons` + helper changes + the C58 client wiring (`useLessonSearch.ts` searchParams + queryKey + `SearchPage` pass-through). Mechanism choices are §4 Q1–Q5.
@@ -146,8 +156,8 @@ Theme B (Wave 1)
 
 | PR | Title | Contains | Risk / notes |
 |---|---|---|---|
-| 1 | **W1a-cosmetic-a11y** | C57, §3.2 checkbox-a11y, copy/a11y one-liners (×4), C69, C84-suppress | Near-zero. CSS + small TS + facet map. No DB. Frontend-only revert. |
-| 2 | **W1a-behavior** | C59 (+ new `IntListSkeleton`), C14, C79 | Low. Net-new component + first `keepPreviousData`. No DB. |
+| 1 | **W1a-cosmetic-a11y** | C57, §3.2 checkbox-a11y, copy/a11y one-liners (×4), C69, C84-suppress, §4.8 toolbar-overflow | Near-zero. CSS + small TS + facet map. No DB. Frontend-only revert. |
+| 2 | **W1a-behavior** | C59 (+ new `IntListSkeleton`), C14, C79, §3.4 split-view (+ new `useMediaQuery`) | Low. Net-new component + first `keepPreviousData`. No DB. |
 | 3 | **W1b-search-rpc** | C136, C58, C11, location-Both, C84 path-a (+ `LessonMetadata.tags` type + `normalizeMetadata`) | **Medium — hottest RPC.** One migration (DROP+CREATE if `order_by` lands — see §6), TEST-DB-gated; PROD-verify after. |
 | 4 | **W1c-url-state** | C114/C157 | Low-med. Pure-frontend; sync-loop care; WIP as reference only. |
 
@@ -178,7 +188,7 @@ Pull up `reference_ci_flakes.md` before the PR3 PROD migration (SASL apply/verif
 
 ## 9. Out of scope (captured for future work)
 
-- **Split-view dead-end <1100px** (review §3.4, a real P1) and **toolbar overflow <768px** (review §4.8) — public mobile bugs **not** in the roadmap's Wave 1 list. Surface to the user for a future wave; they are NOT in Theme B as scoped. *(Flagged because the roadmap may have dropped them.)*
+- ~~Split-view dead-end <1100px (review §3.4) and toolbar overflow <768px (review §4.8)~~ — **NOW IN SCOPE (folded into W1a 2026-06-20):** these review-only public responsive bugs (no roadmap C-id) are now §4.8 → PR1 and §3.4 → PR2 (see §5). Kept here as provenance.
 - Reviewer-side fixes: summary field (§3.7), UserProfile titles (§4.11), ReviewDashboard pagination (§4.12), AI-draft provenance chips (§4.10), draft persistence/batch nav (§4.9) — reviewer track (Wave 5), not public.
 - ReviewDetail decomposition (§3.8 / C107) — Wave 5, gated on page-level tests first.
 - Closed-vocabulary selects (§3.9) — timed to Stage-2 canonical vocab landing.
