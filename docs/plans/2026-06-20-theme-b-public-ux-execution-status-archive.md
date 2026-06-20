@@ -63,3 +63,52 @@ Learnings carried forward:
 - Authored the four scaffold docs; **Gate A** = two adversarial reviews (Codex + Claude) on the design doc, folded ~16 findings (no BLOCKERs).
 - **Gate B** = Codex adversarial review of the impl plan + kickoff, folded 6 findings (2 were confirmed wrong-as-written code facts: InfiniteScrollTrigger path, barrel export).
 - Scaffold pushed + merged via PR #520 (`ef8cc0f`, docs-only). **Responsive fold-in** (§4.8→PR1, §3.4→PR2) merged via PR #521 (`88e117e`).
+
+---
+
+## PR 2 — W1a-behavior — SHIPPED ✅
+
+**GitHub PR #523** → **squash-MERGED 2026-06-20 21:48 UTC → `main` @ `530b2536`** (user-gated; 2 bot rounds + Codex GATE-4 each). Branch `feat/theme-b-w1a-behavior` (off `19d99b7`). Net-new frontend, **no DB**. 7 code commits: `382521a` (2.1 C59) · `d2f968b` (2.2 C14) · `4769866` (2.3 C79) · `234388c` (2.4 §3.4) · `5f2954c` (pre-push fix-ups) · `5edc7e7` (bot round-1) · `2980c3f` (bot round-2). Final suite **1373/1373**.
+
+### Done (PR2 tasks 2.1–2.4 + pre-push)
+
+- **Task 2.1 — C59 loading state** (`382521a`). `useLessonSearch.ts`: `placeholderData: keepPreviousData` (first repo usage; v5.90.20). New `src/components/Internal/IntListSkeleton.tsx` (int-* tokened, mirrors `IntListRow`, `role="status"`, sr-only text, `prefers-reduced-motion` opt-out) + `.int-skeleton` shimmer in `internal.css` + barrel export. `SearchPage.tsx`: `isPending`/`isPlaceholderData`; skeleton branch BEFORE the empty check; neutral "No lessons to show." hint for no-query/no-filter empty; suggestions gated on `!isPending && !isPlaceholderData`; infinite-scroll guarded in both `hasMore` and `handleLoadMore`. Tests: new keepPreviousData-persistence harness + "Loading State (C59)" block.
+- **Task 2.2 — C14 IntFormField ARIA** (`d2f968b`). `fieldId = htmlFor ?? childProps?.id ?? generatedId`; stable `descId`; injected `aria-required`/`aria-invalid`/`aria-describedby` (merged, no clobber) onto the single-child `isValidElement` clone path ONLY. Default scope **(b)** — IntPillGroup NOT touched (flagged follow-up). +5 tests.
+- **Task 2.3 — C79 LessonSearchPicker keyboard nav** (`4769866`, internal-only): `activeIndex` (reset on results change) + `collapsed` + `useId` listbox. Input → combobox roles + `onKeyDown` (ArrowDown/Up clamped no-wrap; Enter selects active + preventDefault; Escape collapses + keeps input focus). `<ul role=listbox>`, `<li role=option>` is the click target. No `onEscape`/`onClose` prop (neither consumer needs panel-collapse). +4 tests; regression-guard click test unmodified.
+- **Task 2.4 — §3.4 split-view dead-end <1100px** (`234388c`). New `src/hooks/useMediaQuery.ts` (SSR/jsdom-safe). `SearchPage.tsx`: `isWide = useMediaQuery('(min-width:1100px)')`; `isSplit = view==='split' && isWide`; `effectiveView` drives `data-view`; `allowSplit={isWide}`. **Store `view` NOT mutated.** `IntToolbar`/`IntViewSwitcher`: optional `allowSplit` HIDES the Split radio when narrow. `eslint.config.js`: +`MediaQueryListEvent`. New `search-page-split-view.test.tsx`.
+- **Pre-push fix-ups** (`5f2954c`) — 4 dual-family findings, all RED→GREEN: §3.4 `view={effectiveView}` (Claude — restores the vanished density switcher + List highlight 768–1099px); C79 conditional `aria-controls` (Codex F1); C79 `<li role=option>` click target, no nested `<button>` (Codex F2); C59 hide the whole `InfiniteScrollTrigger` during `isPlaceholderData` (Codex F3, RED-proven).
+
+### Round outcomes
+
+**Round 1:** only `claude[bot]` (3 surfaces). 4 findings, all minor. {bot · rebuttal · Codex GATE-4 — unanimous}: ACCEPT (A) `inputRef` dead code; ACCEPT (D) IntListSkeleton double-ARIA (dropped `aria-label`, kept sr-only span; re-targeted 2 tests by text). WON'T-FIX (B) ArrowUp APG + (C) inline `getMatches`. Fixed `5edc7e7`; 1371/1371.
+
+**Round 2:** `claude[bot]` self-contradicted (review summary CHANGES_REQUESTED vs its own "Approve to merge" issue-comment). 6 findings. {bot · rebuttal · Codex GATE-4}: ACCEPT (R2-1) skeleton `aria-busy` drop; ACCEPT (R2-3) IntFormField cast widened to `AriaAttributes & {id?}`; ACCEPT (R2-6) ScreenReaderAnnouncer announced a STALE count mid-transition — added a `suppressed` prop wired `isPending || isPlaceholderData` (Codex: isPending also kills the cold-load false "0 lessons"), +2 RED→GREEN tests. WON'T-FIX (R2-2) ArrowUp re-raise; (R2-4) picker stale-state-after-clear (REAL but PRE-EXISTING → follow-up); (R2-5) inline `getMatches`. Fixed `2980c3f`; suite **1373/1373**.
+
+**Pre-push gate outcome:** Claude code-reviewer + Codex GATE 3 in parallel on `main...HEAD` (docs excluded). Codex's first dispatch backgrounded its output (flaky); a focused retry returned inline. 4 findings, all ACCEPTED + fixed in `5f2954c` (each RED→GREEN). Claude+Codex DISAGREED on F1 (Claude: "accepted APG pattern"; Codex: violation) — sided with Codex's fix. Codex independently confirmed the C59 state machine, `useMediaQuery`, and IntFormField ARIA clean.
+
+### Decisions made during execution (PR2)
+
+- **C14 scope (b)** (executor-locked): single-form-control ARIA fix only; IntPillGroup/multi-child control-level ARIA deferred (flagged follow-up).
+- **C79 Escape semantics** (executor-locked): component-local clear/collapse + keep input focus; NO `onEscape`/`onClose` prop.
+- **C79 option structure** (pre-push, GATE-4 accept of Codex F2): the `<li role="option">` is the click target; nested `<button>` removed (canonical listbox).
+- **§3.4 toolbar `view` prop** (pre-push, Claude): pass `effectiveView` not raw `view` (keeps non-destructive stored-preference behavior without stranding the density switcher / view highlight below 1100px).
+- **Codex GATE-3 async-handoff flake** (process learning): first `codex:codex-rescue` dispatch returned "running in background" without findings; a focused retry with explicit "return findings INLINE" worked. Use that phrasing for all Codex dispatches.
+
+### Session log (PR2 cycle)
+
+#### Session 4 — 2026-06-20 — PR #523 bot-review rounds 1 + 2 triaged + fixed → squash-merged `530b2536`
+
+Supervisor session. Oriented (git matched; baseline clean). PR #523 CI green except expected-red Security Audit + 2 SKIPs; all 4 auto-review bots ran.
+- **Four-surface triage** (`/pr-triage 523`): round 1 only `claude[bot]`, 4 minor findings; round 2 bot self-contradicted across surfaces, 6 findings (2 re-raises).
+- **GATE 4** (Codex, return-inline, no flake either round): unanimous on all substantive findings; *improved* R2-6 (suppress on `isPending || isPlaceholderData`); noted toolbar visual count intentionally stale.
+- ACCEPT R2-1/R2-3/R2-6 (user approved all 3), WON'T-FIX R2-2/R2-4/R2-5. R2-6 TDD'd. Fixed `2980c3f`.
+- **Merge:** user chose squash-merge. Round-2 push hit a **transient GH Actions `synchronize` dispatch miss** (0 GH-Actions check-runs on the head; Netlify/semgrep present) — recovered with an **empty re-trigger commit `7575626`** → full pipeline green. Squash-merged `530b2536`. (`reviewDecision` still showed `CHANGES_REQUESTED` — GitHub doesn't auto-clear it when a later review is only COMMENTED; artifact, not a blocker.)
+- **Learnings:** GATE-4 "return findings INLINE" worked first-try both rounds (→ promote to memory candidate); bot self-contradiction across surfaces = the four-surface-triage rationale; R2-6 was a genuine miss in C59's own pattern (gated siblings, missed the announcer); CI `synchronize` dispatch-miss → empty-commit re-trigger (→ `reference_ci_flakes.md` candidate); poller gotcha — `gh ... jq 'test("review")'` crashes on null `.name` rollup entries (guard with `select(.name != null …)`).
+
+#### Session 3 — 2026-06-20 — PR2 built + pre-push-gated + opened as PR #523
+
+Supervisor session; all 4 impl-plan tasks executed by fresh-context Opus executors, each supervisor-verified before acceptance.
+- Oriented: PR #522 had merged → `main` @ `19d99b7` (git/status divergence resolved in git's favor). Archived Sessions 0/1/2 + PR1 detail. Branched `feat/theme-b-w1a-behavior`.
+- Tasks 2.1→2.4 (`382521a`→`d2f968b`→`4769866`→`234388c`); suite climbed 1355→1369.
+- **Pre-push gate (dual-family):** Claude caught the §3.4 density-switcher vanishing 768–1099px (bigger than the supervisor's flagged nuance); Codex (after a return-inline retry) caught F1 dangling aria-controls, F2 nested button in option, F3 false "No more results" during placeholder. All 4 ACCEPTED + fixed `5f2954c`. Suite 1371/1371; opened PR #523 (code-only; docs local).
+- **Learnings:** GATE-3 dual-family earned its keep (each family found real issues the other missed); supervisor-verify caught nothing wrong in executors this round but the pre-push gate caught 4 real items (gate is load-bearing even when per-task verification is clean).

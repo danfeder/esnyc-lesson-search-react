@@ -327,13 +327,13 @@ hide the SPLIT control there. Design: 2026-06-20-theme-b-public-ux-design.md §5
 
 ---
 
-## PR 3 — W1b-search-rpc  *(SKELETON — author tasks after locking §4 Q1–Q5)*
+## PR 3 — W1b-search-rpc  *(LOCKED 2026-06-20 — §4 Q1–Q5 resolved; tasks authored below)*
 
 **Branch:** `feat/theme-b-w1b-search-rpc`
 
-**What ships (scope):** one `search_lessons` migration — C136 (`&`/operator crash), C58 (real server-side sort), C11 (ghost-ID exclusion + deterministic order), location-Both expansion, C84 path-a (expose `tags` → real badge, remove PR1 suppression) — plus the C58 client wiring and the `LessonMetadata.tags` type + `normalizeMetadata` change.
+**What ships (scope):** one `search_lessons` migration — C136 (`&`/operator crash), C58 (real server-side sort: **relevance / title / modified only — `grade` option removed**), C11 (ghost-ID exclusion + deterministic order), location-Both expansion — plus the C58 client wiring (the `order_by` param). **C84 / tags exposure is DEFERRED out of W1b** (design §4 Q5 + §9; user verdict 2026-06-20 — tags predate the metadata rebuild and need a data-quality audit first). The PR1 `IntSidebar` tags-badge suppression **stays**; the tags *filter* still works.
 
-> **This is design-lock work.** Before authoring concrete tasks here, lock design §4 Q1–Q5 (Q1 C58 stopgap-vs-real + the migration DROP/CREATE shape; Q2 C136 tsquery-operator sanitize site; Q3 C11 exact ghost IDs from `20260508000000:109`; Q4 location-Both casing; Q5 C84 path-a task list). Then GATE 1B (Codex/Claude review of the authored tasks) + GATE 2 (Codex on the migration SQL) before TEST. The single hottest public RPC — full `mcp__supabase-test__` verification before merge, PROD-verify after, `npm run test:rls` green.
+> **§4 Q1–Q5 are LOCKED** (see design doc §4 for each decision + rationale): Q1 C58 = real `order_by` for relevance/title/modified, grade option removed, DROP+CREATE; Q2 C136 = sanitize inside `expand_search_with_synonyms`; Q3 C11 = exclude 3 exact ghost IDs + `lesson_id` tiebreaker; Q4 location-Both = new `_match_location` helper; Q5 C84 = DEFERRED. **Remaining gates:** GATE 1B (review these authored tasks — supervisor) → GATE 2 (Codex on the migration SQL, pre-TEST) → local `supabase db reset` + `npm run test:rls` + local smoke → push → CI applies to TEST → full `mcp__supabase-test__` verification before merge → PROD-verify (3-signal) after. The single hottest public RPC — DATA SAFETY is the top constraint.
 
 **Pre-flight reads (when this PR begins):**
 - `supabase/migrations/20260520020000_search_lessons_filter_retired.sql` (current `search_lessons` body)
@@ -344,7 +344,63 @@ hide the SPLIT control there. Design: 2026-06-20-theme-b-public-ux-design.md §5
 - `src/hooks/useLessonSearch.ts` (searchParams ~111-137 — C58 client wiring), `src/types/index.ts` (`LessonMetadata` ~28, `ViewState.sortBy` ~94), `src/utils/facetCounts.ts` (case `'tags'`)
 - Invoke `database-migrations` skill + `/new-migration`.
 
-### Task 3.x: <!-- TBD — authored after §4 Q1–Q5 lock -->
+### Task 3.1: `search_lessons` W1b migration — C136 + C58 sort + C11 ghosts + location-Both
+
+**Skills (mandatory):** invoke `database-migrations` AND `/new-migration` before creating the file; `superpowers:test-driven-development` for the local verification harness; `superpowers:verification-before-completion` before claiming done.
+
+**File:** `supabase/migrations/20260620000000_search_lessons_w1b.sql` — first run `ls supabase/migrations | sort | tail -3` and confirm this prefix sorts **AFTER** `20260619000000_pr6e_drop_rollback_tables.sql` (ASCII gotcha: digits < underscore; bump the prefix if a newer file exists). Include a clearly-delimited `-- ROLLBACK` comment block (per `supabase/migrations/CLAUDE.md`).
+
+**Pre-flight reads (verbatim):** current body `20260520020000_search_lessons_filter_retired.sql` (the whole function) · DROP+CREATE+GRANT precedent `20260514000000_search_lessons_filter_tags.sql` (~47/54/245) · `_match_cooking_methods` `20260505000000:159-183` · `expand_search_with_synonyms` `20251001:161-212`. **Verify every line/anchor against the file before editing.**
+
+> **GATE 1B applied (Codex, 2026-06-20):** this task was adversarially reviewed and hardened — the BLOCKER/HIGH/MEDIUM fixes are already baked into the spec below (explicit `_match_location` GRANT; `service_role` in the `search_lessons` GRANT; a normalized `sort_key` so an explicit-NULL/unknown `order_by` → relevance; explicit quote-stripping in the C136 sanitizer; the naked-DROP+CREATE atomicity rationale). GATE 2 (Codex on the actual SQL) still runs before TEST.
+
+**The one migration file contains, in order:**
+
+1. **C136 — `CREATE OR REPLACE FUNCTION public.expand_search_with_synonyms(query_text text) RETURNS text`** (no signature change; plain replace; **it is a public function with its own EXECUTE grants** — keep them; treat the behavior change as a public-API change and smoke-test it directly). Copy the baseline body verbatim, then sanitize each token: right after the existing `CONTINUE WHEN word = '';`, insert `word := trim(regexp_replace(word, '[&|!():*<>''"]', ' ', 'g')); CONTINUE WHEN word = '';` — the char class strips tsquery operators **and quotes** (`'` is doubled to `''` inside the SQL string literal); collapse to space, trim, skip if now empty. Leaves the `search_synonyms` lookup + the ` | ` OR-join intact. Stripping `*` intentionally disables tsquery prefix syntax (public input is plain text, not tsquery). This is the `&`/quote-crash fix; the WHERE's trigram fallback (`l.title % search_query`) already matches the raw string so no recall is lost. **Smoke (parity) at impl:** `herbs & spices`, `mother's`, a lone `'`, `cook*`, `plant (food)`, a plain word + a synonym term — all must return without error and preserve sensible matches.
+
+2. **location-Both — new `CREATE OR REPLACE FUNCTION public._match_location(p_l_locations text[], p_filter_locations text[]) RETURNS boolean LANGUAGE sql IMMUTABLE PARALLEL SAFE`**, mirroring `_match_cooking_methods` exactly. Expanded-filter CTE: `CASE lower(x) WHEN 'indoor' THEN ARRAY['indoor','both'] WHEN 'outdoor' THEN ARRAY['outdoor','both'] WHEN 'both' THEN ARRAY['both'] ELSE ARRAY[lower(x)] END`; then `EXISTS (SELECT 1 FROM unnest(coalesce(p_l_locations,'{}')) c WHERE lower(c) = ANY(SELECT v FROM expanded_filter))`. **(Semantics — locked: selecting "Both" shows only Both-tagged/flexible lessons, NOT match-all; selecting Indoor/Outdoor includes Both.)** Then **`GRANT EXECUTE ON FUNCTION public._match_location(text[], text[]) TO anon, authenticated, service_role;`** — REQUIRED (mirror `_match_cooking_methods`; `search_lessons` runs invoker-rights, so the helper must be executable by the calling roles).
+
+3. **C58 + C11 — DROP + CREATE `search_lessons`:**
+   - `DROP FUNCTION IF EXISTS public.search_lessons(text, text[], text[], text[], text[], text[], text[], text[], text, text[], text[], text[], text[], integer, integer);` — the exact current 15-arg identity signature (confirmed on TEST 2026-06-20). **Atomicity:** follow the `20260514000000` precedent — naked `DROP` then `CREATE` in one file. Supabase applies each migration file in a transaction, so there is no missing-function window. Do **NOT** add explicit `BEGIN/COMMIT` (conflicts with the runner's wrapper), and `CREATE OR REPLACE` is impossible here (the signature changes 15→16).
+   - `CREATE FUNCTION public.search_lessons(<the same 15 params, verbatim>, order_by text DEFAULT 'relevance')` — 16 args; new param **LAST + DEFAULTed** so PostgREST/typegen stay compatible. **Keep `filter_lesson_format text` as-is** (dead but harmless; dropping it is the separate deferred Task 1.3a — do NOT bundle it here).
+   - Body = copy the current body, applying these deltas to **BOTH the count query AND the result query**:
+     - **location**: replace `l.location_requirements && filter_location` with `public._match_location(l.location_requirements, filter_location)` (keep the surrounding `filter_location IS NULL OR array_length(filter_location,1) IS NULL OR …` guard).
+     - **C11 ghost exclusion**: add `AND l.lesson_id <> ALL (ARRAY['1l9KH63QBe2xhyH0zp6VIavtj0uKSRZtd','1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU','1nFbpkwlujk8fIO8RkeIcDoO2fuO83Iil2Srf8t5iqm8']::text[])`.
+   - **RETURNS TABLE: UNCHANGED** (NO `tags` — C84 deferred).
+   - **C58 ORDER BY (result query only):**
+     - ⚠️ **Gotcha:** you CANNOT reference the `rank` output alias inside a `CASE` expression — Postgres allows a bare output-alias in ORDER BY but not alias-in-expression (it would resolve `rank` as a non-existent input column and fail at apply). **Wrap the result SELECT in an outer subquery** `sub` that also exposes `l.updated_at` (even though it's not in RETURNS), then apply the conditional ORDER BY on the outer query referencing `sub.rank` / `sub.title` / `sub.updated_at`. The outer SELECT lists only the RETURNS columns; ORDER BY may reference `sub` columns not in the SELECT list.
+     - **First normalize** (top of the function body, plpgsql): `sort_key text := CASE WHEN order_by IN ('title','modified') THEN order_by ELSE 'relevance' END;` — this collapses an *explicit* `NULL`, `'grade'`, `'confidence'`, or any unknown value to `'relevance'` (the `DEFAULT 'relevance'` only covers an *omitted* arg, not an explicit NULL — GATE-1B 2.2).
+     - Target ORDER BY (references `sort_key`): `CASE WHEN sort_key='relevance' THEN sub.rank END DESC NULLS LAST, CASE WHEN sort_key='relevance' THEN COALESCE((sub.confidence->>'overall')::float,0) END DESC NULLS LAST, CASE WHEN sort_key='title' THEN sub.title END ASC NULLS LAST, CASE WHEN sort_key='modified' THEN sub.updated_at END DESC NULLS LAST, sub.title ASC, sub.lesson_id ASC`. So 'relevance'/unknown → rank (then confidence); 'title' → title; 'modified' → updated_at; **always** `title, lesson_id` as the deterministic tail (the C11 tiebreaker — empty-query order is now stable run-to-run). Keep `LIMIT page_size OFFSET page_offset` on the OUTER query, after the ORDER BY (filters stay inside `sub`).
+   - re-`GRANT EXECUTE ON FUNCTION public.search_lessons(<new 16-arg signature>) TO anon, authenticated, service_role;` (replicate the `20260514000000:245` GRANT block — **include `service_role`**, GATE-1B 5.2; current grantees `PUBLIC, anon, authenticated, postgres, service_role` — verify they match post-apply).
+   - `NOTIFY pgrst, 'reload schema';`
+
+4. **Regenerate `src/types/database.types.ts`** from the local DB after apply (the Args gain `order_by`). The frontend `.rpc` call casts to a loose `Record<string, SearchParamValue>` so it compiles even without the regen, but regenerate + commit for honesty.
+
+**ROLLBACK block:** DROP the new 16-arg `search_lessons` + re-CREATE the prior 15-arg body from `20260520020000`; restore the `expand_search_with_synonyms` baseline body; `DROP FUNCTION IF EXISTS public._match_location(text[],text[])`.
+
+**Verify (LOCAL FIRST — iterate before any push; do NOT push/PR/TEST/PROD — supervisor owns those):**
+- `supabase db reset` applies all migrations with no error on the new file.
+- `npm run test:rls` green.
+- Local smoke via `mcp__supabase__execute_sql`: `SELECT count(*) FROM search_lessons('herbs & spices')` (no 500, was a crash) · `order_by:='title'` vs `order_by:='modified'` give different order · empty-query call twice → identical order · the 3 ghost IDs absent from `search_lessons(NULL,...)` and from an Indoor-filtered call · Indoor filter returns Both-tagged rows (count rises vs the old `&&`) · explicit `order_by:=NULL` and `order_by:='grade'` both behave as relevance.
+- Sanitizer smoke (call the function directly — it's public): `SELECT expand_search_with_synonyms('mother''s')`, `'cook*'`, `'herbs & spices'`, `'plant (food)'`, a lone `''''` → all return without error; a ~50-word input doesn't error/timeout.
+- **Report** the exact smoke outputs + commit hash(es). The supervisor runs GATE 2 (Codex on the SQL) and the TEST/PROD verification.
+
+---
+### Task 3.2: C58 client wiring + remove the `grade` sort option
+
+**Skills:** `superpowers:test-driven-development`.
+
+**Files:**
+- `src/hooks/useLessonSearch.ts`: add `order_by: <sortBy>` to the `searchParams` object (the toolbar values map 1:1 to the RPC param; pass `viewState.sortBy` directly — the RPC's `ELSE → relevance` covers any stale value). Add `sortBy` to the `queryKey` (`['lesson-search', rpcName, filters, sortBy, pageSize]`) so a sort change refetches. The hook must **receive** `sortBy` — trace how `filters`/page reach it today and wire `viewState.sortBy` through the same path.
+- `src/pages/SearchPage.tsx`: ensure `viewState.sortBy` flows into the hook; `onSortChange` must also **reset `currentPage` to 1** (per `src/stores/CLAUDE.md` / project rule "reset currentPage when filters change") — e.g. `setViewState({ sortBy: sort, currentPage: 1 })`; verify the store action's reset semantics and mirror how filter changes reset the page.
+- `src/components/Internal/IntToolbar.tsx`: remove `{ value: 'grade', label: 'Sort: Grade' }` from `SORT_OPTIONS` (~23-28). Leave `'grade'`/`'confidence'` in the `ViewState.sortBy` TS union (harmless).
+
+**Tests (TDD):**
+- `useLessonSearch.wiring.test.tsx`: RPC called with `order_by` matching the active sort; the queryKey includes `sortBy` (a sort change ⇒ new query/refetch).
+- the toolbar test: `SORT_OPTIONS` no longer offers `grade` (and still offers relevance/title/modified).
+- `search-page.test.tsx`: a sort change resets to page 1.
+
+**Verify:** `npm run check` + `npm run test:run` green; `git show --stat`. Report commits + actual test output. Do NOT push/PR.
 
 ---
 
