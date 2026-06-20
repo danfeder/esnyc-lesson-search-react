@@ -76,7 +76,7 @@ export const SearchPage: React.FC = () => {
       <div className="int-shell">
         <IntSidebar counts={counts} />
 
-        <main id="main-content" className="int-main" tabIndex={-1}>
+        <div id="main-content" className="int-main" tabIndex={-1}>
           <h1 className="sr-only">ESYNYC Lesson Library</h1>
           <IntToolbar
             count={totalCount}
@@ -171,7 +171,7 @@ export const SearchPage: React.FC = () => {
               totalCount={totalCount}
             />
           )}
-        </main>
+        </div>
 
         {isSplit && (
           <IntSplitDetail lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />

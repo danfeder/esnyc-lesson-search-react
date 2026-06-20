@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { X } from 'lucide-react';
 import type { Lesson } from '@/types';
 import { IntLessonDetail } from './IntLessonDetail';
@@ -38,6 +38,7 @@ export function IntLessonDrawer({ lesson, onClose }: IntLessonDrawerProps) {
             <DialogPanel className="int-drawer pointer-events-auto">
               {lesson && (
                 <>
+                  <DialogTitle className="sr-only">{lesson.title}</DialogTitle>
                   <button
                     type="button"
                     className="int-drawer-close"

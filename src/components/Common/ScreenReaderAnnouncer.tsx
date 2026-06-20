@@ -27,7 +27,8 @@ export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({ to
       activeFilters.push(`${filters.culturalHeritage.length} cultural heritage selections`);
     if (filters.coreCompetencies.length)
       activeFilters.push(`${filters.coreCompetencies.length} core competencies`);
-    if (filters.cookingMethods) activeFilters.push(`cooking method: ${filters.cookingMethods}`);
+    if (filters.cookingMethods.length)
+      activeFilters.push(`${filters.cookingMethods.length} cooking methods`);
     if (filters.academicIntegration.length)
       activeFilters.push(`${filters.academicIntegration.length} academic subjects`);
     if (filters.socialEmotionalLearning.length)
