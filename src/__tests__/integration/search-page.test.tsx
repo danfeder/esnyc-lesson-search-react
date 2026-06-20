@@ -405,12 +405,52 @@ describe('SearchPage Integration', () => {
 
       const user = userEvent.setup();
       const sortDropdown = screen.getByRole('combobox', { name: /sort results/i });
-      await user.selectOptions(sortDropdown, 'grade');
+      await user.selectOptions(sortDropdown, 'modified');
 
       // Check the store was updated
       await waitFor(() => {
         const currentState = useSearchStore.getState();
-        expect(currentState.viewState.sortBy).toBe('grade');
+        expect(currentState.viewState.sortBy).toBe('modified');
+      });
+
+      // End-to-end (C58): the chosen sort must actually REACH the RPC as order_by
+      // (UI -> SearchPage prop threading -> useLessonSearch -> rpc). This guards
+      // the `sortBy: viewState.sortBy` prop in SearchPage — without it the hook
+      // would default to relevance and this assertion would fail even though the
+      // store update above still passes.
+      await waitFor(() => {
+        const sawModified = rpcMock.mock.calls.some(
+          ([, params]) => (params as Record<string, unknown> | undefined)?.order_by === 'modified'
+        );
+        expect(sawModified).toBe(true);
+      });
+    });
+
+    it('sort change resets the result page to 1 (C58)', async () => {
+      const testLesson = createTestLesson();
+      rpcMock.mockResolvedValue({ data: [testLesson], error: null });
+
+      renderWithProviders(<SearchPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('combobox', { name: /sort results/i })).toBeInTheDocument();
+      });
+
+      // Simulate being deeper in the paginated list before re-sorting.
+      const store = useSearchStore.getState();
+      store.setViewState({ currentPage: 4 });
+      expect(useSearchStore.getState().viewState.currentPage).toBe(4);
+
+      const user = userEvent.setup();
+      const sortDropdown = screen.getByRole('combobox', { name: /sort results/i });
+      await user.selectOptions(sortDropdown, 'title');
+
+      await waitFor(() => {
+        const currentState = useSearchStore.getState();
+        expect(currentState.viewState.sortBy).toBe('title');
+        // Changing the sort must reset paging to the first page (mirrors the
+        // filter-change reset rule in src/stores/CLAUDE.md).
+        expect(currentState.viewState.currentPage).toBe(1);
       });
     });
   });

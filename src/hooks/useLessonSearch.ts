@@ -2,11 +2,18 @@ import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { getSearchRpcName } from '@/lib/search';
 import { parseSearchQuery } from '@/utils/parseSearchQuery';
-import type { Lesson, LessonMetadata, SearchFilters } from '@/types';
+import type { Lesson, LessonMetadata, SearchFilters, ViewState } from '@/types';
 
 interface UseLessonSearchOptions {
   filters: SearchFilters;
   pageSize?: number;
+  /**
+   * C58: the active sort, passed straight through to the RPC's `order_by`
+   * param. The RPC normalizes anything outside relevance/title/modified
+   * (incl. a stale persisted 'grade'/'confidence') back to relevance, so no
+   * client-side mapping is needed. Defaults to relevance.
+   */
+  sortBy?: ViewState['sortBy'];
 }
 
 interface ConfidenceScores {
@@ -86,7 +93,11 @@ function mapRowToLesson(row: RpcRow): Lesson {
   };
 }
 
-export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptions) {
+export function useLessonSearch({
+  filters,
+  pageSize = 20,
+  sortBy = 'relevance',
+}: UseLessonSearchOptions) {
   const rpcName = getSearchRpcName();
 
   // Preprocess the raw search box term: strip filler + route grade cues (S1.2).
@@ -99,7 +110,7 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
   const effectiveGradeLevels = hasExplicitGradeFilter ? filters.gradeLevels : detectedGrades;
 
   return useInfiniteQuery<PageResult, Error>({
-    queryKey: ['lesson-search', rpcName, filters, pageSize],
+    queryKey: ['lesson-search', rpcName, filters, sortBy, pageSize],
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((sum, p) => sum + p.lessons.length, 0);
@@ -132,6 +143,9 @@ export function useLessonSearch({ filters, pageSize = 20 }: UseLessonSearchOptio
           : undefined,
         filter_cooking_method: filters.cookingMethods?.length ? filters.cookingMethods : undefined,
         filter_tags: filters.tags?.length ? filters.tags : undefined,
+        // C58: pass the active sort straight through; the RPC's ELSE→relevance
+        // branch safely handles any stale value (e.g. a persisted 'grade').
+        order_by: sortBy,
         page_size: pageSize,
         page_offset: currentPage * pageSize,
       };
