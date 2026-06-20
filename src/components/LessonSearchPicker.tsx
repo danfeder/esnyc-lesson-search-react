@@ -47,7 +47,6 @@ export function LessonSearchPicker({
   const [collapsed, setCollapsed] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
   const optionId = (index: number) => `${listboxId}-option-${index}`;
 
@@ -156,7 +155,6 @@ export function LessonSearchPicker({
       <div className="relative">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
-          ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => {

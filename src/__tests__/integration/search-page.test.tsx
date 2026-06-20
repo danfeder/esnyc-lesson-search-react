@@ -492,7 +492,9 @@ describe('SearchPage Integration', () => {
 
       // The cold-load skeleton renders...
       await waitFor(() => {
-        expect(screen.getByRole('status', { name: /loading lessons/i })).toBeInTheDocument();
+        // The skeleton's loading announcement lives in an sr-only text node
+        // inside a role="status" live region (no aria-label — see IntListSkeleton).
+        expect(screen.getByText(/loading lessons/i).closest('[role="status"]')).toBeInTheDocument();
       });
       // ...and the false-negative "No matches"/"No results" empty state does NOT.
       expect(screen.queryByRole('heading', { name: /no matches/i })).not.toBeInTheDocument();
@@ -593,7 +595,9 @@ describe('SearchPage Integration', () => {
       renderWithProviders(<SearchPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('status', { name: /loading lessons/i })).toBeInTheDocument();
+        // The skeleton's loading announcement lives in an sr-only text node
+        // inside a role="status" live region (no aria-label — see IntListSkeleton).
+        expect(screen.getByText(/loading lessons/i).closest('[role="status"]')).toBeInTheDocument();
       });
       expect(screen.queryByText(/No results found/i)).not.toBeInTheDocument();
     });

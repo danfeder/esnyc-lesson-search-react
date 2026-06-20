@@ -14,7 +14,10 @@ interface IntListSkeletonProps {
  */
 export function IntListSkeleton({ rows = 8 }: IntListSkeletonProps) {
   return (
-    <div className="int-list" role="status" aria-label="Loading lessons" aria-busy="true">
+    // role="status" announces via its text content (the sr-only span below).
+    // No aria-label — it would be a redundant accessible name and some screen
+    // readers announce both the name and the content (double-announcement).
+    <div className="int-list" role="status" aria-busy="true">
       {Array.from({ length: rows }).map((_, i) => (
         <div className="int-list-row" key={i} aria-hidden="true">
           <div className="int-row-grades">
