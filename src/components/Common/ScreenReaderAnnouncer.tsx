@@ -3,14 +3,29 @@ import { useSearchStore } from '@/stores/searchStore';
 
 interface ScreenReaderAnnouncerProps {
   totalCount?: number;
+  /**
+   * When true, hold the announcement (the search is pending/showing placeholder
+   * data, so `totalCount` is stale or the `|| 0` cold-load fallback). Keeps the
+   * last announcement until the data settles, then announces the real count
+   * once — avoids a stale "Found N lessons" mid-transition and a premature
+   * "0 lessons" on cold load. Mirrors C59's other isPlaceholderData gates.
+   */
+  suppressed?: boolean;
 }
 
-export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({ totalCount }) => {
+export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({
+  totalCount,
+  suppressed = false,
+}) => {
   const [announcement, setAnnouncement] = useState('');
   const { filters } = useSearchStore();
 
   // Announce filter changes
   useEffect(() => {
+    // While the result count is stale/placeholder, don't announce — wait for
+    // the settled count so screen readers hear it exactly once and correctly.
+    if (suppressed) return;
+
     const activeFilters = [];
 
     if (filters.query) activeFilters.push(`searching for "${filters.query}"`);
@@ -41,7 +56,7 @@ export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({ to
     } else {
       setAnnouncement(`All filters cleared. Showing all ${count} lessons.`);
     }
-  }, [filters, totalCount]);
+  }, [filters, totalCount, suppressed]);
 
   return (
     <>

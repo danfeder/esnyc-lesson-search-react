@@ -1,4 +1,4 @@
-import { useId, type ReactNode, cloneElement, isValidElement } from 'react';
+import { useId, type ReactNode, type AriaAttributes, cloneElement, isValidElement } from 'react';
 import { cn } from '@/utils/cn';
 
 interface IntFormFieldProps {
@@ -52,7 +52,10 @@ export function IntFormField({
       'aria-required': required || undefined,
       'aria-invalid': error ? true : undefined,
       'aria-describedby': describedByIds || undefined,
-    } as Partial<typeof childProps>);
+      // Cast to a real ARIA shape (+ id) so the injected aria-* values are
+      // type-checked — `Partial<typeof childProps>` would let aria-required /
+      // aria-invalid through unchecked (childProps only types id + describedby).
+    } as AriaAttributes & { id?: string });
   }
 
   return (

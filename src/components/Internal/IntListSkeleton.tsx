@@ -14,10 +14,14 @@ interface IntListSkeletonProps {
  */
 export function IntListSkeleton({ rows = 8 }: IntListSkeletonProps) {
   return (
-    // role="status" announces via its text content (the sr-only span below).
-    // No aria-label — it would be a redundant accessible name and some screen
-    // readers announce both the name and the content (double-announcement).
-    <div className="int-list" role="status" aria-busy="true">
+    // role="status" is a polite live region that announces via its text content
+    // (the sr-only span below). No aria-label (a redundant accessible name some
+    // screen readers announce alongside the content → double-announcement) and
+    // no aria-busy: on a live region aria-busy="true" tells AT to DEFER the
+    // announcement until it flips to false, but this skeleton unmounts when the
+    // load finishes (it never flips), so the "Loading lessons…" announcement
+    // could be swallowed entirely.
+    <div className="int-list" role="status">
       {Array.from({ length: rows }).map((_, i) => (
         <div className="int-list-row" key={i} aria-hidden="true">
           <div className="int-row-grades">

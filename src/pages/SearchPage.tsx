@@ -92,7 +92,10 @@ export const SearchPage: React.FC = () => {
   return (
     <div className="int-shell-root" data-view={effectiveView} data-density={density}>
       <SkipLink />
-      <ScreenReaderAnnouncer totalCount={totalCount} />
+      {/* C59: totalCount lags one fetch under keepPreviousData (and is `|| 0`
+          on cold load) — suppress the live-region announcement until settled so
+          screen readers hear the real count once, not a stale/zero one. */}
+      <ScreenReaderAnnouncer totalCount={totalCount} suppressed={isPending || isPlaceholderData} />
 
       <div className="int-shell">
         <IntSidebar counts={counts} />
