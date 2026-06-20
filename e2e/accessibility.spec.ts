@@ -13,6 +13,10 @@ test.describe('Accessibility', () => {
   test('page has main landmark', async ({ page }) => {
     const main = page.locator('main, [role="main"]');
     await expect(main.first()).toBeVisible();
+    // Regression guard for the nested-<main> fix (SearchPage's inner <main> was
+    // downgraded to <div id="main-content">): the app shell must expose exactly
+    // one <main> landmark on the search route — a second would re-nest landmarks.
+    await expect(page.getByRole('main')).toHaveCount(1);
   });
 
   test('search input has accessible label', async ({ page }) => {
@@ -110,7 +114,10 @@ test.describe('Accessibility', () => {
 
     // With display:none on the input, getByRole('checkbox') cannot find it (not
     // in the role tree) and .focus() cannot land on it -> this FAILS today.
-    const cookingCheckbox = page.getByRole('checkbox', { name: /cooking/i }).first();
+    // No `.first()`: the Activity Type "Cooking" option is the only checkbox whose
+    // accessible name matches /cooking/i in the expanded role tree, so toHaveCount(1)
+    // is a genuine assertion (a future 2nd match should fail loudly, not be masked).
+    const cookingCheckbox = page.getByRole('checkbox', { name: /cooking/i });
     await expect(cookingCheckbox).toHaveCount(1);
     await cookingCheckbox.focus();
     await expect(cookingCheckbox).toBeFocused();

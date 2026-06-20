@@ -40,11 +40,10 @@ function sectionByLabel(label: string) {
 
 describe('IntSidebar', () => {
   beforeEach(() => {
-    // The sidebar reads array filters per key; reset the two we assert on so the
-    // sections render their full static option list and no rows are pre-checked.
-    useSearchStore.setState((s) => ({
-      filters: { ...s.filters, tags: [], activityType: [] },
-    }));
+    // Full filter reset for inter-test isolation (mirrors ScreenReaderAnnouncer.test.tsx).
+    // clearFilters() resets every key to [] so the tags/activityType sections render
+    // their full static option list and no rows are pre-checked.
+    useSearchStore.getState().clearFilters();
   });
 
   it('renders no count badge in the Lesson Type (tags) section', () => {

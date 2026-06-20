@@ -203,6 +203,9 @@
   cursor: pointer;
   font-size: 13px;
   color: var(--color-esy-ink-70);
+  /* Contain the sr-only `position:absolute` input below within this label so its
+     containing block is the checkbox row, not a distant positioned ancestor. */
+  position: relative;
 }
 .int-check:hover { color: var(--color-esy-ink); }
 /* sr-only clip: visually hide the checkbox input but keep it focusable and in

@@ -28,6 +28,11 @@ export type FacetCounts = Record<FacetFilterKey, Record<string, number>>;
  * the slug-keying in `tallyHeritage`). Unknowns fall back to their verbatim
  * value (`?? noun`) so nothing is silently lost — and a stray `'both'` (retired
  * 2026-05-06, zero rows in PROD) buckets harmlessly rather than fanning out.
+ *
+ * The slug VALUES below are the canonical option values in `filterDefinitions.ts`
+ * (`FILTER_CONFIGS.activityType.options`); keep them in sync if an activity type
+ * is added. (We map explicitly rather than deriving from the option LABELs, to
+ * avoid coupling this data-side bucketing to display copy.)
  */
 const ACTIVITY_TYPE_SLUG_BY_NOUN: Record<string, string> = {
   cooking: 'cooking-only',
