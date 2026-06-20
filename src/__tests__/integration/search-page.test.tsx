@@ -538,6 +538,46 @@ describe('SearchPage Integration', () => {
       });
     });
 
+    it('does not flash "No more results to load" over stale rows mid-transition', async () => {
+      // First query: one row of total_count 50 → hasNextPage true, so the
+      // settled state shows the load-more affordance (NOT the terminal copy).
+      const firstRow = createTestLesson({ lesson_id: 'first', total_count: 50 });
+      let resolveSecond: ((value: { data: unknown; error: null }) => void) | undefined;
+      rpcMock.mockResolvedValueOnce({ data: [firstRow], error: null }).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecond = resolve;
+          })
+      );
+
+      renderWithProviders(<SearchPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /load more results/i })).toBeInTheDocument();
+      });
+
+      // Change the filter → in-flight refetch; keepPreviousData keeps 'first'
+      // visible. The trigger forces hasMore=false during placeholder, which —
+      // if the trigger still rendered — would flash "No more results to load"
+      // over the stale rows. The whole trigger must be hidden instead.
+      const store = useSearchStore.getState();
+      store.setFilters({ gradeLevels: ['5'] });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('button', { name: /load more results/i })
+        ).not.toBeInTheDocument();
+      });
+      // Stale row still visible, but NO false terminal "No more results" copy.
+      expect(screen.getByText('Test Lesson Title')).toBeInTheDocument();
+      expect(screen.queryByText(/no more results to load/i)).not.toBeInTheDocument();
+
+      resolveSecond?.({
+        data: [createTestLesson({ lesson_id: 'second', total_count: 1 })],
+        error: null,
+      });
+    });
+
     it('does not flash a suggestions panel while the first search is pending', async () => {
       const store = useSearchStore.getState();
       store.setFilters({ query: 'pizza' });

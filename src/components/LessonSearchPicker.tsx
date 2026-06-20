@@ -170,7 +170,10 @@ export function LessonSearchPicker({
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={isOpen}
-          aria-controls={listboxId}
+          // Only reference the listbox while it's actually in the DOM (it
+          // renders under `isOpen`); a dangling IDREF when collapsed is an
+          // ARIA violation.
+          aria-controls={isOpen ? listboxId : undefined}
           aria-activedescendant={isOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined}
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -193,29 +196,28 @@ export function LessonSearchPicker({
           {results.map((r, index) => {
             const active = index === activeIndex;
             return (
+              // Canonical listbox option: the option element itself is the
+              // selection target (no nested interactive <button> inside
+              // role="option"). Keyboard selection is managed by the combobox
+              // input (Enter on the active option); the mouse path uses this
+              // onClick. Focus stays in the input, per the combobox pattern.
               <li
                 key={r.lesson_id}
                 id={optionId(index)}
                 role="option"
                 aria-selected={active}
+                onClick={() => onSelect(r)}
                 onMouseEnter={() => setActiveIndex(index)}
-                className={active ? 'bg-gray-100' : ''}
+                className={`cursor-pointer px-3 py-2 hover:bg-gray-50 ${active ? 'bg-gray-100' : ''}`}
               >
-                <button
-                  type="button"
-                  onClick={() => onSelect(r)}
-                  tabIndex={-1}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 focus:bg-gray-100 focus:outline-none"
-                >
-                  <div className="font-medium text-gray-900">{r.title}</div>
-                  {(!!r.grade_levels?.length || !!r.season_timing?.length) && (
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      {r.grade_levels?.length ? `Grades ${r.grade_levels.join(', ')}` : ''}
-                      {r.grade_levels?.length && r.season_timing?.length ? ' · ' : ''}
-                      {r.season_timing?.join(', ')}
-                    </div>
-                  )}
-                </button>
+                <div className="font-medium text-gray-900">{r.title}</div>
+                {(!!r.grade_levels?.length || !!r.season_timing?.length) && (
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {r.grade_levels?.length ? `Grades ${r.grade_levels.join(', ')}` : ''}
+                    {r.grade_levels?.length && r.season_timing?.length ? ' · ' : ''}
+                    {r.season_timing?.join(', ')}
+                  </div>
+                )}
               </li>
             );
           })}

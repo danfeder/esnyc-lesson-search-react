@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LessonSearchPicker } from '@/components/LessonSearchPicker';
 
@@ -280,7 +280,32 @@ describe('LessonSearchPicker', () => {
     expect(listbox).toBeInTheDocument();
     expect(input).toHaveAttribute('aria-controls', listbox.id);
     expect(input).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getAllByRole('option')).toHaveLength(2);
+
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(2);
+    // Canonical listbox: the option element is the selection target — it must
+    // NOT wrap a nested interactive <button> (an interactive descendant inside
+    // role="option" is an invalid combobox/listbox pattern).
+    options.forEach((option) => {
+      expect(within(option).queryByRole('button')).toBeNull();
+    });
+  });
+
+  it('does not advertise aria-controls before the listbox is rendered', async () => {
+    const user = userEvent.setup();
+    render(<LessonSearchPicker selected={null} onSelect={vi.fn()} onClear={vi.fn()} />);
+
+    const input = screen.getByRole('combobox');
+    // Closed (no query yet): aria-controls must not reference an absent listbox.
+    expect(input).not.toHaveAttribute('aria-controls');
+
+    await user.type(input, 'apple');
+    await waitFor(() => screen.getByText('Apple Crisp Lesson'));
+    expect(input).toHaveAttribute('aria-controls', screen.getByRole('listbox').id);
+
+    // After Escape collapses the listbox, the IDREF is dropped again.
+    await user.keyboard('{Escape}');
+    expect(input).not.toHaveAttribute('aria-controls');
   });
 
   it('ArrowDown sets aria-activedescendant on input + aria-selected on first option', async () => {

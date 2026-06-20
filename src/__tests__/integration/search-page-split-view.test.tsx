@@ -112,6 +112,14 @@ describe('SearchPage split-view viewport coercion (§3.4)', () => {
     // The SPLIT option in the view switcher must be hidden when narrow.
     expect(screen.queryByRole('radio', { name: /split/i })).not.toBeInTheDocument();
 
+    // The toolbar reflects the EFFECTIVE view (list) below 1100px: the List
+    // radio is checked (not a stranded no-selection state) and the density
+    // switcher — which only renders for list view — is present. Both follow
+    // from passing `effectiveView` (not the raw stored `view='split'`) to the
+    // toolbar; otherwise the density control vanishes for a genuine list.
+    expect(screen.getByRole('radio', { name: /^list$/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radiogroup', { name: /list density/i })).toBeInTheDocument();
+
     // Clicking a row opens the drawer (a Dialog with the lesson title as its
     // accessible name), not nothing.
     const user = userEvent.setup();

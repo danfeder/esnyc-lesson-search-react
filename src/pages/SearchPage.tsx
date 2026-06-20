@@ -104,7 +104,12 @@ export const SearchPage: React.FC = () => {
             query={filters.query}
             activeFilterCount={activeFilterCount}
             sortBy={viewState.sortBy}
-            view={view}
+            // §3.4: pass the EFFECTIVE view (split→list below 1100px) so the
+            // view switcher highlights List and the list-only density switcher
+            // still renders; raw `view='split'` would strand both. Stored
+            // preference is untouched (allowSplit also hides the dead Split
+            // option), so a return to a wide screen restores split.
+            view={effectiveView}
             density={density}
             allowSplit={isWide}
             onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
@@ -198,14 +203,17 @@ export const SearchPage: React.FC = () => {
               </div>
             )}
 
-          {lessons.length > 0 && (
+          {lessons.length > 0 && !isPlaceholderData && (
+            // C59: hide the whole trigger during a filter-changed refetch
+            // (placeholder rows are the PREVIOUS query's). This both stops the
+            // sentinel firing fetchNextPage against stale data AND avoids the
+            // trigger's "No more results to load" terminal copy flashing over
+            // those stale rows when hasMore would be forced false. It reappears
+            // with the correct hasMore once the fresh page resolves.
             <InfiniteScrollTrigger
               onLoadMore={handleLoadMore}
               isLoading={isFetchingNextPage}
-              // C59: suppress load-more while the previous (placeholder) page is
-              // still showing during a filter-changed refetch, so the sentinel
-              // doesn't fire fetchNextPage against stale results mid-transition.
-              hasMore={!!hasNextPage && !isPlaceholderData}
+              hasMore={!!hasNextPage}
               currentCount={lessons.length}
               totalCount={totalCount}
             />
