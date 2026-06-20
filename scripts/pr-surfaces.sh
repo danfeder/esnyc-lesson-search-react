@@ -22,8 +22,14 @@ if [[ -z "$PR" ]]; then
   exit 2
 fi
 
-if ! command -v gh >/dev/null 2>&1; then
-  echo "error: GitHub CLI (gh) not found on PATH" >&2
+for dep in gh jq; do
+  if ! command -v "$dep" >/dev/null 2>&1; then
+    echo "error: required tool '$dep' not found on PATH" >&2
+    exit 1
+  fi
+done
+if ! gh auth status >/dev/null 2>&1; then
+  echo "error: gh is not authenticated (run 'gh auth login') — aborting so we don't emit a misleadingly-empty triage" >&2
   exit 1
 fi
 
@@ -51,7 +57,9 @@ printf '%s\n' "$checks_json" | jq -r '.[] | "  [\(.state)] \(.name)"' 2>/dev/nul
 fail_links=$(printf '%s\n' "$checks_json" \
   | jq -r '.[] | select(.state=="FAILURE" or .state=="ERROR") | .link' 2>/dev/null || true)
 if [[ -n "${fail_links:-}" ]]; then
-  run_ids=$(printf '%s\n' "$fail_links" | grep -oE 'runs/[0-9]+' | grep -oE '[0-9]+' | sort -u)
+  # Anchor to the GitHub Actions URL shape so a non-Actions check link that merely
+  # contains "runs/<n>" elsewhere can't trigger a spurious `gh run view`.
+  run_ids=$(printf '%s\n' "$fail_links" | grep -oE 'actions/runs/[0-9]+' | grep -oE '[0-9]+' | sort -u)
   for rid in $run_ids; do
     hr "   failed run $rid (gh run view --log-failed)"
     gh run view "$rid" --log-failed 2>/dev/null || echo "(could not fetch log for run $rid)"

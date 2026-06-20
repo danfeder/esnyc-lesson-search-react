@@ -181,7 +181,7 @@ const {
 
 ## 🗂️ Current Pages Reference
 
-`src/pages/*.tsx` is the source of truth — run `ls src/pages/*.tsx` for the authoritative, current list, since this inventory drifts as pages are added. As of 2026-06 there are 18 page components (note: `LessonModal` is a **component**, not a page — it lives outside `src/pages/`):
+`src/pages/*.tsx` is the source of truth — run `ls src/pages/*.tsx` for the authoritative, current list, since this inventory drifts as pages are added. As of 2026-06 there are 18 page components:
 
 ### Public
 - **SearchPage** - Main search interface, no auth

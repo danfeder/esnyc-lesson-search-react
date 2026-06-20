@@ -117,7 +117,7 @@ The full local validation loop — `npm run type-check`, `npm run lint`, `npm ru
 
 Defined in `src/utils/filterDefinitions.ts`. Consult stakeholders before adding or removing filters.
 
-Each filter declares its own type in `src/utils/filterDefinitions.ts` (`single` | `multiple` | `hierarchical` | `creatable`) — **treat that file as authoritative; do not trust an inlined list here.** As of 2026-06, only **Location** is single-select and **Cultural Heritage** is hierarchical (parent selection includes all children); the remaining facet filters are multi-select. (Note: there is no `lessonFormat` filter — `lessonFormat` exists only as a metadata field on lesson rows.)
+Each filter declares its own type in `src/utils/filterDefinitions.ts` (`single` | `multiple` | `hierarchical` | `creatable`) — **treat that file as authoritative; do not trust an inlined list here.** As of 2026-06, only **Location** is single-select and **Cultural Heritage** is hierarchical (parent selection includes all children); the remaining facet filters are multi-select. (Note: there is no `lessonFormat` filter — that field was removed from the schema entirely in the 2026-05 metadata rebuild, column and metadata key both.)
 
 ## Tech Stack
 
