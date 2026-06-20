@@ -107,3 +107,57 @@ describe('useLessonSearch — parseSearchQuery wiring (S1.2)', () => {
     expect(params.filter_grade_levels).toBeUndefined();
   });
 });
+
+describe('useLessonSearch — keepPreviousData persistence (C59)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('keeps the previous data.pages while the next filter-changed query is in flight', async () => {
+    // Build a row factory that matches the RpcRow shape mapRowToLesson expects.
+    const makeRow = (id: string, total: number) => ({
+      lesson_id: id,
+      title: `Lesson ${id}`,
+      summary: '',
+      file_link: '',
+      grade_levels: [],
+      metadata: {},
+      total_count: total,
+    });
+
+    // First filter resolves immediately; the second never resolves (in flight).
+    let resolveSecond: ((value: { data: unknown; error: null }) => void) | undefined;
+    rpcMock.mockResolvedValueOnce({ data: [makeRow('a', 1)], error: null }).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSecond = resolve;
+        })
+    );
+
+    const { result, rerender } = renderHook(
+      ({ filters }: { filters: SearchFilters }) => useLessonSearch({ filters }),
+      {
+        wrapper: createWrapper(),
+        initialProps: { filters: makeFilters({ query: 'first' }) },
+      }
+    );
+
+    // First query resolves with the 'a' lesson.
+    await waitFor(() => {
+      expect(result.current.data?.pages[0].lessons[0].lessonId).toBe('a');
+    });
+
+    // Change the filter → a NEW query starts (the second, never-resolving rpc).
+    rerender({ filters: makeFilters({ query: 'second' }) });
+
+    // With placeholderData: keepPreviousData, the prior data.pages stay visible
+    // while the new query is fetching (instead of blanking to undefined).
+    await waitFor(() => {
+      expect(result.current.isPlaceholderData).toBe(true);
+    });
+    expect(result.current.data?.pages[0].lessons[0].lessonId).toBe('a');
+
+    // Cleanup: let the pending promise settle so the test runner doesn't hang.
+    resolveSecond?.({ data: [makeRow('b', 1)], error: null });
+  });
+});

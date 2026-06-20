@@ -9,6 +9,7 @@ import {
   IntEmptyState,
   IntLessonDrawer,
   IntListRow,
+  IntListSkeleton,
   IntMobileFilterDrawer,
   IntSidebar,
   IntSplitDetail,
@@ -40,7 +41,16 @@ export const SearchPage: React.FC = () => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isMobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const { data, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useLessonSearch({
+  const {
+    data,
+    isError,
+    error,
+    isPending,
+    isPlaceholderData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLessonSearch({
     filters,
     pageSize: viewState.resultsPerPage,
   });
@@ -56,9 +66,11 @@ export const SearchPage: React.FC = () => {
   const suggestions = suggestionsData?.suggestions || [];
 
   const handleLoadMore = useCallback(async () => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    // C59: never fetch the next page while showing placeholder data — the
+    // current list belongs to the prior query, so paginating it is wrong.
+    if (!hasNextPage || isFetchingNextPage || isPlaceholderData) return;
     await fetchNextPage();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData]);
 
   const activeFilterCount = countActiveFilters(filters);
   const hasQuery = !!filters.query?.trim();
@@ -108,13 +120,20 @@ export const SearchPage: React.FC = () => {
             </div>
           )}
 
-          {!isError && lessons.length === 0 ? (
+          {!isError && isPending ? (
+            // C59: cold load (no cached/placeholder data) — show the skeleton,
+            // never a false "No matches". With keepPreviousData a refetch keeps
+            // the prior rows instead of reaching this branch.
+            <IntListSkeleton />
+          ) : !isError && lessons.length === 0 ? (
             <IntEmptyState
               title={hasQuery || activeFilterCount > 0 ? 'No matches' : 'No results'}
+              // Neutral hint when nothing is queried/filtered — the "Try removing
+              // a filter" copy is nonsensical with no active filters (C59).
               hint={
                 hasQuery || activeFilterCount > 0
                   ? 'Try removing a filter or broadening your search.'
-                  : 'Loading lessons…'
+                  : 'No lessons to show.'
               }
             />
           ) : isGrid ? (
@@ -132,41 +151,51 @@ export const SearchPage: React.FC = () => {
             </div>
           )}
 
-          {totalCount === 0 && hasQuery && suggestions.length > 0 && (
-            <div
-              className="int-empty"
-              style={{ marginTop: 12, borderStyle: 'solid', textAlign: 'left' }}
-            >
-              <div className="flex items-start gap-2">
-                <Lightbulb
-                  className="mt-0.5 flex-shrink-0"
-                  style={{ color: 'var(--color-esy-green)', width: 18, height: 18 }}
-                />
-                <div>
-                  <p className="font-medium mb-2">No results found. Try these suggestions:</p>
-                  <div className="int-pills">
-                    {suggestions.map((s, index) => (
-                      <button
-                        key={`sugg-${index}-${s}`}
-                        type="button"
-                        onClick={() => setFilters({ query: s })}
-                        className="int-pill"
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {s}
-                      </button>
-                    ))}
+          {/* C59: only after the data settles — totalCount lags one fetch under
+              keepPreviousData, so gating on a stale 0 here would flash/mis-fire
+              the suggestions panel mid-transition. */}
+          {!isPending &&
+            !isPlaceholderData &&
+            totalCount === 0 &&
+            hasQuery &&
+            suggestions.length > 0 && (
+              <div
+                className="int-empty"
+                style={{ marginTop: 12, borderStyle: 'solid', textAlign: 'left' }}
+              >
+                <div className="flex items-start gap-2">
+                  <Lightbulb
+                    className="mt-0.5 flex-shrink-0"
+                    style={{ color: 'var(--color-esy-green)', width: 18, height: 18 }}
+                  />
+                  <div>
+                    <p className="font-medium mb-2">No results found. Try these suggestions:</p>
+                    <div className="int-pills">
+                      {suggestions.map((s, index) => (
+                        <button
+                          key={`sugg-${index}-${s}`}
+                          type="button"
+                          onClick={() => setFilters({ query: s })}
+                          className="int-pill"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {lessons.length > 0 && (
             <InfiniteScrollTrigger
               onLoadMore={handleLoadMore}
               isLoading={isFetchingNextPage}
-              hasMore={!!hasNextPage}
+              // C59: suppress load-more while the previous (placeholder) page is
+              // still showing during a filter-changed refetch, so the sentinel
+              // doesn't fire fetchNextPage against stale results mid-transition.
+              hasMore={!!hasNextPage && !isPlaceholderData}
               currentCount={lessons.length}
               totalCount={totalCount}
             />

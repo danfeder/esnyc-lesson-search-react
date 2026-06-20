@@ -412,6 +412,29 @@
 }
 .int-list-row:hover .int-row-open { background: var(--color-esy-green); color: white; }
 
+/* --- List skeleton (C59 cold-load placeholder) ---------------------- */
+/* Shimmer bars sized to the IntListRow regions so the layout doesn't jump
+   when real rows replace the skeleton. Tokened with int-* vars (design
+   cohesion) — the int-* analogue of Tailwind animate-pulse. */
+@keyframes int-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.int-skeleton {
+  display: block;
+  background: var(--color-esy-ink-10);
+  border-radius: 4px;
+  animation: int-skeleton-pulse 1.4s ease-in-out infinite;
+}
+.int-skeleton-grade { height: 20px; width: 100%; }
+.int-skeleton-title { height: 15px; width: 60%; margin: 2px 0 8px; }
+.int-skeleton-summary { height: 13px; width: 90%; margin-bottom: 6px; }
+.int-skeleton-meta { height: 12px; width: 40%; }
+.int-skeleton-open { height: 20px; width: 48px; }
+@media (prefers-reduced-motion: reduce) {
+  .int-skeleton { animation: none; }
+}
+
 /* --- Drawer (slide in from right) ----------------------------------- */
 .int-drawer-backdrop {
   position: fixed; inset: 0;
