@@ -1,14 +1,20 @@
 # Theme B — Public "Broken-Windows" UX Execution Status
 
-**Last updated:** 2026-06-20 by Session 4 (PR2 #523 bot rounds 1 + 2 triaged + fixed → `5edc7e7`/`2980c3f`; round-cap reached → MERGE is the next gate, user-gated)
+**Last updated:** 2026-06-20 by Session 4 (PR2 #523 MERGED → `main` @ `530b2536`; **W1a COMPLETE**; next = PR3/W1b cycle)
 
 ## Current State
 
-**Prior PR shipped:** PR 1 (W1a-cosmetic-a11y) = **GitHub PR #522 MERGED 2026-06-20 16:54 UTC → `main` @ `19d99b7`** (2 bot rounds + Codex GATE-4; merge user-gated). Full PR1 detail (Tasks 1.1–1.6 Done + Sessions 0/1/2 logs) moved to `…-execution-status-archive.md` — grep there, don't read it whole.
+**W1a COMPLETE — both PRs merged to `main`:**
+- PR 1 (W1a-cosmetic-a11y) = **#522 MERGED 2026-06-20 16:54 UTC → `19d99b7`** (2 bot rounds + Codex GATE-4). Detail + Sessions 0/1/2 in `…-execution-status-archive.md` — grep, don't read whole.
+- PR 2 (W1a-behavior) = **#523 MERGED 2026-06-20 21:48 UTC → `main` @ `530b2536`** (squash, per repo convention). 4 tasks C59 / C14 / C79 / §3.4 + 2 bot rounds + Codex GATE-4. Net-new frontend, **no DB**. Round 1/2 outcomes below (archive them at PR3-cycle start). CI note: the round-2 push hit a transient GitHub Actions `synchronize` dispatch miss (0 check-runs on the head) — recovered with an empty re-trigger commit; full pipeline then green (only the expected-red Security-Audit npm-audit noise).
 
-**Active PR:** PR 2 — **W1a-behavior = GitHub PR #523 OPEN** (https://github.com/danfeder/esnyc-lesson-search-react/pull/523). Branch `feat/theme-b-w1a-behavior` off `main` @ `19d99b7`. The last W1a PR; W1a is **Locked**. Net-new frontend code, **no DB**. All 4 tasks shipped + supervisor-verified; pre-push dual-family gate done; **bot rounds 1 (`5edc7e7`) + 2 (`2980c3f`) triaged + fixed. 2-round cap reached.**
+**Current branch:** `feat/theme-b-w1b-search-rpc` (created off `main` @ `530b2536` for the PR3 cycle; only this status update on it so far).
 
-**Current task (NEXT):** **MERGE PR #523 — user-gated.** User chose (2026-06-20) "surface merge after a green push": wait for CI/E2E to go green on the round-2 head, then the user makes the explicit merge call. **No round-3 full triage** unless a *critical* bug surfaces (round-cap). On merge → PR-cycle archival (move PR2 Session 3/4 entries into the archive; audit for promotable learnings) → **PR3 (W1b)** — design-lock §4 Q1–Q5 first (GATE 1B), the one search-RPC migration (TEST-DB-gated, GATE 2 on the SQL).
+**Current task (NEXT SESSION = PR3 / W1b cycle, in order):**
+1. **PR-cycle archival FIRST** — move Sessions 3 + 4 + the Round 1/2 outcome blocks (below) into `…-execution-status-archive.md`; slim this file. Audit for promotable feedback-memory learnings (candidates: "Codex GATE-4 return-inline worked ×2 — promote to a memory"; "bot self-contradicts across surfaces — four-surface triage rationale"; "CI `synchronize` dispatch hiccup → empty-commit re-trigger playbook").
+2. **Design-lock §4 Q1–Q5** (W1b open questions): Q1 C58 real `order_by` sort `[user-verdict]`; Q2 C136 sanitizer location `[evidence]`; Q3 C11 ghost lesson_ids `[evidence — TEST+PROD probe]`; Q4 location-Both casing `[evidence — TEST probe]`; Q5 C84 expose `tags` in RPC `[user-verdict]`. Gather evidence + a recommendation each; the two `[user-verdict]` go to the user (never lock unilaterally).
+3. **Author the PR3 tasks** in the impl plan (currently a skeleton), then **GATE 1B** (review the authored tasks).
+4. **Implement** the ONE `search_lessons` migration — DROP+CREATE if `order_by` lands (§6). **DATA SAFETY is top priority:** invoke `database-migrations` + `/new-migration`; **GATE 2** (Codex on the SQL) pre-TEST; date-prefix sorts AFTER the latest (`20260514…`); TEST-DB-MCP-verify the live corpus before merge + PROD-verify (3-signal) after; `npm run test:rls` stays green; `reference_ci_flakes.md` before the PROD migration.
 
 **Round 1 outcome (Session 4):** only `claude[bot]` (3 surfaces). 4 findings, all minor ("nothing blocks merge"). {bot · rebuttal · Codex GATE 4 — unanimous}: **ACCEPT** (A) `inputRef` dead code; **ACCEPT** (D) IntListSkeleton double-ARIA (dropped `aria-label`, kept sr-only span; re-targeted 2 tests by text content). **WON'T-FIX** (B) ArrowUp APG + (C) inline `getMatches`. Fixed in `5edc7e7`; suite 1371/1371.
 
@@ -106,7 +112,11 @@ Decisions / learnings:
 - **Bot self-contradiction across surfaces** (round 2: CHANGES_REQUESTED summary vs "approve" issue-comment) is exactly the four-surface-triage rationale — never trust one surface.
 - **R2-6 was a genuine miss in C59's own pattern** (gated siblings, missed the announcer) — the bot + Codex earned their keep on a real public a11y regression, not just nits.
 
-Next picks up at: **MERGE PR #523** (user-gated) once CI/E2E green on `2980c3f`. On merge → PR-cycle archival (Sessions 3/4 → archive) + PR3 (W1b) design-lock §4 Q1–Q5 (GATE 1B) → the one TEST-DB-gated search-RPC migration (GATE 2 on the SQL).
+**Merge** (same session): user chose **squash-merge now**. Before merge, the round-2 push (`28ed04e`) hit a **transient GitHub Actions `synchronize` dispatch miss** — `gh api .../commits/<sha>/check-runs` showed 0 GH-Actions runs on `2980c3f`/`28ed04e` (only Netlify/semgrep), while the identically-structured round-1 push triggered full CI; no `paths` filters in `ci.yml`. Recovered with an **empty re-trigger commit (`7575626`)** → fresh `synchronize` → full pipeline ran + settled green (only expected-red Security-Audit). Bots re-reviewed the round-2 fixes: verdict **"Ready to merge"** + 3 below-bar perf/style nits (incl. the *thrice*-raised `getMatches` micro-nit) — no action per round-cap. Squash-merged as **`530b2536`** ("…PR2 — search reliability + form/picker a11y (#523)"). Note: `reviewDecision` showed `CHANGES_REQUESTED` (GitHub doesn't auto-clear a CHANGES_REQUESTED when a *later* review is only COMMENTED, not APPROVE) — an artifact, not a real blocker (`mergeStateStatus: UNSTABLE`, mergeable; all findings triaged).
+
+Process-learning candidates (for the next session's archival audit): **(a)** CI `synchronize` dispatch hiccup → empty-commit re-trigger is the recovery (add to `reference_ci_flakes.md`); **(b)** poller gotcha — `gh ... jq 'test("review")'` crashes on null `.name` rollup entries → empty output reads as false "0 in progress"; also guard against early-registration races (require a min check count before concluding "all settled"); **(c)** Codex GATE-4 "return findings INLINE" worked first-try both rounds — strong feedback-memory candidate.
+
+Next picks up at: **PR3 / W1b cycle** — (1) archive Sessions 3/4, (2) design-lock §4 Q1–Q5 (two `[user-verdict]`), (3) author tasks + GATE 1B, (4) the one TEST-DB-gated `search_lessons` migration (GATE 2 on the SQL, DATA-SAFETY top priority). W1a is fully shipped.
 
 ### Session 3 — 2026-06-20 — PR2 built + pre-push-gated + opened as PR #523
 
