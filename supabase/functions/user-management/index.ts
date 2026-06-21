@@ -609,7 +609,7 @@ serve(async (req) => {
         .from('user_profiles')
         .update({
           is_active: false,
-          notes: supabase.sql`COALESCE(notes, '') || ' [DELETED]'`,
+          notes: (currentUser.notes ?? '') + ' [DELETED]',
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId);
@@ -671,44 +671,78 @@ serve(async (req) => {
         });
       }
 
-      let updateData: any = {};
       let auditAction = '';
+      const now = new Date().toISOString();
+      const failedIds: string[] = [];
+      let succeededCount = userIds.length;
 
       // Get current user data for all affected users before update
       const { data: affectedUsers } = await supabase
         .from('user_profiles')
-        .select('id, full_name, email, is_active')
+        .select('id, full_name, email, is_active, notes')
         .in('id', userIds);
 
       switch (action) {
         case 'activate':
-          updateData = { is_active: true };
-          auditAction = 'bulk_users_activated';
+        case 'deactivate': {
+          // Map to a valid user_management_audit_action_check value.
+          auditAction = action === 'activate' ? 'user_activated' : 'user_deactivated';
+
+          // activate/deactivate set a constant is_active (no per-user notes append),
+          // so keep the single atomic bulk update.
+          const { error } = await supabase
+            .from('user_profiles')
+            .update({ is_active: action === 'activate', updated_at: now })
+            .in('id', userIds);
+
+          if (error) throw error;
           break;
-        case 'deactivate':
-          updateData = { is_active: false };
-          auditAction = 'bulk_users_deactivated';
+        }
+        case 'delete': {
+          auditAction = 'user_deleted';
+
+          // Soft delete appends ' [DELETED]' to each user's existing notes, which
+          // supabase-js .update() cannot express as a column-referencing SQL
+          // expression. Read-then-write per user. Best-effort (LOCKED decision):
+          // a mid-loop failure marks some users and not others; collect failures
+          // and do NOT throw inside the loop.
+          for (const u of affectedUsers ?? []) {
+            const { error } = await supabase
+              .from('user_profiles')
+              .update({
+                is_active: false,
+                notes: (u.notes ?? '') + ' [DELETED]',
+                updated_at: now,
+              })
+              .eq('id', u.id);
+
+            if (error) {
+              console.error(`Failed to soft-delete user ${u.id}:`, error);
+              failedIds.push(u.id);
+            }
+          }
+
+          succeededCount = (affectedUsers?.length ?? 0) - failedIds.length;
+
+          // If every affected user failed, surface a hard error so the frontend
+          // shows an error toast. (Empty affectedUsers => nothing to do, not an error.)
+          if ((affectedUsers?.length ?? 0) > 0 && failedIds.length === (affectedUsers?.length ?? 0)) {
+            return new Response(
+              JSON.stringify({ error: 'Failed to delete the selected users.' }),
+              {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              }
+            );
+          }
           break;
-        case 'delete':
-          updateData = {
-            is_active: false,
-            notes: supabase.sql`COALESCE(notes, '') || ' [DELETED]'`,
-          };
-          auditAction = 'bulk_users_deleted';
-          break;
+        }
         default:
           return new Response(JSON.stringify({ error: 'Invalid action' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
       }
-
-      updateData.updated_at = new Date().toISOString();
-
-      // Perform bulk update
-      const { error } = await supabase.from('user_profiles').update(updateData).in('id', userIds);
-
-      if (error) throw error;
 
       // Send notification emails for activate/deactivate actions
       if ((action === 'activate' || action === 'deactivate') && affectedUsers) {
@@ -749,16 +783,24 @@ serve(async (req) => {
         }
       }
 
-      // Log audit trail
-      await supabase.from('user_management_audit').insert({
+      // Log audit trail. `bulk: true` lets audit readers distinguish bulk rows
+      // from single-user rows (which share the same valid action enum values).
+      const { error: auditError } = await supabase.from('user_management_audit').insert({
         actor_id: user.id,
         action: auditAction,
-        metadata: { userIds, action },
+        metadata: { userIds, action, bulk: true },
       });
+      // Non-fatal: an audit-write failure must not fail the user operation.
+      if (auditError) {
+        console.error('Failed to write bulk user-management audit row:', auditError);
+      }
 
-      return new Response(JSON.stringify({ success: true, affected: userIds.length }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ success: true, affected: succeededCount, failed: failedIds }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     // If no route matched

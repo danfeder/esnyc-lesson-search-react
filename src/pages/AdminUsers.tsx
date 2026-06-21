@@ -14,6 +14,8 @@ import {
   UserX,
   Trash2,
   Settings as SettingsIcon,
+  Check,
+  X,
 } from 'lucide-react';
 import { EnhancedUserProfile, UserFilters, UserRole, Permission } from '@/types/auth';
 import { SchoolBadge } from '@/components/Schools';
@@ -59,6 +61,9 @@ export function AdminUsers() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
+  const [toast, setToast] = useState<{ kind: 'success' | 'error' | 'info'; msg: string } | null>(
+    null
+  );
   const bulkActionsRef = useRef<HTMLDivElement>(null);
   const bulkTriggerRef = useRef<HTMLButtonElement>(null);
   const bulkFirstItemRef = useRef<HTMLButtonElement>(null);
@@ -220,6 +225,12 @@ export function AdminUsers() {
   }, []);
 
   useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2800);
+    return () => window.clearTimeout(t);
+  }, [toast]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (bulkActionsRef.current && !bulkActionsRef.current.contains(event.target as Node)) {
         setShowBulkActions(false);
@@ -260,6 +271,9 @@ export function AdminUsers() {
       if (!confirm) return;
     }
 
+    // Capture before setSelectedUsers([]) clears it.
+    const selectedCount = selectedUsers.length;
+
     try {
       if (action === 'delete') {
         const {
@@ -273,6 +287,16 @@ export function AdminUsers() {
           method: 'POST',
         });
         if (response.error) throw response.error;
+
+        const failed: string[] = response.data?.failed ?? [];
+        if (failed.length > 0) {
+          setToast({
+            kind: 'error',
+            msg: `Deleted ${response.data?.affected ?? 0} user(s); ${failed.length} could not be deleted.`,
+          });
+        } else {
+          setToast({ kind: 'success', msg: `Deleted ${selectedCount} user(s).` });
+        }
       } else {
         const { error } = await supabase
           .from('user_profiles')
@@ -290,12 +314,18 @@ export function AdminUsers() {
             metadata: { userIds: selectedUsers, count: selectedUsers.length },
           });
         }
+
+        setToast({
+          kind: 'success',
+          msg: `${action === 'activate' ? 'Activated' : 'Deactivated'} ${selectedCount} user(s).`,
+        });
       }
 
       setSelectedUsers([]);
       loadUsers();
     } catch (error) {
       logger.error(`Error performing bulk ${action}:`, error);
+      setToast({ kind: 'error', msg: `Failed to ${action} selected users.` });
     }
   };
 
@@ -629,6 +659,14 @@ export function AdminUsers() {
             </IntButton>
           </div>
         </div>
+
+        {toast && (
+          <div role="status" aria-live="polite" className={`adm-toast adm-toast--${toast.kind}`}>
+            {toast.kind === 'success' && <Check className="w-3 h-3" aria-hidden="true" />}
+            {toast.kind === 'error' && <X className="w-3 h-3" aria-hidden="true" />}
+            {toast.msg}
+          </div>
+        )}
       </div>
     </div>
   );
