@@ -531,7 +531,21 @@ false-empty flash). Integration test asserts the first RPC is hydrated.
 Design: 2026-06-20-theme-b-public-ux-design.md §4 Q6-Q8."
 ```
 
-**End of PR 4:** PER-PR RITUAL — pre-push code-reviewer agent **+ Codex GATE 3** (different family) on `git diff main...HEAD` → `npm run check` + `npm run test:run` → push → `gh pr create` → four-surface bot triage + GATE 4 on any real suggested change → user-gated merge. **Pure-frontend: deploy-preview + manual smoke only — no TEST-DB gate, no RLS, no PROD migration.** Manual: the full URL round-trip above on the Netlify deploy preview (share a filtered link, refresh, back-button).
+---
+
+### Task 4.4: retire the vestigial "Lesson Type" (`tags`) facet  *(added 2026-06-20 — user verdict; folded into W1c)*
+
+**Sub-skill:** `superpowers:test-driven-development`
+
+**Why:** `lessons.tags` (the public "Lesson Type" facet = `orientation`/`bilingual_handouts`) is **vestigial** — LLM/migration-assigned, never reviewer-curated, not a real teacher-facing taxonomy (user verdict 2026-06-20; identity confirmed me+Codex; PROD vocab = orientation 69 / bilingual_handouts 9). Retire the public facet as part of W1c so the new URL schema never ships it. **Do NOT touch the DB** — leave the `lessons.tags` column + RPC `filter_tags` param (inert once nothing sends it; column deletion is a separate, cautious, out-of-scope data step).
+
+**Files (frontend sweep — grep `tags` / `'Lesson Type'` for every ref):** `src/utils/filterDefinitions.ts` (remove the `tags` entry from `FILTER_CONFIGS`), `src/components/Internal/IntSidebar.tsx` (the `showCount = key !== 'tags'` suppression becomes dead → remove), `src/types/index.ts` (`SearchFilters.tags`), `src/stores/searchStore.ts` (`initialFilters.tags`), `src/hooks/useLessonSearch.ts` (stop sending `filter_tags`), `src/utils/facetCounts.ts` (the `'tags'` case), `src/utils/filterUtils.ts:54` (`tags: 'Lesson Type'` label map), **`src/utils/urlParams.ts` + `urlParams.test.ts` (REVISE Task 4.1 to drop `tags` from the schema/exports)**, plus the affected tests (`IntSidebar.test.tsx`, `facetCounts.test.ts`, …). Confirm nothing else breaks (active pills, mobile drawer, clear-all).
+
+**Steps (TDD):** update/remove the failing tests first (facet no longer rendered; `tags` not a valid URL param; `SearchFilters` has no `tags`), then the sweep, then green. `npm run check` + `npm run test:run`. Manual: the "Lesson Type" section is gone from the sidebar + mobile drawer; no console/type errors; search still works. Commit: `chore(search): W1c — retire the vestigial Lesson Type (tags) facet`.
+
+**Sequencing:** simplest to do alongside the Task 4.1 revision (the URL-schema removal and the facet removal share the `tags` deletion). The `process-submission` `submit_tags` tool / "tags" prose is a DIFFERENT concept (generic name for activity-type + CR-feature extraction) — out of scope, do not touch.
+
+**End of PR 4:** PER-PR RITUAL — pre-push code-reviewer agent **+ Codex GATE 3** (different family) on `git diff main...HEAD` → `npm run check` + `npm run test:run` → push → `gh pr create` → four-surface bot triage + GATE 4 on any real suggested change → user-gated merge. **Pure-frontend: deploy-preview + manual smoke only — no TEST-DB gate, no RLS, no PROD migration.** Manual: the full URL round-trip above on the Netlify deploy preview (share a filtered link, refresh, back-button) + confirm the "Lesson Type" facet is gone.
 
 ---
 
