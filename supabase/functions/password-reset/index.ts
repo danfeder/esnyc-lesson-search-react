@@ -164,16 +164,32 @@ serve(async (req) => {
 
       // Send password reset email
       try {
-        await supabase.functions.invoke('send-email', {
-          body: {
+        // Raw fetch (not supabase.functions.invoke): the SDK's invoke from inside
+        // a deployed edge fn with a service-role client silently fails to deliver
+        // the bearer (mirror complete-review:310-322).
+        const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             type: 'password-reset',
             to: email,
             data: {
               resetUrl: data.properties.action_link,
               recipientName: profile.full_name,
             },
-          },
+          }),
         });
+        if (!emailRes.ok) {
+          const errText = await emailRes.text().catch(() => '<unreadable>');
+          console.error(
+            `Failed to send password reset email (${emailRes.status}):`,
+            errText.substring(0, 500)
+          );
+        }
       } catch (emailError) {
         console.error('Failed to send password reset email:', emailError);
         // Don't fail the request if email fails
@@ -240,15 +256,31 @@ serve(async (req) => {
 
       // Send password changed notification email
       try {
-        await supabase.functions.invoke('send-email', {
-          body: {
+        // Raw fetch (not supabase.functions.invoke): the SDK's invoke from inside
+        // a deployed edge fn with a service-role client silently fails to deliver
+        // the bearer (mirror complete-review:310-322).
+        const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             type: 'password-changed',
             to: email,
             data: {
               recipientName: name,
             },
-          },
+          }),
         });
+        if (!emailRes.ok) {
+          const errText = await emailRes.text().catch(() => '<unreadable>');
+          console.error(
+            `Failed to send password changed email (${emailRes.status}):`,
+            errText.substring(0, 500)
+          );
+        }
       } catch (emailError) {
         console.error('Failed to send password changed email:', emailError);
       }

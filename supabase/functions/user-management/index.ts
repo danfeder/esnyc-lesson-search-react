@@ -540,8 +540,17 @@ serve(async (req) => {
         // Send role change notification
         if (userEmail) {
           try {
-            await supabase.functions.invoke('send-email', {
-              body: {
+            // Raw fetch (not supabase.functions.invoke): the SDK's invoke from
+            // inside a deployed edge fn with a service-role client silently fails
+            // to deliver the bearer (mirror complete-review:310-322).
+            const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                apikey: SUPABASE_SERVICE_ROLE_KEY,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
                 type: 'role-changed',
                 to: userEmail,
                 data: {
@@ -550,8 +559,15 @@ serve(async (req) => {
                   newRole: updateData.role,
                   changedBy: profile.full_name || user.email,
                 },
-              },
+              }),
             });
+            if (!emailRes.ok) {
+              const errText = await emailRes.text().catch(() => '<unreadable>');
+              console.error(
+                `Failed to send role change notification (${emailRes.status}):`,
+                errText.substring(0, 500)
+              );
+            }
           } catch (emailError) {
             console.error('Failed to send role change notification:', emailError);
           }
@@ -563,8 +579,17 @@ serve(async (req) => {
         // Send account status change notification
         if (userEmail) {
           try {
-            await supabase.functions.invoke('send-email', {
-              body: {
+            // Raw fetch (not supabase.functions.invoke): the SDK's invoke from
+            // inside a deployed edge fn with a service-role client silently fails
+            // to deliver the bearer (mirror complete-review:310-322).
+            const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                apikey: SUPABASE_SERVICE_ROLE_KEY,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
                 type: updateData.is_active ? 'account-reactivated' : 'account-deactivated',
                 to: userEmail,
                 data: {
@@ -574,8 +599,15 @@ serve(async (req) => {
                     ? { reactivatedBy: profile.full_name || user.email }
                     : { deactivatedBy: profile.full_name || user.email }),
                 },
-              },
+              }),
             });
+            if (!emailRes.ok) {
+              const errText = await emailRes.text().catch(() => '<unreadable>');
+              console.error(
+                `Failed to send account status notification (${emailRes.status}):`,
+                errText.substring(0, 500)
+              );
+            }
           } catch (emailError) {
             console.error('Failed to send account status notification:', emailError);
           }
@@ -635,8 +667,17 @@ serve(async (req) => {
 
         if (userEmail) {
           try {
-            await supabase.functions.invoke('send-email', {
-              body: {
+            // Raw fetch (not supabase.functions.invoke): the SDK's invoke from
+            // inside a deployed edge fn with a service-role client silently fails
+            // to deliver the bearer (mirror complete-review:310-322).
+            const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                apikey: SUPABASE_SERVICE_ROLE_KEY,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
                 type: 'account-deactivated',
                 to: userEmail,
                 data: {
@@ -645,8 +686,15 @@ serve(async (req) => {
                   deactivatedBy: profile.full_name || user.email,
                   reason: 'Account deleted',
                 },
-              },
+              }),
             });
+            if (!emailRes.ok) {
+              const errText = await emailRes.text().catch(() => '<unreadable>');
+              console.error(
+                `Failed to send deletion notification (${emailRes.status}):`,
+                errText.substring(0, 500)
+              );
+            }
           } catch (emailError) {
             console.error('Failed to send deletion notification:', emailError);
           }
@@ -788,8 +836,17 @@ serve(async (req) => {
 
             if (userEmail) {
               try {
-                await supabase.functions.invoke('send-email', {
-                  body: {
+                // Raw fetch (not supabase.functions.invoke): the SDK's invoke from
+                // inside a deployed edge fn with a service-role client silently fails
+                // to deliver the bearer (mirror complete-review:310-322).
+                const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+                  method: 'POST',
+                  headers: {
+                    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                    apikey: SUPABASE_SERVICE_ROLE_KEY,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
                     type: willBeActive ? 'account-reactivated' : 'account-deactivated',
                     to: userEmail,
                     data: {
@@ -798,8 +855,15 @@ serve(async (req) => {
                         ? { reactivatedBy: profile.full_name || user.email }
                         : { deactivatedBy: profile.full_name || user.email }),
                     },
-                  },
+                  }),
                 });
+                if (!emailRes.ok) {
+                  const errText = await emailRes.text().catch(() => '<unreadable>');
+                  console.error(
+                    `Failed to send notification to ${userEmail} (${emailRes.status}):`,
+                    errText.substring(0, 500)
+                  );
+                }
               } catch (emailError) {
                 console.error(`Failed to send notification to ${userEmail}:`, emailError);
               }
