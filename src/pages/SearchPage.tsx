@@ -54,6 +54,7 @@ export const SearchPage: React.FC = () => {
   } = useLessonSearch({
     filters,
     pageSize: viewState.resultsPerPage,
+    sortBy: viewState.sortBy,
   });
 
   const lessons = (data?.pages || []).flatMap((p) => p.lessons);
@@ -115,7 +116,15 @@ export const SearchPage: React.FC = () => {
             view={effectiveView}
             density={density}
             allowSplit={isWide}
-            onSortChange={(sort) => setViewState({ sortBy: sort as ViewState['sortBy'] })}
+            // C58: keep `currentPage` in sync with the filter-change reset
+            // convention (src/stores/CLAUDE.md) — setViewState doesn't reset it on
+            // its own (unlike setFilters). The user-visible result reset is driven
+            // by `sortBy` being in the React Query key (useLessonSearch), which
+            // restarts the infinite query at page 0; this write keeps store state
+            // consistent for any future paginated consumer.
+            onSortChange={(sort) =>
+              setViewState({ sortBy: sort as ViewState['sortBy'], currentPage: 1 })
+            }
             onViewChange={(v) => setViewState({ view: v })}
             onDensityChange={(d) => setViewState({ density: d })}
             onOpenMobileFilters={() => setMobileFilterOpen(true)}

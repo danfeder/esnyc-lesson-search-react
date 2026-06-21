@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase', () => ({
 
 // Import after the mock is registered.
 import { useLessonSearch } from '@/hooks/useLessonSearch';
-import type { SearchFilters } from '@/types';
+import type { SearchFilters, ViewState } from '@/types';
 
 const EMPTY_FILTERS: SearchFilters = {
   query: '',
@@ -49,6 +49,18 @@ function createWrapper() {
 /** Render the hook and return the params object passed to supabase.rpc on the first call. */
 async function getRpcParams(filters: SearchFilters): Promise<Record<string, unknown>> {
   renderHook(() => useLessonSearch({ filters }), { wrapper: createWrapper() });
+  await waitFor(() => {
+    expect(rpcMock).toHaveBeenCalled();
+  });
+  return rpcMock.mock.calls[0][1] as Record<string, unknown>;
+}
+
+/** Like getRpcParams but threads an explicit sortBy through the hook. */
+async function getRpcParamsWithSort(
+  filters: SearchFilters,
+  sortBy: ViewState['sortBy']
+): Promise<Record<string, unknown>> {
+  renderHook(() => useLessonSearch({ filters, sortBy }), { wrapper: createWrapper() });
   await waitFor(() => {
     expect(rpcMock).toHaveBeenCalled();
   });
@@ -159,5 +171,53 @@ describe('useLessonSearch — keepPreviousData persistence (C59)', () => {
 
     // Cleanup: let the pending promise settle so the test runner doesn't hang.
     resolveSecond?.({ data: [makeRow('b', 1)], error: null });
+  });
+});
+
+describe('useLessonSearch — C58 sort wiring (order_by + queryKey)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    rpcMock.mockResolvedValue({ data: [], error: null });
+  });
+
+  it('passes the active sort through to the RPC as order_by', async () => {
+    const params = await getRpcParamsWithSort(makeFilters({ query: 'compost' }), 'title');
+    expect(params.order_by).toBe('title');
+  });
+
+  it('passes order_by="modified" when the modified sort is active', async () => {
+    const params = await getRpcParamsWithSort(makeFilters({ query: 'compost' }), 'modified');
+    expect(params.order_by).toBe('modified');
+  });
+
+  it('defaults order_by to relevance when no sort is supplied', async () => {
+    // The hook is called without a sortBy (parity with today's SearchPage
+    // before this wiring) — it should still send a defined relevance value.
+    const params = await getRpcParams(makeFilters({ query: 'compost' }));
+    expect(params.order_by).toBe('relevance');
+  });
+
+  it('refetches with the new order_by when the sort changes (sortBy is in the queryKey)', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null });
+
+    const { rerender } = renderHook(
+      ({ sortBy }: { sortBy: ViewState['sortBy'] }) =>
+        useLessonSearch({ filters: makeFilters({ query: 'compost' }), sortBy }),
+      { wrapper: createWrapper(), initialProps: { sortBy: 'relevance' as ViewState['sortBy'] } }
+    );
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledTimes(1);
+    });
+    expect((rpcMock.mock.calls[0][1] as Record<string, unknown>).order_by).toBe('relevance');
+
+    // A sort change must produce a NEW query (refetch) — only possible if sortBy
+    // participates in the queryKey.
+    rerender({ sortBy: 'title' as ViewState['sortBy'] });
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledTimes(2);
+    });
+    expect((rpcMock.mock.calls[1][1] as Record<string, unknown>).order_by).toBe('title');
   });
 });
