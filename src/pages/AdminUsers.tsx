@@ -310,8 +310,12 @@ export function AdminUsers() {
         if (user) {
           await supabase.from('user_management_audit').insert({
             actor_id: user.id,
-            action: action === 'activate' ? 'bulk_users_activated' : 'bulk_users_deactivated',
-            metadata: { userIds: selectedUsers, count: selectedUsers.length },
+            // Canonical audit-action vocab (matches the DB CHECK, AdminUserDetail's
+            // single-user path, and IntActivityTimeline). The legacy `bulk_users_*`
+            // values violate user_management_audit_action_check and were silently
+            // dropped; `bulk: true` in metadata distinguishes bulk from single rows.
+            action: action === 'activate' ? 'user_activated' : 'user_deactivated',
+            metadata: { userIds: selectedUsers, count: selectedUsers.length, bulk: true },
           });
         }
 
