@@ -281,7 +281,10 @@ export function AdminUsers() {
         } = await supabase.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
-        const response = await supabase.functions.invoke('user-management', {
+        // Invoke the bulk sub-route explicitly: the edge function routes by path
+        // (POST /users/bulk), so the subpath must be in the invoke target — a bare
+        // 'user-management' invoke hits the function's 404 fallback.
+        const response = await supabase.functions.invoke('user-management/users/bulk', {
           body: JSON.stringify({ action: 'delete', userIds: selectedUsers }),
           headers: { 'Content-Type': 'application/json' },
           method: 'POST',

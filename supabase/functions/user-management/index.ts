@@ -89,8 +89,18 @@ serve(async (req) => {
       });
     }
 
-    // Route handling
-    const pathParts = pathname.split('/').filter(Boolean);
+    // Route handling.
+    // Supabase serves this function under a path that still contains the
+    // function-name segment (e.g. `/user-management/users/bulk`), so the raw
+    // pathParts start with `user-management` and the REST sub-route checks below
+    // (which expect `users`/`schools` first) never matched — every call fell
+    // through to the 404 fallback. Resolve the route RELATIVE to the function name
+    // so the sub-routes match regardless of how the platform presents the prefix.
+    let pathParts = pathname.split('/').filter(Boolean);
+    const fnNameIdx = pathParts.indexOf('user-management');
+    if (fnNameIdx >= 0) {
+      pathParts = pathParts.slice(fnNameIdx + 1);
+    }
 
     // GET /schools - List all schools
     if (req.method === 'GET' && pathParts.length === 1 && pathParts[0] === 'schools') {
