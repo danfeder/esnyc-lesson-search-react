@@ -200,6 +200,7 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+          github-token: ${{ github.token }}
 
       - name: Deploy ${{ matrix.function }} to TEST
         # --no-verify-jwt: the Supabase edge runtime doesn't enforce a JWT
@@ -270,6 +271,7 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+          github-token: ${{ github.token }}
 
       - name: Deploy ${{ matrix.function }} to PROD
         # See deploy-test for --no-verify-jwt + env-passing rationale.
