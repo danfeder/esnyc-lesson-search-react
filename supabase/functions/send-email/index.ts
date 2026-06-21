@@ -80,28 +80,58 @@ serve(async (req) => {
     const { type, to, data } = (await req.json()) as EmailRequest;
     console.log('Email request:', { type, to, hasData: !!data });
 
-    // Password reset, role change, and account status emails don't require authentication
+    // Per-type auth gate (C133). Every type now requires an Authorization header.
+    // - Service-role bearer → allowed for ANY type (trusted backend callers).
+    // - Backend-only types from a non-service-role caller → rejected (closes the spoof hole).
+    // - Browser types (invitation, welcome) → require an admin/super_admin user JWT.
     let user = null;
-    if (
-      type !== 'password-reset' &&
-      type !== 'role-changed' &&
-      type !== 'account-deactivated' &&
-      type !== 'account-reactivated' &&
-      type !== 'submission-approved' &&
-      type !== 'submission-needs-revision' &&
-      type !== 'submission-rejected'
-    ) {
-      // Verify the request is authenticated
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'No authorization header' }), {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+
+    // Constant-time service-role check (mirror extract-google-doc:42-60).
+    const tokenBytes = new TextEncoder().encode(token);
+    const keyBytes = new TextEncoder().encode(SUPABASE_SERVICE_ROLE_KEY);
+    const isServiceRole =
+      tokenBytes.length === keyBytes.length &&
+      crypto.subtle.timingSafeEqual(tokenBytes, keyBytes);
+
+    // Email types only legitimately sent by trusted backend services (never a browser).
+    const SERVICE_ROLE_ONLY_TYPES = new Set([
+      'password-reset',
+      'password-changed',
+      'role-changed',
+      'account-deactivated',
+      'account-reactivated',
+      'submission-approved',
+      'submission-needs-revision',
+      'submission-rejected',
+    ]);
+    const ADMIN_JWT_TYPES = new Set(['invitation', 'welcome']);
+
+    // Reject unknown types explicitly (defense-in-depth; the LOCKED matrix covers
+    // exactly these two sets — anything else is a malformed request).
+    if (!SERVICE_ROLE_ONLY_TYPES.has(type) && !ADMIN_JWT_TYPES.has(type)) {
+      return new Response(JSON.stringify({ error: 'Unknown email type' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!isServiceRole) {
+      if (SERVICE_ROLE_ONLY_TYPES.has(type)) {
+        // Backend-only type from a non-service-role caller → reject (closes the spoof hole).
+        return new Response(JSON.stringify({ error: 'Insufficient permissions' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      // Get the JWT token and verify it
-      const token = authHeader.replace('Bearer ', '');
+      // Browser types (invitation, welcome) require an admin/super_admin user JWT.
       const {
         data: { user: authUser },
         error: authError,

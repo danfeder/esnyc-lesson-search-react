@@ -164,16 +164,32 @@ serve(async (req) => {
 
       // Send password reset email
       try {
-        await supabase.functions.invoke('send-email', {
-          body: {
+        // Raw fetch (not supabase.functions.invoke): the SDK's invoke from inside
+        // a deployed edge fn with a service-role client silently fails to deliver
+        // the bearer (mirror complete-review:310-322).
+        const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             type: 'password-reset',
             to: email,
             data: {
               resetUrl: data.properties.action_link,
               recipientName: profile.full_name,
             },
-          },
+          }),
         });
+        if (!emailRes.ok) {
+          const errText = await emailRes.text().catch(() => '<unreadable>');
+          console.error(
+            `Failed to send password reset email (${emailRes.status}):`,
+            errText.substring(0, 500)
+          );
+        }
       } catch (emailError) {
         console.error('Failed to send password reset email:', emailError);
         // Don't fail the request if email fails
@@ -220,7 +236,7 @@ serve(async (req) => {
         });
       }
 
-      const { userId, email, name } = (await req.json()) as PasswordChangeNotification;
+      const { userId } = (await req.json()) as PasswordChangeNotification;
 
       // Only allow users to send notifications for themselves or admins to send for anyone
       const { data: profile } = await supabase
@@ -238,17 +254,55 @@ serve(async (req) => {
         });
       }
 
+      // Resolve the recipient SERVER-SIDE from userId — never trust caller-supplied
+      // email/name. Otherwise any authenticated user could send a spoofed
+      // "password changed" security notice to an arbitrary inbox. The 403 guard
+      // above already restricts non-admins to their own id.
+      const targetUserId = isAdmin ? userId : user.id;
+      const { data: emailData, error: emailLookupError } = await supabase.rpc('get_user_emails', {
+        user_ids: [targetUserId],
+      });
+      const targetEmail = emailData?.[0]?.email;
+      if (emailLookupError || !targetEmail) {
+        return new Response(JSON.stringify({ error: 'Target user email not found' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: targetProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('id', targetUserId)
+        .single();
+      const targetName = targetProfile?.full_name ?? targetEmail;
+
       // Send password changed notification email
       try {
-        await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'password-changed',
-            to: email,
-            data: {
-              recipientName: name,
-            },
+        // Raw fetch (not supabase.functions.invoke): the SDK's invoke from inside
+        // a deployed edge fn with a service-role client silently fails to deliver
+        // the bearer (mirror complete-review:310-322).
+        const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            type: 'password-changed',
+            to: targetEmail,
+            data: {
+              recipientName: targetName,
+            },
+          }),
         });
+        if (!emailRes.ok) {
+          const errText = await emailRes.text().catch(() => '<unreadable>');
+          console.error(
+            `Failed to send password changed email (${emailRes.status}):`,
+            errText.substring(0, 500)
+          );
+        }
       } catch (emailError) {
         console.error('Failed to send password changed email:', emailError);
       }
@@ -257,8 +311,8 @@ serve(async (req) => {
       await supabase.from('user_management_audit').insert({
         actor_id: user.id,
         action: 'password_changed',
-        target_user_id: userId,
-        target_email: email,
+        target_user_id: targetUserId,
+        target_email: targetEmail,
       });
 
       return new Response(JSON.stringify({ success: true }), {
