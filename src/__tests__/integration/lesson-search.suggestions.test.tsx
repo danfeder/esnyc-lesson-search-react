@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock Supabase client (rpc for search list; functions.invoke for smart-search suggestions)
 const rpcMock = vi.fn();
@@ -19,18 +19,29 @@ vi.mock('@/lib/supabase', () => ({
 
 // Import after mocks
 import { SearchPage } from '@/pages/SearchPage';
-import { useSearchStore } from '@/stores/searchStore';
+import { useSearchStore, initialFilters } from '@/stores/searchStore';
+import { buildSearchParams } from '@/utils/urlParams';
+import type { SearchFilters, ViewState } from '@/types';
 import { makeRpcRow, makeSmartSearchPayload } from '@/__tests__/helpers/factories';
 
-function renderWithProviders(ui: React.ReactElement) {
+// W1c: SearchPage mounts useUrlSync and hydrates filters from the URL on mount.
+// Render inside a Router and seed the starting query via the URL (a pre-render
+// store.setFilters would be cleared by the empty-URL mount pass).
+function renderWithProviders(ui: React.ReactElement, initialEntries: string[] = ['/']) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   );
+}
+
+function searchUrl(filters: Partial<SearchFilters>, sortBy: ViewState['sortBy'] = 'relevance') {
+  const params = buildSearchParams({ ...initialFilters, ...filters }, sortBy);
+  const qs = params.toString();
+  return qs ? `/?${qs}` : '/';
 }
 
 describe('Search suggestions integration', () => {
@@ -64,11 +75,8 @@ describe('Search suggestions integration', () => {
         error: null,
       });
 
-    // Seed a query so suggestions are enabled
-    const store = useSearchStore.getState();
-    store.setFilters({ query: 'no-result' });
-
-    renderWithProviders(<SearchPage />);
+    // Seed a query (via the URL) so suggestions are enabled after hydration.
+    renderWithProviders(<SearchPage />, [searchUrl({ query: 'no-result' })]);
 
     // Ensure smart-search was called to populate suggestions
     await waitFor(() => expect(invokeMock).toHaveBeenCalled());

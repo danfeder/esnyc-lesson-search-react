@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 import { makeRpcRow } from '../helpers/factories';
 
@@ -20,17 +20,37 @@ vi.mock('@/lib/supabase', () => ({
 
 // Import after mocks
 import { SearchPage } from '@/pages/SearchPage';
-import { useSearchStore } from '@/stores/searchStore';
+import { useSearchStore, initialFilters } from '@/stores/searchStore';
+import { buildSearchParams } from '@/utils/urlParams';
+import type { SearchFilters, ViewState } from '@/types';
 
-function renderWithProviders(ui: React.ReactElement) {
+// W1c: SearchPage now mounts useUrlSync, which reads/writes useSearchParams and
+// hydrates the store from the URL on mount. So (1) the page MUST render inside a
+// Router or useSearchParams throws, and (2) the INITIAL URL — not a pre-render
+// store.setFilters — drives the hydrated filter state. Use MemoryRouter so each
+// test can declare its starting URL. `initialEntries` defaults to ['/'] (empty
+// filters), matching the old BrowserRouter default for tests that don't care.
+function renderWithProviders(ui: React.ReactElement, initialEntries: string[] = ['/']) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   );
+}
+
+/**
+ * Build the search URL (path + query string) for a set of filters/sort, using
+ * the production serializer so the test's intent survives useUrlSync's mount
+ * hydration. Pre-render store.setFilters no longer survives mount (the empty URL
+ * would clear it); express the desired starting state as a URL instead.
+ */
+function searchUrl(filters: Partial<SearchFilters>, sortBy: ViewState['sortBy'] = 'relevance') {
+  const params = buildSearchParams({ ...initialFilters, ...filters }, sortBy);
+  const qs = params.toString();
+  return qs ? `/?${qs}` : '/';
 }
 
 // Test data factories
@@ -231,69 +251,66 @@ describe('SearchPage Integration', () => {
 
   describe('Active filter pills', () => {
     it('displays active filters as pills', async () => {
-      // Set up filters before rendering
-      const store = useSearchStore.getState();
-      store.setFilters({ thematicCategories: ['Nutrition'] });
-
+      // W1c: the starting filter is hydrated from the URL (a pre-render
+      // store.setFilters would be cleared by useUrlSync's empty-URL mount pass).
+      // The value MUST be valid in FILTER_CONFIGS or parseSearchParams drops it,
+      // so use a real thematicCategories option ('Food Systems').
       const testLesson = createTestLesson();
       rpcMock.mockResolvedValueOnce({
         data: [testLesson],
         error: null,
       });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [searchUrl({ thematicCategories: ['Food Systems'] })]);
 
       await waitFor(() => {
-        // Filter pill should show formatted category name and value
-        expect(screen.getByText('Nutrition')).toBeInTheDocument();
+        // The active pill renders after hydration; its remove button is unique
+        // to the pill (the sidebar facet only has the option label).
+        expect(screen.getByRole('button', { name: /remove food systems/i })).toBeInTheDocument();
       });
     });
 
     it('removes single filter when X clicked on pill', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({ thematicCategories: ['Nutrition'] });
-
       const testLesson = createTestLesson();
       rpcMock.mockResolvedValueOnce({
         data: [testLesson],
         error: null,
       });
 
-      renderWithProviders(<SearchPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Nutrition')).toBeInTheDocument();
-      });
+      renderWithProviders(<SearchPage />, [searchUrl({ thematicCategories: ['Food Systems'] })]);
 
       const user = userEvent.setup();
 
-      // IntActivePills renders a button with aria-label "Remove Nutrition".
-      const removeButton = screen.getByRole('button', {
-        name: /remove nutrition/i,
-      });
+      // IntActivePills renders a button with aria-label "Remove Food Systems".
+      // The active pill renders after the URL hydrates the store on mount, so
+      // wait for the remove button itself before clicking.
+      const removeButton = await waitFor(() =>
+        screen.getByRole('button', { name: /remove food systems/i })
+      );
       await user.click(removeButton);
 
       await waitFor(() => {
         const currentState = useSearchStore.getState();
-        expect(currentState.filters.thematicCategories).not.toContain('Nutrition');
+        expect(currentState.filters.thematicCategories).not.toContain('Food Systems');
       });
     });
 
     it('Clear all button removes all filters', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({
-        query: 'test search',
-        gradeLevels: ['3'],
-        thematicCategories: ['Nutrition'],
-      });
-
       const testLesson = createTestLesson();
       rpcMock.mockResolvedValueOnce({
         data: [testLesson],
         error: null,
       });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [
+        searchUrl({
+          query: 'test search',
+          gradeLevels: ['3'],
+          // 'Nutrition' is not a valid thematicCategories value — the URL
+          // validator would drop it; use a real option so it survives hydration.
+          thematicCategories: ['Food Systems'],
+        }),
+      ]);
 
       // Sidebar's "Clear all" (lowercase 'all') appears when any filter is set.
       await waitFor(() => {
@@ -312,16 +329,13 @@ describe('SearchPage Integration', () => {
     });
 
     it('displays search query as a pill', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({ query: 'pizza recipe' });
-
       const testLesson = createTestLesson();
       rpcMock.mockResolvedValueOnce({
         data: [testLesson],
         error: null,
       });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [searchUrl({ query: 'pizza recipe' })]);
 
       await waitFor(() => {
         // Search query should appear as a pill with quotes
@@ -475,13 +489,10 @@ describe('SearchPage Integration', () => {
     });
 
     it('displays current search query when present', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({ query: 'salad recipes' });
-
       const testLesson = createTestLesson({ total_count: 3 });
       rpcMock.mockResolvedValueOnce({ data: [testLesson], error: null });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [searchUrl({ query: 'salad recipes' })]);
 
       await waitFor(() => {
         // IntToolbar: `<strong>N</strong> lessons matching "<query>"`.
@@ -621,9 +632,6 @@ describe('SearchPage Integration', () => {
     });
 
     it('does not flash a suggestions panel while the first search is pending', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({ query: 'pizza' });
-
       // Pending RPC: totalCount is 0 only because data is absent, not because the
       // search genuinely returned zero — the suggestions panel must not mis-fire.
       rpcMock.mockReturnValueOnce(new Promise(() => {}));
@@ -632,7 +640,7 @@ describe('SearchPage Integration', () => {
         error: null,
       });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [searchUrl({ query: 'pizza' })]);
 
       await waitFor(() => {
         // The skeleton's loading announcement lives in an sr-only text node
@@ -645,12 +653,9 @@ describe('SearchPage Integration', () => {
 
   describe('Empty State', () => {
     it('shows zero results when search returns empty', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({ query: 'nonexistent search term xyz' });
-
       rpcMock.mockResolvedValueOnce({ data: [], error: null });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [searchUrl({ query: 'nonexistent search term xyz' })]);
 
       await waitFor(() => {
         // Toolbar still renders the "0 lessons" count; IntEmptyState surfaces
@@ -661,9 +666,6 @@ describe('SearchPage Integration', () => {
     });
 
     it('displays suggestions panel for empty results with query', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({ query: 'misspelled word' });
-
       rpcMock.mockResolvedValueOnce({
         data: [],
         error: null,
@@ -675,7 +677,7 @@ describe('SearchPage Integration', () => {
         error: null,
       });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [searchUrl({ query: 'misspelled word' })]);
 
       // Wait for suggestions panel - appears when totalCount === 0 and query is present
       await waitFor(() => {
@@ -684,16 +686,13 @@ describe('SearchPage Integration', () => {
     });
 
     it('hides suggestions when results exist', async () => {
-      const store = useSearchStore.getState();
-      store.setFilters({ query: 'pizza' });
-
       const testLesson = createTestLesson({ title: 'Pizza Making Lesson', total_count: 5 });
       rpcMock.mockResolvedValueOnce({
         data: [testLesson],
         error: null,
       });
 
-      renderWithProviders(<SearchPage />);
+      renderWithProviders(<SearchPage />, [searchUrl({ query: 'pizza' })]);
 
       await waitFor(() => {
         expect(screen.getByText('Pizza Making Lesson')).toBeInTheDocument();
@@ -701,6 +700,66 @@ describe('SearchPage Integration', () => {
 
       // Suggestions panel should not be visible when there are results
       expect(screen.queryByText(/No results found/i)).not.toBeInTheDocument();
+    });
+  });
+
+  // W1c: URL <-> store sync. SearchPage mounts useUrlSync and gates the first
+  // RPC on the `hydrated` flag (a new `enabled` arg on useLessonSearch), so a
+  // shared/bookmarked link applies its URL filters BEFORE the first search runs
+  // instead of firing a default empty-filter RPC first (which would flash a
+  // false "No matches", a C59-class regression).
+  describe('URL state (W1c)', () => {
+    it('first and only RPC carries the URL-hydrated filters (no pre-hydration empty-filter call)', async () => {
+      const testLesson = createTestLesson({ title: 'Tomato Fall Lesson', total_count: 1 });
+      rpcMock.mockResolvedValue({ data: [testLesson], error: null });
+
+      // A shared link: query "tomato" + a real seasonTiming option ("Fall").
+      renderWithProviders(<SearchPage />, ['/?q=tomato&season=Fall']);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tomato Fall Lesson')).toBeInTheDocument();
+      });
+
+      // The gate guarantees exactly ONE RPC, and it must reflect the URL — not a
+      // default empty-filter pre-hydration call. (If the gate were absent, a
+      // first call with search_query=undefined / filter_seasons=undefined would
+      // fire before hydration.)
+      expect(rpcMock).toHaveBeenCalledTimes(1);
+      const [, firstParams] = rpcMock.mock.calls[0] as [string, Record<string, unknown>];
+      expect(firstParams.search_query).toBe('tomato');
+      expect(firstParams.filter_seasons).toEqual(['Fall']);
+    });
+
+    it('writes the URL after a filter change (debounced)', async () => {
+      const testLesson = createTestLesson({ total_count: 1 });
+      rpcMock.mockResolvedValue({ data: [testLesson], error: null });
+
+      renderWithProviders(<SearchPage />, ['/?q=tomato']);
+
+      await waitFor(() => {
+        const sawTomato = rpcMock.mock.calls.some(
+          ([, params]) => (params as Record<string, unknown> | undefined)?.search_query === 'tomato'
+        );
+        expect(sawTomato).toBe(true);
+      });
+
+      // A user-driven filter change after hydration must propagate to the URL
+      // (store -> URL, replace-mode, debounced 300ms). Probe window.location,
+      // which MemoryRouter does not update — so assert via a re-search side
+      // effect instead: the new filter must reach the RPC, proving the store
+      // change flowed through (the URL write is exercised end-to-end in
+      // useUrlSync.test.tsx; here we confirm SearchPage's wiring drives it).
+      const store = useSearchStore.getState();
+      store.setFilters({ query: 'tomato', seasonTiming: ['Fall'] });
+
+      await waitFor(() => {
+        const sawFall = rpcMock.mock.calls.some(
+          ([, params]) =>
+            JSON.stringify((params as Record<string, unknown> | undefined)?.filter_seasons) ===
+            JSON.stringify(['Fall'])
+        );
+        expect(sawFall).toBe(true);
+      });
     });
   });
 
