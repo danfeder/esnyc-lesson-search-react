@@ -70,7 +70,10 @@ export function buildSearchParams(
 ): URLSearchParams {
   const params = new URLSearchParams();
 
-  const query = (filters.query ?? '').trim();
+  // Apply the same caps on the OUTBOUND path as parseSearchParams does inbound,
+  // so the app can never emit a URL longer than it will accept on read (keeps
+  // shared links bounded for pathological input).
+  const query = (filters.query ?? '').slice(0, MAX_PARAM_LENGTH).trim();
   if (query) {
     params.set(FILTER_TO_PARAM.query, query);
   }
@@ -78,7 +81,7 @@ export function buildSearchParams(
   for (const key of ARRAY_FILTER_KEYS) {
     const arr = filters[key];
     if (arr && arr.length > 0) {
-      params.set(FILTER_TO_PARAM[key], arr.join(','));
+      params.set(FILTER_TO_PARAM[key], arr.slice(0, MAX_ARRAY_LENGTH).join(','));
     }
   }
 
@@ -92,8 +95,14 @@ export function buildSearchParams(
 
 /**
  * Collect every valid value for a filter, including nested children for
- * hierarchical filters (culturalHeritage walks `options[].children` recursively)
- * and grade group ids (`groups[].id`).
+ * hierarchical filters (culturalHeritage walks `options[].children` recursively).
+ *
+ * Grade group ids (`gradeLevels.groups[].id`, e.g. `lower-elementary`) are
+ * deliberately NOT included: the sidebar only ever emits individual grade
+ * option values (K/1/3…) into `filters.gradeLevels`, and the search RPC matches
+ * lessons by those individual grades — a group id would match nothing. Accepting
+ * one from a hand-crafted URL would store a valid-looking value that silently
+ * returns zero results, so we drop it on parse (→ graceful "no grade filter").
  */
 function validValuesForFilter(filterKey: keyof SearchFilters): Set<string> | null {
   const config = FILTER_CONFIGS[filterKey];
@@ -110,12 +119,6 @@ function validValuesForFilter(filterKey: keyof SearchFilters): Set<string> | nul
     }
   };
   addOptions(config.options);
-
-  if (config.groups) {
-    for (const group of config.groups) {
-      valid.add(group.id);
-    }
-  }
 
   return valid;
 }

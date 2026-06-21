@@ -72,6 +72,18 @@ describe('buildSearchParams', () => {
     expect(params.has('grades')).toBe(false);
   });
 
+  it('caps the query at MAX_PARAM_LENGTH on build (outbound symmetry with parse)', () => {
+    const longQuery = 'a'.repeat(MAX_PARAM_LENGTH + 100);
+    const params = buildSearchParams({ ...emptyFilters, query: longQuery }, 'relevance');
+    expect(params.get('q')!.length).toBe(MAX_PARAM_LENGTH);
+  });
+
+  it('caps array filters at MAX_ARRAY_LENGTH on build (outbound symmetry with parse)', () => {
+    const many = Array.from({ length: MAX_ARRAY_LENGTH + 10 }, (_, i) => `v${i}`);
+    const params = buildSearchParams({ ...emptyFilters, gradeLevels: many }, 'relevance');
+    expect(params.get('grades')!.split(',').length).toBe(MAX_ARRAY_LENGTH);
+  });
+
   it('omits the default sort (relevance) from the URL', () => {
     const params = buildSearchParams(emptyFilters, 'relevance');
     expect(params.has('sort')).toBe(false);
@@ -156,9 +168,12 @@ describe('parseSearchParams', () => {
     expect(filters.culturalHeritage).toEqual(['mexican']);
   });
 
-  it('accepts a grade group id as a valid grade value', () => {
+  it('drops a grade group id (only individual grade values are URL-valid)', () => {
+    // The sidebar only emits individual grades (K/1/3…); the RPC matches lessons
+    // by those, so a group id (lower-elementary) would silently return zero
+    // results. We drop it on parse → graceful "no grade filter" instead.
     const { filters } = parseSearchParams(new URLSearchParams('grades=lower-elementary'));
-    expect(filters.gradeLevels).toEqual(['lower-elementary']);
+    expect(filters.gradeLevels).toBeUndefined();
   });
 
   it('caps the query at MAX_PARAM_LENGTH characters', () => {
