@@ -43,6 +43,11 @@ interface SearchState {
   setFilters: (filters: Partial<SearchFilters>) => void;
   clearFilters: () => void;
   setViewState: (viewState: Partial<ViewState>) => void;
+  // Atomic URL → store hydration (W1c): fully REPLACES filters (fields absent
+  // from the URL reset to their empty default — so Back-to-unfiltered clears
+  // stale filters that a partial setFilters merge would keep) and applies
+  // sort + page reset in ONE write (one render, one query-key change).
+  hydrateUrlState: (urlFilters: Partial<SearchFilters>, sortBy: ViewState['sortBy']) => void;
 
   // Filter helpers
   addFilter: (key: keyof SearchFilters, value: string) => void;
@@ -50,7 +55,9 @@ interface SearchState {
   toggleFilter: (key: keyof SearchFilters, value: string) => void;
 }
 
-const initialFilters: SearchFilters = {
+// Exported so the URL-sync hook (useUrlSync) can build a COMPLETE SearchFilters
+// from an incoming URL's validated partial when canonicalizing for the loop guard.
+export const initialFilters: SearchFilters = {
   query: '',
   gradeLevels: [],
   thematicCategories: [],
@@ -101,6 +108,14 @@ export const useSearchStore = create<SearchState>()(
         setViewState: (newViewState) =>
           set((state) => ({
             viewState: { ...state.viewState, ...newViewState },
+          })),
+
+        hydrateUrlState: (urlFilters, sortBy) =>
+          set((state) => ({
+            // FULL replace — fields absent from the URL reset to empty.
+            filters: { ...initialFilters, ...urlFilters },
+            // filters + sort + page in ONE write (one render).
+            viewState: { ...state.viewState, sortBy, currentPage: 1 },
           })),
 
         // Filter helpers
