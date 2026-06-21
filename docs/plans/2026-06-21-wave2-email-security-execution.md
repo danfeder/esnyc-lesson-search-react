@@ -173,8 +173,8 @@ Wave 1 (public UX) shipped the only theme a teacher sees. Wave 2 is the highest-
 **Last updated:** 2026-06-21 by Session 2 (PR1 Tasks 1.1–1.3 coded + verified; pre-push gate next).
 
 ### Current State
-**Active PR:** PR1 — C137 user-delete crash (code DONE + both pre-push gates passed; pushing/PR'ing).
-**Current task:** Task 1.4 — pushing → `gh pr create` → external-bot triage → PROD deploy approval → 3-signal + TEST-DB verify. Tasks 1.1/1.2/1.3 ✅ coded + supervisor-verified; pre-push GATE 3 (Codex + Claude reviewer) ✅ done, fix-ups folded.
+**Active PR:** PR1 — C137 user-delete crash → **PR #527 OPEN** (https://github.com/danfeder/esnyc-lesson-search-react/pull/527).
+**Current task:** Task 1.4 — awaiting external bots → four-surface triage (`/pr-triage 527`) → PROD deploy approval → 3-signal + TEST-DB verify. Tasks 1.1/1.2/1.3 ✅ coded + supervisor-verified; pre-push GATE 3 (Codex + Claude reviewer) ✅ done, fix-ups folded.
 **Branch:** `fix/wave2-c137-user-delete-crash`.
 **Last commit on branch:** `2353194` (pre-push gate fix-up) → `1c1bd40` (audit-enum fold-in) → `5a1c675` (C137 main fix) → `51e72a6` (scaffold).
 **Pre-push gates:** Claude code-reviewer = clean/safe-to-push. Codex GATE 3 = 1 HIGH (pre-read error discarded → silent 200) + 1 MEDIUM (truthful affected count) — both folded into `2353194`; rejected the 500-on-zero-matched-rows suggestion (idempotent no-op, documented).
