@@ -14,6 +14,14 @@ interface UseLessonSearchOptions {
    * client-side mapping is needed. Defaults to relevance.
    */
   sortBy?: ViewState['sortBy'];
+  /**
+   * W1c: SearchPage passes `hydrated` (from useUrlSync) so a shared/bookmarked
+   * link doesn't fire a default empty-filter RPC before the URL has been applied
+   * to the store (which would flash a false "No matches"). Defaults to `true`
+   * for back-compat with every existing caller/test that doesn't pass it — those
+   * behave exactly as before (always enabled).
+   */
+  enabled?: boolean;
 }
 
 interface ConfidenceScores {
@@ -97,6 +105,7 @@ export function useLessonSearch({
   filters,
   pageSize = 20,
   sortBy = 'relevance',
+  enabled = true,
 }: UseLessonSearchOptions) {
   const rpcName = getSearchRpcName();
 
@@ -111,6 +120,10 @@ export function useLessonSearch({
 
   return useInfiniteQuery<PageResult, Error>({
     queryKey: ['lesson-search', rpcName, filters, sortBy, pageSize],
+    // W1c: when disabled (SearchPage's pre-hydration window) the query stays in
+    // `status:'pending'` (TanStack v5) without fetching, so SearchPage's C59
+    // skeleton branch wins over a false "No matches" until hydration enables it.
+    enabled,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((sum, p) => sum + p.lessons.length, 0);
@@ -142,7 +155,6 @@ export function useLessonSearch({
           ? filters.socialEmotionalLearning
           : undefined,
         filter_cooking_method: filters.cookingMethods?.length ? filters.cookingMethods : undefined,
-        filter_tags: filters.tags?.length ? filters.tags : undefined,
         // C58: pass the active sort straight through; the RPC's ELSE→relevance
         // branch safely handles any stale value (e.g. a persisted 'grade').
         order_by: sortBy,

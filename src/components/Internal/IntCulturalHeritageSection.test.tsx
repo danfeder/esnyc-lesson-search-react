@@ -12,7 +12,6 @@ import type { FacetCounts } from '@/utils/facetCounts';
 function makeCounts(culturalHeritage: Record<string, number> = {}): FacetCounts {
   return {
     gradeLevels: {},
-    tags: {},
     activityType: {},
     location: {},
     thematicCategories: {},

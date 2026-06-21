@@ -8,7 +8,6 @@ import { aliasToSlug, ancestorsBySlug } from '@/utils/heritageAncestry.generated
  */
 export type FacetFilterKey =
   | 'gradeLevels'
-  | 'tags'
   | 'activityType'
   | 'location'
   | 'thematicCategories'
@@ -43,7 +42,6 @@ const ACTIVITY_TYPE_SLUG_BY_NOUN: Record<string, string> = {
 
 const EMPTY_COUNTS = (): FacetCounts => ({
   gradeLevels: {},
-  tags: {},
   activityType: {},
   location: {},
   thematicCategories: {},
@@ -60,15 +58,6 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
   switch (key) {
     case 'gradeLevels':
       return lesson.gradeLevels ?? [];
-    case 'tags':
-      // `tags` is a top-level lessons column not currently exposed by the
-      // search_lessons RPC RETURNS TABLE, so we have no per-row signal here.
-      // Filter still works (RPC applies WHERE clause); badge counts stay 0
-      // until a follow-up exposes tags in the result shape. Mirrors the
-      // pre-existing Activity Type facet badge limitation.
-      // TODO: tracked in docs/plans/2026-05-03-metadata-rebuild-foundation-execution-status.md
-      // → "Out-of-scope follow-ups captured here" → "Lesson Type (tags) facet count badge always shows 0".
-      return [];
     case 'activityType':
       // Map each stored noun → its sidebar slug so the badge lookup hits;
       // verbatim fallback for unknowns (no `'both'` fan-out — see C69).
@@ -98,7 +87,6 @@ function valuesForKey(lesson: Lesson, key: FacetFilterKey): string[] {
 
 const KEYS: readonly FacetFilterKey[] = [
   'gradeLevels',
-  'tags',
   'activityType',
   'location',
   'thematicCategories',

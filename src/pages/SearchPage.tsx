@@ -16,6 +16,7 @@ import {
   IntToolbar,
 } from '@/components/Internal';
 import { useSearchStore } from '@/stores/searchStore';
+import { useUrlSync } from '@/hooks/useUrlSync';
 import { useLessonSearch } from '@/hooks/useLessonSearch';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -39,6 +40,14 @@ export const SearchPage: React.FC = () => {
   const setViewState = useSearchStore((s) => s.setViewState);
   const setFilters = useSearchStore((s) => s.setFilters);
 
+  // W1c: two-way URL <-> store sync (query + filters + sort), making the public
+  // search shareable/bookmarkable/refresh-surviving. `hydrated` is false until
+  // the first URL->store pass runs; gating the query below on it means a shared
+  // link applies its filters BEFORE the first RPC fires (no default empty-filter
+  // call, no false "No matches" flash). An empty URL still flips hydrated=true
+  // (with default filters) on mount, so the gate opens after exactly one pass.
+  const { hydrated } = useUrlSync();
+
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isMobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -55,6 +64,10 @@ export const SearchPage: React.FC = () => {
     filters,
     pageSize: viewState.resultsPerPage,
     sortBy: viewState.sortBy,
+    // Gate the first query on hydration (see useUrlSync above). While disabled
+    // the query is `status:'pending'` so the C59 skeleton — not IntEmptyState —
+    // shows during the brief disabled+hydrating window.
+    enabled: hydrated,
   });
 
   const lessons = (data?.pages || []).flatMap((p) => p.lessons);

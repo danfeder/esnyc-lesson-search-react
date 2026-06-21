@@ -29,8 +29,9 @@
 |---|---|---|---|---|
 | 1 | W1a-cosmetic-a11y | `feat/theme-b-w1a-cosmetic-a11y` | C57, §3.2 checkbox-a11y, copy/a11y one-liners, C69, C84-suppress, §4.8 toolbar-overflow | Near-zero risk. CSS + small TS + facet map. No DB. |
 | 2 | W1a-behavior | `feat/theme-b-w1a-behavior` | C59 (+ new `IntListSkeleton`), C14, C79, §3.4 split-view (+ new `useMediaQuery`) | Low risk. Net-new components + first `keepPreviousData`. No DB. |
-| 3 | W1b-search-rpc | `feat/theme-b-w1b-search-rpc` | C136, C58, C11, location-Both, C84 path-a | **SKELETON — lock §4 Q1–Q5 at PR-cycle start.** Migration, TEST-DB-gated. |
-| 4 | W1c-url-state | `feat/theme-b-w1c-url-state` | C114/C157 | **SKELETON — lock §4 Q6–Q8 at PR-cycle start.** Pure-frontend. |
+| 3a | W1b-search-rpc | `feat/theme-b-w1b-search-rpc` | C136, C58 (server), C11, location-Both | **SHIPPED** #524 → `3c592b1` (C84 tags deferred). Migration, TEST-DB-gated. |
+| 3b | W1b sort wiring | `feat/theme-b-w1b-sort-frontend` | C58 (client) | **SHIPPED** #525 → `5197069`. Pure-frontend. |
+| 4 | W1c-url-state | `feat/theme-b-w1c-url-state` | C114/C157 | **LOCKED 2026-06-20 — §4 Q6–Q8 resolved; tasks 4.1–4.3 below.** Pure-frontend (query+filters+sort in URL). |
 
 ---
 
@@ -410,20 +411,141 @@ hide the SPLIT control there. Design: 2026-06-20-theme-b-public-ux-design.md §5
 
 ---
 
-## PR 4 — W1c-url-state  *(SKELETON — author tasks after locking §4 Q6–Q8)*
+## PR 4 — W1c-url-state  *(LOCKED 2026-06-20 — §4 Q6–Q8 resolved; tasks authored below)*
 
 **Branch:** `feat/theme-b-w1c-url-state`
 
-**What ships (scope):** URL persistence for query + filters (shareable/bookmarkable/refresh-surviving), serializing multi-select + hierarchical-heritage filters.
+**What ships (scope):** URL persistence for query + filters + **`sortBy`** (shareable / bookmarkable / refresh-surviving), serializing multi-select + hierarchical-heritage filters. **No lesson deep-linking** (deferred — §4 Q7). No migration, no RLS change → deploy-preview + manual smoke only.
 
-> **Design-lock work.** Lock §4 Q6–Q8 first (resume-vs-restart the WIP; scope incl. sort/deep-linking; replace-vs-push). The `feat/url-persistence` WIP (`e6610678`) is a review-hardened **reference** (sync-loop prevention, hierarchical-heritage validation, debounce already solved correctly) but is NOT mergeable (drops `lessonFormat`, omits `tags`, 340 commits behind). Default: cherry-pick `urlParams.ts` + `useUrlSync.ts` as reference, rewrite the field mapping against current `SearchFilters`.
+> **🔒 §4 Q6–Q8 LOCKED 2026-06-20** (rationale in design §4). **Q6 = WRITE FRESH** — author `urlParams.ts` + `useUrlSync.ts` NEW against the current shapes; the `feat/url-persistence` WIP (`e6610678`) is a **read-only pattern reference, NOT a base** (Codex found its loop guard has a latent back/forward bug + its tests never assert the URL; it also drops `lessonFormat`, omits `tags`, is 346 commits behind). **Q7 = query + filters + `sortBy`**; lesson deep-linking deferred. **Q8 = `replace`** history mode. **Codex-named guards baked into the tasks below:** zero `lessonFormat` references; add `tags`; sort hydration via `setViewState({ sortBy, currentPage: 1 })`; test real back/forward AND assert the URL (not just store state); validate against `FILTER_CONFIGS` incl. recursive heritage children; whitelist sort to `relevance`/`title`/`modified`.
 
 **Pre-flight reads (when this PR begins):**
 - `src/stores/searchStore.ts` (partialize ~178-185 — only view/density persist today)
 - `src/App.tsx` (routes ~96-97 — no `/lesson/:id`), `src/types/index.ts` (`SearchFilters` ~51-64), `src/utils/filterDefinitions.ts` (hierarchical heritage ~130-137)
 - WIP branch: `git show origin/feat/url-persistence:src/utils/urlParams.ts` + `:src/hooks/useUrlSync.ts` + `:src/utils/urlParams.test.ts` + `:src/hooks/useUrlSync.test.tsx` + the design doc `:docs/plans/2025-12-21-url-persistence-design.md` (all branch-only).
 
-### Task 4.x: <!-- TBD — authored after §4 Q6–Q8 lock -->
+> **GATE 1B hardening (Codex plan review, 2026-06-20 — folded before any code).** Caught a BLOCKER + HIGHs, now baked into the tasks: **(1)** URL→store hydration must FULLY replace filters — a partial `setFilters` merge wouldn't clear filters absent from the URL, so Back-to-unfiltered would keep stale filters and the hook would re-write them → new atomic **`hydrateUrlState(partial, sortBy)`** store action (also makes filters+sort+page ONE write, killing the double-render). **(2)** Gate the first query on a **`hydrated`** flag + a new `enabled` arg on `useLessonSearch`, so a shared link doesn't fire a default empty-filter RPC before hydration (a C59-class false-"No matches" flash). **(3)** One-use `lastWrittenRef` token + a single **`canonicalSearchString()`** used on both equality sides. **(4)** Tests: StrictMode double-mount, `createMemoryRouter` history-instrumented `replace` proof, and empty/malformed/clean-after-active all CLEARing the store. Scope grows to `searchStore.ts` (4.2) + `useLessonSearch.ts` (4.3). *(Note: query already has a 300ms input debounce in `Header.tsx` → the URL trails a typed query by ~600ms; intentional — the URL is for sharing after typing, not keystroke-live.)*
+
+### Task 4.1: URL serialization — `urlParams.ts` (query + filters + sort schema)
+
+**Sub-skill:** `superpowers:test-driven-development`
+
+**Reference first (read, do NOT copy — Q6 = write fresh):** `git show origin/feat/url-persistence:src/utils/urlParams.ts` and `:src/utils/urlParams.test.ts`. Useful proven patterns to mirror: the short param-name scheme, comma-joined multi-selects, DoS length caps (`MAX_PARAM_LENGTH`/`MAX_ARRAY_LENGTH`), and recursive heritage validation that walks `FILTER_CONFIGS[key].options[].children` + grade `groups[].id`. Write fresh against the CURRENT `SearchFilters`.
+
+**Files:** Create `src/utils/urlParams.ts` + `src/utils/urlParams.test.ts`.
+
+**URL schema (current `SearchFilters`, verified `src/types/index.ts:51-64`):** `q`→query, `grades`→gradeLevels, `themes`→thematicCategories, `season`→seasonTiming, `skills`→coreCompetencies, `culture`→culturalHeritage, `loc`→location, `activity`→activityType, **`tags`→tags (NEW — first-class `FILTER_CONFIGS.tags`, `type:'multiple'`)**, `academic`→academicIntegration, `sel`→socialEmotionalLearning, `cooking`→cookingMethods. **NO `lessonFormat`/`format`** (field deleted in the 2026-05 metadata rebuild — zero references allowed). Plus **`sort`→sortBy** (NEW).
+
+**Exact exports (LOCKED so Task 4.2 can depend on the contract):** `buildSearchParams(filters: SearchFilters, sortBy: ViewState['sortBy']): URLSearchParams`; `parseSearchParams(params: URLSearchParams): { filters: Partial<SearchFilters>; sortBy: ViewState['sortBy'] }` (returns a VALIDATED partial — only known/valid values — + a whitelisted `sortBy`, default `'relevance'`); `canonicalSearchString(filters: SearchFilters, sortBy: ViewState['sortBy']): string` — the **single** stable serializer the hook uses on BOTH sides of every loop-guard equality (sorted param keys, default `sort` omitted, deterministic array order); `URL_SORT_VALUES = ['relevance','title','modified'] as const`; `MAX_PARAM_LENGTH`; `MAX_ARRAY_LENGTH`.
+
+**Step 1 (TDD — write the test first, watch it FAIL):** `urlParams.test.ts` covering — round-trip identity for valid input; arrays comma-joined + re-split; empty filters → clean URL; validation **drops unknown values** against `FILTER_CONFIGS`; hierarchical heritage parent AND child both accepted; grade group ids accepted; **`q` length-capped at `MAX_PARAM_LENGTH`**, arrays capped at `MAX_ARRAY_LENGTH`; **`tags` round-trips**; **grep-clean of `lessonFormat`**; **sort whitelist** — only `relevance`/`title`/`modified`, `relevance` (default) **omitted** from the URL, any other value (`grade`/`confidence`/junk) → `'relevance'`; `query` free-form (trimmed, never validated); **`canonicalSearchString` stable** across reordered params, `sort=relevance` present-vs-absent, spaces (`%20`/`+`), and a unicode value; **comma-safety invariant** — a test asserts no current `FILTER_CONFIGS` option value contains a comma (guards the comma-join; if it ever fails, switch that field to repeated params).
+
+**Step 2 (implement):** pure functions, no React, per the locked exports. Validate filter values against `FILTER_CONFIGS` (recursive `children` for `culturalHeritage`; grade `groups[].id` for `gradeLevels`). **Tags assumption (state in a code comment):** W1c preserves only the exposed `FILTER_CONFIGS.tags.options` values; if C84 later turns tags into a free/broader vocabulary, revisit (the deferred tags audit is the reopen trigger).
+
+**Step 3: Verify** — `npm run check` clean; `npm run test:run` green; `grep -nE 'lessonFormat|[^a-z]format[^a-z]' src/utils/urlParams.ts` → zero hits.
+
+**Step 4: Commit**
+```bash
+git add src/utils/urlParams.ts src/utils/urlParams.test.ts
+git commit -m "feat(search): W1c — URL param serialization for query + filters + sort
+
+Pure serialize/parse/validate for the public search URL schema (query +
+11 filters + sort), written fresh against current SearchFilters (tags in,
+lessonFormat out) per design §4 Q6/Q7. Sort whitelisted to
+relevance/title/modified (mirrors the RPC fallback); defaults omitted for
+clean URLs. Design: 2026-06-20-theme-b-public-ux-design.md §4 Q6-Q8."
+```
+
+---
+
+### Task 4.2: `useUrlSync` hook — debounced two-way sync with a correct back/forward guard
+
+**Sub-skill:** `superpowers:test-driven-development`
+
+**Reference first (read, do NOT copy):** `git show origin/feat/url-persistence:src/hooks/useUrlSync.ts` + `:src/hooks/useUrlSync.test.tsx`. The 300ms debounce, `replace:true`, one-time init, and timer cleanup are good patterns. **BUT its loop guard has a latent back/forward bug (Codex, the Q6 consult):** after a store-origin URL write it leaves `lastSyncSourceRef === 'store'`, so the NEXT external URL change (a browser **Back**) hits the `=== 'store'` early-return and is **silently swallowed**; and its tests never assert the URL, so they miss it. **Fix this in the fresh implementation** and prove the fix with a test.
+
+**Files:** Create `src/hooks/useUrlSync.ts` + `src/hooks/useUrlSync.test.tsx`; **Edit `src/stores/searchStore.ts`** (+ `src/stores/searchStore.test.ts`) to add the atomic `hydrateUrlState` action.
+
+**Step 1 (store action — fixes the BLOCKER + the double-write):** add to `searchStore.ts` (declared on the `SearchState` interface with the `// eslint-disable-next-line no-unused-vars` convention):
+```ts
+hydrateUrlState: (urlFilters: Partial<SearchFilters>, sortBy: ViewState['sortBy']) =>
+  set((state) => ({
+    filters: { ...initialFilters, ...urlFilters }, // FULL replace — fields absent from the URL reset to empty
+    viewState: { ...state.viewState, sortBy, currentPage: 1 }, // filters + sort + page in ONE write
+  })),
+```
+This is the ONLY path the hook uses for URL→store. FULL replacement means Back-to-unfiltered (or a malformed/empty URL) correctly CLEARS filters (a partial `setFilters` merge would keep stale ones). One `set()` → one render → one query-key change (no filters-with-old-sort intermediate fetch). Mirror an existing setter test in `searchStore.test.ts` (assert full replace + sort + `currentPage:1`).
+
+**Required hook behavior:**
+- Reads `filters` + `viewState.sortBy` + `hydrateUrlState` from `useSearchStore`; uses `useSearchParams` from `react-router-dom` (^7.8.2 — confirmed on `main`). Exposes a **`hydrated: boolean`** (false until the first hydration runs) so SearchPage can gate the first query (Task 4.3).
+- **URL→store (covers mount AND back/forward):** on an external `searchParams` change, if `canonicalSearchString(incoming) === lastWrittenRef.current` it's our own echo → skip **and clear `lastWrittenRef.current = null`** (one-use token — so a later same-string external nav still hydrates); else `parseSearchParams` → `hydrateUrlState(parsed.filters, parsed.sortBy)`. Always set `hydrated = true`. Clear any pending debounce on an external change.
+- **store→URL:** on `filters`/`sortBy` change (after `hydrated`), compute `next = canonicalSearchString(filters, sortBy)`; if `next === current canonical` skip (no-op — kills the echo loop); else debounce 300ms → `setSearchParams(buildSearchParams(filters, sortBy), { replace: true })` and set `lastWrittenRef.current = next` when it fires.
+- StrictMode-safe init (ref guard; the canonical-equality guards make double-invoke idempotent); clean up the debounce timer on unmount.
+
+**Step 2 (TDD — write the hook test first, watch it FAIL):** `useUrlSync.test.tsx` rendering the hook inside a **`createMemoryRouter`** (history-instrumented — assert BOTH store state AND `router.state.location` AND that the history stack does NOT grow on filter toggles). Required cases: (1) mount with `?q=tomato&grades=3` hydrates the store (one `hydrateUrlState`); (2) a filter change writes the URL after the 300ms debounce in **`replace` mode** — history length unchanged; (3) **the regression the WIP lacks — after a store-origin write, an external nav (browser Back) to a different `?…` re-hydrates the store**; (4) a sort change writes `?sort=title`, hydration sets sort via `hydrateUrlState` with `currentPage:1`; (5) **full-replacement (the BLOCKER) — external nav to a clean `/search` (no params) OR `?grades=zzz` (all-invalid) while filters are active → store filters CLEAR** (not stale-kept); (6) **StrictMode double-mount** (app runs under `<StrictMode>`, `main.tsx`) → bounded `setSearchParams`, no duplicate replace, no double-hydrate; (7) no infinite loop (bounded calls); debounce timer cleaned up on unmount.
+
+**Step 3 (implement the hook)** per the required behavior above (reuse Task 4.1's `buildSearchParams`/`parseSearchParams`/`canonicalSearchString`).
+
+**Step 4: Verify** — `npm run check` clean; `npm run test:run` green; the back/forward + full-replacement + StrictMode cases pass.
+
+**Step 5: Commit**
+```bash
+git add src/hooks/useUrlSync.ts src/hooks/useUrlSync.test.tsx src/stores/searchStore.ts src/stores/searchStore.test.ts
+git commit -m "feat(search): W1c — useUrlSync two-way URL<->store sync + atomic hydrate
+
+Debounced (300ms, replace-mode) sync of query + filters + sort, written
+fresh. New hydrateUrlState store action FULLY replaces filters + sets
+sort+page in one write, so back-to-unfiltered clears filters (a partial
+setFilters merge would not). Loop guard compares canonical URL strings via
+a one-use written-token, so browser back/forward correctly re-hydrates (the
+WIP's source-flag guard swallowed the first external nav). Tests use
+createMemoryRouter + StrictMode and assert the URL. Design: design.md §4."
+```
+
+---
+
+### Task 4.3: mount `useUrlSync` in `SearchPage` + gate the first query + integration smoke
+
+**Sub-skill:** `superpowers:test-driven-development`
+
+**Files:** Edit `src/pages/SearchPage.tsx`, `src/hooks/useLessonSearch.ts`; extend `src/__tests__/integration/search-page.test.tsx`.
+
+**Step 1 (TDD — write the test first, watch it FAIL):** a SearchPage-level integration test rendered inside a router with an initial URL (e.g. `?q=tomato&season=fall`) asserting (a) the **first/only** RPC call carries the URL-hydrated filters (NOT a pre-hydration default empty-filter call) and (b) toggling a filter updates the URL. The "first/only RPC is hydrated" assertion proves the `enabled` gate works.
+
+**Step 2 (enabled gate — fixes the HIGH pre-hydration fetch):** add an optional `enabled?: boolean` to `useLessonSearch`'s params, passed through to `useInfiniteQuery`'s `enabled` (default `true` — back-compat for existing callers/tests). In `SearchPage`, `const { hydrated } = useUrlSync();` and pass `enabled: hydrated` to `useLessonSearch`. First render `hydrated=false` → query idle (C59 `isPending` shows the **skeleton**, not "No matches"); the mount effect hydrates (an empty URL still flips `hydrated=true` with default filters) → exactly one fetch with the correct filters. **Confirm the C59 skeleton branch still wins during the disabled+hydrating window** (don't regress PR2's loading state).
+
+**Step 3 (mount):** the `useUrlSync()` call sits near the top of `SearchPage` (after the store reads ~`SearchPage.tsx:40`, before `useLessonSearch`). It must run inside the Router context — confirmed (`App.tsx` wraps routes in `BrowserRouter`). Verify SearchPage doesn't already call `useSearchParams` (none today).
+
+**Step 4: Verify** — `npm run check` clean; `npm run test:run` green; **manual smoke (deploy preview):** apply query + a filter + sort on `/` → URL fills in; paste URL into a fresh tab → same search loads with **no empty-result flash**; toggle a few filters then **Back** → returns to the pre-search page (replace-mode); malformed `?grades=zzz` degrades gracefully; a clean `/search` link with stale localStorage layout still shows all lessons (filters cleared).
+
+**Step 5: Commit**
+```bash
+git add src/pages/SearchPage.tsx src/hooks/useLessonSearch.ts src/__tests__/integration/search-page.test.tsx
+git commit -m "feat(search): W1c — mount useUrlSync + gate first query on hydration
+
+Public search is now shareable/bookmarkable/refresh-surviving: query +
+filters + sort live in the URL. Mounts useUrlSync; gates the first RPC on a
+hydrated flag (new enabled arg on useLessonSearch) so a shared link does
+not fire a default empty-filter search before hydration (no C59-class
+false-empty flash). Integration test asserts the first RPC is hydrated.
+Design: 2026-06-20-theme-b-public-ux-design.md §4 Q6-Q8."
+```
+
+---
+
+### Task 4.4: retire the vestigial "Lesson Type" (`tags`) facet  *(added 2026-06-20 — user verdict; folded into W1c)*
+
+**Sub-skill:** `superpowers:test-driven-development`
+
+**Why:** `lessons.tags` (the public "Lesson Type" facet = `orientation`/`bilingual_handouts`) is **vestigial** — LLM/migration-assigned, never reviewer-curated, not a real teacher-facing taxonomy (user verdict 2026-06-20; identity confirmed me+Codex; PROD vocab = orientation 69 / bilingual_handouts 9). Retire the public facet as part of W1c so the new URL schema never ships it. **Do NOT touch the DB** — leave the `lessons.tags` column + RPC `filter_tags` param (inert once nothing sends it; column deletion is a separate, cautious, out-of-scope data step).
+
+**Files (frontend sweep — grep `tags` / `'Lesson Type'` for every ref):** `src/utils/filterDefinitions.ts` (remove the `tags` entry from `FILTER_CONFIGS`), `src/components/Internal/IntSidebar.tsx` (the `showCount = key !== 'tags'` suppression becomes dead → remove), `src/types/index.ts` (`SearchFilters.tags`), `src/stores/searchStore.ts` (`initialFilters.tags`), `src/hooks/useLessonSearch.ts` (stop sending `filter_tags`), `src/utils/facetCounts.ts` (the `'tags'` case), `src/utils/filterUtils.ts:54` (`tags: 'Lesson Type'` label map), **`src/utils/urlParams.ts` + `urlParams.test.ts` (REVISE Task 4.1 to drop `tags` from the schema/exports)**, plus the affected tests (`IntSidebar.test.tsx`, `facetCounts.test.ts`, …). Confirm nothing else breaks (active pills, mobile drawer, clear-all).
+
+**Steps (TDD):** update/remove the failing tests first (facet no longer rendered; `tags` not a valid URL param; `SearchFilters` has no `tags`), then the sweep, then green. `npm run check` + `npm run test:run`. Manual: the "Lesson Type" section is gone from the sidebar + mobile drawer; no console/type errors; search still works. Commit: `chore(search): W1c — retire the vestigial Lesson Type (tags) facet`.
+
+**Sequencing:** simplest to do alongside the Task 4.1 revision (the URL-schema removal and the facet removal share the `tags` deletion). The `process-submission` `submit_tags` tool / "tags" prose is a DIFFERENT concept (generic name for activity-type + CR-feature extraction) — out of scope, do not touch.
+
+**End of PR 4:** PER-PR RITUAL — pre-push code-reviewer agent **+ Codex GATE 3** (different family) on `git diff main...HEAD` → `npm run check` + `npm run test:run` → push → `gh pr create` → four-surface bot triage + GATE 4 on any real suggested change → user-gated merge. **Pure-frontend: deploy-preview + manual smoke only — no TEST-DB gate, no RLS, no PROD migration.** Manual: the full URL round-trip above on the Netlify deploy preview (share a filtered link, refresh, back-button) + confirm the "Lesson Type" facet is gone.
 
 ---
 
@@ -438,6 +560,10 @@ hide the SPLIT control there. Design: 2026-06-20-theme-b-public-ux-design.md §5
 - `IntFormField.test.tsx` — C14: aria-required/invalid/describedby on the single-input path.
 - `LessonSearchPicker.test.tsx` — C79: arrow/Enter/Escape + roles; existing click/excludeRetired/stale-discard untouched.
 - new `SearchPage` render test (mock `matchMedia`) — §3.4: split+narrow renders the drawer (not the dead rail) + SPLIT control hidden; split+wide renders the split layout.
+- new `urlParams.test.ts` — W1c: round-trip + validation + sort whitelist + `canonicalSearchString` stability + comma-safety invariant + caps (`tags` in, `lessonFormat` grep-clean).
+- new `useUrlSync.test.tsx` (`createMemoryRouter`) — W1c: hydrate on mount; debounced `replace`-mode write (history doesn't grow); **back/forward re-hydrates** (the WIP regression); full-replacement CLEARs on empty/invalid URL; StrictMode double-mount bounded; no infinite loop; cleanup on unmount.
+- `searchStore.test.ts` — W1c: `hydrateUrlState` full-replaces filters + sets sort + `currentPage:1` in one write.
+- `search-page.test.tsx` — W1c: **first/only RPC carries URL-hydrated filters** (no pre-hydration default call); toggling a filter writes the URL.
 
 ### E2E (Playwright)
 - `e2e/performance.spec.ts` — C57: Filters button visible @375px, hidden @desktop. §4.8: `.int-toolbar` no horizontal overflow @375px (density control not clipped).

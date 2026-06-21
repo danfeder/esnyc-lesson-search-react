@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mocks
 const rpcMock = vi.fn();
@@ -17,18 +17,30 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 import { SearchPage } from '@/pages/SearchPage';
-import { useSearchStore } from '@/stores/searchStore';
+import { useSearchStore, initialFilters } from '@/stores/searchStore';
+import { buildSearchParams } from '@/utils/urlParams';
+import type { SearchFilters, ViewState } from '@/types';
 import { makeRpcRow, makeSmartSearchPayload } from '@/__tests__/helpers/factories';
 
-function renderWithProviders(ui: React.ReactElement) {
+// W1c: SearchPage mounts useUrlSync and hydrates filters from the URL on mount.
+// So the page must render inside a Router, and the starting filter state must
+// come from the URL (a pre-render store.setFilters is cleared by the empty-URL
+// mount pass). Use MemoryRouter + a URL built from the production serializer.
+function renderWithProviders(ui: React.ReactElement, initialEntries: string[] = ['/']) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   );
+}
+
+function searchUrl(filters: Partial<SearchFilters>, sortBy: ViewState['sortBy'] = 'relevance') {
+  const params = buildSearchParams({ ...initialFilters, ...filters }, sortBy);
+  const qs = params.toString();
+  return qs ? `/?${qs}` : '/';
 }
 
 describe('Season parameter naming (RPC and suggestions)', () => {
@@ -53,11 +65,8 @@ describe('Season parameter naming (RPC and suggestions)', () => {
       error: null,
     });
 
-    // Set season filters to ensure param is sent
-    const store = useSearchStore.getState();
-    store.setFilters({ seasonTiming: ['Fall', 'Winter'] });
-
-    renderWithProviders(<SearchPage />);
+    // Set season filters via the URL so they survive useUrlSync hydration.
+    renderWithProviders(<SearchPage />, [searchUrl({ seasonTiming: ['Fall', 'Winter'] })]);
 
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());
     const callArgs = rpcMock.mock.calls[0];
@@ -74,10 +83,9 @@ describe('Season parameter naming (RPC and suggestions)', () => {
     // No list results to force suggestions UI
     rpcMock.mockResolvedValueOnce({ data: [], error: null });
 
-    const store = useSearchStore.getState();
-    store.setFilters({ query: 'no-result', seasonTiming: ['Winter'] });
-
-    renderWithProviders(<SearchPage />);
+    renderWithProviders(<SearchPage />, [
+      searchUrl({ query: 'no-result', seasonTiming: ['Winter'] }),
+    ]);
 
     await waitFor(() => expect(invokeMock).toHaveBeenCalled());
     const [fnName, payload] = invokeMock.mock.calls[0];

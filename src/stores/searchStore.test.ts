@@ -372,5 +372,67 @@ describe('searchStore', () => {
     });
   });
 
+  describe('hydrateUrlState (W1c URL → store)', () => {
+    it('fully replaces filters, sets sort, and resets currentPage in one write', () => {
+      const { result } = renderHook(() => useSearchStore());
+
+      // Seed a stale filter + a non-relevance sort + a non-1 page.
+      act(() => {
+        result.current.setFilters({ cookingMethods: ['stovetop'] });
+        result.current.setViewState({ sortBy: 'modified', currentPage: 5 });
+      });
+
+      expect(result.current.filters.cookingMethods).toEqual(['stovetop']);
+
+      // Hydrate from a URL that only carries gradeLevels + sort 'title'.
+      act(() => {
+        result.current.hydrateUrlState({ gradeLevels: ['3'] }, 'title');
+      });
+
+      // FULL replace: gradeLevels set, the stale cookingMethods is now empty.
+      expect(result.current.filters.gradeLevels).toEqual(['3']);
+      expect(result.current.filters.cookingMethods).toEqual([]);
+      // Every other filter resets to the empty default too.
+      expect(result.current.filters.query).toBe('');
+      expect(result.current.filters.seasonTiming).toEqual([]);
+      // Sort + page applied in the same write.
+      expect(result.current.viewState.sortBy).toBe('title');
+      expect(result.current.viewState.currentPage).toBe(1);
+    });
+
+    it('clears all filters when hydrated with an empty partial', () => {
+      const { result } = renderHook(() => useSearchStore());
+
+      act(() => {
+        result.current.setFilters({ query: 'tomato', gradeLevels: ['3rd'] });
+      });
+
+      act(() => {
+        result.current.hydrateUrlState({}, 'relevance');
+      });
+
+      expect(result.current.filters.query).toBe('');
+      expect(result.current.filters.gradeLevels).toEqual([]);
+      expect(result.current.viewState.sortBy).toBe('relevance');
+      expect(result.current.viewState.currentPage).toBe(1);
+    });
+
+    it('preserves layout preferences (view + density) across hydration', () => {
+      const { result } = renderHook(() => useSearchStore());
+
+      act(() => {
+        result.current.setViewState({ view: 'grid', density: 'compact' });
+      });
+
+      act(() => {
+        result.current.hydrateUrlState({ query: 'salad' }, 'title');
+      });
+
+      expect(result.current.filters.query).toBe('salad');
+      expect(result.current.viewState.view).toBe('grid');
+      expect(result.current.viewState.density).toBe('compact');
+    });
+  });
+
   // Error handling for server data is owned by React Query; store no longer manages error state
 });

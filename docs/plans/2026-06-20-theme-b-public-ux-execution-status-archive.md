@@ -112,3 +112,96 @@ Supervisor session; all 4 impl-plan tasks executed by fresh-context Opus executo
 - Tasks 2.1→2.4 (`382521a`→`d2f968b`→`4769866`→`234388c`); suite climbed 1355→1369.
 - **Pre-push gate (dual-family):** Claude caught the §3.4 density-switcher vanishing 768–1099px (bigger than the supervisor's flagged nuance); Codex (after a return-inline retry) caught F1 dangling aria-controls, F2 nested button in option, F3 false "No more results" during placeholder. All 4 ACCEPTED + fixed `5f2954c`. Suite 1371/1371; opened PR #523 (code-only; docs local).
 - **Learnings:** GATE-3 dual-family earned its keep (each family found real issues the other missed); supervisor-verify caught nothing wrong in executors this round but the pre-push gate caught 4 real items (gate is load-bearing even when per-task verification is clean).
+
+---
+
+## PR 3 — W1b-search-rpc (PR3a migration + PR3b sort wiring) — SHIPPED ✅
+
+**Both PRs squash-merged + PROD-verified 2026-06-20.** PR3a #524 (migration) → `3c592b1`; PR3b #525 (frontend sort wiring) → `5197069`. Split for safe rollout (deploy-ordering hazard — see Session 6). All four W1b search bugs (C136 `&`/apostrophe crash, location-Both drop, no real sort, C11 ghost leak) + the live Sort dropdown are in production.
+
+### Done (PR3 — Task 3.1 migration + Task 3.2 frontend)
+
+- **Task 3.1 — `search_lessons` W1b migration** (`136ba4a`, Session 6). `20260620000000_search_lessons_w1b.sql`: C136 sanitizer (strip tsquery operators/quotes → spaces BEFORE split + split on `\s+`, inside `expand_search_with_synonyms`) · new IMMUTABLE `_match_location` helper (+GRANT) mirroring `_match_cooking_methods` (Indoor→{Indoor,Both}, Outdoor→{Outdoor,Both}, Both→{Both}) · DROP+CREATE 16-arg `search_lessons` with `order_by text DEFAULT 'relevance'` + `sort_key` normalization + `sub`-subquery ORDER BY (CASE can't reference the `rank` alias) · C11 exclude 3 exact ghost `lesson_id`s in BOTH count+result WHERE + `lesson_id ASC` tiebreaker · `_match_location` swap for the bare `&&` in both WHEREs. RETURNS unchanged; 1-line `order_by?: string` types delta. Rollback companion written.
+- **Task 3.2 — C58 client sort wiring** (`9988bd0` → cherry-picked to `6f2228e`, Sessions 6/7). `useLessonSearch` sends `order_by` + adds `sortBy` to queryKey; `SearchPage` threads `viewState.sortBy` + resets page on sort; `IntToolbar` drops the no-op `grade` option; end-to-end SearchPage→RPC test added pre-push.
+
+### §4 Q1–Q5 LOCKED 2026-06-20 (rationale inline in design §4)
+
+- **Q1 C58 sort** [user] = "Sort minus grade": real server-side `order_by` for relevance/title/modified; remove the no-op grade option. `ELSE`→relevance (safe fallback for stale `grade`/`confidence`).
+- **Q2 C136** [evidence] = sanitize inside `expand_search_with_synonyms`. Shipped mechanism corrected during build (strip-before-split — the locked per-word-strip sketch crashed on `mother's`).
+- **Q3 C11** [evidence TEST+PROD] = exclude 3 exact ghost IDs (`1l9KH63QBe2…`, `1lDjv2GUFz…`, `1nFbpkwluj…`; all title="Unknown", all [Indoor]; identical TEST/PROD).
+- **Q4 location-Both** [evidence TEST] = new IMMUTABLE `_match_location`; data `text[]`, single-element title-case, 766/766.
+- **Q5 C84 tags** [user] = DEFERRED out of W1b → its own data-quality audit session (`project_tags_field_audit_pending`). PR1 badge suppression stays; filter still works.
+
+### TEST + PROD verification (Sessions 6/7)
+
+- **TEST (PR3a):** no 500 on `herbs & spices`(20)/`mother's`(8)/`plant (food)`(20); total 745→742 (3 non-retired ghosts excluded, 0 in browse/Indoor); location-Both exact (search Indoor 635=440+198−3 / Outdoor 305=107+198 / Both 198); sort title-A–Z, modified≠relevance, NULL+grade→relevance, deterministic.
+- **PROD (PR3a, 3-signal, live corpus 767):** 16-arg sig + `_match_location` live; no 500 on punctuation; 767→764 (3 ghosts excluded); location-Both exact 654/315/205; sort works. `migrate-production.yml` Apply succeeded first try (no SASL flake).
+- **PROD (PR3b, chrome-devtools browser smoke):** Sort dropdown = Relevance / Title A–Z / Updated (no Grade); selecting Title fired a fresh `search_lessons` POST (`{"order_by":"title",…}`) → 200, genuinely title-A–Z, `total_count:764`. End-to-end sort live.
+
+### Bot rounds
+
+- **PR3a round 1 CLEAN:** `claude[bot]` 1 review + 1 code-review + 5 line comments, all confirmations/nits; zero required changes; no GATE 4 (no real suggested change). Nits (document all-operators→0 edge; CTE-refactor duplicate WHERE; title-path ORDER-BY redundancy) rejected (bot-marked "no change"/out-of-scope; editing a pushed migration forbidden).
+- **PR3b round 1 CLEAN:** both `claude[bot]` reviews APPROVED; 3 nits (strip `C58:` comment prefixes / tighten `onSortChange` cast / `'confidence'` blank-select) all REJECTED with verified rebuttals; GATE 4 confirmed all 3 rejects sound. Zero code changes.
+
+### Session log (PR3 / W1b cycle)
+
+#### Session 7 — 2026-06-20 — PR3b (frontend sort wiring) shipped + PROD-verified; W1b COMPLETE
+
+Supervisor session. Shipped the PR3b frontend half of C58 (the already-built Task-3.2 commit) now that PR3a's migration is PROD-live. Clean run end-to-end: cherry-pick → gates → PR → bot triage → user-gated merge → PROD smoke. W1b is now fully complete.
+
+- Oriented; git matched the status file (PR3a merged `3c592b1` on `origin/main`; local `main` stale; `9988bd0` preserved on `feat/theme-b-w1b-frontend`). Baseline `npm run check` clean. Untracked `docs/plans/*` are unrelated other-initiative kickoffs (left alone).
+- **Cherry-pick (PR3b):** synced local `main` → `3c592b1`; cut fresh `feat/theme-b-w1b-sort-frontend` off `main`; cherry-picked `9988bd0` → **`6f2228e`** (clean, exactly the 6 frontend files). `npm run check` clean; `npm run test:run` = 1380/1380. Read the diff myself (supervisor-verify) — matches the Task-3.2 spec exactly.
+- **Pre-push GATE 3** (code-reviewer + Codex `codex:codex-rescue`, parallel, both inline) = **NO MATERIAL FINDINGS** from either. Pushed + opened **PR #525** (frontend-only diff + the carried-forward status doc as a 2nd commit `5fa8c6c`).
+- **Status-doc commit gotcha (caught + noted):** the `git checkout <rpc-branch> -- statusfile` had STAGED the f3cebc1 version; my two subsequent Edit-tool edits modified only the working tree and were never re-`git add`-ed, so `git commit` captured the pre-edit version. Harmless. Lesson: after `git checkout -- <file>` + Edit, `git add` again before commit.
+- **Bot round 1 CLEAN (four-surface triage via `/pr-triage`):** all CI green except expected-red Security-Audit (24 pre-existing dev/transitive vulns; PR3b touches no `package.json`). Both `claude[bot]` reviews APPROVED. 3 nits (A strip `C58:` prefixes / B tighten `onSortChange` cast / C `'confidence'` blank-select) — all rejected against the actual code: (A) the cited CLAUDE.md rule doesn't exist + 6 committed `// C59:` comments in the same files; (B) `onSortChange` already `(sort: SortBy) => void`, cast redundant; (C) `searchStore` `partialize` never persists `sortBy` → blank-select unreachable + locked design.
+- **GATE 4 (Codex 2nd opinion on the 3 rejected suggested-changes, inline):** independently verified all three premises and confirmed **all rejects sound**. Zero code changes. (Codex "return findings INLINE" worked first-try a 5th + 6th consecutive time.)
+- **User approved merge** → squash **`5197069`** (#525). `ci.yml` auto-deployed the frontend to PROD: Deploy-to-Production ✓ (43s), Test & Build green.
+- **PROD verification (chrome-devtools, live site `esynyc-lessonlibrary-v2.netlify.app`):** Sort dropdown = Relevance / Title A–Z / Updated, **no Grade**; selecting Title fired a 2nd `search_lessons` POST (queryKey refetch) with body `{"order_by":"title","page_size":20,"page_offset":0}` → 200; response genuinely title-A–Z ordered; `total_count:764` (PR3a ghost exclusion holding). End-to-end sort live in production. (`app.esynyc.org` is not resolving — used the Netlify default URL.)
+
+Learnings:
+- **Shipping an already-built+verified commit is still a full supervisor cycle** — cherry-pick clean ≠ done. The value this session was the gate discipline (re-review the final diff, four-surface triage, GATE 4) + the PROD browser smoke that *saw* the feature working, not just green CI.
+- **A passing bot CHECK ≠ zero findings.** All 4 `claude-*` checks were green, yet the bots still posted 3 suggested changes across the comment/review surfaces. The four-surface triage is what surfaced them; rebutting each against real code (not the bot's stated premise) mattered — 2 of the 3 rested on factually wrong premises.
+- **PROD string-grep of hashed bundles is unreliable** for route-split apps (the route chunk isn't linked from `index.html`). The browser smoke (read the actual `<select>` options + the real RPC request body) is the right PROD verification for a frontend change.
+
+#### Session 6 — 2026-06-20 — Task 3.1 migration + Task 3.2 frontend built + verified + pre-push-gated; PR3 split for safe rollout
+
+Supervisor session. Built + verified both W1b tasks, ran the pre-push gate, and split PR3 into a migration-first PR3a + a follow-up frontend PR3b per a Codex-caught deploy-ordering hazard (user verdict). Stopped before pushing PR3a.
+
+- Oriented; git matched the status file; baseline `npm run check` clean. Untracked `docs/plans/*` are unrelated other-initiative kickoffs (left alone).
+- **Dispatched Task 3.1 executor** (Opus, fresh context, `database-migrations` + `/new-migration` + TDD skills, local-first, no push). It built `20260620000000_search_lessons_w1b.sql` faithfully per spec (all four fixes; `sub`-subquery ORDER BY; both-WHERE deltas; GRANTs incl. `_match_location` + `service_role`; RETURNS unchanged) + the 1-line types delta; committed locally.
+- **Types regen note (from executor):** local Supabase CLI is **v2.95.4**, older than whatever generated the committed `database.types.ts` (which carries a `PostgrestVersion: '13.0.5'` pin a full regen would strip). Executor applied ONLY the true schema delta (`order_by?: string`) to preserve format. **Follow-up:** consider regenerating with a newer CLI before merge (optional — current delta is correct).
+- **Supervisor-verify (load-bearing):** read the full SQL; diffed the body against `20260520020000`; re-ran the local MCP smoke myself. **Caught a real crash:** `search_lessons('mother''s')` → `syntax error in tsquery: "mother s"`. Root cause: the spec's per-word strip leaves a mid-word operator/quote as an internal space. **Fixed** (strip-before-split), re-applied, re-verified, amended the commit.
+- **GATE 2 (Codex on the SQL, inline — no async flake):** 8/9 areas CLEAN. **1 MEDIUM:** space-only split lets a pasted tab/newline survive → `to_tsquery` error. Accepted + fixed (`regexp_split_to_array(…, '\s+')`); confirmed `E'herbs\tspices'` crashed pre-fix, clean post-fix. Amended → **`136ba4a`**.
+- **Final smoke (all green, no crash):** operators `& | ( ) : *`, mid-word quotes (`mother's`, `herbs&spices`), `a:b`, tab/newline/CR, empty/NULL; title≠modified order; deterministic empty-query order; NULL/grade→relevance; `_match_location` truth table; ghost clause; 16-arg signature; grants. `npm run check` green.
+- **Dispatched Task 3.2 executor** (Opus, fresh context, TDD): client wiring committed `659facc` → 1380 tests green.
+- **Supervisor-verify Task 3.2:** read the diff, re-ran `npm run check` + the 3 touched test files. Confirmed the stale-`grade`-in-select edge is UNREACHABLE — `searchStore` `partialize` persists only `view`/`density`, never `sortBy`.
+- **Pre-push gate (code-reviewer + Codex GATE 3, parallel):** code-reviewer no BLOCKER/HIGH (MEDIUM = inert `currentPage:1` write; LOW = title collation). Codex GATE 3 (inline): SQL/caching/page-reset CLEAN; **BLOCKER = deploy-ordering** (combined frontend+migration unsafe); LOW = no end-to-end test.
+- **Triage:** title-collation resolved by TEST data (`en_US.UTF-8`, 1/745 lowercase-start). Test-gap (both models) → added end-to-end SearchPage→RPC assertion + softened the `currentPage` comment. Amended frontend → `9988bd0`. Deploy-ordering BLOCKER → **user verdict: SPLIT**.
+- **Split executed:** preserved the frontend commit on `feat/theme-b-w1b-frontend` (`9988bd0`); `git reset --hard cafd701` on the migration branch. Migration branch (PR3a) re-verified green (1373 suite).
+- **Pushed PR3a (#524)** + opened the migration PR. CI auto-applied to TEST. **Ran the mandatory TEST-DB verification on the real corpus — ALL GREEN** (numbers above). The 3 ghosts being NON-retired confirms C11 fixes a real live leak.
+- **Bot round 1 (PR3a) CLEAN:** four-surface triage, all confirmations/nits, no GATE 4.
+- **PR3a MERGED + PROD-VERIFIED** (user approved merge + PROD gate): squash `3c592b1`; Apply succeeded first try. 3-signal PROD verify (live corpus 767) all green.
+- **Captured a durable memory:** the additive-RPC-param deploy-ordering rule → `reference_ci_flakes.md` + MEMORY.md index.
+
+Learnings:
+- **Catch deploy-ordering hazards before merge, not after.** An additive RPC param + a frontend that sends it, in one PR, is unsafe here: the frontend auto-deploys to PROD on merge while the migration waits for manual approval → outage window. Expand/contract (migration-first) is the fix.
+- **Re-run the migration's behavioral smoke in the MAIN LOOP, not just read the diff** — the executor's spec-driven smoke tested the sanitizer in isolation (returns a string) and missed that the string is invalid only once `to_tsquery` consumes it. The end-to-end `search_lessons('mother''s')` probe caught it.
+- **A LOCKED mechanism can still be wrong.** Q2's locked decision was right; its literal code sketch (per-word strip) was buggy. Correctness fixes inside a locked decision don't need a user gate; product/design changes do.
+- **Codex "return findings INLINE" worked first-try a 4th time** (GATE 2). Reliable.
+
+#### Session 5 — 2026-06-20 — PR3/W1b cycle opened: §4 locked, Task 3.1/3.2 authored + GATE-1B-hardened
+
+Supervisor session. No code on the branch yet — this session was the full W1b design-lock + task-authoring + plan-review phase. Clean handoff at the end.
+
+- Oriented; git matched the status file; baseline `npm run check` clean. Worktree had pre-existing untracked `docs/plans/*` (unrelated — left alone).
+- **User decisions:** Q1 = "Sort minus grade"; Q5 = **defer tags** to its own audit session.
+- Captured the **tags-audit-pending** concern as a durable project memory (`project_tags_field_audit_pending`) + MEMORY.md index line.
+- **§4 evidence gathering:** background Explore agent code digest + TEST/PROD MCP probes (ghosts identical TEST/PROD; location 766/766 single-element title-case; tags 74/766; `updated_at` exists; current 15-arg sig; grantees incl. service_role).
+- **Locked §4 Q1–Q5** inline in design doc; **authored Task 3.1 + Task 3.2** (skeleton → concrete).
+- **PR-cycle archival:** moved PR2 (Sessions 3/4) into the archive.
+- **GATE 1B** (Codex, inline): **1 BLOCKER** (missing `_match_location` GRANT), **1 HIGH** (`service_role` grant gap), **3 MEDIUM** (NULL `order_by`→`sort_key`; quote-strip; DROP+CREATE atomicity), **9 LOW**. Rebuttal-passed all → folded BLOCKER/HIGH/2-MEDIUM into Task 3.1.
+- **Handoff:** stopped at this clean boundary rather than start the migration build on a heavy context.
+
+Learnings:
+- **GATE 1B (reviewing the authored PLAN before any code) is load-bearing for migrations** — it caught a runtime BLOCKER (helper GRANT) + a HIGH grant gap + a real NULL-fallback hole before any code.
+- **Codex "return findings INLINE, do not background" worked first-try a 3rd consecutive time** — promoted to a feedback memory.
