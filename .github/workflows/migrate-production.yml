@@ -158,6 +158,7 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+          github-token: ${{ github.token }}
 
       - name: Link to production project
         run: supabase link --project-ref jxlxtzkmicfhchkhiojz
@@ -294,6 +295,7 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+          github-token: ${{ github.token }}
 
       - name: Link to production project
         run: supabase link --project-ref jxlxtzkmicfhchkhiojz

@@ -42,6 +42,7 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+          github-token: ${{ github.token }}
 
       - name: Show pending migrations (dry-run)
         if: steps.migration-check.outputs.migrations == 'true'

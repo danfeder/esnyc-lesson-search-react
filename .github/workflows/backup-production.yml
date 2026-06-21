@@ -54,6 +54,7 @@ jobs:
           # convention changes (pin to a specific version), update all three
           # together.
           version: latest
+          github-token: ${{ github.token }}
 
       - name: Link to production project
         run: supabase link --project-ref jxlxtzkmicfhchkhiojz
