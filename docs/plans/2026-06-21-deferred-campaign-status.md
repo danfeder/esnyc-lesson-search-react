@@ -4,14 +4,14 @@
 >
 > **Roadmap (source of truth for scope):** `docs/plans/2026-06-20-deferred-work-roadmap.md` — 169 canonical items across 7 waves, stable `C##` ids.
 
-**Last updated:** 2026-06-21 (Wave 2: PR1 C137 shipped + PROD-verified; PR2 C133 active).
+**Last updated:** 2026-06-21 (Wave 2: PR1 C137 + PR2 C133 both shipped + PROD-verified; PR3 C20 next).
 
 ## Wave status
 
 | Wave | Theme | State | Branch / PRs | Next action | Initiative doc |
 |------|-------|-------|--------------|-------------|----------------|
 | **1** | Public "broken windows" UX (Theme B) | ✅ **SHIPPED 2026-06-21** | #522 `19d99b7` · #523 `530b253` · #524 `3c592b1` · #525 `5197069` · #526 `9eb1b6e` | — (closed) | `2026-06-20-theme-b-public-ux-*` (CLOSED) |
-| **2** | Email + Security P1 | 🟢 **ACTIVE** | PR1 C137 ✅ #527 `b4a5fc3` (PROD-verified) · PR2 C133 `fix/wave2-c133-send-email-auth` | PR2 Task 2.0 (send-email auth probe) → C20 → C138 | `2026-06-21-wave2-email-security-execution.md` |
+| **2** | Email + Security P1 | 🟢 **ACTIVE** | PR1 C137 ✅ #527 `b4a5fc3` · PR2 C133 ✅ #528 `05d86ce` (both PROD-verified) | **PR3 C20** is_admin migration → PR4 C138 detect-dup auth | `2026-06-21-wave2-email-security-execution.md` |
 | **3** | Repo/docs hygiene (mechanical) | ⚪ queued | — | lightweight single sessions; `C60` archive + closure banners, `C169` Dependabot triage | (no scaffold — single PRs) |
 | **4** | Data / corpus cleanup (DB-careful) | ⚪ queued | — | pre-delete FK checklist; `C11`/`C12`/`C08`/`C01`/`C02`/`C09` | TBD |
 | **5** | Reviewer/admin features | ⚪ queued | — | **ReviewDetail decomposition first (test-first)** then `C107`/`C111`/`C112`/`C113`… | TBD (full scaffold) |
