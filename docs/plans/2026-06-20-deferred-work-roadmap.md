@@ -21,12 +21,16 @@ The obsolescence pass earned its keep twice over:
 Sequenced by **user impact × (1/effort) × dependency-order**, hardened by a Codex adversarial pass. Public-facing work leads; DB-gated and refactor work is split out so it doesn't drag the fast wins. Standing gates apply throughout (bottom of section).
 
 ### Wave 1 — Public "broken windows" (ship now; highest user impact, mostly S)
+> **✅ SHIPPED 2026-06-21** — Theme B, 5 PRs: #522 `19d99b7` · #523 `530b253` · #524 `3c592b1` · #525 `5197069` · #526 `9eb1b6e`. Closed; see `2026-06-20-theme-b-public-ux-execution-status.md`.
+
 The only theme a teacher sees. → its own full `/kickoff-feature` scaffold (Theme B).
 - **W1a — pure-frontend** (no migration): `C57` mobile filters · `C59` loading-state/false-no-matches · `C14`/`C79` a11y + keyboard · `C84`/`C69` facet-badge bugs · copy/a11y one-liners (header "· Internal", SR-announcer, dialog name). 1–2 fast PRs.
 - **W1b — migration-gated** (RPC + TEST-DB verify): `C136` `&`-in-query crash · `C58` sort no-op (proper) · `C11` ghost-row exclusion + deterministic no-query `ORDER BY` · location "Both"-expansion. One CI migration.
 - **W1c — shareable state** (M): `C114`/`C157` URL persistence for search/filter state.
 
 ### Wave 2 — Email + Security P1 (high impact / risk)
+> **🟢 ACTIVE — kickoff 2026-06-21.** Scaffolded (small-initiative): `2026-06-21-wave2-email-security-execution.md`. **Recon re-scoped 3 items vs. the prose below:** C138 is mostly already fixed (one residual = `detect-duplicates` auth gate); C128's target endpoint is orphaned (deferred pending an arch decision); C133 is worse than filed (7 skip types + a transport trap). Wave-2 PRs: C137 → C133 → C20 → C138. Deferred: C04 (DNS — yours), C128, C130.
+
 - `C04` Resend domain verify + from-address (**external DNS step is yours**; unblocks `C05` rejection UI).
 - `C133` send-email auth-skip · `C137` user-delete crash · `C138` CORS+service-role bypass (partial) · `C20` `is_admin()` ambiguous-column sleeper · `C128`/`C130` invitation rate-limit / admin session timeout.
 
