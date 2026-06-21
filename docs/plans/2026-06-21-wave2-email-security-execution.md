@@ -174,7 +174,8 @@ Wave 1 (public UX) shipped the only theme a teacher sees. Wave 2 is the highest-
 
 ### Current State
 **Active PR:** PR2 — C133 send-email auth-skip (just started).
-**Current task:** Task 2.1 — IMPLEMENT (Task 2.0 probe ✅ DONE, matrix LOCKED from TEST evidence; scope = **Option B-full**, user-approved). Then 2.2 TEST per-type verify → 2.3 push/PR/3-signal.
+**Current task:** Task 2.2 — TEST per-type verify (after push→TEST deploy). Task 2.1 ✅ coded + supervisor-verified (`aa65002`); pre-push gates ✅ — Claude reviewer = safe; **Codex GATE-3 found 1 HIGH the Claude reviewer missed: the raw-fetch switch ACTIVATED a spoofing vuln in `password-reset/notify` (trusted caller-supplied `email`/`name`) → fixed by resolving recipient server-side from `userId` (`221f5b0`)** + a LOW (explicit unknown-type 400). Pushing → PR → Task 2.2 → 2.3.
+**Out-of-scope follow-up surfaced (NOT fixed in C133):** `password-reset` audit inserts use `action: 'password_changed'`/`'password_reset_requested'` — NOT in `user_management_audit_action_check` → silently rejected (same class as C137's `bulk_users_*`). Needs a migration to widen the CHECK or a remap; separate from the C133 auth fix.
 
 **🔒 Task 2.0 probe result (TEST, first-hand, 2026-06-21):**
 - **C133 vuln CONFIRMED:** an anon POST to send-email `type:'account-deactivated'` passed the auth-skip and reached the Resend send path (only Resend's unverified-domain rule (C04) stopped it at the recipient). Sharper once C04 lands.
