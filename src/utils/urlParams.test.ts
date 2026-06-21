@@ -133,6 +133,15 @@ describe('parseSearchParams', () => {
     expect(filters.gradeLevels).toEqual(['3', '5']);
   });
 
+  it('de-duplicates repeated values within an array param (filter arrays are sets)', () => {
+    // A hand-edited/shared URL can carry duplicates; parse must treat filter
+    // arrays as sets (as canonicalSearchString already assumes) so the active-pill
+    // renderer doesn't get duplicate React keys and the RPC isn't sent redundant
+    // values. The UI's toggleFilter can't produce dupes, but a crafted URL can.
+    const { filters } = parseSearchParams(new URLSearchParams('grades=3,3,5,3'));
+    expect(filters.gradeLevels).toEqual(['3', '5']);
+  });
+
   it('drops unknown filter values not in FILTER_CONFIGS', () => {
     const { filters } = parseSearchParams(new URLSearchParams('grades=3,notagrade,5'));
     expect(filters.gradeLevels).toEqual(['3', '5']);

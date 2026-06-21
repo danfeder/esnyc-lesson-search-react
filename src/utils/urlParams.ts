@@ -150,12 +150,20 @@ export function parseSearchParams(params: URLSearchParams): {
     const valid = validValuesForFilter(key);
     if (!valid) continue;
 
-    const values = raw
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .slice(0, MAX_ARRAY_LENGTH)
-      .filter((v) => valid.has(v));
+    // De-duplicate: filter arrays are order-insensitive sets (canonicalSearchString
+    // relies on this), so a crafted/shared URL like `?grades=3,3` must not yield a
+    // duplicated entry (which would produce duplicate React keys in the active-pill
+    // renderer and redundant RPC values). Set preserves first-occurrence order.
+    const values = [
+      ...new Set(
+        raw
+          .split(',')
+          .map((v) => v.trim())
+          .filter(Boolean)
+          .slice(0, MAX_ARRAY_LENGTH)
+          .filter((v) => valid.has(v))
+      ),
+    ];
 
     if (values.length > 0) {
       filters[key] = values;
