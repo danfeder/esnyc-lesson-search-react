@@ -112,6 +112,16 @@ serve(async (req) => {
       'submission-needs-revision',
       'submission-rejected',
     ]);
+    const ADMIN_JWT_TYPES = new Set(['invitation', 'welcome']);
+
+    // Reject unknown types explicitly (defense-in-depth; the LOCKED matrix covers
+    // exactly these two sets — anything else is a malformed request).
+    if (!SERVICE_ROLE_ONLY_TYPES.has(type) && !ADMIN_JWT_TYPES.has(type)) {
+      return new Response(JSON.stringify({ error: 'Unknown email type' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!isServiceRole) {
       if (SERVICE_ROLE_ONLY_TYPES.has(type)) {

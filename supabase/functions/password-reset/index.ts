@@ -236,7 +236,7 @@ serve(async (req) => {
         });
       }
 
-      const { userId, email, name } = (await req.json()) as PasswordChangeNotification;
+      const { userId } = (await req.json()) as PasswordChangeNotification;
 
       // Only allow users to send notifications for themselves or admins to send for anyone
       const { data: profile } = await supabase
@@ -254,6 +254,28 @@ serve(async (req) => {
         });
       }
 
+      // Resolve the recipient SERVER-SIDE from userId — never trust caller-supplied
+      // email/name. Otherwise any authenticated user could send a spoofed
+      // "password changed" security notice to an arbitrary inbox. The 403 guard
+      // above already restricts non-admins to their own id.
+      const targetUserId = isAdmin ? userId : user.id;
+      const { data: emailData, error: emailLookupError } = await supabase.rpc('get_user_emails', {
+        user_ids: [targetUserId],
+      });
+      const targetEmail = emailData?.[0]?.email;
+      if (emailLookupError || !targetEmail) {
+        return new Response(JSON.stringify({ error: 'Target user email not found' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: targetProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('id', targetUserId)
+        .single();
+      const targetName = targetProfile?.full_name ?? targetEmail;
+
       // Send password changed notification email
       try {
         // Raw fetch (not supabase.functions.invoke): the SDK's invoke from inside
@@ -268,9 +290,9 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             type: 'password-changed',
-            to: email,
+            to: targetEmail,
             data: {
-              recipientName: name,
+              recipientName: targetName,
             },
           }),
         });
@@ -289,8 +311,8 @@ serve(async (req) => {
       await supabase.from('user_management_audit').insert({
         actor_id: user.id,
         action: 'password_changed',
-        target_user_id: userId,
-        target_email: email,
+        target_user_id: targetUserId,
+        target_email: targetEmail,
       });
 
       return new Response(JSON.stringify({ success: true }), {
