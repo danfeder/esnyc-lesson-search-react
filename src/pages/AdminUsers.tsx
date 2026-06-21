@@ -295,7 +295,12 @@ export function AdminUsers() {
             msg: `Deleted ${response.data?.affected ?? 0} user(s); ${failed.length} could not be deleted.`,
           });
         } else {
-          setToast({ kind: 'success', msg: `Deleted ${selectedCount} user(s).` });
+          // Use the server's authoritative count: a selection can desync from the
+          // DB (rows removed elsewhere), so `affected` is truthful where selectedCount isn't.
+          setToast({
+            kind: 'success',
+            msg: `Deleted ${response.data?.affected ?? selectedCount} user(s).`,
+          });
         }
       } else {
         const { error } = await supabase

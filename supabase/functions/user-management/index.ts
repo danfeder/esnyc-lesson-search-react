@@ -674,13 +674,28 @@ serve(async (req) => {
       let auditAction = '';
       const now = new Date().toISOString();
       const failedIds: string[] = [];
-      let succeededCount = userIds.length;
 
-      // Get current user data for all affected users before update
-      const { data: affectedUsers } = await supabase
+      // Get current user data for all affected users before update.
+      const { data: affectedUsers, error: affectedError } = await supabase
         .from('user_profiles')
         .select('id, full_name, email, is_active, notes')
         .in('id', userIds);
+
+      // A failed pre-read must not masquerade as a no-op success: the delete loop
+      // and the activate/deactivate notification block both iterate affectedUsers,
+      // so an undefined result here would silently skip the work and still return 200.
+      if (affectedError) {
+        console.error('Failed to load affected users for bulk action:', affectedError);
+        return new Response(JSON.stringify({ error: 'Failed to load affected users.' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // affected = rows that actually matched (truthful across all actions; the
+      // delete branch subtracts per-user failures below). Unknown ids simply don't
+      // match and aren't counted — soft-deleting an absent user is an idempotent no-op.
+      let succeededCount = affectedUsers?.length ?? 0;
 
       switch (action) {
         case 'activate':
