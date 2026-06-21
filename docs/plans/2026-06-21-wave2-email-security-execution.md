@@ -170,16 +170,17 @@ Wave 1 (public UX) shipped the only theme a teacher sees. Wave 2 is the highest-
 
 ## §3 — STATUS (WHERE we are)
 
-**Last updated:** 2026-06-21 by Session 1 (scaffold + GATE-1 Codex fold).
+**Last updated:** 2026-06-21 by Session 2 (PR1 Tasks 1.1–1.3 coded + verified; pre-push gate next).
 
 ### Current State
-**Active PR:** PR1 — C137 user-delete crash (not yet coded).
-**Current task:** Task 1.1 (not started). PR2–4 tasks authored in §2.
-**Branch:** `fix/wave2-c137-user-delete-crash` (created at scaffold; carries the scaffold docs + the Wave-1/theme-b bookkeeping banners; no C137 code yet).
-**Last commit on branch:** the scaffold commit (run `git log --oneline -3` to confirm SHA).
+**Active PR:** PR1 — C137 user-delete crash (code DONE + both pre-push gates passed; pushing/PR'ing).
+**Current task:** Task 1.4 — pushing → `gh pr create` → external-bot triage → PROD deploy approval → 3-signal + TEST-DB verify. Tasks 1.1/1.2/1.3 ✅ coded + supervisor-verified; pre-push GATE 3 (Codex + Claude reviewer) ✅ done, fix-ups folded.
+**Branch:** `fix/wave2-c137-user-delete-crash`.
+**Last commit on branch:** `2353194` (pre-push gate fix-up) → `1c1bd40` (audit-enum fold-in) → `5a1c675` (C137 main fix) → `51e72a6` (scaffold).
+**Pre-push gates:** Claude code-reviewer = clean/safe-to-push. Codex GATE 3 = 1 HIGH (pre-read error discarded → silent 200) + 1 MEDIUM (truthful affected count) — both folded into `2353194`; rejected the 500-on-zero-matched-rows suggestion (idempotent no-op, documented).
 **Last commit on main:** `9eb1b6e` (Theme B W1c #526).
-**Pre-next-PR verification:** none (this is the first PR).
-**How to start execution:** `/clear`, paste §0, follow the SESSION-START RITUAL.
+**Pre-next-PR verification:** n/a (first PR). `npm run check` green on branch.
+**How to resume:** if continuing PR1 → Task 1.4 (pre-push code-reviewer + Codex GATE 3 → push → `gh pr create` → four-surface triage → PROD deploy approval → 3-signal verify + TEST-DB data check). If PR1 merged → start PR2 (C133), Task 2.0 probe first.
 
 ### Recent decisions worth carrying forward
 - Scaffold committed on PR1's branch (not a standalone docs PR) per user instruction — the Wave-1 ✅ and theme-b CLOSED banners ride PR1's first commit.
@@ -197,6 +198,7 @@ Wave 1 (public UX) shipped the only theme a teacher sees. Wave 2 is the highest-
 
 ### Out-of-scope follow-ups captured here
 - C04 (Resend DNS — user's), C128 (orphaned `invitation-management` — arch decision), C130 (admin session timeout — later frontend slice), C05 (rejection UI — gated on C04), C138 embedding-proxy auth (default deferred). Lift to project memory when the wave closes.
+- **AdminAnalytics.tsx:402–404 dead audit-action labels** (surfaced Session 2 during PR1 verify): the `formatAction` map keys `bulk_users_activated`/`bulk_users_deactivated`/`bulk_users_deleted` — values that no longer get written (canonical vocab is `user_activated`/`user_deactivated`/`user_deleted`). The map is ALSO missing `user_activated`/`user_deactivated`/`user_role_changed`/`permissions_changed`, so single-user activate/deactivate already render as raw strings there today (pre-existing). Display-only; a deliberate reconciliation against `IntActivityTimeline`'s (more complete) label source is the right fix — NOT a drive-by in a crash/security PR. Deferred out of PR1.
 
 ### Session log
 #### Session 1 — 2026-06-21 — Wave 2 kickoff + scaffold
@@ -206,3 +208,11 @@ Wave 1 (public UX) shipped the only theme a teacher sees. Wave 2 is the highest-
 - Authored this combined doc + `2026-06-21-deferred-campaign-status.md`; folded the Wave-1 ✅ SHIPPED banner (roadmap) + CLOSED banner (theme-b status doc).
 - GATE-1 review: Claude reviewer (folded 1 HIGH — service-role pattern → `extract-google-doc:42-60`) + **Codex cross-family, retried & returned: 1 BLOCKER (C20 can't rename param via CREATE OR REPLACE — 42P13 verified on TEST → disambiguate via `$1`) + 1 HIGH (C137 bulk audit action violates CHECK, silently swallowed) + 2 MEDIUM (C133 invitation-management 4th caller; C138 breaks anon-key smoke test). All verified against code + folded into §1/§2.**
 - **Next:** `/clear` → execute PR1 (C137) in a fresh session.
+
+#### Session 2 — 2026-06-21 — PR1 (C137) coded + verified
+- Session-start ritual clean: git matched §3, `npm run check` green baseline.
+- Dispatched ONE executor (Opus, fresh context) for Tasks 1.1+1.2+1.3 (user-approved bundling — one coherent change across `user-management/index.ts` + `AdminUsers.tsx`). Executor reported done; committed `5a1c675`.
+- **Supervisor-verify (load-bearing) caught a real miss the spec didn't anticipate:** the GATE-1 claim that the edge audit fix "closes the activate/deactivate gap" was inaccurate — the live activate/deactivate bulk path does NOT call the edge fn; it does a client-side audit insert at `AdminUsers.tsx:313` with the same invalid `bulk_users_*` enum (silently rejected by `user_management_audit_action_check`). Grep proved `user_activated`/`user_deactivated`/`user_deleted` is the canonical vocab (types/auth.ts, AdminUserDetail single-user path, IntActivityTimeline + its tests, DB CHECK). Folded a 2-line fix → canonical enum + `bulk:true` metadata. Commit `1c1bd40`.
+- Captured the `AdminAnalytics.tsx:402–404` dead-label inconsistency as a deferred follow-up (display-only; reconcile against IntActivityTimeline later).
+- Verified: no `supabase.sql` anywhere in `supabase/functions/`; no `bulk_users_*` WRITES remain (only AdminAnalytics display labels); `npm run check` exit 0; diff reviewed line-by-line.
+- **Next:** Task 1.4 — pre-push code-reviewer + Codex GATE 3 → push → PR → four-surface triage → PROD deploy approval → 3-signal + TEST-DB verify.
