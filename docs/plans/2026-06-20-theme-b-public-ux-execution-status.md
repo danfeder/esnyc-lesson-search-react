@@ -1,3 +1,8 @@
+> # ✅ CLOSED — SHIPPED 2026-06-21
+> **Theme B (Wave 1) is complete and merged.** All 5 PRs landed on `main`: #522 `19d99b7` · #523 `530b253` · #524 `3c592b1` · #525 `5197069` · **#526 `9eb1b6e`** (W1c URL state + tags-facet retirement). The "pending merge / round-2 bots" wording below is **stale** — PR #526 squash-merged as `9eb1b6e`. Campaign continues at Wave 2 (`2026-06-21-wave2-email-security-execution.md`); cross-wave tracker `2026-06-21-deferred-campaign-status.md`. Body retained as the historical execution journal.
+
+---
+
 # Theme B — Public "Broken-Windows" UX Execution Status
 
 **Last updated:** 2026-06-21 by Session 10 (**W1c round-1 bot triage DONE + GATE 4 dedup fix committed.** Four-surface triage on PR #526: claude-review + claude-component-review both verdict *ship* (only style/perf nits + one *overclaim*); **GATE 4 (Codex, different family) found the one real fix both GitHub bots missed** — `parseSearchParams` didn't de-dup array values (`?grades=3,3` → dup React keys). User approved → TDD dedup fix committed `062d58e` (1432 tests green, check clean). Pending: push the bundle (held docs `b307ac3` + `062d58e` + this status update) → round-2 bots → user-gated merge.) Branch `feat/theme-b-w1c-url-state`; §4 Q6–Q8 locked; GATE-1B done. **Pure-frontend: deploy-preview + manual smoke only — NO TEST-DB gate, NO PROD migration.**
