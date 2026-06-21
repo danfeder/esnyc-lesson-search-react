@@ -170,17 +170,16 @@ Wave 1 (public UX) shipped the only theme a teacher sees. Wave 2 is the highest-
 
 ## §3 — STATUS (WHERE we are)
 
-**Last updated:** 2026-06-21 by Session 2 (PR1 Tasks 1.1–1.3 coded + verified; pre-push gate next).
+**Last updated:** 2026-06-21 by Session 3 (PR1 C137 SHIPPED + PROD-verified; PR2 C133 started).
 
 ### Current State
-**Active PR:** PR1 — C137 user-delete crash → **PR #527 OPEN** (https://github.com/danfeder/esnyc-lesson-search-react/pull/527).
-**Current task:** Task 1.4 — **SCOPE EXPANDED (user-approved 2026-06-21):** E2E TEST verify revealed the bulk-delete endpoint **404s** (the supabase.sql crash sat behind an unreachable route). PR1 now ALSO repairs the edge-fn routing. Pushed routing fix → awaiting TEST redeploy → E2E throwaway-delete verify → external-bot triage (`/pr-triage 527`) → PROD deploy approval → 3-signal.
-**Branch:** `fix/wave2-c137-user-delete-crash`.
-**Last commit on branch:** `47d37af` (routing fix) → `598b5e0`/`2353194` (gate fix-ups + doc) → `1c1bd40` (audit-enum fold-in) → `5a1c675` (C137 main fix) → `51e72a6` (scaffold).
-**Pre-push gates:** Claude code-reviewer = clean/safe-to-push. Codex GATE 3 = 1 HIGH (pre-read error discarded → silent 200) + 1 MEDIUM (truthful affected count) — both folded into `2353194`; rejected the 500-on-zero-matched-rows suggestion (idempotent no-op, documented).
-**Last commit on main:** `9eb1b6e` (Theme B W1c #526).
-**Pre-next-PR verification:** n/a (first PR). `npm run check` green on branch.
-**How to resume:** if continuing PR1 → Task 1.4 (pre-push code-reviewer + Codex GATE 3 → push → `gh pr create` → four-surface triage → PROD deploy approval → 3-signal verify + TEST-DB data check). If PR1 merged → start PR2 (C133), Task 2.0 probe first.
+**Active PR:** PR2 — C133 send-email auth-skip (just started).
+**Current task:** Task 2.0 — the `[evidence-lockable]` TEST auth probe: determine exactly how each server-side caller authenticates to send-email (esp. whether `supabase.functions.invoke` from a service-role client forwards a usable `Authorization: Bearer <service-role-key>`, or fails like `complete-review`'s comment warns). Lock the per-type auth matrix from evidence BEFORE writing the fix. Then 2.1 implement → 2.2 TEST per-type verify → 2.3 push/PR/3-signal.
+**Branch:** `fix/wave2-c133-send-email-auth` (off main @ `b4a5fc3`).
+**Last commit on main:** `b4a5fc3` (PR1 C137 #527, squash).
+**Code-confirmed C133 anchors (2026-06-21):** `send-email/index.ts` `EmailRequest.type` = 10 types (`:10-20`); the negative-list (`:85-93`) skips auth for **7**; so only `{invitation, welcome, password-changed}` currently hit the admin-JWT block (`:95-131` = `getUser(token)` + role∈{admin,super_admin} — a USER JWT, NOT the service-role key). ⚠️ `password-changed` requires auth today but is sent **server-side** by `password-reset` (`:243`) via a service-role client → prime transport-trap / possible pre-existing breakage suspect.
+**PR1 — ✅ DONE:** merged #527 (squash `b4a5fc3`) + PROD 3-signal verified (v28; `ezbr_sha256` byte-identical to the E2E'd TEST build). Filed "supabase.sql crash" was actually a routing-404; PR1 fixed routing + crash + audit vocab (edge+frontend) + toast + GATE-3 guards. Branch deleted.
+**How to resume:** PR2 → Task 2.0 probe → lock per-type auth matrix → 2.1 implement (constant-time service-role compare; mirror `extract-google-doc:42-60`) → 2.2 TEST verify → gates. If PR2 done → PR3 (C20 migration).
 
 ### Recent decisions worth carrying forward
 - Scaffold committed on PR1's branch (not a standalone docs PR) per user instruction — the Wave-1 ✅ and theme-b CLOSED banners ride PR1's first commit.
@@ -189,9 +188,10 @@ Wave 1 (public UX) shipped the only theme a teacher sees. Wave 2 is the highest-
 
 ### Done
 - ✅ **Scaffold (Session 1)** — recon (6-agent read-only workflow) → this doc + the master campaign status doc → combined GATE-1 review → committed on `fix/wave2-c137-user-delete-crash` with the Wave-1/theme-b banners. No code yet.
+- ✅ **PR1 / C137 (Sessions 2–3) — SHIPPED + PROD-VERIFIED.** Merged #527 (squash `b4a5fc3`); 3-signal PROD pass. Scope expanded (user-approved) to fix the routing-404 the supabase.sql crash hid; E2E-proven on TEST (real soft-delete + partial-failure + audit). Branch deleted. Full detail in memory [[project_deferred_work_campaign]]. Deferred follow-up: AdminAnalytics dead `bulk_users_*` labels (below).
 
 ### In flight
-(none — PR1 not yet coded)
+- PR2 / C133 — Task 2.0 (TEST auth probe) about to run.
 
 ### Blocked
 (none — user-approval gates are expected, not blockers)
