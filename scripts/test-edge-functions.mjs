@@ -4,10 +4,10 @@
  * Daily smoke test for all 10 deployed edge functions.
  *
  * Two tiers:
- *   1. Full smoke (3 fns) — POST a real payload and assert response shape.
+ *   1. Full smoke (2 fns) — POST a real payload and assert response shape.
  *      Catches business-logic regressions on top of deploy regressions.
- *      Functions: smart-search, detect-duplicates, generate-embeddings.
- *   2. Health check (7 fns) — OPTIONS preflight, expect non-404 / non-5xx.
+ *      Functions: smart-search, generate-embeddings.
+ *   2. Health check (8 fns) — OPTIONS preflight, expect non-404 / non-5xx.
  *      Catches "function not deployed" (404) and module-load crashes (5xx)
  *      without exercising side-effecting code paths. Does NOT catch latent
  *      runtime failures inside the function body — e.g. a missing secret
@@ -17,10 +17,14 @@
  *      aren't safe to exercise on PROD on a daily cron.
  *
  * Side-effect safety:
- *   - detect-duplicates writes to submission_similarities only when both
- *     `submissionId` AND `duplicates.length > 0` are truthy (see
- *     supabase/functions/detect-duplicates/index.ts:382). Omitting
- *     submissionId from our payload guarantees no write.
+ *   - detect-duplicates is auth-gated in-code (it uses a service-role client
+ *     and deploys --no-verify-jwt, so it requires the service-role key OR a
+ *     reviewer/admin user token; see
+ *     supabase/functions/detect-duplicates/index.ts). An anon-key POST would
+ *     401, so we OPTIONS-health-check it instead — the auth gate sits after
+ *     the OPTIONS early-return, so the preflight still returns 200 pre-auth.
+ *     (The full-smoke payload also deliberately omitted submissionId to avoid
+ *     a submission_similarities write; the health check writes nothing either.)
  *   - generate-embeddings makes an OpenAI text-embedding-3-small call;
  *     ~5 input tokens × $0.02/M = ~$0.0000001 per smoke run. Negligible.
  *
@@ -71,22 +75,6 @@ const FULL_SMOKE = [
     },
   },
   {
-    name: 'detect-duplicates',
-    payload: {
-      // submissionId omitted on purpose — see file header.
-      content: 'Edge function smoke test content. Students plant seeds in the garden.',
-      title: 'Smoke test lesson',
-      metadata: { gradeLevels: ['3'] },
-    },
-    assert: (json) => {
-      if (json.success !== true) throw new Error(`success=${json.success}`);
-      if (typeof json.data?.contentHash !== 'string') throw new Error('contentHash missing');
-      if (json.data.contentHash.length !== 64) {
-        throw new Error(`contentHash length=${json.data.contentHash.length}, expected 64`);
-      }
-    },
-  },
-  {
     name: 'generate-embeddings',
     payload: { text: 'edge function smoke test' },
     assert: (json) => {
@@ -99,6 +87,7 @@ const FULL_SMOKE = [
 ];
 
 const HEALTH_CHECK = [
+  'detect-duplicates',
   'extract-google-doc',
   'process-submission',
   'send-email',

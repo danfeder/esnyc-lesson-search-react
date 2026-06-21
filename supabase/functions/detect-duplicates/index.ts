@@ -211,6 +211,50 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Auth gate — this function is deployed with --no-verify-jwt and uses the
+    // service-role client (RLS-bypassing), so it MUST gate access in-code.
+    // Accept either the service-role key (server-to-server callers like
+    // process-submission) or an authenticated reviewer/admin/super_admin user.
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const token = authHeader.replace('Bearer ', '');
+    // Use constant-time comparison to prevent timing attacks.
+    const tokenBytes = new TextEncoder().encode(token);
+    const keyBytes = new TextEncoder().encode(supabaseServiceKey);
+    const isServiceRole =
+      tokenBytes.length === keyBytes.length &&
+      crypto.subtle.timingSafeEqual(tokenBytes, keyBytes);
+
+    if (!isServiceRole) {
+      // Not the service-role key — require an authenticated reviewer/admin user.
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid authentication token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      if (!profile || !['reviewer', 'admin', 'super_admin'].includes(profile.role)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Insufficient permissions' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const { submissionId, content, title, metadata, embedding } =
       (await req.json()) as DetectDuplicatesRequest;
 
