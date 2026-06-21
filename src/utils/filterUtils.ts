@@ -51,7 +51,6 @@ export const getCultureDescendantValues = (value: string): string[] => {
 export const formatCategoryName = (category: string): string => {
   const categoryNames: Record<string, string> = {
     gradeLevels: 'Grade',
-    tags: 'Lesson Type',
     activityType: 'Activity',
     seasonTiming: 'Season',
     thematicCategories: 'Theme',
@@ -71,7 +70,6 @@ export const formatCategoryName = (category: string): string => {
 export const getCategoryIcon = (category: string): string => {
   const categoryIcons: Record<string, string> = {
     gradeLevels: '📚',
-    tags: '🏷️',
     activityType: '🎯',
     seasonTiming: '🍂',
     thematicCategories: '🌿',

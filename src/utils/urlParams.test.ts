@@ -19,7 +19,6 @@ const emptyFilters: SearchFilters = {
   culturalHeritage: [],
   location: [],
   activityType: [],
-  tags: [],
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: [],
@@ -49,7 +48,6 @@ describe('buildSearchParams', () => {
         culturalHeritage: ['americas'],
         location: ['Indoor'],
         activityType: ['cooking-only'],
-        tags: ['orientation'],
         academicIntegration: ['Math'],
         socialEmotionalLearning: ['Self-awareness'],
         cookingMethods: ['stovetop'],
@@ -63,7 +61,6 @@ describe('buildSearchParams', () => {
     expect(params.get('culture')).toBe('americas');
     expect(params.get('loc')).toBe('Indoor');
     expect(params.get('activity')).toBe('cooking-only');
-    expect(params.get('tags')).toBe('orientation');
     expect(params.get('academic')).toBe('Math');
     expect(params.get('sel')).toBe('Self-awareness');
     expect(params.get('cooking')).toBe('stovetop');
@@ -94,6 +91,16 @@ describe('buildSearchParams', () => {
     const params = buildSearchParams({ ...emptyFilters, query: 'x', gradeLevels: ['3'] }, 'title');
     expect(params.has('format')).toBe(false);
     expect(params.has('lessonFormat')).toBe(false);
+  });
+
+  it('never emits a tags param (retired Lesson Type facet)', () => {
+    // The vestigial "Lesson Type" (tags) facet was retired in W1c; the URL
+    // schema must never serialize it even if a stale value is somehow present.
+    const params = buildSearchParams(
+      { ...emptyFilters, query: 'x', gradeLevels: ['3'] } as SearchFilters,
+      'title'
+    );
+    expect(params.has('tags')).toBe(false);
   });
 });
 
@@ -126,6 +133,14 @@ describe('parseSearchParams', () => {
 
   it('ignores unknown params entirely', () => {
     const { filters } = parseSearchParams(new URLSearchParams('q=test&bogus=1&format=recipe'));
+    expect(filters.query).toBe('test');
+    expect(Object.keys(filters)).toEqual(['query']);
+  });
+
+  it('ignores a stale tags param (retired Lesson Type facet)', () => {
+    // `tags` is no longer part of the URL schema; a bookmarked link carrying it
+    // must be treated as an unknown param and dropped (no `tags` key on output).
+    const { filters } = parseSearchParams(new URLSearchParams('q=test&tags=orientation'));
     expect(filters.query).toBe('test');
     expect(Object.keys(filters)).toEqual(['query']);
   });
@@ -189,7 +204,6 @@ describe('round-trip identity', () => {
       seasonTiming: ['Fall', 'Winter'],
       activityType: ['cooking-only'],
       culturalHeritage: ['americas', 'mexican'],
-      tags: ['orientation'],
       location: ['Both'],
     };
     const sortBy: SortBy = 'title';
@@ -201,19 +215,8 @@ describe('round-trip identity', () => {
     expect(filters.seasonTiming).toEqual(original.seasonTiming);
     expect(filters.activityType).toEqual(original.activityType);
     expect(filters.culturalHeritage).toEqual(original.culturalHeritage);
-    expect(filters.tags).toEqual(original.tags);
     expect(filters.location).toEqual(original.location);
     expect(parsedSort).toBe(sortBy);
-  });
-
-  it('round-trips tags specifically', () => {
-    const { filters } = parseSearchParams(
-      buildSearchParams(
-        { ...emptyFilters, tags: ['orientation', 'bilingual_handouts'] },
-        'relevance'
-      )
-    );
-    expect(filters.tags).toEqual(['orientation', 'bilingual_handouts']);
   });
 });
 

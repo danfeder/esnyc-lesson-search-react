@@ -12,7 +12,6 @@ import type { FacetCounts } from '@/utils/facetCounts';
 function makeCounts(overrides: Partial<FacetCounts> = {}): FacetCounts {
   return {
     gradeLevels: {},
-    tags: {},
     activityType: {},
     location: {},
     thematicCategories: {},
@@ -41,29 +40,22 @@ function sectionByLabel(label: string) {
 describe('IntSidebar', () => {
   beforeEach(() => {
     // Full filter reset for inter-test isolation (mirrors ScreenReaderAnnouncer.test.tsx).
-    // clearFilters() resets every key to [] so the tags/activityType sections render
-    // their full static option list and no rows are pre-checked.
+    // clearFilters() resets every key to [] so each section renders its full
+    // static option list and no rows are pre-checked.
     useSearchStore.getState().clearFilters();
   });
 
-  it('renders no count badge in the Lesson Type (tags) section', () => {
-    // tags ("Lesson Type") options come from FILTER_CONFIGS.tags.options (static
-    // config: Orientation, Bilingual Handouts) — not from `counts` — so the
-    // section always renders its option rows in jsdom. The tags count is always
-    // 0 by design (search_lessons returns no `tags` column), so its badge is a
-    // misleading blank span on a working filter; it must be suppressed entirely.
+  it('does not render the retired "Lesson Type" (tags) section', () => {
+    // The vestigial "Lesson Type" (tags) facet was retired in W1c — it is no
+    // longer in FILTER_CONFIGS / CHECKBOX_KEYS, so the section must not render.
     render(<IntSidebar counts={makeCounts()} />);
 
-    const tagsSection = sectionByLabel('Lesson Type');
-    // Sanity: the section actually rendered option rows (not vacuously empty).
-    expect(tagsSection.querySelectorAll('.int-check').length).toBeGreaterThan(0);
-    // The fix: NO per-option count span anywhere in the tags section.
-    expect(tagsSection.querySelectorAll('.int-check-count').length).toBe(0);
+    expect(screen.queryByText('Lesson Type')).toBeNull();
   });
 
-  it('still renders count badges in other sections (suppression is tags-only)', () => {
-    // activityType keeps its badge: give the slug a real count and assert the
-    // span survives — proves the suppression is scoped to tags, not global.
+  it('renders per-option count badges in checkbox sections', () => {
+    // activityType shows its badge: give the slug a real count and assert the
+    // span survives — proves badges still render after the tags retirement.
     render(<IntSidebar counts={makeCounts({ activityType: { 'cooking-only': 3 } })} />);
 
     const activitySection = sectionByLabel('Activity Type');

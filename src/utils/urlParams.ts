@@ -3,15 +3,15 @@ import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 
 /**
  * Pure (no-React) serialize / parse / validate for the public search URL
- * schema: query + 11 filters + sort. Written fresh against the current
- * `SearchFilters` shape (tags included; the legacy lesson-type field removed in
- * the 2026-05 metadata rebuild is intentionally absent) per design §4 Q6/Q7
- * (2026-06-20-theme-b-public-ux-design.md).
+ * schema: query + 10 filters + sort. Written fresh against the current
+ * `SearchFilters` shape per design §4 Q6/Q7
+ * (2026-06-20-theme-b-public-ux-design.md). The vestigial "Lesson Type" (tags)
+ * facet was retired in W1c, so it is intentionally NOT part of the URL schema.
  *
  * Schema (param ↔ filter):
  *   q → query, grades → gradeLevels, themes → thematicCategories,
  *   season → seasonTiming, skills → coreCompetencies, culture → culturalHeritage,
- *   loc → location, activity → activityType, tags → tags,
+ *   loc → location, activity → activityType,
  *   academic → academicIntegration, sel → socialEmotionalLearning,
  *   cooking → cookingMethods, plus sort → sortBy.
  */
@@ -42,7 +42,6 @@ const FILTER_TO_PARAM: Record<keyof SearchFilters, string> = {
   culturalHeritage: 'culture',
   location: 'loc',
   activityType: 'activity',
-  tags: 'tags',
   academicIntegration: 'academic',
   socialEmotionalLearning: 'sel',
   cookingMethods: 'cooking',
@@ -95,10 +94,6 @@ export function buildSearchParams(
  * Collect every valid value for a filter, including nested children for
  * hierarchical filters (culturalHeritage walks `options[].children` recursively)
  * and grade group ids (`groups[].id`).
- *
- * Tags assumption: W1c preserves only the exposed `FILTER_CONFIGS.tags.options`
- * values; revisit if C84 makes tags a free vocabulary (the deferred tags audit
- * is the reopen trigger).
  */
 function validValuesForFilter(filterKey: keyof SearchFilters): Set<string> | null {
   const config = FILTER_CONFIGS[filterKey];

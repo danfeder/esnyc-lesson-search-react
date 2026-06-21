@@ -142,7 +142,6 @@ export function useLessonSearch({
           ? filters.socialEmotionalLearning
           : undefined,
         filter_cooking_method: filters.cookingMethods?.length ? filters.cookingMethods : undefined,
-        filter_tags: filters.tags?.length ? filters.tags : undefined,
         // C58: pass the active sort straight through; the RPC's ELSE→relevance
         // branch safely handles any stale value (e.g. a persisted 'grade').
         order_by: sortBy,

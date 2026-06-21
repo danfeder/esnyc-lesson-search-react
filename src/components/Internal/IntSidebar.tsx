@@ -11,7 +11,6 @@ import { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
  * `gradeLevels` and `culturalHeritage` get bespoke sections.
  */
 const CHECKBOX_KEYS: readonly FacetFilterKey[] = [
-  'tags',
   'activityType',
   'location',
   'thematicCategories',
@@ -79,12 +78,7 @@ export function IntSidebar({ counts }: IntSidebarProps) {
         const cfg = FILTER_CONFIGS[key];
         if (!cfg) return null;
         const selected = (filters[key] ?? []) as string[];
-        const defaultOpen = key === 'tags' || key === 'activityType' || key === 'seasonTiming';
-        // `search_lessons` returns no `tags` column, so the tags per-option
-        // count is always 0 → a misleading blank badge on a working filter.
-        // Suppress it here (stopgap); W1b exposes tags in the RPC and flips
-        // this to a real count. See design §5 C84.
-        const showCount = key !== 'tags';
+        const defaultOpen = key === 'activityType' || key === 'seasonTiming';
         return (
           <IntFilterSection
             key={key}
@@ -104,7 +98,7 @@ export function IntSidebar({ counts }: IntSidebarProps) {
                   />
                   <span className="int-check-box" />
                   <span className="int-check-label">{opt.label}</span>
-                  {showCount && <span className="int-check-count">{count || ''}</span>}
+                  <span className="int-check-count">{count || ''}</span>
                 </label>
               );
             })}
