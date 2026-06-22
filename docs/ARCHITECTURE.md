@@ -1,8 +1,10 @@
 # ESYNYC Lesson Search - System Architecture
 
 **Last Updated**: October 1, 2025
-**Production State**: 1,098 lessons, 6 users, 127 submissions processed
+**Production State** (Oct 2025 baseline — stale, see note below): 1,098 lessons, 6 users, 127 submissions processed
 **Database Snapshot**: `20251001_production_baseline_snapshot.sql`
+
+> **⚠️ Editor's note (Wave 3, 2026-06-21): the production metrics in this document are stale.** All counts below (lesson/user/submission totals — e.g. "1,098 lessons") reflect the **October 2025 baseline snapshot** and have since drifted; this file has not been re-baselined. For live figures, query the database (`SELECT COUNT(*) FROM lessons;`) or see `CLAUDE.md` (which notes the lesson row count drifts). The inline counts are retained as the Oct-2025 baseline for historical context, not as current state.
 
 ---
 
@@ -12,7 +14,7 @@
 
 ESYNYC Lesson Search is a full-stack web application for searching, filtering, and managing 1,000+ garden and cooking education lesson plans. Built with React 19 + Supabase, it serves NYC public school teachers with sophisticated search and filtering capabilities.
 
-**Current Production Metrics** (October 2025):
+**Production Metrics** (October 2025 baseline — stale, see top note):
 - **1,098 lessons** indexed and searchable
 - **60 search synonyms** for query expansion
 - **6 cultural heritage hierarchies** for inclusive search
@@ -104,7 +106,7 @@ SELECT expand_search_with_synonyms('garden');
 
 ```sql
 -- Count lessons
-SELECT COUNT(*) FROM lessons;  -- Should be ~1,098
+SELECT COUNT(*) FROM lessons;  -- Oct 2025 baseline was ~1,098; query for the live count
 
 -- Check normalized columns exist
 SELECT column_name, data_type FROM information_schema.columns
@@ -132,7 +134,7 @@ SELECT * FROM cultural_heritage_hierarchy;
 
 #### **Content Tables** (6 tables)
 
-**lessons** (1,098 rows) - Primary content table
+**lessons** (~1,098 rows as of Oct 2025 baseline — see top note) - Primary content table
 - Stores lesson plans with normalized filter columns
 - Has full-text search (search_vector tsvector)
 - Has semantic search (content_embedding vector 1536)
@@ -1139,7 +1141,7 @@ lesson-123     | lesson-456    | 0.92             | near            | user-uuid 
 **Full-text search**:
 ```sql
 CREATE INDEX idx_lessons_search_vector ON lessons USING GIN (search_vector);
--- Size: ~15 MB for 1,098 lessons
+-- Size: ~15 MB for 1,098 lessons (Oct 2025 baseline — see top note)
 -- Usage: Every text search query
 -- Critical: Cannot be dropped
 ```
@@ -1524,7 +1526,7 @@ metadata = {"gradeLevel": ["5", "6", "7"], ...}  -- ❌ Duplicate
 - Double writes on every lesson insert/update
 - ~20 duplicate indexes (GIN on both array + JSONB path)
 - Confusing for developers ("which is canonical?")
-- Wasted disk space (~30-40 MB for 1,098 lessons)
+- Wasted disk space (~30-40 MB for 1,098 lessons — Oct 2025 baseline, see top note)
 
 **Cleanup steps**:
 1. ✅ Confirm all queries use normalized columns (not metadata JSONB paths)
@@ -2184,7 +2186,7 @@ LIMIT 20
 
 ### 12.3 Scaling Projections
 
-**Current**: 1,098 lessons
+**Current** (Oct 2025 baseline — stale): ~1,098 lessons
 **Growth rate**: ~100-150 lessons/year (based on 127 submissions in ~1 year)
 **Projected 2028**: ~1,500 lessons
 

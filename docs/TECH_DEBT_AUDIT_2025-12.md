@@ -2,6 +2,9 @@
 **Date:** December 2025
 **Scope:** Comprehensive audit of ESYNYC Lesson Search v2
 
+> **⚠️ SUPERSEDED (Wave 3, 2026-06-21) — do NOT mine this audit for fresh work.**
+> This is a point-in-time December 2025 snapshot. Its findings have since been triaged into the deferred-work campaign and either closed (addressed by the Dec-2025 PR batch, roughly #356–#389) or explicitly declined. The current, authoritative backlog is **`docs/plans/2026-06-20-deferred-work-roadmap.md`** — start there, not here. Kept for historical record.
+
 ---
 
 ## Executive Summary
