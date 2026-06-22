@@ -6,7 +6,7 @@
 
 **Active PR:** none yet — not branched. Next is **PR 1** (reversible data cleanups: C12/C83/C08).
 
-**Current task:** **Session 1 = DESIGN-LOCK** (the design doc Status is `Draft`). No implementation code yet. Session 1 works the design doc §4 "Open design questions" (Q1–Q14) against real code/data, locks each answer (respecting `[evidence-lockable]` vs `[user-verdict]` tags), flips the design Status to Locked, and authors the impl plan's concrete tasks (replacing the `<!-- TBD Session 1 -->` placeholders). Many questions are already **GATE-A-grounded** (see Recent decisions) — confirm the grounding still holds on TEST, then lock; the `[user-verdict]` ones (Q1 status/note text, Q4 `year-round`/`end-of-year` season mapping, Q7 retire-or-keep each straggler, Q13 one-PR-vs-split, Q14 seed source) need a user walkthrough.
+**Current task:** **Session 1 = DESIGN-LOCK** (the design doc Status is `Draft`). No implementation code yet. Session 1 works the design doc §4 "Open design questions" (Q1–Q14a, 15 questions) against real code/data, locks each answer (respecting `[evidence-lockable]` vs `[user-verdict]` tags), flips the design Status to Locked, and authors the impl plan's concrete tasks (replacing the `<!-- TBD Session 1 -->` placeholders). Many questions are already **GATE-A-grounded** (see Recent decisions) — confirm the grounding still holds on TEST, then lock; the `[user-verdict]` ones (Q1 status/note text, Q4 `year-round`/`end-of-year` season mapping, Q7 retire-or-keep each straggler, Q13 one-PR-vs-split, Q14 seed source) need a user walkthrough.
 
 **Branch:** `main` (scaffold committed to a `chore/wave4-*` scaffold branch → PR; not yet branched for PR 1).
 
@@ -19,7 +19,7 @@
 ## Recent decisions worth carrying forward
 
 - **Scope locked (user 2026-06-22):** Core 5 (C12, C83, C08, C11, C02) + tiny extras (C49, C88); C11 = **hard-delete**; full 4-file scaffold weight. Defer C01 + C09/C07/C03.
-- **GATE A (design review) done + folded 2026-06-22** — 4 grounded Claude lenses (FK-safety, reality-claims, sequencing, consistency), each verifying against repo + TEST DB. Codex cross-family lens backgrounded instead of returning inline (known orphan flake) → dispatched best-effort; the 4-lens grounded review is the backbone. Key folds:
+- **GATE A (design review) done + folded 2026-06-22** — 4 grounded Claude lenses (FK-safety, reality-claims, sequencing, consistency), each verifying against repo + TEST DB. The in-workflow Codex lens backgrounded; a re-dispatched best-effort Codex pass then RETURNED 4 findings — all folded (see the Codex bullet below). Key Claude-lens folds:
   - **C83 is reviews-only:** 17 string-typed values in `submission_reviews.tagged_metadata->'season'` (`year-round`×13, `end-of-year`×2, `winter`×2) fail the `seasonTiming: z.array(SeasonTimingEnum)` Zod schema; `lessons.metadata.seasonTiming` is 766/766 clean → no live-lesson impact. `year-round`/`end-of-year` aren't in the canonical enum → mapping is a `[user-verdict]`; cleanest mechanism = backfill from each review's approved lesson.
   - **C11 pre-delete checklist must split enforced-FK vs unenforced-text-ref** — a hard DELETE does NOT error on loose text/text[] refs, so "zero refs" must be data-queried, not inferred. 6 enforced FKs (IN-ref column = `lesson_submissions.original_lesson_id`, NOT `lesson_id`) + unenforced refs incl. `lesson_collections.lesson_ids[]` + `duplicate_group_dismissals.lesson_ids[]` (array-overlap probes). All clear on TEST for the 3 ghosts; re-run on PROD verbatim. All 3 ghosts have `original_submission_id = NULL` + zero CASCADE children.
   - **C11 snapshot → dedicated rollback table** (safer than polluting `lesson_versions`, which needs a computed NOT-NULL `version_number`).
@@ -28,6 +28,11 @@
   - **PR2 before PR3** (shared 3 ghost rows) OR scope C02's UPDATE to `retired_at IS NULL` excl. ghost IDs (preferred, order-independent).
   - **C12 note column = `reviewer_notes`** (not `review_notes`); `'rejected'` is in the status CHECK.
   - Corpus counts confirmed on TEST: 766 total / 745 live / 21 retired; 17 stuck submissions (15 new + 2 update); 3 ghost rows. Commit `93b929e` = the cooking_skills/main_ingredients vocab worksheet. `consolidated_lessons.json` = 831 rows / 0 `academicConcepts` / 1662 dropped-`lessonFormat` → confirmed stale (C88).
+- **Codex cross-family pass (RETURNED + folded) — 4 findings, earned its keep:**
+  - **(HIGH) C02 is DUAL-WRITE, not metadata-only** — `cooking_skills`/`main_ingredients` are typed `text[]` columns + `metadata` JSONB + feed `search_vector`, and the two surfaces are out of sync on TEST (430 vs 709 / 425 vs 709). PR3 re-scoped: snapshot+update BOTH surfaces, refresh `search_vector`, lock the canonical surface first (Q11/Q12/Q13). **All 4 Claude lenses missed this** — the clearest cross-family catch.
+  - **(HIGH) guard the irreversible delete** — the `DELETE` must match IDs + identity predicates (`title='Unknown'`, fabricated hash, `retired_at IS NULL`, provenance-null) and assert exactly-3 (folded into Q8 + Task 2.2).
+  - **(MED) C49 stale-client** — recommend expand/contract ordering (drop frontend line + regen types first, then the RPC param), folded into Q10.
+  - **(MED) reviewer-entry vocab drift** — new Q14a: check `METADATA_CONFIGS`/Zod already use the decided vocab, else fold the UI update into PR3 or name a follow-up (else reviewers re-introduce old vocab).
 
 ## Done
 
@@ -70,5 +75,6 @@ Major events:
 - Authored the 4 scaffold docs (design Draft / impl SKELETON / kickoff / this status) in design-lock mode.
 - **GATE A** = a grounded multi-lens design review (Workflow: 4 Claude lenses + Codex cross-family); all accepted findings folded into the design doc; conflict between two lenses on C83's location resolved by direct TEST query (reviews-only, `season` key).
 - Bookkeeping fold (trust-git-then-fix): corrected the master tracker + Wave-3 exec doc "C33 in flight" → "C33 merged `a8efac9` → Wave 3 DONE" in the scaffold commit.
+- Codex cross-family pass returned 4 findings post-commit (best-effort re-dispatch); all folded into the design + impl docs in a follow-up commit on the same branch — notably the HIGH that C02 is dual-write (typed columns + JSONB + `search_vector`), which the 4 Claude lenses missed.
 
 Next session picks up: **Session 1 = design-lock** — paste the kickoff, work the §4 open questions, lock the design, author the impl tasks. No code.

@@ -70,7 +70,7 @@
 - the existing search E2E + manual smoke path
 
 ### Task 2.1 — Pre-delete reference scan (Q8) on TEST + PROD, verbatim IDs <!-- TBD Session 1: run the (a) enforced-FK + (b) unenforced-text-ref + OUT-ref + CASCADE-child probes; lock results -->
-### Task 2.2 — Snapshot + DELETE migration (Q9) <!-- TBD Session 1: dedicated rollback table, SELECT* before DELETE; + .rollback -->
+### Task 2.2 — Snapshot + GUARDED DELETE migration (Q9) <!-- TBD Session 1: dedicated rollback table, SELECT* before DELETE; GUARDED delete (match IDs + identity predicates title='Unknown'/fabricated hash/retired_at IS NULL/original_submission_id IS NULL; assert exactly-3 matched+deleted, fail loudly otherwise); + .rollback -->
 ### Task 2.3 — `search_lessons` DROP+CREATE: remove exclusion + drop param (C49); re-grant + NOTIFY <!-- TBD Session 1 -->
 ### Task 2.4 — Frontend C49 cleanup: delete useLessonSearch.ts:150 + regen types <!-- TBD Session 1: TDD-light; npm run check; search smoke -->
 
@@ -80,15 +80,17 @@
 
 **Branch:** `chore/wave4-pr3-vocab-canonicalization`
 
-**What ships:** bulk UPDATE of `cooking_skills`/`main_ingredients` metadata values to the locked vocab, snapshotting affected `metadata` to a rollback table first; scoped to `retired_at IS NULL` excluding the 3 ghost IDs (order-independent vs PR2).
+**What ships:** canonicalize `cooking_skills`/`main_ingredients` to the locked vocab — **DUAL-WRITE** (typed `text[]` columns + `metadata.cookingSkills`/`mainIngredients` JSONB) + **`search_vector` refresh** on touched rows; snapshot BOTH surfaces to a rollback table first; scoped to `retired_at IS NULL` excluding the 3 ghost IDs (order-independent vs PR2). ⚠️ GATE A found the typed columns + JSONB are out of sync today (430 vs 709 / 425 vs 709) → Session 1 locks the canonical surface + reconciliation BEFORE authoring SQL, and re-confirms C02 still fits one PR (Q13).
 
 **Pre-flight reads (Session 1):**
-- the vocab worksheet (commit `93b929e` — `...cooking-skills-ingredients-worksheet-decided.md`); confirm it covers both fields
-- a metadata-rebuild canonicalization migration as the pipeline template (the `metadata-foundation` PRs)
-- `src/utils/filterDefinitions.ts:174,271` — confirm both fields are `METADATA_CONFIGS` ("NOT search filters")
+- the vocab worksheet (commit `93b929e` — `...cooking-skills-ingredients-worksheet-decided.md`: ~23 cooking skills, two-level main ingredients); confirm it covers both fields
+- a metadata-rebuild canonicalization migration as the pipeline template (the `metadata-foundation` / Stage-2 retag PRs — note the retag design's "dual-write" requirement)
+- `supabase/migrations/20260618000000_search_vector_add_sel.sql:62,67` — the trigger weighting `cooking_skills`/`main_ingredients` into `search_vector`
+- `src/utils/filterDefinitions.ts:174,271` — `METADATA_CONFIGS` ("NOT search filters", so no sidebar regression) — but these ARE the reviewer-entry options; check whether they (+ the Zod schema) already use the decided vocab (Q14a)
 
-### Task 3.1 — Load locked vocab + derive messy→canonical mapping (Q11) <!-- TBD Session 1 -->
-### Task 3.2 — Snapshot + UPDATE migration (Q12/Q13) + .rollback + distribution verify <!-- TBD Session 1 -->
+### Task 3.1 — Load locked vocab + derive mapping + lock canonical surface (Q11) <!-- TBD Session 1 -->
+### Task 3.2 — Check reviewer-entry surface + Zod vs decided vocab; fold-in or name follow-up (Q14a) <!-- TBD Session 1 -->
+### Task 3.3 — Snapshot BOTH surfaces + dual-write UPDATE + search_vector refresh migration (Q12/Q13) + .rollback + verify both distributions + search <!-- TBD Session 1 -->
 
 ---
 
@@ -120,5 +122,5 @@
 ### Manual smoke (per `superpowers:verification-before-completion`)
 - PR1: reviewer queue no longer shows the 17 stuck submissions as actionable; TEST shows the 17 flipped + notes set, ~17 `season` values normalized, stragglers `retired_at` set.
 - PR2: 3 ghosts gone (`count=0`), snapshot table populated, search live count −3, no dangling refs (re-run Q8 probes post-delete).
-- PR3: post-UPDATE value distribution matches locked vocab; rollback table populated.
+- PR3: post-UPDATE value distribution matches locked vocab on **both** surfaces (typed `text[]` columns AND `metadata` JSONB); `search_vector` refreshed (search for a canonicalized term behaves); rollback table populated; reviewer-entry options/Zod aligned (or follow-up named).
 - PR4: `npm run dev` loads with the refreshed seed.
