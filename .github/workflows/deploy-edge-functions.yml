@@ -41,12 +41,13 @@ jobs:
       target: ${{ steps.plan.outputs.target }}
       functions: ${{ steps.plan.outputs.functions }}
       has_work: ${{ steps.plan.outputs.has_work }}
-      # "strict" => the post-deploy version-advance check fails the job on a
-      # no-op. True only for automated push/PR deploys of specific changed
-      # functions (their own source changed, so the version MUST advance).
-      # False for manual dispatch and _shared fanouts, where redeploying
-      # identical content is expected (the check warns instead).
-      strict: ${{ steps.plan.outputs.strict }}
+      # JSON array of functions to verify STRICTLY (fail the job if the
+      # post-deploy version did not advance). A function is listed only when an
+      # automated push/PR changed one of its BUNDLED files (so a real deploy
+      # must advance the version). Functions deployed for a test-only change, a
+      # _shared fanout, a manual dispatch, or orphan-history recovery are absent
+      # here and get a lenient warn-on-no-advance instead.
+      strict_functions: ${{ steps.plan.outputs.strict_functions }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -71,11 +72,10 @@ jobs:
           # regardless of which event branch ran (defensive under set -u).
           FUNCS=()
 
-          # Strict no-op gate defaults OFF; only the "specific function dirs
-          # changed on push/PR" branch below turns it on (see the `strict`
-          # output comment). Manual dispatch, _shared fanouts, and the
-          # orphan-history full-suite recovery all stay lenient.
-          STRICT=false
+          # Functions to verify STRICTLY (their own bundled source changed on an
+          # automated push/PR). Stays empty for manual dispatch, _shared
+          # fanouts, and orphan-history recovery — those verify leniently.
+          STRICT_FUNCS=()
 
           # Discover deployable functions from the filesystem so adding a new
           # function under supabase/functions/<name>/ doesn't require editing
@@ -149,12 +149,15 @@ jobs:
               echo "Shared code changed — deploying all functions."
               FUNCS=("${ALL_FUNCTIONS[@]}")
             else
-              # Specific function source changed on an automated push/PR (no
-              # _shared fanout). Each deployed function's OWN source changed, so
-              # a successful deploy MUST advance its version — enable the strict
-              # no-op gate. (This is the only path that has ever produced the
-              # silent no-op in production.)
-              STRICT=true
+              # Specific function dirs changed on an automated push/PR (no
+              # _shared fanout). Deploy each, and mark for STRICT verification
+              # any function whose change touched a BUNDLED file — there a real
+              # deploy must advance the version, so a frozen version is the
+              # silent no-op bug. A function whose ONLY change is a test file
+              # (not in the deploy bundle) is still deployed but verified
+              # leniently: its bundle is identical, so its version legitimately
+              # won't move. (This push path is the only one that has produced
+              # the silent no-op in production.)
               mapfile -t FUNC_DIRS < <(
                 echo "${CHANGED:-}" \
                   | sed -n 's|^supabase/functions/\([^/]*\)/.*|\1|p' \
@@ -163,6 +166,15 @@ jobs:
               for name in "${FUNC_DIRS[@]}"; do
                 if is_valid_function "$name"; then
                   FUNCS+=("$name")
+                  # Strict iff this function has a changed file that is NOT a
+                  # test file. Everything else under the dir ships in the
+                  # deployed bundle — *.ts source, *.json config, and the
+                  # import.meta.url-referenced prompt *.md assets.
+                  if echo "${CHANGED:-}" \
+                    | grep -E "^supabase/functions/${name}/" \
+                    | grep -qvE '(\.(test|spec)\.ts$|/__tests__/)'; then
+                    STRICT_FUNCS+=("$name")
+                  fi
                 fi
               done
             fi
@@ -173,7 +185,7 @@ jobs:
             echo "has_work=false" >> "$GITHUB_OUTPUT"
             echo "target=$TARGET" >> "$GITHUB_OUTPUT"
             echo 'functions=[]' >> "$GITHUB_OUTPUT"
-            echo "strict=false" >> "$GITHUB_OUTPUT"
+            echo 'strict_functions=[]' >> "$GITHUB_OUTPUT"
             {
               echo "## Edge Function Deploy — no-op"
               echo ""
@@ -183,17 +195,22 @@ jobs:
           fi
 
           JSON=$(printf '%s\n' "${FUNCS[@]}" | jq -R . | jq -cs .)
+          if [ "${#STRICT_FUNCS[@]}" -gt 0 ]; then
+            STRICT_JSON=$(printf '%s\n' "${STRICT_FUNCS[@]}" | jq -R . | jq -cs .)
+          else
+            STRICT_JSON='[]'
+          fi
           echo "has_work=true" >> "$GITHUB_OUTPUT"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           echo "functions=$JSON" >> "$GITHUB_OUTPUT"
-          echo "strict=$STRICT" >> "$GITHUB_OUTPUT"
+          echo "strict_functions=$STRICT_JSON" >> "$GITHUB_OUTPUT"
 
           {
             echo "## Edge Function Deploy Plan"
             echo ""
             echo "- **Event:** \`$EVENT_NAME\`"
             echo "- **Target:** \`$TARGET\`"
-            echo "- **Strict no-op gate:** \`$STRICT\`"
+            echo "- **Strict-verified (must advance):** \`${STRICT_FUNCS[*]:-(none — lenient warn)}\`"
             echo "- **Functions (${#FUNCS[@]}):**"
             for f in "${FUNCS[@]}"; do
               echo "  - \`$f\`"
@@ -285,11 +302,12 @@ jobs:
         # the function is ACTIVE and its deployed version advanced past the
         # pre-deploy snapshot. Supabase only bumps `version` (and ezbr_sha256)
         # when the bundled SOURCE changes, so "did not advance" means the deploy
-        # changed nothing. The detect-changes `strict` flag is true only for
-        # automated push/PR deploys of specific changed functions — where the
-        # source DID change, so a frozen version is a real silent no-op and we
-        # fail loudly. For manual dispatch and _shared fanouts (redeploying
-        # identical content is expected) it warns instead of failing.
+        # changed nothing. detect-changes lists a function in `strict_functions`
+        # only when an automated push/PR changed one of its BUNDLED files — there
+        # a frozen version is a real silent no-op, so we fail loudly. Functions
+        # deployed for a test-only change, a _shared fanout, or a manual dispatch
+        # verify leniently (warn), since their bundle (and version) may
+        # legitimately not change.
         #
         # Caveat: `version` is a project-level counter. With the serialized
         # matrix this reliably attributes the bump to this run, but a
@@ -303,9 +321,17 @@ jobs:
           PROJECT_REF: rxgajgmphciuaqzvwmox
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PRE_VERSION: ${{ steps.pre.outputs.version }}
-          STRICT: ${{ needs.detect-changes.outputs.strict }}
+          STRICT_FUNCTIONS: ${{ needs.detect-changes.outputs.strict_functions }}
         run: |
           set -euo pipefail
+          # This function is verified strictly iff detect-changes listed it in
+          # strict_functions (its own bundled source changed on an automated
+          # push/PR). Otherwise a frozen version warns instead of failing.
+          if printf '%s' "${STRICT_FUNCTIONS:-[]}" | jq -e --arg f "$FUNCTION_NAME" 'index($f) != null' >/dev/null 2>&1; then
+            STRICT=true
+          else
+            STRICT=false
+          fi
           post=""
           status=""
           # Poll briefly: the Management API can lag the CLI deploy by a moment.
@@ -469,9 +495,17 @@ jobs:
           PROJECT_REF: jxlxtzkmicfhchkhiojz
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PRE_VERSION: ${{ steps.pre.outputs.version }}
-          STRICT: ${{ needs.detect-changes.outputs.strict }}
+          STRICT_FUNCTIONS: ${{ needs.detect-changes.outputs.strict_functions }}
         run: |
           set -euo pipefail
+          # This function is verified strictly iff detect-changes listed it in
+          # strict_functions (its own bundled source changed on an automated
+          # push/PR). Otherwise a frozen version warns instead of failing.
+          if printf '%s' "${STRICT_FUNCTIONS:-[]}" | jq -e --arg f "$FUNCTION_NAME" 'index($f) != null' >/dev/null 2>&1; then
+            STRICT=true
+          else
+            STRICT=false
+          fi
           post=""
           status=""
           # Poll briefly: the Management API can lag the CLI deploy by a moment.
