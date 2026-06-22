@@ -354,6 +354,10 @@ jobs:
             echo "::error::Could not read post-deploy version for $FUNCTION_NAME"
             exit 1
           fi
+          if [ -z "$status" ]; then
+            echo "::error::Read a version but no status for $FUNCTION_NAME after polling — cannot confirm the deploy is ACTIVE."
+            exit 1
+          fi
           echo "Post-deploy: version=$post status=$status (pre=$PRE_VERSION)"
           if [ "$status" != "ACTIVE" ]; then
             echo "::error::$FUNCTION_NAME is not ACTIVE after deploy (status=$status)"
@@ -526,6 +530,10 @@ jobs:
           done
           if [ -z "$post" ]; then
             echo "::error::Could not read post-deploy version for $FUNCTION_NAME"
+            exit 1
+          fi
+          if [ -z "$status" ]; then
+            echo "::error::Read a version but no status for $FUNCTION_NAME after polling — cannot confirm the deploy is ACTIVE."
             exit 1
           fi
           echo "Post-deploy: version=$post status=$status (pre=$PRE_VERSION)"
