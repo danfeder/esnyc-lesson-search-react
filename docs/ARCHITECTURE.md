@@ -1141,7 +1141,7 @@ lesson-123     | lesson-456    | 0.92             | near            | user-uuid 
 **Full-text search**:
 ```sql
 CREATE INDEX idx_lessons_search_vector ON lessons USING GIN (search_vector);
--- Size: ~15 MB for 1,098 lessons
+-- Size: ~15 MB for 1,098 lessons (Oct 2025 baseline — see top note)
 -- Usage: Every text search query
 -- Critical: Cannot be dropped
 ```
@@ -1526,7 +1526,7 @@ metadata = {"gradeLevel": ["5", "6", "7"], ...}  -- ❌ Duplicate
 - Double writes on every lesson insert/update
 - ~20 duplicate indexes (GIN on both array + JSONB path)
 - Confusing for developers ("which is canonical?")
-- Wasted disk space (~30-40 MB for 1,098 lessons)
+- Wasted disk space (~30-40 MB for 1,098 lessons — Oct 2025 baseline, see top note)
 
 **Cleanup steps**:
 1. ✅ Confirm all queries use normalized columns (not metadata JSONB paths)

@@ -175,7 +175,7 @@ A 4-agent read-only pass against `main` @ `2d25e23` re-scoped the roadmap's six-
 
 ### Re-homed — C40 (memory archive-split)  ·  NO repo PR  ·  supervisor memory maintenance
 
-Out-of-repo. Apply the status-doc lifecycle (Current-State header first + recent entries in the live file; older sessions split into a `*-archive.md` sibling) to the 3 largest journal memory files in `~/.claude/projects/-Users-danfeder-cCode-esynyc-lessonsearch-v2/memory/`:
+Out-of-repo. Apply the status-doc lifecycle (Current-State header first + recent entries in the live file; older sessions split into a `*-archive.md` sibling) to the 3 largest journal memory files in `~/.claude/projects/-Users-danfeder-cCode-esynyc-lessonsearch-v2/memory/` (machine-specific path — verify it on the executing machine; the slug encodes this repo's local checkout path):
 - `project_metadata_rebuild_initiative.md` (~110 KB / 799 lines — COMPLETE)
 - `project_internal_design_system.md` (~80 KB / 585 lines — COMPLETE)
 - `project_lesson_submission_tier1.md` (~66 KB / 279 lines — COMPLETE)
@@ -186,14 +186,14 @@ All three are closed initiatives → safe to compress the live file to a Current
 
 ## §3 — STATUS (WHERE we are)
 
-**Last updated:** 2026-06-21 by Session 2 — PR A content edits (A.1–A.5) authored + verified; pre-push review + PR open pending (A.6).
+**Last updated:** 2026-06-21 by Session 2 — **PR A open as #532**; round-1 triage + Codex cross-family pass both clean (claude-review APPROVE · Codex AGREE-SHIP); round-1 fix-up pushed. **Awaiting the user's merge call.**
 
 ### Current State
-**Active PR:** **PR A — "close the decks"** — content edits done (A.1–A.5), not yet pushed. A.6 (pre-push code-reviewer → push → `gh pr create` → four-surface triage) is the next step.
-**Current task:** **PR A / A.6** (§2). A.1–A.5 complete on `chore/wave3-close-decks` (uncommitted at this checkpoint; will be committed + pushed in A.6).
-**Branch:** `chore/wave3-close-decks` (PR A's branch). Scaffold commit `be570ab` in place; A.1–A.5 edits in the working tree.
+**Active PR:** **PR A — "close the decks" = #532** (https://github.com/danfeder/esnyc-lesson-search-react/pull/532), OPEN. A.1–A.6 complete; three independent gates agree (claude-review APPROVE · pre-push reviewer APPROVE · Codex AGREE-SHIP). Awaiting the user's merge call (docs-only; no DB/edge gates).
+**Current task:** **NONE pending on PR A** — round-1 fix-up pushed. Next is the user's merge call, then **PR B (archival)**.
+**Branch:** `chore/wave3-close-decks` (PR A's branch), pushed. Commits: scaffold `be570ab` + A.1–A.5 `49a5c91` + round-1 fix-up.
 **Last commit on main:** `2d25e23` (#531 C138, Wave 2 close).
-**Baseline:** `npm run check` green (verified after A.1–A.5 edits).
+**Baseline:** `npm run check` green.
 
 ### Recent decisions worth carrying forward
 - Scaffold committed on PR A's branch (not a standalone docs PR), bundling the Wave-2 close-out edits — same pattern as Wave 2 (`feedback_no_docs_push_during_pr`). Main is PR-protected → no direct push.
@@ -209,7 +209,7 @@ All three are closed initiatives → safe to compress the live file to a Current
 - ✅ **Scaffold (Session 1, 2026-06-21)** — orientation (read campaign memory + master tracker + roadmap Wave-3 + grounded each item via a 4-agent read-only Workflow against `main` @ `2d25e23`) → user-confirmed scope/weight (3 questions) → authored this combined doc + updated the master tracker's Wave-3 row → **combined GATE-1 review (Codex `gpt-5.5`, cross-family; verdict fold-4-fixes — all folded)** → committed on `chore/wave3-close-decks` with the folded Wave-2 close-out edits. No execution yet.
 
 ### In flight
-- **PR A — "close the decks"** — A.1–A.5 content edits done + verified (`npm run check` green). A.6 next: pre-push code-reviewer → commit → push → `gh pr create` → four-surface triage.
+- **PR A — "close the decks" (#532)** — OPEN, all gates clean. Round-1 four-surface triage: claude-review **APPROVE**; all CI green except the pre-existing Security-Audit `npm audit` noise (rejected, `.md`-only diff). Codex cross-family rebuttal pass: **AGREE-SHIP** (corroborated A.1 via `git cherry` patch-equivalence, A.2 banner-only, A.3 no fabricated count; all 4 triage verdicts upheld). Round-1 fix-up pushed. **Awaiting the user's merge call**, then PR B.
 
 ### Blocked
 (none)
@@ -234,4 +234,7 @@ All three are closed initiatives → safe to compress the live file to a Current
 - **A.4** — SUPERSEDED banner on `TECH_DEBT_AUDIT_2025-12.md` (do-not-mine; points to `2026-06-20-deferred-work-roadmap.md`).
 - **A.5** — bumped master tracker (`2026-06-21-deferred-campaign-status.md`) Wave-3 row + header from SCAFFOLDED → PR A IN FLIGHT.
 - Verified: `npm run check` green after all edits; `git diff --stat` = 5 docs files (+§3 of this doc), 0 code touched.
-- **Next:** A.6 — pre-push code-reviewer (docs-accuracy) → commit → push → `gh pr create` → four-surface bot triage.
+- **A.6** — pre-push `feature-dev:code-reviewer` = APPROVE (one LOW: present-tense count under an Oct-2025 header → folded by dropping the "Current" label). Committed `49a5c91`, pushed, opened **PR #532**.
+- **A.6 four-surface triage** — claude-review **APPROVE** with 3 findings (Minor §3-staleness; Informational 3 un-annotated ARCHITECTURE counts; Informational C40 machine-specific path). CI all green except **Security Audit FAILURE = pre-existing `npm audit` noise** (the `@lhci/cli` chain + babel/react-router/dompurify advisories; `.md`-only diff can't introduce it → rejected). Round-1 fix-up folds findings 1+3 + annotates 2 of the 3 counts (left the ASCII-box `total_count: 1098` as illustrative).
+- **Codex cross-family pass (user-requested)** — first two attempts **died silently ~5 min in** = the **foreground-orphan** failure (a long Codex task run foreground gets reaped when the launching subagent returns early). Root cause + the `--background`-and-poll fix saved to memory `[[feedback_prefer_codex_commands]]`. Re-ran via the companion's `task --background` (job `task-mqomfw8v-spu1j9`): completed clean in 5m45s → **AGREE-SHIP**. Independently corroborated A.1 (`git cherry -v` patch-equivalence; no #470 merge commit; banner at `ReviewDetail.tsx:1203`), A.2 banner-only, A.3 no fabricated count; upheld all 4 triage verdicts; found no broken links / lost content.
+- **Three independent gates agree → PR A ready.** Round-1 fix-up pushed. **Next:** user's merge call, then PR B (archival).
