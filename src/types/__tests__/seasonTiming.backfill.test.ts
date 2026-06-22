@@ -57,5 +57,15 @@ describe('C83 season-normalization contract', () => {
     it('renames a season array to seasonTiming, preserving the array', () => {
       expect(reviewToLesson({ season: ['Winter'] }).seasonTiming).toEqual(['Winter']);
     });
+
+    // The 3 C83 fallback reviews are normalized to `season: []`. The mapper's
+    // `length > 0` guard (reviewToLessonMapper.ts) drops the key for an empty array,
+    // so reviewToLesson({ season: [] }) emits NO seasonTiming. This is the intended
+    // partial-updater behaviour and harmless for those 3 rows (their published lesson
+    // already has seasonTiming = []); pinned here so a future reader doesn't have to
+    // trace the mapper to learn what `[]` does.
+    it('emits no seasonTiming for an empty season array (partial-updater behaviour)', () => {
+      expect(reviewToLesson({ season: [] }).seasonTiming).toBeUndefined();
+    });
   });
 });
