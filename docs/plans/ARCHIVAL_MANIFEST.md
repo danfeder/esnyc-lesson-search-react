@@ -3,7 +3,7 @@
 **Created:** 2026-06-22 (Wave 3 — Repo/Docs Hygiene, PR B).
 **What this is:** a navigation aid so archived ≠ lost. Wave 3 relocated **56 shipped/closed plan docs** from the working `docs/plans/` root into `docs/plans/archive/` so the root shows only **live / in-flight** work. History is preserved (`git mv`); every archived file is still in the repo at `docs/plans/archive/<same-filename>`.
 
-**How to find an archived doc:** it kept its exact filename — look in `docs/plans/archive/`, or `git log --follow docs/plans/archive/<name>` for full history across the move.
+**How to find an archived doc:** it kept its exact filename — look in `docs/plans/archive/`, or `git log --follow docs/plans/archive/<name>` for full history across the move. (Paths in the archived list below are written relative to `docs/plans/`, i.e. `archive/<name>` = `docs/plans/archive/<name>`.)
 
 **Why some shipped docs were NOT archived:** see [§ Kept in place](#kept-in-place-18-docs) below. In short: a doc stays in the root if a script reads it at runtime, a live slash-command points at it, it feeds deferred future work, or it's a live campaign doc. Docs cited only in **comments** were archived when the only citation is a frozen (immutable, already-applied) migration `.sql` and kept when cited in editable live source — the "Tier-4 / Option B" rule locked with the user 2026-06-22.
 
@@ -11,7 +11,7 @@
 
 ---
 
-## Archived (56 docs) — grouped by initiative
+## Archived (56 docs — 54 `.md` + 2 `.sql` verification-probe artifacts) — grouped by initiative
 
 ### Deduplication revamp + review/resolution interface — SHIPPED (duplicate detection + resolution live)
 - `archive/2025-12-01-deduplication-revamp-design.md`
