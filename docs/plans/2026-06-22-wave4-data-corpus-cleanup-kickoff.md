@@ -13,29 +13,26 @@ DATA SAFETY supersedes velocity throughout. It clears a handful of small, distin
 each through the 3-tier pipeline (local → TEST → PROD-with-manual-approval), snapshot-before-mutate,
 reversible-first.
 
-4 PRs, lowest-risk-first:
-  PR 1: Reversible data cleanups — C12 (17 stuck `lesson_submissions` → rejected + note), C83 (17 string-typed `submission_reviews.tagged_metadata->'season'` values normalized), C08 (retire the last ~2 live non-ESYNYC imports via `retired_at`). One migration + `.rollback`.
-  PR 2: Ghost hard-delete + search-RPC cleanup — C11 (snapshot + `DELETE` 3 ghost "Unknown" rows + remove the hardcoded 3-ID exclusion from `search_lessons`) + C49 (drop the dead `filter_lesson_format` param + its inert frontend line). **Highest risk, isolated, irreversible.**
-  PR 3: Vocabulary canonicalization — C02 (`cooking_skills`/`main_ingredients` 2nd-pass; snapshot table first).
-  PR 4: Local dev-seed refresh — C88 (`data/consolidated_lessons.json`). No DB, no PROD.
+**3 PRs, lowest-risk-first** (reshaped at design-lock 2026-06-22 from the original 4 — C08 closed as a no-op, C02 relocated):
+  PR 1: Reversible data cleanups — C12 (close stale `lesson_submissions`; **env-independent** scope `status='submitted' AND created_at < '2026-05-01'` → TEST 17 / PROD 14, do NOT hardcode 17; `rejected` + distinct stale/orphan `reviewer_notes` + snapshot table) + C83 (normalize 17 string-typed `submission_reviews…->'season'` → arrays via backfill-from-published-lesson (14) + `[]` (3); CTE-driven, snapshot table). One migration + `.rollback`.
+  PR 2: Ghost hard-delete + search-RPC cleanup — C11 (snapshot + GUARDED `DELETE` 3 ghost "Unknown" rows [identity predicates + assert-exactly-3] + remove the hardcoded 3-ID exclusion from `search_lessons`) + C49 (drop the dead `filter_lesson_format` param + 4 frontend lines + types regen). **Highest risk, isolated, irreversible.** Pre-delete scan verified all-clear on TEST+PROD.
+  PR 3: Local dev-seed refresh — C88 (author a read-only PROD→seed generator; re-export `data/consolidated_lessons.json` from PROD-live ~745, camelCase envelope). No DB write, no PROD mutation.
 
-Deferred (NOT this wave): C01 embeddings regen; C09/C07/C03 dedup-pipeline rework.
+Deferred (NOT this wave): **C02** (`cooking_skills`/`main_ingredients` canonicalization → its own `stage2-retag` content-re-tag session, the deferred "PR F"; carry-forward findings in design §3.1/§4/§8); **C08 closed** (0 stragglers); C01 embeddings regen; C09/C07/C03 dedup-pipeline rework.
 
 **Scaffold delivery (user 2026-06-22):** the scaffold lives on `chore/wave4-scaffold` (unpushed) — there is NO standalone scaffold PR. Session 1 (design-lock) commits on THIS branch; cut PR1 from `chore/wave4-scaffold` (not `main`) so the scaffold + design-lock docs bundle into PR1's PR.
 
 # WHERE THINGS LIVE
 
 - `docs/plans/2026-06-22-wave4-data-corpus-cleanup-design.md`
-  The WHY + locked decisions. Read once at session start.
-  **CHECK ITS STATUS LINE:** if it says **Draft**, you are in (or before) the design-lock session —
-  Session 1 works the doc's §4 "Open design questions" against real code/data, locks the answers
-  (respecting the `[evidence-lockable]` vs `[user-verdict]` tags), flips Status to Locked, and
-  authors the impl plan's concrete tasks. **NO implementation code before that happens.**
+  The WHY + locked decisions. Read once at session start. **Status = LOCKED (Session 1, 2026-06-22)** —
+  §4 holds the per-question locked answers; do not re-debate. §3.1 records the 4→3-PR reshape.
 
 - `docs/plans/2026-06-22-wave4-data-corpus-cleanup-implementation.md`
-  The WHAT. Currently a SKELETON (PR breakdown + pre-flight reads + `<!-- TBD Session 1 -->`
-  placeholders). Session 1 authors the concrete tasks. Verify every snippet against current code
-  before applying; small repo-conformance adaptations OK, product/design changes are not — stop and ask.
+  The WHAT — **tasks AUTHORED.** PR1 (C12+C83) has reference migration SQL skeletons + a TDD Zod fixture;
+  PR2 (C11+C49) the guarded-delete + RPC-recreate steps; PR3 (C88) the generator. The reference SQL is a
+  skeleton, NOT copy-paste: **verify every snippet against current code/schema + re-run the count probes
+  before applying** (counts drift). Repo-conformance adaptations OK; product/design changes — stop and ask.
 
 - `docs/plans/2026-06-22-wave4-data-corpus-cleanup-execution-status.md`
   Source of truth for WHERE we are. Survives /clear (on disk + git). The "Current State" header is
@@ -71,13 +68,14 @@ Supervisor-only (never delegated): user communication, `[user-verdict]` decision
 
 # LOCKED DECISIONS — do NOT re-debate (full set in the design doc; at-risk locks pinned here)
 
-- **Scope = Core 5 (C12, C83, C08, C11, C02) + tiny extras (C49, C88).** Defer C01 + C09/C07/C03. (User, 2026-06-22.)
-- **C11 = HARD-delete** the 3 ghost rows (not soft-delete) + remove the hardcoded `search_lessons` exclusion. (User verdict.)
-- **4 PRs, lowest-risk-first:** PR1 reversible bundle → PR2 isolated irreversible delete + RPC → PR3 bulk metadata → PR4 no-DB seed. PR2 before PR3 (shared rows), OR scope C02's UPDATE to exclude the ghost IDs.
-- **Every corpus mutation goes through a migration file + `.rollback`, snapshot-before-mutate, verbatim IDs from source, TEST-verify before merge + PROD-verify after approval.** (Not data-only via MCP.)
-- **Full 4-file scaffold weight** (this initiative). (User, 2026-06-22.)
+- **Scope (locked + reshaped 2026-06-22): 3 PRs — PR1 = C12 + C83, PR2 = C11 + C49, PR3 = C88.** C08 CLOSED (0 stragglers). C02 RELOCATED to its own `stage2-retag` session. Defer C01 + C09/C07/C03.
+- **C11 = HARD-delete** the 3 ghost rows (not soft-delete) + remove the hardcoded `search_lessons` exclusion. Pre-delete scan VERIFIED all-clear on TEST **and** PROD (identity=3, all 14 ref probes=0, guarded count=3). (User verdict.)
+- **C12 env-independent (TEST≠PROD):** scope by `status='submitted' AND created_at < '2026-05-01'` + assert a post-condition, NOT a hardcoded count. TEST=17 (15 new+2 update), PROD=14 (14 new, 0 update); 0 submitted after 2026-05-01 either DB.
+- **C83 CTE-driven (no hardcoded IDs):** backfill `season` from each review's resolved published lesson via `COALESCE(canonical_lesson_id-join, lessons.original_submission_id OUT-ref-join)` → 14 resolve; the 3 whose lesson has empty `seasonTiming` → `[]`. PROD census identical to TEST.
+- **PRs are fully independent** now C02 is gone (the old PR2-before-PR3 shared-ghost-rows coupling is moot). PR1 → PR2 recommended (build verify rhythm before the irreversible delete).
+- **Every corpus mutation goes through a migration file + `.rollback`, snapshot-before-mutate (dedicated snapshot table per change), verbatim IDs from source, TEST-verify before merge + PROD-verify after approval.** (Not data-only via MCP.)
 
-Out of scope (do NOT scope-creep — captured in design §8): C01 embeddings; C09/C07/C03 dedup rework; hard-deleting the 21 already-retired imports; C65; C67; C117; C36; Wave-3 edge-CI follow-ups.
+Out of scope (do NOT scope-creep — captured in design §8): **C02 (own re-tag session, next-up)**; C08 closed; C01 embeddings; C09/C07/C03 dedup rework; hard-deleting the 21 already-retired imports; C65; C67; C117; C36; Wave-3 edge-CI follow-ups.
 
 If you want to "improve" the design/plan mid-execution, STOP and surface it. Don't unilaterally rewrite the spec.
 
@@ -164,8 +162,11 @@ Lives at `docs/plans/2026-06-22-wave4-data-corpus-cleanup-execution-status.md` (
 
 # RIGHT NOW
 
-Read this prompt → read design doc → read impl plan from current task → read status file → `npm run check` → tell me where you are and what's next. Don't start coding until I confirm.
+Read this prompt → read the status file Current State header → read design doc (LOCKED) → read impl plan PR1 tasks → `npm run check` → tell me where you are and what's next. Don't start coding until I confirm.
 
-**The design doc Status is "Draft" → this is the design-lock session (Session 1).** Work the design's §4 "Open design questions" list — discovery against real code/data, lock answers into the doc, flip Status to Locked, author the impl plan's concrete tasks. **No implementation code this session.** Respect tags: `[evidence-lockable]` you may lock from evidence with a one-line rationale; `[user-verdict]` get evidence + a recommendation presented to the user, who decides — NEVER lock those unilaterally. (Several questions are already GATE-A-grounded — confirm the grounding holds, then lock.)
+**Design is LOCKED (Session 1, 2026-06-22) + impl tasks authored → this is a BUILD session. Start PR1 (C12 + C83).**
+- **First:** check the status file's "In flight" — if the GATE 1B Codex review of the docs hasn't been folded yet, fold it before writing code.
+- PR1 path (impl plan §"PR 1"): invoke `database-migrations`; **re-run the TEST+PROD count probes from the impl-plan "Evidence baseline"** (counts drift — never trust the doc blind); write Task 1.1 (C83 Zod fixture, TDD) then Task 1.2 (the migration + `.rollback` + two snapshot tables); **GATE 2 Codex** on the SQL before TEST apply; `supabase db reset && npm run test:rls && npm run check`; cut the PR1 branch from `chore/wave4-scaffold`; per-PR ritual.
+- The reference migration SQL in the impl plan is a skeleton — verify against current schema; repo-conformance adaptations OK, product/design changes stop-and-ask.
 
 <!-- ===== END OF KICKOFF BODY ===== -->
