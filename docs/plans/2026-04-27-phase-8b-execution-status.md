@@ -1,5 +1,8 @@
 # Phase 8b Execution Status
 
+> **⚠️ CLOSED (Wave 3, 2026-06-21) — this status doc is stale; kept for historical record.**
+> Phase 8b shipped: PR #470's original branch was not merged as a merge commit, but its reviewer-flow changes landed on `main` via rebased/patch-equivalent commits; this doc's "PR #470 OPEN" status is stale.
+
 **Last updated:** 2026-04-29 01:25 UTC by Session 18
 **Current PR:** **PR 3 = #470** — Reviewer flow redesign. **OPEN, round 1 bot fix-ups landed, awaiting round 2 bots + manual TEST DB smoke against deploy preview.** Branch `feat/phase-8b-reviewer-flow` pushed to `origin`. Current head `1853059` = Session 18 round-1 fix-up bundle. PR now 22 commits (10 task/feature + 11 docs + 1 round-1 fix-up).
 **Current task:** Task 3.11 step 5-6 round 1 ✅ done (4-surface bot triage on round 1; 7 of 15 unique findings accepted, 8 rejected with rationale; bundled fix-up `1853059` pushed). Next: wait for round 2 bots (currently in flight against `1853059` — claude-review, claude-component-review, performance-review re-running), four-surface triage round 2 per `feedback_pr_comment_surfaces.md`, manual TEST DB smoke against new deploy preview at https://deploy-preview-470--esynyc-lessonlibrary-v2.netlify.app, **round-cap if round 3 lands** (only critical bugs per kickoff rule).

@@ -186,14 +186,14 @@ All three are closed initiatives → safe to compress the live file to a Current
 
 ## §3 — STATUS (WHERE we are)
 
-**Last updated:** 2026-06-21 by Session 1 (scaffold) — scaffold authored + reviewed + committed; no execution yet.
+**Last updated:** 2026-06-21 by Session 2 — PR A content edits (A.1–A.5) authored + verified; pre-push review + PR open pending (A.6).
 
 ### Current State
-**Active PR:** NONE yet. Wave 3 is **scaffolded, not started.**
-**Current task:** **PR A — "close the decks"** (§2). First execution session: session-start ritual → confirm orientation with user → dispatch/do A.1–A.5 → pre-push → PR.
-**Branch:** the scaffold commit lives on `chore/wave3-close-decks` (PR A's branch), NOT pushed. (If a fresh session finds itself on `main` with these as uncommitted changes instead, that's fine too — just commit them onto `chore/wave3-close-decks`.)
+**Active PR:** **PR A — "close the decks"** — content edits done (A.1–A.5), not yet pushed. A.6 (pre-push code-reviewer → push → `gh pr create` → four-surface triage) is the next step.
+**Current task:** **PR A / A.6** (§2). A.1–A.5 complete on `chore/wave3-close-decks` (uncommitted at this checkpoint; will be committed + pushed in A.6).
+**Branch:** `chore/wave3-close-decks` (PR A's branch). Scaffold commit `be570ab` in place; A.1–A.5 edits in the working tree.
 **Last commit on main:** `2d25e23` (#531 C138, Wave 2 close).
-**Baseline:** `npm run check` green (verified at scaffold).
+**Baseline:** `npm run check` green (verified after A.1–A.5 edits).
 
 ### Recent decisions worth carrying forward
 - Scaffold committed on PR A's branch (not a standalone docs PR), bundling the Wave-2 close-out edits — same pattern as Wave 2 (`feedback_no_docs_push_during_pr`). Main is PR-protected → no direct push.
@@ -209,7 +209,7 @@ All three are closed initiatives → safe to compress the live file to a Current
 - ✅ **Scaffold (Session 1, 2026-06-21)** — orientation (read campaign memory + master tracker + roadmap Wave-3 + grounded each item via a 4-agent read-only Workflow against `main` @ `2d25e23`) → user-confirmed scope/weight (3 questions) → authored this combined doc + updated the master tracker's Wave-3 row → **combined GATE-1 review (Codex `gpt-5.5`, cross-family; verdict fold-4-fixes — all folded)** → committed on `chore/wave3-close-decks` with the folded Wave-2 close-out edits. No execution yet.
 
 ### In flight
-- NONE — scaffold only; PR A not started.
+- **PR A — "close the decks"** — A.1–A.5 content edits done + verified (`npm run check` green). A.6 next: pre-push code-reviewer → commit → push → `gh pr create` → four-surface triage.
 
 ### Blocked
 (none)
@@ -224,3 +224,14 @@ All three are closed initiatives → safe to compress the live file to a Current
 - **GATE-1 review (combined, small-initiative calibration) = Codex `gpt-5.5` cross-family, run via direct `codex exec` (read-only sandbox).** The `codex:codex-rescue` agent + a Claude `feature-dev:code-reviewer` agent BOTH died on transient `API Error: 529 Overloaded` (0 tool-calls / 0 tokens ×3, ~193s each) — Anthropic-side subagent-spawn overload, NOT a Codex problem (Codex CLI v0.140.0 healthy: `auth.json` present, `codex app-server` running, smoke returned `CODEX_OK`). Bypassed the broken Claude wrapper and drove Codex directly. **Verdict: fold-4-fixes — all folded:** (1) BLOCKER-wording → A.1 phase-8b banner pinned to the git-verified truth (reviewer-flow feature IS in `main` via rebased/patch-equivalent commits, NOT a #470 merge commit; banner at `ReviewDetail.tsx:1203`); (2) HIGH → PR B code-referenced-doc grep scan (the Stage-1 concepts worksheet is a hardcoded input to `scripts/build-concepts-tool.py:11,61` + `data/vocab/academic-concepts.vocab.json:3` — a blind `git mv` would break the build); (3) MEDIUM → C.2 marks `.claude/skills/database-migrations/SKILL.md:25-37` decision tree non-retirable; (4) LOW×3 → count fixes (concepts doc 604 lines / ARCHITECTURE 8 occurrences / docs/plans ~71 tracked top-level). No internal-consistency issues found.
 - Committed scaffold + folds on `chore/wave3-close-decks` (NOT pushed).
 - **Next:** `/clear` → paste §0 → execute PR A (close-decks) in a fresh session.
+
+#### Session 2 — 2026-06-21 — PR A "close the decks" execution
+- Session-start ritual: git matched §3 (on `chore/wave3-close-decks`, scaffold `be570ab` in place, 6 intentionally-untracked items present + left alone); `npm run check` green baseline; A.0 verified already folded into `be570ab` (Wave-2 close-out edits). User confirmed orientation.
+- Re-verified all anchors before editing (counts/line numbers drift): A.3's 8 `1,098` sites matched §1 exactly (lines 4, 16, 107, 135, 535, 1142, 1527, 2187).
+- **A.1** — CLOSED banner on `2026-04-27-phase-8b-execution-status.md` using the exact git-verified wording (shipped via rebased/patch-equivalent commits, NOT a #470 merge commit). No private-memory citation in the repo doc (per `feedback_repo_doc_rules_vs_memory_writes`).
+- **A.2** — top CLOSED banner on `2026-05-12-...concepts-execution-status.md` (worksheet shipped PR #496 `6b2fac2`; team review 208/208 complete + integrated). Body untouched.
+- **A.3** — `ARCHITECTURE.md`: added top editor's note + reframed the 4 assertive present-tense counts (lines 4, 107, 135, 2187) to "Oct 2025 baseline". Left line 18 (already under an explicit "(October 2025)" header) and the 3 illustrative/sizing values (537 sample response, 1144/1529 size estimates) under the umbrella note. **No fabricated current number** (per A.3 rule).
+- **A.4** — SUPERSEDED banner on `TECH_DEBT_AUDIT_2025-12.md` (do-not-mine; points to `2026-06-20-deferred-work-roadmap.md`).
+- **A.5** — bumped master tracker (`2026-06-21-deferred-campaign-status.md`) Wave-3 row + header from SCAFFOLDED → PR A IN FLIGHT.
+- Verified: `npm run check` green after all edits; `git diff --stat` = 5 docs files (+§3 of this doc), 0 code touched.
+- **Next:** A.6 — pre-push code-reviewer (docs-accuracy) → commit → push → `gh pr create` → four-surface bot triage.
