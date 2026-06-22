@@ -36,7 +36,7 @@
 
 ## PR 1 — Reversible data cleanups (C12 + C83 + C08)
 
-**Branch:** `chore/wave4-pr1-reversible-cleanups`
+**Branch:** `chore/wave4-pr1-reversible-cleanups` (cut from `chore/wave4-scaffold`, NOT `main`, so the scaffold + design-lock docs bundle into this PR — user decision 2026-06-22)
 
 **What ships:** one migration flipping 17 stuck `lesson_submissions` to rejected + reason note (C12); normalizing the 17 string-typed `submission_reviews.tagged_metadata->'season'` values (C83); setting `retired_at` on the last ~2 live non-ESYNYC imports (C08). Plus `.rollback`.
 

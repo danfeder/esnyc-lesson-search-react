@@ -21,6 +21,8 @@ reversible-first.
 
 Deferred (NOT this wave): C01 embeddings regen; C09/C07/C03 dedup-pipeline rework.
 
+**Scaffold delivery (user 2026-06-22):** the scaffold lives on `chore/wave4-scaffold` (unpushed) — there is NO standalone scaffold PR. Session 1 (design-lock) commits on THIS branch; cut PR1 from `chore/wave4-scaffold` (not `main`) so the scaffold + design-lock docs bundle into PR1's PR.
+
 # WHERE THINGS LIVE
 
 - `docs/plans/2026-06-22-wave4-data-corpus-cleanup-design.md`

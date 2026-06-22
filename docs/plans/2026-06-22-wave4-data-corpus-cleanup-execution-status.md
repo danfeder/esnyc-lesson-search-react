@@ -8,9 +8,9 @@
 
 **Current task:** **Session 1 = DESIGN-LOCK** (the design doc Status is `Draft`). No implementation code yet. Session 1 works the design doc §4 "Open design questions" (Q1–Q14a, 15 questions) against real code/data, locks each answer (respecting `[evidence-lockable]` vs `[user-verdict]` tags), flips the design Status to Locked, and authors the impl plan's concrete tasks (replacing the `<!-- TBD Session 1 -->` placeholders). Many questions are already **GATE-A-grounded** (see Recent decisions) — confirm the grounding still holds on TEST, then lock; the `[user-verdict]` ones (Q1 status/note text, Q4 `year-round`/`end-of-year` season mapping, Q7 retire-or-keep each straggler, Q13 one-PR-vs-split, Q14 seed source) need a user walkthrough.
 
-**Branch:** `main` (scaffold committed to a `chore/wave4-*` scaffold branch → PR; not yet branched for PR 1).
+**Branch:** `chore/wave4-scaffold` — **UNPUSHED** (user decision 2026-06-22: **NO standalone scaffold PR; bundle into PR1's branch**, the Wave-3 pattern). So: do Session 1 (design-lock, docs) on THIS branch; when PR1 is ready, cut PR1 from `chore/wave4-scaffold` (or rename it) so the 2 scaffold commits + the design-lock docs ride into PR1's PR. Do NOT branch PR1 fresh off `main` (it would strand the scaffold) and do NOT open a docs-only scaffold PR.
 
-**Last commit on branch:** (scaffold commit — see session log)
+**Last commit on branch:** `d205eeb` (Codex GATE-A fold) · `6ef413d` (scaffold + C33 bookkeeping fold)
 
 **Last commit on main:** `a8efac9` (Wave 3 C33 edge-deploy verify, #537)
 
@@ -19,6 +19,7 @@
 ## Recent decisions worth carrying forward
 
 - **Scope locked (user 2026-06-22):** Core 5 (C12, C83, C08, C11, C02) + tiny extras (C49, C88); C11 = **hard-delete**; full 4-file scaffold weight. Defer C01 + C09/C07/C03.
+- **Scaffold delivery (user 2026-06-22):** leave `chore/wave4-scaffold` unpushed; bundle its 2 commits into **PR1's branch** (no standalone scaffold PR) — saves a CI cycle on docs-only changes, per `feedback_no_docs_push_during_pr` + the Wave-3 pattern.
 - **GATE A (design review) done + folded 2026-06-22** — 4 grounded Claude lenses (FK-safety, reality-claims, sequencing, consistency), each verifying against repo + TEST DB. The in-workflow Codex lens backgrounded; a re-dispatched best-effort Codex pass then RETURNED 4 findings — all folded (see the Codex bullet below). Key Claude-lens folds:
   - **C83 is reviews-only:** 17 string-typed values in `submission_reviews.tagged_metadata->'season'` (`year-round`×13, `end-of-year`×2, `winter`×2) fail the `seasonTiming: z.array(SeasonTimingEnum)` Zod schema; `lessons.metadata.seasonTiming` is 766/766 clean → no live-lesson impact. `year-round`/`end-of-year` aren't in the canonical enum → mapping is a `[user-verdict]`; cleanest mechanism = backfill from each review's approved lesson.
   - **C11 pre-delete checklist must split enforced-FK vs unenforced-text-ref** — a hard DELETE does NOT error on loose text/text[] refs, so "zero refs" must be data-queried, not inferred. 6 enforced FKs (IN-ref column = `lesson_submissions.original_lesson_id`, NOT `lesson_id`) + unenforced refs incl. `lesson_collections.lesson_ids[]` + `duplicate_group_dismissals.lesson_ids[]` (array-overlap probes). All clear on TEST for the 3 ghosts; re-run on PROD verbatim. All 3 ghosts have `original_submission_id = NULL` + zero CASCADE children.
