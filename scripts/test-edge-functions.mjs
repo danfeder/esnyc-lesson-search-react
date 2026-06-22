@@ -158,7 +158,7 @@ async function main() {
   console.log('');
 
   // Sequential so log output reads top-to-bottom in cron logs. Total wall
-  // time is ~5–10 s for 11 functions; parallelism would buy little and
+  // time is ~5–10 s for 10 functions; parallelism would buy little and
   // muddle the output.
   const results = [];
   for (const spec of FULL_SMOKE) {
