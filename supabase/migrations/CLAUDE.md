@@ -31,6 +31,32 @@ This project uses a 3-environment database pipeline with automated CI/CD:
 | **Test** | `rxgajgmphciuaqzvwmox` | CI validation | Automatic via GitHub Actions on PR |
 | **Production** | `jxlxtzkmicfhchkhiojz` | Live user data | After merge + manual approval |
 
+### Pipeline flow
+
+```
+LOCAL (Docker)            TEST (CI)                       PRODUCTION (approved)
+─────────────            ─────────                       ─────────────────────
+create migration   ──►   auto-applied on PR open   ──►   migrate-production.yml
+supabase db reset        RLS + E2E tests run             dry-run → manual approval
+npm run test:rls         (against Netlify preview)       → applied to PROD
+```
+
+### Local Development Setup
+
+```bash
+# Start local Supabase (DB, Auth, Storage, Edge Functions)
+supabase start
+
+# Reset database with all migrations
+supabase db reset
+
+# View local Studio
+open http://localhost:54323
+
+# Stop when done
+supabase stop
+```
+
 ## Two Types of Database Changes
 
 ### Schema Changes (MUST use migrations)
@@ -364,6 +390,14 @@ supabase db reset
 - **Latest:** Check `supabase/migrations/` for most recent file
 - **Test project:** `rxgajgmphciuaqzvwmox`
 - **Production project:** `jxlxtzkmicfhchkhiojz`
+
+## GitHub Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `e2e.yml` | PR to main | Apply migrations to TEST DB + run RLS / E2E tests against the Netlify preview |
+| `migrate-production.yml` | Push to main (merge) | Apply to PRODUCTION — **requires manual approval** (GitHub Environment gate) |
+| `reset-test-db.yml` | Manual dispatch | Reset the TEST database if it gets corrupted |
 
 ## GitHub Secrets (for reference)
 
