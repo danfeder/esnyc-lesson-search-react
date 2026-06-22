@@ -25,7 +25,7 @@ npm run test:e2e:ui       # Run with Playwright UI
 
 ## Database: 3-Part Pipeline
 
-**IMPORTANT: Read `supabase/migrations/CLAUDE.md` before making ANY database changes.**
+**IMPORTANT: Read `supabase/migrations/CLAUDE.md` (the canonical guide) before making ANY database changes, and use the `database-migrations` skill before editing any migration file.**
 
 | Environment | Project | Purpose |
 |-------------|---------|---------|
@@ -79,8 +79,8 @@ supabase migration list # Show migration status
 
 ### See Also
 
-- `supabase/migrations/CLAUDE.md` - Detailed migration guidelines
-- `docs/MIGRATION_WORKFLOW.md` - Complete workflow documentation
+- `supabase/migrations/CLAUDE.md` - Canonical detailed guide (full workflow, iteration/baselining, troubleshooting, templates)
+- `.claude/skills/database-migrations/SKILL.md` - **Mandatory** decision tree before editing any migration ("has it been pushed?")
 
 ## E2E Testing
 
