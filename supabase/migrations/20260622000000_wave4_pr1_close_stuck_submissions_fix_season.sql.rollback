@@ -1,0 +1,72 @@
+-- =====================================================
+-- ROLLBACK: 20260622000000_wave4_pr1_close_stuck_submissions_fix_season.sql
+-- =====================================================
+-- The .sql.rollback extension keeps this file inert under `supabase db push`
+-- (the CLI only picks up .sql files). To roll back manually, run the block
+-- below via psql or `mcp__supabase-*__execute_sql`.
+--
+-- Restores the exact prior state of both Wave-4 PR1 sections from their
+-- dedicated snapshot tables. The whole restore is ONE `DO` block = a single
+-- atomic statement (GATE-2 Codex C3), so it is all-or-nothing regardless of how
+-- it is run (psql or MCP) — if the C83 restore fails, the C12 restore (and the
+-- updated_at trigger re-enable) roll back with it; the trigger can never be left
+-- dangling. Idempotent and safe to run more than once: if a snapshot table is
+-- missing, that section is a no-op.
+--
+-- The snapshot tables are intentionally LEFT IN PLACE (the recovery artifact);
+-- a future cleanup migration drops them once PROD-verified stable (per the
+-- pr6_retag_rollback precedent, design §5/§8). The snapshot is first-write-wins
+-- (ON CONFLICT DO NOTHING), so it always holds the TRUE pre-Wave-4 value.
+-- NOTE (GATE-3 Codex C4): re-applying an already-applied-then-rolled-back migration
+-- is NOT a supported operation (migrations apply once via schema_migrations; fixes go
+-- in a NEW migration — see supabase/migrations/CLAUDE.md). The single edge case Codex
+-- raised — a manual re-run of THIS file after an intervening edit to a snapshotted row
+-- — would restore the stale snapshot value over that edit. If you must ever hand-re-run
+-- this file, DROP the two snapshot tables first so they re-capture current pre-mutation
+-- state. In the supported pipeline this cannot occur.
+
+DO $$
+BEGIN
+  -- (C12) Restore lesson_submissions to exact prior (status, reviewer_notes,
+  --       reviewed_at, updated_at). The updated_at BEFORE-UPDATE trigger
+  --       (trigger_lesson_submissions_updated_at) would re-stamp updated_at = now()
+  --       on this restore UPDATE, defeating an exact rollback — disable it for the
+  --       restore, then re-enable (Codex C12-MED). Both ALTERs are inside this atomic
+  --       block, so any error rolls the DISABLE back too.
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'wave4_c12_submissions_rollback'
+  ) THEN
+    ALTER TABLE public.lesson_submissions DISABLE TRIGGER trigger_lesson_submissions_updated_at;
+
+    UPDATE public.lesson_submissions ls
+    SET status        = s.status,
+        reviewer_notes = s.reviewer_notes,
+        reviewed_at   = s.reviewed_at,
+        updated_at    = s.updated_at
+    FROM public.wave4_c12_submissions_rollback s
+    WHERE ls.id = s.id;
+
+    ALTER TABLE public.lesson_submissions ENABLE TRIGGER trigger_lesson_submissions_updated_at;
+
+    RAISE NOTICE 'C12 rollback: restored lesson_submissions from snapshot';
+  ELSE
+    RAISE NOTICE 'C12 rollback: snapshot table absent — nothing to restore';
+  END IF;
+
+  -- (C83) Restore submission_reviews.tagged_metadata->'season' to the original
+  --       string value from wave4_c83_season_rollback.
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'wave4_c83_season_rollback'
+  ) THEN
+    UPDATE public.submission_reviews sr
+    SET tagged_metadata = jsonb_set(sr.tagged_metadata, '{season}', s.original_season)
+    FROM public.wave4_c83_season_rollback s
+    WHERE sr.id = s.review_id;
+
+    RAISE NOTICE 'C83 rollback: restored submission_reviews season values from snapshot';
+  ELSE
+    RAISE NOTICE 'C83 rollback: snapshot table absent — nothing to restore';
+  END IF;
+END $$;
