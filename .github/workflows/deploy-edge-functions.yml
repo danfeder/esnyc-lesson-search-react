@@ -316,7 +316,10 @@ jobs:
             if [ "$code" = "200" ]; then
               post=$(jq -r '.version // empty' /tmp/post.json)
               status=$(jq -r '.status // empty' /tmp/post.json)
-              [ -n "$post" ] && break
+              # Require BOTH before breaking: a 200 carrying a version but no
+              # status would otherwise break early and fail the ACTIVE check
+              # with a blank status. Keep polling until the record is complete.
+              [ -n "$post" ] && [ -n "$status" ] && break
             fi
             echo "Attempt $attempt: HTTP $code (version='${post:-}')."
             [ "$attempt" -lt 5 ] && sleep 5
@@ -336,6 +339,10 @@ jobs:
           if [ "$PRE_VERSION" = "none" ]; then
             echo "✅ First deploy of $FUNCTION_NAME registered version $post."
           else
+            # Belt-and-braces: the pre-deploy step already fails on a 200 with no
+            # numeric version, so PRE_VERSION here is numeric or "none" (handled
+            # above). Unreachable by design, but keeps the integer compare below
+            # safe if the pre-step logic ever changes.
             case "$PRE_VERSION" in
               ''|*[!0-9]*)
                 echo "::error::Pre-deploy version '$PRE_VERSION' is not numeric — cannot verify the increment for $FUNCTION_NAME."
@@ -475,7 +482,10 @@ jobs:
             if [ "$code" = "200" ]; then
               post=$(jq -r '.version // empty' /tmp/post.json)
               status=$(jq -r '.status // empty' /tmp/post.json)
-              [ -n "$post" ] && break
+              # Require BOTH before breaking: a 200 carrying a version but no
+              # status would otherwise break early and fail the ACTIVE check
+              # with a blank status. Keep polling until the record is complete.
+              [ -n "$post" ] && [ -n "$status" ] && break
             fi
             echo "Attempt $attempt: HTTP $code (version='${post:-}')."
             [ "$attempt" -lt 5 ] && sleep 5
@@ -495,6 +505,10 @@ jobs:
           if [ "$PRE_VERSION" = "none" ]; then
             echo "✅ First deploy of $FUNCTION_NAME registered version $post."
           else
+            # Belt-and-braces: the pre-deploy step already fails on a 200 with no
+            # numeric version, so PRE_VERSION here is numeric or "none" (handled
+            # above). Unreachable by design, but keeps the integer compare below
+            # safe if the pre-step logic ever changes.
             case "$PRE_VERSION" in
               ''|*[!0-9]*)
                 echo "::error::Pre-deploy version '$PRE_VERSION' is not numeric — cannot verify the increment for $FUNCTION_NAME."
