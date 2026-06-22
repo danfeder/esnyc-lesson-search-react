@@ -1,0 +1,246 @@
+-- =====================================================
+-- ROLLBACK: 20260622010000_wave4_pr2_delete_ghosts_search_rpc.sql.rollback
+-- =====================================================
+-- Restores the PRE-PR2 state:
+--   1. Drop the NEW 15-arg search_lessons.
+--   2. Recreate the ORIGINAL w1b search_lessons (16-arg, WITH filter_lesson_format
+--      AND both ghost-exclusion blocks intact) — copied VERBATIM from
+--      20260620000000_search_lessons_w1b.sql — then re-GRANT EXECUTE (16-arg type
+--      list) + NOTIFY pgrst (a rollback is itself a DROP+CREATE, so it must
+--      re-grant + reload the cache — Codex C11-HIGH).
+--   3. Re-INSERT the 3 deleted parent rows from public.wave4_c11_ghost_rollback.
+--
+-- NOTE: deleted rows are recoverable ONLY from public.wave4_c11_ghost_rollback.
+--   This rollback restores the PARENT lessons rows only — whole, given the
+--   Q8-verified zero-CASCADE-child precondition (0 children on both DBs).
+--   The snapshot table is LEFT IN PLACE as the recovery artifact (a future
+--   cleanup migration drops it once PROD-stable).
+
+-- =====================================================
+-- 1. Drop the NEW 15-arg search_lessons.
+-- =====================================================
+DROP FUNCTION IF EXISTS public.search_lessons(text, text[], text[], text[], text[], text[], text[], text[], text[], text[], text[], text[], integer, integer, text);
+
+
+-- =====================================================
+-- 2. Recreate the ORIGINAL w1b 16-arg search_lessons (VERBATIM from
+--    20260620000000_search_lessons_w1b.sql) — WITH filter_lesson_format AND
+--    both C11 ghost-exclusion blocks.
+-- =====================================================
+CREATE FUNCTION public.search_lessons(
+  search_query           text    DEFAULT NULL,
+  filter_grade_levels    text[]  DEFAULT NULL,
+  filter_themes          text[]  DEFAULT NULL,
+  filter_seasons         text[]  DEFAULT NULL,
+  filter_competencies    text[]  DEFAULT NULL,
+  filter_cultures        text[]  DEFAULT NULL,
+  filter_location        text[]  DEFAULT NULL,
+  filter_activity_type   text[]  DEFAULT NULL,
+  filter_lesson_format   text    DEFAULT NULL,         -- compat bridge; drops in Task 1.3a (kept as-is)
+  filter_academic        text[]  DEFAULT NULL,
+  filter_sel             text[]  DEFAULT NULL,
+  filter_cooking_method  text[]  DEFAULT NULL,
+  filter_tags            text[]  DEFAULT NULL,
+  page_size              integer DEFAULT 20,
+  page_offset            integer DEFAULT 0,
+  order_by               text    DEFAULT 'relevance'   -- NEW (C58): relevance | title | modified
+)
+RETURNS TABLE (
+  lesson_id    text,
+  title        text,
+  summary      text,
+  file_link    text,
+  grade_levels text[],
+  metadata     jsonb,
+  confidence   jsonb,
+  rank         double precision,
+  total_count  bigint
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  expanded_query    text;
+  expanded_cultures text[];
+  total_results     bigint;
+  -- C58: normalize the sort key. The DEFAULT only covers an OMITTED arg; an
+  -- explicit NULL / 'grade' / 'confidence' / unknown all collapse to relevance.
+  sort_key text := CASE WHEN order_by IN ('title', 'modified') THEN order_by ELSE 'relevance' END;
+BEGIN
+  -- Synonym expansion for FTS
+  IF search_query IS NOT NULL AND search_query <> '' THEN
+    expanded_query := expand_search_with_synonyms(search_query);
+  ELSE
+    expanded_query := NULL;
+  END IF;
+
+  -- Cultural heritage: alias FIRST, then expand to children.
+  IF filter_cultures IS NOT NULL AND array_length(filter_cultures, 1) > 0 THEN
+    expanded_cultures := expand_cultural_heritage(_alias_cultural_heritage(filter_cultures));
+  ELSE
+    expanded_cultures := NULL;
+  END IF;
+
+  -- Total count (count and result queries share WHERE)
+  SELECT COUNT(*) INTO total_results
+  FROM lessons l
+  WHERE
+    (search_query IS NULL OR search_query = '' OR (
+      l.search_vector @@ to_tsquery('english', expanded_query) OR
+      l.title   % search_query OR
+      l.summary % search_query
+    ))
+    AND (filter_grade_levels IS NULL OR array_length(filter_grade_levels, 1) IS NULL OR
+         l.grade_levels && filter_grade_levels)
+    AND (filter_themes IS NULL OR array_length(filter_themes, 1) IS NULL OR
+         l.thematic_categories && filter_themes)
+    AND (filter_seasons IS NULL OR array_length(filter_seasons, 1) IS NULL OR
+         l.season_timing && filter_seasons)
+    AND (filter_competencies IS NULL OR array_length(filter_competencies, 1) IS NULL OR
+         l.core_competencies && filter_competencies)
+    AND (expanded_cultures IS NULL OR array_length(expanded_cultures, 1) IS NULL OR
+         l.cultural_heritage && expanded_cultures)
+    -- location-Both (was: l.location_requirements && filter_location)
+    AND (filter_location IS NULL OR array_length(filter_location, 1) IS NULL OR
+         public._match_location(l.location_requirements, filter_location))
+    AND (filter_activity_type IS NULL OR array_length(filter_activity_type, 1) IS NULL OR
+         l.activity_type && _alias_activity_type(filter_activity_type))
+    -- (filter_lesson_format WHERE clause removed — D3 lessonFormat field dropped.)
+    AND (filter_academic IS NULL OR array_length(filter_academic, 1) IS NULL OR
+         l.academic_integration && filter_academic)
+    AND (filter_sel IS NULL OR array_length(filter_sel, 1) IS NULL OR
+         l.social_emotional_learning && filter_sel)
+    AND (filter_cooking_method IS NULL OR array_length(filter_cooking_method, 1) IS NULL OR
+         _match_cooking_methods(l.cooking_methods, filter_cooking_method))
+    AND (filter_tags IS NULL OR array_length(filter_tags, 1) IS NULL OR
+         l.tags && filter_tags)
+    -- exclude soft-retired imports (PR 4)
+    AND l.retired_at IS NULL
+    -- C11: exclude the 3 exact "Unknown" ghost rows
+    AND l.lesson_id <> ALL (ARRAY[
+      '1l9KH63QBe2xhyH0zp6VIavtj0uKSRZtd',
+      '1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU',
+      '1nFbpkwlujk8fIO8RkeIcDoO2fuO83Iil2Srf8t5iqm8'
+    ]::text[]);
+
+  -- Paginated result rows.
+  -- C58: the conditional ORDER BY references the `rank` value, but Postgres
+  -- cannot resolve the output alias inside a CASE expression. So the filtered/
+  -- ranked SELECT is wrapped in subquery `sub` (which also exposes l.updated_at,
+  -- not in RETURNS), and the outer query selects only the RETURNS columns and
+  -- orders on sub.* . LIMIT/OFFSET stay on the OUTER query.
+  RETURN QUERY
+  SELECT
+    sub.lesson_id,
+    sub.title,
+    sub.summary,
+    sub.file_link,
+    sub.grade_levels,
+    sub.metadata,
+    sub.confidence,
+    sub.rank,
+    sub.total_count
+  FROM (
+    SELECT
+      l.lesson_id,
+      l.title,
+      l.summary,
+      l.file_link,
+      l.grade_levels,
+      -- Per-field COALESCE metadata reconstruction. Same as 20260520020000.
+      COALESCE(l.metadata, '{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object(
+        'thematicCategories',      CASE WHEN COALESCE(array_length(l.thematic_categories, 1), 0) > 0       THEN to_jsonb(l.thematic_categories)       END,
+        'seasonTiming',            CASE WHEN COALESCE(array_length(l.season_timing, 1), 0) > 0             THEN to_jsonb(l.season_timing)             END,
+        'locationRequirements',    CASE WHEN COALESCE(array_length(l.location_requirements, 1), 0) > 0     THEN to_jsonb(l.location_requirements)     END,
+        'coreCompetencies',        CASE WHEN COALESCE(array_length(l.core_competencies, 1), 0) > 0         THEN to_jsonb(l.core_competencies)         END,
+        'culturalHeritage',        CASE WHEN COALESCE(array_length(l.cultural_heritage, 1), 0) > 0         THEN to_jsonb(l.cultural_heritage)         END,
+        'activityType',            CASE WHEN COALESCE(array_length(l.activity_type, 1), 0) > 0             THEN to_jsonb(l.activity_type)             END,
+        'cookingMethods',          CASE WHEN COALESCE(array_length(l.cooking_methods, 1), 0) > 0           THEN to_jsonb(l.cooking_methods)           END,
+        'academicIntegration',     CASE WHEN COALESCE(array_length(l.academic_integration, 1), 0) > 0      THEN to_jsonb(l.academic_integration)      END,
+        'socialEmotionalLearning', CASE WHEN COALESCE(array_length(l.social_emotional_learning, 1), 0) > 0 THEN to_jsonb(l.social_emotional_learning) END,
+        'academicConcepts',        CASE
+                                     WHEN jsonb_typeof(l.metadata->'academicIntegration') = 'object'
+                                      AND l.metadata->'academicIntegration' ? 'concepts'
+                                     THEN l.metadata->'academicIntegration'->'concepts'
+                                   END
+      )) AS metadata,
+      l.confidence,
+      CASE
+        WHEN search_query IS NOT NULL AND search_query <> '' THEN
+          GREATEST(
+            COALESCE(ts_rank(l.search_vector, to_tsquery('english', expanded_query)), 0),
+            COALESCE(similarity(l.title,   search_query), 0),
+            COALESCE(similarity(l.summary, search_query), 0) * 0.8
+          )::double precision
+        ELSE 0::double precision
+      END AS rank,
+      total_results AS total_count,
+      l.updated_at AS updated_at        -- exposed for ORDER BY only; not in RETURNS
+    FROM lessons l
+    WHERE
+      (search_query IS NULL OR search_query = '' OR (
+        l.search_vector @@ to_tsquery('english', expanded_query) OR
+        l.title   % search_query OR
+        l.summary % search_query
+      ))
+      AND (filter_grade_levels IS NULL OR array_length(filter_grade_levels, 1) IS NULL OR
+           l.grade_levels && filter_grade_levels)
+      AND (filter_themes IS NULL OR array_length(filter_themes, 1) IS NULL OR
+           l.thematic_categories && filter_themes)
+      AND (filter_seasons IS NULL OR array_length(filter_seasons, 1) IS NULL OR
+           l.season_timing && filter_seasons)
+      AND (filter_competencies IS NULL OR array_length(filter_competencies, 1) IS NULL OR
+           l.core_competencies && filter_competencies)
+      AND (expanded_cultures IS NULL OR array_length(expanded_cultures, 1) IS NULL OR
+           l.cultural_heritage && expanded_cultures)
+      -- location-Both (was: l.location_requirements && filter_location)
+      AND (filter_location IS NULL OR array_length(filter_location, 1) IS NULL OR
+           public._match_location(l.location_requirements, filter_location))
+      AND (filter_activity_type IS NULL OR array_length(filter_activity_type, 1) IS NULL OR
+           l.activity_type && _alias_activity_type(filter_activity_type))
+      -- (filter_lesson_format WHERE clause removed — D3.)
+      AND (filter_academic IS NULL OR array_length(filter_academic, 1) IS NULL OR
+           l.academic_integration && filter_academic)
+      AND (filter_sel IS NULL OR array_length(filter_sel, 1) IS NULL OR
+           l.social_emotional_learning && filter_sel)
+      AND (filter_cooking_method IS NULL OR array_length(filter_cooking_method, 1) IS NULL OR
+           _match_cooking_methods(l.cooking_methods, filter_cooking_method))
+      AND (filter_tags IS NULL OR array_length(filter_tags, 1) IS NULL OR
+           l.tags && filter_tags)
+      -- exclude soft-retired imports (PR 4)
+      AND l.retired_at IS NULL
+      -- C11: exclude the 3 exact "Unknown" ghost rows
+      AND l.lesson_id <> ALL (ARRAY[
+        '1l9KH63QBe2xhyH0zp6VIavtj0uKSRZtd',
+        '1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU',
+        '1nFbpkwlujk8fIO8RkeIcDoO2fuO83Iil2Srf8t5iqm8'
+      ]::text[])
+  ) sub
+  ORDER BY
+    CASE WHEN sort_key = 'relevance' THEN sub.rank END DESC NULLS LAST,
+    CASE WHEN sort_key = 'relevance' THEN COALESCE((sub.confidence->>'overall')::float, 0) END DESC NULLS LAST,
+    CASE WHEN sort_key = 'title'     THEN sub.title END ASC NULLS LAST,
+    CASE WHEN sort_key = 'modified'  THEN sub.updated_at END DESC NULLS LAST,
+    sub.title ASC,
+    sub.lesson_id ASC
+  LIMIT page_size
+  OFFSET page_offset;
+END;
+$$;
+
+
+-- Re-issue GRANT (DROP discarded the old grant). ORIGINAL 16-arg type list.
+GRANT EXECUTE ON FUNCTION public.search_lessons(
+  text, text[], text[], text[], text[], text[], text[], text[], text,
+  text[], text[], text[], text[], integer, integer, text
+) TO anon, authenticated, service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- =====================================================
+-- 3. Restore the deleted parent rows from the snapshot.
+-- =====================================================
+INSERT INTO public.lessons
+SELECT * FROM public.wave4_c11_ghost_rollback
+WHERE lesson_id IN ('1l9KH63QBe2xhyH0zp6VIavtj0uKSRZtd','1lDjv2GUFzOC9pSWTpCVQW2ctWvvNmTPP4Jc1iAzrsaU','1nFbpkwlujk8fIO8RkeIcDoO2fuO83Iil2Srf8t5iqm8')
+ON CONFLICT (lesson_id) DO NOTHING;

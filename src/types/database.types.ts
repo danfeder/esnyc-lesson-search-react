@@ -1,10 +1,30 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '13.0.5';
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
   public: {
     Tables: {
@@ -105,21 +125,29 @@ export type Database = {
       };
       cultural_heritage_hierarchy: {
         Row: {
-          children: string[];
-          id: number;
-          parent: string;
+          key: string;
+          label: string;
+          parent_key: string | null;
         };
         Insert: {
-          children: string[];
-          id?: number;
-          parent: string;
+          key: string;
+          label: string;
+          parent_key?: string | null;
         };
         Update: {
-          children?: string[];
-          id?: number;
-          parent?: string;
+          key?: string;
+          label?: string;
+          parent_key?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'cultural_heritage_hierarchy_parent_key_fkey';
+            columns: ['parent_key'];
+            isOneToOne: false;
+            referencedRelation: 'cultural_heritage_hierarchy';
+            referencedColumns: ['key'];
+          },
+        ];
       };
       duplicate_group_dismissals: {
         Row: {
@@ -797,11 +825,62 @@ export type Database = {
           {
             foreignKeyName: 'submission_reviews_submission_id_fkey';
             columns: ['submission_id'];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: 'lesson_submissions';
             referencedColumns: ['id'];
           },
         ];
+      };
+      submission_reviews_archive: {
+        Row: {
+          archive_reason: string;
+          archived_at: string;
+          canonical_lesson_id: string | null;
+          created_at: string | null;
+          decision: string | null;
+          detected_duplicates: Json | null;
+          id: string;
+          notes: string | null;
+          review_completed_at: string | null;
+          review_started_at: string | null;
+          reviewer_id: string;
+          submission_id: string;
+          tagged_metadata: Json;
+          time_spent_seconds: number | null;
+        };
+        Insert: {
+          archive_reason: string;
+          archived_at?: string;
+          canonical_lesson_id?: string | null;
+          created_at?: string | null;
+          decision?: string | null;
+          detected_duplicates?: Json | null;
+          id: string;
+          notes?: string | null;
+          review_completed_at?: string | null;
+          review_started_at?: string | null;
+          reviewer_id: string;
+          submission_id: string;
+          tagged_metadata?: Json;
+          time_spent_seconds?: number | null;
+        };
+        Update: {
+          archive_reason?: string;
+          archived_at?: string;
+          canonical_lesson_id?: string | null;
+          created_at?: string | null;
+          decision?: string | null;
+          detected_duplicates?: Json | null;
+          id?: string;
+          notes?: string | null;
+          review_completed_at?: string | null;
+          review_started_at?: string | null;
+          reviewer_id?: string;
+          submission_id?: string;
+          tagged_metadata?: Json;
+          time_spent_seconds?: number | null;
+        };
+        Relationships: [];
       };
       submission_similarities: {
         Row: {
@@ -1047,6 +1126,189 @@ export type Database = {
           },
         ];
       };
+      wave4_c11_ghost_rollback: {
+        Row: {
+          academic_integration: string[] | null;
+          activity_type: string[] | null;
+          canonical_id: string | null;
+          confidence: Json;
+          content_embedding: string | null;
+          content_hash: string | null;
+          content_text: string | null;
+          cooking_methods: string[] | null;
+          cooking_skills: string[] | null;
+          core_competencies: string[] | null;
+          created_at: string | null;
+          crf_confirmed: boolean;
+          cultural_heritage: string[] | null;
+          cultural_responsiveness_features: string[] | null;
+          file_link: string;
+          flagged_for_review: boolean | null;
+          garden_skills: string[] | null;
+          grade_levels: string[];
+          has_versions: boolean | null;
+          id: string;
+          last_modified: string | null;
+          lesson_id: string;
+          location_requirements: string[] | null;
+          main_ingredients: string[] | null;
+          metadata: Json;
+          observances_holidays: string[] | null;
+          original_submission_id: string | null;
+          part_number: number | null;
+          processing_notes: string | null;
+          retired_at: string | null;
+          retired_reason: string | null;
+          review_notes: string | null;
+          search_vector: unknown;
+          season_timing: string[] | null;
+          season_timing_backup: string[] | null;
+          series_id: string | null;
+          social_emotional_learning: string[] | null;
+          summary: string;
+          tags: string[] | null;
+          thematic_categories: string[] | null;
+          title: string;
+          updated_at: string | null;
+          version_number: number | null;
+        };
+        Insert: {
+          academic_integration?: string[] | null;
+          activity_type?: string[] | null;
+          canonical_id?: string | null;
+          confidence?: Json;
+          content_embedding?: string | null;
+          content_hash?: string | null;
+          content_text?: string | null;
+          cooking_methods?: string[] | null;
+          cooking_skills?: string[] | null;
+          core_competencies?: string[] | null;
+          created_at?: string | null;
+          crf_confirmed?: boolean;
+          cultural_heritage?: string[] | null;
+          cultural_responsiveness_features?: string[] | null;
+          file_link: string;
+          flagged_for_review?: boolean | null;
+          garden_skills?: string[] | null;
+          grade_levels?: string[];
+          has_versions?: boolean | null;
+          id?: string;
+          last_modified?: string | null;
+          lesson_id: string;
+          location_requirements?: string[] | null;
+          main_ingredients?: string[] | null;
+          metadata?: Json;
+          observances_holidays?: string[] | null;
+          original_submission_id?: string | null;
+          part_number?: number | null;
+          processing_notes?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
+          review_notes?: string | null;
+          search_vector?: unknown;
+          season_timing?: string[] | null;
+          season_timing_backup?: string[] | null;
+          series_id?: string | null;
+          social_emotional_learning?: string[] | null;
+          summary: string;
+          tags?: string[] | null;
+          thematic_categories?: string[] | null;
+          title: string;
+          updated_at?: string | null;
+          version_number?: number | null;
+        };
+        Update: {
+          academic_integration?: string[] | null;
+          activity_type?: string[] | null;
+          canonical_id?: string | null;
+          confidence?: Json;
+          content_embedding?: string | null;
+          content_hash?: string | null;
+          content_text?: string | null;
+          cooking_methods?: string[] | null;
+          cooking_skills?: string[] | null;
+          core_competencies?: string[] | null;
+          created_at?: string | null;
+          crf_confirmed?: boolean;
+          cultural_heritage?: string[] | null;
+          cultural_responsiveness_features?: string[] | null;
+          file_link?: string;
+          flagged_for_review?: boolean | null;
+          garden_skills?: string[] | null;
+          grade_levels?: string[];
+          has_versions?: boolean | null;
+          id?: string;
+          last_modified?: string | null;
+          lesson_id?: string;
+          location_requirements?: string[] | null;
+          main_ingredients?: string[] | null;
+          metadata?: Json;
+          observances_holidays?: string[] | null;
+          original_submission_id?: string | null;
+          part_number?: number | null;
+          processing_notes?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
+          review_notes?: string | null;
+          search_vector?: unknown;
+          season_timing?: string[] | null;
+          season_timing_backup?: string[] | null;
+          series_id?: string | null;
+          social_emotional_learning?: string[] | null;
+          summary?: string;
+          tags?: string[] | null;
+          thematic_categories?: string[] | null;
+          title?: string;
+          updated_at?: string | null;
+          version_number?: number | null;
+        };
+        Relationships: [];
+      };
+      wave4_c12_submissions_rollback: {
+        Row: {
+          id: string;
+          reviewed_at: string | null;
+          reviewer_notes: string | null;
+          snapshotted_at: string;
+          status: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id: string;
+          reviewed_at?: string | null;
+          reviewer_notes?: string | null;
+          snapshotted_at?: string;
+          status: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          reviewed_at?: string | null;
+          reviewer_notes?: string | null;
+          snapshotted_at?: string;
+          status?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      wave4_c83_season_rollback: {
+        Row: {
+          original_season: Json;
+          review_id: string;
+          snapshotted_at: string;
+        };
+        Insert: {
+          original_season: Json;
+          review_id: string;
+          snapshotted_at?: string;
+        };
+        Update: {
+          original_season?: Json;
+          review_id?: string;
+          snapshotted_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       lessons_with_metadata: {
@@ -1138,7 +1400,7 @@ export type Database = {
           has_versions?: boolean | null;
           id?: string | null;
           last_modified?: string | null;
-          lesson_format?: string | null;
+          lesson_format?: never;
           lesson_id?: string | null;
           location_meta?: never;
           location_requirements?: string[] | null;
@@ -1197,7 +1459,7 @@ export type Database = {
           has_versions?: boolean | null;
           id?: string | null;
           last_modified?: string | null;
-          lesson_format?: string | null;
+          lesson_format?: never;
           lesson_id?: string | null;
           location_meta?: never;
           location_requirements?: string[] | null;
@@ -1261,21 +1523,41 @@ export type Database = {
       };
     };
     Functions: {
-      _alias_activity_type: {
-        Args: { p_values: string[] };
-        Returns: string[];
-      };
+      _alias_activity_type: { Args: { p_values: string[] }; Returns: string[] };
       _alias_cultural_heritage: {
         Args: { p_values: string[] };
         Returns: string[];
       };
-      _alias_lesson_format: {
-        Args: { p_value: string };
-        Returns: string[];
+      _alias_lesson_format: { Args: { p_value: string }; Returns: string[] };
+      _flatten_academic_concepts: {
+        Args: { p_concepts: Json };
+        Returns: string;
       };
       _match_cooking_methods: {
         Args: { p_filter_methods: string[]; p_l_methods: string[] };
         Returns: boolean;
+      };
+      _match_location: {
+        Args: { p_filter_locations: string[]; p_l_locations: string[] };
+        Returns: boolean;
+      };
+      _meta_array_matches_column: {
+        Args: { p_col: string[]; p_meta: Json };
+        Returns: boolean;
+      };
+      _phase4_jsonb_text_array: { Args: { p_value: Json }; Returns: string[] };
+      _phase4_jsonb_text_array_or_null: {
+        Args: { p_value: Json };
+        Returns: string[];
+      };
+      _validate_meta_enum_values: {
+        Args: {
+          p_allowed: string[];
+          p_key: string;
+          p_lesson_id: string;
+          p_meta: Json;
+        };
+        Returns: undefined;
       };
       archive_duplicate_lesson: {
         Args: { p_canonical_id: string; p_lesson_id: string };
@@ -1290,12 +1572,23 @@ export type Database = {
         }[];
       };
       check_security_definer_views: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           has_security_definer: boolean;
           view_name: string;
           view_owner: string;
         }[];
+      };
+      complete_review_atomic: {
+        Args: {
+          p_decision: string;
+          p_metadata: Json;
+          p_notes: string;
+          p_reviewer_id: string;
+          p_selected_lesson_id?: string;
+          p_submission_id: string;
+        };
+        Returns: string;
       };
       debug_user_email: {
         Args: { user_id: string };
@@ -1315,7 +1608,7 @@ export type Database = {
         Returns: string;
       };
       find_duplicate_pairs: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           detection_method: string;
           id1: string;
@@ -1357,15 +1650,22 @@ export type Database = {
       get_lesson_details_for_review: {
         Args: { p_lesson_ids: string[] };
         Returns: {
+          activity_type: string[];
           content_length: number;
           content_preview: string;
+          core_competencies: string[];
+          cultural_heritage: string[];
           file_link: string;
           grade_levels: string[];
           has_summary: boolean;
           has_table_format: boolean;
           lesson_id: string;
+          season_timing: string[];
           summary: string;
+          teacher_name: string;
+          thematic_categories: string[];
           title: string;
+          updated_at: string;
         }[];
       };
       get_user_activity_metrics: {
@@ -1386,7 +1686,7 @@ export type Database = {
         }[];
       };
       get_user_profiles_with_email: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           auth_created_at: string;
           auth_email: string;
@@ -1409,23 +1709,15 @@ export type Database = {
           user_id: string;
         }[];
       };
-      has_duplicate_review_permission: {
-        Args: Record<PropertyKey, never>;
-        Returns: boolean;
-      };
+      has_duplicate_review_permission: { Args: never; Returns: boolean };
       has_role: {
         Args: { p_user_id: string; required_role: string };
         Returns: boolean;
       };
-      is_admin:
-        | { Args: Record<PropertyKey, never>; Returns: boolean }
-        | { Args: { user_id: string }; Returns: boolean };
+      is_admin: { Args: never; Returns: boolean } | { Args: { user_id: string }; Returns: boolean };
       is_duplicate_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       is_lesson_archived: { Args: { p_lesson_id: string }; Returns: boolean };
-      is_reviewer_or_above: {
-        Args: Record<PropertyKey, never>;
-        Returns: boolean;
-      };
+      is_reviewer_or_above: { Args: never; Returns: boolean };
       publish_approved_submissions: {
         Args: { p_limit?: number };
         Returns: {
@@ -1441,7 +1733,6 @@ export type Database = {
           filter_cooking_method?: string[];
           filter_cultures?: string[];
           filter_grade_levels?: string[];
-          filter_lesson_format?: string;
           filter_location?: string[];
           filter_seasons?: string[];
           filter_sel?: string[];
@@ -1464,12 +1755,9 @@ export type Database = {
           total_count: number;
         }[];
       };
-      show_limit: { Args: Record<PropertyKey, never>; Returns: number };
+      show_limit: { Args: never; Returns: number };
       show_trgm: { Args: { '': string }; Returns: string[] };
-      track_user_login: {
-        Args: { p_user_id: string };
-        Returns: undefined;
-      };
+      track_user_login: { Args: { p_user_id: string }; Returns: undefined };
       unaccent: { Args: { '': string }; Returns: string };
       validate_invitation_token: {
         Args: { invite_token: string };
@@ -1484,7 +1772,7 @@ export type Database = {
         }[];
       };
       verify_rls_enabled: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           policy_count: number;
           rls_enabled: boolean;
@@ -1618,6 +1906,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
