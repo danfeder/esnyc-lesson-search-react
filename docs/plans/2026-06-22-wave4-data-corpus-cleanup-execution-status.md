@@ -1,31 +1,41 @@
 # Wave 4 — Data / Corpus Cleanup — Execution Status
 
-**Last updated:** 2026-06-22 by Session 2 (PR1 build)
+**Last updated:** 2026-06-22 by Session 3 (PR1 reconciled SHIPPED + PR2 built/gated/pushed)
 
 ## Current State
 
-**Phase:** PR1 (C12 + C83) **BUILT + locally verified + dual-gate-reviewed**, on branch `chore/wave4-pr1-reversible-cleanups` (cut from `chore/wave4-scaffold`). **UNPUSHED — awaiting user go to push** (push starts the CI → TEST-apply cycle).
+**Phase:** **PR2 (C11 + C49) BUILT + locally verified + GATE 2/3/4-reviewed + PUSHED** on branch `chore/wave4-pr2-ghost-delete-rpc` (cut from `main`). **PR1 (C12 + C83) SHIPPED + PROD-VERIFIED** earlier today (#538, `9f75a15`; PROD run `27987378389` applied 22:16 UTC). PR2 is the **irreversible** PR — merge + PROD-approval are RESERVED for explicit user go.
 
-**PR1 commits** (atop scaffold + design-lock `bd64f14`):
-- `daf1499` test(wave4): C83 Zod contract-lock fixture (6 assertions, field-isolated `.shape.season`; green).
-- `c84b676` feat(wave4): C12 + C83 migration `20260622000000_wave4_pr1_close_stuck_submissions_fix_season.sql` + `.sql.rollback` + 2 snapshot tables (hardened through 2 Codex rounds).
+**PR2 commits** (atop `main`/`9f75a15`):
+- `5310754` refactor(wave4): drop dead `filter_lesson_format` frontend param (C49) — useLessonSearch.ts 4-line removal; urlParams guard 36/36 green.
+- `aacf9d3` feat(wave4): hard-delete 3 ghosts + clean `search_lessons` RPC (C11, C49) — migration + `.rollback` + types regen (GATE 2/3/4 hardenings folded).
 
-**Evidence re-verified (supervisor, TEST+PROD, 2026-06-22) — baseline holds exactly:** C12 TEST 17 (15 new+2 update) / PROD 14 (14 new, 0 update), 0 submitted after 2026-05-01 on both; C83 TEST=PROD 17 string (year-round×13/end-of-year×2/winter×2) / 96 array; linkage 17/17/14/3/0/0 (unresolved=0, non_array=0 → the C83 pre-guard will never fire).
+**PR2 migration shape (`20260622010000_wave4_pr2_delete_ghosts_search_rpc.sql`):** snapshot 3 ghosts → `wave4_c11_ghost_rollback` (RLS, no policy); snapshot-completeness guard; CASCADE-child guard (`LOCK TABLE bookmarks, canonical_lessons IN SHARE MODE` + assert 0 children — atomic, fail-loud); env-independent + idempotent + **snapshot-driven** guarded DELETE (3 on TEST/PROD, 0 on local); recreate `search_lessons` from w1b baseline minus BOTH ghost-exclusion blocks + minus `filter_lesson_format` (15-arg) + re-GRANT(15-arg) + NOTIFY pgrst. `.rollback` recreates the prior 16-arg RPC (+re-GRANT/NOTIFY) + re-inserts snapshot. Independent supervisor diff: RPC recreate = EXACTLY the 3 mandated edits; rollback CREATE byte-identical to w1b.
 
-**Migration shape (hardened):** env-independent date-threshold scope (NO hardcoded 17); both C12 UPDATEs + C83 pre-guard/CTE are SNAPSHOT-DRIVEN (`UPDATE … FROM snapshot`, guarded `status='submitted'`/`jsonb_typeof='string'`) so mutation ⊆ snapshot + idempotent; C83 fail-loud pre-guard + dual post-condition (target-scoped LEFT-JOIN null-safe + whole-table `string=0`); rollback = single atomic `DO` block with the `updated_at` trigger disabled for exact restore; both snapshot tables RLS-enabled/no-policy, retained as recovery artifact.
+**Pre-flight re-verified (supervisor, TEST+PROD, 2026-06-22):** corpus TEST 766/745/21 · PROD 788/767/21; ghosts identity_guarded=3 both; all 13 ref probes=0 both; 0 CASCADE children both → post-delete is a **−3 DELTA**. Live `search_lessons` was ONE 16-arg overload (incl. `order_by`) — forward DROP targets THAT (not w1b's pre-C58 15-arg DROP).
 
-**Local verify:** `supabase db reset` applies clean (both RAISE NOTICE lines, 0 rows local); `npm run test:rls` ✅ (16/16; the 2 `archive_duplicate_lesson` scenario failures are pre-existing/unrelated); `npm run check` exit 0.
+**Local verify:** `supabase db reset` applies clean (NOTICE `C11: hard-deleted 0`); function = 1 overload / 15-arg; migration recorded; `npm run check` exit 0; `test:rls` green (2 pre-existing unrelated `archive_duplicate_lesson` failures).
 
-**Gate results (PR1 pre-push):**
-- **GATE 2** (Codex, pre-TEST): BLOCK → 4 findings. ACCEPTED 3 (snapshot-driven UPDATE/TOCTOU; target-scoped post-condition; atomic single-block rollback) + REJECTED 1 (drop-snapshot-in-rollback — contradicts the locked retain-as-recovery-artifact design).
-- **GATE 3 Claude** code-reviewer: CLEAN (no high-confidence findings; confirms conformance + the 3 fixes correct).
-- **GATE 3 Codex** (round 2): BLOCK → ACCEPTED 1 hardening (LEFT-JOIN null-safe post-condition) + REJECTED rest (retained-snapshot counterexample needs an out-of-pipeline manual re-apply; scalar fail-loud is working-as-designed). Re-apply caveat documented in the rollback header.
+**Gates (PR2 pre-push):** GATE 2/3 Claude code-reviewer raised 1 CRITICAL (DROP allegedly 15-arg) → **REJECTED, false positive** (verified 16-arg pos-9=`text`; local overload_count=1 disproves). GATE 2/3 Codex → 7 findings; ACCEPTED 3 (CASCADE-child guard, snapshot-driven DELETE, PK-comment fix), REJECTED 4 (rationale logged). GATE 4 Codex re-confirm → points 2/3/4 clean; 1 new HIGH (CASCADE-guard TOCTOU) ACCEPTED → `LOCK TABLE` fix. All hardenings folded into `aacf9d3` + re-verified local.
 
-**Remaining scope:** PR 2 — Ghost hard-delete + RPC (C11 + C49), highest risk, branch from `main` after PR1 merges. PR 3 — dev seed (C88), independent, anytime. C08 closed (no-op); C02 relocated to its own `stage2-retag` session.
+> ⚠️ **Status-file reconciliation (Session 3):** the prior header claimed PR1 was "BUILT + UNPUSHED — awaiting user go." Git showed it had been pushed→merged→PROD-applied since Session 2 closed (the push/merge cycle was never recorded in this file). Per the session-start ritual, git is authoritative; this header was corrected to match reality after independent TEST+PROD MCP re-verification.
 
-**What the next step picks up:** on user go — push `chore/wave4-pr1-reversible-cleanups` + `gh pr create`; per-PR ritual (wait for external bots → 4-surface triage → rebuttal + GATE 4 → fix-ups). After CI applies to TEST: `mcp__supabase-test__execute_sql` verify (17 closed + 2 note texts, 0 string season, 3 fallbacks `[]`, snapshot tables 17/17). PROD MCP verify after the manual approval gate (14 closed; season identical).
+**PR1 — final landed state** (migration `20260622000000_wave4_pr1_close_stuck_submissions_fix_season.sql` + `.sql.rollback` + 2 snapshot tables, in `main`):
+- **Supervisor independent re-verification (Session 3, read-only MCP, TEST + PROD) — all probes green:**
+  - C12: stale `submitted` remaining **0/0** (TEST/PROD); closed **17 (15 new + 2 update) TEST / 14 (14 new + 0 update) PROD**; snapshot rows **17 TEST / 14 PROD**.
+  - C83: string `season` remaining **0/0**; snapshot rows **17/17**; `[]` fallbacks **3/3**; non-empty arrays **14/14**.
+  - All counts match the locked design + the merge-commit body exactly. Data-safe.
 
-**Blockers:** none (Codex's residual BLOCK rests on out-of-supported-pipeline scenarios, rejected with written rationale; user to weigh in before push).
+**Gate history (PR1, pre-merge — for the record):**
+- **GATE 2** (Codex, pre-TEST): BLOCK → ACCEPTED 3 (snapshot-driven UPDATE/TOCTOU; target-scoped post-condition; atomic single-block rollback) + REJECTED 1 (drop-snapshot-in-rollback — contradicts the locked retain-as-recovery-artifact design).
+- **GATE 3 Claude** code-reviewer: CLEAN. **GATE 3 Codex** (round 2): BLOCK → ACCEPTED 1 (LEFT-JOIN null-safe post-condition) + REJECTED rest (out-of-pipeline theoreticals). Re-apply caveat documented in the rollback header.
+- (Push→bot-round→merge→PROD-approval cycle happened after Session 2's last status write; not separately logged here. The authoritative proof is the green TEST+PROD MCP re-verification above + run `27987378389`.)
+
+**Remaining scope:** **PR 2 — Ghost hard-delete + RPC (C11 + C49)** — HIGHEST RISK, irreversible; branch from `main` (PR1 merged). PR 3 — dev seed (C88), independent, anytime, no DB write. C08 closed (no-op); C02 relocated to its own `stage2-retag` session.
+
+**What the next step picks up (on user go):** start **PR2** — invoke `database-migrations`; re-run the C11 split-by-enforcement pre-delete scan on TEST **and** PROD with verbatim IDs (identity=3, all 14 ref probes=0, guarded count=3, 0 CASCADE children) before authoring; write the guarded hard-DELETE + snapshot table + `search_lessons` exclusion removal (C11) and the `filter_lesson_format` param/frontend/types cleanup (C49); GATE 2 Codex on the SQL; `supabase db reset && npm run test:rls && npm run check`; cut `chore/wave4-pr2-...` from `main`; per-PR ritual. **Explicit user go required for the specific PROD hard-delete.**
+
+**Blockers:** none. PR1 closed clean.
 
 ## Recent decisions worth carrying forward
 
@@ -48,7 +58,7 @@
 
 ## In flight
 
-- **PR1 built + verified + gated; UNPUSHED.** Next action = push + `gh pr create` on user go, then per-PR ritual + TEST-DB verify after CI applies.
+- **PR2 (C11 + C49) PUSHED → PR open.** Next actions: wait for external bots + CI → four-surface triage → **TEST MCP verify** (3 ghosts gone, live-count **−3 delta** [TEST 745→742], `wave4_c11_ghost_rollback`=3, `search_lessons` returns no ghost IDs, location-Both + sort intact, re-run Q8 ref-probes post-delete=0) → rebuttal-pass any findings. **Merge + PROD-approval RESERVED for explicit user go.** After PROD apply: PROD MCP verify (live-count −3 [767→764], season/ghost census). PR-cycle archival of Session 0–3 entries still pending (do at session-end / PR2 merge).
 
 ## Blocked
 
