@@ -206,7 +206,7 @@ jobs:
           # special characters in filenames can't break the JS parser. Same
           # pattern deploy-edge-functions.yml uses for matrix.function values.
           MIGRATION_FILES: ${{ needs.check-migrations.outputs.migration_files }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
