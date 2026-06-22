@@ -41,6 +41,13 @@ jobs:
       target: ${{ steps.plan.outputs.target }}
       functions: ${{ steps.plan.outputs.functions }}
       has_work: ${{ steps.plan.outputs.has_work }}
+      # JSON array of functions to verify STRICTLY (fail the job if the
+      # post-deploy version did not advance). A function is listed only when an
+      # automated push/PR changed one of its BUNDLED files (so a real deploy
+      # must advance the version). Functions deployed for a test-only change, a
+      # _shared fanout, a manual dispatch, or orphan-history recovery are absent
+      # here and get a lenient warn-on-no-advance instead.
+      strict_functions: ${{ steps.plan.outputs.strict_functions }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -64,6 +71,11 @@ jobs:
           # Initialize FUNCS up-front so the post-case length check is safe
           # regardless of which event branch ran (defensive under set -u).
           FUNCS=()
+
+          # Functions to verify STRICTLY (their own bundled source changed on an
+          # automated push/PR). Stays empty for manual dispatch, _shared
+          # fanouts, and orphan-history recovery — those verify leniently.
+          STRICT_FUNCS=()
 
           # Discover deployable functions from the filesystem so adding a new
           # function under supabase/functions/<name>/ doesn't require editing
@@ -137,6 +149,15 @@ jobs:
               echo "Shared code changed — deploying all functions."
               FUNCS=("${ALL_FUNCTIONS[@]}")
             else
+              # Specific function dirs changed on an automated push/PR (no
+              # _shared fanout). Deploy each, and mark for STRICT verification
+              # any function whose change touched a BUNDLED file — there a real
+              # deploy must advance the version, so a frozen version is the
+              # silent no-op bug. A function whose ONLY change is a test file
+              # (not in the deploy bundle) is still deployed but verified
+              # leniently: its bundle is identical, so its version legitimately
+              # won't move. (This push path is the only one that has produced
+              # the silent no-op in production.)
               mapfile -t FUNC_DIRS < <(
                 echo "${CHANGED:-}" \
                   | sed -n 's|^supabase/functions/\([^/]*\)/.*|\1|p' \
@@ -145,6 +166,15 @@ jobs:
               for name in "${FUNC_DIRS[@]}"; do
                 if is_valid_function "$name"; then
                   FUNCS+=("$name")
+                  # Strict iff this function has a changed file that is NOT a
+                  # test file. Everything else under the dir ships in the
+                  # deployed bundle — *.ts source, *.json config, and the
+                  # import.meta.url-referenced prompt *.md assets.
+                  if echo "${CHANGED:-}" \
+                    | grep -E "^supabase/functions/${name}/" \
+                    | grep -qvE '(\.(test|spec)\.ts$|/__tests__/)'; then
+                    STRICT_FUNCS+=("$name")
+                  fi
                 fi
               done
             fi
@@ -155,6 +185,7 @@ jobs:
             echo "has_work=false" >> "$GITHUB_OUTPUT"
             echo "target=$TARGET" >> "$GITHUB_OUTPUT"
             echo 'functions=[]' >> "$GITHUB_OUTPUT"
+            echo 'strict_functions=[]' >> "$GITHUB_OUTPUT"
             {
               echo "## Edge Function Deploy — no-op"
               echo ""
@@ -164,15 +195,22 @@ jobs:
           fi
 
           JSON=$(printf '%s\n' "${FUNCS[@]}" | jq -R . | jq -cs .)
+          if [ "${#STRICT_FUNCS[@]}" -gt 0 ]; then
+            STRICT_JSON=$(printf '%s\n' "${STRICT_FUNCS[@]}" | jq -R . | jq -cs .)
+          else
+            STRICT_JSON='[]'
+          fi
           echo "has_work=true" >> "$GITHUB_OUTPUT"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           echo "functions=$JSON" >> "$GITHUB_OUTPUT"
+          echo "strict_functions=$STRICT_JSON" >> "$GITHUB_OUTPUT"
 
           {
             echo "## Edge Function Deploy Plan"
             echo ""
             echo "- **Event:** \`$EVENT_NAME\`"
             echo "- **Target:** \`$TARGET\`"
+            echo "- **Strict-verified (must advance):** \`${STRICT_FUNCS[*]:-(none — lenient warn)}\`"
             echo "- **Functions (${#FUNCS[@]}):**"
             for f in "${FUNCS[@]}"; do
               echo "  - \`$f\`"
@@ -189,7 +227,11 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      max-parallel: 4
+      # Serialized (was 4): deploy + post-deploy verify run one function at a
+      # time so a silent no-op is caught before the next function deploys and
+      # the per-function logs stay legible. fail-fast stays false so one
+      # function failing still lets the rest deploy + verify.
+      max-parallel: 1
       matrix:
         function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
     steps:
@@ -201,6 +243,42 @@ jobs:
         with:
           version: latest
           github-token: ${{ github.token }}
+
+      - name: Capture pre-deploy version — ${{ matrix.function }} (TEST)
+        id: pre
+        # Record the function's current deployed version BEFORE deploying so
+        # the post-deploy step can assert it advanced. This is what catches the
+        # recurring "CLI reports success but the function never changed" silent
+        # no-op (seen on complete-review x2 and password-reset x1) — the
+        # version (and source) stays frozen on a no-op.
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          PROJECT_REF: rxgajgmphciuaqzvwmox
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS --retry 3 --retry-all-errors -o /tmp/pre.json -w '%{http_code}' \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/functions/$FUNCTION_NAME") || code=000
+          if [ "$code" = "200" ]; then
+            ver=$(jq -r '.version // empty' /tmp/pre.json)
+            case "$ver" in
+              ''|*[!0-9]*)
+                echo "::error::Pre-deploy API returned HTTP 200 but no numeric version for $FUNCTION_NAME (got '${ver:-<empty>}') — cannot establish a baseline to verify the deploy."
+                cat /tmp/pre.json 2>/dev/null || true
+                exit 1
+                ;;
+            esac
+            echo "Pre-deploy version: $ver"
+            echo "version=$ver" >> "$GITHUB_OUTPUT"
+          elif [ "$code" = "404" ]; then
+            echo "Function not yet deployed (HTTP 404) — treating as first deploy."
+            echo "version=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Failed to read pre-deploy version for $FUNCTION_NAME (HTTP $code)"
+            cat /tmp/pre.json 2>/dev/null || true
+            exit 1
+          fi
 
       - name: Deploy ${{ matrix.function }} to TEST
         # --no-verify-jwt: the Supabase edge runtime doesn't enforce a JWT
@@ -218,6 +296,98 @@ jobs:
           supabase functions deploy "$FUNCTION_NAME" \
             --project-ref rxgajgmphciuaqzvwmox \
             --no-verify-jwt
+
+      - name: Verify deploy advanced the version — ${{ matrix.function }} (TEST)
+        # Automated equivalent of the manual 3-signal post-deploy check: confirm
+        # the function is ACTIVE and its deployed version advanced past the
+        # pre-deploy snapshot. Supabase only bumps `version` (and ezbr_sha256)
+        # when the bundled SOURCE changes, so "did not advance" means the deploy
+        # changed nothing. detect-changes lists a function in `strict_functions`
+        # only when an automated push/PR changed one of its BUNDLED files — there
+        # a frozen version is a real silent no-op, so we fail loudly. Functions
+        # deployed for a test-only change, a _shared fanout, or a manual dispatch
+        # verify leniently (warn), since their bundle (and version) may
+        # legitimately not change.
+        #
+        # Caveat: `version` is a project-level counter. With the serialized
+        # matrix this reliably attributes the bump to this run, but a
+        # *concurrent* deploy of the same function from a different trigger
+        # (push and manual dispatch use separate concurrency groups by design)
+        # could advance it inside this window. That rare case is still covered
+        # by the manual post-deploy source check (ezbr_sha256 vs TEST + a source
+        # grep), which remains the belt-and-braces verification.
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          PROJECT_REF: rxgajgmphciuaqzvwmox
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PRE_VERSION: ${{ steps.pre.outputs.version }}
+          STRICT_FUNCTIONS: ${{ needs.detect-changes.outputs.strict_functions }}
+        run: |
+          set -euo pipefail
+          # This function is verified strictly iff detect-changes listed it in
+          # strict_functions (its own bundled source changed on an automated
+          # push/PR). Otherwise a frozen version warns instead of failing.
+          if printf '%s' "${STRICT_FUNCTIONS:-[]}" | jq -e --arg f "$FUNCTION_NAME" 'index($f) != null' >/dev/null 2>&1; then
+            STRICT=true
+          else
+            STRICT=false
+          fi
+          post=""
+          status=""
+          # Poll briefly: the Management API can lag the CLI deploy by a moment.
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -sS --retry 3 --retry-all-errors -o /tmp/post.json -w '%{http_code}' \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              "https://api.supabase.com/v1/projects/$PROJECT_REF/functions/$FUNCTION_NAME") || code=000
+            if [ "$code" = "200" ]; then
+              post=$(jq -r '.version // empty' /tmp/post.json)
+              status=$(jq -r '.status // empty' /tmp/post.json)
+              # Require BOTH before breaking: a 200 carrying a version but no
+              # status would otherwise break early and fail the ACTIVE check
+              # with a blank status. Keep polling until the record is complete.
+              [ -n "$post" ] && [ -n "$status" ] && break
+            fi
+            echo "Attempt $attempt: HTTP $code (version='${post:-}')."
+            [ "$attempt" -lt 5 ] && sleep 5
+          done
+          if [ -z "$post" ]; then
+            echo "::error::Could not read post-deploy version for $FUNCTION_NAME"
+            exit 1
+          fi
+          if [ -z "$status" ]; then
+            echo "::error::Read a version but no status for $FUNCTION_NAME after polling — cannot confirm the deploy is ACTIVE."
+            exit 1
+          fi
+          echo "Post-deploy: version=$post status=$status (pre=$PRE_VERSION)"
+          if [ "$status" != "ACTIVE" ]; then
+            echo "::error::$FUNCTION_NAME is not ACTIVE after deploy (status=$status)"
+            exit 1
+          fi
+          case "$post" in
+            ''|*[!0-9]*) echo "::error::Non-numeric post-deploy version '$post' for $FUNCTION_NAME"; exit 1 ;;
+          esac
+          if [ "$PRE_VERSION" = "none" ]; then
+            echo "✅ First deploy of $FUNCTION_NAME registered version $post."
+          else
+            # Belt-and-braces: the pre-deploy step already fails on a 200 with no
+            # numeric version, so PRE_VERSION here is numeric or "none" (handled
+            # above). Unreachable by design, but keeps the integer compare below
+            # safe if the pre-step logic ever changes.
+            case "$PRE_VERSION" in
+              ''|*[!0-9]*)
+                echo "::error::Pre-deploy version '$PRE_VERSION' is not numeric — cannot verify the increment for $FUNCTION_NAME."
+                exit 1
+                ;;
+            esac
+            if [ "$post" -gt "$PRE_VERSION" ]; then
+              echo "✅ $FUNCTION_NAME version advanced $PRE_VERSION → $post — deploy is real."
+            elif [ "$STRICT" = "true" ]; then
+              echo "::error::SILENT NO-OP — $FUNCTION_NAME version did not advance (pre=$PRE_VERSION, post=$post) on an automated deploy of changed source. The CLI reported success but the deployed function did not change. Re-dispatch with: gh workflow run deploy-edge-functions.yml -f environment=test -f function=$FUNCTION_NAME"
+              exit 1
+            else
+              echo "::warning::$FUNCTION_NAME version did not advance (pre=$PRE_VERSION, post=$post). Expected when redeploying identical source (manual dispatch) or a _shared fanout that did not change this function's bundle — not treated as a no-op. If this deploy was meant to change the function, confirm via the manual source check."
+            fi
+          fi
 
   # Single approval gate for the whole PROD deploy. Without this, every
   # matrix-expanded `deploy-prod` job would request its own approval —
@@ -260,7 +430,11 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      max-parallel: 4
+      # Serialized (was 4): deploy + post-deploy verify run one function at a
+      # time so a silent no-op is caught before the next function deploys and
+      # the per-function logs stay legible. fail-fast stays false so one
+      # function failing still lets the rest deploy + verify.
+      max-parallel: 1
       matrix:
         function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
     steps:
@@ -273,6 +447,40 @@ jobs:
           version: latest
           github-token: ${{ github.token }}
 
+      - name: Capture pre-deploy version — ${{ matrix.function }} (PROD)
+        id: pre
+        # See deploy-test: record the current PROD version before deploying so
+        # the post-deploy step can assert it advanced (catches the silent no-op
+        # that recurred on the PROD matrix push — complete-review PR #465/#516).
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          PROJECT_REF: jxlxtzkmicfhchkhiojz
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS --retry 3 --retry-all-errors -o /tmp/pre.json -w '%{http_code}' \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/functions/$FUNCTION_NAME") || code=000
+          if [ "$code" = "200" ]; then
+            ver=$(jq -r '.version // empty' /tmp/pre.json)
+            case "$ver" in
+              ''|*[!0-9]*)
+                echo "::error::Pre-deploy API returned HTTP 200 but no numeric version for $FUNCTION_NAME (got '${ver:-<empty>}') — cannot establish a baseline to verify the deploy."
+                cat /tmp/pre.json 2>/dev/null || true
+                exit 1
+                ;;
+            esac
+            echo "Pre-deploy version: $ver"
+            echo "version=$ver" >> "$GITHUB_OUTPUT"
+          elif [ "$code" = "404" ]; then
+            echo "Function not yet deployed (HTTP 404) — treating as first deploy."
+            echo "version=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Failed to read pre-deploy version for $FUNCTION_NAME (HTTP $code)"
+            cat /tmp/pre.json 2>/dev/null || true
+            exit 1
+          fi
+
       - name: Deploy ${{ matrix.function }} to PROD
         # See deploy-test for --no-verify-jwt + env-passing rationale.
         env:
@@ -282,6 +490,82 @@ jobs:
           supabase functions deploy "$FUNCTION_NAME" \
             --project-ref jxlxtzkmicfhchkhiojz \
             --no-verify-jwt
+
+      - name: Verify deploy advanced the version — ${{ matrix.function }} (PROD)
+        # See deploy-test: assert the PROD version advanced past the pre-deploy
+        # snapshot and the function is ACTIVE; fail loudly on a silent no-op.
+        env:
+          FUNCTION_NAME: ${{ matrix.function }}
+          PROJECT_REF: jxlxtzkmicfhchkhiojz
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PRE_VERSION: ${{ steps.pre.outputs.version }}
+          STRICT_FUNCTIONS: ${{ needs.detect-changes.outputs.strict_functions }}
+        run: |
+          set -euo pipefail
+          # This function is verified strictly iff detect-changes listed it in
+          # strict_functions (its own bundled source changed on an automated
+          # push/PR). Otherwise a frozen version warns instead of failing.
+          if printf '%s' "${STRICT_FUNCTIONS:-[]}" | jq -e --arg f "$FUNCTION_NAME" 'index($f) != null' >/dev/null 2>&1; then
+            STRICT=true
+          else
+            STRICT=false
+          fi
+          post=""
+          status=""
+          # Poll briefly: the Management API can lag the CLI deploy by a moment.
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -sS --retry 3 --retry-all-errors -o /tmp/post.json -w '%{http_code}' \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              "https://api.supabase.com/v1/projects/$PROJECT_REF/functions/$FUNCTION_NAME") || code=000
+            if [ "$code" = "200" ]; then
+              post=$(jq -r '.version // empty' /tmp/post.json)
+              status=$(jq -r '.status // empty' /tmp/post.json)
+              # Require BOTH before breaking: a 200 carrying a version but no
+              # status would otherwise break early and fail the ACTIVE check
+              # with a blank status. Keep polling until the record is complete.
+              [ -n "$post" ] && [ -n "$status" ] && break
+            fi
+            echo "Attempt $attempt: HTTP $code (version='${post:-}')."
+            [ "$attempt" -lt 5 ] && sleep 5
+          done
+          if [ -z "$post" ]; then
+            echo "::error::Could not read post-deploy version for $FUNCTION_NAME"
+            exit 1
+          fi
+          if [ -z "$status" ]; then
+            echo "::error::Read a version but no status for $FUNCTION_NAME after polling — cannot confirm the deploy is ACTIVE."
+            exit 1
+          fi
+          echo "Post-deploy: version=$post status=$status (pre=$PRE_VERSION)"
+          if [ "$status" != "ACTIVE" ]; then
+            echo "::error::$FUNCTION_NAME is not ACTIVE after deploy (status=$status)"
+            exit 1
+          fi
+          case "$post" in
+            ''|*[!0-9]*) echo "::error::Non-numeric post-deploy version '$post' for $FUNCTION_NAME"; exit 1 ;;
+          esac
+          if [ "$PRE_VERSION" = "none" ]; then
+            echo "✅ First deploy of $FUNCTION_NAME registered version $post."
+          else
+            # Belt-and-braces: the pre-deploy step already fails on a 200 with no
+            # numeric version, so PRE_VERSION here is numeric or "none" (handled
+            # above). Unreachable by design, but keeps the integer compare below
+            # safe if the pre-step logic ever changes.
+            case "$PRE_VERSION" in
+              ''|*[!0-9]*)
+                echo "::error::Pre-deploy version '$PRE_VERSION' is not numeric — cannot verify the increment for $FUNCTION_NAME."
+                exit 1
+                ;;
+            esac
+            if [ "$post" -gt "$PRE_VERSION" ]; then
+              echo "✅ $FUNCTION_NAME version advanced $PRE_VERSION → $post — deploy is real."
+            elif [ "$STRICT" = "true" ]; then
+              echo "::error::SILENT NO-OP — $FUNCTION_NAME version did not advance (pre=$PRE_VERSION, post=$post) on an automated deploy of changed source. The CLI reported success but the deployed function did not change. Re-dispatch with: gh workflow run deploy-edge-functions.yml -f environment=production -f function=$FUNCTION_NAME"
+              exit 1
+            else
+              echo "::warning::$FUNCTION_NAME version did not advance (pre=$PRE_VERSION, post=$post). Expected when redeploying identical source (manual dispatch) or a _shared fanout that did not change this function's bundle — not treated as a no-op. If this deploy was meant to change the function, confirm via the manual source check."
+            fi
+          fi
 
   report:
     name: Post Deploy Summary
