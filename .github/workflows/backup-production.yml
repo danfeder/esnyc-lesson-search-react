@@ -48,7 +48,7 @@ jobs:
       # is created fresh.
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           # Matches `reset-test-db.yml` and `migrate-production.yml`. If this
           # convention changes (pin to a specific version), update all three
