@@ -1,26 +1,31 @@
 # Wave 4 — Data / Corpus Cleanup — Execution Status
 
-**Last updated:** 2026-06-22 by Session 1 (design-lock)
+**Last updated:** 2026-06-22 by Session 2 (PR1 build)
 
 ## Current State
 
-**Phase:** Design **LOCKED** (Session 1). Build not yet started. Design doc Status = Locked; impl plan tasks authored.
+**Phase:** PR1 (C12 + C83) **BUILT + locally verified + dual-gate-reviewed**, on branch `chore/wave4-pr1-reversible-cleanups` (cut from `chore/wave4-scaffold`). **UNPUSHED — awaiting user go to push** (push starts the CI → TEST-apply cycle).
 
-**Scope (reshaped at lock from 4 PRs → 3):**
-- **PR 1 — Reversible cleanups (C12 + C83).** C12 = close the stale never-reviewed submission backlog (env-independent: `status='submitted' AND created_at < '2026-05-01'`; **TEST 17 / PROD 14** — do NOT hardcode 17). C83 = normalize 17 string-typed `submission_reviews…->'season'` values to arrays via backfill-from-published-lesson (14) + `[]` fallback (3). One migration + `.rollback`, two snapshot tables.
-- **PR 2 — Ghost hard-delete + RPC (C11 + C49).** Highest risk. Guarded `DELETE` of the 3 ghosts (snapshot first; pre-delete scan all-clear on TEST+PROD, guarded count=3) + `search_lessons` DROP+CREATE removing the 3-ID exclusion + dropping the dead `filter_lesson_format` param (C49 = delete `useLessonSearch.ts:147-150` + regen types).
-- **PR 3 — Dev seed (C88).** Author a read-only PROD→seed generator; re-export `data/consolidated_lessons.json` from PROD-live (~745, camelCase envelope). No DB write, no PROD mutation.
-- **C08 = CLOSED (no-op):** 0 import stragglers found (TEST+PROD sweep). **C02 = RELOCATED** to its own `stage2-retag` session (the deferred "PR F" content re-tag; carry-forward findings in design §3.1/§4/§8).
+**PR1 commits** (atop scaffold + design-lock `bd64f14`):
+- `daf1499` test(wave4): C83 Zod contract-lock fixture (6 assertions, field-isolated `.shape.season`; green).
+- `c84b676` feat(wave4): C12 + C83 migration `20260622000000_wave4_pr1_close_stuck_submissions_fix_season.sql` + `.sql.rollback` + 2 snapshot tables (hardened through 2 Codex rounds).
 
-**Branch:** `chore/wave4-scaffold` — **UNPUSHED**. Session 1's design-lock docs commit on THIS branch (about to commit). **PR1 cuts from `chore/wave4-scaffold`** (NOT `main`) so the scaffold + design-lock docs bundle into PR1 (user decision). PR2/PR3 branch from `main` after PR1 merges (or stack — supervisor calls it).
+**Evidence re-verified (supervisor, TEST+PROD, 2026-06-22) — baseline holds exactly:** C12 TEST 17 (15 new+2 update) / PROD 14 (14 new, 0 update), 0 submitted after 2026-05-01 on both; C83 TEST=PROD 17 string (year-round×13/end-of-year×2/winter×2) / 96 array; linkage 17/17/14/3/0/0 (unresolved=0, non_array=0 → the C83 pre-guard will never fire).
 
-**GATE 1B (done):** Codex adversarial review of the locked design + impl plan returned **7 findings, verdict BLOCK — all accepted + folded** before the docs commit. The two HIGH (C11 snapshot-completeness guard before the DELETE; C11 `.rollback` must re-GRANT + `NOTIFY pgrst`) + C83 fail-loud-on-unresolved (no silent `[]`) + C88 importer round-trip (`metadata.gradeLevel` singular vs `gradeLevels`) + C12 `updated_at` snapshot + 2 LOW (C83 fixture targets the review-form schema; C49 types-regen pinned local-post-apply). No below-bar hardening to reject — Codex's different-family lens earned its keep on the migration SQL.
+**Migration shape (hardened):** env-independent date-threshold scope (NO hardcoded 17); both C12 UPDATEs + C83 pre-guard/CTE are SNAPSHOT-DRIVEN (`UPDATE … FROM snapshot`, guarded `status='submitted'`/`jsonb_typeof='string'`) so mutation ⊆ snapshot + idempotent; C83 fail-loud pre-guard + dual post-condition (target-scoped LEFT-JOIN null-safe + whole-table `string=0`); rollback = single atomic `DO` block with the `updated_at` trigger disabled for exact restore; both snapshot tables RLS-enabled/no-policy, retained as recovery artifact.
 
-**What the next (build) session picks up:** start **PR1**. Read impl plan §"PR 1" through Task 1.2; invoke `database-migrations`; **re-run the TEST+PROD count probes from the impl-plan "Evidence baseline" — counts drift, never trust the doc blind**; write the Task 1.1 Zod fixture (TDD) then the migration (Task 1.2); GATE 2 Codex on the SQL; `supabase db reset && npm run test:rls && npm run check`; push from the PR1 branch; per-PR ritual.
+**Local verify:** `supabase db reset` applies clean (both RAISE NOTICE lines, 0 rows local); `npm run test:rls` ✅ (16/16; the 2 `archive_duplicate_lesson` scenario failures are pre-existing/unrelated); `npm run check` exit 0.
 
-**Pre-next-PR verification:** before authoring the PR1 migration, re-confirm on TEST **and** PROD: stuck-submission counts by type + the `created_at < 2026-05-01` boundary (0 newer); the season census (17 string / 96 array) + the 3 empty-source linkages. Standing rule: every PR1/PR2 migration → TEST MCP verify before merge + PROD MCP verify after the manual approval gate.
+**Gate results (PR1 pre-push):**
+- **GATE 2** (Codex, pre-TEST): BLOCK → 4 findings. ACCEPTED 3 (snapshot-driven UPDATE/TOCTOU; target-scoped post-condition; atomic single-block rollback) + REJECTED 1 (drop-snapshot-in-rollback — contradicts the locked retain-as-recovery-artifact design).
+- **GATE 3 Claude** code-reviewer: CLEAN (no high-confidence findings; confirms conformance + the 3 fixes correct).
+- **GATE 3 Codex** (round 2): BLOCK → ACCEPTED 1 hardening (LEFT-JOIN null-safe post-condition) + REJECTED rest (retained-snapshot counterexample needs an out-of-pipeline manual re-apply; scalar fail-loud is working-as-designed). Re-apply caveat documented in the rollback header.
 
-**Blockers:** none (user-approval gates are expected, not blockers).
+**Remaining scope:** PR 2 — Ghost hard-delete + RPC (C11 + C49), highest risk, branch from `main` after PR1 merges. PR 3 — dev seed (C88), independent, anytime. C08 closed (no-op); C02 relocated to its own `stage2-retag` session.
+
+**What the next step picks up:** on user go — push `chore/wave4-pr1-reversible-cleanups` + `gh pr create`; per-PR ritual (wait for external bots → 4-surface triage → rebuttal + GATE 4 → fix-ups). After CI applies to TEST: `mcp__supabase-test__execute_sql` verify (17 closed + 2 note texts, 0 string season, 3 fallbacks `[]`, snapshot tables 17/17). PROD MCP verify after the manual approval gate (14 closed; season identical).
+
+**Blockers:** none (Codex's residual BLOCK rests on out-of-supported-pipeline scenarios, rejected with written rationale; user to weigh in before push).
 
 ## Recent decisions worth carrying forward
 
@@ -38,11 +43,12 @@
 ## Done
 
 - **Session 0:** scaffold (4 docs) + GATE A design review.
-- **Session 1:** design-lock — discovery workflow, supervisor TEST+PROD re-verify, 6 user verdicts, design doc flipped to LOCKED + reshaped to 3 PRs, impl plan tasks authored. GATE 1B Codex review dispatched.
+- **Session 1:** design-lock — discovery workflow, supervisor TEST+PROD re-verify, 6 user verdicts, design doc flipped to LOCKED + reshaped to 3 PRs, impl plan tasks authored. GATE 1B Codex review dispatched + folded (`bd64f14`).
+- **Session 2:** PR1 build — re-verified TEST+PROD baseline; Task 1.1 C83 Zod fixture (`daf1499`); Task 1.2 C12+C83 migration+rollback (`c84b676`); GATE 2 + GATE 3 (Claude clean, 2 Codex rounds triaged); locally verified. **PR1 unpushed, awaiting user go.**
 
 ## In flight
 
-(none — GATE 1B Codex review done + folded; design-lock docs commit is next)
+- **PR1 built + verified + gated; UNPUSHED.** Next action = push + `gh pr create` on user go, then per-PR ritual + TEST-DB verify after CI applies.
 
 ## Blocked
 
@@ -97,3 +103,18 @@ Decisions/learnings:
 - Codex (different model family) caught what the same-family discovery+supervisor missed on the SQL: the silent-`[]` coercion trap, the incomplete-snapshot-before-delete hole, the rollback-loses-grants gap, and the importer `gradeLevel`/`gradeLevels` round-trip mismatch. Reinforces `feedback_codex_over_crossexamine`.
 
 Next session picks up: **start PR1 build** — re-run TEST+PROD count probes → Zod fixture (Task 1.1) → migration + `.rollback` + 2 snapshot tables (Task 1.2) → GATE 2 Codex → `db reset`+`test:rls`+`check` → cut PR1 branch from `chore/wave4-scaffold` → per-PR ritual.
+
+### Session 2 — 2026-06-22 — PR1 build (C12 + C83)
+
+Major events:
+- **Re-verified the evidence baseline myself** (read-only MCP) on TEST + PROD: all six probes matched the doc exactly (C12 17/14, C83 17-string/96-array, linkage 17/17/14/3/0/0). Cut `chore/wave4-pr1-reversible-cleanups` from `chore/wave4-scaffold` @ `bd64f14`.
+- **Task 1.1** (executor + main-loop re-verify): C83 Zod contract-lock fixture, 6 assertions incl. field-isolated `.shape.season.safeParse` so the string-rejection is proven against the `z.array(SeasonTimingEnum)` enum-array contract, not object completeness. `daf1499`, test green.
+- **Task 1.2** (executor + main-loop re-verify): C12+C83 migration + `.sql.rollback` + 2 snapshot tables. Supervisor independently confirmed the trigger name (`trigger_lesson_submissions_updated_at`, baseline:2774), the `status` CHECK includes `'rejected'`, the `.sql.rollback` convention. `c84b676`.
+- **GATE 2 Codex** (different family) returned **BLOCK** while the same-family Claude verifier returned "sound" — the cross-family value. Accepted 3 (snapshot-driven UPDATEs to close a TOCTOU window; target-scoped post-condition; single-atomic-block rollback) + rejected 1 with rationale (drop-snapshot-in-rollback contradicts the locked retain-as-recovery-artifact design). Folded the 3 fixes by `--amend` (unpushed).
+- **GATE 3:** Claude code-reviewer = CLEAN (independently confirmed the 3 fixes correct). Codex round 2 = BLOCK on residual edge cases → accepted 1 cheap hardening (LEFT-JOIN null-safe post-condition) + rejected the rest (retained-snapshot counterexample needs an unsupported manual re-apply; scalar fail-loud is working-as-designed). Documented the re-apply caveat in the rollback header. Re-verified local + re-amended (`c84b676`).
+
+Decisions/learnings:
+- **Cross-family review earned its keep again**: same-family Claude said "sound", Codex (different family) surfaced the snapshot-vs-mutation TOCTOU + the non-atomic rollback. Accept Codex's data-safety hardenings even when low-probability, reject its out-of-pipeline theoreticals with written rationale (reinforces `feedback_codex_over_crossexamine`).
+- **codex:codex-rescue backgrounds + drops findings even when told "return inline"** — the fix that worked: dispatch with an explicit *poll-until-findings* contract ("never return saying 'running in background'; poll `result` in a loop"). The first GATE-3 Codex dispatch backgrounded at 5.7 min and was unrecoverable (no SendMessage tool available in this env). (Promote to `feedback_codex_return_inline` on close.)
+
+Next step picks up: **push PR1 on user go** → per-PR ritual → TEST-DB MCP verify after CI applies → PROD verify after manual approval.
