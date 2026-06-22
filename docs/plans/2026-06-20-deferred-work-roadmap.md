@@ -21,7 +21,7 @@ The obsolescence pass earned its keep twice over:
 Sequenced by **user impact × (1/effort) × dependency-order**, hardened by a Codex adversarial pass. Public-facing work leads; DB-gated and refactor work is split out so it doesn't drag the fast wins. Standing gates apply throughout (bottom of section).
 
 ### Wave 1 — Public "broken windows" (ship now; highest user impact, mostly S)
-> **✅ SHIPPED 2026-06-21** — Theme B, 5 PRs: #522 `19d99b7` · #523 `530b253` · #524 `3c592b1` · #525 `5197069` · #526 `9eb1b6e`. Closed; see `2026-06-20-theme-b-public-ux-execution-status.md`.
+> **✅ SHIPPED 2026-06-21** — Theme B, 5 PRs: #522 `19d99b7` · #523 `530b253` · #524 `3c592b1` · #525 `5197069` · #526 `9eb1b6e`. Closed; see `archive/2026-06-20-theme-b-public-ux-execution-status.md` (archived in Wave 3 PR B).
 
 The only theme a teacher sees. → its own full `/kickoff-feature` scaffold (Theme B).
 - **W1a — pure-frontend** (no migration): `C57` mobile filters · `C59` loading-state/false-no-matches · `C14`/`C79` a11y + keyboard · `C84`/`C69` facet-badge bugs · copy/a11y one-liners (header "· Internal", SR-announcer, dialog name). 1–2 fast PRs.

@@ -4,7 +4,7 @@
 >
 > **Roadmap (source of truth for scope):** `docs/plans/2026-06-20-deferred-work-roadmap.md` — 169 canonical items across 7 waves, stable `C##` ids.
 
-**Last updated:** 2026-06-21 (**Wave 2 COMPLETE**; **Wave 3 IN FLIGHT** — small-initiative, re-scoped vs roadmap after a 4-agent grounding pass; core = C60 + C39, the rest re-homed. PR A (close-decks) in flight.).
+**Last updated:** 2026-06-22 (**Wave 2 COMPLETE**; **Wave 3 IN FLIGHT** — small-initiative, re-scoped vs roadmap after a 4-agent grounding pass; core = C60 + C39, the rest re-homed. **PR A (close-decks) MERGED #532 `5b5226a`; PR B (archival) in flight.**).
 
 ## Wave status
 
@@ -12,7 +12,7 @@
 |------|-------|-------|--------------|-------------|----------------|
 | **1** | Public "broken windows" UX (Theme B) | ✅ **SHIPPED 2026-06-21** | #522 `19d99b7` · #523 `530b253` · #524 `3c592b1` · #525 `5197069` · #526 `9eb1b6e` | — (closed) | `2026-06-20-theme-b-public-ux-*` (CLOSED) |
 | **2** | Email + Security P1 | ✅ **SHIPPED 2026-06-21** | PR1 C137 #527 `b4a5fc3` · PR2 C133 #528 `05d86ce` · PR3 C20 #530 `c52a00e` · PR4 C138 #531 `2d25e23` (all PROD-verified) | — (closed; deferred follow-ups → memory) | `2026-06-21-wave2-email-security-execution.md` (CLOSED) |
-| **3** | Repo/docs hygiene | 🟢 **PR A IN FLIGHT 2026-06-21** | PR A close-decks on `chore/wave3-close-decks` | **PR A** close-decks (in flight) → PR B archival → PR C migration-doc 4→2 | `2026-06-22-wave3-repo-docs-hygiene-execution.md` |
+| **3** | Repo/docs hygiene | 🟢 **PR B IN FLIGHT 2026-06-22** | PR A `5b5226a` (#532, MERGED) · PR B archival on `chore/wave3-archival` | PR A close-decks ✅ → **PR B archival (in flight)** → PR C migration-doc 4→2 | `2026-06-22-wave3-repo-docs-hygiene-execution.md` |
 | **4** | Data / corpus cleanup (DB-careful) | ⚪ queued | — | pre-delete FK checklist; `C11`/`C12`/`C08`/`C01`/`C02`/`C09` | TBD |
 | **5** | Reviewer/admin features | ⚪ queued | — | **ReviewDetail decomposition first (test-first)** then `C107`/`C111`/`C112`/`C113`… | TBD (full scaffold) |
 | **6** | Search depth + larger features | ⚪ queued | — | `C42`/`C41`/`C162`/`C121`/`C122` (L tier) | TBD |

@@ -186,14 +186,16 @@ All three are closed initiatives → safe to compress the live file to a Current
 
 ## §3 — STATUS (WHERE we are)
 
-**Last updated:** 2026-06-21 by Session 2 — **PR A open as #532**; round-1 triage + Codex cross-family pass both clean (claude-review APPROVE · Codex AGREE-SHIP); round-1 fix-up pushed. **Awaiting the user's merge call.**
+**Last updated:** 2026-06-22 by Session 3 — **PR A MERGED (#532, squash `5b5226a`).** **PR B (archival) OPEN as #533** on `chore/wave3-archival`: B.1 mechanism locked (`docs/plans/archive/` subdir), B.2 classified (**56 archive / 18 keep**, Codex-cross-examined), B.3 manifest + B.4 `git mv` done. Both pre-push gates clean (Claude SHIP · Codex AGREE-SHIP); round-1 four-surface triage clean (claude-review APPROVE, 3 Informational; Security-Audit = pre-existing npm-audit noise, rejected). **Awaiting user merge call.**
 
 ### Current State
-**Active PR:** **PR A — "close the decks" = #532** (https://github.com/danfeder/esnyc-lesson-search-react/pull/532), OPEN. A.1–A.6 complete; three independent gates agree (claude-review APPROVE · pre-push reviewer APPROVE · Codex AGREE-SHIP). Awaiting the user's merge call (docs-only; no DB/edge gates).
-**Current task:** **NONE pending on PR A** — round-1 fix-up pushed. Next is the user's merge call, then **PR B (archival)**.
-**Branch:** `chore/wave3-close-decks` (PR A's branch), pushed. Commits: scaffold `be570ab` + A.1–A.5 `49a5c91` + round-1 fix-up.
-**Last commit on main:** `2d25e23` (#531 C138, Wave 2 close).
-**Baseline:** `npm run check` green.
+**Active PR:** **PR B — docs archival = #533** (https://github.com/danfeder/esnyc-lesson-search-react/pull/533), OPEN. `docs/plans/archive/` subdir + `ARCHIVAL_MANIFEST.md` + 56-file `git mv` + live-pointer/§3/tracker bookkeeping. Three independent gates agree (pre-push Claude reviewer SHIP · Codex AGREE-SHIP · claude-review bot APPROVE). Round-1 fix-up folds 2 Informational clarity nits (manifest relative-path note + `.sql`-count note); §2 redundancy nit = won't-fix (intended status-doc structure).
+**Current task:** **NONE pending on PR B** — round-1 fix-up pushed. Next is the user's merge call, then **PR C (migration-doc 4→2 consolidation)**. No DB/edge gates (docs-only).
+**Branch:** `chore/wave3-archival`. Commit pending (B.1–B.4 staged).
+**Last commit on main:** `5b5226a` (#532 PR A — Wave 3 close-decks).
+**Baseline:** `npm run check` green at branch start (re-verify after edits).
+
+**B.1 mechanism lock (decision #7, evidence-based):** archive target = **`docs/plans/archive/` subdir**. The 4 existing `*-execution-status-archive.md` files are sister-file *splits* of still-live status docs (each has a live `-execution-status.md` partner) — a different job from relocating whole shipped initiatives; a dedicated subdir is the clean wholesale move and `git mv` preserves history. **Tier-4 policy lock (decision, user 2026-06-22): Option B** — archive the 6 docs cited only in frozen (immutable) migration `.sql` comments; keep the 6 cited in editable live source. Result: 56 archived (50 zero-ref + 6 Tier-4a), 18 kept.
 
 ### Recent decisions worth carrying forward
 - Scaffold committed on PR A's branch (not a standalone docs PR), bundling the Wave-2 close-out edits — same pattern as Wave 2 (`feedback_no_docs_push_during_pr`). Main is PR-protected → no direct push.
@@ -207,9 +209,10 @@ All three are closed initiatives → safe to compress the live file to a Current
 
 ### Done
 - ✅ **Scaffold (Session 1, 2026-06-21)** — orientation (read campaign memory + master tracker + roadmap Wave-3 + grounded each item via a 4-agent read-only Workflow against `main` @ `2d25e23`) → user-confirmed scope/weight (3 questions) → authored this combined doc + updated the master tracker's Wave-3 row → **combined GATE-1 review (Codex `gpt-5.5`, cross-family; verdict fold-4-fixes — all folded)** → committed on `chore/wave3-close-decks` with the folded Wave-2 close-out edits. No execution yet.
+- ✅ **PR A — "close the decks" (#532)** — MERGED 2026-06-22, squash `5b5226a`. A.1–A.6 complete; three independent gates agreed (claude-review APPROVE · pre-push reviewer APPROVE · Codex AGREE-SHIP); Security-Audit `npm audit` noise correctly rejected (`.md`-only diff).
 
 ### In flight
-- **PR A — "close the decks" (#532)** — OPEN, all gates clean. Round-1 four-surface triage: claude-review **APPROVE**; all CI green except the pre-existing Security-Audit `npm audit` noise (rejected, `.md`-only diff). Codex cross-family rebuttal pass: **AGREE-SHIP** (corroborated A.1 via `git cherry` patch-equivalence, A.2 banner-only, A.3 no fabricated count; all 4 triage verdicts upheld). Round-1 fix-up pushed. **Awaiting the user's merge call**, then PR B.
+- **PR B — docs archival (#533)** — OPEN, all gates clean. **56 docs `git mv`'d** into `docs/plans/archive/` + `ARCHIVAL_MANIFEST.md`; **18 kept** in root (4 live campaign · 4 functional script inputs · 2 live-command-referenced · 2 deferred-future-work inputs · 6 live-source-comment Tier-4b). Three independent gates: pre-push Claude reviewer **SHIP** · Codex **AGREE-SHIP** · CI `claude-review` bot **APPROVE** (3 Informational, 2 folded / 1 won't-fix). Security-Audit CI failure = pre-existing `npm audit` noise (rejected; `.md`-only diff). ~150 archive→archive intra-links left stale by design (manifest is the map); the lone live pointer repointed. Round-1 fix-up pushed. **Awaiting user merge call**, then PR C.
 
 ### Blocked
 (none)
@@ -238,3 +241,15 @@ All three are closed initiatives → safe to compress the live file to a Current
 - **A.6 four-surface triage** — claude-review **APPROVE** with 3 findings (Minor §3-staleness; Informational 3 un-annotated ARCHITECTURE counts; Informational C40 machine-specific path). CI all green except **Security Audit FAILURE = pre-existing `npm audit` noise** (the `@lhci/cli` chain + babel/react-router/dompurify advisories; `.md`-only diff can't introduce it → rejected). Round-1 fix-up folds findings 1+3 + annotates 2 of the 3 counts (left the ASCII-box `total_count: 1098` as illustrative).
 - **Codex cross-family pass (user-requested)** — first two attempts **died silently ~5 min in** = the **foreground-orphan** failure (a long Codex task run foreground gets reaped when the launching subagent returns early). Root cause + the `--background`-and-poll fix saved to memory `[[feedback_prefer_codex_commands]]`. Re-ran via the companion's `task --background` (job `task-mqomfw8v-spu1j9`): completed clean in 5m45s → **AGREE-SHIP**. Independently corroborated A.1 (`git cherry -v` patch-equivalence; no #470 merge commit; banner at `ReviewDetail.tsx:1203`), A.2 banner-only, A.3 no fabricated count; upheld all 4 triage verdicts; found no broken links / lost content.
 - **Three independent gates agree → PR A ready.** Round-1 fix-up pushed. **Next:** user's merge call, then PR B (archival).
+
+#### Session 3 — 2026-06-22 — PR B "docs archival" execution
+- Session-start ritual: git diverged from §3 as the memory flagged — **PR A (#532) had MERGED** (squash `5b5226a` on `main`, confirmed via `gh pr view`); §3 said "open/awaiting." Trusted git. On `main`, clean except the 6 intentionally-untracked items (left alone). `npm run check` green. User confirmed orientation + directive: **err toward MORE Codex cross-examination** (saved to memory `[[feedback_codex_over_crossexamine]]`).
+- Branched `chore/wave3-archival` off `main`.
+- **B.1** — locked archive mechanism = `docs/plans/archive/` subdir (evidence: the 4 existing `*-execution-status-archive.md` are sister-file splits of LIVE status docs, not wholesale relocations).
+- **B.2** — **reference scan was the load-bearing step:** `git grep` of every doc's basename across the repo (outside `docs/plans/`) surfaced **~22 referenced docs — far more than the grounding's single flagged landmine.** Split into (a) hard functional runtime reads (3 worksheets via `parse-heritage`/`emit-concepts`/`build-concepts` scripts → MUST NOT MOVE), (b) provenance comments in immutable applied migrations, (c) editable live-source comments. Classified all 74 top-level files → 56 archivable / 18 keep. Resolved 2 judgment docs by status marker (cooking-skills-decided → PR F input; heritage-filter-rebuild-design → PR C1/C2 — both KEEP).
+- **Codex cross-examination** (`codex:codex-rescue`, read-only, INLINE, 583s): independently re-greps → **zero missed external refs on the 56**; confirmed no live doc mis-archived (the 5 imperative-voice docs are cosmetically-not-actually-open); verified the Tier-4 6/6 split line-by-line; recommended **Option B**. Surfaced ~150 archive→archive intra-links (accept) + 4 live-doc pointers (1 real, repointed).
+- **Tier-4 fork → user chose Option B** (archive 6 frozen-migration-only, keep 6 live-source) via AskUserQuestion.
+- **B.3/B.4** — created `docs/plans/archive/` + `ARCHIVAL_MANIFEST.md` (grouped by initiative + a "kept in place / why" section documenting the 18) + `git mv` 56 files (56 moved / 0 failed; verified 18 KEEP remain top-level). Folded the PR-A-merged status into the master tracker + roadmap live-pointer + this §3. **Caught + reverted an accidental `git add -A`** that staged the 6 intentionally-untracked files; re-staged precisely (56 R + 1 A + 3 M, 0 untracked-leak). Committed `0acc54d`.
+- **B.5 pre-push** — two independent reviewers in parallel: Claude `feature-dev:code-reviewer` = **SHIP**; Codex (foreground, INLINE — first attempt hit the background-orphan failure, re-dispatched with explicit no-background) = **AGREE-SHIP**. Both verified: no live doc archived, functional script inputs resolve, manifest 56-for-56 exact, bookkeeping facts correct, zero code touched.
+- Pushed → **PR #533**. Round-1 four-surface triage: `claude-review` bot **APPROVE** (3 Informational); Security-Audit = pre-existing npm-audit noise (rejected). Folded 2 clarity nits (manifest relative-path + `.sql`-count notes) + this §3 update into a round-1 fix-up; §2 redundancy nit won't-fixed (intended structure).
+- **Next:** user's merge call, then PR C (migration-doc 4→2 consolidation).
