@@ -203,17 +203,18 @@ function applyAliasFloor(
 ): void {
   const tags = work[field];
   if (!isStringArray(tags)) return;
-  let changed = false;
-  const folded = tags.map((tag) => {
-    const canonical = folds[tag];
-    if (canonical !== undefined && canonical !== tag) {
-      changed = true;
-      return canonical;
-    }
-    return tag;
-  });
+  const folded = tags.map((tag) => folds[tag] ?? tag);
+  // Two distinct aliases can fold to the SAME canonical (e.g. `Chopping` and
+  // `Dicing` → `Knife skills`). A positional overwrite would emit that canonical
+  // twice, which the downstream `uniqueEnumArray` refinement REJECTS (kicking an
+  // otherwise clean-core row into the LLM repair pass) — so de-dupe here,
+  // preserving first-occurrence order. The floor's contract is clean, unique,
+  // valid canonical output.
+  const deduped = folded.filter((value, index) => folded.indexOf(value) === index);
+  const changed =
+    deduped.length !== tags.length || deduped.some((value, index) => value !== tags[index]);
   if (changed) {
-    work[field] = folded;
+    work[field] = deduped;
     normalizations.push(ruleKey);
   }
 }

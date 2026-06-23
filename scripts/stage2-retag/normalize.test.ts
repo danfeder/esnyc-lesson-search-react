@@ -316,16 +316,23 @@ describe('normalizeRecordInput — R7 cooking_skills alias floor', () => {
     expect(normalizations).toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
   });
 
-  it('preserves order and de-dupes nothing structurally (positional overwrite)', () => {
-    // `Chopping` and `Dicing` both fold to `Knife skills`; both positions overwrite.
-    const { rawInput } = normalizeRecordInput({
+  it('de-dupes when two aliases fold to the same canonical (uniqueItems-safe)', () => {
+    // `Chopping` and `Dicing` both fold to `Knife skills`. A positional overwrite
+    // would emit `Knife skills` twice, which the downstream uniqueEnumArray
+    // refinement REJECTS (kicking a clean-core row into the repair pass) — so the
+    // floor de-dupes, preserving first-occurrence order.
+    const { rawInput, normalizations } = normalizeRecordInput({
       cooking_skills: ['Chopping', 'Tasting', 'Dicing'],
     });
     expect((rawInput as { cooking_skills: string[] }).cooking_skills).toEqual([
       'Knife skills',
       'Tasting',
-      'Knife skills',
     ]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
+    // Fixed point: re-running over the de-duped output changes nothing.
+    const again = normalizeRecordInput(rawInput);
+    expect(again.normalizations).toEqual([]);
+    expect(again.rawInput).toEqual(rawInput);
   });
 
   it('leaves an already-canonical cooking_skills array untouched (no provenance)', () => {
