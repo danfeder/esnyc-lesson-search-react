@@ -13,7 +13,13 @@
 - **P1-close stale field-count comment sweep** (→ 14/15/13) across schema/vocab/run-retag/export-corpus/index/sample-answer-key. Intentional pre-C02 "13-field" scorer refs + prepare-apply (deferred to P3) left alone.
 - **DEFERRED (Codex LOW, harmless):** same-target alias-map case-twin keys — collision guard only throws on *different*-target; idempotency holds. Still in the out-of-scope list.
 
-**Remaining this session:** `git push -u`, `gh pr create`, then four-surface bot triage (`/pr-triage`) → rebuttal every finding + GATE 4 Codex on any real change → consolidated fix-ups → round-cap after 2. **No DB in P1 → no TEST/PROD verify.** The P1 PR (→ main) bundles the 2 planning commits (`2fb3bb6` scaffold + `8834ec6` lock) + lock-correction docs + ALL P1 impl + checkpoints + these Session-5 fix-ups + the archival.
+**P1 PR = #542** (https://github.com/danfeder/esnyc-lesson-search-react/pull/542). **Bot triage round 1 DONE:** all CI green (Security Audit / claude-review / semgrep / CodeQL / E2E / Test&Build). `claude[bot]` left 8 findings → **1 real fix** (#6 dead `byId` map removed) + all others rebutted/deferred, **GATE-4 Codex-validated** ("no cases where you are wrongly dismissing a real bug"):
+- **#1 (HIGH `--resume` re-bill) REJECTED** — bot misquoted; real condition is `record.strict === current.strict` (not `=== false`); conservative cross-identity re-process is intentional + doesn't bite a same-version P3 resume; pre-existing code.
+- **#2 (MED alias-floor provenance overcount) DECLINED** — dedup is part of the floor's documented contract; output always correct; `uniqueItems:true` makes dup-canonical input invalid-by-contract; no decision impact.
+- **#3/#4/#5 DEFERRED** — pre-existing harness code (git blame = 2026-06-12), not C02-introduced; harness-debt, revisit in P3 (esp. #3 diff-report casing double-count).
+- **#7/#8 DECLINED** — INFO; gate-4 still correctly fails on a never-stored literal; 70-row double-parse is negligible.
+
+**Remaining:** push the #6 fix → round-2 re-review (only a 2-line dead-code delete; expected clean) → on green, **USER merges P1** (merge is user-gated) → P2. **No DB in P1 → no TEST/PROD verify.**
 
 **P2 (after P1 merges) — key carry-forwards:**
 - (a) **P2.1 MUST regenerate `artifacts/corpus.jsonl`** — the on-disk one (765 lines, pre-2026-06-12) LACKS `cooking_skills`/`main_ingredients`; the C02 sampler + rules-baseline read current tags from corpus record fields. The `CorpusRecordForSampling` type carries the two fields.
@@ -44,7 +50,7 @@
 
 ## In flight
 
-(P1 PR triage — opening this session)
+(P1 PR #542 — round-2 re-review of the #6 fix-up pending; then user merge gate)
 
 ## Blocked
 
