@@ -1,53 +1,34 @@
 # C02 — Cooking Skills & Main Ingredients Re-tag — Execution Status
 
-**Last updated:** 2026-06-23 by Session 5 (**P1 PR being opened** — pre-push review folded, fix-ups committed, pushing `feat/c02-harness` → main)
+**Last updated:** 2026-06-23 by Session 6 (**P1 MERGED → P2 start**; formalized the Opus-only supersede across all 4 scaffold docs; about to dispatch P2.1)
 
 ## Current State
 
-**Phase:** P1 COMPLETE (P1.1–P1.6, all supervisor-verified). **Session 5 = opening the P1 PR + carrying it to merge-ready.** Full suite **75/1580 green**, `npm run check` clean. Per-task P1 as-built detail + Sessions 0–4 log are now in the **archive** (`…execution-status-archive.md`) — read on demand, not at session start.
+**Phase:** **P1 COMPLETE & MERGED** — PR #542 squashed to `a5ff8a9` on `main` (rounds 1–5 bot triage + a user-requested Codex merge-review all folded; round-4 caught + fixed a real 🔴 gold-key data-loss bug). The full P1 PR cycle (per-task as-built + Sessions 0–5 log) is in the **archive** (`…execution-status-archive.md`) — read on demand via `grep -n`, not at session start. Baseline now: harness suite **631/631**, full suite ~**75 files / 1583**, `npm run check` clean.
 
-**P1 pre-push review — DONE (Session 5).** Ran a superpowers code-reviewer + GATE 3 Codex (`codex:codex-rescue`, inline) in parallel on `git diff main...HEAD`. Both: **no HIGH/MED**. Triaged + folded 3 LOW + 1 Codex MED into two fix-up commits (`9a311a8` comment sweep + `b923b71` review fix-ups):
-- **gate ④ case-fold** (`c02-gates.ts`) — never-stored literal scan was exact-case; now `matchKey`-normalized so `salt`/` Oil ` can't slip the greenlight gate. +1 TDD test.
-- **under-coverage fail-hard** (`sample-answer-key.ts --c02`) — the ≥2× HARD guarantee only WARNed + exited 0; now fails closed (exit 1). No-op on the real corpus (0 warnings).
-- **faithful normalize-rule fixture** (`validate-output.test.ts`) — was a closed loop on fake camelCase rule names; switched to the real kebab keys.
-- **P1-close stale field-count comment sweep** (→ 14/15/13) across schema/vocab/run-retag/export-corpus/index/sample-answer-key. Intentional pre-C02 "13-field" scorer refs + prepare-apply (deferred to P3) left alone.
-- **DEFERRED (Codex LOW, harmless):** same-target alias-map case-twin keys — collision guard only throws on *different*-target; idempotency holds. Still in the out-of-scope list.
+**NOW: P2 (Pilot) on a new `feat/c02-pilot` branch.** P1's `feat/c02-harness` is merged, so P2 branches fresh. **Model = Opus 4.8 ONLY** — the §4 Q11 Opus-vs-Sonnet bake-off was **SUPERSEDED 2026-06-23** by user decision (`project_c02_p2_opus_only`): one Opus run, scored alone against the same 4 gates, `claude-opus-4-7` fallback only if it fails. Session 6 formalized this supersede across the design / impl / kickoff / status docs (the explicit P2-start bookkeeping item from that memory).
 
-**P1 PR = #542** (https://github.com/danfeder/esnyc-lesson-search-react/pull/542). **Bot triage round 1 DONE:** all CI green (Security Audit / claude-review / semgrep / CodeQL / E2E / Test&Build). `claude[bot]` left 8 findings → **1 real fix** (#6 dead `byId` map removed) + all others rebutted/deferred, **GATE-4 Codex-validated** ("no cases where you are wrongly dismissing a real bug"):
-- **#1 (HIGH `--resume` re-bill) REJECTED** — bot misquoted; real condition is `record.strict === current.strict` (not `=== false`); conservative cross-identity re-process is intentional + doesn't bite a same-version P3 resume; pre-existing code.
-- **#2 (MED alias-floor provenance overcount) DECLINED** — dedup is part of the floor's documented contract; output always correct; `uniqueItems:true` makes dup-canonical input invalid-by-contract; no decision impact.
-- **#3/#4/#5 DEFERRED** — pre-existing harness code (git blame = 2026-06-12), not C02-introduced; harness-debt, revisit in P3 (esp. #3 diff-report casing double-count).
-- **#7/#8 DECLINED** — INFO; gate-4 still correctly fails on a never-stored literal; 70-row double-parse is negligible.
+**Next task = P2.1** — regenerate `scripts/stage2-retag/artifacts/corpus.jsonl` (the on-disk one is the stale **765-line Jun-12** export and **lacks** `cooking_skills`/`main_ingredients`; confirmed 2026-06-23 — those keys are absent), then run the 3-layer sampler to produce the 70-lesson pilot key; commit the id-list + sample manifest. Scripts-only, no DB writes, no money (read-only export + deterministic sample). Then P2.2 (gold key, USER-GATED) → P2.3 (single Opus-4.8 run, needs Console credits) → P2.4 (4-gate greenlight, USER-GATED).
 
-**Bot triage round 2 DONE** (`7258a93`). The bot does a FRESH FULL review each round (not a delta), so round 2 surfaced **6 deeper findings** — all C02-new, **none a correctness/DB/wrong-greenlight bug**. Fixed 3 (#1 `normalizeRecordInput` PURE-docstring accuracy; #2 gate-③ documented-choice comment; #6 `--c02` corpus pre-flight guard → actionable error instead of cryptic ENOENT). Deferred #3/#4/#5 (redundant file reads / partition recompute — negligible at 70 rows) + the **#2 gate-③ tuning** to P2 (carry-forwards f/g).
-
-**Round 3 (fresh review) passed all checks.** Then a **Codex merge-readiness review** (user-requested) surfaced **3 real *vacuous-pass* holes** in the gate/sampler logic — same class as the gate-②/gate-④ bugs already fixed. User chose **harden all 3 before merge** (`96c0ab1`, TDD red→green): gate ③ now FAILS on zero added-specifics predicted (was vacuous null→pass); gate ① now FAILS on an empty clean-core (was 0-vs-0 pass); a new `assertCorpusHasC02Tags` guard aborts loudly on a stale corpus missing both fields (was silent empty-tags), wired into both the sampler `runC02` and scorer `runC02Mode`. **GATE-4 Codex re-verified all 3 CORRECT + no false-fails/false-throws → MERGE-READY: yes, no blockers.** Suite 75/1580, check clean.
-
-**Bot triage round 4 DONE** (`779eeb7`). The round-4 fresh review caught a **real 🔴 bug** + 2 🟡 (critical-only review per the round-cap earned its keep): **🔴 `FinalLabelRecord`/`blank()` (`sample-answer-key.ts`) omitted the 2 C02 fields** — since P1.2 added them to `MAIN_PASS_FIELDS` the worksheet RENDERS them, but the `--parse` path's `field in current` branch SILENTLY DISCARDED the human-adjudicated gold tags (the P2 gold key would carry zero C02 data). Fixed (interface + blank + round-trip test). **🟡 gate ④** mirrored gate ③ (null Sweeteners now fails closed). **🟡 gate ①** got a `cleanCoreHasGold` guard (all-untagged clean-core now fails, not just zero-rows). **🔵 declined a 3rd time** (alias-floor dedup provenance — the suggested fix would make a pure-dedup output change silent; Codex agreed + sharpened: it misses tail-dup `['a','a','b']→['a','b']`). +3 TDD tests (red→green stash-verified). **GATE-4 Codex re-verified all 3 CORRECT + no false-fails → MERGE-READY: yes.** Suite **75/1583**, check clean.
-
-**⚠️ Codex model fix (user, 2026-06-23):** leaving `codex-rescue`'s model unset routes non-deterministically (rollouts showed 5.5/5.4/4.1 mixed; one GATE-4 landed on 5.4). NOW pin **`--model gpt-5.5`** on every Codex call (see `feedback_codex_model_pin`). Round-4 GATE-4 re-confirmed on **gpt-5.5** (rollout-verified `"model":"gpt-5.5"`) — all 3 fixes CORRECT, MERGE-READY: yes.
-
-**Remaining:** the `779eeb7` push triggers a round-5 fresh review → **critical-only** per round-cap → CI green → **USER merges P1** (merge is user-gated) → P2. **No DB in P1 → no TEST/PROD verify.**
-
-**P2 (after P1 merges) — key carry-forwards:**
+**P2 — key carry-forwards:**
 - (a) **P2.1 MUST regenerate `artifacts/corpus.jsonl`** — the on-disk one (765 lines, pre-2026-06-12) LACKS `cooking_skills`/`main_ingredients`; the C02 sampler + rules-baseline read current tags from corpus record fields. The `CorpusRecordForSampling` type carries the two fields.
 - (b) P2.2 gold key is USER-GATED (AI-drafts → user-adjudicates + the Q6 independent judgment-row 2nd pass).
-- (c) P2.3 bake-off = `--model claude-opus-4-8` vs `claude-sonnet-4-6` over the 70-key (run `preflight-token-mass` first; needs Console credits).
-- (d) P2.4 greenlight is USER-GATED (4 gates; tie→Sonnet; Opus must earn it; `claude-opus-4-7` fallback).
+- (c) **P2.3 = a SINGLE `--model claude-opus-4-8` run** over the 70-key (run `preflight-token-mass` first; needs Console credits). **NO Sonnet bake-off** — the §4 Q11 bake-off was **SUPERSEDED 2026-06-23** by user decision (`project_c02_p2_opus_only`); one model run, not two.
+- (d) P2.4 greenlight is USER-GATED (Opus 4.8 scored **alone** on the 4 gates, no model tie-break; Opus must earn it; `claude-opus-4-7` fallback only if it fails).
 - (e) the C02 sampler covers all **93** values (both fields), not just the 70 ingredient values — per-value scoring needs ≥2 support on both fields.
 - (f) **Gate ③ zero-specifics — RESOLVED in P1** (`96c0ab1`, Codex merge-review + user sign-off): gate ③ now FAILS when a contestant predicts zero added specifics (requires `addedSpecificPrecision !== null`), so a model emitting only group tags can't clear ③ vacuously. Also hardened in the same commit: gate ① fails on an empty clean-core; `assertCorpusHasC02Tags` aborts on a stale corpus. No longer a P2 decision.
 - (g) **P2 efficiency cleanups (round-2 bot; negligible at 70 rows, do when P2 exercises the harness at scale):** add `dropKeys: Set<string>` to `C02Floor` so `buildC02SamplerContext` stops re-reading the alias-map file (#3); memoize `loadC02Manifest` in `vocab.ts` like `loadC02Floor` (#4); pass a precomputed `judgmentRow` into `bootstrapGate2Delta` instead of recomputing `partitionKey` (#5).
 
-**The locks (carry forward):** Q2 flat `string[]` + parent-map superRefine · Q3 alias-floor + parent-reconcile R-rules in `normalize.ts` · Q4 3-layer strata + size **70** · Q5 4 gates over the **existing** `evalMetrics` precision/fp (NOT new metric math) · Q6 independent hard-case 2nd-pass gold key · Q7 harness R-rule + Zod superRefine, **no DB trigger** · Q8 Title-Case `value===label` · Q9 P3→P4a→P4b expand/contract (never bundle) · Q10 P-branch map · Q11 Opus-4.8-vs-Sonnet-4.6 bake-off (Sonnet wins ties). **Q1 vocab = 93 canonical:** 23 cooking_skills + 70 main_ingredients (24 groups + 46 specifics, 4 null-parents: Celery/Fennel/Seaweed (nori)/Cocoa & chocolate; Melons parented under "Squash, cucumbers & melons"); **B-lite pantry** (Sugar→Sweeteners; drop Salt/Oil/Soy sauce); **freeze the manifest at end of P3**.
+**The locks (carry forward):** Q2 flat `string[]` + parent-map superRefine · Q3 alias-floor + parent-reconcile R-rules in `normalize.ts` · Q4 3-layer strata + size **70** · Q5 4 gates over the **existing** `evalMetrics` precision/fp (NOT new metric math) · Q6 independent hard-case 2nd-pass gold key · Q7 harness R-rule + Zod superRefine, **no DB trigger** · Q8 Title-Case `value===label` · Q9 P3→P4a→P4b expand/contract (never bundle) · Q10 P-branch map · **Q11 SUPERSEDED 2026-06-23 → Opus-4.8 only, NO bake-off** (`project_c02_p2_opus_only`; original lock was Opus-vs-Sonnet, Sonnet wins ties — now skipped). **Q1 vocab = 93 canonical:** 23 cooking_skills + 70 main_ingredients (24 groups + 46 specifics, 4 null-parents: Celery/Fennel/Seaweed (nori)/Cocoa & chocolate; Melons parented under "Squash, cucumbers & melons"); **B-lite pantry** (Sugar→Sweeteners; drop Salt/Oil/Soy sauce); **freeze the manifest at end of P3**.
 
-**Live census correction:** PROD 2026-06-23 = **121 distinct cooking_skills / 202 main_ingredients** (design §1's 122/230 was stale).
+**Live census (CORRECTED Session 6, 2026-06-23):** PROD `retired_at IS NULL` = **764 live rows**; **122 distinct cooking_skills** (1,758 appearances, 435 lessons) / **230 distinct main_ingredients** (1,847 appearances, 430 lessons). ⚠️ The earlier "121/202 re-census" was a **TEST-DB query mislabeled as PROD** (forensics: `121` = TEST cooking_skills distinct exactly, the census table's named-appearance sum `1,709` = TEST exactly; PROD is reproducibly 122/230 per the 2026-06-11 `oq2` verbatim-SQL census + a fresh live query; the q1 census table even self-sums to 123/212 ≠ its 121/202 headline). 122/230 (the original draft figure) is ground truth; 121/202 retracted. Floor coverage re-measured against live PROD = **92.4% cooking / 94.3% ingredients** appearances (designed band), so the TEST-sourcing did NOT materially damage the alias map — but it left ~10–15 clean folds the TEST list missed (Beans/Squash/Parmesan cheese/Sour Cream/Peas/Lettuce/Various seeds/Beyond Sausage (pea protein)/… → their groups); P2.1 augments the alias map with these.
 
 **Pre-next-PR verification (if any):** none (no DB until P3). P1 is scripts-only, git-revert reversible.
 
 ## Recent decisions worth carrying forward
 
 - **Method = hybrid-floor full LLM re-read** (decided in the 2026-06-22 scoping discussion + a Codex cross-exam): LLM reads every lesson; deterministic alias-map floor anchors the ~94% clean core; LLM does the judgment work. NOT rules-only (can't add specifics), NOT blind full-LLM (regresses the core).
-- **Prior $121 fable run produced ZERO output for these two fields** (verified) — no reusable work; fable-5 is suspended, so the pilot re-runs an Opus-vs-Sonnet bake-off.
+- **Prior $121 fable run produced ZERO output for these two fields** (verified) — no reusable work; fable-5 is suspended. The pilot was originally going to re-run an Opus-vs-Sonnet bake-off, but that was **superseded 2026-06-23 → Opus 4.8 only** (`project_c02_p2_opus_only`).
 - **Vocab amendments (user, 2026-06-22):** +Seaweed (nori), +Cocoa & chocolate (group-less specifics), +Sunflower butter/Tahini/Peanut butter (under Nuts & seeds); Hummus→Chickpeas remap; Frying→Sautéing & stir-frying. Solo sign-off (no curriculum-team round).
 - **Pilot gold key = AI-drafts-user-adjudicates** + an independent hard-case protocol; greenlit on 4 separate gates, not a macro score.
 - **Enforcement = expand/contract** (P3 data → P4a frontend deploy → P4b CHECK), mirroring `garden_skills`.
@@ -56,11 +37,11 @@
 
 ## Done
 
-- **P1 (Sessions 0–5)** — scaffold + GATE 1A → §4 design lock (11 Q's) + impl-plan P1.1–P4b.1 + GATE 1B → P1.1–P1.6 harness build (vocab manifest + alias-floor maps · both fields wired into schema/vocab/prompt · R7/R8/R9 normalize rules · export/diff/validate plumbing · 3-layer set-cover sampler · 4-gate scoring + rules baseline) → pre-push review folded + fix-ups. **All supervisor-verified; full suite 75/1576 green.** Per-task as-built + Sessions 0–4 session log → **archive file**. P1 PR opened Session 5.
+- **P1 (Sessions 0–5) — MERGED** as PR #542 → `a5ff8a9` on `main`. Scaffold + GATE 1A → §4 design lock (11 Q's) + impl-plan P1.1–P4b.1 + GATE 1B → P1.1–P1.6 harness build (vocab manifest + alias-floor maps · both fields wired into schema/vocab/prompt · R7/R8/R9 normalize rules · export/diff/validate plumbing · 3-layer set-cover sampler · 4-gate scoring + rules baseline) → pre-push review + 5 bot-triage rounds + Codex merge-review folded. **All supervisor-verified; harness 631/631, full suite ~75/1583 green.** Full P1 PR cycle (per-task as-built + Sessions 0–5 log) → **archive file**.
 
 ## In flight
 
-(P1 PR #542 — round-4 caught + fixed a 🔴 gold-key data-loss bug; gpt-5.5-confirmed MERGE-READY; round-5 review + CI pending on `779eeb7`; awaiting USER merge)
+(P2.1 — about to dispatch: regenerate `corpus.jsonl` → run the 70-lesson sampler on `feat/c02-pilot`.)
 
 ## Blocked
 
@@ -92,20 +73,14 @@
 
 ## Recent session log
 
-> Sessions 0–4 are in the **archive file** (full per-session detail + learnings). Only the current PR cycle's latest session stays here.
+> **PR cycle 1 (P1, Sessions 0–5) is fully ARCHIVED** — full per-session detail + learnings in `…execution-status-archive.md`. Only the current PR cycle's sessions stay here.
 
-### Session 5 — 2026-06-23 — P1 PR open (pre-push review + fix-ups + PR-cycle archival)
+### Session 6 — 2026-06-23 — P1 merge reconciled + Opus-only supersede formalized + P2.1 start
 
 Major events:
-- Oriented: confirmed **P1 complete** (git + status agree; the kickoff "next = P1.3" RIGHT-NOW line was stale, as the kickoff itself warns). Baseline green (`npm run check` clean, 75/1575).
-- Ran the **P1 pre-push review**: superpowers code-reviewer + **GATE 3 Codex** (codex-rescue, inline) in parallel on `git diff main...HEAD`. Both verdicts = ship, **no HIGH/MED**.
-- Triaged 3 LOW + 1 Codex MED; folded the worthwhile ones + the P1-close stale-comment sweep into `9a311a8` (comment sweep) + `b923b71` (review fix-ups). Deferred the harmless same-target alias-collision (Codex LOW). Suite **75/1576** green, check clean.
-  - gate ④ case-fold (+TDD red→green) · under-coverage fail-hard (CLI exit 1) · faithful normalize-rule fixture (kebab keys) · stale field-count comments → 14/15/13.
-- **PR-cycle archival:** moved per-task P1 as-built detail + Sessions 0–4 log to the archive file; trimmed the Current State header.
-- [push `-u` + `gh pr create` + four-surface bot triage — in progress this session.]
+- Oriented: git showed **P1 PR #542 already MERGED** (`a5ff8a9`) while the status header still read "P1 PR being opened" → trusted git, reconciled the header to P2 start.
+- User flagged the **Opus-only decision** (`project_c02_p2_opus_only`, skip the Q11 bake-off). **Formalized the supersede** across all four scaffold docs (design §4 Q11 banner + §6 + §8 table; impl Tech-Stack + P2 table + P2 header + P2.3/P2.4; kickoff phased-delivery + LOCKED + RIGHT-NOW; status carry-forwards (c)/(d) + locks line + header).
+- **PR-cycle archival:** moved the Session 5 (P1 PR open→merge) entry to the archive; refreshed the Current State header to P2.
+- [P2.1 dispatch + verify — in progress.]
 
-Learnings (candidates to promote):
-- A holistic **seams-and-whole** pre-push review still caught 2 real issues on an already-incrementally-reviewed PR: a greenlight-gate exact-case gap (gate ④) and a near-vacuous test fixture (camelCase rule names that `normalize.ts` never emits). Per-task reviews miss boundary issues.
-- **Fail-closed on the ≥2× guarantee** (Codex MED): a WARN-and-exit-0 silently undercut the locked "HARD guarantee" — the fix is a no-op on the real corpus today and a P2 safety net. Cheap fail-safe reflex worth keeping.
-
-Next: complete the bot triage; on green, the user merges P1 → then P2 (regenerate the corpus first, then gold key + bake-off).
+Next: P2.1 (regenerate corpus.jsonl → 70-lesson sampler), then P2.2 gold key (USER-GATED).

@@ -8,7 +8,7 @@
 
 **Architecture:** Hybrid-floor full LLM re-read via the existing `scripts/stage2-retag/` harness — the LLM reads every lesson; a deterministic alias-map **floor** anchors the ~92–94% clean core; the LLM owns the judgment work (vague-tag replacement, Herbs/Alliums split, adding the 1–3 starred specifics, dropping cosmetic noise). Canonical surface = the typed `text[]` columns (which feed `search_vector`); the apply dual-writes the `metadata` JSONB mirror. See design doc §3 for WHY.
 
-**Tech Stack:** TypeScript (`scripts/stage2-retag/` harness + Vitest), React/TS frontend (reviewer dropdowns + Zod), Supabase/Postgres (apply + enforcement migrations), Anthropic SDK (**Opus 4.8 / Sonnet 4.6** — fable-5 suspended).
+**Tech Stack:** TypeScript (`scripts/stage2-retag/` harness + Vitest), React/TS frontend (reviewer dropdowns + Zod), Supabase/Postgres (apply + enforcement migrations), Anthropic SDK (**Opus 4.8 only** — the Sonnet bake-off was skipped per the 2026-06-23 user decision `project_c02_p2_opus_only`; fable-5 suspended; `claude-opus-4-7` fallback).
 
 **Design reference:** `docs/plans/2026-06-22-c02-cooking-ingredients-retag-design.md` — read it (incl. the GATE-A folds) before any task.
 
@@ -21,7 +21,7 @@
 | PR / phase | Title | Contains | DB? | Notes |
 |---|---|---|---|---|
 | **P1** | Harness extension + floor + pilot tooling | Two fields + two-level shape into schema/prompt/vocab/export/normalize/validate; the deterministic alias-map floor; extend sample/score for the rules baseline + 4 gates; the canonical **VALUES manifest + parent map** artifact | **No DB** (scripts only) | own branch, mergeable independently; git-revert reversible |
-| **P2** | Pilot + bake-off | Sample 70; AI-draft gold key → user adjudicate (+ hard-case protocol); Opus-vs-Sonnet bake-off; score the 4 gates; **greenlight decision** + cost projection | No DB | artifacts in harness `artifacts/`; may ride `feat/c02-harness` or a `pilot/c02` branch (§4 Q10) |
+| **P2** | Pilot | Sample 70; AI-draft gold key → user adjudicate (+ hard-case protocol); **single Opus-4.8 run** (no bake-off — superseded 2026-06-23); score the 4 gates; **greenlight decision** + cost projection | No DB | artifacts in harness `artifacts/`; new `feat/c02-pilot` branch (P1's `feat/c02-harness` is merged) |
 | **P3** | Full run + apply | Winning model over ~700 → staging + diff + user spot-check; **one migration**: snapshot → dual-write column + JSONB → idempotent → `.sql.rollback`; **NO CHECK yet** | **migration** | **highest risk**; snapshot + `.sql.rollback`; GATE 2 |
 | **P4a** | Enforcement — frontend | Non-creatable dropdowns + canonical options + Zod enums (2 app files + **4** edge-mirror lines) + specific→group `superRefine` | frontend | merges → auto-deploys; ship BEFORE P4b |
 | **P4b** | Enforcement — CHECK | `valid_cooking_skills` + `valid_main_ingredients` CHECKs, after a drift re-census | **migration** | **separate** PR/approval from P4a (expand/contract, §4 Q9); GATE 2 |
@@ -42,7 +42,7 @@ Original instructions (historical): Work design doc §4 Q1–Q11 **in order**; w
 
 <!-- Session 1 done 2026-06-23: §4 locked, concrete P1–P4b tasks authored below, GATE 1B run. The pre-flight reads above were the discovery surface for the lock. -->
 
-> **Anchor-drift notes for executors (verified 2026-06-23, fold into your pre-flight):** `applyUpdate` is **L540-582** (not 531); the `academic_concepts` structured precedent is heavier than "free" (its own repair branch, JSONB-only — irrelevant to the flat path we chose); `normalize.ts` header overstates that `validate-output` routes through the normalizer (it doesn't — normalization is pre-Zod in `run-retag`); `score-answer-key` currently has **3** gates (not 4) — C02 restructures, not extends; live census is **121 / 202** distinct (not 122 / 230).
+> **Anchor-drift notes for executors (verified 2026-06-23, fold into your pre-flight):** `applyUpdate` is **L540-582** (not 531); the `academic_concepts` structured precedent is heavier than "free" (its own repair branch, JSONB-only — irrelevant to the flat path we chose); `normalize.ts` header overstates that `validate-output` routes through the normalizer (it doesn't — normalization is pre-Zod in `run-retag`); `score-answer-key` currently has **3** gates (not 4) — C02 restructures, not extends; live census is **122 / 230** distinct, 764 live rows (the earlier "121/202" was a TEST-DB query mislabeled as PROD — corrected Session 6, see status doc).
 
 ---
 
@@ -83,18 +83,20 @@ Original instructions (historical): Work design doc §4 Q1–Q11 **in order**; w
 
 **P1 exit:** `npm run check` + `npm run test:run` green; per-PR ritual (reviewer agent + GATE 3 Codex parallel; four-surface triage); merge `feat/c02-harness`.
 
-## P2 — Pilot + bake-off
+## P2 — Pilot
 
-**No DB.** Artifacts in `scripts/stage2-retag/artifacts/` (bulk gitignored; commit a scorecard summary) — not a throwaway branch (§4 Q10). May ride `feat/c02-harness` or a `pilot/c02` branch.
+> **⚠️ Model = Opus 4.8 ONLY (no bake-off).** The §4 Q11 Opus-vs-Sonnet bake-off was **superseded 2026-06-23** by user decision (`project_c02_p2_opus_only`): run Opus 4.8 once, score it alone against the same 4 gates, fall back to `claude-opus-4-7` only if it fails. P2.3/P2.4 below reflect this.
+
+**No DB.** Artifacts in `scripts/stage2-retag/artifacts/` (bulk gitignored; commit a scorecard summary) — not a throwaway branch (§4 Q10). New branch `feat/c02-pilot` (P1's `feat/c02-harness` is merged).
 
 **2.1 — Generate the 70-lesson key** via the 1.5 sampler. Commit the id list + a sample manifest.
    - *Commit:* `chore(c02): generate the 70-lesson pilot answer-key sample (P2.1)`
 
-**2.2 — Gold key (USER-GATED).** AI drafts tags for the 70; **user adjudicates each**; for the judgment rows (vague-tag, Herbs split, added specifics, pantry) run the **independent second-pass adjudication** (Q6 — user, or a different AI lens than the bake-off models) before acceptance. Produces the gold `answer-key.final.jsonl`. **Stop for the user.**
+**2.2 — Gold key (USER-GATED).** AI drafts tags for the 70; **user adjudicates each**; for the judgment rows (vague-tag, Herbs split, added specifics, pantry) run the **independent second-pass adjudication** (Q6 — user, or a different AI lens than the Opus drafting model) before acceptance. Produces the gold `answer-key.final.jsonl`. **Stop for the user.**
 
-**2.3 — Bake-off.** Run `preflight-token-mass` first (confirm the grown tool-schema prefix < 12K `TOKEN_MASS_BUDGET` and > the Opus 4096 floor). Then two runs over the key: `--model claude-opus-4-8` and `--model claude-sonnet-4-6` (first 3 lessons `--concurrency 1` to confirm `cache_read > 0`). Capture per-lesson `totalCostUsd`; project × ~700, separating `cache_creation` (first call) vs `cache_read` (0.1×). *(Needs Console credits — flag if a credit-balance 400 hits.)*
+**2.3 — Opus 4.8 run** (no bake-off — superseded 2026-06-23). Run `preflight-token-mass` first (confirm the grown tool-schema prefix < 12K `TOKEN_MASS_BUDGET` and > the Opus 4096 floor). Then **one run** over the key: `--model claude-opus-4-8` (first 3 lessons `--concurrency 1` to confirm `cache_read > 0`). Capture per-lesson `totalCostUsd`; project × ~700, separating `cache_creation` (first call) vs `cache_read` (0.1×). *(Needs Console credits — flag if a credit-balance 400 hits.)*
 
-**2.4 — Score + greenlight (USER-GATED).** Score both models on the 4 gates vs the gold key; pick the cheaper model that clears ALL four (tie → Sonnet 4.6); `claude-opus-4-7` is the fallback baseline if neither clears. Opus 4.8 must *earn* selection (fabrication caveat `schema.ts:42-44`). Commit `artifacts/c02-pilot-scorecard.md` (per-field micro-F1, per-gate pass/fail, cost, model pick). **Present the greenlight + cost to the user; do NOT start P3 without explicit approval.**
+**2.4 — Score + greenlight (USER-GATED).** Score **Opus 4.8 alone** on the 4 gates vs the gold key (no model tie-break). Opus 4.8 must *earn* the greenlight by clearing ALL four (the fabrication caveat `schema.ts:42-44` is why the gates remain the safety net); `claude-opus-4-7` is the fallback baseline only if Opus 4.8 doesn't clear. Commit `artifacts/c02-pilot-scorecard.md` (per-field micro-F1, per-gate pass/fail, cost, model used). **Present the greenlight + cost to the user; do NOT start P3 without explicit approval.**
 
 ## P3 — Full run + apply migration
 

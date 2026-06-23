@@ -83,3 +83,23 @@ Learnings (promoted/aligned):
 - A grounding pass before the heaviest task pays for itself — de-risked the set-cover AND surfaced an unrelated 180-lesson floor bug.
 - Case-sensitive deterministic matching is a latent trap — normalize match-keys + bake collision-safety into machine-checked invariants.
 - A verifier's "benign LOW" still deserves the rebuttal pass (`feedback_bot_review_investigation`). Float-`>=` on a derived ratio is a latent footgun — extract a named epsilon-tolerant predicate.
+
+### Session 5 — 2026-06-23 — P1 PR open → merge (#542 → `a5ff8a9`)
+
+Major events:
+- Oriented: confirmed P1 complete (git + status agree; the kickoff "next = P1.3" line was stale, as the kickoff warns). Baseline green.
+- **Pre-push review** (GATE 3): superpowers code-reviewer + Codex (`codex:codex-rescue`, inline) in parallel on `git diff main...HEAD`. Both = ship, no HIGH/MED. Folded 3 LOW + 1 Codex MED into `9a311a8` (comment sweep) + `b923b71` (review fix-ups): gate ④ case-fold (`matchKey`-normalized never-stored scan, +TDD), under-coverage fail-hard (CLI exit 1, was WARN-and-exit-0), faithful normalize-rule fixture (real kebab keys not fake camelCase), P1-close stale field-count comment sweep (→14/15/13).
+- **PR #542 opened; four-surface bot triage across 5 rounds** (the bot does a FRESH FULL review each round, not a delta):
+  - **Round 1:** all CI green; `claude[bot]` 8 findings → 1 real fix (#6 dead `byId` map removed) + 7 rebutted/deferred, GATE-4 Codex-validated. #1 (HIGH `--resume` re-bill) REJECTED — bot misquoted the condition.
+  - **Round 2** (`7258a93`): 6 deeper findings, none correctness/DB/wrong-greenlight. Fixed 3 (PURE docstring accuracy; gate-③ documented-choice comment; `--c02` corpus pre-flight guard → actionable error). Deferred redundant-read/partition-recompute (negligible at 70 rows) → P2 carry-forward (g).
+  - **Round 3 + user-requested Codex merge-readiness review:** surfaced **3 real *vacuous-pass* holes** (same class as the gate-②/④ bugs). User chose harden-all-3 before merge (`96c0ab1`, TDD red→green): gate ③ fails on zero added-specifics predicted; gate ① fails on an empty clean-core; `assertCorpusHasC02Tags` aborts on a stale corpus. GATE-4 Codex re-verified all 3 correct, no false-fails. **(This resolved P2 carry-forward (f).)**
+  - **Round 4** (`779eeb7`): caught a **real 🔴 gold-key data-loss bug** — `FinalLabelRecord`/`blank()` in `sample-answer-key.ts` omitted the 2 C02 fields, so the `--parse` path silently DISCARDED human-adjudicated gold tags (the P2 gold key would have carried ZERO C02 data). Fixed (interface + blank + round-trip test). + 🟡 gate ④ null-Sweeteners fails closed; 🟡 gate ① all-untagged-clean-core guard. Declined the alias-floor dedup-provenance finding a 3rd time (Codex agreed + sharpened). +3 TDD tests.
+  - **Codex model pin (user, 2026-06-23):** unset model routes non-deterministically (5.5/5.4/4.1 mixed; one GATE-4 landed on 5.4) → now pin `--model gpt-5.5` (`feedback_codex_model_pin`). Round-4 GATE-4 re-confirmed on gpt-5.5: all fixes correct, MERGE-READY.
+  - **Round 5** + CI green → **user merged P1** (squash → `a5ff8a9`).
+- **PR-cycle archival:** moved P1 as-built detail + Sessions 0–4 to this archive; trimmed the live header.
+
+Learnings (promoted/aligned):
+- A holistic **seams-and-whole** pre-push review still caught 2 real issues on an already-incrementally-reviewed PR (gate ④ exact-case gap; a near-vacuous test fixture). Per-task reviews miss boundary issues.
+- **Adversarial review of the pilot/scoring machinery paid off repeatedly** — rounds 3/4 + the Codex merge-review caught a whole *class* of "vacuous-pass" gate bugs (gates that pass when they should fail on degenerate input) + a silent gold-key data-loss bug. The fix reflex: a gate must FAIL on degenerate/empty input, not vacuously pass. Worth carrying into P2 when the gates actually run.
+- **Fail-closed on a stated "HARD guarantee"** (Codex MED): a WARN-and-exit-0 silently undercut the locked ≥2× guarantee; the fix is a no-op on the real corpus + a P2 safety net.
+- Pin the Codex model (`--model gpt-5.5`) on every call — `feedback_codex_model_pin`.
