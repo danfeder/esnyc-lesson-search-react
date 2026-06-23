@@ -19,7 +19,9 @@
 - **#3/#4/#5 DEFERRED** — pre-existing harness code (git blame = 2026-06-12), not C02-introduced; harness-debt, revisit in P3 (esp. #3 diff-report casing double-count).
 - **#7/#8 DECLINED** — INFO; gate-4 still correctly fails on a never-stored literal; 70-row double-parse is negligible.
 
-**Remaining:** push the #6 fix → round-2 re-review (only a 2-line dead-code delete; expected clean) → on green, **USER merges P1** (merge is user-gated) → P2. **No DB in P1 → no TEST/PROD verify.**
+**Bot triage round 2 DONE** (`7258a93`). The bot does a FRESH FULL review each round (not a delta), so round 2 surfaced **6 deeper findings** — all C02-new, **none a correctness/DB/wrong-greenlight bug**. Fixed 3 (#1 `normalizeRecordInput` PURE-docstring accuracy; #2 gate-③ documented-choice comment; #6 `--c02` corpus pre-flight guard → actionable error instead of cryptic ENOENT). Deferred #3/#4/#5 (redundant file reads / partition recompute — negligible at 70 rows) + the **#2 gate-③ tuning** to P2 (carry-forwards f/g).
+
+**Remaining:** the `7258a93` push triggers a round-3 fresh review → **critical-only per the round-cap** (glance, action only critical) → on green, **USER merges P1** (merge is user-gated) → P2. **No DB in P1 → no TEST/PROD verify.**
 
 **P2 (after P1 merges) — key carry-forwards:**
 - (a) **P2.1 MUST regenerate `artifacts/corpus.jsonl`** — the on-disk one (765 lines, pre-2026-06-12) LACKS `cooking_skills`/`main_ingredients`; the C02 sampler + rules-baseline read current tags from corpus record fields. The `CorpusRecordForSampling` type carries the two fields.
@@ -27,6 +29,8 @@
 - (c) P2.3 bake-off = `--model claude-opus-4-8` vs `claude-sonnet-4-6` over the 70-key (run `preflight-token-mass` first; needs Console credits).
 - (d) P2.4 greenlight is USER-GATED (4 gates; tie→Sonnet; Opus must earn it; `claude-opus-4-7` fallback).
 - (e) the C02 sampler covers all **93** values (both fields), not just the 70 ingredient values — per-value scoring needs ≥2 support on both fields.
+- (f) **Gate ③ greenlight-tuning decision (round-2 bot finding):** a contestant predicting ZERO added specifics yields `null` precision → gate ③ PASSES vacuously, so a model emitting only group tags (never the two-level specifics — the point of the re-tag) clears ③; recall on specifics currently rides gates ①/②'s judgment-row F1. Decide at **P2.4 greenlight** whether to require ≥1 added-specific prediction (e.g. `addedSpecificPrecision !== null`). Q5 locks thresholds as re-tunable at the pilot; documented inline in `c02-gates.ts` `evaluateGate3`.
+- (g) **P2 efficiency cleanups (round-2 bot; negligible at 70 rows, do when P2 exercises the harness at scale):** add `dropKeys: Set<string>` to `C02Floor` so `buildC02SamplerContext` stops re-reading the alias-map file (#3); memoize `loadC02Manifest` in `vocab.ts` like `loadC02Floor` (#4); pass a precomputed `judgmentRow` into `bootstrapGate2Delta` instead of recomputing `partitionKey` (#5).
 
 **The locks (carry forward):** Q2 flat `string[]` + parent-map superRefine · Q3 alias-floor + parent-reconcile R-rules in `normalize.ts` · Q4 3-layer strata + size **70** · Q5 4 gates over the **existing** `evalMetrics` precision/fp (NOT new metric math) · Q6 independent hard-case 2nd-pass gold key · Q7 harness R-rule + Zod superRefine, **no DB trigger** · Q8 Title-Case `value===label` · Q9 P3→P4a→P4b expand/contract (never bundle) · Q10 P-branch map · Q11 Opus-4.8-vs-Sonnet-4.6 bake-off (Sonnet wins ties). **Q1 vocab = 93 canonical:** 23 cooking_skills + 70 main_ingredients (24 groups + 46 specifics, 4 null-parents: Celery/Fennel/Seaweed (nori)/Cocoa & chocolate; Melons parented under "Squash, cucumbers & melons"); **B-lite pantry** (Sugar→Sweeteners; drop Salt/Oil/Soy sauce); **freeze the manifest at end of P3**.
 
@@ -50,7 +54,7 @@
 
 ## In flight
 
-(P1 PR #542 — round-2 re-review of the #6 fix-up pending; then user merge gate)
+(P1 PR #542 — round-3 fresh review of the round-2 fix-ups pending, critical-only per round-cap; then user merge gate)
 
 ## Blocked
 
