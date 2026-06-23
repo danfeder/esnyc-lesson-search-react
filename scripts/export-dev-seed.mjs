@@ -132,6 +132,10 @@ async function exportDevSeed() {
         console.error(`❌ Fetch error on range ${from}-${to}:`, error);
         process.exit(1);
       }
+      if (data == null) {
+        console.error(`❌ Received null data (no error) for range ${from}-${to} — aborting.`);
+        process.exit(1);
+      }
       collected.push(...data);
       console.log(`📥 Fetched ${collected.length}/${count} rows...`);
     }
@@ -160,9 +164,7 @@ async function exportDevSeed() {
     }));
 
     // 5) Self-check invariants BEFORE writing anything to disk.
-    const noGradeRows = rows.filter(
-      (r) => !(resolveGradeLevels(r.metadata) || []).length
-    );
+    const noGradeRows = rows.filter((r) => !resolveGradeLevels(r.metadata).length);
     const lessonFormatRows = rows.filter(
       (r) => r.metadata && Object.prototype.hasOwnProperty.call(r.metadata, 'lessonFormat')
     );

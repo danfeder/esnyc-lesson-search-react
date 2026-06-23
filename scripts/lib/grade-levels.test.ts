@@ -31,4 +31,13 @@ describe('resolveGradeLevels', () => {
     expect(resolveGradeLevels(null)).toEqual([]);
     expect(resolveGradeLevels(undefined)).toEqual([]);
   });
+
+  it('returns [] when a grade key is a non-array (legacy malformed data)', () => {
+    // The Array.isArray guards reject non-array shapes rather than passing a
+    // string through to the text[] column.
+    expect(resolveGradeLevels({ gradeLevel: 'K' as unknown as string[] })).toEqual([]);
+    expect(
+      resolveGradeLevels({ gradeLevels: 'K' as unknown as string[], gradeLevel: ['3'] })
+    ).toEqual(['3']);
+  });
 });

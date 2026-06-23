@@ -11,6 +11,8 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 // @ts-ignore -- .mjs helper, not part of the TS project
 import { requireNonProd } from './lib/require-env.mjs';
+// @ts-ignore -- .mjs helper, not part of the TS project
+import { resolveGradeLevels } from './lib/grade-levels.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,7 +71,7 @@ function convertToDbFormat(lesson: any) {
     confidence: lesson.confidence || {},
 
     // Map metadata fields to database columns (these are duplicated for faster querying)
-    grade_levels: lesson.metadata?.gradeLevel || [],
+    grade_levels: resolveGradeLevels(lesson.metadata),
     activity_type: activityType,
     location_requirements: lesson.metadata?.locationRequirements || [],
     thematic_categories: lesson.metadata?.thematicCategories || [],
