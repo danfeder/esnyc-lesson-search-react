@@ -1,14 +1,17 @@
 # Wave 4 — Data / Corpus Cleanup — Execution Status
 
-**Last updated:** 2026-06-22 by Session 3 (PR1 reconciled SHIPPED + PR2 built/gated/pushed)
+**Last updated:** 2026-06-22 by Session 3 (PR1 reconciled + **PR2 SHIPPED + PROD-VERIFIED**)
 
 ## Current State
 
-**Phase:** **PR2 (C11 + C49) BUILT + locally verified + GATE 2/3/4-reviewed + PUSHED** on branch `chore/wave4-pr2-ghost-delete-rpc` (cut from `main`). **PR1 (C12 + C83) SHIPPED + PROD-VERIFIED** earlier today (#538, `9f75a15`; PROD run `27987378389` applied 22:16 UTC). PR2 is the **irreversible** PR — merge + PROD-approval are RESERVED for explicit user go.
+**Phase:** **PR1 + PR2 BOTH SHIPPED + PROD-VERIFIED. Only PR3 (C88) remains — Wave 4 ~⅔ done.** PR1 (C12+C83) = #538 `9f75a15` (PROD applied 22:16 UTC). **PR2 (C11+C49) = #539 squash `af75f65` (merged 23:55, PROD "Apply to Production" succeeded 23:58:54, MCP-verified).** Active branch = `main` (synced); tree carries only the pending status-doc update (rides PR3). **Next = PR3 (C88) — independent, no DB write, no PROD mutation; recommend a fresh session.**
 
-**PR2 commits** (atop `main`/`9f75a15`):
+**PR2 PROD verify (supervisor MCP, source of truth):** migration recorded; corpus live **767→764 (−3 delta)**; ghosts present/by-identity **0/0**; `wave4_c11_ghost_rollback` = **3** (recovery artifact preserved); `search_lessons` = **1 overload / 15-arg**, no `filter_lesson_format`; `search_lessons()` total_count **764** with **0 ghosts in results**; all 13 ref-probes post-delete **0**. TEST verify identical (745→742). PROD pre-approval scan was all-clear (3 ghosts, 0 cascade children, 0 probes) immediately before apply.
+
+**PR2 commits** (squashed into `af75f65`):
 - `5310754` refactor(wave4): drop dead `filter_lesson_format` frontend param (C49) — useLessonSearch.ts 4-line removal; urlParams guard 36/36 green.
 - `aacf9d3` feat(wave4): hard-delete 3 ghosts + clean `search_lessons` RPC (C11, C49) — migration + `.rollback` + types regen (GATE 2/3/4 hardenings folded).
+- `0f2f353` docs(wave4): status checkpoint.
 
 **PR2 migration shape (`20260622010000_wave4_pr2_delete_ghosts_search_rpc.sql`):** snapshot 3 ghosts → `wave4_c11_ghost_rollback` (RLS, no policy); snapshot-completeness guard; CASCADE-child guard (`LOCK TABLE bookmarks, canonical_lessons IN SHARE MODE` + assert 0 children — atomic, fail-loud); env-independent + idempotent + **snapshot-driven** guarded DELETE (3 on TEST/PROD, 0 on local); recreate `search_lessons` from w1b baseline minus BOTH ghost-exclusion blocks + minus `filter_lesson_format` (15-arg) + re-GRANT(15-arg) + NOTIFY pgrst. `.rollback` recreates the prior 16-arg RPC (+re-GRANT/NOTIFY) + re-inserts snapshot. Independent supervisor diff: RPC recreate = EXACTLY the 3 mandated edits; rollback CREATE byte-identical to w1b.
 
@@ -58,7 +61,9 @@
 
 ## In flight
 
-- **PR2 (C11 + C49) PUSHED → PR open.** Next actions: wait for external bots + CI → four-surface triage → **TEST MCP verify** (3 ghosts gone, live-count **−3 delta** [TEST 745→742], `wave4_c11_ghost_rollback`=3, `search_lessons` returns no ghost IDs, location-Both + sort intact, re-run Q8 ref-probes post-delete=0) → rebuttal-pass any findings. **Merge + PROD-approval RESERVED for explicit user go.** After PROD apply: PROD MCP verify (live-count −3 [767→764], season/ghost census). PR-cycle archival of Session 0–3 entries still pending (do at session-end / PR2 merge).
+- **Nothing building.** PR1 + PR2 both SHIPPED + PROD-verified. **Next = PR3 (C88)** — author a read-only PROD→seed generator (`scripts/export-dev-seed.mjs`) + regenerate `data/consolidated_lessons.json` from PROD-live (~764, camelCase envelope per `import-data.js`). No DB write, no migration, no PROD mutation, no approval gate. Recommend a fresh session (independent work; this session's context is heavily used). Impl plan §"PR 3" / design §4 Q14 — the round-trip `import-data.js` test (non-NULL `grade_levels`, the `gradeLevel`/`gradeLevels` key reconciliation) is the real gate.
+- **PR-cycle archival pending:** at PR3 kickoff, move Session 0–3 entries into `-execution-status-archive.md` (audit for memory-promotable learnings first — see this session's log).
+- **This session's status-doc update is uncommitted on `main`** (can't push to main directly) → it rides PR3's branch (next session cuts PR3 from main, carrying this change). NEVER `git add -A`.
 
 ## Blocked
 
@@ -128,3 +133,20 @@ Decisions/learnings:
 - **codex:codex-rescue backgrounds + drops findings even when told "return inline"** — the fix that worked: dispatch with an explicit *poll-until-findings* contract ("never return saying 'running in background'; poll `result` in a loop"). The first GATE-3 Codex dispatch backgrounded at 5.7 min and was unrecoverable (no SendMessage tool available in this env). (Promote to `feedback_codex_return_inline` on close.)
 
 Next step picks up: **push PR1 on user go** → per-PR ritual → TEST-DB MCP verify after CI applies → PROD verify after manual approval.
+
+### Session 3 — 2026-06-22 — PR1 reconciliation + PR2 (C11+C49) built → shipped → PROD-verified
+
+Major events:
+- **Caught a stale status file at session start:** it claimed "PR1 unpushed," but git showed **#538 merged + PROD-applied** (run `27987378389`). Trusted git, **independently re-verified PR1 on TEST+PROD via MCP** (all probes matched the locked design: C12 17/14 closed, C83 0 string / 17 snapshot / 3 `[]`+14 arrays), corrected the header. **Learning → promote: a /clear'd supervisor MUST diff git vs the status file first; the push→merge→PROD cycle from the prior session was never recorded.**
+- **PR2 pre-flight (load-bearing, supervisor):** re-ran the full Q8 pre-delete scan on **TEST+PROD** (3 ghosts, identity-matched, all 13 ref-probes 0, 0 cascade children). **Caught two design-vs-reality gaps before authoring:** (a) the live `search_lessons` is the **16-arg** post-C58 signature (incl. `order_by`) — the forward DROP must target THAT, not w1b's line-184 pre-C58 15-arg DROP (would silently no-op → duplicate overload); (b) **local has 0 ghosts** → the impl-plan's literal "assert exactly 3 deleted" would fail `db reset` locally → re-shaped to an **env-independent + idempotent** guard (user-approved) consistent with PR1's pattern.
+- **PR2 build:** Task 2.1 (C49 frontend, supervisor-direct 4-line delete; urlParams 36/36) + Task 2.2 (executor: migration + `.rollback` + types regen). Supervisor independently **diffed the `search_lessons` recreate vs w1b = exactly the 3 mandated edits**, and confirmed the rollback CREATE byte-identical to w1b.
+- **3 gate rounds:** GATE 2/3 Claude reviewer raised 1 CRITICAL ("DROP is 15-arg") → **disproved 3 ways** (direct arg-count = 16, `text` at pos 9; local `overload_count=1`; Codex non-corroboration) = **false positive**. GATE 2/3 Codex → 7 findings, **accepted 3** (CASCADE-child guard, snapshot-driven DELETE, PK-comment fix) + rejected 4. GATE 4 Codex re-confirm → points 2/3/4 clean + 1 new HIGH (CASCADE-guard TOCTOU) → accepted, added `LOCK TABLE … IN SHARE MODE`. All folded while the migration was still local/unpushed (editable).
+- **Shipped:** pushed → PR #539 → all CI + 4 bots pass → **TEST MCP verify all-green (−3 → 742)** → 2 post-merge bot nits triaged as non-issues (pushed migration, verified-impossible, fix=churn) → user merged (`af75f65`) → final PROD pre-approval scan clean → user approved → **PROD apply succeeded + MCP-verified (−3 → 764, ghosts gone, snapshot=3, clean 15-arg RPC, 0 dangling)**.
+
+Decisions/learnings (promote at initiative close):
+- **Cross-family + multi-signal verification earned its keep AGAIN:** the same-family Claude reviewer's lone CRITICAL was a miscount; the disproof came from a direct probe + the live DB overload count + Codex's non-corroboration. Never act on a single reviewer's CRITICAL without an independent probe.
+- **Codex (different family) surfaced the real data-safety hardenings** (snapshot-driven delete, CASCADE-child guard + its TOCTOU) that the same-family pass missed — reinforces `feedback_codex_over_crossexamine`.
+- **Supervisor pre-flight against the LIVE schema (pg_proc/pg_constraint) is load-bearing:** the 16-vs-15-arg DROP and the local-0-ghosts guard reshape were both invisible in the docs and would have been silent bugs.
+- **Env-independent guards (pass on 0 rows locally, enforce where rows exist, idempotent) are the house pattern** for corpus mutations that must traverse local→TEST→PROD (PR1 + PR2 both).
+
+Next session picks up: **PR3 (C88)** — fresh session. Cut `chore/wave4-pr3-dev-seed-refresh` from `main` (carries this session's uncommitted status-doc update); do the PR-cycle archival of Session 0–3 entries first; then author the read-only generator + round-trip-test the seed.
