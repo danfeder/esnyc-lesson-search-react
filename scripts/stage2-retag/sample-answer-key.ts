@@ -620,7 +620,6 @@ export function buildC02Sample(
   const ctx = options.context ?? buildC02SamplerContext();
   const rng = mulberry32(seed);
 
-  const byId = new Map(corpus.map((r) => [r.id, r]));
   const chosenIds = new Set<string>();
   const selected: C02SelectedLesson[] = [];
   const coverage: C02Coverage = { cooking: {}, ingredients: {} };
@@ -768,7 +767,6 @@ export function buildC02Sample(
     }
   }
 
-  void byId;
   return {
     selected,
     coverage,
