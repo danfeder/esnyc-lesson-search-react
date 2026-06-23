@@ -129,6 +129,18 @@ describe('Gate 1 — no clean-core regression', () => {
     expect(res.gate1.passed).toBe(false);
     expect(res.gate1.failingFields.map((f) => f.field)).toContain('main_ingredients');
   });
+
+  it('FAILS when the clean-core stratum is empty (no-regression unverifiable on 0 rows)', () => {
+    // Every key row is a judgment row (vague cooking tag + Herbs & Aromatics
+    // current tag), so the clean-core partition is empty. Gate ① must fail
+    // closed rather than vacuously pass on a 0-vs-0 micro-F1 comparison.
+    const jCorpus = [corpusRow('J', ['Basic Skills'], ['Herbs & Aromatics'])];
+    const jKey: KeyRecord[] = [row('J', ['Knife skills'], ['Fresh herbs'])];
+    const jWinner = [row('J', ['Knife skills'], ['Fresh herbs'])];
+    const res = evaluateC02Gates(jWinner, computeRulesBaseline(jCorpus), jKey, jCorpus);
+    expect(res.gate1.cleanCoreCount).toBe(0);
+    expect(res.gate1.passed).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -225,6 +237,21 @@ describe('Gate 3 — low false-positive on added specifics', () => {
     const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
     expect(res.gate3.passed).toBe(true);
     expect(res.gate3.addedSpecificPrecision).toBeGreaterThanOrEqual(GATE3_PRECISION_FLOOR);
+  });
+
+  it('FAILS when the winner predicts ZERO added specifics (must attempt the two-level tier)', () => {
+    // Winner emits only the group tag, never the added specific (Tahini) the gold
+    // key carries -> null precision. Gate ③ must fail closed, not pass vacuously:
+    // a model that never attempts specifics defeats the two-level objective and
+    // would slip through (gates ①/② use aggregate F1, not specifics recall).
+    const winner = [
+      row('T1', [], ['Nuts & seeds']),
+      row('T2', [], ['Nuts & seeds']),
+      row('T3', [], ['Nuts & seeds']),
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    expect(res.gate3.passed).toBe(false);
+    expect(res.gate3.addedSpecificPrecision).toBeNull();
   });
 
   it('FAILS via a SINGLETON over-prediction: one wrong specific drags precision below 0.7', () => {

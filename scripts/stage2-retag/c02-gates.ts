@@ -302,7 +302,12 @@ function evaluateGate1(
     if (winner < rules) failingFields.push({ field, winner, rules });
   }
   return {
-    passed: failingFields.length === 0,
+    // Fail closed on an EMPTY clean-core: no-regression is unverifiable on 0
+    // rows, and a 0-vs-0 micro-F1 comparison would otherwise pass vacuously. The
+    // sampler aims for a clean-core slice; if set-cover ever starves it, don't
+    // greenlight on an unmeasured gate. (Codex/round-2 finding; hardened before
+    // merge.)
+    passed: cleanCore.length > 0 && failingFields.length === 0,
     perField,
     failingFields,
     cleanCoreCount: cleanCore.length,
@@ -374,18 +379,18 @@ function evaluateGate3(winner: ContestantScore): Gate3Result {
     }
   }
 
-  // Gate ③ is a PRECISION gate (design §4 Q5): zero added-specifics predicted
-  // ⇒ no false positives ⇒ null precision ⇒ pass (the conservative reading of a
-  // precision gate). NOTE for the P2 greenlight tuning: this means a model that
-  // predicts ONLY group tags (never the two-level specifics) clears ③ vacuously
-  // — recall on added specifics is left to gates ①/②'s judgment-row F1. If the
-  // pilot shows a contestant gaming this, re-tune here (e.g. require
-  // `addedSpecificPrecision !== null`). Q5 locks thresholds as re-tunable at the
-  // pilot, so the behavior is intentionally left as-is for P1.
+  // Gate ③ guards the ADDED-specifics tier. `null` precision = the contestant
+  // predicted ZERO added specifics, which FAILS closed (it does NOT pass
+  // vacuously): a model that never attempts the two-level specifics defeats the
+  // point of the re-tag, and gates ①/② can't reliably catch it (they use
+  // aggregate micro-F1, and the rules baseline is itself blind to specifics).
+  // So require at least one added-specific prediction AND precision >= the floor.
+  // (Codex/round-2 review finding; hardened before merge with user sign-off,
+  // 2026-06-23.)
   const addedSpecificPrecision =
     pooledTp + pooledFp === 0 ? null : pooledTp / (pooledTp + pooledFp);
   const precisionOk =
-    addedSpecificPrecision === null || addedSpecificPrecision >= GATE3_PRECISION_FLOOR;
+    addedSpecificPrecision !== null && addedSpecificPrecision >= GATE3_PRECISION_FLOOR;
   const passed = precisionOk && absentValueViolations.length === 0;
 
   return {

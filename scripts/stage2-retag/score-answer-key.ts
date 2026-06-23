@@ -56,6 +56,7 @@ import {
   renderC02Scorecard,
   type CorpusCurrentTags,
 } from './c02-gates';
+import { assertCorpusHasC02Tags } from './sample-answer-key';
 import { RESULT_PROPERTIES } from './schema';
 import {
   parseRunRecords,
@@ -656,6 +657,7 @@ function runC02Mode(args: Args, key: KeyRecord[]): void {
     );
   }
   const corpus = parseTaggedJsonl(readFileSync(corpusPath, 'utf8')) as CorpusCurrentTags[];
+  assertCorpusHasC02Tags(corpus, corpusPath);
   const rulesRecords = computeRulesBaseline(corpus);
 
   const gates = evaluateC02Gates(winnerRecords, rulesRecords, key, corpus);

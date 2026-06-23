@@ -108,6 +108,33 @@ export const corpusRecordSchema = z
 
 export type CorpusRecordForSampling = z.infer<typeof corpusRecordSchema>;
 
+/**
+ * Guard against a STALE corpus. The C02 sampler + scorer read current
+ * cooking_skills / main_ingredients from the corpus, but those columns were
+ * added to the export AFTER the original artifacts/corpus.jsonl was written
+ * (P2.1 regenerates it with them). A stale file parses fine — the two fields are
+ * simply absent (they are `.optional()` above) — and would silently yield empty
+ * current-tags, corrupting the rules baseline + gate scoring with NO error. Fail
+ * loudly instead: if not one row carries any cooking_skills or main_ingredients,
+ * treat the corpus as stale and abort. (Codex/round-2 review finding.)
+ */
+export function assertCorpusHasC02Tags(
+  rows: ReadonlyArray<{ cooking_skills?: string[] | null; main_ingredients?: string[] | null }>,
+  corpusPath: string
+): void {
+  const anyTagged = rows.some(
+    (r) => (r.cooking_skills?.length ?? 0) > 0 || (r.main_ingredients?.length ?? 0) > 0
+  );
+  if (!anyTagged) {
+    throw new Error(
+      `Corpus at ${corpusPath} carries NO cooking_skills/main_ingredients across ` +
+        `${rows.length} row(s) — it predates the C02 export and is stale. The C02 ` +
+        `sampler + scorer need current tags; regenerate artifacts/corpus.jsonl with ` +
+        `the two fields first (see the P2.1 corpus-regeneration prerequisite).`
+    );
+  }
+}
+
 /** The current-tags block carried into the sample record + shown in the worksheet. */
 export type CurrentTags = Record<string, unknown>;
 
@@ -1336,7 +1363,9 @@ interface C02RunResult {
  * `run`; the corpus must carry cooking_skills/main_ingredients (P2.1 regen).
  */
 export function runC02(opts: { seed: number; outDir: string; corpusPath?: string }): C02RunResult {
-  const corpus = loadCorpus(opts.corpusPath ?? DEFAULT_CORPUS_PATH);
+  const corpusPath = opts.corpusPath ?? DEFAULT_CORPUS_PATH;
+  const corpus = loadCorpus(corpusPath);
+  assertCorpusHasC02Tags(corpus, corpusPath);
   const result = buildC02Sample(corpus, { seed: opts.seed });
 
   mkdirSync(opts.outDir, { recursive: true });

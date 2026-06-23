@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { loadVocab, loadC02Manifest, c02MainIngredientsValues } from './vocab';
 import {
   SAMPLER_VERSION,
+  assertCorpusHasC02Tags,
   bodyLengthQuartiles,
   buildC02Sample,
   buildSampleRecords,
@@ -604,6 +605,22 @@ describe('predictMembership (reuses the real C02 floor)', () => {
     const pred = predictMembership(rec);
     expect(pred.cooking).toEqual([]);
     expect(pred.ingredients).toEqual([]);
+  });
+});
+
+describe('assertCorpusHasC02Tags — stale-corpus guard', () => {
+  it('throws when no row carries cooking_skills or main_ingredients (stale corpus)', () => {
+    const stale = [
+      { cooking_skills: [], main_ingredients: [] },
+      { cooking_skills: null, main_ingredients: null },
+      {},
+    ];
+    expect(() => assertCorpusHasC02Tags(stale, '/tmp/corpus.jsonl')).toThrow(/stale/i);
+  });
+
+  it('does not throw when at least one row carries a C02 tag', () => {
+    const fresh = [{ cooking_skills: [], main_ingredients: [] }, { cooking_skills: ['Baking'] }];
+    expect(() => assertCorpusHasC02Tags(fresh, '/tmp/corpus.jsonl')).not.toThrow();
   });
 });
 
