@@ -255,7 +255,7 @@ describe('summarizeRun — C02 fields are field-agnostic (no per-field gap)', ()
         passed: false,
         fieldErrors: { main_ingredients: ['main_ingredients.0: Invalid enum value'] },
       },
-      normalizations: ['cookingSkillsAliasFloor', 'ingredientParentReconcile:Squash'],
+      normalizations: ['cooking-skills-alias-floor', 'ingredient-parent-reconcile'],
       rawInput: { cooking_skills: ['Knife skills'], main_ingredients: ['banana'] },
     },
     {
@@ -283,9 +283,11 @@ describe('summarizeRun — C02 fields are field-agnostic (no per-field gap)', ()
   });
 
   it('tallies the C02 normalization rules (alias-floor + parent-reconcile) by base rule', () => {
-    expect(c02Summary.normalizations.cookingSkillsAliasFloor).toBe(1);
-    // `rule:subject` provenance rolls up under the base rule name.
-    expect(c02Summary.normalizations.ingredientParentReconcile).toBe(1);
+    // Real rule keys are kebab-case and R9 emits parent-reconcile bare (no
+    // `:subject` suffix); the fixture mirrors what normalize.ts actually pushes.
+    // (Suffix roll-up is covered by the `concepts-integration-add:…` fixtures.)
+    expect(c02Summary.normalizations['cooking-skills-alias-floor']).toBe(1);
+    expect(c02Summary.normalizations['ingredient-parent-reconcile']).toBe(1);
   });
 
   it('tallies a main_ingredients repair attempt under its runtime field name', () => {

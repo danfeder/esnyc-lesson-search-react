@@ -11,7 +11,7 @@
  *                                 sampled lesson (id, title, bucket, stratum or
  *                                 adversarial class/reason, body, current tags).
  *   - answer-key-worksheet.md   — a plain-language per-lesson labeling sheet
- *                                 (12 re-tag fields + a grades row), with the
+ *                                 (14 re-tag fields + a grades row), with the
  *                                 canonical vocab lists inlined once at the top
  *                                 (rendered from vocab.ts, never hand-copied),
  *                                 a DRAFT column (B2 pre-fill agent) and a
@@ -76,7 +76,7 @@ const conceptsObjectSchema = z.record(z.array(z.string()));
 
 /**
  * The corpus record shape the sampler consumes — the export-corpus.ts output:
- * id + title + body + the current PROD values of the 12 re-tag fields. We keep
+ * id + title + body + the current PROD values of the 14 re-tag fields. We keep
  * the whole tag block (validated loosely) so the worksheet can show "current"
  * values and the sample JSONL can carry them forward.
  */
@@ -891,7 +891,7 @@ export function buildSampleRecords(params: BuildSampleParams): SampleRecord[] {
 
 const GRADES_ROW_LABEL = 'Grades the document itself claims (leave blank if the doc is silent)';
 
-/** Field-row order in the worksheet: the 12 re-tag fields, then the grades row. */
+/** Field-row order in the worksheet: the 14 re-tag fields, then the grades row. */
 const WORKSHEET_FIELD_ORDER: (MainPassField | 'grade_levels')[] = [...RESULT_PROPERTIES];
 
 function fieldRowLabel(field: MainPassField | 'grade_levels', vocab: Stage2Vocab): string {
@@ -1396,9 +1396,16 @@ function main(): void {
         `  ${result.samplePath}\n  ${result.manifestPath}\n`
     );
     if (result.warningCount > 0) {
-      process.stdout.write(
-        `  ⚠️  ${result.warningCount} value(s) under the ≥2× floor — see the manifest's "warnings"\n`
+      // ≥2× coverage is a HARD guarantee (design §4 Q4 / P1.5): an under-covered
+      // canonical can't be scored by the per-value pilot gates, so fail closed
+      // rather than emit a usable-looking-but-weak key.
+      process.stderr.write(
+        `  ⚠️  ${result.warningCount} value(s) under the ≥2× floor — see the manifest's "warnings".\n` +
+          `  HARD FAILURE: per-value pilot gates cannot be scored for an under-covered\n` +
+          `  canonical value. Regenerate/repair the corpus (or merge the too-rare value\n` +
+          `  into the manifest) and re-run.\n`
       );
+      process.exitCode = 1;
     }
     return;
   }

@@ -323,6 +323,19 @@ describe('Gate 4 — pantry-staple precision', () => {
     expect(res.gate4.survivingNeverStored).toContain('Salt');
   });
 
+  it('FAILS on a case/space variant of a never-stored literal (case-insensitive)', () => {
+    const winner = [
+      row('S1', [], ['Sweeteners']),
+      row('S2', [], ['Sweeteners']),
+      row('S3', [], ['Sweeteners']),
+      row('S4', [], ['Sweeteners']),
+      row('S5', [], ['salt']), // lowercase variant must still be caught by gate 4
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    expect(res.gate4.passed).toBe(false);
+    expect(res.gate4.survivingNeverStored).toContain('salt');
+  });
+
   it('exposes the locked never-stored literal set (Salt / Oil / Soy sauce)', () => {
     expect(GATE4_NEVER_STORED_LITERALS).toEqual(['Salt', 'Oil', 'Soy sauce']);
   });

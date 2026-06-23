@@ -52,6 +52,7 @@ import {
   type KeyRecord,
   type TaggedRecord,
 } from './score-answer-key';
+import { matchKey } from './normalize';
 
 // ---------------------------------------------------------------------------
 // Constants — the two C02 fields + the LOCKED Q5 thresholds
@@ -402,12 +403,15 @@ function evaluateGate4(winner: ContestantScore, winnerRecords: TaggedRecord[]): 
     sweetenersPrecision === null || sweetenersPrecision >= GATE4_SWEETENERS_PRECISION_FLOOR;
 
   // No never-stored literal (Salt/Oil/Soy sauce) may survive in ANY prediction.
-  const neverStored = new Set<string>(GATE4_NEVER_STORED_LITERALS);
+  // Compare on matchKey (NFC.trim().toLowerCase()) so a casing/spacing variant
+  // (`salt`, ` Oil `, `soy sauce`) can't slip the literal past gate ④; the
+  // offending token is reported as-emitted.
+  const neverStored = new Set<string>(GATE4_NEVER_STORED_LITERALS.map(matchKey));
   const surviving = new Set<string>();
   for (const record of winnerRecords) {
     for (const field of C02_FIELDS) {
       for (const tok of extractFieldTokens(field, record)) {
-        if (neverStored.has(tok)) surviving.add(tok);
+        if (neverStored.has(matchKey(tok))) surviving.add(tok);
       }
     }
   }
