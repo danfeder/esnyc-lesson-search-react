@@ -5,7 +5,7 @@
  *   - export-corpus.ts        — A4: exports the live lesson corpus to
  *                               artifacts/corpus.jsonl (id, title, body,
  *                               current field values).
- *   - vocab.ts                — A3: locked canonical vocab for the 12
+ *   - vocab.ts                — A3: locked canonical vocab for the 14
  *                               main-pass fields (enums.json + worksheet
  *                               artifacts + smaller-fields data file).
  *   - schema.ts               — A5: monolithic `submit_tags` tool schema,

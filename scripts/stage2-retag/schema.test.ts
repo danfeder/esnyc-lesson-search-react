@@ -83,6 +83,8 @@ function validResult(): Stage2RetagResult {
     cooking_methods: [],
     observances_holidays: [],
     garden_skills: [vocab.garden_skills.values[0]],
+    cooking_skills: [vocab.cooking_skills.values[0]],
+    main_ingredients: [],
     grade_levels: ['K', '1', '2'],
   };
 }
@@ -101,10 +103,12 @@ describe('submit_tags tool shape', () => {
     expect(tool.input_schema.additionalProperties).toBe(false);
   });
 
-  it('contains exactly the intended property set: 12 vocab fields + grade_levels', () => {
+  it('contains exactly the intended property set: 14 vocab fields + grade_levels', () => {
     const expected = [...MAIN_PASS_FIELDS, 'grade_levels'].sort();
     expect(Object.keys(tool.input_schema.properties).sort()).toEqual(expected);
-    expect(Object.keys(tool.input_schema.properties)).toHaveLength(13);
+    // 14 main-pass vocab fields (incl. C02 cooking_skills + main_ingredients)
+    // + grade_levels = 15.
+    expect(Object.keys(tool.input_schema.properties)).toHaveLength(15);
     expect([...RESULT_PROPERTIES].sort()).toEqual(expected);
   });
 
@@ -295,7 +299,9 @@ describe('Zod result schema', () => {
 
   it('rejects unknown top-level keys (additionalProperties mirror)', () => {
     const result = validResult() as unknown as Record<string, unknown>;
-    result.cooking_skills = []; // second-pass field — NOT in the main pass
+    // C02 folded cooking_skills + main_ingredients INTO the main pass, so the
+    // unknown-key probe uses a field that is genuinely outside the schema.
+    result.not_a_real_field = []; // not in MAIN_PASS_FIELDS / RESULT_PROPERTIES
     expect(resultSchema.safeParse(result).success).toBe(false);
   });
 

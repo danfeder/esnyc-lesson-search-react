@@ -154,8 +154,8 @@ const DEFAULT_OUTPUT_PATH = path.join(ARTIFACTS_DIR, 'retag-run.jsonl');
 export const DEFAULT_CORPUS_EXCLUSIONS_PATH = path.join(MODULE_DIR, 'data/corpus-exclusions.json');
 
 /**
- * Output budget for the ~13-property monolithic response. The PROD per-field
- * calls use 1024; the monolithic output (13 fields incl. the dual-vocab
+ * Output budget for the ~15-property monolithic response. The PROD per-field
+ * calls use 1024; the monolithic output (15 fields incl. the dual-vocab
  * concepts object + synonym pairs) needs roughly 3-4x that. 4096 stays well
  * under the non-streaming SDK-timeout guidance (~16K).
  */
@@ -659,7 +659,7 @@ interface RepairFieldSpec {
   values: readonly string[];
 }
 
-/** Field → repair vocab/label/kind (covers the 12 vocab fields + grades). */
+/** Field → repair vocab/label/kind (covers the 14 vocab fields + grades). */
 export function repairFieldSpec(vocab: Stage2Vocab, field: string): RepairFieldSpec {
   if (field === 'academic_concepts') {
     return { label: vocab.academic_concepts.label, kind: 'concepts', values: [] };
@@ -675,7 +675,7 @@ export function repairFieldSpec(vocab: Stage2Vocab, field: string): RepairFieldS
 }
 
 /**
- * Builds the per-field repair tool. Flat fields (the 11 enum arrays +
+ * Builds the per-field repair tool. Flat fields (the 13 enum arrays +
  * grade_levels) use today's PROD multi-label shape VERBATIM
  * (`selected_values` enum array, uniqueItems, required). `academic_concepts`
  * has no flat-enum PROD equivalent, so its repair tool is the monolithic

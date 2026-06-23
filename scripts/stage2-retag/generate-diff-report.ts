@@ -140,7 +140,7 @@ export interface DiffReport {
 // Corpus parsing
 // ---------------------------------------------------------------------------
 
-/** The 11 flat (text[]) fields — every main-pass field except the
+/** The 13 flat (text[]) fields — every main-pass field except the
  *  subject-keyed academic_concepts. */
 const FLAT_FIELDS = MAIN_PASS_FIELDS.filter(
   (field): field is Exclude<MainPassField, 'academic_concepts'> => field !== 'academic_concepts'

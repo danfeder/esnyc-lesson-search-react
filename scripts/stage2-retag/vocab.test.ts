@@ -289,9 +289,9 @@ describe('smaller fields', () => {
 // ---------------------------------------------------------------------------
 
 describe('field declarations', () => {
-  it('covers exactly the 12 main-pass fields', () => {
+  it('covers exactly the 14 main-pass fields (incl. C02 cooking_skills + main_ingredients)', () => {
     expect(Object.keys(vocab).sort()).toEqual([...MAIN_PASS_FIELDS].sort());
-    expect(MAIN_PASS_FIELDS).toHaveLength(12);
+    expect(MAIN_PASS_FIELDS).toHaveLength(14);
   });
 
   it('every field declares label, selection, jsonbKey, and column mapping', () => {
@@ -307,7 +307,7 @@ describe('field declarations', () => {
     }
   });
 
-  it('maps the 11 column-backed fields 1:1 to their snake_case text[] columns', () => {
+  it('maps the 13 column-backed fields 1:1 to their snake_case text[] columns', () => {
     for (const field of MAIN_PASS_FIELDS) {
       if (field === 'academic_concepts') continue;
       expect(vocab[field].column).toBe(field);
@@ -336,6 +336,8 @@ describe('field declarations', () => {
       cooking_methods: 'cookingMethods',
       observances_holidays: 'observancesHolidays',
       garden_skills: 'gardenSkills',
+      cooking_skills: 'cookingSkills',
+      main_ingredients: 'mainIngredients',
     };
     for (const field of MAIN_PASS_FIELDS) {
       expect(vocab[field].jsonbKey).toBe(expectedJsonbKeys[field]);

@@ -141,7 +141,7 @@ describe('buildDiffReport — coverage', () => {
     expect(report.unknownInRun).toEqual(['lesson-ghost']);
   });
 
-  it('covers all 12 main-pass fields in canonical order', () => {
+  it('covers all 14 main-pass fields in canonical order', () => {
     expect(report.fields.map((f) => f.field)).toEqual([
       'activity_type',
       'tags',
@@ -155,6 +155,8 @@ describe('buildDiffReport — coverage', () => {
       'cooking_methods',
       'observances_holidays',
       'garden_skills',
+      'cooking_skills',
+      'main_ingredients',
     ]);
   });
 });
@@ -335,6 +337,118 @@ describe('buildDiffReport — corpus exclusions', () => {
     const md = renderMarkdown(r);
     expect(md).toMatch(/excluded from the run/i);
     expect(md).toContain('1');
+  });
+});
+
+describe('buildDiffReport — C02 fields (cooking_skills + main_ingredients)', () => {
+  // A self-contained corpus + run pair exercising a before/after change on both
+  // C02 fields (the shared __fixtures__ predate these fields). cooking_skills:
+  // adds "Knife skills". main_ingredients: drops "Tomatoes", adds "Alliums".
+  // (Canonical spellings per the C02 vocab; the diff is set-based and does no
+  // enum validation, but real values keep the fixture honest.)
+  const c02CorpusText = JSON.stringify({
+    id: 'lesson-c02',
+    title: 'Knife Skills with Onions',
+    content_text: 'A cooking lesson.',
+    activity_type: ['cooking'],
+    tags: [],
+    season_timing: [],
+    cultural_responsiveness_features: [],
+    cultural_heritage: [],
+    academic_integration: [],
+    social_emotional_learning: [],
+    core_competencies: [],
+    cooking_methods: [],
+    observances_holidays: [],
+    garden_skills: [],
+    cooking_skills: ['Sautéing & stir-frying'],
+    main_ingredients: ['Nightshades', 'Tomatoes'],
+    academic_concepts: null,
+  });
+
+  const c02RunText = JSON.stringify({
+    id: 'lesson-c02',
+    phase: 'main',
+    model: 'claude-opus-4-7',
+    promptSchemaHash: 'hash-current',
+    rawInput: {
+      activity_type: ['cooking'],
+      tags: [],
+      season_timing: [],
+      cultural_responsiveness_features: [],
+      cultural_heritage: [],
+      academic_integration: [],
+      social_emotional_learning: [],
+      core_competencies: [],
+      cooking_methods: [],
+      observances_holidays: [],
+      garden_skills: [],
+      academic_concepts: {},
+      grade_levels: [],
+      cooking_skills: ['Sautéing & stir-frying', 'Knife skills'],
+      main_ingredients: ['Nightshades', 'Alliums'],
+    },
+    zod: { passed: true, fieldErrors: null },
+    usage: {
+      input_tokens: 1,
+      output_tokens: 1,
+      cache_creation_input_tokens: 0,
+      cache_read_input_tokens: 0,
+    },
+    costUsd: 0.01,
+    latencyMs: 100,
+    error: null,
+    stopReason: 'tool_use',
+    bodyHash: 'h',
+    strict: false,
+    completedAt: '2026-06-23T00:00:00.000Z',
+  });
+
+  const c02Corpus = parseCorpusRecords(c02CorpusText);
+  const c02Run = parseRunRecords(c02RunText);
+  const c02Report = buildDiffReport(c02Corpus, c02Run, vocab);
+
+  function c02Field(name: string): FieldDiff {
+    const found = c02Report.fields.find((f) => f.field === name);
+    if (!found) throw new Error(`report has no field ${name}`);
+    return found;
+  }
+
+  it('parses both C02 columns out of the corpus line', () => {
+    const rec = c02Corpus.find((r) => r.id === 'lesson-c02');
+    expect(rec?.flat.cooking_skills).toEqual(['Sautéing & stir-frying']);
+    expect(rec?.flat.main_ingredients).toEqual(['Nightshades', 'Tomatoes']);
+  });
+
+  it('shows the cooking_skills before/after (semantic add)', () => {
+    const f = c02Field('cooking_skills');
+    expect(f.label).toBe('Cooking Skills');
+    expect(f.lessonsChangedSemantic).toBe(1);
+    expect(f.addedValueCounts).toEqual({ 'Knife skills': 1 });
+    expect(f.droppedValueCounts).toEqual({});
+    const lesson = f.changedLessons.find((l) => l.id === 'lesson-c02');
+    expect(lesson?.added).toEqual(['Knife skills']);
+    expect(lesson?.dropped).toEqual([]);
+  });
+
+  it('shows the main_ingredients before/after (semantic add + drop)', () => {
+    const f = c02Field('main_ingredients');
+    expect(f.label).toBe('Main Ingredients');
+    expect(f.lessonsChangedSemantic).toBe(1);
+    expect(f.addedValueCounts).toEqual({ Alliums: 1 });
+    expect(f.droppedValueCounts).toEqual({ Tomatoes: 1 });
+    const lesson = f.changedLessons.find((l) => l.id === 'lesson-c02');
+    expect(lesson?.added).toEqual(['Alliums']);
+    expect(lesson?.dropped).toEqual(['Tomatoes']);
+  });
+
+  it('renders both C02 fields as plain-language sections with their changes', () => {
+    const md = renderMarkdown(c02Report);
+    expect(md).toContain('## Cooking Skills');
+    expect(md).toContain('## Main Ingredients');
+    expect(md).toContain('"Knife skills"');
+    expect(md).toContain('"Alliums"');
+    expect(md).toContain('"Tomatoes"');
   });
 });
 

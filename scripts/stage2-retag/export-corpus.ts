@@ -5,11 +5,11 @@
  * the PRODUCTION database to `scripts/stage2-retag/artifacts/corpus.jsonl`,
  * one JSON record per line:
  *
- *   { id, title, content_text, <11 text[] field columns>, academic_concepts }
+ *   { id, title, content_text, <13 text[] field columns>, academic_concepts }
  *
  * - `id` is `lessons.lesson_id` (the stable text id used throughout the
  *   PR 6 evidence artifacts and the OQ5 exclusion list).
- * - The 11 column names come from the vocab module's dual-write mapping
+ * - The 13 column names come from the vocab module's dual-write mapping
  *   (task A3) — `academic_concepts` is the documented exception with no
  *   text[] column; it is selected as `metadata->academicConcepts`.
  *
@@ -210,7 +210,8 @@ export function loadBodyOverrides(
 
 const vocab = loadVocab();
 
-/** The 11 fields with a lessons text[] column, in canonical field order. */
+/** The 13 fields with a lessons text[] column, in canonical field order (all
+ *  14 main-pass fields except academic_concepts, which is JSONB-only). */
 const COLUMN_FIELDS = MAIN_PASS_FIELDS.filter((field) => vocab[field].column !== null);
 
 const SELECT_LIST = [
@@ -238,6 +239,28 @@ type LessonRow = z.infer<typeof rowSchema>;
 interface ReadOnlyLessonsSource {
   /** SELECT-only page fetch over the live corpus, ordered by lesson_id. */
   fetchLiveLessonsPage(from: number, to: number): Promise<LessonRow[]>;
+}
+
+/**
+ * Builds one exported corpus record from a fetched lessons row + its resolved
+ * body (already normalized / override-substituted by the caller). Pure: every
+ * column-backed main-pass field's text[] column is copied (null preserved as
+ * null), academic_concepts is taken from its JSONB selection. Because the field
+ * list is derived from COLUMN_FIELDS (= MAIN_PASS_FIELDS with a non-null
+ * column), any field added to the vocab with a column — e.g. the C02
+ * cooking_skills / main_ingredients — round-trips here with no code change.
+ */
+export function buildCorpusRecord(row: LessonRow, body: string): Record<string, unknown> {
+  const record: Record<string, unknown> = {
+    id: row.lesson_id,
+    title: normalizeBody(row.title),
+    content_text: body,
+  };
+  for (const field of COLUMN_FIELDS) {
+    record[field] = row[vocab[field].column as string] ?? null;
+  }
+  record.academic_concepts = row.academic_concepts ?? null;
+  return record;
 }
 
 function createReadOnlyLessonsSource(url: string, anonKey: string): ReadOnlyLessonsSource {
@@ -320,16 +343,7 @@ async function main(): Promise<void> {
       throw new Error(`empty body after normalization: ${row.lesson_id}`);
     }
 
-    const record: Record<string, unknown> = {
-      id: row.lesson_id,
-      title: normalizeBody(row.title),
-      content_text: body,
-    };
-    for (const field of COLUMN_FIELDS) {
-      record[field] = row[vocab[field].column as string] ?? null;
-    }
-    record.academic_concepts = row.academic_concepts ?? null;
-    lines.push(JSON.stringify(record));
+    lines.push(JSON.stringify(buildCorpusRecord(row, body)));
   }
 
   // Every loaded override MUST have matched a live corpus row — a manifest id

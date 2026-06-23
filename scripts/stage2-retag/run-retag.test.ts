@@ -95,6 +95,8 @@ function makeValidResult(): Record<string, unknown> {
     cooking_methods: [],
     observances_holidays: [],
     garden_skills: [],
+    cooking_skills: [],
+    main_ingredients: [],
     grade_levels: [],
   };
 }

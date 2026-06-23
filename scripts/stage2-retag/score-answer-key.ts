@@ -42,13 +42,21 @@
  *
  * Reporting only: no API calls, no DB access.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
 import { computeMetrics, type PerValueMetrics } from '../lib/evalMetrics';
+import {
+  buildC02ScorecardJson,
+  computeRulesBaseline,
+  evaluateC02Gates,
+  renderC02Scorecard,
+  type CorpusCurrentTags,
+} from './c02-gates';
+import { assertCorpusHasC02Tags } from './sample-answer-key';
 import { RESULT_PROPERTIES } from './schema';
 import {
   parseRunRecords,
@@ -527,6 +535,10 @@ interface Args {
   v3FromCorpus?: string;
   output: string;
   help: boolean;
+  /** C02 mode: emit the 4-gate C02 scorecard (cooking_skills + main_ingredients)
+   *  instead of the 13-field scorecard. Requires the corpus (current tags) for
+   *  the COMPUTED rules baseline + clean-core/judgment-row labels. */
+  c02: boolean;
 }
 
 /** Parses a `label=path` --run value. */
@@ -539,7 +551,13 @@ export function parseRunSpec(value: string): RunSpec {
 }
 
 export function parseArgs(argv: string[]): Args {
-  const args: Args = { key: DEFAULT_KEY_PATH, runs: [], output: DEFAULT_OUTPUT_PATH, help: false };
+  const args: Args = {
+    key: DEFAULT_KEY_PATH,
+    runs: [],
+    output: DEFAULT_OUTPUT_PATH,
+    help: false,
+    c02: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const next = argv[i + 1];
@@ -547,6 +565,9 @@ export function parseArgs(argv: string[]): Args {
       case '--key':
         args.key = requireFlagValue(flag, next);
         i++;
+        break;
+      case '--c02':
+        args.c02 = true;
         break;
       case '--run':
         args.runs.push(parseRunSpec(requireFlagValue(flag, next)));
@@ -590,17 +611,67 @@ Flags:
   --output <path>          markdown scorecard (default
                            scripts/stage2-retag/artifacts/answer-key-scorecard.md);
                            a JSON sidecar is written alongside with a .json suffix.
+  --c02                    emit the C02 4-gate scorecard (cooking_skills +
+                           main_ingredients) instead of the 13-field scorecard.
+                           The winner = the first --run contestant; the rules
+                           baseline is COMPUTED from the corpus current tags (the
+                           real deterministic floor); the corpus (--v3-from-corpus)
+                           also supplies the clean-core/judgment-row labels.
   --help
 
 Gates (winning model = the first --run label, or v3 if no runs): per-field F1 ≥
 v3 everywhere; macroF1 ≥ ${MACRO_F1_FLOOR}; per-value recall ≥ ${RECALL_FLOOR}
 for values with answer-key support ≥ ${SUPPORT_FLOOR} (support-1 singletons are
-reported but do not gate). Reporting only: no API calls, no DB access.
+reported but do not gate). With --c02, instead: ① no clean-core regression
+(strict per-field) · ② beats rules +0.05 on judgment rows (both fields, tie
+fails) · ③ added-specific precision ≥ 0.7 + absent-rate ≤ 5% · ④ Sweeteners
+precision ≥ 0.8 + no never-stored literal survives. Reporting only: no API
+calls, no DB access.
 `;
 
 /** The JSON sidecar path for a markdown output path (swap/append .json). */
 export function jsonSidecarPath(markdownPath: string): string {
   return markdownPath.replace(/\.md$/i, '') + '.json';
+}
+
+/**
+ * C02 mode (impl plan P1.6). Emits the 4-gate C02 scorecard. The winner is the
+ * first --run contestant (its rawInput tags); the rules baseline is COMPUTED
+ * from the corpus current tags (the real floor — not loaded); the corpus also
+ * supplies the clean-core/judgment-row labels. No model run, no DB.
+ */
+function runC02Mode(args: Args, key: KeyRecord[]): void {
+  if (args.runs.length === 0) {
+    throw new Error('--c02 requires a --run <label>=<path> winner contestant');
+  }
+  const winnerSpec = args.runs[0];
+  const winnerRecords = loadRunContestant(readFileSync(winnerSpec.path, 'utf8'));
+
+  const corpusPath = args.v3FromCorpus ?? DEFAULT_CORPUS_PATH;
+  if (!existsSync(corpusPath)) {
+    throw new Error(
+      `--c02 requires the corpus file (current tags), not found at: ${corpusPath}\n` +
+        `Pass --v3-from-corpus <path>, or regenerate artifacts/corpus.jsonl first ` +
+        `(the corpus must include cooking_skills + main_ingredients — see the P2.1 ` +
+        `corpus-regeneration prerequisite).`
+    );
+  }
+  const corpus = parseTaggedJsonl(readFileSync(corpusPath, 'utf8')) as CorpusCurrentTags[];
+  assertCorpusHasC02Tags(corpus, corpusPath);
+  const rulesRecords = computeRulesBaseline(corpus);
+
+  const gates = evaluateC02Gates(winnerRecords, rulesRecords, key, corpus);
+  const markdown = renderC02Scorecard(winnerSpec.label, key, gates);
+  const json = buildC02ScorecardJson(winnerSpec.label, key, gates);
+
+  mkdirSync(path.dirname(args.output), { recursive: true });
+  writeFileSync(args.output, markdown, 'utf8');
+  const sidecar = jsonSidecarPath(args.output);
+  writeFileSync(sidecar, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
+
+  console.log(markdown);
+  console.log(`C02 markdown scorecard → ${args.output}`);
+  console.log(`C02 JSON sidecar       → ${sidecar}`);
 }
 
 function main(): void {
@@ -612,6 +683,12 @@ function main(): void {
   warnIfOutsideArtifacts(args.output);
 
   const key = parseTaggedJsonl(readFileSync(args.key, 'utf8'));
+
+  // C02 mode: emit the 4-gate scorecard for cooking_skills + main_ingredients.
+  if (args.c02) {
+    runC02Mode(args, key);
+    return;
+  }
 
   const contestants: ContestantScore[] = [];
   // v3 first (the gate-1 baseline), if provided.

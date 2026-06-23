@@ -9,13 +9,13 @@
  * `submit_tags` carrying `cache_control: {type:'ephemeral'}`, enums inline
  * in `input_schema`, forced via `tool_choice: {type:'tool'}`.
  *
- * Property set: the 12 main-pass vocab fields PLUS `grade_levels` (the
+ * Property set: the 14 main-pass vocab fields PLUS `grade_levels` (the
  * grade array the impl plan's result schema names; enum copied verbatim
  * from `FILTER_CONFIGS.gradeLevels` in `src/utils/filterDefinitions.ts` —
  * `src/types/lessonMetadata.zod.ts` has no grade enum). The everyday↔
  * framework synonym pairs (D5/OQ10: same call) live INSIDE the
  * `academic_concepts` subject-keyed object, so the top-level property count
- * is 13.
+ * is 15.
  *
  * Token-mass note: the academic-concepts enum (119 values) is needed at 12
  * sites (6 subjects × framework + synonym-pair slots). Inlining it 12×
@@ -31,7 +31,12 @@ import { fileURLToPath } from 'node:url';
 import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 
-import { MAIN_PASS_FIELDS, type Stage2Vocab } from './vocab';
+import {
+  MAIN_PASS_FIELDS,
+  c02IngredientParentMap,
+  loadC02Manifest,
+  type Stage2Vocab,
+} from './vocab';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -78,7 +83,7 @@ export const SONNET_MIN_CACHEABLE_PREFIX_TOKENS = 2048;
  */
 export const GRADE_LEVELS = ['3K', 'PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8'] as const;
 
-/** Top-level result properties: the 12 vocab fields + the grade array. */
+/** Top-level result properties: the 14 vocab fields + the grade array. */
 export const RESULT_PROPERTIES = [...MAIN_PASS_FIELDS, 'grade_levels'] as const;
 
 // ---------------------------------------------------------------------------
@@ -184,6 +189,8 @@ export interface Stage2RetagResult {
   cooking_methods: string[];
   observances_holidays: string[];
   garden_skills: string[];
+  cooking_skills: string[];
+  main_ingredients: string[];
   grade_levels: string[];
 }
 
@@ -294,6 +301,16 @@ export function buildSubmitTagsTool(vocab: Stage2Vocab): SubmitTagsTool {
       'Observances the lesson is explicitly tied to.'
     ),
     garden_skills: enumArray(vocab, 'garden_skills', 'Garden skills practiced or taught.'),
+    cooking_skills: enumArray(
+      vocab,
+      'cooking_skills',
+      'Cooking skills/techniques students actually practice. Assign the real technique taught — never the vague placeholders "Basic Skills" or "Cooking Techniques".'
+    ),
+    main_ingredients: enumArray(
+      vocab,
+      'main_ingredients',
+      'Main ingredients — tag the ingredient GROUP; add 1–3 specific values only when a specific food is central to the lesson. Whenever you tag a specific, ALSO tag its parent group.'
+    ),
     grade_levels: {
       type: 'array',
       description:
@@ -379,6 +396,34 @@ function uniqueEnumArray(values: string[], minItems = 0) {
 }
 
 /**
+ * The main_ingredients schema: a flat unique enum array over {groups ∪
+ * specifics} PLUS a parent-map `.superRefine` that rejects an ORPHAN specific
+ * — a specific whose required parent group is absent from the same array
+ * (design §4 Q2/Q7). Group-less specifics (`null` parent in the manifest) are
+ * not in the parent map, so they carry no parent requirement. The parent map
+ * is loaded from the C02 manifest — never duplicated into a second const.
+ */
+function mainIngredientsSchema(values: string[]) {
+  const parentMap = c02IngredientParentMap(loadC02Manifest());
+  return uniqueEnumArray(values).superRefine((selected, ctx) => {
+    const present = new Set(selected);
+    for (const value of selected) {
+      const requiredParent = parentMap[value];
+      if (requiredParent !== undefined && !present.has(requiredParent)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          // Empty path → the issue is attributed to the main_ingredients
+          // property key by the enclosing z.object (so the repair pass
+          // re-prompts main_ingredients, not the object root).
+          path: [],
+          message: `orphan specific "${value}" requires its parent group "${requiredParent}"`,
+        });
+      }
+    }
+  });
+}
+
+/**
  * The Zod schema every API response must `safeParse` before it counts as a
  * valid record (post-hoc validation is load-bearing: input_schema enum
  * adherence is not server-guaranteed). Mirrors the input_schema: same 13
@@ -417,6 +462,10 @@ export function buildResultSchema(vocab: Stage2Vocab) {
       cooking_methods: uniqueEnumArray(vocab.cooking_methods.values),
       observances_holidays: uniqueEnumArray(vocab.observances_holidays.values),
       garden_skills: uniqueEnumArray(vocab.garden_skills.values),
+      // cooking_skills is a PLAIN flat enum (like garden_skills) — no refinement.
+      cooking_skills: uniqueEnumArray(vocab.cooking_skills.values),
+      // main_ingredients carries the orphan-specific parent-map superRefine.
+      main_ingredients: mainIngredientsSchema(vocab.main_ingredients.values),
       grade_levels: z.array(z.enum(GRADE_LEVELS)).refine(noDuplicates, {
         message: UNIQUE_MESSAGE,
       }),

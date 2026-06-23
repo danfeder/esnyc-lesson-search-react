@@ -11,7 +11,7 @@
  *                                 sampled lesson (id, title, bucket, stratum or
  *                                 adversarial class/reason, body, current tags).
  *   - answer-key-worksheet.md   — a plain-language per-lesson labeling sheet
- *                                 (12 re-tag fields + a grades row), with the
+ *                                 (14 re-tag fields + a grades row), with the
  *                                 canonical vocab lists inlined once at the top
  *                                 (rendered from vocab.ts, never hand-copied),
  *                                 a DRAFT column (B2 pre-fill agent) and a
@@ -32,8 +32,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
+import { loadC02Floor, matchKey, type C02Floor } from './normalize';
 import { RESULT_PROPERTIES } from './schema';
-import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
+import {
+  MAIN_PASS_FIELDS,
+  c02IngredientParentMap,
+  c02MainIngredientsValues,
+  loadC02Manifest,
+  loadVocab,
+  type MainPassField,
+  type Stage2Vocab,
+} from './vocab';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -55,6 +64,10 @@ const SAMPLE_FILENAME = 'answer-key-sample.jsonl';
 const WORKSHEET_FILENAME = 'answer-key-worksheet.md';
 const FINAL_FILENAME = 'answer-key.final.jsonl';
 
+/** C02 (P1.5) artifact filenames — the 3-layer cooking/ingredients pilot sample. */
+const C02_SAMPLE_FILENAME = 'c02-answer-key-sample.jsonl';
+const C02_MANIFEST_FILENAME = 'c02-answer-key-manifest.json';
+
 // ---------------------------------------------------------------------------
 // Corpus record shape (the fields the worksheet needs)
 // ---------------------------------------------------------------------------
@@ -63,7 +76,7 @@ const conceptsObjectSchema = z.record(z.array(z.string()));
 
 /**
  * The corpus record shape the sampler consumes — the export-corpus.ts output:
- * id + title + body + the current PROD values of the 12 re-tag fields. We keep
+ * id + title + body + the current PROD values of the 14 re-tag fields. We keep
  * the whole tag block (validated loosely) so the worksheet can show "current"
  * values and the sample JSONL can carry them forward.
  */
@@ -83,11 +96,44 @@ export const corpusRecordSchema = z
     cooking_methods: z.array(z.string()).nullable().optional(),
     observances_holidays: z.array(z.string()).nullable().optional(),
     garden_skills: z.array(z.string()).nullable().optional(),
+    // C02 (P1.5): the two re-tagged free-form vocabularies. The on-disk
+    // corpus.jsonl predates the export that added these, so they may be absent
+    // (P2.1 regenerates the corpus with them); the C02 sampler reads them when
+    // present and treats absent as an empty current-tag set.
+    cooking_skills: z.array(z.string()).nullable().optional(),
+    main_ingredients: z.array(z.string()).nullable().optional(),
     academic_concepts: conceptsObjectSchema.nullable().optional(),
   })
   .passthrough();
 
 export type CorpusRecordForSampling = z.infer<typeof corpusRecordSchema>;
+
+/**
+ * Guard against a STALE corpus. The C02 sampler + scorer read current
+ * cooking_skills / main_ingredients from the corpus, but those columns were
+ * added to the export AFTER the original artifacts/corpus.jsonl was written
+ * (P2.1 regenerates it with them). A stale file parses fine — the two fields are
+ * simply absent (they are `.optional()` above) — and would silently yield empty
+ * current-tags, corrupting the rules baseline + gate scoring with NO error. Fail
+ * loudly instead: if not one row carries any cooking_skills or main_ingredients,
+ * treat the corpus as stale and abort. (Codex/round-2 review finding.)
+ */
+export function assertCorpusHasC02Tags(
+  rows: ReadonlyArray<{ cooking_skills?: string[] | null; main_ingredients?: string[] | null }>,
+  corpusPath: string
+): void {
+  const anyTagged = rows.some(
+    (r) => (r.cooking_skills?.length ?? 0) > 0 || (r.main_ingredients?.length ?? 0) > 0
+  );
+  if (!anyTagged) {
+    throw new Error(
+      `Corpus at ${corpusPath} carries NO cooking_skills/main_ingredients across ` +
+        `${rows.length} row(s) — it predates the C02 export and is stale. The C02 ` +
+        `sampler + scorer need current tags; regenerate artifacts/corpus.jsonl with ` +
+        `the two fields first (see the P2.1 corpus-regeneration prerequisite).`
+    );
+  }
+}
 
 /** The current-tags block carried into the sample record + shown in the worksheet. */
 export type CurrentTags = Record<string, unknown>;
@@ -311,6 +357,458 @@ export function stratifiedSample(
 }
 
 // ---------------------------------------------------------------------------
+// C02 3-layer answer-key sampler (P1.5)
+//
+// Builds the pilot answer-key sample for the cooking_skills + main_ingredients
+// re-tag (design §4 Q4): a deterministic, seeded, 70-lesson sample in three
+// layers — (1) hard-case quotas keyed off CURRENT tags, (2) a deterministic
+// greedy set-cover guaranteeing every one of the 93 canonical values appears
+// >=2x across {hard-case ∪ coverage}, (3) a clean-core slice (the existing
+// activity_type × body-length-quartile proportional draw) filling to exactly 70.
+//
+// The set-cover's coverage TARGET is "expected post-retag membership", NOT
+// current tags — an added specific has near-zero current carriers. A lesson is
+// a CANDIDATE for value V iff EITHER the deterministic C02 floor predicts V from
+// its current tags (floor-over-current-tags) OR a committed body-keyword pattern
+// for V matches the lesson body. Coverage is HARD where the pool allows; any
+// value the pool cannot raise to 2 lands on a WARN list (defensive — the
+// grounding proved this list is empty on the real corpus).
+//
+// Determinism: every random choice routes through mulberry32(seed) + the shared
+// shuffle. No Math.random. Same seed -> identical selection + layer assignment.
+// ---------------------------------------------------------------------------
+
+/** Target sample size — design §4 Q4 lock (≈25 clean-core / 25 coverage / 20 hard-case). */
+export const C02_SAMPLE_SIZE = 70;
+
+/** Hard-case layer cap (design §4 Q4 ≈20). */
+export const C02_HARD_CASE_CAP = 20;
+
+/** Minimum occurrences every canonical value must reach (design §4 Q4 ≥2×). */
+export const C02_COVERAGE_FLOOR = 2;
+
+const C02_COVERAGE_KEYWORDS_PATH = path.join(MODULE_DIR, 'data/c02-coverage-keywords.json');
+const C02_ALIAS_MAP_PATH = path.join(MODULE_DIR, 'data/c02-alias-map.json');
+
+const coverageKeywordsSchema = z.object({
+  provenance: z.record(z.unknown()),
+  keywords: z.record(z.string()),
+});
+
+/**
+ * Loads the committed body-keyword patterns (value → case-insensitive RegExp).
+ * Used by the set-cover to widen the candidate pool for values with near-zero
+ * current carriers (added specifics; the empty/low-floor tail). P2 may extend
+ * the data file if the real run reveals a coverage gap (data-only change).
+ */
+export function loadCoverageKeywords(
+  filePath: string = C02_COVERAGE_KEYWORDS_PATH
+): Map<string, RegExp> {
+  const parsed = coverageKeywordsSchema.parse(JSON.parse(readFileSync(filePath, 'utf8')));
+  const out = new Map<string, RegExp>();
+  for (const [value, pattern] of Object.entries(parsed.keywords)) {
+    out.set(value, new RegExp(pattern, 'i'));
+  }
+  return out;
+}
+
+const aliasMapFileSchema = z.object({
+  provenance: z.record(z.unknown()),
+  aliasMap: z.record(z.string()),
+  drops: z.array(z.string()),
+});
+
+/** The C02 floor + parent map + drop set + canonical value sets the sampler needs. */
+export interface C02SamplerContext {
+  floor: C02Floor;
+  parentMap: Record<string, string>;
+  /** matchKey set of every alias-map drop literal (orphan/drop hard-case class). */
+  dropKeys: Set<string>;
+  /** matchKey → canonical for cooking_skills (alias folds + canonical-case). */
+  cookingFolds: Map<string, string>;
+  /** matchKey → canonical for main_ingredients (alias folds + canonical-case). */
+  ingredientFolds: Map<string, string>;
+  cookingValues: string[];
+  ingredientValues: string[];
+  keywords: Map<string, RegExp>;
+}
+
+/**
+ * Builds the sampler context from the real on-disk C02 data (the SAME floor the
+ * normalize R7/R8/R9 rules use — reused, never re-implemented), plus the
+ * coverage keywords and the alias-map drop list. The floor is loaded via the
+ * exported `loadC02Floor`; we additionally read the alias-map file directly for
+ * its `drops` (the orphan/drop hard-case signal) rather than re-deriving it.
+ */
+export function buildC02SamplerContext(opts?: {
+  keywordsPath?: string;
+  aliasMapPath?: string;
+}): C02SamplerContext {
+  const manifest = loadC02Manifest();
+  const floor = loadC02Floor();
+  const parsedAlias = aliasMapFileSchema.parse(
+    JSON.parse(readFileSync(opts?.aliasMapPath ?? C02_ALIAS_MAP_PATH, 'utf8'))
+  );
+  return {
+    floor,
+    parentMap: c02IngredientParentMap(manifest),
+    dropKeys: new Set(parsedAlias.drops.map((d) => matchKey(d))),
+    cookingFolds: floor.cookingFolds,
+    ingredientFolds: floor.ingredientFolds,
+    cookingValues: manifest.cookingSkills,
+    ingredientValues: c02MainIngredientsValues(manifest),
+    keywords: loadCoverageKeywords(opts?.keywordsPath),
+  };
+}
+
+/** The two-field membership prediction the set-cover targets. */
+export interface PredictedMembership {
+  cooking: string[];
+  ingredients: string[];
+}
+
+function foldField(tags: string[] | null | undefined, folds: Map<string, string>): string[] {
+  if (!tags) return [];
+  return tags.map((tag) => folds.get(matchKey(tag)) ?? tag);
+}
+
+/**
+ * Apply the REAL deterministic C02 floor to a record's CURRENT tags to predict
+ * its post-retag canonical membership (per field). REUSES the floor's folds +
+ * the parent map (R9: a specific implies its parent group). Returns deduped,
+ * order-preserving arrays. NOT a tagger — a sampling predictor only.
+ *
+ * `ctx` defaults to the real on-disk context (cached via loadC02Floor); pass an
+ * explicit context to test with synthetic data.
+ */
+export function predictMembership(
+  record: CorpusRecordForSampling,
+  ctx: C02SamplerContext = buildC02SamplerContext()
+): PredictedMembership {
+  const cookingFolded = foldField(record.cooking_skills, ctx.cookingFolds);
+  const ingredientFolded = foldField(record.main_ingredients, ctx.ingredientFolds);
+
+  // R9 parent-reconcile: every emitted specific implies its parent group.
+  const withParents = [...ingredientFolded];
+  const present = new Set(ingredientFolded);
+  for (const value of ingredientFolded) {
+    const parent = ctx.parentMap[value];
+    if (parent !== undefined && !present.has(parent)) {
+      present.add(parent);
+      withParents.push(parent);
+    }
+  }
+
+  return {
+    cooking: dedupe(cookingFolded),
+    ingredients: dedupe(withParents),
+  };
+}
+
+function dedupe(values: string[]): string[] {
+  return values.filter((v, i) => values.indexOf(v) === i);
+}
+
+/** A (field, canonical-value) coverage slot. */
+type Slot = `cooking:${string}` | `ingredients:${string}`;
+
+/**
+ * The set of canonical values a lesson is a CANDIDATE for, by field:
+ * floor-over-current-tags ∪ body-keyword-scan. A value enters the cooking set
+ * iff the floor predicts it OR its keyword pattern matches the body; likewise
+ * ingredients. The keyword scan lets added/low-floor values find candidates the
+ * floor alone misses.
+ */
+function candidateSlots(record: CorpusRecordForSampling, ctx: C02SamplerContext): Set<Slot> {
+  const pred = predictMembership(record, ctx);
+  const slots = new Set<Slot>();
+  for (const v of pred.cooking) slots.add(`cooking:${v}`);
+  for (const v of pred.ingredients) slots.add(`ingredients:${v}`);
+
+  const body = record.content_text ?? '';
+  for (const v of ctx.cookingValues) {
+    const re = ctx.keywords.get(v);
+    if (re && re.test(body)) slots.add(`cooking:${v}`);
+  }
+  for (const v of ctx.ingredientValues) {
+    const re = ctx.keywords.get(v);
+    if (re && re.test(body)) slots.add(`ingredients:${v}`);
+  }
+  return slots;
+}
+
+/** The hard-case signal classes (design §4 Q4). */
+export type HardCaseClass = 'vague-cooking' | 'herbs-aromatics' | 'orphan-food';
+
+/** The vague cooking tags the LLM must REPLACE (never folded — design §5). */
+const VAGUE_COOKING_KEYS = new Set(['Basic Skills', 'Cooking Techniques'].map((s) => matchKey(s)));
+
+/** The legacy ingredient catch-all that conflates Fresh herbs vs Alliums. */
+const HERBS_AROMATICS_KEY = matchKey('Herbs & Aromatics');
+
+/**
+ * Classify a record's hard-case signal (first match wins, in a stable order),
+ * or null if it is clean. (a) a vague cooking tag in current cooking_skills;
+ * (b) the Herbs & Aromatics catch-all in current main_ingredients; (c) an
+ * orphan/drop food — a current main_ingredients tag that is in the alias-map
+ * drops list OR floors to nothing (non-canonical, not an alias key).
+ */
+export function classifyHardCase(
+  record: CorpusRecordForSampling,
+  ctx: C02SamplerContext
+): HardCaseClass | null {
+  const cooking = record.cooking_skills ?? [];
+  if (cooking.some((t) => VAGUE_COOKING_KEYS.has(matchKey(t)))) return 'vague-cooking';
+
+  const ingredients = record.main_ingredients ?? [];
+  if (ingredients.some((t) => matchKey(t) === HERBS_AROMATICS_KEY)) return 'herbs-aromatics';
+
+  for (const t of ingredients) {
+    const key = matchKey(t);
+    if (ctx.dropKeys.has(key)) return 'orphan-food';
+    // floors to nothing = not in the ingredient folds (no alias, not a canonical)
+    if (!ctx.ingredientFolds.has(key)) return 'orphan-food';
+  }
+  return null;
+}
+
+/** A selected lesson tagged with its layer + (for hard-case) its class. */
+export interface C02SelectedLesson {
+  id: string;
+  title: string;
+  layer: 'hard-case' | 'coverage' | 'clean-core';
+  hardCaseClass: HardCaseClass | null;
+}
+
+export interface C02Coverage {
+  cooking: Record<string, number>;
+  ingredients: Record<string, number>;
+}
+
+export interface C02SampleResult {
+  selected: C02SelectedLesson[];
+  coverage: C02Coverage;
+  warnings: string[];
+  layerSizes: { hardCase: number; coverage: number; cleanCore: number };
+  seed: number;
+  size: number;
+}
+
+export interface BuildC02SampleOptions {
+  seed: number;
+  size?: number;
+  hardCaseCap?: number;
+  context?: C02SamplerContext;
+}
+
+/** Tally a selected record's candidate slots into the running coverage map. */
+function tallyCoverage(
+  record: CorpusRecordForSampling,
+  ctx: C02SamplerContext,
+  coverage: C02Coverage
+): void {
+  for (const slot of candidateSlots(record, ctx)) {
+    const [field, value] = splitSlot(slot);
+    if (field === 'cooking') coverage.cooking[value] = (coverage.cooking[value] ?? 0) + 1;
+    else coverage.ingredients[value] = (coverage.ingredients[value] ?? 0) + 1;
+  }
+}
+
+function splitSlot(slot: Slot): ['cooking' | 'ingredients', string] {
+  const idx = slot.indexOf(':');
+  return [slot.slice(0, idx) as 'cooking' | 'ingredients', slot.slice(idx + 1)];
+}
+
+/**
+ * Build the C02 3-layer answer-key sample. Deterministic for a fixed seed.
+ *
+ * Layer order:
+ *   1. hard-case — round-robin across the three signal classes (seeded shuffle
+ *      within each class), capped at `hardCaseCap` (~20).
+ *   2. coverage  — deterministic greedy set-cover over the NOT-yet-chosen
+ *      lessons: repeatedly pick the lesson covering the most still-deficient
+ *      (value, slot) pairs (a value is deficient until it reaches
+ *      C02_COVERAGE_FLOOR across {hard-case ∪ coverage}); tie-break by a seeded
+ *      shuffle then by id. Stop when every value is satisfied OR no remaining
+ *      lesson can raise any deficient value. Unreachable values → WARN list.
+ *   3. clean-core — fill to exactly `size` from the remaining NON-hard-case
+ *      lessons via the existing activity_type × quartile proportional draw.
+ *
+ * If the corpus is smaller than `size`, takes all available lessons (mirrors the
+ * existing small-pool behavior).
+ */
+export function buildC02Sample(
+  corpus: CorpusRecordForSampling[],
+  options: BuildC02SampleOptions
+): C02SampleResult {
+  const seed = options.seed;
+  const size = options.size ?? C02_SAMPLE_SIZE;
+  const hardCaseCap = options.hardCaseCap ?? C02_HARD_CASE_CAP;
+  const ctx = options.context ?? buildC02SamplerContext();
+  const rng = mulberry32(seed);
+
+  const chosenIds = new Set<string>();
+  const selected: C02SelectedLesson[] = [];
+  const coverage: C02Coverage = { cooking: {}, ingredients: {} };
+
+  const select = (
+    record: CorpusRecordForSampling,
+    layer: C02SelectedLesson['layer'],
+    hardCaseClass: HardCaseClass | null
+  ): void => {
+    chosenIds.add(record.id);
+    selected.push({ id: record.id, title: record.title, layer, hardCaseClass });
+    tallyCoverage(record, ctx, coverage);
+  };
+
+  // ----- Classify every lesson once (stable order preserved) -----
+  const hardCaseOf = new Map<string, HardCaseClass>();
+  for (const rec of corpus) {
+    const cls = classifyHardCase(rec, ctx);
+    if (cls) hardCaseOf.set(rec.id, cls);
+  }
+
+  // ===== Layer 1 — hard-case (round-robin by class, seeded shuffle within) =====
+  const classOrder: HardCaseClass[] = ['vague-cooking', 'herbs-aromatics', 'orphan-food'];
+  const buckets = new Map<HardCaseClass, CorpusRecordForSampling[]>();
+  for (const cls of classOrder) buckets.set(cls, []);
+  for (const rec of corpus) {
+    const cls = hardCaseOf.get(rec.id);
+    if (cls) buckets.get(cls)!.push(rec);
+  }
+  const shuffledBuckets = new Map<HardCaseClass, CorpusRecordForSampling[]>();
+  for (const cls of classOrder) shuffledBuckets.set(cls, shuffle(buckets.get(cls)!, rng));
+
+  const cursors = new Map<HardCaseClass, number>(classOrder.map((c) => [c, 0]));
+  let hardRemaining = true;
+  while (selected.length < hardCaseCap && hardRemaining && selected.length < size) {
+    hardRemaining = false;
+    for (const cls of classOrder) {
+      if (selected.length >= hardCaseCap || selected.length >= size) break;
+      const bucket = shuffledBuckets.get(cls)!;
+      let cursor = cursors.get(cls)!;
+      while (cursor < bucket.length && chosenIds.has(bucket[cursor].id)) cursor++;
+      if (cursor < bucket.length) {
+        select(bucket[cursor], 'hard-case', cls);
+        cursors.set(cls, cursor + 1);
+        hardRemaining = true;
+      }
+    }
+  }
+
+  // ===== Layer 2 — deterministic greedy set-cover =====
+  const needed = (value: string, field: 'cooking' | 'ingredients'): number => {
+    const have =
+      field === 'cooking' ? (coverage.cooking[value] ?? 0) : (coverage.ingredients[value] ?? 0);
+    return Math.max(0, C02_COVERAGE_FLOOR - have);
+  };
+
+  // Precompute each remaining lesson's candidate slot set once.
+  const remaining = corpus.filter((r) => !chosenIds.has(r.id));
+  const slotsOf = new Map<string, Set<Slot>>();
+  for (const rec of remaining) slotsOf.set(rec.id, candidateSlots(rec, ctx));
+
+  const allSlots: Slot[] = [
+    ...ctx.cookingValues.map((v): Slot => `cooking:${v}`),
+    ...ctx.ingredientValues.map((v): Slot => `ingredients:${v}`),
+  ];
+
+  const deficientSlots = (): Set<Slot> => {
+    const out = new Set<Slot>();
+    for (const slot of allSlots) {
+      const [field, value] = splitSlot(slot);
+      if (needed(value, field) > 0) out.add(slot);
+    }
+    return out;
+  };
+
+  // Greedy loop: pick the remaining lesson covering the most still-deficient
+  // slots; tie-break by a seeded shuffle then by id (both deterministic).
+  let pool = remaining.slice();
+  // A stable, seed-derived priority order for tie-breaking.
+  const tiePriority = new Map<string, number>();
+  shuffle(remaining, rng).forEach((rec, i) => tiePriority.set(rec.id, i));
+
+  for (;;) {
+    if (selected.length >= size) break;
+    const deficient = deficientSlots();
+    if (deficient.size === 0) break;
+
+    let best: CorpusRecordForSampling | null = null;
+    let bestGain = 0;
+    let bestKey = Number.POSITIVE_INFINITY;
+    for (const rec of pool) {
+      if (chosenIds.has(rec.id)) continue;
+      let gain = 0;
+      for (const slot of slotsOf.get(rec.id)!) if (deficient.has(slot)) gain++;
+      if (gain === 0) continue;
+      const key = tiePriority.get(rec.id)!;
+      if (gain > bestGain || (gain === bestGain && key < bestKey)) {
+        best = rec;
+        bestGain = gain;
+        bestKey = key;
+      }
+    }
+
+    if (!best || bestGain === 0) break; // no candidate can raise any deficient value
+    select(best, 'coverage', null);
+    pool = pool.filter((r) => r.id !== best!.id);
+  }
+
+  // WARN for any value the pool could not raise to the floor.
+  const warnings: string[] = [];
+  for (const slot of allSlots) {
+    const [field, value] = splitSlot(slot);
+    const have =
+      field === 'cooking' ? (coverage.cooking[value] ?? 0) : (coverage.ingredients[value] ?? 0);
+    if (have < C02_COVERAGE_FLOOR) {
+      warnings.push(
+        `C02 set-cover: ${field}:${value} reached only ${have}/${C02_COVERAGE_FLOOR} (insufficient candidates)`
+      );
+    }
+  }
+
+  // ===== Layer 3 — clean-core fill to exactly `size` =====
+  if (selected.length < size) {
+    const cleanPool = corpus.filter((r) => !chosenIds.has(r.id) && !hardCaseOf.has(r.id));
+    const want = size - selected.length;
+    // Reuse the existing proportional stratified draw (deterministic, seeded).
+    const drawn = stratifiedSample(cleanPool, want, seed, new Set());
+    for (const rec of drawn) {
+      if (selected.length >= size) break;
+      if (chosenIds.has(rec.id)) continue;
+      select(rec, 'clean-core', null);
+    }
+    // If clean-core is exhausted but we are still short (tiny corpus), top up
+    // from any remaining lesson via a seeded shuffle so we honor `size` when the
+    // population allows.
+    if (selected.length < size) {
+      const leftover = shuffle(
+        corpus.filter((r) => !chosenIds.has(r.id)),
+        rng
+      );
+      for (const rec of leftover) {
+        if (selected.length >= size) break;
+        select(rec, 'clean-core', null);
+      }
+    }
+  }
+
+  return {
+    selected,
+    coverage,
+    warnings,
+    layerSizes: {
+      hardCase: selected.filter((s) => s.layer === 'hard-case').length,
+      coverage: selected.filter((s) => s.layer === 'coverage').length,
+      cleanCore: selected.filter((s) => s.layer === 'clean-core').length,
+    },
+    seed,
+    size,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Sample-record assembly
 // ---------------------------------------------------------------------------
 
@@ -418,7 +916,7 @@ export function buildSampleRecords(params: BuildSampleParams): SampleRecord[] {
 
 const GRADES_ROW_LABEL = 'Grades the document itself claims (leave blank if the doc is silent)';
 
-/** Field-row order in the worksheet: the 12 re-tag fields, then the grades row. */
+/** Field-row order in the worksheet: the 14 re-tag fields, then the grades row. */
 const WORKSHEET_FIELD_ORDER: (MainPassField | 'grade_levels')[] = [...RESULT_PROPERTIES];
 
 function fieldRowLabel(field: MainPassField | 'grade_levels', vocab: Stage2Vocab): string {
@@ -550,6 +1048,11 @@ export interface FinalLabelRecord {
   cooking_methods: string[];
   observances_holidays: string[];
   garden_skills: string[];
+  // C02 (P1.2 added these to MAIN_PASS_FIELDS, so the worksheet now RENDERS
+  // f:cooking_skills / f:main_ingredients rows; they MUST be present here or the
+  // `field in current` parse branch silently discards the human-filled values).
+  cooking_skills: string[];
+  main_ingredients: string[];
   academic_concepts: Record<string, string[]>;
   grade_levels: string[];
 }
@@ -610,6 +1113,8 @@ export function parseFilledWorksheet(markdown: string, excluded?: Set<string>): 
     cooking_methods: [],
     observances_holidays: [],
     garden_skills: [],
+    cooking_skills: [],
+    main_ingredients: [],
     academic_concepts: {},
     grade_levels: [],
   });
@@ -674,6 +1179,12 @@ export interface Args {
    * the B2 step uses to materialize the user-confirmed key).
    */
   parse?: string;
+  /**
+   * C02 mode: emit the 3-layer cooking_skills/main_ingredients pilot sample
+   * (hard-case + set-cover + clean-core, design §4 Q4) instead of the
+   * Protocol-A sample. Independent of the Protocol-A path.
+   */
+  c02: boolean;
   help: boolean;
 }
 
@@ -689,7 +1200,12 @@ function requireIntFlag(flag: string, next: string | undefined): number {
 }
 
 export function parseArgs(argv: string[]): Args {
-  const a: Args = { seed: DEFAULT_SEED, randomTotal: DEFAULT_RANDOM_TOTAL, help: false };
+  const a: Args = {
+    seed: DEFAULT_SEED,
+    randomTotal: DEFAULT_RANDOM_TOTAL,
+    c02: false,
+    help: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const next = argv[i + 1];
@@ -715,6 +1231,9 @@ export function parseArgs(argv: string[]): Args {
         }
         a.parse = next;
         i++;
+        break;
+      case '--c02':
+        a.c02 = true;
         break;
       case '--help':
       case '-h':
@@ -747,6 +1266,10 @@ Flags:
   --parse <path>      CONVERTER mode: parse a FILLED worksheet at <path> back
                       into ${FINAL_FILENAME} (CONFIRMED wins, blank → DRAFT)
                       instead of emitting a fresh sample
+  --c02               C02 mode: emit the 3-layer cooking_skills/main_ingredients
+                      pilot sample (hard-case + ≥2× set-cover + clean-core,
+                      size ${C02_SAMPLE_SIZE}) → ${C02_SAMPLE_FILENAME} + ${C02_MANIFEST_FILENAME}.
+                      Requires a corpus carrying the two fields (P2.1 regen).
   --help
 
 No DB access, no API calls. Reads artifacts/corpus.jsonl + data/answer-key-adversarial.json.
@@ -831,10 +1354,93 @@ export function parseWorksheetToFinal(
   return { finalPath, recordCount: records.length, skippedIds };
 }
 
+interface C02RunResult {
+  samplePath: string;
+  manifestPath: string;
+  selectedCount: number;
+  layerSizes: { hardCase: number; coverage: number; cleanCore: number };
+  warningCount: number;
+  seed: number;
+}
+
+/**
+ * C02 orchestration (P1.5): build the 3-layer sample and write a JSONL of the
+ * selected lessons + a manifest (provenance + layer sizes + per-value coverage
+ * + the WARN list). Reuses the same corpus loader + artifact-write pattern as
+ * `run`; the corpus must carry cooking_skills/main_ingredients (P2.1 regen).
+ */
+export function runC02(opts: { seed: number; outDir: string; corpusPath?: string }): C02RunResult {
+  const corpusPath = opts.corpusPath ?? DEFAULT_CORPUS_PATH;
+  const corpus = loadCorpus(corpusPath);
+  assertCorpusHasC02Tags(corpus, corpusPath);
+  const result = buildC02Sample(corpus, { seed: opts.seed });
+
+  mkdirSync(opts.outDir, { recursive: true });
+  const samplePath = path.join(opts.outDir, C02_SAMPLE_FILENAME);
+  const manifestPath = path.join(opts.outDir, C02_MANIFEST_FILENAME);
+
+  const sampleJsonl =
+    result.selected.map((s) => JSON.stringify(s)).join('\n') + (result.selected.length ? '\n' : '');
+  writeFileSync(samplePath, sampleJsonl);
+  writeFileSync(
+    manifestPath,
+    JSON.stringify(
+      {
+        provenance: {
+          task: 'C02 P1.5 — 3-layer answer-key sample (hard-case + set-cover + clean-core)',
+          sampler_version: SAMPLER_VERSION,
+          seed: result.seed,
+          size: result.size,
+          note:
+            'Deterministic; reproduce with `npx tsx scripts/stage2-retag/sample-answer-key.ts --c02 --seed ' +
+            `${result.seed}\``,
+        },
+        layerSizes: result.layerSizes,
+        coverage: result.coverage,
+        warnings: result.warnings,
+        selected: result.selected,
+      },
+      null,
+      2
+    ) + '\n'
+  );
+
+  return {
+    samplePath,
+    manifestPath,
+    selectedCount: result.selected.length,
+    layerSizes: result.layerSizes,
+    warningCount: result.warnings.length,
+    seed: result.seed,
+  };
+}
+
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
     process.stdout.write(HELP);
+    return;
+  }
+  if (args.c02) {
+    const result = runC02({ seed: args.seed, outDir: args.outDir ?? DEFAULT_OUT_DIR });
+    process.stdout.write(
+      `c02 answer key: ${result.selectedCount} lessons ` +
+        `(${result.layerSizes.hardCase} hard-case + ${result.layerSizes.coverage} coverage + ` +
+        `${result.layerSizes.cleanCore} clean-core; seed ${result.seed})\n` +
+        `  ${result.samplePath}\n  ${result.manifestPath}\n`
+    );
+    if (result.warningCount > 0) {
+      // ≥2× coverage is a HARD guarantee (design §4 Q4 / P1.5): an under-covered
+      // canonical can't be scored by the per-value pilot gates, so fail closed
+      // rather than emit a usable-looking-but-weak key.
+      process.stderr.write(
+        `  ⚠️  ${result.warningCount} value(s) under the ≥2× floor — see the manifest's "warnings".\n` +
+          `  HARD FAILURE: per-value pilot gates cannot be scored for an under-covered\n` +
+          `  canonical value. Regenerate/repair the corpus (or merge the too-rare value\n` +
+          `  into the manifest) and re-run.\n`
+      );
+      process.exitCode = 1;
+    }
     return;
   }
   if (args.parse) {
