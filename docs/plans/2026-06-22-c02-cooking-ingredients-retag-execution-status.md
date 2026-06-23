@@ -23,7 +23,11 @@
 
 **Round 3 (fresh review) passed all checks.** Then a **Codex merge-readiness review** (user-requested) surfaced **3 real *vacuous-pass* holes** in the gate/sampler logic — same class as the gate-②/gate-④ bugs already fixed. User chose **harden all 3 before merge** (`96c0ab1`, TDD red→green): gate ③ now FAILS on zero added-specifics predicted (was vacuous null→pass); gate ① now FAILS on an empty clean-core (was 0-vs-0 pass); a new `assertCorpusHasC02Tags` guard aborts loudly on a stale corpus missing both fields (was silent empty-tags), wired into both the sampler `runC02` and scorer `runC02Mode`. **GATE-4 Codex re-verified all 3 CORRECT + no false-fails/false-throws → MERGE-READY: yes, no blockers.** Suite 75/1580, check clean.
 
-**Remaining:** push `96c0ab1` (triggers a round-4 fresh review → **critical-only** per round-cap), CI green → **USER merges P1** (merge is user-gated) → P2. **No DB in P1 → no TEST/PROD verify.**
+**Bot triage round 4 DONE** (`779eeb7`). The round-4 fresh review caught a **real 🔴 bug** + 2 🟡 (critical-only review per the round-cap earned its keep): **🔴 `FinalLabelRecord`/`blank()` (`sample-answer-key.ts`) omitted the 2 C02 fields** — since P1.2 added them to `MAIN_PASS_FIELDS` the worksheet RENDERS them, but the `--parse` path's `field in current` branch SILENTLY DISCARDED the human-adjudicated gold tags (the P2 gold key would carry zero C02 data). Fixed (interface + blank + round-trip test). **🟡 gate ④** mirrored gate ③ (null Sweeteners now fails closed). **🟡 gate ①** got a `cleanCoreHasGold` guard (all-untagged clean-core now fails, not just zero-rows). **🔵 declined a 3rd time** (alias-floor dedup provenance — the suggested fix would make a pure-dedup output change silent; Codex agreed + sharpened: it misses tail-dup `['a','a','b']→['a','b']`). +3 TDD tests (red→green stash-verified). **GATE-4 Codex re-verified all 3 CORRECT + no false-fails → MERGE-READY: yes.** Suite **75/1583**, check clean.
+
+**⚠️ Codex model fix (user, 2026-06-23):** leaving `codex-rescue`'s model unset routes non-deterministically (rollouts showed 5.5/5.4/4.1 mixed; one GATE-4 landed on 5.4). NOW pin **`--model gpt-5.5`** on every Codex call (see `feedback_codex_model_pin`). Round-4 GATE-4 re-confirmed on **gpt-5.5** (rollout-verified `"model":"gpt-5.5"`) — all 3 fixes CORRECT, MERGE-READY: yes.
+
+**Remaining:** the `779eeb7` push triggers a round-5 fresh review → **critical-only** per round-cap → CI green → **USER merges P1** (merge is user-gated) → P2. **No DB in P1 → no TEST/PROD verify.**
 
 **P2 (after P1 merges) — key carry-forwards:**
 - (a) **P2.1 MUST regenerate `artifacts/corpus.jsonl`** — the on-disk one (765 lines, pre-2026-06-12) LACKS `cooking_skills`/`main_ingredients`; the C02 sampler + rules-baseline read current tags from corpus record fields. The `CorpusRecordForSampling` type carries the two fields.
@@ -56,7 +60,7 @@
 
 ## In flight
 
-(P1 PR #542 — Codex-verified MERGE-READY; round-4 fresh review of the hardening pending (critical-only); awaiting USER merge)
+(P1 PR #542 — round-4 caught + fixed a 🔴 gold-key data-loss bug; gpt-5.5-confirmed MERGE-READY; round-5 review + CI pending on `779eeb7`; awaiting USER merge)
 
 ## Blocked
 
