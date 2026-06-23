@@ -18,6 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { requireNonProd } from './lib/require-env.mjs';
+import { resolveGradeLevels } from './lib/grade-levels.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,7 +63,7 @@ async function importLessons() {
         title: lesson.lessonTitle || 'Untitled Lesson',
         summary: lesson.lessonSummary || 'No summary available',
         file_link: lesson.fileLink,
-        grade_levels: lesson.metadata?.gradeLevel || [],
+        grade_levels: resolveGradeLevels(lesson.metadata),
         metadata: lesson.metadata || {},
         confidence: lesson.confidence || {
           overall: 0.5,
