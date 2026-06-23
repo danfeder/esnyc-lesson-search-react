@@ -683,6 +683,67 @@ describe('normalizeRecordInput — plural/synonym alias folds', () => {
 });
 
 // ---------------------------------------------------------------------------
+// P2.1b — floor top-up: clean folds the TEST-sourced census missed
+//
+// A live-PROD coverage audit found a handful of UNAMBIGUOUS single-target folds
+// the alias map (authored partly from a census accidentally run against TEST)
+// did not cover. These are clean folds (no lesson context needed). Each is
+// asserted end-to-end through the floor (the same buildC02Floor/matchKey path
+// the rules use), including R9 parent-reconcile where the target is a specific.
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — P2.1b floor top-up folds', () => {
+  // key → expected normalized main_ingredients array (incl. R9 parent append
+  // for the two specific targets Cheese→Dairy and Beets→Root vegetables).
+  const cases: Array<[string, string[]]> = [
+    ['Beans', ['Beans & legumes']],
+    ['Peas', ['Beans & legumes']],
+    ['Squash', ['Squash, cucumbers & melons']],
+    ['Parmesan cheese', ['Cheese', 'Dairy']],
+    ['Mozzarella cheese', ['Cheese', 'Dairy']],
+    ['Sour Cream', ['Dairy']],
+    ['Buttermilk', ['Dairy']],
+    ['Condensed milk', ['Dairy']],
+    ['Various seeds', ['Nuts & seeds']],
+    ['Beyond Sausage (pea protein)', ['Tofu & plant proteins']],
+    ['Lettuce', ['Leafy greens']],
+    ['Cereal/grains', ['Grains & starches']],
+    ['Whole wheat wraps', ['Grains & starches']],
+    ['Beet juice', ['Beets', 'Root vegetables']],
+  ];
+
+  it.each(cases)('folds %s through the floor to its canonical target', (key, expected) => {
+    const { rawInput, normalizations } = normalizeRecordInput({ main_ingredients: [key] });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual(expected);
+    expect(normalizations).toContain(NORMALIZATION_RULES.mainIngredientsAliasFloor);
+  });
+
+  it('declares each top-up key mapping to its stated canonical target', () => {
+    const expectedTargets: Record<string, string> = {
+      Beans: 'Beans & legumes',
+      Peas: 'Beans & legumes',
+      Squash: 'Squash, cucumbers & melons',
+      'Parmesan cheese': 'Cheese',
+      'Mozzarella cheese': 'Cheese',
+      'Sour Cream': 'Dairy',
+      Buttermilk: 'Dairy',
+      'Condensed milk': 'Dairy',
+      'Various seeds': 'Nuts & seeds',
+      'Beyond Sausage (pea protein)': 'Tofu & plant proteins',
+      Lettuce: 'Leafy greens',
+      'Cereal/grains': 'Grains & starches',
+      'Whole wheat wraps': 'Grains & starches',
+      'Beet juice': 'Beets',
+    };
+    for (const [key, target] of Object.entries(expectedTargets)) {
+      expect(ALIAS_MAP[key]).toBe(target);
+      // Every target must be a real canonical ingredient value.
+      expect(ING_VALUES.has(target)).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // buildC02Floor — machine-checked invariants + load-time collision guard
 // ---------------------------------------------------------------------------
 

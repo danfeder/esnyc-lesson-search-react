@@ -85,8 +85,10 @@ describe('c02 manifest — invariant (a): both files parse with the expected sha
     expect(Array.isArray(aliases.drops)).toBe(true);
   });
 
-  it('aliasMap has the locked key count (187 — drift guard)', () => {
-    expect(Object.keys(aliases.aliasMap)).toHaveLength(187);
+  it('aliasMap has the locked key count (201 — drift guard)', () => {
+    // 187 original + 14 P2.1b floor top-ups (clean folds the TEST-sourced
+    // census missed; see c02-alias-map.json provenance).
+    expect(Object.keys(aliases.aliasMap)).toHaveLength(201);
   });
 
   it('declares the case-insensitive + trim matching in its provenance', () => {

@@ -13,7 +13,8 @@
       "IDEMPOTENCY PRECONDITION (P1.3): no canonical value (cooking ∪ groups ∪ specifics) is an aliasMap KEY — canonical values map to themselves implicitly. So 'Measuring', 'Baking', 'Alliums', 'Chickpeas', 'Citrus fruits', 'Oranges', 'Lime', 'Apples', 'Coconut' are absent as keys.",
       "Every aliasMap VALUE is a member of c02-vocab.json's canonical set.",
       "Pantry B-lite: Sugar (and its sweetener kin) → 'Sweeteners' group; Salt/Oil/Soy sauce → drops.",
-      "MATCHING IS CASE-INSENSITIVE + TRIM (normalize.ts matchKey = NFC + trim + toLowerCase). Keys are matched on their lowercased+trimmed form, so case twins (Mixing/mixing, Chopping/chopping, Beets/beets, Alliums/alliums, …) need NO explicit lowercase/uppercase duplicate key. Additionally, every canonical VALUE is loaded into the per-field match lookup at its own matchKey (the 'canonical-case rule'), so a correctly-spelled-but-miscased canonical (e.g. 'beets'→'Beets', 'tahini'→'Tahini') normalizes to canonical casing for free. Plurals/synonyms are NOT caught by case-folding and DO need explicit keys (Avocados→Avocado, Sun butter/Sunbutter→Sunflower butter, Limes/Lemons→Lime/Lemon, Cucumber/Carrot→Cucumbers/Carrots). The loader THROWS at load time if two match-keys collide onto different canonicals (verified zero collisions on the real data)."
+      "MATCHING IS CASE-INSENSITIVE + TRIM (normalize.ts matchKey = NFC + trim + toLowerCase). Keys are matched on their lowercased+trimmed form, so case twins (Mixing/mixing, Chopping/chopping, Beets/beets, Alliums/alliums, …) need NO explicit lowercase/uppercase duplicate key. Additionally, every canonical VALUE is loaded into the per-field match lookup at its own matchKey (the 'canonical-case rule'), so a correctly-spelled-but-miscased canonical (e.g. 'beets'→'Beets', 'tahini'→'Tahini') normalizes to canonical casing for free. Plurals/synonyms are NOT caught by case-folding and DO need explicit keys (Avocados→Avocado, Sun butter/Sunbutter→Sunflower butter, Limes/Lemons→Lime/Lemon, Cucumber/Carrot→Cucumbers/Carrots). The loader THROWS at load time if two match-keys collide onto different canonicals (verified zero collisions on the real data).",
+      "P2.1b FLOOR TOP-UP (2026-06-23): a live-PROD coverage audit added 14 clean single-target ingredient folds the alias map missed because the original census was accidentally run against TEST (PROD-only values were absent). All are unambiguous (no lesson context needed): Beans/Peas→Beans & legumes, Squash→Squash, cucumbers & melons, Parmesan cheese/Mozzarella cheese→Cheese, Sour Cream/Buttermilk/Condensed milk→Dairy, Various seeds→Nuts & seeds, Beyond Sausage (pea protein)→Tofu & plant proteins (distinct from the existing bare 'Beyond Sausage' key — different matchKey, same target), Lettuce→Leafy greens, Cereal/grains & Whole wheat wraps→Grains & starches, Beet juice→Beets. The vague/ambiguous cooking_skills residual and the 'Herbs & Aromatics'/'herbs-aromatics' catch-all are DELIBERATELY left to the LLM, not floored here."
     ]
   },
   "aliasMap": {
@@ -240,7 +241,22 @@
     "Maple syrup": "Sweeteners",
 
     "Carrot": "Carrots",
-    "Beet": "Beets"
+    "Beet": "Beets",
+
+    "Beans": "Beans & legumes",
+    "Peas": "Beans & legumes",
+    "Squash": "Squash, cucumbers & melons",
+    "Parmesan cheese": "Cheese",
+    "Mozzarella cheese": "Cheese",
+    "Sour Cream": "Dairy",
+    "Buttermilk": "Dairy",
+    "Condensed milk": "Dairy",
+    "Various seeds": "Nuts & seeds",
+    "Beyond Sausage (pea protein)": "Tofu & plant proteins",
+    "Lettuce": "Leafy greens",
+    "Cereal/grains": "Grains & starches",
+    "Whole wheat wraps": "Grains & starches",
+    "Beet juice": "Beets"
   },
   "drops": [
     "Shea butter",
