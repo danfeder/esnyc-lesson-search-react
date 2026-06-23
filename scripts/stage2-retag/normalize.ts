@@ -161,7 +161,7 @@ export function matchKey(s: string): string {
  *  also carries every canonical value at its own matchKey (the "canonical-case
  *  rule") so a correctly-spelled-but-miscased canonical normalizes to its
  *  canonical casing. */
-interface C02Floor {
+export interface C02Floor {
   /** matchKey → cooking_skills canonical (folds whose canonical is a
    *  cooking_skills value, plus every cooking canonical at its own matchKey). */
   cookingFolds: Map<string, string>;
@@ -238,7 +238,13 @@ export function buildC02Floor(aliasMap: Record<string, string>, manifest: C02Man
 
 let c02FloorCache: C02Floor | null = null;
 
-function loadC02Floor(): C02Floor {
+/**
+ * Load (and memoize) the real on-disk C02 floor — the same alias map + canonical
+ * manifest the normalize R7/R8/R9 rules use. Exported so the answer-key sampler
+ * (P1.5) can REUSE the deterministic floor for its membership predictor instead
+ * of re-implementing the fold/parent logic (design §4 Q4).
+ */
+export function loadC02Floor(): C02Floor {
   if (c02FloorCache) return c02FloorCache;
 
   const aliasFile = c02AliasMapSchema.parse(

@@ -12,23 +12,27 @@
  *     slots, grades row, DRAFT/CONFIRMED columns, body NOT inlined)
  *   - worksheet → final.jsonl parse round-trip on a fixture
  */
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { loadVocab } from './vocab';
+import { loadVocab, loadC02Manifest, c02MainIngredientsValues } from './vocab';
 import {
   SAMPLER_VERSION,
   bodyLengthQuartiles,
+  buildC02Sample,
   buildSampleRecords,
   loadAdversarial,
+  loadCoverageKeywords,
   loadExclusions,
   mulberry32,
   parseArgs,
   parseFilledWorksheet,
   parseWorksheetToFinal,
+  predictMembership,
   renderWorksheet,
+  runC02,
   stratifiedSample,
   stratumKey,
   type CorpusRecordForSampling,
@@ -453,5 +457,337 @@ describe('parseArgs', () => {
 
   it('rejects a non-integer seed', () => {
     expect(() => parseArgs(['--seed', 'abc'])).toThrow(/integer/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C02 3-layer answer-key sampler (P1.5) — hard-case + set-cover + clean-core.
+// The real on-disk corpus.jsonl lacks cooking_skills/main_ingredients (the
+// export added them after that file was generated), so these tests use SYNTHETIC
+// fixtures that carry the two arrays (grounding: execution-status Session 4).
+// ---------------------------------------------------------------------------
+
+const c02Manifest = loadC02Manifest();
+const COOKING_VALUES = c02Manifest.cookingSkills;
+const INGREDIENT_VALUES = c02MainIngredientsValues(c02Manifest);
+const ALL_VALUE_COUNT = COOKING_VALUES.length + INGREDIENT_VALUES.length; // 93
+
+let synthCounter = 0;
+function synthRecord(
+  over: Partial<CorpusRecordForSampling> & { id?: string }
+): CorpusRecordForSampling {
+  const id = over.id ?? `c02-synth-${synthCounter++}`;
+  return {
+    id,
+    title: `Synthetic ${id}`,
+    content_text: over.content_text ?? 'x'.repeat(200),
+    activity_type: over.activity_type ?? ['cooking'],
+    tags: null,
+    season_timing: [],
+    cultural_responsiveness_features: [],
+    cultural_heritage: [],
+    academic_integration: [],
+    social_emotional_learning: [],
+    core_competencies: [],
+    cooking_methods: [],
+    observances_holidays: [],
+    garden_skills: [],
+    academic_concepts: {},
+    cooking_skills: over.cooking_skills ?? [],
+    main_ingredients: over.main_ingredients ?? [],
+  } as CorpusRecordForSampling;
+}
+
+/**
+ * A body string guaranteed NOT to match any coverage-keyword pattern (so a
+ * lesson's coverage comes ONLY from its current tags unless we say otherwise).
+ * Uses a vocabulary that no pattern in c02-coverage-keywords.json matches.
+ */
+const INERT_BODY = 'qqq zzz vvv inert filler text with no culinary keyword '.repeat(6);
+
+/**
+ * Build a synthetic corpus where EVERY canonical value appears as a current tag
+ * on >=2 distinct DENSELY-tagged lessons — mirroring real lessons, which carry
+ * many ingredients/skills at once, so ~40 multi-value lessons can cover all 186
+ * (value × 2) slots well within the 70-lesson budget (single-tag lessons could
+ * not). Deterministic. `excludeValue`, when set, omits that value's carriers so
+ * a test can control its candidate count precisely.
+ */
+function buildFullCoverageCorpus(opts?: { excludeValue?: string }): CorpusRecordForSampling[] {
+  const exclude = opts?.excludeValue;
+  const records: CorpusRecordForSampling[] = [];
+  const cooking = COOKING_VALUES.filter((v) => v !== exclude);
+  const ingredients = INGREDIENT_VALUES.filter((v) => v !== exclude);
+
+  // Pack values into dense "recipe" lessons, two passes (so every value lands on
+  // >=2 distinct lessons). Chunk sizes are coprime-ish across passes so the same
+  // value never pairs with the identical neighbors twice (closer to real data).
+  const chunk = <T>(arr: T[], size: number, offset: number): T[][] => {
+    const rotated = [...arr.slice(offset), ...arr.slice(0, offset)];
+    const out: T[][] = [];
+    for (let i = 0; i < rotated.length; i += size) out.push(rotated.slice(i, i + size));
+    return out;
+  };
+
+  for (const pass of [0, 1]) {
+    for (const group of chunk(cooking, 5, pass * 2)) {
+      records.push(synthRecord({ cooking_skills: group, content_text: INERT_BODY }));
+    }
+    for (const group of chunk(ingredients, 6, pass * 3)) {
+      records.push(synthRecord({ main_ingredients: group, content_text: INERT_BODY }));
+    }
+  }
+
+  // Clean-core padding (no C02-relevant current tags, inert body) so the corpus
+  // exceeds 70 and the clean-core layer has lessons to draw from.
+  for (let i = 0; i < 120; i++) {
+    records.push(
+      synthRecord({
+        activity_type: i % 2 === 0 ? ['cooking'] : ['garden'],
+        content_text: INERT_BODY + 'y'.repeat((i % 4) * 40),
+      })
+    );
+  }
+  return records;
+}
+
+describe('loadCoverageKeywords', () => {
+  it('loads the committed coverage-keyword patterns incl. the grounding seeds', () => {
+    const kw = loadCoverageKeywords();
+    // The grounding-required seeds (execution-status Session 4 / design §4 Q4).
+    expect(kw.has('Grilling')).toBe(true);
+    expect(kw.has('Fermenting')).toBe(true);
+    expect(kw.has('Wrapping & rolling')).toBe(true);
+    expect(kw.has('Melons')).toBe(true);
+    expect(kw.has('Stone fruits')).toBe(true);
+    expect(kw.has('Peanut butter')).toBe(true);
+    expect(kw.has('Fennel')).toBe(true);
+    // A pattern matches the body case-insensitively.
+    expect(kw.get('Grilling')!.test('We will GRILL the corn')).toBe(true);
+    expect(kw.get('Melons')!.test('slice the watermelon')).toBe(true);
+    expect(kw.get('Grilling')!.test('no relevant body here')).toBe(false);
+  });
+
+  it('only maps real canonical values (no stray keys)', () => {
+    const kw = loadCoverageKeywords();
+    const canon = new Set([...COOKING_VALUES, ...INGREDIENT_VALUES]);
+    for (const key of kw.keys()) {
+      expect(canon.has(key)).toBe(true);
+    }
+  });
+});
+
+describe('predictMembership (reuses the real C02 floor)', () => {
+  it('folds a current cooking_skills alias to its canonical', () => {
+    // "Mixing" folds to "Mixing & stirring" via the case-insensitive floor.
+    const rec = synthRecord({ cooking_skills: ['Mixing'] });
+    const pred = predictMembership(rec);
+    expect(pred.cooking).toContain('Mixing & stirring');
+  });
+
+  it('predicts a specific AND its parent group (R9 parent-reconcile)', () => {
+    const rec = synthRecord({ main_ingredients: ['Tomatoes'] });
+    const pred = predictMembership(rec);
+    expect(pred.ingredients).toContain('Tomatoes');
+    expect(pred.ingredients).toContain('Nightshades');
+  });
+
+  it('keeps a canonical group as itself and de-dupes', () => {
+    const rec = synthRecord({ main_ingredients: ['Nightshades', 'Tomatoes', 'Tomatoes'] });
+    const pred = predictMembership(rec);
+    // de-duped, parent present once.
+    expect(pred.ingredients.filter((v) => v === 'Nightshades')).toHaveLength(1);
+  });
+
+  it('returns empty arrays for a clean-core lesson with no C02 tags', () => {
+    const rec = synthRecord({ cooking_skills: [], main_ingredients: [] });
+    const pred = predictMembership(rec);
+    expect(pred.cooking).toEqual([]);
+    expect(pred.ingredients).toEqual([]);
+  });
+});
+
+describe('buildC02Sample — coverage guarantee', () => {
+  it('covers every one of the 93 canonical values >=2x', () => {
+    const corpus = buildFullCoverageCorpus();
+    const result = buildC02Sample(corpus, { seed: 4242 });
+    expect(result.warnings).toEqual([]);
+    for (const v of COOKING_VALUES) {
+      expect(result.coverage.cooking[v] ?? 0).toBeGreaterThanOrEqual(2);
+    }
+    for (const v of INGREDIENT_VALUES) {
+      expect(result.coverage.ingredients[v] ?? 0).toBeGreaterThanOrEqual(2);
+    }
+    expect(ALL_VALUE_COUNT).toBe(93);
+  });
+
+  it('uses BOTH a floor carrier and a keyword-only candidate to reach 2 for a value with exactly one of each', () => {
+    // Full dense coverage for the other 92 values, with Grilling REMOVED from
+    // every carrier, then add exactly: one Grilling floor carrier (current tag,
+    // inert body) + one Grilling keyword-only candidate (body matches /grill/,
+    // no current tag). Neither alone reaches 2 → the set-cover must pick BOTH.
+    const base = buildFullCoverageCorpus({ excludeValue: 'Grilling' });
+    const floorCarrier = synthRecord({
+      id: 'grill-floor',
+      cooking_skills: ['Grilling'],
+      content_text: INERT_BODY,
+    });
+    const keywordOnly = synthRecord({
+      id: 'grill-keyword',
+      cooking_skills: [],
+      content_text: 'today we grill the vegetables over the open flame '.repeat(6),
+    });
+    const corpus = [floorCarrier, keywordOnly, ...base];
+    const result = buildC02Sample(corpus, { seed: 7 });
+    const chosenIds = new Set(result.selected.map((s) => s.id));
+    // Both must be selected — neither alone reaches 2.
+    expect(chosenIds.has('grill-floor')).toBe(true);
+    expect(chosenIds.has('grill-keyword')).toBe(true);
+    expect(result.coverage.cooking['Grilling']).toBeGreaterThanOrEqual(2);
+    expect(result.warnings).toEqual([]);
+  });
+});
+
+describe('buildC02Sample — WARN path for an under-covered value', () => {
+  it('lands an unreachable value on the WARN list and does not crash', () => {
+    // Full dense coverage for everything EXCEPT Grilling, for which only ONE
+    // candidate exists anywhere (one floor carrier, inert body so no keyword
+    // candidate). Grilling cannot reach 2 → it must WARN, in isolation.
+    const base = buildFullCoverageCorpus({ excludeValue: 'Grilling' });
+    const lone = synthRecord({
+      id: 'lonely-grill',
+      cooking_skills: ['Grilling'],
+      content_text: INERT_BODY,
+    });
+    const corpus = [lone, ...base];
+    const result = buildC02Sample(corpus, { seed: 99 });
+    expect(result.warnings.some((w) => w.includes('Grilling'))).toBe(true);
+    // The under-covered value reached at most 1, and the sampler still reports
+    // honest coverage (never silently claims 2).
+    expect(result.coverage.cooking['Grilling'] ?? 0).toBeLessThan(2);
+    // Every OTHER value still reached >=2 (the WARN is isolated).
+    for (const v of COOKING_VALUES) {
+      if (v === 'Grilling') continue;
+      expect(result.coverage.cooking[v] ?? 0).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
+describe('buildC02Sample — determinism', () => {
+  it('same seed -> identical selected id set + layer assignment', () => {
+    const corpus = buildFullCoverageCorpus();
+    const a = buildC02Sample(corpus, { seed: 314 });
+    const b = buildC02Sample(corpus, { seed: 314 });
+    expect(a.selected.map((s) => `${s.id}:${s.layer}`)).toEqual(
+      b.selected.map((s) => `${s.id}:${s.layer}`)
+    );
+  });
+
+  it('a different seed may produce a different selection', () => {
+    const corpus = buildFullCoverageCorpus();
+    const a = buildC02Sample(corpus, { seed: 1 }).selected.map((s) => s.id);
+    const b = buildC02Sample(corpus, { seed: 2 }).selected.map((s) => s.id);
+    // Not guaranteed different in general, but with this corpus the clean-core
+    // draw differs across seeds.
+    expect(a).not.toEqual(b);
+  });
+});
+
+describe('buildC02Sample — layer sizes', () => {
+  it('selects exactly 70 on a corpus larger than 70', () => {
+    const corpus = buildFullCoverageCorpus();
+    const result = buildC02Sample(corpus, { seed: 55 });
+    expect(result.selected).toHaveLength(70);
+    const layers = result.selected.map((s) => s.layer);
+    const counts = {
+      hard: layers.filter((l) => l === 'hard-case').length,
+      coverage: layers.filter((l) => l === 'coverage').length,
+      clean: layers.filter((l) => l === 'clean-core').length,
+    };
+    expect(counts.hard + counts.coverage + counts.clean).toBe(70);
+    // hard-case is capped at <= 20.
+    expect(counts.hard).toBeLessThanOrEqual(20);
+    expect(result.layerSizes.hardCase).toBe(counts.hard);
+    expect(result.layerSizes.coverage).toBe(counts.coverage);
+    expect(result.layerSizes.cleanCore).toBe(counts.clean);
+  });
+
+  it('takes the whole corpus when it is smaller than 70', () => {
+    const small = buildFullCoverageCorpus().slice(0, 40);
+    const result = buildC02Sample(small, { seed: 5 });
+    expect(result.selected.length).toBeLessThanOrEqual(40);
+    // every selected id is unique
+    const ids = result.selected.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('buildC02Sample — hard-case classes', () => {
+  it('picks vague cooking tags, the Herbs & Aromatics catch-all, and orphan/drop foods', () => {
+    const vague = synthRecord({ id: 'hc-vague', cooking_skills: ['Basic Skills'] });
+    const herbs = synthRecord({ id: 'hc-herbs', main_ingredients: ['Herbs & Aromatics'] });
+    const orphan = synthRecord({ id: 'hc-orphan', main_ingredients: ['Lavender'] }); // in drops
+    const fill = buildFullCoverageCorpus();
+    const corpus = [vague, herbs, orphan, ...fill];
+    const result = buildC02Sample(corpus, { seed: 22 });
+    const byId = new Map(result.selected.map((s) => [s.id, s]));
+    expect(byId.get('hc-vague')?.layer).toBe('hard-case');
+    expect(byId.get('hc-vague')?.hardCaseClass).toBe('vague-cooking');
+    expect(byId.get('hc-herbs')?.layer).toBe('hard-case');
+    expect(byId.get('hc-herbs')?.hardCaseClass).toBe('herbs-aromatics');
+    expect(byId.get('hc-orphan')?.layer).toBe('hard-case');
+    expect(byId.get('hc-orphan')?.hardCaseClass).toBe('orphan-food');
+  });
+});
+
+describe('parseArgs --c02', () => {
+  it('defaults c02 to false', () => {
+    expect(parseArgs([]).c02).toBe(false);
+  });
+
+  it('enables c02 mode with --c02', () => {
+    expect(parseArgs(['--c02']).c02).toBe(true);
+  });
+
+  it('combines --c02 with --seed', () => {
+    const a = parseArgs(['--c02', '--seed', '4242']);
+    expect(a.c02).toBe(true);
+    expect(a.seed).toBe(4242);
+  });
+});
+
+describe('runC02 artifact writing', () => {
+  it('writes the c02 sample JSONL + manifest with layer sizes and coverage', () => {
+    const outDir = path.join(MODULE_DIR, '__fixtures__/.tmp-c02');
+    const corpusPath = path.join(outDir, 'corpus.jsonl');
+    // Build a dense full-coverage corpus and persist it as the C02 mode corpus.
+    const corpus = buildFullCoverageCorpus();
+    rmSync(outDir, { recursive: true, force: true });
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(corpusPath, corpus.map((r) => JSON.stringify(r)).join('\n') + '\n');
+
+    const result = runC02({ seed: 4242, outDir, corpusPath });
+    expect(result.selectedCount).toBe(70);
+    expect(result.warningCount).toBe(0);
+    expect(
+      result.layerSizes.hardCase + result.layerSizes.coverage + result.layerSizes.cleanCore
+    ).toBe(70);
+
+    const written = readFileSync(result.samplePath, 'utf8')
+      .split('\n')
+      .filter((l) => l.trim() !== '')
+      .map((l) => JSON.parse(l) as { id: string; layer: string });
+    expect(written).toHaveLength(70);
+    expect(new Set(written.map((w) => w.layer))).toEqual(new Set(['coverage', 'clean-core']));
+
+    const manifest = JSON.parse(readFileSync(result.manifestPath, 'utf8')) as {
+      coverage: { cooking: Record<string, number>; ingredients: Record<string, number> };
+      warnings: string[];
+    };
+    expect(manifest.warnings).toEqual([]);
+    for (const v of COOKING_VALUES) {
+      expect(manifest.coverage.cooking[v] ?? 0).toBeGreaterThanOrEqual(2);
+    }
+    rmSync(outDir, { recursive: true, force: true });
   });
 });

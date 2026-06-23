@@ -1,0 +1,35 @@
+{
+  "provenance": {
+    "task": "C02 P1.5 — body-keyword augmentation for the answer-key set-cover predictor",
+    "design": "docs/plans/2026-06-22-c02-cooking-ingredients-retag-design.md §4 Q4 (the ≥2× set-cover layer)",
+    "emitted": "2026-06-23",
+    "purpose": "Maps a canonical cooking_skills / main_ingredients value to a lowercase, case-insensitive regex over the lesson BODY (content_text). A lesson is a keyword-CANDIDATE for value V iff a pattern exists for V and new RegExp(pattern, 'i').test(body). The set-cover predictor (sample-answer-key.ts) takes candidates(V) = floor-over-current-tags(V) ∪ body-keyword-scan(V) so that values with near-zero current carriers (added specifics; the empty-floor tail Grilling/Melons; the low-floor tail Fermenting/Wrapping & rolling/Stone fruits/Peanut butter/Fennel) can still reach the ≥2× coverage guarantee.",
+    "grounding": "Session 4 read-only PROD census proved ≥2× is universally achievable for all 93 canonical values under floor ∪ keyword. The 7 low-floor values below each had 5-28 body-keyword candidates. These patterns are the grounding-derived seeds.",
+    "extensibility": "P2 (the real pilot run) MAY extend this file if the real corpus reveals a coverage gap for a value with no pattern here — adding a pattern is a data-only change. Patterns are matched case-insensitively against the raw body text; keep them lowercase by convention but the 'i' flag makes case moot.",
+    "note": "This is a SAMPLING heuristic only — it never writes a tag. It just widens the candidate pool the deterministic set-cover draws from so every value is representable. Over-broad patterns only cost a slightly larger candidate pool; they never produce a wrong tag."
+  },
+  "keywords": {
+    "Grilling": "grill",
+    "Fermenting": "ferment|kimchi|sauerkraut|kombucha|miso",
+    "Wrapping & rolling": "sushi|dumpling|tamale|spring roll|burrito|wrap|roll",
+    "Pickling & preserving": "pickl|preserv|brine|can(ning|ned)",
+    "Roasting": "roast",
+    "Steaming": "steam",
+    "Baking": "bak(e|ing)|oven",
+    "Dough making": "dough|knead|tortilla|pasta|bread",
+    "Melons": "melon|cantaloupe|honeydew|watermelon",
+    "Stone fruits": "peach|plum|cherr|apricot|nectarine",
+    "Peanut butter": "peanut butter",
+    "Sunflower butter": "sunflower butter|sun butter|sunbutter",
+    "Tahini": "tahini",
+    "Fennel": "fennel",
+    "Seaweed (nori)": "seaweed|nori|kimbap",
+    "Cocoa & chocolate": "chocolate|cocoa",
+    "Celery": "celery",
+    "Dried fruits": "raisin|dried fruit|date(s)?|dried cranberr|dried cherr",
+    "Tropical fruits": "mango|pineapple|plantain|papaya|coconut",
+    "Coconut": "coconut",
+    "Beets": "beet",
+    "Honey": "honey"
+  }
+}
