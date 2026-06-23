@@ -196,6 +196,17 @@ describe('c02 alias map — invariant (d): every alias value is canonical', () =
     expect(aliases.aliasMap['Frying']).toBe('Sautéing & stir-frying');
   });
 
+  it('folds the §4c near-synonym group-words + case twins (review-fix coverage)', () => {
+    // Guards against silently dropping an explicitly-enumerated §4c twin
+    // (the `rice` omission caught at P1.1 review) or a single-group near-synonym.
+    expect(aliases.aliasMap['rice']).toBe('Rice');
+    expect(aliases.aliasMap['Seeds']).toBe('Nuts & seeds');
+    expect(aliases.aliasMap['Nuts']).toBe('Nuts & seeds');
+    expect(aliases.aliasMap['Legumes']).toBe('Beans & legumes');
+    expect(aliases.aliasMap['Citrus']).toBe('Citrus fruits');
+    expect(aliases.aliasMap['Various spices']).toBe('Spices');
+  });
+
   it('does NOT fold the vague LLM-judgment tags', () => {
     for (const vague of [
       'Basic Skills',

@@ -9,7 +9,7 @@
       "drops": "raw census source-values dropped at re-tag (cosmetic/craft/composite noise + B-lite pantry Salt/Oil/Soy-sauce). A DROP is distinguishable from a fold and is NOT a canonical value. The LLM/floor removes these; they never become a stored tag."
     },
     "discipline": [
-      "Vague LLM-judgment tags are NOT folded here (the LLM replaces them by reading the lesson): Basic Skills, Cooking Techniques, Stovetop cooking, Various techniques, Cooking, Heating, and bare group-words (Fruits/Vegetables/Herbs/Spices/Dairy) that need per-lesson judgment.",
+      "Vague LLM-judgment tags are NOT folded here (the LLM replaces them by reading the lesson): Basic Skills, Cooking Techniques, Stovetop cooking, Various techniques, Cooking, Heating. Also left to the LLM: the multi-group words Fruits/Vegetables (span many groups), Herbs (Fresh herbs vs Spices), and the EXACT bare group names Spices/Dairy (left so the full re-read can upgrade to a specific). By contrast, NEAR-SYNONYMS of a single group ARE floored to that group: Legumes→Beans & legumes, Citrus→Citrus fruits, Dried fruit→Dried fruits, Seeds/Nuts→Nuts & seeds, Various spices→Spices. This floor-vs-LLM boundary is provisional and pilot-tuned (design §3).",
       "IDEMPOTENCY PRECONDITION (P1.3): no canonical value (cooking ∪ groups ∪ specifics) is an aliasMap KEY — canonical values map to themselves implicitly. So 'Measuring', 'Baking', 'Alliums', 'Chickpeas', 'Citrus fruits', 'Oranges', 'Lime', 'Apples', 'Coconut' are absent as keys.",
       "Every aliasMap VALUE is a member of c02-vocab.json's canonical set.",
       "Pantry B-lite: Sugar (and its sweetener kin) → 'Sweeteners' group; Salt/Oil/Soy sauce → drops."
@@ -118,6 +118,7 @@
     "cilantro": "Cilantro",
     "apples": "Apples",
     "oats": "Oats",
+    "rice": "Rice",
     "bananas": "Bananas",
     "cheese": "Cheese",
     "yogurt": "Yogurt",
@@ -180,6 +181,11 @@
     "Flaxseed": "Nuts & seeds",
     "Almonds": "Nuts & seeds",
     "Pepita seeds": "Nuts & seeds",
+    "Seeds": "Nuts & seeds",
+    "seeds": "Nuts & seeds",
+    "Nuts": "Nuts & seeds",
+    "Nuts/seeds": "Nuts & seeds",
+    "Nuts/Seeds": "Nuts & seeds",
 
     "Limes": "Lime",
     "Pears": "Apples & pears",
