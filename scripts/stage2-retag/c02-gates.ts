@@ -63,6 +63,14 @@ export type C02Field = (typeof C02_FIELDS)[number];
 
 /** Gate ② minimum micro-F1 delta over rules on judgment rows (a tie fails). */
 export const GATE2_MIN_DELTA = 0.05;
+/**
+ * Float tolerance for the gate ② delta comparison. A mathematically-exact +0.05
+ * delta (e.g. 0.95 − 0.90) renders as 0.04999999999999993 under IEEE-754 and
+ * would be spuriously failed by a bare `>= 0.05`. The epsilon restores parity
+ * with the documented "+0.05" while keeping the tie-fails intent intact: a tie
+ * (delta 0) still fails, since 0 < GATE2_MIN_DELTA − GATE2_DELTA_EPS.
+ */
+export const GATE2_DELTA_EPS = 1e-9;
 /** Gate ③ pooled precision floor over the 46 added specifics. */
 export const GATE3_PRECISION_FLOOR = 0.7;
 /** Gate ③ ceiling on the prediction rate of a never-in-key specific. */
@@ -304,6 +312,15 @@ function evaluateGate1(
 // Gate ② — beats rules on judgment rows (+0.05, both fields, tie fails)
 // ---------------------------------------------------------------------------
 
+/**
+ * Gate ② per-field pass test: winner must beat rules by at least +0.05 micro-F1.
+ * Epsilon-tolerant (see GATE2_DELTA_EPS) so an exact +0.05 delta isn't lost to
+ * float error; a tie (delta 0) still fails.
+ */
+export function gate2DeltaPasses(delta: number): boolean {
+  return delta >= GATE2_MIN_DELTA - GATE2_DELTA_EPS;
+}
+
 function evaluateGate2(
   winnerById: Map<string, TaggedRecord>,
   rulesById: Map<string, TaggedRecord>,
@@ -317,8 +334,9 @@ function evaluateGate2(
     const winner = subsetFieldMicroF1(field, winnerById, judgmentRow);
     const rules = subsetFieldMicroF1(field, rulesById, judgmentRow);
     const delta = winner - rules;
-    // A tie (delta == 0) FAILS: strictly require delta >= +0.05.
-    perField[field] = { winner, rules, delta, passed: delta >= GATE2_MIN_DELTA };
+    // A tie (delta == 0) FAILS: require delta >= +0.05 (epsilon-tolerant so an
+    // exact +0.05 isn't lost to float error — see gate2DeltaPasses).
+    perField[field] = { winner, rules, delta, passed: gate2DeltaPasses(delta) };
   }
   // BOTH fields must pass.
   const passed = C02_FIELDS.every((f) => perField[f].passed);

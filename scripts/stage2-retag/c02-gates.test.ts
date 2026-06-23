@@ -15,6 +15,7 @@ import { type KeyRecord, type TaggedRecord } from './score-answer-key';
 import {
   C02_FIELDS,
   GATE2_MIN_DELTA,
+  gate2DeltaPasses,
   GATE3_PRECISION_FLOOR,
   GATE3_ABSENT_RATE_CEILING,
   GATE4_SWEETENERS_PRECISION_FLOOR,
@@ -181,6 +182,20 @@ describe('Gate 2 — beats rules on judgment rows', () => {
     });
     const res = evaluateC02Gates(winner, rules, key, corpus);
     expect(res.gate2.passed).toBe(false);
+  });
+
+  it('passes a mathematically-exact +0.05 delta despite IEEE-754 error, tie still fails', () => {
+    // These differences are mathematically +0.05 but render < 0.05 in float;
+    // a bare `delta >= 0.05` would spuriously fail them.
+    expect(0.95 - 0.9).toBeLessThan(GATE2_MIN_DELTA);
+    expect(0.85 - 0.8).toBeLessThan(GATE2_MIN_DELTA);
+    expect(gate2DeltaPasses(0.95 - 0.9)).toBe(true);
+    expect(gate2DeltaPasses(0.85 - 0.8)).toBe(true);
+    expect(gate2DeltaPasses(0.55 - 0.5)).toBe(true);
+    // The tie-fails intent is preserved, and genuinely-below deltas still fail.
+    expect(gate2DeltaPasses(0)).toBe(false);
+    expect(gate2DeltaPasses(0.04)).toBe(false);
+    expect(gate2DeltaPasses(0.0499)).toBe(false);
   });
 });
 
