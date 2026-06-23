@@ -32,6 +32,31 @@
  *        activity_type, the user-verified key had garden_skills EMPTY (zero
  *        harm cases). Mirrors R1 — activity mode governs the dependent field.
  *
+ * C02 (P1.3) adds the deterministic alias-floor + parent-reconcile for the two
+ * re-tagged free-form vocabularies (design §3, §4 Q3/Q7). The alias map is the
+ * ~92-94% deterministic core; where it gives an unambiguous canonical it
+ * OVERWRITES (floor-first). It loads from `data/c02-alias-map.json` once
+ * (lazy memoized singleton — normalizeRecordInput runs per-record ~700×).
+ *
+ *   R7 — cooking_skills alias-floor. For the `cooking_skills` tag array,
+ *        overwrite each tag that is an alias-map KEY with its canonical value.
+ *        Field-scoped: only aliases whose canonical is a cooking_skills value
+ *        are applied here, so an ingredient alias sitting in cooking_skills
+ *        (wrong field) is never folded — no cross-domain contamination.
+ *   R8 — main_ingredients alias-floor. Same, scoped to aliases whose canonical
+ *        is a main_ingredients value (group ∪ specific).
+ *   R9 — ingredient parent-reconcile. For every emitted SPECIFIC in
+ *        `main_ingredients`, APPEND its parent group if absent (never drop,
+ *        never reorder existing). No-op for the 4 group-less specifics; DOES
+ *        append "Squash, cucumbers & melons" for Melons. Source of truth =
+ *        c02IngredientParentMap (a manifest miss = "no parent required").
+ *        R7/R8 MUST run before R9 so a folded specific gets its parent.
+ *
+ * The field-partition disjointness invariant (P1.1: no canonical value is an
+ * alias KEY; no key folds to both a cooking and an ingredient canonical; group
+ * names are never keys) makes the alias-floor a single-pass fixed point and the
+ * floor∘reconcile composition idempotent.
+ *
  * normalizeRecordInput is PURE (no mutation of its argument), IDEMPOTENT
  * (re-normalizing normalized output is a no-op), and NEVER silent (every
  * applied rule is named in the returned `normalizations` list). run-retag,
@@ -39,6 +64,12 @@
  * through it so the persisted + diffed + applied values are the normalized
  * ones.
  */
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { z } from 'zod';
+
+import { c02IngredientParentMap, c02MainIngredientsValues, loadC02Manifest } from './vocab';
 
 /** Stable rule keys recorded in a record's `normalizations` provenance list
  *  and counted in the validation summary. Subject-scoped rules append
@@ -52,6 +83,12 @@ export const NORMALIZATION_RULES = {
   synonymPairDrop: 'synonym-pair-drop',
   /** R6 — cleared garden_skills because activity_type lacks `garden`. */
   gardenSkillsNonGardenClear: 'garden-skills-nongarden-clear',
+  /** R7 — folded one or more cooking_skills tags to their alias canonical. */
+  cookingSkillsAliasFloor: 'cooking-skills-alias-floor',
+  /** R8 — folded one or more main_ingredients tags to their alias canonical. */
+  mainIngredientsAliasFloor: 'main-ingredients-alias-floor',
+  /** R9 — appended one or more missing parent groups for emitted specifics. */
+  ingredientParentReconcile: 'ingredient-parent-reconcile',
 } as const;
 
 export interface NormalizationResult {
@@ -72,6 +109,142 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+// ---------------------------------------------------------------------------
+// C02 alias-floor + parent-map loading (lazy memoized singletons)
+//
+// normalizeRecordInput runs PER-RECORD (~700×) so the file I/O + Zod parse must
+// happen once, not per call. The data files are the same byte-source the vocab
+// loader and DB CHECK use (P1.1).
+// ---------------------------------------------------------------------------
+
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(MODULE_DIR, '../..');
+const C02_ALIAS_MAP_PATH = 'scripts/stage2-retag/data/c02-alias-map.json';
+
+/**
+ * The C02 alias-floor file (P1.1). `aliasMap` is a single combined object of
+ * raw census source-value → canonical Title-Case value. `drops` is carried for
+ * provenance + the future P1.6 rules-baseline contestant — it is NOT part of
+ * R7/R8/R9 (drop-removal is LLM judgment per design §5, not the floor).
+ */
+const c02AliasMapSchema = z.object({
+  provenance: z.record(z.unknown()),
+  aliasMap: z.record(z.string()),
+  drops: z.array(z.string()),
+});
+
+/** Field-scoped alias folds: cooking-skills folds and ingredient folds, split
+ *  by whether each alias's canonical is a cooking_skills or main_ingredients
+ *  value. Splitting at load time makes R7/R8 genuinely field-scoped (their
+ *  names) and structurally prevents cross-domain contamination. */
+interface C02Floor {
+  /** alias key → cooking_skills canonical (only folds whose canonical is a
+   *  cooking_skills value). */
+  cookingFolds: Record<string, string>;
+  /** alias key → main_ingredients canonical (only folds whose canonical is a
+   *  main_ingredients group ∪ specific value). */
+  ingredientFolds: Record<string, string>;
+  /** specific → required parent group (group-less specifics absent = no
+   *  parent required). */
+  parentMap: Record<string, string>;
+}
+
+let c02FloorCache: C02Floor | null = null;
+
+function loadC02Floor(): C02Floor {
+  if (c02FloorCache) return c02FloorCache;
+
+  const aliasFile = c02AliasMapSchema.parse(
+    JSON.parse(readFileSync(path.join(REPO_ROOT, C02_ALIAS_MAP_PATH), 'utf8'))
+  );
+  const manifest = loadC02Manifest();
+  const cookingValues = new Set(manifest.cookingSkills);
+  const ingredientValues = new Set(c02MainIngredientsValues(manifest));
+
+  const cookingFolds: Record<string, string> = {};
+  const ingredientFolds: Record<string, string> = {};
+  for (const [alias, canonical] of Object.entries(aliasFile.aliasMap)) {
+    if (cookingValues.has(canonical)) {
+      cookingFolds[alias] = canonical;
+    } else if (ingredientValues.has(canonical)) {
+      ingredientFolds[alias] = canonical;
+    } else {
+      // A fold whose canonical is in NEITHER field's value set is a data bug
+      // (P1.1's "every alias VALUE is canonical" invariant) — fail loudly
+      // rather than silently dropping the fold.
+      throw new Error(
+        `c02-alias-map.json: alias "${alias}" folds to "${canonical}" which is ` +
+          `not a cooking_skills nor a main_ingredients canonical value`
+      );
+    }
+  }
+
+  c02FloorCache = {
+    cookingFolds,
+    ingredientFolds,
+    parentMap: c02IngredientParentMap(manifest),
+  };
+  return c02FloorCache;
+}
+
+/**
+ * Overwrite each tag that is a fold KEY with its canonical value. Positional
+ * overwrite preserves array length + order (consumers de-dupe downstream).
+ * Records the rule key once when ANY tag changed (mirrors R6's guard).
+ */
+function applyAliasFloor(
+  work: Record<string, unknown>,
+  field: 'cooking_skills' | 'main_ingredients',
+  folds: Record<string, string>,
+  ruleKey: string,
+  normalizations: string[]
+): void {
+  const tags = work[field];
+  if (!isStringArray(tags)) return;
+  let changed = false;
+  const folded = tags.map((tag) => {
+    const canonical = folds[tag];
+    if (canonical !== undefined && canonical !== tag) {
+      changed = true;
+      return canonical;
+    }
+    return tag;
+  });
+  if (changed) {
+    work[field] = folded;
+    normalizations.push(ruleKey);
+  }
+}
+
+/**
+ * R9 — for every emitted SPECIFIC in main_ingredients, APPEND its parent group
+ * if absent. Append-only: never drops, never reorders existing tags. Group-less
+ * specifics (parent-map miss) and bare groups are no-ops. Runs AFTER R8 so a
+ * folded specific gets its parent appended in the same pass.
+ */
+function applyIngredientParentReconcile(
+  work: Record<string, unknown>,
+  parentMap: Record<string, string>,
+  normalizations: string[]
+): void {
+  const tags = work.main_ingredients;
+  if (!isStringArray(tags)) return;
+
+  const present = new Set(tags);
+  const additions: string[] = [];
+  for (const tag of tags) {
+    const parent = parentMap[tag];
+    if (parent !== undefined && !present.has(parent)) {
+      present.add(parent);
+      additions.push(parent);
+    }
+  }
+  if (additions.length > 0) {
+    work.main_ingredients = [...tags, ...additions];
+    normalizations.push(NORMALIZATION_RULES.ingredientParentReconcile);
+  }
 }
 
 /**
@@ -191,6 +364,25 @@ export function normalizeRecordInput(rawInput: unknown): NormalizationResult {
   applyGardenSkillsNonGardenClear(work, normalizations);
   applyConceptsIntegrationReconcile(work, normalizations);
   applySynonymPairLint(work, normalizations);
+
+  // C02 (P1.3) — alias-floor (R7/R8) MUST precede parent-reconcile (R9) so a
+  // folded specific gets its parent appended in the same pass.
+  const c02Floor = loadC02Floor();
+  applyAliasFloor(
+    work,
+    'cooking_skills',
+    c02Floor.cookingFolds,
+    NORMALIZATION_RULES.cookingSkillsAliasFloor,
+    normalizations
+  );
+  applyAliasFloor(
+    work,
+    'main_ingredients',
+    c02Floor.ingredientFolds,
+    NORMALIZATION_RULES.mainIngredientsAliasFloor,
+    normalizations
+  );
+  applyIngredientParentReconcile(work, c02Floor.parentMap, normalizations);
 
   return { rawInput: work, normalizations };
 }

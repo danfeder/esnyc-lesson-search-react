@@ -11,9 +11,34 @@
  * (so consumers — run-retag, generate-diff-report, validate-output — can all
  * apply it safely).
  */
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import { NORMALIZATION_RULES, normalizeRecordInput, type NormalizationResult } from './normalize';
+import { c02IngredientParentMap, c02MainIngredientsValues, loadC02Manifest } from './vocab';
+
+// Derive the ACTUAL canonical sets + parent map from the locked manifest, so
+// these tests fail loudly if the data drifts rather than encoding stale copies.
+const MANIFEST = loadC02Manifest();
+const COOKING_SKILLS = MANIFEST.cookingSkills;
+const PARENT_MAP = c02IngredientParentMap(MANIFEST);
+const ING_VALUES = new Set(c02MainIngredientsValues(MANIFEST));
+const GROUPS = new Set(MANIFEST.mainIngredientsGroups);
+const NULL_PARENT_SPECIFICS = MANIFEST.mainIngredientsSpecifics
+  .filter((s) => s.parent === null)
+  .map((s) => s.value);
+
+// The alias map itself (read directly — the rules load it internally; the test
+// reads it to assert the groups-never-keys invariant + derive fold fixtures).
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(MODULE_DIR, '../..');
+const ALIAS_FILE = JSON.parse(
+  readFileSync(path.join(REPO_ROOT, 'scripts/stage2-retag/data/c02-alias-map.json'), 'utf8')
+) as { aliasMap: Record<string, string>; drops: string[] };
+const ALIAS_MAP = ALIAS_FILE.aliasMap;
 
 // ---------------------------------------------------------------------------
 // R1 — `academic` activity_type exclusivity strip
@@ -271,5 +296,244 @@ describe('normalizeRecordInput — provenance, idempotence, robustness', () => {
     // non-array activity_type / non-object concepts are left as-is
     expect(normalizeRecordInput({ activity_type: 'cooking' }).normalizations).toEqual([]);
     expect(normalizeRecordInput({ academic_concepts: 'nope' }).normalizations).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R7 — cooking_skills deterministic alias-floor
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — R7 cooking_skills alias floor', () => {
+  it('overwrites an alias-key tag with its cooking canonical', () => {
+    // `Sautéing` → `Sautéing & stir-frying` (a cooking_skills canonical).
+    const { rawInput, normalizations } = normalizeRecordInput({
+      cooking_skills: ['Sautéing', 'Baking'],
+    });
+    expect((rawInput as { cooking_skills: string[] }).cooking_skills).toEqual([
+      'Sautéing & stir-frying',
+      'Baking',
+    ]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
+  });
+
+  it('preserves order and de-dupes nothing structurally (positional overwrite)', () => {
+    // `Chopping` and `Dicing` both fold to `Knife skills`; both positions overwrite.
+    const { rawInput } = normalizeRecordInput({
+      cooking_skills: ['Chopping', 'Tasting', 'Dicing'],
+    });
+    expect((rawInput as { cooking_skills: string[] }).cooking_skills).toEqual([
+      'Knife skills',
+      'Tasting',
+      'Knife skills',
+    ]);
+  });
+
+  it('leaves an already-canonical cooking_skills array untouched (no provenance)', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      cooking_skills: ['Measuring', 'Knife skills', 'Baking'],
+    });
+    expect((rawInput as { cooking_skills: string[] }).cooking_skills).toEqual([
+      'Measuring',
+      'Knife skills',
+      'Baking',
+    ]);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
+  });
+
+  it('is a no-op when cooking_skills is absent / not a string array', () => {
+    expect(normalizeRecordInput({}).normalizations).not.toContain(
+      NORMALIZATION_RULES.cookingSkillsAliasFloor
+    );
+    expect(normalizeRecordInput({ cooking_skills: 'Baking' }).normalizations).not.toContain(
+      NORMALIZATION_RULES.cookingSkillsAliasFloor
+    );
+    expect(normalizeRecordInput({ cooking_skills: [1, 2] }).normalizations).not.toContain(
+      NORMALIZATION_RULES.cookingSkillsAliasFloor
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R8 — main_ingredients deterministic alias-floor
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — R8 main_ingredients alias floor', () => {
+  it('overwrites an alias-key tag with its ingredient canonical', () => {
+    // `Hummus` → `Chickpeas` (a specific); `Legumes` → `Beans & legumes` (a group).
+    const { rawInput, normalizations } = normalizeRecordInput({
+      // Pair with the parent group already present so R9 has nothing to append
+      // here — this test isolates the R8 fold.
+      main_ingredients: ['Beans & legumes', 'Hummus'],
+    });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Beans & legumes',
+      'Chickpeas',
+    ]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.mainIngredientsAliasFloor);
+  });
+
+  it('folds the §5 remaps (Nori/Seaweed → Seaweed (nori); Cocoa → Cocoa & chocolate)', () => {
+    const { rawInput } = normalizeRecordInput({
+      main_ingredients: ['Nori', 'Cocoa powder'],
+    });
+    // Both fold to null-parent specifics, so R9 appends nothing.
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Seaweed (nori)',
+      'Cocoa & chocolate',
+    ]);
+  });
+
+  it('leaves an already-canonical main_ingredients array untouched (no fold provenance)', () => {
+    const { normalizations } = normalizeRecordInput({
+      main_ingredients: ['Nightshades', 'Tomatoes'],
+    });
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.mainIngredientsAliasFloor);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R9 — ingredient parent-reconcile (append-only)
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — R9 ingredient parent reconcile', () => {
+  it('appends the missing parent group for an emitted specific (Tomatoes → +Nightshades)', () => {
+    const expectedParent = PARENT_MAP['Tomatoes'];
+    expect(expectedParent).toBe('Nightshades'); // guards against manifest drift
+    const { rawInput, normalizations } = normalizeRecordInput({
+      main_ingredients: ['Tomatoes'],
+    });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Tomatoes',
+      'Nightshades',
+    ]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+
+  it('never removes a reviewer-meaningful specific (append-only, original order kept)', () => {
+    const { rawInput } = normalizeRecordInput({
+      main_ingredients: ['Garlic', 'Tomatoes', 'Lemon'],
+    });
+    const out = (rawInput as { main_ingredients: string[] }).main_ingredients;
+    // All three originals survive in their original relative order.
+    expect(out.indexOf('Garlic')).toBe(0);
+    expect(out.indexOf('Tomatoes')).toBe(1);
+    expect(out.indexOf('Lemon')).toBe(2);
+    // Parents appended after the originals.
+    expect(out).toContain(PARENT_MAP['Garlic']); // Alliums
+    expect(out).toContain(PARENT_MAP['Tomatoes']); // Nightshades
+    expect(out).toContain(PARENT_MAP['Lemon']); // Citrus fruits
+    expect(out).toHaveLength(6);
+  });
+
+  it('does NOT re-append a parent already present (no duplicate, no provenance)', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      main_ingredients: ['Nightshades', 'Tomatoes'],
+    });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Nightshades',
+      'Tomatoes',
+    ]);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+
+  it('is a NO-OP for the 4 null-parent specifics', () => {
+    // Manifest-derived list of the group-less specifics.
+    expect(NULL_PARENT_SPECIFICS.sort()).toEqual(
+      ['Celery', 'Cocoa & chocolate', 'Fennel', 'Seaweed (nori)'].sort()
+    );
+    const { rawInput, normalizations } = normalizeRecordInput({
+      main_ingredients: [...NULL_PARENT_SPECIFICS],
+    });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual(
+      NULL_PARENT_SPECIFICS
+    );
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+
+  it('DOES append "Squash, cucumbers & melons" for Melons (parented, not null)', () => {
+    expect(PARENT_MAP['Melons']).toBe('Squash, cucumbers & melons');
+    const { rawInput, normalizations } = normalizeRecordInput({
+      main_ingredients: ['Melons'],
+    });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Melons',
+      'Squash, cucumbers & melons',
+    ]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+
+  it('leaves a group-only array untouched (groups have no parent requirement)', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      main_ingredients: ['Nightshades', 'Alliums'],
+    });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Nightshades',
+      'Alliums',
+    ]);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R7/R8/R9 — combined invariants: ordering, idempotence, field-scoping
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — C02 floor/reconcile combined invariants', () => {
+  it('R8 alias-floor runs BEFORE R9 reconcile in ONE pass (Hummus → Chickpeas → +Beans & legumes)', () => {
+    // Hummus folds to the specific Chickpeas, which then needs its parent
+    // (Beans & legumes) appended — both must happen in a single normalize call.
+    const { rawInput, normalizations } = normalizeRecordInput({
+      main_ingredients: ['Hummus'],
+    });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Chickpeas',
+      'Beans & legumes',
+    ]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.mainIngredientsAliasFloor);
+    expect(normalizations).toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+
+  it('is idempotent — re-normalizing folded+reconciled output is a fixed point', () => {
+    const first = normalizeRecordInput({
+      cooking_skills: ['Sautéing', 'Chopping'],
+      main_ingredients: ['Hummus', 'Nori'],
+    });
+    expect(first.normalizations.length).toBeGreaterThan(0);
+    const second = normalizeRecordInput(first.rawInput);
+    expect(second.normalizations).toEqual([]);
+    expect(second.rawInput).toEqual(first.rawInput);
+  });
+
+  it('every canonical group is absent from the alias map (groups-never-keys invariant)', () => {
+    // Extends the P1.1 idempotency invariant to GROUPS specifically: a folded
+    // specific's appended parent group can never itself be re-folded, so
+    // floor∘reconcile is a combined fixed point.
+    for (const group of GROUPS) {
+      expect(ALIAS_MAP).not.toHaveProperty([group]);
+    }
+  });
+
+  it('never folds a cooking_skills tag to an ingredient canonical, or vice versa (no cross-field contamination)', () => {
+    // A cooking-skill alias key placed in main_ingredients must NOT fold (its
+    // canonical is not an ingredient value); and an ingredient alias key placed
+    // in cooking_skills must NOT fold (its canonical is not a cooking value).
+    // `Sautéing` is a cooking alias key; `Hummus` is an ingredient alias key.
+    const cookingCanonOfSauteing = ALIAS_MAP['Sautéing'];
+    const ingCanonOfHummus = ALIAS_MAP['Hummus'];
+    expect(COOKING_SKILLS).toContain(cookingCanonOfSauteing);
+    expect(ING_VALUES.has(cookingCanonOfSauteing)).toBe(false);
+    expect(ING_VALUES.has(ingCanonOfHummus)).toBe(true);
+    expect(COOKING_SKILLS).not.toContain(ingCanonOfHummus);
+
+    // Wrong-field placement: an ingredient alias key sitting in cooking_skills
+    // is NOT folded by R7 (and would not become a valid cooking value).
+    const r7 = normalizeRecordInput({ cooking_skills: ['Hummus'] });
+    expect((r7.rawInput as { cooking_skills: string[] }).cooking_skills).toEqual(['Hummus']);
+    expect(r7.normalizations).not.toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
+
+    // A cooking alias key sitting in main_ingredients is NOT folded by R8.
+    const r8 = normalizeRecordInput({ main_ingredients: ['Sautéing'] });
+    expect((r8.rawInput as { main_ingredients: string[] }).main_ingredients).toEqual(['Sautéing']);
+    expect(r8.normalizations).not.toContain(NORMALIZATION_RULES.mainIngredientsAliasFloor);
   });
 });
