@@ -84,6 +84,15 @@ describe('c02 manifest — invariant (a): both files parse with the expected sha
     expect(typeof aliases.aliasMap).toBe('object');
     expect(Array.isArray(aliases.drops)).toBe(true);
   });
+
+  it('aliasMap has the locked key count (187 — drift guard)', () => {
+    expect(Object.keys(aliases.aliasMap)).toHaveLength(187);
+  });
+
+  it('declares the case-insensitive + trim matching in its provenance', () => {
+    const note = JSON.stringify(aliases.provenance);
+    expect(note.toLowerCase()).toContain('case-insensitive');
+  });
 });
 
 // ---------------------------------------------------------------------------

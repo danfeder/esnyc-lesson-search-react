@@ -12,7 +12,8 @@
       "Vague LLM-judgment tags are NOT folded here (the LLM replaces them by reading the lesson): Basic Skills, Cooking Techniques, Stovetop cooking, Various techniques, Cooking, Heating. Also left to the LLM: the multi-group words Fruits/Vegetables (span many groups), Herbs (Fresh herbs vs Spices), and the EXACT bare group names Spices/Dairy (left so the full re-read can upgrade to a specific). By contrast, NEAR-SYNONYMS of a single group ARE floored to that group: Legumes→Beans & legumes, Citrus→Citrus fruits, Dried fruit→Dried fruits, Seeds/Nuts→Nuts & seeds, Various spices→Spices. This floor-vs-LLM boundary is provisional and pilot-tuned (design §3).",
       "IDEMPOTENCY PRECONDITION (P1.3): no canonical value (cooking ∪ groups ∪ specifics) is an aliasMap KEY — canonical values map to themselves implicitly. So 'Measuring', 'Baking', 'Alliums', 'Chickpeas', 'Citrus fruits', 'Oranges', 'Lime', 'Apples', 'Coconut' are absent as keys.",
       "Every aliasMap VALUE is a member of c02-vocab.json's canonical set.",
-      "Pantry B-lite: Sugar (and its sweetener kin) → 'Sweeteners' group; Salt/Oil/Soy sauce → drops."
+      "Pantry B-lite: Sugar (and its sweetener kin) → 'Sweeteners' group; Salt/Oil/Soy sauce → drops.",
+      "MATCHING IS CASE-INSENSITIVE + TRIM (normalize.ts matchKey = NFC + trim + toLowerCase). Keys are matched on their lowercased+trimmed form, so case twins (Mixing/mixing, Chopping/chopping, Beets/beets, Alliums/alliums, …) need NO explicit lowercase/uppercase duplicate key. Additionally, every canonical VALUE is loaded into the per-field match lookup at its own matchKey (the 'canonical-case rule'), so a correctly-spelled-but-miscased canonical (e.g. 'beets'→'Beets', 'tahini'→'Tahini') normalizes to canonical casing for free. Plurals/synonyms are NOT caught by case-folding and DO need explicit keys (Avocados→Avocado, Sun butter/Sunbutter→Sunflower butter, Limes/Lemons→Lime/Lemon, Cucumber/Carrot→Cucumbers/Carrots). The loader THROWS at load time if two match-keys collide onto different canonicals (verified zero collisions on the real data)."
     ]
   },
   "aliasMap": {
@@ -181,6 +182,8 @@
     "Flaxseed": "Nuts & seeds",
     "Almonds": "Nuts & seeds",
     "Pepita seeds": "Nuts & seeds",
+    "Sun butter": "Sunflower butter",
+    "Sunbutter": "Sunflower butter",
     "Seeds": "Nuts & seeds",
     "seeds": "Nuts & seeds",
     "Nuts": "Nuts & seeds",
@@ -202,6 +205,7 @@
     "Plantains": "Tropical fruits",
     "Mango": "Tropical fruits",
     "Pineapple": "Tropical fruits",
+    "Avocados": "Avocado",
     "Coconut flakes": "Coconut",
 
     "Oat milk": "Dairy alternatives",
