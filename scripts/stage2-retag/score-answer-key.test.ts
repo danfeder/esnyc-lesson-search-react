@@ -127,11 +127,13 @@ const contestant = [
 // ---------------------------------------------------------------------------
 
 describe('extractFieldTokens', () => {
-  it('SCORED_FIELDS is the 13 result properties', () => {
+  it('SCORED_FIELDS is the 15 result properties (incl. C02 cooking_skills + main_ingredients)', () => {
     expect(SCORED_FIELDS).toContain('activity_type');
     expect(SCORED_FIELDS).toContain('grade_levels');
     expect(SCORED_FIELDS).toContain('academic_concepts');
-    expect(SCORED_FIELDS).toHaveLength(13);
+    expect(SCORED_FIELDS).toContain('cooking_skills');
+    expect(SCORED_FIELDS).toContain('main_ingredients');
+    expect(SCORED_FIELDS).toHaveLength(15);
   });
 
   it('returns flat array values verbatim for flat enum fields', () => {

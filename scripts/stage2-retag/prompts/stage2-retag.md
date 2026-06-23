@@ -103,3 +103,19 @@ Tag an observance only when the lesson is explicitly built around or tied to it 
 garden_skills describe GARDEN practice — only tag them for activities happening in or about a garden. A skill-shaped activity that happens in the kitchen or classroom without garden material or garden context does NOT get a garden_skills tag: smelling cooking spices, washing produce, or an indoor game with plant pictures is not Sensory exploration / Harvesting / Garden exploration. A cooking lesson where nobody visits the garden gets an empty array, even when its recipe discusses crops or soil.
 
 Within a garden context, tag the garden skills students hands-on practice or that the lesson explicitly teaches as a focus (a planting lesson where students also briefly water gets Planting; add Watering techniques only if watering is taught/practiced as a skill, not as incidental care).
+
+### cooking_skills
+
+The specific cooking skills/techniques students actually practice in a hands-on cooking block (same cooking bar as cooking_methods — a tasting-only or garden-only lesson gets an empty array). Tag every canonical skill the Agenda shows students DO: Measuring, Knife skills, Mixing & stirring, Boiling & simmering, Roasting, Baking, Wrapping & rolling, etc.
+
+**Replace vague tags with the real technique.** NEVER emit a placeholder like "Basic Skills" or "Cooking Techniques" — those are not canonical values. Read the Agenda and assign the actual skill taught: a lesson that says "basic cooking skills" but has students dice vegetables and sauté them is `Knife skills` + `Sautéing & stir-frying`, not a generic catch-all. Frying / stovetop frying is `Sautéing & stir-frying`.
+
+### main_ingredients
+
+The lesson's main ingredients, tagged at TWO levels: ingredient **groups** (e.g. Leafy greens, Nightshades, Beans & legumes, Citrus fruits) plus **specific** foods (e.g. Tomatoes, Garlic, Chickpeas). Tag the group whenever an ingredient from that group is central to the lesson. Add 1–3 specific values only when a specific food is genuinely central to the lesson (the dish is about it, it is the focus ingredient) — do not list every incidental pantry item.
+
+**Always tag the parent group alongside a specific.** Every specific food belongs to a group; whenever you tag a specific, ALSO tag its group in the same array. For example, tag `[Nightshades, Tomatoes]`, not `Tomatoes` alone. A few specifics are group-less and stand alone (Celery, Fennel, Seaweed (nori), Cocoa & chocolate). Melons belongs under "Squash, cucumbers & melons".
+
+**Split the old "Herbs & Aromatics" catch-all.** That legacy umbrella conflated two distinct new groups: tag `Fresh herbs` for fresh leafy herbs (cilantro, parsley, mint, basil) and `Alliums` for onions, garlic, scallions, leeks, and shallots. Choose the group(s) the actual ingredients fall into — never a generic "herbs" or "aromatics" tag.
+
+**Pantry staples (B-lite rule).** Tag `Sweeteners` (with `Sugar` folding into it) ONLY when the lesson is genuinely ABOUT the sweetener (e.g. a lesson on sugar, honey, or sweetness). Do NOT tag salt, oil, or soy sauce at all — these are never-stored background staples, even when the recipe uses them.

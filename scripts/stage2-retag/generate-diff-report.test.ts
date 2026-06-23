@@ -141,7 +141,7 @@ describe('buildDiffReport — coverage', () => {
     expect(report.unknownInRun).toEqual(['lesson-ghost']);
   });
 
-  it('covers all 12 main-pass fields in canonical order', () => {
+  it('covers all 14 main-pass fields in canonical order', () => {
     expect(report.fields.map((f) => f.field)).toEqual([
       'activity_type',
       'tags',
@@ -155,6 +155,8 @@ describe('buildDiffReport — coverage', () => {
       'cooking_methods',
       'observances_holidays',
       'garden_skills',
+      'cooking_skills',
+      'main_ingredients',
     ]);
   });
 });

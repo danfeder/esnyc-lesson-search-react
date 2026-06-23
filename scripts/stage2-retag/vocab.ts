@@ -46,6 +46,12 @@ export const MAIN_PASS_FIELDS = [
   'cooking_methods',
   'observances_holidays',
   'garden_skills',
+  // C02 (PR F): the two largest free-form vocabularies, re-tagged to the
+  // decided canonical worksheet vocab. cooking_skills is a plain flat enum
+  // (like garden_skills); main_ingredients is a flat enum over {groups ∪
+  // specifics} carrying a parent-map orphan-specific refinement (design §4 Q2).
+  'cooking_skills',
+  'main_ingredients',
 ] as const;
 
 export type MainPassField = (typeof MAIN_PASS_FIELDS)[number];
@@ -101,6 +107,24 @@ const enumsJsonSchema = z.object({
   cultural_responsiveness_features: z.array(z.string().min(1)).min(1),
 });
 
+/**
+ * The C02 provisional canonical manifest (`data/c02-vocab.json`, P1.1). A NEW
+ * split file-shape that the worksheet-artifact `flattenVocabArtifact` adapter
+ * CANNOT express — the specifics carry a `{value, parent}` parent map, and the
+ * deterministic alias-floor lives in a sibling `c02-alias-map.json`. Hence a
+ * dedicated loader below (`loadC02Manifest`) rather than reusing the adapter.
+ */
+const c02VocabSchema = z.object({
+  provenance: z.record(z.unknown()),
+  cookingSkills: z.array(z.string().min(1)).min(1),
+  mainIngredientsGroups: z.array(z.string().min(1)).min(1),
+  mainIngredientsSpecifics: z
+    .array(z.object({ value: z.string().min(1), parent: z.string().min(1).nullable() }))
+    .min(1),
+});
+
+export type C02Manifest = z.infer<typeof c02VocabSchema>;
+
 /** The 6 walkthrough-locked smaller fields (local data file). */
 const smallerFieldsSchema = z.object({
   provenance: z.record(z.unknown()),
@@ -140,6 +164,52 @@ export function flattenVocabArtifact(artifact: VocabArtifact): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// C02 manifest loader (bespoke — the split parent-bearing file-shape)
+// ---------------------------------------------------------------------------
+
+const C02_VOCAB_PATH = 'scripts/stage2-retag/data/c02-vocab.json';
+
+/** Loads + Zod-validates the C02 provisional canonical manifest. */
+export function loadC02Manifest(): C02Manifest {
+  return c02VocabSchema.parse(readJsonFile(C02_VOCAB_PATH));
+}
+
+/**
+ * The flat main_ingredients enum = groups ∪ specifics (24 + 46 = 70). The
+ * two-level worksheet design is represented flatly (design §4 Q2); the
+ * group↔specific relationship lives in the parent map below, not in the enum.
+ */
+export function c02MainIngredientsValues(manifest: C02Manifest): string[] {
+  const values = [
+    ...manifest.mainIngredientsGroups,
+    ...manifest.mainIngredientsSpecifics.map((s) => s.value),
+  ];
+  const seen = new Set(values);
+  if (seen.size !== values.length) {
+    const dupes = values.filter((v, i) => values.indexOf(v) !== i);
+    throw new Error(
+      `c02-vocab.json has duplicate main_ingredients values: ${[...new Set(dupes)].join(', ')}`
+    );
+  }
+  return values;
+}
+
+/**
+ * specific → required-parent-group map, derived directly from the manifest
+ * (single source of truth — never duplicated into a second hardcoded const).
+ * A `null` parent means the specific is group-less (no parent requirement);
+ * those entries are intentionally EXCLUDED from the map, so a lookup miss =
+ * "no parent required". Groups themselves are never keys here.
+ */
+export function c02IngredientParentMap(manifest: C02Manifest): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const { value, parent } of manifest.mainIngredientsSpecifics) {
+    if (parent !== null) map[value] = parent;
+  }
+  return map;
+}
+
+// ---------------------------------------------------------------------------
 // Assembly
 // ---------------------------------------------------------------------------
 
@@ -162,6 +232,7 @@ export function loadVocab(): Stage2Vocab {
   const smaller = smallerFieldsSchema.parse(
     readJsonFile('scripts/stage2-retag/data/smaller-fields.vocab.json')
   );
+  const c02 = c02VocabSchema.parse(readJsonFile(C02_VOCAB_PATH));
 
   const academicIntegrationValues = [...smaller.fields.academic_integration];
 
@@ -276,6 +347,28 @@ export function loadVocab(): Stage2Vocab {
       selection: 'multi',
       column: 'garden_skills',
       jsonbKey: 'gardenSkills',
+      shape: 'string-array',
+    },
+    cooking_skills: {
+      field: 'cooking_skills',
+      label: 'Cooking Skills',
+      // C02: flat 23-value enum, like garden_skills (no two-level tier).
+      values: [...c02.cookingSkills],
+      selection: 'multi',
+      column: 'cooking_skills',
+      jsonbKey: 'cookingSkills',
+      shape: 'string-array',
+    },
+    main_ingredients: {
+      field: 'main_ingredients',
+      label: 'Main Ingredients',
+      // C02: flat enum over {groups ∪ specifics} (24 + 46 = 70). The
+      // group↔specific parent map drives a result-schema superRefine
+      // (buildResultSchema), NOT a second structured shape (design §4 Q2).
+      values: c02MainIngredientsValues(c02),
+      selection: 'multi',
+      column: 'main_ingredients',
+      jsonbKey: 'mainIngredients',
       shape: 'string-array',
     },
   };
