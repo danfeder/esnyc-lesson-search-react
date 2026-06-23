@@ -240,6 +240,63 @@ describe('summarizeRun — normalization provenance (code-enforced rules)', () =
   });
 });
 
+describe('summarizeRun — C02 fields are field-agnostic (no per-field gap)', () => {
+  // validate-output never enumerates a field list: every per-field tally keys
+  // off RUNTIME field names (Object.keys over zod.fieldErrors / normalizations
+  // / repairs). So cooking_skills + main_ingredients flow through with zero
+  // code change — this test pins that contract for the two new fields.
+  const base = runRecords[0]; // lesson-roots, main, Zod-passed
+  const c02Records: RunRecord[] = [
+    {
+      ...base,
+      id: 'lesson-c02-main',
+      phase: 'main',
+      zod: {
+        passed: false,
+        fieldErrors: { main_ingredients: ['main_ingredients.0: Invalid enum value'] },
+      },
+      normalizations: ['cookingSkillsAliasFloor', 'ingredientParentReconcile:Squash'],
+      rawInput: { cooking_skills: ['Knife skills'], main_ingredients: ['banana'] },
+    },
+    {
+      ...base,
+      id: 'lesson-c02-repair',
+      phase: 'repair',
+      zod: { passed: true, fieldErrors: null },
+      repairs: {
+        main_ingredients: {
+          previous: ['banana'],
+          repaired: ['Bananas'],
+          usage: null,
+          costUsd: null,
+          latencyMs: null,
+          error: null,
+        },
+      },
+      rawInput: { cooking_skills: ['Knife skills'], main_ingredients: ['Bananas'] },
+    },
+  ];
+  const c02Summary = summarizeRun(c02Records, corpus);
+
+  it('tallies a main_ingredients Zod failure under its runtime field name', () => {
+    expect(c02Summary.zodFailuresByField.main_ingredients).toBe(1);
+  });
+
+  it('tallies the C02 normalization rules (alias-floor + parent-reconcile) by base rule', () => {
+    expect(c02Summary.normalizations.cookingSkillsAliasFloor).toBe(1);
+    // `rule:subject` provenance rolls up under the base rule name.
+    expect(c02Summary.normalizations.ingredientParentReconcile).toBe(1);
+  });
+
+  it('tallies a main_ingredients repair attempt under its runtime field name', () => {
+    expect(c02Summary.repair.fields.main_ingredients).toEqual({
+      attempted: 1,
+      succeeded: 1,
+      failed: 0,
+    });
+  });
+});
+
 describe('parseArgs hardening', () => {
   it('throws when a value-taking flag is missing its value', () => {
     expect(() => parseArgs(['--run'])).toThrow(/--run requires a value/);
