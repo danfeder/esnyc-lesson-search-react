@@ -1,7 +1,7 @@
 /**
  * Canonical vocab assembly for the Stage 2 re-tag main pass (task A3).
  *
- * Loads the locked canonical vocabularies for all 12 main-pass fields:
+ * Loads the locked canonical vocabularies for all 14 main-pass fields:
  *
  *   - 4 PR-1 closed enums from `src/types/generated/enums.json`
  *     (activity_type, tags, season_timing, cultural_responsiveness_features);
@@ -13,7 +13,10 @@
  *   - the 6 walkthrough-locked smaller fields from
  *     `scripts/stage2-retag/data/smaller-fields.vocab.json` (design doc §4
  *     OQ2 lock; spellings transcribed from filterDefinitions.ts + the census
- *     artifact).
+ *     artifact);
+ *   - the 2 C02 re-tag fields (cooking_skills, main_ingredients) from
+ *     `scripts/stage2-retag/data/c02-vocab.json` via loadC02Manifest (design
+ *     doc §4 Q1 lock).
  *
  * Each field declares its enum values, display label, selection arity, and
  * the dual-write targets (lessons text[] column + metadata JSONB key, census
@@ -63,7 +66,7 @@ export interface FieldVocab {
   label: string;
   /** Locked canonical enum values. */
   values: string[];
-  /** Tagging-output arity. All 12 main-pass fields are array-valued in storage. */
+  /** Tagging-output arity. All 14 main-pass fields are array-valued in storage. */
   selection: 'multi' | 'single';
   /**
    * Dual-write target: `lessons.<column>` text[] — `null` for
@@ -218,7 +221,7 @@ function readJsonFile(relPath: string): unknown {
 }
 
 /**
- * Loads and assembles the locked canonical vocab for all 12 main-pass fields.
+ * Loads and assembles the locked canonical vocab for all 14 main-pass fields.
  * Throws (loudly, via Zod) if any input file is missing or malformed.
  */
 export function loadVocab(): Stage2Vocab {

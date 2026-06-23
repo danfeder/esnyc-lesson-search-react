@@ -9,13 +9,13 @@
  * `submit_tags` carrying `cache_control: {type:'ephemeral'}`, enums inline
  * in `input_schema`, forced via `tool_choice: {type:'tool'}`.
  *
- * Property set: the 12 main-pass vocab fields PLUS `grade_levels` (the
+ * Property set: the 14 main-pass vocab fields PLUS `grade_levels` (the
  * grade array the impl plan's result schema names; enum copied verbatim
  * from `FILTER_CONFIGS.gradeLevels` in `src/utils/filterDefinitions.ts` —
  * `src/types/lessonMetadata.zod.ts` has no grade enum). The everyday↔
  * framework synonym pairs (D5/OQ10: same call) live INSIDE the
  * `academic_concepts` subject-keyed object, so the top-level property count
- * is 13.
+ * is 15.
  *
  * Token-mass note: the academic-concepts enum (119 values) is needed at 12
  * sites (6 subjects × framework + synonym-pair slots). Inlining it 12×
@@ -83,7 +83,7 @@ export const SONNET_MIN_CACHEABLE_PREFIX_TOKENS = 2048;
  */
 export const GRADE_LEVELS = ['3K', 'PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8'] as const;
 
-/** Top-level result properties: the 12 vocab fields + the grade array. */
+/** Top-level result properties: the 14 vocab fields + the grade array. */
 export const RESULT_PROPERTIES = [...MAIN_PASS_FIELDS, 'grade_levels'] as const;
 
 // ---------------------------------------------------------------------------

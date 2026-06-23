@@ -5,11 +5,11 @@
  * the PRODUCTION database to `scripts/stage2-retag/artifacts/corpus.jsonl`,
  * one JSON record per line:
  *
- *   { id, title, content_text, <11 text[] field columns>, academic_concepts }
+ *   { id, title, content_text, <13 text[] field columns>, academic_concepts }
  *
  * - `id` is `lessons.lesson_id` (the stable text id used throughout the
  *   PR 6 evidence artifacts and the OQ5 exclusion list).
- * - The 11 column names come from the vocab module's dual-write mapping
+ * - The 13 column names come from the vocab module's dual-write mapping
  *   (task A3) — `academic_concepts` is the documented exception with no
  *   text[] column; it is selected as `metadata->academicConcepts`.
  *
