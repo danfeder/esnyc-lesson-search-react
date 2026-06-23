@@ -374,6 +374,14 @@ function evaluateGate3(winner: ContestantScore): Gate3Result {
     }
   }
 
+  // Gate ③ is a PRECISION gate (design §4 Q5): zero added-specifics predicted
+  // ⇒ no false positives ⇒ null precision ⇒ pass (the conservative reading of a
+  // precision gate). NOTE for the P2 greenlight tuning: this means a model that
+  // predicts ONLY group tags (never the two-level specifics) clears ③ vacuously
+  // — recall on added specifics is left to gates ①/②'s judgment-row F1. If the
+  // pilot shows a contestant gaming this, re-tune here (e.g. require
+  // `addedSpecificPrecision !== null`). Q5 locks thresholds as re-tunable at the
+  // pilot, so the behavior is intentionally left as-is for P1.
   const addedSpecificPrecision =
     pooledTp + pooledFp === 0 ? null : pooledTp / (pooledTp + pooledFp);
   const precisionOk =

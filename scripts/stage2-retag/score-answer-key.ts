@@ -42,7 +42,7 @@
  *
  * Reporting only: no API calls, no DB access.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -647,6 +647,14 @@ function runC02Mode(args: Args, key: KeyRecord[]): void {
   const winnerRecords = loadRunContestant(readFileSync(winnerSpec.path, 'utf8'));
 
   const corpusPath = args.v3FromCorpus ?? DEFAULT_CORPUS_PATH;
+  if (!existsSync(corpusPath)) {
+    throw new Error(
+      `--c02 requires the corpus file (current tags), not found at: ${corpusPath}\n` +
+        `Pass --v3-from-corpus <path>, or regenerate artifacts/corpus.jsonl first ` +
+        `(the corpus must include cooking_skills + main_ingredients — see the P2.1 ` +
+        `corpus-regeneration prerequisite).`
+    );
+  }
   const corpus = parseTaggedJsonl(readFileSync(corpusPath, 'utf8')) as CorpusCurrentTags[];
   const rulesRecords = computeRulesBaseline(corpus);
 

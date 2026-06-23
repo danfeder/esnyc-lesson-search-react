@@ -57,12 +57,15 @@
  * names are never keys) makes the alias-floor a single-pass fixed point and the
  * floor∘reconcile composition idempotent.
  *
- * normalizeRecordInput is PURE (no mutation of its argument), IDEMPOTENT
- * (re-normalizing normalized output is a no-op), and NEVER silent (every
- * applied rule is named in the returned `normalizations` list). run-retag,
- * generate-diff-report, and validate-output all route raw tool_use input
- * through it so the persisted + diffed + applied values are the normalized
- * ones.
+ * normalizeRecordInput does NOT mutate its argument, is IDEMPOTENT
+ * (re-normalizing normalized output is a no-op), and is NEVER silent (every
+ * applied rule is named in the returned `normalizations` list). It is not pure
+ * in the strict sense: on first call it lazily loads + memoizes the C02
+ * alias-floor data (`data/c02-alias-map.json`, `data/c02-vocab.json`) via
+ * `loadC02Floor()` — a one-time synchronous file read that throws ENOENT if
+ * those files are absent. run-retag, generate-diff-report, and validate-output
+ * all route raw tool_use input through it so the persisted + diffed + applied
+ * values are the normalized ones.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
