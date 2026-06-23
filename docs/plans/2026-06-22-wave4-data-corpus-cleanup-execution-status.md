@@ -1,10 +1,12 @@
 # Wave 4 — Data / Corpus Cleanup — Execution Status
 
-**Last updated:** 2026-06-22 by Session 3 (PR1 reconciled + **PR2 SHIPPED + PROD-VERIFIED**)
+**Last updated:** 2026-06-22 by Session 4 (**PR3 SHIPPED → WAVE 4 COMPLETE**)
 
 ## Current State
 
-**Phase:** **PR1 + PR2 BOTH SHIPPED + PROD-VERIFIED. Only PR3 (C88) remains — Wave 4 ~⅔ done.** PR1 (C12+C83) = #538 `9f75a15` (PROD applied 22:16 UTC). **PR2 (C11+C49) = #539 squash `af75f65` (merged 23:55, PROD "Apply to Production" succeeded 23:58:54, MCP-verified).** Active branch = `main` (synced); tree carries only the pending status-doc update (rides PR3). **Next = PR3 (C88) — independent, no DB write, no PROD mutation; recommend a fresh session.**
+**Phase:** **✅ WAVE 4 COMPLETE — all 3 PRs shipped + verified.** PR1 (C12+C83) = #538 `9f75a15` (PROD-applied + MCP-verified). PR2 (C11 ghost hard-delete + C49) = #539 `af75f65` (PROD-applied + MCP-verified; corpus 767→764). **PR3 (C88 dev-seed) = #540 squash `9db76d3` (merged 2026-06-22).** Active branch = `main`. **No further Wave-4 work.** C08 closed as a no-op; **C02 relocated to its own `scripts/stage2-retag` session (next-up, separate).** Defer C01 + C09/C07/C03.
+
+**PR3 summary (C88 — no DB write, no migration, no PROD mutation):** authored `scripts/export-dev-seed.mjs`, a read-only PROD→local seed generator (anon publishable key only; parsed-`new URL().hostname` prod-guard; count-first paging + truncation/zero-row/invariant guards) + shared `scripts/lib/grade-levels.mjs` resolver (`gradeLevels ?? gradeLevel`, empty-array-safe) wired into BOTH `import-data.js` and `identify-and-restore-missing-lessons.ts` + `npm run export-dev-seed` + `scripts/README` docs. **The seed `data/consolidated_lessons.json` stays GITIGNORED** (it was deliberately removed + ignored in #133; the generator is the durable fix vs a re-staling committed snapshot — `[user-verdict]` Option B). **Round-trip gate (supervisor, local DB): 764/764 rows import with non-NULL `grade_levels`, 0 empty, 0 mismatch.** 3 bot rounds all triaged with GATE 3 (Claude reviewer + Codex) + GATE 4 (Codex, different family); notable calls: substring prod-guard → parsed-hostname exact-match (Codex-verified unbypassable); **rejected** the bot suggestion to soften the truncation guard (would hide silent data loss; Codex confirmed); corrected two overstated bot rationales (anon-key "exfiltration" — it's the public key; "data/ missing on clone" — `data/vocab/*` is tracked); documented (not over-engineered) a benign offset-paging race. Round-capped at round 3 (F1 reject, F2 EXPORT_SOURCE_URL deferred-as-harmless, F3 stale-count fixed).
 
 **PR2 PROD verify (supervisor MCP, source of truth):** migration recorded; corpus live **767→764 (−3 delta)**; ghosts present/by-identity **0/0**; `wave4_c11_ghost_rollback` = **3** (recovery artifact preserved); `search_lessons` = **1 overload / 15-arg**, no `filter_lesson_format`; `search_lessons()` total_count **764** with **0 ghosts in results**; all 13 ref-probes post-delete **0**. TEST verify identical (745→742). PROD pre-approval scan was all-clear (3 ghosts, 0 cascade children, 0 probes) immediately before apply.
 
@@ -61,9 +63,9 @@
 
 ## In flight
 
-- **Nothing building.** PR1 + PR2 both SHIPPED + PROD-verified. **Next = PR3 (C88)** — author a read-only PROD→seed generator (`scripts/export-dev-seed.mjs`) + regenerate `data/consolidated_lessons.json` from PROD-live (~764, camelCase envelope per `import-data.js`). No DB write, no migration, no PROD mutation, no approval gate. Recommend a fresh session (independent work; this session's context is heavily used). Impl plan §"PR 3" / design §4 Q14 — the round-trip `import-data.js` test (non-NULL `grade_levels`, the `gradeLevel`/`gradeLevels` key reconciliation) is the real gate.
-- **PR-cycle archival pending:** at PR3 kickoff, move Session 0–3 entries into `-execution-status-archive.md` (audit for memory-promotable learnings first — see this session's log).
-- **This session's status-doc update is uncommitted on `main`** (can't push to main directly) → it rides PR3's branch (next session cuts PR3 from main, carrying this change). NEVER `git add -A`.
+- **Nothing building. ✅ WAVE 4 COMPLETE** — PR1 #538, PR2 #539, PR3 #540 all shipped. No open Wave-4 work.
+- **PR-cycle archival:** folded into close — for a closed initiative the full Session 0–4 log stays in this doc as the historical record (not split to `-execution-status-archive.md`). Memory-promotable learnings were lifted to `project_deferred_work_campaign` + the satellite at close.
+- **Next initiative (separate): C02** cooking_skills/main_ingredients vocab re-tag in its own `scripts/stage2-retag` session — carry-forward findings in design §3.1/§4 Q11–14a/§8.
 
 ## Blocked
 
@@ -150,3 +152,18 @@ Decisions/learnings (promote at initiative close):
 - **Env-independent guards (pass on 0 rows locally, enforce where rows exist, idempotent) are the house pattern** for corpus mutations that must traverse local→TEST→PROD (PR1 + PR2 both).
 
 Next session picks up: **PR3 (C88)** — fresh session. Cut `chore/wave4-pr3-dev-seed-refresh` from `main` (carries this session's uncommitted status-doc update); do the PR-cycle archival of Session 0–3 entries first; then author the read-only generator + round-trip-test the seed.
+
+### Session 4 — 2026-06-22 — PR3 (C88) build → ship → merge → **WAVE 4 COMPLETE**
+
+Major events:
+- **Orientation:** caught the standing git-vs-status drift (header said "branch main / PR3 next"; git showed `chore/wave4-pr3-dev-seed-refresh` already cut with the Session-3 status commit `694af98`). Trusted git. **Supervisor pre-flight against live PROD (read-only MCP):** live=764 (not the doc's TEST-derived "~745"), 0 rows with `metadata.lessonFormat`, `anon` HAS direct SELECT on `lessons` (policy "viewable by everyone" `USING(true)`) — so the anon-key generator path is viable; `neither_key=0` + `col_empty_or_null=0` → emit-metadata-as-is + importer `gradeLevels ?? gradeLevel` guarantees non-NULL grades for all 764.
+- **Task 3.1 (executor + supervisor re-verify):** `scripts/export-dev-seed.mjs` + `scripts/lib/grade-levels.mjs` (+ TDD test) + `import-data.js` resolver swap. **Round-trip gate (supervisor, local DB): 764/764 import non-NULL `grade_levels`, 0 empty/mismatch.**
+- **`[user-verdict]` — seed stays GITIGNORED (Option B):** discovered the seed was deliberately removed + gitignored in #133 (the executor force-added it); surfaced the reverse-a-prior-decision choice; user chose keep-gitignored → the generator is the deliverable. Rebuilt the commit to exclude the 1.7M seed; added `npm run export-dev-seed` + README.
+- **GATE 3** (Claude reviewer + Codex) pre-push; **3 bot rounds** each GATE-4-Codex'd (different family). Real fixes folded: sibling importer `identify-and-restore-missing-lessons.ts` (same grade bug, blast-radius-swept) → shared resolver; substring prod-guard → parsed-hostname exact-match; null-guard; mkdir insurance; stale-`831` message. **Rejected** softening the truncation guard (would hide silent data loss; Codex confirmed). Round-capped at round 3.
+- **Shipped:** PR #540, all CI green every round → user go → **squash-merged `9db76d3` → Wave 4 COMPLETE.**
+
+Decisions/learnings (promoted to `project_deferred_work_campaign` at close):
+- **Verify a plan's FILE TARGETS against actual VCS status before "refreshing"** — the plan's "re-export `data/consolidated_lessons.json`" implied a committed file; it was deliberately gitignored in #133. Instance of "look at the target before overwriting."
+- **Doc counts are point-in-time** — the design's "~745" was a TEST number; PROD-live was 764. Always re-query.
+- **Cross-family GATE3/4 Codex earned its keep again** (caught the substring-guard bypass; confirmed the truncation-guard reject). Reinforces `feedback_codex_over_crossexamine`.
+- **Initiative CLOSED.** Next (separate): C02 vocab re-tag in its own `scripts/stage2-retag` session.
