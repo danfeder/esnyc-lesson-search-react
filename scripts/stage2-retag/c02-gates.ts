@@ -301,13 +301,19 @@ function evaluateGate1(
     // STRICT: winner must be >= rules on each field.
     if (winner < rules) failingFields.push({ field, winner, rules });
   }
+  // The regression check is only meaningful if the clean-core carries gold C02
+  // tags to (potentially) regress. An all-untagged clean-core scores 0-vs-0 on
+  // both fields and would pass vacuously despite measuring nothing.
+  const cleanCoreHasGold = cleanCore.some((rec) =>
+    C02_FIELDS.some((f) => extractFieldTokens(f, rec).length > 0)
+  );
   return {
-    // Fail closed on an EMPTY clean-core: no-regression is unverifiable on 0
-    // rows, and a 0-vs-0 micro-F1 comparison would otherwise pass vacuously. The
-    // sampler aims for a clean-core slice; if set-cover ever starves it, don't
-    // greenlight on an unmeasured gate. (Codex/round-2 finding; hardened before
+    // Fail closed on a clean-core that can't exercise the gate: zero rows, OR
+    // rows that carry no gold C02 tags at all (no-regression unverifiable). The
+    // sampler aims for a tagged clean-core slice; don't greenlight on an
+    // unmeasured gate. (Codex/round-2 + bot/round-4 findings; hardened before
     // merge.)
-    passed: cleanCore.length > 0 && failingFields.length === 0,
+    passed: cleanCore.length > 0 && cleanCoreHasGold && failingFields.length === 0,
     perField,
     failingFields,
     cleanCoreCount: cleanCore.length,
@@ -412,8 +418,12 @@ function evaluateGate4(winner: ContestantScore, winnerRecords: TaggedRecord[]): 
   const ingredientScore = winner.fields.main_ingredients;
   const sweetenersPv = ingredientScore?.perValue.find((pv) => pv.value === GATE4_SWEETENERS_VALUE);
   const sweetenersPrecision = sweetenersPv?.precision ?? null;
+  // Mirror gate ③ (fail closed on null): null precision = the winner predicted
+  // NO Sweeteners. The set-cover gold guarantees Sweeteners >= 2x, so predicting
+  // none is a real miss of the one kept pantry staple — don't pass vacuously.
+  // (Codex/round-4 review finding; consistent with the gate-③ hardening.)
   const precisionOk =
-    sweetenersPrecision === null || sweetenersPrecision >= GATE4_SWEETENERS_PRECISION_FLOOR;
+    sweetenersPrecision !== null && sweetenersPrecision >= GATE4_SWEETENERS_PRECISION_FLOOR;
 
   // No never-stored literal (Salt/Oil/Soy sauce) may survive in ANY prediction.
   // Compare on matchKey (NFC.trim().toLowerCase()) so a casing/spacing variant

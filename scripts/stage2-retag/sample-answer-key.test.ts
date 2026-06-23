@@ -624,6 +624,23 @@ describe('assertCorpusHasC02Tags — stale-corpus guard', () => {
   });
 });
 
+describe('parseFilledWorksheet — C02 fields round-trip', () => {
+  it('captures human-filled cooking_skills + main_ingredients (not silently dropped)', () => {
+    // P1.2 added the 2 fields to MAIN_PASS_FIELDS, so renderWorksheet now emits
+    // f:cooking_skills / f:main_ingredients rows. The parser must capture them
+    // (FinalLabelRecord + blank() include them) — else the human-adjudicated
+    // gold tags are silently discarded into an empty answer key.
+    const md = [
+      '<!-- lesson-id: L1 -->',
+      '| Cooking Skills <!-- f:cooking_skills --> | | Baking, Knife skills |',
+      '| Main Ingredients <!-- f:main_ingredients --> | | Beets |',
+    ].join('\n');
+    const [rec] = parseFilledWorksheet(md);
+    expect(rec.cooking_skills).toEqual(['Baking', 'Knife skills']);
+    expect(rec.main_ingredients).toEqual(['Beets']);
+  });
+});
+
 describe('buildC02Sample — coverage guarantee', () => {
   it('covers every one of the 93 canonical values >=2x', () => {
     const corpus = buildFullCoverageCorpus();

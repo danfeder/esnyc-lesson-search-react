@@ -141,6 +141,18 @@ describe('Gate 1 — no clean-core regression', () => {
     expect(res.gate1.cleanCoreCount).toBe(0);
     expect(res.gate1.passed).toBe(false);
   });
+
+  it('FAILS when the clean-core carries no gold C02 tags at all (measures nothing)', () => {
+    // A clean-core row exists but its gold tags are empty in both fields, so the
+    // regression check is 0-vs-0 (vacuous). Gate ① must fail closed even though
+    // cleanCoreCount > 0.
+    const eCorpus = [corpusRow('E', [], [])];
+    const eKey: KeyRecord[] = [row('E', [], [])];
+    const eWinner = [row('E', [], [])];
+    const res = evaluateC02Gates(eWinner, computeRulesBaseline(eCorpus), eKey, eCorpus);
+    expect(res.gate1.cleanCoreCount).toBe(1);
+    expect(res.gate1.passed).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -317,6 +329,21 @@ describe('Gate 4 — pantry-staple precision', () => {
     const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
     expect(res.gate4.passed).toBe(true);
     expect(res.gate4.sweetenersPrecision).toBeGreaterThanOrEqual(GATE4_SWEETENERS_PRECISION_FLOOR);
+  });
+
+  it('FAILS when the winner never predicts Sweeteners (null precision = vacuous, fail closed)', () => {
+    // The set-cover gold guarantees Sweeteners >= 2x; a winner predicting none
+    // has null Sweeteners precision -> must fail closed, mirroring gate ③.
+    const winner = [
+      row('S1', [], []),
+      row('S2', [], []),
+      row('S3', [], []),
+      row('S4', [], []),
+      row('S5', [], []),
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    expect(res.gate4.passed).toBe(false);
+    expect(res.gate4.survivingNeverStored).toEqual([]); // fails on precision, not a literal
   });
 
   it('FAILS when Sweeteners precision drops below 0.8', () => {

@@ -1048,6 +1048,11 @@ export interface FinalLabelRecord {
   cooking_methods: string[];
   observances_holidays: string[];
   garden_skills: string[];
+  // C02 (P1.2 added these to MAIN_PASS_FIELDS, so the worksheet now RENDERS
+  // f:cooking_skills / f:main_ingredients rows; they MUST be present here or the
+  // `field in current` parse branch silently discards the human-filled values).
+  cooking_skills: string[];
+  main_ingredients: string[];
   academic_concepts: Record<string, string[]>;
   grade_levels: string[];
 }
@@ -1108,6 +1113,8 @@ export function parseFilledWorksheet(markdown: string, excluded?: Set<string>): 
     cooking_methods: [],
     observances_holidays: [],
     garden_skills: [],
+    cooking_skills: [],
+    main_ingredients: [],
     academic_concepts: {},
     grade_levels: [],
   });
