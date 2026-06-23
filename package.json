@@ -18,6 +18,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "import-data": "node scripts/import-data.js",
+    "export-dev-seed": "node scripts/export-dev-seed.mjs",
     "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist",
     "test:lighthouse": "npm run build && lhci autorun",
     "analyze": "npm run build && npx vite-bundle-analyzer dist/",
