@@ -4,11 +4,11 @@
 
 ## Current State
 
-**Active PR:** none. The design-lock doc changes sit on branch `chore/c02-scaffold`, **committed locally** (this session), **not pushed** — no PR open.
+**Active PR:** none. **Branch strategy (user, 2026-06-23):** `feat/c02-harness` was branched off `chore/c02-scaffold` carrying both planning commits (`2fb3bb6` scaffold + `8834ec6` design lock) — the **planning docs ship inside the P1 PR**, no separate docs PR. Nothing pushed yet.
 
-**Current task:** **Session 1 (DESIGN LOCK) COMPLETE.** Next session starts **P1 implementation** on a fresh `feat/c02-harness` branch (scripts-only, no DB), task **P1.1** — build `scripts/stage2-retag/data/c02-vocab.json` + `c02-alias-map.json` from the reconciled `q1-vocab-census.md` (TDD).
+**Current task:** **Session 1 (DESIGN LOCK) COMPLETE.** Next session starts **P1 implementation** on `feat/c02-harness` (already checked out; scripts-only, no DB), task **P1.1** — build `scripts/stage2-retag/data/c02-vocab.json` + `c02-alias-map.json` from the reconciled `q1-vocab-census.md` (TDD).
 
-**Branch:** `chore/c02-scaffold` (scaffold + design-lock commits live here; Session 0's status said "main / not yet branched" — corrected by trusting git).
+**Branch:** `feat/c02-harness` (off `chore/c02-scaffold` @ `8834ec6`). P1.1–P1.6 land here; the P1 PR (→ main) will include the 2 planning commits + the P1 implementation commits.
 
 **What Session 1 produced:** design `Status: LOCKED` (all 11 §4 questions resolved via a 6-agent discovery fan-out + 4 user verdicts, every anchor re-verified); impl plan concrete P1.1–P4b.1 tasks authored; `docs/plans/c02-session1-discovery/q1-vocab-census.md` (provisional manifest, reconciled to the locks); GATE 1B (Codex + Claude) run + all findings folded.
 
