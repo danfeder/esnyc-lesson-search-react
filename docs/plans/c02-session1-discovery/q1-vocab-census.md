@@ -105,7 +105,7 @@ G24. Sweeteners
 
 ### 2c. SPECIFIC → GROUP PARENT MAP (the source of truth for the §7 superRefine)
 
-`null` parent = group-less specific (lights up no group when tagged alone). **Confirmed group-less (5):** Celery, Fennel, Melons (worksheet) + Seaweed (nori), Cocoa & chocolate (§5 C02 additions).
+`null` parent = group-less specific (lights up no group when tagged alone). **Confirmed group-less (4):** Celery, Fennel (worksheet) + Seaweed (nori), Cocoa & chocolate (§5 C02 additions). *(Melons is parented under `Squash, cucumbers & melons` per the worksheet — corrected 2026-06-23, Session 2.)*
 
 | Specific | Parent group |
 |---|---|
@@ -119,7 +119,7 @@ G24. Sweeteners
 | Cabbage | Cruciferous |
 | Winter squash | Squash, cucumbers & melons |
 | Cucumbers | Squash, cucumbers & melons |
-| **Melons** | **`null` (group-less)** |
+| Melons | Squash, cucumbers & melons *(corrected 2026-06-23 Session 2: worksheet parents it here, not group-less)* |
 | Bananas | Tropical fruits |
 | Avocado | Tropical fruits |
 | Lemon | Citrus fruits |
@@ -156,9 +156,9 @@ G24. Sweeteners
 | **Oranges** | **Citrus fruits** *(§4 Q1 pre-add — count 7)* |
 | **Lime** | **Citrus fruits** *(§4 Q1 pre-add — count 6)* |
 
-**Specifics count:** 34 worksheet starter + 5 §5-new (Sunflower butter, Tahini, Peanut butter, Seaweed (nori), Cocoa & chocolate) + **4 §4-Q1 user-pre-added (Apples, Coconut, Oranges, Lime)** = **43 specifics** (Hummus is a *remap* into the existing `Chickpeas` specific, not a new value). **Provisional closed set = 24 groups + 43 specifics = 67 main_ingredients values** (pantry B-lite adds no literals; any re-tag-discovered additions land before the end-of-P3 freeze).
+**Specifics count:** 37 worksheet (34-row table + 3 always-available Celery/Fennel/Melons) + 5 §5-new (Sunflower butter, Tahini, Peanut butter, Seaweed (nori), Cocoa & chocolate) + **4 §4-Q1 user-pre-added (Apples, Coconut, Oranges, Lime)** = **46 specifics** (Hummus is a *remap* into the existing `Chickpeas` specific, not a new value). **Provisional closed set = 24 groups + 46 specifics = 70 main_ingredients values** (pantry B-lite adds no literals; any re-tag-discovered additions land before the end-of-P3 freeze).
 
-> NOTE (RESOLVED 2026-06-23): the worksheet's "starter 34" counts Celery/Fennel/Melons among the always-available below-cutoff specifics → 34 + 5 §5-new + 4 §4-Q1 pre-added = **43 specifics**, **67** total provisional values. `Melons` is intentionally a group-less (`null`-parent) specific **distinct from** the `Squash, cucumbers & melons` group (G7) — do not auto-parent it. The provisional set is frozen at the end of P3.
+> NOTE (CORRECTED 2026-06-23 Session 2, user-confirmed): the worksheet header reads *"Specific-foods tier — starter 34 + always-available extras"* — its 34-row table EXCLUDES Celery/Fennel/Melons, which are listed as 3 separate always-available extras (worksheet L121-122). So worksheet specifics = 34 + 3 = **37**; + 5 §5-new + 4 §4-Q1 pre-added = **46 specifics / 70** total provisional main_ingredients values. (The earlier "43/67" dropped those 3 always-available extras — arithmetic slip.) **`Melons` is parented under `Squash, cucumbers & melons`** per the worksheet's repeated intent (the group was renamed to give Melons "a discoverable home", worksheet L84-86/94-95/122), NOT group-less — group-less specifics = **4** (Celery, Fennel, Seaweed (nori), Cocoa & chocolate). The provisional set is frozen at the end of P3.
 
 ### 2d. FREEZE decision (recommendation)
 
@@ -243,7 +243,7 @@ These census rows fold as follows under the B-lite recommendation:
 
 ## 5. KEY DECISIONS — RESOLVED 2026-06-23
 
-**User verdicts (design §4 Q1):** (1) Pantry = **B-lite** (Sugar→Sweeteners; drop Salt/Oil/Soy sauce). (2) Freeze = **after re-tag discovery, end of P3**. (3) Roster = **24 groups + 43 specifics = 67** provisional. (4) Pre-add the 4 high-count specifics (**Apples, Coconut, Oranges, Lime**); the rest (Plantains/Lentils/Pears/Raisins/Dates) left to post-run discovery. (5) Casing = **Title-Case `value===label`**. The numbered list below is the original open-question framing, now settled.
+**User verdicts (design §4 Q1):** (1) Pantry = **B-lite** (Sugar→Sweeteners; drop Salt/Oil/Soy sauce). (2) Freeze = **after re-tag discovery, end of P3**. (3) Roster = **24 groups + 46 specifics = 70** provisional *(corrected from 43/67 in Session 2 — the original count dropped the 3 always-available worksheet extras; see §2c NOTE)*. (4) Pre-add the 4 high-count specifics (**Apples, Coconut, Oranges, Lime**); the rest (Plantains/Lentils/Pears/Raisins/Dates) left to post-run discovery. (5) Casing = **Title-Case `value===label`**. The numbered list below is the original open-question framing, now settled.
 
 
 1. **Pantry disposition (§2e):** confirm **B-lite** (Sugar → Sweeteners group; Salt/Oil/Soy sauce dropped) vs **Option C** (4 group-less literals).

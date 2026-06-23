@@ -6,13 +6,15 @@
 
 **Active PR:** none. **Branch strategy (user, 2026-06-23):** `feat/c02-harness` was branched off `chore/c02-scaffold` carrying both planning commits (`2fb3bb6` scaffold + `8834ec6` design lock) — the **planning docs ship inside the P1 PR**, no separate docs PR. Nothing pushed yet.
 
-**Current task:** **Session 1 (DESIGN LOCK) COMPLETE.** Next session starts **P1 implementation** on `feat/c02-harness` (already checked out; scripts-only, no DB), task **P1.1** — build `scripts/stage2-retag/data/c02-vocab.json` + `c02-alias-map.json` from the reconciled `q1-vocab-census.md` (TDD).
+**Current task:** **P1.1 COMPLETE + supervisor-verified** (commits `83da03f` manifest + `e5fed38` review-fix). Next: **P1.2** — add `cooking_skills` + `main_ingredients` to the harness output: `vocab.ts` `MAIN_PASS_FIELDS` (L36-49) + two `FieldVocab` entries in `loadVocab`; `schema.ts` an explicit line in BOTH hand-listed sites (`buildSubmitTagsTool` properties ~L251-280 AND `buildResultSchema` ~L404-419) + a `.superRefine` on main_ingredients only (orphan-specific reject per the parent map); emitter prompt `prompts/stage2-retag.md` (two-level guidance + Herbs/Alliums split + vague-tag replacement + pantry B-lite). TDD. Loader for the new split file-shape is bespoke (no `flattenVocabArtifact` reuse — verifier handoff note).
 
-**Branch:** `feat/c02-harness` (off `chore/c02-scaffold` @ `8834ec6`). P1.1–P1.6 land here; the P1 PR (→ main) will include the 2 planning commits + the P1 implementation commits.
+**⚠️ LOCK CORRECTION (Session 2, 2026-06-23, user-confirmed via AskUserQuestion):** the §4 Q1 manifest count was wrong — **main_ingredients = 24 groups + 46 specifics = 70 values** (was 43/67; the "34 worksheet" arithmetic dropped the 3 always-available extras Celery/Fennel/Melons). And **Melons is parented under "Squash, cucumbers & melons"** (was group-less) → **exactly 4 null-parent specifics** (Celery, Fennel, Seaweed (nori), Cocoa & chocolate). All 4 docs + the census §2c table/NOTE corrected. Total canonical = 23 cooking + 70 ingredients = 93.
+
+**Branch:** `feat/c02-harness` (off `chore/c02-scaffold` @ `8834ec6`). P1.1 landed (`83da03f` + `e5fed38`); P1.2–P1.6 next. The P1 PR (→ main) will include the 2 planning commits + the lock-correction docs commit + the P1 implementation commits.
 
 **What Session 1 produced:** design `Status: LOCKED` (all 11 §4 questions resolved via a 6-agent discovery fan-out + 4 user verdicts, every anchor re-verified); impl plan concrete P1.1–P4b.1 tasks authored; `docs/plans/c02-session1-discovery/q1-vocab-census.md` (provisional manifest, reconciled to the locks); GATE 1B (Codex + Claude) run + all findings folded.
 
-**The locks (carry forward):** Q2 flat `string[]` + parent-map superRefine · Q3 alias-floor + parent-reconcile R-rules in `normalize.ts` · Q4 3-layer strata + size **70** · Q5 4 gates over the **existing** `evalMetrics` precision/fp (NOT new metric math) · Q6 independent hard-case 2nd-pass gold key · Q7 harness R-rule + Zod superRefine, **no DB trigger** · Q8 Title-Case `value===label` · Q9 P3→P4a→P4b expand/contract (never bundle) · Q10 P-branch map · Q11 Opus-4.8-vs-Sonnet-4.6 bake-off (Sonnet wins ties). **Q1 vocab:** 23 cooking_skills + **67 provisional main_ingredients** (24 groups + 43 specifics incl. 4 pre-added Apples/Coconut/Oranges/Lime); **B-lite pantry** (Sugar→Sweeteners; drop Salt/Oil/Soy sauce); **freeze at end of P3**.
+**The locks (carry forward):** Q2 flat `string[]` + parent-map superRefine · Q3 alias-floor + parent-reconcile R-rules in `normalize.ts` · Q4 3-layer strata + size **70** · Q5 4 gates over the **existing** `evalMetrics` precision/fp (NOT new metric math) · Q6 independent hard-case 2nd-pass gold key · Q7 harness R-rule + Zod superRefine, **no DB trigger** · Q8 Title-Case `value===label` · Q9 P3→P4a→P4b expand/contract (never bundle) · Q10 P-branch map · Q11 Opus-4.8-vs-Sonnet-4.6 bake-off (Sonnet wins ties). **Q1 vocab:** 23 cooking_skills + **70 provisional main_ingredients** (24 groups + 46 specifics incl. 4 pre-added Apples/Coconut/Oranges/Lime); **B-lite pantry** (Sugar→Sweeteners; drop Salt/Oil/Soy sauce); **freeze at end of P3**.
 
 **Live census correction:** PROD 2026-06-23 = **121 distinct cooking_skills / 202 main_ingredients** (design §1's 122/230 was stale).
 
@@ -32,6 +34,7 @@
 
 - **Session 0 (2026-06-22):** four-file scaffold + GATE 1A.
 - **Session 1 (2026-06-23):** §4 design lock (all 11 Q's), impl-plan tasks P1.1–P4b.1 authored, GATE 1B run + folded, Q1 manifest reconciled. Design `Status: LOCKED`.
+- **Session 2 (2026-06-23):** lock correction (43→46 / Melons parent, user-confirmed) + **P1.1 done** — `c02-vocab.json` (23/24/46) + `c02-alias-map.json` (184 folds + drops) + `c02-vocab.test.ts` (18 tests). Executor→adversarial-verifier workflow; supervisor-verified (independent idempotency + count probes + test re-run + 2 MED review fixes folded).
 
 ## In flight
 
@@ -87,3 +90,19 @@ Learnings (candidates to promote):
 - Discovery flagged real census drift (main_ingredients 230→202) — always re-census live before authoring vocab tasks.
 
 Next: Session 2 = P1 implementation (branch `feat/c02-harness`, P1.1 first, TDD).
+
+### Session 2 — 2026-06-23 — lock correction + P1.1 (vocab manifest + alias-floor)
+
+Major events:
+- Ran P1.1 as an **executor→adversarial-verifier Workflow** (ultracode). Run #1 **blocked correctly**: the executor caught that the locked manifest's "43 specifics" contradicts the census §2c table (46 rows) — the "34 worksheet" arithmetic dropped the 3 always-available extras. No artifact committed; tree left pristine.
+- Supervisor independently verified against the worksheet (header literally reads "starter 34 + always-available extras") + found a **second** error: Melons was group-less in the lock but the worksheet parents it under "Squash, cucumbers & melons" (3× stated, "discoverable home" rationale). Brought both to the user via **AskUserQuestion** → both confirmed on the recommended option (46/70; Melons parented → 4 null-parents).
+- Corrected the lock across all 4 scaffold docs + census §2c table/NOTE; updated the workflow script (executor + verifier prompts) to bake in the adjudication.
+- Run #2 **complete**: `83da03f` (`c02-vocab.json` 23/24/46 + `c02-alias-map.json` 178 folds + `c02-vocab.test.ts` 17 tests). Verifier verdict **pass-with-findings** — value-set/parent-map/idempotency PASS (mutation-tested the test with 4 planted mutants, all caught); 2 MED alias under-folds (`rice` dropped; Seeds/Nuts family uncovered vs floored Legumes/Citrus).
+- Supervisor main-loop verify: independent jq probes (counts, Melons parent, no Salt/Oil/Soy/Sugar literal, 0 transitive chains, 0 canonical-as-key) + re-ran the test (17/17). Folded both MED fixes → `e5fed38` (rice + Seeds/Nuts→Nuts & seeds + provenance note documenting the near-synonym-vs-exact-group-name floor line + a positive §4c-twin test). Final: 184 folds, 18 tests, full suite 73 files/1464 tests green, `npm run check` clean.
+
+Learnings (candidates to promote):
+- **Executor "stop-and-report" on a locked-spec contradiction is load-bearing** — the blocked run prevented building a wrong byte-source that propagates to Zod + DB CHECK. The supervisor-surfaced 2nd error (Melons) shows: when one lock-error is found, re-derive the whole neighborhood from the authoritative source before re-dispatching.
+- **The worksheet > the discovery census** when they conflict — the census §2c was a transcription of the worksheet and carried 2 errors; the worksheet (the decided source) is authoritative.
+- Verifier **mutation-testing the test file** (planting mutants to prove non-vacuity) is a strong adversarial pattern worth reusing for TDD-task verification.
+
+Next: Session 2 continues (or Session 3) = **P1.2** — add both fields to the harness output schema/vocab/prompt (TDD).
