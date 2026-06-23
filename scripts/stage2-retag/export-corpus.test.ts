@@ -21,6 +21,9 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  EXPECTED_EXPORT_ROWS,
+  EXPECTED_LIVE_ROWS,
+  GHOST_STUB_LESSON_IDS,
   MIN_OVERRIDE_BODY_CHARS,
   buildCorpusRecord,
   loadBodyOverridesManifest,
@@ -41,6 +44,25 @@ afterEach(() => {
     const dir = tmpDirs.pop();
     if (dir) rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Census guards (P2.1a — Wave-4 #539 hard-deleted 3 ghost rows + 2 OQ5 stubs)
+// ---------------------------------------------------------------------------
+
+describe('census guards (P2.1a — post Wave-4 #539)', () => {
+  it('expects 764 live rows (was 767 before Wave-4 #539 hard-deleted 3 ghost rows)', () => {
+    expect(EXPECTED_LIVE_ROWS).toBe(764);
+  });
+
+  it('has no ghost stubs to exclude (the 2 OQ5 stubs were hard-deleted by Wave-4 #539)', () => {
+    expect(GHOST_STUB_LESSON_IDS.size).toBe(0);
+  });
+
+  it('derives EXPECTED_EXPORT_ROWS = live rows with an empty ghost set (no exclusions)', () => {
+    expect(EXPECTED_EXPORT_ROWS).toBe(764);
+    expect(EXPECTED_EXPORT_ROWS).toBe(EXPECTED_LIVE_ROWS - GHOST_STUB_LESSON_IDS.size);
+  });
 });
 
 // ---------------------------------------------------------------------------

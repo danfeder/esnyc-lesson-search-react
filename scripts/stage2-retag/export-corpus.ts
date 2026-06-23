@@ -33,8 +33,9 @@
  *     npx tsx scripts/stage2-retag/export-corpus.ts
  *
  * OQ5 handling (design doc §4 OQ5 lock; oq5-content-text-audit.md):
- * - EXCLUDED ghost stubs (273-char "Error processing lesson" rows, no body
- *   to read): lesson_ids in GHOST_STUB_LESSON_IDS.
+ * - Ghost stubs (273-char "Error processing lesson" rows, no body to read):
+ *   the 2 OQ5 stubs were hard-deleted by Wave-4 PR #539, so GHOST_STUB_LESSON_IDS
+ *   is now empty and there is nothing left to exclude (guard is a no-op).
  * - Who's Who in the Food System (WHOS_WHO_LESSON_ID): its stored
  *   content_text is a 462-char import-time extraction failure, but the live
  *   Google Doc holds the full ~3,300-char lesson. The body is fetched from
@@ -80,19 +81,24 @@ export const BODY_OVERRIDES_MANIFEST_PATH = path.join(MODULE_DIR, 'data/body-ove
 export const MIN_OVERRIDE_BODY_CHARS = 2000;
 
 /**
- * MCP census, 2026-06-12 (mcp__supabase-remote__execute_sql, PROD):
- *   SELECT count(*) FROM lessons WHERE retired_at IS NULL;  -- 767
- * The export hard-fails if the fetched row count differs.
+ * MCP census, 2026-06-23 (mcp__supabase-remote__execute_sql, PROD):
+ *   SELECT count(*) FROM lessons WHERE retired_at IS NULL;  -- 764
+ * Was 767 on 2026-06-12; Wave-4 PR #539 hard-deleted 3 ghost rows after that
+ * export. The export hard-fails if the fetched row count differs.
  */
-const EXPECTED_LIVE_ROWS = 767;
+export const EXPECTED_LIVE_ROWS = 764;
 
-/** OQ5 ghost stubs — excluded from the corpus (verbatim from the OQ5 lock). */
-const GHOST_STUB_LESSON_IDS: ReadonlySet<string> = new Set([
-  '1l9KH63QBe2xhyH0zp6VIavtj0uKSRZtd',
-  '1nFbpkwlujk8fIO8RkeIcDoO2fuO83Iil2Srf8t5iqm8',
-]);
+/**
+ * OQ5 ghost stubs — formerly excluded from the corpus. The 2 OQ5 stub rows
+ * (273-char "Error processing lesson" rows) were hard-deleted by Wave-4 PR
+ * #539, so NO ghost stubs remain in the live corpus and there is nothing left
+ * to exclude. The set is intentionally empty: with size 0 the per-row skip
+ * never fires, the "expected N ghost stubs found" guard becomes 0===0=pass,
+ * and EXPECTED_EXPORT_ROWS derives to EXPECTED_LIVE_ROWS.
+ */
+export const GHOST_STUB_LESSON_IDS: ReadonlySet<string> = new Set([]);
 
-const EXPECTED_EXPORT_ROWS = EXPECTED_LIVE_ROWS - GHOST_STUB_LESSON_IDS.size; // 765
+export const EXPECTED_EXPORT_ROWS = EXPECTED_LIVE_ROWS - GHOST_STUB_LESSON_IDS.size; // 764
 
 /** OQ5 body override — Who's Who in the Food System (verbatim id). */
 const WHOS_WHO_LESSON_ID = '1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg';
