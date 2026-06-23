@@ -47,7 +47,8 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const PROD_PROJECT_REF = 'jxlxtzkmicfhchkhiojz';
-const PROD_URL = `https://${PROD_PROJECT_REF}.supabase.co`;
+const PROD_HOST = `${PROD_PROJECT_REF}.supabase.co`;
+const PROD_URL = `https://${PROD_HOST}`;
 const PAGE_SIZE = 1000;
 const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'consolidated_lessons.json');
 
@@ -64,12 +65,23 @@ if (!sourceAnonKey) {
 }
 
 // Inverse prod-guard: the dev seed must be sourced from the real PROD-live
-// corpus, so refuse to run against anything that is NOT prod.
-if (!sourceUrl.includes(PROD_PROJECT_REF)) {
+// corpus, so refuse to run against anything that is NOT prod. Match on the
+// exact parsed HOSTNAME, never a substring — a substring check would accept a
+// hostile URL that merely embeds the ref (e.g. https://evil.com/<ref>/...),
+// which would send the anon key to and pull attacker-controlled rows from that
+// host straight into the local seed.
+let sourceHost;
+try {
+  sourceHost = new URL(sourceUrl).hostname;
+} catch {
+  console.error(`⛔ export-dev-seed: EXPORT_SOURCE_URL is not a valid URL: ${sourceUrl}`);
+  process.exit(1);
+}
+if (sourceHost !== PROD_HOST) {
   console.error('');
   console.error('⛔ export-dev-seed refuses to seed from a NON-PRODUCTION source.');
-  console.error(`   Resolved source URL: ${sourceUrl}`);
-  console.error(`   Expected the prod project (${PROD_PROJECT_REF}).`);
+  console.error(`   Resolved source host: ${sourceHost}`);
+  console.error(`   Expected exactly:     ${PROD_HOST}`);
   console.error('   The dev seed must reflect the live PROD corpus; aborting.');
   console.error('');
   process.exit(1);
@@ -91,6 +103,17 @@ async function exportDevSeed() {
   try {
     console.log('🔄 Regenerating local dev seed from PROD-live corpus (C88)...');
     console.log(`🛰  Source (read-only PROD): ${sourceUrl}`);
+
+    // NOTE on consistency: this uses count + OFFSET paging, which assumes the
+    // corpus is stable for the few seconds the export runs. The strict
+    // collected.length !== count check below catches net row-count changes and
+    // PostgREST truncation. It does NOT catch the rare case where a concurrent
+    // INSERT shifts offsets such that a row is skipped while a different new row
+    // keeps the total equal — a same-count swap. That is acceptable here: this
+    // is a manually-run, read-only dev-seed generator against a slowly-curated
+    // corpus (lessons are reviewed in, not bulk-inserted), the only artifact is
+    // a LOCAL seed file, and re-running fully recovers. If lessons ever become
+    // high-churn, switch to keyset paging (WHERE lesson_id > last_seen_id).
 
     // 1) Exact live-row count up front so we can page deterministically and
     //    detect PostgREST silent truncation.
@@ -140,10 +163,15 @@ async function exportDevSeed() {
       console.log(`📥 Fetched ${collected.length}/${count} rows...`);
     }
 
-    // 3) Fail loud if we did not collect exactly `count` rows.
+    // 3) Fail loud if we did not collect exactly `count` rows. This catches
+    //    silent PostgREST truncation (fewer rows than the head count) — the
+    //    real data-loss risk — and also a benign race where a row was
+    //    retired/added between the count and the page reads. Either way, abort
+    //    rather than write a partial seed; re-running resolves the race.
     if (collected.length !== count) {
       console.error(
-        `❌ Row-count mismatch: collected ${collected.length}, expected ${count} (PostgREST truncation?).`
+        `❌ Row-count mismatch: collected ${collected.length}, expected ${count} — ` +
+          `PostgREST truncation, or the corpus changed mid-export (retire/insert). Re-run.`
       );
       process.exit(1);
     }
@@ -188,6 +216,9 @@ async function exportDevSeed() {
     }
 
     // 6) Write the seed. Match the existing pretty-printed JSON formatting.
+    //    Ensure the output dir exists (idempotent) so the write never ENOENTs,
+    //    independent of whatever else happens to be tracked under data/.
+    fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
     fs.writeFileSync(OUTPUT_PATH, JSON.stringify(rows, null, 2) + '\n');
 
     console.log('');
