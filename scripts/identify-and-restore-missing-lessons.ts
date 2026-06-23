@@ -240,7 +240,9 @@ async function main() {
 
     if (finalCount === consolidatedData.length) {
       console.log('\n✅ Perfect! All lessons have been successfully restored!');
-      console.log('   The database now contains all 831 lessons from the consolidated file.');
+      console.log(
+        `   The database now contains all ${consolidatedData.length} lessons from the consolidated file.`
+      );
     } else if (checkMissing && checkMissing.length === missingLessons.length) {
       console.log('\n✅ All missing lessons have been successfully restored!');
       console.log(
