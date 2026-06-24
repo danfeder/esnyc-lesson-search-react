@@ -198,6 +198,16 @@ export function c02MainIngredientsValues(manifest: C02Manifest): string[] {
 }
 
 /**
+ * The 46 main_ingredient SPECIFIC values (the `{value, parent}` entries' values,
+ * groups EXCLUDED). The P2′.6 round-4 specifics keep-only lock reads this to
+ * forbid the LLM from ADDing any new specific (it may still KEEP/DROP an anchored
+ * one). Single source of truth — derived from the manifest, never re-listed.
+ */
+export function c02MainIngredientsSpecificValues(manifest: C02Manifest): string[] {
+  return manifest.mainIngredientsSpecifics.map((s) => s.value);
+}
+
+/**
  * specific → required-parent-group map, derived directly from the manifest
  * (single source of truth — never duplicated into a second hardcoded const).
  * A `null` parent means the specific is group-less (no parent requirement);

@@ -407,17 +407,19 @@ describe('processC02Decision — validation flow (P2′.3 / D-P6)', () => {
   }
 
   it('valid decision → finalC02 reconciled + zod passed + skipC02 normalize (no R7/R8/R9)', () => {
+    // Specifics are keep-only (P2′.6 r4): Tomatoes reaches finalC02 via the
+    // ANCHOR (KEEP), not an ADD. A KEPT specific still pulls its parent group in.
     const apiInput = {
       cooking_skills: { keep: ['Baking'], drop: [], add: [] },
       main_ingredients: {
-        keep: [],
+        keep: ['Tomatoes'],
         drop: [],
-        add: [{ value: 'Tomatoes', reason: 'specific-food-central' }],
+        add: [],
       },
     };
     const out = processC02Decision({
       apiInput,
-      floored: flooredAnchor(['Baking'], []),
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
       floorInput,
       decisionSchema,
       finalSchema,
@@ -426,7 +428,7 @@ describe('processC02Decision — validation flow (P2′.3 / D-P6)', () => {
     // rawInput preserved as the raw decision; llmDecisions is the parsed decision.
     expect(out.rawInput).toEqual(apiInput);
     expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
-    // The ADDed specific pulls its parent group in via reconcile.
+    // The KEPT specific pulls its parent group in via reconcile.
     expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
     expect(out.finalC02?.main_ingredients).toContain('Nightshades');
     // C02 normalize rules were skipped (no double-apply).

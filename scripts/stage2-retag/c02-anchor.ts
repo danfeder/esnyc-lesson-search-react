@@ -46,8 +46,13 @@ import { c02MainIngredientsValues, type C02Manifest } from './vocab';
  * v3 (P2′.6 round 3): reconcile is now LENIENT (recovers a malformed partition
  * instead of rejecting it) + `Sweeteners` is keep-only. The reconcile output
  * changed, so every record re-executes rather than resumes.
+ * v4 (P2′.6 round 4): the keep-only lock now covers ALL 46 main_ingredient
+ * specifics (specifics keep-only — the LLM may KEEP/DROP an anchored specific
+ * but never ADD a new one). Hygiene so a future LIVE run (fresh-25/P3) never
+ * resume-reuses a v3 cache; the re-reconcile A/B over stored decisions does not
+ * depend on this id.
  */
-export const C02_RECONCILE_POLICY_ID = 'c02-anchored-verify-and-diff-v3';
+export const C02_RECONCILE_POLICY_ID = 'c02-anchored-verify-and-diff-v4';
 
 /**
  * One-sentence note framing the anchor as the lesson's CURRENT tags (so the

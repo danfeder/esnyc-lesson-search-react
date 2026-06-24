@@ -11,7 +11,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { C02FloorInput, C02FlooredTags } from './c02-floor';
 import type { C02Decision } from './schema';
-import { c02IngredientParentMap, c02MainIngredientsValues, type C02Manifest } from './vocab';
+import {
+  c02IngredientParentMap,
+  c02MainIngredientsSpecificValues,
+  c02MainIngredientsValues,
+  type C02Manifest,
+} from './vocab';
 import { reconcileC02Tags, C02_KEEP_ONLY_LOCK, C02_INGREDIENT_KEEP_ONLY_LOCK } from './reconcile';
 
 // A small synthetic manifest with a clear specific→group parent map.
@@ -35,6 +40,7 @@ function makeFloorInput(): C02FloorInput {
     parentMap: c02IngredientParentMap(MANIFEST),
     cookingValues: new Set(MANIFEST.cookingSkills),
     ingredientValues: new Set(c02MainIngredientsValues(MANIFEST)),
+    specificValues: new Set(c02MainIngredientsSpecificValues(MANIFEST)),
     dropKeys: new Set(),
   };
 }
@@ -229,6 +235,91 @@ describe('reconcileC02Tags — D-P1 keep-only lock (Tasting / Kitchen & food saf
   });
 });
 
+describe('reconcileC02Tags — specifics keep-only lock (P2′.6 round 4)', () => {
+  // Round 4 EXTENDS the D-P1 keep-only lock to ALL 46 main_ingredient specifics:
+  // the model may KEEP or DROP a specific already in the floored anchor, but may
+  // never ADD a new specific. Groups are unaffected (the LLM still adds groups).
+  it('SUPPRESSES an LLM ADD of a non-anchor specific (Tomatoes), and its parent is not spawned', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: [] },
+      floored: floored([], []),
+      llmDecisions: decision({}, { add: ['Tomatoes'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).not.toContain('Tomatoes');
+    // No surviving specific ⇒ no parent-derived group from it.
+    expect(result.finalMainIngredients).not.toContain('Nightshades');
+  });
+
+  it('KEEPS a specific already in the anchor (keep-only, not no-tag)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: ['Nightshades', 'Tomatoes'] },
+      floored: floored([], ['Nightshades', 'Tomatoes']),
+      llmDecisions: decision({}, { keep: ['Tomatoes', 'Nightshades'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).toContain('Tomatoes');
+  });
+
+  it('still DROPS an anchored specific the LLM drops (the lock blocks ADD only)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: ['Nightshades', 'Tomatoes'] },
+      floored: floored([], ['Nightshades', 'Tomatoes']),
+      llmDecisions: decision({}, { keep: ['Nightshades'], drop: ['Tomatoes'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).not.toContain('Tomatoes');
+    expect(result.finalMainIngredients).toContain('Nightshades');
+  });
+
+  it('a KEPT anchored specific still derives its parent group (parent-derived unaffected)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: ['Garlic'] },
+      // The anchor carries the specific only; the floor would have added Alliums,
+      // but here we anchor the specific alone to prove reconcile derives the parent.
+      floored: floored([], ['Garlic']),
+      llmDecisions: decision({}, { keep: ['Garlic'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).toContain('Garlic');
+    expect(result.finalMainIngredients).toContain('Alliums');
+    const prov = result.provenance.find((p) => p.value === 'Alliums');
+    expect(prov?.origin).toBe('parent-derived');
+  });
+
+  it('Sweeteners (the original ingredient lock) is STILL locked under the extended set', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: [] },
+      floored: floored([], []),
+      llmDecisions: decision({}, { add: ['Sweeteners'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).not.toContain('Sweeteners');
+  });
+
+  it('a non-locked GROUP add (Fruits) still passes through (groups are NOT locked)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: [] },
+      floored: floored([], []),
+      llmDecisions: decision({}, { add: ['Fruits'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).toContain('Fruits');
+  });
+
+  it('also suppresses a specific the LLM mis-buckets into KEEP (recovered-add path is locked too)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: [] },
+      floored: floored([], []),
+      // 'Apples' is NOT in the anchor; a keep-mis-bucket recovers to ADD, and the
+      // specifics lock must still suppress it on that path.
+      llmDecisions: decision({}, { keep: ['Apples'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).not.toContain('Apples');
+  });
+});
+
 describe('reconcileC02Tags — subtractive (never append-only)', () => {
   it('an LLM-dropped floor tag is actually REMOVED from finalC02', () => {
     const result = reconcileC02Tags({
@@ -243,22 +334,25 @@ describe('reconcileC02Tags — subtractive (never append-only)', () => {
 });
 
 describe('reconcileC02Tags — specific→group invariant', () => {
-  it('ADDing a specific implies its parent group is present in finalC02', () => {
+  // Specifics are now keep-only (P2′.6 r4): a specific reaches finalC02 via the
+  // ANCHOR (KEEP), never an ADD. The invariant still holds — a surviving specific
+  // implies its parent group.
+  it('a KEPT anchored specific implies its parent group is present in finalC02', () => {
     const result = reconcileC02Tags({
-      existing: { cooking_skills: [], main_ingredients: [] },
-      floored: floored([], []),
-      llmDecisions: decision({}, { add: ['Tomatoes'] }),
+      existing: { cooking_skills: [], main_ingredients: ['Tomatoes'] },
+      floored: floored([], ['Tomatoes']),
+      llmDecisions: decision({}, { keep: ['Tomatoes'] }),
       floor: makeFloorInput(),
     });
     expect(result.finalMainIngredients).toContain('Tomatoes');
     expect(result.finalMainIngredients).toContain('Nightshades');
   });
 
-  it('a null-parent specific does NOT spawn a parent', () => {
+  it('a null-parent specific (KEPT from the anchor) does NOT spawn a parent', () => {
     const result = reconcileC02Tags({
-      existing: { cooking_skills: [], main_ingredients: [] },
-      floored: floored([], []),
-      llmDecisions: decision({}, { add: ['Celery'] }),
+      existing: { cooking_skills: [], main_ingredients: ['Celery'] },
+      floored: floored([], ['Celery']),
+      llmDecisions: decision({}, { keep: ['Celery'] }),
       floor: makeFloorInput(),
     });
     expect(result.finalMainIngredients).toEqual(['Celery']);
@@ -286,11 +380,16 @@ describe('reconcileC02Tags — parent/child conflict resolution', () => {
 describe('reconcileC02Tags — canonical / deterministic output', () => {
   it('finalC02 is unique, canonically-ordered, and deterministic across runs', () => {
     const args = () => ({
-      existing: { cooking_skills: [] as string[], main_ingredients: ['Tomatoes', 'Apples'] },
-      floored: floored([], ['Tomatoes', 'Nightshades', 'Apples', 'Fruits']),
+      existing: {
+        cooking_skills: [] as string[],
+        main_ingredients: ['Tomatoes', 'Garlic', 'Apples'],
+      },
+      // Garlic is anchored (specifics are keep-only — it cannot be ADDed) and
+      // KEPT; the floor anchor carries its parent group too.
+      floored: floored([], ['Tomatoes', 'Nightshades', 'Garlic', 'Alliums', 'Apples', 'Fruits']),
       llmDecisions: decision(
         {},
-        { keep: ['Tomatoes', 'Nightshades', 'Apples', 'Fruits'], add: ['Garlic'] }
+        { keep: ['Tomatoes', 'Nightshades', 'Garlic', 'Alliums', 'Apples', 'Fruits'] }
       ),
       floor: makeFloorInput(),
     });
@@ -300,28 +399,31 @@ describe('reconcileC02Tags — canonical / deterministic output', () => {
     expect(a.finalMainIngredients).toEqual(b.finalMainIngredients);
     // Unique: no duplicate values.
     expect(new Set(a.finalMainIngredients).size).toBe(a.finalMainIngredients.length);
-    // Canonical: every value is a canonical vocab value (Garlic pulls Alliums in).
+    // Canonical: every value is a canonical vocab value.
     for (const v of a.finalMainIngredients) {
       expect(c02MainIngredientsValues(MANIFEST)).toContain(v);
     }
+    // The anchored specific survives with its parent.
     expect(a.finalMainIngredients).toContain('Garlic');
     expect(a.finalMainIngredients).toContain('Alliums');
   });
 
   it('emits per-value provenance for every final value', () => {
     const result = reconcileC02Tags({
-      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
-      floored: floored(['Boiling & simmering'], []),
+      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: ['Tomatoes'] },
+      // Tomatoes is anchored (specifics are keep-only) → kept; its parent group
+      // is parent-derived. Baking is a non-locked SKILL add → added.
+      floored: floored(['Boiling & simmering'], ['Tomatoes']),
       llmDecisions: decision(
-        { keep: ['Boiling & simmering'], add: ['Baking'] }, // non-locked add
-        { add: ['Tomatoes'] }
+        { keep: ['Boiling & simmering'], add: ['Baking'] }, // non-locked skill add
+        { keep: ['Tomatoes'] }
       ),
       floor: makeFloorInput(),
     });
     const provFor = (v: string) => result.provenance.find((p) => p.value === v)?.origin;
     expect(provFor('Boiling & simmering')).toBe('kept');
     expect(provFor('Baking')).toBe('added');
-    expect(provFor('Tomatoes')).toBe('added');
+    expect(provFor('Tomatoes')).toBe('kept');
     expect(provFor('Nightshades')).toBe('parent-derived');
   });
 });

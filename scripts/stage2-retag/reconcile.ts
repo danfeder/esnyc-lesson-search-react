@@ -54,13 +54,20 @@ export const C02_KEEP_ONLY_LOCK: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * D-P1 keep-only lock for main_ingredients (P2′.6 round 3). `Sweeteners` is the
- * over-applied pantry GROUP (Sugar folds into it): the B-lite rule says tag it
- * only when the lesson is genuinely ABOUT the sweetener, but round-2 scored it
- * at 0.417 precision (12 predictions) — the model adds it for any honey/sugar in
- * a recipe. Like the catch-all skills, it is KEEP-only: never ADDed, only KEPT
- * from the anchor. Specific foods (Garlic, Honey, …) are NOT locked — they are
- * legitimate specifics whose central-vs-incidental call is a calibration matter.
+ * D-P1 keep-only lock for main_ingredients GROUPS (P2′.6 round 3). `Sweeteners`
+ * is the over-applied pantry GROUP (Sugar folds into it): the B-lite rule says
+ * tag it only when the lesson is genuinely ABOUT the sweetener, but round-2
+ * scored it at 0.417 precision (12 predictions) — the model adds it for any
+ * honey/sugar in a recipe. Like the catch-all skills, it is KEEP-only: never
+ * ADDed, only KEPT from the anchor.
+ *
+ * This is the GROUP-level seed of the ingredient lock. The full ingredient lock
+ * is built per-run by UNIONing this with the 46 main_ingredient SPECIFICS (P2′.6
+ * round 4 — see `reconcileC02Tags`): the case review (Session 12) proved the
+ * tight key is right (the model over-tags specifics — single cloves, dressing
+ * acids, "example" produce), and the over-add precision could not be brought
+ * under the gates by prompt/few-shots, so specifics become keep-only too (the
+ * model may KEEP/DROP an anchored specific but never ADD a new one).
  */
 export const C02_INGREDIENT_KEEP_ONLY_LOCK: ReadonlySet<string> = new Set(['Sweeteners']);
 
@@ -257,6 +264,15 @@ export function reconcileC02Tags(input: C02ReconcileInput): C02ReconcileResult {
     C02_KEEP_ONLY_LOCK
   );
 
+  // P2′.6 round 4: the ingredient keep-only lock = the pantry-group seed
+  // (`Sweeteners`) UNIONed with the 46 main_ingredient SPECIFICS. A locked value
+  // may be KEPT (it is in the anchor) but never ADDed — so the model can no
+  // longer introduce a NEW specific, while still keeping/dropping anchored ones.
+  // Groups (other than the locked Sweeteners) remain freely addable.
+  const ingredientLock = new Set<string>([
+    ...C02_INGREDIENT_KEEP_ONLY_LOCK,
+    ...input.floor.specificValues,
+  ]);
   const ingredientsBase = reconcileField(
     'main_ingredients',
     input.floored.ingredients,
@@ -265,7 +281,7 @@ export function reconcileC02Tags(input: C02ReconcileInput): C02ReconcileResult {
       drop: input.llmDecisions.main_ingredients.drop.map((d) => d.value),
       add: input.llmDecisions.main_ingredients.add.map((a) => a.value),
     },
-    C02_INGREDIENT_KEEP_ONLY_LOCK
+    ingredientLock
   );
   const ingredients = reconcileParents(ingredientsBase, input.floor.parentMap);
 

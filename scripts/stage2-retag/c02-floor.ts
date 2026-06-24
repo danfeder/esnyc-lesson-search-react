@@ -52,7 +52,12 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import { loadC02Floor, matchKey, type C02Floor } from './normalize';
-import { c02MainIngredientsValues, loadC02Manifest, type C02Manifest } from './vocab';
+import {
+  c02MainIngredientsSpecificValues,
+  c02MainIngredientsValues,
+  loadC02Manifest,
+  type C02Manifest,
+} from './vocab';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(MODULE_DIR, '../..');
@@ -94,6 +99,12 @@ export interface C02FloorInput {
   parentMap: Record<string, string>;
   cookingValues: ReadonlySet<string>;
   ingredientValues: ReadonlySet<string>;
+  /**
+   * The 46 main_ingredient SPECIFIC values (groups excluded). The reconciler's
+   * P2′.6 round-4 keep-only lock unions this with the pantry-group lock so the
+   * LLM cannot ADD a new specific (KEEP/DROP of an anchored specific is allowed).
+   */
+  specificValues: ReadonlySet<string>;
   /** matchKey set of every drops-list literal — these are EXECUTED (removed). */
   dropKeys: ReadonlySet<string>;
 }
@@ -113,6 +124,7 @@ export function buildC02FloorInput(
     parentMap: floor.parentMap,
     cookingValues: new Set(manifest.cookingSkills),
     ingredientValues: new Set(c02MainIngredientsValues(manifest)),
+    specificValues: new Set(c02MainIngredientsSpecificValues(manifest)),
     dropKeys: new Set(drops.map((d) => matchKey(d))),
   };
 }
