@@ -331,6 +331,11 @@ export function selectComparedLessons(
   };
 }
 
+// ⚠️ P3 (D-P6): the C02 anchored path stores the two C02 fields' reconciled
+// arrays on the record's `finalC02`, not `rawInput` (which holds the raw
+// KEEP/DROP/ADD decision). This diff reads `rawInput` for all fields; P3.1
+// switches the two C02 fields to read `finalC02`. The run-record carries it now
+// (run-retag.ts `RunRecord.finalC02`); the scorer already reads it (P2′.3).
 function newFlatValues(rawInput: Record<string, unknown>, field: string): string[] {
   const value = rawInput[field];
   return Array.isArray(value)

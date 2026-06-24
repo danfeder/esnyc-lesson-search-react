@@ -18,6 +18,7 @@ import {
   C02_DROP_REASONS,
   SUBMIT_TAGS_TOOL_NAME,
   buildC02DecisionSchema,
+  buildC02FinalSchema,
   buildC02SubmitTagsTool,
 } from './schema';
 import { loadVocab } from './vocab';
@@ -25,6 +26,7 @@ import { loadVocab } from './vocab';
 const vocab = loadVocab();
 const tool = buildC02SubmitTagsTool(vocab);
 const decisionSchema = buildC02DecisionSchema(vocab);
+const finalSchema = buildC02FinalSchema(vocab);
 
 // ---------------------------------------------------------------------------
 // tool shape: exactly the two C02 fields, KEEP/DROP/ADD + reason codes
@@ -179,5 +181,46 @@ describe('reason-code constants', () => {
     expect(C02_ADD_REASONS.length).toBeGreaterThan(0);
     expect(new Set(C02_DROP_REASONS).size).toBe(C02_DROP_REASONS.length);
     expect(new Set(C02_ADD_REASONS).size).toBe(C02_ADD_REASONS.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildC02FinalSchema — the reconciled finalC02 canonical validator (P2′.3)
+// ---------------------------------------------------------------------------
+
+describe('buildC02FinalSchema — validates the reconciled finalC02 arrays', () => {
+  it('accepts canonical cooking_skills + main_ingredients with the parent invariant satisfied', () => {
+    const groups = tool.input_schema.properties.main_ingredients.properties.keep.items.enum;
+    // Pick a real group value to use as a non-orphan ingredient.
+    const aGroup = groups.find((v) => v === 'Alliums') ?? groups[0];
+    const result = finalSchema.safeParse({
+      cooking_skills: ['Baking'],
+      main_ingredients: [aGroup],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('REJECTS an off-vocab value', () => {
+    const result = finalSchema.safeParse({
+      cooking_skills: ['Not A Real Skill'],
+      main_ingredients: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('REJECTS an orphan specific (Garlic without Alliums)', () => {
+    const result = finalSchema.safeParse({
+      cooking_skills: [],
+      main_ingredients: ['Garlic'], // specific without its parent group Alliums
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts a specific WITH its parent group', () => {
+    const result = finalSchema.safeParse({
+      cooking_skills: [],
+      main_ingredients: ['Alliums', 'Garlic'],
+    });
+    expect(result.success).toBe(true);
   });
 });

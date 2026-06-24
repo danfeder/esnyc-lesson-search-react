@@ -687,6 +687,25 @@ export function buildC02DecisionSchema(vocab: Stage2Vocab) {
 
 export type C02Decision = z.infer<ReturnType<typeof buildC02DecisionSchema>>;
 
+/**
+ * The canonical validator for the RECONCILED `finalC02` arrays (design §3·PIVOT
+ * D-P6 / P2′.3) — the THIRD stage of the C02 validation flow (decision-schema →
+ * floor + reconcile → THIS). It validates `{cooking_skills, main_ingredients}`
+ * the same way the all-field result schema does for these two fields: a flat
+ * unique enum array for cooking_skills, and the parent-map `.superRefine` for
+ * main_ingredients (rejects an orphan specific). The reconciler already enforces
+ * the parent invariant, so this is a belt-and-suspenders guard that a reconciled
+ * row is genuinely canonical before it is persisted as `finalC02`.
+ */
+export function buildC02FinalSchema(vocab: Stage2Vocab) {
+  return z
+    .object({
+      cooking_skills: uniqueEnumArray(vocab.cooking_skills.values),
+      main_ingredients: mainIngredientsSchema([...vocab.main_ingredients.values]),
+    })
+    .strict();
+}
+
 // ---------------------------------------------------------------------------
 // Token-mass guard
 // ---------------------------------------------------------------------------

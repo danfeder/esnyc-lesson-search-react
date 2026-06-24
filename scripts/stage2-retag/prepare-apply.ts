@@ -218,6 +218,13 @@ export interface StagingRow {
 // Run-record → new-value extraction (pure)
 // ---------------------------------------------------------------------------
 
+// ⚠️ P2′.4/P3 (D-P6): in the C02 anchored path the two C02 fields live on the
+// record's `finalC02` (reconciled canonical arrays), NOT on `rawInput` (which
+// holds the raw KEEP/DROP/ADD decision). This apply emitter still reads
+// `rawInput` for ALL fields — P3.2 re-scopes it to C02-only and switches the two
+// C02 fields to `finalC02` (the run-record carries it now; see run-retag.ts
+// `RunRecord.finalC02`). The scorer (`score-answer-key.loadRunContestant`)
+// already reads `finalC02` for the two C02 fields as of P2′.3.
 function newFlatValues(rawInput: Record<string, unknown>, field: string): string[] {
   const value = rawInput[field];
   return Array.isArray(value)

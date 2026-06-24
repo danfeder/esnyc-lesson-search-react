@@ -16,6 +16,7 @@ import {
   buildScorecardJson,
   evaluateGates,
   extractFieldTokens,
+  loadRunContestant,
   renderScorecardMarkdown,
   scoreContestant,
   type KeyRecord,
@@ -464,5 +465,63 @@ describe('valueKeyLessonIds dedup (repeated token in a key cell)', () => {
     // Invariant: valueKeyLessonIds[value].length === truthCount.
     expect(grade.valueKeyLessonIds['K']).toHaveLength(1);
     expect(grade.valueKeyLessonIds['K']).toEqual(['L1']);
+  });
+});
+
+describe('loadRunContestant — reads finalC02 for the two C02 fields (P2′.3 / D-P6)', () => {
+  it('reads the reconciled finalC02, NOT the raw decision in rawInput', () => {
+    // The C02 anchored record's rawInput holds the raw KEEP/DROP/ADD decision
+    // (no flat tag arrays); finalC02 holds the reconciled canonical tags. The
+    // scorer must read finalC02 — reading rawInput would yield empty token sets.
+    const record = {
+      id: 'L1',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'h',
+      rawInput: {
+        cooking_skills: { keep: [], drop: [], add: [] },
+        main_ingredients: { keep: [], drop: [], add: [] },
+      },
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      costUsd: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'b',
+      strict: false,
+      effectiveBaseUrl: 'direct',
+      finalC02: {
+        cooking_skills: ['Baking'],
+        main_ingredients: ['Nightshades', 'Tomatoes'],
+      },
+      completedAt: '2026-06-24T00:00:00.000Z',
+    };
+    const [contestant] = loadRunContestant(JSON.stringify(record));
+    expect(contestant.cooking_skills).toEqual(['Baking']);
+    expect(contestant.main_ingredients).toEqual(['Nightshades', 'Tomatoes']);
+  });
+
+  it('falls back to rawInput tags when finalC02 is absent (legacy / non-C02 runs)', () => {
+    const record = {
+      id: 'L1',
+      phase: 'main',
+      model: 'claude-opus-4-7',
+      promptSchemaHash: 'h',
+      rawInput: { cooking_skills: ['Mixing & stirring'], activity_type: ['cooking'] },
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      costUsd: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'b',
+      strict: false,
+      effectiveBaseUrl: 'direct',
+      completedAt: '2026-06-24T00:00:00.000Z',
+    };
+    const [contestant] = loadRunContestant(JSON.stringify(record));
+    expect(contestant.cooking_skills).toEqual(['Mixing & stirring']);
+    expect(contestant.activity_type).toEqual(['cooking']);
   });
 });

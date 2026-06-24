@@ -129,9 +129,15 @@ import {
   GRADE_LEVELS,
   RESULT_PROPERTIES,
   SUBMIT_TAGS_TOOL_NAME,
+  buildC02DecisionSchema,
+  buildC02FinalSchema,
+  buildC02SubmitTagsTool,
   buildResultSchema,
   buildSubmitTagsTool,
+  loadC02SystemPrompt,
   loadSystemPrompt,
+  type C02Decision,
+  type C02SubmitTagsTool,
   type SubmitTagsTool,
 } from './schema';
 import { normalizeRecordInput } from './normalize';
@@ -144,7 +150,13 @@ import {
   renderC02AnchorBlock,
   type C02EffectiveInput,
 } from './c02-anchor';
-import { applyC02Floor, loadC02FloorInput, type C02FloorInput } from './c02-floor';
+import {
+  applyC02Floor,
+  loadC02FloorInput,
+  type C02FloorInput,
+  type C02FlooredTags,
+} from './c02-floor';
+import { reconcileC02Tags, toFinalC02, type C02FinalTags } from './reconcile';
 import { assertCorpusHasC02Tags } from './sample-answer-key';
 import {
   MAIN_PASS_FIELDS,
@@ -299,6 +311,21 @@ export interface RunRecord {
    * NEVER silent — every code-enforced edit is recorded here.
    */
   normalizations?: string[];
+  /**
+   * C02 anchored verify-and-diff (design §3·PIVOT D-P6): the RAW LLM KEEP/DROP/
+   * ADD decision object for the two C02 fields, as returned by the 2-field tool.
+   * Preserved alongside `rawInput` (which holds the same raw decision) so the
+   * reconciler's input is auditable. Absent on non-C02 / legacy records.
+   */
+  llmDecisions?: unknown;
+  /**
+   * C02 anchored verify-and-diff (design §3·PIVOT D-P6): the RECONCILED canonical
+   * `cooking_skills` + `main_ingredients` arrays — floor-anchored core + the LLM
+   * KEEP/DROP/ADD, never append-only. This is the canonical surface the scorer,
+   * diff, and apply read for the two C02 fields (NOT `rawInput`, which holds the
+   * raw decision shape). Absent on non-C02 / legacy records.
+   */
+  finalC02?: C02FinalTags;
   completedAt: string;
 }
 
@@ -316,7 +343,10 @@ export const DIRECT_BASE_URL = 'direct';
  * The model is deliberately NOT part of the hash — it is recorded on the
  * record and matched separately.
  */
-export function computePromptSchemaHash(systemPrompt: string, tool: SubmitTagsTool): string {
+export function computePromptSchemaHash(
+  systemPrompt: string,
+  tool: SubmitTagsTool | C02SubmitTagsTool
+): string {
   return createHash('sha256')
     .update(systemPrompt)
     .update('\u0000')
@@ -361,6 +391,101 @@ export function validateRawInput(
   return { passed: false, fieldErrors: fieldErrorsFromZod(parsed.error) };
 }
 
+/** The validated + reconciled outcome of one C02 anchored verify-and-diff call. */
+export interface C02DecisionOutcome {
+  /** The RAW model tool output (the KEEP/DROP/ADD decision) — preserved verbatim. */
+  rawInput: unknown;
+  /** The parsed decision (set only when the decision schema passed). */
+  llmDecisions?: unknown;
+  /** The reconciled canonical arrays (set only when the whole flow passed). */
+  finalC02?: C02FinalTags;
+  /** passed iff decision-schema → reconcile → finalC02 canonical all succeeded. */
+  zod: ZodOutcome;
+  /** Mechanical normalizations applied (C02 rules SKIPPED — see normalize.skipC02). */
+  normalizations: string[];
+}
+
+/**
+ * The C02 anchored verify-and-diff validation flow (design §3·PIVOT D-P6 /
+ * P2′.3), pure + unit-tested. The 2-field KEEP/DROP/ADD decision object does
+ * NOT satisfy the all-field result schema, so the flow is its own three stages:
+ *
+ *   1. decision-schema validation (`buildC02DecisionSchema`) — enum + shape;
+ *   2. floor + reconcile (`reconcileC02Tags`) — merge the floored anchor with
+ *      the KEEP/DROP/ADD into the reconciled `finalC02` (subtractive, never
+ *      append-only); a non-partitioning decision / anchor-colliding ADD throws
+ *      and is treated as a validation failure;
+ *   3. `finalC02` canonical validation (`buildC02FinalSchema`) — a
+ *      belt-and-suspenders guard that the reconciled output is canonical.
+ *
+ * `rawInput` is preserved as the raw decision (NOT overwritten — D-P6); the
+ * record carries the raw decision as `llmDecisions` and the reconciled arrays as
+ * `finalC02`. Normalization runs with `{ skipC02: true }` so R7/R8/R9 never
+ * re-process the two C02 fields (the floor/reconcile SUPERSEDE them — D-P6).
+ */
+export function processC02Decision(params: {
+  apiInput: unknown;
+  floored: C02FlooredTags;
+  floorInput: C02FloorInput;
+  decisionSchema: ReturnType<typeof buildC02DecisionSchema>;
+  finalSchema: ReturnType<typeof buildC02FinalSchema>;
+}): C02DecisionOutcome {
+  const { apiInput, floored, floorInput, decisionSchema, finalSchema } = params;
+  // Normalize with the C02 rules SKIPPED — the raw decision shape has no flat
+  // C02 arrays for R7/R8/R9 to touch, and the reconciled output supersedes them.
+  const { rawInput, normalizations } = normalizeRecordInput(apiInput, { skipC02: true });
+
+  // (1) decision-schema validation.
+  const parsed = decisionSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      rawInput,
+      zod: { passed: false, fieldErrors: fieldErrorsFromZod(parsed.error) },
+      normalizations,
+    };
+  }
+  const llmDecisions = parsed.data as C02Decision;
+
+  // (2) floor + reconcile. A malformed decision (non-partitioning / anchor-
+  // colliding ADD) throws — surface it as a reconcile validation failure.
+  let finalC02: C02FinalTags;
+  try {
+    const reconciled = reconcileC02Tags({
+      existing: {},
+      floored,
+      llmDecisions,
+      floor: floorInput,
+    });
+    finalC02 = toFinalC02(reconciled);
+  } catch (e) {
+    return {
+      rawInput,
+      llmDecisions,
+      zod: { passed: false, fieldErrors: { _reconcile: [errorMessage(e)] } },
+      normalizations,
+    };
+  }
+
+  // (3) finalC02 canonical validation (belt-and-suspenders).
+  const finalParsed = finalSchema.safeParse(finalC02);
+  if (!finalParsed.success) {
+    return {
+      rawInput,
+      llmDecisions,
+      zod: { passed: false, fieldErrors: fieldErrorsFromZod(finalParsed.error) },
+      normalizations,
+    };
+  }
+
+  return {
+    rawInput,
+    llmDecisions,
+    finalC02,
+    zod: { passed: true, fieldErrors: null },
+    normalizations,
+  };
+}
+
 /** Per-record cost in USD from the rate table; `null` for unknown models. */
 export function computeCostUsd(model: string, usage: AnthropicUsage | null): number | null {
   if (!usage) return null;
@@ -393,6 +518,10 @@ export function buildRunRecord(params: {
   effectiveBaseUrl: string;
   repairs?: Record<string, RepairOutcome>;
   normalizations?: string[];
+  /** C02 anchored path only: the raw KEEP/DROP/ADD decision (D-P6). */
+  llmDecisions?: unknown;
+  /** C02 anchored path only: the reconciled canonical arrays (D-P6). */
+  finalC02?: C02FinalTags;
 }): RunRecord {
   return {
     id: params.id,
@@ -412,6 +541,8 @@ export function buildRunRecord(params: {
     effectiveBaseUrl: params.effectiveBaseUrl,
     ...(params.repairs !== undefined ? { repairs: params.repairs } : {}),
     ...(params.normalizations !== undefined ? { normalizations: params.normalizations } : {}),
+    ...(params.llmDecisions !== undefined ? { llmDecisions: params.llmDecisions } : {}),
+    ...(params.finalC02 !== undefined ? { finalC02: params.finalC02 } : {}),
     completedAt: new Date().toISOString(),
   };
 }
@@ -449,6 +580,15 @@ const runRecordLineSchema = z
     effectiveBaseUrl: z.string().optional(),
     repairs: z.record(z.unknown()).optional(),
     normalizations: z.array(z.string()).optional(),
+    // C02 anchored verify-and-diff (D-P6). Optional so legacy/non-C02 records
+    // parse; the anchored run writes both on every C02 record.
+    llmDecisions: z.unknown().optional(),
+    finalC02: z
+      .object({
+        cooking_skills: z.array(z.string()),
+        main_ingredients: z.array(z.string()),
+      })
+      .optional(),
     completedAt: z.string(),
   })
   .passthrough();
@@ -1197,7 +1337,7 @@ export function buildC02EffectiveInput(
   lesson: CorpusRecord,
   floorInput: C02FloorInput,
   manifestVersion: string
-): { anchoredBody: string; effectiveInput: C02EffectiveInput } {
+): { anchoredBody: string; effectiveInput: C02EffectiveInput; floored: C02FlooredTags } {
   const rawCookingSkills = lesson.cooking_skills ?? [];
   const rawMainIngredients = lesson.main_ingredients ?? [];
   const floored = applyC02Floor(
@@ -1215,6 +1355,7 @@ export function buildC02EffectiveInput(
       manifestVersion,
       reconcilePolicyId: C02_RECONCILE_POLICY_ID,
     },
+    floored,
   };
 }
 
@@ -1391,7 +1532,7 @@ export const TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM =
 export function buildMessageRequest(params: {
   model: string;
   systemPrompt: string;
-  tool: Anthropic.Messages.Tool | SubmitTagsTool;
+  tool: Anthropic.Messages.Tool | SubmitTagsTool | C02SubmitTagsTool;
   body: string;
   toolChoiceAuto: boolean;
 }): Anthropic.Messages.MessageCreateParamsNonStreaming {
@@ -1421,7 +1562,7 @@ async function callForcedTool(
   client: Anthropic,
   model: string,
   systemPrompt: string,
-  tool: Anthropic.Messages.Tool | SubmitTagsTool,
+  tool: Anthropic.Messages.Tool | SubmitTagsTool | C02SubmitTagsTool,
   body: string,
   toolChoiceAuto = false
 ): Promise<CallResult> {
@@ -1479,19 +1620,35 @@ export async function runFallbackForRefusal(params: {
    * fallback call is forced regardless of its value.
    */
   mainPassToolChoiceAuto?: boolean;
+  /**
+   * Optional override for the validate/normalize step (P2′.3 / D-P6). The C02
+   * anchored path passes the `processC02Decision` flow so the fallback validates
+   * + reconciles + persists `finalC02` exactly like the main pass; when omitted,
+   * the legacy `normalizeRecordInput` + all-field `resultSchema` flow runs
+   * (unchanged for the 13-field harness + the existing fallback tests).
+   */
+  processResult?: (apiInput: unknown) => C02DecisionOutcome;
 }): Promise<RunRecord> {
   try {
     // ALWAYS forced — the fallback never inherits --tool-choice-auto.
     const { rawInput: apiInput, usage, latencyMs, stopReason } = await params.callFn(false);
-    const { rawInput, normalizations } = normalizeRecordInput(apiInput);
-    const zod = validateRawInput(params.resultSchema, rawInput);
+    const outcome: C02DecisionOutcome = params.processResult
+      ? params.processResult(apiInput)
+      : (() => {
+          const { rawInput, normalizations } = normalizeRecordInput(apiInput);
+          return {
+            rawInput,
+            zod: validateRawInput(params.resultSchema, rawInput),
+            normalizations,
+          };
+        })();
     return buildRunRecord({
       id: params.id,
       phase: 'fallback',
       model: params.fallbackModel,
       promptSchemaHash: params.promptSchemaHash,
-      rawInput,
-      zod,
+      rawInput: outcome.rawInput,
+      zod: outcome.zod,
       usage,
       latencyMs,
       error: null,
@@ -1500,7 +1657,9 @@ export async function runFallbackForRefusal(params: {
       strict: params.strict,
       // Forced path → no toolChoice marker (mirrors the main forced path).
       effectiveBaseUrl: params.effectiveBaseUrl,
-      normalizations,
+      normalizations: outcome.normalizations,
+      ...(outcome.llmDecisions !== undefined ? { llmDecisions: outcome.llmDecisions } : {}),
+      ...(outcome.finalC02 !== undefined ? { finalC02: outcome.finalC02 } : {}),
     });
   } catch (e) {
     const msg = errorMessage(e);
@@ -1548,15 +1707,25 @@ export function warnIfOutsideArtifacts(filePath: string): void {
 
 async function runMainPass(args: Args): Promise<void> {
   const vocab = loadVocab();
-  const systemPrompt = loadSystemPrompt();
-  const baseTool = buildSubmitTagsTool(vocab);
-  const tool: SubmitTagsTool & { strict?: boolean } = args.strict
+  // C02 anchored verify-and-diff (design §3·PIVOT D-P4/D-P6 / P2′.3): the live
+  // call sends the dedicated 2-field KEEP/DROP/ADD tool + the verify-and-diff
+  // prompt + the anchored body (current tags appended), NOT the monolithic
+  // all-14-field tool + body-only prompt. The decision is reconciled into
+  // finalC02 (subtractive, never append-only).
+  const systemPrompt = loadC02SystemPrompt();
+  const baseTool = buildC02SubmitTagsTool(vocab);
+  const tool: C02SubmitTagsTool & { strict?: boolean } = args.strict
     ? { ...baseTool, strict: true }
     : baseTool;
   // Hash is over the canonical (non-strict) tool so --strict toggling alone
-  // does not invalidate resume; the wire schema content is identical.
+  // does not invalidate resume; the wire schema content is identical. The C02
+  // tool + prompt are part of the hash, so any pilot run produced against the
+  // OLD monolithic prefix re-runs (its hash differs) — D-P9 already changes
+  // bodyHash for the anchor, this changes promptSchemaHash for the tool/prompt.
   const promptSchemaHash = computePromptSchemaHash(systemPrompt, baseTool);
-  const resultSchema = buildResultSchema(vocab);
+  // The two-stage C02 validators (decision shape → reconciled finalC02 canonical).
+  const decisionSchema = buildC02DecisionSchema(vocab);
+  const finalSchema = buildC02FinalSchema(vocab);
 
   // Append the source-document surfaces (Drive filename + page header) to each
   // lesson body BEFORE hashing/sending — these carry grade/season claims that
@@ -1673,12 +1842,24 @@ async function runMainPass(args: Args): Promise<void> {
     let fallbackRecord: RunRecord | null = null;
     // D-P9: the run-identity hash is over the FULL effective input (body + raw
     // current tags + floored anchor + manifest version + reconcile policy), not
-    // body-only. The anchored body + 2-field decision flow is wired by P2′.3
-    // (the live `callForcedTool` swap + reconcile + finalC02 contract); P2′.2
-    // threads the tags + lands the correct hash so a stale pilot answer never
-    // resume/repair-merges.
-    const { effectiveInput } = buildC02EffectiveInput(lesson, c02FloorInput, c02ManifestVer);
+    // body-only. P2′.3 wires the LIVE anchored call: the model sees the anchored
+    // body (current tags appended) + the 2-field KEEP/DROP/ADD tool, and the
+    // decision is reconciled into finalC02 (subtractive, never append-only).
+    const { effectiveInput, anchoredBody, floored } = buildC02EffectiveInput(
+      lesson,
+      c02FloorInput,
+      c02ManifestVer
+    );
     const bodyHash = computeBodyHash(effectiveInput);
+    // The C02 validation flow for this lesson's anchored decision (D-P6).
+    const processC02 = (apiInput: unknown): C02DecisionOutcome =>
+      processC02Decision({
+        apiInput,
+        floored,
+        floorInput: c02FloorInput,
+        decisionSchema,
+        finalSchema,
+      });
     try {
       const {
         rawInput: apiInput,
@@ -1690,21 +1871,22 @@ async function runMainPass(args: Args): Promise<void> {
         args.model,
         systemPrompt,
         tool,
-        lesson.content_text,
+        anchoredBody,
         args.toolChoiceAuto
       );
-      // Code-enforce the mechanical tagging rules the models ignore (R1/R4/R5)
-      // BEFORE Zod, so validation + the repair pass + the apply gate all see
-      // normalized values. Provenance is stamped on the record, never silent.
-      const { rawInput, normalizations } = normalizeRecordInput(apiInput);
-      const zod = validateRawInput(resultSchema, rawInput);
+      // C02 anchored verify-and-diff flow (D-P6): decision-schema validation →
+      // floor + reconcile → finalC02 canonical validation. R7/R8/R9 are SKIPPED
+      // (the floor/reconcile supersede them — see processC02Decision). The raw
+      // decision is preserved as rawInput + llmDecisions; the reconciled arrays
+      // are persisted as finalC02 (the canonical surface scoring/apply read).
+      const outcome = processC02(apiInput);
       record = buildRunRecord({
         id: lesson.id,
         phase: 'main',
         model: args.model,
         promptSchemaHash,
-        rawInput,
-        zod,
+        rawInput: outcome.rawInput,
+        zod: outcome.zod,
         usage,
         latencyMs,
         error: null,
@@ -1713,10 +1895,12 @@ async function runMainPass(args: Args): Promise<void> {
         strict: args.strict,
         toolChoice: args.toolChoiceAuto ? 'auto' : undefined,
         effectiveBaseUrl,
-        normalizations,
+        normalizations: outcome.normalizations,
+        llmDecisions: outcome.llmDecisions,
+        finalC02: outcome.finalC02,
       });
       addToTotals(usage, record.costUsd);
-      if (zod.passed) zodPassed++;
+      if (outcome.zod.passed) zodPassed++;
       else zodFailed++;
     } catch (e) {
       const msg = errorMessage(e);
@@ -1759,18 +1943,22 @@ async function runMainPass(args: Args): Promise<void> {
           fallbackModel: args.fallbackModel,
           promptSchemaHash,
           bodyHash,
-          resultSchema,
+          resultSchema: buildResultSchema(vocab),
           effectiveBaseUrl,
           strict: args.strict,
           mainPassToolChoiceAuto: args.toolChoiceAuto,
-          // Forced tool_choice (toolChoiceAuto=false), forced tool definition.
+          // C02 anchored path: the fallback validates + reconciles via the SAME
+          // flow as the main pass (decision-schema → reconcile → finalC02).
+          processResult: processC02,
+          // Forced tool_choice (toolChoiceAuto=false), forced tool definition,
+          // ANCHORED body (current tags appended — same as the main pass).
           callFn: (toolChoiceAuto) =>
             callForcedTool(
               client,
               args.fallbackModel as string,
               systemPrompt,
               tool,
-              lesson.content_text,
+              anchoredBody,
               toolChoiceAuto
             ),
         });

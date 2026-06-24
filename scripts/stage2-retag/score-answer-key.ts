@@ -508,13 +508,25 @@ export function loadV3FromCorpus(corpusJsonl: string): TaggedRecord[] {
  * wins (repair supersedes main), and the scored tags live in `rawInput`.
  * Records whose rawInput is not a plain object contribute no tags (id present,
  * empty token-sets everywhere — scored like a wrong-but-present answer).
+ *
+ * C02 contract (design §3·PIVOT D-P6, P2′.3): the anchored verify-and-diff path
+ * writes the RAW KEEP/DROP/ADD decision to `rawInput` (a non-tag shape) and the
+ * RECONCILED canonical arrays to `finalC02`. For the two C02 fields, the scored
+ * tags therefore come from `finalC02` (overlaying whatever `rawInput` happens to
+ * hold for those keys), so the scorer reads the reconciled output — never the
+ * raw decision. A record without `finalC02` (legacy / non-C02 runs) is read from
+ * `rawInput` exactly as before.
  */
 export function loadRunContestant(runJsonl: string): TaggedRecord[] {
   const latest = latestRecordById(parseRunRecords(runJsonl));
   const records: TaggedRecord[] = [];
   for (const [id, record] of latest) {
     const raw = record.rawInput;
-    const tags = isPlainObject(raw) ? raw : {};
+    const tags = isPlainObject(raw) ? { ...raw } : {};
+    if (record.finalC02 !== undefined) {
+      tags.cooking_skills = record.finalC02.cooking_skills;
+      tags.main_ingredients = record.finalC02.main_ingredients;
+    }
     records.push({ ...tags, id });
   }
   return records;

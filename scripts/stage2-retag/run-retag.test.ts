@@ -22,10 +22,13 @@ import {
   DEFAULT_MODEL,
   GRADE_LEVELS,
   RESULT_PROPERTIES,
+  buildC02DecisionSchema,
+  buildC02FinalSchema,
   buildResultSchema,
   buildSubmitTagsTool,
   loadSystemPrompt,
 } from './schema';
+import { loadC02FloorInput } from './c02-floor';
 import { loadVocab } from './vocab';
 import {
   DIRECT_BASE_URL,
@@ -60,6 +63,7 @@ import {
   planRepairCandidates,
   planRepairs,
   repairFieldSpec,
+  processC02Decision,
   resolveClientConfig,
   runFallbackForRefusal,
   validateRawInput,
@@ -68,6 +72,7 @@ import {
   type RepairOutcome,
   type RunRecord,
 } from './run-retag';
+import type { C02FlooredTags } from './c02-floor';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(MODULE_DIR, '__fixtures__');
@@ -302,6 +307,159 @@ describe('buildRunRecord', () => {
     expect(record.usage).toEqual(usage);
     expect(record.costUsd).toBeCloseTo(computeCostUsd('claude-opus-4-7', usage) ?? NaN, 10);
     expect(record.stopReason).toBe('max_tokens');
+  });
+});
+
+describe('run-record finalC02 contract (P2′.3 / D-P6)', () => {
+  const llmDecisions = {
+    cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+    main_ingredients: {
+      keep: ['Nightshades'],
+      drop: [],
+      add: [{ value: 'Tomatoes', reason: 'specific-food-central' }],
+    },
+  };
+  const finalC02 = {
+    cooking_skills: ['Baking'],
+    main_ingredients: ['Nightshades', 'Tomatoes'],
+  };
+
+  it('carries BOTH the raw llmDecisions AND finalC02 as NEW record fields, without overwriting rawInput', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions, // rawInput holds the raw decision — preserved.
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+    });
+    expect(record.rawInput).toEqual(llmDecisions);
+    expect(record.llmDecisions).toEqual(llmDecisions);
+    expect(record.finalC02).toEqual(finalC02);
+  });
+
+  it('round-trips both NEW fields through parseRunRecords (write → parse → both present)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions,
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+    });
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.llmDecisions).toEqual(llmDecisions);
+    expect(parsed.finalC02).toEqual(finalC02);
+  });
+
+  it('omits the NEW fields when not provided (legacy/non-C02 records still parse)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-7',
+      promptSchemaHash: 'abc',
+      rawInput: { activity_type: ['garden'] },
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+    });
+    expect(record.llmDecisions).toBeUndefined();
+    expect(record.finalC02).toBeUndefined();
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.finalC02).toBeUndefined();
+  });
+});
+
+describe('processC02Decision — validation flow (P2′.3 / D-P6)', () => {
+  const decisionSchema = buildC02DecisionSchema(vocab);
+  const finalSchema = buildC02FinalSchema(vocab);
+  const floorInput = loadC02FloorInput();
+
+  /** A floored anchor with both fields populated from canonical values. */
+  function flooredAnchor(cooking: string[], ingredients: string[]): C02FlooredTags {
+    return {
+      cooking: cooking.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+      ingredients: ingredients.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+    };
+  }
+
+  it('valid decision → finalC02 reconciled + zod passed + skipC02 normalize (no R7/R8/R9)', () => {
+    const apiInput = {
+      cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+      main_ingredients: {
+        keep: [],
+        drop: [],
+        add: [{ value: 'Tomatoes', reason: 'specific-food-central' }],
+      },
+    };
+    const out = processC02Decision({
+      apiInput,
+      floored: flooredAnchor(['Baking'], []),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(true);
+    // rawInput preserved as the raw decision; llmDecisions is the parsed decision.
+    expect(out.rawInput).toEqual(apiInput);
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
+    // The ADDed specific pulls its parent group in via reconcile.
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.finalC02?.main_ingredients).toContain('Nightshades');
+    // C02 normalize rules were skipped (no double-apply).
+    expect(out.normalizations).not.toContain('cooking-skills-alias-floor');
+    expect(out.normalizations).not.toContain('ingredient-parent-reconcile');
+  });
+
+  it('a decision that fails the schema (wrong shape) → zod.passed false, no finalC02', () => {
+    const out = processC02Decision({
+      apiInput: { cooking_skills: 'not an object', main_ingredients: {} },
+      floored: flooredAnchor([], []),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(false);
+    expect(out.finalC02).toBeUndefined();
+  });
+
+  it('a non-partitioning decision (anchor value omitted) → zod.passed false, no finalC02', () => {
+    // 'Baking' is in the anchor but neither kept nor dropped → reconcile rejects.
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: [], drop: [], add: [] },
+        main_ingredients: { keep: [], drop: [], add: [] },
+      },
+      floored: flooredAnchor(['Baking'], []),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(false);
+    expect(out.finalC02).toBeUndefined();
   });
 });
 
