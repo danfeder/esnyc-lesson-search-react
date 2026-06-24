@@ -1,0 +1,175 @@
+{
+  "generatedAt": "2026-06-24T20:21:26.081Z",
+  "keyLessons": 69,
+  "winningLabel": "opus-4-8",
+  "gates": {
+    "gate1": {
+      "passed": false,
+      "perField": {
+        "cooking_skills": {
+          "winner": 0.787037037037037,
+          "rules": 0.8078817733990148
+        },
+        "main_ingredients": {
+          "winner": 0.7716049382716048,
+          "rules": 0.9177215189873419
+        }
+      },
+      "failingFields": [
+        {
+          "field": "cooking_skills",
+          "winner": 0.787037037037037,
+          "rules": 0.8078817733990148
+        },
+        {
+          "field": "main_ingredients",
+          "winner": 0.7716049382716048,
+          "rules": 0.9177215189873419
+        }
+      ],
+      "cleanCoreCount": 34
+    },
+    "gate2": {
+      "passed": false,
+      "perField": {
+        "cooking_skills": {
+          "winner": 0.8013698630136987,
+          "rules": 0.8068965517241379,
+          "delta": -0.005526688710439154,
+          "passed": false
+        },
+        "main_ingredients": {
+          "winner": 0.8347826086956522,
+          "rules": 0.7766990291262136,
+          "delta": 0.05808357956943866,
+          "passed": true
+        }
+      },
+      "minDelta": 0.05,
+      "judgmentRowCount": 35
+    },
+    "gate3": {
+      "passed": false,
+      "addedSpecificPrecision": 0.6210526315789474,
+      "precisionFloor": 0.7,
+      "pooledTp": 118,
+      "pooledFp": 72,
+      "absentValueViolations": [],
+      "absentRateCeiling": 0.05,
+      "perSpecificViolations": [
+        {
+          "value": "Bell peppers",
+          "precision": 0.42857142857142855,
+          "truthCount": 4,
+          "predictionCount": 7
+        },
+        {
+          "value": "Carrots",
+          "precision": 0.5,
+          "truthCount": 6,
+          "predictionCount": 12
+        },
+        {
+          "value": "Cilantro",
+          "precision": 0.5,
+          "truthCount": 3,
+          "predictionCount": 4
+        },
+        {
+          "value": "Garlic",
+          "precision": 0.3125,
+          "truthCount": 5,
+          "predictionCount": 16
+        },
+        {
+          "value": "Ginger",
+          "precision": 0.4,
+          "truthCount": 3,
+          "predictionCount": 5
+        },
+        {
+          "value": "Honey",
+          "precision": 0.4444444444444444,
+          "truthCount": 4,
+          "predictionCount": 9
+        },
+        {
+          "value": "Lemon",
+          "precision": 0.3333333333333333,
+          "truthCount": 3,
+          "predictionCount": 9
+        },
+        {
+          "value": "Parsley",
+          "precision": 0.5,
+          "truthCount": 3,
+          "predictionCount": 6
+        },
+        {
+          "value": "Tomatoes",
+          "precision": 0.5,
+          "truthCount": 3,
+          "predictionCount": 6
+        }
+      ],
+      "perSpecificPrecisionFloor": 0.6,
+      "sentinels": [
+        {
+          "value": "Tasting",
+          "field": "cooking_skills",
+          "precision": 1,
+          "floor": 0.7,
+          "predictionCount": 3,
+          "gated": true,
+          "passed": true
+        },
+        {
+          "value": "Kitchen & food safety",
+          "field": "cooking_skills",
+          "precision": 1,
+          "floor": 0.7,
+          "predictionCount": 2,
+          "gated": false,
+          "passed": true
+        },
+        {
+          "value": "Sweeteners",
+          "field": "main_ingredients",
+          "precision": 0.5,
+          "floor": 0.8,
+          "predictionCount": 10,
+          "gated": true,
+          "passed": false
+        }
+      ],
+      "sentinelsPassed": false
+    },
+    "gate4": {
+      "passed": false,
+      "sweetenersPrecision": 0.5,
+      "sweetenersPrecisionFloor": 0.8,
+      "survivingNeverStored": []
+    },
+    "allPassed": false,
+    "gate2BootstrapCI": {
+      "cooking_skills": {
+        "pointDelta": -0.005526688710439154,
+        "lower": -0.08012545991917497,
+        "upper": 0.058590392512653966,
+        "iterations": 1000,
+        "seed": 20260623
+      },
+      "main_ingredients": {
+        "pointDelta": 0.05808357956943866,
+        "lower": -0.050784025770998276,
+        "upper": 0.15478396246066806,
+        "iterations": 1000,
+        "seed": 20260623
+      }
+    },
+    "labels": {
+      "cleanCore": 34,
+      "judgmentRow": 35
+    }
+  }
+}
