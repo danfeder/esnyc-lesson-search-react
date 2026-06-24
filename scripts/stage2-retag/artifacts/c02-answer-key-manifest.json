@@ -3,11 +3,20 @@
     "task": "C02 P1.5 — 3-layer answer-key sample (hard-case + set-cover + clean-core)",
     "sampler_version": "b1-v1",
     "seed": 20260612,
-    "size": 70,
-    "note": "Deterministic; reproduce with `npx tsx scripts/stage2-retag/sample-answer-key.ts --c02 --seed 20260612`"
+    "size": 69,
+    "note": "Deterministic; reproduce with `npx tsx scripts/stage2-retag/sample-answer-key.ts --c02 --seed 20260612`",
+    "postSampleRemovals": [
+      {
+        "id": "1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX",
+        "title": "Equivalent Ratios",
+        "layer": "hard-case",
+        "reason": "On the corpus-exclusions deletion-slate (incomplete/non-lesson, §A24/§F); absent from the run-retag corpus, so unscoreable as a phantom all-miss. Removed 2026-06-23 (Session 8, P2.3). Original deterministic sample size = 70; effective scored key = 69."
+      }
+    ],
+    "coverageNote": "The `coverage` value-counts below reflect the as-drawn 70-id sample; one deletion-slated id was removed post-sample (see postSampleRemovals). Gold-key adjudicated support recomputed over 69 rows preserves >=2 for every value the removed lesson carried (verified)."
   },
   "layerSizes": {
-    "hardCase": 20,
+    "hardCase": 19,
     "coverage": 28,
     "cleanCore": 22
   },
@@ -191,12 +200,6 @@
       "title": "Sandwich Swap (Mobile Education)",
       "layer": "hard-case",
       "hardCaseClass": "orphan-food"
-    },
-    {
-      "id": "1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX",
-      "title": "Equivalent Ratios",
-      "layer": "hard-case",
-      "hardCaseClass": "vague-cooking"
     },
     {
       "id": "1ChYFdztQt1U-EK4aOzZ6XkY9fKqTCawKlmTlTajQRvg",
