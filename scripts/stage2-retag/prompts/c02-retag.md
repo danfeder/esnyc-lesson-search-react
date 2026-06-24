@@ -25,6 +25,13 @@ Do NOT re-tag the lesson from a blank slate. Start from the current tags in the 
 
 Decide ONLY these two fields. Call the `submit_tags` tool exactly once with the two decision objects.
 
+**How to fill the three buckets (follow exactly — a malformed decision is rejected and the lesson scores blank):**
+
+- Every value shown in the anchor MUST land in EITHER `keep` OR `drop` — never both, never neither. Account for each anchor value exactly once; copy it verbatim.
+- `keep` and `drop` contain ONLY values that appear in the anchor. A value that is not in the anchor can never be kept or dropped.
+- `add` contains ONLY values that are NOT in the anchor. If you want a value that the anchor does not already show, it goes in `add` (with a reason code) — never in `keep`.
+- Use the exact canonical strings from the tool schema for every value, and only the listed reason codes. An unlisted value or reason code is rejected.
+
 **Bias toward the anchor.** Most current tags are correct; a from-scratch re-read over-tags. Only DROP a tag when the body affirmatively fails to support it, and only ADD a tag when the body clearly supports it — a value that is merely plausible, age-typical, or thematically adjacent does NOT get added. False positives are worse than false negatives.
 
 **Tag THIS body independently.** Same-titled lesson variants genuinely differ. Decide from this body's anchor + this body's text — never from what another lesson with the same title contains.
@@ -51,9 +58,9 @@ The specific cooking skills/techniques students actually practice in a hands-on 
 
 - **Add the real technique behind a vague placeholder.** The floor already removed non-canonical placeholders like "Basic Skills" / "Cooking Techniques" (they won't appear in the anchor), so such a lesson's cooking_skills anchor is empty or thin. ADD the actual skill the Agenda shows (`real-technique-taught`): a lesson that says "basic cooking skills" but has students dice and sauté vegetables → ADD `Knife skills` + `Sautéing & stir-frying`. Frying / stovetop frying is `Sautéing & stir-frying`.
 
-- **`Tasting` ADD criterion (strict).** ADD `Tasting` ONLY when the lesson teaches tasting as a SKILL — a structured sensory comparison, tasting vocabulary, or a taste assessment students perform (e.g. comparing varieties, describing flavor on a sensory rubric, a blind taste test). Do NOT add `Tasting` merely because students eat or sample the dish at the end. Eating the finished dish is NOT `Tasting`. If the only "tasting" is a closing snack, DROP a current `Tasting` tag (`incidental-not-central`).
+- **`Tasting` is KEEP-ONLY — never ADD it.** These two skills are heavily over-applied, so the body cannot introduce them: if `Tasting` is not already in the anchor, it stays off (your ADD list must never contain it). KEEP a current `Tasting` tag ONLY when the lesson teaches tasting as a SKILL — a structured sensory comparison, tasting vocabulary, or a taste assessment students perform (e.g. comparing varieties, describing flavor on a sensory rubric, a blind taste test). Do NOT keep `Tasting` merely because students eat or sample the dish at the end. Eating the finished dish is NOT `Tasting`. If the only "tasting" is a closing snack, DROP a current `Tasting` tag (`incidental-not-central`).
 
-- **`Kitchen & food safety` ADD criterion (strict).** ADD `Kitchen & food safety` ONLY when food/kitchen safety is taught, practiced, or assessed as content — a dedicated agenda segment, a safety lesson, hand-washing or knife-safety instruction the lesson explicitly delivers. Do NOT add it for incidental safe handling (a passing "wash your hands", routine careful knife use, "be careful with the hot pan"). Incidental knife/wash/heat is NOT `Kitchen & food safety`. If a current tag rests only on incidental handling, DROP it (`incidental-not-central`).
+- **`Kitchen & food safety` is KEEP-ONLY — never ADD it.** As with `Tasting`, the body cannot introduce it: if it is not already in the anchor, it stays off. KEEP a current `Kitchen & food safety` tag ONLY when food/kitchen safety is taught, practiced, or assessed as content — a dedicated agenda segment, a safety lesson, hand-washing or knife-safety instruction the lesson explicitly delivers. Do NOT keep it for incidental safe handling (a passing "wash your hands", routine careful knife use, "be careful with the hot pan"). Incidental knife/wash/heat is NOT `Kitchen & food safety`. If a current tag rests only on incidental handling, DROP it (`incidental-not-central`).
 
 ## main_ingredients — KEEP/DROP/ADD rules
 
@@ -65,6 +72,8 @@ The lesson's main ingredients, at TWO levels: ingredient **groups** (e.g. Leafy 
 
 - **Garnish is not a main ingredient.** A food used only as a garnish, a decorative topping, or a trace flavoring (a sprig of parsley on the plate, a sprinkle of sesame, a lemon wedge for looks) is NOT a main ingredient. Do not ADD it; DROP a current tag that rests only on a garnish (`incidental-not-central`).
 
+- **Aromatics and flavor-base foods are rarely central specifics.** Garlic, ginger, onions, scallions, and shallots used as a flavor base, sofrito, or aromatic backbone are background seasoning, not what the lesson is about. When they appear that way, the most you tag is the `Alliums` group (for the onion family) when it is genuinely central — do NOT ADD `Garlic` or `Ginger` as a *specific* unless the dish is genuinely ABOUT that food (a garlic-confit lesson, a ginger-tea lesson). The same restraint governs a squeeze of citrus, a spoonful of honey, or a few herbs used to finish or season: tag the specific food ONLY when it is the centerpiece, never when it merely flavors. A specific that survives only as seasoning is `incidental-not-central`.
+
 - **Pantry-staple precision (B-lite rule).** Salt, oil, and soy sauce are never-stored background staples — the floor already removed them (they won't appear in the anchor) and they are not valid values, so never ADD them, even when the recipe uses them. `Sweeteners` (Sugar folds into it) IS canonical and may appear in the anchor — KEEP or ADD it ONLY when the lesson is genuinely ABOUT the sweetener (a lesson on sugar, honey, sweetness); otherwise DROP it (`pantry-staple-not-about-it`), not because a recipe contains a spoonful of sugar.
 
 ## Negative few-shots
@@ -75,7 +84,9 @@ The lesson's main ingredients, at TWO levels: ingredient **groups** (e.g. Leafy 
 
 3. **Tasting vs eating.** A garden lesson ends with "students taste the cherry tomatoes they harvested." That is eating the produce, not a tasting SKILL → do NOT add `Tasting`. A separate lesson runs "a blind taste test comparing three apple varieties, scoring sweetness and crunch on a sensory chart" → that IS `Tasting` (`body-clearly-supports`).
 
-4. **Kitchen safety vs incidental handling.** A cooking lesson says "remind students to wash hands and use the bear claw grip." That is incidental safe handling → do NOT add `Kitchen & food safety`. A lesson with a dedicated "Kitchen Safety" agenda segment teaching knife handling, stove safety, and sanitation → that IS `Kitchen & food safety` (`body-clearly-supports`).
+4. **Kitchen safety vs incidental handling.** A cooking lesson says "remind students to wash hands and use the bear claw grip." That is incidental safe handling → do NOT add `Kitchen & food safety`. (And recall `Kitchen & food safety` is KEEP-ONLY — even a strong case is only ever KEPT from the anchor, never ADDed.)
+
+5. **Aromatics flavor the dish; they are not the dish.** A stir-fry sautés "2 cloves garlic and a thumb of ginger" before adding bok choy and tofu. Garlic and ginger are the aromatic base → at most ADD `Alliums` if the onion family is genuinely central; do NOT ADD `Garlic` or `Ginger` as specifics. The main ingredients are the bok choy (`Leafy greens`) and tofu (`Tofu & plant proteins`). Likewise a salad finished with a honey-lemon dressing → do NOT ADD `Honey`/`Sweeteners` or `Lemon`/`Citrus fruits`; the greens are the subject.
 
 ## Output
 

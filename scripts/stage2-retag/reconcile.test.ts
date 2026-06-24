@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import type { C02FloorInput, C02FlooredTags } from './c02-floor';
 import type { C02Decision } from './schema';
 import { c02IngredientParentMap, c02MainIngredientsValues, type C02Manifest } from './vocab';
-import { reconcileC02Tags } from './reconcile';
+import { reconcileC02Tags, C02_KEEP_ONLY_LOCK } from './reconcile';
 
 // A small synthetic manifest with a clear specific→group parent map.
 const MANIFEST: C02Manifest = {
@@ -129,10 +129,48 @@ describe('reconcileC02Tags — ADD contract', () => {
     const result = reconcileC02Tags({
       existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
       floored: floored(['Boiling & simmering'], []),
-      llmDecisions: decision({ keep: ['Boiling & simmering'], add: ['Tasting'] }, {}),
+      // 'Baking' is a non-locked skill; a locked ADD is tested separately below.
+      llmDecisions: decision({ keep: ['Boiling & simmering'], add: ['Baking'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toContain('Baking');
+  });
+});
+
+describe('reconcileC02Tags — D-P1 keep-only lock (Tasting / Kitchen & food safety)', () => {
+  it('the lock set is exactly the two universal catch-all cooking skills', () => {
+    expect(C02_KEEP_ONLY_LOCK).toEqual(new Set(['Tasting', 'Kitchen & food safety']));
+  });
+
+  it('SUPPRESSES an LLM ADD of a locked cooking skill (never-add), even though it is a valid disjoint add', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: [] },
+      floored: floored([], []),
+      llmDecisions: decision({ add: ['Tasting'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual([]);
+    expect(result.finalCookingSkills).not.toContain('Tasting');
+  });
+
+  it('KEEPS a locked cooking skill when it is in the anchor (keep-only, not no-tag)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Tasting'], main_ingredients: [] },
+      floored: floored(['Tasting'], []),
+      llmDecisions: decision({ keep: ['Tasting'] }, {}),
       floor: makeFloorInput(),
     });
     expect(result.finalCookingSkills).toContain('Tasting');
+  });
+
+  it('still DROPS a locked cooking skill the LLM drops (the lock blocks ADD only, not DROP)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Tasting'], main_ingredients: [] },
+      floored: floored(['Tasting'], []),
+      llmDecisions: decision({ drop: ['Tasting'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).not.toContain('Tasting');
   });
 });
 
@@ -220,14 +258,14 @@ describe('reconcileC02Tags — canonical / deterministic output', () => {
       existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
       floored: floored(['Boiling & simmering'], []),
       llmDecisions: decision(
-        { keep: ['Boiling & simmering'], add: ['Tasting'] },
+        { keep: ['Boiling & simmering'], add: ['Baking'] }, // non-locked add
         { add: ['Tomatoes'] }
       ),
       floor: makeFloorInput(),
     });
     const provFor = (v: string) => result.provenance.find((p) => p.value === v)?.origin;
     expect(provFor('Boiling & simmering')).toBe('kept');
-    expect(provFor('Tasting')).toBe('added');
+    expect(provFor('Baking')).toBe('added');
     expect(provFor('Tomatoes')).toBe('added');
     expect(provFor('Nightshades')).toBe('parent-derived');
   });

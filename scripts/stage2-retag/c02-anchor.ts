@@ -40,8 +40,12 @@ import { c02MainIngredientsValues, type C02Manifest } from './vocab';
  * the floor-anchored verify-and-diff policy the anchored run operates under. A
  * change to the reconciliation contract bumps this id so cached answers from a
  * prior policy never resume-merge.
+ *
+ * v2 (P2′.6 round 2): added the D-P1 keep-only lock on the universal catch-all
+ * cooking skills (`Tasting`, `Kitchen & food safety` — never ADDed, only KEPT).
+ * The reconcile output changed, so every record re-executes rather than resumes.
  */
-export const C02_RECONCILE_POLICY_ID = 'c02-anchored-verify-and-diff-v1';
+export const C02_RECONCILE_POLICY_ID = 'c02-anchored-verify-and-diff-v2';
 
 /**
  * One-sentence note framing the anchor as the lesson's CURRENT tags (so the

@@ -34,6 +34,25 @@
 import type { C02FloorInput, C02FlooredTags } from './c02-floor';
 import type { C02Decision } from './schema';
 
+/**
+ * D-P1 keep-only lock (design §3·PIVOT). These universal catch-all cooking
+ * skills are demonstrably over-ADDed by the LLM: pilot round 1 (P2′.6) scored
+ * `Tasting` at 0.214 precision over 28 predictions — its KEEP decisions were
+ * perfect (3/3) and ALL the damage came from ADDs (3 right / 22 wrong);
+ * `Kitchen & food safety` 0.400 (KEEP 2/2, ADD 0/3). Tightening the prompt's
+ * per-label ADD criteria + negative few-shots did NOT bring them under the
+ * sentinel gate, so the lock makes them KEEP-only: a locked value the LLM ADDs
+ * is suppressed from `finalC02`; a locked value already in the anchor may still
+ * be KEPT or DROPPED (the lock blocks ADD only, never KEEP/DROP).
+ */
+export const C02_KEEP_ONLY_LOCK: ReadonlySet<string> = new Set([
+  'Tasting',
+  'Kitchen & food safety',
+]);
+
+/** Empty lock — no main_ingredients value is keep-only. */
+const NO_LOCK: ReadonlySet<string> = new Set();
+
 /** How a final reconciled value arrived in the output. */
 export type C02ReconcileOrigin = 'kept' | 'added' | 'parent-derived';
 
@@ -98,7 +117,8 @@ interface FieldDecisionValues {
 function reconcileField(
   field: 'cooking_skills' | 'main_ingredients',
   anchorTags: readonly { value: string }[],
-  decision: FieldDecisionValues
+  decision: FieldDecisionValues,
+  lockedAddValues: ReadonlySet<string>
 ): C02ReconciledTag[] {
   const anchor = new Set(anchorTags.map((t) => t.value));
   const keep = new Set(decision.keep);
@@ -142,6 +162,12 @@ function reconcileField(
     }
   }
 
+  // D-P1 keep-only lock: a locked value may be KEPT (it is in the anchor) but
+  // never ADDed. Filter locked values out of the add list for output ONLY —
+  // the disjoint/partition checks above still ran over the full decision, so a
+  // malformed decision is still rejected, not silently lock-masked.
+  const addForOutput = add.filter((v) => !lockedAddValues.has(v));
+
   // (3) base result = KEPT anchor values (in anchor order) ∪ ADDed values
   // (in decision order). Subtractive: a DROPPED anchor value never appears.
   const out: C02ReconciledTag[] = [];
@@ -152,7 +178,7 @@ function reconcileField(
       out.push({ value: t.value, field, origin: 'kept' });
     }
   }
-  for (const v of add) {
+  for (const v of addForOutput) {
     if (!seen.has(v)) {
       seen.add(v);
       out.push({ value: v, field, origin: 'added' });
@@ -192,17 +218,27 @@ function reconcileParents(
  * failure for that lesson, like a Zod failure).
  */
 export function reconcileC02Tags(input: C02ReconcileInput): C02ReconcileResult {
-  const cooking = reconcileField('cooking_skills', input.floored.cooking, {
-    keep: input.llmDecisions.cooking_skills.keep,
-    drop: input.llmDecisions.cooking_skills.drop.map((d) => d.value),
-    add: input.llmDecisions.cooking_skills.add.map((a) => a.value),
-  });
+  const cooking = reconcileField(
+    'cooking_skills',
+    input.floored.cooking,
+    {
+      keep: input.llmDecisions.cooking_skills.keep,
+      drop: input.llmDecisions.cooking_skills.drop.map((d) => d.value),
+      add: input.llmDecisions.cooking_skills.add.map((a) => a.value),
+    },
+    C02_KEEP_ONLY_LOCK
+  );
 
-  const ingredientsBase = reconcileField('main_ingredients', input.floored.ingredients, {
-    keep: input.llmDecisions.main_ingredients.keep,
-    drop: input.llmDecisions.main_ingredients.drop.map((d) => d.value),
-    add: input.llmDecisions.main_ingredients.add.map((a) => a.value),
-  });
+  const ingredientsBase = reconcileField(
+    'main_ingredients',
+    input.floored.ingredients,
+    {
+      keep: input.llmDecisions.main_ingredients.keep,
+      drop: input.llmDecisions.main_ingredients.drop.map((d) => d.value),
+      add: input.llmDecisions.main_ingredients.add.map((a) => a.value),
+    },
+    NO_LOCK
+  );
   const ingredients = reconcileParents(ingredientsBase, input.floor.parentMap);
 
   return {
