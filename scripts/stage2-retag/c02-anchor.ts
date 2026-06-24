@@ -43,9 +43,11 @@ import { c02MainIngredientsValues, type C02Manifest } from './vocab';
  *
  * v2 (P2′.6 round 2): added the D-P1 keep-only lock on the universal catch-all
  * cooking skills (`Tasting`, `Kitchen & food safety` — never ADDed, only KEPT).
- * The reconcile output changed, so every record re-executes rather than resumes.
+ * v3 (P2′.6 round 3): reconcile is now LENIENT (recovers a malformed partition
+ * instead of rejecting it) + `Sweeteners` is keep-only. The reconcile output
+ * changed, so every record re-executes rather than resumes.
  */
-export const C02_RECONCILE_POLICY_ID = 'c02-anchored-verify-and-diff-v2';
+export const C02_RECONCILE_POLICY_ID = 'c02-anchored-verify-and-diff-v3';
 
 /**
  * One-sentence note framing the anchor as the lesson's CURRENT tags (so the

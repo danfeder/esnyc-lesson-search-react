@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import type { C02FloorInput, C02FlooredTags } from './c02-floor';
 import type { C02Decision } from './schema';
 import { c02IngredientParentMap, c02MainIngredientsValues, type C02Manifest } from './vocab';
-import { reconcileC02Tags, C02_KEEP_ONLY_LOCK } from './reconcile';
+import { reconcileC02Tags, C02_KEEP_ONLY_LOCK, C02_INGREDIENT_KEEP_ONLY_LOCK } from './reconcile';
 
 // A small synthetic manifest with a clear specific→group parent map.
 const MANIFEST: C02Manifest = {
@@ -74,55 +74,61 @@ describe('reconcileC02Tags — partition contract', () => {
     expect(result.finalCookingSkills).toEqual(['Boiling & simmering']);
   });
 
-  it('REJECTS a decision that omits an anchor value from KEEP ∪ DROP', () => {
-    expect(() =>
-      reconcileC02Tags({
-        existing: { cooking_skills: ['Boiling & simmering', 'Baking'], main_ingredients: [] },
-        floored: floored(['Boiling & simmering', 'Baking'], []),
-        // 'Baking' is in the anchor but appears in neither keep nor drop.
-        llmDecisions: decision({ keep: ['Boiling & simmering'] }, {}),
-        floor: makeFloorInput(),
-      })
-    ).toThrow(/partition/i);
+  // Lenient recovery (D-P6 amended, P2′.6 r3): the LLM cannot reliably emit a
+  // perfect partition, and REJECTING cost ~12% of lessons their tags. Reconcile
+  // now RECOVERS the model's intent into a clean partition instead of throwing.
+  it('RECOVERS an omitted anchor value as an implicit KEEP (lenient)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Boiling & simmering', 'Baking'], main_ingredients: [] },
+      floored: floored(['Boiling & simmering', 'Baking'], []),
+      // 'Baking' is in the anchor but appears in neither keep nor drop → kept.
+      llmDecisions: decision({ keep: ['Boiling & simmering'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual(['Boiling & simmering', 'Baking']);
   });
 
-  it('REJECTS a decision whose KEEP/DROP value is outside the anchor', () => {
-    expect(() =>
-      reconcileC02Tags({
-        existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
-        floored: floored(['Boiling & simmering'], []),
-        // 'Baking' is not in the anchor; it cannot be KEPT (only ADDed).
-        llmDecisions: decision({ keep: ['Boiling & simmering', 'Baking'] }, {}),
-        floor: makeFloorInput(),
-      })
-    ).toThrow(/partition|not in the anchor/i);
+  it('RECOVERS a KEEP value outside the anchor as an ADD (lenient)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
+      floored: floored(['Boiling & simmering'], []),
+      // 'Baking' is not in the anchor; a keep-mis-bucket → recovered as an add.
+      llmDecisions: decision({ keep: ['Boiling & simmering', 'Baking'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual(['Boiling & simmering', 'Baking']);
   });
 
-  it('REJECTS a value that appears in BOTH keep and drop (overlap)', () => {
-    expect(() =>
-      reconcileC02Tags({
-        existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
-        floored: floored(['Boiling & simmering'], []),
-        llmDecisions: decision(
-          { keep: ['Boiling & simmering'], drop: ['Boiling & simmering'] },
-          {}
-        ),
-        floor: makeFloorInput(),
-      })
-    ).toThrow(/partition|both keep and drop|overlap/i);
+  it('IGNORES a DROP value outside the anchor (cannot drop an absent value)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
+      floored: floored(['Boiling & simmering'], []),
+      llmDecisions: decision({ keep: ['Boiling & simmering'], drop: ['Baking'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual(['Boiling & simmering']);
+  });
+
+  it('RESOLVES an overlap (a value in both keep and drop) by DROP-wins (precision-favoring)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
+      floored: floored(['Boiling & simmering'], []),
+      llmDecisions: decision({ keep: ['Boiling & simmering'], drop: ['Boiling & simmering'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual([]);
   });
 });
 
 describe('reconcileC02Tags — ADD contract', () => {
-  it('REJECTS an ADD that is already in the anchor (ADD must be disjoint)', () => {
-    expect(() =>
-      reconcileC02Tags({
-        existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
-        floored: floored(['Boiling & simmering'], []),
-        llmDecisions: decision({ keep: ['Boiling & simmering'], add: ['Boiling & simmering'] }, {}),
-        floor: makeFloorInput(),
-      })
-    ).toThrow(/disjoint|already in the anchor|ADD/i);
+  it('RECOVERS an ADD already in the anchor as a KEEP (lenient)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
+      floored: floored(['Boiling & simmering'], []),
+      llmDecisions: decision({ add: ['Boiling & simmering'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual(['Boiling & simmering']);
   });
 
   it('an LLM ADD survives into finalC02', () => {
@@ -171,6 +177,42 @@ describe('reconcileC02Tags — D-P1 keep-only lock (Tasting / Kitchen & food saf
       floor: makeFloorInput(),
     });
     expect(result.finalCookingSkills).not.toContain('Tasting');
+  });
+
+  it('the ingredient lock is exactly the over-applied pantry group Sweeteners', () => {
+    expect(C02_INGREDIENT_KEEP_ONLY_LOCK).toEqual(new Set(['Sweeteners']));
+  });
+
+  it('SUPPRESSES an LLM ADD of the locked pantry group Sweeteners (main_ingredients)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: [] },
+      floored: floored([], []),
+      llmDecisions: decision({}, { add: ['Sweeteners'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).not.toContain('Sweeteners');
+  });
+
+  it('KEEPS Sweeteners when it is in the anchor (keep-only, not no-tag)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: ['Sweeteners'] },
+      floored: floored([], ['Sweeteners']),
+      llmDecisions: decision({}, { keep: ['Sweeteners'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).toContain('Sweeteners');
+  });
+
+  it('also suppresses a locked value the LLM mis-buckets into KEEP (recovered-add path is locked too)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: [], main_ingredients: [] },
+      floored: floored([], []),
+      // 'Sweeteners' is NOT in the anchor; a keep-mis-bucket recovers to ADD,
+      // and the lock must still suppress it on that path.
+      llmDecisions: decision({}, { keep: ['Sweeteners'] }),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalMainIngredients).not.toContain('Sweeteners');
   });
 });
 

@@ -50,8 +50,16 @@ export const C02_KEEP_ONLY_LOCK: ReadonlySet<string> = new Set([
   'Kitchen & food safety',
 ]);
 
-/** Empty lock — no main_ingredients value is keep-only. */
-const NO_LOCK: ReadonlySet<string> = new Set();
+/**
+ * D-P1 keep-only lock for main_ingredients (P2′.6 round 3). `Sweeteners` is the
+ * over-applied pantry GROUP (Sugar folds into it): the B-lite rule says tag it
+ * only when the lesson is genuinely ABOUT the sweetener, but round-2 scored it
+ * at 0.417 precision (12 predictions) — the model adds it for any honey/sugar in
+ * a recipe. Like the catch-all skills, it is KEEP-only: never ADDed, only KEPT
+ * from the anchor. Specific foods (Garlic, Honey, …) are NOT locked — they are
+ * legitimate specifics whose central-vs-incidental call is a calibration matter.
+ */
+export const C02_INGREDIENT_KEEP_ONLY_LOCK: ReadonlySet<string> = new Set(['Sweeteners']);
 
 /** How a final reconciled value arrived in the output. */
 export type C02ReconcileOrigin = 'kept' | 'added' | 'parent-derived';
@@ -111,8 +119,25 @@ interface FieldDecisionValues {
 /**
  * Reconcile ONE field against its floored anchor. Returns the ordered, unique
  * canonical values + each value's origin (`kept` | `added`). Parent-reconcile is
- * applied by the caller (ingredient-only). REJECTS a non-partitioning decision
- * or an ADD that collides with the anchor.
+ * applied by the caller (ingredient-only).
+ *
+ * LENIENT recovery (design §3·PIVOT D-P6 amended, P2′.6 round 3): the LLM cannot
+ * reliably emit a perfect partition (KEEP ∪ DROP = the anchor; ADD disjoint),
+ * and REJECTING a malformed decision cost ~12% of pilot lessons their tags (a
+ * recall sink the prompt could not fix). Rather than throw, recover the model's
+ * INTENT into a clean partition, each fix favoring the anchored-but-conservative
+ * reading:
+ *   - a KEEP value NOT in the anchor → the model wants a NEW value → ADD it.
+ *   - a DROP value NOT in the anchor → cannot drop an absent value → ignore.
+ *   - an ADD value ALREADY in the anchor → it is an anchor value the model
+ *     wants → KEEP it.
+ *   - a value in BOTH keep and drop (overlap) → DROP wins (the verify-and-diff
+ *     bar favors precision when the model contradicts itself).
+ *   - an anchor value in NEITHER keep nor drop (omission) → implicit KEEP (the
+ *     floor anchor is already cleaned; do not silently drop an un-flagged value).
+ * The result is still a clean, subtractive partition; an explicit DROP still
+ * removes. The decision schema (upstream Zod) still rejects off-vocab values, so
+ * recovery only ever moves a valid canonical value between buckets.
  */
 function reconcileField(
   field: 'cooking_skills' | 'main_ingredients',
@@ -121,55 +146,41 @@ function reconcileField(
   lockedAddValues: ReadonlySet<string>
 ): C02ReconciledTag[] {
   const anchor = new Set(anchorTags.map((t) => t.value));
-  const keep = new Set(decision.keep);
-  const drop = new Set(decision.drop);
-  const add = decision.add; // order-preserving
+  const keep = new Set<string>();
+  const drop = new Set<string>();
+  const recoveredAdds: string[] = []; // order-preserving (decision order)
 
-  // (1a) overlap — a value in BOTH keep and drop.
-  for (const v of keep) {
-    if (drop.has(v)) {
-      throw new Error(
-        `C02 reconcile (${field}): "${v}" appears in BOTH keep and drop — ` +
-          `KEEP ∪ DROP must partition the anchor (no overlap).`
-      );
-    }
+  // KEEP bucket: an anchor value is kept; a non-anchor value is a mis-bucketed
+  // new value → recover as an add.
+  for (const v of decision.keep) {
+    if (anchor.has(v)) keep.add(v);
+    else recoveredAdds.push(v);
   }
-  // (1b) outside-the-anchor — a kept/dropped value not in the anchor.
-  for (const v of [...keep, ...drop]) {
-    if (!anchor.has(v)) {
-      throw new Error(
-        `C02 reconcile (${field}): "${v}" is in keep/drop but NOT in the anchor — ` +
-          `KEEP/DROP decide only anchor values (a new value must be ADDed).`
-      );
-    }
+  // DROP bucket: only an anchor value can be dropped; a non-anchor drop is a
+  // no-op (cannot drop what is not there).
+  for (const v of decision.drop) {
+    if (anchor.has(v)) drop.add(v);
   }
-  // (1c) omission — an anchor value decided neither keep nor drop.
+  // ADD bucket: a non-anchor value is a genuine add; a value already in the
+  // anchor is recovered as a keep (the model wants it, and it is present).
+  for (const v of decision.add) {
+    if (anchor.has(v)) keep.add(v);
+    else recoveredAdds.push(v);
+  }
+  // overlap → DROP wins.
+  for (const v of drop) keep.delete(v);
+  // omission → implicit KEEP.
   for (const v of anchor) {
-    if (!keep.has(v) && !drop.has(v)) {
-      throw new Error(
-        `C02 reconcile (${field}): anchor value "${v}" is in neither keep nor drop — ` +
-          `KEEP ∪ DROP must EXACTLY partition the anchor (no omission).`
-      );
-    }
-  }
-  // (2) ADD must be disjoint from the anchor.
-  for (const v of add) {
-    if (anchor.has(v)) {
-      throw new Error(
-        `C02 reconcile (${field}): ADD "${v}" is already in the anchor — ` +
-          `ADD must be DISJOINT from the anchor (an anchor value is KEPT, not ADDed).`
-      );
-    }
+    if (!keep.has(v) && !drop.has(v)) keep.add(v);
   }
 
   // D-P1 keep-only lock: a locked value may be KEPT (it is in the anchor) but
-  // never ADDed. Filter locked values out of the add list for output ONLY —
-  // the disjoint/partition checks above still ran over the full decision, so a
-  // malformed decision is still rejected, not silently lock-masked.
-  const addForOutput = add.filter((v) => !lockedAddValues.has(v));
+  // never ADDed — filter locked values out of the add list (recovered adds
+  // included, so a locked value mis-bucketed into KEEP is still suppressed).
+  const addForOutput = recoveredAdds.filter((v) => !lockedAddValues.has(v));
 
-  // (3) base result = KEPT anchor values (in anchor order) ∪ ADDed values
-  // (in decision order). Subtractive: a DROPPED anchor value never appears.
+  // base result = KEPT anchor values (in anchor order) ∪ ADDed values (in
+  // decision order). Subtractive: a DROPPED anchor value never appears.
   const out: C02ReconciledTag[] = [];
   const seen = new Set<string>();
   for (const t of anchorTags) {
@@ -237,7 +248,7 @@ export function reconcileC02Tags(input: C02ReconcileInput): C02ReconcileResult {
       drop: input.llmDecisions.main_ingredients.drop.map((d) => d.value),
       add: input.llmDecisions.main_ingredients.add.map((a) => a.value),
     },
-    NO_LOCK
+    C02_INGREDIENT_KEEP_ONLY_LOCK
   );
   const ingredients = reconcileParents(ingredientsBase, input.floor.parentMap);
 

@@ -446,8 +446,10 @@ describe('processC02Decision — validation flow (P2′.3 / D-P6)', () => {
     expect(out.finalC02).toBeUndefined();
   });
 
-  it('a non-partitioning decision (anchor value omitted) → zod.passed false, no finalC02', () => {
-    // 'Baking' is in the anchor but neither kept nor dropped → reconcile rejects.
+  it('a non-partitioning decision (anchor value omitted) → RECOVERED as implicit KEEP (lenient, P2′.6 r3)', () => {
+    // 'Baking' is in the anchor but neither kept nor dropped. Reconcile is now
+    // LENIENT: it recovers the omission as an implicit KEEP rather than rejecting
+    // the whole lesson (the strict-reject cost ~12% of pilot lessons their tags).
     const out = processC02Decision({
       apiInput: {
         cooking_skills: { keep: [], drop: [], add: [] },
@@ -458,8 +460,8 @@ describe('processC02Decision — validation flow (P2′.3 / D-P6)', () => {
       decisionSchema,
       finalSchema,
     });
-    expect(out.zod.passed).toBe(false);
-    expect(out.finalC02).toBeUndefined();
+    expect(out.zod.passed).toBe(true);
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
   });
 });
 
