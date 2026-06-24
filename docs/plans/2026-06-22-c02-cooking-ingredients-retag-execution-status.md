@@ -1,10 +1,24 @@
 # C02 — Cooking Skills & Main Ingredients Re-tag — Execution Status
 
-**Last updated:** 2026-06-23 by Session 7 (**P2.2 COMPLETE** — gold answer key built + force-committed `53aec72`; user interactively adjudicated all 70; 0 vocab/parent errors. **Preflight PASSED** (static ~6,947 tok); Console key is empty → P2.3 bills via the **CLIProxyAPI proxy/OAuth**. **P2.3 RUNBOOK written below; user runs P2.3/P2.4 in a fresh post-/clear session.**)
+**Last updated:** 2026-06-23 by Session 8 (**⚠️ P2 PILOT FAILED → METHOD PIVOT** — both `claude-opus-4-8` and the `claude-opus-4-7` fallback failed all 4 gates by over-tagging; root cause = the harness is effectively a *blind* full-LLM re-read, Codex-confirmed. Next session = method-pivot **DESIGN**, not a re-run. See the pivot block at the top of Current State.)
 
 ## Current State
 
-**Phase:** **P1 COMPLETE & MERGED** — PR #542 squashed to `a5ff8a9` on `main` (rounds 1–5 bot triage + a user-requested Codex merge-review all folded; round-4 caught + fixed a real 🔴 gold-key data-loss bug). The full P1 PR cycle (per-task as-built + Sessions 0–5 log) is in the **archive** (`…execution-status-archive.md`) — read on demand via `grep -n`, not at session start. Baseline now: harness suite **631/631**, full suite ~**75 files / 1583**, `npm run check` clean.
+**⚠️ Phase: P2 PILOT FAILED → METHOD PIVOT (Session 8, 2026-06-23).** Branch `feat/c02-pilot`. P1 merged (`a5ff8a9`); P2.1 prep + P2.2 gold key done. P2.3/P2.4 RAN: **both `claude-opus-4-8` (the stronger) and `claude-opus-4-7` failed ALL 4 GATES**, identically, by **over-tagging** (high recall, low precision). Scorecards committed: `artifacts/c02-pilot-scorecard.opus-4-{8,7}.md`. Numbers (4.8): Gate① cooking 0.757 / main 0.755 vs floor 0.785 / 0.918; Gate② cooking −0.074 / main +0.098 (only passing half anywhere); Gate③ added-specific precision 0.575; Gate④ Sweeteners 0.357. 4.7 worse on every axis except it scraped Gate① cooking (0.792 ≥ 0.785). Runs clean (69/69, 0 errored, ~$3.7–3.9 each).
+
+**Root cause (Codex-confirmed, agent `a4b3f01160e125f23`):** the harness as built is effectively a **blind full-LLM re-read** — the LLM is sent the lesson **body only** (`run-retag.ts:~1322`, `prompts/stage2-retag.md`), never the existing tags; the floor's anchor rules **R7/R8 fire 0 times** on the model's canonical output (`normalize.ts`; verified both runs — only R9 parent-reconcile fires, which *adds* tags); the apply (`prepare-apply.ts`) stores **pure normalized LLM rawInput**, no floor∪LLM merge. So nothing protects the clean core — the §3.1-rejected failure mode. The over-tagging is generic: `Tasting` predicted on 78% of lessons (key has 6 of 69), `Kitchen & food safety` 43%, `Fresh herbs` 45% — see `artifacts/c02-filter-usefulness.md`.
+
+**Codex cross-exam confirmed the diagnosis + added 5 things:** (1) 🔴 the apply rewrites **ALL** metadata fields, not just the two — a C02 run+apply would stomp the already-rebuilt other fields → **scope the apply to C02-only before any P3**; (2) these two fields are **review-metadata + FTS-ranking signals (weight B/C), NOT public facets** (`filterDefinitions.ts:170-172`) — tight tagging still right (incidental tags pollute the high-weight ranking signal; a passing mention is already findable via low-weight body text); (3) don't blindly **keep** all existing tags either (floor only 0.785 on cooking) — allow **evidence-backed drops**; (4) tuning against the 69-key contaminates it → reserve a **fresh held-out slice** for the final gate; (5) Gate③ pooling masks per-value failures → add **per-value precision gates** (Tasting / food-safety / reading-recipes / Fresh herbs / Sweeteners / Garlic / Spices).
+
+**NEXT SESSION = METHOD-PIVOT DESIGN (re-lock, THEN build — NOT a re-run).** New approach to design + re-lock (re-opens §3 / §4-Q3 floor-vs-LLM split, §4-Q5 gates, §4-Q6 gold-key/holdout, + the apply scope): **floor-first reconciliation in code** (primary — the deterministic floor is authoritative on the clean core; the LLM proposes only replacements / additions / evidence-backed drops) + **anchored prompt + negative few-shots** (supplement — show the LLM the current tags; few-shot the universal-skill/garnish FPs) + **C02-only apply scope** + **per-value precision gates** + a **held-out test slice**. Don't touch the gates until scoring the actual reconciled hybrid (Codex: the 0.755-vs-0.918 ingredient gap is too big to be a threshold problem). **Reusable from P1/P2 (NOT thrown away):** the whole harness, the 93-value vocab manifest, the 201-key alias floor, the **69-lesson gold key** (`c02-answer-key.final.jsonl`, stub-fixed `1a434c6`), the 764-row PROD corpus, both pilot run outputs (`artifacts/c02-run.opus-4-{8,7}.jsonl`, on disk).
+
+**Proxy/runbook correction (carry forward):** CLIProxyAPI **v7.2.33** Anthropic base URL = `http://127.0.0.1:8317` (the old `…/api/provider/anthropic` path is GONE → 404); the harness `--base-url` takes the bare host. The preflight 12K-budget breach (measured 13.7K) was **proxy-cloak inflation only** (real prompt ~6.9K static) — not a real cost/size problem. Proxy binary backed up at `~/.local/bin/cli-proxy-api.v7.1.68.bak`; OAuth auto-refreshes while running.
+
+---
+
+_The P2.3 runbook + "current task = P2.3" content below is **SUPERSEDED** by the pilot outcome above — kept for historical reference only._
+
+**Phase (historical — pre-pilot orientation):** **P1 COMPLETE & MERGED** — PR #542 squashed to `a5ff8a9` on `main` (rounds 1–5 bot triage + a user-requested Codex merge-review all folded; round-4 caught + fixed a real 🔴 gold-key data-loss bug). The full P1 PR cycle (per-task as-built + Sessions 0–5 log) is in the **archive** (`…execution-status-archive.md`) — read on demand via `grep -n`, not at session start. Baseline now: harness suite **631/631**, full suite ~**75 files / 1583**, `npm run check` clean.
 
 **NOW: P2 (Pilot) on a new `feat/c02-pilot` branch.** P1's `feat/c02-harness` is merged, so P2 branches fresh. **Model = Opus 4.8 ONLY** — the §4 Q11 Opus-vs-Sonnet bake-off was **SUPERSEDED 2026-06-23** by user decision (`project_c02_p2_opus_only`): one Opus run, scored alone against the same 4 gates, `claude-opus-4-7` fallback only if it fails. Session 6 formalized this supersede across the design / impl / kickoff / status docs (the explicit P2-start bookkeeping item from that memory).
 
@@ -43,7 +57,8 @@
 
 ## Recent decisions worth carrying forward
 
-- **Method = hybrid-floor full LLM re-read** (decided in the 2026-06-22 scoping discussion + a Codex cross-exam): LLM reads every lesson; deterministic alias-map floor anchors the ~94% clean core; LLM does the judgment work. NOT rules-only (can't add specifics), NOT blind full-LLM (regresses the core).
+- **⚠️ PIVOT (Session 8, 2026-06-23): the as-built method failed the pilot and is being replaced.** The "hybrid-floor full LLM re-read" was implemented as a **blind** re-read (floor R7/R8 inert on canonical LLM output, apply stores raw LLM, LLM never sees existing tags) → both Opus models over-tagged and failed all 4 gates. New direction (re-lock next session): **floor-first reconciliation in code + anchored prompt + negative few-shots + C02-only apply scope + per-value gates + held-out slice.** Codex-confirmed. The bullet below is the ORIGINAL (now-superseded) method decision, kept for history.
+- **Method = hybrid-floor full LLM re-read** (decided in the 2026-06-22 scoping discussion + a Codex cross-exam): LLM reads every lesson; deterministic alias-map floor anchors the ~94% clean core; LLM does the judgment work. NOT rules-only (can't add specifics), NOT blind full-LLM (regresses the core). **[SUPERSEDED by the pivot above — the implementation was, in practice, the blind full-LLM it claimed to avoid.]**
 - **Prior $121 fable run produced ZERO output for these two fields** (verified) — no reusable work; fable-5 is suspended. The pilot was originally going to re-run an Opus-vs-Sonnet bake-off, but that was **superseded 2026-06-23 → Opus 4.8 only** (`project_c02_p2_opus_only`).
 - **Vocab amendments (user, 2026-06-22):** +Seaweed (nori), +Cocoa & chocolate (group-less specifics), +Sunflower butter/Tahini/Peanut butter (under Nuts & seeds); Hummus→Chickpeas remap; Frying→Sautéing & stir-frying. Solo sign-off (no curriculum-team round).
 - **Pilot gold key = AI-drafts-user-adjudicates** + an independent hard-case protocol; greenlit on 4 separate gates, not a macro score.
@@ -59,7 +74,7 @@
 
 ## In flight
 
-(P2.2 COMPLETE on `feat/c02-pilot` — tooling `f1d0f78`/`33ffbdb`, gold key `53aec72`, + Session-7 doc commits. No PR opened yet — P2 is artifacts/scripts-only; can open a PR for the harness/tooling at a natural boundary, or carry the branch through P2.4 and PR the whole pilot. **PAUSED before P2.3 pending Console credits** — next supervisor action once credits load = `preflight-token-mass` then the `--model claude-opus-4-8` run over the 70, then P2.4 scoring.)
+(P2 pilot **RAN + FAILED** on `feat/c02-pilot` — both Opus models failed all 4 gates by over-tagging; **method pivot pending** (see Current State pivot block). No PR opened (P2 is artifacts/scripts-only). **Next = method-pivot DESIGN session, NOT a PR or a re-run.** The branch carries the 69-key, both pilot run outputs, the two scorecards + the filter-usefulness analysis — runs on disk (gitignored), summaries committed this session.)
 
 ## Blocked
 
@@ -92,6 +107,28 @@
 ## Recent session log
 
 > **PR cycle 1 (P1, Sessions 0–5) is fully ARCHIVED** — full per-session detail + learnings in `…execution-status-archive.md`. Only the current PR cycle's sessions stay here.
+
+### Session 8 — 2026-06-23 — P2.3/P2.4 RAN → pilot FAILED → method pivot (Codex-confirmed)
+
+Major events:
+- Oriented (git/design/impl/status consistent; `npm run check` clean). User chose to **refresh the proxy first**: pulled **CLIProxyAPI v7.2.33** (was v7.1.68, backed up `.v7.1.68.bak`), verified checksum, installed, started, OAuth auto-refreshed, smoke-tested. **Found the endpoint moved** in v7.2.33 → base URL is now `http://127.0.0.1:8317` (old `…/api/provider/anthropic` 404s).
+- **Preflight via proxy measured 13.7K (> 12K budget)** → diagnosed as **proxy-cloak inflation** (v7.2.33's cloak ~6.7K vs v7.1.68's ~1.4K); real prompt unchanged ~6.9K. 3-lesson probe confirmed: ~$0.055/lesson, cache working, detection cleared.
+- **Caught + fixed a gold-key data bug:** the P2.1c sampler had drawn a deletion-slated stub (`1jfFP2nKtAti3…`, "Equivalent Ratios", on `corpus-exclusions`) into the 70-key → unrunnable, would score as a phantom all-miss. Dropped it → **clean 69-lesson key**, committed `1a434c6` (verified 0 support-floor damage). Root cause: `export-corpus` exports all live rows but the 12-id deletion slate is a `run-retag` *runtime* filter not applied at sampling.
+- **P2.3 ran both models** (69 lessons each, concurrency 3, via proxy, 0 errored): `claude-opus-4-8` $3.69 (5 Zod-fail), `claude-opus-4-7` $3.87 (12 Zod-fail).
+- **P2.4 scored both alone on the 4 gates (corrected the runbook — `--c02` flag is REQUIRED).** BOTH **FAIL ALL 4 GATES**. 4.8 > 4.7 (Gate② ingredients +0.098 vs +0.005; higher recall; fewer Zod-fails). Scorecards preserved as `c02-pilot-scorecard.opus-4-{8,7}.md`.
+- **Root-cause diagnosis (supervisor):** over-tagging (high recall, low precision) driven by a **blind full-LLM re-read** — LLM gets body only, floor R7/R8 fire 0× on canonical output (only R9 fires, adds tags), apply stores raw rawInput. Built `c02-filter-usefulness.md` quantifying the over-tag (`Tasting` filter would match 78% of lessons).
+- **User chose: run 4.7 fallback first** (done, worse), then **Pause & discuss** the methodology, then asked to **cross-examine with Codex**.
+- **Codex (gpt-5.5, read-only, inline) confirmed the diagnosis** and added 5 findings (apply blast-radius rewrites ALL fields; fields are review-metadata/FTS-ranking not facets; allow evidence-backed drops; held-out slice needed; per-value gates). Recommended **B (floor-first reconciliation in code) > A (anchored prompt + negative few-shots) > C (gates last)**.
+- **User chose: Checkpoint + fresh session.** Captured the pivot in design banner + kickoff RIGHT-NOW + this status; committed pilot artifacts as provenance.
+
+Dispatch pattern: operational session (proxy ops + harness runs + deterministic scoring/diagnostics in the main loop), one Codex cross-exam subagent (inline contract honored). Supervisor re-verified every artifact (committed-object row counts, FP/FN recompute reproducing the scorecard's 93-specific-FP figure, floor-firing grep on the run JSONL).
+
+Learnings (candidates to promote):
+- **A pilot's job is to expose method gaps before the expensive run — this one did.** The "hybrid-floor" anchoring (alias-overwrite R-rules) was built correctly but is *inert on LLM output* (the LLM emits canonical, not aliases), so the method silently degraded to the blind re-read the design rejected. Verify a guardrail actually *fires* on the real input, not just that it exists.
+- **Run-then-score caught a runbook gap twice:** `--c02` is required for the C02 gates (omitting it silently runs the old 57-lesson mode), and the scorer reads `rawInput` (raw model output) so Zod-failures and off-vocab count as real FPs/misses — score the harshest honest signal first.
+- **Cross-examine pivotal verdicts.** Codex independently confirmed the diagnosis AND caught the apply-blast-radius safety issue (apply rewrites ALL fields) the supervisor missed — cheap insurance on a method-level decision (`feedback_codex_over_crossexamine`).
+
+Next: **method-pivot DESIGN session** — re-lock floor-first reconciliation + anchored prompt + C02-only apply scope + per-value gates + held-out slice (§3/§4-Q3/Q5/Q6 + apply scope), THEN build. The 69-key + harness + vocab + alias floor + both run outputs all carry forward.
 
 ### Session 7 — 2026-06-23 — P2.2 gold-key build + two-lens AI draft → paused at user-adjudication gate
 
