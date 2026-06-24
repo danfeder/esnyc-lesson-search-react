@@ -118,6 +118,19 @@ describe('reconcileC02Tags — partition contract', () => {
     });
     expect(result.finalCookingSkills).toEqual([]);
   });
+
+  it('DROP-wins fires for a NON-anchor overlap too (a contradicted new value is suppressed, not leaked as an ADD)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
+      floored: floored(['Boiling & simmering'], []),
+      // 'Baking' is NOT in the anchor, yet the model both keeps and drops it.
+      // DROP-wins must suppress it — it must NOT leak out via the keep→add recovery.
+      llmDecisions: decision({ keep: ['Boiling & simmering', 'Baking'], drop: ['Baking'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual(['Boiling & simmering']);
+    expect(result.finalCookingSkills).not.toContain('Baking');
+  });
 });
 
 describe('reconcileC02Tags — ADD contract', () => {

@@ -413,8 +413,9 @@ export interface C02DecisionOutcome {
  *   1. decision-schema validation (`buildC02DecisionSchema`) — enum + shape;
  *   2. floor + reconcile (`reconcileC02Tags`) — merge the floored anchor with
  *      the KEEP/DROP/ADD into the reconciled `finalC02` (subtractive, never
- *      append-only); a non-partitioning decision / anchor-colliding ADD throws
- *      and is treated as a validation failure;
+ *      append-only). Reconcile is LENIENT (P2′.6 r3): it RECOVERS a malformed
+ *      partition into a clean one rather than throwing, so a Zod failure here is
+ *      a decision-shape/enum failure, not a partition slip;
  *   3. `finalC02` canonical validation (`buildC02FinalSchema`) — a
  *      belt-and-suspenders guard that the reconciled output is canonical.
  *

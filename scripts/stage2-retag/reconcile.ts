@@ -10,21 +10,24 @@
  *   - the LLM's KEEP / DROP / ADD decision (a validated `C02Decision`),
  * into the FINAL `finalC02` arrays the scorer + apply read.
  *
- * Contract (per field, enforced by REJECTING a malformed decision):
- *   1. KEEP ∪ DROP must EXACTLY partition the floored anchor — no value in both
- *      keep and drop (no overlap), no anchor value missing from keep∪drop (no
- *      omission), nothing in keep/drop outside the anchor. A non-partitioning
- *      decision is REJECTED (throws). The anchor IS the set of canonical values
- *      the model saw; KEEP/DROP is a verdict on each of them.
- *   2. ADD must be DISJOINT from the anchor — an anchor value is KEPT or DROPPED,
- *      never re-ADDed. An ADD that collides with the anchor is REJECTED.
- *   3. The base result is KEEP ∪ ADD (the kept anchor values + the additions);
- *      DROPPED anchor values are actually removed (subtractive proof).
- *   4. The specific→group invariant holds: every surviving specific implies its
+ * Contract (per field). KEEP/DROP is the model's verdict on each anchor value;
+ * ADD introduces a new value. The model cannot reliably emit a perfect
+ * partition, so reconcile is LENIENT — it RECOVERS the model's intent into a
+ * clean partition rather than rejecting the lesson (D-P6 amended, P2′.6 r3; the
+ * recovery rules are documented on `reconcileField`):
+ *   1. The result is a clean partition: KEEP ∪ DROP covers exactly the anchor
+ *      (omissions become implicit KEEPs), and ADD is disjoint from the anchor (a
+ *      keep/add already-in-anchor collision is recovered into the right bucket).
+ *   2. The base result is KEEP ∪ ADD (the kept anchor values + the additions);
+ *      DROPPED anchor values are actually removed (subtractive proof). A value in
+ *      BOTH keep and drop is suppressed (DROP-wins, precision-favoring).
+ *   3. The specific→group invariant holds: every surviving specific implies its
  *      parent group is present (appended with provenance `parent-derived` when
  *      absent). This also RESOLVES the parent/child conflict — drop-parent +
  *      keep-child is contradictory, so the kept child forces its parent back in
  *      (the parent is RETAINED, not lost).
+ *   4. Off-vocab values cannot reach here — the decision schema (upstream Zod)
+ *      rejects them, so recovery only ever moves valid canonical values.
  *
  * Output is canonical (every value is a vocab value — the decision schema's
  * enums already guarantee this), unique, deterministically ordered (anchor-order
@@ -146,29 +149,43 @@ function reconcileField(
   lockedAddValues: ReadonlySet<string>
 ): C02ReconciledTag[] {
   const anchor = new Set(anchorTags.map((t) => t.value));
+
+  // overlap → DROP wins, resolved UNIFORMLY (anchored or not): any value the
+  // model puts in BOTH keep and drop is contradictory, so it is suppressed from
+  // every bucket (the verify-and-diff bar favors precision). Computed on the raw
+  // keep/drop sets BEFORE anchor classification so a NON-anchor overlap can't
+  // leak out via the keep→add recovery.
+  const rawKeep = new Set(decision.keep);
+  const overlap = new Set<string>();
+  for (const v of decision.drop) {
+    if (rawKeep.has(v)) overlap.add(v);
+  }
+
   const keep = new Set<string>();
   const drop = new Set<string>();
   const recoveredAdds: string[] = []; // order-preserving (decision order)
 
   // KEEP bucket: an anchor value is kept; a non-anchor value is a mis-bucketed
-  // new value → recover as an add.
+  // new value → recover as an add. Overlap values are skipped (drop-wins).
   for (const v of decision.keep) {
+    if (overlap.has(v)) continue;
     if (anchor.has(v)) keep.add(v);
     else recoveredAdds.push(v);
   }
   // DROP bucket: only an anchor value can be dropped; a non-anchor drop is a
-  // no-op (cannot drop what is not there).
+  // no-op (cannot drop what is not there). Overlap anchor values land here and,
+  // being excluded from keep above, are dropped.
   for (const v of decision.drop) {
     if (anchor.has(v)) drop.add(v);
   }
   // ADD bucket: a non-anchor value is a genuine add; a value already in the
   // anchor is recovered as a keep (the model wants it, and it is present).
+  // Overlap values are skipped (drop-wins).
   for (const v of decision.add) {
+    if (overlap.has(v)) continue;
     if (anchor.has(v)) keep.add(v);
     else recoveredAdds.push(v);
   }
-  // overlap → DROP wins.
-  for (const v of drop) keep.delete(v);
   // omission → implicit KEEP.
   for (const v of anchor) {
     if (!keep.has(v) && !drop.has(v)) keep.add(v);
