@@ -32,6 +32,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
+import { applyC02Floor, buildC02FloorInput, floorTagValues, type C02FloorInput } from './c02-floor';
 import { loadC02Floor, matchKey, type C02Floor } from './normalize';
 import { RESULT_PROPERTIES } from './schema';
 import {
@@ -431,6 +432,8 @@ export interface C02SamplerContext {
   cookingValues: string[];
   ingredientValues: string[];
   keywords: Map<string, RegExp>;
+  /** The ONE canonical floor input (D-P3) — `predictMembership` delegates to it. */
+  floorInput: C02FloorInput;
 }
 
 /**
@@ -458,6 +461,7 @@ export function buildC02SamplerContext(opts?: {
     cookingValues: manifest.cookingSkills,
     ingredientValues: c02MainIngredientsValues(manifest),
     keywords: loadCoverageKeywords(opts?.keywordsPath),
+    floorInput: buildC02FloorInput(floor, manifest, parsedAlias.drops),
   };
 }
 
@@ -467,16 +471,13 @@ export interface PredictedMembership {
   ingredients: string[];
 }
 
-function foldField(tags: string[] | null | undefined, folds: Map<string, string>): string[] {
-  if (!tags) return [];
-  return tags.map((tag) => folds.get(matchKey(tag)) ?? tag);
-}
-
 /**
- * Apply the REAL deterministic C02 floor to a record's CURRENT tags to predict
- * its post-retag canonical membership (per field). REUSES the floor's folds +
- * the parent map (R9: a specific implies its parent group). Returns deduped,
- * order-preserving arrays. NOT a tagger — a sampling predictor only.
+ * Apply the ONE canonical C02 floor (`applyC02Floor`, D-P3) to a record's CURRENT
+ * tags to predict its post-retag canonical membership (per field). Delegates to
+ * the SINGLE floor function — it does NOT re-implement fold / drop-execution /
+ * parent-reconcile — and projects the provenance-annotated result to the plain
+ * value arrays the set-cover + rules-baseline consume. NOT a tagger; a sampling
+ * predictor only.
  *
  * `ctx` defaults to the real on-disk context (cached via loadC02Floor); pass an
  * explicit context to test with synthetic data.
@@ -485,28 +486,14 @@ export function predictMembership(
   record: CorpusRecordForSampling,
   ctx: C02SamplerContext = buildC02SamplerContext()
 ): PredictedMembership {
-  const cookingFolded = foldField(record.cooking_skills, ctx.cookingFolds);
-  const ingredientFolded = foldField(record.main_ingredients, ctx.ingredientFolds);
-
-  // R9 parent-reconcile: every emitted specific implies its parent group.
-  const withParents = [...ingredientFolded];
-  const present = new Set(ingredientFolded);
-  for (const value of ingredientFolded) {
-    const parent = ctx.parentMap[value];
-    if (parent !== undefined && !present.has(parent)) {
-      present.add(parent);
-      withParents.push(parent);
-    }
-  }
-
+  const floored = applyC02Floor(
+    { cooking_skills: record.cooking_skills, main_ingredients: record.main_ingredients },
+    ctx.floorInput
+  );
   return {
-    cooking: dedupe(cookingFolded),
-    ingredients: dedupe(withParents),
+    cooking: floorTagValues(floored.cooking),
+    ingredients: floorTagValues(floored.ingredients),
   };
-}
-
-function dedupe(values: string[]): string[] {
-  return values.filter((v, i) => values.indexOf(v) === i);
 }
 
 /** A (field, canonical-value) coverage slot. */

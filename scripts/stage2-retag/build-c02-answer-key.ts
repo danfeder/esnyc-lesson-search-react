@@ -50,6 +50,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
+import { applyC02Floor, floorTagValues, type C02FloorInput } from './c02-floor';
 import { loadC02Floor, matchKey, type C02Floor } from './normalize';
 import {
   buildC02SamplerContext,
@@ -136,34 +137,17 @@ const fieldPairSchema = z.object({
 // ---------------------------------------------------------------------------
 
 /**
- * Fold a tag list through one field's match-lookup and KEEP only the values
- * that land on a canonical manifest value, in canonical casing, de-duped
- * (first-occurrence order). A non-canonical leftover (no alias, not a canonical)
- * is DROPPED — the anchor is the floor's clean, valid, canonical contribution.
- */
-function foldAndKeepCanonical(
-  tags: readonly string[],
-  folds: Map<string, string>,
-  canonical: ReadonlySet<string>
-): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const tag of tags) {
-    const folded = folds.get(matchKey(tag));
-    if (folded === undefined || !canonical.has(folded)) continue;
-    if (seen.has(folded)) continue;
-    seen.add(folded);
-    out.push(folded);
-  }
-  return out;
-}
-
-/**
  * Append each present specific's required parent group if absent (the floor's R9
- * `ingredientParentReconcile`, applied here via the SAME `floor.parentMap` the
- * normalize rule + sampler `predictMembership` use — never re-derived). Null-
- * parent specifics (absent from the map) and bare groups are no-ops. Keeps
+ * `ingredientParentReconcile`, applied here via the SAME `parentMap` the
+ * normalize rule + the unified floor use — never re-derived). Null-parent
+ * specifics (absent from the map) and bare groups are no-ops. Keeps
  * first-occurrence order; appends parents at the end.
+ *
+ * Used by the WORKSHEET prefill (`prefillField`) to parent-reconcile the
+ * AGREED bucket (floor ∪ draft∩codex), which may include human/LLM-added
+ * specifics the floor never saw — so the pre-fill is itself assemble-valid.
+ * The floor-over-CURRENT-tags path uses `applyC02Floor` directly (see
+ * `floorAnchor`).
  */
 function appendParents(
   ingredients: readonly string[],
@@ -182,27 +166,23 @@ function appendParents(
 }
 
 /**
- * The deterministic floor anchor for a record's CURRENT tags: each field folded
- * through the real C02 floor, kept only where the result is a canonical manifest
- * value, then (for main_ingredients) parent-reconciled so a present specific
- * always carries its group (R9). This is exactly what the floor alone produces
- * on the clean core — fold (R7/R8) + parent-reconcile (R9) — so the anchor is
- * internally consistent and passes the same specific->group invariant `assemble`
- * enforces. Specifics that must be ADDED by reading do not appear here (that is
- * the judgment work the gold key supplies).
+ * The deterministic floor anchor for a record's CURRENT tags = the ONE canonical
+ * floor (`applyC02Floor`, D-P3) projected to plain value arrays. The floor folds
+ * aliases, EXECUTES the drops list, drops unmapped/non-canonical junk, removes
+ * the `Herbs & Aromatics` literal (a split candidate, never emitted), and
+ * parent-reconciles so a present specific always carries its group (R9). This is
+ * exactly the floor's clean, valid, canonical contribution — and passes the same
+ * specific→group invariant `assemble` enforces. Specifics that must be ADDED by
+ * reading do not appear here (that is the judgment work the gold key supplies).
+ *
+ * Delegates to the single floor function — it does NOT re-implement fold /
+ * drop-execution / parent-reconcile (import-identity, D-P3).
  */
-export function floorAnchor(
-  current: FieldPair,
-  floor: C02Floor,
-  cookingValues: ReadonlySet<string>,
-  ingredientValues: ReadonlySet<string>
-): FieldPair {
+export function floorAnchor(current: FieldPair, floorInput: C02FloorInput): FieldPair {
+  const floored = applyC02Floor(current, floorInput);
   return {
-    cooking_skills: foldAndKeepCanonical(current.cooking_skills, floor.cookingFolds, cookingValues),
-    main_ingredients: appendParents(
-      foldAndKeepCanonical(current.main_ingredients, floor.ingredientFolds, ingredientValues),
-      floor.parentMap
-    ),
+    cooking_skills: floorTagValues(floored.cooking),
+    main_ingredients: floorTagValues(floored.ingredients),
   };
 }
 
@@ -256,13 +236,9 @@ function currentOf(rec: CorpusRecordForSampling): FieldPair {
 export function buildScaffold(
   selections: ManifestSelection[],
   corpus: CorpusRecordForSampling[],
-  manifest: C02Manifest,
-  floor: C02Floor,
   ctx: C02SamplerContext
 ): C02ScaffoldRecord[] {
   const byId = new Map(corpus.map((r) => [r.id, r]));
-  const cookingValues = new Set(manifest.cookingSkills);
-  const ingredientValues = new Set(c02MainIngredientsValues(manifest));
 
   return selections.map((sel) => {
     const rec = byId.get(sel.id);
@@ -281,7 +257,8 @@ export function buildScaffold(
       hardCaseClass: sel.hardCaseClass,
       hardCaseJudgment: classifyHardCase(rec, ctx) !== null,
       current,
-      floorAnchor: floorAnchor(current, floor, cookingValues, ingredientValues),
+      // The floor-over-current-tags anchor = the ONE canonical floor (D-P3).
+      floorAnchor: floorAnchor(current, ctx.floorInput),
       bodyExcerpt: (rec.content_text ?? '').slice(0, BODY_EXCERPT_CHARS),
     };
   });
@@ -776,10 +753,8 @@ function resolvePaths(artifactsDir: string): RunPaths {
 export function runScaffold(paths: RunPaths): { scaffoldPath: string; count: number } {
   const selections = loadManifestSelections(paths.manifestPath);
   const corpus = loadCorpus(paths.corpusPath);
-  const manifest = loadC02Manifest();
-  const floor = loadC02Floor();
   const ctx = buildC02SamplerContext();
-  const rows = buildScaffold(selections, corpus, manifest, floor, ctx);
+  const rows = buildScaffold(selections, corpus, ctx);
 
   mkdirSync(paths.artifactsDir, { recursive: true });
   writeFileSync(paths.scaffoldPath, rows.map((r) => JSON.stringify(r)).join('\n') + '\n');

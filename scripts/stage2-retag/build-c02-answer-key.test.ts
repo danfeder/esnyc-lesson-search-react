@@ -23,6 +23,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { buildC02FloorInput, type C02FloorInput } from './c02-floor';
 import { matchKey, buildC02Floor, type C02Floor } from './normalize';
 import type { CorpusRecordForSampling, C02SamplerContext } from './sample-answer-key';
 import { classifyHardCase } from './sample-answer-key';
@@ -64,24 +65,28 @@ const MINI_ALIAS_MAP: Record<string, string> = {
 };
 
 const MINI_FLOOR: C02Floor = buildC02Floor(MINI_ALIAS_MAP, MINI_MANIFEST);
-const MINI_ING_VALUES = new Set(c02MainIngredientsValues(MINI_MANIFEST));
-const MINI_COOKING_VALUES = new Set(MINI_MANIFEST.cookingSkills);
 const MINI_PARENT_MAP = c02IngredientParentMap(MINI_MANIFEST);
+const MINI_DROPS = ['Lavender'];
+
+/** The ONE canonical floor input (D-P3) the unified floor consumes. */
+const MINI_INPUT: C02FloorInput = buildC02FloorInput(MINI_FLOOR, MINI_MANIFEST, MINI_DROPS);
 
 /**
- * A synthetic sampler context for classifyHardCase. The hard-case classifier
- * keys off dropKeys + ingredientFolds + the vague/herbs literals; we wire those
- * from the mini floor + a couple of synthetic drops.
+ * A synthetic sampler context for classifyHardCase + buildScaffold. The hard-case
+ * classifier keys off dropKeys + ingredientFolds + the vague/herbs literals; the
+ * scaffold floor-anchor keys off `floorInput`. We wire both from the mini floor +
+ * a synthetic drop.
  */
 const MINI_CTX: C02SamplerContext = {
   floor: MINI_FLOOR,
   parentMap: MINI_PARENT_MAP,
-  dropKeys: new Set([matchKey('Lavender')]),
+  dropKeys: new Set(MINI_DROPS.map((d) => matchKey(d))),
   cookingFolds: MINI_FLOOR.cookingFolds,
   ingredientFolds: MINI_FLOOR.ingredientFolds,
   cookingValues: MINI_MANIFEST.cookingSkills,
   ingredientValues: c02MainIngredientsValues(MINI_MANIFEST),
   keywords: new Map(),
+  floorInput: MINI_INPUT,
 };
 
 let synthCounter = 0;
@@ -125,12 +130,7 @@ function selection(over: Partial<ManifestSelection> & { id: string }): ManifestS
 
 describe('floorAnchor', () => {
   it('folds a known alias to its canonical value (+ R9 appends the parent group)', () => {
-    const out = floorAnchor(
-      { cooking_skills: ['Boil'], main_ingredients: ['Tomato'] },
-      MINI_FLOOR,
-      MINI_COOKING_VALUES,
-      MINI_ING_VALUES
-    );
+    const out = floorAnchor({ cooking_skills: ['Boil'], main_ingredients: ['Tomato'] }, MINI_INPUT);
     expect(out.cooking_skills).toEqual(['Boiling & simmering']);
     // R9 parent-reconcile: the specific Tomatoes pulls its parent Nightshades.
     expect(out.main_ingredients).toEqual(['Tomatoes', 'Nightshades']);
@@ -139,9 +139,7 @@ describe('floorAnchor', () => {
   it('drops a non-canonical leftover (a value the floor cannot fold)', () => {
     const out = floorAnchor(
       { cooking_skills: ['Boil', 'Frobnicating'], main_ingredients: ['Tomato', 'Quux'] },
-      MINI_FLOOR,
-      MINI_COOKING_VALUES,
-      MINI_ING_VALUES
+      MINI_INPUT
     );
     // Frobnicating / Quux are not canonical and not alias keys -> dropped;
     // Tomatoes survives and pulls its parent Nightshades (R9).
@@ -152,18 +150,14 @@ describe('floorAnchor', () => {
   it('appends the parent group for a present specific (R9) but not for a null-parent specific', () => {
     const withParent = floorAnchor(
       { cooking_skills: [], main_ingredients: ['Tomato'] },
-      MINI_FLOOR,
-      MINI_COOKING_VALUES,
-      MINI_ING_VALUES
+      MINI_INPUT
     );
     expect(withParent.main_ingredients).toEqual(['Tomatoes', 'Nightshades']);
 
     // Celery is a null-parent specific -> no parent appended.
     const nullParent = floorAnchor(
       { cooking_skills: [], main_ingredients: ['celery'] },
-      MINI_FLOOR,
-      MINI_COOKING_VALUES,
-      MINI_ING_VALUES
+      MINI_INPUT
     );
     expect(nullParent.main_ingredients).toEqual(['Celery']);
   });
@@ -171,9 +165,7 @@ describe('floorAnchor', () => {
   it('normalizes a miscased canonical to its canonical casing', () => {
     const out = floorAnchor(
       { cooking_skills: ['boiling & simmering'], main_ingredients: ['celery'] },
-      MINI_FLOOR,
-      MINI_COOKING_VALUES,
-      MINI_ING_VALUES
+      MINI_INPUT
     );
     expect(out.cooking_skills).toEqual(['Boiling & simmering']);
     expect(out.main_ingredients).toEqual(['Celery']);
@@ -182,9 +174,7 @@ describe('floorAnchor', () => {
   it('de-dupes when two inputs fold to the same canonical', () => {
     const out = floorAnchor(
       { cooking_skills: ['Boil', 'boiling & simmering'], main_ingredients: [] },
-      MINI_FLOOR,
-      MINI_COOKING_VALUES,
-      MINI_ING_VALUES
+      MINI_INPUT
     );
     expect(out.cooking_skills).toEqual(['Boiling & simmering']);
   });
@@ -286,7 +276,7 @@ describe('buildScaffold', () => {
       synthRecord({ id: 'C', cooking_skills: [], main_ingredients: ['Lavender'] }),
     ];
     const selections = [selection({ id: 'C' }), selection({ id: 'A' }), selection({ id: 'B' })];
-    const rows = buildScaffold(selections, corpus, MINI_MANIFEST, MINI_FLOOR, MINI_CTX);
+    const rows = buildScaffold(selections, corpus, MINI_CTX);
     expect(rows.map((r) => r.id)).toEqual(['C', 'A', 'B']); // manifest order, not corpus order
     expect(rows).toHaveLength(3);
   });
@@ -295,13 +285,7 @@ describe('buildScaffold', () => {
     const corpus = [
       synthRecord({ id: 'A', cooking_skills: ['Boil'], main_ingredients: ['Tomato', 'Quux'] }),
     ];
-    const [row] = buildScaffold(
-      [selection({ id: 'A' })],
-      corpus,
-      MINI_MANIFEST,
-      MINI_FLOOR,
-      MINI_CTX
-    );
+    const [row] = buildScaffold([selection({ id: 'A' })], corpus, MINI_CTX);
     expect(row.current.cooking_skills).toEqual(['Boil']);
     expect(row.current.main_ingredients).toEqual(['Tomato', 'Quux']);
     expect(row.floorAnchor.cooking_skills).toEqual(['Boiling & simmering']);
@@ -313,13 +297,7 @@ describe('buildScaffold', () => {
     const orphan = synthRecord({ id: 'C', main_ingredients: ['Lavender'] }); // in dropKeys
     const clean = synthRecord({ id: 'A', cooking_skills: ['Boil'] });
     const corpus = [orphan, clean];
-    const rows = buildScaffold(
-      [selection({ id: 'C' }), selection({ id: 'A' })],
-      corpus,
-      MINI_MANIFEST,
-      MINI_FLOOR,
-      MINI_CTX
-    );
+    const rows = buildScaffold([selection({ id: 'C' }), selection({ id: 'A' })], corpus, MINI_CTX);
     const byId = new Map(rows.map((r) => [r.id, r]));
     expect(byId.get('C')!.hardCaseJudgment).toBe(classifyHardCase(orphan, MINI_CTX) !== null);
     expect(byId.get('C')!.hardCaseJudgment).toBe(true);
@@ -329,22 +307,16 @@ describe('buildScaffold', () => {
 
   it('trims the body excerpt to ~2000 chars', () => {
     const corpus = [synthRecord({ id: 'A', content_text: 'z'.repeat(5000) })];
-    const [row] = buildScaffold(
-      [selection({ id: 'A' })],
-      corpus,
-      MINI_MANIFEST,
-      MINI_FLOOR,
-      MINI_CTX
-    );
+    const [row] = buildScaffold([selection({ id: 'A' })], corpus, MINI_CTX);
     expect(row.bodyExcerpt.length).toBeLessThanOrEqual(2000);
     expect(row.bodyExcerpt.length).toBeGreaterThan(0);
   });
 
   it('throws (exit-1 cause) when a selected id is missing from the corpus', () => {
     const corpus = [synthRecord({ id: 'A' })];
-    expect(() =>
-      buildScaffold([selection({ id: 'MISSING' })], corpus, MINI_MANIFEST, MINI_FLOOR, MINI_CTX)
-    ).toThrow(/MISSING/);
+    expect(() => buildScaffold([selection({ id: 'MISSING' })], corpus, MINI_CTX)).toThrow(
+      /MISSING/
+    );
   });
 
   it('throws when the corpus is stale (a record with neither field key present)', () => {
@@ -354,9 +326,7 @@ describe('buildScaffold', () => {
       content_text: 'body',
       // NOTE: no cooking_skills / main_ingredients keys at all
     } as unknown as CorpusRecordForSampling;
-    expect(() =>
-      buildScaffold([selection({ id: 'A' })], [staleRec], MINI_MANIFEST, MINI_FLOOR, MINI_CTX)
-    ).toThrow(/stale/i);
+    expect(() => buildScaffold([selection({ id: 'A' })], [staleRec], MINI_CTX)).toThrow(/stale/i);
   });
 });
 
