@@ -716,7 +716,10 @@ export function buildC02FinalSchema(vocab: Stage2Vocab) {
  * measurement (run `npx tsx scripts/stage2-retag/preflight-token-mass.ts`);
  * this estimate is the credit-free guard used in tests.
  */
-export function estimateTokenMass(systemPrompt: string, tool: SubmitTagsTool): number {
+export function estimateTokenMass(
+  systemPrompt: string,
+  tool: SubmitTagsTool | C02SubmitTagsTool
+): number {
   return Math.ceil((systemPrompt.length + JSON.stringify(tool).length) / 4);
 }
 
@@ -735,6 +738,30 @@ export function buildTokenCountRequest(
     model,
     system: [{ type: 'text', text: loadSystemPrompt(), cache_control: { type: 'ephemeral' } }],
     tools: [buildSubmitTagsTool(vocab)],
+    tool_choice: { type: 'tool', name: SUBMIT_TAGS_TOOL_NAME },
+    messages: [{ role: 'user', content: body }],
+  };
+}
+
+/**
+ * The `messages.countTokens` request for the LIVE C02 anchored verify-and-diff
+ * call (design §3·PIVOT P2′.2/P2′.3): the C02 system prompt + the dedicated
+ * 2-field KEEP/DROP/ADD tool (reusing SUBMIT_TAGS_TOOL_NAME for proxy detection)
+ * + a single user turn. This is what P2′.6 must preflight — D-P9 changed the
+ * cached prefix, and the 2-field tool + shorter prompt nearly halve it (risking
+ * the Opus cache floor), so measuring the monolithic shape would mislead. The
+ * anchor (current tags) lives in the per-lesson user `body`, after the cache
+ * breakpoint, so the cached prefix is system + this tool.
+ */
+export function buildC02TokenCountRequest(
+  vocab: Stage2Vocab,
+  body: string,
+  model: string = DEFAULT_MODEL
+): Anthropic.Messages.MessageCountTokensParams {
+  return {
+    model,
+    system: [{ type: 'text', text: loadC02SystemPrompt(), cache_control: { type: 'ephemeral' } }],
+    tools: [buildC02SubmitTagsTool(vocab)],
     tool_choice: { type: 'tool', name: SUBMIT_TAGS_TOOL_NAME },
     messages: [{ role: 'user', content: body }],
   };

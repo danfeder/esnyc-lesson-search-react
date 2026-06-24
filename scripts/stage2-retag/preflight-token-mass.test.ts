@@ -126,6 +126,14 @@ describe('parsePreflightArgs (--base-url proxy flag)', () => {
     // --help short-circuits before any value-flag validation, so it coexists.
     expect(parsePreflightArgs(['--help', '--base-url']).help).toBe(true);
   });
+
+  it('defaults c02 to false and sets it on --c02 (P2′.6 anchored prefix)', () => {
+    expect(parsePreflightArgs([]).c02).toBe(false);
+    expect(parsePreflightArgs(['--c02']).c02).toBe(true);
+    const both = parsePreflightArgs(['--c02', '--base-url', 'http://127.0.0.1:8317']);
+    expect(both.c02).toBe(true);
+    expect(both.baseUrl).toBe('http://127.0.0.1:8317');
+  });
 });
 
 describe('preflightTokenMass key-source switch (pre-network env guards)', () => {

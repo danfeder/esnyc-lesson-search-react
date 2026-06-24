@@ -28,9 +28,12 @@ import {
   TOKEN_MASS_BUDGET_TOKENS,
   buildResultSchema,
   buildSubmitTagsTool,
+  buildC02SubmitTagsTool,
   buildTokenCountRequest,
+  buildC02TokenCountRequest,
   estimateTokenMass,
   loadSystemPrompt,
+  loadC02SystemPrompt,
   type EnumArraySchema,
   type ConceptsObjectSchema,
   type Stage2RetagResult,
@@ -405,6 +408,26 @@ describe('token-mass guard', () => {
     expect(req.tools).toHaveLength(1);
     const requestTool = req.tools?.[0] as { name?: string };
     expect(requestTool.name).toBe('submit_tags');
+    expect(req.tool_choice).toEqual({ type: 'tool', name: 'submit_tags' });
+    expect(req.messages).toEqual([{ role: 'user', content: body }]);
+    expect('max_tokens' in req).toBe(false);
+  });
+
+  it('buildC02TokenCountRequest mirrors the LIVE C02 anchored call (C02 prompt + 2-field tool)', () => {
+    // P2′.6: the preflight must measure the ACTUAL cached prefix the live C02
+    // run sends (loadC02SystemPrompt + buildC02SubmitTagsTool), not the stale
+    // monolithic shape — the smaller 2-field tool roughly halves the prefix and
+    // risks dropping below the Opus cache floor (D-P9 changed the prefix).
+    const body = 'Lesson body sample\n\nCurrent tags: ...';
+    const req = buildC02TokenCountRequest(vocab, body);
+    expect(req.model).toBe('claude-opus-4-7');
+    expect(req.system).toEqual([
+      { type: 'text', text: loadC02SystemPrompt(), cache_control: { type: 'ephemeral' } },
+    ]);
+    expect(req.tools).toHaveLength(1);
+    // It must be the C02 2-field tool, NOT the monolithic 14-field one.
+    expect(req.tools?.[0]).toEqual(buildC02SubmitTagsTool(vocab));
+    expect(req.tools?.[0]).not.toEqual(buildSubmitTagsTool(vocab));
     expect(req.tool_choice).toEqual({ type: 'tool', name: 'submit_tags' });
     expect(req.messages).toEqual([{ role: 'user', content: body }]);
     expect('max_tokens' in req).toBe(false);
