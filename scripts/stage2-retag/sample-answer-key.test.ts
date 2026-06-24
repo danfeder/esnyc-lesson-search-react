@@ -19,6 +19,10 @@ import { describe, expect, it } from 'vitest';
 
 import { loadVocab, loadC02Manifest, c02MainIngredientsValues } from './vocab';
 import {
+  C02_HELDOUT_MANIFEST_FILENAME,
+  C02_HELDOUT_SAMPLE_FILENAME,
+  C02_HELDOUT_SEED,
+  C02_HELDOUT_SIZE,
   SAMPLER_VERSION,
   assertCorpusHasC02Tags,
   bodyLengthQuartiles,
@@ -26,6 +30,7 @@ import {
   buildSampleRecords,
   loadAdversarial,
   loadCoverageKeywords,
+  loadExcludeKey,
   loadExclusions,
   mulberry32,
   parseArgs,
@@ -837,6 +842,252 @@ describe('runC02 artifact writing', () => {
     for (const v of COOKING_VALUES) {
       expect(manifest.coverage.cooking[v] ?? 0).toBeGreaterThanOrEqual(2);
     }
+    rmSync(outDir, { recursive: true, force: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P2′.5 — Held-out sampler (D-P2): a disjoint ~25-lesson anti-overfit CANARY,
+// drawn from the corpus MINUS the locked 69-key lessons, under a NEW seed and a
+// RELAXED coverage mode (representative stratified draw, no ≥2× hard-fail). The
+// strict 69-key path stays byte-for-byte unchanged.
+// ---------------------------------------------------------------------------
+
+describe('SAMPLER_VERSION — bumped to the cleaned-floor version', () => {
+  it('is b1-v2', () => {
+    expect(SAMPLER_VERSION).toBe('b1-v2');
+  });
+});
+
+describe('held-out sampler constants', () => {
+  it('uses a distinct held-out seed + size', () => {
+    expect(C02_HELDOUT_SEED).toBe(20260624);
+    expect(C02_HELDOUT_SIZE).toBe(25);
+    // The held-out seed MUST differ from the strict default so the draws are
+    // independent (a shared seed would correlate the two samples).
+    expect(C02_HELDOUT_SEED).not.toBe(20260612);
+  });
+
+  it('writes to held-out-specific filenames (never the 69-key artifacts)', () => {
+    expect(C02_HELDOUT_SAMPLE_FILENAME).toBe('c02-heldout-sample.jsonl');
+    expect(C02_HELDOUT_MANIFEST_FILENAME).toBe('c02-heldout-manifest.json');
+  });
+});
+
+describe('buildC02Sample — excludeIds (held-out eligibility filter)', () => {
+  it('excludes every id in excludeIds from the selection (all three layers)', () => {
+    // Make a hard-case lesson + a keyword-coverage lesson + clean-core padding,
+    // then exclude the hard-case + a coverage carrier; neither may appear.
+    const excludedHard = synthRecord({ id: 'ex-hard', cooking_skills: ['Basic Skills'] });
+    const excludedCov = synthRecord({
+      id: 'ex-cov',
+      content_text: 'today we grill the vegetables over the open flame '.repeat(6),
+    });
+    const base = buildFullCoverageCorpus();
+    const corpus = [excludedHard, excludedCov, ...base];
+    const excludeIds = new Set(['ex-hard', 'ex-cov']);
+    const result = buildC02Sample(corpus, { seed: 4242, excludeIds });
+    const chosen = new Set(result.selected.map((s) => s.id));
+    expect(chosen.has('ex-hard')).toBe(false);
+    expect(chosen.has('ex-cov')).toBe(false);
+  });
+});
+
+describe('buildC02Sample — relaxed coverage mode (the held-out draw)', () => {
+  it('draws exactly `size`, labels every row clean-core, and emits NO warnings', () => {
+    const corpus = buildFullCoverageCorpus();
+    const result = buildC02Sample(corpus, {
+      seed: C02_HELDOUT_SEED,
+      size: 25,
+      coverageMode: 'relaxed',
+    });
+    expect(result.selected).toHaveLength(25);
+    // Relaxed mode is a plain stratified draw — no hard-case / coverage layers.
+    expect(new Set(result.selected.map((s) => s.layer))).toEqual(new Set(['clean-core']));
+    expect(result.layerSizes.hardCase).toBe(0);
+    expect(result.layerSizes.coverage).toBe(0);
+    expect(result.layerSizes.cleanCore).toBe(25);
+    // Under-coverage is NOT a goal of the canary — warnings are suppressed even
+    // though most of the 93 values cannot reach 2 in a 25-row draw.
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('is deterministic under a fixed seed (same id list across two calls)', () => {
+    const corpus = buildFullCoverageCorpus();
+    const opts = { seed: C02_HELDOUT_SEED, size: 25, coverageMode: 'relaxed' as const };
+    const a = buildC02Sample(corpus, opts).selected.map((s) => s.id);
+    const b = buildC02Sample(corpus, opts).selected.map((s) => s.id);
+    expect(a).toEqual(b);
+  });
+
+  it('the held-out draw is disjoint from the excluded 69-key ids', () => {
+    // Mark 69 ids as the "locked key" and exclude them; none may reappear.
+    const corpus = buildFullCoverageCorpus();
+    const lockedIds = new Set(corpus.slice(0, 69).map((r) => r.id));
+    const result = buildC02Sample(corpus, {
+      seed: C02_HELDOUT_SEED,
+      size: 25,
+      coverageMode: 'relaxed',
+      excludeIds: lockedIds,
+    });
+    expect(result.selected).toHaveLength(25);
+    const chosen = result.selected.map((s) => s.id);
+    expect(chosen.some((id) => lockedIds.has(id))).toBe(false);
+  });
+});
+
+describe('buildC02Sample — strict mode still hard-fails on under-coverage', () => {
+  it('strict mode produces under-coverage warnings on a tiny corpus', () => {
+    // A tiny, sparsely-tagged corpus cannot raise the 93 canonical values to 2×,
+    // so strict mode MUST surface warnings (the hard-fail signal).
+    const corpus = [
+      synthRecord({ id: 's1', cooking_skills: ['Baking'] }),
+      synthRecord({ id: 's2', main_ingredients: ['Rice'] }),
+      synthRecord({ id: 's3', content_text: INERT_BODY }),
+    ];
+    const result = buildC02Sample(corpus, { seed: 7, coverageMode: 'strict' });
+    expect(result.warnings.length).toBeGreaterThan(0);
+  });
+
+  it('relaxed mode over the SAME tiny corpus suppresses those warnings', () => {
+    const corpus = [
+      synthRecord({ id: 's1', cooking_skills: ['Baking'] }),
+      synthRecord({ id: 's2', main_ingredients: ['Rice'] }),
+      synthRecord({ id: 's3', content_text: INERT_BODY }),
+    ];
+    const result = buildC02Sample(corpus, { seed: 7, size: 2, coverageMode: 'relaxed' });
+    expect(result.warnings).toEqual([]);
+  });
+});
+
+describe('loadExcludeKey — JSONL id loader', () => {
+  const tmpDir = path.join(MODULE_DIR, '__fixtures__/.tmp-excludekey');
+
+  it('loads the .id from each non-empty JSONL line', () => {
+    rmSync(tmpDir, { recursive: true, force: true });
+    mkdirSync(tmpDir, { recursive: true });
+    const keyPath = path.join(tmpDir, 'key.jsonl');
+    writeFileSync(
+      keyPath,
+      [
+        JSON.stringify({ id: 'a', cooking_skills: [], main_ingredients: [] }),
+        '',
+        JSON.stringify({ id: 'b', cooking_skills: ['Baking'], main_ingredients: [] }),
+        '',
+      ].join('\n')
+    );
+    const ids = loadExcludeKey(keyPath);
+    expect(ids).toEqual(new Set(['a', 'b']));
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('throws on a missing file', () => {
+    expect(() => loadExcludeKey(path.join(tmpDir, 'does-not-exist.jsonl'))).toThrow();
+  });
+
+  it('throws on an empty file (no ids)', () => {
+    rmSync(tmpDir, { recursive: true, force: true });
+    mkdirSync(tmpDir, { recursive: true });
+    const keyPath = path.join(tmpDir, 'empty.jsonl');
+    writeFileSync(keyPath, '\n\n');
+    expect(() => loadExcludeKey(keyPath)).toThrow(/empty|no ids/i);
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+});
+
+describe('parseArgs — held-out flags', () => {
+  it('parses --relaxed-coverage into coverageMode relaxed', () => {
+    const a = parseArgs(['--c02', '--relaxed-coverage']);
+    expect(a.coverageMode).toBe('relaxed');
+  });
+
+  it('defaults coverageMode to strict', () => {
+    expect(parseArgs(['--c02']).coverageMode).toBe('strict');
+  });
+
+  it('parses --size into an integer', () => {
+    expect(parseArgs(['--c02', '--size', '25']).size).toBe(25);
+  });
+
+  it('parses --exclude-key into a path', () => {
+    expect(parseArgs(['--c02', '--exclude-key', '/tmp/key.jsonl']).excludeKey).toBe(
+      '/tmp/key.jsonl'
+    );
+  });
+});
+
+describe('runC02 — relaxed/held-out mode', () => {
+  const outDir = path.join(MODULE_DIR, '__fixtures__/.tmp-c02-heldout');
+
+  function setup(): { corpusPath: string; keyPath: string } {
+    rmSync(outDir, { recursive: true, force: true });
+    mkdirSync(outDir, { recursive: true });
+    const corpus = buildFullCoverageCorpus();
+    const corpusPath = path.join(outDir, 'corpus.jsonl');
+    writeFileSync(corpusPath, corpus.map((r) => JSON.stringify(r)).join('\n') + '\n');
+    // Exclude-key = the first 69 corpus ids (mimics the 69-key final.jsonl shape).
+    const keyPath = path.join(outDir, 'key.final.jsonl');
+    writeFileSync(
+      keyPath,
+      corpus
+        .slice(0, 69)
+        .map((r) => JSON.stringify({ id: r.id, cooking_skills: [], main_ingredients: [] }))
+        .join('\n') + '\n'
+    );
+    return { corpusPath, keyPath };
+  }
+
+  it('writes the held-out filenames (never the 69-key artifacts) + records provenance', () => {
+    const { corpusPath, keyPath } = setup();
+    const excludeIds = loadExcludeKey(keyPath);
+    const result = runC02({
+      seed: C02_HELDOUT_SEED,
+      size: C02_HELDOUT_SIZE,
+      outDir,
+      corpusPath,
+      coverageMode: 'relaxed',
+      excludeIds,
+      excludeKeyName: path.basename(keyPath),
+    });
+    expect(result.samplePath.endsWith(C02_HELDOUT_SAMPLE_FILENAME)).toBe(true);
+    expect(result.manifestPath.endsWith(C02_HELDOUT_MANIFEST_FILENAME)).toBe(true);
+    expect(result.selectedCount).toBe(25);
+    expect(result.warningCount).toBe(0);
+
+    const written = readFileSync(result.samplePath, 'utf8')
+      .split('\n')
+      .filter((l) => l.trim() !== '')
+      .map((l) => JSON.parse(l) as { id: string });
+    expect(written).toHaveLength(25);
+    const excludedSet = excludeIds;
+    expect(written.some((w) => excludedSet.has(w.id))).toBe(false);
+
+    const manifest = JSON.parse(readFileSync(result.manifestPath, 'utf8')) as {
+      provenance: {
+        coverageMode: string;
+        excludedCount: number;
+        excludeKey?: string;
+        sampler_version: string;
+      };
+    };
+    expect(manifest.provenance.coverageMode).toBe('relaxed');
+    expect(manifest.provenance.excludedCount).toBe(69);
+    expect(manifest.provenance.excludeKey).toBe(path.basename(keyPath));
+    expect(manifest.provenance.sampler_version).toBe('b1-v2');
+    rmSync(outDir, { recursive: true, force: true });
+  });
+
+  it('relaxed runC02 returns a zero warningCount (no hard-fail signal)', () => {
+    const { corpusPath, keyPath } = setup();
+    const result = runC02({
+      seed: C02_HELDOUT_SEED,
+      size: C02_HELDOUT_SIZE,
+      outDir,
+      corpusPath,
+      coverageMode: 'relaxed',
+      excludeIds: loadExcludeKey(keyPath),
+    });
+    expect(result.warningCount).toBe(0);
     rmSync(outDir, { recursive: true, force: true });
   });
 });

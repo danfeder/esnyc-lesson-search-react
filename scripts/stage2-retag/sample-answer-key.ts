@@ -47,8 +47,12 @@ import {
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
-/** Bumped when the sampler logic changes in a way that affects the emitted draw. */
-export const SAMPLER_VERSION = 'b1-v1' as const;
+/**
+ * Bumped when the sampler logic changes in a way that affects the emitted draw.
+ * `b1-v2` = the cleaned-floor version (P2′.1 dropped junk-keeping floor folds;
+ * P2′.5 added the held-out relaxed-coverage draw).
+ */
+export const SAMPLER_VERSION = 'b1-v2' as const;
 
 /** Fixed default seed — recorded in the sample header so draws are reproducible. */
 export const DEFAULT_SEED = 20260612;
@@ -68,6 +72,25 @@ const FINAL_FILENAME = 'answer-key.final.jsonl';
 /** C02 (P1.5) artifact filenames — the 3-layer cooking/ingredients pilot sample. */
 const C02_SAMPLE_FILENAME = 'c02-answer-key-sample.jsonl';
 const C02_MANIFEST_FILENAME = 'c02-answer-key-manifest.json';
+
+/**
+ * C02 held-out (P2′.5 / D-P2) artifact filenames — the disjoint ~25-lesson
+ * anti-overfit CANARY, drawn in RELAXED coverage mode from the corpus MINUS the
+ * locked 69-key lessons. Distinct from the strict-mode filenames so the locked
+ * 69-key artifacts are NEVER overwritten by a held-out run.
+ */
+export const C02_HELDOUT_SAMPLE_FILENAME = 'c02-heldout-sample.jsonl';
+export const C02_HELDOUT_MANIFEST_FILENAME = 'c02-heldout-manifest.json';
+
+/**
+ * Held-out draw seed — DISTINCT from DEFAULT_SEED (20260612) so the held-out
+ * sample is independent of the 69-key draw (a shared seed would correlate the
+ * two). The held-out manifest is reproducible from this default.
+ */
+export const C02_HELDOUT_SEED = 20260624;
+
+/** Held-out target size — the fresh ~25 canary (D-P2). */
+export const C02_HELDOUT_SIZE = 25;
 
 // ---------------------------------------------------------------------------
 // Corpus record shape (the fields the worksheet needs)
@@ -255,6 +278,47 @@ export function loadExclusions(filePath: string): Set<string> {
       throw new Error(`exclusions list has a duplicate id: ${entry.id}`);
     }
     ids.add(entry.id);
+  }
+  return ids;
+}
+
+/** A JSONL key line carries at least an `id` (e.g. the 69-key answer-key.final.jsonl). */
+const excludeKeyLineSchema = z.object({ id: z.string().min(1) }).passthrough();
+
+/**
+ * Load a set of ids to EXCLUDE from the held-out draw, from a JSONL key file
+ * (the 69-key `c02-answer-key.final.jsonl` — each non-empty line is a JSON
+ * object with an `id` field). Validates the file exists and yields at least one
+ * id; throws a clear error otherwise (P2′.5). No DB, no API — local read only.
+ */
+export function loadExcludeKey(filePath: string): Set<string> {
+  let raw: string;
+  try {
+    raw = readFileSync(filePath, 'utf8');
+  } catch (e) {
+    throw new Error(
+      `--exclude-key: cannot read ${filePath}: ${e instanceof Error ? e.message : String(e)}`
+    );
+  }
+  const ids = new Set<string>();
+  raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+    .forEach((line, index) => {
+      let parsed: { id: string };
+      try {
+        parsed = excludeKeyLineSchema.parse(JSON.parse(line));
+      } catch (e) {
+        throw new Error(
+          `--exclude-key: ${filePath} line ${index + 1} is not a JSON object with an "id": ` +
+            (e instanceof Error ? e.message : String(e))
+        );
+      }
+      ids.add(parsed.id);
+    });
+  if (ids.size === 0) {
+    throw new Error(`--exclude-key: ${filePath} is empty (no ids to exclude)`);
   }
   return ids;
 }
@@ -614,11 +678,30 @@ export interface C02SampleResult {
   size: number;
 }
 
+/**
+ * Coverage mode for the C02 sampler.
+ *   - `strict`  (default) = the 3-layer ≥2×-coverage draw (hard-case + greedy
+ *     set-cover + clean-core); under-coverage produces `warnings` (a hard-fail
+ *     signal at the CLI). This is the locked 69-key path — unchanged.
+ *   - `relaxed` = a plain representative stratified draw over the eligible pool
+ *     (the held-out anti-overfit canary, D-P2): NO hard-case oversampling, NO
+ *     ≥2× set-cover, `warnings` always empty.
+ */
+export type C02CoverageMode = 'strict' | 'relaxed';
+
 export interface BuildC02SampleOptions {
   seed: number;
   size?: number;
   hardCaseCap?: number;
   context?: C02SamplerContext;
+  /**
+   * Ids to EXCLUDE from the eligible pool before any layer runs (the held-out
+   * draw passes the 69-key ids here). Filtered once at the top of the function
+   * so ALL layers operate on the eligible pool. Default = no exclusion.
+   */
+  excludeIds?: Set<string>;
+  /** See {@link C02CoverageMode}. Default `strict` (the unchanged 69-key path). */
+  coverageMode?: C02CoverageMode;
 }
 
 /** Tally a selected record's candidate slots into the running coverage map. */
@@ -664,8 +747,50 @@ export function buildC02Sample(
   const seed = options.seed;
   const size = options.size ?? C02_SAMPLE_SIZE;
   const hardCaseCap = options.hardCaseCap ?? C02_HARD_CASE_CAP;
+  const coverageMode = options.coverageMode ?? 'strict';
   const ctx = options.context ?? buildC02SamplerContext();
   const rng = mulberry32(seed);
+
+  // Restrict to the eligible pool ONCE — every layer below reads `corpus`, so a
+  // single entry filter threads the exclusion through all three layers (the
+  // held-out draw passes the 69-key ids here so they can never reappear).
+  const excludeIds = options.excludeIds;
+  if (excludeIds && excludeIds.size > 0) {
+    corpus = corpus.filter((r) => !excludeIds.has(r.id));
+  }
+
+  // ----- Relaxed (held-out) mode (D-P2) -----
+  // The fresh-25 is the anti-overfit CANARY: it must reflect the NATURAL corpus
+  // distribution. Oversampling hard cases / rare values (strict mode's whole
+  // goal) would defeat the overfit-guard purpose, so relaxed mode is a plain
+  // representative stratified draw (the SAME proportional activity_type ×
+  // body-length-quartile mechanism the clean-core layer uses) over the FULL
+  // eligible pool — no hard-case quotas, no ≥2× set-cover, no under-coverage
+  // hard-fail. Per-value ≥2× coverage stays on the 69-key workhorse only.
+  if (coverageMode === 'relaxed') {
+    const selected: C02SelectedLesson[] = [];
+    const coverage: C02Coverage = { cooking: {}, ingredients: {} };
+    const drawn = stratifiedSample(corpus, size, seed, new Set());
+    for (const rec of drawn) {
+      if (selected.length >= size) break;
+      selected.push({ id: rec.id, title: rec.title, layer: 'clean-core', hardCaseClass: null });
+      tallyCoverage(rec, ctx, coverage);
+    }
+    return {
+      selected,
+      coverage,
+      // Under-coverage is explicitly NOT a goal in relaxed mode — the canary is
+      // a representative draw, not a coverage-maximizing one. No warnings.
+      warnings: [],
+      layerSizes: {
+        hardCase: 0,
+        coverage: 0,
+        cleanCore: selected.length,
+      },
+      seed,
+      size,
+    };
+  }
 
   const chosenIds = new Set<string>();
   const selected: C02SelectedLesson[] = [];
@@ -1190,7 +1315,12 @@ export function loadCorpus(filePath: string): CorpusRecordForSampling[] {
 // ---------------------------------------------------------------------------
 
 export interface Args {
-  seed: number;
+  /**
+   * PRNG seed. Undefined-by-default so each mode can resolve its own default
+   * (the Protocol-A/strict-C02 path → DEFAULT_SEED; the held-out relaxed path →
+   * C02_HELDOUT_SEED) — keeps the committed held-out manifest reproducible.
+   */
+  seed?: number;
   outDir?: string;
   randomTotal: number;
   /**
@@ -1200,11 +1330,20 @@ export interface Args {
    */
   parse?: string;
   /**
-   * C02 mode: emit the 3-layer cooking_skills/main_ingredients pilot sample
-   * (hard-case + set-cover + clean-core, design §4 Q4) instead of the
+   * C02 mode: emit the cooking_skills/main_ingredients sample (strict 3-layer,
+   * or — with --relaxed-coverage — the held-out canary) instead of the
    * Protocol-A sample. Independent of the Protocol-A path.
    */
   c02: boolean;
+  /**
+   * C02 coverage mode (P2′.5). `strict` (default) = the 3-layer ≥2× draw;
+   * `relaxed` = the held-out representative draw (no hard-fail).
+   */
+  coverageMode: C02CoverageMode;
+  /** C02 sample size override; undefined → mode default (strict 70 / relaxed 25). */
+  size?: number;
+  /** Path to a JSONL key whose `.id`s are EXCLUDED from a held-out draw. */
+  excludeKey?: string;
   help: boolean;
 }
 
@@ -1224,14 +1363,18 @@ export function parseArgs(argv: string[]): Args {
     seed: DEFAULT_SEED,
     randomTotal: DEFAULT_RANDOM_TOTAL,
     c02: false,
+    coverageMode: 'strict',
     help: false,
   };
+  let seedExplicit = false;
+  let sizeExplicit = false;
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const next = argv[i + 1];
     switch (flag) {
       case '--seed':
         a.seed = requireIntFlag(flag, next);
+        seedExplicit = true;
         i++;
         break;
       case '--random-total':
@@ -1255,6 +1398,21 @@ export function parseArgs(argv: string[]): Args {
       case '--c02':
         a.c02 = true;
         break;
+      case '--relaxed-coverage':
+        a.coverageMode = 'relaxed';
+        break;
+      case '--size':
+        a.size = requireIntFlag(flag, next);
+        sizeExplicit = true;
+        i++;
+        break;
+      case '--exclude-key':
+        if (next === undefined || next.startsWith('--')) {
+          throw new Error(`flag ${flag} requires a value (use --help for usage)`);
+        }
+        a.excludeKey = next;
+        i++;
+        break;
       case '--help':
       case '-h':
         a.help = true;
@@ -1262,6 +1420,13 @@ export function parseArgs(argv: string[]): Args {
       default:
         throw new Error(`unknown flag: ${flag} (use --help for usage)`);
     }
+  }
+  // Held-out (relaxed) defaults: so the committed held-out manifest reproduces
+  // from a documented command (seed 20260624, size 25) without extra flags. A
+  // user-passed --seed/--size still wins (the explicit flags above).
+  if (a.coverageMode === 'relaxed') {
+    if (!seedExplicit) a.seed = C02_HELDOUT_SEED;
+    if (!sizeExplicit) a.size = C02_HELDOUT_SIZE;
   }
   return a;
 }
@@ -1290,6 +1455,14 @@ Flags:
                       pilot sample (hard-case + ≥2× set-cover + clean-core,
                       size ${C02_SAMPLE_SIZE}) → ${C02_SAMPLE_FILENAME} + ${C02_MANIFEST_FILENAME}.
                       Requires a corpus carrying the two fields (P2.1 regen).
+  --relaxed-coverage  C02 HELD-OUT mode (P2′.5 / D-P2): a disjoint ~${C02_HELDOUT_SIZE}-lesson
+                      representative stratified draw (NO ≥2× hard-fail) →
+                      ${C02_HELDOUT_SAMPLE_FILENAME} + ${C02_HELDOUT_MANIFEST_FILENAME}.
+                      Defaults to seed ${C02_HELDOUT_SEED}, size ${C02_HELDOUT_SIZE} unless overridden.
+  --exclude-key <p>   path to a JSONL key (each line a JSON object with an "id")
+                      whose ids are EXCLUDED from the draw (the 69-key file, so
+                      the held-out slice is disjoint from the locked gold key)
+  --size <N>          C02 sample size override (strict default ${C02_SAMPLE_SIZE}, relaxed ${C02_HELDOUT_SIZE})
   --help
 
 No DB access, no API calls. Reads artifacts/corpus.jsonl + data/answer-key-adversarial.json.
@@ -1381,39 +1554,75 @@ interface C02RunResult {
   layerSizes: { hardCase: number; coverage: number; cleanCore: number };
   warningCount: number;
   seed: number;
+  coverageMode: C02CoverageMode;
 }
 
 /**
- * C02 orchestration (P1.5): build the 3-layer sample and write a JSONL of the
- * selected lessons + a manifest (provenance + layer sizes + per-value coverage
- * + the WARN list). Reuses the same corpus loader + artifact-write pattern as
- * `run`; the corpus must carry cooking_skills/main_ingredients (P2.1 regen).
+ * C02 orchestration (P1.5 + P2′.5): build the C02 sample and write a JSONL of
+ * the selected lessons + a manifest (provenance + layer sizes + per-value
+ * coverage + the WARN list). Reuses the same corpus loader + artifact-write
+ * pattern as `run`; the corpus must carry cooking_skills/main_ingredients.
+ *
+ * `coverageMode: 'relaxed'` (P2′.5 / D-P2) writes to the HELD-OUT filenames so
+ * the locked 69-key strict artifacts are NEVER overwritten; strict keeps the
+ * existing filenames. `excludeIds`/`size` thread through to `buildC02Sample`.
  */
-export function runC02(opts: { seed: number; outDir: string; corpusPath?: string }): C02RunResult {
+export function runC02(opts: {
+  seed: number;
+  outDir: string;
+  corpusPath?: string;
+  size?: number;
+  coverageMode?: C02CoverageMode;
+  excludeIds?: Set<string>;
+  /** Basename of the --exclude-key file, recorded in the manifest provenance. */
+  excludeKeyName?: string;
+}): C02RunResult {
   const corpusPath = opts.corpusPath ?? DEFAULT_CORPUS_PATH;
+  const coverageMode = opts.coverageMode ?? 'strict';
   const corpus = loadCorpus(corpusPath);
   assertCorpusHasC02Tags(corpus, corpusPath);
-  const result = buildC02Sample(corpus, { seed: opts.seed });
+  const result = buildC02Sample(corpus, {
+    seed: opts.seed,
+    size: opts.size,
+    coverageMode,
+    excludeIds: opts.excludeIds,
+  });
 
   mkdirSync(opts.outDir, { recursive: true });
-  const samplePath = path.join(opts.outDir, C02_SAMPLE_FILENAME);
-  const manifestPath = path.join(opts.outDir, C02_MANIFEST_FILENAME);
+  const isRelaxed = coverageMode === 'relaxed';
+  const samplePath = path.join(
+    opts.outDir,
+    isRelaxed ? C02_HELDOUT_SAMPLE_FILENAME : C02_SAMPLE_FILENAME
+  );
+  const manifestPath = path.join(
+    opts.outDir,
+    isRelaxed ? C02_HELDOUT_MANIFEST_FILENAME : C02_MANIFEST_FILENAME
+  );
 
   const sampleJsonl =
     result.selected.map((s) => JSON.stringify(s)).join('\n') + (result.selected.length ? '\n' : '');
   writeFileSync(samplePath, sampleJsonl);
+
+  const reproduceFlags = isRelaxed
+    ? `--c02 --relaxed-coverage --seed ${result.seed} --size ${result.size}` +
+      (opts.excludeKeyName ? ` --exclude-key <path>/${opts.excludeKeyName}` : '')
+    : `--c02 --seed ${result.seed}`;
+
   writeFileSync(
     manifestPath,
     JSON.stringify(
       {
         provenance: {
-          task: 'C02 P1.5 — 3-layer answer-key sample (hard-case + set-cover + clean-core)',
+          task: isRelaxed
+            ? 'C02 P2′.5 — held-out anti-overfit canary (relaxed stratified draw, excludes the 69-key)'
+            : 'C02 P1.5 — 3-layer answer-key sample (hard-case + set-cover + clean-core)',
           sampler_version: SAMPLER_VERSION,
+          coverageMode,
           seed: result.seed,
           size: result.size,
-          note:
-            'Deterministic; reproduce with `npx tsx scripts/stage2-retag/sample-answer-key.ts --c02 --seed ' +
-            `${result.seed}\``,
+          excludedCount: opts.excludeIds?.size ?? 0,
+          excludeKey: opts.excludeKeyName,
+          note: `Deterministic; reproduce with \`npx tsx scripts/stage2-retag/sample-answer-key.ts ${reproduceFlags}\``,
         },
         layerSizes: result.layerSizes,
         coverage: result.coverage,
@@ -1432,6 +1641,7 @@ export function runC02(opts: { seed: number; outDir: string; corpusPath?: string
     layerSizes: result.layerSizes,
     warningCount: result.warnings.length,
     seed: result.seed,
+    coverageMode,
   };
 }
 
@@ -1441,15 +1651,37 @@ function main(): void {
     process.stdout.write(HELP);
     return;
   }
+  // parseArgs always resolves a per-mode seed default; this `??` is a type guard.
+  const seed = args.seed ?? DEFAULT_SEED;
   if (args.c02) {
-    const result = runC02({ seed: args.seed, outDir: args.outDir ?? DEFAULT_OUT_DIR });
-    process.stdout.write(
-      `c02 answer key: ${result.selectedCount} lessons ` +
-        `(${result.layerSizes.hardCase} hard-case + ${result.layerSizes.coverage} coverage + ` +
-        `${result.layerSizes.cleanCore} clean-core; seed ${result.seed})\n` +
-        `  ${result.samplePath}\n  ${result.manifestPath}\n`
-    );
-    if (result.warningCount > 0) {
+    const excludeIds = args.excludeKey ? loadExcludeKey(args.excludeKey) : undefined;
+    const result = runC02({
+      seed,
+      outDir: args.outDir ?? DEFAULT_OUT_DIR,
+      size: args.size,
+      coverageMode: args.coverageMode,
+      excludeIds,
+      excludeKeyName: args.excludeKey ? path.basename(args.excludeKey) : undefined,
+    });
+    if (result.coverageMode === 'relaxed') {
+      process.stdout.write(
+        `c02 HELD-OUT (relaxed) sample: ${result.selectedCount} lessons ` +
+          `(excludes ${excludeIds?.size ?? 0} key ids; seed ${result.seed})\n` +
+          `  ${result.samplePath}\n  ${result.manifestPath}\n`
+      );
+    } else {
+      process.stdout.write(
+        `c02 answer key: ${result.selectedCount} lessons ` +
+          `(${result.layerSizes.hardCase} hard-case + ${result.layerSizes.coverage} coverage + ` +
+          `${result.layerSizes.cleanCore} clean-core; seed ${result.seed})\n` +
+          `  ${result.samplePath}\n  ${result.manifestPath}\n`
+      );
+    }
+    // The ≥2× under-coverage hard-fail is a STRICT-mode guarantee only. Relaxed
+    // (held-out) mode is a representative draw — under-coverage is expected and
+    // `warnings` is empty — so gate the exit on strict mode explicitly (belt +
+    // suspenders): a held-out run must never fail closed.
+    if (result.coverageMode === 'strict' && result.warningCount > 0) {
       // ≥2× coverage is a HARD guarantee (design §4 Q4 / P1.5): an under-covered
       // canonical can't be scored by the per-value pilot gates, so fail closed
       // rather than emit a usable-looking-but-weak key.
@@ -1477,7 +1709,7 @@ function main(): void {
     return;
   }
   const result = run({
-    seed: args.seed,
+    seed,
     randomTotal: args.randomTotal,
     outDir: args.outDir ?? DEFAULT_OUT_DIR,
   });
