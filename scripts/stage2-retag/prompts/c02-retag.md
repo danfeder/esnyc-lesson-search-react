@@ -13,6 +13,8 @@ The user message contains two parts:
 
    An empty section (`(none)`) means the lesson currently has no tags for that field — an ADD-only situation.
 
+**The anchor is already cleaned.** A deterministic floor runs BEFORE you see the tags: it has already removed raw legacy junk — vague placeholders ("Basic Skills", "Cooking Techniques"), the old "Herbs & Aromatics" umbrella, never-stored pantry staples (salt, oil, soy sauce), and cosmetic/craft noise. Those literals will NEVER appear in the anchor, and they are NOT valid tool values. So every value you KEEP or DROP is a *canonical* value already shown in the anchor; you ADD the canonical replacements the body supports (e.g. the real technique a removed "Basic Skills" stood for, or `Fresh herbs` / `Alliums` for a removed "Herbs & Aromatics"). Reserve DROP for a canonical anchor tag the body does not actually support.
+
 ## Your task: KEEP / DROP / ADD (verify-and-diff, not re-tag-from-scratch)
 
 Do NOT re-tag the lesson from a blank slate. Start from the current tags in the anchor and decide, for `cooking_skills` and `main_ingredients` ONLY:
@@ -45,9 +47,9 @@ Decide ONLY these two fields. Call the `submit_tags` tool exactly once with the 
 
 ## cooking_skills — KEEP/DROP/ADD rules
 
-The specific cooking skills/techniques students actually practice in a hands-on cooking block. A tasting-only or garden-only lesson has no cooking skills (an empty KEEP plus DROPs).
+The specific cooking skills/techniques students actually practice in a hands-on cooking block. A garden-only lesson, or one where students only EAT or sample the finished dish, has no hands-on cooking skills (an empty KEEP plus DROPs for any that don't hold). Exception: structured sensory **tasting** is itself the `Tasting` skill — a tasting lesson with no knife/heat work still has `Tasting` (see the Tasting criterion below).
 
-- **Replace vague tags with the real technique.** "Basic Skills" / "Cooking Techniques" are NOT canonical — DROP them (`vague-placeholder-replaced`) and ADD the actual skill the Agenda shows (`real-technique-taught`). A lesson that says "basic cooking skills" but has students dice and sauté vegetables → DROP "Basic Skills", ADD `Knife skills` + `Sautéing & stir-frying`. Frying / stovetop frying is `Sautéing & stir-frying`.
+- **Add the real technique behind a vague placeholder.** The floor already removed non-canonical placeholders like "Basic Skills" / "Cooking Techniques" (they won't appear in the anchor), so such a lesson's cooking_skills anchor is empty or thin. ADD the actual skill the Agenda shows (`real-technique-taught`): a lesson that says "basic cooking skills" but has students dice and sauté vegetables → ADD `Knife skills` + `Sautéing & stir-frying`. Frying / stovetop frying is `Sautéing & stir-frying`.
 
 - **`Tasting` ADD criterion (strict).** ADD `Tasting` ONLY when the lesson teaches tasting as a SKILL — a structured sensory comparison, tasting vocabulary, or a taste assessment students perform (e.g. comparing varieties, describing flavor on a sensory rubric, a blind taste test). Do NOT add `Tasting` merely because students eat or sample the dish at the end. Eating the finished dish is NOT `Tasting`. If the only "tasting" is a closing snack, DROP a current `Tasting` tag (`incidental-not-central`).
 
@@ -59,17 +61,17 @@ The lesson's main ingredients, at TWO levels: ingredient **groups** (e.g. Leafy 
 
 - **Always keep the parent group alongside a specific.** Every specific belongs to a group — whenever you KEEP or ADD a specific, its group must also be present (`parent-group-required`). A few specifics are group-less and stand alone (Celery, Fennel, Seaweed (nori), Cocoa & chocolate). Melons belongs under "Squash, cucumbers & melons".
 
-- **Split the old "Herbs & Aromatics" umbrella.** The legacy umbrella conflated two new groups. DROP any "herbs"/"aromatics" umbrella (`herbs-aromatics-split`) and ADD `Fresh herbs` for fresh leafy herbs (cilantro, parsley, mint, basil) and/or `Alliums` for onions, garlic, scallions, leeks, shallots (`herbs-aromatics-split`) — whichever the actual ingredients are.
+- **Split the old "Herbs & Aromatics" umbrella.** The floor already removed the legacy "Herbs & Aromatics" umbrella (it won't appear in the anchor). When the body shows fresh leafy herbs (cilantro, parsley, mint, basil) ADD `Fresh herbs`, and/or when it shows onions, garlic, scallions, leeks, or shallots ADD `Alliums` (`herbs-aromatics-split`) — whichever the actual ingredients are.
 
 - **Garnish is not a main ingredient.** A food used only as a garnish, a decorative topping, or a trace flavoring (a sprig of parsley on the plate, a sprinkle of sesame, a lemon wedge for looks) is NOT a main ingredient. Do not ADD it; DROP a current tag that rests only on a garnish (`incidental-not-central`).
 
-- **Pantry-staple precision (B-lite rule).** Salt, oil, and soy sauce are never-stored background staples — never KEEP or ADD them, even when the recipe uses them (DROP a current one with `pantry-staple-not-about-it`). Tag `Sweeteners` (Sugar folds into it) ONLY when the lesson is genuinely ABOUT the sweetener (a lesson on sugar, honey, sweetness) — not because a recipe contains a spoonful of sugar.
+- **Pantry-staple precision (B-lite rule).** Salt, oil, and soy sauce are never-stored background staples — the floor already removed them (they won't appear in the anchor) and they are not valid values, so never ADD them, even when the recipe uses them. `Sweeteners` (Sugar folds into it) IS canonical and may appear in the anchor — KEEP or ADD it ONLY when the lesson is genuinely ABOUT the sweetener (a lesson on sugar, honey, sweetness); otherwise DROP it (`pantry-staple-not-about-it`), not because a recipe contains a spoonful of sugar.
 
 ## Negative few-shots
 
 1. **Garnish isn't an ingredient.** A soup recipe finishes "garnish with a sprig of cilantro and a lemon wedge." The cilantro and lemon are garnishes, not main ingredients → do NOT add `Fresh herbs`/`Citrus fruits` for them; if a current tag rests only on the garnish, DROP it (`incidental-not-central`). (If the lesson is a cilantro-pesto lesson where cilantro IS the dish, that's different — then it's `specific-food-central`.)
 
-2. **Pantry-staple precision.** A stir-fry recipe lists "2 tbsp soy sauce, 1 tbsp oil, a pinch of salt" in its ingredients. None of these are main ingredients → never KEEP or ADD `Salt`/`Oil`/`Soy sauce` (DROP any current one with `pantry-staple-not-about-it`). The main ingredients are the vegetables and protein the stir-fry is built around.
+2. **Pantry-staple precision.** A stir-fry recipe lists "2 tbsp soy sauce, 1 tbsp oil, a pinch of salt" in its ingredients. None of these are main ingredients → never ADD `Salt`/`Oil`/`Soy sauce` (the floor already removed them; they are not valid values). The main ingredients are the vegetables and protein the stir-fry is built around.
 
 3. **Tasting vs eating.** A garden lesson ends with "students taste the cherry tomatoes they harvested." That is eating the produce, not a tasting SKILL → do NOT add `Tasting`. A separate lesson runs "a blind taste test comparing three apple varieties, scoring sweetness and crunch on a sensory chart" → that IS `Tasting` (`body-clearly-supports`).
 

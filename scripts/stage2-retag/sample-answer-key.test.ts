@@ -618,9 +618,24 @@ describe('assertCorpusHasC02Tags — stale-corpus guard', () => {
     expect(() => assertCorpusHasC02Tags(stale, '/tmp/corpus.jsonl')).toThrow(/stale/i);
   });
 
-  it('does not throw when at least one row carries a C02 tag', () => {
-    const fresh = [{ cooking_skills: [], main_ingredients: [] }, { cooking_skills: ['Baking'] }];
+  it('does not throw when every row has both keys present and at least one carries a tag', () => {
+    // A fresh export writes BOTH keys on every row (null/[] when empty).
+    const fresh = [
+      { cooking_skills: [], main_ingredients: [] },
+      { cooking_skills: ['Baking'], main_ingredients: [] },
+    ];
     expect(() => assertCorpusHasC02Tags(fresh, '/tmp/corpus.jsonl')).not.toThrow();
+  });
+
+  it('throws on a PARTIAL-stale corpus — a row MISSING a key, even if other rows are tagged', () => {
+    // The original wholesale check passed this (one row had tags); the strengthened
+    // per-row presence check rejects it (Codex P2′.2 #1) and names the offending id.
+    const partial = [
+      { id: 'tagged', cooking_skills: ['Baking'], main_ingredients: ['Apples'] },
+      { id: 'stale-row', cooking_skills: ['Roasting'] }, // missing main_ingredients key
+    ];
+    expect(() => assertCorpusHasC02Tags(partial, '/tmp/corpus.jsonl')).toThrow(/stale/i);
+    expect(() => assertCorpusHasC02Tags(partial, '/tmp/corpus.jsonl')).toThrow(/stale-row/);
   });
 });
 

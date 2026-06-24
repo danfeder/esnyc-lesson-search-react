@@ -110,19 +110,52 @@ export const corpusRecordSchema = z
 export type CorpusRecordForSampling = z.infer<typeof corpusRecordSchema>;
 
 /**
- * Guard against a STALE corpus. The C02 sampler + scorer read current
- * cooking_skills / main_ingredients from the corpus, but those columns were
- * added to the export AFTER the original artifacts/corpus.jsonl was written
- * (P2.1 regenerates it with them). A stale file parses fine — the two fields are
- * simply absent (they are `.optional()` above) — and would silently yield empty
- * current-tags, corrupting the rules baseline + gate scoring with NO error. Fail
- * loudly instead: if not one row carries any cooking_skills or main_ingredients,
- * treat the corpus as stale and abort. (Codex/round-2 review finding.)
+ * Guard against a STALE or PARTIAL corpus. The C02 sampler + scorer + anchored
+ * run read current cooking_skills / main_ingredients from the corpus, but those
+ * columns were added to the export AFTER the original artifacts/corpus.jsonl was
+ * written (P2.1 regenerates it with them). A stale file parses fine — the two
+ * fields are simply absent (`.optional()`) — and would silently yield empty
+ * current-tags (wrong anchor + wrong run-identity hash), corrupting the rules
+ * baseline + gate scoring with NO error.
+ *
+ * Two checks (Codex P2′.2 #1 strengthens the original wholesale check):
+ *  (1) **Per-row key PRESENCE.** A FRESH C02 export writes BOTH keys on every
+ *      row — `buildCorpusRecord` (export-corpus.ts) uses `?? null`, so an empty
+ *      field is `null`, never a missing key. A row MISSING a key therefore
+ *      predates the C02 export: the corpus is stale/partial and that one row
+ *      would silently anchor as untagged. Fail with the offending ids rather
+ *      than coercing missing → []. (An explicit `null`/`[]` is a legitimate
+ *      "this lesson has no tags" and passes.)
+ *  (2) **Degenerate guard.** Even with both keys present everywhere, at least
+ *      one row must actually carry a tag (catches an all-empty corpus).
  */
 export function assertCorpusHasC02Tags(
-  rows: ReadonlyArray<{ cooking_skills?: string[] | null; main_ingredients?: string[] | null }>,
+  rows: ReadonlyArray<{
+    id?: string;
+    cooking_skills?: string[] | null;
+    main_ingredients?: string[] | null;
+  }>,
   corpusPath: string
 ): void {
+  const missing = rows.flatMap((r, i) => {
+    const lacks: string[] = [];
+    if (r.cooking_skills === undefined) lacks.push('cooking_skills');
+    if (r.main_ingredients === undefined) lacks.push('main_ingredients');
+    return lacks.length ? [{ id: r.id ?? `row#${i + 1}`, lacks }] : [];
+  });
+  if (missing.length > 0) {
+    const sample = missing
+      .slice(0, 10)
+      .map((m) => `${m.id} (lacks ${m.lacks.join('+')})`)
+      .join(', ');
+    throw new Error(
+      `Corpus at ${corpusPath}: ${missing.length} of ${rows.length} row(s) are MISSING a ` +
+        `cooking_skills/main_ingredients key — a fresh C02 export writes both keys (null when ` +
+        `empty), so a missing key means the corpus is STALE/partial and that row would silently ` +
+        `anchor as untagged with a wrong hash. Regenerate artifacts/corpus.jsonl with the two ` +
+        `fields (the P2.1 prerequisite). Offending: ${sample}${missing.length > 10 ? ', …' : ''}`
+    );
+  }
   const anyTagged = rows.some(
     (r) => (r.cooking_skills?.length ?? 0) > 0 || (r.main_ingredients?.length ?? 0) > 0
   );
