@@ -29,6 +29,7 @@ import { classifyHardCase } from './sample-answer-key';
 import { c02IngredientParentMap, c02MainIngredientsValues, type C02Manifest } from './vocab';
 import {
   assembleFromWorksheet,
+  bucketField,
   buildScaffold,
   floorAnchor,
   renderWorksheet,
@@ -186,6 +187,90 @@ describe('floorAnchor', () => {
       MINI_ING_VALUES
     );
     expect(out.cooking_skills).toEqual(['Boiling & simmering']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// bucketField — per-tag AGREED / CONTESTED provenance
+// ---------------------------------------------------------------------------
+
+describe('bucketField', () => {
+  it('AGREED = floor ∪ (draft ∩ codex); CONTESTED splits the lens-only tags', () => {
+    // floor={A}, draft={A,B,C}, codex={A,B,D} -> AGREED={A,B}, C[sonnet], D[codex].
+    const out = bucketField(['A'], ['A', 'B', 'C'], ['A', 'B', 'D']);
+    expect(out.agreed).toEqual(['A', 'B']);
+    expect(out.contested).toEqual([
+      { value: 'C', provenance: 'sonnet' },
+      { value: 'D', provenance: 'codex' },
+    ]);
+  });
+
+  it('keeps floor first, then the draft∩codex remainder, in stable order', () => {
+    const out = bucketField(['Z'], ['B', 'A', 'Z'], ['A', 'B', 'Z']);
+    // floor Z first, then intersection in draft order (B, A) minus the already-agreed Z.
+    expect(out.agreed).toEqual(['Z', 'B', 'A']);
+    expect(out.contested).toEqual([]);
+  });
+
+  it('with NO codex lens, AGREED = floor ∪ draft and nothing is contested', () => {
+    const out = bucketField(['A'], ['A', 'B', 'C'], undefined);
+    expect(out.agreed).toEqual(['A', 'B', 'C']);
+    expect(out.contested).toEqual([]);
+  });
+
+  it('annotates a tag both lenses propose but the floor∩ excluded as sonnet+codex (defensive)', () => {
+    // Force the impossible-under-intersection branch via a stubbed agreed set:
+    // a tag present in BOTH draft and codex must be in AGREED, so we cannot
+    // trigger it through the public path — assert the normal both-lens tag lands
+    // in AGREED instead (the only reachable behavior), documenting the rule.
+    const out = bucketField([], ['A', 'X'], ['A', 'Y']);
+    expect(out.agreed).toEqual(['A']); // both lenses -> agreed, never contested
+    expect(out.contested).toEqual([
+      { value: 'X', provenance: 'sonnet' },
+      { value: 'Y', provenance: 'codex' },
+    ]);
+  });
+
+  it('de-dupes across draft+codex when building CONTESTED', () => {
+    const out = bucketField([], ['A', 'A'], ['B', 'B']);
+    expect(out.agreed).toEqual([]);
+    expect(out.contested).toEqual([
+      { value: 'A', provenance: 'sonnet' },
+      { value: 'B', provenance: 'codex' },
+    ]);
+  });
+});
+
+describe('bucketField → prefill parent-reconcile (via floorAnchor + appendParents)', () => {
+  it('a specific in AGREED pulls its parent group into the FINAL pre-fill', () => {
+    // floor anchor already carries Tomatoes+Nightshades (R9). The pre-fill of the
+    // AGREED bucket is then parent-reconciled, so a present specific keeps its
+    // group and assemble accepts it. We prove it round-trips assemble-valid.
+    const scaffold: C02ScaffoldRecord = {
+      id: 'P',
+      title: 'T P',
+      layer: 'clean-core',
+      hardCaseClass: null,
+      hardCaseJudgment: true,
+      current: { cooking_skills: [], main_ingredients: [] },
+      // floor anchor lacks the parent (constructed by hand to a single specific)
+      // — appendParents in prefill must add Nightshades so assemble passes.
+      floorAnchor: { cooking_skills: [], main_ingredients: ['Tomatoes'] },
+      bodyExcerpt: 'body text',
+    };
+    const proposals = new Map([
+      [
+        'P',
+        {
+          draft: { cooking_skills: [], main_ingredients: ['Tomatoes'] },
+          codex: { cooking_skills: [], main_ingredients: ['Tomatoes'] },
+        },
+      ],
+    ]);
+    const md = renderWorksheet([scaffold], proposals, MINI_FLOOR);
+    const out = assembleFromWorksheet(md, [selection({ id: 'P' })], MINI_MANIFEST, MINI_FLOOR);
+    // Tomatoes (AGREED) pulled its parent Nightshades into the pre-fill -> no orphan.
+    expect(out[0].main_ingredients.sort()).toEqual(['Nightshades', 'Tomatoes']);
   });
 });
 
@@ -395,7 +480,7 @@ describe('renderWorksheet -> assembleFromWorksheet round-trip', () => {
       }),
       scaffoldRow({ id: 'B', floorAnchor: { cooking_skills: [], main_ingredients: ['Celery'] } }),
     ];
-    const md = renderWorksheet(scaffold, new Map());
+    const md = renderWorksheet(scaffold, new Map(), MINI_FLOOR);
     const out = assembleFromWorksheet(
       md,
       scaffold.map((s) => selection({ id: s.id })),
@@ -408,28 +493,51 @@ describe('renderWorksheet -> assembleFromWorksheet round-trip', () => {
     ]);
   });
 
-  it('prefers a codex proposal on a judgment row, unioning in the floor anchor', () => {
+  it('pre-fills the AGREED bucket (floorAnchor ∪ draft∩codex) — contested tags are NOT pre-filled', () => {
+    // floor={Baking}/{Nightshades,Tomatoes}; draft adds Boiling (cooking) +
+    // Apples,Fruits (ingredients); codex agrees only on Apples,Fruits (NOT
+    // Boiling). AGREED cooking = {Baking}; AGREED ingredients = floor ∪
+    // {Apples,Fruits}. Boiling is contested [sonnet] → left out of the pre-fill.
     const scaffold = [
       scaffoldRow({
         id: 'A',
         hardCaseJudgment: true,
-        floorAnchor: { cooking_skills: ['Baking'], main_ingredients: ['Nightshades'] },
+        floorAnchor: { cooking_skills: ['Baking'], main_ingredients: ['Nightshades', 'Tomatoes'] },
       }),
     ];
     const proposals = new Map([
-      ['A', { codex: { cooking_skills: ['Boiling & simmering'], main_ingredients: ['Tomatoes'] } }],
+      [
+        'A',
+        {
+          draft: {
+            cooking_skills: ['Baking', 'Boiling & simmering'],
+            main_ingredients: ['Nightshades', 'Tomatoes', 'Fruits', 'Apples'],
+          },
+          codex: {
+            cooking_skills: ['Baking'],
+            main_ingredients: ['Nightshades', 'Tomatoes', 'Fruits', 'Apples'],
+          },
+        },
+      ],
     ]);
-    const md = renderWorksheet(scaffold, proposals);
+    const md = renderWorksheet(scaffold, proposals, MINI_FLOOR);
     const out = assembleFromWorksheet(md, [selection({ id: 'A' })], MINI_MANIFEST, MINI_FLOOR);
-    // codex values UNION the floor anchor; orphan Tomatoes pulls its parent
-    // Nightshades (already in the anchor); de-duped.
-    expect(out[0].cooking_skills.sort()).toEqual(['Baking', 'Boiling & simmering']);
-    expect(out[0].main_ingredients).toContain('Nightshades');
-    expect(out[0].main_ingredients).toContain('Tomatoes');
+    // Boiling & simmering (draft-only) is excluded from the AGREED pre-fill.
+    expect(out[0].cooking_skills).toEqual(['Baking']);
+    // Agreed ingredients = floor {Nightshades, Tomatoes} ∪ both-lens {Fruits, Apples}.
+    expect(out[0].main_ingredients.sort()).toEqual(['Apples', 'Fruits', 'Nightshades', 'Tomatoes']);
+    // The contested tag is surfaced (annotated) but NOT in the FINAL line.
+    expect(md).toMatch(/Boiling & simmering \[sonnet\]/);
   });
 
-  it('flags DISAGREE when draft and codex differ on a field', () => {
-    const scaffold = [scaffoldRow({ id: 'A', hardCaseJudgment: true })];
+  it('renders the agreed / contested provenance blocks per field', () => {
+    const scaffold = [
+      scaffoldRow({
+        id: 'A',
+        hardCaseJudgment: true,
+        floorAnchor: { cooking_skills: ['Baking'], main_ingredients: [] },
+      }),
+    ];
     const proposals = new Map([
       [
         'A',
@@ -439,7 +547,12 @@ describe('renderWorksheet -> assembleFromWorksheet round-trip', () => {
         },
       ],
     ]);
-    const md = renderWorksheet(scaffold, proposals);
-    expect(md).toMatch(/DISAGREE/);
+    const md = renderWorksheet(scaffold, proposals, MINI_FLOOR);
+    expect(md).toMatch(/agreed \(high-confidence\)/);
+    expect(md).toMatch(/contested — decide each/);
+    // Baking is in the floor anchor -> AGREED (not contested). Boiling (codex-
+    // only, not in the floor) is the sole contested tag, annotated [codex].
+    expect(md).toMatch(/cooking_skills — agreed \(high-confidence\):\*\* Baking/);
+    expect(md).toMatch(/Boiling & simmering \[codex\]/);
   });
 });

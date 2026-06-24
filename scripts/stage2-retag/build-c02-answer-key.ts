@@ -22,10 +22,15 @@
  *
  *   worksheet — render `artifacts/c02-answer-key-worksheet.md`: one section per
  *               lesson (manifest order, numbered N/70) with the read-only
- *               context (title/id/layer/body/current/floor/draft/codex + a
- *               DISAGREE flag) and two pre-filled, strictly-parseable FINAL
- *               lines a human edits. Optionally reconciles an existing
- *               `artifacts/c02-proposals.jsonl` (draft/codex per id).
+ *               context (title/id/layer/body/current/floor/draft/codex) plus a
+ *               per-tag provenance block — AGREED (floorAnchor ∪ draft∩codex,
+ *               high-confidence) and CONTESTED (the one-lens-only tags, each
+ *               annotated [sonnet]/[codex]) — and two pre-filled,
+ *               strictly-parseable FINAL lines a human edits. The pre-fill is the
+ *               parent-reconciled AGREED bucket (assemble-valid; contested tags
+ *               are deliberately left out for the human to add). Optionally
+ *               reconciles an existing `artifacts/c02-proposals.jsonl`
+ *               (draft/codex per id).
  *
  *   assemble  — parse the (human-edited) worksheet's FINAL lines and emit
  *               `artifacts/c02-answer-key.final.jsonl` (70 rows of
@@ -355,26 +360,91 @@ function unionOrdered(a: readonly string[], b: readonly string[]): string[] {
   return out;
 }
 
+/** The lens(es) that proposed a contested tag. */
+export type ContestedProvenance = 'sonnet' | 'codex' | 'sonnet+codex';
+
+/** One contested candidate tag + which model lens(es) proposed it. */
+export interface ContestedTag {
+  value: string;
+  provenance: ContestedProvenance;
+}
+
+/** Per-field provenance buckets over the candidate tags for one lesson. */
+export interface FieldBuckets {
+  /** floorAnchor ∪ (draft ∩ codex) — high-confidence; the FINAL pre-fill base. */
+  agreed: string[];
+  /** (draft ∪ codex) − agreed, each annotated with the proposing lens(es). */
+  contested: ContestedTag[];
+}
+
 /**
- * The pre-filled FINAL value list for one field of one lesson: prefer codex on
- * judgment rows where it exists, else draft, else the floor anchor; ALWAYS
- * union-in the floor anchor (the floor is authoritative on the clean core).
+ * Compute the AGREED / CONTESTED buckets for one field of one lesson.
+ *
+ *   AGREED    = floorAnchor ∪ (draft ∩ codex). With NO codex (the ~19 non-
+ *               judgment rows lacking a Codex lens), the intersection degrades to
+ *               `draft` itself, so AGREED = floorAnchor ∪ draft.
+ *   CONTESTED = (draft ∪ codex) − AGREED, each tag annotated with the lens(es)
+ *               that proposed it: [sonnet], [codex], or [sonnet+codex] (the last
+ *               only if a tag is in both yet excluded from AGREED — impossible
+ *               under the intersection rule, but handled defensively).
+ *
+ * Order is stable & deterministic: AGREED keeps floorAnchor first (the
+ * authoritative clean core), then the draft∩codex remainder in draft order;
+ * CONTESTED follows (draft ∪ codex) first-occurrence order. De-duped throughout.
+ */
+export function bucketField(
+  anchor: readonly string[],
+  draft: readonly string[] | undefined,
+  codex: readonly string[] | undefined
+): FieldBuckets {
+  const draftVals = draft ?? [];
+  const draftSet = new Set(draftVals);
+  // With no Codex lens, the intersection degrades to draft itself (every draft
+  // tag is "agreed" with the only lens available); with one, it is the overlap.
+  const intersection =
+    codex === undefined ? [...draftVals] : draftVals.filter((v) => new Set(codex).has(v));
+
+  const agreed = unionOrdered(anchor, intersection);
+  const agreedSet = new Set(agreed);
+
+  const codexSet = new Set(codex ?? []);
+  const contested: ContestedTag[] = [];
+  const seen = new Set<string>();
+  for (const value of [...draftVals, ...(codex ?? [])]) {
+    if (agreedSet.has(value) || seen.has(value)) continue;
+    seen.add(value);
+    const inDraft = draftSet.has(value);
+    const inCodex = codexSet.has(value);
+    const provenance: ContestedProvenance =
+      inDraft && inCodex ? 'sonnet+codex' : inCodex ? 'codex' : 'sonnet';
+    contested.push({ value, provenance });
+  }
+  return { agreed, contested };
+}
+
+/**
+ * The pre-filled FINAL value list for one field of one lesson: the AGREED bucket
+ * (floorAnchor ∪ draft∩codex), parent-reconciled for main_ingredients so the
+ * pre-fill is itself assemble-valid (a present specific always carries its parent
+ * group — reusing the floor's R9 logic, never introducing orphans). Contested
+ * tags are deliberately NOT pre-filled — the human adds the ones that belong.
  */
 function prefillField(
   field: keyof FieldPair,
   row: C02ScaffoldRecord,
-  proposal: Proposal | undefined
+  proposal: Proposal | undefined,
+  floor: C02Floor
 ): string[] {
-  const anchor = row.floorAnchor[field];
-  let base: string[];
-  if (row.hardCaseJudgment && proposal?.codex) base = proposal.codex[field];
-  else if (proposal?.draft) base = proposal.draft[field];
-  else base = anchor;
-  return unionOrdered(base, anchor);
+  const agreed = bucketField(
+    row.floorAnchor[field],
+    proposal?.draft?.[field],
+    proposal?.codex?.[field]
+  ).agreed;
+  return field === 'main_ingredients' ? appendParents(agreed, floor.parentMap) : agreed;
 }
 
-/** The DRAFT shown read-only: a proposal draft if present, else the floor anchor. */
-function draftField(
+/** Render the per-lens raw value (a proposal lens if present, else the floor anchor for draft). */
+function rawDraft(
   field: keyof FieldPair,
   row: C02ScaffoldRecord,
   proposal: Proposal | undefined
@@ -382,11 +452,31 @@ function draftField(
   return proposal?.draft ? proposal.draft[field] : row.floorAnchor[field];
 }
 
+/** Render one field's Agreed / Contested provenance block. */
+function renderFieldBlock(
+  field: keyof FieldPair,
+  row: C02ScaffoldRecord,
+  proposal: Proposal | undefined
+): string[] {
+  const { agreed, contested } = bucketField(
+    row.floorAnchor[field],
+    proposal?.draft?.[field],
+    proposal?.codex?.[field]
+  );
+  const lines = [`- **${field} — agreed (high-confidence):** ${joinValues(agreed)}`];
+  if (contested.length > 0) {
+    const rendered = contested.map((t) => `${t.value} [${t.provenance}]`).join(`${FINAL_SEP} `);
+    lines.push(`  - **contested — decide each:** ${rendered}`);
+  }
+  return lines;
+}
+
 function renderSection(
   row: C02ScaffoldRecord,
   index: number,
   total: number,
-  proposal: Proposal | undefined
+  proposal: Proposal | undefined,
+  floor: C02Floor
 ): string {
   const hardCaseNote = row.hardCaseClass ? ` · hard-case \`${row.hardCaseClass}\`` : '';
   const lines: string[] = [
@@ -405,35 +495,28 @@ function renderSection(
     '',
     `- **Current:** cooking_skills = ${joinValues(row.current.cooking_skills)} | main_ingredients = ${joinValues(row.current.main_ingredients)}`,
     `- **Floor anchor:** cooking_skills = ${joinValues(row.floorAnchor.cooking_skills)} | main_ingredients = ${joinValues(row.floorAnchor.main_ingredients)}`,
+    `- **Draft:** cooking_skills = ${joinValues(rawDraft('cooking_skills', row, proposal))} | main_ingredients = ${joinValues(rawDraft('main_ingredients', row, proposal))}`,
   ];
-
-  const draftCooking = draftField('cooking_skills', row, proposal);
-  const draftIngredients = draftField('main_ingredients', row, proposal);
-  lines.push(
-    `- **Draft:** cooking_skills = ${joinValues(draftCooking)} | main_ingredients = ${joinValues(draftIngredients)}`
-  );
 
   if (proposal?.codex) {
     lines.push(
       `- **Codex:** cooking_skills = ${joinValues(proposal.codex.cooking_skills)} | main_ingredients = ${joinValues(proposal.codex.main_ingredients)}`
     );
-    // DISAGREE flag per field when draft and codex differ.
-    if (proposal.draft) {
-      const fields: (keyof FieldPair)[] = ['cooking_skills', 'main_ingredients'];
-      for (const f of fields) {
-        if (joinValues(proposal.draft[f]) !== joinValues(proposal.codex[f])) {
-          lines.push(`  - ⚠️ DISAGREE: ${f}`);
-        }
-      }
-    }
   }
+
+  // Per-tag provenance: AGREED (high-confidence) + CONTESTED (decide each).
+  lines.push('', '**Per-tag provenance:**');
+  lines.push(...renderFieldBlock('cooking_skills', row, proposal));
+  lines.push(...renderFieldBlock('main_ingredients', row, proposal));
 
   lines.push(
     '',
-    '> Edit the two FINAL lines below. Values are `;`-separated; leave nothing after `=` for none.',
+    '> Edit the two FINAL lines below. Pre-filled with the AGREED tags; add the',
+    '> CONTESTED tags that belong. Values are `;`-separated; leave nothing after',
+    '> `=` for none. A main_ingredients specific must keep its parent group.',
     '',
-    `FINAL cooking_skills = ${joinValues(prefillField('cooking_skills', row, proposal))}`,
-    `FINAL main_ingredients = ${joinValues(prefillField('main_ingredients', row, proposal))}`,
+    `FINAL cooking_skills = ${joinValues(prefillField('cooking_skills', row, proposal, floor))}`,
+    `FINAL main_ingredients = ${joinValues(prefillField('main_ingredients', row, proposal, floor))}`,
     '',
     '---'
   );
@@ -447,14 +530,19 @@ function renderSection(
  */
 export function renderWorksheet(
   scaffold: C02ScaffoldRecord[],
-  proposals: Map<string, Proposal>
+  proposals: Map<string, Proposal>,
+  floor: C02Floor
 ): string {
   const total = scaffold.length;
   const intro = [
     '# C02 gold answer-key worksheet',
     '',
     '> One section per pilot lesson (manifest order). Everything except the two',
-    '> `FINAL` lines is read-only context. Edit each `FINAL` line to the adjudicated',
+    '> `FINAL` lines is read-only context. Each field shows two provenance buckets:',
+    '> **agreed** (floor anchor ∪ the tags both the Sonnet draft and the Codex',
+    '> lens proposed — high-confidence, already pre-filled) and **contested** (the',
+    '> tags only one lens proposed, annotated `[sonnet]` / `[codex]` — decide each',
+    '> and add the ones that belong). Edit each `FINAL` line to the adjudicated',
     '> tags: `;`-separated canonical values; leave nothing after `=` for none. A',
     '> main_ingredients specific must have its parent group present too (assemble',
     '> enforces this). Run `assemble` to produce the gold key.',
@@ -464,7 +552,7 @@ export function renderWorksheet(
     '---',
   ].join('\n');
   const sections = scaffold.map((row, i) =>
-    renderSection(row, i + 1, total, proposals.get(row.id))
+    renderSection(row, i + 1, total, proposals.get(row.id), floor)
   );
   return `${intro}\n${sections.join('\n')}\n`;
 }
@@ -729,7 +817,8 @@ function loadScaffold(filePath: string): C02ScaffoldRecord[] {
 export function runWorksheet(paths: RunPaths): { worksheetPath: string; count: number } {
   const scaffold = loadScaffold(paths.scaffoldPath);
   const proposals = loadProposals(paths.proposalsPath);
-  const markdown = renderWorksheet(scaffold, proposals);
+  const floor = loadC02Floor();
+  const markdown = renderWorksheet(scaffold, proposals, floor);
 
   mkdirSync(paths.artifactsDir, { recursive: true });
   writeFileSync(paths.worksheetPath, markdown);
