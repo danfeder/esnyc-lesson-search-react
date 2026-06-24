@@ -21,6 +21,7 @@ import {
   scoreContestant,
   type KeyRecord,
 } from './score-answer-key';
+import { computeRulesBaseline, evaluateC02Gates, type CorpusCurrentTags } from './c02-gates';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -523,5 +524,75 @@ describe('loadRunContestant — reads finalC02 for the two C02 fields (P2′.3 /
     const [contestant] = loadRunContestant(JSON.stringify(record));
     expect(contestant.cooking_skills).toEqual(['Mixing & stirring']);
     expect(contestant.activity_type).toEqual(['cooking']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// END-TO-END gate path reads finalC02, not rawInput (P2′.4 / D-P6)
+// ---------------------------------------------------------------------------
+
+describe('C02 gate path scores from finalC02, not rawInput (P2′.4)', () => {
+  it('a run record whose rawInput conflicts with finalC02 is scored from finalC02 through evaluateC02Gates', () => {
+    // The run record's rawInput carries the WRONG C02 tags (a stale/raw shape);
+    // finalC02 carries the correct reconciled arrays. loadRunContestant overlays
+    // finalC02 for the two C02 fields, so the gate path must reflect finalC02.
+    //
+    // Gold == finalC02 on a clean-core row. If the gate path read rawInput
+    // instead, the winner would mis-match the gold and Gate ① would FAIL (winner
+    // F1 < rules F1); reading finalC02 makes it PASS. The two outcomes are
+    // distinguishable, so the test genuinely proves the source.
+    const corpus: CorpusCurrentTags[] = [
+      {
+        id: 'L1',
+        title: 'L1',
+        content_text: 'body',
+        cooking_skills: ['Baking'],
+        main_ingredients: ['Tomatoes', 'Nightshades'],
+      },
+    ];
+    const key: KeyRecord[] = [
+      { id: 'L1', cooking_skills: ['Baking'], main_ingredients: ['Tomatoes', 'Nightshades'] },
+    ];
+
+    const record = {
+      id: 'L1',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'h',
+      // rawInput holds CONFLICTING flat tag arrays (what a non-C02 read would use).
+      rawInput: {
+        cooking_skills: ['Knife skills'],
+        main_ingredients: ['Leafy greens'],
+      },
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      costUsd: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'b',
+      strict: false,
+      effectiveBaseUrl: 'direct',
+      finalC02: {
+        cooking_skills: ['Baking'],
+        main_ingredients: ['Tomatoes', 'Nightshades'],
+      },
+      completedAt: '2026-06-24T00:00:00.000Z',
+    };
+
+    const winnerRecords = loadRunContestant(JSON.stringify(record));
+    // Sanity: the loaded contestant reflects finalC02, NOT rawInput.
+    expect(winnerRecords[0].cooking_skills).toEqual(['Baking']);
+    expect(winnerRecords[0].main_ingredients).toEqual(['Tomatoes', 'Nightshades']);
+
+    const rules = computeRulesBaseline(corpus);
+    const res = evaluateC02Gates(winnerRecords, rules, key, corpus);
+
+    // Reading finalC02 -> winner matches gold on the clean-core row -> Gate ① PASS.
+    // Reading rawInput (the conflicting tags) would drop winner F1 below the
+    // baseline and FAIL Gate ①. PASS therefore proves the path read finalC02.
+    expect(res.gate1.passed).toBe(true);
+    expect(res.gate1.perField.cooking_skills.winner).toBe(1);
+    expect(res.gate1.perField.main_ingredients.winner).toBe(1);
   });
 });

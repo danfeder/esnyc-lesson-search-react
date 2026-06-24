@@ -18,7 +18,15 @@ import {
   gate2DeltaPasses,
   GATE3_PRECISION_FLOOR,
   GATE3_ABSENT_RATE_CEILING,
+  GATE3_PER_SPECIFIC_PRECISION_FLOOR,
+  GATE3_PER_SPECIFIC_TRUTH_SUPPORT,
+  GATE3_PER_SPECIFIC_PREDICTION_SUPPORT,
+  GATE_SENTINEL_PRECISION_FLOOR,
+  GATE_SENTINEL_PREDICTION_SUPPORT,
+  GATE_SENTINEL_TASTING_VALUE,
+  GATE_SENTINEL_KITCHEN_SAFETY_VALUE,
   GATE4_SWEETENERS_PRECISION_FLOOR,
+  GATE4_SWEETENERS_VALUE,
   GATE4_NEVER_STORED_LITERALS,
   bootstrapGate2Delta,
   computeRulesBaseline,
@@ -295,6 +303,315 @@ describe('Gate 3 — low false-positive on added specifics', () => {
     expect(res.gate3.absentRateCeiling).toBe(GATE3_ABSENT_RATE_CEILING);
     // The violating value's rate genuinely exceeds the ceiling.
     expect(res.gate3.absentValueViolations[0].rate).toBeGreaterThan(GATE3_ABSENT_RATE_CEILING);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gate 3 — per-specific precision floor (D-P8, support-guarded ≥0.60)
+// ---------------------------------------------------------------------------
+
+describe('Gate 3 — per-specific precision floor (D-P8)', () => {
+  // Three real specifics, each given enough gold support + predictions to clear
+  // the support guard (truthCount >= 3 AND predictionCount >= 3). One of them
+  // (Tahini) is over-predicted so its per-specific precision drops below 0.60.
+  function specificCorpus(ids: string[]): CorpusCurrentTags[] {
+    return ids.map((id) => corpusRow(id, [], ['Nuts & seeds']));
+  }
+
+  it('FAILS a qualifying specific (truthCount>=3 & predictionCount>=3) whose precision < 0.60 EVEN when pooled precision passes', () => {
+    // Gold carries Tahini on 3 rows (truthCount 3). Winner predicts Tahini on 6
+    // rows: 3 right (tp=3), 3 wrong (fp=3) -> per-specific precision 3/6 = 0.50.
+    // predictionCount 6 >= 3 and truthCount 3 >= 3, so the support guard FIRES
+    // and the per-specific floor (0.60) gates it -> FAIL.
+    //
+    // Crucially, a CLEAN high-support specific (Peanut butter: tp 4, fp 0) lifts
+    // the POOLED precision ABOVE 0.70 — (3+4)/(6+4) = 0.70 — so the pooled check
+    // PASSES. The gate still FAILS solely because the per-specific floor catches
+    // Tahini. This proves the per-specific floor adds teeth the pooled check lacks.
+    const ids = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7'];
+    const corpus = specificCorpus(ids);
+    const key: KeyRecord[] = [
+      row('G1', [], ['Nuts & seeds', 'Tahini']),
+      row('G2', [], ['Nuts & seeds', 'Tahini']),
+      row('G3', [], ['Nuts & seeds', 'Tahini']),
+      // Four rows carry a DIFFERENT specific (Peanut butter) the winner predicts
+      // perfectly, lifting POOLED precision >= 0.70 so only the per-specific floor
+      // can catch Tahini.
+      row('G4', [], ['Nuts & seeds', 'Peanut butter']),
+      row('G5', [], ['Nuts & seeds', 'Peanut butter']),
+      row('G6', [], ['Nuts & seeds', 'Peanut butter']),
+      row('G7', [], ['Nuts & seeds', 'Peanut butter']),
+    ];
+    const winner = [
+      row('G1', [], ['Nuts & seeds', 'Tahini']),
+      row('G2', [], ['Nuts & seeds', 'Tahini']),
+      row('G3', [], ['Nuts & seeds', 'Tahini']),
+      // Tahini over-predicted on G4/G5/G6 (fp x3) where the gold is Peanut butter;
+      // Peanut butter predicted correctly on all four (tp 4, fp 0).
+      row('G4', [], ['Nuts & seeds', 'Peanut butter', 'Tahini']),
+      row('G5', [], ['Nuts & seeds', 'Peanut butter', 'Tahini']),
+      row('G6', [], ['Nuts & seeds', 'Peanut butter', 'Tahini']),
+      row('G7', [], ['Nuts & seeds', 'Peanut butter']),
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    // POOLED precision PASSES: Tahini tp3/fp3 + Peanut butter tp4/fp0 = 7/(7+3) = 0.70.
+    expect(res.gate3.addedSpecificPrecision).toBeGreaterThanOrEqual(GATE3_PRECISION_FLOOR);
+    // ...but the per-specific floor catches Tahini -> gate FAILS.
+    expect(res.gate3.passed).toBe(false);
+    const violators = res.gate3.perSpecificViolations.map((v) => v.value);
+    expect(violators).toContain('Tahini');
+    expect(violators).not.toContain('Peanut butter'); // clean specific is not a violation
+    const tahini = res.gate3.perSpecificViolations.find((v) => v.value === 'Tahini')!;
+    expect(tahini.precision).toBeLessThan(GATE3_PER_SPECIFIC_PRECISION_FLOOR);
+    expect(tahini.truthCount).toBeGreaterThanOrEqual(GATE3_PER_SPECIFIC_TRUTH_SUPPORT);
+    expect(tahini.predictionCount).toBeGreaterThanOrEqual(GATE3_PER_SPECIFIC_PREDICTION_SUPPORT);
+  });
+
+  it('IGNORES a low-precision specific BELOW support (predictionCount<3) for gating, but its FPs still feed the pooled denominator', () => {
+    // Tahini is supported in gold on 4 rows (pooled precision stays >= 0.70 via
+    // those true positives). A low-support specific (Sunflower butter) is
+    // predicted only TWICE (predictionCount 2 < 3) and is ALWAYS wrong (the key
+    // never carries it). Because predictionCount < 3 the per-specific floor does
+    // NOT gate it (it is informational), but its 2 false positives MUST still
+    // count in the pooled precision denominator.
+    const ids = ['P1', 'P2', 'P3', 'P4'];
+    const corpus = specificCorpus(ids);
+    const key: KeyRecord[] = [
+      row('P1', [], ['Nuts & seeds', 'Tahini']),
+      row('P2', [], ['Nuts & seeds', 'Tahini']),
+      row('P3', [], ['Nuts & seeds', 'Tahini']),
+      row('P4', [], ['Nuts & seeds', 'Tahini']),
+    ];
+    const winner = [
+      row('P1', [], ['Nuts & seeds', 'Tahini']),
+      row('P2', [], ['Nuts & seeds', 'Tahini']),
+      row('P3', [], ['Nuts & seeds', 'Tahini', 'Sunflower butter']),
+      row('P4', [], ['Nuts & seeds', 'Tahini', 'Sunflower butter']),
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    // Sunflower butter (predictionCount 2 < 3) must NOT appear as a per-specific
+    // VIOLATION (below the support guard -> informational only).
+    const violators = res.gate3.perSpecificViolations.map((v) => v.value);
+    expect(violators).not.toContain('Sunflower butter');
+    // BUT its 2 FPs feed the pooled denominator: Tahini tp4/fp0 + Sunflower
+    // butter tp0/fp2 -> pooled 4/(4+2) = 0.667 < 0.70 -> pooled gate fails.
+    expect(res.gate3.pooledFp).toBe(2);
+    expect(res.gate3.addedSpecificPrecision).toBeCloseTo(4 / 6, 5);
+    expect(res.gate3.passed).toBe(false);
+  });
+
+  it('does NOT gate a qualifying-truth but low-PREDICTION specific (truthCount>=3, predictionCount<3)', () => {
+    // Tahini has gold support of 3 (truthCount 3) but the winner only predicts it
+    // ONCE, and that prediction is wrong vs a row where gold lacks it... here we
+    // make precision 0 on a single prediction. predictionCount 1 < 3 -> the
+    // per-specific floor must NOT gate it (both sides of the AND must hold).
+    const ids = ['Q1', 'Q2', 'Q3', 'Q4'];
+    const corpus = specificCorpus(ids);
+    const key: KeyRecord[] = [
+      row('Q1', [], ['Nuts & seeds', 'Tahini']),
+      row('Q2', [], ['Nuts & seeds', 'Tahini']),
+      row('Q3', [], ['Nuts & seeds', 'Tahini']),
+      row('Q4', [], ['Nuts & seeds']),
+    ];
+    const winner = [
+      row('Q1', [], ['Nuts & seeds']),
+      row('Q2', [], ['Nuts & seeds']),
+      row('Q3', [], ['Nuts & seeds']),
+      // single Tahini prediction on a row whose gold lacks it -> tp0/fp1.
+      row('Q4', [], ['Nuts & seeds', 'Tahini']),
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    const violators = res.gate3.perSpecificViolations.map((v) => v.value);
+    expect(violators).not.toContain('Tahini'); // predictionCount 1 < 3 -> informational
+  });
+
+  it('PASSES the per-specific floor when a qualifying specific meets it (precision >= 0.60)', () => {
+    // Tahini: tp 3, fp 1 -> 0.75 >= 0.60 and >= 0.70 pooled. No violation.
+    const ids = ['R1', 'R2', 'R3', 'R4'];
+    const corpus = specificCorpus(ids);
+    const key: KeyRecord[] = [
+      row('R1', [], ['Nuts & seeds', 'Tahini']),
+      row('R2', [], ['Nuts & seeds', 'Tahini']),
+      row('R3', [], ['Nuts & seeds', 'Tahini']),
+      row('R4', [], ['Nuts & seeds']),
+    ];
+    const winner = [
+      row('R1', [], ['Nuts & seeds', 'Tahini']),
+      row('R2', [], ['Nuts & seeds', 'Tahini']),
+      row('R3', [], ['Nuts & seeds', 'Tahini']),
+      row('R4', [], ['Nuts & seeds', 'Tahini']), // one fp -> precision 3/4 = 0.75
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    expect(res.gate3.perSpecificViolations).toEqual([]);
+  });
+
+  it('exposes the locked per-specific thresholds (0.60 floor, support 3/3)', () => {
+    expect(GATE3_PER_SPECIFIC_PRECISION_FLOOR).toBe(0.6);
+    expect(GATE3_PER_SPECIFIC_TRUTH_SUPPORT).toBe(3);
+    expect(GATE3_PER_SPECIFIC_PREDICTION_SUPPORT).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gate 3 — named sentinels (Tasting/Kitchen-safety ≥0.70, Sweeteners ≥0.80)
+// ---------------------------------------------------------------------------
+
+describe('Gate 3 — named sentinels (D-P8)', () => {
+  // Tasting + Kitchen & food safety are COOKING_SKILLS values (read from the
+  // cooking score's perValue); Sweeteners is a MAIN_INGREDIENTS group.
+  it('PASSES when all gated sentinels clear their floors', () => {
+    // Tasting: tp 3 / fp 1 -> 0.75 >= 0.70. Kitchen & food safety: tp 4 / fp 0
+    // -> 1.0. Sweeteners: tp 4 / fp 1 -> 0.80 >= 0.80.
+    const ids = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
+    const corpus = ids.map((id) => corpusRow(id, [], []));
+    const key: KeyRecord[] = [
+      row('Z1', ['Tasting', 'Kitchen & food safety'], ['Sweeteners']),
+      row('Z2', ['Tasting', 'Kitchen & food safety'], ['Sweeteners']),
+      row('Z3', ['Tasting', 'Kitchen & food safety'], ['Sweeteners']),
+      row('Z4', ['Kitchen & food safety'], ['Sweeteners']),
+      row('Z5', [], []),
+    ];
+    const winner = [
+      row('Z1', ['Tasting', 'Kitchen & food safety'], ['Sweeteners']),
+      row('Z2', ['Tasting', 'Kitchen & food safety'], ['Sweeteners']),
+      row('Z3', ['Tasting', 'Kitchen & food safety'], ['Sweeteners']),
+      row('Z4', ['Kitchen & food safety'], ['Sweeteners']),
+      row('Z5', ['Tasting'], ['Sweeteners']), // Tasting fp x1; Sweeteners fp x1
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    const tasting = res.gate3.sentinels.find((s) => s.value === GATE_SENTINEL_TASTING_VALUE)!;
+    expect(tasting.field).toBe('cooking_skills');
+    expect(tasting.gated).toBe(true);
+    expect(tasting.passed).toBe(true);
+    const sweet = res.gate3.sentinels.find((s) => s.value === GATE4_SWEETENERS_VALUE)!;
+    expect(sweet.field).toBe('main_ingredients');
+    expect(sweet.floor).toBe(GATE4_SWEETENERS_PRECISION_FLOOR);
+    expect(sweet.passed).toBe(true);
+  });
+
+  it('FAILS the gate when the Tasting sentinel (cooking_skills) drops below 0.70', () => {
+    // Tasting predicted on 6 rows: tp 3 / fp 3 -> 0.50 < 0.70 -> sentinel fails.
+    const ids = ['Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6'];
+    const corpus = ids.map((id) => corpusRow(id, [], []));
+    const key: KeyRecord[] = [
+      row('Y1', ['Tasting'], []),
+      row('Y2', ['Tasting'], []),
+      row('Y3', ['Tasting'], []),
+      row('Y4', [], []),
+      row('Y5', [], []),
+      row('Y6', [], []),
+    ];
+    const winner = ids.map((id) => row(id, ['Tasting'], []));
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    const tasting = res.gate3.sentinels.find((s) => s.value === GATE_SENTINEL_TASTING_VALUE)!;
+    expect(tasting.gated).toBe(true);
+    expect(tasting.precision).toBeLessThan(GATE_SENTINEL_PRECISION_FLOOR);
+    expect(tasting.passed).toBe(false);
+    expect(res.gate3.sentinelsPassed).toBe(false);
+    expect(res.gate3.passed).toBe(false);
+  });
+
+  it('FAILS the gate when the Sweeteners sentinel (main_ingredients) drops below 0.80', () => {
+    // Sweeteners tp 3 / fp 2 -> 0.60 < 0.80.
+    const ids = ['W1', 'W2', 'W3', 'W4', 'W5'];
+    const corpus = ids.map((id) => corpusRow(id, [], []));
+    const key: KeyRecord[] = [
+      row('W1', [], ['Sweeteners']),
+      row('W2', [], ['Sweeteners']),
+      row('W3', [], ['Sweeteners']),
+      row('W4', [], []),
+      row('W5', [], []),
+    ];
+    const winner = ids.map((id) => row(id, [], ['Sweeteners']));
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    const sweet = res.gate3.sentinels.find((s) => s.value === GATE4_SWEETENERS_VALUE)!;
+    expect(sweet.gated).toBe(true);
+    expect(sweet.precision).toBeLessThan(GATE4_SWEETENERS_PRECISION_FLOOR);
+    expect(sweet.passed).toBe(false);
+    expect(res.gate3.sentinelsPassed).toBe(false);
+  });
+
+  it('leaves a below-PREDICTION-support sentinel informational (does not gate)', () => {
+    // Kitchen & food safety predicted only TWICE (predictionCount 2 < 3) and both
+    // wrong -> precision 0, but predictionCount < support -> NOT gated.
+    const ids = ['K1', 'K2', 'K3'];
+    const corpus = ids.map((id) => corpusRow(id, [], []));
+    const key: KeyRecord[] = [row('K1', [], []), row('K2', [], []), row('K3', [], [])];
+    const winner = [
+      row('K1', ['Kitchen & food safety'], []),
+      row('K2', ['Kitchen & food safety'], []),
+      row('K3', [], []),
+    ];
+    const res = evaluateC02Gates(winner, computeRulesBaseline(corpus), key, corpus);
+    const kfs = res.gate3.sentinels.find((s) => s.value === GATE_SENTINEL_KITCHEN_SAFETY_VALUE)!;
+    expect(kfs.predictionCount).toBeLessThan(GATE_SENTINEL_PREDICTION_SUPPORT);
+    expect(kfs.gated).toBe(false);
+    // A non-gated sentinel cannot fail the sentinel block on its own.
+    expect(kfs.passed).toBe(true);
+  });
+
+  it('exposes the locked sentinel thresholds + values', () => {
+    expect(GATE_SENTINEL_PRECISION_FLOOR).toBe(0.7);
+    expect(GATE_SENTINEL_PREDICTION_SUPPORT).toBe(3);
+    expect(GATE_SENTINEL_TASTING_VALUE).toBe('Tasting');
+    expect(GATE_SENTINEL_KITCHEN_SAFETY_VALUE).toBe('Kitchen & food safety');
+    // Sweeteners reuses the Gate ④ constant — no duplicate threshold.
+    expect(GATE4_SWEETENERS_PRECISION_FLOOR).toBe(0.8);
+    expect(GATE4_SWEETENERS_VALUE).toBe('Sweeteners');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-P7 — the rules baseline reflects the CLEANED floor (junk/Herbs absent)
+// ---------------------------------------------------------------------------
+
+describe('computeRulesBaseline reflects the CLEANED floor (D-P7)', () => {
+  it('drops junk (Basic Skills) and the Herbs & Aromatics literal from the baseline prediction', () => {
+    // Current tags carry the un-mappable junk cooking tag (Basic Skills) and the
+    // Herbs & Aromatics catch-all (a SPLIT candidate, never a deterministic fold).
+    // The cleaned floor (P2′.1 applyC02Floor) must NOT emit either verbatim.
+    const corpus = [corpusRow('B', ['Basic Skills'], ['Herbs & Aromatics'])];
+    const baseline = computeRulesBaseline(corpus);
+    const rec = baseline.find((r) => r.id === 'B')!;
+    expect(rec.cooking_skills).not.toContain('Basic Skills');
+    expect(rec.main_ingredients).not.toContain('Herbs & Aromatics');
+  });
+
+  it('executes the drops list — a dropped pantry literal (Salt) never enters the baseline', () => {
+    const corpus = [corpusRow('D', [], ['Salt', 'Beets'])];
+    const baseline = computeRulesBaseline(corpus);
+    const rec = baseline.find((r) => r.id === 'D')!;
+    expect(rec.main_ingredients).not.toContain('Salt'); // dropped (B-lite, never-stored)
+    expect(rec.main_ingredients).toContain('Beets'); // real value survives
+  });
+
+  it('Gate ② scores the winner against the CLEANED baseline (Herbs row beats a baseline that emits nothing)', () => {
+    // A judgment row whose only current ingredient tag is Herbs & Aromatics: the
+    // cleaned baseline emits NO ingredient (it drops Herbs & Aromatics), so a
+    // winner that correctly splits to Fresh herbs beats an empty baseline. This
+    // is only true because the baseline reads the CLEANED floor — a junk-keeping
+    // baseline would have emitted Herbs & Aromatics and changed the delta.
+    const corpus = [
+      corpusRow('J', ['Basic Skills'], ['Herbs & Aromatics']),
+      corpusRow('J2', ['Basic Skills'], ['Herbs & Aromatics']),
+    ];
+    const key: KeyRecord[] = [
+      row('J', ['Knife skills'], ['Fresh herbs']),
+      row('J2', ['Knife skills'], ['Fresh herbs']),
+    ];
+    const rules = computeRulesBaseline(corpus);
+    // Prove the baseline emitted nothing for ingredients on these rows.
+    for (const r of rules) {
+      expect(r.main_ingredients).toEqual([]);
+    }
+    const winner = [
+      row('J', ['Knife skills'], ['Fresh herbs']),
+      row('J2', ['Knife skills'], ['Fresh herbs']),
+    ];
+    const res = evaluateC02Gates(winner, rules, key, corpus);
+    // ingredient delta = winner 1.0 - rules 0.0 = 1.0 >= +0.05.
+    expect(res.gate2.perField.main_ingredients.rules).toBe(0);
+    expect(res.gate2.perField.main_ingredients.delta).toBeGreaterThanOrEqual(GATE2_MIN_DELTA);
   });
 });
 

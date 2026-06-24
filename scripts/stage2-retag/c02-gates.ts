@@ -35,7 +35,7 @@
  * precision/fp/predictionCount + micro-F1 from `scripts/lib/evalMetrics` via
  * `scoreContestant`. Reporting only: no API calls, no DB access.
  */
-import { computeMetrics } from '../lib/evalMetrics';
+import { computeMetrics, type PerValueMetrics } from '../lib/evalMetrics';
 import { loadC02Manifest } from './vocab';
 import {
   buildC02SamplerContext,
@@ -76,6 +76,41 @@ export const GATE2_DELTA_EPS = 1e-9;
 export const GATE3_PRECISION_FLOOR = 0.7;
 /** Gate ③ ceiling on the prediction rate of a never-in-key specific. */
 export const GATE3_ABSENT_RATE_CEILING = 0.05;
+
+// --- D-P8 per-value AUGMENTATION of gate ③ (support-aware; re-tunable) -------
+/**
+ * Gate ③ per-specific precision floor (design §3·PIVOT D-P8). AUGMENTS the
+ * pooled precision check: a single specific whose per-value precision falls below
+ * this floor FAILS the gate — but ONLY where it has enough support to measure
+ * precision reliably (both the truth and prediction support guards below). This
+ * is a support-aware WRAPPER over the already-computed per-value precision (NOT
+ * `evalMetrics.minPrecisionPerValue`, which gates every value flatly).
+ */
+export const GATE3_PER_SPECIFIC_PRECISION_FLOOR = 0.6;
+/** Per-specific floor only gates a specific with at least this gold support. */
+export const GATE3_PER_SPECIFIC_TRUTH_SUPPORT = 3;
+/** Per-specific floor only gates a specific predicted at least this many times. */
+export const GATE3_PER_SPECIFIC_PREDICTION_SUPPORT = 3;
+
+/**
+ * Named sentinels (D-P8): the universal over-tag risks the pilot must watch.
+ * `Tasting` + `Kitchen & food safety` are COOKING_SKILLS values (read from the
+ * cooking score's perValue); `Sweeteners` is a MAIN_INGREDIENTS group that reuses
+ * the existing gate ④ threshold/value (GATE4_SWEETENERS_* — NOT duplicated here).
+ */
+export const GATE_SENTINEL_TASTING_VALUE = 'Tasting';
+export const GATE_SENTINEL_KITCHEN_SAFETY_VALUE = 'Kitchen & food safety';
+/** Sentinel precision floor for the two cooking-skills sentinels. */
+export const GATE_SENTINEL_PRECISION_FLOOR = 0.7;
+/**
+ * A sentinel only gates once it has been predicted at least this many times —
+ * matching the per-specific support-guard philosophy (a below-support sentinel is
+ * informational, not gating). Truth support is NOT required (a sentinel that is
+ * over-predicted on a key with little gold support is exactly the over-tag signal
+ * we want to catch — precision is well-defined as soon as predictionCount > 0).
+ */
+export const GATE_SENTINEL_PREDICTION_SUPPORT = 3;
+
 /** Gate ④ precision floor for the Sweeteners pantry-staple group. */
 export const GATE4_SWEETENERS_PRECISION_FLOOR = 0.8;
 /** Gate ④ the never-stored pantry literals (B-lite — must never survive). */
@@ -250,6 +285,23 @@ export interface Gate2Result {
   judgmentRowCount: number;
 }
 
+/**
+ * A named sentinel result (D-P8). `gated` is false for a below-prediction-support
+ * sentinel (informational only); a non-gated sentinel always reports `passed:true`
+ * so it cannot fail the gate. `precision` is null when the sentinel was never
+ * predicted (tp+fp === 0).
+ */
+export interface SentinelResult {
+  value: string;
+  field: C02Field;
+  precision: number | null;
+  floor: number;
+  predictionCount: number;
+  /** True once predictionCount >= the support threshold — only then does it gate. */
+  gated: boolean;
+  passed: boolean;
+}
+
 export interface Gate3Result {
   passed: boolean;
   /** Pooled precision over the 46 added specifics (sum tp / sum(tp+fp)). */
@@ -261,6 +313,23 @@ export interface Gate3Result {
   /** never-in-key specifics predicted above the absent-value rate ceiling. */
   absentValueViolations: Array<{ value: string; rate: number; predictionCount: number }>;
   absentRateCeiling: number;
+  /**
+   * D-P8 per-specific floor: each SUPPORT-GUARDED specific (truthCount >= 3 AND
+   * predictionCount >= 3) whose per-value precision fell below the per-specific
+   * floor. Below-support specifics stay informational (their FPs still feed the
+   * pooled denominator above) and never appear here.
+   */
+  perSpecificViolations: Array<{
+    value: string;
+    precision: number;
+    truthCount: number;
+    predictionCount: number;
+  }>;
+  perSpecificPrecisionFloor: number;
+  /** D-P8 named sentinels (Tasting/Kitchen-safety ≥0.70, Sweeteners ≥0.80). */
+  sentinels: SentinelResult[];
+  /** True iff every GATED sentinel met its floor. */
+  sentinelsPassed: boolean;
 }
 
 export interface Gate4Result {
@@ -359,6 +428,28 @@ function evaluateGate2(
 // Gate ③ — low false-positive on added specifics
 // ---------------------------------------------------------------------------
 
+/**
+ * D-P8 named sentinel evaluation for ONE value off a per-value metrics list.
+ * Reuses the already-computed `precision`/`predictionCount` (no new metric math).
+ * Gated only once predictionCount >= the support threshold; a below-support
+ * sentinel is informational (passed:true so it can't fail the block).
+ */
+function evaluateSentinel(
+  value: string,
+  field: C02Field,
+  perValue: PerValueMetrics[],
+  floor: number
+): SentinelResult {
+  const pv = perValue.find((p) => p.value === value);
+  const predictionCount = pv?.predictionCount ?? 0;
+  const precision = pv?.precision ?? null;
+  const gated = predictionCount >= GATE_SENTINEL_PREDICTION_SUPPORT;
+  // A gated sentinel must have a defined precision >= floor. (Gated implies
+  // predictionCount > 0, so precision is non-null whenever `gated` is true.)
+  const passed = !gated || (precision !== null && precision >= floor);
+  return { value, field, precision, floor, predictionCount, gated, passed };
+}
+
 function evaluateGate3(winner: ContestantScore): Gate3Result {
   const specifics = new Set(addedSpecificValues());
   const ingredientScore = winner.fields.main_ingredients;
@@ -368,6 +459,15 @@ function evaluateGate3(winner: ContestantScore): Gate3Result {
   let pooledTp = 0;
   let pooledFp = 0;
   const absentValueViolations: Array<{ value: string; rate: number; predictionCount: number }> = [];
+  // D-P8 per-specific floor: a SUPPORT-GUARDED specific below the per-value floor
+  // fails the gate. Below-support specifics stay informational (their FPs already
+  // feed the pooled denominator above — we never skip them there).
+  const perSpecificViolations: Array<{
+    value: string;
+    precision: number;
+    truthCount: number;
+    predictionCount: number;
+  }> = [];
   for (const pv of perValue) {
     if (!specifics.has(pv.value)) continue;
     pooledTp += pv.tp;
@@ -383,7 +483,47 @@ function evaluateGate3(winner: ContestantScore): Gate3Result {
         absentValueViolations.push({ value: pv.value, rate, predictionCount: pv.predictionCount });
       }
     }
+    // D-P8 per-specific floor — gated only where BOTH support guards hold.
+    if (
+      pv.truthCount >= GATE3_PER_SPECIFIC_TRUTH_SUPPORT &&
+      pv.predictionCount >= GATE3_PER_SPECIFIC_PREDICTION_SUPPORT &&
+      pv.precision !== null &&
+      pv.precision < GATE3_PER_SPECIFIC_PRECISION_FLOOR
+    ) {
+      perSpecificViolations.push({
+        value: pv.value,
+        precision: pv.precision,
+        truthCount: pv.truthCount,
+        predictionCount: pv.predictionCount,
+      });
+    }
   }
+
+  // D-P8 named sentinels. Tasting + Kitchen & food safety are COOKING_SKILLS
+  // values (read from the cooking score's perValue); Sweeteners is a
+  // main_ingredients group reusing the gate ④ threshold (no duplicate constant).
+  const cookingPerValue = winner.fields.cooking_skills?.perValue ?? [];
+  const sentinels: SentinelResult[] = [
+    evaluateSentinel(
+      GATE_SENTINEL_TASTING_VALUE,
+      'cooking_skills',
+      cookingPerValue,
+      GATE_SENTINEL_PRECISION_FLOOR
+    ),
+    evaluateSentinel(
+      GATE_SENTINEL_KITCHEN_SAFETY_VALUE,
+      'cooking_skills',
+      cookingPerValue,
+      GATE_SENTINEL_PRECISION_FLOOR
+    ),
+    evaluateSentinel(
+      GATE4_SWEETENERS_VALUE,
+      'main_ingredients',
+      perValue,
+      GATE4_SWEETENERS_PRECISION_FLOOR
+    ),
+  ];
+  const sentinelsPassed = sentinels.every((s) => s.passed);
 
   // Gate ③ guards the ADDED-specifics tier. `null` precision = the contestant
   // predicted ZERO added specifics, which FAILS closed (it does NOT pass
@@ -397,7 +537,13 @@ function evaluateGate3(winner: ContestantScore): Gate3Result {
     pooledTp + pooledFp === 0 ? null : pooledTp / (pooledTp + pooledFp);
   const precisionOk =
     addedSpecificPrecision !== null && addedSpecificPrecision >= GATE3_PRECISION_FLOOR;
-  const passed = precisionOk && absentValueViolations.length === 0;
+  // D-P8: the pooled check AND the per-specific floor AND the named sentinels all
+  // gate (the per-specific + sentinel checks AUGMENT the pooled precision).
+  const passed =
+    precisionOk &&
+    absentValueViolations.length === 0 &&
+    perSpecificViolations.length === 0 &&
+    sentinelsPassed;
 
   return {
     passed,
@@ -407,6 +553,10 @@ function evaluateGate3(winner: ContestantScore): Gate3Result {
     pooledFp,
     absentValueViolations,
     absentRateCeiling: GATE3_ABSENT_RATE_CEILING,
+    perSpecificViolations,
+    perSpecificPrecisionFloor: GATE3_PER_SPECIFIC_PRECISION_FLOOR,
+    sentinels,
+    sentinelsPassed,
   };
 }
 
@@ -672,7 +822,7 @@ export function renderC02Scorecard(
 
   // Gate 3
   lines.push(
-    `## Gate ③ — low false-positive on added specifics (precision ≥ ${GATE3_PRECISION_FLOOR}, absent-rate ≤ ${GATE3_ABSENT_RATE_CEILING}): ${gates.gate3.passed ? 'PASS' : 'FAIL'}`
+    `## Gate ③ — low false-positive on added specifics (pooled ≥ ${GATE3_PRECISION_FLOOR}, per-specific ≥ ${GATE3_PER_SPECIFIC_PRECISION_FLOOR}, absent-rate ≤ ${GATE3_ABSENT_RATE_CEILING}): ${gates.gate3.passed ? 'PASS' : 'FAIL'}`
   );
   lines.push('');
   lines.push(
@@ -690,6 +840,37 @@ export function renderC02Scorecard(
     for (const v of gates.gate3.absentValueViolations) {
       lines.push(`| ${v.value} | ${v.rate.toFixed(3)} | ${v.predictionCount} |`);
     }
+  }
+  lines.push('');
+  // D-P8 per-specific floor (support-guarded: truthCount ≥ 3 AND predictionCount ≥ 3).
+  if (gates.gate3.perSpecificViolations.length === 0) {
+    lines.push(
+      `No support-guarded specific falls below the per-specific precision floor (${gates.gate3.perSpecificPrecisionFloor}).`
+    );
+  } else {
+    lines.push(
+      `Support-guarded specifics below the per-specific precision floor (${gates.gate3.perSpecificPrecisionFloor}):`
+    );
+    lines.push('');
+    lines.push('| Specific | precision | truth support | predictions |');
+    lines.push('| --- | --- | --- | --- |');
+    for (const v of gates.gate3.perSpecificViolations) {
+      lines.push(
+        `| ${v.value} | ${v.precision.toFixed(3)} | ${v.truthCount} | ${v.predictionCount} |`
+      );
+    }
+  }
+  lines.push('');
+  // D-P8 named sentinels.
+  lines.push(`Named sentinels: ${gates.gate3.sentinelsPassed ? 'PASS' : 'FAIL'}.`);
+  lines.push('');
+  lines.push('| Sentinel | field | precision | floor | predictions | gated | pass |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+  for (const s of gates.gate3.sentinels) {
+    lines.push(
+      `| ${s.value} | ${s.field} | ${fmtNum(s.precision)} | ${s.floor} | ${s.predictionCount} | ` +
+        `${s.gated ? 'yes' : 'no (informational)'} | ${s.passed ? 'PASS' : 'FAIL'} |`
+    );
   }
   lines.push('');
 
