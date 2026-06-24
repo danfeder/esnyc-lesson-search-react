@@ -454,13 +454,25 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
   });
 });
 
-describe('computeBodyHash', () => {
-  it('is a stable sha256 hex digest of the body string', () => {
-    expect(computeBodyHash('Pre K lesson about roots and shoots.')).toBe(
-      'b1ec60d74f183a675c5b917af4752075cbdef51d654a8ba842ebceac3bfbd5d2'
-    );
-    expect(computeBodyHash('a')).toMatch(/^[0-9a-f]{64}$/);
-    expect(computeBodyHash('a')).not.toBe(computeBodyHash('b'));
+describe('computeBodyHash (D-P9 — full effective input, not body-only)', () => {
+  // The anchored pivot hashes the FULL effective input (body + raw current tags
+  // + floored anchor + manifest version + reconcile policy). Per-dimension
+  // independence is covered in c02-corpus-thread.test.ts; here we assert the
+  // signature + stable-hex + body-sensitivity contract.
+  const base = {
+    body: 'Pre K lesson about roots and shoots.',
+    rawCookingSkills: [],
+    rawMainIngredients: [],
+    anchor: 'cooking_skills: (none)\nmain_ingredients: (none)',
+    manifestVersion: 'v',
+    reconcilePolicyId: 'p',
+  };
+  it('is a stable 64-char sha256 hex digest over the effective input', () => {
+    expect(computeBodyHash(base)).toMatch(/^[0-9a-f]{64}$/);
+    expect(computeBodyHash(base)).toBe(computeBodyHash({ ...base }));
+  });
+  it('changes when the body changes (no longer body-only, but body still matters)', () => {
+    expect(computeBodyHash({ ...base, body: 'a different body' })).not.toBe(computeBodyHash(base));
   });
 });
 

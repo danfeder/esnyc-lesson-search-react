@@ -136,7 +136,23 @@ import {
 } from './schema';
 import { normalizeRecordInput } from './normalize';
 import { appendDocSurfaces, loadDocSurfaces } from './doc-surfaces';
-import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
+import {
+  C02_RECONCILE_POLICY_ID,
+  appendC02Anchor,
+  c02ManifestVersion,
+  computeEffectiveInputHash,
+  renderC02AnchorBlock,
+  type C02EffectiveInput,
+} from './c02-anchor';
+import { applyC02Floor, loadC02FloorInput, type C02FloorInput } from './c02-floor';
+import { assertCorpusHasC02Tags } from './sample-answer-key';
+import {
+  MAIN_PASS_FIELDS,
+  loadC02Manifest,
+  loadVocab,
+  type MainPassField,
+  type Stage2Vocab,
+} from './vocab';
 
 dotenv.config({ path: '.env.local' });
 
@@ -308,9 +324,21 @@ export function computePromptSchemaHash(systemPrompt: string, tool: SubmitTagsTo
     .digest('hex');
 }
 
-/** sha256 hex of a lesson body string (stamped on every RunRecord). */
-export function computeBodyHash(body: string): string {
-  return createHash('sha256').update(body).digest('hex');
+/**
+ * sha256 hex of the FULL effective input for one C02 lesson (design §3·PIVOT
+ * D-P9), stamped on every RunRecord as `bodyHash` and matched by --resume /
+ * --repair. The anchored pivot hashes body + raw current tags + floored anchor
+ * + manifest version + reconciliation-policy id — NOT body-only — so a change
+ * to ANY of those (a new floor, a new vocab, a new policy, a reviewer's edit to
+ * the current tags) invalidates a stale cached answer. Records from the failed
+ * body-only pilot therefore never resume/repair-merge (expected, D-P9).
+ *
+ * Thin wrapper over `computeEffectiveInputHash` (the pure, c02-anchor-owned
+ * function) so all three consumers (main pass, resume body-map, repair) share
+ * one hashing contract.
+ */
+export function computeBodyHash(input: C02EffectiveInput): string {
+  return computeEffectiveInputHash(input);
 }
 
 /** Groups Zod issues by top-level property ('_root' for object-level issues). */
@@ -1112,12 +1140,29 @@ export function excludeCorpusIds<T extends { id: string }>(
 // API plumbing
 // ---------------------------------------------------------------------------
 
-const corpusLineSchema = z.object({ id: z.string().min(1), content_text: z.string().min(1) });
-type CorpusRecord = z.infer<typeof corpusLineSchema>;
+/**
+ * Run-time corpus line schema. P2′.2 widens it to RETAIN the existing C02 tags
+ * (`cooking_skills` / `main_ingredients`) — the blind re-read used to drop them
+ * (`z.object({id, content_text})`), which is why the floor anchor never reached
+ * the run loop. Both are `.nullable().optional()`: export-corpus writes them
+ * generically (null for an untagged lesson), and an OLD corpus line that
+ * predates the C02 export still parses (caught by the freshness preflight, not
+ * the schema). `.passthrough()` keeps the other exported fields available
+ * without re-listing them.
+ */
+export const corpusLineSchema = z
+  .object({
+    id: z.string().min(1),
+    content_text: z.string().min(1),
+    cooking_skills: z.array(z.string()).nullable().optional(),
+    main_ingredients: z.array(z.string()).nullable().optional(),
+  })
+  .passthrough();
+export type CorpusRecord = z.infer<typeof corpusLineSchema>;
 
 function loadCorpus(): CorpusRecord[] {
   const text = readFileSync(CORPUS_PATH, 'utf8');
-  return text
+  const records = text
     .split('\n')
     .filter((line) => line.trim() !== '')
     .map((line, index) => {
@@ -1129,6 +1174,48 @@ function loadCorpus(): CorpusRecord[] {
         );
       }
     });
+  // Freshness preflight (P2′.2): the anchored run reads the existing C02 tags
+  // from the corpus, so a STALE corpus.jsonl that predates the C02 export would
+  // silently yield empty anchors. Fail loudly instead of blindly re-exporting
+  // (re-export is the P2.1 prerequisite, not this runner's job).
+  assertCorpusHasC02Tags(records, CORPUS_PATH);
+  return records;
+}
+
+/**
+ * The anchored effective input for one C02 lesson (design §3·PIVOT D-P4/D-P5/
+ * D-P9), shared by the main pass, the resume body-map, and the repair pass so
+ * all three hash the SAME thing. Floors the lesson's CURRENT tags (reading the
+ * provenance FIELD off `applyC02Floor` — never re-deriving it), renders the
+ * provenance-annotated anchor, appends it to the (already doc-surfaced) body,
+ * and assembles the full effective input the run-identity hash is taken over.
+ *
+ * `floorInput` + `manifestVersion` are loaded ONCE per run and threaded in so
+ * the per-lesson call stays I/O-free (~700×).
+ */
+export function buildC02EffectiveInput(
+  lesson: CorpusRecord,
+  floorInput: C02FloorInput,
+  manifestVersion: string
+): { anchoredBody: string; effectiveInput: C02EffectiveInput } {
+  const rawCookingSkills = lesson.cooking_skills ?? [];
+  const rawMainIngredients = lesson.main_ingredients ?? [];
+  const floored = applyC02Floor(
+    { cooking_skills: rawCookingSkills, main_ingredients: rawMainIngredients },
+    floorInput
+  );
+  const anchor = renderC02AnchorBlock(floored);
+  return {
+    anchoredBody: appendC02Anchor(lesson.content_text, floored),
+    effectiveInput: {
+      body: lesson.content_text,
+      rawCookingSkills,
+      rawMainIngredients,
+      anchor,
+      manifestVersion,
+      reconcilePolicyId: C02_RECONCILE_POLICY_ID,
+    },
+  };
 }
 
 /**
@@ -1493,8 +1580,17 @@ async function runMainPass(args: Args): Promise<void> {
         `(incomplete/non-lesson, ruling §A24/§F): ${excludedHits.join(', ')}`
     );
   }
+  // C02 anchor inputs, loaded ONCE (the floor runs per-lesson; the manifest
+  // version + reconcile-policy id fold into the run-identity hash — D-P9).
+  const c02FloorInput = loadC02FloorInput();
+  const c02ManifestVer = c02ManifestVersion(loadC02Manifest());
+  // The effective-input hash is over body + raw current tags + floored anchor +
+  // manifest version + reconcile policy (D-P9) — NOT body-only.
   const bodyHashById = new Map(
-    corpus.map((lesson) => [lesson.id, computeBodyHash(lesson.content_text)])
+    corpus.map((lesson) => [
+      lesson.id,
+      computeBodyHash(buildC02EffectiveInput(lesson, c02FloorInput, c02ManifestVer).effectiveInput),
+    ])
   );
   let lessons = corpus;
   // --ids: restrict to the intersection of the corpus with the requested id
@@ -1575,7 +1671,14 @@ async function runMainPass(args: Args): Promise<void> {
     // Captured in the catch when a refusal triggers --fallback-model; appended
     // AFTER the main errored record so the fallback wins as the latest record.
     let fallbackRecord: RunRecord | null = null;
-    const bodyHash = computeBodyHash(lesson.content_text);
+    // D-P9: the run-identity hash is over the FULL effective input (body + raw
+    // current tags + floored anchor + manifest version + reconcile policy), not
+    // body-only. The anchored body + 2-field decision flow is wired by P2′.3
+    // (the live `callForcedTool` swap + reconcile + finalC02 contract); P2′.2
+    // threads the tags + lands the correct hash so a stale pilot answer never
+    // resume/repair-merges.
+    const { effectiveInput } = buildC02EffectiveInput(lesson, c02FloorInput, c02ManifestVer);
+    const bodyHash = computeBodyHash(effectiveInput);
     try {
       const {
         rawInput: apiInput,
@@ -1737,8 +1840,14 @@ async function runRepairPass(args: Args): Promise<void> {
     latest = filtered;
   }
 
+  // C02 anchor inputs (load ONCE), mirroring the main pass — D-P9.
+  const c02FloorInput = loadC02FloorInput();
+  const c02ManifestVer = c02ManifestVersion(loadC02Manifest());
   const bodyHashById = new Map(
-    [...lessonBodyById].map(([id, body]) => [id, computeBodyHash(body)])
+    [...lessonRecordById].map(([id, rec]) => [
+      id,
+      computeBodyHash(buildC02EffectiveInput(rec, c02FloorInput, c02ManifestVer).effectiveInput),
+    ])
   );
   const plan = planRepairCandidates(latest, promptSchemaHash, args.model, bodyHashById);
   if (plan.staleHash > 0) {
@@ -1787,11 +1896,14 @@ async function runRepairPass(args: Args): Promise<void> {
   let nowPassing = 0;
   let stillFailing = 0;
   await mapWithConcurrency(limited, args.concurrency, async ({ record, fields }) => {
-    const lessonBody = lessonBodyById.get(record.id);
-    if (lessonBody === undefined) {
+    const lessonRecord = lessonRecordById.get(record.id);
+    if (lessonRecord === undefined) {
       console.warn(`  ${record.id}: not in corpus.jsonl, skipping repair`);
       return;
     }
+    const lessonBody = lessonRecord.content_text;
+    // D-P9 effective-input hash for this record (matches the main-pass stamp).
+    const { effectiveInput } = buildC02EffectiveInput(lessonRecord, c02FloorInput, c02ManifestVer);
     const repairs: Record<string, RepairOutcome> = {};
     for (const field of fields) {
       const previous = (record.rawInput as Record<string, unknown>)[field];
@@ -1864,7 +1976,7 @@ async function runRepairPass(args: Args): Promise<void> {
         // Repair records aggregate several per-field calls — no single
         // stop_reason applies, so it is null by design.
         stopReason: null,
-        bodyHash: computeBodyHash(lessonBody),
+        bodyHash: computeBodyHash(effectiveInput),
         strict: args.strict,
         toolChoice: args.toolChoiceAuto ? 'auto' : undefined,
         effectiveBaseUrl,
@@ -1880,8 +1992,13 @@ async function runRepairPass(args: Args): Promise<void> {
   console.log(`Repair done: ${nowPassing} now Zod-pass, ${stillFailing} still failing.`);
 }
 
-/** Lesson bodies for the repair pass (lazy: only loaded in --repair mode). */
-let lessonBodyById: Map<string, string>;
+/**
+ * Lesson corpus records for the repair pass (lazy: only loaded in --repair
+ * mode). Carries the doc-surfaced body AND the raw C02 tags, so the repair pass
+ * can rebuild the same D-P9 effective-input hash the main pass stamped (no
+ * spurious bodyMismatch skips when the anchored hash matches).
+ */
+let lessonRecordById: Map<string, CorpusRecord>;
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -1904,12 +2021,15 @@ async function main(): Promise<void> {
     const excludedIds = new Set(
       loadCorpusExclusions(DEFAULT_CORPUS_EXCLUSIONS_PATH).map((e) => e.id)
     );
-    lessonBodyById = new Map(
+    lessonRecordById = new Map(
       loadCorpus()
         .filter((lesson) => !excludedIds.has(lesson.id))
         .map((lesson) => [
           lesson.id,
-          appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
+          {
+            ...lesson,
+            content_text: appendDocSurfaces(lesson.content_text, docSurfaces.get(lesson.id)),
+          },
         ])
     );
     await runRepairPass(args);
