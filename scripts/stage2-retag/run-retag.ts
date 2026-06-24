@@ -654,6 +654,17 @@ export interface CurrentRunIdentity {
    * fallback record is NOT resume-skipped and its lesson re-runs the main pass.
    */
   fallbackModel?: string;
+  /**
+   * C02 anchored verify-and-diff only (D-P6): the anchored run expects a
+   * reconciled `finalC02` on EVERY successful record. A record matching the
+   * current identity but LACKING `finalC02` is a validation failure (its
+   * `error` is null — it is not an API error), so it must RE-RUN on --resume,
+   * not be resume-skipped. When false/undefined (the legacy/body-only path
+   * and all existing records), `finalC02` is not consulted and resume behaves
+   * exactly as before. An empty-but-present `finalC02` ({cooking_skills: [],
+   * main_ingredients: []}) is a PASS → resumable; only ABSENCE re-runs.
+   */
+  requireFinalC02?: boolean;
   /** id → sha256 of the CURRENT corpus body for that lesson. */
   bodyHashById: Map<string, string>;
 }
@@ -696,7 +707,12 @@ export function computeResumableIds(
       toolChoiceMatches &&
       recordProxied === current.proxied &&
       record.bodyHash === current.bodyHashById.get(id) &&
-      record.error === null
+      record.error === null &&
+      // C02 anchored run: a matching record with no finalC02 is a validation
+      // failure (error === null), so re-run it instead of resume-skipping.
+      // Empty-but-present finalC02 is a PASS — only absence re-runs. (Off for
+      // the legacy/body-only path → existing resume verdicts unchanged.)
+      (!current.requireFinalC02 || record.finalC02 !== undefined)
     ) {
       resumable.add(id);
     }
@@ -760,6 +776,10 @@ export function planRepairCandidates(
     if (record.zod.passed) continue;
     if (record.phase === 'main' && record.error !== null) continue;
     if (record.promptSchemaHash !== currentHash) {
+      // C02 anchored records carry the C02 prompt+schema hash, which never
+      // matches the monolithic all-field repair hash → they stale-skip here
+      // (safe: --repair can't corrupt them). Their recovery path is --resume's
+      // requireFinalC02 re-run (see computeResumableIds), not the repair pass.
       plan.staleHash++;
       continue;
     }
@@ -1788,6 +1808,9 @@ async function runMainPass(args: Args): Promise<void> {
       toolChoiceAuto: args.toolChoiceAuto,
       proxied: args.baseUrl !== undefined,
       fallbackModel: args.fallbackModel,
+      // C02 anchored run: re-run any record that completed without finalC02
+      // (a validation failure, error === null) rather than resume-skipping it.
+      requireFinalC02: true,
       bodyHashById,
     });
     const before = lessons.length;

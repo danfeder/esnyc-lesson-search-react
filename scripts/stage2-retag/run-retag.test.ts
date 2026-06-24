@@ -610,6 +610,65 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
     expect(records).toHaveLength(1);
     expect(computeResumableIds(records, identity(['a']))).toEqual(new Set(['a']));
   });
+
+  // FIX 1 (P2′.3 Codex): the C02 anchored run expects `finalC02` on every
+  // successful record. A record matching the current identity but LACKING
+  // finalC02 (error === null) is a validation FAILURE that must re-run on
+  // --resume, not resume-skip. Opt in via requireFinalC02.
+  describe('requireFinalC02 (C02 anchored resume — re-run validation failures)', () => {
+    it('does NOT resume a matching record that lacks finalC02 (validation failure)', () => {
+      // error === null but no finalC02 → a C02 validation failure, not done.
+      const records = parseRunRecords(
+        jsonl([makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL, error: null })])
+      );
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: true })).toEqual(
+        new Set()
+      );
+    });
+
+    it('resumes the same matching record once finalC02 is present (PASS)', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({
+            id: 'a',
+            promptSchemaHash: HASH,
+            model: MODEL,
+            finalC02: { cooking_skills: ['Knife skills'], main_ingredients: ['Alliums'] },
+          }),
+        ])
+      );
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: true })).toEqual(
+        new Set(['a'])
+      );
+    });
+
+    it('treats finalC02 with EMPTY arrays as a PASS (resumable), not a failure', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({
+            id: 'a',
+            promptSchemaHash: HASH,
+            model: MODEL,
+            finalC02: { cooking_skills: [], main_ingredients: [] },
+          }),
+        ])
+      );
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: true })).toEqual(
+        new Set(['a'])
+      );
+    });
+
+    it('leaves legacy behavior unchanged when requireFinalC02 is absent/false', () => {
+      // A record with no finalC02 + error === null stays resumable (the gate is off).
+      const records = parseRunRecords(
+        jsonl([makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL, error: null })])
+      );
+      expect(computeResumableIds(records, identity(['a']))).toEqual(new Set(['a']));
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: false })).toEqual(
+        new Set(['a'])
+      );
+    });
+  });
 });
 
 describe('computeBodyHash (D-P9 — full effective input, not body-only)', () => {
