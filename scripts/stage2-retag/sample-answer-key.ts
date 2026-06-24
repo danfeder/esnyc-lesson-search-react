@@ -1421,6 +1421,30 @@ export function parseArgs(argv: string[]): Args {
         throw new Error(`unknown flag: ${flag} (use --help for usage)`);
     }
   }
+  // Held-out flag guards (P2′.5 Codex): the held-out flags travel together so a
+  // mistyped invocation can never (a) draw an un-excluded "held-out" sample that
+  // overlaps the locked 69-key (canary contamination) or (b) run STRICT with
+  // --exclude-key/--size and clobber the locked 69-key artifacts (the strict
+  // path writes c02-answer-key-*.json; a held-out-intended run that forgot
+  // --relaxed-coverage would overwrite them before the under-coverage gate).
+  if (a.coverageMode === 'relaxed' && a.excludeKey === undefined) {
+    throw new Error(
+      '--relaxed-coverage requires --exclude-key: a held-out draw must exclude the locked ' +
+        'gold key, else it is not held-out (use --help for usage)'
+    );
+  }
+  if (a.excludeKey !== undefined && a.coverageMode !== 'relaxed') {
+    throw new Error(
+      '--exclude-key is held-out-only; it requires --relaxed-coverage (a strict run with ' +
+        'exclusion would overwrite the locked 69-key artifacts) (use --help for usage)'
+    );
+  }
+  if (a.size !== undefined && a.coverageMode !== 'relaxed') {
+    throw new Error(
+      '--size is held-out-only; it requires --relaxed-coverage (the strict 69-key draw is ' +
+        'fixed at size 70) (use --help for usage)'
+    );
+  }
   // Held-out (relaxed) defaults: so the committed held-out manifest reproduces
   // from a documented command (seed 20260624, size 25) without extra flags. A
   // user-passed --seed/--size still wins (the explicit flags above).
@@ -1459,6 +1483,7 @@ Flags:
                       representative stratified draw (NO ≥2× hard-fail) →
                       ${C02_HELDOUT_SAMPLE_FILENAME} + ${C02_HELDOUT_MANIFEST_FILENAME}.
                       Defaults to seed ${C02_HELDOUT_SEED}, size ${C02_HELDOUT_SIZE} unless overridden.
+                      REQUIRES --exclude-key. (--exclude-key/--size are held-out-only.)
   --exclude-key <p>   path to a JSONL key (each line a JSON object with an "id")
                       whose ids are EXCLUDED from the draw (the 69-key file, so
                       the held-out slice is disjoint from the locked gold key)

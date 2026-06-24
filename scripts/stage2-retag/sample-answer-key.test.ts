@@ -996,8 +996,13 @@ describe('loadExcludeKey — JSONL id loader', () => {
 });
 
 describe('parseArgs — held-out flags', () => {
+  // The held-out flags travel together: --relaxed-coverage ⟺ --exclude-key, and
+  // --size is held-out-only. This biconditional is exercised below; the valid
+  // held-out flag set is [--c02 --relaxed-coverage --exclude-key <path>].
+  const HELDOUT = ['--c02', '--relaxed-coverage', '--exclude-key', '/tmp/key.jsonl'];
+
   it('parses --relaxed-coverage into coverageMode relaxed', () => {
-    const a = parseArgs(['--c02', '--relaxed-coverage']);
+    const a = parseArgs(HELDOUT);
     expect(a.coverageMode).toBe('relaxed');
   });
 
@@ -1006,13 +1011,31 @@ describe('parseArgs — held-out flags', () => {
   });
 
   it('parses --size into an integer', () => {
-    expect(parseArgs(['--c02', '--size', '25']).size).toBe(25);
+    expect(parseArgs([...HELDOUT, '--size', '25']).size).toBe(25);
   });
 
   it('parses --exclude-key into a path', () => {
-    expect(parseArgs(['--c02', '--exclude-key', '/tmp/key.jsonl']).excludeKey).toBe(
-      '/tmp/key.jsonl'
+    expect(parseArgs(HELDOUT).excludeKey).toBe('/tmp/key.jsonl');
+  });
+
+  // --- Guards (P2′.5 Codex): protect the locked 69-key artifacts + canary ---
+  it('rejects --relaxed-coverage WITHOUT --exclude-key (an un-excluded "held-out" draw is not held-out)', () => {
+    expect(() => parseArgs(['--c02', '--relaxed-coverage'])).toThrow(/exclude-key/i);
+  });
+
+  it('rejects --exclude-key WITHOUT --relaxed-coverage (a strict run with exclusion would clobber the 69-key files)', () => {
+    expect(() => parseArgs(['--c02', '--exclude-key', '/tmp/key.jsonl'])).toThrow(
+      /relaxed-coverage/i
     );
+  });
+
+  it('rejects --size WITHOUT --relaxed-coverage (the strict 69-key draw is fixed at 70)', () => {
+    expect(() => parseArgs(['--c02', '--size', '25'])).toThrow(/relaxed-coverage/i);
+  });
+
+  it('accepts the full held-out flag set without throwing', () => {
+    expect(() => parseArgs([...HELDOUT, '--size', '25'])).not.toThrow();
+    expect(() => parseArgs(['--c02', '--seed', '20260612'])).not.toThrow(); // strict, unaffected
   });
 });
 
