@@ -170,6 +170,46 @@ describe('applyC02Floor — idempotent fixed point', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Deterministic provenance precedence (Codex P2′.1 #2/#3)
+//
+// When the SAME resolved value is reached both directly (exact-canonical) and
+// via an alias (alias-fold) in one record, the emitted provenance must NOT
+// depend on input order — exact-canonical wins. D-P5 uses provenance as a
+// confidence signal, so logically-equal tag sets must annotate identically.
+// ---------------------------------------------------------------------------
+
+describe('applyC02Floor — provenance is order-independent (exact-canonical wins)', () => {
+  it('labels the merged value exact-canonical regardless of which form appears first', () => {
+    const aliasFirst = applyC02Floor({ main_ingredients: ['Tomato', 'Tomatoes'] }, MINI_INPUT);
+    const canonicalFirst = applyC02Floor({ main_ingredients: ['Tomatoes', 'Tomato'] }, MINI_INPUT);
+    const pick = (tags: { value: string; provenance: string }[]) =>
+      tags.find((t) => t.value === 'Tomatoes');
+    expect(pick(aliasFirst.ingredients)).toEqual({
+      value: 'Tomatoes',
+      provenance: 'exact-canonical',
+    });
+    expect(pick(canonicalFirst.ingredients)).toEqual({
+      value: 'Tomatoes',
+      provenance: 'exact-canonical',
+    });
+  });
+
+  it('keeps first-occurrence ORDER even when provenance is upgraded', () => {
+    // `Tomato` (alias) appears first → `Tomatoes` keeps that slot; `Apples`
+    // (canonical) is second. The provenance upgrade must not reorder them.
+    const out = applyC02Floor({ main_ingredients: ['Tomato', 'Apples', 'Tomatoes'] }, MINI_INPUT);
+    // floorField yields [Tomatoes, Apples] (first-occurrence order); the
+    // specific→group invariant then appends parents at the end.
+    expect(floorTagValues(out.ingredients)).toEqual([
+      'Tomatoes',
+      'Apples',
+      'Nightshades',
+      'Fruits',
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Real on-disk data: Herbs & Aromatics + provenance over the live floor
 // ---------------------------------------------------------------------------
 

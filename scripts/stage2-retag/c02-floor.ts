@@ -156,7 +156,7 @@ function floorField(
   dropKeys: ReadonlySet<string>
 ): C02FloorTag[] {
   const out: C02FloorTag[] = [];
-  const seen = new Set<string>();
+  const indexByValue = new Map<string, number>();
   for (const tag of tags) {
     const key = matchKey(tag);
     // (1) execute drops — a drops-listed value is removed.
@@ -164,14 +164,27 @@ function floorField(
     // (2) fold; (3) drop unmapped junk (no fold + not canonical).
     const folded = folds.get(key);
     if (folded === undefined || !canonical.has(folded)) continue;
-    if (seen.has(folded)) continue;
-    seen.add(folded);
     // alias-fold vs exact-canonical: the canonical-case rule loads every
     // canonical at its own matchKey, so the input was already canonical iff its
     // matchKey equals the folded canonical's matchKey.
     const provenance: C02FloorProvenance =
       key === matchKey(folded) ? 'exact-canonical' : 'alias-fold';
-    out.push({ value: folded, provenance });
+    const existing = indexByValue.get(folded);
+    if (existing === undefined) {
+      indexByValue.set(folded, out.length);
+      out.push({ value: folded, provenance });
+    } else if (provenance === 'exact-canonical' && out[existing].provenance === 'alias-fold') {
+      // Deterministic provenance precedence: when the SAME resolved value is
+      // reached both directly (exact-canonical) and via an alias (alias-fold)
+      // in one record, exact-canonical WINS — independent of input order. The
+      // value keeps its first-occurrence slot (we only upgrade the label). D-P5
+      // reads provenance as a confidence signal, so logically-equal tag sets
+      // must annotate identically. Provenance otherwise describes derivation
+      // from the ORIGINAL current tags and is meaningful on a single
+      // application only — value projection (not provenance) is the idempotent
+      // fixed point.
+      out[existing].provenance = 'exact-canonical';
+    }
   }
   return out;
 }
