@@ -1,6 +1,6 @@
 # C02 — Cooking Skills & Main Ingredients Re-tag — Execution Status
 
-**Last updated:** 2026-06-23 by Session 6 (**P1 MERGED → P2 start**; Opus-only supersede formalized; **census forensics** = the "121/202" was a TEST query mislabeled PROD, corrected to 122/230; **P2.1 COMPLETE** = corpus regen + floor top-up + 70-lesson sample, all supervisor-verified; next = **P2.2 gold key, USER-GATED**)
+**Last updated:** 2026-06-23 by Session 7 (**P2.2 IN PROGRESS** — gold-key build tooling shipped (`f1d0f78` + `33ffbdb`); two-lens AI draft generated (Sonnet draft all 70 + Codex/GPT-5.5 independent re-derive of the 51 judgment rows, both supervisor-validated 0 errors); **worksheet ready, PAUSED at the user-adjudication gate**)
 
 ## Current State
 
@@ -8,12 +8,14 @@
 
 **NOW: P2 (Pilot) on a new `feat/c02-pilot` branch.** P1's `feat/c02-harness` is merged, so P2 branches fresh. **Model = Opus 4.8 ONLY** — the §4 Q11 Opus-vs-Sonnet bake-off was **SUPERSEDED 2026-06-23** by user decision (`project_c02_p2_opus_only`): one Opus run, scored alone against the same 4 gates, `claude-opus-4-7` fallback only if it fails. Session 6 formalized this supersede across the design / impl / kickoff / status docs (the explicit P2-start bookkeeping item from that memory).
 
-**Next task = P2.2 (gold key — USER-GATED; STOP for the user).** **P2.1 is COMPLETE + supervisor-verified** (all three sub-tasks on `feat/c02-pilot`, harness 649/649, check clean):
-- **P2.1a** (`eb0c304`): `export-corpus.ts` census guards `EXPECTED_LIVE_ROWS` 767→764 + emptied `GHOST_STUB_LESSON_IDS` (Wave-4 #539 hard-deleted the 2 OQ5 stubs; TDD) → **regenerated `corpus.jsonl` from PROD = 764 records, all carry both fields, distinct 122/230** (gitignored).
-- **P2.1b** (`16880b5`): floor top-up — 14 clean folds the TEST census missed added to `c02-alias-map.json` (187→201 keys; TDD; invariants re-asserted; floor coverage on live PROD now ~92.4% cs / ~95% mi).
-- **P2.1c** (`30f0a0b`): ran the `--c02` sampler over the regen corpus → **70-lesson pilot key** (20 hard-case / 28 coverage / 22 clean-core; **all 93 canonical values ≥2×**, 0 under; deterministic seed 20260612; manifest force-committed, bulk sample gitignored).
+**Current task = P2.2 (gold key — USER-GATED; PAUSED for the user to adjudicate).** P2.1 complete (`eb0c304`/`16880b5`/`30f0a0b` — corpus regen 764 rows, floor 201 keys, 70-lesson manifest). **P2.2 work done so far this session (all supervisor-verified):**
+- **Build tooling** `f1d0f78` + `33ffbdb`: `scripts/stage2-retag/build-c02-answer-key.ts` (+ test, 30 cases) — `scaffold` (manifest∩corpus + floor anchor incl. R9 parent-reconcile + judgment-row flag + body excerpt) / `worksheet` (per-tag provenance: AGREED = floor ∪ (draft∩codex) pre-filled into FINAL; CONTESTED tags listed `[sonnet]`/`[codex]` for conscious decisions) / `assemble` (parses FINAL lines → validates closed-vocab + parent invariant → `c02-answer-key.final.jsonl`). Scripts committed; all bodies-bearing artifacts gitignored.
+- **Two-lens AI draft (no Console credits — session billing):** 7 Sonnet agents drafted all 70 (0 vocab/parent errors); 3 Codex/GPT-5.5 agents independently re-derived the 51 judgment rows (rows where judgment changed the answer vs. the floor; 0 errors, full coverage). Merged → gitignored `artifacts/c02-proposals.jsonl`. The Sonnet draft was deliberately withheld from Codex so the two lenses are genuinely independent (Q6).
+- **Worksheet emitted** → `artifacts/c02-answer-key-worksheet.md` (4660 lines, gitignored). Adjudication load: **30/70 rows fully pre-filled** (just confirm), **40 rows / 119 contested tags** to decide.
 
-**P2.2 (next, USER-GATED):** AI drafts tags for the 70 → **user adjudicates each** + the Q6 independent 2nd-pass on judgment rows → gold `answer-key.final.jsonl`. Then **P2.3** = single Opus-4.8 run (needs Console credits; run `preflight-token-mass` first) → **P2.4** = 4-gate greenlight (USER-GATED). The 70-lesson identity is locked by the committed manifest (`c02-answer-key-manifest.json`), so the gold key + Opus run operate on the same set.
+**WAITING ON USER:** adjudicate the worksheet's FINAL lines (confirm AGREED, add the CONTESTED tags that belong) → tell the supervisor → run `assemble` → **force-commit** `c02-answer-key.final.jsonl` (id+tags only, no bodies). THEN **P2.3** = single Opus-4.8 run over the same 70 (needs Console credits; run `preflight-token-mass` first) → **P2.4** = 4-gate greenlight (USER-GATED). 70-lesson identity locked by the committed `c02-answer-key-manifest.json`.
+
+**Open user-decision surfaced in adjudication:** "hibiscus" appears in ≥2 lessons (Temperature & Tea Making; Red Drinks for Juneteenth) with NO canonical mapping — both lenses left it untagged/proxied. Decide during adjudication: leave untagged, proxy, or flag as a genuinely-missing food for the manifest (manifest freezes at end of P3, so a real high-freq food can still be added before then).
 
 **P2 — key carry-forwards:**
 - (a) **P2.1 MUST regenerate `artifacts/corpus.jsonl`** — the on-disk one (765 lines, pre-2026-06-12) LACKS `cooking_skills`/`main_ingredients`; the C02 sampler + rules-baseline read current tags from corpus record fields. The `CorpusRecordForSampling` type carries the two fields.
@@ -47,7 +49,7 @@
 
 ## In flight
 
-(P2.1 complete on `feat/c02-pilot` — `eb0c304`/`16880b5`/`30f0a0b` + 2 doc commits. No PR opened yet — P2 is artifacts-only; can open a PR for the harness/floor changes at a natural boundary, or carry the branch through P2.4 and PR the whole pilot. **Paused at the P2.2 user-gate.**)
+(P2.2 build tooling + two-lens draft done on `feat/c02-pilot` — `f1d0f78`/`33ffbdb` (+ Session-7 doc commit). No PR opened yet — P2 is artifacts-only; can open a PR for the harness/tooling changes at a natural boundary, or carry the branch through P2.4 and PR the whole pilot. **PAUSED at the P2.2 user-adjudication gate** — worksheet at `artifacts/c02-answer-key-worksheet.md` awaits the user; next supervisor action after the user finishes = `assemble` → force-commit the gold key.)
 
 ## Blocked
 
@@ -80,6 +82,26 @@
 ## Recent session log
 
 > **PR cycle 1 (P1, Sessions 0–5) is fully ARCHIVED** — full per-session detail + learnings in `…execution-status-archive.md`. Only the current PR cycle's sessions stay here.
+
+### Session 7 — 2026-06-23 — P2.2 gold-key build + two-lens AI draft → paused at user-adjudication gate
+
+Major events:
+- Oriented (git/design/impl/status all consistent; `npm run check` clean). User answered the two P2.2 forks via AskUserQuestion: **adjudicate ALL 70 rows** + **Codex/GPT-5.5** as the independent lens for judgment rows.
+- **Design subtlety caught + honored:** drafting the gold key with Opus-4.8 (the P2.3 contestant) would make Gate ② near-circular. Plan keeps the gold key's judgment-row answers independent of Opus: Sonnet drafts (different family, session billing), Codex independently re-derives, user is final authority. No Console credits spent (reserved for the P2.3 Opus run).
+- **Built the gold-key tooling** (executor `f1d0f78`, TDD): `build-c02-answer-key.ts` `scaffold`/`worksheet`/`assemble`. Executor caught a real self-inconsistency — a fold-only floor anchor emits orphan specifics that `assemble`'s own parent invariant rejects; fixed by applying R9 parent-reconcile to the anchor (matches the actual harness floor R7/R8+R9). Supervisor re-verified: 70 scaffold rows, layers 28/22/20, 30 judgment rows.
+- **Draft fan-out:** prep a full-body 70-lesson pilot corpus (median body 3910 chars → the 2000-char scaffold excerpt would truncate ingredient lists, so full bodies used) → 7 Sonnet agents drafted 10 each → **70 rows, 0 vocab/parent/dup errors** (supervisor-revalidated against `c02-vocab.json`).
+- **Codex independent pass:** computed the 51-row judgment set (hardCaseJudgment ∪ draft-changed-vs-floor ∪ added-specific) → 3 `codex:codex-rescue` agents (gpt-5.5, file-first + inline contract) re-derived → **51 rows, 0 errors, full coverage**; all returned inline (no backgrounding). Sonnet draft withheld from Codex for genuine independence.
+- Draft-vs-Codex exact-set agreement is low (3/51 both-fields) — expected for ~10-tag arrays across two families — so the worksheet shows **per-tag** provenance instead. **Worksheet enhancement** (executor `33ffbdb`, TDD, 30 tests): AGREED = floor ∪ (draft∩codex) pre-filled into FINAL (parent-reconciled, assemble-valid); CONTESTED tags listed `[sonnet]`/`[codex]`. Fixed the original codex-wholesale pre-fill that dropped correct Sonnet additions (e.g. `Boiling & simmering` on the rice lesson).
+- Emitted the worksheet; **PAUSED at the user-adjudication gate.** Load: 30/70 fully pre-filled, 40 rows / 119 contested tags to decide.
+
+Dispatch pattern: each code task = one fresh-context executor → supervisor re-verified the artifact (commit stat, test run, regen + assemble exit, the rendered rice block). Draft/Codex = parallel Agent fan-outs writing gitignored part-files (context-light); supervisor re-validated every part against the vocab+parent invariant, not just the agents' self-reports.
+
+Learnings (candidates to promote):
+- **Don't let the contestant model draft its own grading key.** For an LLM-judged pilot, the gold key's judgment-row answers must come from a *different* lens than the model under test, else the "beats baseline" gate is circular. Withholding the first lens's draft from the second keeps the two-lens agreement signal honest.
+- **Exact-set agreement is the wrong metric for multi-tag arrays** — two good independent lenses rarely match exactly; per-TAG provenance (agreed / single-lens-contested) is what makes human adjudication fast and the disagreement signal usable.
+- **Part-files on disk > structured returns** for fan-outs that produce bulk data — agents write gitignored part-files + return a 1-line confirmation, keeping supervisor context light while the supervisor re-validates the files directly.
+
+Next: **user adjudicates the worksheet** → supervisor runs `assemble` → force-commits `c02-answer-key.final.jsonl` → P2.3 (single Opus-4.8 run, needs Console credits) → P2.4 (4-gate greenlight, USER-GATED).
 
 ### Session 6 — 2026-06-23 — P1 merge reconciled + Opus-only supersede + census forensics + P2.1 COMPLETE
 
