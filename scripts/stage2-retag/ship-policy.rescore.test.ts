@@ -12,9 +12,10 @@
  *   floor-retention cooking  F1 ≈ 0.872   (P 0.833 / R 0.915)
  *   ingredients ship == floor (per row)
  *
- * This SUPERSEDES the throwaway `c02-cooking-floor-vs-llm.ts` analysis with a
- * maintained equivalent. Numbers may shift ≤0.005 if computed through cleaner
- * code (tolerance below); a larger drift FAILS this gate (flag, don't absorb).
+ * This SUPERSEDES the throwaway `c02-cooking-floor-vs-llm.ts` analysis (since
+ * removed) with a maintained equivalent. Numbers may shift ≤0.005 if computed
+ * through cleaner code (tolerance below); a larger drift FAILS this gate (flag,
+ * don't absorb).
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
