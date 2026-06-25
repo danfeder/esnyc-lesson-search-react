@@ -102,6 +102,7 @@ function main(): void {
   const shipped: Agg = { tp: 0, fp: 0, fn: 0 }; // floor-retention = the SHIPPED policy
   const perValue = new Map<string, Agg>();
   const missingRun: string[] = [];
+  const missingCorpus: string[] = [];
   let retentionSupersetOfFloor = 0;
   const perLesson: { id: string; gold: string[]; ship: string[]; fp: string[]; fn: string[] }[] =
     [];
@@ -113,6 +114,7 @@ function main(): void {
     };
     const record = runById.get(id) ?? {};
     if (!runById.has(id)) missingRun.push(id);
+    if (!corpusById.has(id)) missingCorpus.push(id);
 
     const floored = floorTagValues(applyC02Floor(existing, floorInput).cooking);
     const ship = materializeC02Ship(record, existing, floorInput, cookingValues).cooking_skills;
@@ -144,15 +146,27 @@ function main(): void {
     });
   }
 
-  // FAIL CLOSED: a key id absent from the run output would be scored as the
-  // deterministic floor (empty record → floor-only ship), silently turning an
-  // INCOMPLETE run into a passing-looking scorecard. An incomplete run must not
-  // be reportable as a valid canary result — throw before emitting any numbers.
-  if (missingRun.length) {
+  // FAIL CLOSED: a key id absent from EITHER the run output OR the corpus would
+  // be silently scored as the deterministic floor (empty record → floor-only
+  // ship; empty existing tags → empty floor), turning an INCOMPLETE input into a
+  // passing-looking scorecard. Neither incompleteness may be reportable — throw
+  // before emitting any numbers.
+  const missing: string[] = [];
+  if (missingRun.length)
+    missing.push(
+      `run output \`${path.basename(args.run)}\` (${missingRun.length}): ${missingRun.join(', ')}`
+    );
+  if (missingCorpus.length)
+    missing.push(
+      `corpus \`${path.basename(args.corpus)}\` (${missingCorpus.length}): ${missingCorpus.join(
+        ', '
+      )}`
+    );
+  if (missing.length) {
     throw new Error(
-      `FAIL-CLOSED: ${missingRun.length} key id(s) absent from the run output (\`${path.basename(
-        args.run
-      )}\`) — an incomplete run cannot produce a valid scorecard. Missing: ${missingRun.join(', ')}`
+      `FAIL-CLOSED: key id(s) absent — an incomplete input cannot produce a valid scorecard. ${missing.join(
+        ' | '
+      )}`
     );
   }
 

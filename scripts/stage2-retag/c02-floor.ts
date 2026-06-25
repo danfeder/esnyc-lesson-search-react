@@ -210,6 +210,13 @@ export function applyC02Floor(
   current: { cooking_skills?: string[] | null; main_ingredients?: string[] | null },
   input: C02FloorInput
 ): C02FlooredTags {
+  // Both fields share `input.dropKeys` (a field-agnostic Set of drop match-keys),
+  // even though the FOLD maps are field-scoped. This is safe because every
+  // drop-listed value is non-canonical in BOTH fields: cooking drops (e.g.
+  // `Forming patties`) never appear in `main_ingredients` tags, and ingredient
+  // drops (e.g. `Olive oil` / `Salt`) never appear in `cooking_skills` tags. The
+  // build-time floor invariants confirm zero cross-field match-key collisions, so
+  // a shared drop list cannot strip a value from the wrong field.
   const cooking = floorField(
     current.cooking_skills ?? [],
     input.cookingFolds,
