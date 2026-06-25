@@ -467,6 +467,126 @@ describe('processC02Decision — validation flow (P2′.3 / D-P6)', () => {
   });
 });
 
+describe('processC02Decision — run-time field isolation (P2′.8 part 2 / D-P11)', () => {
+  const decisionSchema = buildC02DecisionSchema(vocab);
+  const finalSchema = buildC02FinalSchema(vocab);
+  const floorInput = loadC02FloorInput();
+
+  function flooredAnchor(cooking: string[], ingredients: string[]): C02FlooredTags {
+    return {
+      cooking: cooking.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+      ingredients: ingredients.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+    };
+  }
+
+  it('an off-vocab INGREDIENT does NOT discard the valid COOKING decision (the 4-record regression)', () => {
+    // Mirrors the 4 r4 pilot records: a valid cooking decision + an off-vocab
+    // ingredient ADD ('Thyme'). The whole-record parse fails, but field
+    // isolation must still produce a canonical finalC02: cooking from the LLM,
+    // ingredients from the floor.
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: ['Knife skills'], drop: [], add: [] },
+        main_ingredients: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Thyme', reason: 'real-technique-taught' }],
+        },
+      },
+      floored: flooredAnchor(['Knife skills'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    // finalC02 is present and canonical for BOTH fields.
+    expect(out.finalC02).toBeDefined();
+    expect(out.finalC02?.cooking_skills).toEqual(['Knife skills']);
+    // ingredients fell back to the floor (the off-vocab field), still canonical.
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.finalC02?.main_ingredients).toContain('Nightshades');
+    // the off-vocab value never appears.
+    expect(out.finalC02?.main_ingredients).not.toContain('Thyme');
+    // the floored field is recorded for transparency.
+    expect(out.flooredFields).toEqual(['main_ingredients']);
+  });
+
+  it('an off-vocab COOKING value does NOT discard the valid INGREDIENT decision (symmetry)', () => {
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Flambeing', reason: 'real-technique-taught' }],
+        },
+        main_ingredients: { keep: ['Tomatoes'], drop: [], add: [] },
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.finalC02).toBeDefined();
+    // cooking fell back to the floor.
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
+    expect(out.finalC02?.cooking_skills).not.toContain('Flambeing');
+    // ingredients reconciled from the valid LLM decision.
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.flooredFields).toEqual(['cooking_skills']);
+  });
+
+  it('a valid decision sets NO flooredFields (the happy path is untouched)', () => {
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+        main_ingredients: { keep: ['Tomatoes'], drop: [], add: [] },
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(true);
+    expect(out.flooredFields).toBeUndefined();
+  });
+
+  it('BOTH fields off-vocab → total failure (no finalC02), as before', () => {
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Flambeing', reason: 'real-technique-taught' }],
+        },
+        main_ingredients: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Thyme', reason: 'real-technique-taught' }],
+        },
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(false);
+    expect(out.finalC02).toBeUndefined();
+  });
+
+  it('a structurally-malformed decision (wrong SHAPE, not off-vocab) → total failure (no per-field recovery)', () => {
+    // Field isolation recovers off-VALUE failures; a wrong-SHAPE decision is not
+    // a recoverable per-field enum slip, so it still fails wholesale.
+    const out = processC02Decision({
+      apiInput: { cooking_skills: 'not an object', main_ingredients: 42 },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(false);
+    expect(out.finalC02).toBeUndefined();
+  });
+});
+
 describe('parseRunRecords + computeResumableIds (--resume)', () => {
   const HASH = 'current-hash';
   const MODEL = 'claude-opus-4-7';

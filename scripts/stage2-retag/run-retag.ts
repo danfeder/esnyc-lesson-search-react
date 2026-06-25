@@ -391,6 +391,14 @@ export function validateRawInput(
   return { passed: false, fieldErrors: fieldErrorsFromZod(parsed.error) };
 }
 
+/** The two C02 fields, in dual-write order. */
+const C02_FIELD_NAMES = ['cooking_skills', 'main_ingredients'] as const;
+type C02FieldName = (typeof C02_FIELD_NAMES)[number];
+
+/** The empty KEEP/DROP/ADD decision — reconcile implicit-KEEPs the floored
+ *  anchor for a field given this, yielding the FLOOR for that field. */
+const EMPTY_FIELD_DECISION = { keep: [], drop: [], add: [] } as const;
+
 /** The validated + reconciled outcome of one C02 anchored verify-and-diff call. */
 export interface C02DecisionOutcome {
   /** The RAW model tool output (the KEEP/DROP/ADD decision) — preserved verbatim. */
@@ -403,6 +411,16 @@ export interface C02DecisionOutcome {
   zod: ZodOutcome;
   /** Mechanical normalizations applied (C02 rules SKIPPED — see normalize.skipC02). */
   normalizations: string[];
+  /**
+   * RUN-TIME FIELD ISOLATION (P2′.8 part 2 / D-P11). Set ONLY when one C02 field's
+   * decision was off-vocab and that field FELL BACK to the deterministic floor
+   * while the OTHER field reconciled from the valid LLM decision. Lists the
+   * floored field(s). This is the run-time guarantee that an off-vocab value in
+   * one field can never discard the OTHER field's valid output — so a full run
+   * captures a valid per-field `finalC02` even on a partial decision (the ship
+   * layer's raw-reconstruction becomes a redundant net, not the only safety).
+   */
+  flooredFields?: C02FieldName[];
 }
 
 /**
@@ -436,55 +454,100 @@ export function processC02Decision(params: {
   // C02 arrays for R7/R8/R9 to touch, and the reconciled output supersedes them.
   const { rawInput, normalizations } = normalizeRecordInput(apiInput, { skipC02: true });
 
-  // (1) decision-schema validation.
+  // Shared stage (2)+(3): reconcile a (full, validated-or-floored) decision into
+  // the canonical `finalC02` and validate it. Used by BOTH the happy path and
+  // the field-isolation recovery path — the reconcile core is UNCHANGED (a
+  // floored field is just an EMPTY decision, which reconcile implicit-KEEPs into
+  // the floored anchor = the floor for that field).
+  const reconcileAndValidate = (
+    llmDecisions: C02Decision,
+    extra: { flooredFields?: C02FieldName[] }
+  ): C02DecisionOutcome => {
+    // (2) floor + reconcile.
+    let finalC02: C02FinalTags;
+    try {
+      const reconciled = reconcileC02Tags({
+        existing: {},
+        floored,
+        llmDecisions,
+        floor: floorInput,
+      });
+      finalC02 = toFinalC02(reconciled);
+    } catch (e) {
+      return {
+        rawInput,
+        llmDecisions,
+        zod: { passed: false, fieldErrors: { _reconcile: [errorMessage(e)] } },
+        normalizations,
+      };
+    }
+    // (3) finalC02 canonical validation (belt-and-suspenders).
+    const finalParsed = finalSchema.safeParse(finalC02);
+    if (!finalParsed.success) {
+      return {
+        rawInput,
+        llmDecisions,
+        zod: { passed: false, fieldErrors: fieldErrorsFromZod(finalParsed.error) },
+        normalizations,
+      };
+    }
+    return {
+      rawInput,
+      llmDecisions,
+      finalC02,
+      zod: { passed: true, fieldErrors: null },
+      normalizations,
+      ...(extra.flooredFields ? { flooredFields: extra.flooredFields } : {}),
+    };
+  };
+
+  // (1) decision-schema validation — whole object first (the common case).
   const parsed = decisionSchema.safeParse(rawInput);
-  if (!parsed.success) {
+  if (parsed.success) {
+    return reconcileAndValidate(parsed.data as C02Decision, {});
+  }
+
+  // (1b) RUN-TIME FIELD ISOLATION (P2′.8 part 2 / D-P11). The whole-object parse
+  // failed; try each field's decision INDEPENDENTLY. A field whose decision is
+  // valid reconciles from the LLM; an off-vocab field falls back to its
+  // canonical FLOOR (an EMPTY decision → reconcile implicit-KEEPs the floored
+  // anchor). This stops an off-vocab value in ONE field from discarding the
+  // OTHER field's valid output (the 4 r4 pilot records: a valid cooking decision
+  // killed by an off-vocab ingredient — whole-record validation coupling).
+  const decisionInput =
+    rawInput && typeof rawInput === 'object' ? (rawInput as Record<string, unknown>) : {};
+  const perField: Record<C02FieldName, unknown> = {
+    cooking_skills: undefined,
+    main_ingredients: undefined,
+  };
+  const flooredFields: C02FieldName[] = [];
+  let anyFieldValid = false;
+  for (const field of C02_FIELD_NAMES) {
+    const fieldSchema = decisionSchema.shape[field];
+    const fieldParsed = fieldSchema.safeParse(decisionInput[field]);
+    if (fieldParsed.success) {
+      perField[field] = fieldParsed.data;
+      anyFieldValid = true;
+    } else {
+      // off-vocab / unrecoverable field → floor it (empty decision).
+      perField[field] = EMPTY_FIELD_DECISION;
+      flooredFields.push(field);
+    }
+  }
+
+  // Recover ONLY a genuine MIXED case: at least one valid field AND at least one
+  // floored field. A wholly-valid decision never reaches here; a wholly-invalid
+  // decision (both fields off-vocab / wrong-shape) still fails wholesale, exactly
+  // as before — field isolation does not paper over a decision with NO signal.
+  if (!anyFieldValid || flooredFields.length === 0) {
     return {
       rawInput,
       zod: { passed: false, fieldErrors: fieldErrorsFromZod(parsed.error) },
       normalizations,
     };
   }
-  const llmDecisions = parsed.data as C02Decision;
 
-  // (2) floor + reconcile. A malformed decision (non-partitioning / anchor-
-  // colliding ADD) throws — surface it as a reconcile validation failure.
-  let finalC02: C02FinalTags;
-  try {
-    const reconciled = reconcileC02Tags({
-      existing: {},
-      floored,
-      llmDecisions,
-      floor: floorInput,
-    });
-    finalC02 = toFinalC02(reconciled);
-  } catch (e) {
-    return {
-      rawInput,
-      llmDecisions,
-      zod: { passed: false, fieldErrors: { _reconcile: [errorMessage(e)] } },
-      normalizations,
-    };
-  }
-
-  // (3) finalC02 canonical validation (belt-and-suspenders).
-  const finalParsed = finalSchema.safeParse(finalC02);
-  if (!finalParsed.success) {
-    return {
-      rawInput,
-      llmDecisions,
-      zod: { passed: false, fieldErrors: fieldErrorsFromZod(finalParsed.error) },
-      normalizations,
-    };
-  }
-
-  return {
-    rawInput,
-    llmDecisions,
-    finalC02,
-    zod: { passed: true, fieldErrors: null },
-    normalizations,
-  };
+  return reconcileAndValidate(perField as unknown as C02Decision, { flooredFields });
 }
 
 /** Per-record cost in USD from the rate table; `null` for unknown models. */
