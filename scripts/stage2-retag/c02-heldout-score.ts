@@ -144,6 +144,18 @@ function main(): void {
     });
   }
 
+  // FAIL CLOSED: a key id absent from the run output would be scored as the
+  // deterministic floor (empty record → floor-only ship), silently turning an
+  // INCOMPLETE run into a passing-looking scorecard. An incomplete run must not
+  // be reportable as a valid canary result — throw before emitting any numbers.
+  if (missingRun.length) {
+    throw new Error(
+      `FAIL-CLOSED: ${missingRun.length} key id(s) absent from the run output (\`${path.basename(
+        args.run
+      )}\`) — an incomplete run cannot produce a valid scorecard. Missing: ${missingRun.join(', ')}`
+    );
+  }
+
   const mShip = metrics(shipped);
   const mFloor = metrics(floorOnly);
   const mLlm = metrics(llmAsIs);
@@ -155,10 +167,6 @@ function main(): void {
   lines.push(
     `- run: \`${path.basename(args.run)}\`  ·  key: \`${path.basename(args.key)}\`  ·  lessons: **${goldById.size}**`
   );
-  if (missingRun.length)
-    lines.push(
-      `- ⚠️ ${missingRun.length} key id(s) MISSING from the run output: ${missingRun.join(', ')}`
-    );
   lines.push(
     `- floor-retention ⊇ floor (no loss vs floor): **${retentionSupersetOfFloor}/${goldById.size}**`
   );

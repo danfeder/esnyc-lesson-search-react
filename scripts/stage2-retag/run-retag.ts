@@ -326,6 +326,16 @@ export interface RunRecord {
    * raw decision shape). Absent on non-C02 / legacy records.
    */
   finalC02?: C02FinalTags;
+  /**
+   * C02 run-time field isolation (P2′.8 part 2 / D-P11): the C02 field(s) whose
+   * decision was off-vocab and FELL BACK to the deterministic floor while the
+   * other field reconciled from a valid LLM decision. Present (and non-empty)
+   * ONLY on a mixed partial-decision record; absent on clean records. Persisted
+   * so a full run's field-isolation can be audited at scale (the P3.1 pre-apply
+   * gate) without re-deriving — a floored record otherwise stores as a clean
+   * `zod.passed: true` and is indistinguishable from a fully-valid one.
+   */
+  flooredFields?: C02FieldName[];
   completedAt: string;
 }
 
@@ -586,6 +596,8 @@ export function buildRunRecord(params: {
   llmDecisions?: unknown;
   /** C02 anchored path only: the reconciled canonical arrays (D-P6). */
   finalC02?: C02FinalTags;
+  /** C02 anchored path only: field(s) that fell back to the floor (P2′.8 part 2). */
+  flooredFields?: C02FieldName[];
 }): RunRecord {
   return {
     id: params.id,
@@ -607,6 +619,7 @@ export function buildRunRecord(params: {
     ...(params.normalizations !== undefined ? { normalizations: params.normalizations } : {}),
     ...(params.llmDecisions !== undefined ? { llmDecisions: params.llmDecisions } : {}),
     ...(params.finalC02 !== undefined ? { finalC02: params.finalC02 } : {}),
+    ...(params.flooredFields !== undefined ? { flooredFields: params.flooredFields } : {}),
     completedAt: new Date().toISOString(),
   };
 }
@@ -653,6 +666,7 @@ const runRecordLineSchema = z
         main_ingredients: z.array(z.string()),
       })
       .optional(),
+    flooredFields: z.array(z.enum(['cooking_skills', 'main_ingredients'])).optional(),
     completedAt: z.string(),
   })
   .passthrough();
@@ -1744,6 +1758,7 @@ export async function runFallbackForRefusal(params: {
       normalizations: outcome.normalizations,
       ...(outcome.llmDecisions !== undefined ? { llmDecisions: outcome.llmDecisions } : {}),
       ...(outcome.finalC02 !== undefined ? { finalC02: outcome.finalC02 } : {}),
+      ...(outcome.flooredFields !== undefined ? { flooredFields: outcome.flooredFields } : {}),
     });
   } catch (e) {
     const msg = errorMessage(e);
@@ -1985,6 +2000,7 @@ async function runMainPass(args: Args): Promise<void> {
         normalizations: outcome.normalizations,
         llmDecisions: outcome.llmDecisions,
         finalC02: outcome.finalC02,
+        flooredFields: outcome.flooredFields,
       });
       addToTotals(usage, record.costUsd);
       if (outcome.zod.passed) zodPassed++;

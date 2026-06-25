@@ -370,6 +370,53 @@ describe('run-record finalC02 contract (P2′.3 / D-P6)', () => {
     expect(parsed.finalC02).toEqual(finalC02);
   });
 
+  it('persists + round-trips flooredFields (run-time field-isolation provenance, P2′.8 part 2)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions,
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+      flooredFields: ['main_ingredients'],
+    });
+    expect(record.flooredFields).toEqual(['main_ingredients']);
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.flooredFields).toEqual(['main_ingredients']);
+  });
+
+  it('omits flooredFields on a clean record (a floored record is otherwise indistinguishable)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions,
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+    });
+    expect(record.flooredFields).toBeUndefined();
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.flooredFields).toBeUndefined();
+  });
+
   it('omits the NEW fields when not provided (legacy/non-C02 records still parse)', () => {
     const record = buildRunRecord({
       id: 'lesson-9',

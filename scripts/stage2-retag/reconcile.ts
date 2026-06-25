@@ -248,9 +248,13 @@ function reconcileParents(
 
 /**
  * Reconcile the floor-anchored core with the LLM's KEEP/DROP/ADD into the final
- * `finalC02` arrays (design §3·PIVOT D-P6). Throws on any non-partitioning
- * decision or anchor-colliding ADD (the caller treats a throw as a reconcile
- * failure for that lesson, like a Zod failure).
+ * `finalC02` arrays (design §3·PIVOT D-P6, amended P2′.6 r3). LENIENT — it never
+ * throws on a malformed partition or an anchor-colliding ADD; it RECOVERS the
+ * model's intent into a clean partition (a KEEP outside the anchor → ADD, a DROP
+ * outside the anchor → ignored, keep/drop overlap → DROP-wins, an omission →
+ * implicit KEEP). The caller's surrounding try/catch is only a defensive guard
+ * against an unexpected runtime error (e.g. a malformed `floor`), not a partition
+ * slip — a decision-shape/enum failure is caught earlier by the decision schema.
  */
 export function reconcileC02Tags(input: C02ReconcileInput): C02ReconcileResult {
   const cooking = reconcileField(
