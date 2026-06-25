@@ -17,7 +17,7 @@
  * through cleaner code (tolerance below); a larger drift FAILS this gate (flag,
  * don't absorb).
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -67,6 +67,16 @@ function metrics(a: Agg): { p: number; r: number; f1: number } {
 }
 
 describe('P2′.8 re-score gate — D-P11 numbers reproduce through materializeC02Ship', () => {
+  // This gate recomputes D-P11's numbers through real code from the STORED r4 run
+  // + the PROD corpus — both gitignored (they carry lesson bodies) and present
+  // only on a local dev checkout. In CI / a fresh clone the artifacts are absent,
+  // so register a single skipped placeholder and bail BEFORE any read (the loads
+  // below run at collection time, so a per-`it` skipIf cannot guard them). The
+  // gate still runs locally as the maintained re-score check.
+  if (!existsSync(RUN) || !existsSync(CORPUS)) {
+    it.skip('requires local-only artifacts (corpus.jsonl + stored r4 run) — skipped in CI', () => {});
+    return;
+  }
   const floorInput = loadC02FloorInput();
   const cookingValues = new Set(loadC02Manifest().cookingSkills);
 
