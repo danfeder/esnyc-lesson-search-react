@@ -37,10 +37,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildC02DecisionSchema, buildC02FinalSchema } from './schema';
-import { loadVocab } from './vocab';
+import { loadVocab, loadC02Manifest } from './vocab';
 import { loadC02FloorInput } from './c02-floor';
-import { loadC02Manifest } from './vocab';
 import { c02ManifestVersion } from './c02-anchor';
+import { assertCorpusHasC02Tags } from './sample-answer-key';
 import {
   buildC02EffectiveInput,
   corpusLineSchema,
@@ -125,6 +125,11 @@ function loadCorpusById(corpusPath: string): Map<string, CorpusRecord> {
       }
       byId.set(record.id, record);
     });
+  // Freshness guard (mirror run-retag.ts `loadCorpus`): fail loudly if the
+  // corpus predates the C02 export. Without it, a stale corpus would silently
+  // anchor rows as untagged → wrong `finalC02` in the `--out` file with no
+  // indication anything was wrong (claude-review PR #543).
+  assertCorpusHasC02Tags([...byId.values()], corpusPath);
   return byId;
 }
 

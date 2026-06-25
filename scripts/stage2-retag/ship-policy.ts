@@ -31,6 +31,7 @@
  * Off-vocab cooking values (against the canonical cooking manifest) are dropped.
  */
 import { applyC02Floor, floorTagValues, type C02FloorInput } from './c02-floor';
+import { C02_KEEP_ONLY_LOCK } from './reconcile';
 
 /**
  * The two-field SHIP output: the canonical APPLY arrays per field. Keyed by the
@@ -68,6 +69,17 @@ function decisionEntryValue(entry: unknown): string | undefined {
  * (the LLM's intended final; DROPs are NOT applied here — floor-retention makes
  * the floor the only authority that can keep a skill, never the LLM's drop).
  * `keep` entries are bare strings; `add` entries are `{value, reason}` objects.
+ *
+ * The keep-only lock (`Tasting` / `Kitchen & food safety`) is filtered from the
+ * reconstructed final — from BOTH `keep` and `add` — MIRRORING the reconcile
+ * path, which demotes a non-anchor KEEP to ADD and then lock-filters the adds
+ * (`reconcile.ts:175`/`:201`/`:204`). A locked catch-all may be KEPT from the
+ * anchor but never reintroduced by the LLM. Without this a fallback record (no
+ * `finalC02`) could ship a locked over-add that the reconciled records suppress
+ * — either ADDed (r4 record `1YOJ…` adds `Tasting`) or mis-bucketed into KEEP
+ * (the GATE-4 hole). An anchored locked value still ships via floor-retention's
+ * floor union, so filtering it from the reconstructed final loses nothing real.
+ *
  * Returns `[]` if the record carries no usable cooking decision.
  */
 export function reconstructCookingFinal(rawInput: unknown): string[] {
@@ -87,7 +99,9 @@ export function reconstructCookingFinal(rawInput: unknown): string[] {
       if (v !== undefined) values.push(v);
     }
   }
-  return values;
+  // keep-only lock over the combined keep ∪ add (closes the mis-bucketed-KEEP
+  // hole GATE 4 flagged); an anchored locked value returns via the floor.
+  return values.filter((v) => !C02_KEEP_ONLY_LOCK.has(v));
 }
 
 /**

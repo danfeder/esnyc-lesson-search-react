@@ -30,7 +30,9 @@ import { type C02Manifest } from './vocab';
 
 const MANIFEST: C02Manifest = {
   provenance: {},
-  cookingSkills: ['Boiling & simmering', 'Roasting', 'Knife skills', 'Measuring'],
+  // 'Tasting' is canonical here SO the off-vocab guard does NOT catch it — that
+  // lets the keep-only-lock tests below exercise the real lock, not off-vocab.
+  cookingSkills: ['Boiling & simmering', 'Roasting', 'Knife skills', 'Measuring', 'Tasting'],
   mainIngredientsGroups: ['Leafy greens', 'Alliums'],
   mainIngredientsSpecifics: [
     { value: 'Kale', parent: 'Leafy greens' },
@@ -183,6 +185,61 @@ describe('materializeC02Ship — finalC02-or-raw read (field isolation)', () => 
       { cooking_skills: ['Roasting'] } // floored → must survive
     );
     expect(out.cooking_skills).toContain('Roasting');
+  });
+
+  it('does NOT ship a keep-only-locked ADD from the raw decision (mirrors the reconcile lock)', () => {
+    // The lock (Tasting / Kitchen & food safety) blocks an ADD on the reconcile
+    // path; the reconstruction fallback must match — r4 record 1YOJ adds Tasting.
+    // Tasting IS canonical, so the off-vocab guard alone would NOT catch it.
+    const out = ship(
+      {
+        rawInput: {
+          cooking_skills: {
+            keep: ['Knife skills'],
+            drop: [],
+            add: [{ value: 'Tasting', reason: 'real-technique-taught' }],
+          },
+        },
+      },
+      { cooking_skills: [] } // Tasting NOT in the floor → must NOT ship
+    );
+    expect(out.cooking_skills).not.toContain('Tasting');
+    expect(out.cooking_skills).toEqual(['Knife skills']);
+  });
+
+  it('does NOT ship a keep-only-locked value MIS-BUCKETED into raw keep (non-anchored)', () => {
+    // GATE-4 hole: the lock must filter keep ∪ add, not just add. A locked value
+    // the LLM put in `keep` (not `add`) that is NOT in the floor must not ship.
+    const out = ship(
+      {
+        rawInput: {
+          cooking_skills: {
+            keep: ['Knife skills', 'Tasting'], // Tasting mis-bucketed into keep
+            drop: [],
+            add: [],
+          },
+        },
+      },
+      { cooking_skills: [] } // Tasting NOT floored → must NOT ship
+    );
+    expect(out.cooking_skills).not.toContain('Tasting');
+    expect(out.cooking_skills).toEqual(['Knife skills']);
+  });
+
+  it('a keep-only-locked value that is FLOORED still ships (floor-retention; the lock only blocks the ADD)', () => {
+    const out = ship(
+      {
+        rawInput: {
+          cooking_skills: {
+            keep: [],
+            drop: [],
+            add: [{ value: 'Tasting', reason: 'x' }],
+          },
+        },
+      },
+      { cooking_skills: ['Tasting'] } // anchored → ships from the floor regardless
+    );
+    expect(out.cooking_skills).toContain('Tasting');
   });
 });
 
