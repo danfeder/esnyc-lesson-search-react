@@ -1,0 +1,233 @@
+[
+  {
+    "id": "1dx3HqZZFfiANs_69qszRwOOVVdKDRTAMW5Zrio88s7o",
+    "title": "Food from the Eastern Hemisphere",
+    "disputed": [
+      {
+        "tag": "Knife skills",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "\"Students will work in groups to prepare sesame cauliflower and fried rice.\" Materials: \"Cutting boards / Knives ... Cauliflower ... Carrots ... Onion ... Broccoli ... Scallions\". Prep: \"Pre-cook rice\" (only the rice is pre-done; vegetables are not pre-cut).",
+        "reason": "Students prepare the dishes; cutting of cauliflower/carrots/onion is entailed and knives are set at student tables; no pre-cut prep step for the veg."
+      },
+      {
+        "tag": "Roasting",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Materials list includes \"Baking sheet / Silpat (or foil) / Oven\" for the sesame cauliflower, but the Agenda only says students \"prepare sesame cauliflower and fried rice\" with no roasting/oven step and no statement of who operates the oven.",
+        "reason": "Oven/baking-sheet are tools on the materials list; no Agenda step shows students roasting, and oven heat-work is typically teacher-operated."
+      }
+    ],
+    "recommended_final": ["Sautéing & stir-frying", "Knife skills"]
+  },
+  {
+    "id": "1qYwSYXu5udiqIjXG6533FCnt0YbhBz3OkHLEbzSu9e4",
+    "title": "Go, Grow, Glow",
+    "disputed": [
+      {
+        "tag": "Knife skills",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Prep work/setup (teacher): \"Pre-cook rice ... Chop onions/Mince garlic for beans\". Engaging activity (students): \"Students will work together to prepare the different components of burrito bowls: Go: Cilantro Lime Rice / Grow: Black beans / Glow: Tomato Corn Salsa\" — no explicit student cutting step.",
+        "reason": "The only explicit chopping (\"Chop onions/Mince garlic\") is teacher prep; tomato-cutting for the salsa is not stated as a student step."
+      },
+      {
+        "tag": "Boiling & simmering",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Prep (teacher): \"Pre-cook rice\". Materials: \"Cook tops / Pans\". Students \"prepare the different components\" but no Agenda step shows students boiling/simmering the beans or rice.",
+        "reason": "Rice is pre-cooked by teacher; no explicit student boiling/simmering step for the beans is shown in the Agenda."
+      }
+    ],
+    "recommended_final": ["Assembling dishes"]
+  },
+  {
+    "id": "1GXPRwyORgQy1Cf6P0kMA0vkaU3Z-T5Klvzi93hZciaQ",
+    "title": "Chickpea Salad",
+    "disputed": [
+      {
+        "tag": "Assembling dishes",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "\"students collect ingredients in a bowl ... Put some dressing in each bowl and have students pass around the table to mix\" / Option 2: \"Combine into one large bowl and mix in chickpeas. Add dressing to taste and mix together.\" The verbatim action is mixing/shaking, not layered assembly.",
+        "reason": "Students mix a salad (verbatim \"mix\"/\"shake\"); this is the mixing skill, not a distinct multi-component dish assembly."
+      },
+      {
+        "tag": "Mixing & stirring",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "\"have students pass around the table to mix\" / \"students get to do the mixing\" / \"Add dressing to taste and mix together\" / dressing: \"students pass around the table and shake to make the dressing.\"",
+        "reason": "Students explicitly do the mixing/shaking of the salad and dressing — Agenda-explicit student action."
+      }
+    ],
+    "recommended_final": ["Knife skills", "Creating sauces & dressings", "Mixing & stirring"]
+  },
+  {
+    "id": "1YW8jh8unSsEpzPqUhpA5JR3L71HOKCPt4plEMzsoWC0",
+    "title": "African American Foodways: Hoppin' John",
+    "disputed": [
+      {
+        "tag": "Boiling & simmering",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "\"Cucumber table: cook the Hoppin' John\" with \"Choose one table leader to assign jobs to the other students.\" Materials: \"Stove / Large pan\". Anticipated problems: \"Be careful to not overcook the rice- it becomes mushy.\" Prep par-cooks peas (\"Pre-soak/par-cook the black eyed peas\") but final cooking is student-done.",
+        "reason": "Students cook the Hoppin' John (rice + black-eyed peas) on the stove in a pan = simmering; the cook step is a student rotation, not teacher-prep."
+      },
+      {
+        "tag": "Baking",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "\"3rd grade: make cornbread batter.\" \"4th grade: ... taste cornbread\" (pre-baked). Materials include \"Oven / Baking pan\" but no Agenda step shows students putting cornbread in the oven or baking it.",
+        "reason": "Students make batter (a mixing step); the actual baking in the oven is not shown as a student action (4th grade tastes pre-made cornbread)."
+      }
+    ],
+    "recommended_final": ["Knife skills", "Mixing & stirring", "Boiling & simmering"]
+  },
+  {
+    "id": "1FUQYevNBKMdDFgZYFGyPDT90O_61dVOf",
+    "title": "Vegetable Ramen",
+    "disputed": [
+      {
+        "tag": "Measuring",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "Engaging activity, Toppings Table(s): \"4. Measure corn\" — listed among the student prep/cook steps (alongside \"Grate carrots\", \"Chop broccoli\", etc.).",
+        "reason": "\"Measure corn\" is a verbatim student step in the Agenda's hands-on cooking block."
+      }
+    ],
+    "recommended_final": ["Boiling & simmering", "Knife skills", "Grating", "Seasoning & spice blending", "Measuring"]
+  },
+  {
+    "id": "1pLaLf59n80wmw7yzcSylQ-DAbd7xBOHDhDWE_iz4Q_0",
+    "title": "Healthy Snacks (Energy Bites, Popcorn, Cracker Stack)",
+    "disputed": [
+      {
+        "tag": "Mixing & stirring",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Energy bites: \"Pre-made mixture of sunbutter, honey, oats, vanilla, cinnamon\" (dough pre-made; students only \"roll into balls\"). Popcorn: \"Add a pinch of seasonings and shake to mix.\" No bowl-stirring student step.",
+        "reason": "The dough is pre-made; the only \"mix\" is shaking popcorn with seasoning, which is better captured by the agreed Seasoning & spice blending."
+      },
+      {
+        "tag": "Tasting",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Closing: \"Vote for favorite snacks\" and reflection \"How would you describe the taste of each of the snacks? What are some of your favorite flavors and textures?\" Opening references a \"tasting word wall.\"",
+        "reason": "A favorite-snack preference vote plus casual \"describe the taste\" reflection — not a structured sensory comparison, rubric, or blind test."
+      },
+      {
+        "tag": "Wrapping & rolling",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "Energy bites: \"Students roll into balls using tablespoon\" and \"Roll balls in coconut flakes.\"",
+        "reason": "Students explicitly roll the energy bites into balls and roll them in coconut — Agenda-explicit student rolling action."
+      }
+    ],
+    "recommended_final": ["Assembling dishes", "Seasoning & spice blending", "Wrapping & rolling"]
+  },
+  {
+    "id": "1eViPJBz9xeqq8o3U3e3MTaccETv6n2C1Q-w6DhG1E-I",
+    "title": "3rd Grade Chinese-Style Dumplings",
+    "disputed": [
+      {
+        "tag": "Steaming",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "\"Teacher collects all dumplings from each table. Place in the dumplings in the pans with a bit of oil ... Steam for 3 minutes with the lid on. Teacher has two pans going.\" (The Culinary-Skills header lists \"steam\" but the Agenda action is teacher-operated.)",
+        "reason": "Steaming is explicitly teacher-operated (\"Teacher collects ... Teacher has two pans going\"); students fill/seal dumplings, not steam them."
+      },
+      {
+        "tag": "Reading & following recipes",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "\"Each table has a set of task cards: Team Captains help distribute the task cards ... Then each student gets a task card and complete their task, putting their ingredients in the bowl.\"",
+        "reason": "Students each follow a task card (structured recipe step) to complete their portion of the dish — Agenda-explicit student step."
+      },
+      {
+        "tag": "Kitchen & food safety",
+        "verdict": "include",
+        "confidence": "low",
+        "evidence": "Opening: \"Review Kitchen Pledge\" (also in Vocabulary and Prep: \"Kitchen pledge\"). Opening rules: \"Be Safe - listen for instructions, use tools safely.\" Plus a dedicated \"Wash Hands (5 minutes)\" segment.",
+        "reason": "The Kitchen Pledge is reviewed/taught in the opening (the standard explicitly allows a taught Kitchen Pledge); low confidence because it is a brief 'review', not a full safety segment. FLAG for adjudicator."
+      }
+    ],
+    "recommended_final": ["Measuring", "Knife skills", "Mashing", "Grating", "Mixing & stirring", "Wrapping & rolling", "Reading & following recipes", "Kitchen & food safety"]
+  },
+  {
+    "id": "0BxEc0RZeYtCiUGNLaHJQSUFoQVE",
+    "title": "September Sixth Grade Summer Plant Hunt",
+    "disputed": [
+      {
+        "tag": "Tasting",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Closing Circle: \"Introduce students to the guidelines for our tasting ... we can use our other senses: smell, touch, and sight ... What do you notice about the taste? Give me a thumbs-up if it's sweet. Give me a thumbs-up if it's sour.\" This is a garden plant-hunt/watering lesson with no cooking block.",
+        "reason": "A single garden-produce tasting with a sweet/sour thumbs-check and senses framing, not a structured sensory comparison/rubric; and there is no hands-on cooking block at all (cooking_skills should be empty). FLAG: borderline on the sensory-vocabulary point."
+      }
+    ],
+    "recommended_final": []
+  },
+  {
+    "id": "11ialYB913qPqDiVMfppjDJt588C49vmQxZjUWRwCTbY",
+    "title": "Food of Peru",
+    "disputed": [
+      {
+        "tag": "Knife skills",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "\"Students will work in groups to prepare chicha morada and arroz chaufa (fried rice) or locro de zapallo y papas.\" Materials: \"Cutting boards / Knives\" (set up at student tables). Task card: \"Arroz Chaufa (no meat plus any available veggies)\". Prep (teacher) pre-cooks rice / parboils potatoes / roasts squash, but veg-cutting for the fried rice is not pre-done.",
+        "reason": "Students prepare arroz chaufa with veggies (entails cutting); knives/cutting boards are set at student tables and the veg is not pre-cut in prep. (Same template as 'Food from the Eastern Hemisphere'.)"
+      }
+    ],
+    "recommended_final": ["Sautéing & stir-frying", "Knife skills"]
+  },
+  {
+    "id": "1m2sMUa9Qjkzqz9dU6CqAkAReX6-92gUC8Va8Zl_EdMw",
+    "title": "Foods From Around the World: China",
+    "disputed": [
+      {
+        "tag": "Mashing",
+        "verdict": "include",
+        "confidence": "low",
+        "evidence": "Materials: \"Plastic bag and rolling pin for smashing cucumbers\". Agenda: \"Model for students how to smash the cucumber. The goal is to release the juices ... You can have students give themselves 10 seconds to smash or sing a song while they smash, then pass to a neighbor.\"",
+        "reason": "Students crush/smash the cucumbers with a rolling pin (a crushing action; nearest skill is Mashing). FLAG: 'smash to release juice' is arguably distinct from true mashing."
+      },
+      {
+        "tag": "Assembling dishes",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Agenda combine step: \"Have students who are making the dressing mix it in a jar or cup, then add it once the cucumber is done draining.\" The dish is cucumber + herbs + dressing.",
+        "reason": "Combining drained cucumber with dressing is a small mix-in step, better captured by Mixing & stirring / Creating sauces & dressings than a distinct dish-assembly skill. FLAG: borderline."
+      },
+      {
+        "tag": "Reading & following recipes",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Each tray includes a \"Recipe copy\"; \"Take-home copies of smashed cucumber salad recipe\". Anticipated problems: \"Assign one student to be the table leader ... and ensure the recipe is followed.\"",
+        "reason": "Students follow a recipe copy at each table; the table leader's role is explicitly to \"ensure the recipe is followed.\""
+      },
+      {
+        "tag": "Mixing & stirring",
+        "verdict": "include",
+        "confidence": "low",
+        "evidence": "Materials: \"Jar or cup for mixing dressing\" and \"Stirring spoon\". Agenda: \"Have students who are making the dressing mix it in a jar or cup.\"",
+        "reason": "Students explicitly mix the dressing and a stirring spoon is provided; low confidence because the mixing mostly overlaps the agreed Creating sauces & dressings. FLAG: overlap."
+      },
+      {
+        "tag": "Tasting",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Closing ritual: \"Finish by tasting what students have made together. Have students share tasting words about the tasting.\"",
+        "reason": "\"Share tasting words\" is a tasting-vocabulary activity (a taught sensory skill), not merely a like/dislike preference vote."
+      },
+      {
+        "tag": "Grating",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "Materials: \"Garlic press or grater\" (a tool option). No Agenda step instructs students to grate; garlic is for the dressing and can be pressed.",
+        "reason": "Grater is a one-of-two tool option on the materials list with no student grating step in the Agenda."
+      }
+    ],
+    "recommended_final": ["Knife skills", "Creating sauces & dressings", "Mashing", "Reading & following recipes", "Mixing & stirring", "Tasting"]
+  }
+]

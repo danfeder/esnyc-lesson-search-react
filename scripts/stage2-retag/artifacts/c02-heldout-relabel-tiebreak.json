@@ -1,0 +1,297 @@
+[
+  {
+    "id": "1dx3HqZZFfiANs_69qszRwOOVVdKDRTAMW5Zrio88s7o",
+    "title": "Food from the Eastern Hemisphere",
+    "disputed": [
+      {
+        "tag": "Assembling dishes",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "Students will work in groups to prepare sesame cauliflower and fried rice.",
+        "reason": "Both dishes are cooked (fried rice / roasted-coated cauliflower), not built/plated/filled component assemblies like the empanada or pesto-on-potato anchors."
+      }
+    ]
+  },
+  {
+    "id": "19CMwluTwweSei-u_gCvoerBrGG839U_Al7a4ORiZKa8",
+    "title": "Fruit Salad Challenge",
+    "disputed": [
+      {
+        "tag": "Creating sauces & dressings",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "Tips and tricks: ... Make a salad dressing: using honey, lemon juice, cinnamon",
+        "reason": "Dressing is only an optional example tip among several ('Use fruit that you like', 'Work together'); a fruit salad does not entail a dressing and none is required."
+      },
+      {
+        "tag": "Assembling dishes",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Each group will have 10-15 minutes to make their fruit salad ... mixing bowls ... various fruits",
+        "reason": "Students cut and combine multiple fruits into a composed salad in mixing bowls — a build-from-components assembly."
+      }
+    ]
+  },
+  {
+    "id": "1qYwSYXu5udiqIjXG6533FCnt0YbhBz3OkHLEbzSu9e4",
+    "title": "Go, Grow, Glow",
+    "disputed": [
+      {
+        "tag": "Creating sauces & dressings",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Glow: Tomato Corn Salsa ... Students will work together to prepare the different components of burrito bowls",
+        "reason": "Students make Tomato Corn Salsa as one component; salsa is treated as a sauce under the standard (cf. Pico de Gallo)."
+      },
+      {
+        "tag": "Sautéing & stir-frying",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Materials: Cook tops, Pans ... Prep ... Chop onions/Mince garlic for beans",
+        "reason": "Black beans component is cooked in pans on cooktops with sautéed onions/garlic in class (rice is pre-cooked, but beans are not pre-made)."
+      }
+    ]
+  },
+  {
+    "id": "1lv-gM8xprEt5t1YVLxvBN8eYI0uabXRN8XETqJVOJZQ",
+    "title": "5th Grade Food Cultures Unit Overview",
+    "disputed": [
+      {
+        "tag": "Assembling dishes",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "Through this series of six lessons ... A certain amount of pre-cooking is required for several of these recipes (with the exception of Pakistani chutney and Mexican bionico which are very quick to make)",
+        "reason": "Special-care unit overview: only bionico (single sub-lesson) is an assembled fresh dish; not reliably student-performed across the unit — conservative exclude."
+      },
+      {
+        "tag": "Baking",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "For Ukrainian vareniki, Chinese dumplings, Uzbek plov, and Caribbean plantain fries you will want to prepare a batch of food in advance",
+        "reason": "Any baking (plantain fries) is among the batch-cooked-in-advance recipes; not a student-performed technique across the unit."
+      },
+      {
+        "tag": "Boiling & simmering",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "For Ukrainian vareniki, Chinese dumplings, Uzbek plov, and Caribbean plantain fries you will want to prepare a batch of food in advance and then stagger all of your tastings",
+        "reason": "Boiling/simmering items (vareniki, dumplings, plov) are explicitly batch-cooked in advance, not student-performed in the overview."
+      },
+      {
+        "tag": "Creating sauces & dressings",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "with the exception of Pakistani chutney and Mexican bionico which are very quick to make",
+        "reason": "Chutney (sauce-like) is fresh-made but is a single sub-lesson technique; special-care rule excludes single-sub-lesson techniques from the overview."
+      },
+      {
+        "tag": "Mixing & stirring",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Pakistani chutney and Mexican bionico which are very quick to make",
+        "reason": "Mixing rests only on the two quick fresh recipes; not in the named-safe generics (Knife skills / Measuring / Reading & following recipes) — conservative exclude for the overview."
+      },
+      {
+        "tag": "Sautéing & stir-frying",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "For Ukrainian vareniki, Chinese dumplings, Uzbek plov, and Caribbean plantain fries you will want to prepare a batch of food in advance",
+        "reason": "Any sautéing (Uzbek plov) is among the batch-cooked-in-advance recipes; not a student-performed unit-wide technique."
+      },
+      {
+        "tag": "Steaming",
+        "verdict": "exclude",
+        "confidence": "high",
+        "evidence": "For Ukrainian vareniki, Chinese dumplings ... prepare a batch of food in advance",
+        "reason": "Dumplings/vareniki (steamed) are explicitly batch-cooked in advance; steaming is a single-sub-lesson, pre-cooked technique — exclude."
+      },
+      {
+        "tag": "Wrapping & rolling",
+        "verdict": "exclude",
+        "confidence": "high",
+        "evidence": "For Ukrainian vareniki, Chinese dumplings ... prepare a batch of food in advance",
+        "reason": "Wrapping/rolling applies only to dumplings/vareniki, which are batch-cooked in advance; single-sub-lesson + pre-made — exclude per special-care rule."
+      }
+    ]
+  },
+  {
+    "id": "1GXPRwyORgQy1Cf6P0kMA0vkaU3Z-T5Klvzi93hZciaQ",
+    "title": "Chickpea Salad",
+    "disputed": [
+      {
+        "tag": "Reading & following recipes",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "remind students of the hummus we made before, and refer back to that recipe ... Students make a version of the chickpea salad that is served in the school cafeteria",
+        "reason": "Hands-on cooking lesson with a recipe; Reading & following recipes is credited on essentially every hands-on cooking lesson."
+      },
+      {
+        "tag": "Assembling dishes",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "students collect ingredients in a bowl ... Combine into one large bowl and mix in chickpeas. Add dressing to taste and mix together",
+        "reason": "Students compose a salad from chopped vegetables + chickpeas + dressing — a multi-component assembly."
+      }
+    ]
+  },
+  {
+    "id": "1LMlCebsrli4L9ed2kEUrFUinjYpNGQ2H0E99jkrRGnw",
+    "title": "Pico de Gallo",
+    "disputed": [
+      {
+        "tag": "Reading & following recipes",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "we are going to practice our knife skills with a recipe that requires detailed cutting: Pico de Gallo ... Pico de gallo take-home recipe",
+        "reason": "Hands-on cooking lesson built around a recipe; Reading & following recipes credited on essentially every hands-on cooking lesson."
+      },
+      {
+        "tag": "Assembling dishes",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "students cut tomatoes, bell peppers, onions, cilantro; then squeeze lime juice and add salt in group mixing bowl",
+        "reason": "Pico de gallo is a single chunky salsa/sauce (already credited under sauces + mixing), not a plated multi-component assembled dish."
+      },
+      {
+        "tag": "Creating sauces & dressings",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "Salsa means sauce in spanish. It is a a mix of foods like tomatoes, onions, and peppers ... cut into tiny pieces (chunky/pico de gallo)",
+        "reason": "The lesson itself frames pico de gallo as a salsa = sauce that students make; canonical sauce/salsa case."
+      }
+    ]
+  },
+  {
+    "id": "1YW8jh8unSsEpzPqUhpA5JR3L71HOKCPt4plEMzsoWC0",
+    "title": "Hoppin' John",
+    "disputed": [
+      {
+        "tag": "Assembling dishes",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "Cucumber table: cook the Hoppin' John ... Choose one table leader to assign jobs",
+        "reason": "Hoppin' John is a one-pot cooked dish (rice + black-eyed peas + sautéed veg); no fill/layer/plate assembly step."
+      }
+    ]
+  },
+  {
+    "id": "1FUQYevNBKMdDFgZYFGyPDT90O_61dVOf",
+    "title": "Vegetable Ramen",
+    "disputed": [
+      {
+        "tag": "Mixing & stirring",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Broth / Noodle Table(s): Boil noodles, Add miso ... Set up \"toppings bar\" - make furikake seasoning",
+        "reason": "Students stir miso into the broth and combine/mix furikake seasoning; mixing & stirring is entailed and student-performed."
+      }
+    ]
+  },
+  {
+    "id": "1pLaLf59n80wmw7yzcSylQ-DAbd7xBOHDhDWE_iz4Q_0",
+    "title": "Healthy Snacks",
+    "disputed": [
+      {
+        "tag": "Knife skills",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Salad knives x8 (if students will be cutting apple slices themselves) ... Prep work and setup: ... Cut apples",
+        "reason": "Energy-bite dough is pre-made and popcorn pre-popped; the only knife use is conditional apple slicing that the prep defaults to pre-cut."
+      },
+      {
+        "tag": "Mixing & stirring",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "Energy bites: Pre-made mixture of sunbutter, honey, oats, vanilla, cinnamon ... 1 bowl with pre-made dough",
+        "reason": "The dough is pre-made; popcorn is shaken (not stirred) and crackers are spread — no student mixing/stirring step."
+      },
+      {
+        "tag": "Wrapping & rolling",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Students roll into balls using tablespoon ... Roll balls in coconut flakes",
+        "reason": "Students roll energy-bite dough into balls and roll them in coconut — a student-performed rolling/shaping action."
+      }
+    ]
+  },
+  {
+    "id": "1eViPJBz9xeqq8o3U3e3MTaccETv6n2C1Q-w6DhG1E-I",
+    "title": "3rd Grade Chinese-Style Dumplings",
+    "disputed": [
+      {
+        "tag": "Seasoning & spice blending",
+        "verdict": "include",
+        "confidence": "high",
+        "evidence": "one measures the soy sauce ... one measures the sesame oil ... one measures the rice vinegar ... one grinds and measures the white pepper ... Everyone takes turns mixing.",
+        "reason": "Students grind white pepper and blend multiple seasonings (soy, sesame oil, vinegar, white pepper) into the dumpling filling."
+      }
+    ]
+  },
+  {
+    "id": "1zrKohaoXxvEe86HLnOvjUED_Am_-ETNw",
+    "title": "A Visit to Mashama Bailey's Restaurant",
+    "disputed": [
+      {
+        "tag": "Seasoning & spice blending",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Divide students into two groups: one small group to add seasoning to the grits ... 1 container of salt, 1 container of sugar, 1 container of red pepper flakes ... Pepper grinder",
+        "reason": "Students season the grits and add salt/sugar/red pepper flakes to the greens — blending multiple seasonings is student-performed."
+      },
+      {
+        "tag": "Grating",
+        "verdict": "exclude",
+        "confidence": "low",
+        "evidence": "Garlic graters ... [grits tray] Cheese ... [greens tray] 1 pre-cut onion",
+        "reason": "Garlic graters are listed but garlic is not in either ingredient tray and no grating step is stated; onion is pre-cut — no entailed/performed grating."
+      },
+      {
+        "tag": "Measuring",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Tablespoons ... Written Task sheets for corn grits and stewed greens ... 1 container of salt, 1 container of sugar",
+        "reason": "Students portion seasonings/grits with tablespoons following task sheets; Measuring is credited on essentially every hands-on cooking lesson."
+      },
+      {
+        "tag": "Sautéing & stir-frying",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "one large group to make the collard greens ... Visual Task Cards for collard greens and grits ... stewed greens",
+        "reason": "Collard greens are stewed/simmered on an induction burner, not sautéed or stir-fried; no stir-fry step."
+      }
+    ]
+  },
+  {
+    "id": "11ialYB913qPqDiVMfppjDJt588C49vmQxZjUWRwCTbY",
+    "title": "Food of Peru",
+    "disputed": [
+      {
+        "tag": "Assembling dishes",
+        "verdict": "exclude",
+        "confidence": "medium",
+        "evidence": "Students will work in groups to prepare chicha morada and arroz chaufa (fried rice) or locro de zapallo y papas.",
+        "reason": "Dishes are a boiled drink (chicha), fried rice, and a stew (locro) — cooked dishes, none a fill/layer/plate component assembly."
+      },
+      {
+        "tag": "Boiling & simmering",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "Students will work in groups to prepare chicha morada and arroz chaufa (fried rice) or locro de zapallo y papas. ... Stovetops, Pans",
+        "reason": "Locro is a simmered squash-potato stew and chicha a boiled drink; per the Green Room anchor, boiling/simmering the dish entails is credited even with some prep pre-cooking, and stovetops are student tools."
+      }
+    ]
+  },
+  {
+    "id": "1m2sMUa9Qjkzqz9dU6CqAkAReX6-92gUC8Va8Zl_EdMw",
+    "title": "Foods From Around the World: China",
+    "disputed": [
+      {
+        "tag": "Assembling dishes",
+        "verdict": "include",
+        "confidence": "medium",
+        "evidence": "smashed cucumber salad recipe ... Have students who are making the dressing mix it in a jar or cup, then add it once the cucumber is done draining.",
+        "reason": "Students compose a smashed-cucumber salad from prepared components (smashed cucumber + cut herbs + jar dressing) — a multi-component assembly."
+      }
+    ]
+  }
+]
