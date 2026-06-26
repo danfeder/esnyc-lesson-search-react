@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import {
   lessonMetadataSchema as srcLessonSchema,
@@ -158,5 +160,44 @@ describe('C02 vocab manifest integrity (src exports)', () => {
     for (const parent of Object.values(INGREDIENT_PARENT_MAP)) {
       if (parent !== null) expect(MAIN_INGREDIENTS_VALUES).toContain(parent);
     }
+  });
+});
+
+/**
+ * Drift-lock (GATE-3 LOW-1): the TS enum constants are hand-materialized from the
+ * frozen manifest `scripts/stage2-retag/data/c02-vocab.json`, which is the declared
+ * single source of truth (and the byte-source for the P4b DB CHECK). Assert the TS
+ * copies stay byte-identical to it, so a future freeze-reopen that edits the manifest
+ * can never silently diverge from the enums (which would make Zod and the DB CHECK
+ * disagree → reviewer save failures). The harness side (manifest↔harness) is locked
+ * by scripts/stage2-retag/c02-harness-fields.test.ts; the edge mirror is locked to
+ * src by edgeSharedSchemas.equivalence.test.ts — so src↔manifest closes the chain.
+ */
+describe('C02 manifest drift-lock (TS consts === frozen c02-vocab.json)', () => {
+  const manifest = JSON.parse(
+    readFileSync(path.resolve(process.cwd(), 'scripts/stage2-retag/data/c02-vocab.json'), 'utf8')
+  ) as {
+    cookingSkills: string[];
+    mainIngredientsGroups: string[];
+    mainIngredientsSpecifics: { value: string; parent: string | null }[];
+  };
+
+  it('COOKING_SKILLS_VALUES === manifest.cookingSkills (order-identical)', () => {
+    expect([...COOKING_SKILLS_VALUES]).toEqual(manifest.cookingSkills);
+  });
+
+  it('MAIN_INGREDIENTS_VALUES === manifest groups-then-specifics (order-identical)', () => {
+    const expected = [
+      ...manifest.mainIngredientsGroups,
+      ...manifest.mainIngredientsSpecifics.map((s) => s.value),
+    ];
+    expect([...MAIN_INGREDIENTS_VALUES]).toEqual(expected);
+  });
+
+  it('INGREDIENT_PARENT_MAP === manifest specific→parent map', () => {
+    const expected: Record<string, string | null> = Object.fromEntries(
+      manifest.mainIngredientsSpecifics.map((s) => [s.value, s.parent])
+    );
+    expect(INGREDIENT_PARENT_MAP).toEqual(expected);
   });
 });
