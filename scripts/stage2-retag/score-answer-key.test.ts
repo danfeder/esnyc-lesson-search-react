@@ -604,8 +604,8 @@ describe('C02 gate path scores from finalC02, not rawInput (P2′.4)', () => {
 
 // ---------------------------------------------------------------------------
 // Corpus↔run freshness guard (Task 4c): the --corpus must match the --run
-// snapshot, proved by a deterministic bodyHash spot-check. Reuses the EXACT
-// run-retag pipeline (appendDocSurfaces → buildC02EffectiveInput →
+// snapshot, proved by a FULL bodyHash scan over every run record. Reuses the
+// EXACT run-retag pipeline (appendDocSurfaces → buildC02EffectiveInput →
 // computeBodyHash) so a faithfully-matching pair never false-positives.
 // ---------------------------------------------------------------------------
 
@@ -722,5 +722,30 @@ describe('assertCorpusMatchesRun — corpus↔run freshness guard (Task 4c)', ()
         corpusPath: '/c/corpus.jsonl',
       })
     ).not.toThrow();
+  });
+
+  it('THROWS when a stale row sorts BEYOND the first 10 ids (FULL scan, not a 10-id sample)', () => {
+    // 12 rows: the first 11 (sorted) faithfully match the run; only L12 — which
+    // sorts at position 12, OUTSIDE any first-10 sample — is stale. A sample of
+    // the first 10 sorted ids would MISS it; the guard must full-scan every run
+    // record carrying a bodyHash and catch it (Codex Task-4c finding).
+    const wideCorpus: CorpusCurrentTags[] = Array.from({ length: 12 }, (_, i) => ({
+      id: `L${String(i + 1).padStart(2, '0')}`,
+      title: `L${i + 1}`,
+      content_text: `Lesson ${i + 1} body about cooking.`,
+      cooking_skills: ['Baking'],
+      main_ingredients: ['Flour'],
+    }));
+    const runRecords = wideCorpus.map(runRecordForCorpusRow);
+    // Mutate ONLY the last (12th sorted) row's body → its recomputed hash drifts.
+    const staleWide = wideCorpus.map((row) =>
+      row.id === 'L12' ? { ...row, content_text: 'STALE body for L12 only.' } : row
+    );
+    expect(() =>
+      assertCorpusMatchesRun(runRecords, staleWide, {
+        runPath: '/runs/r.jsonl',
+        corpusPath: '/c/stale-wide.jsonl',
+      })
+    ).toThrow(/L12/);
   });
 });

@@ -653,11 +653,6 @@ export function jsonSidecarPath(markdownPath: string): string {
   return markdownPath.replace(/\.md$/i, '') + '.json';
 }
 
-/** How many ids (deterministically chosen: sorted, first N) the freshness guard
- *  spot-checks. A spot-check, not a full scan — it only needs to PROVE the
- *  corpus is the run's snapshot, not re-hash all ~700 rows. */
-export const C02_FRESHNESS_SAMPLE_SIZE = 10;
-
 /**
  * Corpus↔run freshness guard (Task 4c). Proves the `--corpus` matches the
  * `--run` snapshot before the rules baseline / gates are computed against them
@@ -665,23 +660,26 @@ export const C02_FRESHNESS_SAMPLE_SIZE = 10;
  * supplies the rules baseline + clean-core/judgment labels; the run supplies the
  * model tags), yielding a silently misleading scorecard.
  *
- * **Faithful bodyHash spot-check.** For a deterministic SAMPLE of run ids
- * present in the corpus (sorted, first {@link C02_FRESHNESS_SAMPLE_SIZE}), the
- * effective-input `bodyHash` is RECOMPUTED from the corpus row using the EXACT
- * pipeline `runMainPass` stamps each record with — append doc surfaces →
- * `buildC02EffectiveInput(row, floorInput, manifestVer)` → `computeBodyHash(...)`
- * (the same exported helpers; no logic is re-implemented here, so a legitimately
- * matching corpus/run pair can never false-positive). If ANY sampled id's
- * recomputed hash differs from the run record's stored `bodyHash`, the corpus is
- * NOT the run's snapshot → throw, naming both paths.
+ * **Faithful bodyHash FULL scan.** For EVERY latest run record (sorted by id for
+ * deterministic error reporting), the effective-input `bodyHash` is RECOMPUTED
+ * from the corpus row using the EXACT pipeline `runMainPass` stamps each record
+ * with — append doc surfaces → `buildC02EffectiveInput(row, floorInput,
+ * manifestVer)` → `computeBodyHash(...)` (the same exported helpers; no logic is
+ * re-implemented here, so a legitimately matching corpus/run pair can never
+ * false-positive). If ANY id's recomputed hash differs from the run record's
+ * stored `bodyHash`, the corpus is NOT the run's snapshot → throw, naming both
+ * paths. A full scan (not a sample) is used deliberately: the rules baseline +
+ * labels read ALL corpus rows, so a stale row anywhere — not just in a first-N
+ * sample — would skew the scorecard, and re-hashing ~700 rows is milliseconds
+ * (a string hash; the floor/manifest/doc-surfaces load once).
  *
  * **Lighter fallback (never-false-positive).** A run record's `bodyHash` is
- * `.optional()` in the schema; a sampled id lacking one is skipped. If NONE of
- * the sample carries a `bodyHash` (e.g. a legacy/hashless run), the spot-check
- * cannot run, so the guard DOWNGRADES to an id-coverage assertion (every run id
- * is present in the corpus) and notes the downgrade. Id-coverage is also checked
- * eagerly: a sampled id absent from the corpus throws regardless of hashes (it
- * is a real corpus↔run gap and cannot be hash-verified anyway).
+ * `.optional()` in the schema; an id lacking one is skipped. If NONE of the run
+ * records carries a `bodyHash` (e.g. a legacy/hashless run), the hash scan cannot
+ * run, so the guard DOWNGRADES to an id-coverage assertion (every run id is
+ * present in the corpus) and notes the downgrade. Id-coverage is also checked
+ * eagerly: any run id absent from the corpus throws regardless of hashes (it is a
+ * real corpus↔run gap and cannot be hash-verified anyway).
  */
 export function assertCorpusMatchesRun(
   runRecords: RunRecord[],
@@ -697,10 +695,10 @@ export function assertCorpusMatchesRun(
   // The run records carry the bodyHash (loadRunContestant strips it). Latest
   // record per id wins, mirroring the scorer's contestant view.
   const latestRun = latestRecordById(runRecords);
-  // Deterministic sample: sorted run ids, first N. (Sort ALL run ids first so
-  // the sample is stable regardless of corpus coverage; coverage is asserted
-  // per sampled id below.)
-  const sampledIds = [...latestRun.keys()].sort().slice(0, C02_FRESHNESS_SAMPLE_SIZE);
+  // FULL scan: every latest run id, sorted only for deterministic error
+  // reporting (the first mismatch reported is stable). Not a sample — a stale
+  // row anywhere skews the all-rows rules baseline + labels.
+  const checkedIds = [...latestRun.keys()].sort();
 
   const failHeader =
     `C02 freshness guard: the --corpus does not match the --run snapshot.\n` +
@@ -709,16 +707,16 @@ export function assertCorpusMatchesRun(
     `Regenerate the corpus from the SAME export the run was produced against, or ` +
     `pass the matching --corpus / --v3-from-corpus.`;
 
-  // Load the floor + manifest ONCE (reused across the sample; offline, no DB).
+  // Load the floor + manifest ONCE (reused across the scan; offline, no DB).
   const floorInput = loadC02FloorInput();
   const manifestVer = c02ManifestVersion(loadC02Manifest());
   const docSurfaces = loadDocSurfaces();
 
   let hashChecked = 0;
-  for (const id of sampledIds) {
+  for (const id of checkedIds) {
     const corpusRow = corpusById.get(id);
-    // Id-coverage: a sampled run id with no corpus row is a real gap (it also
-    // can't be hash-verified). Throw regardless of the hash path.
+    // Id-coverage: a run id with no corpus row is a real gap (it also can't be
+    // hash-verified). Throw regardless of the hash path.
     if (corpusRow === undefined || corpusRow.content_text === undefined) {
       throw new Error(
         `${failHeader}\n` +
@@ -728,7 +726,7 @@ export function assertCorpusMatchesRun(
     }
     const record = latestRun.get(id);
     const storedHash = record?.bodyHash;
-    if (!storedHash) continue; // hashless record: skip the spot-check for this id.
+    if (!storedHash) continue; // hashless record: skip the hash check for this id.
     const surfacedBody = appendDocSurfaces(corpusRow.content_text, docSurfaces.get(id));
     const { effectiveInput } = buildC02EffectiveInput(
       {
@@ -751,14 +749,14 @@ export function assertCorpusMatchesRun(
     hashChecked++;
   }
 
-  if (sampledIds.length > 0 && hashChecked === 0) {
-    // Downgraded to id-coverage (no sampled record carried a bodyHash). Coverage
-    // was already asserted per sampled id above (any gap threw), so reaching here
-    // means the corpus covers the sampled run ids — pass with a note.
+  if (checkedIds.length > 0 && hashChecked === 0) {
+    // Downgraded to id-coverage (no record carried a bodyHash). Coverage was
+    // already asserted per id above (any gap threw), so reaching here means the
+    // corpus covers every run id — pass with a note.
     console.warn(
-      `note: C02 freshness guard downgraded from the bodyHash spot-check to id-coverage — ` +
-        `none of the ${sampledIds.length} sampled run record(s) carry a bodyHash (legacy/hashless run). ` +
-        `Verified every sampled run id is present in the corpus instead.`
+      `note: C02 freshness guard downgraded from the bodyHash scan to id-coverage — ` +
+        `none of the ${checkedIds.length} run record(s) carry a bodyHash (legacy/hashless run). ` +
+        `Verified every run id is present in the corpus instead.`
     );
   }
 }
