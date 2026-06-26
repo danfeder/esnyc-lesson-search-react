@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { canonicalizeReviewMetadata } from './canonicalizeReviewMetadata';
+import {
+  canonicalizeReviewMetadata,
+  COOKING_SKILLS_MAP,
+  MAIN_INGREDIENTS_MAP,
+} from './canonicalizeReviewMetadata';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
+import {
+  COOKING_SKILLS_VALUES,
+  MAIN_INGREDIENTS_VALUES,
+  INGREDIENT_PARENT_MAP,
+} from '@/types/lessonMetadata.zod';
 import smallerFieldsVocab from '../../scripts/stage2-retag/data/smaller-fields.vocab.json';
 import type { ReviewMetadata } from '@/types';
 
@@ -283,6 +292,113 @@ describe('canonicalizeReviewMetadata', () => {
         }
       });
     }
+  });
+
+  describe('C02 cooking_skills + main_ingredients canonicalization (P4a save-blocker)', () => {
+    // Every value that is a specific with a non-null parent must have that
+    // parent present in the same array (the closed schema's superRefine).
+    const hasNoOrphanSpecific = (arr: readonly string[]) =>
+      arr.every((v) => {
+        const parent = INGREDIENT_PARENT_MAP[v];
+        return !parent || arr.includes(parent);
+      });
+    const hasNoDuplicates = (arr: readonly string[]) => new Set(arr).size === arr.length;
+
+    it('maps legacy slugs, dedupes cookingSkills, and parent-completes mainIngredients (headline census row)', () => {
+      const result = canonicalizeReviewMetadata({
+        cookingSkills: ['chopping', 'dicing', 'slicing', 'boiling'],
+        mainIngredients: ['alliums', 'carrots', 'pasta', 'ginger'],
+      });
+      // 5 cutting slugs all collapse to one 'Knife skills' → dedupe (first-seen order).
+      expect(result.cookingSkills).toEqual(['Knife skills', 'Boiling & simmering']);
+      // map → parent-complete → dedupe, deterministic order: mapped first, parents appended.
+      expect(result.mainIngredients).toEqual([
+        'Alliums',
+        'Carrots',
+        'Grains & starches',
+        'Ginger',
+        'Root vegetables',
+        'Spices',
+      ]);
+      expect(result.mainIngredients).toEqual(
+        expect.arrayContaining([
+          'Carrots',
+          'Root vegetables',
+          'Alliums',
+          'Grains & starches',
+          'Ginger',
+          'Spices',
+        ])
+      );
+      expect(hasNoOrphanSpecific(result.mainIngredients!)).toBe(true);
+      expect(hasNoDuplicates(result.mainIngredients!)).toBe(true);
+      // The whole canonicalized payload must satisfy the now-closed review schema.
+      expect(reviewFormPayloadSchema.safeParse(result).success).toBe(true);
+    });
+
+    it('parent-completes a lone specific (carrots → Carrots + Root vegetables)', () => {
+      const result = canonicalizeReviewMetadata({ mainIngredients: ['carrots'] });
+      expect(result.mainIngredients).toEqual(['Carrots', 'Root vegetables']);
+    });
+
+    it('maps herbs-aromatics → Fresh herbs (a group — no parent added)', () => {
+      const result = canonicalizeReviewMetadata({ mainIngredients: ['herbs-aromatics'] });
+      expect(result.mainIngredients).toEqual(['Fresh herbs']);
+    });
+
+    it('leaves a null-parent specific alone (celery → Celery, no parent added)', () => {
+      const result = canonicalizeReviewMetadata({ mainIngredients: ['celery'] });
+      expect(result.mainIngredients).toEqual(['Celery']);
+    });
+
+    it('round-trips already-canonical mainIngredients and still enforces parent-completion', () => {
+      expect(
+        canonicalizeReviewMetadata({ mainIngredients: ['Tomatoes', 'Nightshades'] }).mainIngredients
+      ).toEqual(['Tomatoes', 'Nightshades']);
+      // A canonical orphan specific gets its group appended.
+      expect(canonicalizeReviewMetadata({ mainIngredients: ['Tomatoes'] }).mainIngredients).toEqual(
+        ['Tomatoes', 'Nightshades']
+      );
+    });
+
+    it('dedupes cookingSkills when several cutting slugs collapse to Knife skills', () => {
+      const result = canonicalizeReviewMetadata({
+        cookingSkills: ['chopping', 'dicing', 'slicing', 'julienning', 'mincing'],
+      });
+      expect(result.cookingSkills).toEqual(['Knife skills']);
+    });
+
+    it('passes an unmapped cooking/ingredient value through unchanged (defensive contract)', () => {
+      const result = canonicalizeReviewMetadata({
+        cookingSkills: ['boiling', 'some-future-skill'],
+        mainIngredients: ['carrots', 'some-future-ingredient'],
+      });
+      expect(result.cookingSkills).toEqual(['Boiling & simmering', 'some-future-skill']);
+      expect(result.mainIngredients).toEqual([
+        'Carrots',
+        'some-future-ingredient',
+        'Root vegetables',
+      ]);
+    });
+
+    it('leaves undefined cookingSkills / mainIngredients absent (no array materialized)', () => {
+      const result = canonicalizeReviewMetadata({ gradeLevels: ['3'] });
+      expect(result.cookingSkills).toBeUndefined();
+      expect(result.mainIngredients).toBeUndefined();
+    });
+
+    describe('drift-lock: every map VALUE is a frozen-vocab member', () => {
+      it('every COOKING_SKILLS_MAP value ∈ COOKING_SKILLS_VALUES', () => {
+        for (const v of Object.values(COOKING_SKILLS_MAP)) {
+          expect(COOKING_SKILLS_VALUES as readonly string[]).toContain(v);
+        }
+      });
+      it('every MAIN_INGREDIENTS_MAP value ∈ MAIN_INGREDIENTS_VALUES', () => {
+        for (const v of Object.values(MAIN_INGREDIENTS_MAP)) {
+          expect(MAIN_INGREDIENTS_VALUES as readonly string[]).toContain(v);
+        }
+      });
+    });
   });
 
   describe('integration: a canonicalized legacy payload passes the closed reviewFormPayloadSchema', () => {

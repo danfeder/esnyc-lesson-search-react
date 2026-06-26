@@ -115,6 +115,163 @@ export const GARDEN_SKILLS_VALUES = [
   'Sensory exploration',
 ] as const;
 
+// C02 closed vocabularies (locked P4a) — MUST match src/types/lessonMetadata.zod.ts
+// (byte-identical to the frozen manifest scripts/stage2-retag/data/c02-vocab.json).
+// value===label Title-Case canonical. main_ingredients is a two-level taxonomy
+// (24 groups + 46 specifics); INGREDIENT_PARENT_MAP maps each specific to its
+// parent group (or null for the four group-less specifics).
+
+export const COOKING_SKILLS_VALUES = [
+  'Measuring',
+  'Mixing & stirring',
+  'Reading & following recipes',
+  'Kitchen & food safety',
+  'Tasting',
+  'Grating',
+  'Mashing',
+  'Blending & juicing',
+  'Seasoning & spice blending',
+  'Knife skills',
+  'Boiling & simmering',
+  'Sautéing & stir-frying',
+  'Steaming',
+  'Roasting',
+  'Baking',
+  'Grilling',
+  'Dough making',
+  'Creating sauces & dressings',
+  'Pickling & preserving',
+  'Fermenting',
+  'Assembling dishes',
+  'Wrapping & rolling',
+  'Plating & garnishing',
+] as const;
+
+export const MAIN_INGREDIENTS_VALUES = [
+  // Groups (24)
+  'Alliums',
+  'Leafy greens',
+  'Root vegetables',
+  'Nightshades',
+  'Peppers',
+  'Cruciferous',
+  'Squash, cucumbers & melons',
+  'Mushrooms',
+  'Berries',
+  'Citrus fruits',
+  'Tropical fruits',
+  'Apples & pears',
+  'Stone fruits',
+  'Dried fruits',
+  'Grains & starches',
+  'Beans & legumes',
+  'Nuts & seeds',
+  'Eggs',
+  'Tofu & plant proteins',
+  'Dairy',
+  'Dairy alternatives',
+  'Fresh herbs',
+  'Spices',
+  'Sweeteners',
+  // Specifics (46)
+  'Garlic',
+  'Carrots',
+  'Sweet potatoes',
+  'Potatoes',
+  'Beets',
+  'Tomatoes',
+  'Bell peppers',
+  'Cabbage',
+  'Winter squash',
+  'Cucumbers',
+  'Melons',
+  'Bananas',
+  'Avocado',
+  'Coconut',
+  'Lemon',
+  'Oranges',
+  'Lime',
+  'Apples',
+  'Wheat/flour',
+  'Corn/masa',
+  'Rice',
+  'Oats',
+  'Black beans',
+  'Black-eyed peas',
+  'Chickpeas',
+  'Pinto beans',
+  'Pumpkin seeds',
+  'Sunflower seeds',
+  'Sunflower butter',
+  'Tahini',
+  'Peanut butter',
+  'Yogurt',
+  'Cheese',
+  'Butter',
+  'Milk',
+  'Coconut milk',
+  'Cilantro',
+  'Parsley',
+  'Mint',
+  'Ginger',
+  'Cinnamon',
+  'Honey',
+  'Celery',
+  'Fennel',
+  'Seaweed (nori)',
+  'Cocoa & chocolate',
+] as const;
+
+// Specific → parent group (null = group-less specific, never requires a parent).
+export const INGREDIENT_PARENT_MAP: Record<string, string | null> = {
+  Garlic: 'Alliums',
+  Carrots: 'Root vegetables',
+  'Sweet potatoes': 'Root vegetables',
+  Potatoes: 'Root vegetables',
+  Beets: 'Root vegetables',
+  Tomatoes: 'Nightshades',
+  'Bell peppers': 'Peppers',
+  Cabbage: 'Cruciferous',
+  'Winter squash': 'Squash, cucumbers & melons',
+  Cucumbers: 'Squash, cucumbers & melons',
+  Melons: 'Squash, cucumbers & melons',
+  Bananas: 'Tropical fruits',
+  Avocado: 'Tropical fruits',
+  Coconut: 'Tropical fruits',
+  Lemon: 'Citrus fruits',
+  Oranges: 'Citrus fruits',
+  Lime: 'Citrus fruits',
+  Apples: 'Apples & pears',
+  'Wheat/flour': 'Grains & starches',
+  'Corn/masa': 'Grains & starches',
+  Rice: 'Grains & starches',
+  Oats: 'Grains & starches',
+  'Black beans': 'Beans & legumes',
+  'Black-eyed peas': 'Beans & legumes',
+  Chickpeas: 'Beans & legumes',
+  'Pinto beans': 'Beans & legumes',
+  'Pumpkin seeds': 'Nuts & seeds',
+  'Sunflower seeds': 'Nuts & seeds',
+  'Sunflower butter': 'Nuts & seeds',
+  Tahini: 'Nuts & seeds',
+  'Peanut butter': 'Nuts & seeds',
+  Yogurt: 'Dairy',
+  Cheese: 'Dairy',
+  Butter: 'Dairy',
+  Milk: 'Dairy',
+  'Coconut milk': 'Dairy alternatives',
+  Cilantro: 'Fresh herbs',
+  Parsley: 'Fresh herbs',
+  Mint: 'Fresh herbs',
+  Ginger: 'Spices',
+  Cinnamon: 'Spices',
+  Honey: 'Sweeteners',
+  Celery: null,
+  Fennel: null,
+  'Seaweed (nori)': null,
+  'Cocoa & chocolate': null,
+};
+
 // =============================================================================
 // Closed-enum Zod types
 // =============================================================================
@@ -129,6 +286,31 @@ export const CoreCompetenciesEnum = z.enum(CORE_COMPETENCIES_VALUES);
 export const CookingMethodsEnum = z.enum(COOKING_METHODS_VALUES);
 export const ObservancesHolidaysEnum = z.enum(OBSERVANCES_HOLIDAYS_VALUES);
 export const GardenSkillsEnum = z.enum(GARDEN_SKILLS_VALUES);
+export const CookingSkillsEnum = z.enum(COOKING_SKILLS_VALUES);
+export const MainIngredientsEnum = z.enum(MAIN_INGREDIENTS_VALUES);
+
+// =============================================================================
+// main_ingredients specific→group invariant (C02 §4 Q7) — mirror of the
+// src/types refinement. A specific value with a NON-null parent group requires
+// that group to also be present; groups and null-parent specifics never trigger;
+// an empty array passes.
+// =============================================================================
+
+const refineMainIngredientParents = (values: readonly string[], ctx: z.RefinementCtx): void => {
+  for (const value of values) {
+    const parent = INGREDIENT_PARENT_MAP[value];
+    if (parent && !values.includes(parent)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `main_ingredient "${value}" requires its parent group "${parent}" to also be selected`,
+      });
+    }
+  }
+};
+
+const mainIngredientsArraySchema = z
+  .array(MainIngredientsEnum)
+  .superRefine(refineMainIngredientParents);
 
 // =============================================================================
 // AcademicIntegration sub-shape (canonical-keys path).
@@ -163,13 +345,16 @@ export const lessonMetadataSchema = z.object({
   socialEmotionalLearning: z.array(SocialEmotionalLearningEnum).optional(),
   academicIntegration: academicIntegrationCanonicalSchema.optional(),
 
+  // Closed C02 vocabularies (locked P4a — mirror src/types). mainIngredients
+  // carries the specific→group invariant.
+  mainIngredients: mainIngredientsArraySchema.optional(),
+  cookingSkills: z.array(CookingSkillsEnum).optional(),
+
   // Still-open string arrays.
   thematicCategories: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
   locationRequirements: z.array(z.string()).optional(),
-  mainIngredients: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  cookingSkills: z.array(z.string()).optional(),
   academicConcepts: z.record(z.string(), z.array(z.string())).optional(),
 
   duration: z.string().optional(),
@@ -204,10 +389,12 @@ export const reviewFormPayloadSchema = z.object({
   academicIntegration: z.array(AcademicIntegrationEnum).optional(),
   observancesHolidays: z.array(ObservancesHolidaysEnum).optional(),
 
+  // Closed C02 vocabularies (locked P4a — mirror src/types).
+  mainIngredients: mainIngredientsArraySchema.optional(),
+  cookingSkills: z.array(CookingSkillsEnum).optional(),
+
   themes: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  mainIngredients: z.array(z.string()).optional(),
-  cookingSkills: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
 
   processingNotes: z.string().optional(),

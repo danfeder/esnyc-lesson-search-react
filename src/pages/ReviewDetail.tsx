@@ -997,7 +997,11 @@ export function ReviewDetail() {
                     <label className="adm-label adm-label-req" htmlFor={inputIds.mainIngredients}>
                       Main ingredients
                     </label>
-                    <CreatableSelect
+                    {/* Non-creatable Select: mainIngredients is a closed C02 */}
+                    {/* canonical enum enforced by Zod + DB CHECK in C02. */}
+                    {/* CreatableSelect would invite reviewer-typed values */}
+                    {/* that the save path rejects. */}
+                    <Select
                       inputId={inputIds.mainIngredients}
                       classNamePrefix="adm-rs"
                       isMulti
@@ -1024,7 +1028,11 @@ export function ReviewDetail() {
                     <label className="adm-label adm-label-req" htmlFor={inputIds.cookingSkills}>
                       Cooking skills
                     </label>
-                    <CreatableSelect
+                    {/* Non-creatable Select: cookingSkills is a closed C02 */}
+                    {/* canonical enum enforced by Zod + DB CHECK in C02. */}
+                    {/* CreatableSelect would invite reviewer-typed values */}
+                    {/* that the save path rejects. */}
+                    <Select
                       inputId={inputIds.cookingSkills}
                       classNamePrefix="adm-rs"
                       isMulti

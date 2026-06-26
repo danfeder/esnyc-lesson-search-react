@@ -3,7 +3,8 @@
     "source": "docs/plans/c02-session1-discovery/q1-vocab-census.md §2 (reconciled 2026-06-23 to design §4 Q1) + docs/plans/2026-06-12-metadata-rebuild-stage1-cooking-skills-ingredients-worksheet-decided.md",
     "design": "docs/plans/2026-06-22-c02-cooking-ingredients-retag-design.md §4 Q1/§5",
     "emitted": "2026-06-23",
-    "task": "C02 P1.1 — provisional canonical vocab manifest + parent map",
+    "frozen": "2026-06-26",
+    "task": "C02 P1.1 — canonical vocab manifest + parent map (FROZEN 2026-06-26, P3→P4 boundary)",
     "casing": "Title-Case value===label (mirrors shipped garden_skills); the stored value IS the exact worksheet label string incl. diacritics/parens/ampersands.",
     "counts": {
       "cookingSkills": 23,
@@ -13,7 +14,7 @@
       "nullParentSpecifics": 4
     },
     "notes": [
-      "PROVISIONAL closed set (design §4 Q1): frozen at the end of P3, before P4 enforcement; any genuinely-missing high-frequency food surfaced during the run is added before the freeze.",
+      "FROZEN 2026-06-26 (design §4 Q1, P3→P4 boundary — post-apply, pre-enforcement). The P3 full LLM run + apply surfaced no genuinely-missing high-frequency food, so the provisional set ships unchanged as the closed set. PROD freeze census (read-only, mcp__supabase-remote): 752 live non-excluded rows / 0 distinct off-vocab values / 0 off-vocab lessons against this exact 23+70 set (the 12 corpus-exclusion ids are intentionally out of scope, slated for deletion). P4a Zod enums + P4b DB CHECK derive byte-identically from this frozen set — do NOT add/remove/rename a value without re-opening the freeze.",
       "Pantry = B-lite: Sugar maps to the existing 'Sweeteners' group via c02-alias-map.json (NOT a literal here); Salt / Oil / Soy sauce are dropped (never-stored) — no literals anywhere.",
       "4 null-parent (group-less) specifics: Celery, Fennel (worksheet) + Seaweed (nori), Cocoa & chocolate (§5 C02 additions). Melons is parented under 'Squash, cucumbers & melons' per the worksheet (corrected Session 2).",
       "4 user-pre-added high-count specifics (design §4 Q1): Apples→Apples & pears, Coconut→Tropical fruits, Oranges→Citrus fruits, Lime→Citrus fruits.",
