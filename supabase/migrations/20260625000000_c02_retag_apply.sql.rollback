@@ -24,11 +24,21 @@
 UPDATE public.lessons l SET
   cooking_skills = r.cooking_skills,
   main_ingredients = r.main_ingredients,
-  metadata = jsonb_set(
-    jsonb_set(
-      COALESCE(l.metadata, '{}'::jsonb),
-      '{cookingSkills}', to_jsonb(COALESCE(r.cooking_skills, ARRAY[]::text[])), true),
-    '{mainIngredients}', to_jsonb(COALESCE(r.main_ingredients, ARRAY[]::text[])), true)
+  -- Restore the two C02 metadata keys EXACTLY as captured in the full-row snapshot
+  -- (r.metadata) rather than re-deriving them from the columns. This faithfully
+  -- reverts the ~16 rows whose pre-apply state was a key ABSENT (stays absent) or a
+  -- column/metadata DIVERGENCE (original metadata value restored), instead of
+  -- canonicalizing them to match the column. Mechanism: strip both C02 keys from the
+  -- current metadata, then re-add only the ones the snapshot actually had (with their
+  -- exact snapshot values). All other (non-C02) current metadata keys are preserved,
+  -- so a restore never clobbers unrelated post-apply edits. NULL/absent snapshot
+  -- metadata → both keys stay stripped. Idempotent (absolute reconstruction).
+  metadata = (COALESCE(l.metadata, '{}'::jsonb) - 'cookingSkills' - 'mainIngredients')
+    || COALESCE(
+         (SELECT jsonb_object_agg(e.k, e.v)
+            FROM jsonb_each(r.metadata) AS e(k, v)
+            WHERE e.k IN ('cookingSkills', 'mainIngredients')),
+         '{}'::jsonb)
 FROM public.c02_retag_rollback r
 WHERE l.lesson_id = r.lesson_id
   AND NOT EXISTS (
