@@ -31,6 +31,8 @@ import {
   COOKING_METHODS_VALUES,
   OBSERVANCES_HOLIDAYS_VALUES,
   GARDEN_SKILLS_VALUES,
+  COOKING_SKILLS_VALUES,
+  MAIN_INGREDIENTS_VALUES,
 } from '../src/types/lessonMetadata.zod.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +49,8 @@ const enums = {
   cooking_methods: [...COOKING_METHODS_VALUES],
   observances_holidays: [...OBSERVANCES_HOLIDAYS_VALUES],
   garden_skills: [...GARDEN_SKILLS_VALUES],
+  cooking_skills: [...COOKING_SKILLS_VALUES],
+  main_ingredients: [...MAIN_INGREDIENTS_VALUES],
 };
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });

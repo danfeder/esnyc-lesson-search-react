@@ -11,6 +11,8 @@ import {
   COOKING_METHODS_VALUES,
   OBSERVANCES_HOLIDAYS_VALUES,
   GARDEN_SKILLS_VALUES,
+  COOKING_SKILLS_VALUES,
+  MAIN_INGREDIENTS_VALUES,
 } from '../lessonMetadata.zod';
 
 /**
@@ -63,7 +65,15 @@ describe('enums.json freshness', () => {
     expect(enumsJson.garden_skills).toEqual([...GARDEN_SKILLS_VALUES]);
   });
 
-  it('exposes exactly the ten closed-enum keys (4 foundation + 6 small fields closed PR 6e)', () => {
+  it('cooking_skills values match the canonical Zod source', () => {
+    expect(enumsJson.cooking_skills).toEqual([...COOKING_SKILLS_VALUES]);
+  });
+
+  it('main_ingredients values match the canonical Zod source', () => {
+    expect(enumsJson.main_ingredients).toEqual([...MAIN_INGREDIENTS_VALUES]);
+  });
+
+  it('exposes exactly the twelve closed-enum keys (4 foundation + 6 small fields + 2 C02 fields)', () => {
     expect(Object.keys(enumsJson).sort()).toEqual(
       [
         'activity_type',
@@ -76,6 +86,8 @@ describe('enums.json freshness', () => {
         'cooking_methods',
         'observances_holidays',
         'garden_skills',
+        'cooking_skills',
+        'main_ingredients',
       ].sort()
     );
   });
