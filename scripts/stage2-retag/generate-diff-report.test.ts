@@ -341,38 +341,24 @@ describe('buildDiffReport — corpus exclusions', () => {
   });
 });
 
-describe('buildDiffReport — C02 fields (cooking_skills + main_ingredients)', () => {
-  // A self-contained corpus + run pair exercising a before/after change on both
-  // C02 fields (the shared __fixtures__ predate these fields). cooking_skills:
-  // adds "Knife skills". main_ingredients: drops "Tomatoes", adds "Alliums".
-  // (Canonical spellings per the C02 vocab; the diff is set-based and does no
-  // enum validation, but real values keep the fixture honest.)
-  const c02CorpusText = JSON.stringify({
-    id: 'lesson-c02',
-    title: 'Knife Skills with Onions',
-    content_text: 'A cooking lesson.',
-    activity_type: ['cooking'],
-    tags: [],
-    season_timing: [],
-    cultural_responsiveness_features: [],
-    cultural_heritage: [],
-    academic_integration: [],
-    social_emotional_learning: [],
-    core_competencies: [],
-    cooking_methods: [],
-    observances_holidays: [],
-    garden_skills: [],
-    cooking_skills: ['Sautéing & stir-frying'],
-    main_ingredients: ['Nightshades', 'Tomatoes'],
-    academic_concepts: null,
-  });
-
-  const c02RunText = JSON.stringify({
-    id: 'lesson-c02',
-    phase: 'main',
-    model: 'claude-opus-4-7',
-    promptSchemaHash: 'hash-current',
-    rawInput: {
+describe('buildDiffReport — C02 anchored run (per-field SHIP output, P3.1-diff)', () => {
+  // Three C02-ANCHORED lessons (carry finalC02 ⇒ the diff reads the materialized
+  // per-field SHIP output, NOT rawInput). All values are canonical C02 vocab.
+  //
+  //   lesson-floored    flooredFields:['main_ingredients']; cooking finalC02 KEEP
+  //                     + ADD "Knife skills"; ingredients fell back to floor.
+  //                     Ship cooking = floor ∪ LLM = [Sautéing & stir-frying,
+  //                     Knife skills]; ingredients floor-only of [Tomatoes] =
+  //                     [Tomatoes, Nightshades] (parent-derived). BOTH change.
+  //   lesson-shipchanged  clean; cooking finalC02 ADDs "Knife skills";
+  //                     ingredients unchanged by the floor. Cooking ship-changes.
+  //   lesson-unchanged  clean; cooking finalC02 KEEP-only; ship == today on both
+  //                     fields. Neither floored nor ship-changed.
+  function c02Corpus(id: string, title: string, cooking: string[], ingredients: string[]): string {
+    return JSON.stringify({
+      id,
+      title,
+      content_text: 'A cooking lesson.',
       activity_type: ['cooking'],
       tags: [],
       season_timing: [],
@@ -384,30 +370,76 @@ describe('buildDiffReport — C02 fields (cooking_skills + main_ingredients)', (
       cooking_methods: [],
       observances_holidays: [],
       garden_skills: [],
-      academic_concepts: {},
-      grade_levels: [],
-      cooking_skills: ['Sautéing & stir-frying', 'Knife skills'],
-      main_ingredients: ['Nightshades', 'Alliums'],
-    },
-    zod: { passed: true, fieldErrors: null },
-    usage: {
-      input_tokens: 1,
-      output_tokens: 1,
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-    },
-    costUsd: 0.01,
-    latencyMs: 100,
-    error: null,
-    stopReason: 'tool_use',
-    bodyHash: 'h',
-    strict: false,
-    completedAt: '2026-06-23T00:00:00.000Z',
-  });
+      cooking_skills: cooking,
+      main_ingredients: ingredients,
+      academic_concepts: null,
+    });
+  }
 
-  const c02Corpus = parseCorpusRecords(c02CorpusText);
-  const c02Run = parseRunRecords(c02RunText);
-  const c02Report = buildDiffReport(c02Corpus, c02Run, vocab);
+  function c02RunRecord(
+    id: string,
+    finalC02: { cooking_skills: string[]; main_ingredients: string[] },
+    extra: Record<string, unknown> = {}
+  ): string {
+    return JSON.stringify({
+      id,
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'hash-current',
+      // rawInput on an anchored record holds the raw KEEP/DROP/ADD DECISION
+      // object (NOT arrays). It is deliberately the WRONG arrays here so any
+      // test reading rawInput instead of the ship output would fail loudly.
+      rawInput: { cooking_skills: { keep: [], add: [] }, main_ingredients: { keep: [], add: [] } },
+      llmDecisions: { cooking_skills: { keep: [], add: [] } },
+      finalC02,
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      costUsd: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'h',
+      strict: false,
+      completedAt: '2026-06-25T00:00:00.000Z',
+      ...extra,
+    });
+  }
+
+  const corpusText = [
+    c02Corpus('lesson-floored', 'Floored Salad', ['Sautéing & stir-frying'], ['Tomatoes']),
+    c02Corpus(
+      'lesson-shipchanged',
+      'Ship Changed Stew',
+      ['Sautéing & stir-frying'],
+      ['Tomatoes', 'Nightshades']
+    ),
+    c02Corpus(
+      'lesson-unchanged',
+      'Unchanged Roast',
+      ['Sautéing & stir-frying'],
+      ['Tomatoes', 'Nightshades']
+    ),
+  ].join('\n');
+
+  const runText = [
+    c02RunRecord(
+      'lesson-floored',
+      { cooking_skills: ['Sautéing & stir-frying', 'Knife skills'], main_ingredients: [] },
+      { flooredFields: ['main_ingredients'] }
+    ),
+    c02RunRecord('lesson-shipchanged', {
+      cooking_skills: ['Sautéing & stir-frying', 'Knife skills'],
+      main_ingredients: ['Tomatoes', 'Nightshades'],
+    }),
+    c02RunRecord('lesson-unchanged', {
+      cooking_skills: ['Sautéing & stir-frying'],
+      main_ingredients: ['Tomatoes', 'Nightshades'],
+    }),
+  ].join('\n');
+
+  const c02CorpusRecs = parseCorpusRecords(corpusText);
+  const c02Run = parseRunRecords(runText);
+  const c02Report = buildDiffReport(c02CorpusRecs, c02Run, vocab);
 
   function c02Field(name: string): FieldDiff {
     const found = c02Report.fields.find((f) => f.field === name);
@@ -415,45 +447,80 @@ describe('buildDiffReport — C02 fields (cooking_skills + main_ingredients)', (
     return found;
   }
 
-  it('parses both C02 columns out of the corpus line', () => {
-    const rec = c02Corpus.find((r) => r.id === 'lesson-c02');
-    expect(rec?.flat.cooking_skills).toEqual(['Sautéing & stir-frying']);
-    expect(rec?.flat.main_ingredients).toEqual(['Nightshades', 'Tomatoes']);
+  it('scopes a C02 run to ONLY the two C02 fields (the other 12 are not diffed)', () => {
+    expect(c02Report.fields.map((f) => f.field)).toEqual(['cooking_skills', 'main_ingredients']);
   });
 
-  it('shows the cooking_skills before/after (semantic add)', () => {
+  it('diffs cooking_skills via floor-retention (floor ∪ LLM), NOT rawInput', () => {
     const f = c02Field('cooking_skills');
     expect(f.label).toBe('Cooking Skills');
-    expect(f.lessonsChangedSemantic).toBe(1);
-    expect(f.addedValueCounts).toEqual({ 'Knife skills': 1 });
+    // floored + shipchanged both ADD "Knife skills"; unchanged keeps as-is.
+    expect(f.lessonsChangedSemantic).toBe(2);
+    expect(f.lessonsUnchanged).toBe(1);
+    expect(f.addedValueCounts).toEqual({ 'Knife skills': 2 });
     expect(f.droppedValueCounts).toEqual({});
-    const lesson = f.changedLessons.find((l) => l.id === 'lesson-c02');
-    expect(lesson?.added).toEqual(['Knife skills']);
-    expect(lesson?.dropped).toEqual([]);
+    const floored = f.changedLessons.find((l) => l.id === 'lesson-floored');
+    expect(floored?.added).toEqual(['Knife skills']);
+    expect(floored?.dropped).toEqual([]);
   });
 
-  it('shows the main_ingredients before/after (semantic add + drop)', () => {
+  it('diffs main_ingredients via floor-ONLY (ignores the LLM ingredient decision)', () => {
     const f = c02Field('main_ingredients');
     expect(f.label).toBe('Main Ingredients');
+    // Only lesson-floored changes: floor-only of [Tomatoes] adds the parent
+    // [Nightshades]. shipchanged + unchanged already carry [Tomatoes,Nightshades].
     expect(f.lessonsChangedSemantic).toBe(1);
-    expect(f.addedValueCounts).toEqual({ Alliums: 1 });
-    expect(f.droppedValueCounts).toEqual({ Tomatoes: 1 });
-    const lesson = f.changedLessons.find((l) => l.id === 'lesson-c02');
-    expect(lesson?.added).toEqual(['Alliums']);
-    expect(lesson?.dropped).toEqual(['Tomatoes']);
+    expect(f.addedValueCounts).toEqual({ Nightshades: 1 });
+    expect(f.droppedValueCounts).toEqual({});
+    const floored = f.changedLessons.find((l) => l.id === 'lesson-floored');
+    expect(floored?.added).toEqual(['Nightshades']);
   });
 
-  it('renders both C02 fields as plain-language sections with their changes', () => {
+  it('renders both C02 fields and OMITS the other fields from the markdown', () => {
     const md = renderMarkdown(c02Report);
     expect(md).toContain('## Cooking Skills');
     expect(md).toContain('## Main Ingredients');
     expect(md).toContain('"Knife skills"');
-    expect(md).toContain('"Alliums"');
-    expect(md).toContain('"Tomatoes"');
+    expect(md).toContain('"Nightshades"');
+    // Other main-pass fields must NOT appear as sections on a C02 run.
+    expect(md).not.toContain('## Activity Type');
+    expect(md).not.toContain('## Garden Skills');
+  });
+
+  describe('ship-policy provenance bucket (floored / ship-changed sample)', () => {
+    it('flags the floored row AND the ship-changed row, and EXCLUDES the unchanged row', () => {
+      const bucket = c02Report.c02ShipProvenance;
+      expect(bucket).toBeDefined();
+      const ids = bucket?.rows.map((r) => r.id).sort();
+      expect(ids).toEqual(['lesson-floored', 'lesson-shipchanged']);
+    });
+
+    it('marks the floored row as floored (flooredFields non-empty)', () => {
+      const row = c02Report.c02ShipProvenance?.rows.find((r) => r.id === 'lesson-floored');
+      expect(row?.floored).toBe(true);
+      expect(row?.flooredFields).toEqual(['main_ingredients']);
+      expect(row?.shipChanged).toBe(true);
+    });
+
+    it('marks the ship-changed-only row as ship-changed but NOT floored', () => {
+      const row = c02Report.c02ShipProvenance?.rows.find((r) => r.id === 'lesson-shipchanged');
+      expect(row?.floored).toBe(false);
+      expect(row?.flooredFields).toEqual([]);
+      expect(row?.shipChanged).toBe(true);
+    });
+
+    it('renders a labeled provenance section a human can spot-check', () => {
+      const md = renderMarkdown(c02Report);
+      expect(md).toMatch(/floored.*ship-changed|ship-changed.*floored|spot-check/i);
+      expect(md).toContain('Floored Salad');
+      expect(md).toContain('Ship Changed Stew');
+      // the unchanged row is NOT in the spot-check sample
+      expect(md).not.toContain('Unchanged Roast');
+    });
   });
 });
 
-describe('selectComparedLessons — fail-closed on C02 anchored records (FIX 2, P2′.3 Codex)', () => {
+describe('selectComparedLessons — C02 ship threading (P3.1-diff, lifts the P2′.3 fail-closed throw)', () => {
   // Minimal shared corpus line: one lesson the run records can target.
   const corpusText = JSON.stringify({
     id: 'lesson-c02',
@@ -484,27 +551,52 @@ describe('selectComparedLessons — fail-closed on C02 anchored records (FIX 2, 
     });
   }
 
-  it('THROWS (naming C02/finalC02/P3) when a latest record carries finalC02', () => {
+  it('with c02ShipThreading: does NOT throw and threads finalC02 onto the compared lesson', () => {
+    const runRecords = parseRunRecords(
+      runRecordWith({ finalC02: { cooking_skills: ['Knife skills'], main_ingredients: [] } })
+    );
+    expect(() =>
+      selectComparedLessons(corpus, runRecords, new Set(), { c02ShipThreading: true })
+    ).not.toThrow();
+    const { compared } = selectComparedLessons(corpus, runRecords, new Set(), {
+      c02ShipThreading: true,
+    });
+    expect(compared.map((c) => c.id)).toEqual(['lesson-c02']);
+    expect(compared[0].finalC02).toEqual({
+      cooking_skills: ['Knife skills'],
+      main_ingredients: [],
+    });
+  });
+
+  it('with c02ShipThreading: threads llmDecisions (reconstruction source) onto the compared lesson', () => {
+    const runRecords = parseRunRecords(
+      runRecordWith({ llmDecisions: { cooking_skills: { keep: [], drop: [], add: [] } } })
+    );
+    expect(() =>
+      selectComparedLessons(corpus, runRecords, new Set(), { c02ShipThreading: true })
+    ).not.toThrow();
+    const { compared } = selectComparedLessons(corpus, runRecords, new Set(), {
+      c02ShipThreading: true,
+    });
+    expect(compared[0].llmDecisions).toEqual({
+      cooking_skills: { keep: [], drop: [], add: [] },
+    });
+  });
+
+  it('WITHOUT c02ShipThreading (the apply path): STILL fails closed on a C02 record (P3.2 owns lifting it)', () => {
     const runRecords = parseRunRecords(
       runRecordWith({ finalC02: { cooking_skills: ['Knife skills'], main_ingredients: [] } })
     );
     expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/finalC02/);
     expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/C02/);
-    expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/P3/);
   });
 
-  it('THROWS when a latest record carries llmDecisions (raw KEEP/DROP/ADD)', () => {
-    const runRecords = parseRunRecords(
-      runRecordWith({ llmDecisions: { cooking_skills: { keep: [], drop: [], add: [] } } })
-    );
-    expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/C02/);
-  });
-
-  it('does NOT throw on legacy records lacking finalC02/llmDecisions', () => {
+  it('does NOT throw on legacy records lacking finalC02/llmDecisions (either mode)', () => {
     const runRecords = parseRunRecords(runRecordWith({}));
     expect(() => selectComparedLessons(corpus, runRecords)).not.toThrow();
     const { compared } = selectComparedLessons(corpus, runRecords);
     expect(compared.map((c) => c.id)).toEqual(['lesson-c02']);
+    expect(compared[0].finalC02).toBeUndefined();
   });
 });
 

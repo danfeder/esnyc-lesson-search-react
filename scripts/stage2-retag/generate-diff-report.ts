@@ -51,7 +51,22 @@ import {
   type RunRecord,
 } from './run-retag';
 import { normalizeRecordInput } from './normalize';
-import { MAIN_PASS_FIELDS, loadVocab, type MainPassField, type Stage2Vocab } from './vocab';
+import { loadC02FloorInput, type C02FloorInput } from './c02-floor';
+import {
+  C02_APPLY_FIELDS,
+  materializeC02Ship,
+  type C02ApplyField,
+  type C02ShipRecord,
+  type C02ShipTags,
+} from './ship-policy';
+import {
+  MAIN_PASS_FIELDS,
+  loadC02Manifest,
+  loadVocab,
+  type MainPassField,
+  type Stage2Vocab,
+} from './vocab';
+import type { C02FinalTags } from './reconcile';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS_DIR = path.join(MODULE_DIR, 'artifacts');
@@ -123,6 +138,42 @@ export interface MissingLesson {
   reason: 'no-record' | 'no-output';
 }
 
+/**
+ * One C02 ship-policy provenance row (P3.1-diff / design §8 ②). On a C02 run the
+ * diff reads the materialized per-field SHIP output (floor-only `main_ingredients`
+ * + floor-retention `cooking_skills`), so the existing `normalizationCount`
+ * edge-case signal cannot flag floored C02 rows (C02 bypasses `normalize`; the
+ * floor lands later in `materializeC02Ship`). This bucket replaces it: every row
+ * is classified by HOW its shipped output was produced/changed, so the user can
+ * spot-check the floored / ship-changed sample before apply.
+ */
+export interface C02ShipProvenanceRow {
+  id: string;
+  title: string;
+  /** Field(s) whose LLM decision was off-vocab and fell back to the floor. */
+  flooredFields: C02ApplyField[];
+  /** True iff `flooredFields` is non-empty (a floor-fallback row). */
+  floored: boolean;
+  /** True iff the shipped C02 output differs from the CURRENT C02 tags. */
+  shipChanged: boolean;
+  /** The materialized per-field SHIP output (what apply would write). */
+  ship: C02ShipTags;
+}
+
+/**
+ * The ship-policy provenance bucket for a C02 run — the floored / ship-changed
+ * SAMPLE the user spot-checks (design §8 ② / impl P3.1). Only present on a C02
+ * anchored run; absent on a legacy/non-C02 run.
+ */
+export interface C02ShipProvenanceBucket {
+  /** Rows that are floored OR ship-changed (the spot-check sample). */
+  rows: C02ShipProvenanceRow[];
+  /** Count of floored rows (a field fell back to the floor). */
+  flooredCount: number;
+  /** Count of rows whose shipped output differs from today's tags. */
+  shipChangedCount: number;
+}
+
 export interface DiffReport {
   corpusLessons: number;
   /** Corpus lessons dropped before diffing because they are on the run's
@@ -134,6 +185,9 @@ export interface DiffReport {
   missingFromRun: MissingLesson[];
   unknownInRun: string[];
   fields: FieldDiff[];
+  /** C02 anchored run only (design §8 ② / P3.1): the ship-policy provenance
+   *  bucket — the floored / ship-changed spot-check sample. Absent otherwise. */
+  c02ShipProvenance?: C02ShipProvenanceBucket;
 }
 
 // ---------------------------------------------------------------------------
@@ -262,6 +316,25 @@ export interface ComparedLesson {
   title: string;
   corpus: CorpusDiffRecord;
   rawInput: Record<string, unknown>;
+  /**
+   * C02 anchored run only (threaded when `c02ShipThreading` is on): the
+   * reconciled canonical C02 arrays. The diff reads the per-field SHIP output
+   * MATERIALIZED from this (NOT `rawInput`, which holds the raw decision); see
+   * D-P6/D-P11. Absent on legacy/non-C02 records.
+   */
+  finalC02?: C02FinalTags;
+  /** C02 anchored run only: the raw KEEP/DROP/ADD decision (the ship layer's
+   *  reconstruction source for a finalC02-less fallback record). */
+  llmDecisions?: unknown;
+  /** C02 anchored run only: field(s) that fell back to the deterministic floor
+   *  (the provenance bucket's floored signal). */
+  flooredFields?: C02ApplyField[];
+}
+
+/** A compared lesson is C02-anchored iff it carries a reconciled finalC02 or the
+ *  raw C02 decision — the SAME marker the run record uses. */
+function isC02Anchored(lesson: ComparedLesson): boolean {
+  return lesson.finalC02 !== undefined || lesson.llmDecisions !== undefined;
 }
 
 /**
@@ -280,10 +353,23 @@ export interface ComparedLesson {
  * Both buildDiffReport and prepare-apply build on this so the diff a human
  * reviews and the tags an apply migration writes can never drift apart.
  */
+export interface SelectComparedOptions {
+  /**
+   * P3.1-diff: opt IN to C02 ship threading. When on, a C02 anchored record is
+   * NOT refused — its reconciled C02 source (`finalC02` / `llmDecisions` /
+   * `flooredFields`) is threaded onto the compared lesson so `buildDiffReport`
+   * can materialize the per-field SHIP output (NOT read the raw decision from
+   * `rawInput`). The diff path passes this. The apply path (prepare-apply) does
+   * NOT — it stays fail-closed until P3.2 threads the ship output into staging.
+   */
+  c02ShipThreading?: boolean;
+}
+
 export function selectComparedLessons(
   corpusRecords: CorpusDiffRecord[],
   runRecords: RunRecord[],
-  excludedIds: Set<string> = new Set()
+  excludedIds: Set<string> = new Set(),
+  options: SelectComparedOptions = {}
 ): {
   compared: ComparedLesson[];
   missingFromRun: MissingLesson[];
@@ -293,26 +379,28 @@ export function selectComparedLessons(
   zodFailedIncluded: number;
 } {
   const latest = latestRecordById(runRecords);
-  // FIX 2 (P2′.3 Codex): fail-closed on C02 anchored records. Both the diff
-  // report and prepare-apply funnel through here and read the two C02 fields
-  // from `rawInput` (which, on an anchored record, holds the raw KEEP/DROP/ADD
-  // DECISION OBJECT, not arrays → newFlatValues silently returns []). The
-  // reconciled canonical arrays live on `record.finalC02`, which these tools do
-  // NOT yet read. Emitting a diff/apply now would show C02 as empty and could
-  // stage an all-C02-emptying migration — so THROW instead of silently
-  // corrupting. P3.1 (diff) and P3.2 (apply) thread `finalC02` + scope apply to
-  // C02-only; until then, refuse the whole run. (Legacy/body-only records,
-  // which lack both fields, are unaffected.)
-  for (const record of latest.values()) {
-    if (record.finalC02 !== undefined || record.llmDecisions !== undefined) {
-      throw new Error(
-        `selectComparedLessons: run record ${record.id} is a C02 anchored record ` +
-          `(carries finalC02/llmDecisions). generate-diff-report and prepare-apply do not ` +
-          `yet read finalC02 (the reconciled C02 arrays) — they would read the raw KEEP/DROP/ADD ` +
-          `decision from rawInput and silently emit empty cooking_skills/main_ingredients, ` +
-          `risking an all-C02-emptying apply. Refusing. Threading finalC02 + scoping apply to ` +
-          `C02-only is scheduled for P3.1 (diff) / P3.2 (apply); use those, not this path, for C02.`
-      );
+  // FIX 2 (P2′.3 Codex), narrowed in P3.1: fail-closed on C02 anchored records
+  // UNLESS the caller opts into ship threading. On an anchored record `rawInput`
+  // holds the raw KEEP/DROP/ADD DECISION OBJECT (not arrays → newFlatValues
+  // silently returns []); the reconciled arrays live on `record.finalC02`.
+  //   - Diff path (c02ShipThreading: true): threads finalC02 and materializes the
+  //     per-field SHIP output below — safe, so the throw is lifted (P3.1-diff).
+  //   - Apply path (prepare-apply, no flag): still reads `rawInput` for the two
+  //     C02 fields, so emitting now could stage an all-C02-emptying migration —
+  //     stays REFUSED until P3.2 threads the ship output into staging.
+  // (Legacy/body-only records, which lack both fields, are unaffected either way.)
+  if (!options.c02ShipThreading) {
+    for (const record of latest.values()) {
+      if (record.finalC02 !== undefined || record.llmDecisions !== undefined) {
+        throw new Error(
+          `selectComparedLessons: run record ${record.id} is a C02 anchored record ` +
+            `(carries finalC02/llmDecisions). This caller does not thread the C02 ship output ` +
+            `— it would read the raw KEEP/DROP/ADD decision from rawInput and silently emit empty ` +
+            `cooking_skills/main_ingredients, risking an all-C02-emptying apply. Refusing. The diff ` +
+            `path passes { c02ShipThreading: true } (P3.1); the apply path threads the ship output ` +
+            `in P3.2 — use those, not this fail-closed path, for C02.`
+        );
+      }
     }
   }
   const { kept: corpusRecordsKept, excludedHits } = excludeCorpusIds(corpusRecords, excludedIds);
@@ -332,12 +420,23 @@ export function selectComparedLessons(
       continue;
     }
     if (!record.zod.passed) zodFailedIncluded++;
+    // C02 fields bypass `normalize` (skipC02): normalizing here is harmless for
+    // the 12 non-C02 fields and is a no-op on the raw C02 decision object, which
+    // the diff never reads on an anchored record (it reads the ship output).
     const { rawInput } = normalizeRecordInput(record.rawInput);
+    const isC02 =
+      options.c02ShipThreading &&
+      (record.finalC02 !== undefined || record.llmDecisions !== undefined);
     compared.push({
       id: corpusRecord.id,
       title: corpusRecord.title,
       corpus: corpusRecord,
       rawInput: rawInput as Record<string, unknown>,
+      ...(isC02 && record.finalC02 !== undefined ? { finalC02: record.finalC02 } : {}),
+      ...(isC02 && record.llmDecisions !== undefined ? { llmDecisions: record.llmDecisions } : {}),
+      ...(isC02 && record.flooredFields !== undefined
+        ? { flooredFields: record.flooredFields }
+        : {}),
     });
   }
   missingFromRun.sort((a, b) => a.id.localeCompare(b.id));
@@ -353,16 +452,89 @@ export function selectComparedLessons(
   };
 }
 
-// ⚠️ P3 (D-P6): the C02 anchored path stores the two C02 fields' reconciled
-// arrays on the record's `finalC02`, not `rawInput` (which holds the raw
-// KEEP/DROP/ADD decision). This diff reads `rawInput` for all fields; P3.1
-// switches the two C02 fields to read `finalC02`. The run-record carries it now
-// (run-retag.ts `RunRecord.finalC02`); the scorer already reads it (P2′.3).
 function newFlatValues(rawInput: Record<string, unknown>, field: string): string[] {
   const value = rawInput[field];
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === 'string')
     : [];
+}
+
+/** Order-insensitive set equality on string arrays (ship-change detection). */
+function setsEqual(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((value) => set.has(value));
+}
+
+/**
+ * The materialized per-field SHIP output a C02 compared lesson would APPLY
+ * (D-P6/D-P11): floor-only `main_ingredients` + floor-retention `cooking_skills`.
+ * Reads the lesson's CURRENT C02 tags from the corpus as `materializeC02Ship`'s
+ * floor input — NOT `rawInput` (the raw decision). Shared by the diff (new
+ * values) and the provenance bucket (ship-change detection) so they cannot drift.
+ */
+function shipTagsFor(
+  lesson: ComparedLesson,
+  floorInput: C02FloorInput,
+  cookingValues: ReadonlySet<string>
+): C02ShipTags {
+  const shipRecord: C02ShipRecord = {
+    ...(lesson.finalC02 !== undefined ? { finalC02: lesson.finalC02 } : {}),
+    // The reconstruction source for a finalC02-less fallback record is the raw
+    // decision; the run record stores it both as `llmDecisions` and `rawInput`.
+    rawInput: lesson.llmDecisions ?? lesson.rawInput,
+  };
+  const existingTags = {
+    cooking_skills: lesson.corpus.flat.cooking_skills ?? [],
+    main_ingredients: lesson.corpus.flat.main_ingredients ?? [],
+  };
+  return materializeC02Ship(shipRecord, existingTags, floorInput, cookingValues);
+}
+
+/** Per-id materialized ship output for every C02 compared lesson (computed once;
+ *  the floor input + canonical cooking set are loaded ONCE by the caller). */
+function buildC02ShipMap(
+  lessons: ComparedLesson[],
+  floorInput: C02FloorInput,
+  cookingValues: ReadonlySet<string>
+): Map<string, C02ShipTags> {
+  const map = new Map<string, C02ShipTags>();
+  for (const lesson of lessons) {
+    if (isC02Anchored(lesson)) map.set(lesson.id, shipTagsFor(lesson, floorInput, cookingValues));
+  }
+  return map;
+}
+
+/**
+ * The ship-policy provenance bucket (P3.1 / design §8 ②): classify every C02
+ * compared lesson by how its shipped output was produced/changed, and keep the
+ * floored OR ship-changed rows as the user's spot-check sample. REPLACES the
+ * `normalizationCount` edge-case signal for C02 floored rows (C02 bypasses
+ * `normalize`; the floor lands later in `materializeC02Ship`).
+ */
+function buildC02ShipProvenance(
+  lessons: ComparedLesson[],
+  shipMap: Map<string, C02ShipTags>
+): C02ShipProvenanceBucket {
+  const rows: C02ShipProvenanceRow[] = [];
+  let flooredCount = 0;
+  let shipChangedCount = 0;
+  for (const lesson of lessons) {
+    const ship = shipMap.get(lesson.id);
+    if (ship === undefined) continue; // non-C02 lesson (defensive)
+    const flooredFields = lesson.flooredFields ?? [];
+    const floored = flooredFields.length > 0;
+    const shipChanged =
+      !setsEqual(lesson.corpus.flat.cooking_skills ?? [], ship.cooking_skills) ||
+      !setsEqual(lesson.corpus.flat.main_ingredients ?? [], ship.main_ingredients);
+    if (floored) flooredCount++;
+    if (shipChanged) shipChangedCount++;
+    if (floored || shipChanged) {
+      rows.push({ id: lesson.id, title: lesson.title, flooredFields, floored, shipChanged, ship });
+    }
+  }
+  rows.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
+  return { rows, flooredCount, shipChangedCount };
 }
 
 function newFrameworkValues(rawInput: Record<string, unknown>, subject: string): string[] {
@@ -386,11 +558,23 @@ function tally(counts: Record<string, number>, values: string[]): void {
   for (const value of values) counts[value] = (counts[value] ?? 0) + 1;
 }
 
-function diffFlatField(field: MainPassField, label: string, lessons: ComparedLesson[]): FieldDiff {
+/**
+ * @param shipMap when supplied (a C02 run), the two C02 fields' NEW values come
+ *   from the materialized per-field SHIP output (NOT `rawInput`, which holds the
+ *   raw decision) — D-P6/D-P11. Non-C02 fields always read `rawInput`.
+ */
+function diffFlatField(
+  field: MainPassField,
+  label: string,
+  lessons: ComparedLesson[],
+  shipMap?: Map<string, C02ShipTags>
+): FieldDiff {
   const result = emptyFieldDiff(field, label, lessons.length);
+  const isC02Field = (C02_APPLY_FIELDS as readonly string[]).includes(field);
   for (const lesson of lessons) {
     const oldValues = lesson.corpus.flat[field] ?? [];
-    const newValues = newFlatValues(lesson.rawInput, field);
+    const ship = isC02Field ? shipMap?.get(lesson.id) : undefined;
+    const newValues = ship ? ship[field as C02ApplyField] : newFlatValues(lesson.rawInput, field);
     const diff = diffValueSets(oldValues, newValues);
     recordLessonDiff(result, lesson, diff, oldValues.length === 0 && newValues.length === 0);
   }
@@ -503,12 +687,33 @@ export function buildDiffReport(
     corpusLessonsKept,
     excludedLessons,
     zodFailedIncluded,
-  } = selectComparedLessons(corpusRecords, runRecords, excludedIds);
+    // The diff path ALWAYS threads C02 ship output (the apply path opts out).
+  } = selectComparedLessons(corpusRecords, runRecords, excludedIds, { c02ShipThreading: true });
 
-  const fields = MAIN_PASS_FIELDS.map((field) =>
+  // A C02 anchored run scopes the diff to the two C02 fields and reads the
+  // materialized per-field SHIP output for them (D-P6/D-P11). The floor input +
+  // canonical cooking set are loaded ONCE here (not per row).
+  const isC02Run = compared.some(isC02Anchored);
+  let shipMap: Map<string, C02ShipTags> | undefined;
+  let c02ShipProvenance: C02ShipProvenanceBucket | undefined;
+  if (isC02Run) {
+    const floorInput = loadC02FloorInput();
+    const cookingValues = new Set(loadC02Manifest().cookingSkills);
+    shipMap = buildC02ShipMap(compared, floorInput, cookingValues);
+    c02ShipProvenance = buildC02ShipProvenance(compared, shipMap);
+  }
+
+  // On a C02 run, the run's `rawInput` carries no values for the other 12 fields,
+  // so diffing them would spuriously show every other field emptied — scope to
+  // the two C02 fields only.
+  const fieldsToReport: readonly MainPassField[] = isC02Run
+    ? (C02_APPLY_FIELDS as readonly MainPassField[])
+    : MAIN_PASS_FIELDS;
+
+  const fields = fieldsToReport.map((field) =>
     field === 'academic_concepts'
       ? diffConceptsField(vocab[field].label, compared)
-      : diffFlatField(field, vocab[field].label, compared)
+      : diffFlatField(field, vocab[field].label, compared, shipMap)
   );
 
   return {
@@ -519,6 +724,7 @@ export function buildDiffReport(
     missingFromRun,
     unknownInRun,
     fields,
+    ...(c02ShipProvenance ? { c02ShipProvenance } : {}),
   };
 }
 
@@ -662,6 +868,53 @@ function renderFieldSection(f: FieldDiff): string[] {
   return lines;
 }
 
+/**
+ * Renders the C02 ship-policy provenance bucket — the floored / ship-changed
+ * SAMPLE the user spot-checks before apply (design §8 ② / P3.1). Each row says
+ * how its shipped output was produced (floor-fallback) and what it would write.
+ */
+function renderC02ShipProvenance(bucket: C02ShipProvenanceBucket): string[] {
+  const lines: string[] = [];
+  lines.push('## Spot-check sample — floored / ship-changed rows');
+  lines.push('');
+  lines.push(
+    'These are the C02 rows whose shipped tags were produced by the deterministic ' +
+      'floor (a field whose AI suggestion was off-vocabulary fell back to the floor) ' +
+      'or otherwise differ from the tags they have today. Spot-check these before ' +
+      'applying — they are where the re-tag actually changes a lesson.'
+  );
+  lines.push('');
+  lines.push(
+    `- Rows that fell back to the floor (floored): ${bucket.flooredCount}` +
+      `\n- Rows whose shipped tags differ from today: ${bucket.shipChangedCount}`
+  );
+  lines.push('');
+  if (bucket.rows.length === 0) {
+    lines.push('No floored or ship-changed rows in this run.');
+    lines.push('');
+    return lines;
+  }
+  for (const row of bucket.rows) {
+    const markers: string[] = [];
+    if (row.floored) {
+      markers.push(`floored (${row.flooredFields.join(', ')})`);
+    }
+    if (row.shipChanged) markers.push('ship-changed');
+    const cooking =
+      row.ship.cooking_skills.length > 0 ? row.ship.cooking_skills.map(quote).join(', ') : '(none)';
+    const ingredients =
+      row.ship.main_ingredients.length > 0
+        ? row.ship.main_ingredients.map(quote).join(', ')
+        : '(none)';
+    lines.push(
+      `- **${row.title}** (\`${row.id}\`) — ${markers.join('; ')}; ` +
+        `ships cooking skills: ${cooking}; main ingredients: ${ingredients}`
+    );
+  }
+  lines.push('');
+  return lines;
+}
+
 /** Renders the diff report as plain-language markdown (Protocol-B artifact). */
 export function renderMarkdown(report: DiffReport): string {
   const lines: string[] = [];
@@ -711,6 +964,10 @@ export function renderMarkdown(report: DiffReport): string {
 
   for (const f of report.fields) {
     lines.push(...renderFieldSection(f));
+  }
+
+  if (report.c02ShipProvenance) {
+    lines.push(...renderC02ShipProvenance(report.c02ShipProvenance));
   }
 
   if (report.missingFromRun.length > 0) {
