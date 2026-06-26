@@ -153,6 +153,25 @@ describe('materializeC02Ship — finalC02-or-raw read (field isolation)', () => 
     expect(out.cooking_skills.length).toBeGreaterThan(0);
   });
 
+  it('reconstructs a valid ADD even when raw keep is ABSENT (does not discard it)', () => {
+    // reconstructCookingFinal runs on PRE-validation output; the field whose
+    // schema failed may be missing an array. A missing `keep` must not throw away
+    // a valid `add` (claude-review PR #543).
+    const out = ship(
+      {
+        rawInput: {
+          cooking_skills: {
+            // no `keep` key
+            drop: [],
+            add: [{ value: 'Roasting', reason: 'real-technique-taught' }],
+          },
+        },
+      },
+      { cooking_skills: [] }
+    );
+    expect(out.cooking_skills).toContain('Roasting');
+  });
+
   it('drops an off-vocab value from the raw-decision add', () => {
     const out = ship(
       {

@@ -163,9 +163,14 @@ function reconcileField(
   // keep/drop sets BEFORE anchor classification so a NON-anchor overlap can't
   // leak out via the keep→add recovery.
   const rawKeep = new Set(decision.keep);
+  const rawAdd = new Set(decision.add);
   const overlap = new Set<string>();
   for (const v of decision.drop) {
-    if (rawKeep.has(v)) overlap.add(v);
+    // DROP-wins for a value the model both KEEPs/ADDs AND DROPs (contradictory →
+    // suppress from every bucket; the verify-and-diff bar favors precision). The
+    // add∩drop case matters too: a non-anchor add+drop would otherwise reach
+    // recoveredAdds and ship despite the DROP (claude-review PR #543).
+    if (rawKeep.has(v) || rawAdd.has(v)) overlap.add(v);
   }
 
   const keep = new Set<string>();

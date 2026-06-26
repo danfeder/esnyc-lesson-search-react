@@ -87,11 +87,16 @@ export function reconstructCookingFinal(rawInput: unknown): string[] {
   const decision = (rawInput as Record<string, unknown>).cooking_skills;
   if (!decision || typeof decision !== 'object') return [];
   const { keep, add } = decision as { keep?: unknown; add?: unknown };
-  if (!Array.isArray(keep)) return [];
+  // Decouple keep/add: a malformed/absent `keep` must NOT discard a valid `add`
+  // (this runs on pre-validation output — the field whose schema FAILED is
+  // exactly where one array can be missing; claude-review PR #543).
+  if (!Array.isArray(keep) && !Array.isArray(add)) return [];
   const values: string[] = [];
-  for (const entry of keep) {
-    const v = decisionEntryValue(entry);
-    if (v !== undefined) values.push(v);
+  if (Array.isArray(keep)) {
+    for (const entry of keep) {
+      const v = decisionEntryValue(entry);
+      if (v !== undefined) values.push(v);
+    }
   }
   if (Array.isArray(add)) {
     for (const entry of add) {

@@ -137,6 +137,19 @@ describe('reconcileC02Tags — partition contract', () => {
     expect(result.finalCookingSkills).toEqual(['Boiling & simmering']);
     expect(result.finalCookingSkills).not.toContain('Baking');
   });
+
+  it('DROP-wins fires for an ADD∩DROP overlap (a non-anchor value both added and dropped is suppressed)', () => {
+    const result = reconcileC02Tags({
+      existing: { cooking_skills: ['Boiling & simmering'], main_ingredients: [] },
+      floored: floored(['Boiling & simmering'], []),
+      // 'Baking' is NOT in the anchor and is in BOTH add and drop — contradictory,
+      // so DROP-wins must suppress it (it must not ship as an ADD; claude-review PR #543).
+      llmDecisions: decision({ add: ['Baking'], drop: ['Baking'] }, {}),
+      floor: makeFloorInput(),
+    });
+    expect(result.finalCookingSkills).toEqual(['Boiling & simmering']);
+    expect(result.finalCookingSkills).not.toContain('Baking');
+  });
 });
 
 describe('reconcileC02Tags — ADD contract', () => {

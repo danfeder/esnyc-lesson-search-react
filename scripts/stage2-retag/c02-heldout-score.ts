@@ -112,9 +112,17 @@ function main(): void {
       cooking_skills: (corpusById.get(id)?.cooking_skills as string[]) ?? [],
       main_ingredients: (corpusById.get(id)?.main_ingredients as string[]) ?? [],
     };
-    const record = runById.get(id) ?? {};
-    if (!runById.has(id)) missingRun.push(id);
-    if (!corpusById.has(id)) missingCorpus.push(id);
+    const hasRun = runById.has(id);
+    const hasCorpus = corpusById.has(id);
+    if (!hasRun) missingRun.push(id);
+    if (!hasCorpus) missingCorpus.push(id);
+    // EXCLUDE a missing-id record from every tally — an empty record/corpus row
+    // would score as the floor and poison the accumulators. The post-loop guard
+    // then throws on any missing id, so no scorecard is emitted regardless; the
+    // `continue` keeps the tallies clean and makes "throw before any numbers"
+    // literally true (claude-review PR #543).
+    if (!hasRun || !hasCorpus) continue;
+    const record = runById.get(id) as C02ShipRecord;
 
     const floored = floorTagValues(applyC02Floor(existing, floorInput).cooking);
     const ship = materializeC02Ship(record, existing, floorInput, cookingValues).cooking_skills;
