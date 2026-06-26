@@ -545,11 +545,10 @@ export function processC02Decision(params: {
     }
   }
 
-  // Recover ONLY a genuine MIXED case: at least one valid field AND at least one
-  // floored field. A wholly-valid decision never reaches here; a wholly-invalid
+  // No field had any valid signal → genuine wholesale failure. A wholly-invalid
   // decision (both fields off-vocab / wrong-shape) still fails wholesale, exactly
   // as before — field isolation does not paper over a decision with NO signal.
-  if (!anyFieldValid || flooredFields.length === 0) {
+  if (!anyFieldValid) {
     return {
       rawInput,
       zod: { passed: false, fieldErrors: fieldErrorsFromZod(parsed.error) },
@@ -557,7 +556,17 @@ export function processC02Decision(params: {
     };
   }
 
-  return reconcileAndValidate(perField as unknown as C02Decision, { flooredFields });
+  // At least one field is valid. `flooredFields` may be:
+  //  - non-empty (MIXED case: a valid field + an off-vocab field floored), OR
+  //  - empty (ALL fields valid, but the whole-object parse failed on a STRAY
+  //    top-level key under .strict()) → reconcile cleanly with NO flooredFields,
+  //    exactly like the stage-(1) happy path. Returning the whole-object error
+  //    here would needlessly mark a valid record a failure (and RE-RUN it on
+  //    --resume) even though both fields reconcile to a canonical finalC02.
+  return reconcileAndValidate(
+    perField as unknown as C02Decision,
+    flooredFields.length > 0 ? { flooredFields } : {}
+  );
 }
 
 /** Per-record cost in USD from the rate table; `null` for unknown models. */

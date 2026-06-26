@@ -596,6 +596,34 @@ describe('processC02Decision — run-time field isolation (P2′.8 part 2 / D-P1
     expect(out.flooredFields).toBeUndefined();
   });
 
+  it('BOTH fields valid + a STRAY top-level key → reconciles cleanly (no spurious failure, no flooredFields)', () => {
+    // The whole-object decision schema is .strict(), so a stray top-level key
+    // (e.g. the model emits an extra `garden_skills`) fails the whole-object
+    // parse. But BOTH C02 fields parse individually → there is NOTHING to floor.
+    // The record must reconcile cleanly (exactly the stage-(1) happy path), NOT
+    // be marked a failure (which would needlessly RE-RUN it on --resume). Task 4a.
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+        main_ingredients: { keep: ['Tomatoes'], drop: [], add: [] },
+        // A stray extra top-level key trips the .strict() whole-object parse.
+        garden_skills: ['Planting seeds'],
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    // A clean success — canonical finalC02, NOT a floored/failed record.
+    expect(out.zod.passed).toBe(true);
+    expect(out.finalC02).toBeDefined();
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.finalC02?.main_ingredients).toContain('Nightshades');
+    // No field was floored — this is a clean reconcile, not a recovery.
+    expect(out.flooredFields).toBeUndefined();
+  });
+
   it('BOTH fields off-vocab → total failure (no finalC02), as before', () => {
     const out = processC02Decision({
       apiInput: {
