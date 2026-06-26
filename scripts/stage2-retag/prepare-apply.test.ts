@@ -1021,3 +1021,37 @@ describe('rollback snapshot — renamed table, still full-row (D-P10c)', () => {
     expect(sql).toContain('ALTER TABLE public.c02_retag_rollback ENABLE ROW LEVEL SECURITY');
   });
 });
+
+describe('buildApplyMigrationSql — C02 homogeneity guard (D-P10a data safety)', () => {
+  const report = buildDiffReport(c02Corpus, c02RunRecords, vocab);
+
+  it('refuses to emit when a C02 run carries a non-C02 changing row (would stomp the 15 other fields)', () => {
+    // A C02 run is homogeneous by construction (every compared record carries
+    // finalC02/llmDecisions). If a stray non-C02 changing row slipped in, the
+    // per-row applyUpdate dispatch would emit a LEGACY all-fields UPDATE for it,
+    // stomping the metadata rebuild. The guard must fail closed instead.
+    const c02 = makeRow({
+      id: 'c02-x',
+      isC02: true,
+      changed: true,
+      fields: {
+        cooking_skills: ['Sautéing & stir-frying'],
+        main_ingredients: ['Tomatoes', 'Nightshades'],
+      },
+      currentFields: { cooking_skills: [], main_ingredients: [] },
+    });
+    const legacyStray = makeRow({
+      id: 'legacy-y',
+      isC02: false,
+      changed: true,
+      fields: { season_timing: ['Summer'] },
+    });
+    expect(() => buildApplyMigrationSql([c02, legacyStray], vocab, report)).toThrow(
+      /non-C02 changing row/i
+    );
+  });
+
+  it('emits normally for a homogeneous C02 run (every row isC02)', () => {
+    expect(() => buildApplyMigrationSql(c02Staging(), vocab, report)).not.toThrow();
+  });
+});

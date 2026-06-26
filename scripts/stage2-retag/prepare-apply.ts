@@ -842,6 +842,28 @@ export function buildApplyMigrationSql(
   // guard + the renamed rollback table + the skipped-ID capture. A legacy/non-C02
   // run keeps the original all-fields preview shape.
   const isC02Run = rows.some((r) => r.isC02);
+  // DATA SAFETY (D-P10a): a C02 run MUST be homogeneous. Per-changing-row
+  // dispatch sends `isC02` rows to applyC02Update (two C02 fields only) but a
+  // NON-C02 changing row falls through to the legacy applyUpdate that writes ALL
+  // ~14 metadata fields — stomping the completed metadata rebuild. The original
+  // fail-closed throw in selectComparedLessons guarded this; narrowing it to the
+  // opt-in { c02ShipThreading } for the apply path moved the guarantee HERE. On a
+  // C02 run every compared record carries finalC02/llmDecisions (so every row is
+  // isC02) by construction — this assertion makes that provable, not assumed:
+  // refuse to emit rather than silently stomp if a stray non-C02 row appears.
+  if (isC02Run) {
+    const nonC02Changing = changing.filter((r) => !r.isC02);
+    if (nonC02Changing.length > 0) {
+      throw new Error(
+        `buildApplyMigrationSql: refusing to emit — this C02 run carries ` +
+          `${nonC02Changing.length} non-C02 changing row(s) ` +
+          `(${nonC02Changing.map((r) => r.id).join(', ')}). Those would route to the ` +
+          `legacy all-fields UPDATE and STOMP the other 15 metadata fields. A C02 run ` +
+          `must be homogeneous (every changing row isC02). Investigate the run output ` +
+          `before applying — do NOT emit a mixed migration.`
+      );
+    }
+  }
   const lines: string[] = [];
 
   lines.push('-- =====================================================');
