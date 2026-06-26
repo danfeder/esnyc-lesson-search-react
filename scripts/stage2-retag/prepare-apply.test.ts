@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildStagingRows,
@@ -265,17 +265,18 @@ describe('buildApplyMigrationSql', () => {
   const sql = buildApplyMigrationSql(staging(), vocab, report);
 
   it('creates the rollback snapshot table idempotently', () => {
-    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.pr6_retag_rollback');
+    // P3.2 (D-P10c): the rollback table is C02-named for all runs now.
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.c02_retag_rollback');
   });
 
   it('enables RLS with no policy on the rollback table (service-role only)', () => {
-    expect(sql).toContain('ALTER TABLE public.pr6_retag_rollback ENABLE ROW LEVEL SECURITY');
+    expect(sql).toContain('ALTER TABLE public.c02_retag_rollback ENABLE ROW LEVEL SECURITY');
   });
 
   it('snapshots only changing rows, guarded against double-insert', () => {
     // ON CONFLICT DO NOTHING keeps re-runs from overwriting the original values.
     expect(sql).toContain('ON CONFLICT');
-    expect(sql.toUpperCase()).toContain('INSERT INTO PUBLIC.PR6_RETAG_ROLLBACK');
+    expect(sql.toUpperCase()).toContain('INSERT INTO PUBLIC.C02_RETAG_ROLLBACK');
   });
 
   it('dual-writes a normal field: BOTH the text[] column and its JSONB key', () => {
@@ -733,5 +734,347 @@ describe('renderGradeDiffMarkdown', () => {
     expect(md).toContain('→');
     // the count of written grade changes is reported.
     expect(md).toContain(String(diff.changes.length));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P3.2 — D-P10: C02-only apply emitter + optimistic concurrency guard
+// ---------------------------------------------------------------------------
+//
+// Synthetic, CI-safe C02 corpus + run (no gitignored dump). Mirrors the
+// generate-diff-report.test C02 fixtures: the run records carry `finalC02`
+// (the reconciled canonical arrays), so the emitter reads the per-field SHIP
+// output (D-P6/D-P11), NOT `rawInput` (whose arrays are deliberately WRONG so
+// any code reading them fails loudly). Values are canonical C02 vocab and one
+// carries an apostrophe + ampersand (`Sautéing & stir-frying`) to exercise SQL
+// escaping under the new write site.
+//
+//   c02-floored   flooredFields:['main_ingredients']; cooking finalC02 KEEP +
+//                 ADD "Knife skills"; ingredients floored from [Tomatoes] →
+//                 [Tomatoes, Nightshades] (parent-derived). BOTH C02 fields
+//                 change. Used to assert flooredC02Fields flows to isEdgeCase.
+//   c02-changed   clean; cooking finalC02 ADDs "Knife skills"; ingredients
+//                 already [Tomatoes, Nightshades] (no floor change). Cooking
+//                 ship-changes only.
+//   c02-unchanged ship == today on both fields → NOT changed (skipped by apply).
+
+function c02CorpusLine(
+  id: string,
+  title: string,
+  cooking: string[],
+  ingredients: string[]
+): string {
+  return JSON.stringify({
+    id,
+    title,
+    content_text: 'A cooking lesson.',
+    activity_type: ['cooking'],
+    tags: ['Some Tag'],
+    season_timing: ['Winter'],
+    cultural_responsiveness_features: [],
+    cultural_heritage: ['Italian'],
+    academic_integration: [],
+    social_emotional_learning: [],
+    core_competencies: [],
+    cooking_methods: ['stovetop'],
+    observances_holidays: [],
+    garden_skills: [],
+    cooking_skills: cooking,
+    main_ingredients: ingredients,
+    academic_concepts: { Science: ['Plant Parts'] },
+  });
+}
+
+function c02RunLine(
+  id: string,
+  finalC02: { cooking_skills: string[]; main_ingredients: string[] },
+  extra: Record<string, unknown> = {}
+): string {
+  return JSON.stringify({
+    id,
+    phase: 'main',
+    model: 'claude-opus-4-8',
+    promptSchemaHash: 'hash-current',
+    // rawInput on an anchored record is the raw KEEP/DROP/ADD DECISION object,
+    // with DELIBERATELY WRONG arrays — any code reading it (instead of the ship
+    // output) would stage garbage and a scope assertion below would fire.
+    rawInput: {
+      cooking_skills: { keep: ['WRONG-cooking'], add: [] },
+      main_ingredients: { keep: ['WRONG-ingredient'], add: [] },
+      // non-C02 fields present on rawInput must NOT reach a C02 apply:
+      season_timing: ['Summer'],
+      grade_levels: ['8'],
+      academic_concepts: { Science: { framework: ['WRONG-Concept'] } },
+    },
+    llmDecisions: { cooking_skills: { keep: [], add: [] } },
+    finalC02,
+    zod: { passed: true, fieldErrors: null },
+    usage: null,
+    costUsd: null,
+    latencyMs: null,
+    error: null,
+    stopReason: 'tool_use',
+    bodyHash: 'h',
+    strict: false,
+    completedAt: '2026-06-25T00:00:00.000Z',
+    ...extra,
+  });
+}
+
+const c02CorpusText = [
+  c02CorpusLine('c02-floored', 'Floored Salad', ['Sautéing & stir-frying'], ['Tomatoes']),
+  c02CorpusLine(
+    'c02-changed',
+    'Ship Changed Stew',
+    ['Sautéing & stir-frying'],
+    ['Tomatoes', 'Nightshades']
+  ),
+  c02CorpusLine(
+    'c02-unchanged',
+    'Unchanged Roast',
+    ['Sautéing & stir-frying'],
+    ['Tomatoes', 'Nightshades']
+  ),
+].join('\n');
+
+const c02RunText = [
+  c02RunLine(
+    'c02-floored',
+    { cooking_skills: ['Sautéing & stir-frying', 'Knife skills'], main_ingredients: [] },
+    { flooredFields: ['main_ingredients'] }
+  ),
+  c02RunLine('c02-changed', {
+    cooking_skills: ['Sautéing & stir-frying', 'Knife skills'],
+    main_ingredients: ['Tomatoes', 'Nightshades'],
+  }),
+  c02RunLine('c02-unchanged', {
+    cooking_skills: ['Sautéing & stir-frying'],
+    main_ingredients: ['Tomatoes', 'Nightshades'],
+  }),
+].join('\n');
+
+const c02Corpus = parseCorpusRecords(c02CorpusText);
+const c02RunRecords = parseRunRecords(c02RunText);
+
+function c02Staging(): StagingRow[] {
+  return buildStagingRows(c02Corpus, c02RunRecords, vocab);
+}
+
+function c02Row(id: string): StagingRow {
+  const found = c02Staging().find((r) => r.id === id);
+  if (!found) throw new Error(`no C02 staging row for ${id}`);
+  return found;
+}
+
+/** The per-lesson UPDATE statement text for one id (from `UPDATE` to its `;`).
+ *  Scans the "(2) Apply" section so the skipped-capture INSERT (which also
+ *  mentions `l.lesson_id = '<id>'`) cannot be mistaken for the UPDATE. */
+function c02UpdateStmt(id: string): string {
+  const report = buildDiffReport(c02Corpus, c02RunRecords, vocab);
+  const fullSql = buildApplyMigrationSql(c02Staging(), vocab, report);
+  const applySection = fullSql.slice(fullSql.indexOf('-- (2) Apply'));
+  const marker = `WHERE lesson_id = '${id}'`;
+  const markerIdx = applySection.indexOf(marker);
+  if (markerIdx < 0) throw new Error(`no UPDATE for ${id}`);
+  const start = applySection.lastIndexOf('UPDATE public.lessons SET', markerIdx);
+  if (start < 0) throw new Error(`no UPDATE for ${id}`);
+  const end = applySection.indexOf(';', markerIdx);
+  return applySection.slice(start, end + 1);
+}
+
+describe('buildStagingRows — C02 run threads the SHIP output (D-P6/D-P11)', () => {
+  it('reads the two C02 fields from the ship output, NOT rawInput', () => {
+    // c02-floored: cooking ship = floor ∪ LLM = [Sautéing & stir-frying, Knife
+    // skills]; ingredients floor-only of [Tomatoes] = [Tomatoes, Nightshades].
+    const r = c02Row('c02-floored');
+    expect(r.fields.cooking_skills).toEqual(['Sautéing & stir-frying', 'Knife skills']);
+    expect(r.fields.main_ingredients).toEqual(['Tomatoes', 'Nightshades']);
+    // the WRONG rawInput arrays must never appear.
+    expect(r.fields.cooking_skills).not.toContain('WRONG-cooking');
+    expect(r.fields.main_ingredients).not.toContain('WRONG-ingredient');
+  });
+
+  it('marks a C02 row and records its floored C02 field(s)', () => {
+    expect(c02Row('c02-floored').isC02).toBe(true);
+    expect(c02Row('c02-floored').flooredC02Fields).toEqual(['main_ingredients']);
+    expect(c02Row('c02-changed').flooredC02Fields ?? []).toEqual([]);
+  });
+
+  it('captures each row pre-apply C02 source arrays for the concurrency guard', () => {
+    // currentFields holds the corpus pre-retag C02 values (the guard literals).
+    const r = c02Row('c02-changed');
+    expect(r.currentFields.cooking_skills).toEqual(['Sautéing & stir-frying']);
+    expect(r.currentFields.main_ingredients).toEqual(['Tomatoes', 'Nightshades']);
+  });
+});
+
+describe('comparedToStagingRow — C02 change detection counts ONLY the two C02 fields', () => {
+  it('marks a row changed when a C02 field changes', () => {
+    expect(c02Row('c02-floored').changed).toBe(true);
+    expect(c02Row('c02-changed').changed).toBe(true);
+  });
+
+  it('marks a row UNCHANGED when both C02 fields equal today (other fields ignored)', () => {
+    // c02-unchanged ships exactly today's cooking + ingredients; the run's
+    // non-C02 rawInput (season Summer, grade 8, concepts) must NOT make it
+    // "changed" — C02 change-detection is scoped to the two C02 fields.
+    const r = c02Row('c02-unchanged');
+    expect(r.changed).toBe(false);
+    expect(r.changeMagnitude).toBe(0);
+  });
+});
+
+describe('isEdgeCase — flooredC02Fields routes a C02 row to the weird bucket', () => {
+  it('flags a row whose C02 field fell back to the floor', () => {
+    expect(isEdgeCase(makeRow({ flooredC02Fields: ['main_ingredients'] }))).toBe(true);
+  });
+
+  it('does not flag a clean C02 row with no floored fields', () => {
+    expect(isEdgeCase(makeRow({ flooredC02Fields: [] }))).toBe(false);
+  });
+});
+
+describe('applyUpdate — C02-only write scope (D-P10a)', () => {
+  it('writes ONLY the two C02 text[] columns + their two JSONB keys', () => {
+    const stmt = c02UpdateStmt('c02-floored');
+    // the two columns
+    expect(stmt).toContain('cooking_skills = ');
+    expect(stmt).toContain('main_ingredients = ');
+    // the two JSONB keys
+    expect(stmt).toContain('{cookingSkills}');
+    expect(stmt).toContain('{mainIngredients}');
+  });
+
+  it('writes NO other flat column and NO grade_levels column', () => {
+    const stmt = c02UpdateStmt('c02-floored');
+    expect(stmt).not.toMatch(/\bseason_timing\s*=/);
+    expect(stmt).not.toMatch(/\bcooking_methods\s*=/);
+    expect(stmt).not.toMatch(/\bcultural_heritage\s*=/);
+    expect(stmt).not.toMatch(/\bgrade_levels\s*=/);
+  });
+
+  it('writes NO other JSONB key (no gradeLevels, no academicConcepts, no other field key)', () => {
+    const stmt = c02UpdateStmt('c02-floored');
+    expect(stmt).not.toContain('{gradeLevels}');
+    expect(stmt).not.toContain('{academicConcepts}');
+    expect(stmt).not.toContain('{seasonTiming}');
+    expect(stmt).not.toContain('{cookingMethods}');
+  });
+
+  it('uses the SHIP values, never the WRONG rawInput arrays', () => {
+    const stmt = c02UpdateStmt('c02-floored');
+    expect(stmt).toContain('Knife skills');
+    expect(stmt).toContain('Nightshades');
+    expect(stmt).not.toContain('WRONG-cooking');
+    expect(stmt).not.toContain('WRONG-ingredient');
+    expect(stmt).not.toContain('Summer');
+  });
+
+  it('escapes the apostrophe + ampersand value safely', () => {
+    const stmt = c02UpdateStmt('c02-floored');
+    // Sautéing & stir-frying carries no single quote, but assert it survives
+    // verbatim inside a single-quoted text literal.
+    expect(stmt).toContain(`'Sautéing & stir-frying'`);
+  });
+});
+
+describe('applyUpdate — optimistic concurrency guard (D-P10b)', () => {
+  it('matches the pre-apply C02 source arrays in the WHERE (order-insensitive, NULL-safe)', () => {
+    const stmt = c02UpdateStmt('c02-changed');
+    // coalesce(...) <@ ARRAY[...] AND coalesce(...) @> ARRAY[...] for BOTH cols.
+    expect(stmt).toMatch(/coalesce\(\s*cooking_skills\s*,\s*'\{\}'::text\[\]\s*\)\s*<@/i);
+    expect(stmt).toMatch(/coalesce\(\s*cooking_skills\s*,\s*'\{\}'::text\[\]\s*\)\s*@>/i);
+    expect(stmt).toMatch(/coalesce\(\s*main_ingredients\s*,\s*'\{\}'::text\[\]\s*\)\s*<@/i);
+    expect(stmt).toMatch(/coalesce\(\s*main_ingredients\s*,\s*'\{\}'::text\[\]\s*\)\s*@>/i);
+    // the guard literals are the CURRENT corpus arrays, not the new ship values.
+    expect(stmt).toContain(`'Sautéing & stir-frying'`);
+    expect(stmt).toContain(`'Tomatoes'`);
+  });
+
+  it('emits a skipped-ID capture for rows whose current DB C02 values fail the guard', () => {
+    const report = buildDiffReport(c02Corpus, c02RunRecords, vocab);
+    const sql = buildApplyMigrationSql(c02Staging(), vocab, report);
+    // A capture table + an INSERT … SELECT of target ids whose current C02
+    // values no longer match the export-time guard.
+    expect(sql).toContain('c02_retag_skipped');
+    expect(sql.toUpperCase()).toContain('INSERT INTO PUBLIC.C02_RETAG_SKIPPED');
+  });
+});
+
+describe('rollback snapshot — renamed table, still full-row (D-P10c)', () => {
+  const report = buildDiffReport(c02Corpus, c02RunRecords, vocab);
+  const sql = buildApplyMigrationSql(c02Staging(), vocab, report);
+
+  it('uses the C02-named rollback table', () => {
+    expect(sql).toContain('public.c02_retag_rollback');
+    expect(sql).not.toContain('pr6_retag_rollback');
+  });
+
+  it('keeps the snapshot full-row (captures all columns + full metadata)', () => {
+    // full-row forensic snapshot: the DDL still lists every flat column + a
+    // metadata jsonb column, and the INSERT captures l.metadata.
+    expect(sql).toContain('metadata jsonb');
+    expect(sql).toContain('l.metadata');
+  });
+
+  it('enables RLS with no policies on the rollback table', () => {
+    expect(sql).toContain('ALTER TABLE public.c02_retag_rollback ENABLE ROW LEVEL SECURITY');
+  });
+});
+
+describe('buildApplyMigrationSql — C02 homogeneity guard (D-P10a data safety)', () => {
+  const report = buildDiffReport(c02Corpus, c02RunRecords, vocab);
+
+  it('refuses to emit when a C02 run carries a non-C02 changing row (would stomp the 15 other fields)', () => {
+    // A C02 run is homogeneous by construction (every compared record carries
+    // finalC02/llmDecisions). If a stray non-C02 changing row slipped in, the
+    // per-row applyUpdate dispatch would emit a LEGACY all-fields UPDATE for it,
+    // stomping the metadata rebuild. The guard must fail closed instead.
+    const c02 = makeRow({
+      id: 'c02-x',
+      isC02: true,
+      changed: true,
+      fields: {
+        cooking_skills: ['Sautéing & stir-frying'],
+        main_ingredients: ['Tomatoes', 'Nightshades'],
+      },
+      currentFields: { cooking_skills: [], main_ingredients: [] },
+    });
+    const legacyStray = makeRow({
+      id: 'legacy-y',
+      isC02: false,
+      changed: true,
+      fields: { season_timing: ['Summer'] },
+    });
+    expect(() => buildApplyMigrationSql([c02, legacyStray], vocab, report)).toThrow(
+      /non-C02 changing row/i
+    );
+  });
+
+  it('emits normally for a homogeneous C02 run (every row isC02)', () => {
+    expect(() => buildApplyMigrationSql(c02Staging(), vocab, report)).not.toThrow();
+  });
+});
+
+describe('buildStagingRows — fail-closed isC02 propagation seam (D-P10a)', () => {
+  it('throws if a C02-anchored lesson does not propagate isC02 onto its StagingRow', async () => {
+    // The C02-only write scope depends on EVERY C02-anchored compared lesson
+    // carrying isC02:true onto its StagingRow (buildApplyMigrationSql keys its
+    // homogeneity guard off rows.some(r => r.isC02); applyUpdate dispatches the
+    // C02-only write off row.isC02). Break the ship-threading seam by forcing the
+    // floor input to fail to load: ship becomes undefined, so a C02-anchored
+    // lesson falls through to the LEGACY all-fields path and its StagingRow never
+    // gets isC02 — the exact silent stomp D-P10a prevents. buildStagingRows must
+    // catch this and refuse, not return a row that would route to the legacy
+    // all-fields UPDATE.
+    vi.resetModules();
+    vi.doMock('./c02-floor', () => ({ loadC02FloorInput: () => undefined }));
+    try {
+      const { buildStagingRows: bsr } = await import('./prepare-apply');
+      expect(() => bsr(c02Corpus, c02RunRecords, vocab)).toThrow(/C02-anchored lesson/);
+    } finally {
+      vi.doUnmock('./c02-floor');
+      vi.resetModules();
+    }
   });
 });

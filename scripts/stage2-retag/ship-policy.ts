@@ -34,6 +34,16 @@ import { applyC02Floor, floorTagValues, type C02FloorInput } from './c02-floor';
 import { C02_KEEP_ONLY_LOCK } from './reconcile';
 
 /**
+ * The two C02 fields the anchored re-tag SHIPS (and APPLIES). The single source
+ * of truth for "which fields are in C02 scope": the diff report scopes a C02 run
+ * to exactly these (generate-diff-report P3.1), and the apply emitter writes only
+ * these columns + their JSONB keys (prepare-apply P3.2 imports this — do NOT
+ * redefine it there). Order matches the DB column / metadata-rebuild convention.
+ */
+export const C02_APPLY_FIELDS = ['cooking_skills', 'main_ingredients'] as const;
+export type C02ApplyField = (typeof C02_APPLY_FIELDS)[number];
+
+/**
  * The two-field SHIP output: the canonical APPLY arrays per field. Keyed by the
  * same field names the DB columns / metadata JSONB use (mirrors `C02FinalTags`).
  */

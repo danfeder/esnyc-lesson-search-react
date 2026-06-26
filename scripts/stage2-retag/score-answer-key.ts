@@ -59,11 +59,18 @@ import {
 import { assertCorpusHasC02Tags } from './sample-answer-key';
 import { RESULT_PROPERTIES } from './schema';
 import {
+  buildC02EffectiveInput,
+  computeBodyHash,
   parseRunRecords,
   latestRecordById,
   requireFlagValue,
   warnIfOutsideArtifacts,
+  type RunRecord,
 } from './run-retag';
+import { appendDocSurfaces, loadDocSurfaces } from './doc-surfaces';
+import { loadC02FloorInput } from './c02-floor';
+import { loadC02Manifest } from './vocab';
+import { c02ManifestVersion } from './c02-anchor';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS_DIR = path.join(MODULE_DIR, 'artifacts');
@@ -647,6 +654,114 @@ export function jsonSidecarPath(markdownPath: string): string {
 }
 
 /**
+ * Corpus↔run freshness guard (Task 4c). Proves the `--corpus` matches the
+ * `--run` snapshot before the rules baseline / gates are computed against them
+ * — otherwise the gates would be scored against inconsistent data (the corpus
+ * supplies the rules baseline + clean-core/judgment labels; the run supplies the
+ * model tags), yielding a silently misleading scorecard.
+ *
+ * **Faithful bodyHash FULL scan.** For EVERY latest run record (sorted by id for
+ * deterministic error reporting), the effective-input `bodyHash` is RECOMPUTED
+ * from the corpus row using the EXACT pipeline `runMainPass` stamps each record
+ * with — append doc surfaces → `buildC02EffectiveInput(row, floorInput,
+ * manifestVer)` → `computeBodyHash(...)` (the same exported helpers; no logic is
+ * re-implemented here, so a legitimately matching corpus/run pair can never
+ * false-positive). If ANY id's recomputed hash differs from the run record's
+ * stored `bodyHash`, the corpus is NOT the run's snapshot → throw, naming both
+ * paths. A full scan (not a sample) is used deliberately: the rules baseline +
+ * labels read ALL corpus rows, so a stale row anywhere — not just in a first-N
+ * sample — would skew the scorecard, and re-hashing ~700 rows is milliseconds
+ * (a string hash; the floor/manifest/doc-surfaces load once).
+ *
+ * **Lighter fallback (never-false-positive).** A run record's `bodyHash` is
+ * `.optional()` in the schema; an id lacking one is skipped. If NONE of the run
+ * records carries a `bodyHash` (e.g. a legacy/hashless run), the hash scan cannot
+ * run, so the guard DOWNGRADES to an id-coverage assertion (every run id is
+ * present in the corpus) and notes the downgrade. Id-coverage is also checked
+ * eagerly: any run id absent from the corpus throws regardless of hashes (it is a
+ * real corpus↔run gap and cannot be hash-verified anyway).
+ */
+export function assertCorpusMatchesRun(
+  runRecords: RunRecord[],
+  corpus: Array<{
+    id: string;
+    content_text?: string;
+    cooking_skills?: string[] | null;
+    main_ingredients?: string[] | null;
+  }>,
+  opts: { runPath: string; corpusPath: string }
+): void {
+  const corpusById = new Map(corpus.map((row) => [row.id, row]));
+  // The run records carry the bodyHash (loadRunContestant strips it). Latest
+  // record per id wins, mirroring the scorer's contestant view.
+  const latestRun = latestRecordById(runRecords);
+  // FULL scan: every latest run id, sorted only for deterministic error
+  // reporting (the first mismatch reported is stable). Not a sample — a stale
+  // row anywhere skews the all-rows rules baseline + labels.
+  const checkedIds = [...latestRun.keys()].sort();
+
+  const failHeader =
+    `C02 freshness guard: the --corpus does not match the --run snapshot.\n` +
+    `  run:    ${opts.runPath}\n` +
+    `  corpus: ${opts.corpusPath}\n` +
+    `Regenerate the corpus from the SAME export the run was produced against, or ` +
+    `pass the matching --corpus / --v3-from-corpus.`;
+
+  // Load the floor + manifest ONCE (reused across the scan; offline, no DB).
+  const floorInput = loadC02FloorInput();
+  const manifestVer = c02ManifestVersion(loadC02Manifest());
+  const docSurfaces = loadDocSurfaces();
+
+  let hashChecked = 0;
+  for (const id of checkedIds) {
+    const corpusRow = corpusById.get(id);
+    // Id-coverage: a run id with no corpus row is a real gap (it also can't be
+    // hash-verified). Throw regardless of the hash path.
+    if (corpusRow === undefined || corpusRow.content_text === undefined) {
+      throw new Error(
+        `${failHeader}\n` +
+          `  detail: run id "${id}" has no corpus row (missing or bodyless) — the corpus ` +
+          `does not cover the run.`
+      );
+    }
+    const record = latestRun.get(id);
+    const storedHash = record?.bodyHash;
+    if (!storedHash) continue; // hashless record: skip the hash check for this id.
+    const surfacedBody = appendDocSurfaces(corpusRow.content_text, docSurfaces.get(id));
+    const { effectiveInput } = buildC02EffectiveInput(
+      {
+        id,
+        content_text: surfacedBody,
+        cooking_skills: corpusRow.cooking_skills,
+        main_ingredients: corpusRow.main_ingredients,
+      },
+      floorInput,
+      manifestVer
+    );
+    const recomputed = computeBodyHash(effectiveInput);
+    if (recomputed !== storedHash) {
+      throw new Error(
+        `${failHeader}\n` +
+          `  detail: recomputed effective-input bodyHash for id "${id}" (${recomputed}) ` +
+          `≠ the run record's stored bodyHash (${storedHash}).`
+      );
+    }
+    hashChecked++;
+  }
+
+  if (checkedIds.length > 0 && hashChecked === 0) {
+    // Downgraded to id-coverage (no record carried a bodyHash). Coverage was
+    // already asserted per id above (any gap threw), so reaching here means the
+    // corpus covers every run id — pass with a note.
+    console.warn(
+      `note: C02 freshness guard downgraded from the bodyHash scan to id-coverage — ` +
+        `none of the ${checkedIds.length} run record(s) carry a bodyHash (legacy/hashless run). ` +
+        `Verified every run id is present in the corpus instead.`
+    );
+  }
+}
+
+/**
  * C02 mode (impl plan P1.6). Emits the 4-gate C02 scorecard. The winner is the
  * first --run contestant (its rawInput tags); the rules baseline is COMPUTED
  * from the corpus current tags (the real floor — not loaded); the corpus also
@@ -657,7 +772,11 @@ function runC02Mode(args: Args, key: KeyRecord[]): void {
     throw new Error('--c02 requires a --run <label>=<path> winner contestant');
   }
   const winnerSpec = args.runs[0];
-  const winnerRecords = loadRunContestant(readFileSync(winnerSpec.path, 'utf8'));
+  // Parse the run JSONL ONCE: the full records carry the bodyHash the freshness
+  // guard needs; the contestant view (tag-only, finalC02-overlaid) drives gating.
+  const winnerRunText = readFileSync(winnerSpec.path, 'utf8');
+  const winnerRunRecords = parseRunRecords(winnerRunText);
+  const winnerRecords = loadRunContestant(winnerRunText);
 
   const corpusPath = args.v3FromCorpus ?? DEFAULT_CORPUS_PATH;
   if (!existsSync(corpusPath)) {
@@ -670,6 +789,13 @@ function runC02Mode(args: Args, key: KeyRecord[]): void {
   }
   const corpus = parseTaggedJsonl(readFileSync(corpusPath, 'utf8')) as CorpusCurrentTags[];
   assertCorpusHasC02Tags(corpus, corpusPath);
+  // Freshness guard (Task 4c): PROVE the corpus is the run's snapshot BEFORE
+  // computing the baseline / gates against them. A stale/wrong corpus would
+  // silently misalign the rules baseline + clean-core labels with the model tags.
+  assertCorpusMatchesRun(winnerRunRecords, corpus, {
+    runPath: winnerSpec.path,
+    corpusPath,
+  });
   const rulesRecords = computeRulesBaseline(corpus);
 
   const gates = evaluateC02Gates(winnerRecords, rulesRecords, key, corpus);

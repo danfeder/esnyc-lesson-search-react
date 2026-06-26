@@ -63,13 +63,23 @@ import {
 } from './run-retag';
 import {
   buildDiffReport,
+  isC02Anchored,
   parseCorpusRecords,
   selectComparedLessons,
+  shipTagsFor,
   type ComparedLesson,
   type CorpusDiffRecord,
   type DiffReport,
 } from './generate-diff-report';
-import { MAIN_PASS_FIELDS, loadVocab, type FieldVocab, type Stage2Vocab } from './vocab';
+import { loadC02FloorInput } from './c02-floor';
+import { C02_APPLY_FIELDS, type C02ShipTags } from './ship-policy';
+import {
+  MAIN_PASS_FIELDS,
+  loadC02Manifest,
+  loadVocab,
+  type FieldVocab,
+  type Stage2Vocab,
+} from './vocab';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS_DIR = path.join(MODULE_DIR, 'artifacts');
@@ -86,7 +96,15 @@ const DEFAULT_HERITAGE_CORRECTIONS_PATH = path.join(MODULE_DIR, 'data/heritage-c
  *  grade diff — the corpus snapshot carries no current grades). */
 const DEFAULT_PROD_GRADES_CENSUS_PATH = path.join(MODULE_DIR, 'data/prod-grades-census.json');
 
-const ROLLBACK_TABLE = 'public.pr6_retag_rollback';
+// P3.2 (D-P10c): the rollback table is C02-named. The snapshot stays FULL-ROW
+// (every column + full metadata, conservative for forensics); only the table
+// name and the rollback-restore scope change for C02.
+const ROLLBACK_TABLE = 'public.c02_retag_rollback';
+// P3.2 (D-P10b): the optimistic-concurrency skip-report capture. On apply, any
+// target whose CURRENT DB C02 arrays no longer match the export-time guard is
+// captured here (an INSERT … SELECT) so we can reconcile which rows were
+// skipped (a reviewer edited them since the corpus export — skip, don't stomp).
+const SKIPPED_TABLE = 'public.c02_retag_skipped';
 const STAGING_TABLE = 'public.pr6_retag_staging';
 
 /** The 11 flat fields that have a lessons text[] column (everything but
@@ -212,6 +230,24 @@ export interface StagingRow {
   /** How many code-enforced mechanical normalizations the runner applied to
    *  this record (non-zero is an edge-case signal). */
   normalizationCount: number;
+  /**
+   * P3.2 (D-P10a): true iff this is a C02 anchored row. On a C02 row the apply
+   * emitter writes ONLY the two C02 fields (cooking_skills/main_ingredients) —
+   * column + JSONB key — and NOTHING else (no grade, no academicConcepts, no
+   * other flat field), so a C02 run+apply can never stomp the metadata rebuild.
+   * The two C02 fields' `fields[...]` values come from the per-field SHIP output
+   * (`materializeC02Ship`), NOT `rawInput` (D-P6/D-P11).
+   */
+  isC02?: boolean;
+  /**
+   * P3.2 (D-P11 / Session-15 audit carry-forward): the C02 field(s) whose LLM
+   * decision was off-vocab and FELL BACK to the deterministic floor. C02 fields
+   * bypass `normalize`, so `normalizationCount` is 0 for a floored C02 row and
+   * cannot flag it — this signal routes floored C02 rows to the weird bucket for
+   * spot-check (see isEdgeCase). Absent/empty on a clean C02 row or any non-C02
+   * row.
+   */
+  flooredC02Fields?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -281,12 +317,49 @@ function normalizeCorpusConcepts(raw: Record<string, string[]>): Record<string, 
 function comparedToStagingRow(
   lesson: ComparedLesson,
   source: { zodPassed: boolean; phase: 'main' | 'repair' | 'fallback'; normalizationCount: number },
-  correction?: HeritageCorrection
+  correction?: HeritageCorrection,
+  // P3.2 (D-P6/D-P11): on a C02 anchored lesson the caller passes the
+  // materialized per-field SHIP output. When present, the two C02 fields' new
+  // values come from it (NOT `rawInput`, which holds the raw decision), the
+  // emitter scopes to C02-only, and change-detection counts ONLY the two C02
+  // fields. Absent on a legacy/non-C02 lesson (the unchanged all-fields path).
+  ship?: C02ShipTags
 ): StagingRow {
   const fields: Record<string, string[]> = {};
   const currentFields: Record<string, string[]> = {};
-  let changeMagnitude = 0;
 
+  // --- C02 anchored row: scope EVERYTHING to the two C02 fields (D-P10a) ------
+  if (ship) {
+    let changeMagnitude = 0;
+    for (const field of C02_APPLY_FIELDS) {
+      const newValues = ship[field];
+      const oldValues = lesson.corpus.flat[field] ?? [];
+      fields[field] = newValues;
+      currentFields[field] = oldValues;
+      if (!setsEqual(oldValues, newValues)) changeMagnitude++;
+    }
+    // No grade, no academic_concepts, no other flat field is staged or written
+    // on a C02 row — the apply must never touch a non-C02 metadata field.
+    return {
+      id: lesson.id,
+      title: lesson.title,
+      fields,
+      currentFields,
+      academicConcepts: {},
+      currentConcepts: {},
+      gradeLevels: [],
+      changed: changeMagnitude > 0,
+      changeMagnitude,
+      zodPassed: source.zodPassed,
+      phase: source.phase,
+      normalizationCount: source.normalizationCount,
+      isC02: true,
+      flooredC02Fields: lesson.flooredFields ?? [],
+    };
+  }
+
+  // --- Legacy/non-C02 row: the original all-fields path (unchanged) ----------
+  let changeMagnitude = 0;
   for (const field of FLAT_FIELDS) {
     let newValues = newFlatValues(lesson.rawInput, field);
     // C2.1: apply the targeted heritage correction (drop/set) to the run's
@@ -345,14 +418,42 @@ export function buildStagingRows(
   excludedIds: Set<string> = new Set(),
   heritageCorrections: Map<string, HeritageCorrection> = new Map()
 ): StagingRow[] {
-  const { compared } = selectComparedLessons(corpusRecords, runRecords, excludedIds);
+  // P3.2 (D-P10a): opt into C02 ship threading. selectComparedLessons threads
+  // the reconciled C02 source (finalC02 / llmDecisions / flooredFields) onto a
+  // C02 anchored lesson instead of fail-closing — we then materialize the
+  // per-field SHIP output below (NOT the raw decision on `rawInput`). A
+  // legacy/non-C02 run carries no C02 source, so threading is a no-op and the
+  // emitter keeps its original all-fields behavior.
+  const { compared } = selectComparedLessons(corpusRecords, runRecords, excludedIds, {
+    c02ShipThreading: true,
+  });
   // selectComparedLessons drops the source-record provenance, so recover the
   // Zod flag, phase, and normalization count from the latest record per id
   // (later lines win — same selection rule).
   const latest = new Map<string, RunRecord>();
   for (const record of runRecords) latest.set(record.id, record);
-  return compared.map((lesson) => {
+
+  // The floor input + canonical cooking set are loaded ONCE (only when a C02
+  // anchored lesson is present), then reused for every row's ship materialization
+  // — exactly mirroring buildDiffReport. Loading is lazy so a legacy run never
+  // pays for it (and never requires the C02 data files to exist).
+  const isC02Run = compared.some(isC02Anchored);
+  let floorInput: ReturnType<typeof loadC02FloorInput> | undefined;
+  let cookingValues: ReadonlySet<string> | undefined;
+  if (isC02Run) {
+    floorInput = loadC02FloorInput();
+    cookingValues = new Set(loadC02Manifest().cookingSkills);
+  }
+
+  const rows = compared.map((lesson) => {
     const record = latest.get(lesson.id);
+    // On a C02 anchored lesson, materialize the per-field SHIP output (floor-only
+    // main_ingredients + floor-retention cooking_skills) from the SAME helper the
+    // diff report uses, so staging and the diff can never drift (D-P6/D-P11).
+    const ship =
+      isC02Anchored(lesson) && floorInput && cookingValues
+        ? shipTagsFor(lesson, floorInput, cookingValues)
+        : undefined;
     return comparedToStagingRow(
       lesson,
       {
@@ -360,9 +461,34 @@ export function buildStagingRows(
         phase: record?.phase ?? 'main',
         normalizationCount: record?.normalizations?.length ?? 0,
       },
-      heritageCorrections.get(lesson.id)
+      heritageCorrections.get(lesson.id),
+      ship
     );
   });
+
+  // DATA SAFETY (D-P10a): fail-closed on the isC02 propagation seam. The C02-only
+  // write scope hinges on EVERY C02-anchored lesson carrying isC02:true onto its
+  // StagingRow — buildApplyMigrationSql computes `isC02Run = rows.some(r => r.isC02)`
+  // and applyUpdate dispatches the C02-only write off `row.isC02`. If a future
+  // refactor of comparedToStagingRow (or a broken ship-threading path) failed to
+  // propagate isC02 onto an anchored row, that guard would see isC02Run=false and
+  // fall through to the legacy ALL-FIELDS UPDATE — exactly the metadata-rebuild
+  // stomp D-P10a prevents. The downstream homogeneity guard catches a stray
+  // non-C02 row; this catches the inverse (an anchored row that lost its isC02
+  // mark). Refuse to return staging rather than silently stage a stomp.
+  compared.forEach((lesson, i) => {
+    if (isC02Anchored(lesson) && rows[i].isC02 !== true) {
+      throw new Error(
+        `buildStagingRows: C02-anchored lesson ${lesson.id} produced a StagingRow ` +
+          `without isC02:true. The C02 ship output failed to propagate onto staging — ` +
+          `emitting would risk a LEGACY all-fields UPDATE that stomps the completed ` +
+          `metadata rebuild (D-P10a). Refusing. Investigate the ship-threading seam ` +
+          `(comparedToStagingRow / shipTagsFor) before applying.`
+      );
+    }
+  });
+
+  return rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -536,6 +662,73 @@ function rollbackSnapshotInsert(rows: StagingRow[]): string[] {
 }
 
 /**
+ * The optimistic-concurrency guard predicate for ONE C02 column (D-P10b).
+ *
+ * DATA-SAFETY CRITICAL. The apply's WHERE must also match the row's pre-apply
+ * C02 source array (the value captured at corpus export). If a reviewer edited
+ * the tags between export and apply, the current DB value no longer matches and
+ * the UPDATE skips the row (matches zero rows) — it is NOT stomped.
+ *
+ * Comparison semantics (deliberate):
+ *   - ORDER-INSENSITIVE — `coalesce(col,'{}') <@ ARRAY[...] AND ⊇` (mutual
+ *     containment) rather than `=`. PostgreSQL array `=` is order-sensitive, so
+ *     a benign reordering of the SAME tag set (e.g. a re-save that reorders the
+ *     array) would otherwise FALSE-SKIP a row that no human actually changed.
+ *   - NULL = EMPTY SET — `coalesce(col,'{}'::text[])` so a column stored as NULL
+ *     ("no tags") compares equal to a stored `{}`; without this the guard would
+ *     FALSE-SKIP rows whose "no tags" is NULL.
+ * A cardinality check is added belt-and-suspenders so duplicate values (if any
+ * ever exist) can't make `A ⊆ B ∧ A ⊇ B` pass on differently-sized sets.
+ */
+function c02ConcurrencyGuardPredicate(column: string, expected: string[]): string {
+  const literal = sqlTextArrayLiteral(expected);
+  const col = `coalesce(${column}, '{}'::text[])`;
+  return (
+    `${col} <@ ${literal} AND ${col} @> ${literal} ` +
+    `AND cardinality(${col}) = cardinality(${literal})`
+  );
+}
+
+/**
+ * One C02-scoped dual-write UPDATE for a changing C02 lesson (D-P10a + D-P10b).
+ * Writes ONLY the two C02 fields — `cooking_skills` + `main_ingredients` — as a
+ * typed text[] column AND its camelCase metadata JSONB key (`cookingSkills` /
+ * `mainIngredients`), and NOTHING else (no grade, no academic_concepts, no other
+ * flat field), so a C02 run+apply can never stomp the completed metadata
+ * rebuild. The WHERE carries the optimistic-concurrency guard on BOTH C02
+ * columns so a reviewer-edited row is skipped, not stomped.
+ */
+function applyC02Update(row: StagingRow, vocab: Stage2Vocab): string[] {
+  const setClauses: string[] = [];
+  for (const field of C02_APPLY_FIELDS) {
+    setClauses.push(`  ${field} = ${sqlTextArrayLiteral(row.fields[field] ?? [])}`);
+  }
+  // metadata JSONB: chain jsonb_set for ONLY the two C02 camelCase keys.
+  let metaExpr = "COALESCE(metadata, '{}'::jsonb)";
+  for (const field of C02_APPLY_FIELDS) {
+    const fieldVocab: FieldVocab = vocab[field];
+    metaExpr = `jsonb_set(${metaExpr}, '{${fieldVocab.jsonbKey}}', ${sqlJsonbLiteral(
+      row.fields[field] ?? []
+    )}, true)`;
+  }
+  setClauses.push(`  metadata = ${metaExpr}`);
+
+  // Concurrency guard (D-P10b): match the lesson AND its export-time C02 arrays.
+  const guards = C02_APPLY_FIELDS.map((field) =>
+    c02ConcurrencyGuardPredicate(field, row.currentFields[field] ?? [])
+  );
+
+  const lines: string[] = [];
+  lines.push(`UPDATE public.lessons SET`);
+  lines.push(`${setClauses.join(',\n')}`);
+  lines.push(`WHERE lesson_id = ${sqlTextLiteral(row.id)}`);
+  for (const guard of guards) lines.push(`  AND ${guard}`);
+  // close the statement on the last guard line
+  lines[lines.length - 1] = `${lines[lines.length - 1]};`;
+  return lines;
+}
+
+/**
  * One dual-write UPDATE per changing lesson. Each sets ABSOLUTE new values
  * (idempotent re-apply). For every flat field: write BOTH the text[] column AND
  * jsonb_set the matching camelCase metadata key. academic_concepts (column:
@@ -543,8 +736,13 @@ function rollbackSnapshotInsert(rows: StagingRow[]): string[] {
  *
  * All metadata key writes are chained through a single jsonb_set expression so
  * one UPDATE statement leaves the row fully canonical.
+ *
+ * P3.2 (D-P10a): a C02 anchored row delegates to applyC02Update — the C02-only
+ * write scope + the optimistic-concurrency guard. The legacy/non-C02 all-fields
+ * body below is unchanged.
  */
 function applyUpdate(row: StagingRow, vocab: Stage2Vocab): string[] {
+  if (row.isC02) return applyC02Update(row, vocab);
   const setClauses: string[] = [];
 
   // grade guard (C2.1 — DATA SAFETY): grade_levels is a user-facing filter and
@@ -589,6 +787,72 @@ function applyUpdate(row: StagingRow, vocab: Stage2Vocab): string[] {
 }
 
 /**
+ * P3.2 (D-P10b): the skipped-ID capture for a C02 run. BEFORE any UPDATE,
+ * record every CHANGING target row whose CURRENT DB C02 arrays no longer match
+ * the export-time guard (a reviewer edited it since the corpus export) into
+ * `c02_retag_skipped`. Scope is the `changing` set ONLY — the same rows the
+ * per-lesson UPDATEs run over. An UNCHANGED row emits no UPDATE, so there is
+ * nothing for it to skip or stomp and it is intentionally NOT captured here (a
+ * reviewer's drift on an unchanged row is irrelevant — we were never going to
+ * write it). The guard-skipped rows are exactly the changing rows the UPDATEs
+ * match zero of, so this is the reconciliation surface for "which rows we PLANNED
+ * to change did we deliberately NOT touch?" — committed alongside the migration.
+ *
+ * Idempotent: CREATE TABLE IF NOT EXISTS + ON CONFLICT DO NOTHING. RLS-enabled,
+ * no policies (service-role only). Captures the current C02 arrays so a human
+ * can see WHAT the row drifted to.
+ */
+function c02SkippedCapture(rows: StagingRow[]): string[] {
+  const lines: string[] = [];
+  lines.push('-- =====================================================');
+  lines.push('-- (1c) Concurrency guard — capture rows skipped because a reviewer');
+  lines.push('--      edited their C02 tags since the corpus export (D-P10b).');
+  lines.push('--      The per-lesson UPDATEs below carry the SAME guard, so these');
+  lines.push('--      rows match zero rows there — they are skipped, NOT stomped.');
+  lines.push('-- =====================================================');
+  lines.push(`CREATE TABLE IF NOT EXISTS ${SKIPPED_TABLE} (`);
+  lines.push('  lesson_id text PRIMARY KEY,');
+  lines.push('  current_cooking_skills text[],');
+  lines.push('  current_main_ingredients text[],');
+  lines.push('  expected_cooking_skills text[],');
+  lines.push('  expected_main_ingredients text[]');
+  lines.push(');');
+  lines.push(`ALTER TABLE ${SKIPPED_TABLE} ENABLE ROW LEVEL SECURITY;`);
+  if (rows.length === 0) {
+    lines.push('-- (no changing C02 rows)');
+    lines.push('');
+    return lines;
+  }
+  for (const row of rows) {
+    const expectedCooking = row.currentFields.cooking_skills ?? [];
+    const expectedIngredients = row.currentFields.main_ingredients ?? [];
+    lines.push(
+      `INSERT INTO ${SKIPPED_TABLE} ` +
+        '(lesson_id, current_cooking_skills, current_main_ingredients, ' +
+        'expected_cooking_skills, expected_main_ingredients)'
+    );
+    lines.push('SELECT l.lesson_id, l.cooking_skills, l.main_ingredients,');
+    lines.push(
+      `  ${sqlTextArrayLiteral(expectedCooking)}, ${sqlTextArrayLiteral(expectedIngredients)}`
+    );
+    lines.push('FROM public.lessons l');
+    lines.push(`WHERE l.lesson_id = ${sqlTextLiteral(row.id)}`);
+    // A row is SKIPPED iff it DRIFTED on EITHER C02 column — i.e. either column's
+    // current value fails its export-time guard. Each NOT(...) is fully
+    // parenthesized so the OR can't bind across an unrelated predicate.
+    const cookingDrift = `NOT (${c02ConcurrencyGuardPredicate('l.cooking_skills', expectedCooking)})`;
+    const ingredientDrift = `NOT (${c02ConcurrencyGuardPredicate(
+      'l.main_ingredients',
+      expectedIngredients
+    )})`;
+    lines.push(`  AND (${cookingDrift} OR ${ingredientDrift})`);
+    lines.push('ON CONFLICT (lesson_id) DO NOTHING;');
+  }
+  lines.push('');
+  return lines;
+}
+
+/**
  * Builds the DRAFT apply migration text (mirrors PR-5's
  * 20260611000000_pr5a_heritage_canonicalization.sql shape): a header comment,
  * the rollback snapshot DDL + guarded INSERT of changing rows, then one
@@ -602,6 +866,32 @@ export function buildApplyMigrationSql(
   report: DiffReport
 ): string {
   const changing = changedRows(rows);
+  // P3.2: a C02 run scopes the emitter to the two C02 fields + the concurrency
+  // guard + the renamed rollback table + the skipped-ID capture. A legacy/non-C02
+  // run keeps the original all-fields preview shape.
+  const isC02Run = rows.some((r) => r.isC02);
+  // DATA SAFETY (D-P10a): a C02 run MUST be homogeneous. Per-changing-row
+  // dispatch sends `isC02` rows to applyC02Update (two C02 fields only) but a
+  // NON-C02 changing row falls through to the legacy applyUpdate that writes ALL
+  // ~14 metadata fields — stomping the completed metadata rebuild. The original
+  // fail-closed throw in selectComparedLessons guarded this; narrowing it to the
+  // opt-in { c02ShipThreading } for the apply path moved the guarantee HERE. On a
+  // C02 run every compared record carries finalC02/llmDecisions (so every row is
+  // isC02) by construction — this assertion makes that provable, not assumed:
+  // refuse to emit rather than silently stomp if a stray non-C02 row appears.
+  if (isC02Run) {
+    const nonC02Changing = changing.filter((r) => !r.isC02);
+    if (nonC02Changing.length > 0) {
+      throw new Error(
+        `buildApplyMigrationSql: refusing to emit — this C02 run carries ` +
+          `${nonC02Changing.length} non-C02 changing row(s) ` +
+          `(${nonC02Changing.map((r) => r.id).join(', ')}). Those would route to the ` +
+          `legacy all-fields UPDATE and STOMP the other 15 metadata fields. A C02 run ` +
+          `must be homogeneous (every changing row isC02). Investigate the run output ` +
+          `before applying — do NOT emit a mixed migration.`
+      );
+    }
+  }
   const lines: string[] = [];
 
   lines.push('-- =====================================================');
@@ -636,6 +926,13 @@ export function buildApplyMigrationSql(
     lines.push(...rollbackSnapshotInsert(changing));
   }
 
+  // (1c) C02 ONLY: the optimistic-concurrency skipped-ID capture (D-P10b),
+  //      scoped to `changing` — the only rows the UPDATEs below run over (an
+  //      unchanged row emits no UPDATE, so it has nothing to skip/stomp).
+  if (isC02Run) {
+    lines.push(...c02SkippedCapture(changing));
+  }
+
   lines.push('-- =====================================================');
   lines.push('-- (2) Apply: per-lesson dual-write UPDATEs (absolute values)');
   lines.push('-- =====================================================');
@@ -652,6 +949,34 @@ export function buildApplyMigrationSql(
   lines.push('-- =====================================================');
   lines.push('-- ROLLBACK (keep as comments)');
   lines.push('-- =====================================================');
+  if (isC02Run) {
+    // C02-targeted rollback (D-P10c): restore ONLY the two C02 columns + their
+    // two JSONB keys from the (full-row) snapshot — NOT full metadata — so a
+    // restore never clobbers unrelated post-apply edits to the other 15 fields.
+    // NOTE: the real idempotent `*.sql.rollback` DO-block + the post-update
+    // column↔JSONB lockstep assertion (D-P10d) are authored into the migration
+    // FILE after the full run (GATE 2); this commented recipe is the C02-scoped
+    // shape they implement.
+    lines.push('-- C02-targeted restore (the two C02 fields ONLY — never full metadata):');
+    lines.push('--');
+    lines.push('-- UPDATE public.lessons l SET');
+    for (const field of C02_APPLY_FIELDS) lines.push(`--   ${field} = r.${field},`);
+    lines.push('--   metadata = jsonb_set(');
+    lines.push('--     jsonb_set(');
+    lines.push(
+      `--       COALESCE(l.metadata, '{}'::jsonb), '{${vocab.cooking_skills.jsonbKey}}', ` +
+        `to_jsonb(COALESCE(r.cooking_skills, ARRAY[]::text[])), true),`
+    );
+    lines.push(
+      `--     '{${vocab.main_ingredients.jsonbKey}}', ` +
+        `to_jsonb(COALESCE(r.main_ingredients, ARRAY[]::text[])), true)`
+    );
+    lines.push(`-- FROM ${ROLLBACK_TABLE} r WHERE l.lesson_id = r.lesson_id;`);
+    lines.push('--');
+    lines.push(`-- DROP TABLE IF EXISTS ${ROLLBACK_TABLE};  -- after cleanup`);
+    lines.push(`-- DROP TABLE IF EXISTS ${SKIPPED_TABLE};   -- after reconciliation`);
+    return `${lines.join('\n')}\n`;
+  }
   lines.push('-- Restore reads the snapshot table (forward migration). Restoring the');
   lines.push('-- columns + metadata is sufficient:');
   lines.push('--');
@@ -718,7 +1043,15 @@ function seededShuffle<T>(items: T[], rand: () => number): T[] {
  * These populate the weird-edge-case bucket even on a 100%-Zod-pass run.
  */
 export function isEdgeCase(row: StagingRow): boolean {
-  return !row.zodPassed || row.phase === 'fallback' || row.normalizationCount > 0;
+  return (
+    !row.zodPassed ||
+    row.phase === 'fallback' ||
+    row.normalizationCount > 0 ||
+    // P3.2 (D-P11): a floored C02 row. C02 fields bypass `normalize`, so
+    // normalizationCount is 0 for them — this is the signal that flags a row
+    // whose C02 field fell back to the deterministic floor for spot-check.
+    (row.flooredC02Fields !== undefined && row.flooredC02Fields.length > 0)
+  );
 }
 
 /**

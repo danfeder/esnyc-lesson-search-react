@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   SCORED_FIELDS,
+  assertCorpusMatchesRun,
   buildScorecardJson,
   evaluateGates,
   extractFieldTokens,
@@ -22,6 +23,10 @@ import {
   type KeyRecord,
 } from './score-answer-key';
 import { computeRulesBaseline, evaluateC02Gates, type CorpusCurrentTags } from './c02-gates';
+import { loadC02Manifest } from './vocab';
+import { c02ManifestVersion } from './c02-anchor';
+import { loadC02FloorInput } from './c02-floor';
+import { buildC02EffectiveInput, computeBodyHash, type RunRecord } from './run-retag';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -594,5 +599,153 @@ describe('C02 gate path scores from finalC02, not rawInput (P2′.4)', () => {
     expect(res.gate1.passed).toBe(true);
     expect(res.gate1.perField.cooking_skills.winner).toBe(1);
     expect(res.gate1.perField.main_ingredients.winner).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Corpus↔run freshness guard (Task 4c): the --corpus must match the --run
+// snapshot, proved by a FULL bodyHash scan over every run record. Reuses the
+// EXACT run-retag pipeline (appendDocSurfaces → buildC02EffectiveInput →
+// computeBodyHash) so a faithfully-matching pair never false-positives.
+// ---------------------------------------------------------------------------
+
+describe('assertCorpusMatchesRun — corpus↔run freshness guard (Task 4c)', () => {
+  /**
+   * Builds a RunRecord whose `bodyHash` is computed from a corpus row by the
+   * SAME pipeline the live run uses, so a faithfully-paired corpus/run passes
+   * the guard. No doc surfaces in tests → appendDocSurfaces is a no-op, so the
+   * effective input is taken over the row's content_text verbatim (the floor +
+   * manifest are loaded from the checked-in data files, offline).
+   */
+  function runRecordForCorpusRow(row: CorpusCurrentTags): RunRecord {
+    const floorInput = loadC02FloorInput();
+    const manifestVer = c02ManifestVersion(loadC02Manifest());
+    const { effectiveInput } = buildC02EffectiveInput(
+      {
+        id: row.id,
+        content_text: row.content_text,
+        cooking_skills: row.cooking_skills,
+        main_ingredients: row.main_ingredients,
+      },
+      floorInput,
+      manifestVer
+    );
+    return {
+      id: row.id,
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'h',
+      rawInput: {},
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      costUsd: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: computeBodyHash(effectiveInput),
+      strict: false,
+      effectiveBaseUrl: 'direct',
+      completedAt: '2026-06-24T00:00:00.000Z',
+    };
+  }
+
+  const corpus: CorpusCurrentTags[] = [
+    {
+      id: 'L1',
+      title: 'L1',
+      content_text: 'Lesson one body about baking bread.',
+      cooking_skills: ['Baking'],
+      main_ingredients: ['Flour'],
+    },
+    {
+      id: 'L2',
+      title: 'L2',
+      content_text: 'Lesson two body about chopping vegetables.',
+      cooking_skills: ['Knife skills'],
+      main_ingredients: ['Carrots'],
+    },
+  ];
+
+  it('PASSES (no throw) when each sampled run record bodyHash matches the corpus snapshot', () => {
+    const runRecords = corpus.map(runRecordForCorpusRow);
+    expect(() =>
+      assertCorpusMatchesRun(runRecords, corpus, {
+        runPath: '/runs/r.jsonl',
+        corpusPath: '/c/corpus.jsonl',
+      })
+    ).not.toThrow();
+  });
+
+  it('THROWS naming both paths when the corpus body differs from the run snapshot', () => {
+    // The run was produced against the ORIGINAL corpus; the --corpus passed here
+    // has a mutated body for L1 → its recomputed bodyHash no longer matches the
+    // stored run bodyHash. The guard must catch this and refuse to score.
+    const runRecords = corpus.map(runRecordForCorpusRow);
+    const staleCorpus: CorpusCurrentTags[] = [
+      { ...corpus[0], content_text: 'A DIFFERENT body — this corpus is stale.' },
+      corpus[1],
+    ];
+    expect(() =>
+      assertCorpusMatchesRun(runRecords, staleCorpus, {
+        runPath: '/runs/r.jsonl',
+        corpusPath: '/c/stale-corpus.jsonl',
+      })
+    ).toThrow(
+      /\/runs\/r\.jsonl[\s\S]*\/c\/stale-corpus\.jsonl|\/c\/stale-corpus\.jsonl[\s\S]*\/runs\/r\.jsonl/
+    );
+  });
+
+  it('THROWS when a sampled run id is absent from the corpus (id-coverage fallback)', () => {
+    // A run record whose id has no corpus row cannot be hash-verified AND fails
+    // the lighter id-coverage check — the corpus does not cover the run.
+    const runRecords = corpus.map(runRecordForCorpusRow);
+    const corpusMissingL2: CorpusCurrentTags[] = [corpus[0]];
+    expect(() =>
+      assertCorpusMatchesRun(runRecords, corpusMissingL2, {
+        runPath: '/runs/r.jsonl',
+        corpusPath: '/c/partial-corpus.jsonl',
+      })
+    ).toThrow(/L2/);
+  });
+
+  it('falls back to id-coverage (no throw) when no sampled record carries a bodyHash', () => {
+    // Legacy / hashless run records: the bodyHash spot-check is skipped per-id;
+    // when NONE of the sample has a hash, the guard degrades to id-coverage,
+    // which passes here because every run id is present in the corpus.
+    const runRecords = corpus.map((row) => {
+      const rec = runRecordForCorpusRow(row);
+      return { ...rec, bodyHash: '' };
+    });
+    expect(() =>
+      assertCorpusMatchesRun(runRecords, corpus, {
+        runPath: '/runs/r.jsonl',
+        corpusPath: '/c/corpus.jsonl',
+      })
+    ).not.toThrow();
+  });
+
+  it('THROWS when a stale row sorts BEYOND the first 10 ids (FULL scan, not a 10-id sample)', () => {
+    // 12 rows: the first 11 (sorted) faithfully match the run; only L12 — which
+    // sorts at position 12, OUTSIDE any first-10 sample — is stale. A sample of
+    // the first 10 sorted ids would MISS it; the guard must full-scan every run
+    // record carrying a bodyHash and catch it (Codex Task-4c finding).
+    const wideCorpus: CorpusCurrentTags[] = Array.from({ length: 12 }, (_, i) => ({
+      id: `L${String(i + 1).padStart(2, '0')}`,
+      title: `L${i + 1}`,
+      content_text: `Lesson ${i + 1} body about cooking.`,
+      cooking_skills: ['Baking'],
+      main_ingredients: ['Flour'],
+    }));
+    const runRecords = wideCorpus.map(runRecordForCorpusRow);
+    // Mutate ONLY the last (12th sorted) row's body → its recomputed hash drifts.
+    const staleWide = wideCorpus.map((row) =>
+      row.id === 'L12' ? { ...row, content_text: 'STALE body for L12 only.' } : row
+    );
+    expect(() =>
+      assertCorpusMatchesRun(runRecords, staleWide, {
+        runPath: '/runs/r.jsonl',
+        corpusPath: '/c/stale-wide.jsonl',
+      })
+    ).toThrow(/L12/);
   });
 });

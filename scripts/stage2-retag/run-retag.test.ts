@@ -37,6 +37,7 @@ import {
   MissingToolUseError,
   PRICING_PER_MTOK,
   TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM,
+  assertNotC02RepairRun,
   buildMessageRequest,
   buildRepairTool,
   buildRunRecord,
@@ -593,6 +594,34 @@ describe('processC02Decision — run-time field isolation (P2′.8 part 2 / D-P1
       finalSchema,
     });
     expect(out.zod.passed).toBe(true);
+    expect(out.flooredFields).toBeUndefined();
+  });
+
+  it('BOTH fields valid + a STRAY top-level key → reconciles cleanly (no spurious failure, no flooredFields)', () => {
+    // The whole-object decision schema is .strict(), so a stray top-level key
+    // (e.g. the model emits an extra `garden_skills`) fails the whole-object
+    // parse. But BOTH C02 fields parse individually → there is NOTHING to floor.
+    // The record must reconcile cleanly (exactly the stage-(1) happy path), NOT
+    // be marked a failure (which would needlessly RE-RUN it on --resume). Task 4a.
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+        main_ingredients: { keep: ['Tomatoes'], drop: [], add: [] },
+        // A stray extra top-level key trips the .strict() whole-object parse.
+        garden_skills: ['Planting seeds'],
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    // A clean success — canonical finalC02, NOT a floored/failed record.
+    expect(out.zod.passed).toBe(true);
+    expect(out.finalC02).toBeDefined();
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.finalC02?.main_ingredients).toContain('Nightshades');
+    // No field was floored — this is a clean reconcile, not a recovery.
     expect(out.flooredFields).toBeUndefined();
   });
 
@@ -1164,6 +1193,36 @@ describe('planRepairCandidates (repair candidate selection)', () => {
     expect(result.zeroFieldRecords).toEqual([
       { id: 'a', rootErrors: ["(object): Unrecognized key(s) in object: 'bogus_field'"] },
     ]);
+  });
+});
+
+describe('assertNotC02RepairRun (refuse --repair on C02 anchored runs)', () => {
+  it('throws when any record carries finalC02 (a C02 anchored marker)', () => {
+    const records = [
+      makeRecord({ id: 'a' }),
+      makeRecord({ id: 'b', finalC02: { cooking_skills: ['Roasting'], main_ingredients: [] } }),
+    ];
+    expect(() => assertNotC02RepairRun(records)).toThrow(/--resume/);
+  });
+
+  it('throws when any record carries llmDecisions (the raw C02 decision marker)', () => {
+    const records = [
+      makeRecord({ id: 'a' }),
+      makeRecord({ id: 'b', llmDecisions: { cooking_skills: { keep: [], drop: [], add: [] } } }),
+    ];
+    expect(() => assertNotC02RepairRun(records)).toThrow(/--resume/);
+  });
+
+  it('does NOT throw for a list of purely monolithic records (no finalC02/llmDecisions)', () => {
+    const records = [
+      makeRecord({ id: 'a', rawInput: makeValidResult() }),
+      makeRecord({ id: 'b', zod: { passed: false, fieldErrors: { tags: ['bad'] } } }),
+    ];
+    expect(() => assertNotC02RepairRun(records)).not.toThrow();
+  });
+
+  it('does NOT throw for an empty record list', () => {
+    expect(() => assertNotC02RepairRun([])).not.toThrow();
   });
 });
 
