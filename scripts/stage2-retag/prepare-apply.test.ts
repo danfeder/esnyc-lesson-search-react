@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildStagingRows,
@@ -1053,5 +1053,28 @@ describe('buildApplyMigrationSql — C02 homogeneity guard (D-P10a data safety)'
 
   it('emits normally for a homogeneous C02 run (every row isC02)', () => {
     expect(() => buildApplyMigrationSql(c02Staging(), vocab, report)).not.toThrow();
+  });
+});
+
+describe('buildStagingRows — fail-closed isC02 propagation seam (D-P10a)', () => {
+  it('throws if a C02-anchored lesson does not propagate isC02 onto its StagingRow', async () => {
+    // The C02-only write scope depends on EVERY C02-anchored compared lesson
+    // carrying isC02:true onto its StagingRow (buildApplyMigrationSql keys its
+    // homogeneity guard off rows.some(r => r.isC02); applyUpdate dispatches the
+    // C02-only write off row.isC02). Break the ship-threading seam by forcing the
+    // floor input to fail to load: ship becomes undefined, so a C02-anchored
+    // lesson falls through to the LEGACY all-fields path and its StagingRow never
+    // gets isC02 — the exact silent stomp D-P10a prevents. buildStagingRows must
+    // catch this and refuse, not return a row that would route to the legacy
+    // all-fields UPDATE.
+    vi.resetModules();
+    vi.doMock('./c02-floor', () => ({ loadC02FloorInput: () => undefined }));
+    try {
+      const { buildStagingRows: bsr } = await import('./prepare-apply');
+      expect(() => bsr(c02Corpus, c02RunRecords, vocab)).toThrow(/C02-anchored lesson/);
+    } finally {
+      vi.doUnmock('./c02-floor');
+      vi.resetModules();
+    }
   });
 });

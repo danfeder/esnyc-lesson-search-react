@@ -41,7 +41,13 @@ import {
 import { loadC02FloorInput, type C02FloorInput } from './c02-floor';
 import type { C02ApplyField, C02ShipTags } from './ship-policy';
 import { loadC02Manifest, c02MainIngredientsValues, type C02Manifest } from './vocab';
-import { parseRunRecords, requireFlagValue, warnIfOutsideArtifacts } from './run-retag';
+import {
+  DEFAULT_CORPUS_EXCLUSIONS_PATH,
+  loadCorpusExclusions,
+  parseRunRecords,
+  requireFlagValue,
+  warnIfOutsideArtifacts,
+} from './run-retag';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS_DIR = path.join(MODULE_DIR, 'artifacts');
@@ -294,6 +300,7 @@ interface Args {
   run: string;
   corpus: string;
   out: string;
+  exclusions: string;
   help: boolean;
 }
 
@@ -302,6 +309,7 @@ export function parseArgs(argv: string[]): Args {
     run: DEFAULT_RUN_PATH,
     corpus: DEFAULT_CORPUS_PATH,
     out: DEFAULT_OUT_PATH,
+    exclusions: DEFAULT_CORPUS_EXCLUSIONS_PATH,
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -318,6 +326,10 @@ export function parseArgs(argv: string[]): Args {
         break;
       case '--out':
         args.out = requireFlagValue(flag, next);
+        i++;
+        break;
+      case '--exclusions':
+        args.exclusions = requireFlagValue(flag, next);
         i++;
         break;
       case '--help':
@@ -346,6 +358,9 @@ Flags:
   --run <path>     run-output JSONL (default scripts/stage2-retag/artifacts/retag-run.jsonl)
   --corpus <path>  corpus JSONL (default scripts/stage2-retag/artifacts/corpus.jsonl)
   --out <path>     markdown report path (default scripts/stage2-retag/artifacts/prevalence-report.md)
+  --exclusions <path>  corpus-exclusions JSON; excluded lessons are dropped before
+                       the firing-rate denominator is computed (default
+                       scripts/stage2-retag/data/corpus-exclusions.json)
   --help
 
 Reporting only: no API calls, no DB access. Reads the per-field SHIP output
@@ -361,7 +376,12 @@ function main(): void {
   warnIfOutsideArtifacts(args.out);
   const corpusRecords = parseCorpusRecords(readFileSync(args.corpus, 'utf8'));
   const runRecords = parseRunRecords(readFileSync(args.run, 'utf8'));
-  const report = buildPrevalenceReport(corpusRecords, runRecords);
+  // Drop deletion-slated / non-lesson rows BEFORE the firing-rate denominator is
+  // computed — otherwise excluded lessons inflate `totalCompared` and deflate
+  // every per-value rate. Mirrors generate-diff-report's CLI exactly so the
+  // prevalence report and the diff report share one excluded universe.
+  const excludedIds = new Set(loadCorpusExclusions(args.exclusions).map((entry) => entry.id));
+  const report = buildPrevalenceReport(corpusRecords, runRecords, excludedIds);
 
   mkdirSync(path.dirname(args.out), { recursive: true });
   writeFileSync(args.out, renderPrevalenceMarkdown(report), 'utf8');

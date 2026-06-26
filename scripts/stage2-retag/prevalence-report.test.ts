@@ -275,6 +275,14 @@ describe('parseArgs', () => {
     expect(overridden.run).toBe('/tmp/r.jsonl');
     expect(overridden.out).toBe('/tmp/o.md');
   });
+
+  it('defaults --exclusions to the corpus-exclusions manifest and accepts an override', () => {
+    // The CLI must thread corpus exclusions into buildPrevalenceReport so the
+    // excluded lessons never inflate the firing-rate denominator (mirrors the
+    // diff-report CLI). Default points at the committed manifest; override wins.
+    expect(parseArgs([]).exclusions).toContain('corpus-exclusions.json');
+    expect(parseArgs(['--exclusions', '/tmp/excl.json']).exclusions).toBe('/tmp/excl.json');
+  });
 });
 
 describe('real-corpus smoke (local-only; skipped in CI without the dumps)', () => {

@@ -357,10 +357,13 @@ export interface SelectComparedOptions {
   /**
    * P3.1-diff: opt IN to C02 ship threading. When on, a C02 anchored record is
    * NOT refused — its reconciled C02 source (`finalC02` / `llmDecisions` /
-   * `flooredFields`) is threaded onto the compared lesson so `buildDiffReport`
-   * can materialize the per-field SHIP output (NOT read the raw decision from
-   * `rawInput`). The diff path passes this. The apply path (prepare-apply) does
-   * NOT — it stays fail-closed until P3.2 threads the ship output into staging.
+   * `flooredFields`) is threaded onto the compared lesson so the caller can
+   * materialize the per-field SHIP output (NOT read the raw decision from
+   * `rawInput`). BOTH C02 read paths pass this now: the diff path
+   * (`buildDiffReport`) and — as of P3.2 — the apply path (`buildStagingRows` in
+   * prepare-apply), which materializes the ship output into staging. A caller
+   * that OMITS the flag stays fail-closed (the throw below): it would read the
+   * raw KEEP/DROP/ADD decision from `rawInput` and risk an all-C02-emptying apply.
    */
   c02ShipThreading?: boolean;
 }
@@ -385,9 +388,13 @@ export function selectComparedLessons(
   // silently returns []); the reconciled arrays live on `record.finalC02`.
   //   - Diff path (c02ShipThreading: true): threads finalC02 and materializes the
   //     per-field SHIP output below — safe, so the throw is lifted (P3.1-diff).
-  //   - Apply path (prepare-apply, no flag): still reads `rawInput` for the two
-  //     C02 fields, so emitting now could stage an all-C02-emptying migration —
-  //     stays REFUSED until P3.2 threads the ship output into staging.
+  //   - Apply path (prepare-apply): as of P3.2 ALSO passes c02ShipThreading and
+  //     materializes the per-field SHIP output into staging — so it, too, is safe
+  //     and takes the threaded path, never this throw.
+  //   - The throw therefore guards only a caller that OMITS the flag on a C02
+  //     anchored record: that path would read `rawInput`'s raw KEEP/DROP/ADD
+  //     decision and silently stage empty C02 fields, risking an all-C02-emptying
+  //     apply — so it stays fail-closed.
   // (Legacy/body-only records, which lack both fields, are unaffected either way.)
   if (!options.c02ShipThreading) {
     for (const record of latest.values()) {
@@ -687,7 +694,8 @@ export function buildDiffReport(
     corpusLessonsKept,
     excludedLessons,
     zodFailedIncluded,
-    // The diff path ALWAYS threads C02 ship output (the apply path opts out).
+    // Both C02 read paths thread the ship output now: the diff path (here) and —
+    // as of P3.2 — the apply path (buildStagingRows in prepare-apply).
   } = selectComparedLessons(corpusRecords, runRecords, excludedIds, { c02ShipThreading: true });
 
   // A C02 anchored run scopes the diff to the two C02 fields and reads the

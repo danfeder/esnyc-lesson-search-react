@@ -445,7 +445,7 @@ export function buildStagingRows(
     cookingValues = new Set(loadC02Manifest().cookingSkills);
   }
 
-  return compared.map((lesson) => {
+  const rows = compared.map((lesson) => {
     const record = latest.get(lesson.id);
     // On a C02 anchored lesson, materialize the per-field SHIP output (floor-only
     // main_ingredients + floor-retention cooking_skills) from the SAME helper the
@@ -465,6 +465,30 @@ export function buildStagingRows(
       ship
     );
   });
+
+  // DATA SAFETY (D-P10a): fail-closed on the isC02 propagation seam. The C02-only
+  // write scope hinges on EVERY C02-anchored lesson carrying isC02:true onto its
+  // StagingRow — buildApplyMigrationSql computes `isC02Run = rows.some(r => r.isC02)`
+  // and applyUpdate dispatches the C02-only write off `row.isC02`. If a future
+  // refactor of comparedToStagingRow (or a broken ship-threading path) failed to
+  // propagate isC02 onto an anchored row, that guard would see isC02Run=false and
+  // fall through to the legacy ALL-FIELDS UPDATE — exactly the metadata-rebuild
+  // stomp D-P10a prevents. The downstream homogeneity guard catches a stray
+  // non-C02 row; this catches the inverse (an anchored row that lost its isC02
+  // mark). Refuse to return staging rather than silently stage a stomp.
+  compared.forEach((lesson, i) => {
+    if (isC02Anchored(lesson) && rows[i].isC02 !== true) {
+      throw new Error(
+        `buildStagingRows: C02-anchored lesson ${lesson.id} produced a StagingRow ` +
+          `without isC02:true. The C02 ship output failed to propagate onto staging — ` +
+          `emitting would risk a LEGACY all-fields UPDATE that stomps the completed ` +
+          `metadata rebuild (D-P10a). Refusing. Investigate the ship-threading seam ` +
+          `(comparedToStagingRow / shipTagsFor) before applying.`
+      );
+    }
+  });
+
+  return rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -764,11 +788,15 @@ function applyUpdate(row: StagingRow, vocab: Stage2Vocab): string[] {
 
 /**
  * P3.2 (D-P10b): the skipped-ID capture for a C02 run. BEFORE any UPDATE,
- * record every target lesson whose CURRENT DB C02 arrays no longer match the
- * export-time guard (a reviewer edited it since the corpus export) into
- * `c02_retag_skipped`. The guard-skipped rows are exactly the rows the UPDATEs
- * will match zero of, so this is the reconciliation surface for "which target
- * rows did we deliberately NOT touch?" — committed alongside the migration.
+ * record every CHANGING target row whose CURRENT DB C02 arrays no longer match
+ * the export-time guard (a reviewer edited it since the corpus export) into
+ * `c02_retag_skipped`. Scope is the `changing` set ONLY — the same rows the
+ * per-lesson UPDATEs run over. An UNCHANGED row emits no UPDATE, so there is
+ * nothing for it to skip or stomp and it is intentionally NOT captured here (a
+ * reviewer's drift on an unchanged row is irrelevant — we were never going to
+ * write it). The guard-skipped rows are exactly the changing rows the UPDATEs
+ * match zero of, so this is the reconciliation surface for "which rows we PLANNED
+ * to change did we deliberately NOT touch?" — committed alongside the migration.
  *
  * Idempotent: CREATE TABLE IF NOT EXISTS + ON CONFLICT DO NOTHING. RLS-enabled,
  * no policies (service-role only). Captures the current C02 arrays so a human
@@ -898,7 +926,9 @@ export function buildApplyMigrationSql(
     lines.push(...rollbackSnapshotInsert(changing));
   }
 
-  // (1c) C02 ONLY: the optimistic-concurrency skipped-ID capture (D-P10b).
+  // (1c) C02 ONLY: the optimistic-concurrency skipped-ID capture (D-P10b),
+  //      scoped to `changing` — the only rows the UPDATEs below run over (an
+  //      unchanged row emits no UPDATE, so it has nothing to skip/stomp).
   if (isC02Run) {
     lines.push(...c02SkippedCapture(changing));
   }
