@@ -333,7 +333,7 @@ export interface ComparedLesson {
 
 /** A compared lesson is C02-anchored iff it carries a reconciled finalC02 or the
  *  raw C02 decision — the SAME marker the run record uses. */
-function isC02Anchored(lesson: ComparedLesson): boolean {
+export function isC02Anchored(lesson: ComparedLesson): boolean {
   return lesson.finalC02 !== undefined || lesson.llmDecisions !== undefined;
 }
 
@@ -473,7 +473,7 @@ function setsEqual(a: readonly string[], b: readonly string[]): boolean {
  * floor input — NOT `rawInput` (the raw decision). Shared by the diff (new
  * values) and the provenance bucket (ship-change detection) so they cannot drift.
  */
-function shipTagsFor(
+export function shipTagsFor(
   lesson: ComparedLesson,
   floorInput: C02FloorInput,
   cookingValues: ReadonlySet<string>
