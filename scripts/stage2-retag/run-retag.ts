@@ -2109,6 +2109,42 @@ async function runMainPass(args: Args): Promise<void> {
 // Repair pass
 // ---------------------------------------------------------------------------
 
+/**
+ * Refuses `--repair` on a C02 anchored run, LOUDLY and explicitly.
+ *
+ * The repair pass re-prompts each Zod-failed field with the MONOLITHIC all-field
+ * tool (`buildSubmitTagsTool` + `loadSystemPrompt`), which is wrong for a C02
+ * record — those carry a 2-field KEEP/DROP/ADD decision produced by the anchored
+ * C02 tool. Today C02 records only stay out of the repair pass by COINCIDENCE:
+ * they carry the C02 prompt+schema hash, which never matches the monolithic
+ * repair hash, so `planRepairCandidates` stale-skips them silently. That is
+ * fragile — a future change to how the repair hash is computed could silently
+ * start routing C02 records through the monolithic path and mangle them.
+ *
+ * Detection marker (design §3·PIVOT D-P6): a record is C02-anchored iff it
+ * carries a C02-only field — `finalC02 !== undefined` OR `llmDecisions !==
+ * undefined`. A monolithic record sets neither (both are written only by the
+ * anchored C02 run; see the RunRecord schema). A real C02 run output has many
+ * such records, so "any record carries one" is a robust, false-positive-safe
+ * detector. The recovery path for failed C02 records is `--resume`, which
+ * re-runs any record completed without a `finalC02` (the `requireFinalC02`
+ * resume identity flag).
+ *
+ * @throws if any record in `records` is C02-anchored.
+ */
+export function assertNotC02RepairRun(records: Iterable<RunRecord>): void {
+  for (const record of records) {
+    if (record.finalC02 !== undefined || record.llmDecisions !== undefined) {
+      throw new Error(
+        '--repair is not supported for C02 anchored runs (the repair pass uses ' +
+          'the monolithic all-field tool). Recover failed C02 records with ' +
+          '--resume, which re-runs any record completed without a finalC02 ' +
+          '(requireFinalC02).'
+      );
+    }
+  }
+}
+
 async function runRepairPass(args: Args): Promise<void> {
   const vocab = loadVocab();
   const systemPrompt = loadSystemPrompt();
@@ -2139,6 +2175,12 @@ async function runRepairPass(args: Args): Promise<void> {
     }
     latest = filtered;
   }
+
+  // Refuse --repair on a C02 anchored run, explicitly — do NOT rely on the
+  // silent hash-mismatch stale-skip in planRepairCandidates (the repair pass
+  // re-prompts with the monolithic all-field tool, which would mangle a C02
+  // 2-field KEEP/DROP/ADD record). Recover failed C02 records with --resume.
+  assertNotC02RepairRun(latest.values());
 
   // C02 anchor inputs (load ONCE), mirroring the main pass — D-P9.
   const c02FloorInput = loadC02FloorInput();

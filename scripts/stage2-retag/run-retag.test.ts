@@ -37,6 +37,7 @@ import {
   MissingToolUseError,
   PRICING_PER_MTOK,
   TOOL_CHOICE_AUTO_SYSTEM_ADDENDUM,
+  assertNotC02RepairRun,
   buildMessageRequest,
   buildRepairTool,
   buildRunRecord,
@@ -1192,6 +1193,36 @@ describe('planRepairCandidates (repair candidate selection)', () => {
     expect(result.zeroFieldRecords).toEqual([
       { id: 'a', rootErrors: ["(object): Unrecognized key(s) in object: 'bogus_field'"] },
     ]);
+  });
+});
+
+describe('assertNotC02RepairRun (refuse --repair on C02 anchored runs)', () => {
+  it('throws when any record carries finalC02 (a C02 anchored marker)', () => {
+    const records = [
+      makeRecord({ id: 'a' }),
+      makeRecord({ id: 'b', finalC02: { cooking_skills: ['Roasting'], main_ingredients: [] } }),
+    ];
+    expect(() => assertNotC02RepairRun(records)).toThrow(/--resume/);
+  });
+
+  it('throws when any record carries llmDecisions (the raw C02 decision marker)', () => {
+    const records = [
+      makeRecord({ id: 'a' }),
+      makeRecord({ id: 'b', llmDecisions: { cooking_skills: { keep: [], drop: [], add: [] } } }),
+    ];
+    expect(() => assertNotC02RepairRun(records)).toThrow(/--resume/);
+  });
+
+  it('does NOT throw for a list of purely monolithic records (no finalC02/llmDecisions)', () => {
+    const records = [
+      makeRecord({ id: 'a', rawInput: makeValidResult() }),
+      makeRecord({ id: 'b', zod: { passed: false, fieldErrors: { tags: ['bad'] } } }),
+    ];
+    expect(() => assertNotC02RepairRun(records)).not.toThrow();
+  });
+
+  it('does NOT throw for an empty record list', () => {
+    expect(() => assertNotC02RepairRun([])).not.toThrow();
   });
 });
 
