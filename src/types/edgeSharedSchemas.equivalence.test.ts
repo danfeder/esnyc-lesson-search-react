@@ -10,6 +10,9 @@ import {
   COOKING_METHODS_VALUES as canonicalCookingMethods,
   OBSERVANCES_HOLIDAYS_VALUES as canonicalObservances,
   GARDEN_SKILLS_VALUES as canonicalGardenSkills,
+  COOKING_SKILLS_VALUES as canonicalCookingSkills,
+  MAIN_INGREDIENTS_VALUES as canonicalMainIngredients,
+  INGREDIENT_PARENT_MAP as canonicalIngredientParentMap,
   lessonMetadataSchema as canonicalLessonSchema,
 } from './lessonMetadata.zod';
 import { reviewFormPayloadSchema as canonicalReviewSchema } from './reviewFormPayload.zod';
@@ -25,6 +28,9 @@ import {
   COOKING_METHODS_VALUES as sharedCookingMethods,
   OBSERVANCES_HOLIDAYS_VALUES as sharedObservances,
   GARDEN_SKILLS_VALUES as sharedGardenSkills,
+  COOKING_SKILLS_VALUES as sharedCookingSkills,
+  MAIN_INGREDIENTS_VALUES as sharedMainIngredients,
+  INGREDIENT_PARENT_MAP as sharedIngredientParentMap,
   lessonMetadataSchema as sharedLessonSchema,
   reviewFormPayloadSchema as sharedReviewSchema,
 } from '../../supabase/functions/_shared/metadataSchemas';
@@ -70,6 +76,15 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
     it('garden_skills values match', () => {
       expect([...sharedGardenSkills]).toEqual([...canonicalGardenSkills]);
     });
+    it('cooking_skills values match', () => {
+      expect([...sharedCookingSkills]).toEqual([...canonicalCookingSkills]);
+    });
+    it('main_ingredients values match', () => {
+      expect([...sharedMainIngredients]).toEqual([...canonicalMainIngredients]);
+    });
+    it('ingredient parent map matches', () => {
+      expect(sharedIngredientParentMap).toEqual(canonicalIngredientParentMap);
+    });
   });
 
   describe('lessonMetadataSchema parses identically across both modules', () => {
@@ -91,6 +106,14 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
           selected: ['Math'],
         },
       },
+      // C02 closed vocab (P4a): canonical cooking skill values parse.
+      { cookingSkills: ['Mixing & stirring', 'Sautéing & stir-frying'] },
+      // C02 main_ingredients: a bare group parses.
+      { mainIngredients: ['Nightshades'] },
+      // C02 main_ingredients: a group + its child specific parses.
+      { mainIngredients: ['Nightshades', 'Tomatoes'] },
+      // C02 main_ingredients: a null-parent specific alone parses (no parent required).
+      { mainIngredients: ['Celery'] },
       // All-fields-populated fixture — drift protection. If a future edit drops
       // any key from the deno-runtime mirror, the c.data === s.data assertion
       // catches it because the missing key would be absent from s.data.
@@ -103,10 +126,10 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
         coreCompetencies: ['Kitchen Skills and Related Academic Content'],
         culturalHeritage: ['Mexican'],
         locationRequirements: ['Indoor'],
-        mainIngredients: ['Tomatoes'],
+        mainIngredients: ['Nightshades', 'Tomatoes'],
         gradeLevels: ['3'],
         gardenSkills: ['Planting'],
-        cookingSkills: ['Mixing'],
+        cookingSkills: ['Mixing & stirring'],
         cookingMethods: ['stovetop'],
         observancesHolidays: ['Lunar New Year'],
         socialEmotionalLearning: ['Self-management'],
@@ -143,6 +166,12 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { cookingMethods: ['Stovetop'] }, // canonical is kebab 'stovetop'
       { observancesHolidays: ['Not A Holiday'] },
       { gardenSkills: ['planting'] }, // legacy slug, canonical Title 'Planting'
+      // C02 closed PR 6 P4a — off-vocab + orphan-specific rejected.
+      { cookingSkills: ['Mixing'] }, // near-miss, canonical 'Mixing & stirring'
+      { cookingSkills: ['chopping'] }, // old kebab, off-vocab
+      { mainIngredients: ['Dragonfruit'] }, // off-vocab ingredient
+      { mainIngredients: ['Tomatoes'] }, // orphan specific (missing parent 'Nightshades')
+      { mainIngredients: ['Alliums', 'Tomatoes'] }, // orphan even with an unrelated group present
     ];
     it.each(invalid)('rejects %j', (fixture) => {
       const c = canonicalLessonSchema.safeParse(fixture);
@@ -172,6 +201,10 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
           'Garden Skills and Related Academic Content',
         ],
       },
+      // C02 closed vocab (P4a) on the review side — same contract as lesson side.
+      { cookingSkills: ['Knife skills', 'Roasting'] },
+      { mainIngredients: ['Citrus fruits', 'Lemon'] },
+      { mainIngredients: ['Seaweed (nori)'] }, // null-parent specific alone
       // All-fields-populated fixture — drift protection. See lessonMetadata
       // counterpart above for rationale.
       {
@@ -184,9 +217,9 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
         coreCompetencies: ['Kitchen Skills and Related Academic Content'],
         socialEmotionalLearning: ['Self-management'],
         cookingMethods: ['stovetop'],
-        mainIngredients: ['Tomatoes'],
+        mainIngredients: ['Nightshades', 'Tomatoes'],
         gardenSkills: ['Planting'],
-        cookingSkills: ['Mixing'],
+        cookingSkills: ['Mixing & stirring'],
         culturalHeritage: ['Mexican'],
         academicIntegration: ['Math'],
         observancesHolidays: ['Lunar New Year'],
@@ -215,6 +248,10 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { cookingMethods: ['Stovetop'] }, // canonical is kebab 'stovetop'
       { observancesHolidays: ['End of year'] }, // merged into 'End of year celebrations'
       { gardenSkills: ['planting'] }, // legacy slug, canonical Title 'Planting'
+      // C02 closed PR 6 P4a — off-vocab + orphan-specific rejected on review side.
+      { cookingSkills: ['Mixing'] }, // near-miss, canonical 'Mixing & stirring'
+      { mainIngredients: ['Dragonfruit'] }, // off-vocab ingredient
+      { mainIngredients: ['Lemon'] }, // orphan specific (missing parent 'Citrus fruits')
     ];
     it.each(invalid)('rejects %j', (fixture) => {
       const c = canonicalReviewSchema.safeParse(fixture);
