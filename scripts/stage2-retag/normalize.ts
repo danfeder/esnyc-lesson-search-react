@@ -416,12 +416,36 @@ function applySynonymPairLint(work: Record<string, unknown>, normalizations: str
   }
 }
 
+/** Options for `normalizeRecordInput`. */
+export interface NormalizeOptions {
+  /**
+   * Skip the C02 rules (R7 cooking-skills alias-floor, R8 main-ingredients
+   * alias-floor, R9 ingredient parent-reconcile) for the two C02 fields.
+   *
+   * The C02 anchored verify-and-diff path (design §3·PIVOT D-P6) produces the
+   * canonical `cooking_skills` + `main_ingredients` via the ONE canonical floor
+   * + `reconcile.ts` — which SUPERSEDE R7/R8/R9. Re-running them on the
+   * reconciled output would double-apply the floor (re-fold / re-append /
+   * re-introduce a value the floor already removed). The run-time C02 path
+   * passes `{ skipC02: true }`; the other 12 fields (R1/R4/R5/R6) still
+   * normalize unchanged. Defaults to `false` so the legacy 13-field path is
+   * untouched.
+   */
+  skipC02?: boolean;
+}
+
 /**
  * Apply every mechanical rule to a raw tool_use input object. Returns a deep
  * copy plus the provenance list. Non-object input is returned untouched (there
  * is nothing to normalize — e.g. an errored record's `null` rawInput).
+ *
+ * `{ skipC02: true }` bypasses R7/R8/R9 for the two C02 fields (the anchored
+ * verify-and-diff path reconciles them upstream — see `NormalizeOptions`).
  */
-export function normalizeRecordInput(rawInput: unknown): NormalizationResult {
+export function normalizeRecordInput(
+  rawInput: unknown,
+  options: NormalizeOptions = {}
+): NormalizationResult {
   if (!isPlainObject(rawInput)) {
     return { rawInput, normalizations: [] };
   }
@@ -437,23 +461,27 @@ export function normalizeRecordInput(rawInput: unknown): NormalizationResult {
   applySynonymPairLint(work, normalizations);
 
   // C02 (P1.3) — alias-floor (R7/R8) MUST precede parent-reconcile (R9) so a
-  // folded specific gets its parent appended in the same pass.
-  const c02Floor = loadC02Floor();
-  applyAliasFloor(
-    work,
-    'cooking_skills',
-    c02Floor.cookingFolds,
-    NORMALIZATION_RULES.cookingSkillsAliasFloor,
-    normalizations
-  );
-  applyAliasFloor(
-    work,
-    'main_ingredients',
-    c02Floor.ingredientFolds,
-    NORMALIZATION_RULES.mainIngredientsAliasFloor,
-    normalizations
-  );
-  applyIngredientParentReconcile(work, c02Floor.parentMap, normalizations);
+  // folded specific gets its parent appended in the same pass. SKIPPED on the
+  // anchored C02 path (D-P6): the floor + reconcile already produced canonical
+  // C02 — re-applying these would double-apply the floor.
+  if (!options.skipC02) {
+    const c02Floor = loadC02Floor();
+    applyAliasFloor(
+      work,
+      'cooking_skills',
+      c02Floor.cookingFolds,
+      NORMALIZATION_RULES.cookingSkillsAliasFloor,
+      normalizations
+    );
+    applyAliasFloor(
+      work,
+      'main_ingredients',
+      c02Floor.ingredientFolds,
+      NORMALIZATION_RULES.mainIngredientsAliasFloor,
+      normalizations
+    );
+    applyIngredientParentReconcile(work, c02Floor.parentMap, normalizations);
+  }
 
   return { rawInput: work, normalizations };
 }

@@ -292,8 +292,30 @@ export function selectComparedLessons(
   excludedLessons: number;
   zodFailedIncluded: number;
 } {
-  const { kept: corpusRecordsKept, excludedHits } = excludeCorpusIds(corpusRecords, excludedIds);
   const latest = latestRecordById(runRecords);
+  // FIX 2 (P2′.3 Codex): fail-closed on C02 anchored records. Both the diff
+  // report and prepare-apply funnel through here and read the two C02 fields
+  // from `rawInput` (which, on an anchored record, holds the raw KEEP/DROP/ADD
+  // DECISION OBJECT, not arrays → newFlatValues silently returns []). The
+  // reconciled canonical arrays live on `record.finalC02`, which these tools do
+  // NOT yet read. Emitting a diff/apply now would show C02 as empty and could
+  // stage an all-C02-emptying migration — so THROW instead of silently
+  // corrupting. P3.1 (diff) and P3.2 (apply) thread `finalC02` + scope apply to
+  // C02-only; until then, refuse the whole run. (Legacy/body-only records,
+  // which lack both fields, are unaffected.)
+  for (const record of latest.values()) {
+    if (record.finalC02 !== undefined || record.llmDecisions !== undefined) {
+      throw new Error(
+        `selectComparedLessons: run record ${record.id} is a C02 anchored record ` +
+          `(carries finalC02/llmDecisions). generate-diff-report and prepare-apply do not ` +
+          `yet read finalC02 (the reconciled C02 arrays) — they would read the raw KEEP/DROP/ADD ` +
+          `decision from rawInput and silently emit empty cooking_skills/main_ingredients, ` +
+          `risking an all-C02-emptying apply. Refusing. Threading finalC02 + scoping apply to ` +
+          `C02-only is scheduled for P3.1 (diff) / P3.2 (apply); use those, not this path, for C02.`
+      );
+    }
+  }
+  const { kept: corpusRecordsKept, excludedHits } = excludeCorpusIds(corpusRecords, excludedIds);
   const corpusIds = new Set(corpusRecordsKept.map((record) => record.id));
 
   const compared: ComparedLesson[] = [];
@@ -331,6 +353,11 @@ export function selectComparedLessons(
   };
 }
 
+// ⚠️ P3 (D-P6): the C02 anchored path stores the two C02 fields' reconciled
+// arrays on the record's `finalC02`, not `rawInput` (which holds the raw
+// KEEP/DROP/ADD decision). This diff reads `rawInput` for all fields; P3.1
+// switches the two C02 fields to read `finalC02`. The run-record carries it now
+// (run-retag.ts `RunRecord.finalC02`); the scorer already reads it (P2′.3).
 function newFlatValues(rawInput: Record<string, unknown>, field: string): string[] {
   const value = rawInput[field];
   return Array.isArray(value)

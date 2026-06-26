@@ -40,9 +40,12 @@ import {
   SONNET_MIN_CACHEABLE_PREFIX_TOKENS,
   TOKEN_MASS_BUDGET_TOKENS,
   buildSubmitTagsTool,
+  buildC02SubmitTagsTool,
   buildTokenCountRequest,
+  buildC02TokenCountRequest,
   estimateTokenMass,
   loadSystemPrompt,
+  loadC02SystemPrompt,
 } from './schema';
 import { normalizeBaseUrl } from './run-retag';
 import { loadVocab } from './vocab';
@@ -121,7 +124,7 @@ export function assessCacheFloor(model: string, prefixTokens: number): CacheFloo
  * key). The caller is responsible for normalizing the URL (trailing-/v1 strip).
  * maxRetries: 0 either way — exactly one attempt, never loop against the account.
  */
-export async function preflightTokenMass(normalizedBaseUrl?: string): Promise<number> {
+export async function preflightTokenMass(normalizedBaseUrl?: string, c02 = false): Promise<number> {
   let client: Anthropic;
   if (normalizedBaseUrl !== undefined) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -143,20 +146,24 @@ export async function preflightTokenMass(normalizedBaseUrl?: string): Promise<nu
     }
     client = new Anthropic({ apiKey, maxRetries: 0 });
   }
-  const response = await client.messages.countTokens(
-    buildTokenCountRequest(loadVocab(), SAMPLE_BODY)
-  );
+  const vocab = loadVocab();
+  const request = c02
+    ? buildC02TokenCountRequest(vocab, SAMPLE_BODY)
+    : buildTokenCountRequest(vocab, SAMPLE_BODY);
+  const response = await client.messages.countTokens(request);
   return response.input_tokens;
 }
 
 const HELP = `
 Stage 2 re-tag cached-prefix token-mass preflight (impl-plan A5 guard).
 
-Measures the system prompt + monolithic submit_tags tool via count_tokens and
+Measures the cached prefix (system prompt + forced tool) via count_tokens and
 runs two guards: a ~${TOKEN_MASS_BUDGET_TOKENS}-token budget ceiling and the
 model family's cacheable-prefix floor (FAIL for opus below floor, WARN for
 sonnet, UNKNOWN for other families). Offline, both guards fall back to the
-static chars/4 estimate.
+static chars/4 estimate. Default measures the monolithic submit_tags prefix;
+pass --c02 to measure the LIVE C02 anchored prefix (verify-and-diff prompt +
+2-field tool), which is what the P2′ pilot actually sends.
 
 Usage:
   npx tsx scripts/stage2-retag/preflight-token-mass.ts [flags]
@@ -169,6 +176,9 @@ Flags:
                      "/v1" is stripped with a stderr warning. When set, the API
                      key source switches to ANTHROPIC_API_KEY (the proxy-side
                      key); unset = direct API + ANTHROPIC_CONSOLE_API_KEY.
+  --c02              measure the LIVE C02 anchored prefix (C02 verify-and-diff
+                     prompt + dedicated 2-field tool) instead of the monolithic
+                     submit_tags prefix. Use this for the P2′ re-pilot.
   --help, -h         show this help and exit
 
 Env (direct API, no --base-url): ANTHROPIC_CONSOLE_API_KEY required (from
@@ -178,19 +188,25 @@ Env (--base-url set): ANTHROPIC_API_KEY required (the proxy-side key).
 `;
 
 /**
- * Parses the preflight's flags: `--base-url <url>` and `--help`/`-h` (the
- * preflight is otherwise argument-free). Mirrors run-retag's flag style.
- * `--help` short-circuits, so it is honored even alongside an incomplete
- * value flag.
+ * Parses the preflight's flags: `--base-url <url>`, `--c02` (measure the C02
+ * anchored prefix, not the monolithic one), and `--help`/`-h` (the preflight is
+ * otherwise argument-free). Mirrors run-retag's flag style. `--help`
+ * short-circuits, so it is honored even alongside an incomplete value flag.
  */
-export function parsePreflightArgs(argv: string[]): { baseUrl?: string; help: boolean } {
-  const out: { baseUrl?: string; help: boolean } = { help: false };
+export function parsePreflightArgs(argv: string[]): {
+  baseUrl?: string;
+  help: boolean;
+  c02: boolean;
+} {
+  const out: { baseUrl?: string; help: boolean; c02: boolean } = { help: false, c02: false };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const next = argv[i + 1];
     if (flag === '--help' || flag === '-h') {
       out.help = true;
       return out;
+    } else if (flag === '--c02') {
+      out.c02 = true;
     } else if (flag === '--base-url') {
       if (next === undefined || next.startsWith('--')) {
         throw new Error('flag --base-url requires a value');
@@ -198,7 +214,7 @@ export function parsePreflightArgs(argv: string[]): { baseUrl?: string; help: bo
       out.baseUrl = next;
       i++;
     } else {
-      throw new Error(`unknown flag: ${flag} (only --base-url and --help are supported)`);
+      throw new Error(`unknown flag: ${flag} (only --base-url, --c02, and --help are supported)`);
     }
   }
   return out;
@@ -212,9 +228,12 @@ async function main(): Promise<void> {
   }
   const normalizedBaseUrl = args.baseUrl !== undefined ? normalizeBaseUrl(args.baseUrl) : undefined;
 
-  const prompt = loadSystemPrompt();
-  const tool = buildSubmitTagsTool(loadVocab());
+  const vocab = loadVocab();
+  const prompt = args.c02 ? loadC02SystemPrompt() : loadSystemPrompt();
+  const tool = args.c02 ? buildC02SubmitTagsTool(vocab) : buildSubmitTagsTool(vocab);
+  const shape = args.c02 ? 'C02 anchored (verify-and-diff prompt + 2-field tool)' : 'monolithic';
   const staticEstimate = estimateTokenMass(prompt, tool);
+  console.log(`Measuring the ${shape} prefix.`);
   console.log(`Static estimate (chars/4, prompt + serialized tool): ~${staticEstimate} tokens`);
   if (normalizedBaseUrl !== undefined) {
     console.log(`Routing count_tokens via CLIProxyAPI proxy: ${normalizedBaseUrl}`);
@@ -222,7 +241,7 @@ async function main(): Promise<void> {
 
   let measured: number | null = null;
   try {
-    measured = await preflightTokenMass(normalizedBaseUrl);
+    measured = await preflightTokenMass(normalizedBaseUrl, args.c02);
     console.log(`count_tokens measured (prompt + tool + tiny sample body): ${measured} tokens`);
   } catch (error) {
     console.warn(

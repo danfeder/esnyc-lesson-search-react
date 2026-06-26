@@ -1,0 +1,145 @@
+{
+  "generatedAt": "2026-06-24T19:59:29.312Z",
+  "keyLessons": 69,
+  "winningLabel": "opus-4-8",
+  "gates": {
+    "gate1": {
+      "passed": false,
+      "perField": {
+        "cooking_skills": {
+          "winner": 0.7669902912621359,
+          "rules": 0.8078817733990148
+        },
+        "main_ingredients": {
+          "winner": 0.7290969899665553,
+          "rules": 0.9177215189873419
+        }
+      },
+      "failingFields": [
+        {
+          "field": "cooking_skills",
+          "winner": 0.7669902912621359,
+          "rules": 0.8078817733990148
+        },
+        {
+          "field": "main_ingredients",
+          "winner": 0.7290969899665553,
+          "rules": 0.9177215189873419
+        }
+      ],
+      "cleanCoreCount": 34
+    },
+    "gate2": {
+      "passed": false,
+      "perField": {
+        "cooking_skills": {
+          "winner": 0.797153024911032,
+          "rules": 0.8068965517241379,
+          "delta": -0.009743526813105863,
+          "passed": false
+        },
+        "main_ingredients": {
+          "winner": 0.8258928571428571,
+          "rules": 0.7766990291262136,
+          "delta": 0.049193828016643515,
+          "passed": false
+        }
+      },
+      "minDelta": 0.05,
+      "judgmentRowCount": 35
+    },
+    "gate3": {
+      "passed": false,
+      "addedSpecificPrecision": 0.6473988439306358,
+      "precisionFloor": 0.7,
+      "pooledTp": 112,
+      "pooledFp": 61,
+      "absentValueViolations": [],
+      "absentRateCeiling": 0.05,
+      "perSpecificViolations": [
+        {
+          "value": "Garlic",
+          "precision": 0.16666666666666666,
+          "truthCount": 5,
+          "predictionCount": 12
+        },
+        {
+          "value": "Honey",
+          "precision": 0.4,
+          "truthCount": 4,
+          "predictionCount": 10
+        },
+        {
+          "value": "Lemon",
+          "precision": 0.42857142857142855,
+          "truthCount": 3,
+          "predictionCount": 7
+        },
+        {
+          "value": "Tomatoes",
+          "precision": 0.3333333333333333,
+          "truthCount": 3,
+          "predictionCount": 6
+        }
+      ],
+      "perSpecificPrecisionFloor": 0.6,
+      "sentinels": [
+        {
+          "value": "Tasting",
+          "field": "cooking_skills",
+          "precision": 1,
+          "floor": 0.7,
+          "predictionCount": 3,
+          "gated": true,
+          "passed": true
+        },
+        {
+          "value": "Kitchen & food safety",
+          "field": "cooking_skills",
+          "precision": 1,
+          "floor": 0.7,
+          "predictionCount": 2,
+          "gated": false,
+          "passed": true
+        },
+        {
+          "value": "Sweeteners",
+          "field": "main_ingredients",
+          "precision": 0.4166666666666667,
+          "floor": 0.8,
+          "predictionCount": 12,
+          "gated": true,
+          "passed": false
+        }
+      ],
+      "sentinelsPassed": false
+    },
+    "gate4": {
+      "passed": false,
+      "sweetenersPrecision": 0.4166666666666667,
+      "sweetenersPrecisionFloor": 0.8,
+      "survivingNeverStored": []
+    },
+    "allPassed": false,
+    "gate2BootstrapCI": {
+      "cooking_skills": {
+        "pointDelta": -0.009743526813105863,
+        "lower": -0.0996501387380867,
+        "upper": 0.05713985499632235,
+        "iterations": 1000,
+        "seed": 20260623
+      },
+      "main_ingredients": {
+        "pointDelta": 0.049193828016643515,
+        "lower": -0.02893209665005636,
+        "upper": 0.13036314803529925,
+        "iterations": 1000,
+        "seed": 20260623
+      }
+    },
+    "labels": {
+      "cleanCore": 34,
+      "judgmentRow": 35
+    }
+  }
+}

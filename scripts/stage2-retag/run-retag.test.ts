@@ -22,10 +22,13 @@ import {
   DEFAULT_MODEL,
   GRADE_LEVELS,
   RESULT_PROPERTIES,
+  buildC02DecisionSchema,
+  buildC02FinalSchema,
   buildResultSchema,
   buildSubmitTagsTool,
   loadSystemPrompt,
 } from './schema';
+import { loadC02FloorInput } from './c02-floor';
 import { loadVocab } from './vocab';
 import {
   DIRECT_BASE_URL,
@@ -60,6 +63,7 @@ import {
   planRepairCandidates,
   planRepairs,
   repairFieldSpec,
+  processC02Decision,
   resolveClientConfig,
   runFallbackForRefusal,
   validateRawInput,
@@ -68,6 +72,7 @@ import {
   type RepairOutcome,
   type RunRecord,
 } from './run-retag';
+import type { C02FlooredTags } from './c02-floor';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(MODULE_DIR, '__fixtures__');
@@ -305,6 +310,330 @@ describe('buildRunRecord', () => {
   });
 });
 
+describe('run-record finalC02 contract (P2′.3 / D-P6)', () => {
+  const llmDecisions = {
+    cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+    main_ingredients: {
+      keep: ['Nightshades'],
+      drop: [],
+      add: [{ value: 'Tomatoes', reason: 'specific-food-central' }],
+    },
+  };
+  const finalC02 = {
+    cooking_skills: ['Baking'],
+    main_ingredients: ['Nightshades', 'Tomatoes'],
+  };
+
+  it('carries BOTH the raw llmDecisions AND finalC02 as NEW record fields, without overwriting rawInput', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions, // rawInput holds the raw decision — preserved.
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+    });
+    expect(record.rawInput).toEqual(llmDecisions);
+    expect(record.llmDecisions).toEqual(llmDecisions);
+    expect(record.finalC02).toEqual(finalC02);
+  });
+
+  it('round-trips both NEW fields through parseRunRecords (write → parse → both present)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions,
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+    });
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.llmDecisions).toEqual(llmDecisions);
+    expect(parsed.finalC02).toEqual(finalC02);
+  });
+
+  it('persists + round-trips flooredFields (run-time field-isolation provenance, P2′.8 part 2)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions,
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+      flooredFields: ['main_ingredients'],
+    });
+    expect(record.flooredFields).toEqual(['main_ingredients']);
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.flooredFields).toEqual(['main_ingredients']);
+  });
+
+  it('omits flooredFields on a clean record (a floored record is otherwise indistinguishable)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-8',
+      promptSchemaHash: 'abc',
+      rawInput: llmDecisions,
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+      llmDecisions,
+      finalC02,
+    });
+    expect(record.flooredFields).toBeUndefined();
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.flooredFields).toBeUndefined();
+  });
+
+  it('omits the NEW fields when not provided (legacy/non-C02 records still parse)', () => {
+    const record = buildRunRecord({
+      id: 'lesson-9',
+      phase: 'main',
+      model: 'claude-opus-4-7',
+      promptSchemaHash: 'abc',
+      rawInput: { activity_type: ['garden'] },
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'body-9',
+      strict: false,
+      effectiveBaseUrl: DIRECT_BASE_URL,
+    });
+    expect(record.llmDecisions).toBeUndefined();
+    expect(record.finalC02).toBeUndefined();
+    const [parsed] = parseRunRecords(JSON.stringify(record));
+    expect(parsed.finalC02).toBeUndefined();
+  });
+});
+
+describe('processC02Decision — validation flow (P2′.3 / D-P6)', () => {
+  const decisionSchema = buildC02DecisionSchema(vocab);
+  const finalSchema = buildC02FinalSchema(vocab);
+  const floorInput = loadC02FloorInput();
+
+  /** A floored anchor with both fields populated from canonical values. */
+  function flooredAnchor(cooking: string[], ingredients: string[]): C02FlooredTags {
+    return {
+      cooking: cooking.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+      ingredients: ingredients.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+    };
+  }
+
+  it('valid decision → finalC02 reconciled + zod passed + skipC02 normalize (no R7/R8/R9)', () => {
+    // Specifics are keep-only (P2′.6 r4): Tomatoes reaches finalC02 via the
+    // ANCHOR (KEEP), not an ADD. A KEPT specific still pulls its parent group in.
+    const apiInput = {
+      cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+      main_ingredients: {
+        keep: ['Tomatoes'],
+        drop: [],
+        add: [],
+      },
+    };
+    const out = processC02Decision({
+      apiInput,
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(true);
+    // rawInput preserved as the raw decision; llmDecisions is the parsed decision.
+    expect(out.rawInput).toEqual(apiInput);
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
+    // The KEPT specific pulls its parent group in via reconcile.
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.finalC02?.main_ingredients).toContain('Nightshades');
+    // C02 normalize rules were skipped (no double-apply).
+    expect(out.normalizations).not.toContain('cooking-skills-alias-floor');
+    expect(out.normalizations).not.toContain('ingredient-parent-reconcile');
+  });
+
+  it('a decision that fails the schema (wrong shape) → zod.passed false, no finalC02', () => {
+    const out = processC02Decision({
+      apiInput: { cooking_skills: 'not an object', main_ingredients: {} },
+      floored: flooredAnchor([], []),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(false);
+    expect(out.finalC02).toBeUndefined();
+  });
+
+  it('a non-partitioning decision (anchor value omitted) → RECOVERED as implicit KEEP (lenient, P2′.6 r3)', () => {
+    // 'Baking' is in the anchor but neither kept nor dropped. Reconcile is now
+    // LENIENT: it recovers the omission as an implicit KEEP rather than rejecting
+    // the whole lesson (the strict-reject cost ~12% of pilot lessons their tags).
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: [], drop: [], add: [] },
+        main_ingredients: { keep: [], drop: [], add: [] },
+      },
+      floored: flooredAnchor(['Baking'], []),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(true);
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
+  });
+});
+
+describe('processC02Decision — run-time field isolation (P2′.8 part 2 / D-P11)', () => {
+  const decisionSchema = buildC02DecisionSchema(vocab);
+  const finalSchema = buildC02FinalSchema(vocab);
+  const floorInput = loadC02FloorInput();
+
+  function flooredAnchor(cooking: string[], ingredients: string[]): C02FlooredTags {
+    return {
+      cooking: cooking.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+      ingredients: ingredients.map((value) => ({ value, provenance: 'exact-canonical' as const })),
+    };
+  }
+
+  it('an off-vocab INGREDIENT does NOT discard the valid COOKING decision (the 4-record regression)', () => {
+    // Mirrors the 4 r4 pilot records: a valid cooking decision + an off-vocab
+    // ingredient ADD ('Thyme'). The whole-record parse fails, but field
+    // isolation must still produce a canonical finalC02: cooking from the LLM,
+    // ingredients from the floor.
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: ['Knife skills'], drop: [], add: [] },
+        main_ingredients: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Thyme', reason: 'real-technique-taught' }],
+        },
+      },
+      floored: flooredAnchor(['Knife skills'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    // finalC02 is present and canonical for BOTH fields.
+    expect(out.finalC02).toBeDefined();
+    expect(out.finalC02?.cooking_skills).toEqual(['Knife skills']);
+    // ingredients fell back to the floor (the off-vocab field), still canonical.
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.finalC02?.main_ingredients).toContain('Nightshades');
+    // the off-vocab value never appears.
+    expect(out.finalC02?.main_ingredients).not.toContain('Thyme');
+    // the floored field is recorded for transparency.
+    expect(out.flooredFields).toEqual(['main_ingredients']);
+  });
+
+  it('an off-vocab COOKING value does NOT discard the valid INGREDIENT decision (symmetry)', () => {
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Flambeing', reason: 'real-technique-taught' }],
+        },
+        main_ingredients: { keep: ['Tomatoes'], drop: [], add: [] },
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.finalC02).toBeDefined();
+    // cooking fell back to the floor.
+    expect(out.finalC02?.cooking_skills).toEqual(['Baking']);
+    expect(out.finalC02?.cooking_skills).not.toContain('Flambeing');
+    // ingredients reconciled from the valid LLM decision.
+    expect(out.finalC02?.main_ingredients).toContain('Tomatoes');
+    expect(out.flooredFields).toEqual(['cooking_skills']);
+  });
+
+  it('a valid decision sets NO flooredFields (the happy path is untouched)', () => {
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: { keep: ['Baking'], drop: [], add: [] },
+        main_ingredients: { keep: ['Tomatoes'], drop: [], add: [] },
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(true);
+    expect(out.flooredFields).toBeUndefined();
+  });
+
+  it('BOTH fields off-vocab → total failure (no finalC02), as before', () => {
+    const out = processC02Decision({
+      apiInput: {
+        cooking_skills: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Flambeing', reason: 'real-technique-taught' }],
+        },
+        main_ingredients: {
+          keep: [],
+          drop: [],
+          add: [{ value: 'Thyme', reason: 'real-technique-taught' }],
+        },
+      },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(false);
+    expect(out.finalC02).toBeUndefined();
+  });
+
+  it('a structurally-malformed decision (wrong SHAPE, not off-vocab) → total failure (no per-field recovery)', () => {
+    // Field isolation recovers off-VALUE failures; a wrong-SHAPE decision is not
+    // a recoverable per-field enum slip, so it still fails wholesale.
+    const out = processC02Decision({
+      apiInput: { cooking_skills: 'not an object', main_ingredients: 42 },
+      floored: flooredAnchor(['Baking'], ['Tomatoes']),
+      floorInput,
+      decisionSchema,
+      finalSchema,
+    });
+    expect(out.zod.passed).toBe(false);
+    expect(out.finalC02).toBeUndefined();
+  });
+});
+
 describe('parseRunRecords + computeResumableIds (--resume)', () => {
   const HASH = 'current-hash';
   const MODEL = 'claude-opus-4-7';
@@ -452,15 +781,86 @@ describe('parseRunRecords + computeResumableIds (--resume)', () => {
     expect(records).toHaveLength(1);
     expect(computeResumableIds(records, identity(['a']))).toEqual(new Set(['a']));
   });
+
+  // FIX 1 (P2′.3 Codex): the C02 anchored run expects `finalC02` on every
+  // successful record. A record matching the current identity but LACKING
+  // finalC02 (error === null) is a validation FAILURE that must re-run on
+  // --resume, not resume-skip. Opt in via requireFinalC02.
+  describe('requireFinalC02 (C02 anchored resume — re-run validation failures)', () => {
+    it('does NOT resume a matching record that lacks finalC02 (validation failure)', () => {
+      // error === null but no finalC02 → a C02 validation failure, not done.
+      const records = parseRunRecords(
+        jsonl([makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL, error: null })])
+      );
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: true })).toEqual(
+        new Set()
+      );
+    });
+
+    it('resumes the same matching record once finalC02 is present (PASS)', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({
+            id: 'a',
+            promptSchemaHash: HASH,
+            model: MODEL,
+            finalC02: { cooking_skills: ['Knife skills'], main_ingredients: ['Alliums'] },
+          }),
+        ])
+      );
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: true })).toEqual(
+        new Set(['a'])
+      );
+    });
+
+    it('treats finalC02 with EMPTY arrays as a PASS (resumable), not a failure', () => {
+      const records = parseRunRecords(
+        jsonl([
+          makeRecord({
+            id: 'a',
+            promptSchemaHash: HASH,
+            model: MODEL,
+            finalC02: { cooking_skills: [], main_ingredients: [] },
+          }),
+        ])
+      );
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: true })).toEqual(
+        new Set(['a'])
+      );
+    });
+
+    it('leaves legacy behavior unchanged when requireFinalC02 is absent/false', () => {
+      // A record with no finalC02 + error === null stays resumable (the gate is off).
+      const records = parseRunRecords(
+        jsonl([makeRecord({ id: 'a', promptSchemaHash: HASH, model: MODEL, error: null })])
+      );
+      expect(computeResumableIds(records, identity(['a']))).toEqual(new Set(['a']));
+      expect(computeResumableIds(records, { ...identity(['a']), requireFinalC02: false })).toEqual(
+        new Set(['a'])
+      );
+    });
+  });
 });
 
-describe('computeBodyHash', () => {
-  it('is a stable sha256 hex digest of the body string', () => {
-    expect(computeBodyHash('Pre K lesson about roots and shoots.')).toBe(
-      'b1ec60d74f183a675c5b917af4752075cbdef51d654a8ba842ebceac3bfbd5d2'
-    );
-    expect(computeBodyHash('a')).toMatch(/^[0-9a-f]{64}$/);
-    expect(computeBodyHash('a')).not.toBe(computeBodyHash('b'));
+describe('computeBodyHash (D-P9 — full effective input, not body-only)', () => {
+  // The anchored pivot hashes the FULL effective input (body + raw current tags
+  // + floored anchor + manifest version + reconcile policy). Per-dimension
+  // independence is covered in c02-corpus-thread.test.ts; here we assert the
+  // signature + stable-hex + body-sensitivity contract.
+  const base = {
+    body: 'Pre K lesson about roots and shoots.',
+    rawCookingSkills: [],
+    rawMainIngredients: [],
+    anchor: 'cooking_skills: (none)\nmain_ingredients: (none)',
+    manifestVersion: 'v',
+    reconcilePolicyId: 'p',
+  };
+  it('is a stable 64-char sha256 hex digest over the effective input', () => {
+    expect(computeBodyHash(base)).toMatch(/^[0-9a-f]{64}$/);
+    expect(computeBodyHash(base)).toBe(computeBodyHash({ ...base }));
+  });
+  it('changes when the body changes (no longer body-only, but body still matters)', () => {
+    expect(computeBodyHash({ ...base, body: 'a different body' })).not.toBe(computeBodyHash(base));
   });
 });
 

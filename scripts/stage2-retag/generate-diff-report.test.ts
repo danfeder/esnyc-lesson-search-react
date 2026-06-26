@@ -31,6 +31,7 @@ import {
   parseArgs,
   parseCorpusRecords,
   renderMarkdown,
+  selectComparedLessons,
   type FieldDiff,
 } from './generate-diff-report';
 import { parseRunRecords } from './run-retag';
@@ -449,6 +450,61 @@ describe('buildDiffReport — C02 fields (cooking_skills + main_ingredients)', (
     expect(md).toContain('"Knife skills"');
     expect(md).toContain('"Alliums"');
     expect(md).toContain('"Tomatoes"');
+  });
+});
+
+describe('selectComparedLessons — fail-closed on C02 anchored records (FIX 2, P2′.3 Codex)', () => {
+  // Minimal shared corpus line: one lesson the run records can target.
+  const corpusText = JSON.stringify({
+    id: 'lesson-c02',
+    title: 'Knife Skills with Onions',
+    cooking_skills: ['Sautéing & stir-frying'],
+    main_ingredients: ['Nightshades'],
+    academic_concepts: null,
+  });
+  const corpus = parseCorpusRecords(corpusText);
+
+  function runRecordWith(extra: Record<string, unknown>): string {
+    return JSON.stringify({
+      id: 'lesson-c02',
+      phase: 'main',
+      model: 'claude-opus-4-7',
+      promptSchemaHash: 'hash-current',
+      rawInput: { cooking_skills: [], main_ingredients: [] },
+      zod: { passed: true, fieldErrors: null },
+      usage: null,
+      costUsd: null,
+      latencyMs: null,
+      error: null,
+      stopReason: 'tool_use',
+      bodyHash: 'h',
+      strict: false,
+      completedAt: '2026-06-23T00:00:00.000Z',
+      ...extra,
+    });
+  }
+
+  it('THROWS (naming C02/finalC02/P3) when a latest record carries finalC02', () => {
+    const runRecords = parseRunRecords(
+      runRecordWith({ finalC02: { cooking_skills: ['Knife skills'], main_ingredients: [] } })
+    );
+    expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/finalC02/);
+    expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/C02/);
+    expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/P3/);
+  });
+
+  it('THROWS when a latest record carries llmDecisions (raw KEEP/DROP/ADD)', () => {
+    const runRecords = parseRunRecords(
+      runRecordWith({ llmDecisions: { cooking_skills: { keep: [], drop: [], add: [] } } })
+    );
+    expect(() => selectComparedLessons(corpus, runRecords)).toThrowError(/C02/);
+  });
+
+  it('does NOT throw on legacy records lacking finalC02/llmDecisions', () => {
+    const runRecords = parseRunRecords(runRecordWith({}));
+    expect(() => selectComparedLessons(corpus, runRecords)).not.toThrow();
+    const { compared } = selectComparedLessons(corpus, runRecords);
+    expect(compared.map((c) => c.id)).toEqual(['lesson-c02']);
   });
 });
 

@@ -1,0 +1,539 @@
+{
+  "provenance": {
+    "task": "C02 P1.5 — 3-layer answer-key sample (hard-case + set-cover + clean-core)",
+    "sampler_version": "b1-v2",
+    "seed": 20260612,
+    "size": 69,
+    "note": "Deterministic; reproduce with `npx tsx scripts/stage2-retag/sample-answer-key.ts --c02 --seed 20260612`",
+    "postSampleRemovals": [
+      {
+        "id": "1jfFP2nKtAti3HQZzX2Fi9X72M8BZ02uX",
+        "title": "Equivalent Ratios",
+        "layer": "hard-case",
+        "reason": "On the corpus-exclusions deletion-slate (incomplete/non-lesson, §A24/§F); absent from the run-retag corpus, so unscoreable as a phantom all-miss. Removed 2026-06-23 (Session 8, P2.3). Original deterministic sample size = 70; effective scored key = 69."
+      }
+    ],
+    "coverageNote": "The `coverage` value-counts below reflect the as-drawn 70-id sample; one deletion-slated id was removed post-sample (see postSampleRemovals). Gold-key adjudicated support recomputed over 69 rows preserves >=2 for every value the removed lesson carried (verified)."
+  },
+  "layerSizes": {
+    "hardCase": 19,
+    "coverage": 28,
+    "cleanCore": 22
+  },
+  "coverage": {
+    "cooking": {
+      "Knife skills": 39,
+      "Measuring": 42,
+      "Reading & following recipes": 40,
+      "Assembling dishes": 19,
+      "Dough making": 21,
+      "Mixing & stirring": 31,
+      "Wrapping & rolling": 22,
+      "Boiling & simmering": 4,
+      "Blending & juicing": 5,
+      "Roasting": 9,
+      "Baking": 20,
+      "Grating": 7,
+      "Seasoning & spice blending": 2,
+      "Sautéing & stir-frying": 5,
+      "Pickling & preserving": 9,
+      "Mashing": 6,
+      "Fermenting": 2,
+      "Steaming": 2,
+      "Kitchen & food safety": 2,
+      "Creating sauces & dressings": 2,
+      "Tasting": 3,
+      "Grilling": 3,
+      "Plating & garnishing": 2
+    },
+    "ingredients": {
+      "Rice": 7,
+      "Black beans": 3,
+      "Alliums": 24,
+      "Cilantro": 5,
+      "Bell peppers": 7,
+      "Grains & starches": 32,
+      "Beans & legumes": 12,
+      "Fresh herbs": 13,
+      "Peppers": 8,
+      "Berries": 11,
+      "Bananas": 6,
+      "Avocado": 2,
+      "Tropical fruits": 20,
+      "Nightshades": 7,
+      "Cucumbers": 8,
+      "Parsley": 6,
+      "Mint": 5,
+      "Wheat/flour": 11,
+      "Squash, cucumbers & melons": 11,
+      "Dairy": 9,
+      "Honey": 11,
+      "Coconut": 10,
+      "Root vegetables": 21,
+      "Leafy greens": 11,
+      "Citrus fruits": 7,
+      "Potatoes": 3,
+      "Spices": 13,
+      "Chickpeas": 2,
+      "Sunflower butter": 3,
+      "Nuts & seeds": 6,
+      "Peanut butter": 2,
+      "Tomatoes": 4,
+      "Lemon": 2,
+      "Corn/masa": 7,
+      "Dried fruits": 8,
+      "Sweeteners": 5,
+      "Eggs": 2,
+      "Ginger": 5,
+      "Cinnamon": 3,
+      "Cocoa & chocolate": 3,
+      "Yogurt": 3,
+      "Oats": 2,
+      "Cabbage": 3,
+      "Carrots": 4,
+      "Mushrooms": 2,
+      "Cruciferous": 3,
+      "Pinto beans": 2,
+      "Cheese": 2,
+      "Garlic": 2,
+      "Tahini": 2,
+      "Lime": 2,
+      "Oranges": 2,
+      "Apples": 3,
+      "Butter": 2,
+      "Apples & pears": 3,
+      "Stone fruits": 2,
+      "Coconut milk": 3,
+      "Sweet potatoes": 6,
+      "Dairy alternatives": 3,
+      "Seaweed (nori)": 3,
+      "Beets": 3,
+      "Celery": 4,
+      "Pumpkin seeds": 2,
+      "Sunflower seeds": 2,
+      "Milk": 3,
+      "Winter squash": 2,
+      "Fennel": 2,
+      "Tofu & plant proteins": 2,
+      "Melons": 2,
+      "Black-eyed peas": 4
+    }
+  },
+  "warnings": [],
+  "selected": [
+    {
+      "id": "1WSB8DGOrxQ1AcguvIA8Tqy3v8p5rFQnB_IOnQISo5VU",
+      "title": "Everybody Cooks Rice",
+      "layer": "hard-case",
+      "hardCaseClass": "vague-cooking"
+    },
+    {
+      "id": "10s9d-9ozwRHjwgqAsRfyi2as7XznPSEmx1PyVmMmUm8",
+      "title": "Temperature and Tea Making",
+      "layer": "hard-case",
+      "hardCaseClass": "herbs-aromatics"
+    },
+    {
+      "id": "1_u1GSf5QuGNz_6Xl_PBMX82CegoLCS000Pd9ZKHh0Mw",
+      "title": "Health Discussion Topics",
+      "layer": "hard-case",
+      "hardCaseClass": "orphan-food"
+    },
+    {
+      "id": "1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI",
+      "title": "Fattoush",
+      "layer": "hard-case",
+      "hardCaseClass": "vague-cooking"
+    },
+    {
+      "id": "1m7CtCXCZkrBWfZ6PHtz634y2leOE9EXY",
+      "title": "We All Need Trees",
+      "layer": "hard-case",
+      "hardCaseClass": "herbs-aromatics"
+    },
+    {
+      "id": "1f1FVc2FsYYwFtCFWDRAxSfsT3BcPC1E5",
+      "title": "Lotion & Agar Soap - K",
+      "layer": "hard-case",
+      "hardCaseClass": "orphan-food"
+    },
+    {
+      "id": "1-MsjoyBLbpfMuiJtecJMApM-NctLHc5qup0i1w4ZC7A",
+      "title": "Primavera Pasta & Citrus Lemonade",
+      "layer": "hard-case",
+      "hardCaseClass": "vague-cooking"
+    },
+    {
+      "id": "17a2gTrfRtpR0iRdxZIMVyevukqwQ7G508VlcmkjYpck",
+      "title": "Pesto Celebration",
+      "layer": "hard-case",
+      "hardCaseClass": "herbs-aromatics"
+    },
+    {
+      "id": "1d8eP6UrO-PNjP6cnlbrRjUCIeaNHdFXTd-ANOM5XgAA",
+      "title": "Sandwich Swap (Mobile Education)",
+      "layer": "hard-case",
+      "hardCaseClass": "orphan-food"
+    },
+    {
+      "id": "1ChYFdztQt1U-EK4aOzZ6XkY9fKqTCawKlmTlTajQRvg",
+      "title": "Foods From Around the World: Uzbekistan",
+      "layer": "hard-case",
+      "hardCaseClass": "herbs-aromatics"
+    },
+    {
+      "id": "18oKyXzj8zydRDEtQvZ68USr144_9vfMJhckXNo6NFVk",
+      "title": "Breakfast around the World / Israeli Salad (Intro to Global Unit)",
+      "layer": "hard-case",
+      "hardCaseClass": "orphan-food"
+    },
+    {
+      "id": "1R6DqXH9XvSvZq9B0106w0CHtS3kvuJNX53taROiZZBE",
+      "title": "Daikon Pickles & Furikake",
+      "layer": "hard-case",
+      "hardCaseClass": "vague-cooking"
+    },
+    {
+      "id": "1ldS7zEG960hNqyamfSPAbO_mKmmRpHvJ",
+      "title": "History of Tex-Mex Food",
+      "layer": "hard-case",
+      "hardCaseClass": "herbs-aromatics"
+    },
+    {
+      "id": "1TNen8KVizYd-al0B8XTA9wY-3s5O6Rm8aJQDWPhpz7k",
+      "title": "Red Drinks for Juneteenth",
+      "layer": "hard-case",
+      "hardCaseClass": "orphan-food"
+    },
+    {
+      "id": "1yUHWKsyYlQoHqmOuuX4IttgvcVY5uDOeJwsKAwjco9s",
+      "title": "Pickle Lesson with Ms.Ingrit",
+      "layer": "hard-case",
+      "hardCaseClass": "vague-cooking"
+    },
+    {
+      "id": "1kYWPuSBCWHVdY-rwsbMJC8J3EMOPno_G",
+      "title": "Hydroponics",
+      "layer": "hard-case",
+      "hardCaseClass": "herbs-aromatics"
+    },
+    {
+      "id": "181lWTGhtMXpO95d3JOAiPYXQe963z_Ru5Ibpvc9kbrE",
+      "title": "Gingerbread Cookies",
+      "layer": "hard-case",
+      "hardCaseClass": "orphan-food"
+    },
+    {
+      "id": "1YOJ1pRdApcO0q0dfbP-JjM6NhLFiDKEf",
+      "title": "Eat the Rainbow: Green",
+      "layer": "hard-case",
+      "hardCaseClass": "vague-cooking"
+    },
+    {
+      "id": "1LyuuuF-GNwUfVIgxrR_3NQLCEbD59GkfFN145WeTk3Q",
+      "title": "Moroccan Carrot Salad, Two Ways",
+      "layer": "hard-case",
+      "hardCaseClass": "herbs-aromatics"
+    },
+    {
+      "id": "1UUgPjsSA6N-JnHMk8TNC2UzqZQz50-RcmP54V7U2kIY",
+      "title": "Pumpkin Pie Energy Bites",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "17BtzyY25PBuqNX7sAptazjN3TFuatIsrNWjV3hbIip0",
+      "title": "Ramen and Korean food traditions",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "19jKdVhI31juzrkZg6H4pZpWGzwzUZmeW",
+      "title": "Pupusas & Curtido",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1eFmMW_gk1dR2uEpUWTVHylQAB7-OSAIKNfwc07Dbmgg",
+      "title": "Hummus and Pita",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1xg1E9ux99J_eNrE12Ao3cbkGU7j5KDCP0PYCDjRkrwQ",
+      "title": "Good Mood Food",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1r325MQlxLcN1l9TUzIx2qHNH7IXrecHeU6AZL0O0IP0",
+      "title": "Apple Pie",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "lesson_5a9dc306522d41b0b290259210b2fef9",
+      "title": "Jam and Jelly: Fruit Preservation",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1pGzazTHZbfbNIafJvpMV06eAyvsNTPc6wG71K3CVQr0",
+      "title": "Middle School Family Cooking Night: Callaloo",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1fR_VcTO7V1OWM7qp2EweRBN9Zl9z1e3N7pQuvZhJO1k",
+      "title": "Vegetable Sushi",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1P8rs1bUmdlj_lKDPQSnMr1QANW-KnTWAuEAc-UbEDVw",
+      "title": "Trail Mix - Greater Than Less Than",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1_rHQ9aGoFQkgrM1ebgtqo5o6ZjJqXAoA",
+      "title": "Green Room Party",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1dYfqKvRGyB45l5D-3KEN9Fx6-lFsNckvakBtMQq614k",
+      "title": "Three Sisters Empanadas",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1M7m_WxtgZ8EJtZ0Pkii6RV5G4iNFiJHOCTXXvv6Viis",
+      "title": "Plant Part Salad 4- Balsamic, Honey, Herb Dressing",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1hUNwNfHVudR9tl-UZ8wPn9dKB9h7t33l",
+      "title": "Agar Jelly - K",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "13nUlv33cUEy2yjjzCARmrlCIHO4oDwQxyCNHVyUtKGk",
+      "title": "Chilled Cucumber and Tahini Soup with Spicy Pumpkin Seeds",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1vtacAdf80q9FyZ4dEEzWmVLdycRmgJ7_MSRbrweoGwA",
+      "title": "AAPI Heritage Month - Philippines & Lumpia",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1K0zdfgOhbMmfWLeSwPfpz3dJ0RM7fLrAilQ2Ebfjilk",
+      "title": "Pumpkin Spice Muffins",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1X7HadA1WaR-hNBFIHvAUsFKborDGE5eT3Lhg5Dp9CEI",
+      "title": "Seed Dispersal",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "18CWBffI1JwrvlrtTKsqjuhalw6-auWuRIyPbo_qTYac",
+      "title": "A Fruit Is A Suitcase For Seeds",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1uDDPxAKSjEPYMU36W80bEbSMa_YuuGPNw62CXFGD6hM",
+      "title": "Hoppin’ John Burgers & Green Bean Salad: Celebrating Black History Month",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1xwTiqazvuLxwYiNB-y6xLaRRVFkDkvOgYroXPstQLjE",
+      "title": "African American Food Traditions",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1BZJ0LHTN_tKBT4JtR-cynAUPAkjGNZQ6hhzoa5e7OUU",
+      "title": "Blind Cooking",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1Ks-y9PWIktUAGwrekBvnfPW1xt3NRdRGKjB90pFAT6g",
+      "title": "Plant Part Salad 2 - Buttermilk Dressing",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "127RLjTEXNBru8mi_iAT-UDLIABOfEtJT3EYFAlK7hn8",
+      "title": "Crunchy Noodle and Tofu Salad",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "16evw1D1b7oSDzm-vyvk2yXaIAt9XEwYsoWUjWE0CgpY",
+      "title": "Empanadas & Corn Salad",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1C4xWyGL9hhb2DnnoRSFQUisyeu5O-78h",
+      "title": "Caffeine",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1JCT_JOaWRCF_-9M_0P3VVVU_seTz8xcr7VKzkdA8rLk",
+      "title": "Smashed Cucumber Salad",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1_YYC5Yr7thlhsTuEA3X3bnsVLw7jMttBAUpoxiud7sY",
+      "title": "I spy...in the garden! Indoors 3K/PK",
+      "layer": "coverage",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1McBtCpSmViKDSLFydF_RF0Uf5cs0Z6Z7c73GN-2OdJ8",
+      "title": "Sink or Float Experiment",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1-FhCLI8tF1VdM7DT_Mb55CQsZthpXReYCA1ipA1A0sU",
+      "title": "Types of Energy",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1mTrOat6NRL6z3SqwXqINpikZYdyL3VyqUr74t1kYYQA",
+      "title": "Daal and Roti",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1QDKfp6mC3uRwMfHSnGyeGX8L270dSN1KxFx3ZBDvZXc",
+      "title": "Teamwork Challenge",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "14pan9UR9mIDVEhi4V7b3yajqYDw42ELsD0ty7Yj23Xg",
+      "title": "Rainbow Smoothies",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "12ZjWQaqW6hOPDo16zi9PN3iG92jI4KLz",
+      "title": "Blue Corn Cookies",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1B3Phuk-DzUJFDHJKfg9RPlolcBWMeaq6gwWRjOfhU9I",
+      "title": "Hoppin’ John Burgers: Celebrating Black History Month",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1gh1_OqCpnhDkGOmte5VIdIkEkU8_HpXs34KdcSuPkrQ",
+      "title": "Fattoush",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "14aOq2dX-A8NXidQDvirQf60SKD__38gH5EtJjO95FwI",
+      "title": "Leaf Related Art Activities",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1ZynAlPlWZsqiotLYrT7PTASgINLs30N7ETVQYp-AWYQ",
+      "title": "Bee Habitat",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1qOAiHnYteeSZZKHAqW9c5z1YlbLQqGRlWZIW3KQ4Vss",
+      "title": "Diary of A Worm",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "0B-haDqSHcXMCZEdqQmkyZ3otQmNBM2dBbXhzODdJMkxKUjJn",
+      "title": "Worm Structure and Function",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1dTMg_5AdKV5cJNnt7_L2cXhTK9fmJr8U",
+      "title": "Roots",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1czcU78YP5rfa2Nkf_CvtMQQPfjObEE_AMB0YcjkGIJg",
+      "title": "How Do Seeds Turn into Plants?",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "19Tg4I9XywohpcrdBZ77vaBgyIdYhxGo0bk3FpSUcE2Y",
+      "title": "Legend of the 3 sisters",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1cCe0ugBM572aGRojx1RfR6wE5FuBA3CjFetD8NKffvs",
+      "title": "Pesticides",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1ycSqtbE4BzPe28OrrOG7T72wvvG51ynT_Q2GrR5Rg-I",
+      "title": "4 Color Scavenger Hunt",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1DrCDUg2KdLyl7IhLXdfgX-kWAZtu12wqQ9yYDl_b2ek",
+      "title": "Stems",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "19nAJvWpV3Nu1aPT2_N5IT67ZDY5W8zuFNyuJidoGKQU",
+      "title": "Middle School Haudenosaunee Address Lesson",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1PAsbX7TiCV0vlvFwtD_tteWiWWdCAcCmttQEv2oOBwk",
+      "title": "Respect in the Garden",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "14wTm_zkFDwSqkUBJj01zdY2Lq1D6-eXdj6BQcZwOrQ4",
+      "title": "Black Eyed Peas, the South and BHM",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1nNPA0q0yh9gE_Qz7Nx5_jmUIqhkOAOWrISWtv7pYLs4",
+      "title": "Foods From Around the World: Final Vote",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    }
+  ]
+}

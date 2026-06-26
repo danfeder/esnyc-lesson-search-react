@@ -1,0 +1,237 @@
+{
+  "provenance": {
+    "task": "C02 P2′.5 — held-out anti-overfit canary (relaxed stratified draw, excludes the 69-key)",
+    "sampler_version": "b1-v2",
+    "coverageMode": "relaxed",
+    "seed": 20260624,
+    "size": 25,
+    "excludedCount": 69,
+    "excludeKey": "c02-answer-key.final.jsonl",
+    "note": "Deterministic; reproduce with `npx tsx scripts/stage2-retag/sample-answer-key.ts --c02 --relaxed-coverage --seed 20260624 --size 25 --exclude-key <path>/c02-answer-key.final.jsonl`"
+  },
+  "layerSizes": {
+    "hardCase": 0,
+    "coverage": 0,
+    "cleanCore": 25
+  },
+  "coverage": {
+    "cooking": {
+      "Reading & following recipes": 11,
+      "Pickling & preserving": 1,
+      "Knife skills": 11,
+      "Measuring": 11,
+      "Assembling dishes": 4,
+      "Baking": 5,
+      "Mixing & stirring": 8,
+      "Wrapping & rolling": 6,
+      "Dough making": 4,
+      "Boiling & simmering": 1,
+      "Sautéing & stir-frying": 3,
+      "Fermenting": 1,
+      "Steaming": 1,
+      "Roasting": 1
+    },
+    "ingredients": {
+      "Dried fruits": 3,
+      "Seaweed (nori)": 1,
+      "Rice": 4,
+      "Cruciferous": 1,
+      "Eggs": 1,
+      "Carrots": 1,
+      "Alliums": 6,
+      "Cabbage": 1,
+      "Ginger": 3,
+      "Grains & starches": 8,
+      "Root vegetables": 4,
+      "Spices": 3,
+      "Honey": 4,
+      "Berries": 1,
+      "Bananas": 1,
+      "Tropical fruits": 4,
+      "Citrus fruits": 3,
+      "Black beans": 1,
+      "Corn/masa": 3,
+      "Tomatoes": 1,
+      "Cilantro": 2,
+      "Lime": 2,
+      "Beans & legumes": 3,
+      "Nightshades": 3,
+      "Fresh herbs": 3,
+      "Chickpeas": 1,
+      "Bell peppers": 2,
+      "Celery": 2,
+      "Parsley": 1,
+      "Tahini": 1,
+      "Peppers": 2,
+      "Nuts & seeds": 2,
+      "Black-eyed peas": 1,
+      "Wheat/flour": 3,
+      "Leafy greens": 2,
+      "Oats": 1,
+      "Coconut": 1,
+      "Apples": 1,
+      "Sunflower butter": 1,
+      "Sweeteners": 1,
+      "Apples & pears": 1,
+      "Tofu & plant proteins": 1,
+      "Stone fruits": 1,
+      "Potatoes": 1,
+      "Winter squash": 1,
+      "Squash, cucumbers & melons": 2,
+      "Cucumbers": 1
+    }
+  },
+  "warnings": [],
+  "selected": [
+    {
+      "id": "1ggSUt1lSukTkXV9LKBCQmvidkl6T8jSx",
+      "title": "Designing a Garden",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1puemyxDt0Cy3w5acFa9bjZGdfWEsZLs5",
+      "title": "Tastes Around the World",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "12S2A7YScBOfauAz5TZCeS33x16VW-v1CtCF51gvZGBg",
+      "title": "Ancient China Bingo",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1dx3HqZZFfiANs_69qszRwOOVVdKDRTAMW5Zrio88s7o",
+      "title": "Food from the Eastern Hemisphere",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "19CMwluTwweSei-u_gCvoerBrGG839U_Al7a4ORiZKa8",
+      "title": "Fruit Salad Challenge",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1qYwSYXu5udiqIjXG6533FCnt0YbhBz3OkHLEbzSu9e4",
+      "title": "Go, Grow, Glow",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1lv-gM8xprEt5t1YVLxvBN8eYI0uabXRN8XETqJVOJZQ",
+      "title": "5th Grade Food Cultures Unit Overview",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1GXPRwyORgQy1Cf6P0kMA0vkaU3Z-T5Klvzi93hZciaQ",
+      "title": "Chickpea Salad",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1LMlCebsrli4L9ed2kEUrFUinjYpNGQ2H0E99jkrRGnw",
+      "title": "Pico de Gallo (Knife Skills)",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1YW8jh8unSsEpzPqUhpA5JR3L71HOKCPt4plEMzsoWC0",
+      "title": "African American Foodways: Hoppin' John",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1FUQYevNBKMdDFgZYFGyPDT90O_61dVOf",
+      "title": "Vegetable Ramen",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1pLaLf59n80wmw7yzcSylQ-DAbd7xBOHDhDWE_iz4Q_0",
+      "title": "Healthy Snacks (Energy Bites, Popcorn, Cracker Stack)",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1eViPJBz9xeqq8o3U3e3MTaccETv6n2C1Q-w6DhG1E-I",
+      "title": "3rd Grade Chinese-Style Dumplings",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1zrKohaoXxvEe86HLnOvjUED_Am_-ETNw",
+      "title": "A Visit to Mashama Bailey’s Restaurant",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "lesson_2a67f63617374e7b93450c7d49d35bf5",
+      "title": "Bees",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "lesson_6fe7881164eb44148eabb42d0e14bfec",
+      "title": "Recycle Gardening  ",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "19OW9S7QbgkM_XtHaYS-qOqrQi37ILPbe",
+      "title": "Seeds",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "0B-haDqSHcXMCTnVCNkhGM3BNSzJwV3JZV0UzdmxxMlBHRHBV",
+      "title": "edibleschoolyards_planting",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4",
+      "title": "2nd Grade Decomposition Experiment Part 1",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1vnOYmF90vIaodnDkjLtXQdSLoLdE38HALLK8OfcwntM",
+      "title": "Gardening & The Environment",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1Yy7iv3vxPHukKFooYce0yr5BOqUcqprM2rhUWX12Cgo",
+      "title": "The Garden in the Spring",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "0BxEc0RZeYtCiUGNLaHJQSUFoQVE",
+      "title": "September Sixth Grade Summer Plant Hunt",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "11ialYB913qPqDiVMfppjDJt588C49vmQxZjUWRwCTbY",
+      "title": "Food of Peru",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1m2sMUa9Qjkzqz9dU6CqAkAReX6-92gUC8Va8Zl_EdMw",
+      "title": "Foods From Around the World: China",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    },
+    {
+      "id": "1iUmZQtejAbOYDkxNhEj47s_O0a5qvo7OskHw2-KhCP4",
+      "title": "Expert’s Guide to Gardening: Compost",
+      "layer": "clean-core",
+      "hardCaseClass": null
+    }
+  ]
+}

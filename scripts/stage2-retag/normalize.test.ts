@@ -552,6 +552,87 @@ describe('normalizeRecordInput — C02 floor/reconcile combined invariants', () 
 });
 
 // ---------------------------------------------------------------------------
+// { skipC02 } — bypass R7/R8/R9 for the two C02 fields (P2′.3 / D-P6)
+//
+// In the C02 anchored verify-and-diff path the canonical floor + reconcile
+// SUPERSEDE R7/R8/R9 — the run-time normalize must NOT re-apply them to the two
+// C02 fields (no double-apply). The other 12 fields still normalize unchanged.
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — { skipC02 } bypass (P2′.3)', () => {
+  it('does NOT fold or parent-reconcile the two C02 fields when skipC02 is set', () => {
+    // These tags WOULD be folded (Sautéing → Sautéing & stir-frying) / reconciled
+    // (Tomatoes → +Nightshades) by R7/R8/R9. With skipC02 they pass through
+    // untouched — reconcile.ts already produced the canonical finalC02.
+    const { rawInput, normalizations } = normalizeRecordInput(
+      {
+        cooking_skills: ['Sautéing'],
+        main_ingredients: ['Tomatoes', 'Hummus'],
+      },
+      { skipC02: true }
+    );
+    expect((rawInput as { cooking_skills: string[] }).cooking_skills).toEqual(['Sautéing']);
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Tomatoes',
+      'Hummus',
+    ]);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.mainIngredientsAliasFloor);
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+
+  it('does not RE-INTRODUCE a value the canonical floor removed (subtractive proof)', () => {
+    // A value `applyC02Floor` drops (Herbs & Aromatics / Olive oil / Forming
+    // patties) must not be re-folded or re-introduced by normalize on the C02
+    // path. With skipC02, normalize leaves the (already-reconciled) array alone.
+    const { rawInput } = normalizeRecordInput(
+      {
+        cooking_skills: ['Baking'],
+        main_ingredients: ['Nightshades'],
+      },
+      { skipC02: true }
+    );
+    expect((rawInput as { cooking_skills: string[] }).cooking_skills).not.toContain(
+      'Herbs & Aromatics'
+    );
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).not.toContain(
+      'Olive oil'
+    );
+    // The reconciled values pass through verbatim.
+    expect((rawInput as { cooking_skills: string[] }).cooking_skills).toEqual(['Baking']);
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual(['Nightshades']);
+  });
+
+  it('STILL applies the non-C02 rules (R1/R4/R5/R6) when skipC02 is set — surgical bypass', () => {
+    // R1 (academic exclusivity) must still fire; skipC02 scopes ONLY R7/R8/R9.
+    const { rawInput, normalizations } = normalizeRecordInput(
+      { activity_type: ['garden', 'academic'], cooking_skills: ['Sautéing'] },
+      { skipC02: true }
+    );
+    expect((rawInput as { activity_type: string[] }).activity_type).toEqual(['garden']);
+    expect(normalizations).toContain(NORMALIZATION_RULES.academicExclusivityStrip);
+    // C02 rule still skipped.
+    expect(normalizations).not.toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
+  });
+
+  it('default (no options) still applies R7/R8/R9 — the 13-field path is unchanged', () => {
+    const { rawInput, normalizations } = normalizeRecordInput({
+      cooking_skills: ['Sautéing'],
+      main_ingredients: ['Tomatoes'],
+    });
+    expect((rawInput as { cooking_skills: string[] }).cooking_skills).toEqual([
+      'Sautéing & stir-frying',
+    ]);
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual([
+      'Tomatoes',
+      'Nightshades',
+    ]);
+    expect(normalizations).toContain(NORMALIZATION_RULES.cookingSkillsAliasFloor);
+    expect(normalizations).toContain(NORMALIZATION_RULES.ingredientParentReconcile);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // matchKey helper (lowercase + trim + NFC; no diacritic/punct/space stripping)
 // ---------------------------------------------------------------------------
 
@@ -679,6 +760,67 @@ describe('normalizeRecordInput — plural/synonym alias folds', () => {
     expect(ALIAS_MAP['Avocados']).toBe('Avocado');
     expect(ALIAS_MAP['Sun butter']).toBe('Sunflower butter');
     expect(ALIAS_MAP['Sunbutter']).toBe('Sunflower butter');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P2.1b — floor top-up: clean folds the TEST-sourced census missed
+//
+// A live-PROD coverage audit found a handful of UNAMBIGUOUS single-target folds
+// the alias map (authored partly from a census accidentally run against TEST)
+// did not cover. These are clean folds (no lesson context needed). Each is
+// asserted end-to-end through the floor (the same buildC02Floor/matchKey path
+// the rules use), including R9 parent-reconcile where the target is a specific.
+// ---------------------------------------------------------------------------
+
+describe('normalizeRecordInput — P2.1b floor top-up folds', () => {
+  // key → expected normalized main_ingredients array (incl. R9 parent append
+  // for the two specific targets Cheese→Dairy and Beets→Root vegetables).
+  const cases: Array<[string, string[]]> = [
+    ['Beans', ['Beans & legumes']],
+    ['Peas', ['Beans & legumes']],
+    ['Squash', ['Squash, cucumbers & melons']],
+    ['Parmesan cheese', ['Cheese', 'Dairy']],
+    ['Mozzarella cheese', ['Cheese', 'Dairy']],
+    ['Sour Cream', ['Dairy']],
+    ['Buttermilk', ['Dairy']],
+    ['Condensed milk', ['Dairy']],
+    ['Various seeds', ['Nuts & seeds']],
+    ['Beyond Sausage (pea protein)', ['Tofu & plant proteins']],
+    ['Lettuce', ['Leafy greens']],
+    ['Cereal/grains', ['Grains & starches']],
+    ['Whole wheat wraps', ['Grains & starches']],
+    ['Beet juice', ['Beets', 'Root vegetables']],
+  ];
+
+  it.each(cases)('folds %s through the floor to its canonical target', (key, expected) => {
+    const { rawInput, normalizations } = normalizeRecordInput({ main_ingredients: [key] });
+    expect((rawInput as { main_ingredients: string[] }).main_ingredients).toEqual(expected);
+    expect(normalizations).toContain(NORMALIZATION_RULES.mainIngredientsAliasFloor);
+  });
+
+  it('declares each top-up key mapping to its stated canonical target', () => {
+    const expectedTargets: Record<string, string> = {
+      Beans: 'Beans & legumes',
+      Peas: 'Beans & legumes',
+      Squash: 'Squash, cucumbers & melons',
+      'Parmesan cheese': 'Cheese',
+      'Mozzarella cheese': 'Cheese',
+      'Sour Cream': 'Dairy',
+      Buttermilk: 'Dairy',
+      'Condensed milk': 'Dairy',
+      'Various seeds': 'Nuts & seeds',
+      'Beyond Sausage (pea protein)': 'Tofu & plant proteins',
+      Lettuce: 'Leafy greens',
+      'Cereal/grains': 'Grains & starches',
+      'Whole wheat wraps': 'Grains & starches',
+      'Beet juice': 'Beets',
+    };
+    for (const [key, target] of Object.entries(expectedTargets)) {
+      expect(ALIAS_MAP[key]).toBe(target);
+      // Every target must be a real canonical ingredient value.
+      expect(ING_VALUES.has(target)).toBe(true);
+    }
   });
 });
 

@@ -208,6 +208,22 @@ export function loadSystemPrompt(): string {
   return promptMemo;
 }
 
+let c02PromptMemo: string | null = null;
+
+/**
+ * Loads the dedicated C02 anchored verify-and-diff system prompt (design
+ * §3·PIVOT D-P4). Distinct from the monolithic `stage2-retag.md` prompt: it
+ * frames the task as KEEP/DROP/ADD against the current tags (the anchor), with
+ * the locked per-label ADD criteria (Tasting, Kitchen & food safety) and the
+ * negative few-shots (garnish-isn't-an-ingredient; pantry-staple precision).
+ */
+export function loadC02SystemPrompt(): string {
+  if (c02PromptMemo === null) {
+    c02PromptMemo = readFileSync(path.join(MODULE_DIR, 'prompts', 'c02-retag.md'), 'utf8');
+  }
+  return c02PromptMemo;
+}
+
 // ---------------------------------------------------------------------------
 // Tool construction
 // ---------------------------------------------------------------------------
@@ -474,6 +490,223 @@ export function buildResultSchema(vocab: Stage2Vocab) {
 }
 
 // ---------------------------------------------------------------------------
+// C02 dedicated 2-field verify-and-diff tool (design §3·PIVOT D-P4 / P2′.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * The ONLY two fields the C02 anchored verify-and-diff tool decides. The
+ * single source of truth for "C02 tool scope" — the tool builder, the decision
+ * schema, and (P2′.3) the reconciler all read this, never an inlined pair.
+ */
+export const C02_DECISION_FIELDS = ['cooking_skills', 'main_ingredients'] as const;
+export type C02DecisionField = (typeof C02_DECISION_FIELDS)[number];
+
+/**
+ * Reason codes the model must attach to every DROP. Closed enum (the model
+ * cannot invent a justification): each maps to one of the locked drop rationales
+ * (vague-tag replacement, the Herbs & Aromatics split, pantry-staple precision,
+ * incidental-not-central, plain unsupported-by-body).
+ */
+export const C02_DROP_REASONS = [
+  'body-does-not-support',
+  'incidental-not-central',
+  'vague-placeholder-replaced',
+  'pantry-staple-not-about-it',
+  'herbs-aromatics-split',
+] as const;
+export type C02DropReason = (typeof C02_DROP_REASONS)[number];
+
+/**
+ * Reason codes the model must attach to every ADD. Closed enum: each maps to a
+ * locked add rationale (body clearly supports it, a specific food is central,
+ * the real technique taught replacing a vague tag, the Herbs & Aromatics split
+ * into Fresh herbs/Alliums, a parent group required by a kept/added specific).
+ */
+export const C02_ADD_REASONS = [
+  'body-clearly-supports',
+  'specific-food-central',
+  'real-technique-taught',
+  'herbs-aromatics-split',
+  'parent-group-required',
+] as const;
+export type C02AddReason = (typeof C02_ADD_REASONS)[number];
+
+interface ReasonedEntryItemsSchema {
+  type: 'object';
+  properties: {
+    value: { type: 'string'; enum: readonly string[] };
+    reason: { type: 'string'; enum: readonly string[]; description?: string };
+  };
+  required: ['value', 'reason'];
+  additionalProperties: false;
+}
+
+interface ReasonedEntryArraySchema {
+  type: 'array';
+  description?: string;
+  items: ReasonedEntryItemsSchema;
+  uniqueItems?: true;
+}
+
+interface C02FieldDecisionSchema {
+  type: 'object';
+  description?: string;
+  properties: {
+    keep: EnumArraySchema;
+    drop: ReasonedEntryArraySchema;
+    add: ReasonedEntryArraySchema;
+  };
+  required: ['keep', 'drop', 'add'];
+  additionalProperties: false;
+}
+
+export type C02SubmitTagsInputSchema = {
+  type: 'object';
+  properties: Record<C02DecisionField, C02FieldDecisionSchema>;
+  required: string[];
+  additionalProperties: false;
+};
+
+export interface C02SubmitTagsTool {
+  name: typeof SUBMIT_TAGS_TOOL_NAME;
+  description: string;
+  input_schema: C02SubmitTagsInputSchema;
+  cache_control: { type: 'ephemeral' };
+}
+
+function reasonedEntryArray(
+  valueEnum: readonly string[],
+  reasonEnum: readonly string[],
+  description: string
+): ReasonedEntryArraySchema {
+  return {
+    type: 'array',
+    description,
+    items: {
+      type: 'object',
+      properties: {
+        value: { type: 'string', enum: valueEnum },
+        reason: { type: 'string', enum: reasonEnum },
+      },
+      required: ['value', 'reason'],
+      additionalProperties: false,
+    },
+  };
+}
+
+function c02FieldDecision(
+  valueEnum: readonly string[],
+  field: C02DecisionField
+): C02FieldDecisionSchema {
+  return {
+    type: 'object',
+    description:
+      `Verify-and-diff decision for ${field}: KEEP each current tag the body still ` +
+      'supports, DROP each current tag the body does not (with a reason), and ADD a ' +
+      'missing tag the body clearly supports (with a reason).',
+    properties: {
+      keep: {
+        type: 'array',
+        description: 'Current tags (from the anchor) the lesson body still supports — kept as-is.',
+        items: { type: 'string', enum: valueEnum },
+        uniqueItems: true,
+      },
+      drop: reasonedEntryArray(
+        valueEnum,
+        C02_DROP_REASONS,
+        'Current tags (from the anchor) the body does NOT support — removed, each with a reason code.'
+      ),
+      add: reasonedEntryArray(
+        valueEnum,
+        C02_ADD_REASONS,
+        'Tags NOT currently present that the body clearly supports — added, each with a reason code.'
+      ),
+    },
+    required: ['keep', 'drop', 'add'],
+    additionalProperties: false,
+  };
+}
+
+/**
+ * Builds the dedicated C02 verify-and-diff tool (design §3·PIVOT D-P4). It
+ * REUSES the `submit_tags` name (the CLIProxyAPI proxy is detection-cleared for
+ * that name — a new name risks the P2′.6 proxy run) but its input_schema has
+ * ONLY the two C02 fields, each a KEEP/DROP/ADD object with a reason code per
+ * drop and per add. The enum values are direct references into the vocab module
+ * — never re-typed. The reconcile step (P2′.3) consumes the parsed decision.
+ */
+export function buildC02SubmitTagsTool(vocab: Stage2Vocab): C02SubmitTagsTool {
+  const properties: Record<C02DecisionField, C02FieldDecisionSchema> = {
+    cooking_skills: c02FieldDecision(vocab.cooking_skills.values, 'cooking_skills'),
+    main_ingredients: c02FieldDecision(vocab.main_ingredients.values, 'main_ingredients'),
+  };
+  return {
+    name: SUBMIT_TAGS_TOOL_NAME,
+    description:
+      'Verify the lesson’s current cooking_skills and main_ingredients tags against the body: ' +
+      'KEEP, DROP (with a reason), or ADD (with a reason) each value. Decide ONLY these two fields.',
+    input_schema: {
+      type: 'object',
+      properties,
+      required: [...C02_DECISION_FIELDS],
+      additionalProperties: false,
+    },
+    cache_control: { type: 'ephemeral' },
+  };
+}
+
+/**
+ * The Zod parser for one C02 KEEP/DROP/ADD decision object. The post-hoc gate
+ * (enum adherence is not server-guaranteed). It validates the DECISION shape
+ * only — the floor + reconcile + finalC02 canonical validation come in P2′.3;
+ * this schema deliberately does NOT enforce the specific→group invariant (that
+ * is a reconciled-output property, not a raw-decision one).
+ */
+export function buildC02DecisionSchema(vocab: Stage2Vocab) {
+  const cookingEnum = zodEnumFrom(vocab.cooking_skills.values);
+  const ingredientEnum = zodEnumFrom([...vocab.main_ingredients.values]);
+  const dropReason = z.enum(C02_DROP_REASONS as unknown as [string, ...string[]]);
+  const addReason = z.enum(C02_ADD_REASONS as unknown as [string, ...string[]]);
+
+  const fieldDecision = (valueEnum: z.ZodEnum<[string, ...string[]]>) =>
+    z
+      .object({
+        keep: z.array(valueEnum).refine(noDuplicates, { message: UNIQUE_MESSAGE }),
+        drop: z.array(z.object({ value: valueEnum, reason: dropReason }).strict()),
+        add: z.array(z.object({ value: valueEnum, reason: addReason }).strict()),
+      })
+      .strict();
+
+  return z
+    .object({
+      cooking_skills: fieldDecision(cookingEnum),
+      main_ingredients: fieldDecision(ingredientEnum),
+    })
+    .strict();
+}
+
+export type C02Decision = z.infer<ReturnType<typeof buildC02DecisionSchema>>;
+
+/**
+ * The canonical validator for the RECONCILED `finalC02` arrays (design §3·PIVOT
+ * D-P6 / P2′.3) — the THIRD stage of the C02 validation flow (decision-schema →
+ * floor + reconcile → THIS). It validates `{cooking_skills, main_ingredients}`
+ * the same way the all-field result schema does for these two fields: a flat
+ * unique enum array for cooking_skills, and the parent-map `.superRefine` for
+ * main_ingredients (rejects an orphan specific). The reconciler already enforces
+ * the parent invariant, so this is a belt-and-suspenders guard that a reconciled
+ * row is genuinely canonical before it is persisted as `finalC02`.
+ */
+export function buildC02FinalSchema(vocab: Stage2Vocab) {
+  return z
+    .object({
+      cooking_skills: uniqueEnumArray(vocab.cooking_skills.values),
+      main_ingredients: mainIngredientsSchema([...vocab.main_ingredients.values]),
+    })
+    .strict();
+}
+
+// ---------------------------------------------------------------------------
 // Token-mass guard
 // ---------------------------------------------------------------------------
 
@@ -483,7 +716,10 @@ export function buildResultSchema(vocab: Stage2Vocab) {
  * measurement (run `npx tsx scripts/stage2-retag/preflight-token-mass.ts`);
  * this estimate is the credit-free guard used in tests.
  */
-export function estimateTokenMass(systemPrompt: string, tool: SubmitTagsTool): number {
+export function estimateTokenMass(
+  systemPrompt: string,
+  tool: SubmitTagsTool | C02SubmitTagsTool
+): number {
   return Math.ceil((systemPrompt.length + JSON.stringify(tool).length) / 4);
 }
 
@@ -502,6 +738,30 @@ export function buildTokenCountRequest(
     model,
     system: [{ type: 'text', text: loadSystemPrompt(), cache_control: { type: 'ephemeral' } }],
     tools: [buildSubmitTagsTool(vocab)],
+    tool_choice: { type: 'tool', name: SUBMIT_TAGS_TOOL_NAME },
+    messages: [{ role: 'user', content: body }],
+  };
+}
+
+/**
+ * The `messages.countTokens` request for the LIVE C02 anchored verify-and-diff
+ * call (design §3·PIVOT P2′.2/P2′.3): the C02 system prompt + the dedicated
+ * 2-field KEEP/DROP/ADD tool (reusing SUBMIT_TAGS_TOOL_NAME for proxy detection)
+ * + a single user turn. This is what P2′.6 must preflight — D-P9 changed the
+ * cached prefix, and the 2-field tool + shorter prompt nearly halve it (risking
+ * the Opus cache floor), so measuring the monolithic shape would mislead. The
+ * anchor (current tags) lives in the per-lesson user `body`, after the cache
+ * breakpoint, so the cached prefix is system + this tool.
+ */
+export function buildC02TokenCountRequest(
+  vocab: Stage2Vocab,
+  body: string,
+  model: string = DEFAULT_MODEL
+): Anthropic.Messages.MessageCountTokensParams {
+  return {
+    model,
+    system: [{ type: 'text', text: loadC02SystemPrompt(), cache_control: { type: 'ephemeral' } }],
+    tools: [buildC02SubmitTagsTool(vocab)],
     tool_choice: { type: 'tool', name: SUBMIT_TAGS_TOOL_NAME },
     messages: [{ role: 'user', content: body }],
   };
