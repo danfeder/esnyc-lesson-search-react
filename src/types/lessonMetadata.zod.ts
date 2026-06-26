@@ -256,6 +256,9 @@ export const MAIN_INGREDIENTS_VALUES = [
 ] as const;
 
 // Specific → parent group (null = group-less specific, never requires a parent).
+// NOTE: only the 46 specifics are keys — a GROUP or unknown value lookup returns
+// `undefined` (not `null`). Callers MUST use a truthy guard (`if (parent && …)`),
+// never `parent !== null`, or a group would be misread as an orphaned specific.
 export const INGREDIENT_PARENT_MAP: Record<string, string | null> = {
   Garlic: 'Alliums',
   Carrots: 'Root vegetables',
