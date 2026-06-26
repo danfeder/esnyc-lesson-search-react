@@ -1,0 +1,15 @@
+-- =====================================================
+-- Rollback for: 20260626000000_c02_enforce_check.sql
+-- =====================================================
+-- The forward migration is pure additive DDL (two NOT VALID CHECK constraints,
+-- ZERO data mutation), so the rollback only drops the constraints. There is no
+-- snapshot table and nothing to restore — dropping the CHECKs returns the
+-- lessons table to its exact pre-migration state.
+--
+-- This file is a manual recovery artifact; CI does NOT auto-apply it. Run it via
+-- mcp__supabase-*__execute_sql (or psql) against the target DB if you need to
+-- revert the enforcement.
+-- =====================================================
+
+ALTER TABLE public.lessons DROP CONSTRAINT IF EXISTS valid_cooking_skills;
+ALTER TABLE public.lessons DROP CONSTRAINT IF EXISTS valid_main_ingredients;
