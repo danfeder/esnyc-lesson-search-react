@@ -1,0 +1,42 @@
+-- =====================================================
+-- ROLLBACK: 20260625000000_c02_retag_apply.sql.rollback
+-- =====================================================
+-- Reverts the C02 re-tag apply. C02-TARGETED (design §3·PIVOT D-P10c): restores
+-- ONLY the two C02 fields — cooking_skills + main_ingredients (text[] column AND
+-- the camelCase metadata JSONB key) — from the full-row snapshot
+-- public.c02_retag_rollback. The other 15 metadata fields, grade_levels, and
+-- academicConcepts are NEVER written, so a restore can never clobber unrelated
+-- post-apply edits to those fields.
+--
+-- ROW SCOPE: restores ONLY the rows the apply actually UPDATED = the snapshot
+-- set MINUS public.c02_retag_skipped. A skipped row (a reviewer had edited its
+-- C02 tags between corpus export and apply, so the concurrency guard skipped it)
+-- was never written by the apply; restoring it to the export-time snapshot value
+-- would wrongly revert that reviewer edit. So skipped rows are excluded here.
+--
+-- Idempotent: sets ABSOLUTE values from the snapshot (re-run safe). The snapshot
+-- tables are LEFT IN PLACE as the recovery artifact; a future cleanup migration
+-- drops them once PROD-stable (see the commented DROPs at the end).
+
+-- =====================================================
+-- 1. C02-targeted restore (the two C02 fields ONLY).
+-- =====================================================
+UPDATE public.lessons l SET
+  cooking_skills = r.cooking_skills,
+  main_ingredients = r.main_ingredients,
+  metadata = jsonb_set(
+    jsonb_set(
+      COALESCE(l.metadata, '{}'::jsonb),
+      '{cookingSkills}', to_jsonb(COALESCE(r.cooking_skills, ARRAY[]::text[])), true),
+    '{mainIngredients}', to_jsonb(COALESCE(r.main_ingredients, ARRAY[]::text[])), true)
+FROM public.c02_retag_rollback r
+WHERE l.lesson_id = r.lesson_id
+  AND NOT EXISTS (
+    SELECT 1 FROM public.c02_retag_skipped s WHERE s.lesson_id = r.lesson_id
+  );
+
+-- =====================================================
+-- 2. Cleanup (run ONLY after the rollback is confirmed and no longer needed).
+-- =====================================================
+-- DROP TABLE IF EXISTS public.c02_retag_rollback;  -- the full-row snapshot
+-- DROP TABLE IF EXISTS public.c02_retag_skipped;   -- the guard-skip reconciliation
