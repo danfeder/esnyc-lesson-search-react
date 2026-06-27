@@ -4,11 +4,13 @@
 
 ## Current State
 
-**Phase:** **PR-0 COMPLETE — GATE 3 done + fix-ups folded; READY TO PUSH (awaiting user go-ahead).** Design **LOCKED** (Session 1, `61ae519`); impl plan PR 0–2 authored + GATE 1B folded. The ReviewDetail safety net is built + adversarially hardened: **0.1 mock + 3 fixtures** (`9d237ae`); **0.2 page-level RTL test — THE GATE** (`3b530ef`, `92213d5`); **0.3 helper unit suites + 6 export-only additions to ReviewDetail.tsx** (`cc1c96d`); **GATE-3 fix-ups** (`ba97c1b`: completed the mock chain-method surface, pinned the non-null-preselect-target→`selectedDuplicate` seed + ai_draft form seed + the approve_update merge-save `selectedLessonId`/`submissionId`, made the doc-embed toggle test deterministic). **Net = 15 page-level RTL behaviors + 23 helper units; full suite 2002 green; `npm run check` clean; zero production-logic change** (only 6 `export` additions). All four executor dispatches + the GATE-3 fix-up supervisor-verified.
+**Phase:** **PR-0 OPEN (#552), round-1 bot review TRIAGED + fix-up pushed → round-2 CI/bots in progress.** Design **LOCKED** (Session 1, `61ae519`); impl plan PR 0–2 authored + GATE 1B folded. The ReviewDetail safety net is built + twice-hardened: **0.1 mock + 3 fixtures** (`9d237ae`); **0.2 page-level RTL test — THE GATE** (`3b530ef`, `92213d5`); **0.3 helper unit suites + 6 export-only additions to ReviewDetail.tsx** (`cc1c96d`); **GATE-3 fix-ups** (`ba97c1b`); **round-1 bot fix-up** (`9304e34`: F3 reviews-error→silent-preselect pin + F4/F5/F6 test hygiene). **Net = 16 page-level RTL behaviors + 4-state banner + 23 helper units; targeted 39 green; full suite was 2002 green pre-fix-up; `npm run check` clean; zero production-logic change** (only 6 `export` additions). All dispatches + both fix-ups supervisor-verified. Round-1 external review = `claude[bot]` 6 findings, all rebuttal-passed (GATE-4 2nd opinion ran — note: real Codex was rate-limited until 2026-06-29, so the 2nd opinion fell back to a Claude-family read, a weaker independent signal; acceptable for a test-only PR): **accepted F3/F4/F5/F6**, **deferred F1** (parseExtractedContent name-collision → PR-1a), **rejected F2** (self-resolves in PR-1a). `claude-database-review` posted nothing (no DB). All other CI checks green round 1.
 
-**Current task / NEXT:** **Push PR-0** (`git push -u origin test/wave5-reviewdetail-safety-net`) + `gh pr create`, then run the per-PR ritual steps 3–8 (wait for external bots → four-surface triage → rebuttal-pass → fix-ups → round-cap). Bundle the status-doc commit into the push. After PR-0 MERGES, PR-1a (easy seams) starts — and **enforce PR-1a Task 1a.2's mandatory test-first 4-case `buildCandidateCards` unit test** (the GATE-3 mitigation for candidate-card branch coverage; see decisions roll-up).
+**After PR-0 merges → PR-1a (easy seams) reminders:** (1) **enforce PR-1a Task 1a.2's mandatory test-first 4-case `buildCandidateCards` unit test** (the GATE-3 mitigation for candidate-card branch coverage); (2) **Task 1a.1 naming (bot F1):** when relocating `parseExtractedContent` into `reviewDetailHelpers.ts`, do NOT consolidate it with `ReviewDashboard.tsx`'s PRIVATE same-named `parseExtractedContent` — they have incompatible signatures (`string` vs `{title,summary}`); keep them separate (rename one if you ever try to share). Both confirmed module-private in different files today, so no collision until someone DRYs them.
 
-**Active PR:** **PR-0 = [#552](https://github.com/danfeder/esnyc-lesson-search-react/pull/552)** — OPEN (pushed 2026-06-27), awaiting CI + external bot reviewers. Branch **`test/wave5-reviewdetail-safety-net`**, cut from `chore/wave5-scaffold` per the **"carry docs forward"** decision — the 2 scaffold doc commits ride inside this PR. **Per-PR ritual now at steps 3–8:** wait for external bots → four-surface triage (`/pr-triage 552`) → rebuttal-pass every finding (GATE 4 Codex on real suggested changes) → consolidated fix-ups → round-cap after 2 bot rounds. No DB in this PR → no TEST-DB verification needed.
+**Active PR:** **PR-0 = [#552](https://github.com/danfeder/esnyc-lesson-search-react/pull/552)** — OPEN. Round-1 CI all green + round-1 bot review triaged; round-1 fix-up (`9304e34`) + the docs/status commits pushed → **round-2 CI + bots in progress.** Branch **`test/wave5-reviewdetail-safety-net`** ("carry docs forward" — 2 scaffold doc commits ride inside this PR). **Per-PR ritual: round-cap after round 2** (a 3rd round is critical-bugs-only). No DB in this PR → no TEST-DB verification needed. Pre-push GATE-3 re-dispatch was calibrated-skipped for the round-1 fix-up (test-only +139 lines, GATE-4-vetted + supervisor-verified; round-2 external bots are the second pass; Codex unavailable anyway).
+
+**Current task / NEXT:** Watch round-2 checks settle → re-triage all four surfaces (by timestamp, post-fix-up) → if clean, present **merge recommendation** to the user (merge is user-gated). **After PR-0 MERGES:** PR-1a (easy seams). Two forward-notes to honor then — see "Out-of-scope follow-ups."
 
 **🔭 RE-SCOPED 2026-06-26 (Session 1, user-confirmed): Wave 5 = PR 0–2 ONLY** (ReviewDetail test net →
 decompose → C107 speedup; frontend-only, no DB, no product decisions). The personalization cluster
@@ -41,10 +43,10 @@ ReviewErrorBoundary. C112 stores `SearchFilters` directly as jsonb. Bookmark sur
 anon = hide/disable (no AuthModal-lift this wave). My-Bookmarks = `/bookmarks` ProtectedRoute (no perms).
 
 **Branch:** `test/wave5-reviewdetail-safety-net` (PR-0; cut from `chore/wave5-scaffold` @ `61ae519`).
-Carries the 2 scaffold doc commits (`03b8c10`, `61ae519`) + kickoff banner fix (`43ac2f6`) + Task 0.1
-(`9d237ae`) + Task 0.2 (`3b530ef`, `92213d5`) + Task 0.3 (`cc1c96d`) + GATE-3 fix-ups (`ba97c1b`) + this
-status-doc commit. **Not pushed** (awaiting user go-ahead).
-**Last commit on branch:** `ba97c1b` (test(wave5): GATE-3 fix-ups) + the pending status-doc commit.
+Commits: scaffold docs (`03b8c10`,`61ae519`) + kickoff banner (`43ac2f6`) + 0.1 (`9d237ae`) + 0.2
+(`3b530ef`,`92213d5`) + 0.3 (`cc1c96d`) + GATE-3 fix-ups (`ba97c1b`) + status (`2579e8a`,`<this push>`) +
+round-1 bot fix-up (`9304e34`). **Pushed through round-1 + round-1 fix-up.**
+**Last code commit:** `9304e34` (round-1 bot fix-up F3–F6).
 **Last commit on main:** `5d44bbe` (feat(c02): P4b enforcement — DB CHECKs #549).
 
 **Design status:** **LOCKED** (Session 1, `61ae519`). GATE 1A + 1B complete (folded).
@@ -103,6 +105,7 @@ Q8 (C107 error semantics + parallel shape).
 
 ## Out-of-scope follow-ups captured here
 
+- **PR-2 mock seam (GATE-4 7th issue):** `makeReviewSupabaseMock` cannot serve `lessons_with_metadata` as BOTH a `.in()` array AND a `.eq().single()` object in the SAME render (it keys only on table name; the dual-shape unwrap picks one). Today fine (no fixture fires both paths at once — `degradedUpdateFixture` keeps similarities empty). But PR-2's parallel reorder could plausibly trigger both `lessons_with_metadata` paths in one render → if a PR-2 fixture needs that, key the mock handler on `{table, terminal}` (the mock header already flags this). Validate during PR-2's manual smoke; not a PR-0 defect.
 - F4/F5 process tooling was roadmap-sequenced "after W1, before W5"; proceeding with Wave 5 now per user
   direction. F4/F5 remain queued (`reference_working_efficiency_deferred`).
 - C27 (search-query logging) blocks C28's "Library searches" KPI → C28 ships without it.
@@ -178,4 +181,10 @@ Process learnings:
 - **Reject discipline mattered too:** two "Critical/High" findings (C-1, H-1) were already mitigated by locked design decisions — accepting them would have re-introduced order-sensitivity (C-1) or duplicated PR-1a's planned coverage (H-1). The rebuttal pass paid off both directions.
 - Supervisor-grounding (reading L472–486 / L571–579 myself before triaging the Criticals) made the accept/reject calls evidence-based rather than trusting the reviewers' assumptions.
 
-Decisions roll-up: see "Recent decisions worth carrying forward". Commits on `test/wave5-reviewdetail-safety-net`: `43ac2f6`, `9d237ae`, `3b530ef`, `92213d5`, `cc1c96d`, `ba97c1b` + this status commit. **Not pushed (awaiting user go-ahead).**
+- **Opened PR-0 = #552** (user go-ahead). Round-1 CI all green (E2E/Test&Build/CodeQL/semgrep/Lighthouse/coverage + Security Audit + deploy preview). Four-surface triage: only `claude[bot]` posted (6 findings); no line comments, no review-state reviews, `claude-database-review` silent (no DB). Rebuttal-passed all 6 + GATE-4 2nd opinion: accepted F3 (reviews-error→silent-preselect pin) + F4/F5/F6 (test hygiene), deferred F1 (name collision → PR-1a note), rejected F2 (self-resolves PR-1a). Fix-up `9304e34`; pushed with the docs/status bundle → round 2.
+
+Process learnings:
+- **Codex was rate-limited (until 2026-06-29)** — the `codex:codex-rescue` agent auto-fell-back to a direct Claude-family file read for the GATE-4 2nd opinion (`feedback_make_failing_tools_work`). Usable for a low-stakes test-only PR, but NOT a true independent-model-family signal; for a higher-stakes (DB/behavior) round, wait for Codex or escalate. Recorded the weaker-signal caveat in the triage.
+- **Calibrated-skipped the pre-push GATE-3 re-dispatch** on the round-1 fix-up (test-only +139, GATE-4-vetted + supervisor-verified, round-2 external bots are the second pass, Codex unavailable). Proportionality over rote ritual — noted explicitly.
+
+Decisions roll-up: see "Recent decisions worth carrying forward". **Pushed through round-1 + round-1 fix-up (`9304e34`); round-2 CI/bots in progress.**
