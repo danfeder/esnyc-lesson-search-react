@@ -93,7 +93,7 @@ interface SubmissionDetail {
 // reviewFormPayloadSchema (src/types/reviewFormPayload.zod.ts) and the
 // existing required-fields labels so a Zod failure highlights the same
 // IntFormField as a missing-required failure would.
-const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, string> = {
+export const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, string> = {
   activityType: 'Activity Type',
   location: 'Location',
   season: 'Season & Timing',
@@ -129,7 +129,7 @@ const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, str
 // `ReviewErrorBoundary` instead of the review UI. Widen to `unknown`
 // and handle scalar input so reopening any approved submission stays
 // safe; legacy `'both'` fans out to multi-pill `[cooking-only, garden-only]`.
-function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
+export function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
   const v: unknown = raw.activityType;
   if (v == null) return raw;
 
@@ -149,7 +149,7 @@ function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
   return raw;
 }
 
-function parseExtractedContent(content: string): { title: string; summary: string } {
+export function parseExtractedContent(content: string): { title: string; summary: string } {
   const lines = content.split('\n').filter((line) => line.trim());
   let title = '';
   let summary = '';
@@ -177,18 +177,18 @@ function parseExtractedContent(content: string): { title: string; summary: strin
   return { title, summary };
 }
 
-function normalizeMatchType(raw: string | null): IntDuplicateMatchType | null {
+export function normalizeMatchType(raw: string | null): IntDuplicateMatchType | null {
   if (!raw) return null;
   if (raw === 'exact' || raw === 'high' || raw === 'medium' || raw === 'low') return raw;
   return null;
 }
 
-function selectOptionsFromConfig(config: FilterConfig) {
+export function selectOptionsFromConfig(config: FilterConfig) {
   return config.options.map((o) => ({ value: o.value, label: o.label }));
 }
 
 /** Hierarchical -> flat options for cultural heritage CreatableSelect. */
-function flattenHeritageOptions(config: FilterConfig) {
+export function flattenHeritageOptions(config: FilterConfig) {
   return config.options.flatMap((parent) => {
     const parentOpt = { value: parent.value, label: parent.label };
     const childOpts = (parent.children ?? []).map((c) => ({
