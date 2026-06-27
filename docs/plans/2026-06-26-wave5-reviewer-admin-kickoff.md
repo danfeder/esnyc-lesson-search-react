@@ -240,11 +240,16 @@ If it were ever missing, recreate it from the template at the bottom of the stat
 Read this prompt → read design doc → read implementation plan from current task → read status file →
 `npm run check` → tell me where you are and what's next. Don't start coding until I confirm.
 
-**The design doc Status line says "Draft" → this is Session 1 (design lock).** Work the design doc's
-§4 "Open design questions" list — discovery against real code/data, lock answers into the doc, then
-author the impl plan's concrete tasks + run GATE 1B. **No implementation code this session.** Respect
-the tags: `[evidence-lockable]` you may lock from evidence with a one-line rationale; `[user-verdict]`
-(Q1, Q5, Q6, Q7, Q9) get evidence + a recommendation presented to the user, who decides — NEVER lock
-those unilaterally.
+**Design-lock is DONE (Session 1, commit `61ae519`); the design doc Status line reads "LOCKED".**
+We are now in **PR-0 execution** — building the ReviewDetail safety net (the gate that unblocks all
+decomposition). Wave 5 is re-scoped to **PR 0–2 only** (test net → decompose → C107); PR 3–6+ deferred.
+Work the impl plan's **PR-0 tasks 0.1 → 0.2 → 0.3** in order (table-aware supabase mock + fixtures →
+page-level RTL characterization test → pure-helper unit suites). All design Qs are resolved (Q1 = split
+PR-1 into 1a/1b; Q2/Q3/Q4/Q8 evidence-locked; Q5/Q6/Q7/Q9 deferred with the personalization/admin
+tracks). Dispatch executors task-by-task (TDD/characterization), supervisor-verify each, checkpoint the
+status doc after each. **Branch (chosen 2026-06-26, "carry docs forward"):** PR-0 work lands on
+`test/wave5-reviewdetail-safety-net`, cut from `chore/wave5-scaffold` so the 2 scaffold doc commits ride
+inside PR-0's PR. Read the impl plan's PR-0 tasks (esp. the dual-shape mock, the `tagged_metadata`
+fixture columns, and the 9 page behaviors + 4-state banner coverage) before dispatching.
 
 <!-- ===== END OF KICKOFF BODY ===== -->
