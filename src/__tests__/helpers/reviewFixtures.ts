@@ -36,8 +36,30 @@
  *                            null` and NO review row → drives the PRESELECT branch
  *                            + the auto-expand search effect + the amber
  *                            (update, null-target) intent banner.
+ *   - preselectTargetUpdateFixture — an `update` submission with NO review row but
+ *                            a NON-null, RESOLVABLE `original_lesson_id` AND a
+ *                            non-null canonical-keys `ai_draft_metadata`. Drives
+ *                            the OTHER half of the preselect branch the
+ *                            null-target fixture cannot: a non-null preselect
+ *                            target seeds `selectedDuplicate` (the hoisted dup
+ *                            card shows selected; the "pick a target" hint is
+ *                            absent) AND `computeInitialMetadataFromAiDraft` seeds
+ *                            the form (distinctive processingNotes round-trips).
+ *                            The seeded metadata is complete + canonical so the
+ *                            approve_update merge-save passes validation and
+ *                            invokes complete-review with a non-null
+ *                            selectedLessonId.
  */
 import type { TableResult } from './supabaseReviewMock';
+
+/**
+ * Distinctive sentinel carried by `preselectTargetUpdateFixture.ai_draft_metadata
+ * .processingNotes`. Exported so the page test can assert the exact round-tripped
+ * value in the Processing notes textarea — pinning that the ai_draft seed
+ * (computeInitialMetadataFromAiDraft) actually populated the form (C-2b).
+ */
+export const PRESELECT_AI_DRAFT_NOTE =
+  'AI-draft seed: roasted leafy greens unit — distinctive preselect marker.';
 
 // ---------------------------------------------------------------------------
 // modernFixture — restore branch, canonical vocab, blue intent banner.
@@ -283,6 +305,95 @@ export const degradedUpdateFixture: Record<string, TableResult> = {
   submission_reviews: { data: [], error: null },
   user_profiles: {
     data: [{ id: 'teacher-degraded', full_name: 'Dana Degraded' }],
+    error: null,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// preselectTargetUpdateFixture — non-null preselect target + ai_draft seed.
+// ---------------------------------------------------------------------------
+// An `update` submission with NO review row (so the load path takes the
+// PRESELECT branch, not restore) and a NON-null `original_lesson_id` that IS
+// resolvable: it appears in BOTH submission_similarities and the candidate
+// lessons_with_metadata `.in()` array, so it renders as an in-list dup card (no
+// off-list lookup) and computePreselection's non-null target seeds
+// selectedDuplicate to it. `ai_draft_metadata` is a non-null draft in CANONICAL
+// keys (lessonMetadataSchema shape — locationRequirements/seasonTiming/
+// thematicCategories, NOT the review-form location/season/themes): the load path
+// runs computeInitialMetadataFromAiDraft → lessonToReview → reAddActivityTypeSuffix
+// and seeds the form. The draft is COMPLETE (all required fields incl. the three
+// cooking fields) and canonical, so the approve_update merge-save passes both
+// validateRequiredFields and reviewFormPayloadSchema. mainIngredients uses the
+// group 'Leafy greens' (no specific→group parent needed). The distinctive
+// processingNotes (PRESELECT_AI_DRAFT_NOTE) is the observable C-2b pin.
+export const preselectTargetUpdateFixture: Record<string, TableResult> = {
+  lesson_submissions: {
+    data: [
+      {
+        id: 'sub-preselect',
+        created_at: '2026-06-24T12:00:00.000Z',
+        google_doc_url: 'https://docs.google.com/document/d/preselect-doc/edit',
+        google_doc_id: 'preselect-doc',
+        submission_type: 'update',
+        original_lesson_id: 'lesson-preselect-target',
+        status: 'in_review',
+        extracted_content:
+          'Preselect Update Title\n\nSummary: An update bound to a resolvable target, carrying an AI draft.',
+        extracted_title: 'Preselect Update Title',
+        content_hash: 'hash-preselect',
+        content_embedding: null,
+        teacher_id: 'teacher-preselect',
+        // CANONICAL-keys AI draft (lessonMetadataSchema). Seeds the form on the
+        // preselect branch via computeInitialMetadataFromAiDraft → lessonToReview
+        // → reAddActivityTypeSuffix. Complete + canonical so the merge-save validates.
+        ai_draft_metadata: {
+          activityType: ['cooking'], // → cooking pill pressed; showCookingFields true
+          locationRequirements: ['Indoor'], // → review-form location 'Indoor'
+          thematicCategories: ['Food Systems'], // → themes
+          seasonTiming: ['Fall'], // → season
+          gradeLevels: ['3', '4'],
+          coreCompetencies: ['Kitchen Skills and Related Academic Content'],
+          socialEmotionalLearning: ['Relationship skills'],
+          cookingMethods: ['stovetop'],
+          mainIngredients: ['Leafy greens'], // group → no parent-group invariant trigger
+          cookingSkills: ['Roasting'],
+          culturalResponsivenessFeatures: ['Reshapes curriculum'],
+          processingNotes: PRESELECT_AI_DRAFT_NOTE, // distinctive C-2b observable
+        },
+      },
+    ],
+    error: null,
+  },
+  submission_similarities: {
+    data: [
+      {
+        lesson_id: 'lesson-preselect-target',
+        submission_id: 'sub-preselect',
+        combined_score: 0.88,
+        match_type: 'high',
+        title_similarity: 0.85,
+        content_similarity: 0.9,
+      },
+    ],
+    error: null,
+  },
+  // Candidate `.in()` path — the in-list dup card for the preselect target, so
+  // the off-list lookup does NOT fire and the target hoists to "Submitter's choice".
+  lessons_with_metadata: {
+    data: [
+      {
+        lesson_id: 'lesson-preselect-target',
+        title: 'Preselect Target Lesson',
+        grade_levels: ['3', '4'],
+        thematic_categories: ['Food Systems'],
+      },
+    ],
+    error: null,
+  },
+  // No review row → the load path takes the preselect branch.
+  submission_reviews: { data: [], error: null },
+  user_profiles: {
+    data: [{ id: 'teacher-preselect', full_name: 'Parker Preselect' }],
     error: null,
   },
 };

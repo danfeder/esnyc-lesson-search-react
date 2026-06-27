@@ -71,14 +71,42 @@ export interface TableResult {
  * A thenable chainable query builder. Every chain method returns the SAME
  * builder; `.single()`/`.maybeSingle()` unwrap the configured array to its first
  * element; awaiting the builder directly resolves the configured array as-is.
+ *
+ * F1: the chainable-method surface MIRRORS the global `setup.ts` builder exactly
+ * so this table-aware mock is a strict SUPERSET. `LessonSearchPicker` (rendered
+ * by the auto-opened search hatch in the (update, null-target) / zero-candidate
+ * cases — tests 6/7) chains `.ilike('title', …)` and, with excludeRetired,
+ * `.is('retired_at', null)`; a thinner surface would TypeError the moment a test
+ * exercises that search input. The methods are arg-blind by design (the LOCKED
+ * dispatch-by-table tradeoff — see the module header); they only need to EXIST
+ * and keep the chain fluent.
  */
 export interface ReviewQueryBuilder extends PromiseLike<TableResult> {
   select: (...args: unknown[]) => ReviewQueryBuilder;
+  insert: (...args: unknown[]) => ReviewQueryBuilder;
+  update: (...args: unknown[]) => ReviewQueryBuilder;
+  delete: (...args: unknown[]) => ReviewQueryBuilder;
   eq: (...args: unknown[]) => ReviewQueryBuilder;
+  neq: (...args: unknown[]) => ReviewQueryBuilder;
+  gt: (...args: unknown[]) => ReviewQueryBuilder;
+  gte: (...args: unknown[]) => ReviewQueryBuilder;
+  lt: (...args: unknown[]) => ReviewQueryBuilder;
+  lte: (...args: unknown[]) => ReviewQueryBuilder;
+  like: (...args: unknown[]) => ReviewQueryBuilder;
+  ilike: (...args: unknown[]) => ReviewQueryBuilder;
+  is: (...args: unknown[]) => ReviewQueryBuilder;
   in: (...args: unknown[]) => ReviewQueryBuilder;
+  contains: (...args: unknown[]) => ReviewQueryBuilder;
+  containedBy: (...args: unknown[]) => ReviewQueryBuilder;
+  range: (...args: unknown[]) => ReviewQueryBuilder;
+  overlaps: (...args: unknown[]) => ReviewQueryBuilder;
+  textSearch: (...args: unknown[]) => ReviewQueryBuilder;
+  match: (...args: unknown[]) => ReviewQueryBuilder;
+  not: (...args: unknown[]) => ReviewQueryBuilder;
+  or: (...args: unknown[]) => ReviewQueryBuilder;
+  filter: (...args: unknown[]) => ReviewQueryBuilder;
   order: (...args: unknown[]) => ReviewQueryBuilder;
   limit: (...args: unknown[]) => ReviewQueryBuilder;
-  neq: (...args: unknown[]) => ReviewQueryBuilder;
   single: () => Promise<TableResult>;
   maybeSingle: () => Promise<TableResult>;
 }
@@ -90,11 +118,30 @@ function makeReviewQueryBuilder(config: TableResult): ReviewQueryBuilder {
 
   const builder: ReviewQueryBuilder = {
     select: () => builder,
+    insert: () => builder,
+    update: () => builder,
+    delete: () => builder,
     eq: () => builder,
+    neq: () => builder,
+    gt: () => builder,
+    gte: () => builder,
+    lt: () => builder,
+    lte: () => builder,
+    like: () => builder,
+    ilike: () => builder,
+    is: () => builder,
     in: () => builder,
+    contains: () => builder,
+    containedBy: () => builder,
+    range: () => builder,
+    overlaps: () => builder,
+    textSearch: () => builder,
+    match: () => builder,
+    not: () => builder,
+    or: () => builder,
+    filter: () => builder,
     order: () => builder,
     limit: () => builder,
-    neq: () => builder,
     single: () => Promise.resolve<TableResult>({ data: unwrapped, error }),
     maybeSingle: () => Promise.resolve<TableResult>({ data: unwrapped, error }),
     then: <TResult1 = TableResult, TResult2 = never>(

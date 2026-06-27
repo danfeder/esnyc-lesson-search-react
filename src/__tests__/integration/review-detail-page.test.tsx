@@ -26,7 +26,10 @@ import {
   legacyFixture,
   noReviewUpdateFixture,
   degradedUpdateFixture,
+  preselectTargetUpdateFixture,
+  PRESELECT_AI_DRAFT_NOTE,
 } from '../helpers/reviewFixtures';
+import * as featureFlags from '@/utils/featureFlags';
 
 // Module-scope mocks. The vi.mock factory's arrows read these LAZILY (only when
 // `from`/`invoke` are actually called during a render), so reassigning
@@ -134,12 +137,24 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(functionsInvokeMock).toHaveBeenCalledTimes(1);
     const [fnName, opts] = functionsInvokeMock.mock.calls[0] as [
       string,
-      { body: { metadata: { activityType?: string[] }; decision: string; notes: string } },
+      {
+        body: {
+          submissionId: string;
+          metadata: { activityType?: string[] };
+          decision: string;
+          notes: string;
+          selectedLessonId: string | null;
+        };
+      },
     ];
     expect(fnName).toBe('complete-review');
     expect(opts.body.metadata.activityType).toEqual(['cooking']);
     expect(opts.body.decision).toBe('approve_new');
     expect(opts.body.notes).toContain('Reviewed and approved');
+    // C-3 (cheap part): the body targets THIS submission, and approve_new sends a
+    // null selectedLessonId (the merge-target id is only attached for approve_update).
+    expect(opts.body.submissionId).toBe('sub-modern');
+    expect(opts.body.selectedLessonId).toBeNull();
   });
 
   // [reviewValidation 1a.5] — clearing a required field blocks the save.
@@ -210,32 +225,106 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
 
   // [ReviewDocPanel 1a.3] — Doc/Text toggle renders the text view + persists the viewMode.
   it('8. doc/text toggle: switches to the text view and persists reviewViewMode to localStorage', async () => {
-    renderReview(modernFixture, 'sub-modern');
-    const user = userEvent.setup();
+    // F3: pin GOOGLE_DOC_EMBED true so the Doc/Text toggle exists REGARDLESS of
+    // the local VITE_ENABLE_DOC_EMBED env. When the flag is false ReviewDetail
+    // hides the toggle group and forces viewMode='text' at mount — there would be
+    // no "View mode" group to click, and the test would be non-deterministic
+    // across dev environments. Spy the module-namespace getter (the global
+    // setup.ts uses clearAllMocks, NOT restoreAllMocks, so we MUST restore the
+    // spy ourselves — done in the finally below).
+    const featuresSpy = vi
+      .spyOn(featureFlags, 'FEATURES', 'get')
+      .mockReturnValue({ GOOGLE_DOC_EMBED: true });
+    try {
+      renderReview(modernFixture, 'sub-modern');
+      const user = userEvent.setup();
 
-    // Toggle button lives in the IntDocFrame "View mode" group (not the embed
-    // pre-flight screen's "View as Text" button).
-    const viewModeGroup = await screen.findByRole('group', { name: 'View mode' });
-    await user.click(within(viewModeGroup).getByRole('button', { name: 'Text' }));
+      // Toggle button lives in the IntDocFrame "View mode" group (not the embed
+      // pre-flight screen's "View as Text" button).
+      const viewModeGroup = await screen.findByRole('group', { name: 'View mode' });
+      await user.click(within(viewModeGroup).getByRole('button', { name: 'Text' }));
 
-    // Text view renders the extracted content.
-    expect(
-      await screen.findByText(/a canonical modern lesson about cooking with apples/i)
-    ).toBeInTheDocument();
-    // viewMode persisted under the exact localStorage key ReviewDetail uses.
-    expect(window.localStorage.getItem('reviewViewMode')).toBe('text');
+      // Text view renders the extracted content.
+      expect(
+        await screen.findByText(/a canonical modern lesson about cooking with apples/i)
+      ).toBeInTheDocument();
+      // viewMode persisted under the exact localStorage key ReviewDetail uses.
+      expect(window.localStorage.getItem('reviewViewMode')).toBe('text');
+    } finally {
+      featuresSpy.mockRestore();
+    }
   });
 
-  // [risk 7 / 1b.3] — closed-enum label resolution; do NOT over-DRY the 5 selects.
-  it('9. closed-enum selects: cookingSkills (config-label) and CRF (raw label) each render their value', async () => {
+  // [risk 7 / 1b.3] — each closed-enum Select renders its chip; do NOT over-DRY the selects.
+  it('9. closed-enum selects: cookingSkills (config-label path) and CRF (raw-label path) each render their chip', async () => {
     renderReview(modernFixture, 'sub-modern');
 
-    // cookingSkills uses the config-lookup label path; CRF uses raw `label: v`.
-    // (For the frozen vocab value === label, so the OUTPUT coincides; the pin is
-    // that each closed-enum Select still renders its selected value — an over-DRY
-    // that broke either path would drop the chip.)
-    expect(await screen.findByText('Knife skills')).toBeInTheDocument();
-    expect(screen.getByText('Reshapes curriculum')).toBeInTheDocument();
+    // F2/H-2 investigated: this pins that EACH closed-enum Select still renders
+    // its selected chip — an over-DRY refactor that broke either rendering path
+    // would drop a chip. It deliberately does NOT pin the config-lookup-label
+    // path vs the raw `label: v` path as DISTINCT: cookingSkills/mainIngredients/
+    // gardenSkills resolve their label from ALL_FIELD_CONFIGS (`?.label || v`)
+    // while CRF/observances use raw `label: v`, but across the ENTIRE frozen
+    // closed-enum SELECT vocab value === label, so the two paths produce
+    // byte-identical output and no in-vocab value can tell them apart. (Verified:
+    // mainIngredients/cookingSkills are `VALUES.map(v => ({value:v,label:v}))`,
+    // gardenSkills/observances/CRF are explicit value===label entries.) So the
+    // assertion checks chip presence, not which label branch ran.
+    expect(await screen.findByText('Knife skills')).toBeInTheDocument(); // config-label path
+    expect(screen.getByText('Reshapes curriculum')).toBeInTheDocument(); // raw-label path
+  });
+
+  // [preselect branch — non-null target half; C-2a + C-2b] — the complement of
+  // test 6 (null-target). A no-review `update` with a RESOLVABLE original_lesson_id
+  // seeds selectedDuplicate from the preselect target AND seeds the form from
+  // ai_draft_metadata. test 6 cannot reach either (its target is null, its draft empty).
+  it('10. no-review preselect (resolvable target): approve_update preselected, target card SELECTED, ai_draft seeds the form', async () => {
+    renderReview(preselectTargetUpdateFixture, 'sub-preselect');
+
+    // C-2a: computePreselection set decision=approve_update for the update path.
+    expect(await screen.findByRole('radio', { name: /merge into existing/i })).toBeChecked();
+
+    // C-2a: the non-null preselect target seeded selectedDuplicate → the hoisted
+    // "Submitter's choice" dup card renders SELECTED (aria-pressed=true). This is
+    // exactly what test 6's null target CANNOT produce.
+    const targetCard = screen.getByRole('button', { name: /preselect target lesson/i });
+    expect(targetCard).toHaveAttribute('aria-pressed', 'true');
+
+    // C-2a: because selectedDuplicate IS set, the "pick a target" hint is ABSENT
+    // (test 6 shows it present for the null target) — the contrasting pin.
+    expect(screen.queryByText(/pick a target lesson to merge into/i)).not.toBeInTheDocument();
+
+    // C-2b: computeInitialMetadataFromAiDraft seeded the form — the distinctive
+    // canonical-keys ai_draft processingNotes round-tripped into its textarea.
+    expect(
+      screen.getByPlaceholderText(/internal notes about how this lesson was processed/i)
+    ).toHaveValue(PRESELECT_AI_DRAFT_NOTE);
+  });
+
+  // [merge-save flow; C-3] — approve_update save carries the preselect target as
+  // selectedLessonId (NOT null) and targets this submission.
+  it('11. merge-save: approve_update invokes complete-review with the preselect target as selectedLessonId', async () => {
+    renderReview(preselectTargetUpdateFixture, 'sub-preselect');
+    const user = userEvent.setup();
+
+    // The ai_draft seeded a complete, canonical form, so the approve_update save
+    // passes validation. The merge button is enabled because selectedDuplicate is set.
+    await user.click(await screen.findByRole('button', { name: /merge & archive/i }));
+
+    // Navigation happened (the /review sentinel mounted) → the save succeeded.
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+
+    expect(functionsInvokeMock).toHaveBeenCalledTimes(1);
+    const [fnName, opts] = functionsInvokeMock.mock.calls[0] as [
+      string,
+      { body: { submissionId: string; decision: string; selectedLessonId: string | null } },
+    ];
+    expect(fnName).toBe('complete-review');
+    expect(opts.body.decision).toBe('approve_update');
+    // The crux: selectedLessonId is the preselect target id, NOT null (approve_new
+    // would null it; the null-target preselect fixture could never set it).
+    expect(opts.body.selectedLessonId).toBe('lesson-preselect-target');
+    expect(opts.body.submissionId).toBe('sub-preselect');
   });
 });
 
