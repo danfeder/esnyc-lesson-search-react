@@ -50,7 +50,7 @@
  *                            invokes complete-review with a non-null
  *                            selectedLessonId.
  */
-import type { TableResult } from './supabaseReviewMock';
+import type { TableResult } from '@/__tests__/helpers/supabaseReviewMock';
 
 /**
  * Distinctive sentinel carried by `preselectTargetUpdateFixture.ai_draft_metadata
@@ -298,12 +298,16 @@ export const degradedUpdateFixture: Record<string, TableResult> = {
     ],
     error: null,
   },
-  // F5: this MUST stay empty. A non-empty similarities array would trigger the
-  // candidate `.in()` query on `lessons_with_metadata`, which would conflict with
-  // the off-list `.eq().single()` path the mock can't serve simultaneously for the
-  // SAME table (see the `lessons_with_metadata` note in supabaseReviewMock.ts's
-  // header). So the degraded target must stay ABSENT from similarities — that is
-  // what keeps its title unresolvable and the banner on the yellow branch.
+  // F5 (corrected per round-2 review): the yellow branch does NOT strictly require
+  // an empty similarities array — the off-list lookup fires whenever the target is
+  // absent from the top-5 RENDERED cards (`targetInRenderedTopFive`, ReviewDetail
+  // L361), not based on whether similarities returned rows. So similarities could
+  // hold non-target rows and the banner would still be yellow. It's kept empty here
+  // only to keep the fixture minimal — and because a non-empty array would also fire
+  // the candidate `.in()` query on `lessons_with_metadata`, which this table-keyed
+  // mock can't serve as a different shape than the off-list `.eq().single()` path
+  // (see supabaseReviewMock.ts's `lessons_with_metadata` note), making those dup
+  // cards render as "Unknown". Minimal-and-unambiguous beats clever here.
   submission_similarities: { data: [], error: null },
   // Off-list lookup queries this via `.eq().single()`; an empty array unwraps to
   // null → submitterTargetLesson stays null → targetTitle null → yellow banner.

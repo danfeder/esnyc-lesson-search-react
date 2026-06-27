@@ -20,7 +20,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-import { makeReviewSupabaseMock, type TableResult } from '../helpers/supabaseReviewMock';
+import { makeReviewSupabaseMock, type TableResult } from '@/__tests__/helpers/supabaseReviewMock';
 import {
   modernFixture,
   legacyFixture,
@@ -29,7 +29,7 @@ import {
   preselectTargetUpdateFixture,
   reviewsErrorPreselectFixture,
   PRESELECT_AI_DRAFT_NOTE,
-} from '../helpers/reviewFixtures';
+} from '@/__tests__/helpers/reviewFixtures';
 import * as featureFlags from '@/utils/featureFlags';
 
 // Module-scope mocks. The vi.mock factory's arrows read these LAZILY (only when
