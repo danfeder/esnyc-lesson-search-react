@@ -298,6 +298,12 @@ export const degradedUpdateFixture: Record<string, TableResult> = {
     ],
     error: null,
   },
+  // F5: this MUST stay empty. A non-empty similarities array would trigger the
+  // candidate `.in()` query on `lessons_with_metadata`, which would conflict with
+  // the off-list `.eq().single()` path the mock can't serve simultaneously for the
+  // SAME table (see the `lessons_with_metadata` note in supabaseReviewMock.ts's
+  // header). So the degraded target must stay ABSENT from similarities — that is
+  // what keeps its title unresolvable and the banner on the yellow branch.
   submission_similarities: { data: [], error: null },
   // Off-list lookup queries this via `.eq().single()`; an empty array unwraps to
   // null → submitterTargetLesson stays null → targetTitle null → yellow banner.
@@ -394,6 +400,102 @@ export const preselectTargetUpdateFixture: Record<string, TableResult> = {
   submission_reviews: { data: [], error: null },
   user_profiles: {
     data: [{ id: 'teacher-preselect', full_name: 'Parker Preselect' }],
+    error: null,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// reviewsErrorPreselectFixture — submission_reviews DB error → silent preselect.
+// ---------------------------------------------------------------------------
+// F3: pins the CURRENT error-path behavior of the reviews fetch (ReviewDetail
+// ~L390): it is destructured as `const { data: reviews } = …` WITHOUT capturing
+// `error`. On a DB error supabase-js RESOLVES `{ data: null, error }` (it does
+// NOT reject), so `reviews` is null → the restore block `if (reviews && …)` is
+// SKIPPED and the preselect block `if (!reviews || …)` RUNS. No error surfaces:
+// loadSubmission's try/catch never even sees it (the resolved error never
+// throws). So a reviews DB error degrades SILENTLY to a fresh preselect —
+// exactly as if there were no prior review row.
+//
+// Shape mirrors preselectTargetUpdateFixture (a non-null, RESOLVABLE
+// original_lesson_id + a non-null canonical-keys ai_draft) EXCEPT
+// submission_reviews carries `{ data: null, error }`. Using `data: null` (NOT
+// `[]`) accurately simulates supabase-js's error return; the mock's bare-await
+// `.then` passes `{data,error}` through as-is, so `reviews` lands as null.
+//
+// THE POINT: if PR-1b's hook extraction ever starts THROWING on a reviews DB
+// error (instead of returning null → preselect), the page test on this fixture
+// must FAIL (no decision radios rendered / no preselect ran).
+export const reviewsErrorPreselectFixture: Record<string, TableResult> = {
+  lesson_submissions: {
+    data: [
+      {
+        id: 'sub-reviewserror',
+        created_at: '2026-06-25T12:00:00.000Z',
+        google_doc_url: 'https://docs.google.com/document/d/reviewserror-doc/edit',
+        google_doc_id: 'reviewserror-doc',
+        submission_type: 'update',
+        original_lesson_id: 'lesson-reviewserror-target',
+        status: 'in_review',
+        extracted_content:
+          'Reviews Error Update Title\n\nSummary: An update whose submission_reviews fetch errored — load must still preselect.',
+        extracted_title: 'Reviews Error Update Title',
+        content_hash: 'hash-reviewserror',
+        content_embedding: null,
+        teacher_id: 'teacher-reviewserror',
+        // Non-null canonical-keys AI draft so the preselect branch also seeds the
+        // form (computeInitialMetadataFromAiDraft). Complete + canonical (same
+        // shape as preselectTargetUpdateFixture's draft).
+        ai_draft_metadata: {
+          activityType: ['cooking'],
+          locationRequirements: ['Indoor'],
+          thematicCategories: ['Food Systems'],
+          seasonTiming: ['Fall'],
+          gradeLevels: ['3', '4'],
+          coreCompetencies: ['Kitchen Skills and Related Academic Content'],
+          socialEmotionalLearning: ['Relationship skills'],
+          cookingMethods: ['stovetop'],
+          mainIngredients: ['Leafy greens'],
+          cookingSkills: ['Roasting'],
+          culturalResponsivenessFeatures: ['Reshapes curriculum'],
+          processingNotes: 'AI-draft seed for the reviews-error preselect path.',
+        },
+      },
+    ],
+    error: null,
+  },
+  submission_similarities: {
+    data: [
+      {
+        lesson_id: 'lesson-reviewserror-target',
+        submission_id: 'sub-reviewserror',
+        combined_score: 0.9,
+        match_type: 'high',
+        title_similarity: 0.88,
+        content_similarity: 0.92,
+      },
+    ],
+    error: null,
+  },
+  // Candidate `.in()` path — the in-list dup card for the resolvable target, so
+  // the preselect target hoists to a SELECTED "Submitter's choice" card.
+  lessons_with_metadata: {
+    data: [
+      {
+        lesson_id: 'lesson-reviewserror-target',
+        title: 'Reviews Error Target Lesson',
+        grade_levels: ['3', '4'],
+        thematic_categories: ['Food Systems'],
+      },
+    ],
+    error: null,
+  },
+  // THE PIN: a DB error on the reviews fetch. supabase-js returns
+  // `{ data: null, error }`; ReviewDetail does not capture `error`, so `reviews`
+  // is null → restore skipped, preselect runs, no throw. `data: null` (NOT `[]`)
+  // is the faithful supabase-js error shape.
+  submission_reviews: { data: null, error: { message: 'timeout' } },
+  user_profiles: {
+    data: [{ id: 'teacher-reviewserror', full_name: 'Riley Reviewserror' }],
     error: null,
   },
 };

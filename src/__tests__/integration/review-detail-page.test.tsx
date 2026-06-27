@@ -15,7 +15,7 @@
  * `from` mock + a `functions.invoke` mock (the global setup mocks `from` but has
  * NO `functions`/`rpc`). Mirrors the local-override pattern in search-page.test.tsx.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -27,6 +27,7 @@ import {
   noReviewUpdateFixture,
   degradedUpdateFixture,
   preselectTargetUpdateFixture,
+  reviewsErrorPreselectFixture,
   PRESELECT_AI_DRAFT_NOTE,
 } from '../helpers/reviewFixtures';
 import * as featureFlags from '@/utils/featureFlags';
@@ -52,10 +53,12 @@ import { ReviewDetail } from '@/pages/ReviewDetail';
 // validation-error effect (focus + scrollIntoView on the banner) calls it. Shim
 // it for this suite — a test-environment gap, NOT a production-code change (the
 // global setup.ts already shims scrollTo/ResizeObserver/IntersectionObserver but
-// not scrollIntoView).
-if (!window.HTMLElement.prototype.scrollIntoView) {
+// not scrollIntoView). F4: install it UNCONDITIONALLY in a lifecycle hook rather
+// than a module-scope `if (!…)` guard — the guard would silently skip the shim if
+// any prior code ever defined a partial/leaked stub, leaving the real gap unmet.
+beforeAll(() => {
   window.HTMLElement.prototype.scrollIntoView = vi.fn();
-}
+});
 
 /** Render `<ReviewDetail/>` for a fixture, routed at the fixture's submission id. */
 function renderReview(fixture: Record<string, TableResult>, id: string) {
@@ -72,6 +75,8 @@ function renderReview(fixture: Record<string, TableResult>, id: string) {
 
 beforeEach(() => {
   functionsInvokeMock.mockClear().mockResolvedValue({ data: { success: true }, error: null });
+  // F6: defensive default — renderReview() overwrites this per test, but this
+  // guards any test that does not call renderReview() (none today; kept on purpose).
   currentMock = makeReviewSupabaseMock(modernFixture);
 });
 
@@ -325,6 +330,34 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // would null it; the null-target preselect fixture could never set it).
     expect(opts.body.selectedLessonId).toBe('lesson-preselect-target');
     expect(opts.body.submissionId).toBe('sub-preselect');
+  });
+
+  // [reviews-error path; F3] — a DB error on the submission_reviews fetch degrades
+  // SILENTLY to a fresh preselect. ReviewDetail destructures the reviews fetch as
+  // `const { data: reviews } = …` WITHOUT capturing `error`; supabase-js resolves a
+  // DB error as `{ data: null, error }` (it does NOT reject), so `reviews` is null →
+  // the restore block is SKIPPED and the preselect block RUNS, and loadSubmission's
+  // try/catch never sees the error. This pins the CURRENT no-throw behavior: if
+  // PR-1b's hook extraction ever makes a reviews DB error THROW instead, the
+  // radios-present + preselect-ran pair below must FAIL.
+  it('12. reviews-error: a submission_reviews DB error silently falls through to preselect (no crash)', async () => {
+    renderReview(reviewsErrorPreselectFixture, 'sub-reviewserror');
+
+    // No error-boundary fallback: the three decision radios rendered → the reviews
+    // error did NOT crash or throw out of loadSubmission.
+    expect(await screen.findAllByRole('radio')).toHaveLength(3);
+
+    // The preselect ran DESPITE the error: computePreselection set approve_update
+    // for the update path (NOT a restored decision — there is no usable review row).
+    expect(screen.getByRole('radio', { name: /merge into existing/i })).toBeChecked();
+
+    // The non-null preselect target seeded selectedDuplicate → its in-list dup card
+    // renders SELECTED (same observable as test 10), proving the preselect branch
+    // fully ran on the error path.
+    expect(screen.getByRole('button', { name: /reviews error target lesson/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 });
 
