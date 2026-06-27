@@ -1,17 +1,43 @@
 # Wave 5 — Reviewer/Admin Features — Execution Status
 
-**Last updated:** 2026-06-26 by Scaffold session (Session 0)
+**Last updated:** 2026-06-26 by Session 1 (design-lock, COMPLETE)
 
 ## Current State
 
-**Phase:** Scaffolded; **design-lock (Session 1) NOT yet started.**
+**Phase:** **Design-lock (Session 1) COMPLETE.** Design **LOCKED**; impl plan PR 0–2 authored + **GATE 1B folded**. Ready for **PR-0 execution** next session.
 
 **Active PR:** none (not yet branched for any PR).
 
-**Current task:** Session 1 = design lock. Work the design doc §4 "Open design questions" (Q1–Q9):
-discovery against real code/data → lock answers (respect `[evidence-lockable]` vs `[user-verdict]`
-tags) → flip design Status Draft→Locked → author the impl plan's concrete tasks → run **GATE 1B** on
-the plan. **No implementation code until the design is locked.**
+**🔭 RE-SCOPED 2026-06-26 (Session 1, user-confirmed): Wave 5 = PR 0–2 ONLY** (ReviewDetail test net →
+decompose → C107 speedup; frontend-only, no DB, no product decisions). The personalization cluster
+(PR 3–5: Bookmarks/Saved-Searches/Collections) + the admin tail (PR 6+: C28/C22/C74/C78) are **DEFERRED
+to a future wave** — only ~3 internal reviewers/admins have accounts (general-user login is a later
+rollout → personalization audience ≈0) and reviewers never collide on submissions (→ C22/C78 solve a
+non-problem). See memory `project_user_base_accounts`. Re-scope banners folded into the design + impl
+docs; §§6/7 + the Q3/Q4/Q5/Q9/Q6/Q7 material retained as future-wave reference.
+
+**Current task / NEXT SESSION:** **Execute PR 0** (the safety-net gate) per impl plan PR-0 Tasks 0.1→0.2→0.3.
+Start: cut branch `test/wave5-reviewdetail-safety-net` from `chore/wave5-scaffold` (or rebase onto `main`
+first — see below), then dispatch executors task-by-task (TDD/characterization; supervisor-verify each;
+checkpoint after each). All Q resolved: Q1 = **split PR-1 into PR-1a (easy seams) + PR-1b (risky pieces)**,
+data hook returns an **initial-form-state object**; Q2/Q3/Q4/Q8 locked from evidence (design §4). PR-0
+scope was tightened by GATE 1B — read the impl plan's PR-0 tasks (esp. the dual-shape mock, the
+`tagged_metadata` fixture columns, and the **9 page behaviors + 4-state banner coverage**) before
+dispatching. **PR 3–6+ remain DEFERRED** (re-scope).
+
+**Pre-PR-0 housekeeping (decide next session):** the `chore/wave5-scaffold` branch holds 4 doc commits and
+is **not pushed**. Options: (a) push it + open a docs-only PR to land the scaffold+design-lock on `main`
+first, then branch PR-0 off `main`; or (b) carry the docs forward on the PR-0 branch. Leaning (a) for a
+clean base. Ask the user.
+
+**Locked-answer headlines (durable):** PR-0 = page-level RTL test (build a NEW table-dispatch
+`makeReviewSupabaseMock`; render ReviewDetail directly, no ProtectedRoute/auth-mock/QueryClientProvider;
+5 behaviors incl. a legacy scalar-`activityType`/`reject` fixture) + `export`-in-place pure-helper unit
+suites (`buildCandidateCards` extraction deferred to PR-1). C107 = `Promise.all` 3-wave shape
+(A:[#1,#2,#5] re-apply #1 guards → B:[#3,#6] → C:cond #4); query errors degrade, never hit
+ReviewErrorBoundary. C112 stores `SearchFilters` directly as jsonb. Bookmark surface = 3 leaves
+(IntCard/IntListRow/IntLessonDetail), `stopPropagation` on the role=button wrappers, gate on `!!user`,
+anon = hide/disable (no AuthModal-lift this wave). My-Bookmarks = `/bookmarks` ProtectedRoute (no perms).
 
 **Branch:** `chore/wave5-scaffold` (cut from `origin/main` @ `5d44bbe`). Holds the four scaffold docs.
 **Not pushed** — awaiting user direction on whether to PR the scaffold or carry it into Session 1.
@@ -101,3 +127,37 @@ Major events:
 - Scaffolded the four-file pattern (design Draft + impl SKELETON + kickoff + status) on `chore/wave5-scaffold`.
 - Ran GATE 1A (Codex gpt-5.5 inline + Claude reviewer); folded 19 findings into the design doc.
 - STOP before design-lock and before any implementation code (per session scope). Next: Session 1 = design lock.
+
+### Session 1 — 2026-06-26 — design lock + impl authoring + GATE 1B + RE-SCOPE
+
+Major events:
+- **Discovery:** 5-agent read-only workflow (`wf_a536efc9-c53`) re-verified all 11 §5 seam anchors + the
+  §5.bis C107 graph + test infra + personalization shapes + render surfaces. Supervisor-verified the 4
+  load-bearing corrections against the real files (search-page mock is rpc+functions not `.from()`;
+  loadSubmission catch only logs / never hits ErrorBoundary; `useEnhancedAuth` has no `isAuthenticated`;
+  bookmark surface = 3 leaves w/ role=button stopPropagation).
+- **Locked Q2/Q3/Q4/Q8** from evidence + corrections C-a…C-f into design §4.
+- **RE-SCOPE (user-confirmed):** Wave 5 narrowed to **PR 0–2 only** (ReviewDetail test net → decompose →
+  C107). Personalization (PR 3–5) + admin tail (PR 6+) **deferred to a future wave** — only ~3 internal
+  accounts (general-user login is a later rollout → personalization audience ≈0) + reviewers never collide
+  (→ C22/C78 moot). Saved memory `project_user_base_accounts`; updated MEMORY.md + re-scope banners in
+  design + impl + this status doc; §§6/7 + Q3/Q4/Q5/Q9/Q6/Q7 retained as future-wave reference.
+- **Q1 user-verdict = split** PR-1 into PR-1a (easy seams) + PR-1b (risky core); data hook returns an
+  initial-form-state object. Design **Status → Locked**.
+- **Authored impl plan PR 0–2 concrete tasks** (0.1–0.3, 1a.1–1a.5, 1b.1–1b.4, 2.1) with file paths,
+  anchors, verify cmds, commit msgs.
+- **GATE 1B:** Codex (`gpt-5.5`, inline) + Claude reviewer, parallel — both **GO-WITH-CHANGES**, both
+  confirmed every PR 0–2 anchor EXACT. Folded all findings into PR-0 (dual-shape mock; `tagged_metadata`
+  fixture columns; 3rd `noReviewUpdateFixture` + behaviors 6–9 + 4-state banner coverage to pin
+  preselect/auto-expand/view-toggle/closed-enum before their seams move; 1a.2 type co-location; PR-2
+  fetch-dependency caveat). No BLOCKER.
+
+Process learnings:
+- The re-scope collapsed 5 of the 9 design questions (Q5/Q9/Q6/Q7 → deferred) — surfacing the *audience*
+  reality before grinding through mechanism questions saved a lot of motion. Worth asking "who uses this"
+  early on any feature wave.
+- GATE 1B caught a real coverage gap (PR-0 pinned only the restore branch, not preselect/effect-ordering)
+  that would have let PR-1b silently regress — the gate earned its keep on a plan-only review.
+
+Decisions roll-up: see "Recent decisions worth carrying forward" + the design §4 locked answers. Commits:
+docs-only on `chore/wave5-scaffold` (see `git log`). Branch not pushed.
