@@ -240,3 +240,49 @@ export const noReviewUpdateFixture: Record<string, TableResult> = {
     error: null,
   },
 };
+
+// ---------------------------------------------------------------------------
+// degradedUpdateFixture — yellow "degraded update" intent banner (4th state).
+// ---------------------------------------------------------------------------
+// An `update` submission whose `original_lesson_id` IS set, but the off-list
+// `lessons_with_metadata` lookup for that id yields NO row (configured empty →
+// `.single()` unwraps to null), and the id is absent from `submission_similarities`
+// too. So the banner predicate is (type === 'update' && targetId && !targetTitle)
+// → the YELLOW "its title couldn't be loaded — verify before approving" state,
+// which the banner must reach WITHOUT falling through to the green "new" branch
+// (the worst-possible misrender — risk: a degraded update read as a brand-new
+// lesson). No review row → preselect branch (approve_update + target = the id).
+export const degradedUpdateFixture: Record<string, TableResult> = {
+  lesson_submissions: {
+    data: [
+      {
+        id: 'sub-degraded',
+        created_at: '2026-06-22T12:00:00.000Z',
+        google_doc_url: 'https://docs.google.com/document/d/degraded-doc/edit',
+        google_doc_id: 'degraded-doc',
+        submission_type: 'update',
+        // Target id is present but unresolvable (absent from BOTH
+        // submission_similarities AND lessons_with_metadata) → title lookup fails.
+        original_lesson_id: 'lesson-degraded-missing',
+        status: 'in_review',
+        extracted_content:
+          'Degraded Update Title\n\nSummary: An update whose declared target lesson could not be resolved.',
+        extracted_title: 'Degraded Update Title',
+        content_hash: 'hash-degraded',
+        content_embedding: null,
+        teacher_id: 'teacher-degraded',
+        ai_draft_metadata: null,
+      },
+    ],
+    error: null,
+  },
+  submission_similarities: { data: [], error: null },
+  // Off-list lookup queries this via `.eq().single()`; an empty array unwraps to
+  // null → submitterTargetLesson stays null → targetTitle null → yellow banner.
+  lessons_with_metadata: { data: [], error: null },
+  submission_reviews: { data: [], error: null },
+  user_profiles: {
+    data: [{ id: 'teacher-degraded', full_name: 'Dana Degraded' }],
+    error: null,
+  },
+};
