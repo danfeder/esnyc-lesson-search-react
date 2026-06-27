@@ -1,12 +1,14 @@
 # Wave 5 — Reviewer/Admin Features — Execution Status
 
-**Last updated:** 2026-06-26 by Session 1 (design-lock, COMPLETE)
+**Last updated:** 2026-06-27 by Session 2 (PR-0 COMPLETE + GATE-3 folded; awaiting user go-ahead to push)
 
 ## Current State
 
-**Phase:** **Design-lock (Session 1) COMPLETE.** Design **LOCKED**; impl plan PR 0–2 authored + **GATE 1B folded**. Ready for **PR-0 execution** next session.
+**Phase:** **PR-0 COMPLETE — GATE 3 done + fix-ups folded; READY TO PUSH (awaiting user go-ahead).** Design **LOCKED** (Session 1, `61ae519`); impl plan PR 0–2 authored + GATE 1B folded. The ReviewDetail safety net is built + adversarially hardened: **0.1 mock + 3 fixtures** (`9d237ae`); **0.2 page-level RTL test — THE GATE** (`3b530ef`, `92213d5`); **0.3 helper unit suites + 6 export-only additions to ReviewDetail.tsx** (`cc1c96d`); **GATE-3 fix-ups** (`ba97c1b`: completed the mock chain-method surface, pinned the non-null-preselect-target→`selectedDuplicate` seed + ai_draft form seed + the approve_update merge-save `selectedLessonId`/`submissionId`, made the doc-embed toggle test deterministic). **Net = 15 page-level RTL behaviors + 23 helper units; full suite 2002 green; `npm run check` clean; zero production-logic change** (only 6 `export` additions). All four executor dispatches + the GATE-3 fix-up supervisor-verified.
 
-**Active PR:** none (not yet branched for any PR).
+**Current task / NEXT:** **Push PR-0** (`git push -u origin test/wave5-reviewdetail-safety-net`) + `gh pr create`, then run the per-PR ritual steps 3–8 (wait for external bots → four-surface triage → rebuttal-pass → fix-ups → round-cap). Bundle the status-doc commit into the push. After PR-0 MERGES, PR-1a (easy seams) starts — and **enforce PR-1a Task 1a.2's mandatory test-first 4-case `buildCandidateCards` unit test** (the GATE-3 mitigation for candidate-card branch coverage; see decisions roll-up).
+
+**Active PR:** **PR-0** (not yet pushed). Branch **`test/wave5-reviewdetail-safety-net`**, cut from `chore/wave5-scaffold` per the **"carry docs forward"** decision (user, 2026-06-26) — the 2 scaffold doc commits ride inside PR-0's PR rather than landing on `main` via a separate docs PR.
 
 **🔭 RE-SCOPED 2026-06-26 (Session 1, user-confirmed): Wave 5 = PR 0–2 ONLY** (ReviewDetail test net →
 decompose → C107 speedup; frontend-only, no DB, no product decisions). The personalization cluster
@@ -16,19 +18,18 @@ rollout → personalization audience ≈0) and reviewers never collide on submis
 non-problem). See memory `project_user_base_accounts`. Re-scope banners folded into the design + impl
 docs; §§6/7 + the Q3/Q4/Q5/Q9/Q6/Q7 material retained as future-wave reference.
 
-**Current task / NEXT SESSION:** **Execute PR 0** (the safety-net gate) per impl plan PR-0 Tasks 0.1→0.2→0.3.
-Start: cut branch `test/wave5-reviewdetail-safety-net` from `chore/wave5-scaffold` (or rebase onto `main`
-first — see below), then dispatch executors task-by-task (TDD/characterization; supervisor-verify each;
-checkpoint after each). All Q resolved: Q1 = **split PR-1 into PR-1a (easy seams) + PR-1b (risky pieces)**,
-data hook returns an **initial-form-state object**; Q2/Q3/Q4/Q8 locked from evidence (design §4). PR-0
-scope was tightened by GATE 1B — read the impl plan's PR-0 tasks (esp. the dual-shape mock, the
-`tagged_metadata` fixture columns, and the **9 page behaviors + 4-state banner coverage**) before
-dispatching. **PR 3–6+ remain DEFERRED** (re-scope).
+**Current task:** **Task 0.3 — pure-helper unit suites (export-in-place, NO relocation).** Add `export` to
+the module-scope helpers in `ReviewDetail.tsx` (`reAddActivityTypeSuffix`, `parseExtractedContent`,
+`normalizeMatchType`, `selectOptionsFromConfig`, `flattenHeritageOptions`, `ZOD_FIELD_TO_LABEL`) and add
+`src/pages/reviewDetailHelpers.test.ts` importing them from `@/pages/ReviewDetail`. Priority: the
+`reAddActivityTypeSuffix` scalar/`'both'`/array/empty/null branches (the crash landmine) first, then
+`parseExtractedContent`, then the rest. `buildCandidateCards` is NOT here (its extraction + 4-case test is
+PR-1a). Adding `export` is the ONLY production-code touch in PR-0 (truly additive). After 0.3, PR-0 is
+push-ready → run GATE 3 (reviewer agent + Codex on the diff) before push. All Q resolved (Q1 = split PR-1
+into 1a/1b; Q2/Q3/Q4/Q8 evidence-locked). **PR 3–6+ remain DEFERRED.**
 
-**Pre-PR-0 housekeeping (decide next session):** the `chore/wave5-scaffold` branch holds 4 doc commits and
-is **not pushed**. Options: (a) push it + open a docs-only PR to land the scaffold+design-lock on `main`
-first, then branch PR-0 off `main`; or (b) carry the docs forward on the PR-0 branch. Leaning (a) for a
-clean base. Ask the user.
+**Pre-PR-0 housekeeping — RESOLVED:** "carry docs forward" (user). Branch `test/wave5-reviewdetail-safety-net`
+cut from `chore/wave5-scaffold`; kickoff RIGHT-NOW banner repointed at PR-0 (`43ac2f6`). No separate docs PR.
 
 **Locked-answer headlines (durable):** PR-0 = page-level RTL test (build a NEW table-dispatch
 `makeReviewSupabaseMock`; render ReviewDetail directly, no ProtectedRoute/auth-mock/QueryClientProvider;
@@ -39,13 +40,14 @@ ReviewErrorBoundary. C112 stores `SearchFilters` directly as jsonb. Bookmark sur
 (IntCard/IntListRow/IntLessonDetail), `stopPropagation` on the role=button wrappers, gate on `!!user`,
 anon = hide/disable (no AuthModal-lift this wave). My-Bookmarks = `/bookmarks` ProtectedRoute (no perms).
 
-**Branch:** `chore/wave5-scaffold` (cut from `origin/main` @ `5d44bbe`). Holds the four scaffold docs.
-**Not pushed** — awaiting user direction on whether to PR the scaffold or carry it into Session 1.
-
-**Last commit on branch:** (the scaffold commit — see `git log -1`).
+**Branch:** `test/wave5-reviewdetail-safety-net` (PR-0; cut from `chore/wave5-scaffold` @ `61ae519`).
+Carries the 2 scaffold doc commits (`03b8c10`, `61ae519`) + kickoff banner fix (`43ac2f6`) + Task 0.1
+(`9d237ae`) + Task 0.2 (`3b530ef`, `92213d5`) + Task 0.3 (`cc1c96d`) + GATE-3 fix-ups (`ba97c1b`) + this
+status-doc commit. **Not pushed** (awaiting user go-ahead).
+**Last commit on branch:** `ba97c1b` (test(wave5): GATE-3 fix-ups) + the pending status-doc commit.
 **Last commit on main:** `5d44bbe` (feat(c02): P4b enforcement — DB CHECKs #549).
 
-**Design status:** **Draft** — strategy locked, 9 mechanism questions open. GATE 1A complete (folded).
+**Design status:** **LOCKED** (Session 1, `61ae519`). GATE 1A + 1B complete (folded).
 
 **Pre-next-PR verification:** none yet (no DB/code work shipped).
 
@@ -161,3 +163,19 @@ Process learnings:
 
 Decisions roll-up: see "Recent decisions worth carrying forward" + the design §4 locked answers. Commits:
 docs-only on `chore/wave5-scaffold` (see `git log`). Branch not pushed.
+
+### Session 2 — 2026-06-26/27 — PR-0 built end-to-end + GATE 3 (ready to push)
+
+Major events:
+- Reconciled a **stale kickoff RIGHT-NOW banner** (still said "design-lock / Draft") against git — design-lock was already done (`61ae519`). Trusted git, repointed the banner at PR-0 (`43ac2f6`).
+- **Housekeeping verdict (user): "carry docs forward"** → cut `test/wave5-reviewdetail-safety-net` from `chore/wave5-scaffold`; the 2 scaffold doc commits ride inside PR-0's PR (no separate docs PR).
+- **Built PR-0 via 3 fresh-context executor dispatches, each supervisor-verified:** 0.1 table-aware supabase mock (dual-shape terminals) + 3 fixtures (`9d237ae`); 0.2 page-level RTL gate test, 13 behaviors + a 4th `degradedUpdateFixture` for the yellow banner (`3b530ef`, `92213d5`); 0.3 export-in-place helper unit suites + 6 export-only ReviewDetail additions, diff confirmed export-only (`cc1c96d`). Verified `tagged_metadata` (not `metadata`) + the decision enum against real code before accepting fixtures.
+- **GATE 3 (pre-push):** code-reviewer agent + Codex (`gpt-5.5`, inline) in parallel on `git diff main...HEAD -- src/`. Rebuttal-passed all 7 findings. **Accepted** C-2 (non-null preselect-target seed unpinned), C-3 (save `submissionId`/`selectedLessonId` + merge-save unpinned), F1 (mock missing `ilike`/`is`/etc.); **accept-lite** F3 (pin doc-embed flag), F2/H-2 (kept honest comment — investigated, **no value≠label case exists** in the frozen closed-enum vocab). **Rejected** C-1 (mock arg-blindness = the locked dispatch-by-table tradeoff; PR-2 manual smoke is the mitigation) + H-1 (candidate-card coverage = PR-1a Task 1a.2's mandatory TDD 4-case unit test). Fix-ups in `ba97c1b`. Grounded the C-2/C-3 accepts by reading the real seed block (L472–486) + save body (L571–579) myself first.
+- **Final net:** 15 page-level behaviors + 23 helper units; **full suite 2002 green**, `npm run check` clean, zero production-logic change.
+
+Process learnings:
+- **GATE 3 earned its keep on a test-only PR:** Codex C-2/C-3 found real holes (the non-null-preselect-target seed + the merge-save `selectedLessonId` path were unpinned) that PR-1b's extraction could have silently regressed — the spec'd 9 behaviors missed them. Closing holes for the exact seams the next PR moves is faithful to "covered before any move," not scope creep.
+- **Reject discipline mattered too:** two "Critical/High" findings (C-1, H-1) were already mitigated by locked design decisions — accepting them would have re-introduced order-sensitivity (C-1) or duplicated PR-1a's planned coverage (H-1). The rebuttal pass paid off both directions.
+- Supervisor-grounding (reading L472–486 / L571–579 myself before triaging the Criticals) made the accept/reject calls evidence-based rather than trusting the reviewers' assumptions.
+
+Decisions roll-up: see "Recent decisions worth carrying forward". Commits on `test/wave5-reviewdetail-safety-net`: `43ac2f6`, `9d237ae`, `3b530ef`, `92213d5`, `cc1c96d`, `ba97c1b` + this status commit. **Not pushed (awaiting user go-ahead).**
