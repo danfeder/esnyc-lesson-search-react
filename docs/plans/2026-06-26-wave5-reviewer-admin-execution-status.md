@@ -8,7 +8,7 @@
 
 **Current task / NEXT:** **Push PR-0** (`git push -u origin test/wave5-reviewdetail-safety-net`) + `gh pr create`, then run the per-PR ritual steps 3–8 (wait for external bots → four-surface triage → rebuttal-pass → fix-ups → round-cap). Bundle the status-doc commit into the push. After PR-0 MERGES, PR-1a (easy seams) starts — and **enforce PR-1a Task 1a.2's mandatory test-first 4-case `buildCandidateCards` unit test** (the GATE-3 mitigation for candidate-card branch coverage; see decisions roll-up).
 
-**Active PR:** **PR-0** (not yet pushed). Branch **`test/wave5-reviewdetail-safety-net`**, cut from `chore/wave5-scaffold` per the **"carry docs forward"** decision (user, 2026-06-26) — the 2 scaffold doc commits ride inside PR-0's PR rather than landing on `main` via a separate docs PR.
+**Active PR:** **PR-0 = [#552](https://github.com/danfeder/esnyc-lesson-search-react/pull/552)** — OPEN (pushed 2026-06-27), awaiting CI + external bot reviewers. Branch **`test/wave5-reviewdetail-safety-net`**, cut from `chore/wave5-scaffold` per the **"carry docs forward"** decision — the 2 scaffold doc commits ride inside this PR. **Per-PR ritual now at steps 3–8:** wait for external bots → four-surface triage (`/pr-triage 552`) → rebuttal-pass every finding (GATE 4 Codex on real suggested changes) → consolidated fix-ups → round-cap after 2 bot rounds. No DB in this PR → no TEST-DB verification needed.
 
 **🔭 RE-SCOPED 2026-06-26 (Session 1, user-confirmed): Wave 5 = PR 0–2 ONLY** (ReviewDetail test net →
 decompose → C107 speedup; frontend-only, no DB, no product decisions). The personalization cluster
