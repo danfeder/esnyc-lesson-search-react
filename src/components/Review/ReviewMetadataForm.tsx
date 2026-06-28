@@ -7,6 +7,10 @@ import { selectOptionsFromConfig, flattenHeritageOptions } from '@/pages/reviewD
 import type { FieldProgress } from '@/pages/reviewValidation';
 import { IntFormField, IntPillGroup, IntProgressBar } from '@/components/Internal';
 
+// Heritage options depend only on the static culturalHeritage config, so
+// flatten once at module scope rather than recomputing on every render.
+const HERITAGE_OPTIONS = flattenHeritageOptions(ALL_FIELD_CONFIGS.culturalHeritage);
+
 /** Stable react-select input ids, declared in the page (uses `useId`). */
 export interface ReviewMetadataInputIds {
   heritage: string;
@@ -65,8 +69,6 @@ export function ReviewMetadataForm({
     selected: current ? [current] : [],
     onChange: (next: string[]) => onChange(next[0]),
   });
-
-  const heritageOptions = flattenHeritageOptions(ALL_FIELD_CONFIGS.culturalHeritage);
 
   return (
     <div>
@@ -183,9 +185,9 @@ export function ReviewMetadataForm({
               inputId={inputIds.heritage}
               classNamePrefix="adm-rs"
               isMulti
-              options={heritageOptions}
+              options={HERITAGE_OPTIONS}
               value={(metadata.culturalHeritage ?? []).map(
-                (v) => heritageOptions.find((o) => o.value === v) || { value: v, label: v }
+                (v) => HERITAGE_OPTIONS.find((o) => o.value === v) || { value: v, label: v }
               )}
               onChange={(next) =>
                 handleMetadataChange('culturalHeritage', next ? next.map((o) => o.value) : [])

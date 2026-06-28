@@ -133,8 +133,11 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           .select('lesson_id, title, grade_levels, thematic_categories')
           .in('lesson_id', lessonIds);
 
+        // Degrade gracefully (similar lessons render as "Unknown"), but surface
+        // the dropped error for observability — same graceful-degrade tier as
+        // the similarities/profile fetches (logger.warn, not error).
         if (lessonsError) {
-          logger.error('Error fetching similar lessons:', lessonsError);
+          logger.warn('Error fetching similar lessons:', lessonsError);
         }
 
         if (lessons) {
@@ -167,8 +170,11 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
           .eq('lesson_id', submitterTargetId)
           .single();
+        // Degrade gracefully (the off-list "Submitter's choice" card just
+        // doesn't render), but surface the dropped error for observability —
+        // same graceful-degrade tier as the other context fetches (warn).
         if (targetErr) {
-          logger.error('Failed to fetch off-list submitter target:', targetErr);
+          logger.warn('Failed to fetch off-list submitter target:', targetErr);
         }
         // Coalesce nullable view fields. lessons_with_metadata is typed
         // with nullable lesson_id and title (Supabase view nullability)
