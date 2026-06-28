@@ -160,6 +160,32 @@ describe('buildCandidateCards (duplicate-candidate card builder — 4 decision-p
     ).toEqual([cardA]);
   });
 
+  // Off-list target loaded but WITH null grade_levels → synthetic card is
+  // still prepended; its meta uses the "Grades —" fallback. This is the
+  // off-list path's OWN grade-format branch (distinct from the dup-list
+  // mapping covered by dupB), so it needs its own coverage.
+  it('off-list target with null grade_levels → "Grades —" in synthetic-card meta', () => {
+    expect(
+      buildCandidateCards({
+        submission: {
+          original_lesson_id: 'lesson-x',
+          submitterTargetLesson: { ...offTarget, grade_levels: null },
+        },
+        topDuplicates: [],
+        selectedSearchLesson: null,
+      })
+    ).toEqual([
+      {
+        id: 'lesson-x',
+        title: 'Cherry Cake',
+        meta: 'Grades — · lesson-x',
+        similarity: 0,
+        matchType: null,
+        matchLabel: "Submitter's choice",
+      },
+    ]);
+  });
+
   // Reviewer search pick that duplicates a card already in base → NOT
   // appended again (de-dup by lesson_id).
   it('reviewer search pick already present in base → not appended twice', () => {

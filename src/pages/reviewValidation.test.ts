@@ -115,6 +115,21 @@ describe('validateRequiredFields (returns the list of MISSING field labels)', ()
       validateRequiredFields({ ...completeBase, activityType: ['cooking-only', 'garden-only'] })
     ).toEqual(['Cooking Methods', 'Main Ingredients', 'Cooking Skills', 'Garden Skills']);
   });
+
+  // Partial-satisfaction guard: cooking fully filled but garden empty → only
+  // Garden Skills. Catches a regression where the garden requirement is ever
+  // accidentally nested inside the cooking block (it would wrongly return []).
+  it('BOTH branch: cooking satisfied, garden empty → only Garden Skills', () => {
+    expect(
+      validateRequiredFields({
+        ...completeBase,
+        activityType: ['cooking-only', 'garden-only'],
+        cookingMethods: ['Boiling'],
+        mainIngredients: ['Flour'],
+        cookingSkills: ['Measuring'],
+      })
+    ).toEqual(['Garden Skills']);
+  });
 });
 
 describe('computeFieldProgress (progress-bar completed/total counts)', () => {
