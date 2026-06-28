@@ -23,10 +23,14 @@ import {
   ZOD_FIELD_TO_LABEL,
   reAddActivityTypeSuffix,
   parseExtractedContent,
-  normalizeMatchType,
   selectOptionsFromConfig,
   flattenHeritageOptions,
 } from '@/pages/reviewDetailHelpers';
+import {
+  buildCandidateCards,
+  type SimilarityWithLesson,
+  type SubmitterTargetLesson,
+} from '@/pages/buildCandidateCards';
 import {
   IntButton,
   IntDecisionBar,
@@ -37,7 +41,6 @@ import {
   IntPillGroup,
   IntProgressBar,
   IntStatusBadge,
-  type IntDuplicateMatchType,
 } from '@/components/Internal';
 
 // As of Phase 4 (complete-review edge function + complete_review_atomic
@@ -46,38 +49,10 @@ import {
 // the reject radio. The four-decision union is reserved for that flip.
 type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
 
-interface SimilarityWithLesson {
-  lesson_id: string;
-  combined_score: number | null;
-  match_type: string | null;
-  title_similarity: number | null;
-  content_similarity: number | null;
-  lesson: {
-    title: string | null;
-    grade_levels: string[] | null;
-    thematic_categories: string[] | null;
-  };
-}
-
-// Phase 8b: shape of the off-list submitter-target lookup. Used both as
-// the local-variable type in loadSubmission and as the optional field on
-// SubmissionDetail so the rendering code (banner + unified card list)
-// can read it. lesson_id and title are non-null here because we
-// coalesce/guard at the construction site (loadSubmission) before
-// assigning — even though the underlying lessons_with_metadata view
-// types both as nullable. If either is null in the row, the off-list
-// lookup is treated as failed (submitterTargetLesson stays null) and
-// the banner falls into the "update with id but title couldn't be
-// loaded" yellow state.
-interface SubmitterTargetLesson {
-  lesson_id: string;
-  title: string;
-  summary?: string | null;
-  file_link?: string | null;
-  grade_levels?: string[] | null;
-  thematic_categories?: string[] | null;
-}
-
+// SimilarityWithLesson + SubmitterTargetLesson moved to
+// `@/pages/buildCandidateCards` (Wave 5 PR-1a Task 1a.2) and imported back
+// above, so the pure card builder can co-locate the types it owns without a
+// circular dependency on this page.
 interface SubmissionDetail {
   id: string;
   created_at: string;
@@ -505,90 +480,14 @@ export function ReviewDetail() {
     [submission?.similarities]
   );
 
-  // Phase 8b: unified card list for the decision panel. Each entry is
-  // already in IntDuplicateCard `dup` prop shape (id, title, meta,
-  // similarity, matchType, optional matchLabel for "Submitter's choice"
-  // / "Reviewer searched" badges). NOT raw SimilarityWithLesson — that
-  // mapping happens here. Four cases composed as base + optional tail:
-  // (1) submitter target IS in dup list → hoist + "Submitter's choice";
-  // (2) submitter target is OFF-list → prepend synthetic card from
-  // Task 3.1's off-list lookup; (3) no submitter target → dup list as-is.
-  // (4) Task 3.6: if reviewer searched and picked a lesson not already
-  // present, append it with "Reviewer searched" badge.
-  const candidateCards = useMemo(() => {
-    if (!submission) return [];
-
-    const fromDups = topDuplicates.map((d) => {
-      const grades = d.lesson.grade_levels?.length
-        ? `Grades ${d.lesson.grade_levels.join(', ')}`
-        : 'Grades —';
-      return {
-        id: d.lesson_id,
-        title: d.lesson.title || 'Untitled',
-        meta: `${grades} · ${d.lesson_id}`,
-        similarity: d.combined_score ?? 0,
-        matchType: normalizeMatchType(d.match_type),
-        matchLabel: undefined as string | undefined,
-      };
-    });
-
-    const submitterTargetId = submission.original_lesson_id ?? null;
-    let base: typeof fromDups;
-
-    if (!submitterTargetId) {
-      base = fromDups;
-    } else {
-      // Case 1: target IS in the dup list — hoist + label.
-      const inListIdx = fromDups.findIndex((c) => c.id === submitterTargetId);
-      if (inListIdx >= 0) {
-        const hoisted = { ...fromDups[inListIdx], matchLabel: "Submitter's choice" };
-        base = [hoisted, ...fromDups.filter((_, i) => i !== inListIdx)];
-      } else {
-        // Case 2: target is OFF-list — prepend synthetic card from off-list
-        // lookup (loaded by Task 3.1 into submission.submitterTargetLesson).
-        const off = submission.submitterTargetLesson;
-        if (off) {
-          const grades = off.grade_levels?.length
-            ? `Grades ${off.grade_levels.join(', ')}`
-            : 'Grades —';
-          base = [
-            {
-              id: off.lesson_id,
-              title: off.title || 'Untitled',
-              meta: `${grades} · ${off.lesson_id}`,
-              similarity: 0,
-              matchType: null as IntDuplicateMatchType | null,
-              matchLabel: "Submitter's choice" as string | undefined,
-            },
-            ...fromDups,
-          ];
-        } else {
-          base = fromDups;
-        }
-      }
-    }
-
-    // Case 4 (Task 3.6): append reviewer's search-picked lesson if not
-    // already present in base.
-    if (selectedSearchLesson && !base.some((c) => c.id === selectedSearchLesson.lesson_id)) {
-      const grades = selectedSearchLesson.grade_levels?.length
-        ? `Grades ${selectedSearchLesson.grade_levels.join(', ')}`
-        : 'Grades —';
-      return [
-        ...base,
-        {
-          id: selectedSearchLesson.lesson_id,
-          title: selectedSearchLesson.title,
-          meta: `${grades} · ${selectedSearchLesson.lesson_id}`,
-          similarity: 0,
-          matchType: null as IntDuplicateMatchType | null,
-          matchLabel: 'Reviewer searched' as string | undefined,
-        },
-      ];
-    }
-
-    return base;
-  }, [submission, topDuplicates, selectedSearchLesson]);
+  // Phase 8b: unified card list for the decision panel. The mapping +
+  // 4-branch composition lives in the pure `buildCandidateCards` builder
+  // (Wave 5 PR-1a Task 1a.2; table-driven unit tests in
+  // buildCandidateCards.test.ts). Same inputs, same dependency array.
+  const candidateCards = useMemo(
+    () => buildCandidateCards({ submission, topDuplicates, selectedSearchLesson }),
+    [submission, topDuplicates, selectedSearchLesson]
+  );
 
   // Phase 8b Task 3.6: derived plain values for the search escape hatch.
   // Computed during render — not hooks. Read by the useEffect below to
