@@ -31,6 +31,12 @@ import {
   type SubmitterTargetLesson,
 } from '@/pages/buildCandidateCards';
 import {
+  showCookingFields as deriveShowCookingFields,
+  showGardenFields as deriveShowGardenFields,
+  validateRequiredFields as computeRequiredFieldErrors,
+  computeFieldProgress,
+} from '@/pages/reviewValidation';
+import {
   IntButton,
   IntDecisionBar,
   IntDuplicateCard,
@@ -104,61 +110,19 @@ export function ReviewDetail() {
     culturalResponsiveness: `${baseId}-cultural-responsiveness`,
   };
 
-  const showCookingFields = useMemo(() => {
-    const types = metadata.activityType ?? [];
-    return types.includes('cooking') || types.includes('cooking-only');
-  }, [metadata.activityType]);
-  const showGardenFields = useMemo(() => {
-    const types = metadata.activityType ?? [];
-    return types.includes('garden') || types.includes('garden-only');
-  }, [metadata.activityType]);
+  // Validation/progress logic + the cooking/garden conditional-field
+  // derivations live in `@/pages/reviewValidation` as pure functions of
+  // `metadata` (Wave 5 PR-1a Task 1a.5). Memoized here so the page's JSX and
+  // save flow keep stable references; behavior is unchanged.
+  const showCookingFields = useMemo(() => deriveShowCookingFields(metadata), [metadata]);
+  const showGardenFields = useMemo(() => deriveShowGardenFields(metadata), [metadata]);
 
-  const validateRequiredFields = useCallback(() => {
-    const errors: string[] = [];
-    if (!metadata.activityType?.length) errors.push('Activity Type');
-    if (!metadata.location) errors.push('Location');
-    if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
-    if (!metadata.themes?.length) errors.push('Thematic Categories');
-    if (!metadata.season?.length) errors.push('Season & Timing');
-    if (!metadata.coreCompetencies?.length) errors.push('Core Competencies');
-    if (!metadata.socialEmotionalLearning?.length) errors.push('Social-Emotional Learning');
-    if (showCookingFields) {
-      if (!metadata.cookingMethods?.length) errors.push('Cooking Methods');
-      if (!metadata.mainIngredients?.length) errors.push('Main Ingredients');
-      if (!metadata.cookingSkills?.length) errors.push('Cooking Skills');
-    }
-    if (showGardenFields) {
-      if (!metadata.gardenSkills?.length) errors.push('Garden Skills');
-    }
-    return errors;
-  }, [metadata, showCookingFields, showGardenFields]);
+  const validateRequiredFields = useCallback(
+    () => computeRequiredFieldErrors(metadata),
+    [metadata]
+  );
 
-  const fieldProgress = useMemo(() => {
-    const required: { label: string; filled: boolean }[] = [
-      { label: 'Activity Type', filled: (metadata.activityType?.length ?? 0) > 0 },
-      { label: 'Location', filled: !!metadata.location },
-      { label: 'Grade Levels', filled: (metadata.gradeLevels?.length ?? 0) > 0 },
-      { label: 'Thematic Categories', filled: (metadata.themes?.length ?? 0) > 0 },
-      { label: 'Season & Timing', filled: (metadata.season?.length ?? 0) > 0 },
-      { label: 'Core Competencies', filled: (metadata.coreCompetencies?.length ?? 0) > 0 },
-      {
-        label: 'Social-Emotional Learning',
-        filled: (metadata.socialEmotionalLearning?.length ?? 0) > 0,
-      },
-    ];
-    if (showCookingFields) {
-      required.push(
-        { label: 'Cooking Methods', filled: (metadata.cookingMethods?.length ?? 0) > 0 },
-        { label: 'Main Ingredients', filled: (metadata.mainIngredients?.length ?? 0) > 0 },
-        { label: 'Cooking Skills', filled: (metadata.cookingSkills?.length ?? 0) > 0 }
-      );
-    }
-    if (showGardenFields) {
-      required.push({ label: 'Garden Skills', filled: (metadata.gardenSkills?.length ?? 0) > 0 });
-    }
-    const completed = required.filter((f) => f.filled).length;
-    return { completed, total: required.length };
-  }, [metadata, showCookingFields, showGardenFields]);
+  const fieldProgress = useMemo(() => computeFieldProgress(metadata), [metadata]);
 
   const loadSubmission = useCallback(async () => {
     try {
