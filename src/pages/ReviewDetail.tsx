@@ -2,34 +2,49 @@ import { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
 import { logger } from '@/utils/logger';
-import { sanitizeContent } from '@/utils/sanitize';
-import { FEATURES } from '@/utils/featureFlags';
 import type { ReviewMetadata } from '@/types';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
-import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
+import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
-import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
+import { ReviewDocPanel } from '@/components/Review/ReviewDocPanel';
+import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
+import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
 import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
-import { titlesAreSimilar } from '@/utils/titleSimilarity';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import { computePreselection } from '@/pages/reviewPreselect';
 import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
 import {
+  ZOD_FIELD_TO_LABEL,
+  reAddActivityTypeSuffix,
+  parseExtractedContent,
+  selectOptionsFromConfig,
+  flattenHeritageOptions,
+} from '@/pages/reviewDetailHelpers';
+import {
+  buildCandidateCards,
+  type SimilarityWithLesson,
+  type SubmitterTargetLesson,
+} from '@/pages/buildCandidateCards';
+import {
+  showCookingFields as deriveShowCookingFields,
+  showGardenFields as deriveShowGardenFields,
+  validateRequiredFields as computeRequiredFieldErrors,
+  computeFieldProgress,
+} from '@/pages/reviewValidation';
+import {
   IntButton,
   IntDecisionBar,
-  IntDocFrame,
   IntDuplicateCard,
   IntFormField,
   IntPageHeader,
   IntPillGroup,
   IntProgressBar,
   IntStatusBadge,
-  type IntDuplicateMatchType,
 } from '@/components/Internal';
 
 // As of Phase 4 (complete-review edge function + complete_review_atomic
@@ -38,38 +53,10 @@ import {
 // the reject radio. The four-decision union is reserved for that flip.
 type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
 
-interface SimilarityWithLesson {
-  lesson_id: string;
-  combined_score: number | null;
-  match_type: string | null;
-  title_similarity: number | null;
-  content_similarity: number | null;
-  lesson: {
-    title: string | null;
-    grade_levels: string[] | null;
-    thematic_categories: string[] | null;
-  };
-}
-
-// Phase 8b: shape of the off-list submitter-target lookup. Used both as
-// the local-variable type in loadSubmission and as the optional field on
-// SubmissionDetail so the rendering code (banner + unified card list)
-// can read it. lesson_id and title are non-null here because we
-// coalesce/guard at the construction site (loadSubmission) before
-// assigning — even though the underlying lessons_with_metadata view
-// types both as nullable. If either is null in the row, the off-list
-// lookup is treated as failed (submitterTargetLesson stays null) and
-// the banner falls into the "update with id but title couldn't be
-// loaded" yellow state.
-interface SubmitterTargetLesson {
-  lesson_id: string;
-  title: string;
-  summary?: string | null;
-  file_link?: string | null;
-  grade_levels?: string[] | null;
-  thematic_categories?: string[] | null;
-}
-
+// SimilarityWithLesson + SubmitterTargetLesson moved to
+// `@/pages/buildCandidateCards` (Wave 5 PR-1a Task 1a.2) and imported back
+// above, so the pure card builder can co-locate the types it owns without a
+// circular dependency on this page.
 interface SubmissionDetail {
   id: string;
   created_at: string;
@@ -86,117 +73,6 @@ interface SubmissionDetail {
   similarities?: SimilarityWithLesson[];
   submitterTargetLesson?: SubmitterTargetLesson | null;
   review?: { metadata: ReviewMetadata; decision: string; notes: string };
-}
-
-// Map review-form Zod field keys to the human labels used in the
-// validation banner + per-IntFormField error states. Kept in sync with
-// reviewFormPayloadSchema (src/types/reviewFormPayload.zod.ts) and the
-// existing required-fields labels so a Zod failure highlights the same
-// IntFormField as a missing-required failure would.
-export const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, string> = {
-  activityType: 'Activity Type',
-  location: 'Location',
-  season: 'Season & Timing',
-  themes: 'Thematic Categories',
-  gradeLevels: 'Grade Levels',
-  coreCompetencies: 'Core Competencies',
-  socialEmotionalLearning: 'Social-Emotional Learning',
-  cookingMethods: 'Cooking Methods',
-  mainIngredients: 'Main Ingredients',
-  gardenSkills: 'Garden Skills',
-  cookingSkills: 'Cooking Skills',
-  culturalHeritage: 'Cultural Heritage',
-  academicIntegration: 'Academic Integration',
-  observancesHolidays: 'Observances & Holidays',
-  culturalResponsivenessFeatures: 'Cultural Responsiveness Features',
-  processingNotes: 'Processing Notes',
-  summary: 'Summary',
-};
-
-// Mirror of the save-path activityType strip in handleSaveReview. The
-// IntPillGroup option values are slugs (`cooking-only`/`garden-only`/
-// `academic-only`/`craft-only`); the canonical Zod enum + DB CHECK
-// installed in PR 1 store `cooking`/`garden`/`academic`/`craft` (suffix
-// stripped on save). Without re-adding the suffix when loading an
-// existing review, a pill the reviewer previously selected appears
-// unselected on reopen — the form looks blank even though the value
-// is present and validates fine.
-//
-// Shape-tolerant by design: pre-D2.1 reviews stored `activityType` as a
-// scalar string (113 PROD rows as of 2026-05-06). The `as ReviewMetadata`
-// cast at the call site is a runtime lie for those rows. Calling `v.map`
-// on a scalar throws `is not a function`, which surfaces in
-// `ReviewErrorBoundary` instead of the review UI. Widen to `unknown`
-// and handle scalar input so reopening any approved submission stays
-// safe; legacy `'both'` fans out to multi-pill `[cooking-only, garden-only]`.
-export function reAddActivityTypeSuffix(raw: ReviewMetadata): ReviewMetadata {
-  const v: unknown = raw.activityType;
-  if (v == null) return raw;
-
-  if (typeof v === 'string') {
-    if (v === '') return raw;
-    if (v === 'both') return { ...raw, activityType: ['cooking-only', 'garden-only'] };
-    return { ...raw, activityType: [v.endsWith('-only') ? v : `${v}-only`] };
-  }
-
-  if (Array.isArray(v) && v.length > 0) {
-    return {
-      ...raw,
-      activityType: (v as string[]).map((s) => (s.endsWith('-only') ? s : `${s}-only`)),
-    };
-  }
-
-  return raw;
-}
-
-export function parseExtractedContent(content: string): { title: string; summary: string } {
-  const lines = content.split('\n').filter((line) => line.trim());
-  let title = '';
-  let summary = '';
-
-  const titleMatch = content.match(/^(Title:|Lesson Title:|#\s+)?(.+)$/im);
-  if (titleMatch && titleMatch[2]) {
-    title = titleMatch[2].trim();
-  } else if (lines.length > 0) {
-    title = lines[0].trim();
-  }
-
-  const summaryMatch = content.match(
-    /(?:Summary:|Overview:|Description:)\s*(.+?)(?:\n\n|\n(?=[A-Z]))/is
-  );
-  if (summaryMatch && summaryMatch[1]) {
-    summary = summaryMatch[1].trim();
-  } else {
-    const contentAfterTitle = lines.slice(1).join('\n');
-    const firstParagraph = contentAfterTitle.split(/\n\n/)[0];
-    if (firstParagraph) {
-      summary = firstParagraph.trim().substring(0, 500);
-    }
-  }
-
-  return { title, summary };
-}
-
-export function normalizeMatchType(raw: string | null): IntDuplicateMatchType | null {
-  if (!raw) return null;
-  if (raw === 'exact' || raw === 'high' || raw === 'medium' || raw === 'low') return raw;
-  return null;
-}
-
-export function selectOptionsFromConfig(config: FilterConfig) {
-  return config.options.map((o) => ({ value: o.value, label: o.label }));
-}
-
-/** Hierarchical -> flat options for cultural heritage CreatableSelect. */
-export function flattenHeritageOptions(config: FilterConfig) {
-  return config.options.flatMap((parent) => {
-    const parentOpt = { value: parent.value, label: parent.label };
-    const childOpts = (parent.children ?? []).map((c) => ({
-      value: c.value,
-      label: `${parent.label} → ${c.label}`,
-    }));
-    return [parentOpt, ...childOpts];
-  });
 }
 
 export function ReviewDetail() {
@@ -234,76 +110,19 @@ export function ReviewDetail() {
     culturalResponsiveness: `${baseId}-cultural-responsiveness`,
   };
 
-  const [viewMode, setViewMode] = useState<'embed' | 'text'>(() => {
-    if (!FEATURES.GOOGLE_DOC_EMBED) return 'text';
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return (window.localStorage.getItem('reviewViewMode') as 'embed' | 'text') || 'embed';
-    }
-    return 'embed';
-  });
+  // Validation/progress logic + the cooking/garden conditional-field
+  // derivations live in `@/pages/reviewValidation` as pure functions of
+  // `metadata` (Wave 5 PR-1a Task 1a.5). Memoized here so the page's JSX and
+  // save flow keep stable references; behavior is unchanged.
+  const showCookingFields = useMemo(() => deriveShowCookingFields(metadata), [metadata]);
+  const showGardenFields = useMemo(() => deriveShowGardenFields(metadata), [metadata]);
 
-  const handleSetViewMode = useCallback((mode: 'embed' | 'text') => {
-    setViewMode(mode);
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('reviewViewMode', mode);
-    }
-  }, []);
+  const validateRequiredFields = useCallback(
+    () => computeRequiredFieldErrors(metadata),
+    [metadata]
+  );
 
-  const showCookingFields = useMemo(() => {
-    const types = metadata.activityType ?? [];
-    return types.includes('cooking') || types.includes('cooking-only');
-  }, [metadata.activityType]);
-  const showGardenFields = useMemo(() => {
-    const types = metadata.activityType ?? [];
-    return types.includes('garden') || types.includes('garden-only');
-  }, [metadata.activityType]);
-
-  const validateRequiredFields = useCallback(() => {
-    const errors: string[] = [];
-    if (!metadata.activityType?.length) errors.push('Activity Type');
-    if (!metadata.location) errors.push('Location');
-    if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
-    if (!metadata.themes?.length) errors.push('Thematic Categories');
-    if (!metadata.season?.length) errors.push('Season & Timing');
-    if (!metadata.coreCompetencies?.length) errors.push('Core Competencies');
-    if (!metadata.socialEmotionalLearning?.length) errors.push('Social-Emotional Learning');
-    if (showCookingFields) {
-      if (!metadata.cookingMethods?.length) errors.push('Cooking Methods');
-      if (!metadata.mainIngredients?.length) errors.push('Main Ingredients');
-      if (!metadata.cookingSkills?.length) errors.push('Cooking Skills');
-    }
-    if (showGardenFields) {
-      if (!metadata.gardenSkills?.length) errors.push('Garden Skills');
-    }
-    return errors;
-  }, [metadata, showCookingFields, showGardenFields]);
-
-  const fieldProgress = useMemo(() => {
-    const required: { label: string; filled: boolean }[] = [
-      { label: 'Activity Type', filled: (metadata.activityType?.length ?? 0) > 0 },
-      { label: 'Location', filled: !!metadata.location },
-      { label: 'Grade Levels', filled: (metadata.gradeLevels?.length ?? 0) > 0 },
-      { label: 'Thematic Categories', filled: (metadata.themes?.length ?? 0) > 0 },
-      { label: 'Season & Timing', filled: (metadata.season?.length ?? 0) > 0 },
-      { label: 'Core Competencies', filled: (metadata.coreCompetencies?.length ?? 0) > 0 },
-      {
-        label: 'Social-Emotional Learning',
-        filled: (metadata.socialEmotionalLearning?.length ?? 0) > 0,
-      },
-    ];
-    if (showCookingFields) {
-      required.push(
-        { label: 'Cooking Methods', filled: (metadata.cookingMethods?.length ?? 0) > 0 },
-        { label: 'Main Ingredients', filled: (metadata.mainIngredients?.length ?? 0) > 0 },
-        { label: 'Cooking Skills', filled: (metadata.cookingSkills?.length ?? 0) > 0 }
-      );
-    }
-    if (showGardenFields) {
-      required.push({ label: 'Garden Skills', filled: (metadata.gardenSkills?.length ?? 0) > 0 });
-    }
-    const completed = required.filter((f) => f.filled).length;
-    return { completed, total: required.length };
-  }, [metadata, showCookingFields, showGardenFields]);
+  const fieldProgress = useMemo(() => computeFieldProgress(metadata), [metadata]);
 
   const loadSubmission = useCallback(async () => {
     try {
@@ -608,90 +427,14 @@ export function ReviewDetail() {
     [submission?.similarities]
   );
 
-  // Phase 8b: unified card list for the decision panel. Each entry is
-  // already in IntDuplicateCard `dup` prop shape (id, title, meta,
-  // similarity, matchType, optional matchLabel for "Submitter's choice"
-  // / "Reviewer searched" badges). NOT raw SimilarityWithLesson — that
-  // mapping happens here. Four cases composed as base + optional tail:
-  // (1) submitter target IS in dup list → hoist + "Submitter's choice";
-  // (2) submitter target is OFF-list → prepend synthetic card from
-  // Task 3.1's off-list lookup; (3) no submitter target → dup list as-is.
-  // (4) Task 3.6: if reviewer searched and picked a lesson not already
-  // present, append it with "Reviewer searched" badge.
-  const candidateCards = useMemo(() => {
-    if (!submission) return [];
-
-    const fromDups = topDuplicates.map((d) => {
-      const grades = d.lesson.grade_levels?.length
-        ? `Grades ${d.lesson.grade_levels.join(', ')}`
-        : 'Grades —';
-      return {
-        id: d.lesson_id,
-        title: d.lesson.title || 'Untitled',
-        meta: `${grades} · ${d.lesson_id}`,
-        similarity: d.combined_score ?? 0,
-        matchType: normalizeMatchType(d.match_type),
-        matchLabel: undefined as string | undefined,
-      };
-    });
-
-    const submitterTargetId = submission.original_lesson_id ?? null;
-    let base: typeof fromDups;
-
-    if (!submitterTargetId) {
-      base = fromDups;
-    } else {
-      // Case 1: target IS in the dup list — hoist + label.
-      const inListIdx = fromDups.findIndex((c) => c.id === submitterTargetId);
-      if (inListIdx >= 0) {
-        const hoisted = { ...fromDups[inListIdx], matchLabel: "Submitter's choice" };
-        base = [hoisted, ...fromDups.filter((_, i) => i !== inListIdx)];
-      } else {
-        // Case 2: target is OFF-list — prepend synthetic card from off-list
-        // lookup (loaded by Task 3.1 into submission.submitterTargetLesson).
-        const off = submission.submitterTargetLesson;
-        if (off) {
-          const grades = off.grade_levels?.length
-            ? `Grades ${off.grade_levels.join(', ')}`
-            : 'Grades —';
-          base = [
-            {
-              id: off.lesson_id,
-              title: off.title || 'Untitled',
-              meta: `${grades} · ${off.lesson_id}`,
-              similarity: 0,
-              matchType: null as IntDuplicateMatchType | null,
-              matchLabel: "Submitter's choice" as string | undefined,
-            },
-            ...fromDups,
-          ];
-        } else {
-          base = fromDups;
-        }
-      }
-    }
-
-    // Case 4 (Task 3.6): append reviewer's search-picked lesson if not
-    // already present in base.
-    if (selectedSearchLesson && !base.some((c) => c.id === selectedSearchLesson.lesson_id)) {
-      const grades = selectedSearchLesson.grade_levels?.length
-        ? `Grades ${selectedSearchLesson.grade_levels.join(', ')}`
-        : 'Grades —';
-      return [
-        ...base,
-        {
-          id: selectedSearchLesson.lesson_id,
-          title: selectedSearchLesson.title,
-          meta: `${grades} · ${selectedSearchLesson.lesson_id}`,
-          similarity: 0,
-          matchType: null as IntDuplicateMatchType | null,
-          matchLabel: 'Reviewer searched' as string | undefined,
-        },
-      ];
-    }
-
-    return base;
-  }, [submission, topDuplicates, selectedSearchLesson]);
+  // Phase 8b: unified card list for the decision panel. The mapping +
+  // 4-branch composition lives in the pure `buildCandidateCards` builder
+  // (Wave 5 PR-1a Task 1a.2; table-driven unit tests in
+  // buildCandidateCards.test.ts). Same inputs, same dependency array.
+  const candidateCards = useMemo(
+    () => buildCandidateCards({ submission, topDuplicates, selectedSearchLesson }),
+    [submission, topDuplicates, selectedSearchLesson]
+  );
 
   // Phase 8b Task 3.6: derived plain values for the search escape hatch.
   // Computed during render — not hooks. Read by the useEffect below to
@@ -1162,49 +905,12 @@ export function ReviewDetail() {
           </div>
 
           {/* MIDDLE — document */}
-          <div>
-            <IntDocFrame
-              fileName={`${headerTitle.toLowerCase().replace(/\s+/g, '-')}.gdoc`}
-              externalHref={submission.google_doc_url}
-              toggle={
-                FEATURES.GOOGLE_DOC_EMBED
-                  ? {
-                      options: [
-                        { value: 'embed', label: 'Doc' },
-                        { value: 'text', label: 'Text' },
-                      ],
-                      value: viewMode,
-                      onChange: (v) => handleSetViewMode(v as 'embed' | 'text'),
-                    }
-                  : undefined
-              }
-              padded={viewMode === 'text'}
-            >
-              {FEATURES.GOOGLE_DOC_EMBED && viewMode === 'embed' ? (
-                <GoogleDocEmbed
-                  docId={submission.google_doc_id}
-                  docUrl={submission.google_doc_url}
-                  height="calc(100vh - 18rem)"
-                  fallbackToText={() => handleSetViewMode('text')}
-                  onError={(error) => {
-                    logger.error('Google Doc embed error:', error.message);
-                  }}
-                />
-              ) : (
-                <pre
-                  style={{
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'var(--esy-font-body)',
-                    fontSize: 14,
-                    color: 'var(--color-esy-ink)',
-                    margin: 0,
-                  }}
-                >
-                  {sanitizeContent(submission.extracted_content)}
-                </pre>
-              )}
-            </IntDocFrame>
-          </div>
+          <ReviewDocPanel
+            headerTitle={headerTitle}
+            googleDocUrl={submission.google_doc_url}
+            googleDocId={submission.google_doc_id}
+            extractedContent={submission.extracted_content}
+          />
 
           {/* RIGHT — duplicates + decision */}
           <div>
@@ -1212,71 +918,12 @@ export function ReviewDetail() {
                 reads what the submitter declared BEFORE the candidate cards,
                 mismatch warning, and search escape hatch — all of which
                 depend on or react to that declared intent. */}
-            {(() => {
-              const type = submission?.submission_type;
-              const targetId = submission?.original_lesson_id;
-              // SimilarityWithLesson has lesson_id at top level, lesson.title nested.
-              // submitterTargetLesson (off-list fetch) has title at top level.
-              // Use ?? so empty-string titles from corrupt rows don't fall
-              // through to the next lookup (?? coalesces only on null|undefined).
-              const targetTitle =
-                submission?.submitterTargetLesson?.title ??
-                topDuplicates.find((d) => d.lesson_id === targetId)?.lesson?.title ??
-                null;
-
-              // (update, X, title-known) — happy path
-              if (type === 'update' && targetId && targetTitle) {
-                return (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                    <span className="font-medium text-blue-900">Submitter says:</span>{' '}
-                    <span className="text-blue-900">
-                      Updating <strong>{targetTitle}</strong>
-                    </span>
-                  </div>
-                );
-              }
-              // (update, X, title lookup FAILED) — degraded but still update intent.
-              // CRITICAL: must NOT fall through to the green "new" banner; that's the
-              // worst-possible misrender (reviewer thinks it's new when submitter
-              // declared an update). Render yellow with the raw lesson_id and a
-              // "verify before approving" prompt.
-              if (type === 'update' && targetId && !targetTitle) {
-                return (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
-                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
-                      <span className="text-amber-900">
-                        Updating lesson <code>{targetId}</code> — but its title couldn&apos;t be
-                        loaded. Please search the library to confirm the right merge target before
-                        approving.
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              // (update, null) — explicit can't-find-it
-              if (type === 'update' && !targetId) {
-                return (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
-                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
-                      <span className="text-amber-900">
-                        Updating, but couldn&apos;t find target — please search to identify.
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              // (new) — only fall here when type is genuinely 'new'
-              return (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
-                  <span className="font-medium text-emerald-900">Submitter says:</span>{' '}
-                  <span className="text-emerald-900">New lesson</span>
-                </div>
-              );
-            })()}
+            <SubmitterIntentBanner
+              submissionType={submission.submission_type}
+              targetId={submission.original_lesson_id}
+              submitterTargetLesson={submission.submitterTargetLesson}
+              topDuplicates={topDuplicates}
+            />
 
             {candidateCards.length > 0 && (
               <div className="adm-card">
@@ -1316,22 +963,12 @@ export function ReviewDetail() {
                 AND the target's title diverges from the submission's
                 extracted title (word-set Jaccard < 0.3). Suppressed for
                 reviewer manual picks via the search escape hatch. */}
-            {(() => {
-              if (!showMismatch) return null;
-              const targetTitle =
-                candidateCards.find((c) => c.id === selectedDuplicate)?.title ?? '';
-              const submissionTitle = submission?.extracted_title ?? '';
-              if (!targetTitle || !submissionTitle) return null;
-              if (titlesAreSimilar(targetTitle, submissionTitle)) return null;
-              return (
-                <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900">
-                  Heads up: submitter linked to <strong>&ldquo;{targetTitle}&rdquo;</strong> but
-                  submission&apos;s extracted title is{' '}
-                  <strong>&ldquo;{submissionTitle}&rdquo;</strong> — confirm this is the right merge
-                  target.
-                </div>
-              );
-            })()}
+            <TitleMismatchWarning
+              showMismatch={showMismatch}
+              candidateCards={candidateCards}
+              selectedDuplicate={selectedDuplicate}
+              extractedTitle={submission.extracted_title}
+            />
 
             {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
                 auto-expanded for (update, null) and zero-candidate cases. */}

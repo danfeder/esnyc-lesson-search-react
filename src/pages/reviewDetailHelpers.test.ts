@@ -6,7 +6,7 @@ import {
   selectOptionsFromConfig,
   flattenHeritageOptions,
   ZOD_FIELD_TO_LABEL,
-} from '@/pages/ReviewDetail';
+} from '@/pages/reviewDetailHelpers';
 import type { ReviewMetadata } from '@/types';
 import type { FilterConfig } from '@/utils/filterDefinitions';
 

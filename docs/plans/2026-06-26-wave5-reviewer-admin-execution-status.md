@@ -1,16 +1,21 @@
 # Wave 5 — Reviewer/Admin Features — Execution Status
 
-**Last updated:** 2026-06-27 by Session 2 (PR-0 COMPLETE + GATE-3 folded; awaiting user go-ahead to push)
+**Last updated:** 2026-06-27 by Session 3 (PR-1a START — branch cut from main; carry-forward docs + PR-0-cycle archival committed; dispatching Task 1a.1 next)
 
 ## Current State
 
-**Phase:** **PR-0 OPEN (#552), round-1 bot review TRIAGED + fix-up pushed → round-2 CI/bots in progress.** Design **LOCKED** (Session 1, `61ae519`); impl plan PR 0–2 authored + GATE 1B folded. The ReviewDetail safety net is built + twice-hardened: **0.1 mock + 3 fixtures** (`9d237ae`); **0.2 page-level RTL test — THE GATE** (`3b530ef`, `92213d5`); **0.3 helper unit suites + 6 export-only additions to ReviewDetail.tsx** (`cc1c96d`); **GATE-3 fix-ups** (`ba97c1b`); **round-1 bot fix-up** (`9304e34`: F3 reviews-error→silent-preselect pin + F4/F5/F6 test hygiene). **Net = 16 page-level RTL behaviors + 4-state banner + 23 helper units; targeted 39 green; full suite was 2002 green pre-fix-up; `npm run check` clean; zero production-logic change** (only 6 `export` additions). All dispatches + both fix-ups supervisor-verified. Round-1 external review = `claude[bot]` 6 findings, all rebuttal-passed (GATE-4 2nd opinion ran — note: real Codex was rate-limited until 2026-06-29, so the 2nd opinion fell back to a Claude-family read, a weaker independent signal; acceptable for a test-only PR): **accepted F3/F4/F5/F6**, **deferred F1** (parseExtractedContent name-collision → PR-1a), **rejected F2** (self-resolves in PR-1a). `claude-database-review` posted nothing (no DB). All other CI checks green round 1.
+**Phase:** **PR-1a — ReviewDetail decomposition, easy seams (IN PROGRESS).** PR-0 (safety net) is SHIPPED + MERGED to main (squash `3258365`, [#552](https://github.com/danfeder/esnyc-lesson-search-react/pull/552), 2026-06-27) — the decomposition gate is satisfied. Design **LOCKED** (Session 1, `61ae519`); impl plan PR 0–2 authored + GATE 1B folded. Branch **`refactor/wave5-reviewdetail-easy-seams`** cut from main; first commit = carry-forward docs (status + kickoff) + PR-0-cycle session-log archival (Sessions 0–2 → `…-execution-status-archive.md`). **Baseline verified clean** at branch cut: `npm run check` green; `ReviewDetail.tsx` = 1,483 lines (matches design anchors); all 6 PR-0 `export` helpers present (`reAddActivityTypeSuffix`/`parseExtractedContent`/`normalizeMatchType`/`selectOptionsFromConfig`/`flattenHeritageOptions`/`ZOD_FIELD_TO_LABEL`, L96–200); PR-0 test files (`supabaseReviewMock.ts`, `reviewFixtures.ts`, `review-detail-page.test.tsx`, `reviewDetailHelpers.test.ts`) all present.
 
-**After PR-0 merges → PR-1a (easy seams) reminders:** (1) **enforce PR-1a Task 1a.2's mandatory test-first 4-case `buildCandidateCards` unit test** (the GATE-3 mitigation for candidate-card branch coverage); (2) **Task 1a.1 naming (bot F1):** when relocating `parseExtractedContent` into `reviewDetailHelpers.ts`, do NOT consolidate it with `ReviewDashboard.tsx`'s PRIVATE same-named `parseExtractedContent` — they have incompatible signatures (`string` vs `{title,summary}`); keep them separate (rename one if you ever try to share). Both confirmed module-private in different files today, so no collision until someone DRYs them.
+**PR-1a task plan (impl §"PR 1a", execute IN ORDER; supervisor-verify + checkpoint after EACH):**
+1. ✅ **1a.1 DONE** (`240663a`) — relocated the 6 pure helpers → `src/pages/reviewDetailHelpers.ts` (self-contained imports, no circular dep); repointed `reviewDetailHelpers.test.ts`; only the test imported the symbols (no other importer). `ReviewDashboard.tsx`'s private same-named `parseExtractedContent` left untouched (bot F1). Gate test 39/39 green, `npm run check` clean. Supervisor-verified (pure relocation: 113 del / 115 ins).
+2. ✅ **1a.2 DONE** (`cf1e469`) — extracted `buildCandidateCards()` → sibling `src/pages/buildCandidateCards.ts` (`SimilarityWithLesson`/`SubmitterTargetLesson` co-located; `normalizeMatchType`+`IntDuplicateMatchType` moved with it; no circular import). TDD test-first confirmed (saw RED first); 7-case suite (4 named branches + 3 edges). Original useMemo dep array `[submission, topDuplicates, selectedSearchLesson]` + 4-branch logic preserved byte-for-byte. Gate 23/23 green, `npm run check` clean. Supervisor-verified against the removed diff.
+3. ✅ **1a.3 DONE** (`36fcd1c`) — extracted `<ReviewDocPanel>` → `src/components/Review/ReviewDocPanel.tsx` (+ barrel); owns `viewMode`/localStorage internally (key `reviewViewMode`, default `'embed'` unchanged); `<div>` root preserves the `adm-split--3col` 3-direct-child grid; removed now-unused page imports (`FEATURES`/`sanitizeContent`/`GoogleDocEmbed`/`IntDocFrame`). Gate 16/16 green, check clean. Supervisor-verified.
+4. ✅ **1a.4 DONE** (`7e5550a`) — extracted `<SubmitterIntentBanner>` (4-state, branch order preserved: blue→amber-degraded→amber-null→green; degraded-update `targetId && !targetTitle` precedes the green fallthrough → invariant held) + `<TitleMismatchWarning>` (gates on `titlesAreSimilar`) → `src/components/Review/` (+ barrel). NOTE: real code uses identical `amber-50/amber-300` classes for both degraded + null-target (distinguished by text/icon), not a literal "yellow" — design's color label was imprecise; classNames kept byte-identical. Gate 16/16 green, check clean. Supervisor-verified.
+5. ✅ **1a.5 DONE** (`8ddd36f`) — extracted `reviewValidation.ts` (`validateRequiredFields`→`computeRequiredFieldErrors`, `computeFieldProgress`, `showCookingFields`/`showGardenFields` as exported pure helpers) + 21-case TDD suite (cooking/garden/both/neither conditional-required branches + progress counts). Page keeps thin `useMemo`/`useCallback` wrappers (local names unchanged via aliased imports → no JSX/call-site churn). ⚠️ **One deliberate, behavior-NEUTRAL deviation (GATE-3 watch):** the 4 wrappers' dep arrays narrowed-input → `[metadata]` (forced by `exhaustive-deps` once the wrappers close over whole `metadata`). New deps are a SUPERSET of the old effective triggers (`[metadata.activityType]` / `[metadata,showCooking,showGarden]`), so memo values are never staler — only fresher — with identical output; boolean consumers compare by value. Gate 37/37 green, check clean. Supervisor-verified (read the wrappers + reasoned the superset property).
 
-**Active PR:** **PR-0 = [#552](https://github.com/danfeder/esnyc-lesson-search-react/pull/552)** — OPEN, **all CI green through 2 bot rounds.** Round-2 `claude[bot]` posted 3 findings: **R2-1** (High — `submission_reviews`/similarities/profile fetches drop `error` → silent preselect → possible silent review overwrite via `complete_review_atomic` ON CONFLICT) = **real latent bug, DEFERRED** (pre-existing, OUT of PR-0's pure-additive scope; test 12 now pins the behavior; fix in PR-1b — see Out-of-scope); **R2-2** (import alias) + **R2-3** (inaccurate F5 comment) = **accepted, fixed** as a final cleanup. **User verdict: "quick cleanup, then merge"** → cleanup applied (39 green, check clean), bundling with the round-2 status update → **round-3 push → merge after green (user-authorized).** Round-cap honored: won't chase round-3 bot output unless critical.
+**Invariant for EVERY task:** **no behavior change**; run `npm run test:run -- review-detail-page` after each extraction — it MUST stay green. Re-verify all line anchors against current code before extracting (2026-06-26 anchors may drift). **R2-1 latent data-integrity bug rides into PR-1b, NOT PR-1a** (see Out-of-scope follow-ups).
 
-**Current task / NEXT:** Push the cleanup+status bundle (round 3) → watch CI green → **squash-merge PR-0 to main** (repo convention = squash, PR# in title). **After merge → PR-1a (easy seams)** is the next PR (fresh session/chunk): branch `refactor/wave5-reviewdetail-easy-seams` from main; honor the PR-1a reminders below (1a.2 mandatory TDD 4-case test; 1a.1 parseExtractedContent naming) + carry the R2-1 fix into PR-1b.
+**Active PR:** **#553 OPEN** (`refactor(wave5): PR-1a — ReviewDetail decomposition (easy seams)`, base main, opened 2026-06-28). **Round 1 DONE:** all CI green; `claude[bot]` posted (no `claude-database-review` — no DB). Four-surface triage + rebuttal-pass: **ACCEPTED** the comment-cleanup (6 provenance/caller-enum strips + 1 misleading-comment fix; comment-only, gate stayed 16/16); **REJECTED** the optional `if(!submissionType) return null` guard (behavior change); **DEFERRED** F1 (logger.error→warn, GATE-4 Codex AGREE-DEFER, user-confirmed defer → tracked follow-up), F3 (components→pages types, →PR-1b), F5 (alias-rebind naming, →PR-1b), F6 (grades/meta helper, bot agrees defer). Fix-up = comment cleanup + this status bundle → push round 2. **Round 2 DONE:** all CI green; `claude[bot]` = "shippable as-is" (all non-blocking). Triage: **ACCEPTED** R2-A (corrected my own F1 doc-note — verified `GoogleDocEmbed`: fallback is a MANUAL "Show Text View" button, NOT auto-recovery) + **R2-B/R2-C** (closed 2 branch-coverage holes in the new test files: off-list null-grades synthetic card; BOTH cooking-satisfied/garden-empty → +2 tests, additive, on-mission for the safety net); **DEFERRED** R2-D (`const type` alias) + R2-E/F6 (`formatGrades` DRY) → PR-1b cosmetic bucket. **User chose "add 2 tests, then merge."** Round 3 = the 2 tests + F1-note correction + status (deliberate final round to close net holes, NOT bot-chasing). **Round-cap: this is the cap — merge once round 3 green unless a true critical bug appears.** Full suite **2031 green** (90 files), `npm run check` clean. **GATE 3 (pre-push) — BOTH families CLEAN, no behavior drift:** Claude code-reviewer = CLEAN ("ship it"); **Codex (`gpt-5.5`, cross-family) = CLEAN** (re-ran after the user reset the usage limit — full independent signal obtained, NOT a fallback). Both independently confirmed byte-parity on all 5 extractions, the banner degraded-update invariant (`??` + branch-2-before-green), `buildCandidateCards`' 4 branches + `!base.some()` dedup + ordering, the `submission?.`→`submission.` safety, the `[metadata]` dep-array superset reasoning, no circular imports, prop completeness. One **deferred cosmetic nit** (the 2 `Review/` components type-import from `@/pages/buildCandidateCards` — components→pages dir; type-only, no circular/runtime risk; settle the type home in PR-1b). **Branch pushed** (`origin/refactor/wave5-reviewdetail-easy-seams`). **Next: `gh pr create`** (awaiting user go-ahead, per PR-0 pattern). PR-0 (#552) is MERGED.
 
 **🔭 RE-SCOPED 2026-06-26 (Session 1, user-confirmed): Wave 5 = PR 0–2 ONLY** (ReviewDetail test net →
 decompose → C107 speedup; frontend-only, no DB, no product decisions). The personalization cluster
@@ -19,19 +24,6 @@ to a future wave** — only ~3 internal reviewers/admins have accounts (general-
 rollout → personalization audience ≈0) and reviewers never collide on submissions (→ C22/C78 solve a
 non-problem). See memory `project_user_base_accounts`. Re-scope banners folded into the design + impl
 docs; §§6/7 + the Q3/Q4/Q5/Q9/Q6/Q7 material retained as future-wave reference.
-
-**Current task:** **Task 0.3 — pure-helper unit suites (export-in-place, NO relocation).** Add `export` to
-the module-scope helpers in `ReviewDetail.tsx` (`reAddActivityTypeSuffix`, `parseExtractedContent`,
-`normalizeMatchType`, `selectOptionsFromConfig`, `flattenHeritageOptions`, `ZOD_FIELD_TO_LABEL`) and add
-`src/pages/reviewDetailHelpers.test.ts` importing them from `@/pages/ReviewDetail`. Priority: the
-`reAddActivityTypeSuffix` scalar/`'both'`/array/empty/null branches (the crash landmine) first, then
-`parseExtractedContent`, then the rest. `buildCandidateCards` is NOT here (its extraction + 4-case test is
-PR-1a). Adding `export` is the ONLY production-code touch in PR-0 (truly additive). After 0.3, PR-0 is
-push-ready → run GATE 3 (reviewer agent + Codex on the diff) before push. All Q resolved (Q1 = split PR-1
-into 1a/1b; Q2/Q3/Q4/Q8 evidence-locked). **PR 3–6+ remain DEFERRED.**
-
-**Pre-PR-0 housekeeping — RESOLVED:** "carry docs forward" (user). Branch `test/wave5-reviewdetail-safety-net`
-cut from `chore/wave5-scaffold`; kickoff RIGHT-NOW banner repointed at PR-0 (`43ac2f6`). No separate docs PR.
 
 **Locked-answer headlines (durable):** PR-0 = page-level RTL test (build a NEW table-dispatch
 `makeReviewSupabaseMock`; render ReviewDetail directly, no ProtectedRoute/auth-mock/QueryClientProvider;
@@ -42,22 +34,15 @@ ReviewErrorBoundary. C112 stores `SearchFilters` directly as jsonb. Bookmark sur
 (IntCard/IntListRow/IntLessonDetail), `stopPropagation` on the role=button wrappers, gate on `!!user`,
 anon = hide/disable (no AuthModal-lift this wave). My-Bookmarks = `/bookmarks` ProtectedRoute (no perms).
 
-**Branch:** `test/wave5-reviewdetail-safety-net` (PR-0; cut from `chore/wave5-scaffold` @ `61ae519`).
-Commits: scaffold docs (`03b8c10`,`61ae519`) + kickoff banner (`43ac2f6`) + 0.1 (`9d237ae`) + 0.2
-(`3b530ef`,`92213d5`) + 0.3 (`cc1c96d`) + GATE-3 fix-ups (`ba97c1b`) + status (`2579e8a`,`<this push>`) +
-round-1 bot fix-up (`9304e34`). **Pushed through round-1 + round-1 fix-up.**
-**Last code commit:** `9304e34` (round-1 bot fix-up F3–F6).
-**Last commit on main:** `5d44bbe` (feat(c02): P4b enforcement — DB CHECKs #549).
+**Branch:** `refactor/wave5-reviewdetail-easy-seams` (PR-1a; cut from `main` @ `3258365`, 2026-06-27).
+Commits so far: `9cdbd82` (carry-forward + archival) · `240663a` (1a.1) ✅ · `cf1e469` (1a.2 `buildCandidateCards`+TDD) ✅ · `36fcd1c` (1a.3 `<ReviewDocPanel>`) ✅ · `7e5550a` (1a.4 banners) ✅ · **`8ddd36f` (1a.5 — `reviewValidation.ts` + 21-case TDD suite) ✅ verified.** **ALL 5 PR-1a extractions DONE.** ReviewDetail 1483→**1120 lines** (−363/−24.5%). Next: full-suite run → GATE 3 (reviewer + Codex) → bundle status-doc commit → push + `gh pr create`.
+**Last commit on main:** `3258365` (PR-0 safety net, #552 MERGED).
 
 **Design status:** **LOCKED** (Session 1, `61ae519`). GATE 1A + 1B complete (folded).
 
-**Pre-next-PR verification:** none yet (no DB/code work shipped).
+**Pre-next-PR verification (before push/PR for PR-1a):** GATE 3 (pre-push reviewer-agent + Codex on `git diff main...HEAD`). No DB → no TEST-DB verify. The load-bearing automated gate is `npm run test:run -- review-detail-page` staying green after every extraction + `npm run check` clean.
 
-**Open `[user-verdict]` questions Session 1 must bring to the user (never lock unilaterally):**
-Q1 (decomposition grouping / PR-1 split), Q5 (collections sharing rung), Q6 (admin-tail scope),
-Q7 (C22 assignee product decision), Q9 (collections array-mutation ↔ migration tradeoff).
-`[evidence-lockable]`: Q2 (test strategy), Q3 (no-migration confirmation), Q4 (C112↔C114 serializer),
-Q8 (C107 error semantics + parallel shape).
+**Open `[user-verdict]` questions:** **all resolved or deferred.** Q1 LOCKED (split PR-1 into 1a/1b). Q2/Q3/Q4/Q8 evidence-locked. Q5/Q6/Q7/Q9 deferred with the personalization + admin tracks (future wave). Nothing pending for PR 0–2.
 
 ## Recent decisions worth carrying forward
 
@@ -107,6 +92,14 @@ Q8 (C107 error semantics + parallel shape).
 
 - **⚠️ R2-1 — latent reviewer-flow DATA-INTEGRITY bug (fix in PR-1b; round-2 bot, HIGH).** `ReviewDetail.loadSubmission` destructures three fetches WITHOUT capturing `error` — `submission_reviews` (L390), `submission_similarities` (L323), `user_profiles` (L397). supabase-js resolves a DB error as `{data:null,error}` (no throw), so on a transient error `reviews=null` → the restore block (L430) is SKIPPED → the preselect block (L472) runs → the reviewer sees a blank/preselected form with NO prior work loaded, unaware the restore failed. Blast radius: `complete_review_atomic` (migration `20260428000003`) uses `ON CONFLICT … DO UPDATE`, so saving the "fresh" form **silently overwrites the prior review row** — a transient DB blip can turn an `approve_update`→Lesson A into a clean `approve_new`. **PR-0 only PINS this (test 12); the FIX is OUT of PR-0's pure-additive scope.** Right home = **PR-1b**, when `loadSubmission` moves into `useReviewSubmission` (capture each `error`, at minimum `logger.warn`, and ideally surface a load-error state so the reviewer doesn't blind-overwrite). When fixed, **test 12 must be updated** (it currently pins the silent-preselect behavior). Ties to `feedback_data_safety_top_priority`.
 - **PR-2 mock seam (GATE-4 7th issue):** `makeReviewSupabaseMock` cannot serve `lessons_with_metadata` as BOTH a `.in()` array AND a `.eq().single()` object in the SAME render (it keys only on table name; the dual-shape unwrap picks one). Today fine (no fixture fires both paths at once — `degradedUpdateFixture` keeps similarities empty). But PR-2's parallel reorder could plausibly trigger both `lessons_with_metadata` paths in one render → if a PR-2 fixture needs that, key the mock handler on `{table, terminal}` (the mock header already flags this). Validate during PR-2's manual smoke; not a PR-0 defect.
+- **Type-layering nit (PR-1a GATE-3, cosmetic, settle in PR-1b):** the two extracted `Review/` components (`SubmitterIntentBanner.tsx`, `TitleMismatchWarning.tsx`) type-import `SimilarityWithLesson`/`SubmitterTargetLesson`/`CandidateCard` from `@/pages/buildCandidateCards` — a components→pages import direction. Type-only (zero runtime coupling, no circular risk; lint-clean). PR-1b builds the `Review/` cluster core (`<ReviewMetadataForm>`/`<ReviewDecisionPanel>`) and is the natural place to decide the shared-type home (move to `src/types/` or a `Review/`-local types file). Not a PR-1a defect.
+- **NOTE — R2-1 line anchors above (L390/L323/L397/L430/L472) are PRE-PR-1a** (file was 1,483 lines; now 1,120). PR-1b's `useReviewSubmission` executor must re-locate `loadSubmission` by symbol, not those numbers.
+- **⚠️ F1 (PR-1a round-1+2 bot, Medium) — `ReviewDocPanel` Google-Doc-embed `onError` uses `logger.error` (→ Sentry, ERROR severity) on embed failure.** **CORRECTED understanding (round-2 bot, verified against `GoogleDocEmbed.tsx`):** recovery is NOT automatic — `handleError` (L51–58) sets error state + calls `onError`; the embed then renders an **"Unable to Load Document" error screen with a MANUAL "Show Text View" button** (L124–149, the button only appears if `fallbackToText` is passed). So the reviewer sees an error UI and must click to get the text — it does NOT silently fall back. Sentry gets an ERROR-severity `captureMessage` (no stack trace) on every CSP-block / iframe-auth failure. **Should be `logger.warn`** (embed failure is a recoverable degraded state, not an exception). PRE-EXISTING (carried verbatim from the original `ReviewDetail.tsx`); DEFERRED out of PR-1a to keep it byte-identical (GATE-4 Codex = AGREE-DEFER; user-confirmed). **Explicit follow-up (do NOT rely on proximity — Codex caveat):** one-line change at `src/components/Review/ReviewDocPanel.tsx` `onError` handler — a tiny dedicated cleanup commit (PR-1b does NOT touch this file, so do not assume proximity).
+- **PR-1b cosmetic-cleanup bucket (PR-1a round-1+2 bot, Low, all behavior-neutral, all DEFERRED to PR-1b):**
+  - **F5 — alias-then-rebind naming in `ReviewDetail.tsx`:** `validateRequiredFields as computeRequiredFieldErrors` import + a local `const validateRequiredFields = useCallback(...)` wrapper reusing the original name. Cleaner scheme = import as `validateRequiredFields`, name the memoized wrapper distinctly (e.g. `getValidationErrors`); same for the `computeFieldProgress`/`fieldProgress` pair.
+  - **R2-D — redundant `const type = submissionType` alias** in `SubmitterIntentBanner.tsx` (leftover from the original nullable-`submission` IIFE; the prop is already the typed value). Drop the alias, use `submissionType` directly at the 3 `type ===` sites.
+  - **R2-E / F6 — `formatGrades` DRY** in `buildCandidateCards.ts`: the `arr?.length ? 'Grades '+join : 'Grades —'` ternary repeats verbatim 3× (dup-map, off-list, reviewer-search sites). Extract a one-line `formatGrades(arr)` helper. Behavior-identical (now unit-pinned by the round-2 null-grades test).
+  - All three are carried-forward/extraction-artifact style; kept byte-identical in PR-1a to preserve the pure-refactor contract. None block.
 - F4/F5 process tooling was roadmap-sequenced "after W1, before W5"; proceeding with Wave 5 now per user
   direction. F4/F5 remain queued (`reference_working_efficiency_deferred`).
 - C27 (search-query logging) blocks C28's "Library searches" KPI → C28 ships without it.
@@ -116,76 +109,34 @@ Q8 (C107 error semantics + parallel shape).
 
 - Kickoff prompt: `2026-06-26-wave5-reviewer-admin-kickoff.md`
 - Design doc: `2026-06-26-wave5-reviewer-admin-design.md` (locked strategy + Q1–Q9)
-- Implementation plan: `2026-06-26-wave5-reviewer-admin-implementation.md` (SKELETON)
+- Implementation plan: `2026-06-26-wave5-reviewer-admin-implementation.md` (PR 0–2 tasks authored; PR 3–6+ deferred-reference)
+- **PR-cycle archive:** `2026-06-26-wave5-reviewer-admin-execution-status-archive.md` (Sessions 0–2 forensic trail; grep, don't read end-to-end)
 - Campaign master status: `2026-06-21-deferred-campaign-status.md` (Wave 5 row)
 - Roadmap: `2026-06-20-deferred-work-roadmap.md` (§Wave 5, scope source of truth)
 - Memory: `project_deferred_work_campaign`, `project_teacher_zero_metadata_model`, `reference_ci_flakes`
 
 ## Session log
 
-### Session 0 — 2026-06-26 — scaffold + GATE 1A
+> Sessions 0–2 (scaffold → design-lock → PR-0 safety net built + merged, #552 `3258365`) moved to
+> `2026-06-26-wave5-reviewer-admin-execution-status-archive.md` at PR-1a-cycle start (2026-06-27).
+> Grep the archive for forensic detail; the durable carry-forward lives in the sections above.
+
+### Session 3 — 2026-06-27 — PR-1a start (branch cut + carry-forward + archival)
 
 Major events:
-- Oriented via a parallel-read workflow (roadmap Wave 5 detail · campaign status · ReviewDetail anatomy/seams ·
-  personalization-table backend reality) + independent baseline-snapshot cross-check + table shapes.
-- Confirmed PR breakdown shape with the user (reversible-first; PR 0 tests → decompose → C107 → C111/112/113 →
-  admin tail).
-- Scaffolded the four-file pattern (design Draft + impl SKELETON + kickoff + status) on `chore/wave5-scaffold`.
-- Ran GATE 1A (Codex gpt-5.5 inline + Claude reviewer); folded 19 findings into the design doc.
-- STOP before design-lock and before any implementation code (per session scope). Next: Session 1 = design lock.
+- **Session-start ritual:** read kickoff + status + design doc end-to-end + impl plan PR-1a section; `npm run check` clean baseline; verified git matches (PR-0 `3258365` merged on main, worktree dirty only with the 2 carry-forward docs + unrelated untracked `docs/plans/*.md`). Confirmed PR-0's 6 `export` helpers + 4 test files present, `ReviewDetail.tsx` = 1,483 lines. User confirmed orientation.
+- **Cut `refactor/wave5-reviewdetail-easy-seams` from main** (`3258365`). First commit bundles the carry-forward docs (status + kickoff, from PR-0's merge onto main) + the PR-0-cycle session-log archival (ritual step 5: Sessions 0–2 → new archive file). Untracked unrelated docs NOT staged.
+- **Ritual-step-5 learnings audit (Sessions 0–2):** all process learnings already covered by existing feedback memories (GATE 3/round-cap/reject-discipline → `feedback_pr_bot_review_workflow` + `feedback_bot_review_investigation`; Codex-fallback → `feedback_make_failing_tools_work`). The "ask who uses this early on a feature wave" learning overlaps `project_user_base_accounts`; not promoting a new memory mid-initiative — revisit at initiative-close retrospective (ritual step 6).
+- **NEXT:** dispatch PR-1a Task 1a.1 (relocate pure helpers) to a fresh-context executor; supervisor-verify + checkpoint after each of 1a.1–1a.5.
 
-### Session 1 — 2026-06-26 — design lock + impl authoring + GATE 1B + RE-SCOPE
+- **PR-1a build complete (all 5 extractions, each supervisor-verified):** 1a.1 `240663a` · 1a.2 `cf1e469` · 1a.3 `36fcd1c` · 1a.4 `7e5550a` · 1a.5 `8ddd36f`. `ReviewDetail.tsx` 1483→1120 lines (−363/−24.5%). Full suite 2031 green; +28 new unit tests (buildCandidateCards 7, reviewValidation 21). Zero behavior change.
+- **GATE 3 (pre-push) — both families CLEAN:** Claude code-reviewer + **Codex `gpt-5.5`** (re-ran after the user reset the usage limit → genuine cross-family signal, not a fallback) both confirmed byte-parity across all 5 extractions + the dep-array superset reasoning + banner invariant + dedup/ordering + no circular imports + prop completeness. Zero behavior drift. No fix-ups.
+- **Process note:** the one non-byte-identical change in the whole PR (1a.5's `[metadata]` dep arrays) was flagged by the executor, scrutinized by the supervisor (superset → never staler), and re-confirmed by the GATE-3 reviewer — exactly the kind of deviation the verify chain is for. Logged for any PR-bot re-raise.
 
-Major events:
-- **Discovery:** 5-agent read-only workflow (`wf_a536efc9-c53`) re-verified all 11 §5 seam anchors + the
-  §5.bis C107 graph + test infra + personalization shapes + render surfaces. Supervisor-verified the 4
-  load-bearing corrections against the real files (search-page mock is rpc+functions not `.from()`;
-  loadSubmission catch only logs / never hits ErrorBoundary; `useEnhancedAuth` has no `isAuthenticated`;
-  bookmark surface = 3 leaves w/ role=button stopPropagation).
-- **Locked Q2/Q3/Q4/Q8** from evidence + corrections C-a…C-f into design §4.
-- **RE-SCOPE (user-confirmed):** Wave 5 narrowed to **PR 0–2 only** (ReviewDetail test net → decompose →
-  C107). Personalization (PR 3–5) + admin tail (PR 6+) **deferred to a future wave** — only ~3 internal
-  accounts (general-user login is a later rollout → personalization audience ≈0) + reviewers never collide
-  (→ C22/C78 moot). Saved memory `project_user_base_accounts`; updated MEMORY.md + re-scope banners in
-  design + impl + this status doc; §§6/7 + Q3/Q4/Q5/Q9/Q6/Q7 retained as future-wave reference.
-- **Q1 user-verdict = split** PR-1 into PR-1a (easy seams) + PR-1b (risky core); data hook returns an
-  initial-form-state object. Design **Status → Locked**.
-- **Authored impl plan PR 0–2 concrete tasks** (0.1–0.3, 1a.1–1a.5, 1b.1–1b.4, 2.1) with file paths,
-  anchors, verify cmds, commit msgs.
-- **GATE 1B:** Codex (`gpt-5.5`, inline) + Claude reviewer, parallel — both **GO-WITH-CHANGES**, both
-  confirmed every PR 0–2 anchor EXACT. Folded all findings into PR-0 (dual-shape mock; `tagged_metadata`
-  fixture columns; 3rd `noReviewUpdateFixture` + behaviors 6–9 + 4-state banner coverage to pin
-  preselect/auto-expand/view-toggle/closed-enum before their seams move; 1a.2 type co-location; PR-2
-  fetch-dependency caveat). No BLOCKER.
+- **PR #553 opened (2026-06-28); round 1 triaged.** CI all green (E2E/Lighthouse/CodeQL/semgrep/Security Audit/coverage/deploy-preview). `claude[bot]` = 7 findings across surfaces (1 issue-comment summary + 1 review + 6 line-comments); `claude-component-review`/`performance-review` checks passed with no blocking comments; no `claude-database-review` (no DB). Rebuttal-passed all: accepted comment-cleanup (non-semantic) + the misleading-`(new)`-comment fix; rejected the `return null` guard (behavior change); deferred F1 logger (GATE-4 Codex AGREE-DEFER, user-confirmed) / F3 / F5 / F6. **GATE 4 ran on F1** (the one non-trivial lean-reject) → Codex AGREE-DEFER with a "track explicitly, don't rely on proximity" caveat → logged F1+F5 as concrete Out-of-scope follow-ups. Fix-up commit = comment cleanup + docs bundle.
+- **Process note:** the bot's "CLAUDE.md rule" citation for the provenance-comment finding was inaccurate (not literally in-repo CLAUDE.md), but the advice was sound and the noise was executor-introduced → accepted on merit, not on the (wrong) citation. Verified by grep before accepting.
 
-Process learnings:
-- The re-scope collapsed 5 of the 9 design questions (Q5/Q9/Q6/Q7 → deferred) — surfacing the *audience*
-  reality before grinding through mechanism questions saved a lot of motion. Worth asking "who uses this"
-  early on any feature wave.
-- GATE 1B caught a real coverage gap (PR-0 pinned only the restore branch, not preselect/effect-ordering)
-  that would have let PR-1b silently regress — the gate earned its keep on a plan-only review.
+- **Round 2 (fix-up `f708d44` re-review):** all CI green; `claude[bot]` = "shippable as-is." 5 findings, all non-blocking. R2-A corrected MY F1 note (verified `GoogleDocEmbed` myself: error → "Unable to Load Document" screen + MANUAL "Show Text View" button, not silent fallback) → fixed the note. R2-B/R2-C = real branch-coverage holes in the new test files → added 2 cases (additive). R2-D (`const type` alias) + R2-E/F6 (`formatGrades` DRY) → deferred to the PR-1b cosmetic bucket. **User chose "add 2 tests, then merge"** → round 3 = the deliberate final round (close net holes), then merge per the round-cap.
+- **Process note:** investigating R2-A myself (reading `GoogleDocEmbed.tsx`) caught that MY OWN earlier characterization ("graceful auto-recovery, no visible error") was wrong — the bot was right. `feedback_bot_review_investigation` cuts both ways: it surfaced an inaccuracy in my own tracked follow-up, not just in the bot's claims.
 
-Decisions roll-up: see "Recent decisions worth carrying forward" + the design §4 locked answers. Commits:
-docs-only on `chore/wave5-scaffold` (see `git log`). Branch not pushed.
-
-### Session 2 — 2026-06-26/27 — PR-0 built end-to-end + GATE 3 (ready to push)
-
-Major events:
-- Reconciled a **stale kickoff RIGHT-NOW banner** (still said "design-lock / Draft") against git — design-lock was already done (`61ae519`). Trusted git, repointed the banner at PR-0 (`43ac2f6`).
-- **Housekeeping verdict (user): "carry docs forward"** → cut `test/wave5-reviewdetail-safety-net` from `chore/wave5-scaffold`; the 2 scaffold doc commits ride inside PR-0's PR (no separate docs PR).
-- **Built PR-0 via 3 fresh-context executor dispatches, each supervisor-verified:** 0.1 table-aware supabase mock (dual-shape terminals) + 3 fixtures (`9d237ae`); 0.2 page-level RTL gate test, 13 behaviors + a 4th `degradedUpdateFixture` for the yellow banner (`3b530ef`, `92213d5`); 0.3 export-in-place helper unit suites + 6 export-only ReviewDetail additions, diff confirmed export-only (`cc1c96d`). Verified `tagged_metadata` (not `metadata`) + the decision enum against real code before accepting fixtures.
-- **GATE 3 (pre-push):** code-reviewer agent + Codex (`gpt-5.5`, inline) in parallel on `git diff main...HEAD -- src/`. Rebuttal-passed all 7 findings. **Accepted** C-2 (non-null preselect-target seed unpinned), C-3 (save `submissionId`/`selectedLessonId` + merge-save unpinned), F1 (mock missing `ilike`/`is`/etc.); **accept-lite** F3 (pin doc-embed flag), F2/H-2 (kept honest comment — investigated, **no value≠label case exists** in the frozen closed-enum vocab). **Rejected** C-1 (mock arg-blindness = the locked dispatch-by-table tradeoff; PR-2 manual smoke is the mitigation) + H-1 (candidate-card coverage = PR-1a Task 1a.2's mandatory TDD 4-case unit test). Fix-ups in `ba97c1b`. Grounded the C-2/C-3 accepts by reading the real seed block (L472–486) + save body (L571–579) myself first.
-- **Final net:** 15 page-level behaviors + 23 helper units; **full suite 2002 green**, `npm run check` clean, zero production-logic change.
-
-Process learnings:
-- **GATE 3 earned its keep on a test-only PR:** Codex C-2/C-3 found real holes (the non-null-preselect-target seed + the merge-save `selectedLessonId` path were unpinned) that PR-1b's extraction could have silently regressed — the spec'd 9 behaviors missed them. Closing holes for the exact seams the next PR moves is faithful to "covered before any move," not scope creep.
-- **Reject discipline mattered too:** two "Critical/High" findings (C-1, H-1) were already mitigated by locked design decisions — accepting them would have re-introduced order-sensitivity (C-1) or duplicated PR-1a's planned coverage (H-1). The rebuttal pass paid off both directions.
-- Supervisor-grounding (reading L472–486 / L571–579 myself before triaging the Criticals) made the accept/reject calls evidence-based rather than trusting the reviewers' assumptions.
-
-- **Opened PR-0 = #552** (user go-ahead). Round-1 CI all green (E2E/Test&Build/CodeQL/semgrep/Lighthouse/coverage + Security Audit + deploy preview). Four-surface triage: only `claude[bot]` posted (6 findings); no line comments, no review-state reviews, `claude-database-review` silent (no DB). Rebuttal-passed all 6 + GATE-4 2nd opinion: accepted F3 (reviews-error→silent-preselect pin) + F4/F5/F6 (test hygiene), deferred F1 (name collision → PR-1a note), rejected F2 (self-resolves PR-1a). Fix-up `9304e34`; pushed with the docs/status bundle → round 2.
-
-Process learnings:
-- **Codex was rate-limited (until 2026-06-29)** — the `codex:codex-rescue` agent auto-fell-back to a direct Claude-family file read for the GATE-4 2nd opinion (`feedback_make_failing_tools_work`). Usable for a low-stakes test-only PR, but NOT a true independent-model-family signal; for a higher-stakes (DB/behavior) round, wait for Codex or escalate. Recorded the weaker-signal caveat in the triage.
-- **Calibrated-skipped the pre-push GATE-3 re-dispatch** on the round-1 fix-up (test-only +139, GATE-4-vetted + supervisor-verified, round-2 external bots are the second pass, Codex unavailable). Proportionality over rote ritual — noted explicitly.
-
-Decisions roll-up: see "Recent decisions worth carrying forward". **Pushed through round-1 + round-1 fix-up (`9304e34`); round-2 CI/bots in progress.**
+<!-- append PR-1a round outcomes below as they land -->
