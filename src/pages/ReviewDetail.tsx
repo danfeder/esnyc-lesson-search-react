@@ -2,7 +2,7 @@ import { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
-import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
 import { logger } from '@/utils/logger';
@@ -12,8 +12,9 @@ import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 import { ReviewDocPanel } from '@/components/Review/ReviewDocPanel';
+import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
+import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
 import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
-import { titlesAreSimilar } from '@/utils/titleSimilarity';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import { computePreselection } from '@/pages/reviewPreselect';
 import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
@@ -953,71 +954,12 @@ export function ReviewDetail() {
                 reads what the submitter declared BEFORE the candidate cards,
                 mismatch warning, and search escape hatch — all of which
                 depend on or react to that declared intent. */}
-            {(() => {
-              const type = submission?.submission_type;
-              const targetId = submission?.original_lesson_id;
-              // SimilarityWithLesson has lesson_id at top level, lesson.title nested.
-              // submitterTargetLesson (off-list fetch) has title at top level.
-              // Use ?? so empty-string titles from corrupt rows don't fall
-              // through to the next lookup (?? coalesces only on null|undefined).
-              const targetTitle =
-                submission?.submitterTargetLesson?.title ??
-                topDuplicates.find((d) => d.lesson_id === targetId)?.lesson?.title ??
-                null;
-
-              // (update, X, title-known) — happy path
-              if (type === 'update' && targetId && targetTitle) {
-                return (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                    <span className="font-medium text-blue-900">Submitter says:</span>{' '}
-                    <span className="text-blue-900">
-                      Updating <strong>{targetTitle}</strong>
-                    </span>
-                  </div>
-                );
-              }
-              // (update, X, title lookup FAILED) — degraded but still update intent.
-              // CRITICAL: must NOT fall through to the green "new" banner; that's the
-              // worst-possible misrender (reviewer thinks it's new when submitter
-              // declared an update). Render yellow with the raw lesson_id and a
-              // "verify before approving" prompt.
-              if (type === 'update' && targetId && !targetTitle) {
-                return (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
-                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
-                      <span className="text-amber-900">
-                        Updating lesson <code>{targetId}</code> — but its title couldn&apos;t be
-                        loaded. Please search the library to confirm the right merge target before
-                        approving.
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              // (update, null) — explicit can't-find-it
-              if (type === 'update' && !targetId) {
-                return (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm flex items-start">
-                    <AlertTriangle size={16} className="text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-amber-900">Submitter says:</span>{' '}
-                      <span className="text-amber-900">
-                        Updating, but couldn&apos;t find target — please search to identify.
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              // (new) — only fall here when type is genuinely 'new'
-              return (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
-                  <span className="font-medium text-emerald-900">Submitter says:</span>{' '}
-                  <span className="text-emerald-900">New lesson</span>
-                </div>
-              );
-            })()}
+            <SubmitterIntentBanner
+              submissionType={submission.submission_type}
+              targetId={submission.original_lesson_id}
+              submitterTargetLesson={submission.submitterTargetLesson}
+              topDuplicates={topDuplicates}
+            />
 
             {candidateCards.length > 0 && (
               <div className="adm-card">
@@ -1057,22 +999,12 @@ export function ReviewDetail() {
                 AND the target's title diverges from the submission's
                 extracted title (word-set Jaccard < 0.3). Suppressed for
                 reviewer manual picks via the search escape hatch. */}
-            {(() => {
-              if (!showMismatch) return null;
-              const targetTitle =
-                candidateCards.find((c) => c.id === selectedDuplicate)?.title ?? '';
-              const submissionTitle = submission?.extracted_title ?? '';
-              if (!targetTitle || !submissionTitle) return null;
-              if (titlesAreSimilar(targetTitle, submissionTitle)) return null;
-              return (
-                <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900">
-                  Heads up: submitter linked to <strong>&ldquo;{targetTitle}&rdquo;</strong> but
-                  submission&apos;s extracted title is{' '}
-                  <strong>&ldquo;{submissionTitle}&rdquo;</strong> — confirm this is the right merge
-                  target.
-                </div>
-              );
-            })()}
+            <TitleMismatchWarning
+              showMismatch={showMismatch}
+              candidateCards={candidateCards}
+              selectedDuplicate={selectedDuplicate}
+              extractedTitle={submission.extracted_title}
+            />
 
             {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
                 auto-expanded for (update, null) and zero-candidate cases. */}
