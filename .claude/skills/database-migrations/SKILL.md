@@ -115,6 +115,7 @@ Before completing migration work:
 - [ ] New migrations tested locally with `supabase db reset`
 - [ ] RLS policies tested with `npm run test:rls` (if applicable)
 - [ ] Changes verified on TEST DB with `mcp__supabase-test__execute_sql`
+- [ ] **If adding a value-allowlist CHECK to a column** (`col <@ ARRAY[...]`): ran the read-only **whole-table** drift census FIRST (incl. retired/archived rows), and chose the constraint form deliberately — clean-and-fully-validate by default, `NOT VALID` only for genuinely out-of-scope rows + a tracked `VALIDATE` follow-up. See REFERENCE.md → "Adding a Value-Allowlist CHECK Constraint".
 - [ ] Ready for merge
 
 ## Why This Matters
