@@ -1,11 +1,9 @@
 import type { ReviewMetadata } from '@/types';
 
-// ReviewDetail validation/progress logic, extracted as pure functions of
-// `metadata` (Wave 5 PR-1a Task 1a.5). The cooking/garden derivations gate
-// which fields are *conditionally* required, so they live here alongside the
-// validation/progress logic that consumes them — and are re-imported by
-// ReviewDetail.tsx's JSX, which conditionally renders the cooking/garden
-// sections off these same booleans. Behavior is preserved verbatim.
+// Validation/progress logic for the reviewer metadata form — pure functions of
+// `metadata`. The cooking/garden derivations gate which fields are
+// *conditionally* required, so they live here alongside the validation/progress
+// logic that consumes them.
 
 export interface FieldProgress {
   completed: number;

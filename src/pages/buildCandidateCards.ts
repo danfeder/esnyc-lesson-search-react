@@ -15,16 +15,12 @@ export interface SimilarityWithLesson {
   };
 }
 
-// Phase 8b: shape of the off-list submitter-target lookup. Used both as
-// the local-variable type in loadSubmission and as the optional field on
-// SubmissionDetail so the rendering code (banner + unified card list)
-// can read it. lesson_id and title are non-null here because we
-// coalesce/guard at the construction site (loadSubmission) before
-// assigning — even though the underlying lessons_with_metadata view
-// types both as nullable. If either is null in the row, the off-list
-// lookup is treated as failed (submitterTargetLesson stays null) and
-// the banner falls into the "update with id but title couldn't be
-// loaded" yellow state.
+// Shape of the off-list submitter-target lookup. lesson_id and title are
+// non-null here because the construction site coalesces/guards before
+// assigning — even though the underlying lessons_with_metadata view types
+// both as nullable. If either is null in the row, the lookup is treated as
+// failed (submitterTargetLesson stays null) and the banner falls into the
+// "update with id but title couldn't be loaded" amber state.
 export interface SubmitterTargetLesson {
   lesson_id: string;
   title: string;

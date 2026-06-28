@@ -16,12 +16,10 @@ interface TitleMismatchWarningProps {
 }
 
 /**
- * Phase 8b Task 3.7 title-mismatch warning, extracted from `ReviewDetail` in
- * Wave 5 PR-1a Task 1a.4 — pure presentational, no behavior change. Fires only
- * when the target was auto-picked AND its title diverges from the submission's
- * extracted title (word-set Jaccard < 0.3 via the already-tested
- * `titlesAreSimilar`). Suppressed for reviewer manual picks via the `showMismatch`
- * gate.
+ * Title-mismatch warning. Fires only when the target was auto-picked AND its
+ * title diverges from the submission's extracted title (word-set Jaccard < 0.3
+ * via the already-tested `titlesAreSimilar`). Suppressed for reviewer manual
+ * picks via the `showMismatch` gate.
  */
 export function TitleMismatchWarning({
   showMismatch,

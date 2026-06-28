@@ -13,18 +13,17 @@ interface SubmitterIntentBannerProps {
 }
 
 /**
- * Phase 8b binding-intent banner, extracted from `ReviewDetail` in Wave 5
- * PR-1a Task 1a.4 — pure presentational, no behavior change. Rendered FIRST in
- * the decision column so the reviewer reads what the submitter declared BEFORE
- * the candidate cards, mismatch warning, and search escape hatch.
+ * Binding-intent banner. Rendered FIRST in the decision column so the reviewer
+ * reads what the submitter declared BEFORE the candidate cards, mismatch
+ * warning, and search escape hatch.
  *
  * Four states, in this exact order (LOAD-BEARING — a degraded update must
- * render the amber/yellow "title couldn't be loaded" state and NEVER fall
- * through to the green genuine-new branch; the page test pins this):
+ * render the amber "title couldn't be loaded" state and NEVER fall through to
+ * the green genuine-new branch):
  *   1. blue   — (update, target id, title known) happy update;
  *   2. amber  — (update, target id, title lookup FAILED) degraded update;
  *   3. amber  — (update, null target) explicit can't-find-it;
- *   4. green  — (new) genuine new submission.
+ *   4. green  — (new or unknown type) genuine new submission.
  */
 export function SubmitterIntentBanner({
   submissionType,
@@ -86,7 +85,8 @@ export function SubmitterIntentBanner({
       </div>
     );
   }
-  // (new) — only fall here when type is genuinely 'new'
+  // (new or unknown/undefined type) — genuine-new fallthrough; any value that
+  // isn't 'update' lands here (matches the original IIFE behavior).
   return (
     <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
       <span className="font-medium text-emerald-900">Submitter says:</span>{' '}

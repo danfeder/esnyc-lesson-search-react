@@ -17,9 +17,7 @@ interface ReviewDocPanelProps {
  * MIDDLE column of the reviewer screen: the Google-Doc embed vs extracted-text
  * toggle. Owns its `viewMode` state and persists the reviewer's choice to
  * localStorage under the `reviewViewMode` key (default `embed` when the embed
- * feature flag is on; forced `text` when it's off). Extracted from
- * `ReviewDetail` in Wave 5 PR-1a Task 1a.3 — pure presentational, no behavior
- * change.
+ * feature flag is on; forced `text` when it's off).
  */
 export function ReviewDocPanel({
   headerTitle,
