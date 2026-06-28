@@ -45,7 +45,7 @@ export interface CandidateCard {
 }
 
 // Minimal structural view of the submission this builder reads. The full
-// SubmissionDetail (defined in ReviewDetail.tsx) is structurally assignable
+// SubmissionDetail (defined in useReviewSubmission.ts) is structurally assignable
 // here, so the page can pass `submission` directly without this module
 // depending on the page (which would be a circular import).
 interface SubmissionForCards {

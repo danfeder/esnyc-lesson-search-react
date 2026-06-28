@@ -240,20 +240,26 @@ If it were ever missing, recreate it from the template at the bottom of the stat
 Read this prompt → read design doc → read implementation plan from current task → read status file →
 `npm run check` → tell me where you are and what's next. Don't start coding until I confirm.
 
-**Design-lock DONE (`61ae519`) and ✅ PR-0 SHIPPED to main** (squash `3258365`, #552, 2026-06-27) — the
-page-level RTL safety net (16 behaviors + 23 helper units, zero production-logic change) merged; the
-decomposition gate is satisfied. Wave 5 is re-scoped to **PR 0–2 only** (test net → decompose → C107);
-PR 3–6+ deferred. **We are now starting PR-1a (easy decomposition seams).** First: confirm the
-execution-status doc's "Current task / NEXT" block, then **cut `refactor/wave5-reviewdetail-easy-seams`
-from main** and make its FIRST commit the uncommitted status-doc + this-kickoff edit carried over from
-PR-0's merge (direct main commits are forbidden; carry-docs-forward continues), plus the PR-1a-cycle
-session-log archival (ritual step 5). Then execute impl-plan **PR-1a Tasks 1a.1 → 1a.5** (relocate pure
-helpers → `reviewDetailHelpers.ts`; extract `buildCandidateCards()` **with its mandatory test-first
-4-case unit test**; `<ReviewDocPanel>`; `<SubmitterIntentBanner>`+`<TitleMismatchWarning>`;
-`reviewValidation.ts`). **No behavior change — the PR-0 page test (`review-detail-page`) must stay green
-after EACH extraction.** Honor the two carried reminders (1a.2 TDD 4-case; keep `parseExtractedContent`
-distinct from `ReviewDashboard`'s private same-named helper). The **R2-1 latent data-integrity bug**
-(load-path fetches drop `error` → silent review overwrite; pinned by test 12) rides into **PR-1b**, not
-PR-1a. Dispatch executors task-by-task, supervisor-verify each, checkpoint the status doc after each.
+**Design-lock DONE (`61ae519`); ✅ PR-0 SHIPPED (`3258365`, #552); ✅ PR-1a SHIPPED** (squash `e4c248d`,
+#553, 2026-06-28) — the 5 easy-seam extractions merged, zero behavior change, `ReviewDetail.tsx`
+1,483→1,120 lines; GATE-3 byte-parity confirmed by both model families; 3 bot rounds triaged + capped.
+Wave 5 is re-scoped to **PR 0–2 only** (test net → decompose → C107); PR 3–6+ deferred. **We are now
+starting PR-1b (core / risky seams).** First: confirm the execution-status doc's Current-State "▶ PR-1b"
+block + the PR-1b cleanup bucket, then **cut `refactor/wave5-reviewdetail-core-seams` from main** and make
+its FIRST commit the uncommitted status-doc + this-kickoff edits carried over from PR-1a's merge (direct
+main commits are forbidden; carry-docs-forward continues), plus the **PR-1a-cycle session-log archival**
+(ritual step 5 — move Session 3 → `…-execution-status-archive.md`). Then execute impl-plan **PR-1b Tasks
+1b.1 → 1b.4**: **1b.1** `useReviewSubmission(id)` hook (returns a computed initial-form-state object, NOT
+the 13 setters; preserve restore-vs-preselect mutual-exclusion) **and FIX R2-1 here** (capture each fetch
+`error`; surface a load-error state so a transient DB blip can't silently overwrite a prior review via
+`complete_review_atomic` ON CONFLICT; **update page test 12**, which currently PINS the silent-preselect
+bug); **1b.2** `useSearchEscapeHatch` + `<ReviewSearchPanel>` (preserve the 2 effects' declaration order +
+dep arrays VERBATIM — risk 4); **1b.3** `<ReviewMetadataForm>` (LEFT column — do NOT over-DRY the 5
+closed-enum react-selects — risk 7); **1b.4** `<ReviewDecisionPanel>` (RIGHT column). **No behavior change
+EXCEPT the deliberate R2-1 fix — the PR-0 page test (`review-detail-page`) must stay green after EACH
+extraction** (test 12 changes only when the R2-1 fix lands). Re-locate ALL anchors by SYMBOL (file is now
+1,120 lines; impl-plan line numbers are pre-PR-1a). Fold the deferred PR-1b cleanup bucket
+(logger.warn / type-shapes→`@/types` / redundant casts / naming / localStorage validation) in opportunistically
+where those files are touched. Dispatch executors task-by-task, supervisor-verify each, checkpoint after each.
 
 <!-- ===== END OF KICKOFF BODY ===== -->

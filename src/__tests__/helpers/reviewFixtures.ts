@@ -409,26 +409,26 @@ export const preselectTargetUpdateFixture: Record<string, TableResult> = {
 };
 
 // ---------------------------------------------------------------------------
-// reviewsErrorPreselectFixture — submission_reviews DB error → silent preselect.
+// reviewsErrorPreselectFixture — submission_reviews DB error → R2-1 BLOCK.
 // ---------------------------------------------------------------------------
-// F3: pins the CURRENT error-path behavior of the reviews fetch (ReviewDetail
-// ~L390): it is destructured as `const { data: reviews } = …` WITHOUT capturing
-// `error`. On a DB error supabase-js RESOLVES `{ data: null, error }` (it does
-// NOT reject), so `reviews` is null → the restore block `if (reviews && …)` is
-// SKIPPED and the preselect block `if (!reviews || …)` RUNS. No error surfaces:
-// loadSubmission's try/catch never even sees it (the resolved error never
-// throws). So a reviews DB error degrades SILENTLY to a fresh preselect —
-// exactly as if there were no prior review row.
+// Pins the R2-1 FIX (PR-1b, useReviewSubmission). The reviews fetch returns a DB
+// error: supabase-js RESOLVES `{ data: null, error }` (it does NOT reject). The
+// hook now CAPTURES that `error` and, instead of silently falling through to a
+// fresh preselect (the old bug — which let a later Save overwrite a prior review
+// via complete_review_atomic's ON CONFLICT), it sets `loadError` and BLOCKS:
+// the form never renders, so no overwrite is possible. (similarities/profile
+// errors still degrade gracefully — only the reviews error blocks.)
 //
 // Shape mirrors preselectTargetUpdateFixture (a non-null, RESOLVABLE
 // original_lesson_id + a non-null canonical-keys ai_draft) EXCEPT
 // submission_reviews carries `{ data: null, error }`. Using `data: null` (NOT
 // `[]`) accurately simulates supabase-js's error return; the mock's bare-await
-// `.then` passes `{data,error}` through as-is, so `reviews` lands as null.
+// `.then` passes `{data,error}` through as-is, so the hook sees a non-null error.
 //
-// THE POINT: if PR-1b's hook extraction ever starts THROWING on a reviews DB
-// error (instead of returning null → preselect), the page test on this fixture
-// must FAIL (no decision radios rendered / no preselect ran).
+// THE POINT (test 12): a reviews DB error must surface the load-error screen
+// (load-error copy present, NO decision radios, the preselect target card
+// ABSENT). If the hook ever regresses to silently preselecting on a reviews
+// error, test 12 must FAIL.
 export const reviewsErrorPreselectFixture: Record<string, TableResult> = {
   lesson_submissions: {
     data: [

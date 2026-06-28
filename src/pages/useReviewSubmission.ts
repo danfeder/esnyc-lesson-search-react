@@ -1,0 +1,341 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { parseDbError } from '@/utils/errorHandling';
+import { logger } from '@/utils/logger';
+import type { ReviewMetadata } from '@/types';
+import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
+import { type SubmissionStatus } from '@/utils/submissionStatus';
+import { computePreselection } from '@/pages/reviewPreselect';
+import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
+import { reAddActivityTypeSuffix } from '@/pages/reviewDetailHelpers';
+import type { SimilarityWithLesson, SubmitterTargetLesson } from '@/pages/buildCandidateCards';
+
+// As of Phase 4 (complete-review edge function + complete_review_atomic
+// RPC), the DB-side CHECK on lesson_submissions.status accepts 'rejected'
+// too. The UI here still only renders three decisions — Phase 8a will add
+// the reject radio. The four-decision union is reserved for that flip.
+export type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
+
+// SimilarityWithLesson + SubmitterTargetLesson live in
+// `@/pages/buildCandidateCards` (Wave 5 PR-1a Task 1a.2) and are imported
+// above so the pure card builder can co-locate the types it owns without a
+// circular dependency. SubmissionDetail + ReviewDecision were relocated here
+// (Wave 5 PR-1b Task 1b.1) alongside the load logic so the hook owns the
+// fetch-shape contract and ReviewDetail imports them back.
+export interface SubmissionDetail {
+  id: string;
+  created_at: string;
+  google_doc_url: string;
+  google_doc_id: string;
+  submission_type: 'new' | 'update';
+  original_lesson_id?: string;
+  status: SubmissionStatus;
+  extracted_content: string;
+  extracted_title?: string;
+  content_hash: string;
+  content_embedding?: string;
+  teacher: { email: string; full_name?: string };
+  similarities?: SimilarityWithLesson[];
+  submitterTargetLesson?: SubmitterTargetLesson | null;
+  review?: { metadata: ReviewMetadata; decision: string; notes: string };
+}
+
+/**
+ * The computed restore-vs-preselect seed the hook hands the page. The page
+ * applies it to its own form `useState` via ONE seeding effect — the hook does
+ * NOT own the form setters (LOCKED design Q1). Exactly one of the load path's
+ * two branches (restore an existing review, or preselect from submitter intent)
+ * produces this object, identically to the prior inline behavior.
+ */
+export interface ReviewInitialFormState {
+  metadata: ReviewMetadata;
+  decision: ReviewDecision;
+  notes: string;
+  selectedDuplicate: string | null;
+  legacyDecisionWarning: string | null;
+}
+
+export interface UseReviewSubmissionResult {
+  submission: SubmissionDetail | null;
+  loading: boolean;
+  /**
+   * R2-1: set ONLY when the `submission_reviews` fetch returns a DB error. When
+   * non-null the page must block with a load-error screen (the form never
+   * renders → no save can overwrite a prior review). `submission` and
+   * `initialFormState` stay null in this case.
+   */
+  loadError: string | null;
+  initialFormState: ReviewInitialFormState | null;
+  /** Re-run the load (the load-error screen's Retry affordance). */
+  reload: () => void;
+}
+
+/**
+ * R2-1 load-error copy. Surfaced when the `submission_reviews` fetch errors so
+ * the reviewer reloads rather than unknowingly saving over a prior review.
+ */
+const REVIEWS_LOAD_ERROR_MESSAGE =
+  "We couldn't load this submission's existing review. Reload before making a decision — " +
+  'saving now could overwrite a previous review.';
+
+/**
+ * Loads a submission and its review context for the ReviewDetail page, and
+ * computes the initial form-state seed (restore-vs-preselect). Extracted from
+ * ReviewDetail (Wave 5 PR-1b Task 1b.1) WITHOUT changing fetch ordering (the
+ * serial→parallel rewrite is PR-2). The only intended behavior change is the
+ * R2-1 fix: a `submission_reviews` fetch error now BLOCKS (load-error screen)
+ * instead of silently routing to a fresh preselect that could overwrite a prior
+ * review. The `submission_similarities` / `user_profiles` fetch errors keep
+ * degrading gracefully exactly as before — their dropped errors are now merely
+ * `logger.warn`'d for observability.
+ */
+export function useReviewSubmission(id: string | undefined): UseReviewSubmissionResult {
+  const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [initialFormState, setInitialFormState] = useState<ReviewInitialFormState | null>(null);
+
+  const loadSubmission = useCallback(async () => {
+    // Clear any prior load error so Retry starts from a clean slate.
+    setLoadError(null);
+    try {
+      const { data: submissionData, error: submissionError } = await supabase
+        .from('lesson_submissions')
+        .select('*, content_embedding')
+        .eq('id', id!)
+        .single();
+
+      if (submissionError) throw submissionError;
+      if (!submissionData) {
+        logger.error('No submission found with id:', id);
+        setLoading(false);
+        return;
+      }
+
+      const { data: similarities, error: similaritiesError } = await supabase
+        .from('submission_similarities')
+        .select('*')
+        .eq('submission_id', id!)
+        .order('combined_score', { ascending: false });
+
+      // Degrade gracefully (no similarities → no dup cards), but surface the
+      // dropped error for observability (R2-1 cleanup — pure logging, no
+      // behavior change).
+      if (similaritiesError) {
+        logger.warn('Error fetching submission similarities:', similaritiesError);
+      }
+
+      let similaritiesWithLessons: SimilarityWithLesson[] = [];
+      if (similarities && similarities.length > 0) {
+        const lessonIds = similarities.map((s) => s.lesson_id);
+        const { data: lessons, error: lessonsError } = await supabase
+          .from('lessons_with_metadata')
+          .select('lesson_id, title, grade_levels, thematic_categories')
+          .in('lesson_id', lessonIds);
+
+        // Degrade gracefully (similar lessons render as "Unknown"), but surface
+        // the dropped error for observability — same graceful-degrade tier as
+        // the similarities/profile fetches (logger.warn, not error).
+        if (lessonsError) {
+          logger.warn('Error fetching similar lessons:', lessonsError);
+        }
+
+        if (lessons) {
+          similaritiesWithLessons = similarities.map((sim) => {
+            const lesson = lessons.find((l) => l.lesson_id === sim.lesson_id);
+            return {
+              ...sim,
+              lesson: lesson || { title: 'Unknown', grade_levels: [], thematic_categories: [] },
+            };
+          });
+        }
+      }
+
+      // Phase 8b: if submitter bound to a lesson that's NOT in the rendered
+      // top-5 dup cards, fetch it separately so the unified card list can
+      // render it as "Submitter's choice." CRITICAL: check against the
+      // SLICED top-5 (not the full similarities array) — the render path
+      // uses topDuplicates = submission.similarities.slice(0, 5), so a
+      // submitter target sitting at rank 6+ of dup detection is not
+      // visible in the cards UI and needs the same off-list treatment.
+      const submitterTargetId = submissionData?.original_lesson_id ?? null;
+      const renderedTopFive = similaritiesWithLessons.slice(0, 5);
+      const targetInRenderedTopFive = submitterTargetId
+        ? renderedTopFive.some((s) => s.lesson_id === submitterTargetId)
+        : false;
+      let submitterTargetLesson: SubmitterTargetLesson | null = null;
+      if (submitterTargetId && !targetInRenderedTopFive) {
+        const { data: targetData, error: targetErr } = await supabase
+          .from('lessons_with_metadata')
+          .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
+          .eq('lesson_id', submitterTargetId)
+          .single();
+        // Degrade gracefully (the off-list "Submitter's choice" card just
+        // doesn't render), but surface the dropped error for observability —
+        // same graceful-degrade tier as the other context fetches (warn).
+        if (targetErr) {
+          logger.warn('Failed to fetch off-list submitter target:', targetErr);
+        }
+        // Coalesce nullable view fields. lessons_with_metadata is typed
+        // with nullable lesson_id and title (Supabase view nullability)
+        // — guard before constructing the SubmitterTargetLesson which
+        // requires both.
+        if (!targetErr && targetData && targetData.lesson_id && targetData.title) {
+          submitterTargetLesson = {
+            lesson_id: targetData.lesson_id,
+            title: targetData.title,
+            summary: targetData.summary,
+            file_link: targetData.file_link,
+            grade_levels: targetData.grade_levels,
+            thematic_categories: targetData.thematic_categories,
+          };
+        }
+      }
+
+      const { data: reviews, error: reviewsError } = await supabase
+        .from('submission_reviews')
+        .select('*')
+        .eq('submission_id', id!)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      // R2-1 (data-integrity fix): supabase-js resolves a DB error as
+      // `{ data: null, error }` WITHOUT throwing, so a transient blip on the
+      // reviews fetch would leave `reviews` null and silently route to the
+      // preselect branch below — a fresh form whose later save would overwrite
+      // the prior review via complete_review_atomic's ON CONFLICT. BLOCK
+      // instead: surface a load-error screen so the form never renders and no
+      // overwrite is possible. `finally` still runs setLoading(false);
+      // submission + initialFormState stay null.
+      if (reviewsError) {
+        logger.error('Failed to load existing submission review:', reviewsError);
+        setLoadError(REVIEWS_LOAD_ERROR_MESSAGE);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name')
+        .eq('id', submissionData.teacher_id)
+        .single();
+
+      // Degrade gracefully (→ "Unknown Teacher"), but surface the dropped error
+      // for observability (R2-1 cleanup — pure logging, no behavior change).
+      if (profileError) {
+        logger.warn('Error fetching submission teacher profile:', profileError);
+      }
+
+      const fullSubmission: SubmissionDetail = {
+        ...submissionData,
+        created_at: submissionData.created_at || '',
+        status: ((submissionData.status as SubmissionStatus) || 'submitted') as SubmissionStatus,
+        extracted_content: submissionData.extracted_content || '',
+        extracted_title: submissionData.extracted_title ?? undefined,
+        content_hash: submissionData.content_hash || '',
+        submission_type: (submissionData.submission_type || 'new') as 'new' | 'update',
+        original_lesson_id: submissionData.original_lesson_id ?? undefined,
+        content_embedding: submissionData.content_embedding ?? undefined,
+        similarities: similaritiesWithLessons,
+        submitterTargetLesson,
+        review: reviews?.[0]
+          ? {
+              metadata: (reviews[0].tagged_metadata as ReviewMetadata) || {},
+              decision: reviews[0].decision || '',
+              notes: reviews[0].notes || '',
+            }
+          : undefined,
+        teacher: {
+          email: 'teacher@example.com',
+          full_name: profile?.full_name || 'Unknown Teacher',
+        },
+      };
+
+      setSubmission(fullSubmission);
+
+      // Compute the initial form-state seed. EXACTLY ONE branch runs, keyed on
+      // reviews?.length, identical to the prior inline restore-vs-preselect
+      // logic — the page applies the result via one seeding effect.
+      let seed: ReviewInitialFormState;
+      if (reviews && reviews.length > 0) {
+        const review = reviews[0];
+        // PR 6e E2c: legacy `tagged_metadata` rows (113 PROD, all approve_new)
+        // store pre-canonical SLUG forms for the 6 small-vocab fields. After
+        // E2b closed `reviewFormPayloadSchema`, reopening one without
+        // canonicalizing would render the legacy selections deselected AND
+        // reject re-save. Canonicalize the 6 vocab fields here, then let
+        // reAddActivityTypeSuffix handle activityType (disjoint fields). No
+        // DB write — the forensic rows stay legacy on disk.
+        const restoredMetadata = reAddActivityTypeSuffix(
+          canonicalizeReviewMetadata((review.tagged_metadata as ReviewMetadata) || {})
+        );
+        const existingDecision = review.decision as string;
+        let restoredDecision: ReviewDecision = 'approve_new';
+        let legacyWarning: string | null = null;
+        if (
+          existingDecision === 'approve_new' ||
+          existingDecision === 'approve_update' ||
+          existingDecision === 'needs_revision'
+        ) {
+          restoredDecision = existingDecision;
+        } else if (existingDecision) {
+          // Legacy values like 'reject' that the new UI doesn't expose. Surface
+          // it so the reviewer doesn't accidentally re-approve a previously
+          // rejected submission. (decision falls back to the approve_new default.)
+          logger.warn(
+            'Loaded review with unsupported decision, falling back to default:',
+            existingDecision
+          );
+          legacyWarning = `This submission was previously marked "${existingDecision}". That option is no longer available — choose a new decision below.`;
+        }
+        seed = {
+          metadata: restoredMetadata,
+          decision: restoredDecision,
+          notes: review.notes || '',
+          // selectedDuplicate is NOT restored from a prior review — pre-existing
+          // limitation, out of 8b scope; preserved verbatim (risk 2).
+          selectedDuplicate: null,
+          legacyDecisionWarning: legacyWarning,
+        };
+      } else {
+        // Phase 8b: pre-select decision + target from submitter intent — only
+        // when no existing review row. (selectedDuplicate is preselect-only.)
+        const preselection = computePreselection({
+          submission_type: submissionData?.submission_type,
+          original_lesson_id: submissionData?.original_lesson_id,
+        });
+        const draft = computeInitialMetadataFromAiDraft(submissionData.ai_draft_metadata);
+        seed = {
+          metadata: draft ? reAddActivityTypeSuffix(draft) : {},
+          decision: preselection.decision,
+          notes: '',
+          selectedDuplicate: preselection.target ?? null,
+          legacyDecisionWarning: null,
+        };
+      }
+      setInitialFormState(seed);
+    } catch (error) {
+      logger.error('Error loading submission:', parseDbError(error));
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) loadSubmission();
+  }, [id, loadSubmission]);
+
+  // Retry from the load-error screen. Reset `loading` first so the reviewer
+  // sees the spinner — NOT a "Submission not found" flash (submission is null
+  // after a blocked reviews-error load) nor a stale prior submission's form
+  // (when navigation set loadError while an earlier submission was still in
+  // state) — while the refetch is in flight. The R2-1 blocker must not appear
+  // to lift until the retry actually resolves. The id-triggered load path
+  // above is deliberately left calling loadSubmission directly (preserves the
+  // pre-existing navigation loading behavior — no spinner on id change).
+  const reload = useCallback(() => {
+    setLoading(true);
+    loadSubmission();
+  }, [loadSubmission]);
+
+  return { submission, loading, loadError, initialFormState, reload };
+}

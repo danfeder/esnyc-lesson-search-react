@@ -1,7 +1,5 @@
-import { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useId, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Select from 'react-select';
-import CreatableSelect from 'react-select/creatable';
 import { ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
@@ -9,77 +7,37 @@ import { logger } from '@/utils/logger';
 import type { ReviewMetadata } from '@/types';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
-import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
-import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
+import { STATUS_LABEL, STATUS_TO_BADGE } from '@/utils/submissionStatus';
 import { ReviewDocPanel } from '@/components/Review/ReviewDocPanel';
-import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
-import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
-import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
+import { ReviewMetadataForm } from '@/components/Review/ReviewMetadataForm';
+import { ReviewDecisionPanel } from '@/components/Review/ReviewDecisionPanel';
+import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
-import { computePreselection } from '@/pages/reviewPreselect';
-import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
-import {
-  ZOD_FIELD_TO_LABEL,
-  reAddActivityTypeSuffix,
-  parseExtractedContent,
-  selectOptionsFromConfig,
-  flattenHeritageOptions,
-} from '@/pages/reviewDetailHelpers';
-import {
-  buildCandidateCards,
-  type SimilarityWithLesson,
-  type SubmitterTargetLesson,
-} from '@/pages/buildCandidateCards';
+import { ZOD_FIELD_TO_LABEL, parseExtractedContent } from '@/pages/reviewDetailHelpers';
+import { buildCandidateCards } from '@/pages/buildCandidateCards';
+import { useReviewSubmission, type ReviewDecision } from '@/pages/useReviewSubmission';
+import { useSearchEscapeHatch } from '@/pages/useSearchEscapeHatch';
 import {
   showCookingFields as deriveShowCookingFields,
   showGardenFields as deriveShowGardenFields,
   validateRequiredFields as computeRequiredFieldErrors,
   computeFieldProgress,
 } from '@/pages/reviewValidation';
-import {
-  IntButton,
-  IntDecisionBar,
-  IntDuplicateCard,
-  IntFormField,
-  IntPageHeader,
-  IntPillGroup,
-  IntProgressBar,
-  IntStatusBadge,
-} from '@/components/Internal';
+import { IntButton, IntPageHeader, IntStatusBadge } from '@/components/Internal';
 
-// As of Phase 4 (complete-review edge function + complete_review_atomic
-// RPC), the DB-side CHECK on lesson_submissions.status accepts 'rejected'
-// too. The UI here still only renders three decisions — Phase 8a will add
-// the reject radio. The four-decision union is reserved for that flip.
-type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
-
-// SimilarityWithLesson + SubmitterTargetLesson moved to
-// `@/pages/buildCandidateCards` (Wave 5 PR-1a Task 1a.2) and imported back
-// above, so the pure card builder can co-locate the types it owns without a
-// circular dependency on this page.
-interface SubmissionDetail {
-  id: string;
-  created_at: string;
-  google_doc_url: string;
-  google_doc_id: string;
-  submission_type: 'new' | 'update';
-  original_lesson_id?: string;
-  status: SubmissionStatus;
-  extracted_content: string;
-  extracted_title?: string;
-  content_hash: string;
-  content_embedding?: string;
-  teacher: { email: string; full_name?: string };
-  similarities?: SimilarityWithLesson[];
-  submitterTargetLesson?: SubmitterTargetLesson | null;
-  review?: { metadata: ReviewMetadata; decision: string; notes: string };
-}
+// ReviewDecision + SubmissionDetail (and the load logic) live in
+// `@/pages/useReviewSubmission` (Wave 5 PR-1b Task 1b.1). ReviewDecision is
+// imported back above for the page's `decision` form state. SimilarityWithLesson
+// + SubmitterTargetLesson live in `@/pages/buildCandidateCards` (PR-1a Task 1a.2).
 
 export function ReviewDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Data load + the computed restore-vs-preselect seed live in the
+  // useReviewSubmission hook (Wave 5 PR-1b Task 1b.1). The hook owns
+  // submission/loading/loadError + the seed; the page keeps its own form state
+  // and applies the seed via one effect below.
+  const { submission, loading, loadError, initialFormState, reload } = useReviewSubmission(id);
   const [saving, setSaving] = useState(false);
   const [metadata, setMetadata] = useState<ReviewMetadata>({});
   const [decision, setDecision] = useState<ReviewDecision>('approve_new');
@@ -93,7 +51,6 @@ export function ReviewDetail() {
   // submitter couldn't. selectedSearchLesson must be declared BEFORE the
   // candidateCards useMemo (which reads it via deps).
   const [selectedSearchLesson, setSelectedSearchLesson] = useState<LessonSearchResult | null>(null);
-  const [showSearch, setShowSearch] = useState<boolean>(false);
 
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
 
@@ -124,195 +81,23 @@ export function ReviewDetail() {
 
   const fieldProgress = useMemo(() => computeFieldProgress(metadata), [metadata]);
 
-  const loadSubmission = useCallback(async () => {
-    try {
-      const { data: submissionData, error: submissionError } = await supabase
-        .from('lesson_submissions')
-        .select('*, content_embedding')
-        .eq('id', id!)
-        .single();
-
-      if (submissionError) throw submissionError;
-      if (!submissionData) {
-        logger.error('No submission found with id:', id);
-        setLoading(false);
-        return;
-      }
-
-      const { data: similarities } = await supabase
-        .from('submission_similarities')
-        .select('*')
-        .eq('submission_id', id!)
-        .order('combined_score', { ascending: false });
-
-      let similaritiesWithLessons: SimilarityWithLesson[] = [];
-      if (similarities && similarities.length > 0) {
-        const lessonIds = similarities.map((s) => s.lesson_id);
-        const { data: lessons, error: lessonsError } = await supabase
-          .from('lessons_with_metadata')
-          .select('lesson_id, title, grade_levels, thematic_categories')
-          .in('lesson_id', lessonIds);
-
-        if (lessonsError) {
-          logger.error('Error fetching similar lessons:', lessonsError);
-        }
-
-        if (lessons) {
-          similaritiesWithLessons = similarities.map((sim) => {
-            const lesson = lessons.find((l) => l.lesson_id === sim.lesson_id);
-            return {
-              ...sim,
-              lesson: lesson || { title: 'Unknown', grade_levels: [], thematic_categories: [] },
-            };
-          });
-        }
-      }
-
-      // Phase 8b: if submitter bound to a lesson that's NOT in the rendered
-      // top-5 dup cards, fetch it separately so the unified card list can
-      // render it as "Submitter's choice." CRITICAL: check against the
-      // SLICED top-5 (not the full similarities array) — the render path
-      // uses topDuplicates = submission.similarities.slice(0, 5), so a
-      // submitter target sitting at rank 6+ of dup detection is not
-      // visible in the cards UI and needs the same off-list treatment.
-      const submitterTargetId = submissionData?.original_lesson_id ?? null;
-      const renderedTopFive = similaritiesWithLessons.slice(0, 5);
-      const targetInRenderedTopFive = submitterTargetId
-        ? renderedTopFive.some((s) => s.lesson_id === submitterTargetId)
-        : false;
-      let submitterTargetLesson: SubmitterTargetLesson | null = null;
-      if (submitterTargetId && !targetInRenderedTopFive) {
-        const { data: targetData, error: targetErr } = await supabase
-          .from('lessons_with_metadata')
-          .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
-          .eq('lesson_id', submitterTargetId)
-          .single();
-        if (targetErr) {
-          logger.error('Failed to fetch off-list submitter target:', targetErr);
-        }
-        // Coalesce nullable view fields. lessons_with_metadata is typed
-        // with nullable lesson_id and title (Supabase view nullability)
-        // — guard before constructing the SubmitterTargetLesson which
-        // requires both.
-        if (!targetErr && targetData && targetData.lesson_id && targetData.title) {
-          submitterTargetLesson = {
-            lesson_id: targetData.lesson_id,
-            title: targetData.title,
-            summary: targetData.summary,
-            file_link: targetData.file_link,
-            grade_levels: targetData.grade_levels,
-            thematic_categories: targetData.thematic_categories,
-          };
-        }
-      }
-
-      const { data: reviews } = await supabase
-        .from('submission_reviews')
-        .select('*')
-        .eq('submission_id', id!)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .eq('id', submissionData.teacher_id)
-        .single();
-
-      const fullSubmission: SubmissionDetail = {
-        ...submissionData,
-        created_at: submissionData.created_at || '',
-        status: ((submissionData.status as SubmissionStatus) || 'submitted') as SubmissionStatus,
-        extracted_content: submissionData.extracted_content || '',
-        extracted_title: submissionData.extracted_title ?? undefined,
-        content_hash: submissionData.content_hash || '',
-        submission_type: (submissionData.submission_type || 'new') as 'new' | 'update',
-        original_lesson_id: submissionData.original_lesson_id ?? undefined,
-        content_embedding: submissionData.content_embedding ?? undefined,
-        similarities: similaritiesWithLessons,
-        submitterTargetLesson,
-        review: reviews?.[0]
-          ? {
-              metadata: (reviews[0].tagged_metadata as ReviewMetadata) || {},
-              decision: reviews[0].decision || '',
-              notes: reviews[0].notes || '',
-            }
-          : undefined,
-        teacher: {
-          email: 'teacher@example.com',
-          full_name: profile?.full_name || 'Unknown Teacher',
-        },
-      };
-
-      setSubmission(fullSubmission);
-
-      if (reviews && reviews.length > 0) {
-        const review = reviews[0];
-        // PR 6e E2c: legacy `tagged_metadata` rows (113 PROD, all approve_new)
-        // store pre-canonical SLUG forms for the 6 small-vocab fields. After
-        // E2b closed `reviewFormPayloadSchema`, reopening one without
-        // canonicalizing would render the legacy selections deselected AND
-        // reject re-save. Canonicalize the 6 vocab fields here, then let
-        // reAddActivityTypeSuffix handle activityType (disjoint fields). No
-        // DB write — the forensic rows stay legacy on disk.
-        setMetadata(
-          reAddActivityTypeSuffix(
-            canonicalizeReviewMetadata((review.tagged_metadata as ReviewMetadata) || {})
-          )
-        );
-        const existingDecision = review.decision as string;
-        if (
-          existingDecision === 'approve_new' ||
-          existingDecision === 'approve_update' ||
-          existingDecision === 'needs_revision'
-        ) {
-          setDecision(existingDecision);
-        } else if (existingDecision) {
-          // Legacy values like 'reject' that the new UI doesn't expose. Surface
-          // it so the reviewer doesn't accidentally re-approve a previously
-          // rejected submission.
-          logger.warn(
-            'Loaded review with unsupported decision, falling back to default:',
-            existingDecision
-          );
-          setLegacyDecisionWarning(
-            `This submission was previously marked "${existingDecision}". That option is no longer available — choose a new decision below.`
-          );
-        }
-        setNotes(review.notes || '');
-      }
-
-      // Phase 8b: pre-select decision + target from submitter intent — but
-      // only when no existing review row. The block above already restored
-      // decision/notes/metadata from reviews?.[0] when present; pre-selecting
-      // here would clobber that restoration. (selectedDuplicate is not
-      // restored from a prior review — pre-existing limitation, out of 8b
-      // scope.)
-      if (!reviews || reviews.length === 0) {
-        const preselection = computePreselection({
-          submission_type: submissionData?.submission_type,
-          original_lesson_id: submissionData?.original_lesson_id,
-        });
-        setDecision(preselection.decision);
-        if (preselection.target) {
-          setSelectedDuplicate(preselection.target);
-        }
-
-        const draft = computeInitialMetadataFromAiDraft(submissionData.ai_draft_metadata);
-        if (draft) {
-          setMetadata(reAddActivityTypeSuffix(draft));
-        }
-      }
-    } catch (error) {
-      logger.error('Error loading submission:', parseDbError(error));
-    } finally {
-      setLoading(false);
+  // Seed the page's form state from the hook's computed restore-vs-preselect
+  // object. The hook holds `initialFormState` in its own state so the reference
+  // is stable across re-renders — this effect runs once per load. useLayoutEffect
+  // (not useEffect) applies the seed SYNCHRONOUSLY in the same commit the data
+  // arrives, so the form never paints a default-state frame before seeding —
+  // preserving the prior behavior where loadSubmission set decision/metadata in
+  // the same batch as the submission (no visible flash, no test-observable race
+  // between the seed and the first render with `submission` set).
+  useLayoutEffect(() => {
+    if (initialFormState) {
+      setMetadata(initialFormState.metadata);
+      setDecision(initialFormState.decision);
+      setNotes(initialFormState.notes);
+      setSelectedDuplicate(initialFormState.selectedDuplicate);
+      setLegacyDecisionWarning(initialFormState.legacyDecisionWarning);
     }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) loadSubmission();
-  }, [id, loadSubmission]);
+  }, [initialFormState]);
 
   useEffect(() => {
     // Pill groups don't expose individual aria-invalid targets, so focus the
@@ -437,8 +222,9 @@ export function ReviewDetail() {
   );
 
   // Phase 8b Task 3.6: derived plain values for the search escape hatch.
-  // Computed during render — not hooks. Read by the useEffect below to
-  // auto-expand the picker, and by the JSX to choose contextual help text.
+  // Computed during render — not hooks. Passed to the useSearchEscapeHatch
+  // hook below to auto-expand the picker, and read by the JSX to choose
+  // contextual help text.
   const needsSearch = submission?.submission_type === 'update' && !submission?.original_lesson_id;
   const noDups = candidateCards.length === 0;
   const searchHelpText = needsSearch
@@ -458,28 +244,18 @@ export function ReviewDetail() {
     searchPickedId: selectedSearchLesson?.lesson_id ?? null,
   });
 
-  // Reset the search picker when navigating to a different submission.
-  // Reset showSearch too so the auto-expand effect makes the open/closed
-  // decision fresh per submission rather than carrying manual-toggle state
-  // across navigation. Declared FIRST so its setShowSearch(false) lands
-  // before the auto-expand effect's setShowSearch(true) on navigation —
-  // React batches setState calls from effects in the same flush, last
-  // writer wins; we want auto-expand to be the last writer when its
-  // condition is met.
-  useEffect(() => {
-    setSelectedSearchLesson(null);
-    setShowSearch(false);
-  }, [submission?.id]);
-
-  // Auto-expand the search picker when the submitter couldn't find a target
-  // ((update, null)) or there are no candidate cards to choose from. One-
-  // directional: only opens, never closes — closing while the reviewer is
-  // mid-pick (candidateCards gains a Case-4 card → noDups flips false →
-  // setShowSearch(false)) was the round-1 bug. Manual close via the toggle
-  // button stays sticky because deps don't change on a user-initiated close.
-  useEffect(() => {
-    if (needsSearch || noDups) setShowSearch(true);
-  }, [needsSearch, noDups]);
+  // Search escape hatch: owns `showSearch` + the reset/auto-expand effects
+  // (declaration order + dep arrays preserved verbatim — risk 4: reset-first,
+  // one-directional auto-expand on [needsSearch, noDups], sticky manual close).
+  // `selectedSearchLesson` stays page-owned (buildCandidateCards reads it
+  // UPSTREAM of `noDups`); the hook only resets it via the passed setter. See
+  // useSearchEscapeHatch for the full effect-ordering rationale.
+  const { showSearch, setShowSearch } = useSearchEscapeHatch({
+    submissionId: submission?.id,
+    needsSearch,
+    noDups,
+    setSelectedSearchLesson,
+  });
 
   // parseExtractedContent is pure but a few hundred lines of regex; memoize once.
   const parsedContent = useMemo(
@@ -495,6 +271,30 @@ export function ReviewDetail() {
           <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-esy-ink-70)' }}>
             Loading submission…
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // R2-1: a submission_reviews fetch error BLOCKS here — must win over the
+  // not-found branch below (submission is null in the error case). Blocking
+  // means the review form never renders, so a transient DB blip can't route the
+  // reviewer to a fresh preselect that overwrites a prior review on save. Retry
+  // re-runs the load.
+  if (loadError) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <IntPageHeader
+            title="Couldn't load this review"
+            description={loadError}
+            back={{ label: 'Review queue', onClick: () => navigate('/review') }}
+            actions={
+              <IntButton variant="primary" onClick={() => reload()}>
+                Retry
+              </IntButton>
+            }
+          />
         </div>
       </div>
     );
@@ -518,21 +318,6 @@ export function ReviewDetail() {
   const submittedOn = submission.created_at
     ? new Date(submission.created_at).toLocaleDateString()
     : '';
-  const fieldError = (label: string) =>
-    validationErrors.includes(label) ? `Required.` : undefined;
-
-  // Single-select pill adapter: mode='single' lets IntPillGroup talk in arrays
-  // while we store a single value on metadata.
-  const singleProps = (
-    current: string | undefined,
-    onChange: (next: string | undefined) => void
-  ) => ({
-    mode: 'single' as const,
-    selected: current ? [current] : [],
-    onChange: (next: string[]) => onChange(next[0]),
-  });
-
-  const heritageOptions = flattenHeritageOptions(ALL_FIELD_CONFIGS.culturalHeritage);
 
   return (
     <div className="int-shell-root">
@@ -590,319 +375,17 @@ export function ReviewDetail() {
 
         <div className="adm-split adm-split--3col">
           {/* LEFT — metadata */}
-          <div>
-            <div className="adm-card">
-              <div className="adm-section-eyebrow">Metadata</div>
-              <p className="adm-section-desc">
-                Fix tags before publishing. Reviewer has the final call.
-              </p>
-              <IntProgressBar
-                filled={fieldProgress.completed}
-                total={fieldProgress.total}
-                ariaLabel="Required fields"
-              />
-
-              {legacyDecisionWarning && (
-                <div role="status" className="adm-hint adm-hint--error adm-alert--error">
-                  {legacyDecisionWarning}
-                </div>
-              )}
-
-              {validationErrors.length > 0 && (
-                <div
-                  ref={errorBannerRef}
-                  tabIndex={-1}
-                  role="alert"
-                  className="adm-hint adm-hint--error adm-alert--error"
-                >
-                  Missing required fields: {validationErrors.join(', ')}
-                </div>
-              )}
-
-              <div style={{ marginTop: 16 }}>
-                <IntFormField label="Activity type" required error={fieldError('Activity Type')}>
-                  <IntPillGroup
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.activityType)}
-                    selected={metadata.activityType ?? []}
-                    onChange={(v) => handleMetadataChange('activityType', v)}
-                    ariaLabel="Activity type"
-                  />
-                </IntFormField>
-
-                <IntFormField label="Location" required error={fieldError('Location')}>
-                  <IntPillGroup
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.location)}
-                    {...singleProps(metadata.location, (v) => handleMetadataChange('location', v))}
-                    ariaLabel="Location"
-                  />
-                </IntFormField>
-
-                <IntFormField label="Grades" required error={fieldError('Grade Levels')}>
-                  <IntPillGroup
-                    variant="green"
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.gradeLevels)}
-                    selected={metadata.gradeLevels ?? []}
-                    onChange={(next) => handleMetadataChange('gradeLevels', next)}
-                    ariaLabel="Grades"
-                  />
-                </IntFormField>
-
-                <IntFormField label="Seasons" required error={fieldError('Season & Timing')}>
-                  <IntPillGroup
-                    variant="green"
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.seasonTiming)}
-                    selected={metadata.season ?? []}
-                    onChange={(next) => handleMetadataChange('season', next)}
-                    ariaLabel="Seasons"
-                  />
-                </IntFormField>
-
-                <IntFormField label="Thematic" required error={fieldError('Thematic Categories')}>
-                  <IntPillGroup
-                    variant="green"
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.thematicCategories)}
-                    selected={metadata.themes ?? []}
-                    onChange={(next) => handleMetadataChange('themes', next)}
-                    ariaLabel="Thematic categories"
-                  />
-                </IntFormField>
-
-                <IntFormField label="Competencies" required error={fieldError('Core Competencies')}>
-                  <IntPillGroup
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.coreCompetencies)}
-                    selected={metadata.coreCompetencies ?? []}
-                    onChange={(next) => handleMetadataChange('coreCompetencies', next)}
-                    ariaLabel="Core competencies"
-                  />
-                </IntFormField>
-
-                <IntFormField
-                  label="Social-emotional learning"
-                  required
-                  error={fieldError('Social-Emotional Learning')}
-                >
-                  <IntPillGroup
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.socialEmotionalLearning)}
-                    selected={metadata.socialEmotionalLearning ?? []}
-                    onChange={(next) => handleMetadataChange('socialEmotionalLearning', next)}
-                    ariaLabel="Social-emotional learning"
-                  />
-                </IntFormField>
-
-                <IntFormField label="Academic">
-                  <IntPillGroup
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.academicIntegration)}
-                    selected={metadata.academicIntegration ?? []}
-                    onChange={(next) => handleMetadataChange('academicIntegration', next)}
-                    ariaLabel="Academic integration"
-                  />
-                </IntFormField>
-
-                <div className="adm-field">
-                  <label className="adm-label" htmlFor={inputIds.heritage}>
-                    Cultural heritage
-                  </label>
-                  <CreatableSelect
-                    inputId={inputIds.heritage}
-                    classNamePrefix="adm-rs"
-                    isMulti
-                    options={heritageOptions}
-                    value={(metadata.culturalHeritage ?? []).map(
-                      (v) => heritageOptions.find((o) => o.value === v) || { value: v, label: v }
-                    )}
-                    onChange={(next) =>
-                      handleMetadataChange('culturalHeritage', next ? next.map((o) => o.value) : [])
-                    }
-                  />
-                </div>
-              </div>
-
-              {showCookingFields && (
-                <div style={{ marginTop: 8 }}>
-                  <div className="adm-section-eyebrow" style={{ marginBottom: 8 }}>
-                    Cooking details
-                  </div>
-
-                  <IntFormField
-                    label="Cooking methods"
-                    required
-                    error={fieldError('Cooking Methods')}
-                  >
-                    <IntPillGroup
-                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.cookingMethods)}
-                      selected={metadata.cookingMethods ?? []}
-                      onChange={(next) => handleMetadataChange('cookingMethods', next)}
-                      ariaLabel="Cooking methods"
-                    />
-                  </IntFormField>
-
-                  <div className="adm-field">
-                    <label className="adm-label adm-label-req" htmlFor={inputIds.mainIngredients}>
-                      Main ingredients
-                    </label>
-                    {/* Non-creatable Select: mainIngredients is a closed C02 */}
-                    {/* canonical enum enforced by Zod + DB CHECK in C02. */}
-                    {/* CreatableSelect would invite reviewer-typed values */}
-                    {/* that the save path rejects. */}
-                    <Select
-                      inputId={inputIds.mainIngredients}
-                      classNamePrefix="adm-rs"
-                      isMulti
-                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.mainIngredients)}
-                      value={(metadata.mainIngredients ?? []).map((v) => ({
-                        value: v,
-                        label:
-                          ALL_FIELD_CONFIGS.mainIngredients.options.find((o) => o.value === v)
-                            ?.label || v,
-                      }))}
-                      onChange={(next) =>
-                        handleMetadataChange(
-                          'mainIngredients',
-                          next ? next.map((o) => o.value) : []
-                        )
-                      }
-                    />
-                    {fieldError('Main Ingredients') && (
-                      <p className="adm-hint adm-hint--error">Required.</p>
-                    )}
-                  </div>
-
-                  <div className="adm-field">
-                    <label className="adm-label adm-label-req" htmlFor={inputIds.cookingSkills}>
-                      Cooking skills
-                    </label>
-                    {/* Non-creatable Select: cookingSkills is a closed C02 */}
-                    {/* canonical enum enforced by Zod + DB CHECK in C02. */}
-                    {/* CreatableSelect would invite reviewer-typed values */}
-                    {/* that the save path rejects. */}
-                    <Select
-                      inputId={inputIds.cookingSkills}
-                      classNamePrefix="adm-rs"
-                      isMulti
-                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.cookingSkills)}
-                      value={(metadata.cookingSkills ?? []).map((v) => ({
-                        value: v,
-                        label:
-                          ALL_FIELD_CONFIGS.cookingSkills.options.find((o) => o.value === v)
-                            ?.label || v,
-                      }))}
-                      onChange={(next) =>
-                        handleMetadataChange('cookingSkills', next ? next.map((o) => o.value) : [])
-                      }
-                    />
-                    {fieldError('Cooking Skills') && (
-                      <p className="adm-hint adm-hint--error">Required.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {showGardenFields && (
-                <div style={{ marginTop: 8 }}>
-                  <div className="adm-section-eyebrow" style={{ marginBottom: 8 }}>
-                    Garden details
-                  </div>
-                  <div className="adm-field">
-                    <label className="adm-label adm-label-req" htmlFor={inputIds.gardenSkills}>
-                      Garden skills
-                    </label>
-                    {/* Non-creatable Select: gardenSkills is a closed enum (24 */}
-                    {/* canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
-                    {/* CreatableSelect would invite reviewer-typed values that */}
-                    {/* the save path rejects. */}
-                    <Select
-                      inputId={inputIds.gardenSkills}
-                      classNamePrefix="adm-rs"
-                      isMulti
-                      options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.gardenSkills)}
-                      value={(metadata.gardenSkills ?? []).map((v) => ({
-                        value: v,
-                        label:
-                          ALL_FIELD_CONFIGS.gardenSkills.options.find((o) => o.value === v)
-                            ?.label || v,
-                      }))}
-                      onChange={(next) =>
-                        handleMetadataChange('gardenSkills', next ? next.map((o) => o.value) : [])
-                      }
-                    />
-                    {fieldError('Garden Skills') && (
-                      <p className="adm-hint adm-hint--error">Required.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ marginTop: 8 }}>
-                <div className="adm-section-eyebrow" style={{ marginBottom: 8 }}>
-                  Additional
-                </div>
-
-                <div className="adm-field">
-                  <label className="adm-label" htmlFor={inputIds.observances}>
-                    Observances &amp; holidays
-                  </label>
-                  {/* Non-creatable Select: observancesHolidays is a closed enum */}
-                  {/* (16 canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
-                  {/* CreatableSelect would invite reviewer-typed values that */}
-                  {/* the save path rejects. */}
-                  <Select
-                    inputId={inputIds.observances}
-                    classNamePrefix="adm-rs"
-                    isMulti
-                    options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.observancesHolidays)}
-                    value={(metadata.observancesHolidays ?? []).map((v) => ({
-                      value: v,
-                      label: v,
-                    }))}
-                    onChange={(next) =>
-                      handleMetadataChange(
-                        'observancesHolidays',
-                        next ? next.map((o) => o.value) : []
-                      )
-                    }
-                  />
-                </div>
-
-                <div className="adm-field">
-                  <label className="adm-label" htmlFor={inputIds.culturalResponsiveness}>
-                    Cultural responsiveness features
-                  </label>
-                  {/* Non-creatable Select: CRF is a closed enum (7 Brown CR */}
-                  {/* master-list features) enforced by Zod + SQL CHECK in PR 1. */}
-                  {/* CreatableSelect would invite reviewer-typed values that */}
-                  {/* the save path silently rejects. */}
-                  <Select
-                    inputId={inputIds.culturalResponsiveness}
-                    classNamePrefix="adm-rs"
-                    isMulti
-                    options={selectOptionsFromConfig(
-                      ALL_FIELD_CONFIGS.culturalResponsivenessFeatures
-                    )}
-                    value={(metadata.culturalResponsivenessFeatures ?? []).map((v) => ({
-                      value: v,
-                      label: v,
-                    }))}
-                    onChange={(next) =>
-                      handleMetadataChange(
-                        'culturalResponsivenessFeatures',
-                        next ? next.map((o) => o.value) : []
-                      )
-                    }
-                  />
-                </div>
-
-                <IntFormField label="Processing notes" hint="Internal — not shown to teacher.">
-                  <textarea
-                    className="adm-textarea"
-                    rows={3}
-                    value={metadata.processingNotes || ''}
-                    onChange={(e) => handleMetadataChange('processingNotes', e.target.value)}
-                    placeholder="Internal notes about how this lesson was processed…"
-                  />
-                </IntFormField>
-              </div>
-            </div>
-          </div>
+          <ReviewMetadataForm
+            metadata={metadata}
+            onChange={handleMetadataChange}
+            inputIds={inputIds}
+            showCookingFields={showCookingFields}
+            showGardenFields={showGardenFields}
+            fieldProgress={fieldProgress}
+            validationErrors={validationErrors}
+            errorBannerRef={errorBannerRef}
+            legacyDecisionWarning={legacyDecisionWarning}
+          />
 
           {/* MIDDLE — document */}
           <ReviewDocPanel
@@ -913,206 +396,28 @@ export function ReviewDetail() {
           />
 
           {/* RIGHT — duplicates + decision */}
-          <div>
-            {/* Phase 8b: binding-intent banner. Rendered FIRST so the reviewer
-                reads what the submitter declared BEFORE the candidate cards,
-                mismatch warning, and search escape hatch — all of which
-                depend on or react to that declared intent. */}
-            <SubmitterIntentBanner
-              submissionType={submission.submission_type}
-              targetId={submission.original_lesson_id}
-              submitterTargetLesson={submission.submitterTargetLesson}
-              topDuplicates={topDuplicates}
-            />
-
-            {candidateCards.length > 0 && (
-              <div className="adm-card">
-                <div className="adm-section-eyebrow">
-                  {candidateCards[0]?.matchLabel === "Submitter's choice"
-                    ? 'Candidate matches'
-                    : 'Possible duplicates'}
-                </div>
-                <p className="adm-section-desc">
-                  Select one to merge into instead of publishing new.
-                </p>
-                <div className="adm-dup-list">
-                  {candidateCards.map((c) => (
-                    <IntDuplicateCard
-                      key={c.id}
-                      dup={{
-                        id: c.id,
-                        title: c.title,
-                        meta: c.meta,
-                        similarity: c.similarity,
-                        matchType: c.matchType,
-                        matchLabel: c.matchLabel,
-                      }}
-                      selected={selectedDuplicate === c.id}
-                      onSelect={() => {
-                        setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
-                        setSaveError(null);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Phase 8b Task 3.7: title-mismatch warning. Fires only when the
-                target was auto-picked (submitter-bound or dup-detector hit)
-                AND the target's title diverges from the submission's
-                extracted title (word-set Jaccard < 0.3). Suppressed for
-                reviewer manual picks via the search escape hatch. */}
-            <TitleMismatchWarning
-              showMismatch={showMismatch}
-              candidateCards={candidateCards}
-              selectedDuplicate={selectedDuplicate}
-              extractedTitle={submission.extracted_title}
-            />
-
-            {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
-                auto-expanded for (update, null) and zero-candidate cases. */}
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => setShowSearch((v) => !v)}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                {showSearch
-                  ? '− Hide library search'
-                  : '+ Search the library for a different lesson'}
-              </button>
-              {showSearch && (
-                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-2">{searchHelpText}</p>
-                  {/* Intentionally NOT passing excludeRetired so the
-                      reviewer can find retired competitors during dup-review
-                      escape-hatch search (e.g., "this submission is a
-                      re-import of retired Stone Soup"). Submitter flows
-                      (RevisingSubmissionForm) opt in via excludeRetired;
-                      reviewer flows leave the default false. */}
-                  <LessonSearchPicker
-                    selected={selectedSearchLesson}
-                    onSelect={(l) => {
-                      setSelectedSearchLesson(l);
-                      setSelectedDuplicate(l.lesson_id);
-                      setSaveError(null);
-                    }}
-                    onClear={() => {
-                      // Capture the cleared id BEFORE resetting state to avoid
-                      // a stale-read race between the two setters.
-                      const clearedId = selectedSearchLesson?.lesson_id ?? null;
-                      setSelectedSearchLesson(null);
-                      if (clearedId && selectedDuplicate === clearedId) {
-                        setSelectedDuplicate(null);
-                      }
-                    }}
-                    cantFindOption={false}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="adm-card">
-              <div className="adm-section-eyebrow">Decision</div>
-              <fieldset className="adm-radio-group" style={{ border: 0, padding: 0, margin: 0 }}>
-                <legend className="sr-only">Choose a decision</legend>
-                <label className="adm-radio">
-                  <input
-                    type="radio"
-                    name="decision"
-                    value="approve_new"
-                    checked={decision === 'approve_new'}
-                    onChange={() => {
-                      setDecision('approve_new');
-                      setSaveError(null);
-                    }}
-                  />
-                  Approve &amp; publish
-                </label>
-                <label className="adm-radio">
-                  <input
-                    type="radio"
-                    name="decision"
-                    value="approve_update"
-                    checked={decision === 'approve_update'}
-                    onChange={() => {
-                      setDecision('approve_update');
-                      setSaveError(null);
-                    }}
-                  />
-                  Merge into existing
-                </label>
-                <label className="adm-radio">
-                  <input
-                    type="radio"
-                    name="decision"
-                    value="needs_revision"
-                    checked={decision === 'needs_revision'}
-                    onChange={() => {
-                      setDecision('needs_revision');
-                      setSaveError(null);
-                    }}
-                  />
-                  Request revisions
-                </label>
-              </fieldset>
-            </div>
-
-            <div className="adm-card">
-              <div className="adm-section-eyebrow">
-                Note to {(submission.teacher.full_name || 'teacher').split(' ')[0]}
-              </div>
-              <textarea
-                className="adm-textarea"
-                rows={4}
-                value={notes}
-                onChange={(e) => {
-                  setNotes(e.target.value);
-                  setSaveError(null);
-                }}
-                placeholder="Optional. Will be emailed to the teacher along with the decision."
-              />
-            </div>
-
-            {saveError && (
-              <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
-                Save failed — nothing was written. {saveError}
-              </div>
-            )}
-
-            <IntDecisionBar
-              eyebrow="Metadata"
-              detail={`${fieldProgress.completed}/${fieldProgress.total} required filled`}
-            >
-              {decision === 'approve_new' && (
-                <IntButton variant="primary" size="lg" onClick={handleSaveReview} disabled={saving}>
-                  {saving ? 'Publishing…' : 'Publish lesson'}
-                </IntButton>
-              )}
-              {decision === 'approve_update' && (
-                <IntButton
-                  variant="ink"
-                  size="lg"
-                  onClick={handleSaveReview}
-                  disabled={saving || !selectedDuplicate}
-                >
-                  {saving ? 'Merging…' : 'Merge & archive'}
-                </IntButton>
-              )}
-              {decision === 'needs_revision' && (
-                <IntButton variant="ink" size="lg" onClick={handleSaveReview} disabled={saving}>
-                  {saving ? 'Sending…' : 'Send for revision'}
-                </IntButton>
-              )}
-            </IntDecisionBar>
-
-            {decision === 'approve_update' && !selectedDuplicate && (
-              <p className="text-sm text-gray-600 mt-2">
-                Pick a target lesson to merge into, or change to Approve as new.
-              </p>
-            )}
-          </div>
+          <ReviewDecisionPanel
+            submission={submission}
+            topDuplicates={topDuplicates}
+            candidateCards={candidateCards}
+            selectedDuplicate={selectedDuplicate}
+            setSelectedDuplicate={setSelectedDuplicate}
+            decision={decision}
+            setDecision={setDecision}
+            notes={notes}
+            setNotes={setNotes}
+            saveError={saveError}
+            setSaveError={setSaveError}
+            saving={saving}
+            onSave={handleSaveReview}
+            showMismatch={showMismatch}
+            fieldProgress={fieldProgress}
+            showSearch={showSearch}
+            setShowSearch={setShowSearch}
+            searchHelpText={searchHelpText}
+            selectedSearchLesson={selectedSearchLesson}
+            setSelectedSearchLesson={setSelectedSearchLesson}
+          />
         </div>
       </div>
     </div>
