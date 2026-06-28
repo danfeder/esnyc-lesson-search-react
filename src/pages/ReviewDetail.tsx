@@ -10,9 +10,7 @@ import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { STATUS_LABEL, STATUS_TO_BADGE } from '@/utils/submissionStatus';
 import { ReviewDocPanel } from '@/components/Review/ReviewDocPanel';
 import { ReviewMetadataForm } from '@/components/Review/ReviewMetadataForm';
-import { ReviewSearchPanel } from '@/components/Review/ReviewSearchPanel';
-import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
-import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
+import { ReviewDecisionPanel } from '@/components/Review/ReviewDecisionPanel';
 import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import { ZOD_FIELD_TO_LABEL, parseExtractedContent } from '@/pages/reviewDetailHelpers';
@@ -25,13 +23,7 @@ import {
   validateRequiredFields as computeRequiredFieldErrors,
   computeFieldProgress,
 } from '@/pages/reviewValidation';
-import {
-  IntButton,
-  IntDecisionBar,
-  IntDuplicateCard,
-  IntPageHeader,
-  IntStatusBadge,
-} from '@/components/Internal';
+import { IntButton, IntPageHeader, IntStatusBadge } from '@/components/Internal';
 
 // ReviewDecision + SubmissionDetail (and the load logic) live in
 // `@/pages/useReviewSubmission` (Wave 5 PR-1b Task 1b.1). ReviewDecision is
@@ -404,176 +396,28 @@ export function ReviewDetail() {
           />
 
           {/* RIGHT — duplicates + decision */}
-          <div>
-            {/* Phase 8b: binding-intent banner. Rendered FIRST so the reviewer
-                reads what the submitter declared BEFORE the candidate cards,
-                mismatch warning, and search escape hatch — all of which
-                depend on or react to that declared intent. */}
-            <SubmitterIntentBanner
-              submissionType={submission.submission_type}
-              targetId={submission.original_lesson_id}
-              submitterTargetLesson={submission.submitterTargetLesson}
-              topDuplicates={topDuplicates}
-            />
-
-            {candidateCards.length > 0 && (
-              <div className="adm-card">
-                <div className="adm-section-eyebrow">
-                  {candidateCards[0]?.matchLabel === "Submitter's choice"
-                    ? 'Candidate matches'
-                    : 'Possible duplicates'}
-                </div>
-                <p className="adm-section-desc">
-                  Select one to merge into instead of publishing new.
-                </p>
-                <div className="adm-dup-list">
-                  {candidateCards.map((c) => (
-                    <IntDuplicateCard
-                      key={c.id}
-                      dup={{
-                        id: c.id,
-                        title: c.title,
-                        meta: c.meta,
-                        similarity: c.similarity,
-                        matchType: c.matchType,
-                        matchLabel: c.matchLabel,
-                      }}
-                      selected={selectedDuplicate === c.id}
-                      onSelect={() => {
-                        setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
-                        setSaveError(null);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Phase 8b Task 3.7: title-mismatch warning. Fires only when the
-                target was auto-picked (submitter-bound or dup-detector hit)
-                AND the target's title diverges from the submission's
-                extracted title (word-set Jaccard < 0.3). Suppressed for
-                reviewer manual picks via the search escape hatch. */}
-            <TitleMismatchWarning
-              showMismatch={showMismatch}
-              candidateCards={candidateCards}
-              selectedDuplicate={selectedDuplicate}
-              extractedTitle={submission.extracted_title}
-            />
-
-            {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
-                auto-expanded for (update, null) and zero-candidate cases. */}
-            <ReviewSearchPanel
-              showSearch={showSearch}
-              onToggle={() => setShowSearch((v) => !v)}
-              searchHelpText={searchHelpText}
-              selectedSearchLesson={selectedSearchLesson}
-              setSelectedSearchLesson={setSelectedSearchLesson}
-              selectedDuplicate={selectedDuplicate}
-              setSelectedDuplicate={setSelectedDuplicate}
-              setSaveError={setSaveError}
-            />
-
-            <div className="adm-card">
-              <div className="adm-section-eyebrow">Decision</div>
-              <fieldset className="adm-radio-group" style={{ border: 0, padding: 0, margin: 0 }}>
-                <legend className="sr-only">Choose a decision</legend>
-                <label className="adm-radio">
-                  <input
-                    type="radio"
-                    name="decision"
-                    value="approve_new"
-                    checked={decision === 'approve_new'}
-                    onChange={() => {
-                      setDecision('approve_new');
-                      setSaveError(null);
-                    }}
-                  />
-                  Approve &amp; publish
-                </label>
-                <label className="adm-radio">
-                  <input
-                    type="radio"
-                    name="decision"
-                    value="approve_update"
-                    checked={decision === 'approve_update'}
-                    onChange={() => {
-                      setDecision('approve_update');
-                      setSaveError(null);
-                    }}
-                  />
-                  Merge into existing
-                </label>
-                <label className="adm-radio">
-                  <input
-                    type="radio"
-                    name="decision"
-                    value="needs_revision"
-                    checked={decision === 'needs_revision'}
-                    onChange={() => {
-                      setDecision('needs_revision');
-                      setSaveError(null);
-                    }}
-                  />
-                  Request revisions
-                </label>
-              </fieldset>
-            </div>
-
-            <div className="adm-card">
-              <div className="adm-section-eyebrow">
-                Note to {(submission.teacher.full_name || 'teacher').split(' ')[0]}
-              </div>
-              <textarea
-                className="adm-textarea"
-                rows={4}
-                value={notes}
-                onChange={(e) => {
-                  setNotes(e.target.value);
-                  setSaveError(null);
-                }}
-                placeholder="Optional. Will be emailed to the teacher along with the decision."
-              />
-            </div>
-
-            {saveError && (
-              <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
-                Save failed — nothing was written. {saveError}
-              </div>
-            )}
-
-            <IntDecisionBar
-              eyebrow="Metadata"
-              detail={`${fieldProgress.completed}/${fieldProgress.total} required filled`}
-            >
-              {decision === 'approve_new' && (
-                <IntButton variant="primary" size="lg" onClick={handleSaveReview} disabled={saving}>
-                  {saving ? 'Publishing…' : 'Publish lesson'}
-                </IntButton>
-              )}
-              {decision === 'approve_update' && (
-                <IntButton
-                  variant="ink"
-                  size="lg"
-                  onClick={handleSaveReview}
-                  disabled={saving || !selectedDuplicate}
-                >
-                  {saving ? 'Merging…' : 'Merge & archive'}
-                </IntButton>
-              )}
-              {decision === 'needs_revision' && (
-                <IntButton variant="ink" size="lg" onClick={handleSaveReview} disabled={saving}>
-                  {saving ? 'Sending…' : 'Send for revision'}
-                </IntButton>
-              )}
-            </IntDecisionBar>
-
-            {decision === 'approve_update' && !selectedDuplicate && (
-              <p className="text-sm text-gray-600 mt-2">
-                Pick a target lesson to merge into, or change to Approve as new.
-              </p>
-            )}
-          </div>
+          <ReviewDecisionPanel
+            submission={submission}
+            topDuplicates={topDuplicates}
+            candidateCards={candidateCards}
+            selectedDuplicate={selectedDuplicate}
+            setSelectedDuplicate={setSelectedDuplicate}
+            decision={decision}
+            setDecision={setDecision}
+            notes={notes}
+            setNotes={setNotes}
+            saveError={saveError}
+            setSaveError={setSaveError}
+            saving={saving}
+            onSave={handleSaveReview}
+            showMismatch={showMismatch}
+            fieldProgress={fieldProgress}
+            showSearch={showSearch}
+            setShowSearch={setShowSearch}
+            searchHelpText={searchHelpText}
+            selectedSearchLesson={selectedSearchLesson}
+            setSelectedSearchLesson={setSelectedSearchLesson}
+          />
         </div>
       </div>
     </div>
