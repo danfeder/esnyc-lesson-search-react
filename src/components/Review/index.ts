@@ -1,5 +1,6 @@
 export { GoogleDocEmbed } from './GoogleDocEmbed';
 export { ReviewDocPanel } from './ReviewDocPanel';
+export { ReviewSearchPanel } from './ReviewSearchPanel';
 export { SubmitterIntentBanner } from './SubmitterIntentBanner';
 export { TitleMismatchWarning } from './TitleMismatchWarning';
 export { ReviewActions } from './ReviewActions';

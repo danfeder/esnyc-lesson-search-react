@@ -12,9 +12,10 @@ import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE } from '@/utils/submissionStatus';
 import { ReviewDocPanel } from '@/components/Review/ReviewDocPanel';
+import { ReviewSearchPanel } from '@/components/Review/ReviewSearchPanel';
 import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
 import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
-import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
+import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import {
   ZOD_FIELD_TO_LABEL,
@@ -24,6 +25,7 @@ import {
 } from '@/pages/reviewDetailHelpers';
 import { buildCandidateCards } from '@/pages/buildCandidateCards';
 import { useReviewSubmission, type ReviewDecision } from '@/pages/useReviewSubmission';
+import { useSearchEscapeHatch } from '@/pages/useSearchEscapeHatch';
 import {
   showCookingFields as deriveShowCookingFields,
   showGardenFields as deriveShowGardenFields,
@@ -67,7 +69,6 @@ export function ReviewDetail() {
   // submitter couldn't. selectedSearchLesson must be declared BEFORE the
   // candidateCards useMemo (which reads it via deps).
   const [selectedSearchLesson, setSelectedSearchLesson] = useState<LessonSearchResult | null>(null);
-  const [showSearch, setShowSearch] = useState<boolean>(false);
 
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
 
@@ -239,8 +240,9 @@ export function ReviewDetail() {
   );
 
   // Phase 8b Task 3.6: derived plain values for the search escape hatch.
-  // Computed during render — not hooks. Read by the useEffect below to
-  // auto-expand the picker, and by the JSX to choose contextual help text.
+  // Computed during render — not hooks. Passed to the useSearchEscapeHatch
+  // hook below to auto-expand the picker, and read by the JSX to choose
+  // contextual help text.
   const needsSearch = submission?.submission_type === 'update' && !submission?.original_lesson_id;
   const noDups = candidateCards.length === 0;
   const searchHelpText = needsSearch
@@ -260,28 +262,18 @@ export function ReviewDetail() {
     searchPickedId: selectedSearchLesson?.lesson_id ?? null,
   });
 
-  // Reset the search picker when navigating to a different submission.
-  // Reset showSearch too so the auto-expand effect makes the open/closed
-  // decision fresh per submission rather than carrying manual-toggle state
-  // across navigation. Declared FIRST so its setShowSearch(false) lands
-  // before the auto-expand effect's setShowSearch(true) on navigation —
-  // React batches setState calls from effects in the same flush, last
-  // writer wins; we want auto-expand to be the last writer when its
-  // condition is met.
-  useEffect(() => {
-    setSelectedSearchLesson(null);
-    setShowSearch(false);
-  }, [submission?.id]);
-
-  // Auto-expand the search picker when the submitter couldn't find a target
-  // ((update, null)) or there are no candidate cards to choose from. One-
-  // directional: only opens, never closes — closing while the reviewer is
-  // mid-pick (candidateCards gains a Case-4 card → noDups flips false →
-  // setShowSearch(false)) was the round-1 bug. Manual close via the toggle
-  // button stays sticky because deps don't change on a user-initiated close.
-  useEffect(() => {
-    if (needsSearch || noDups) setShowSearch(true);
-  }, [needsSearch, noDups]);
+  // Search escape hatch: owns `showSearch` + the reset/auto-expand effects
+  // (declaration order + dep arrays preserved verbatim — risk 4: reset-first,
+  // one-directional auto-expand on [needsSearch, noDups], sticky manual close).
+  // `selectedSearchLesson` stays page-owned (buildCandidateCards reads it
+  // UPSTREAM of `noDups`); the hook only resets it via the passed setter. See
+  // useSearchEscapeHatch for the full effect-ordering rationale.
+  const { showSearch, setShowSearch } = useSearchEscapeHatch({
+    submissionId: submission?.id,
+    needsSearch,
+    noDups,
+    setSelectedSearchLesson,
+  });
 
   // parseExtractedContent is pure but a few hundred lines of regex; memoize once.
   const parsedContent = useMemo(
@@ -798,46 +790,16 @@ export function ReviewDetail() {
 
             {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
                 auto-expanded for (update, null) and zero-candidate cases. */}
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => setShowSearch((v) => !v)}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                {showSearch
-                  ? '− Hide library search'
-                  : '+ Search the library for a different lesson'}
-              </button>
-              {showSearch && (
-                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-2">{searchHelpText}</p>
-                  {/* Intentionally NOT passing excludeRetired so the
-                      reviewer can find retired competitors during dup-review
-                      escape-hatch search (e.g., "this submission is a
-                      re-import of retired Stone Soup"). Submitter flows
-                      (RevisingSubmissionForm) opt in via excludeRetired;
-                      reviewer flows leave the default false. */}
-                  <LessonSearchPicker
-                    selected={selectedSearchLesson}
-                    onSelect={(l) => {
-                      setSelectedSearchLesson(l);
-                      setSelectedDuplicate(l.lesson_id);
-                      setSaveError(null);
-                    }}
-                    onClear={() => {
-                      // Capture the cleared id BEFORE resetting state to avoid
-                      // a stale-read race between the two setters.
-                      const clearedId = selectedSearchLesson?.lesson_id ?? null;
-                      setSelectedSearchLesson(null);
-                      if (clearedId && selectedDuplicate === clearedId) {
-                        setSelectedDuplicate(null);
-                      }
-                    }}
-                    cantFindOption={false}
-                  />
-                </div>
-              )}
-            </div>
+            <ReviewSearchPanel
+              showSearch={showSearch}
+              onToggle={() => setShowSearch((v) => !v)}
+              searchHelpText={searchHelpText}
+              selectedSearchLesson={selectedSearchLesson}
+              setSelectedSearchLesson={setSelectedSearchLesson}
+              selectedDuplicate={selectedDuplicate}
+              setSelectedDuplicate={setSelectedDuplicate}
+              setSaveError={setSaveError}
+            />
 
             <div className="adm-card">
               <div className="adm-section-eyebrow">Decision</div>
