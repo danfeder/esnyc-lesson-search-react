@@ -6,14 +6,12 @@ import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
 import { logger } from '@/utils/logger';
-import { sanitizeContent } from '@/utils/sanitize';
-import { FEATURES } from '@/utils/featureFlags';
 import type { ReviewMetadata } from '@/types';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
 import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
-import { GoogleDocEmbed } from '@/components/Review/GoogleDocEmbed';
+import { ReviewDocPanel } from '@/components/Review/ReviewDocPanel';
 import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { titlesAreSimilar } from '@/utils/titleSimilarity';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
@@ -34,7 +32,6 @@ import {
 import {
   IntButton,
   IntDecisionBar,
-  IntDocFrame,
   IntDuplicateCard,
   IntFormField,
   IntPageHeader,
@@ -105,21 +102,6 @@ export function ReviewDetail() {
     observances: `${baseId}-observances`,
     culturalResponsiveness: `${baseId}-cultural-responsiveness`,
   };
-
-  const [viewMode, setViewMode] = useState<'embed' | 'text'>(() => {
-    if (!FEATURES.GOOGLE_DOC_EMBED) return 'text';
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return (window.localStorage.getItem('reviewViewMode') as 'embed' | 'text') || 'embed';
-    }
-    return 'embed';
-  });
-
-  const handleSetViewMode = useCallback((mode: 'embed' | 'text') => {
-    setViewMode(mode);
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('reviewViewMode', mode);
-    }
-  }, []);
 
   const showCookingFields = useMemo(() => {
     const types = metadata.activityType ?? [];
@@ -958,49 +940,12 @@ export function ReviewDetail() {
           </div>
 
           {/* MIDDLE — document */}
-          <div>
-            <IntDocFrame
-              fileName={`${headerTitle.toLowerCase().replace(/\s+/g, '-')}.gdoc`}
-              externalHref={submission.google_doc_url}
-              toggle={
-                FEATURES.GOOGLE_DOC_EMBED
-                  ? {
-                      options: [
-                        { value: 'embed', label: 'Doc' },
-                        { value: 'text', label: 'Text' },
-                      ],
-                      value: viewMode,
-                      onChange: (v) => handleSetViewMode(v as 'embed' | 'text'),
-                    }
-                  : undefined
-              }
-              padded={viewMode === 'text'}
-            >
-              {FEATURES.GOOGLE_DOC_EMBED && viewMode === 'embed' ? (
-                <GoogleDocEmbed
-                  docId={submission.google_doc_id}
-                  docUrl={submission.google_doc_url}
-                  height="calc(100vh - 18rem)"
-                  fallbackToText={() => handleSetViewMode('text')}
-                  onError={(error) => {
-                    logger.error('Google Doc embed error:', error.message);
-                  }}
-                />
-              ) : (
-                <pre
-                  style={{
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'var(--esy-font-body)',
-                    fontSize: 14,
-                    color: 'var(--color-esy-ink)',
-                    margin: 0,
-                  }}
-                >
-                  {sanitizeContent(submission.extracted_content)}
-                </pre>
-              )}
-            </IntDocFrame>
-          </div>
+          <ReviewDocPanel
+            headerTitle={headerTitle}
+            googleDocUrl={submission.google_doc_url}
+            googleDocId={submission.google_doc_id}
+            extractedContent={submission.extracted_content}
+          />
 
           {/* RIGHT — duplicates + decision */}
           <div>
