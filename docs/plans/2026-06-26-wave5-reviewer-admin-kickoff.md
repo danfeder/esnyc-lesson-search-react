@@ -240,16 +240,20 @@ If it were ever missing, recreate it from the template at the bottom of the stat
 Read this prompt → read design doc → read implementation plan from current task → read status file →
 `npm run check` → tell me where you are and what's next. Don't start coding until I confirm.
 
-**Design-lock is DONE (Session 1, commit `61ae519`); the design doc Status line reads "LOCKED".**
-We are now in **PR-0 execution** — building the ReviewDetail safety net (the gate that unblocks all
-decomposition). Wave 5 is re-scoped to **PR 0–2 only** (test net → decompose → C107); PR 3–6+ deferred.
-Work the impl plan's **PR-0 tasks 0.1 → 0.2 → 0.3** in order (table-aware supabase mock + fixtures →
-page-level RTL characterization test → pure-helper unit suites). All design Qs are resolved (Q1 = split
-PR-1 into 1a/1b; Q2/Q3/Q4/Q8 evidence-locked; Q5/Q6/Q7/Q9 deferred with the personalization/admin
-tracks). Dispatch executors task-by-task (TDD/characterization), supervisor-verify each, checkpoint the
-status doc after each. **Branch (chosen 2026-06-26, "carry docs forward"):** PR-0 work lands on
-`test/wave5-reviewdetail-safety-net`, cut from `chore/wave5-scaffold` so the 2 scaffold doc commits ride
-inside PR-0's PR. Read the impl plan's PR-0 tasks (esp. the dual-shape mock, the `tagged_metadata`
-fixture columns, and the 9 page behaviors + 4-state banner coverage) before dispatching.
+**Design-lock DONE (`61ae519`) and ✅ PR-0 SHIPPED to main** (squash `3258365`, #552, 2026-06-27) — the
+page-level RTL safety net (16 behaviors + 23 helper units, zero production-logic change) merged; the
+decomposition gate is satisfied. Wave 5 is re-scoped to **PR 0–2 only** (test net → decompose → C107);
+PR 3–6+ deferred. **We are now starting PR-1a (easy decomposition seams).** First: confirm the
+execution-status doc's "Current task / NEXT" block, then **cut `refactor/wave5-reviewdetail-easy-seams`
+from main** and make its FIRST commit the uncommitted status-doc + this-kickoff edit carried over from
+PR-0's merge (direct main commits are forbidden; carry-docs-forward continues), plus the PR-1a-cycle
+session-log archival (ritual step 5). Then execute impl-plan **PR-1a Tasks 1a.1 → 1a.5** (relocate pure
+helpers → `reviewDetailHelpers.ts`; extract `buildCandidateCards()` **with its mandatory test-first
+4-case unit test**; `<ReviewDocPanel>`; `<SubmitterIntentBanner>`+`<TitleMismatchWarning>`;
+`reviewValidation.ts`). **No behavior change — the PR-0 page test (`review-detail-page`) must stay green
+after EACH extraction.** Honor the two carried reminders (1a.2 TDD 4-case; keep `parseExtractedContent`
+distinct from `ReviewDashboard`'s private same-named helper). The **R2-1 latent data-integrity bug**
+(load-path fetches drop `error` → silent review overwrite; pinned by test 12) rides into **PR-1b**, not
+PR-1a. Dispatch executors task-by-task, supervisor-verify each, checkpoint the status doc after each.
 
 <!-- ===== END OF KICKOFF BODY ===== -->
