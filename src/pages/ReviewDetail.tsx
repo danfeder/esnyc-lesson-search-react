@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useId, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -10,26 +10,20 @@ import type { ReviewMetadata } from '@/types';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
-import { STATUS_LABEL, STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
+import { STATUS_LABEL, STATUS_TO_BADGE } from '@/utils/submissionStatus';
 import { ReviewDocPanel } from '@/components/Review/ReviewDocPanel';
 import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
 import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
 import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
-import { computePreselection } from '@/pages/reviewPreselect';
-import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
 import {
   ZOD_FIELD_TO_LABEL,
-  reAddActivityTypeSuffix,
   parseExtractedContent,
   selectOptionsFromConfig,
   flattenHeritageOptions,
 } from '@/pages/reviewDetailHelpers';
-import {
-  buildCandidateCards,
-  type SimilarityWithLesson,
-  type SubmitterTargetLesson,
-} from '@/pages/buildCandidateCards';
+import { buildCandidateCards } from '@/pages/buildCandidateCards';
+import { useReviewSubmission, type ReviewDecision } from '@/pages/useReviewSubmission';
 import {
   showCookingFields as deriveShowCookingFields,
   showGardenFields as deriveShowGardenFields,
@@ -47,39 +41,19 @@ import {
   IntStatusBadge,
 } from '@/components/Internal';
 
-// As of Phase 4 (complete-review edge function + complete_review_atomic
-// RPC), the DB-side CHECK on lesson_submissions.status accepts 'rejected'
-// too. The UI here still only renders three decisions — Phase 8a will add
-// the reject radio. The four-decision union is reserved for that flip.
-type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
-
-// SimilarityWithLesson + SubmitterTargetLesson moved to
-// `@/pages/buildCandidateCards` (Wave 5 PR-1a Task 1a.2) and imported back
-// above, so the pure card builder can co-locate the types it owns without a
-// circular dependency on this page.
-interface SubmissionDetail {
-  id: string;
-  created_at: string;
-  google_doc_url: string;
-  google_doc_id: string;
-  submission_type: 'new' | 'update';
-  original_lesson_id?: string;
-  status: SubmissionStatus;
-  extracted_content: string;
-  extracted_title?: string;
-  content_hash: string;
-  content_embedding?: string;
-  teacher: { email: string; full_name?: string };
-  similarities?: SimilarityWithLesson[];
-  submitterTargetLesson?: SubmitterTargetLesson | null;
-  review?: { metadata: ReviewMetadata; decision: string; notes: string };
-}
+// ReviewDecision + SubmissionDetail (and the load logic) live in
+// `@/pages/useReviewSubmission` (Wave 5 PR-1b Task 1b.1). ReviewDecision is
+// imported back above for the page's `decision` form state. SimilarityWithLesson
+// + SubmitterTargetLesson live in `@/pages/buildCandidateCards` (PR-1a Task 1a.2).
 
 export function ReviewDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Data load + the computed restore-vs-preselect seed live in the
+  // useReviewSubmission hook (Wave 5 PR-1b Task 1b.1). The hook owns
+  // submission/loading/loadError + the seed; the page keeps its own form state
+  // and applies the seed via one effect below.
+  const { submission, loading, loadError, initialFormState, reload } = useReviewSubmission(id);
   const [saving, setSaving] = useState(false);
   const [metadata, setMetadata] = useState<ReviewMetadata>({});
   const [decision, setDecision] = useState<ReviewDecision>('approve_new');
@@ -124,195 +98,23 @@ export function ReviewDetail() {
 
   const fieldProgress = useMemo(() => computeFieldProgress(metadata), [metadata]);
 
-  const loadSubmission = useCallback(async () => {
-    try {
-      const { data: submissionData, error: submissionError } = await supabase
-        .from('lesson_submissions')
-        .select('*, content_embedding')
-        .eq('id', id!)
-        .single();
-
-      if (submissionError) throw submissionError;
-      if (!submissionData) {
-        logger.error('No submission found with id:', id);
-        setLoading(false);
-        return;
-      }
-
-      const { data: similarities } = await supabase
-        .from('submission_similarities')
-        .select('*')
-        .eq('submission_id', id!)
-        .order('combined_score', { ascending: false });
-
-      let similaritiesWithLessons: SimilarityWithLesson[] = [];
-      if (similarities && similarities.length > 0) {
-        const lessonIds = similarities.map((s) => s.lesson_id);
-        const { data: lessons, error: lessonsError } = await supabase
-          .from('lessons_with_metadata')
-          .select('lesson_id, title, grade_levels, thematic_categories')
-          .in('lesson_id', lessonIds);
-
-        if (lessonsError) {
-          logger.error('Error fetching similar lessons:', lessonsError);
-        }
-
-        if (lessons) {
-          similaritiesWithLessons = similarities.map((sim) => {
-            const lesson = lessons.find((l) => l.lesson_id === sim.lesson_id);
-            return {
-              ...sim,
-              lesson: lesson || { title: 'Unknown', grade_levels: [], thematic_categories: [] },
-            };
-          });
-        }
-      }
-
-      // Phase 8b: if submitter bound to a lesson that's NOT in the rendered
-      // top-5 dup cards, fetch it separately so the unified card list can
-      // render it as "Submitter's choice." CRITICAL: check against the
-      // SLICED top-5 (not the full similarities array) — the render path
-      // uses topDuplicates = submission.similarities.slice(0, 5), so a
-      // submitter target sitting at rank 6+ of dup detection is not
-      // visible in the cards UI and needs the same off-list treatment.
-      const submitterTargetId = submissionData?.original_lesson_id ?? null;
-      const renderedTopFive = similaritiesWithLessons.slice(0, 5);
-      const targetInRenderedTopFive = submitterTargetId
-        ? renderedTopFive.some((s) => s.lesson_id === submitterTargetId)
-        : false;
-      let submitterTargetLesson: SubmitterTargetLesson | null = null;
-      if (submitterTargetId && !targetInRenderedTopFive) {
-        const { data: targetData, error: targetErr } = await supabase
-          .from('lessons_with_metadata')
-          .select('lesson_id, title, summary, file_link, grade_levels, thematic_categories')
-          .eq('lesson_id', submitterTargetId)
-          .single();
-        if (targetErr) {
-          logger.error('Failed to fetch off-list submitter target:', targetErr);
-        }
-        // Coalesce nullable view fields. lessons_with_metadata is typed
-        // with nullable lesson_id and title (Supabase view nullability)
-        // — guard before constructing the SubmitterTargetLesson which
-        // requires both.
-        if (!targetErr && targetData && targetData.lesson_id && targetData.title) {
-          submitterTargetLesson = {
-            lesson_id: targetData.lesson_id,
-            title: targetData.title,
-            summary: targetData.summary,
-            file_link: targetData.file_link,
-            grade_levels: targetData.grade_levels,
-            thematic_categories: targetData.thematic_categories,
-          };
-        }
-      }
-
-      const { data: reviews } = await supabase
-        .from('submission_reviews')
-        .select('*')
-        .eq('submission_id', id!)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .eq('id', submissionData.teacher_id)
-        .single();
-
-      const fullSubmission: SubmissionDetail = {
-        ...submissionData,
-        created_at: submissionData.created_at || '',
-        status: ((submissionData.status as SubmissionStatus) || 'submitted') as SubmissionStatus,
-        extracted_content: submissionData.extracted_content || '',
-        extracted_title: submissionData.extracted_title ?? undefined,
-        content_hash: submissionData.content_hash || '',
-        submission_type: (submissionData.submission_type || 'new') as 'new' | 'update',
-        original_lesson_id: submissionData.original_lesson_id ?? undefined,
-        content_embedding: submissionData.content_embedding ?? undefined,
-        similarities: similaritiesWithLessons,
-        submitterTargetLesson,
-        review: reviews?.[0]
-          ? {
-              metadata: (reviews[0].tagged_metadata as ReviewMetadata) || {},
-              decision: reviews[0].decision || '',
-              notes: reviews[0].notes || '',
-            }
-          : undefined,
-        teacher: {
-          email: 'teacher@example.com',
-          full_name: profile?.full_name || 'Unknown Teacher',
-        },
-      };
-
-      setSubmission(fullSubmission);
-
-      if (reviews && reviews.length > 0) {
-        const review = reviews[0];
-        // PR 6e E2c: legacy `tagged_metadata` rows (113 PROD, all approve_new)
-        // store pre-canonical SLUG forms for the 6 small-vocab fields. After
-        // E2b closed `reviewFormPayloadSchema`, reopening one without
-        // canonicalizing would render the legacy selections deselected AND
-        // reject re-save. Canonicalize the 6 vocab fields here, then let
-        // reAddActivityTypeSuffix handle activityType (disjoint fields). No
-        // DB write — the forensic rows stay legacy on disk.
-        setMetadata(
-          reAddActivityTypeSuffix(
-            canonicalizeReviewMetadata((review.tagged_metadata as ReviewMetadata) || {})
-          )
-        );
-        const existingDecision = review.decision as string;
-        if (
-          existingDecision === 'approve_new' ||
-          existingDecision === 'approve_update' ||
-          existingDecision === 'needs_revision'
-        ) {
-          setDecision(existingDecision);
-        } else if (existingDecision) {
-          // Legacy values like 'reject' that the new UI doesn't expose. Surface
-          // it so the reviewer doesn't accidentally re-approve a previously
-          // rejected submission.
-          logger.warn(
-            'Loaded review with unsupported decision, falling back to default:',
-            existingDecision
-          );
-          setLegacyDecisionWarning(
-            `This submission was previously marked "${existingDecision}". That option is no longer available — choose a new decision below.`
-          );
-        }
-        setNotes(review.notes || '');
-      }
-
-      // Phase 8b: pre-select decision + target from submitter intent — but
-      // only when no existing review row. The block above already restored
-      // decision/notes/metadata from reviews?.[0] when present; pre-selecting
-      // here would clobber that restoration. (selectedDuplicate is not
-      // restored from a prior review — pre-existing limitation, out of 8b
-      // scope.)
-      if (!reviews || reviews.length === 0) {
-        const preselection = computePreselection({
-          submission_type: submissionData?.submission_type,
-          original_lesson_id: submissionData?.original_lesson_id,
-        });
-        setDecision(preselection.decision);
-        if (preselection.target) {
-          setSelectedDuplicate(preselection.target);
-        }
-
-        const draft = computeInitialMetadataFromAiDraft(submissionData.ai_draft_metadata);
-        if (draft) {
-          setMetadata(reAddActivityTypeSuffix(draft));
-        }
-      }
-    } catch (error) {
-      logger.error('Error loading submission:', parseDbError(error));
-    } finally {
-      setLoading(false);
+  // Seed the page's form state from the hook's computed restore-vs-preselect
+  // object. The hook holds `initialFormState` in its own state so the reference
+  // is stable across re-renders — this effect runs once per load. useLayoutEffect
+  // (not useEffect) applies the seed SYNCHRONOUSLY in the same commit the data
+  // arrives, so the form never paints a default-state frame before seeding —
+  // preserving the prior behavior where loadSubmission set decision/metadata in
+  // the same batch as the submission (no visible flash, no test-observable race
+  // between the seed and the first render with `submission` set).
+  useLayoutEffect(() => {
+    if (initialFormState) {
+      setMetadata(initialFormState.metadata);
+      setDecision(initialFormState.decision);
+      setNotes(initialFormState.notes);
+      setSelectedDuplicate(initialFormState.selectedDuplicate);
+      setLegacyDecisionWarning(initialFormState.legacyDecisionWarning);
     }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) loadSubmission();
-  }, [id, loadSubmission]);
+  }, [initialFormState]);
 
   useEffect(() => {
     // Pill groups don't expose individual aria-invalid targets, so focus the
@@ -495,6 +297,30 @@ export function ReviewDetail() {
           <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-esy-ink-70)' }}>
             Loading submission…
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // R2-1: a submission_reviews fetch error BLOCKS here — must win over the
+  // not-found branch below (submission is null in the error case). Blocking
+  // means the review form never renders, so a transient DB blip can't route the
+  // reviewer to a fresh preselect that overwrites a prior review on save. Retry
+  // re-runs the load.
+  if (loadError) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <IntPageHeader
+            title="Couldn't load this review"
+            description={loadError}
+            back={{ label: 'Review queue', onClick: () => navigate('/review') }}
+            actions={
+              <IntButton variant="primary" onClick={() => reload()}>
+                Retry
+              </IntButton>
+            }
+          />
         </div>
       </div>
     );

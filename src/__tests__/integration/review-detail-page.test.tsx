@@ -332,32 +332,34 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(opts.body.submissionId).toBe('sub-preselect');
   });
 
-  // [reviews-error path; F3] — a DB error on the submission_reviews fetch degrades
-  // SILENTLY to a fresh preselect. ReviewDetail destructures the reviews fetch as
+  // [reviews-error path; R2-1 fix] — a DB error on the submission_reviews fetch now
+  // BLOCKS with a load-error screen instead of silently falling through to a fresh
+  // preselect. Previously the reviews fetch was destructured as
   // `const { data: reviews } = …` WITHOUT capturing `error`; supabase-js resolves a
-  // DB error as `{ data: null, error }` (it does NOT reject), so `reviews` is null →
-  // the restore block is SKIPPED and the preselect block RUNS, and loadSubmission's
-  // try/catch never sees the error. This pins the CURRENT no-throw behavior: if
-  // PR-1b's hook extraction ever makes a reviews DB error THROW instead, the
-  // radios-present + preselect-ran pair below must FAIL.
-  it('12. reviews-error: a submission_reviews DB error silently falls through to preselect (no crash)', async () => {
+  // DB error as `{ data: null, error }` (it does NOT reject), so `reviews` was null →
+  // the restore block was SKIPPED and the preselect block RAN, and a later Save could
+  // silently overwrite a prior review via complete_review_atomic's ON CONFLICT. The
+  // R2-1 fix (PR-1b, useReviewSubmission) captures that error and surfaces a blocking
+  // load-error screen so the form never renders and no save/overwrite is possible.
+  // (similarities/profile fetch errors still degrade gracefully — only the
+  // submission_reviews error blocks.)
+  it('12. reviews-error: a submission_reviews DB error blocks with a load-error screen (no silent overwrite)', async () => {
     renderReview(reviewsErrorPreselectFixture, 'sub-reviewserror');
 
-    // No error-boundary fallback: the three decision radios rendered → the reviews
-    // error did NOT crash or throw out of loadSubmission.
-    expect(await screen.findAllByRole('radio')).toHaveLength(3);
+    // The blocking load-error screen renders with its explanatory copy.
+    expect(
+      await screen.findByText(/couldn.t load this submission.s existing review/i)
+    ).toBeInTheDocument();
 
-    // The preselect ran DESPITE the error: computePreselection set approve_update
-    // for the update path (NOT a restored decision — there is no usable review row).
-    expect(screen.getByRole('radio', { name: /merge into existing/i })).toBeChecked();
+    // The form did NOT render → no decision radios at all (the save surface is
+    // unreachable, so no overwrite is possible).
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
 
-    // The non-null preselect target seeded selectedDuplicate → its in-list dup card
-    // renders SELECTED (same observable as test 10), proving the preselect branch
-    // fully ran on the error path.
-    expect(screen.getByRole('button', { name: /reviews error target lesson/i })).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
+    // The preselect did NOT run → the reviews-error target dup card is absent (the
+    // old silent-preselect behavior selected it; now it must not exist at all).
+    expect(
+      screen.queryByRole('button', { name: /reviews error target lesson/i })
+    ).not.toBeInTheDocument();
   });
 });
 
