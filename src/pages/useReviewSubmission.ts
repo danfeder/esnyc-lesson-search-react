@@ -318,5 +318,18 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
     if (id) loadSubmission();
   }, [id, loadSubmission]);
 
-  return { submission, loading, loadError, initialFormState, reload: loadSubmission };
+  // Retry from the load-error screen. Reset `loading` first so the reviewer
+  // sees the spinner — NOT a "Submission not found" flash (submission is null
+  // after a blocked reviews-error load) nor a stale prior submission's form
+  // (when navigation set loadError while an earlier submission was still in
+  // state) — while the refetch is in flight. The R2-1 blocker must not appear
+  // to lift until the retry actually resolves. The id-triggered load path
+  // above is deliberately left calling loadSubmission directly (preserves the
+  // pre-existing navigation loading behavior — no spinner on id change).
+  const reload = useCallback(() => {
+    setLoading(true);
+    loadSubmission();
+  }, [loadSubmission]);
+
+  return { submission, loading, loadError, initialFormState, reload };
 }
