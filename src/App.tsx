@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from '@/components/Common/ErrorBoundary';
@@ -81,6 +81,17 @@ const queryClient = new QueryClient({
   },
 });
 
+// Module scope (NOT nested in AppContent) so this component keeps a stable
+// identity across AppContent re-renders (e.g. useLessonStats updates). The
+// `key={id}` forces ReviewDetail to REMOUNT when the `/review/:id` param changes,
+// clearing any stale loadError / form state when navigating review-to-review
+// (R2-NEW-1). A nested wrapper would get a fresh identity every parent render and
+// remount ReviewDetail constantly — a regression that defeats the fix.
+function ReviewDetailRoute() {
+  const { id } = useParams();
+  return <ReviewDetail key={id} />;
+}
+
 function AppContent() {
   const { totalLessons, totalCategories } = useLessonStats();
 
@@ -113,7 +124,7 @@ function AppContent() {
                   element={
                     <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
                       <ReviewErrorBoundary>
-                        <ReviewDetail />
+                        <ReviewDetailRoute />
                       </ReviewErrorBoundary>
                     </ProtectedRoute>
                   }
