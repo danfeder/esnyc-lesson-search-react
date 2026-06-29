@@ -103,6 +103,9 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // Three decision radios; the restored decision (approve_new) is checked.
     expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeChecked();
+
+    // N5 (a11y): the note-to-teacher textarea has a programmatic label.
+    expect(screen.getByLabelText(/note to teacher/i).tagName).toBe('TEXTAREA');
   });
 
   // [risks 3, 5] — legacy regime: scalar activityType + legacy reject decision.

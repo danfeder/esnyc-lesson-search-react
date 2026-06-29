@@ -225,6 +225,7 @@ export function ReviewDecisionPanel({
         </div>
         <textarea
           className="adm-textarea"
+          aria-label="Note to teacher"
           rows={4}
           value={notes}
           onChange={(e) => {
