@@ -741,6 +741,90 @@
         "description": ">=5/10 top-10 about kimchi/Korean/fermentation (title/summary ILIKE 'kimchi' OR cultural_heritage Korean OR fermentation).",
         "sql": "title ILIKE '%kimchi%' OR summary ILIKE '%kimchi%' OR title ILIKE '%ferment%' OR summary ILIKE '%ferment%' OR EXISTS(SELECT 1 FROM unnest(cultural_heritage) ch WHERE ch ILIKE '%korean%')"
       }
+    },
+    {
+      "id": "q36",
+      "query": "food waste decay",
+      "intent": "3-term flood probe (C41): 'food waste decay' must collapse from the flat-OR flood to a tight compost/decomposition set; broad 'food' stops dominating.",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q36. Predicate: >=7/10 top-10 about compost/decomposition/food-waste. C41 multi-term flood probe (design section 5); user-confirmed 2026-06-29.",
+      "provenanceNote": "predicate. C41 multi-term probe - reads red on the flat-OR before-baseline by design; maxTotalCount 100 is the post-C41 flood-collapse target (cushion above the tightest single term decay~60; tunable once after-numbers land).",
+      "scoring": "predicate",
+      "maxTotalCount": 100,
+      "predicate": {
+        "description": ">=7/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+      }
+    },
+    {
+      "id": "q37",
+      "query": "food scraps decomposition",
+      "intent": "3-term + decay->decomposition synonym (C41): tight on-topic set; no 'food' flood.",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q37. Predicate: >=7/10 top-10 about compost/decomposition/food-waste. C41 multi-term flood probe (design section 5); user-confirmed 2026-06-29.",
+      "provenanceNote": "predicate. C41 multi-term probe - reads red on the flat-OR before-baseline by design; maxTotalCount 100 is the post-C41 flood-collapse target (cushion above the tightest single term decomposition~59; tunable once after-numbers land).",
+      "scoring": "predicate",
+      "maxTotalCount": 100,
+      "predicate": {
+        "description": ">=7/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+      }
+    },
+    {
+      "id": "q38",
+      "query": "worm compost food waste",
+      "intent": "4-term vermicomposting (C41): stays tight across worm/compost/food/waste.",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q38. Predicate: >=7/10 top-10 about worm/vermicompost/compost/food-waste. C41 multi-term flood probe (design section 5); user-confirmed 2026-06-29.",
+      "provenanceNote": "predicate. C41 multi-term probe - reads red on the flat-OR before-baseline by design; maxTotalCount 90 is the post-C41 target (worm-composting intersection is tight; tunable once after-numbers land).",
+      "scoring": "predicate",
+      "maxTotalCount": 90,
+      "predicate": {
+        "description": ">=7/10 top-10 about worm/vermicompost/compost/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl|worm|vermicompost').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%' OR title ILIKE '%worm%' OR summary ILIKE '%worm%' OR title ILIKE '%vermicompost%' OR summary ILIKE '%vermicompost%'"
+      }
+    },
+    {
+      "id": "q39",
+      "query": "decay food waste",
+      "intent": "synonym-survival (C41): the proven decay lift survives inside the AND while broad 'food' stops flooding.",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q39. Predicate: >=7/10 top-10 about compost/decomposition/food-waste. C41 synonym-survival probe (design section 5); user-confirmed 2026-06-29.",
+      "provenanceNote": "predicate. C41 synonym-survival probe - reads red on the flat-OR before-baseline by design; maxTotalCount 100 post-C41 target (decay~60; tunable once after-numbers land).",
+      "scoring": "predicate",
+      "maxTotalCount": 100,
+      "predicate": {
+        "description": ">=7/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+      }
+    },
+    {
+      "id": "q40",
+      "query": "decompasition food waste",
+      "intent": "typo recall-cliff canary (C41): does 'decompasition' still reach decomposition when AND'd with food waste? Lenient bar; an unmet bar is evidence for the contingent two-pass relax (PR D).",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q40. Predicate: >=4/10 (lenient) top-10 about compost/decomposition/food-waste. C41 typo recall-cliff canary (design section 5); user-confirmed 2026-06-29.",
+      "provenanceNote": "predicate. C41 typo recall-cliff CANARY - lenient >=4/10 bar; reads red on the before-baseline; if unmet after C41 it is the trigger to consider PR D (two-pass relax). maxTotalCount 100 (tunable once after-numbers land).",
+      "scoring": "predicate",
+      "maxTotalCount": 100,
+      "predicate": {
+        "description": ">=4/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl'). Lenient: typo recall-cliff canary.",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+      }
+    },
+    {
+      "id": "q41",
+      "query": "decay of food",
+      "intent": "stop-word-middle (C41): the FTS stop word 'of' survives parseSearchQuery (not in its FILLER list) but must be dropped at the SQL layer (numnode=0); the two real terms decay+food AND correctly. Also exercises the broad 'food' flood.",
+      "category": "G1",
+      "provenance": "gold-provenance.md PREDICATE q41. Predicate: >=6/10 top-10 about compost/decomposition/food-waste. C41 stop-word-middle probe (design section 5); user-confirmed 2026-06-29 (revised from 'compost for the garden' after GATE-3 found parseSearchQuery strips for/the before SQL).",
+      "provenanceNote": "predicate. C41 stop-word-middle probe - the FTS stop word 'of' reaches SQL and must be dropped via numnode=0; reads red on the flat-OR before-baseline by design; maxTotalCount 100 post-C41 target (decay~60; tunable once after-numbers land).",
+      "scoring": "predicate",
+      "maxTotalCount": 100,
+      "predicate": {
+        "description": ">=6/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+      }
     }
   ]
 }

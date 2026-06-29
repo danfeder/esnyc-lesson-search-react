@@ -168,6 +168,12 @@ Measurement set = same as q10 RDM isolation set.
 - q28 `mexican food` — predicate: ≥6/10 top-10 carry Mexican/Latin American `cultural_heritage` OR a Mexican-dish title; maxTotalCount guard. (cuisine/culture coverage.)
 - q29 `apple` — predicate control: ≥6/10 top-10 apple (title/summary/main_ingredients ILIKE 'apple'); maxTotalCount sanity.
 - q30 `food waste` — predicate: ≥6/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').
+- q36 `food waste decay` - predicate: >=7/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl'). maxTotalCount=100 (post-C41 flood-collapse target). C41 multi-term probe; user-confirmed 2026-06-29.
+- q37 `food scraps decomposition` - predicate: >=7/10 top-10 about compost/decomposition/food-waste. maxTotalCount=100. C41 multi-term probe; user-confirmed 2026-06-29.
+- q38 `worm compost food waste` - predicate: >=7/10 top-10 about worm/vermicompost/compost/food-waste. maxTotalCount=90. C41 multi-term probe; user-confirmed 2026-06-29.
+- q39 `decay food waste` - predicate: >=7/10 top-10 about compost/decomposition/food-waste. maxTotalCount=100. C41 synonym-survival probe; user-confirmed 2026-06-29.
+- q40 `decompasition food waste` - predicate: >=4/10 (lenient) top-10 about compost/decomposition/food-waste. maxTotalCount=100. C41 typo recall-cliff canary (PR-D trigger if unmet); user-confirmed 2026-06-29.
+- q41 `decay of food` - predicate: >=6/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl'). maxTotalCount=100. C41 stop-word-middle probe ('of' reaches SQL, dropped via numnode); user-confirmed 2026-06-29 (revised from 'compost for the garden' per GATE-3).
 
 ## CONTROL / SENTINEL
 - q22 `compost worms soil` — scoring=SENTINEL (EXCLUDED from quality score). Pin today's top-10 lesson_ids as `snapshot.topIds` + total_count (~278). Report jaccard(current top-10, snapshot) + total_count delta; alarm if jaccard<0.8 or count outside ±10%.
