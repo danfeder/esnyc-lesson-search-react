@@ -127,7 +127,7 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
     // Clear any prior load error so Retry starts from a clean slate. Also drop
     // any PRIOR submission/seed: loadSubmission only ever runs with loading ===
     // true (initial mount starts loading true; reload() sets it true first;
-    // ReviewDetail's key={id} makes an id change a fresh remount), so the
+    // ReviewErrorBoundary's key={id} makes an id change a fresh remount), so the
     // `if (loading)` spinner always covers this brief null window — no not-found
     // flash on a successful reload. Without this, a re-fetch that hits the
     // not-found (PGRST116) / catch early-returns would leave the STALE prior
@@ -427,8 +427,9 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
   // submission's form — while the refetch is in flight: loadSubmission now
   // clears submission/initialFormState up front, so the spinner must cover that
   // null window (the R2-1 blocker also must not appear to lift until the retry
-  // resolves). An id change is handled separately by ReviewDetail's key={id}
-  // (a full remount), so reload() only ever re-runs against the SAME id.
+  // resolves). An id change is handled separately by ReviewErrorBoundary's
+  // key={id} (a full remount of the review subtree), so reload() only ever
+  // re-runs against the SAME id.
   const reload = useCallback(() => {
     setLoading(true);
     loadSubmission();
