@@ -10,7 +10,7 @@
 
 **PR-2 SCOPE — Option A "Tight + trivia" (user verdict, Session 6):** the C107 rewrite (commit 1) **+** 2 behavior-neutral same-file folds as separate labeled commits — drop the dead `SubmissionDetail.review` field (verified read nowhere in `ReviewDetail`/`Review/*`; `UserProfile.tsx` `.review*` hits are unrelated `lesson_submissions` columns) and remove the redundant `setLoading(false)` on the `!submissionData` path (R2-NEW-2). **DEFER** the 2 behavior-CHANGING cluster items to a tiny follow-up PR: **F2** (primary-fetch `loadError`/Retry) and **R2-NEW-1** (`key={id}` nav-staleness root fix + test). **N4** (helpers→`@/utils`, lives in `ReviewMetadataForm` — not touched by PR-2) and **N5/N6** (a11y backlog) also stay deferred. Full deferred cluster detail in Out-of-scope below.
 
-**Active PR:** **NONE yet** — PR-2 branch cut; executor not yet dispatched. First commit = carry-forward docs (this commit). No DB → no TEST-DB verify; `claude[bot]` only on the eventual PR.
+**Active PR:** **NONE yet** — PR-2 built + supervisor-verified locally; GATE 3 next, then push + PR. **Task 2.1 DONE (3 commits, all `useReviewSubmission.ts` only):** `d8e9de2` (C107 3-wave `Promise.all` — R2-1 block threaded into Wave A after the #1 guards) · `4c4590e` (drop dead `SubmissionDetail.review` field) · `308736c` (remove redundant `setLoading(false)`). Supervisor-verify: Wave A/B/C shape + R2-1 threading + per-await error discipline + seed-logic verbatim confirmed by reading; **page net 16/16 deterministic (3 runs); full suite 2033/2033; `npm run check` exit 0**; no `allSettled`. No DB → no TEST-DB verify; `claude[bot]` only on the eventual PR.
 
 **⚠️ Verification posture for PR-2:** the PR-0 page-test net (`review-detail-page`, 16 tests) asserts **final state, not call order**, so it must pass **unchanged** after the rewrite — but the table-dispatch mock **ignores query args**, so it CANNOT catch a dependency-violating reorder (e.g. #3 firing before #2's ids resolve). → **the manual smoke is load-bearing for PR-2**: open a submission with similarities → candidate cards + teacher name render; reopen a legacy approved submission → no clobber/crash; confirm the off-list submitter-target (#4) still renders when it fires. (Mock-seam caveat: the mock can't serve `lessons_with_metadata` as BOTH `.in()` array AND `.eq().single()` in one render — if a #4 fixture is ever added, key the handler on `{table, terminal}`. Detail in Out-of-scope.)
 
@@ -22,7 +22,7 @@ rollout → personalization audience ≈0) and reviewers never collide on submis
 non-problem). See memory `project_user_base_accounts`. **PR-2 is the last PR in this wave; after it merges, Wave 5 is COMPLETE** (run the initiative-close retrospective). §§6/7 + the Q3/Q4/Q5/Q9/Q6/Q7 material retained as future-wave reference.
 
 **Branch:** `perf/wave5-c107-parallel-load` (PR-2; cut from `main` @ `262eeaa`, 2026-06-28).
-Commits so far: **(pending)** carry-forward status doc + Sessions 4–5 archival.
+Commits so far: `1ee1f99` (carry-forward status doc + Sessions 4–5 archival) · `d8e9de2` (C107 3-wave) · `4c4590e` (drop dead `review` field) · `308736c` (redundant `setLoading`). NEXT: GATE 3 (reviewer + Codex) → load-bearing manual smoke → push + `gh pr create`.
 **Last commit on main:** `262eeaa` (PR-1b, #554 MERGED). `ReviewDetail.tsx` = **425 lines**; PR-1b's 4 modules present.
 
 **Design status:** **LOCKED** (Session 1, `61ae519`). GATE 1A + 1B complete (folded).
