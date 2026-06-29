@@ -104,7 +104,7 @@
       "intent": "Decomposition concept via everyday phrase 'rotting food' (G1 synonym target). SHARED gold with q05/q07.",
       "category": "G1",
       "provenance": "gold-provenance.md FROZEN q05/q06/q07 SHARED gold; same PRIMARY/ACCEPTABLE as q05. q06 also carries a maxTotalCount guard.",
-      "provenanceNote": "frozen-recall. maxTotalCount = live total_count of 'rotting food' (567); q06's job is that a fix must surface decomposition lessons, NOT just flood. All PRIMARY titles returned a row.",
+      "provenanceNote": "frozen-recall. maxTotalCount = live total_count of 'rotting food' (568); q06's job is that a fix must surface decomposition lessons, NOT just flood. All PRIMARY titles returned a row.",
       "scoring": "frozen-recall",
       "maxTotalCount": 568,
       "primaryClusters": [
@@ -600,7 +600,7 @@
       "intent": "Cuisine/culture coverage: Mexican/Latin American lessons (predicate).",
       "category": "G1",
       "provenance": "gold-provenance.md PREDICATE q28. Predicate: >=6/10 top-10 carry Mexican/Latin American cultural_heritage OR a Mexican-dish title. maxTotalCount guard.",
-      "provenanceNote": "predicate. maxTotalCount = live total_count of 'mexican food' (567, over-broad baseline).",
+      "provenanceNote": "predicate. maxTotalCount = live total_count of 'mexican food' (568, over-broad baseline).",
       "scoring": "predicate",
       "maxTotalCount": 568,
       "predicate": {
@@ -752,8 +752,8 @@
       "scoring": "predicate",
       "maxTotalCount": 100,
       "predicate": {
-        "description": ">=7/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
-        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+        "description": ">=7/10 top-10 about compost/decomposition/decay/food-waste (title/summary ILIKE 'compost|decompos|decay|food waste|food scrap|recycl').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%' OR title ILIKE '%decay%' OR summary ILIKE '%decay%'"
       }
     },
     {
@@ -808,8 +808,8 @@
       "scoring": "predicate",
       "maxTotalCount": 100,
       "predicate": {
-        "description": ">=6/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
-        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
+        "description": ">=6/10 top-10 about compost/decomposition/decay/food-waste (title/summary ILIKE 'compost|decompos|decay|food waste|food scrap|recycl').",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%' OR title ILIKE '%decay%' OR summary ILIKE '%decay%'"
       }
     }
   ]
