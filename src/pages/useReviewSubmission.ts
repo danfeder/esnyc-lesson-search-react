@@ -132,7 +132,6 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
       if (submissionError) throw submissionError;
       if (!submissionData) {
         logger.error('No submission found with id:', id);
-        setLoading(false);
         return;
       }
 
