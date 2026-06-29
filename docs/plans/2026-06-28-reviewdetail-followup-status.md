@@ -1,14 +1,39 @@
 # ReviewDetail Follow-up PR — Execution Status
 
-**Last updated:** 2026-06-29 (Session 2 — bot round-1 triage + 3 accepted fix-ups built + supervisor-verified; GATE-3/4 dual-family review in flight; held pre-push).
+**Last updated:** 2026-06-29 (Session 2 — bot rounds 1 & 2 triaged; round-1 (3) + round-2 (5) fix-ups built + supervisor-verified; round 1 PUSHED, round 2 held pre-push behind a final GATE-3 reviewer).
 
 ## Current State
 
-**Phase:** **PR #556 OPEN — bot round-1 triaged, 3 fix-ups built (held, not yet pushed).** https://github.com/danfeder/esnyc-lesson-search-react/pull/556
-All 7 planned tasks + 1 GATE-3 fix-up + the round-1 fix-ups built, supervisor-verified, on branch
-`fix/reviewdetail-followup` (cut from `main` @ `1cd2693`). **Full suite 2039/2039; `npm run check` exit 0.**
+**Phase:** **PR #556 OPEN — bot rounds 1 & 2 triaged + fixed; round-2 bundle held pre-push (ROUND-CAP reached).** https://github.com/danfeder/esnyc-lesson-search-react/pull/556
+All 7 planned tasks + 1 GATE-3 fix-up + round-1 (3) + round-2 (5) fix-ups built, supervisor-verified, on
+branch `fix/reviewdetail-followup` (cut from `main` @ `1cd2693`). **Full suite 2040/2040; `npm run check` exit 0.**
 Frontend-only — **no DB / no migration → no TEST-DB step.** Design + plan are LOCKED and committed
 (`906f2e0` design, `75da10b` plan, `ccc997a` GATE-1B amendments).
+
+**Bot round 2 (`claude[bot]`, COMMENTED — non-blocking; all CI incl. 3 advisory bots `pass`) — 6 findings (across 2 surfaces), all triaged + Codex-cross-examined where substantive:**
+- **R2-1 [correctness] network *reject* → "Submission not found", no Retry — ACCEPTED + FIXED `b1bebec`.**
+  A true promise reject hit the outer catch (logger.error only) → dead-end not-found. Added
+  `setLoadError(SUBMISSION_LOAD_ERROR_MESSAGE)` to the catch (extends F2's retry treatment to
+  connection-level failures). GATE-4 Codex (gpt-5.5) AGREE: can't mask a real 0-row not-found (that
+  returns inline before the catch), and `loadError` wins render precedence so a mid-load throw shows a
+  clean Retry screen, not a half-seeded form — strict improvement. New page test 17 (mock extended with
+  a `reject?` field, RED→GREEN); preamble comment updated.
+- **R2-2 [a11y] sibling `saveError` banner missing aria-live — ACCEPTED + FIXED `65587aa`.** Same fix as
+  round-1 #2; migrated to `<IntAlert variant="error">`.
+- **R2-3 vs S1-1 [CONTRADICTION] — resolved: reject R2-3 / accept S1-1, FIXED `acc80a4`.** R2-3 wanted
+  Mode-2's `!lessons` defensive gate REMOVED (dead code); S1-1 wanted a symmetric `!similarities` gate
+  ADDED to Mode 1. Kept Mode 2's documented gate + added Mode 1's (symmetric defensive consistency),
+  `logger.warn` unconditional (Codex refinement), comments clarified as intentional contract-drift/mock
+  defense. GATE-4 Codex AGREE: modes mutually exclusive today → behavior-identical; defensive symmetry is
+  the more defensible call than removing.
+- **S1-2 [maint] magic `5` in 2 (→3) files — ACCEPTED + FIXED `986635c`.** `export const MAX_DUPLICATE_CARDS = 5`
+  in `buildCandidateCards.ts`; wired into the banner cap + `renderedTopFive` slice (a 3rd coupled site the
+  executor's grep found) + ReviewDetail's `topDuplicates` slice. (User opted in.)
+- **S1-3 [test] test 15 didn't pin the F2 message copy — ACCEPTED + FIXED `cd4a022`.** Added a
+  SUBMISSION-specific-copy assertion (`/check your connection and try again/i`); a swap to the reviews
+  message would now fail.
+- **S1-4 [defensive] `key={id ?? ''}` when id undefined — REJECTED.** Unreachable (`ReviewDetailRoute`
+  only renders under the matched `/review/:id`); pure hypothetical, below bar.
 
 **Bot round 1 (`claude[bot]`, CHANGES_REQUESTED) — 5 findings, all triaged + rebutted:**
 - **#1 `ReviewErrorBoundary` not keyed to `:id` (App.tsx) — ACCEPTED + FIXED `9cf2f8f`.** Real bug in
@@ -64,11 +89,18 @@ lazy-load-failure path — pre-existing, out of scope — no action). Claude: GO
 fixed `4589771` (behavior-neutral: `useReviewSubmission.ts` key-owner comments now name
 `ReviewErrorBoundary`, not `ReviewDetail`). No blockers either family.
 
-**NEXT (this session):** push the held bundle → **bot round 2** (re-collect all 4 surfaces by
-timestamp `>` the push) → rebuttal-pass any new finding (GATE-4 Codex on real changes) → round-cap at 2
-→ request user merge go-ahead. Four-surface round-1 triage already done (issue-comments / reviews /
-line-comments / checks — only `claude[bot]` posted; the 3 advisory bots in `gh pr checks` are all
-`pass`). The two manual deploy-preview smokes below are cheap insurance before merge.
+**Round-2 fix-up commits (held local, NOT yet pushed):** `b1bebec` (R2-1 reject→Retry + test 17) ·
+`65587aa` (R2-2 saveError IntAlert) · `acc80a4` (S1-1 symmetric gate) · `986635c` (S1-2
+MAX_DUPLICATE_CARDS) · `cd4a022` (S1-3 test-15 copy pin). Supervisor-verified: all 5 diffs inspected,
+mock `reject?` extension confirmed backward-compatible, full suite 2040/2040, `npm run check` exit 0.
+GATE-4 Codex (gpt-5.5) ran pre-implementation on the two substantive items (R2-1 + the contradiction) —
+both AGREE-WITH-NUANCE. A final pre-push GATE-3 Claude reviewer on the implemented `b1bebec^..HEAD` diff
+is IN FLIGHT.
+
+**NEXT (this session):** GATE-3 reviewer returns → fix-ups if any → push the round-2 bundle (+ this
+status doc) → **ROUND-CAP REACHED** (rounds 1 & 2 done): do NOT run a full round-3 triage; only confirm
+CI stays green (a 3rd round is critical-bugs-only). Then **request user merge go-ahead** + the two cheap
+manual deploy-preview smokes below.
 
 **Accepted tradeoffs (don't re-flag as bugs):** Retry = full `reload()` → re-seeds the form (discards
 in-progress edits) + briefly shows the page spinner. Banner appears at load before edits; copy says
@@ -78,11 +110,8 @@ in-progress edits) + briefly shows the page spinner. Banner appears at load befo
 banner + Retry render + recover on retry; (2) `/review/A` (force a load-error) → `/review/B` → B renders
 clean (R2-NEW-1 remount).
 
-**Held local commits being pushed NOW (Session 2 bundle):** `9cf2f8f` (#1 boundary key + test) ·
-`2c5cab9` (#2 IntAlert + #5 mt-3) · `cfe4731` (#3 singular grade) · `4589771` (GATE-3 comment-drift
-fix) · `0f86275` (Session-1 held status doc) · the Session-2 status-doc commit. (The 2
-`docs/plans/2026-06-26-wave5-…` commits `62f8e78`/`58c461e` are carried-forward Wave-5-closure docs,
-already pushed in the PR.)
+**Push history:** Round-1 bundle PUSHED `2530e46..fcc7ef4` (3 fixes + comment-drift `4589771` + Session-1/2
+status docs). Round-2 bundle (`b1bebec`..tip + this status update) held pending the GATE-3 reviewer.
 
 ## Pointers
 - Design: `2026-06-28-reviewdetail-followup-design.md` (Option A + GATE-1B amendment box)
@@ -128,4 +157,28 @@ already pushed in the PR.)
   and the executor implemented the correct keying. Bot findings are signals, not patches. (2) Folding a
   user-visible copy fix (#3 "Grade N") into a refactor-cleanup PR was fine because it was tiny, correct,
   and the tests changed regardless — but it WAS surfaced to the user as a scope call first.
-- NEXT: push the held bundle → bot round 2 → round-cap at 2 → user merge go-ahead.
+- Pushed round-1 bundle `2530e46..fcc7ef4`.
+
+### Session 2 (cont.) — 2026-06-29 — PR #556 bot round-2 triage + 5 fix-ups (ROUND-CAP)
+- Polled the 3 advisory bots to completion on the round-1 push (all `pass`); re-collected all 4 surfaces
+  by timestamp. `claude[bot]` posted **COMMENTED** (non-blocking) across 2 surfaces — 6 findings.
+- **The two surfaces CONTRADICTED each other:** R2-3 (remove Mode-2's `!lessons` defensive gate as dead
+  code) vs S1-1 (add a symmetric `!similarities` gate to Mode 1). Resolved toward documented-defensive
+  symmetry (keep Mode 2 + add Mode 1), confirmed by GATE-4 Codex.
+- Explained R2-1 + S1-2 to the user in plain language (per `feedback_plain_language`); user verdicts:
+  **do both.** Dispositions: accept R2-1/R2-2/S1-1/S1-2/S1-3; reject R2-3 (keep gate) + S1-4 (unreachable).
+- **GATE-4 Codex (gpt-5.5, inline)** pre-implementation on R2-1 + the contradiction: both AGREE-WITH-NUANCE
+  (R2-1 catch can't mask a real not-found + improves the mid-load-throw case; keep Mode-1 `logger.warn`
+  unconditional; defensive symmetry > removal).
+- One fresh-context Opus executor built all 5 as labeled commits `b1bebec`/`65587aa`/`acc80a4`/`986635c`/`cd4a022`
+  (TDD: new reject test 17 via a backward-compatible mock `reject?` field, RED→GREEN; test-15 copy pin).
+  Supervisor-verified: all 5 diffs + mock + tests inspected, full suite **2040/2040**, `npm run check` exit 0.
+  Executor's grep found a 3rd coupled `5` (`renderedTopFive`) → folded into MAX_DUPLICATE_CARDS.
+- Final pre-push GATE-3 Claude reviewer on `b1bebec^..HEAD` dispatched.
+- **Process learnings (promote at close):** (1) when two bot findings CONTRADICT, don't pick one
+  mechanically — resolve toward the design's *documented* intent (here: defensive symmetry) and let GATE-4
+  arbitrate the direction. (2) A small, backward-compatible test-mock extension (optional `reject?` field)
+  was worth it to get a REAL discriminating test for the reject path rather than falling back to
+  manual-smoke-only. (3) `[simplification]` findings that propose REMOVING deliberate defensive code are a
+  default-reject under data-safety priorities — keeping documented belt-and-suspenders can't introduce a bug.
+- NEXT: GATE-3 reviewer returns → push round-2 bundle → ROUND-CAP (no full round-3 triage) → user merge.
