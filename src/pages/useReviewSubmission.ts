@@ -135,6 +135,18 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         return;
       }
 
+      // Degrade gracefully (no similarities → no dup cards), but surface the
+      // dropped error for observability. Logged BEFORE the reviews-error block
+      // so a double-fault (#2 AND #5 both error) still records the similarities
+      // warn: in the serial version #2's error was logged at its own await,
+      // before #5 was ever fetched, so the reviews `return` could never swallow
+      // it. Wave A batches #2/#5, so this ordering restores exact serial log
+      // parity (pure logging — no behavior change; runs after the submission
+      // guards and before any state mutation).
+      if (similaritiesError) {
+        logger.warn('Error fetching submission similarities:', similaritiesError);
+      }
+
       // R2-1 (data-integrity fix): supabase-js resolves a DB error as
       // `{ data: null, error }` WITHOUT throwing, so a transient blip on the
       // reviews fetch would leave `reviews` null and silently route to the
@@ -149,13 +161,6 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         logger.error('Failed to load existing submission review:', reviewsError);
         setLoadError(REVIEWS_LOAD_ERROR_MESSAGE);
         return;
-      }
-
-      // Degrade gracefully (no similarities → no dup cards), but surface the
-      // dropped error for observability (R2-1 cleanup — pure logging, no
-      // behavior change).
-      if (similaritiesError) {
-        logger.warn('Error fetching submission similarities:', similaritiesError);
       }
 
       // Wave B — #3 (similar-lesson metadata, depends on #2's ids) and #6
