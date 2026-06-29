@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { IntButton, IntDecisionBar, IntDuplicateCard } from '@/components/Internal';
+import { IntAlert, IntButton, IntDecisionBar, IntDuplicateCard } from '@/components/Internal';
 import { ReviewSearchPanel } from '@/components/Review/ReviewSearchPanel';
 import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
 import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
@@ -101,15 +101,15 @@ export function ReviewDecisionPanel({
           reviewer-search cards still render normally below). */}
       {duplicatesError && (
         <div className="adm-card">
-          <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
+          <IntAlert variant="error">
             {duplicatesError.count != null
               ? `Couldn't load ${duplicatesError.count} possible duplicate${
                   duplicatesError.count === 1 ? '' : 's'
                 } for this submission.`
               : "Couldn't load possible duplicates for this submission."}{' '}
             Retry before deciding — approving as new could miss a real duplicate.
-          </div>
-          <div style={{ marginTop: 12 }}>
+          </IntAlert>
+          <div className="mt-3">
             <IntButton variant="primary" onClick={onRetryDuplicates}>
               Retry
             </IntButton>
