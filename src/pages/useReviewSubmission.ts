@@ -188,7 +188,7 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           logger.warn('No submission found with id:', id);
           return;
         }
-        logger.error('Failed to load submission:', submissionError);
+        logger.error('Failed to load submission:', parseDbError(submissionError));
         setLoadError(SUBMISSION_LOAD_ERROR_MESSAGE);
         return;
       }
