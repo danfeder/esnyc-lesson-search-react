@@ -68,6 +68,13 @@ export interface BuildCandidateCardsArgs {
 //     Task 3.1's off-list lookup; (3) no submitter target → dup list as-is.
 // (4) Task 3.6: if reviewer searched and picked a lesson not already
 //     present, append it with "Reviewer searched" badge.
+// Shared grade-label formatter for the card `meta` line — kept local to this
+// module (single use site cluster). Behavior-identical to the three inlined
+// ternaries it replaced: a non-empty list → "Grades a, b"; null/empty → "Grades —".
+function formatGrades(grades: string[] | null | undefined): string {
+  return grades?.length ? `Grades ${grades.join(', ')}` : 'Grades —';
+}
+
 export function buildCandidateCards({
   submission,
   topDuplicates,
@@ -76,9 +83,7 @@ export function buildCandidateCards({
   if (!submission) return [];
 
   const fromDups = topDuplicates.map((d) => {
-    const grades = d.lesson.grade_levels?.length
-      ? `Grades ${d.lesson.grade_levels.join(', ')}`
-      : 'Grades —';
+    const grades = formatGrades(d.lesson.grade_levels);
     return {
       id: d.lesson_id,
       title: d.lesson.title || 'Untitled',
@@ -105,9 +110,7 @@ export function buildCandidateCards({
       // lookup (loaded by Task 3.1 into submission.submitterTargetLesson).
       const off = submission.submitterTargetLesson;
       if (off) {
-        const grades = off.grade_levels?.length
-          ? `Grades ${off.grade_levels.join(', ')}`
-          : 'Grades —';
+        const grades = formatGrades(off.grade_levels);
         base = [
           {
             id: off.lesson_id,
@@ -128,9 +131,7 @@ export function buildCandidateCards({
   // Case 4 (Task 3.6): append reviewer's search-picked lesson if not
   // already present in base.
   if (selectedSearchLesson && !base.some((c) => c.id === selectedSearchLesson.lesson_id)) {
-    const grades = selectedSearchLesson.grade_levels?.length
-      ? `Grades ${selectedSearchLesson.grade_levels.join(', ')}`
-      : 'Grades —';
+    const grades = formatGrades(selectedSearchLesson.grade_levels);
     return [
       ...base,
       {
