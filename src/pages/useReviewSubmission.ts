@@ -210,10 +210,17 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
       // guards and before any state mutation).
       if (similaritiesError) {
         logger.warn('Error fetching submission similarities:', similaritiesError);
-        // The similarities list itself failed → `similarities` is null, the
-        // Wave-B block below is skipped, and the reviewer would see zero cards
-        // with no signal. Count is unknown here (we never got the list), so null.
-        setDuplicatesError({ count: null });
+        // Symmetric with Mode 2's `!lessons` gate below: only flag the banner
+        // when the list itself is missing. Defensive against a future
+        // supabase-js / test-mock that returns data + error together — don't show
+        // a false "couldn't load duplicates" banner when the similarities are
+        // actually usable. logger.warn stays UNCONDITIONAL for observability
+        // parity. Behavior-identical today: a similaritiesError makes
+        // `similarities` null (Wave B is skipped, cards would silently vanish), so
+        // the count-unknown banner still fires.
+        if (!similarities) {
+          setDuplicatesError({ count: null });
+        }
       }
 
       // R2-1 (data-integrity fix): supabase-js resolves a DB error as
@@ -265,8 +272,11 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           // Whole-query failure → `lessons` is null, so the map below can't run
           // and the duplicate cards silently vanish. Signal it (with the count
           // we know, capped at the 5 the UI renders) so the panel shows a retry
-          // banner, not zero cards. Gate on `!lessons` (defensive): never a false
-          // banner if data + error ever co-occur.
+          // banner, not zero cards. The `!lessons` gate is INTENTIONAL (not dead
+          // code): supabase-js never returns data + error together today, but a
+          // future client / test-mock that did must not flash a false banner over
+          // usable cards — so only flag when the list is actually missing. This
+          // is the gate Mode 1's similarities-error block above mirrors.
           if (!lessons) {
             setDuplicatesError({ count: Math.min(similarities.length, 5) });
           }
