@@ -1,12 +1,25 @@
 # ReviewDetail Follow-up PR — Execution Status
 
-**Last updated:** 2026-06-29 (Session 2 — bot rounds 1 & 2 triaged; round-1 (3) + round-2 (5) fix-ups built + supervisor-verified; round 1 PUSHED, round 2 held pre-push behind a final GATE-3 reviewer).
+**Last updated:** 2026-06-29 (Session 2 — bot rounds 1, 2 & 3 all triaged + fixed + pushed; PR green/MERGEABLE; awaiting user merge go-ahead).
 
 ## Current State
 
-**Phase:** **PR #556 OPEN — bot rounds 1 & 2 triaged + fixed; round-2 bundle held pre-push (ROUND-CAP reached).** https://github.com/danfeder/esnyc-lesson-search-react/pull/556
-All 7 planned tasks + 1 GATE-3 fix-up + round-1 (3) + round-2 (5) fix-ups built, supervisor-verified, on
-branch `fix/reviewdetail-followup` (cut from `main` @ `1cd2693`). **Full suite 2040/2040; `npm run check` exit 0.**
+**Phase:** **PR #556 OPEN — ALL bot rounds done (1+2+3), all CI green, MERGEABLE/CLEAN — awaiting user merge go-ahead.** https://github.com/danfeder/esnyc-lesson-search-react/pull/556
+All 7 planned tasks + 1 GATE-3 fix-up + round-1 (3) + round-2 (5) + round-3 (2) fix-ups built,
+supervisor-verified, **all PUSHED**, on branch `fix/reviewdetail-followup` (cut from `main` @ `1cd2693`).
+**Full suite 2040/2040; `npm run check` exit 0.** Round 3 was the round-cap round (critical-only) →
+2 trivial one-liners folded, 1 finding rejected.
+
+**Bot round 3 (`claude[bot]`, COMMENTED — non-blocking; all CI incl. 4 advisory bots `pass`) — 3 findings, round-cap applied:**
+- **#1 `!submissionData` guard returns without `setLoadError` (useReviewSubmission.ts ~L202) — REJECTED.**
+  Unreachable today (`.single()` 0-rows → PGRST116, caught earlier). The bot's premise is debatable: in
+  the hypothetical `.maybeSingle()` future it cites, null-data-no-error is a GENUINE not-found →
+  "Submission not found" with no Retry is CORRECT; adding `setLoadError` would wrongly offer Retry for a
+  truly-deleted row. Current defense-in-depth kept.
+- **#2 `legacyDecisionWarning` missing `aria-live` (ReviewMetadataForm.tsx:85) — ACCEPTED + FIXED `0a6ca45`.**
+  Added `aria-live="assertive"` (additive, zero visual change). Notably this PR's N6 touched that line.
+- **#3 non-PGRST116 `submissionError` logged raw (useReviewSubmission.ts:191) — ACCEPTED + FIXED `4b3b232`.**
+  Wrapped in `parseDbError` (matches every other error path); logging-only.
 Frontend-only — **no DB / no migration → no TEST-DB step.** Design + plan are LOCKED and committed
 (`906f2e0` design, `75da10b` plan, `ccc997a` GATE-1B amendments).
 
@@ -89,18 +102,18 @@ lazy-load-failure path — pre-existing, out of scope — no action). Claude: GO
 fixed `4589771` (behavior-neutral: `useReviewSubmission.ts` key-owner comments now name
 `ReviewErrorBoundary`, not `ReviewDetail`). No blockers either family.
 
-**Round-2 fix-up commits (held local, NOT yet pushed):** `b1bebec` (R2-1 reject→Retry + test 17) ·
-`65587aa` (R2-2 saveError IntAlert) · `acc80a4` (S1-1 symmetric gate) · `986635c` (S1-2
-MAX_DUPLICATE_CARDS) · `cd4a022` (S1-3 test-15 copy pin). Supervisor-verified: all 5 diffs inspected,
-mock `reject?` extension confirmed backward-compatible, full suite 2040/2040, `npm run check` exit 0.
-GATE-4 Codex (gpt-5.5) ran pre-implementation on the two substantive items (R2-1 + the contradiction) —
-both AGREE-WITH-NUANCE. A final pre-push GATE-3 Claude reviewer on the implemented `b1bebec^..HEAD` diff
-is IN FLIGHT.
+**Round-2 fix-ups (PUSHED `fcc7ef4..8b8e7d2`):** `b1bebec` (R2-1 reject→Retry + test 17) · `65587aa`
+(R2-2 saveError IntAlert) · `acc80a4` (S1-1 symmetric gate) · `986635c` (S1-2 MAX_DUPLICATE_CARDS) ·
+`cd4a022` (S1-3 test-15 copy pin). GATE-4 Codex pre-impl on R2-1 + the contradiction (both
+AGREE-WITH-NUANCE); pre-push GATE-3 Claude reviewer on `b1bebec^..HEAD` = GO (verified catch
+reachability, loadError render precedence, mock reject? backward-compat, test-17 discrimination).
+**Round-3 fix-ups (PUSHED):** `0a6ca45` (#2 aria-live) · `4b3b232` (#3 parseDbError) — page test 22/22,
+check exit 0.
 
-**NEXT (this session):** GATE-3 reviewer returns → fix-ups if any → push the round-2 bundle (+ this
-status doc) → **ROUND-CAP REACHED** (rounds 1 & 2 done): do NOT run a full round-3 triage; only confirm
-CI stays green (a 3rd round is critical-bugs-only). Then **request user merge go-ahead** + the two cheap
-manual deploy-preview smokes below.
+**NEXT (this session):** **Awaiting user merge go-ahead.** All 3 bot rounds done; CI green; PR
+MERGEABLE/CLEAN. Before/at merge: optionally run the two manual deploy-preview smokes below (cheap
+insurance for the fetch-dependency + remount paths the page mock can't exercise). On merge: PR-cycle
+archival + memory hygiene (this is the prioritized W5 follow-up — update [[project_deferred_work_campaign]]).
 
 **Accepted tradeoffs (don't re-flag as bugs):** Retry = full `reload()` → re-seeds the form (discards
 in-progress edits) + briefly shows the page spinner. Banner appears at load before edits; copy says
@@ -181,4 +194,20 @@ status docs). Round-2 bundle (`b1bebec`..tip + this status update) held pending 
   was worth it to get a REAL discriminating test for the reject path rather than falling back to
   manual-smoke-only. (3) `[simplification]` findings that propose REMOVING deliberate defensive code are a
   default-reject under data-safety priorities — keeping documented belt-and-suspenders can't introduce a bug.
-- NEXT: GATE-3 reviewer returns → push round-2 bundle → ROUND-CAP (no full round-3 triage) → user merge.
+- GATE-3 reviewer = GO (verified catch reachability, loadError precedence, mock backward-compat, test-17
+  discrimination, all 3 coupled MAX_DUPLICATE_CARDS sites). Pushed round-2 bundle `fcc7ef4..8b8e7d2`.
+
+### Session 2 (cont.) — 2026-06-29 — PR #556 bot round-3 (round-cap) + merge-ready
+- Polled CI/bots to completion on the round-2 push: ALL green (Test&Build, E2E, Coverage, CodeQL, Security
+  Audit + 4 advisory bots `pass`); PR MERGEABLE/CLEAN. `claude[bot]` posted round 3 COMMENTED (non-blocking),
+  3 findings. Applied the **round-cap** (3rd round = critical-only): none were critical.
+- Triaged: #1 (`!submissionData` no setLoadError) REJECTED — unreachable + the bot's `.maybeSingle()`-future
+  premise is wrong (null-no-error = genuine not-found → no-Retry is correct). #2 (legacyDecisionWarning
+  aria-live) + #3 (parseDbError on submission-error log) = trivial correct one-liners → user chose to fold
+  both in (option B). Fixed `0a6ca45` + `4b3b232`; page test 22/22, check exit 0; pushed.
+- **Process learning (promote at close):** the round-cap is "critical-bugs-only," not "ignore round 3" —
+  still rebuttal-pass each finding (caught that #1's suggested fix was actively wrong for a genuine
+  not-found), then fold only the trivial-correct ones and reject the rest. A11y `aria-live` on
+  conditionally-mounted `role=alert` banners recurred across 3 banners — candidate for a lint rule.
+- NEXT: **awaiting user merge go-ahead** (+ optional manual deploy-preview smokes). On merge: PR-cycle
+  archival + memory hygiene ([[project_deferred_work_campaign]] Wave-5 follow-up).
