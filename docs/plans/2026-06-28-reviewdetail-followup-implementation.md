@@ -50,46 +50,61 @@ single-file changes. No DB / migration / RPC.
 - Modify: `src/pages/ReviewDetail.tsx` (destructure + plumb 2 props)
 - Test: `src/__tests__/integration/review-detail-page.test.tsx` (new test, follows "test 12" shape)
 
-### Step 1 — Write the failing page test
+### Step 1 — Write the failing page tests (TWO failure paths — GATE 1B scope completion)
 
-Follow the structure of test 12 (`"reviews-error: … blocks with a load-error screen"`). New test,
-e.g. `"duplicates-error: a lessons_with_metadata error shows a retry banner (non-blocking) instead of zero cards"`:
+Follow the structure of test 12 (`"reviews-error: … blocks with a load-error screen"`). Add **two**
+tests — the banner must fire on EITHER fetch failing:
 
+**Test A — details fetch fails (`lessons_with_metadata`), count shown:**
 - Fixture: a submission with `submission_similarities` returning ≥1 row (say 3), `submission_reviews`
   empty, **no** `original_lesson_id` (so no off-list `.single()` fetch), and the mock returns
   `{ data: null, error: { message: 'boom' } }` for the `lessons_with_metadata` table.
 - Assert (banner + non-blocking):
-  - The warning text renders (match on a stable substring, e.g. `/couldn't load .* possible duplicate/i`)
-    and shows the count (`/3/`).
-  - A **Retry** button is present (e.g. `getByRole('button', { name: /retry/i })`).
-  - The **form still renders** (the decision radios are present — e.g. the "Approve & publish" radio),
-    proving it is non-blocking (contrast with test 12, which asserts NO radios).
-  - No duplicate `IntDuplicateCard`s rendered (the cards list is empty).
-- Leave test 12 (reviews-error blocking) untouched — it must stay green.
+  - The warning text renders (stable substring, e.g. `/couldn't load .* possible duplicate/i`) and
+    shows the count (`/3/`).
+  - A **Retry** button is present — use `getByRole('button', { name: /retry/i })` (it throws on >1
+    match, so it also guards against a future second Retry leaking into the non-blocked render).
+  - The **form still renders** (decision radios present — e.g. the "Approve & publish" radio),
+    proving non-blocking (contrast with test 12, which asserts NO radios).
+  - No `IntDuplicateCard`s rendered.
+
+**Test B — similarities list fetch fails (`submission_similarities`), count-less message:**
+- Fixture: mock returns `{ data: null, error: { message: 'boom' } }` for the
+  `submission_similarities` table; `submission_reviews` empty; valid `lesson_submissions` row.
+- Assert: the count-less warning renders (`/couldn't load possible duplicates/i`, NO number), a Retry
+  button is present, and the form still renders (non-blocking).
+
+Leave test 12 (reviews-error blocking) untouched — it must stay green.
 
 ### Step 2 — Run it; verify it FAILS
 
 `npm run test:run -- review-detail-page`
-Expected: the new test FAILS (no banner today; cards silently empty).
+Expected: both new tests FAIL (no banner today; cards silently empty).
 
 ### Step 3 — Implement the hook signal (`useReviewSubmission.ts`)
 
 1. Add an exported type near `UseReviewSubmissionResult`:
    ```ts
-   /** Wholesale duplicate-details load failure (lessons_with_metadata for the
-    *  similarity ids). `count` = how many similarities failed to resolve. */
+   /**
+    * A duplicate-cards load failure that leaves the reviewer with zero candidate
+    * cards and no signal. Two failure modes (GATE 1B): the `submission_similarities`
+    * list fetch failed (count unknown → `null`), or the `lessons_with_metadata`
+    * details fetch failed for known similarity ids (`count` = how many, capped at the
+    * 5 the UI would render).
+    */
    export interface DuplicatesLoadError {
-     count: number;
+     count: number | null;
    }
    ```
 2. Add to `UseReviewSubmissionResult`:
    ```ts
    /**
-    * Set when the duplicate-details fetch (lessons_with_metadata for the similarity
-    * ids) errors AND there were similarities. The page renders a retry banner so the
-    * reviewer knows N possible duplicates failed to load rather than silently seeing
-    * zero cards. null when there were no similarities or the fetch succeeded — the
-    * partial/missing-id case still degrades to "Unknown" cards in place.
+    * Set when the candidate-cards would silently vanish due to a transient fetch
+    * failure (similarities list OR details). The page renders a retry banner so the
+    * reviewer doesn't mistake a load failure for "no duplicates" and approve a true
+    * duplicate as new. null when similarities loaded fine (incl. genuinely zero) and
+    * the details fetch succeeded — the partial/missing-id case still degrades to
+    * "Unknown" cards in place.
     */
    duplicatesError: DuplicatesLoadError | null;
    ```
@@ -102,20 +117,38 @@ Expected: the new test FAILS (no banner today; cards silently empty).
    setLoadError(null);
    setDuplicatesError(null);
    ```
-5. In the Wave-B similarities block (the `if (similarities && similarities.length > 0)` body), set it
-   inside the existing `if (lessonsError)` branch — the count comes from `similarities.length`:
+5. **Failure mode 1 — similarities LIST fetch failed.** In the existing `if (similaritiesError)`
+   block (the one that currently only `logger.warn`s, before the reviews-error block), also set the
+   count-less signal. When the list fetch fails, `similarities` is null → the Wave-B block is skipped,
+   so this is the only place the failure is observable:
+   ```ts
+   if (similaritiesError) {
+     logger.warn('Error fetching submission similarities:', similaritiesError);
+     // The similarities list itself failed → `similarities` is null, the Wave-B
+     // block below is skipped, and the reviewer would see zero cards with no signal.
+     // Count is unknown here (we never got the list), so null.
+     setDuplicatesError({ count: null });
+   }
+   ```
+6. **Failure mode 2 — details fetch failed for known ids.** In the Wave-B similarities block, set the
+   counted signal inside the `if (lessonsError)` branch — but gate on `!lessons` (defensive: only when
+   the cards genuinely vanish; never a false banner if data + error ever co-occur). Cap the count at 5
+   to match the UI (`topDuplicates = similarities.slice(0, 5)`):
    ```ts
    if (lessonsError) {
      logger.warn('Error fetching similar lessons:', lessonsError);
      // Whole-query failure → `lessons` is null, so the map below can't run and the
-     // duplicate cards would silently vanish. Signal it (with the count we know) so
-     // the panel renders a retry banner instead of zero cards with no explanation.
-     setDuplicatesError({ count: similarities.length });
+     // duplicate cards silently vanish. Signal it (with the count we know, capped at
+     // the 5 the UI renders) so the panel shows a retry banner, not zero cards.
+     if (!lessons) {
+       setDuplicatesError({ count: Math.min(similarities.length, 5) });
+     }
    }
    ```
    Leave the `if (lessons) { similaritiesWithLessons = similarities.map(...) }` block unchanged (the
-   partial/missing-id "Unknown" fallback stays correct).
-6. Add to the return:
+   partial/missing-id "Unknown" fallback stays correct). The two failure modes are mutually exclusive
+   (mode 1 ⟹ `similarities` null ⟹ mode-2 block never runs).
+7. Add to the return:
    ```ts
    return { submission, loading, loadError, initialFormState, reload, duplicatesError };
    ```
@@ -136,15 +169,19 @@ Expected: the new test FAILS (no banner today; cards silently empty).
    ```
    …and destructure them in the component signature.
 3. Render the banner between `<SubmitterIntentBanner … />` and the `{candidateCards.length > 0 && …}`
-   block, so it sits in the duplicates area and shows independent of card count. Match the existing
-   error-banner conventions (`role="alert"`, `adm-hint--error`) + `IntButton` (already imported):
+   block, so it sits in the duplicates area and shows independent of card count. Handle the count-less
+   case (mode 1). Match the existing error-banner conventions (`role="alert"`, `adm-hint--error`) +
+   `IntButton` (already imported):
    ```tsx
    {duplicatesError && (
      <div className="adm-card">
        <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
-         Couldn't load {duplicatesError.count} possible duplicate
-         {duplicatesError.count === 1 ? '' : 's'} for this submission. Retry before deciding —
-         approving as new could miss a real duplicate.
+         {duplicatesError.count != null
+           ? `Couldn't load ${duplicatesError.count} possible duplicate${
+               duplicatesError.count === 1 ? '' : 's'
+             } for this submission.`
+           : "Couldn't load possible duplicates for this submission."}{' '}
+         Retry before deciding — approving as new could miss a real duplicate.
        </div>
        <div style={{ marginTop: 12 }}>
          <IntButton variant="primary" onClick={onRetryDuplicates}>
@@ -168,10 +205,14 @@ Expected: the new test FAILS (no banner today; cards silently empty).
    onRetryDuplicates={reload}
    ```
 
-> **Known tradeoff (documented, accepted):** `reload()` re-runs the whole load → produces a new
-> `initialFormState` → the `useLayoutEffect([initialFormState])` seeding effect re-applies it, so any
-> in-progress form edits are reset. The banner appears at initial load (before edits), so the
-> practical risk is low. This is the locked design decision (full `reload()` over a targeted refetch).
+> **Known tradeoffs (documented, accepted — locked full-`reload()` decision):**
+> - `reload()` re-runs the whole load → new `initialFormState` → the `useLayoutEffect([initialFormState])`
+>   seeding effect re-applies it, so any in-progress form edits are reset. The banner appears at initial
+>   load (before edits), so practical risk is low.
+> - `reload()` sets `loading = true`, and ReviewDetail's first early-return is `if (loading)`, so
+>   clicking Retry briefly replaces the WHOLE screen with the "Loading submission…" spinner (not just
+>   the duplicates area). The banner is non-blocking; the retry action itself is momentarily blocking.
+>   Expected; note it in deploy-preview smoke.
 
 ### Step 6 — Run tests; verify PASS
 
@@ -261,6 +302,12 @@ the non-PGRST116 case currently throws → also "not found", no retry).
    found") — that reject path is intentionally left out of F2's scope (conflating it with runtime
    errors would mask bugs).
 
+> **`PGRST116` is the *expected* Supabase zero-row code for `.single()`** (precedent: `useEnhancedAuth.ts`,
+> `src/lib/CLAUDE.md`) — not provably the *only* possible code from the repo alone, which is exactly why
+> the `if (!submissionData)` guard stays as belt-and-suspenders. After both `submissionError` branches
+> `return`, that guard is effectively unreachable for `.single()`; keep it (cheap defense-in-depth) but
+> comment it honestly as a fallback, not a live path.
+
 > ReviewDetail's existing `loadError` render already provides the Retry button (it calls `reload`), so
 > the non-PGRST116 case reuses it with no ReviewDetail change.
 
@@ -288,30 +335,44 @@ form state from A can flash into B's first frame. A `key={id}` forces a clean re
   the `<Route>` element today)
 - Test: `src/__tests__/integration/review-detail-page.test.tsx` (pragmatic — see Step 1)
 
-### Step 1 — Decide the test (pragmatic)
+### Step 1 — Decide the test (be honest — GATE 1B)
 
-`key`-based remount is a React structural guarantee that's awkward to unit-test. Prefer a behavior
-test if the harness supports route-level rendering: render `<Routes>` with the wrapper at `/review/A`
-(A errors on reviews → load-error screen), navigate to `/review/B` (valid), assert B's form renders
-with no stale load-error. **If the existing harness renders `<ReviewDetail>` directly (not via the
-route) and adding route-level nav is heavy, do NOT force a brittle test** — instead document a manual
-deploy-preview check (navigate between two reviews) and rely on the unchanged suite staying green.
-State which path you took in the commit body.
+The existing harness (`renderReview`) hardcodes `<Route path="/review/:id" element={<ReviewDetail />} />`
+— it renders `ReviewDetail` **directly, not the wrapper where `key={id}` lives**. So an in-harness
+behavior test proves nothing about this fix unless the wrapper is **exported** and the test renders
+*it* across two ids. Two acceptable paths:
+- **(preferred if cheap)** `export` `ReviewDetailRoute` from `App.tsx`; add a focused test that renders
+  it under a `MemoryRouter` at `/review/A` (A errors on reviews → load-error screen) then re-renders at
+  `/review/B` (valid) and asserts B's form renders with no stale load-error. Needs the mock to serve
+  both fixtures by id — only do this if the mock makes per-id fixtures easy.
+- **(fallback)** ship the `key` fix with **no automated coverage**, document a manual deploy-preview
+  check (navigate between two reviews), and say so plainly in the commit body. This is acceptable for an
+  internal tool (the stale-flash was rated "theoretical only" in PR-1b triage).
+
+Do NOT leave "write a behavior test if the harness supports it" as if it's a live option — pick one
+path and state it in the commit.
 
 ### Step 2 — Implement (`src/App.tsx`)
 
-Add a tiny wrapper and use it in the `/review/:id` route. Read the current route block first; adapt to
-its import style. Shape:
+Add the wrapper and use it in the `/review/:id` route. Read the current route block first; adapt to its
+import style.
+
+**CRITICAL (GATE 1B): define `ReviewDetailRoute` at MODULE top-level, NOT inside `AppContent`.** A
+nested function component gets a new identity on every `AppContent` render (which re-renders on
+`useLessonStats()` updates), which would remount `ReviewDetail` constantly — a real regression that
+defeats the fix.
 ```tsx
 import { useParams } from 'react-router-dom'; // if not already imported
 
+// Module scope — stable identity so ReviewDetail remounts ONLY on :id change.
 function ReviewDetailRoute() {
   const { id } = useParams();
   return <ReviewDetail key={id} />;
 }
 ```
 Then swap `<ReviewDetail />` for `<ReviewDetailRoute />` inside the existing
-`ProtectedRoute`/`ReviewErrorBoundary` wrappers (do not change those).
+`ProtectedRoute`/`ReviewErrorBoundary` wrappers (do not change those). If you choose the export path in
+Step 1, add `export` to the wrapper.
 
 ### Step 3 — Verify + commit
 

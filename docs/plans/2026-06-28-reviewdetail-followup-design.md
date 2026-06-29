@@ -1,7 +1,19 @@
 # ReviewDetail Follow-up PR — Design
 
-**Status:** Approved (2026-06-28)
+**Status:** Approved (2026-06-28) · **GATE 1B amendments folded (2026-06-28)**
 **Scope:** One PR, frontend-only, no DB / no migration. Separately-labeled commits.
+
+> **GATE 1B amendments (Codex `gpt-5.5` + Claude cross-check, 2026-06-28):**
+> - **Cover BOTH silent-zero-cards failures** (user-confirmed scope completion): the banner fires on a
+>   `lessons_with_metadata` details error (count = `min(similarities.length, 5)`) **and** on a
+>   `submission_similarities` list error (count unknown → count-less message). Same mis-review risk →
+>   same treatment. `duplicatesError` shape = `{ count: number | null }`.
+> - Gate the details-error banner on `lessonsError && !lessons` (defensive — no false banner if data +
+>   error ever co-occur).
+> - `ReviewDetailRoute` (Task 3) must be **module-scope** (not nested in `AppContent`, which would
+>   remount on every render). Its `key={id}` fix is not exercised by the existing harness — accept
+>   documented manual coverage or export + test the wrapper.
+> - Retry = full `reload()` → briefly shows the page spinner (and re-seeds the form, see §2).
 **Branch:** `fix/reviewdetail-followup` (cut from `main` @ `1cd2693`; carries 2 wave-5-closure docs commits forward).
 
 This is the prioritized follow-up to the now-closed Wave 5 (ReviewDetail decomposition + C107
