@@ -82,7 +82,11 @@ export function ReviewMetadataForm({
         />
 
         {legacyDecisionWarning && (
-          <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="adm-hint adm-hint--error adm-alert--error"
+          >
             {legacyDecisionWarning}
           </div>
         )}
