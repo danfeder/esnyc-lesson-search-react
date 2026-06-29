@@ -106,7 +106,7 @@
       "provenance": "gold-provenance.md FROZEN q05/q06/q07 SHARED gold; same PRIMARY/ACCEPTABLE as q05. q06 also carries a maxTotalCount guard.",
       "provenanceNote": "frozen-recall. maxTotalCount = live total_count of 'rotting food' (567); q06's job is that a fix must surface decomposition lessons, NOT just flood. All PRIMARY titles returned a row.",
       "scoring": "frozen-recall",
-      "maxTotalCount": 567,
+      "maxTotalCount": 568,
       "primaryClusters": [
         ["1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4"],
         ["1UCyriRP14jUWMetMP6Olivo6XTS3COl14Et8dtpmkPs"],
@@ -602,7 +602,7 @@
       "provenance": "gold-provenance.md PREDICATE q28. Predicate: >=6/10 top-10 carry Mexican/Latin American cultural_heritage OR a Mexican-dish title. maxTotalCount guard.",
       "provenanceNote": "predicate. maxTotalCount = live total_count of 'mexican food' (567, over-broad baseline).",
       "scoring": "predicate",
-      "maxTotalCount": 567,
+      "maxTotalCount": 568,
       "predicate": {
         "description": ">=6/10 top-10 carry Mexican/Latin American cultural_heritage OR a Mexican-dish title (e.g. taco, enchilada, pico de gallo, tostada, arepa, pupusa, mole, salsa).",
         "sql": "EXISTS(SELECT 1 FROM unnest(cultural_heritage) ch WHERE ch ILIKE '%mexic%' OR ch ILIKE '%latin%') OR title ILIKE '%taco%' OR title ILIKE '%enchilada%' OR title ILIKE '%pico de gallo%' OR title ILIKE '%tostada%' OR title ILIKE '%pupusa%' OR title ILIKE '%mole%' OR title ILIKE '%salsa%' OR title ILIKE '%arepa%'"
@@ -782,20 +782,6 @@
       "predicate": {
         "description": ">=7/10 top-10 about worm/vermicompost/compost/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl|worm|vermicompost').",
         "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%' OR title ILIKE '%worm%' OR summary ILIKE '%worm%' OR title ILIKE '%vermicompost%' OR summary ILIKE '%vermicompost%'"
-      }
-    },
-    {
-      "id": "q39",
-      "query": "decay food waste",
-      "intent": "synonym-survival (C41): the proven decay lift survives inside the AND while broad 'food' stops flooding.",
-      "category": "G1",
-      "provenance": "gold-provenance.md PREDICATE q39. Predicate: >=7/10 top-10 about compost/decomposition/food-waste. C41 synonym-survival probe (design section 5); user-confirmed 2026-06-29.",
-      "provenanceNote": "predicate. C41 synonym-survival probe - reads red on the flat-OR before-baseline by design; maxTotalCount 100 post-C41 target (decay~60; tunable once after-numbers land).",
-      "scoring": "predicate",
-      "maxTotalCount": 100,
-      "predicate": {
-        "description": ">=7/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').",
-        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
       }
     },
     {

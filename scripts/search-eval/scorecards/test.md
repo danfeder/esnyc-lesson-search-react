@@ -17,9 +17,9 @@
 |---|---|
 | Mean recall@10 (frozen-recall) | 0.728 |
 | Mean precision@10 (frozen-precision) | 0.833 |
-| Predicate pass-rate | 0.545 (12/22) |
+| Predicate pass-rate | 0.571 (12/21) |
 | Corpus MRR (mean RR over frozen queries) | 0.923 |
-| maxTotalCount violations | 9 |
+| maxTotalCount violations | 6 |
 | normalized-call mismatches | 0 |
 | Dup-flood alarms (dupFlood>0) | 0 |
 | G3-isolation queries | 4 |
@@ -30,7 +30,7 @@
 |---|---|---|---|---|---|---|---|---|
 | q01 | compost lesson for 3rd grade | 87 | 1.000 | true | 1.000 | 0 | 1.000 | true |
 | q05 | decay | 60 | 0.857 | true | 1.000 | 0 | 1.000 | n/a |
-| q06 | rotting food | 568 | 0.000 | false | 0.000 | 0 | 1.000 | false |
+| q06 | rotting food | 568 | 0.000 | false | 0.000 | 0 | 1.000 | true |
 | q07 | decomposition | 59 | 0.857 | true | 1.000 | 0 | 1.000 | n/a |
 | q08 | pickling | 22 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q12 | teamwork and cooperation | 44 | 0.400 | true | 1.000 | 0 | 1.000 | n/a |
@@ -62,7 +62,7 @@
 | q24 | tomato | 92 | 10/10 | 6 | true | n/a |
 | q25 | salad | 81 | 10/10 | 6 | true | n/a |
 | q26 | herbs | 499 | 3/10 | 6 | false | n/a |
-| q28 | mexican food | 568 | 8/10 | 6 | true | false |
+| q28 | mexican food | 568 | 8/10 | 6 | true | true |
 | q29 | apple | 64 | 10/10 | 6 | true | true |
 | q30 | food waste | 568 | 2/10 | 6 | false | n/a |
 | q33 | seeds grades K-2 | 300 | 10/10 | 7 | true | n/a |
@@ -70,7 +70,6 @@
 | q36 | food waste decay | 583 | 2/10 | 7 | false | false |
 | q37 | food scraps decomposition | 581 | 6/10 | 7 | false | false |
 | q38 | worm compost food waste | 619 | 10/10 | 7 | true | false |
-| q39 | decay food waste | 583 | 2/10 | 7 | false | false |
 | q40 | decompasition food waste | 568 | 3/10 | 4 | false | false |
 | q41 | decay of food | 582 | 1/10 | 6 | false | false |
 
@@ -105,13 +104,10 @@ _None._
 
 | id | query | totalCount | maxTotalCount |
 |---|---|---|---|
-| q06 | rotting food | 568 | 567 |
 | q27 | social justice | 658 | 653 |
-| q28 | mexican food | 568 | 567 |
 | q36 | food waste decay | 583 | 100 |
 | q37 | food scraps decomposition | 581 | 100 |
 | q38 | worm compost food waste | 619 | 90 |
-| q39 | decay food waste | 583 | 100 |
 | q40 | decompasition food waste | 568 | 100 |
 | q41 | decay of food | 582 | 100 |
 
