@@ -237,9 +237,7 @@ export function ReviewDecisionPanel({
       </div>
 
       {saveError && (
-        <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
-          Save failed — nothing was written. {saveError}
-        </div>
+        <IntAlert variant="error">Save failed — nothing was written. {saveError}</IntAlert>
       )}
 
       <IntDecisionBar
