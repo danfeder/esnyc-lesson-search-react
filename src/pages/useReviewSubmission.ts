@@ -37,7 +37,6 @@ export interface SubmissionDetail {
   teacher: { email: string; full_name?: string };
   similarities?: SimilarityWithLesson[];
   submitterTargetLesson?: SubmitterTargetLesson | null;
-  review?: { metadata: ReviewMetadata; decision: string; notes: string };
 }
 
 /**
@@ -264,13 +263,6 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         content_embedding: submissionData.content_embedding ?? undefined,
         similarities: similaritiesWithLessons,
         submitterTargetLesson,
-        review: reviews?.[0]
-          ? {
-              metadata: (reviews[0].tagged_metadata as ReviewMetadata) || {},
-              decision: reviews[0].decision || '',
-              notes: reviews[0].notes || '',
-            }
-          : undefined,
         teacher: {
           email: 'teacher@example.com',
           full_name: profile?.full_name || 'Unknown Teacher',
