@@ -99,11 +99,36 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
     // Clear any prior load error so Retry starts from a clean slate.
     setLoadError(null);
     try {
-      const { data: submissionData, error: submissionError } = await supabase
-        .from('lesson_submissions')
-        .select('*, content_embedding')
-        .eq('id', id!)
-        .single();
+      // C107: the six fetches that build the review context run in THREE
+      // dependency-ordered waves of Promise.all instead of six serial
+      // round-trips. Per-await error discipline is UNCHANGED (only ordering):
+      // #1 throws; the reviews fetch BLOCKS (R2-1); the rest degrade + warn. A
+      // true network reject in any wave propagates to the outer try/catch →
+      // logger.error → finally setLoading(false) → "Submission not found" UI,
+      // exactly as the serial version did (Q8 LOCKED: Promise.all, NOT
+      // allSettled — allSettled would resilient-render and change behavior).
+
+      // Wave A — the three id-only fetches (#1 submission, #2 similarities,
+      // #5 latest review). Promise.all does NOT surface per-result errors, so
+      // each result's guards are re-applied on the resolved batch below.
+      const [
+        { data: submissionData, error: submissionError },
+        { data: similarities, error: similaritiesError },
+        { data: reviews, error: reviewsError },
+      ] = await Promise.all([
+        supabase.from('lesson_submissions').select('*, content_embedding').eq('id', id!).single(),
+        supabase
+          .from('submission_similarities')
+          .select('*')
+          .eq('submission_id', id!)
+          .order('combined_score', { ascending: false }),
+        supabase
+          .from('submission_reviews')
+          .select('*')
+          .eq('submission_id', id!)
+          .order('created_at', { ascending: false })
+          .limit(1),
+      ]);
 
       if (submissionError) throw submissionError;
       if (!submissionData) {
@@ -112,11 +137,21 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         return;
       }
 
-      const { data: similarities, error: similaritiesError } = await supabase
-        .from('submission_similarities')
-        .select('*')
-        .eq('submission_id', id!)
-        .order('combined_score', { ascending: false });
+      // R2-1 (data-integrity fix): supabase-js resolves a DB error as
+      // `{ data: null, error }` WITHOUT throwing, so a transient blip on the
+      // reviews fetch would leave `reviews` null and silently route to the
+      // preselect branch below — a fresh form whose later save would overwrite
+      // the prior review via complete_review_atomic's ON CONFLICT. BLOCK
+      // instead: surface a load-error screen so the form never renders and no
+      // overwrite is possible. `finally` still runs setLoading(false);
+      // submission + initialFormState stay null. (When this blocks, Waves B/C
+      // simply don't run — final state is identical to the serial version:
+      // loadError set, submission + initialFormState null.)
+      if (reviewsError) {
+        logger.error('Failed to load existing submission review:', reviewsError);
+        setLoadError(REVIEWS_LOAD_ERROR_MESSAGE);
+        return;
+      }
 
       // Degrade gracefully (no similarities → no dup cards), but surface the
       // dropped error for observability (R2-1 cleanup — pure logging, no
@@ -125,14 +160,31 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         logger.warn('Error fetching submission similarities:', similaritiesError);
       }
 
+      // Wave B — #3 (similar-lesson metadata, depends on #2's ids) and #6
+      // (teacher profile, depends on #1's teacher_id) run in parallel. #3 stays
+      // behind the `similarities.length > 0` guard; with no similarities its
+      // slot resolves to an inert `{ data: null, error: null }` so the
+      // downstream guard semantics are byte-identical to the serial version.
+      const profilePromise = supabase
+        .from('user_profiles')
+        .select('id, full_name')
+        .eq('id', submissionData.teacher_id)
+        .single();
+      const lessonsPromise =
+        similarities && similarities.length > 0
+          ? supabase
+              .from('lessons_with_metadata')
+              .select('lesson_id, title, grade_levels, thematic_categories')
+              .in(
+                'lesson_id',
+                similarities.map((s) => s.lesson_id)
+              )
+          : Promise.resolve({ data: null, error: null });
+      const [{ data: lessons, error: lessonsError }, { data: profile, error: profileError }] =
+        await Promise.all([lessonsPromise, profilePromise]);
+
       let similaritiesWithLessons: SimilarityWithLesson[] = [];
       if (similarities && similarities.length > 0) {
-        const lessonIds = similarities.map((s) => s.lesson_id);
-        const { data: lessons, error: lessonsError } = await supabase
-          .from('lessons_with_metadata')
-          .select('lesson_id, title, grade_levels, thematic_categories')
-          .in('lesson_id', lessonIds);
-
         // Degrade gracefully (similar lessons render as "Unknown"), but surface
         // the dropped error for observability — same graceful-degrade tier as
         // the similarities/profile fetches (logger.warn, not error).
@@ -151,13 +203,21 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         }
       }
 
-      // Phase 8b: if submitter bound to a lesson that's NOT in the rendered
-      // top-5 dup cards, fetch it separately so the unified card list can
-      // render it as "Submitter's choice." CRITICAL: check against the
+      // Degrade gracefully (→ "Unknown Teacher"), but surface the dropped error
+      // for observability (R2-1 cleanup — pure logging, no behavior change).
+      if (profileError) {
+        logger.warn('Error fetching submission teacher profile:', profileError);
+      }
+
+      // Wave C — Phase 8b: if submitter bound to a lesson that's NOT in the
+      // rendered top-5 dup cards, fetch it separately so the unified card list
+      // can render it as "Submitter's choice." CRITICAL: check against the
       // SLICED top-5 (not the full similarities array) — the render path
       // uses topDuplicates = submission.similarities.slice(0, 5), so a
       // submitter target sitting at rank 6+ of dup detection is not
-      // visible in the cards UI and needs the same off-list treatment.
+      // visible in the cards UI and needs the same off-list treatment. This
+      // off-list fetch depends on #1 (original_lesson_id) + #3 (renderedTopFive
+      // built from the similar-lesson metadata), so it runs last, alone.
       const submitterTargetId = submissionData?.original_lesson_id ?? null;
       const renderedTopFive = similaritiesWithLessons.slice(0, 5);
       const targetInRenderedTopFive = submitterTargetId
@@ -190,39 +250,6 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
             thematic_categories: targetData.thematic_categories,
           };
         }
-      }
-
-      const { data: reviews, error: reviewsError } = await supabase
-        .from('submission_reviews')
-        .select('*')
-        .eq('submission_id', id!)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      // R2-1 (data-integrity fix): supabase-js resolves a DB error as
-      // `{ data: null, error }` WITHOUT throwing, so a transient blip on the
-      // reviews fetch would leave `reviews` null and silently route to the
-      // preselect branch below — a fresh form whose later save would overwrite
-      // the prior review via complete_review_atomic's ON CONFLICT. BLOCK
-      // instead: surface a load-error screen so the form never renders and no
-      // overwrite is possible. `finally` still runs setLoading(false);
-      // submission + initialFormState stay null.
-      if (reviewsError) {
-        logger.error('Failed to load existing submission review:', reviewsError);
-        setLoadError(REVIEWS_LOAD_ERROR_MESSAGE);
-        return;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .eq('id', submissionData.teacher_id)
-        .single();
-
-      // Degrade gracefully (→ "Unknown Teacher"), but surface the dropped error
-      // for observability (R2-1 cleanup — pure logging, no behavior change).
-      if (profileError) {
-        logger.warn('Error fetching submission teacher profile:', profileError);
       }
 
       const fullSubmission: SubmissionDetail = {
