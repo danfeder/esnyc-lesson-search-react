@@ -65,6 +65,15 @@ import { vi } from 'vitest';
 export interface TableResult {
   data: unknown;
   error: unknown;
+  /**
+   * R2-1 reject path: when set, every terminal of this table's builder
+   * (`.single()`, `.maybeSingle()`, and the bare-await thenable) REJECTS with
+   * this value instead of resolving `{data, error}`. Models a true
+   * network/connection failure — the supabase-js promise ITSELF rejecting, not
+   * its usual resolved `{data: null, error}` — so a test can exercise the hook's
+   * outer try/catch reject path. Omit it for the normal resolve behavior.
+   */
+  reject?: unknown;
 }
 
 /**
@@ -112,7 +121,10 @@ export interface ReviewQueryBuilder extends PromiseLike<TableResult> {
 }
 
 function makeReviewQueryBuilder(config: TableResult): ReviewQueryBuilder {
-  const { data, error } = config;
+  const { data, error, reject: rejectWith } = config;
+  // R2-1 reject path: a configured `reject` makes every terminal REJECT (models
+  // the supabase-js promise itself rejecting) instead of resolving `{data,error}`.
+  const rejecting = rejectWith !== undefined;
   // Dual-shape unwrap: array form on disk → first element for `.single()`.
   const unwrapped: unknown = Array.isArray(data) ? (data[0] ?? null) : data;
 
@@ -142,13 +154,22 @@ function makeReviewQueryBuilder(config: TableResult): ReviewQueryBuilder {
     filter: () => builder,
     order: () => builder,
     limit: () => builder,
-    single: () => Promise.resolve<TableResult>({ data: unwrapped, error }),
-    maybeSingle: () => Promise.resolve<TableResult>({ data: unwrapped, error }),
+    single: () =>
+      rejecting
+        ? Promise.reject<TableResult>(rejectWith)
+        : Promise.resolve<TableResult>({ data: unwrapped, error }),
+    maybeSingle: () =>
+      rejecting
+        ? Promise.reject<TableResult>(rejectWith)
+        : Promise.resolve<TableResult>({ data: unwrapped, error }),
     then: <TResult1 = TableResult, TResult2 = never>(
       onfulfilled?: ((value: TableResult) => TResult1 | PromiseLike<TResult1>) | null | undefined,
       onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null | undefined
     ): Promise<TResult1 | TResult2> =>
-      Promise.resolve<TableResult>({ data, error }).then(onfulfilled, onrejected),
+      (rejecting
+        ? Promise.reject<TableResult>(rejectWith)
+        : Promise.resolve<TableResult>({ data, error })
+      ).then(onfulfilled, onrejected),
   };
 
   return builder;

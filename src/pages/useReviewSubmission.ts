@@ -147,11 +147,13 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
       // screen, any other error → blocking load-error screen WITH Retry; the
       // reviews fetch BLOCKS (R2-1); the rest degrade + warn. A true network
       // *reject* in any wave (the supabase-js promise itself rejecting, NOT a
-      // resolved `{ data, error }`) still propagates to the outer try/catch →
-      // logger.error → finally setLoading(false) → "Submission not found" UI,
-      // exactly as the serial version did — that reject path is intentionally
-      // left out of F2's scope (Q8 LOCKED: Promise.all, NOT allSettled —
-      // allSettled would resilient-render and change behavior).
+      // resolved `{ data, error }`) propagates to the outer try/catch →
+      // logger.error → setLoadError(SUBMISSION_LOAD_ERROR_MESSAGE) → finally
+      // setLoading(false) → the retryable load-error screen (R2-1: this extends
+      // F2's retry treatment to connection-level failures; the earlier
+      // "Submission not found" fall-through was misleading for a transient blip).
+      // Still Promise.all, NOT allSettled (Q8 LOCKED — allSettled would
+      // resilient-render and change behavior).
 
       // Wave A — the three id-only fetches (#1 submission, #2 similarities,
       // #5 latest review). Promise.all does NOT surface per-result errors, so
@@ -412,7 +414,19 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
       }
       setInitialFormState(seed);
     } catch (error) {
+      // This is the reject / unexpected-throw catch-all: a genuine 0-row
+      // not-found returns INLINE above (submissionError PGRST116 → not-found;
+      // any other resolved submissionError → load-error; the !submissionData
+      // belt-and-suspenders → not-found). Only a true promise REJECT (the
+      // supabase-js promise ITSELF rejecting — a network/connection failure, not
+      // a resolved `{ data, error }`) or an unexpected throw reaches here. Extend
+      // F2's retry treatment to those connection-level failures: surface the
+      // retryable load-error screen instead of the dead-end "Submission not
+      // found" (loadError wins render precedence over the not-found branch, and
+      // submission was already nulled at the top, so a mid-load throw shows a
+      // clean Retry screen rather than a half-seeded form).
       logger.error('Error loading submission:', parseDbError(error));
+      setLoadError(SUBMISSION_LOAD_ERROR_MESSAGE);
     } finally {
       setLoading(false);
     }

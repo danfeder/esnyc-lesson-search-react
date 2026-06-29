@@ -559,6 +559,42 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // R2-1 reject path: F2 splits a RESOLVED primary error ({data:null,error}) —
+  // PGRST116 → not-found, other → load-error (tests 15/16). But a true network
+  // REJECT (the supabase-js promise ITSELF rejecting, not a resolved
+  // {data,error}) lands in loadSubmission's outer try/catch. That catch must now
+  // ALSO route to the retryable load-error screen (SUBMISSION copy) — extending
+  // F2's retry treatment to connection-level failures — instead of leaving the
+  // page on the dead-end "Submission not found" screen with no recovery.
+  // ---------------------------------------------------------------------------
+
+  // Fixture — the primary `lesson_submissions` `.single()` promise REJECTS
+  // (network down), so Wave A's Promise.all rejects → the hook's outer catch.
+  const primaryFetchRejectFixture: Record<string, TableResult> = {
+    lesson_submissions: { data: null, error: null, reject: new Error('network down') },
+  };
+
+  // R2-1 reject — a rejected primary fetch → retryable load-error screen, NOT
+  // "Submission not found".
+  it('17. primary-fetch reject (promise rejects): retryable load-error screen, not "not found"', async () => {
+    renderReview(primaryFetchRejectFixture, 'sub-reject');
+
+    // The blocking load-error screen renders (same screen F2/R2-1 reuse)…
+    expect(await screen.findByText(/couldn.t load this review/i)).toBeInTheDocument();
+    // …with the SUBMISSION-specific copy — the connection hint is unique to
+    // SUBMISSION_LOAD_ERROR_MESSAGE (the reviews-error message has no such hint),
+    // so this also pins that the reject path uses the submission message.
+    expect(screen.getByText(/check your connection and try again/i)).toBeInTheDocument();
+
+    // Retry affordance present (a transient reject is recoverable).
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+
+    // NOT the dead-end not-found screen, and the form never rendered.
+    expect(screen.queryByText(/submission not found/i)).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  // ---------------------------------------------------------------------------
   // GATE 3 (data-integrity): Task 1's duplicates-banner Retry calls reload()
   // while a submission is ALREADY rendered. If the re-fetch now resolves PGRST116
   // (the submission was deleted between the first load and the Retry), the hook
@@ -567,7 +603,7 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
   // decision form for a row that no longer exists. Regression pin for the
   // loadSubmission state-clearing fix.
   // ---------------------------------------------------------------------------
-  it('17. duplicates-retry after delete: a PGRST116 on the banner Retry clears the stale form and shows not-found', async () => {
+  it('18. duplicates-retry after delete: a PGRST116 on the banner Retry clears the stale form and shows not-found', async () => {
     renderReview(detailsErrorFixture, 'sub-detailserror');
     const user = userEvent.setup();
 
