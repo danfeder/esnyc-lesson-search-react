@@ -4,9 +4,10 @@
 
 ## Current State
 
-**Phase:** **PR A IN REVIEW — rounds 1+2 bot triage DONE.** PR A (**#568**) pushed; `claude-review` passed
-both rounds; R1 (3 findings → `b993699`) + R2 (3 findings → `6c83675`) folded. Round-cap 2/2 → a round-3
-review would be critical-bugs-only. **Awaiting (user) merge decision.** Task A.1 (`[user-verdict]` on probe predicates)
+**Phase:** **PR A COMPLETE — 3 bot rounds folded; merging.** PR A (**#568**); `claude-review` passed all 3
+rounds. R1 (3 findings → `b993699`) + R2 (3 findings → `6c83675`) + R3 (3 trivial doc/dead-code findings,
+user-approved past the round-cap → `4f5ebfd`) all folded. **User authorized merge;** squash-merge once the
+round-3 push CI is green. **Next: PR B Task B.1** (return-type caller-grep) off updated main. Task A.1 (`[user-verdict]` on probe predicates)
 DONE; Task A.2 (add probes + before-baseline) DONE + amended after a GATE-3 fold. Design **Locked**. GATE 1A/1B folded during scaffolding (5 GATE-A findings: F1 `plainto_tsquery`
 not `to_tsquery`; F2 empty-tsquery RPC guard; F3 two-function DROP+CREATE scope; F4 types-regen; F5 C42
 provenance-as-risk).
@@ -17,7 +18,7 @@ eval gate). **Next:** four-surface triage of #568 → (user) merge → PR B (`fe
 **Current task:** **PR A bot triage** (PER-PR steps 3–8). Then PR B Task B.1 (caller-grep return-type path)
 once #568 merges to main.
 
-**Branch:** `test/wave6-search-eval-multiterm-probes` (PR #568). **Last commit:** `6c83675` (round-2 fold;
+**Branch:** `test/wave6-search-eval-multiterm-probes` (PR #568). **Last commit:** `4f5ebfd` (round-3 fold;
 status-doc commit on top).
 
 **Last commit on main:** `f12bbf3` (scaffold docs PR #567, merged this session). PR A branched off it.
@@ -169,5 +170,13 @@ confirmed `%decay%` over-match risk LOW + before still RED) → commit `6c83675`
 before-baseline byte-identical (the flooded top-10 carry no `decay` token yet — it only bites post-C41), so
 the commit is just the 2 source files. Round-cap: **2 of 2 used**.
 
-Next step: (user) merge #568 → PR B Task B.1 (return-type caller-grep) off updated main. A round-3 bot review
-would be critical-bugs-only.
+**Round 3 (bot triage) — DONE (folded past round-cap, user-approved).** Pushed `6c83675`+status (`270421f`);
+`claude-review` PASSED a 3rd time + posted 3 more findings, all valid but trivial (doc/dead-code, zero
+measurement impact): (1) q38's note over-claimed "reads red by design" — its predicate already passes 10/10
+pre-C41, so q38 is a flood-COUNT guard, not a precision probe → note/description clarified; (2) q38's
+`%vermicompost%` clauses are dead (subsumed by `%compost%`) → removed (scorecard byte-identical, proving
+inert); (3) gold-provenance q06 spec line still said ~567 → synced to ~568. Bot refuted 3 non-findings
+(q40-no-`decay` intentional; q37 6/10 expected; q38/q40 sharing q37 SQL fine). Folded → `4f5ebfd`. User chose
+"one quick fix-up then merge" past the 2/2 round-cap (findings concrete + cheap + improve the durable baseline).
+
+Next step: squash-merge #568 (user-authorized) → PR B Task B.1 (return-type caller-grep) off updated main.
