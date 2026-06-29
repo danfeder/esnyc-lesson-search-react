@@ -531,8 +531,14 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
   it('15. primary-fetch error (non-PGRST116): blocking load-error screen with Retry, no form', async () => {
     renderReview(primaryFetchErrorFixture, 'sub-primaryerror');
 
-    // The blocking load-error screen renders (same screen R2-1 reuses).
+    // The blocking load-error screen renders (same screen R2-1 reuses)…
     expect(await screen.findByText(/couldn.t load this review/i)).toBeInTheDocument();
+    // …showing the SUBMISSION-specific copy. The heading ("Couldn't load this
+    // review") is SHARED by this F2 path and test 12's reviews-error path, so
+    // without pinning the message body a swap to REVIEWS_LOAD_ERROR_MESSAGE would
+    // still pass. The connection hint is unique to SUBMISSION_LOAD_ERROR_MESSAGE
+    // (the reviews-error copy has no such hint), so this would fail on that swap.
+    expect(screen.getByText(/check your connection and try again/i)).toBeInTheDocument();
 
     // Retry affordance present (a transient error is recoverable).
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
