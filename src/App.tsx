@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from '@/components/Common/ErrorBoundary';
@@ -81,6 +81,27 @@ const queryClient = new QueryClient({
   },
 });
 
+// Module scope (NOT nested in AppContent) so this wrapper keeps a stable identity
+// across AppContent re-renders (e.g. useLessonStats updates). Keying the
+// ReviewErrorBoundary to `id` REMOUNTS the entire review subtree — boundary
+// included — whenever the `/review/:id` param changes. That serves two needs at
+// once: (1) it clears any stale loadError / form state when navigating
+// review-to-review (R2-NEW-1, so ReviewDetail needs no separate key); and (2) it
+// resets the boundary's `hasError` — the boundary is a class component with no
+// other reset path (no getDerivedStateFromProps / componentDidUpdate), so if it
+// sat OUTSIDE this keyed subtree a render error caught on one review would leave
+// hasError true and PERMANENTLY block every later review. Exported for the focused
+// remount/reset test. A nested wrapper would get a fresh identity every parent
+// render and remount constantly — a regression that defeats the fix.
+export function ReviewDetailRoute() {
+  const { id } = useParams();
+  return (
+    <ReviewErrorBoundary key={id}>
+      <ReviewDetail />
+    </ReviewErrorBoundary>
+  );
+}
+
 function AppContent() {
   const { totalLessons, totalCategories } = useLessonStats();
 
@@ -112,9 +133,7 @@ function AppContent() {
                   path="/review/:id"
                   element={
                     <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
-                      <ReviewErrorBoundary>
-                        <ReviewDetail />
-                      </ReviewErrorBoundary>
+                      <ReviewDetailRoute />
                     </ProtectedRoute>
                   }
                 />

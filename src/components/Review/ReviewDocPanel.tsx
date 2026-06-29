@@ -66,7 +66,7 @@ export function ReviewDocPanel({
             height="calc(100vh - 18rem)"
             fallbackToText={() => handleSetViewMode('text')}
             onError={(error) => {
-              logger.error('Google Doc embed error:', error.message);
+              logger.warn('Google Doc embed failed:', error.message);
             }}
           />
         ) : (

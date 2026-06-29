@@ -14,7 +14,7 @@ import { ReviewDecisionPanel } from '@/components/Review/ReviewDecisionPanel';
 import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import { ZOD_FIELD_TO_LABEL, parseExtractedContent } from '@/pages/reviewDetailHelpers';
-import { buildCandidateCards } from '@/pages/buildCandidateCards';
+import { buildCandidateCards, MAX_DUPLICATE_CARDS } from '@/pages/buildCandidateCards';
 import { useReviewSubmission, type ReviewDecision } from '@/pages/useReviewSubmission';
 import { useSearchEscapeHatch } from '@/pages/useSearchEscapeHatch';
 import {
@@ -37,7 +37,8 @@ export function ReviewDetail() {
   // useReviewSubmission hook (Wave 5 PR-1b Task 1b.1). The hook owns
   // submission/loading/loadError + the seed; the page keeps its own form state
   // and applies the seed via one effect below.
-  const { submission, loading, loadError, initialFormState, reload } = useReviewSubmission(id);
+  const { submission, loading, loadError, initialFormState, reload, duplicatesError } =
+    useReviewSubmission(id);
   const [saving, setSaving] = useState(false);
   const [metadata, setMetadata] = useState<ReviewMetadata>({});
   const [decision, setDecision] = useState<ReviewDecision>('approve_new');
@@ -206,9 +207,9 @@ export function ReviewDetail() {
     }
   };
 
-  // Server orders by combined_score DESC; just take the top 5.
+  // Server orders by combined_score DESC; just take the top MAX_DUPLICATE_CARDS.
   const topDuplicates = useMemo(
-    () => submission?.similarities?.slice(0, 5) ?? [],
+    () => submission?.similarities?.slice(0, MAX_DUPLICATE_CARDS) ?? [],
     [submission?.similarities]
   );
 
@@ -400,6 +401,8 @@ export function ReviewDetail() {
             submission={submission}
             topDuplicates={topDuplicates}
             candidateCards={candidateCards}
+            duplicatesError={duplicatesError}
+            onRetryDuplicates={reload}
             selectedDuplicate={selectedDuplicate}
             setSelectedDuplicate={setSelectedDuplicate}
             decision={decision}
