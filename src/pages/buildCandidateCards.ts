@@ -2,6 +2,9 @@ import { type IntDuplicateMatchType } from '@/components/Internal';
 import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { normalizeMatchType } from '@/pages/reviewDetailHelpers';
 
+/** Max duplicate candidate cards shown / counted in the failure banner. */
+export const MAX_DUPLICATE_CARDS = 5;
+
 export interface SimilarityWithLesson {
   lesson_id: string;
   combined_score: number | null;

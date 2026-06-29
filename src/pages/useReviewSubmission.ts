@@ -9,6 +9,7 @@ import { computePreselection } from '@/pages/reviewPreselect';
 import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
 import { reAddActivityTypeSuffix } from '@/pages/reviewDetailHelpers';
 import type { SimilarityWithLesson, SubmitterTargetLesson } from '@/pages/buildCandidateCards';
+import { MAX_DUPLICATE_CARDS } from '@/pages/buildCandidateCards';
 
 // As of Phase 4 (complete-review edge function + complete_review_atomic
 // RPC), the DB-side CHECK on lesson_submissions.status accepts 'rejected'
@@ -278,7 +279,7 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           // usable cards — so only flag when the list is actually missing. This
           // is the gate Mode 1's similarities-error block above mirrors.
           if (!lessons) {
-            setDuplicatesError({ count: Math.min(similarities.length, 5) });
+            setDuplicatesError({ count: Math.min(similarities.length, MAX_DUPLICATE_CARDS) });
           }
         }
 
@@ -303,13 +304,13 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
       // rendered top-5 dup cards, fetch it separately so the unified card list
       // can render it as "Submitter's choice." CRITICAL: check against the
       // SLICED top-5 (not the full similarities array) — the render path
-      // uses topDuplicates = submission.similarities.slice(0, 5), so a
+      // uses topDuplicates = submission.similarities.slice(0, MAX_DUPLICATE_CARDS), so a
       // submitter target sitting at rank 6+ of dup detection is not
       // visible in the cards UI and needs the same off-list treatment. This
       // off-list fetch depends on #1 (original_lesson_id) + #3 (renderedTopFive
       // built from the similar-lesson metadata), so it runs last, alone.
       const submitterTargetId = submissionData?.original_lesson_id ?? null;
-      const renderedTopFive = similaritiesWithLessons.slice(0, 5);
+      const renderedTopFive = similaritiesWithLessons.slice(0, MAX_DUPLICATE_CARDS);
       const targetInRenderedTopFive = submitterTargetId
         ? renderedTopFive.some((s) => s.lesson_id === submitterTargetId)
         : false;

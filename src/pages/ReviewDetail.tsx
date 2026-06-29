@@ -14,7 +14,7 @@ import { ReviewDecisionPanel } from '@/components/Review/ReviewDecisionPanel';
 import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import { ZOD_FIELD_TO_LABEL, parseExtractedContent } from '@/pages/reviewDetailHelpers';
-import { buildCandidateCards } from '@/pages/buildCandidateCards';
+import { buildCandidateCards, MAX_DUPLICATE_CARDS } from '@/pages/buildCandidateCards';
 import { useReviewSubmission, type ReviewDecision } from '@/pages/useReviewSubmission';
 import { useSearchEscapeHatch } from '@/pages/useSearchEscapeHatch';
 import {
@@ -207,9 +207,9 @@ export function ReviewDetail() {
     }
   };
 
-  // Server orders by combined_score DESC; just take the top 5.
+  // Server orders by combined_score DESC; just take the top MAX_DUPLICATE_CARDS.
   const topDuplicates = useMemo(
-    () => submission?.similarities?.slice(0, 5) ?? [],
+    () => submission?.similarities?.slice(0, MAX_DUPLICATE_CARDS) ?? [],
     [submission?.similarities]
   );
 
