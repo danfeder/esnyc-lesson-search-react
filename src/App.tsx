@@ -81,15 +81,25 @@ const queryClient = new QueryClient({
   },
 });
 
-// Module scope (NOT nested in AppContent) so this component keeps a stable
-// identity across AppContent re-renders (e.g. useLessonStats updates). The
-// `key={id}` forces ReviewDetail to REMOUNT when the `/review/:id` param changes,
-// clearing any stale loadError / form state when navigating review-to-review
-// (R2-NEW-1). A nested wrapper would get a fresh identity every parent render and
-// remount ReviewDetail constantly — a regression that defeats the fix.
-function ReviewDetailRoute() {
+// Module scope (NOT nested in AppContent) so this wrapper keeps a stable identity
+// across AppContent re-renders (e.g. useLessonStats updates). Keying the
+// ReviewErrorBoundary to `id` REMOUNTS the entire review subtree — boundary
+// included — whenever the `/review/:id` param changes. That serves two needs at
+// once: (1) it clears any stale loadError / form state when navigating
+// review-to-review (R2-NEW-1, so ReviewDetail needs no separate key); and (2) it
+// resets the boundary's `hasError` — the boundary is a class component with no
+// other reset path (no getDerivedStateFromProps / componentDidUpdate), so if it
+// sat OUTSIDE this keyed subtree a render error caught on one review would leave
+// hasError true and PERMANENTLY block every later review. Exported for the focused
+// remount/reset test. A nested wrapper would get a fresh identity every parent
+// render and remount constantly — a regression that defeats the fix.
+export function ReviewDetailRoute() {
   const { id } = useParams();
-  return <ReviewDetail key={id} />;
+  return (
+    <ReviewErrorBoundary key={id}>
+      <ReviewDetail />
+    </ReviewErrorBoundary>
+  );
 }
 
 function AppContent() {
@@ -123,9 +133,7 @@ function AppContent() {
                   path="/review/:id"
                   element={
                     <ProtectedRoute permissions={[Permission.REVIEW_LESSONS]}>
-                      <ReviewErrorBoundary>
-                        <ReviewDetailRoute />
-                      </ReviewErrorBoundary>
+                      <ReviewDetailRoute />
                     </ProtectedRoute>
                   }
                 />
