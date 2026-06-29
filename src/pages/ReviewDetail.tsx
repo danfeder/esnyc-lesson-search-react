@@ -37,7 +37,8 @@ export function ReviewDetail() {
   // useReviewSubmission hook (Wave 5 PR-1b Task 1b.1). The hook owns
   // submission/loading/loadError + the seed; the page keeps its own form state
   // and applies the seed via one effect below.
-  const { submission, loading, loadError, initialFormState, reload } = useReviewSubmission(id);
+  const { submission, loading, loadError, initialFormState, reload, duplicatesError } =
+    useReviewSubmission(id);
   const [saving, setSaving] = useState(false);
   const [metadata, setMetadata] = useState<ReviewMetadata>({});
   const [decision, setDecision] = useState<ReviewDecision>('approve_new');
@@ -400,6 +401,8 @@ export function ReviewDetail() {
             submission={submission}
             topDuplicates={topDuplicates}
             candidateCards={candidateCards}
+            duplicatesError={duplicatesError}
+            onRetryDuplicates={reload}
             selectedDuplicate={selectedDuplicate}
             setSelectedDuplicate={setSelectedDuplicate}
             decision={decision}

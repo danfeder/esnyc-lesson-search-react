@@ -4,7 +4,11 @@ import { ReviewSearchPanel } from '@/components/Review/ReviewSearchPanel';
 import { SubmitterIntentBanner } from '@/components/Review/SubmitterIntentBanner';
 import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
 import { type LessonSearchResult } from '@/components/LessonSearchPicker';
-import type { SubmissionDetail, ReviewDecision } from '@/pages/useReviewSubmission';
+import type {
+  SubmissionDetail,
+  ReviewDecision,
+  DuplicatesLoadError,
+} from '@/pages/useReviewSubmission';
 import type { CandidateCard, SimilarityWithLesson } from '@/pages/buildCandidateCards';
 import type { FieldProgress } from '@/pages/reviewValidation';
 
@@ -13,6 +17,10 @@ interface ReviewDecisionPanelProps {
   /** Top-5 similarities — read by the intent banner to resolve an in-list title. */
   topDuplicates: SimilarityWithLesson[];
   candidateCards: CandidateCard[];
+  /** Non-null when the wholesale duplicate-details fetch failed (see hook). */
+  duplicatesError: DuplicatesLoadError | null;
+  /** Retry handler for the duplicates banner (the hook's `reload`). */
+  onRetryDuplicates: () => void;
   selectedDuplicate: string | null;
   setSelectedDuplicate: Dispatch<SetStateAction<string | null>>;
   decision: ReviewDecision;
@@ -53,6 +61,8 @@ export function ReviewDecisionPanel({
   submission,
   topDuplicates,
   candidateCards,
+  duplicatesError,
+  onRetryDuplicates,
   selectedDuplicate,
   setSelectedDuplicate,
   decision,
@@ -83,6 +93,29 @@ export function ReviewDecisionPanel({
         submitterTargetLesson={submission.submitterTargetLesson}
         topDuplicates={topDuplicates}
       />
+
+      {/* Task 1 (data-integrity): when the duplicate candidates would silently
+          vanish due to a transient fetch failure, surface a non-blocking warning
+          + Retry instead of zero cards — so the reviewer doesn't approve a true
+          duplicate as new. Renders independent of card count (off-list /
+          reviewer-search cards still render normally below). */}
+      {duplicatesError && (
+        <div className="adm-card">
+          <div role="alert" className="adm-hint adm-hint--error adm-alert--error">
+            {duplicatesError.count != null
+              ? `Couldn't load ${duplicatesError.count} possible duplicate${
+                  duplicatesError.count === 1 ? '' : 's'
+                } for this submission.`
+              : "Couldn't load possible duplicates for this submission."}{' '}
+            Retry before deciding — approving as new could miss a real duplicate.
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <IntButton variant="primary" onClick={onRetryDuplicates}>
+              Retry
+            </IntButton>
+          </div>
+        </div>
+      )}
 
       {candidateCards.length > 0 && (
         <div className="adm-card">

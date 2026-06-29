@@ -54,6 +54,17 @@ export interface ReviewInitialFormState {
   legacyDecisionWarning: string | null;
 }
 
+/**
+ * A duplicate-cards load failure that leaves the reviewer with zero candidate
+ * cards and no signal. Two failure modes (GATE 1B): the `submission_similarities`
+ * list fetch failed (count unknown → `null`), or the `lessons_with_metadata`
+ * details fetch failed for known similarity ids (`count` = how many, capped at the
+ * 5 the UI would render).
+ */
+export interface DuplicatesLoadError {
+  count: number | null;
+}
+
 export interface UseReviewSubmissionResult {
   submission: SubmissionDetail | null;
   loading: boolean;
@@ -67,6 +78,15 @@ export interface UseReviewSubmissionResult {
   initialFormState: ReviewInitialFormState | null;
   /** Re-run the load (the load-error screen's Retry affordance). */
   reload: () => void;
+  /**
+   * Set when the candidate-cards would silently vanish due to a transient fetch
+   * failure (similarities list OR details). The page renders a retry banner so the
+   * reviewer doesn't mistake a load failure for "no duplicates" and approve a true
+   * duplicate as new. null when similarities loaded fine (incl. genuinely zero) and
+   * the details fetch succeeded — the partial/missing-id case still degrades to
+   * "Unknown" cards in place.
+   */
+  duplicatesError: DuplicatesLoadError | null;
 }
 
 /**
@@ -93,10 +113,12 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [initialFormState, setInitialFormState] = useState<ReviewInitialFormState | null>(null);
+  const [duplicatesError, setDuplicatesError] = useState<DuplicatesLoadError | null>(null);
 
   const loadSubmission = useCallback(async () => {
     // Clear any prior load error so Retry starts from a clean slate.
     setLoadError(null);
+    setDuplicatesError(null);
     try {
       // C107: the six fetches that build the review context run in THREE
       // dependency-ordered waves of Promise.all instead of six serial
@@ -145,6 +167,10 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
       // guards and before any state mutation).
       if (similaritiesError) {
         logger.warn('Error fetching submission similarities:', similaritiesError);
+        // The similarities list itself failed → `similarities` is null, the
+        // Wave-B block below is skipped, and the reviewer would see zero cards
+        // with no signal. Count is unknown here (we never got the list), so null.
+        setDuplicatesError({ count: null });
       }
 
       // R2-1 (data-integrity fix): supabase-js resolves a DB error as
@@ -193,6 +219,14 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         // the similarities/profile fetches (logger.warn, not error).
         if (lessonsError) {
           logger.warn('Error fetching similar lessons:', lessonsError);
+          // Whole-query failure → `lessons` is null, so the map below can't run
+          // and the duplicate cards silently vanish. Signal it (with the count
+          // we know, capped at the 5 the UI renders) so the panel shows a retry
+          // banner, not zero cards. Gate on `!lessons` (defensive): never a false
+          // banner if data + error ever co-occur.
+          if (!lessons) {
+            setDuplicatesError({ count: Math.min(similarities.length, 5) });
+          }
         }
 
         if (lessons) {
@@ -360,5 +394,5 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
     loadSubmission();
   }, [loadSubmission]);
 
-  return { submission, loading, loadError, initialFormState, reload };
+  return { submission, loading, loadError, initialFormState, reload, duplicatesError };
 }

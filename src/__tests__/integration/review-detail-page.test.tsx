@@ -361,6 +361,151 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
       screen.queryByRole('button', { name: /reviews error target lesson/i })
     ).not.toBeInTheDocument();
   });
+
+  // ---------------------------------------------------------------------------
+  // Task 1 (data-integrity): a wholesale duplicate-load failure must surface a
+  // NON-blocking warning banner + Retry instead of silently showing zero cards —
+  // so a reviewer can't mistake a load failure for "no duplicates" and approve a
+  // true duplicate as new. TWO failure modes (GATE 1B):
+  //   A. the `lessons_with_metadata` DETAILS fetch errors for known similarity
+  //      ids → counted message (count = min(similarities.length, 5)).
+  //   B. the `submission_similarities` LIST fetch errors → count-less message
+  //      (we never got the list, so the count is unknown).
+  // Both stay NON-blocking (the decision form still renders) — the contrast with
+  // test 12's blocking reviews-error screen is the point.
+  // ---------------------------------------------------------------------------
+
+  // Fixture for Test A — a `new` submission (so no off-list `.single()` lookup),
+  // 3 similarities, and the candidate `lessons_with_metadata` `.in()` fetch
+  // returns `{ data: null, error }` so the cards would silently vanish.
+  const detailsErrorFixture: Record<string, TableResult> = {
+    lesson_submissions: {
+      data: [
+        {
+          id: 'sub-detailserror',
+          created_at: '2026-06-26T12:00:00.000Z',
+          google_doc_url: 'https://docs.google.com/document/d/detailserror-doc/edit',
+          google_doc_id: 'detailserror-doc',
+          submission_type: 'new',
+          original_lesson_id: null,
+          status: 'submitted',
+          extracted_content:
+            'Details Error Title\n\nSummary: A submission whose duplicate-details fetch errors.',
+          extracted_title: 'Details Error Title',
+          content_hash: 'hash-detailserror',
+          content_embedding: null,
+          teacher_id: 'teacher-detailserror',
+          ai_draft_metadata: null,
+        },
+      ],
+      error: null,
+    },
+    submission_similarities: {
+      data: [
+        {
+          lesson_id: 'lesson-a',
+          submission_id: 'sub-detailserror',
+          combined_score: 0.9,
+          match_type: 'high',
+          title_similarity: 0.9,
+          content_similarity: 0.9,
+        },
+        {
+          lesson_id: 'lesson-b',
+          submission_id: 'sub-detailserror',
+          combined_score: 0.8,
+          match_type: 'medium',
+          title_similarity: 0.8,
+          content_similarity: 0.8,
+        },
+        {
+          lesson_id: 'lesson-c',
+          submission_id: 'sub-detailserror',
+          combined_score: 0.7,
+          match_type: 'medium',
+          title_similarity: 0.7,
+          content_similarity: 0.7,
+        },
+      ],
+      error: null,
+    },
+    // The details `.in()` fetch errors → `lessons` null → cards silently vanish.
+    lessons_with_metadata: { data: null, error: { message: 'boom' } },
+    submission_reviews: { data: [], error: null },
+    user_profiles: {
+      data: [{ id: 'teacher-detailserror', full_name: 'Dev Detailserror' }],
+      error: null,
+    },
+  };
+
+  // Test A — details fetch fails → counted retry banner, non-blocking, no cards.
+  it('13. duplicates details error: counted retry banner renders, form still renders, no cards', async () => {
+    renderReview(detailsErrorFixture, 'sub-detailserror');
+
+    // Counted warning (3 similarities → "Couldn't load 3 possible duplicates…").
+    const banner = await screen.findByText(/couldn.t load .* possible duplicate/i);
+    expect(banner).toHaveTextContent(/3/);
+
+    // Retry affordance — getByRole throws on >1 match, so it also guards against
+    // a second Retry leaking into this non-blocked render.
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+
+    // NON-blocking: the decision form still renders (contrast test 12, which
+    // asserts NO radios on the blocking reviews-error screen).
+    expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeInTheDocument();
+
+    // No duplicate cards — the candidate-cards block never rendered.
+    expect(
+      screen.queryByText(/select one to merge into instead of publishing new/i)
+    ).not.toBeInTheDocument();
+  });
+
+  // Fixture for Test B — a `new` submission whose `submission_similarities` LIST
+  // fetch returns `{ data: null, error }`; the count is unknown.
+  const similaritiesErrorFixture: Record<string, TableResult> = {
+    lesson_submissions: {
+      data: [
+        {
+          id: 'sub-simerror',
+          created_at: '2026-06-27T12:00:00.000Z',
+          google_doc_url: 'https://docs.google.com/document/d/simerror-doc/edit',
+          google_doc_id: 'simerror-doc',
+          submission_type: 'new',
+          original_lesson_id: null,
+          status: 'submitted',
+          extracted_content:
+            'Similarities Error Title\n\nSummary: A submission whose similarities list fetch errors.',
+          extracted_title: 'Similarities Error Title',
+          content_hash: 'hash-simerror',
+          content_embedding: null,
+          teacher_id: 'teacher-simerror',
+          ai_draft_metadata: null,
+        },
+      ],
+      error: null,
+    },
+    // The similarities LIST fetch errors → `similarities` null → Wave-B skipped.
+    submission_similarities: { data: null, error: { message: 'boom' } },
+    lessons_with_metadata: { data: [], error: null },
+    submission_reviews: { data: [], error: null },
+    user_profiles: {
+      data: [{ id: 'teacher-simerror', full_name: 'Sam Simerror' }],
+      error: null,
+    },
+  };
+
+  // Test B — similarities list fails → count-less retry banner, non-blocking.
+  it('14. duplicates list error: count-less retry banner renders, form still renders', async () => {
+    renderReview(similaritiesErrorFixture, 'sub-simerror');
+
+    // Count-less warning. The counted phrasing ("…load 3 possible…") would NOT
+    // match this regex, so this specifically pins the count-less branch.
+    expect(await screen.findByText(/couldn.t load possible duplicates/i)).toBeInTheDocument();
+
+    // Retry affordance + the form still renders (non-blocking).
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeInTheDocument();
+  });
 });
 
 describe('SubmitterIntentBanner — 4-state coverage', () => {
