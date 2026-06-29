@@ -557,6 +557,42 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // No Retry affordance — this is NOT the recoverable load-error screen.
     expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
   });
+
+  // ---------------------------------------------------------------------------
+  // GATE 3 (data-integrity): Task 1's duplicates-banner Retry calls reload()
+  // while a submission is ALREADY rendered. If the re-fetch now resolves PGRST116
+  // (the submission was deleted between the first load and the Retry), the hook
+  // must clear the stale `submission`/`initialFormState` so the page falls to the
+  // "Submission not found" screen — NOT keep rendering the prior submission's
+  // decision form for a row that no longer exists. Regression pin for the
+  // loadSubmission state-clearing fix.
+  // ---------------------------------------------------------------------------
+  it('17. duplicates-retry after delete: a PGRST116 on the banner Retry clears the stale form and shows not-found', async () => {
+    renderReview(detailsErrorFixture, 'sub-detailserror');
+    const user = userEvent.setup();
+
+    // First load: duplicate-details error → non-blocking retry banner AND the
+    // decision form (radios) are BOTH on screen (the success-with-banner state).
+    expect(await screen.findByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeInTheDocument();
+
+    // The submission is deleted out from under the reviewer: swap the active mock
+    // so the NEXT lesson_submissions fetch resolves PGRST116 (0 rows). The
+    // vi.mock factory reads `currentMock` lazily per from() call, so the reload's
+    // re-fetch picks up this swap (documented consumption contract).
+    currentMock = makeReviewSupabaseMock({
+      lesson_submissions: { data: null, error: { code: 'PGRST116' } },
+    });
+
+    // Click the banner's Retry → reload() re-runs loadSubmission against the
+    // swapped (now-empty) mock.
+    await user.click(screen.getByRole('button', { name: /retry/i }));
+
+    // The stale form must be GONE and the not-found screen must show — i.e. the
+    // hook cleared the prior submission instead of leaving it truthy.
+    expect(await screen.findByText(/submission not found/i)).toBeInTheDocument();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
 });
 
 describe('SubmitterIntentBanner — 4-state coverage', () => {

@@ -124,9 +124,21 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
   const [duplicatesError, setDuplicatesError] = useState<DuplicatesLoadError | null>(null);
 
   const loadSubmission = useCallback(async () => {
-    // Clear any prior load error so Retry starts from a clean slate.
+    // Clear any prior load error so Retry starts from a clean slate. Also drop
+    // any PRIOR submission/seed: loadSubmission only ever runs with loading ===
+    // true (initial mount starts loading true; reload() sets it true first;
+    // ReviewDetail's key={id} makes an id change a fresh remount), so the
+    // `if (loading)` spinner always covers this brief null window — no not-found
+    // flash on a successful reload. Without this, a re-fetch that hits the
+    // not-found (PGRST116) / catch early-returns would leave the STALE prior
+    // submission truthy, and ReviewDetail would render the old form for a row
+    // that no longer exists (GATE 3, surfaced by Task 1's duplicates-banner
+    // Retry → reload()). A failed reload now correctly falls to the not-found /
+    // load-error screen instead.
     setLoadError(null);
     setDuplicatesError(null);
+    setSubmission(null);
+    setInitialFormState(null);
     try {
       // C107: the six fetches that build the review context run in THREE
       // dependency-ordered waves of Promise.all instead of six serial
@@ -410,14 +422,13 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
     if (id) loadSubmission();
   }, [id, loadSubmission]);
 
-  // Retry from the load-error screen. Reset `loading` first so the reviewer
-  // sees the spinner — NOT a "Submission not found" flash (submission is null
-  // after a blocked reviews-error load) nor a stale prior submission's form
-  // (when navigation set loadError while an earlier submission was still in
-  // state) — while the refetch is in flight. The R2-1 blocker must not appear
-  // to lift until the retry actually resolves. The id-triggered load path
-  // above is deliberately left calling loadSubmission directly (preserves the
-  // pre-existing navigation loading behavior — no spinner on id change).
+  // Retry affordance for the load-error screen AND Task 1's duplicates-banner.
+  // Reset `loading` first so the reviewer sees the spinner — NOT a stale prior
+  // submission's form — while the refetch is in flight: loadSubmission now
+  // clears submission/initialFormState up front, so the spinner must cover that
+  // null window (the R2-1 blocker also must not appear to lift until the retry
+  // resolves). An id change is handled separately by ReviewDetail's key={id}
+  // (a full remount), so reload() only ever re-runs against the SAME id.
   const reload = useCallback(() => {
     setLoading(true);
     loadSubmission();
