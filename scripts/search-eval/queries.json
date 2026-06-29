@@ -776,12 +776,12 @@
       "intent": "4-term vermicomposting (C41): stays tight across worm/compost/food/waste.",
       "category": "G1",
       "provenance": "gold-provenance.md PREDICATE q38. Predicate: >=7/10 top-10 about worm/vermicompost/compost/food-waste. C41 multi-term flood probe (design section 5); user-confirmed 2026-06-29.",
-      "provenanceNote": "predicate. C41 multi-term probe - reads red on the flat-OR before-baseline by design; maxTotalCount 90 is the post-C41 target (worm-composting intersection is tight; tunable once after-numbers land).",
+      "provenanceNote": "predicate/count-guard. q38's PREDICATE already passes pre-C41 (10/10 on the flood) — it is NOT a precision signal; maxTotalCount 90 is the post-C41 flood-collapse gate (the only red dimension here; 619 today). Tunable once after-numbers land.",
       "scoring": "predicate",
       "maxTotalCount": 90,
       "predicate": {
-        "description": ">=7/10 top-10 about worm/vermicompost/compost/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl|worm|vermicompost').",
-        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%' OR title ILIKE '%worm%' OR summary ILIKE '%worm%' OR title ILIKE '%vermicompost%' OR summary ILIKE '%vermicompost%'"
+        "description": ">=7/10 top-10 about worm/compost/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl|worm'; vermicompost covered by compost).",
+        "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%' OR title ILIKE '%worm%' OR summary ILIKE '%worm%'"
       }
     },
     {

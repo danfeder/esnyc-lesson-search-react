@@ -37,7 +37,7 @@ AND (title ILIKE '%decompos%' OR summary ILIKE '%decompos%'
 PRIMARY titles: `2nd Grade Decomposition Experiment Part 1`, `2nd Grade Decomposition Experiment Part 2`, `Decomposition Experiment`, `Decomposition Experiment Part 2`, `November Will It Decompose, Part II`, `Roly Poly Lunch`, `What's for Dinner?: Decomposition in the Garden`.
 ACCEPTABLE titles: `Soil Is Where Food Begins!`, `Worm Breakfast Recipe`, `Roly Polys`, `Worm Study`, `Worm Structure and Function`, `Day in the Life of a Worm`.
 (All compost/food-web/mushroom/garden-chore/salsa/noise rows → exclude.)
-q06 also: `maxTotalCount` guard — pin live total_count of `rotting food` (~567 today) and set guard at that level (q06's job: a fix must surface decomposition lessons, NOT just flood).
+q06 also: `maxTotalCount` guard — pin live total_count of `rotting food` (~568 today) and set guard at that level (q06's job: a fix must surface decomposition lessons, NOT just flood).
 
 ### q13 `three sisters garden` — scoring=frozen-precision (precision@10 [primary+acceptable] + top1/mrr vs PRIMARY)
 Oracle SQL:
@@ -170,7 +170,7 @@ Measurement set = same as q10 RDM isolation set.
 - q30 `food waste` — predicate: ≥6/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl').
 - q36 `food waste decay` — predicate: ≥7/10 top-10 about compost/decomposition/decay/food-waste (title/summary ILIKE 'compost|decompos|decay|food waste|food scrap|recycl'). maxTotalCount=100 (post-C41 flood-collapse target). C41 multi-term probe; user-confirmed 2026-06-29.
 - q37 `food scraps decomposition` — predicate: ≥7/10 top-10 about compost/decomposition/food-waste. maxTotalCount=100. C41 multi-term probe; user-confirmed 2026-06-29.
-- q38 `worm compost food waste` — predicate: ≥7/10 top-10 about worm/vermicompost/compost/food-waste. maxTotalCount=90. C41 multi-term probe; user-confirmed 2026-06-29.
+- q38 `worm compost food waste` — predicate: ≥7/10 top-10 about worm/compost/food-waste (vermicompost covered by compost). maxTotalCount=90. C41 count-guard probe (predicate already 10/10 pre-C41); user-confirmed 2026-06-29.
 - q40 `decompasition food waste` — predicate: ≥4/10 (lenient) top-10 about compost/decomposition/food-waste. maxTotalCount=100. C41 typo recall-cliff canary (PR-D trigger if unmet); user-confirmed 2026-06-29.
 - q41 `decay of food` — predicate: ≥6/10 top-10 about compost/decomposition/decay/food-waste (title/summary ILIKE 'compost|decompos|decay|food waste|food scrap|recycl'). maxTotalCount=100. C41 stop-word-middle probe ('of' reaches SQL, dropped via numnode); user-confirmed 2026-06-29 (revised from 'compost for the garden' per GATE-3).
 
