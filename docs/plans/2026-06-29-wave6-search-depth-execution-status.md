@@ -1,29 +1,40 @@
 # Wave 6 — Search Depth (C41 + C42 spike) Execution Status
 
-**Last updated:** 2026-06-29 by Session 1 (scaffold)
+**Last updated:** 2026-06-29 by Session 2 (PR A pushed, #568)
 
 ## Current State
 
-**Phase:** **SCAFFOLD COMPLETE — ready to execute PR A.** Four-file kit authored on 2026-06-29.
-Design **Locked** (Standard mode — strategy + mechanism both settled at scaffold time). **GATE 1A
-(design) + GATE 1B (impl plan)** both ran (Codex `gpt-5.5`, inline) and folded during scaffolding —
-GATE A folded 5 findings (F1 `plainto_tsquery` not `to_tsquery`; F2 empty-tsquery RPC guard; F3 honest
-two-function DROP+CREATE scope; F4 types-regen; F5 C42 provenance-as-risk). No implementation code yet.
+**Phase:** **PR A COMPLETE — 3 bot rounds folded; merging.** PR A (**#568**); `claude-review` passed all 3
+rounds. R1 (3 findings → `b993699`) + R2 (3 findings → `6c83675`) + R3 (3 trivial doc/dead-code findings,
+user-approved past the round-cap → `4f5ebfd`) all folded. **User authorized merge;** squash-merge once the
+round-3 push CI is green. **Next: PR B Task B.1** (return-type caller-grep) off updated main. Task A.1 (`[user-verdict]` on probe predicates)
+DONE; Task A.2 (add probes + before-baseline) DONE + amended after a GATE-3 fold. Design **Locked**. GATE 1A/1B folded during scaffolding (5 GATE-A findings: F1 `plainto_tsquery`
+not `to_tsquery`; F2 empty-tsquery RPC guard; F3 two-function DROP+CREATE scope; F4 types-regen; F5 C42
+provenance-as-risk).
 
-**Active PR:** none — not yet branched. **Next:** PR A Task A.1.
+**Active PR:** **#568** `test/wave6-search-eval-multiterm-probes` → main (additive eval probes; no DB, no CI
+eval gate). **Next:** four-surface triage of #568 → (user) merge → PR B (`feat/wave6-c41-and-of-ors`).
 
-**Current task:** **PR A Task A.1 — propose the multi-term eval-probe predicates and get the user's
-sign-off** (`[user-verdict]`: the gold `queries.json` is product-owner-frozen, so new entries +
-predicates need confirmation BEFORE editing). Then A.2 (add probes + capture before-baseline scorecard).
+**Current task:** **PR A bot triage** (PER-PR steps 3–8). Then PR B Task B.1 (caller-grep return-type path)
+once #568 merges to main.
 
-**Branch:** `main` (PR A branch `test/wave6-search-eval-multiterm-probes` not yet cut).
+**Branch:** `test/wave6-search-eval-multiterm-probes` (PR #568). **Last commit:** `4f5ebfd` (round-3 fold;
+status-doc commit on top).
 
-**Last commit on branch:** (none)
+**Last commit on main:** `f12bbf3` (scaffold docs PR #567, merged this session). PR A branched off it.
 
-**Last commit on main:** `b9514de` (Wave-5 follow-up #556). *(The scaffold docs commit — bundling these
-four files with the Wave-5 close-out — is the first commit of this initiative; see session log.)*
+**Gold-set added (user-confirmed):** 5 probes q36/q37/q38/q40/q41 (predicate + maxTotalCount) — **q39 was
+dropped in the round-1 fix-up** (it was a word-order duplicate of q36; Postgres FTS is order-independent, so
+both measured an identical 583/2-of-10). q36 `food waste decay`, q37 `food scraps decomposition`, q38 `worm
+compost food waste`, q40 `decompasition food waste` (typo recall-cliff CANARY — lenient `>=4/10`; an unmet
+bar after C41 is the PR-D trigger), q41 `decay of food` (stop-word-middle: "of" survives parseSearchQuery's
+FILLER list but must be dropped at the SQL layer via numnode). Pre-existing guards q06/q28 bumped 567→568
+(benign TEST drift). The no-crash stop-word-heavy case is NOT a gold probe — it's covered by PR B Task B.3's
+MCP `the of and` assertion (the app parser would mask it). Probes read RED by design. **R2 refinement:**
+q36/q41 predicates also match title/summary ILIKE `'%decay%'` (the literal query term) so post-C41
+precision isn't understated; q06/q28 provenanceNotes + new-bullet `≥` glyphs synced.
 
-**Pre-next-PR verification (if any):** none. PR A is additive (eval probes only), no DB, no TEST verify.
+**Pre-next-PR verification (if any):** none for PR A (additive, no DB). PR B needs full TEST+PROD MCP verify.
 
 **What ships, in order:** PR A = multi-term eval probes + before-baseline (`test/…`, additive) → PR B =
 the C41 migration (`feat/wave6-c41-and-of-ors`, full DB discipline + GATE 2, eval-gated) → PR C = C42
@@ -109,3 +120,63 @@ Major events:
   migration-order check + corrected latest-overall baseline (`20260626000000_*`) + same-day ASCII trap note,
   and "preserve the existing `COALESCE(ts_rank,0)`".
 - **Next session:** paste the kickoff → execute PR A Task A.1 (user-verdict on probe predicates).
+
+### Session 2 — 2026-06-29 — PR A built + pushed (#568)
+
+Major events:
+- **Merged scaffold docs PR #567** (`f12bbf3`) to main (user-authorized) so PR A branches off a main that
+  carries the reference docs. All substantive checks were green (UNSTABLE was only the pending `claude-review`).
+- **PR A Task A.1 (`[user-verdict]`) DONE** — proposed 7 multi-term eval probes + predicates; user approved.
+- **PR A Task A.2 DONE** — added probes + captured the TEST before-baseline; first commit `3680278`.
+- **GATE 3 (pre-push: code-reviewer + Codex `gpt-5.5`, parallel)** — code-reviewer CLEAN (traced every
+  predicate against `predicate.ts` grammar, JSON valid, no collateral edits, scorecard arithmetic checks).
+  **Codex found one real issue:** two probes (`compost for the garden`, `lesson about the garden`) used
+  connector words that `parseSearchQuery`'s FILLER list (`lesson/lessons/for/about/a/an/the`) strips BEFORE
+  the RPC, so they never reached/tested the SQL-level stop-word handling. **Folded (user-confirmed):** q41 →
+  `decay of food` ("of" survives FILLER, dropped at SQL via numnode — a genuine, discriminating test); **q42
+  DROPPED** (no-crash case relocated to PR B Task B.3's MCP `the of and`). Commit amended → `0c1e9cb` (6
+  probes q36–q41). q36–q40 + single-term controls (q21/q23/q24/q29) verified byte-identical.
+- **PR #568 opened**, base main. Probes read RED by design (`npm run eval:search` is not a CI gate).
+
+Decisions / learnings:
+- **parseSearchQuery two-filter insight (load-bearing for C41 probe design):** the app-layer FILLER list
+  (`lesson/lessons/for/about/a/an/the`) ≠ the SQL FTS stop-word list (`of/and/in/...`). A true SQL stop-word
+  probe must use a word the app parser KEEPS but FTS DROPS (of/and/in). This is why q41 uses `decay of food`.
+- **TEST-DB drift:** the prior committed scorecard was 11 days stale (`18bd28b`, 2026-06-18). The refreshed
+  baseline picks up benign per-query drift on untouched rows (q06 567→568, q08 14→22, q19 91→107, q26
+  470→499, q28 567→568, etc.; corpus stayed 745). **PR B must compare LINE ITEMS, not aggregate counts** —
+  and re-baseline close in time to PR B's after-run to minimize interim drift.
+- Two pre-existing gold guards now barely tripped by drift (q06 `rotting food` 568 vs 567, q28 `mexican food`
+  568 vs 567). NOT a PR A concern; C41 will likely pull both back under guard (both are 2-word queries that
+  AND-collapse). Out-of-scope to re-tune old guards here.
+
+**Round 1 (bot triage) — DONE.** `claude-review` PASSED + posted 3 findings (reviews/line-comment surfaces
+empty; four-surface confirmed). All real, all measurement-quality (no DB/correctness bug): (1) q36 `food
+waste decay` ≡ q39 `decay food waste` — identical query (FTS ignores word order; scorecard confirmed both
+583/2-of-10) → **user: drop q39**; (2) q06/q28 guards stale at 567 (TEST now 568) → **user: bump both to
+568**; (3) new provenance bullets used ASCII `-` vs existing em-dash `—` → aligned. Folded into fix-up
+`b993699` (q39 dropped → 5 probes; q06/q28→568; em-dash). Bot also positively CONFIRMED the q41 `of` fix and
+q39's predicate scoping. GATE 4 not separately dispatched — findings were empirically verifiable from the
+scorecard (identical numbers / 568-vs-567), not product/DB-code changes. Round-cap: 1 of 2 used.
+
+**Round 2 (bot triage) — DONE.** Pushed `b993699`+status (`aebfdb5`); `claude-review` PASSED again + posted
+3 more findings (reviews/line-comments empty; four-surface confirmed). All real, measurement-quality: (1)
+q41 (and q36) predicate omitted `%decay%` — the literal query term — so post-C41 precision would be
+understated → **added `%decay%` to q36/q41** (rejected the bot's `%rot%`: over-matches carrot/protein/
+rotation); (2) q06/q28 `provenanceNote` still said 567 → synced to 568; (3) new gold-provenance bullets used
+ASCII `>=` vs existing `≥` (U+2265) → aligned. Bot also refuted 2 non-issues (q38 red is by-design; stale
+PR-body table → fixed via `gh pr edit`). Folded as a **Workflow** (executor → adversarial verifier; verifier
+confirmed `%decay%` over-match risk LOW + before still RED) → commit `6c83675`. Notable: `%decay%` left the
+before-baseline byte-identical (the flooded top-10 carry no `decay` token yet — it only bites post-C41), so
+the commit is just the 2 source files. Round-cap: **2 of 2 used**.
+
+**Round 3 (bot triage) — DONE (folded past round-cap, user-approved).** Pushed `6c83675`+status (`270421f`);
+`claude-review` PASSED a 3rd time + posted 3 more findings, all valid but trivial (doc/dead-code, zero
+measurement impact): (1) q38's note over-claimed "reads red by design" — its predicate already passes 10/10
+pre-C41, so q38 is a flood-COUNT guard, not a precision probe → note/description clarified; (2) q38's
+`%vermicompost%` clauses are dead (subsumed by `%compost%`) → removed (scorecard byte-identical, proving
+inert); (3) gold-provenance q06 spec line still said ~567 → synced to ~568. Bot refuted 3 non-findings
+(q40-no-`decay` intentional; q37 6/10 expected; q38/q40 sharing q37 SQL fine). Folded → `4f5ebfd`. User chose
+"one quick fix-up then merge" past the 2/2 round-cap (findings concrete + cheap + improve the durable baseline).
+
+Next step: squash-merge #568 (user-authorized) → PR B Task B.1 (return-type caller-grep) off updated main.
