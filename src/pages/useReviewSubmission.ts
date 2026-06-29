@@ -98,6 +98,14 @@ const REVIEWS_LOAD_ERROR_MESSAGE =
   'saving now could overwrite a previous review.';
 
 /**
+ * F2 load-error copy. Surfaced when the primary `lesson_submissions` fetch
+ * returns a TRANSIENT error (any code other than PGRST116) so the reviewer can
+ * retry instead of seeing a misleading "Submission not found" with no recovery.
+ */
+const SUBMISSION_LOAD_ERROR_MESSAGE =
+  "We couldn't load this submission. Check your connection and try again.";
+
+/**
  * Loads a submission and its review context for the ReviewDetail page, and
  * computes the initial form-state seed (restore-vs-preselect). Extracted from
  * ReviewDetail (Wave 5 PR-1b Task 1b.1) WITHOUT changing fetch ordering (the
@@ -122,12 +130,16 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
     try {
       // C107: the six fetches that build the review context run in THREE
       // dependency-ordered waves of Promise.all instead of six serial
-      // round-trips. Per-await error discipline is UNCHANGED (only ordering):
-      // #1 throws; the reviews fetch BLOCKS (R2-1); the rest degrade + warn. A
-      // true network reject in any wave propagates to the outer try/catch →
+      // round-trips. Per-result error discipline (only ordering changed by C107):
+      // #1's resolved error now SPLITS (F2) — PGRST116 (0 rows) → not-found
+      // screen, any other error → blocking load-error screen WITH Retry; the
+      // reviews fetch BLOCKS (R2-1); the rest degrade + warn. A true network
+      // *reject* in any wave (the supabase-js promise itself rejecting, NOT a
+      // resolved `{ data, error }`) still propagates to the outer try/catch →
       // logger.error → finally setLoading(false) → "Submission not found" UI,
-      // exactly as the serial version did (Q8 LOCKED: Promise.all, NOT
-      // allSettled — allSettled would resilient-render and change behavior).
+      // exactly as the serial version did — that reject path is intentionally
+      // left out of F2's scope (Q8 LOCKED: Promise.all, NOT allSettled —
+      // allSettled would resilient-render and change behavior).
 
       // Wave A — the three id-only fetches (#1 submission, #2 similarities,
       // #5 latest review). Promise.all does NOT surface per-result errors, so
@@ -151,7 +163,24 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           .limit(1),
       ]);
 
-      if (submissionError) throw submissionError;
+      if (submissionError) {
+        // F2: `.single()` returns PGRST116 when it matches 0 rows — a genuine
+        // "no such submission" (retrying won't help) → fall through to the
+        // not-found screen. Any OTHER error is transient (DB/network), so block
+        // with a load-error screen that offers Retry instead of a misleading
+        // "Submission not found".
+        if (submissionError.code === 'PGRST116') {
+          logger.warn('No submission found with id:', id);
+          return;
+        }
+        logger.error('Failed to load submission:', submissionError);
+        setLoadError(SUBMISSION_LOAD_ERROR_MESSAGE);
+        return;
+      }
+      // Belt-and-suspenders: `.single()` always pairs a 0-row match with a
+      // PGRST116 error (handled above), so this guard is effectively unreachable
+      // for the current fetch — kept as cheap defense-in-depth in case the query
+      // shape ever changes (e.g. to `.maybeSingle()`), NOT a live code path.
       if (!submissionData) {
         logger.error('No submission found with id:', id);
         return;

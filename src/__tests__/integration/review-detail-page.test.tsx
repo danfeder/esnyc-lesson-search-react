@@ -506,6 +506,54 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeInTheDocument();
   });
+
+  // ---------------------------------------------------------------------------
+  // Task 2 (F2): distinguish a TRANSIENT primary `lesson_submissions` fetch error
+  // from a GENUINE missing row. `.single()` returns an ERROR with code
+  // 'PGRST116' (not null data) when it matches 0 rows, so the branch keys on the
+  // error CODE:
+  //   - non-PGRST116 error → BLOCKING load-error screen WITH Retry (a transient
+  //     DB/network blip is recoverable — retrying may succeed).
+  //   - PGRST116 → "Submission not found", NO Retry (retrying won't conjure a row).
+  // Previously BOTH paths showed "Submission not found" with no recovery.
+  // ---------------------------------------------------------------------------
+
+  // Fixture for F2-A — the primary `.single()` fetch returns a transient error
+  // (non-PGRST116). The hook returns before any other fetch is inspected.
+  const primaryFetchErrorFixture: Record<string, TableResult> = {
+    lesson_submissions: { data: null, error: { code: '500', message: 'boom' } },
+  };
+
+  // F2-A — non-PGRST116 primary error → blocking load-error screen WITH Retry.
+  it('15. primary-fetch error (non-PGRST116): blocking load-error screen with Retry, no form', async () => {
+    renderReview(primaryFetchErrorFixture, 'sub-primaryerror');
+
+    // The blocking load-error screen renders (same screen R2-1 reuses).
+    expect(await screen.findByText(/couldn.t load this review/i)).toBeInTheDocument();
+
+    // Retry affordance present (a transient error is recoverable).
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+
+    // The decision form did NOT render → no radios (contrast: the not-found path
+    // below has no form either, but this path differs by offering Retry).
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  // Fixture for F2-B — the primary `.single()` matched 0 rows → PGRST116.
+  const submissionNotFoundFixture: Record<string, TableResult> = {
+    lesson_submissions: { data: null, error: { code: 'PGRST116' } },
+  };
+
+  // F2-B — genuine missing row (PGRST116) → "Submission not found", NO Retry.
+  it('16. primary-fetch PGRST116: "Submission not found" with no Retry', async () => {
+    renderReview(submissionNotFoundFixture, 'sub-notfound');
+
+    // The not-found screen renders (retrying a genuinely missing row is futile).
+    expect(await screen.findByText(/submission not found/i)).toBeInTheDocument();
+
+    // No Retry affordance — this is NOT the recoverable load-error screen.
+    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+  });
 });
 
 describe('SubmitterIntentBanner — 4-state coverage', () => {
