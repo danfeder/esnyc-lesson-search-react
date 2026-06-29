@@ -1,27 +1,39 @@
 # Wave 6 — Search Depth (C41 + C42 spike) Execution Status
 
-**Last updated:** 2026-06-29 by Session 2 (PR A pushed, #568)
+**Last updated:** 2026-06-29 by Session 3 (PR A merged; PR B started, B.1 done)
 
 ## Current State
 
-**Phase:** **PR A COMPLETE — 3 bot rounds folded; merging.** PR A (**#568**); `claude-review` passed all 3
-rounds. R1 (3 findings → `b993699`) + R2 (3 findings → `6c83675`) + R3 (3 trivial doc/dead-code findings,
-user-approved past the round-cap → `4f5ebfd`) all folded. **User authorized merge;** squash-merge once the
-round-3 push CI is green. **Next: PR B Task B.1** (return-type caller-grep) off updated main. Task A.1 (`[user-verdict]` on probe predicates)
-DONE; Task A.2 (add probes + before-baseline) DONE + amended after a GATE-3 fold. Design **Locked**. GATE 1A/1B folded during scaffolding (5 GATE-A findings: F1 `plainto_tsquery`
+**Phase:** **PR A MERGED (#568, squash → `48ad150` on main). PR B IN PROGRESS — Task B.1 DONE, B.2 (author
+migration) NEXT.** PR A landed all 3 `claude-review` rounds (R1 `b993699` / R2 `6c83675` / R3 `4f5ebfd`,
+user-approved past the round-cap). PR B branch `feat/wave6-c41-and-of-ors` cut off the merged main.
+
+**Task B.1 (caller-grep → return-type path) DONE — DEFAULT PATH confirmed.** `grep -rn
+'expand_search_with_synonyms' supabase/ src/ scripts/` enumerated all refs; the **only LIVE runtime caller**
+is `search_lessons` (live def `20260622010000_wave4_pr2_delete_ghosts_search_rpc.sql:199`). Everything else is
+non-runtime: superseded `search_lessons` defs in older migrations, the live expander CREATE+GRANT in
+`20260620000000_w1b.sql:59/124`, comments, the `.rollback` file, `archive/*`, `README.md`/`src/lib/CLAUDE.md`
+docs, the generated `src/types/database.types.ts:1606` (regen target), and the
+`scripts/heritage/artifacts/heritage-filter-baseline.json:12` snapshot string. NO `src/` runtime caller
+(frontend calls the RPC, not the expander) and NO `supabase/functions/` edge caller. → **default path:
+expander returns `tsquery`; `search_lessons` redefined to consume it + empty-tsquery guard.**
+
+Design **Locked**. GATE 1A/1B folded during scaffolding (5 GATE-A findings: F1 `plainto_tsquery`
 not `to_tsquery`; F2 empty-tsquery RPC guard; F3 two-function DROP+CREATE scope; F4 types-regen; F5 C42
 provenance-as-risk).
 
-**Active PR:** **#568** `test/wave6-search-eval-multiterm-probes` → main (additive eval probes; no DB, no CI
-eval gate). **Next:** four-surface triage of #568 → (user) merge → PR B (`feat/wave6-c41-and-of-ors`).
+**Active PR:** none yet — PR B not pushed. Migration not yet authored.
 
-**Current task:** **PR A bot triage** (PER-PR steps 3–8). Then PR B Task B.1 (caller-grep return-type path)
-once #568 merges to main.
+**Current task:** **PR B Task B.2** — author the migration (default path: DROP+CREATE the `tsquery`-returning
+expander via `plainto_tsquery`/`||`/`&&`/`numnode`; redefine `search_lessons` consuming the tsquery + empty
+guard; re-GRANT both; `NOTIFY pgrst`; types regen) + the rollback migration. Then local `db reset` +
+`test:rls` + local eval, GATE 2 Codex, push, four-surface triage, TEST+PROD MCP verify.
 
-**Branch:** `test/wave6-search-eval-multiterm-probes` (PR #568). **Last commit:** `4f5ebfd` (round-3 fold;
-status-doc commit on top).
+**Branch:** `feat/wave6-c41-and-of-ors` (off `48ad150`). New migration prefix: `20260629000000_` sorts after
+the latest overall `20260626000000_c02_enforce_check.sql` (no same-day bare-date `20260629_` exists → no ASCII
+trap).
 
-**Last commit on main:** `f12bbf3` (scaffold docs PR #567, merged this session). PR A branched off it.
+**Last commit on main:** `48ad150` (PR A #568 squash-merge). PR B branched off it.
 
 **Gold-set added (user-confirmed):** 5 probes q36/q37/q38/q40/q41 (predicate + maxTotalCount) — **q39 was
 dropped in the round-1 fix-up** (it was a word-order duplicate of q36; Postgres FTS is order-independent, so
@@ -75,6 +87,11 @@ go/no-go spike doc (`docs/…`, no code). PR D (two-pass relax) contingent on a 
 
 ## Decisions made during execution
 
+- **Task B.1 (2026-06-29, Session 3): DEFAULT PATH (expander returns `tsquery`).** Caller-grep proved the
+  only live runtime caller of `expand_search_with_synonyms` is `search_lessons` (`20260622010000_*:199`); no
+  hidden caller in `src/` or `supabase/functions/`. So the return-type change (`text`→`tsquery`) is safe under
+  the default path: DROP+CREATE the expander, redefine `search_lessons` to consume the tsquery + empty guard,
+  re-GRANT both, `NOTIFY pgrst`, regen types. No fallback (`text`-return) needed.
 - Standard-mode scaffold (design Locked, not Draft): both strategy AND mechanism were settled in the
   brainstorm + two Codex passes, so the design ships Locked and the impl plan ships with concrete tasks
   (no design-lock Session 1 needed).
