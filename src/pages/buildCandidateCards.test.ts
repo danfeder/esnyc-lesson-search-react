@@ -101,7 +101,7 @@ const cases: Case[] = [
       {
         id: 'lesson-x',
         title: 'Cherry Cake',
-        meta: 'Grades 5 · lesson-x',
+        meta: 'Grade 5 · lesson-x',
         similarity: 0,
         matchType: null,
         matchLabel: "Submitter's choice",
@@ -121,7 +121,7 @@ const cases: Case[] = [
       {
         id: 'lesson-s',
         title: 'Searched Lesson',
-        meta: 'Grades K · lesson-s',
+        meta: 'Grade K · lesson-s',
         similarity: 0,
         matchType: null,
         matchLabel: 'Reviewer searched',

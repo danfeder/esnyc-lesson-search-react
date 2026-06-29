@@ -69,10 +69,13 @@ export interface BuildCandidateCardsArgs {
 // (4) Task 3.6: if reviewer searched and picked a lesson not already
 //     present, append it with "Reviewer searched" badge.
 // Shared grade-label formatter for the card `meta` line — kept local to this
-// module (single use site cluster). Behavior-identical to the three inlined
-// ternaries it replaced: a non-empty list → "Grades a, b"; null/empty → "Grades —".
+// module (single use site cluster). Replaced three inlined ternaries that always
+// emitted "Grades …"; this corrects the singular case to match IntActivePills'
+// established convention: one grade → "Grade N", multiple → "Grades a, b",
+// null/empty → "Grades —".
 function formatGrades(grades: string[] | null | undefined): string {
-  return grades?.length ? `Grades ${grades.join(', ')}` : 'Grades —';
+  if (!grades?.length) return 'Grades —';
+  return grades.length === 1 ? `Grade ${grades[0]}` : `Grades ${grades.join(', ')}`;
 }
 
 export function buildCandidateCards({
