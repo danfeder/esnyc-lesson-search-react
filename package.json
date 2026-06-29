@@ -104,7 +104,7 @@
     "globals": "^14.0.0",
     "http-server": "^14.1.1",
     "jsdom": "^27.3.0",
-    "openai": "^6.18.0",
+    "openai": "^6.45.0",
     "prettier": "^3.8.4",
     "tailwindcss": "^4.3.1",
     "tiktoken": "^1.0.22",
