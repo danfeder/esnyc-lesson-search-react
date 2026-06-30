@@ -16,10 +16,10 @@
 | Metric | Value |
 |---|---|
 | Mean recall@10 (frozen-recall) | 0.728 |
-| Mean precision@10 (frozen-precision) | 0.833 |
-| Predicate pass-rate | 0.571 (12/21) |
+| Mean precision@10 (frozen-precision) | 0.800 |
+| Predicate pass-rate | 0.667 (14/21) |
 | Corpus MRR (mean RR over frozen queries) | 0.923 |
-| maxTotalCount violations | 6 |
+| maxTotalCount violations | 0 |
 | normalized-call mismatches | 0 |
 | Dup-flood alarms (dupFlood>0) | 0 |
 | G3-isolation queries | 4 |
@@ -34,7 +34,7 @@
 | q07 | decomposition | 59 | 0.857 | true | 1.000 | 0 | 1.000 | n/a |
 | q08 | pickling | 22 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q12 | teamwork and cooperation | 44 | 0.400 | true | 1.000 | 0 | 1.000 | n/a |
-| q14 | knife skills | 693 | 0.875 | true | 1.000 | 0 | 1.000 | n/a |
+| q14 | knife skills | 291 | 0.875 | true | 1.000 | 0 | 1.000 | n/a |
 | q16 | photosynthesis | 11 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q32 | compost lesson for third graders | 87 | 1.000 | true | 1.000 | 0 | 1.000 | n/a |
 | q34 | decompasition | 2 | 0.286 | true | 1.000 | 0 | 0.200 | n/a |
@@ -43,7 +43,7 @@
 
 | id | query | total | precision@10 | top1 | RR | dupFlood | uniqContentP@10 | maxCount ok |
 |---|---|---|---|---|---|---|---|---|
-| q13 | three sisters garden | 653 | 0.900 | true | 1.000 | 0 | 1.000 | n/a |
+| q13 | three sisters garden | 43 | 0.800 | true | 1.000 | 0 | 1.000 | n/a |
 | q15 | pollinators | 61 | 0.800 | true | 1.000 | 0 | 1.000 | n/a |
 | q21 | compost | 178 | 0.800 | true | 1.000 | 0 | 1.000 | true |
 
@@ -52,35 +52,35 @@
 | id | query | total | satisfied/considered | threshold | pass | maxCount ok |
 |---|---|---|---|---|---|---|
 | q02 | garden lessons for kindergarten | 256 | 10/10 | 7 | true | true |
-| q03 | worm composting for 2nd graders | 91 | 10/10 | 7 | true | true |
+| q03 | worm composting for 2nd graders | 20 | 8/10 | 7 | true | true |
 | q04 | a lesson about seeds for first grade | 251 | 10/10 | 7 | true | n/a |
 | q09 | bugs that pollinate flowers | 174 | 9/10 | 8 | true | n/a |
-| q17 | seed saving | 578 | 5/10 | 7 | false | n/a |
-| q18 | taste test | 503 | 7/10 | 7 | true | n/a |
+| q17 | seed saving | 43 | 7/10 | 7 | true | n/a |
+| q18 | taste test | 32 | 1/10 | 7 | false | n/a |
 | q19 | pumpkin | 107 | 10/10 | 7 | true | n/a |
-| q20 | cooking with tomatoes | 497 | 1/10 | 6 | false | n/a |
+| q20 | cooking with tomatoes | 74 | 3/10 | 6 | false | n/a |
 | q24 | tomato | 92 | 10/10 | 6 | true | n/a |
 | q25 | salad | 81 | 10/10 | 6 | true | n/a |
 | q26 | herbs | 499 | 3/10 | 6 | false | n/a |
-| q28 | mexican food | 568 | 8/10 | 6 | true | true |
+| q28 | mexican food | 47 | 9/10 | 6 | true | true |
 | q29 | apple | 64 | 10/10 | 6 | true | true |
-| q30 | food waste | 568 | 2/10 | 6 | false | n/a |
+| q30 | food waste | 37 | 2/10 | 6 | false | n/a |
 | q33 | seeds grades K-2 | 300 | 10/10 | 7 | true | n/a |
 | q35 | kimchi | 1 | 1/1 | 5 | false | n/a |
-| q36 | food waste decay | 583 | 2/10 | 7 | false | false |
-| q37 | food scraps decomposition | 581 | 6/10 | 7 | false | false |
-| q38 | worm compost food waste | 619 | 10/10 | 7 | true | false |
-| q40 | decompasition food waste | 568 | 3/10 | 4 | false | false |
-| q41 | decay of food | 582 | 1/10 | 6 | false | false |
+| q36 | food waste decay | 18 | 2/10 | 7 | false | true |
+| q37 | food scraps decomposition | 21 | 7/10 | 7 | true | true |
+| q38 | worm compost food waste | 11 | 7/10 | 7 | true | true |
+| q40 | decompasition food waste | 568 | 3/10 | 3 | true | n/a |
+| q41 | decay of food | 46 | 2/10 | 6 | false | true |
 
 ## g3-isolation
 
 | id | query | total | isoHits@50 | isoHits@10 | firstRank | rankMoveMedian | rankMoveBest | maxCount ok |
 |---|---|---|---|---|---|---|---|---|
-| q10 | responsible decision-making | 624 | 0 | 0 | n/a | n/a | n/a | n/a |
-| q11 | self management skills | 702 | 2 | 0 | 11 | 0.500 | 40.000 | n/a |
-| q27 | social justice | 658 | 8 | 0 | 12 | 1.000 | 3.000 | false |
-| q31 | making good choices | 696 | 6 | 1 | 10 | 0.000 | 4.000 | n/a |
+| q10 | responsible decision-making | 289 | 0 | 0 | n/a | n/a | n/a | n/a |
+| q11 | self management skills | 363 | 1 | 1 | 7 | -8.000 | 27.000 | n/a |
+| q27 | social justice | 130 | 9 | 0 | 11 | 3.000 | 26.000 | true |
+| q31 | making good choices | 48 | 5 | 3 | 2 | 3.500 | 49.000 | n/a |
 
 ## control-maxcount
 
@@ -94,7 +94,7 @@
 
 | id | query | total | jaccard vs snapshot | totalCount delta | alarm |
 |---|---|---|---|---|---|
-| q22 | compost worms soil | 278 | 1.000 | 0 | false |
+| q22 | compost worms soil | 36 | 0.250 | -242 | true |
 
 ### Dup-flood (dupFlood > 0 in top-10)
 
@@ -102,14 +102,7 @@ _None._
 
 ### maxTotalCount violations
 
-| id | query | totalCount | maxTotalCount |
-|---|---|---|---|
-| q27 | social justice | 658 | 653 |
-| q36 | food waste decay | 583 | 100 |
-| q37 | food scraps decomposition | 581 | 100 |
-| q38 | worm compost food waste | 619 | 90 |
-| q40 | decompasition food waste | 568 | 100 |
-| q41 | decay of food | 582 | 100 |
+_None._
 
 ### normalized-call mismatches (parser drift vs frozen fixture)
 

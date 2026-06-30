@@ -171,7 +171,7 @@ Measurement set = same as q10 RDM isolation set.
 - q36 `food waste decay` — predicate: ≥7/10 top-10 about compost/decomposition/decay/food-waste (title/summary ILIKE 'compost|decompos|decay|food waste|food scrap|recycl'). maxTotalCount=100 (post-C41 flood-collapse target). C41 multi-term probe; user-confirmed 2026-06-29.
 - q37 `food scraps decomposition` — predicate: ≥7/10 top-10 about compost/decomposition/food-waste. maxTotalCount=100. C41 multi-term probe; user-confirmed 2026-06-29.
 - q38 `worm compost food waste` — predicate: ≥7/10 top-10 about worm/compost/food-waste (vermicompost covered by compost). maxTotalCount=90. C41 count-guard probe (predicate already 10/10 pre-C41); user-confirmed 2026-06-29.
-- q40 `decompasition food waste` — predicate: ≥4/10 (lenient) top-10 about compost/decomposition/food-waste. maxTotalCount=100. C41 typo recall-cliff canary (PR-D trigger if unmet); user-confirmed 2026-06-29.
+- q40 `decompasition food waste` — predicate: ≥3/10 (lenient) top-10 about compost/decomposition/food-waste. NO maxTotalCount (relaxes + floods by design). REPURPOSED 2026-06-29 (Session 4, user-confirmed) from the C41 typo recall-cliff CANARY (which triggered PR D) to a recall-RECOVERY probe: PR D relaxes it (strict-AND=2 < K_relax=10) to loose-OR → 568 results, 3/10 on-topic; the lenient ≥3/10 records the recovery.
 - q41 `decay of food` — predicate: ≥6/10 top-10 about compost/decomposition/decay/food-waste (title/summary ILIKE 'compost|decompos|decay|food waste|food scrap|recycl'). maxTotalCount=100. C41 stop-word-middle probe ('of' reaches SQL, dropped via numnode); user-confirmed 2026-06-29 (revised from 'compost for the garden' per GATE-3).
 
 ## CONTROL / SENTINEL

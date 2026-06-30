@@ -1,6 +1,6 @@
 # Wave 6 — Search Depth (C41 + C42 spike) Execution Status
 
-**Last updated:** 2026-06-29 by Session 4 (PR D built `7af13e2` + 4 independent confirmations — main-loop verify, workflow adversarial verifier 10/10, GATE 2 Codex `gpt-5.5` 10/10, read-only K=10 TEST validation; pushing to #569 → CI→TEST eval next)
+**Last updated:** 2026-06-29 by Session 4 (PR D built `7af13e2` + pushed `f883e2b` + applied to TEST + eval DONE — recall cliff RECOVERED 0.688→0.728, maxTotalCount violations 0, q40 repurposed per user; next = fix-up push → bot triage → user merge → PROD verify)
 
 ## Current State
 
@@ -68,11 +68,27 @@ predicate-identical; gap-free CREATE-OR-REPLACE only, no DROP; rank/F2-guard/ORD
 + `npm run check` clean; OR companion → loose flat-OR while strict-AND expander unchanged). **K=10 CONFIRMED
 via read-only TEST `cnt_and` probe** (the live mig-1 strict-AND `total_count` per gold query): clean gap 5↔11
 — relaxers q12=0 / q09=5 / q40=2; keepers q38=11 / q36=18 / q37=21 / q41=46 / q27=130 / taste-test=32 /
-ctrl_compost=178 / ctrl_garden=586. **Known residual to surface in the eval:** `taste test` (32, ≥K) stays
-strict → its strict-AND precision dip is NOT recovered by relax (relax targets near-empty recall cliffs, not
-healthy-count precision). NEXT: push → CI applies mig 2 to TEST → `npm run eval:search` after-scorecard + MCP
-TEST verify → bring user the scorecard + q40's measured relaxed numbers for the `[user-verdict]` gold change →
-edit q40 (the ONLY guarded probe that relaxes) → re-eval → (user) merge → PROD verify (then PR C C42 spike).
+ctrl_compost=178 / ctrl_garden=586.
+
+**DONE this session:** pushed `f883e2b` → CI applied mig 2 to TEST → behavioral verify (teamwork 0→44, q09
+5→174, q40 2→568, fwd=18/q38=11 stay strict, `the of and` → 1 trigram match no-error, compost=178 unchanged)
+→ `npm run eval:search` after-scorecard (TEST, FINAL committed). **Net vs the committed pre-C41 flat-OR
+baseline:** frozen-recall **0.728→0.728 (zero net recall loss — cliff fully recovered from strict-AND's
+0.688)**; frozen-precision **0.833→0.800** (collocation dip); **maxTotalCount violations 6→0** (5 of 6 floods
+fixed; q40 repurposed so it no longer violates); dup-flood 0; normalized-call mismatches 0; MRR 0.923;
+predicate 14/21. Floods collapsed: food waste 568→37, food-waste-decay 583→18, worm-compost 619→11. Sentinel
+q22 alarm + G3 churn = EXPECTED C41 multi-term tightening (diagnostic, not regressions).
+
+**USER DECISIONS (2026-06-29 Session 4):** (1) **MERGE the trade + TRACK a phrase/collocation follow-up** —
+strict AND-of-ORs hurts a few phrase-like queries, worst = `taste test` 7/10→1/10 (treated as taste & test →
+quiz/test lessons; stays strict at 32 so relax doesn't rescue it; also `three sisters` 0.900→0.800). A real
+fix needs phrase-aware search (`<->`/`phraseto_tsquery`), out of this PR's scope → see Out-of-scope. (2) **q40
+REPURPOSED** to a recall-recovery probe (`queries.json` + `gold-provenance.md` synced; user-signed-off frozen
+gold): dropped `maxTotalCount`, bar `>=4/10`→`>=3/10` (the measured 3/10 → passes); records that the typo
+query recovers some on-topic results via relax. Final scorecard = 0 maxTotalCount violations.
+
+**NEXT:** push the fix-up (q40 gold + `gold-provenance.md` + final `scorecards/test.md` + this status) to #569
+→ bot triage (mig-2 round) → (user) merge → PROD MCP verify → then PR C (C42 spike).
 
 **B.3 eval RESULT (strict-AND, TEST after-scorecard) — flood FIXED but recall CLIFF (the PR D trigger):**
 - ✅ FLOOD GONE: `food waste decay` 583→**18**, `food waste` 568→**37**, `worm compost food waste` 619→**11**,
@@ -232,11 +248,20 @@ go/no-go spike doc (`docs/…`, no code). PR D (two-pass relax) contingent on a 
   (candidate table + verified ParadeDB-logical-replication architecture + recommendation) live in the NEW,
   UNCOMMITTED file `docs/plans/2026-06-29-c42-search-engine-options-notes.md`** — fold into PR C when the
   spike is written, or commit standalone then; do NOT let it ride the PR D commit history.
+- **Phrase/collocation precision follow-up (C41 residual, USER-TRACKED 2026-06-29 Session 4).** Strict
+  AND-of-ORs regresses top-10 precision on phrase-like multi-word queries that are NOT genuinely "every word
+  AND'd" concepts — worst measured: `taste test` **7/10→1/10** (becomes taste & test → surfaces quiz/test
+  lessons over taste-test activities; stays strict at 32 ≥ K so the relax does NOT rescue it), also `three
+  sisters garden` 0.900→0.800. No in-scope fix — a real one needs phrase-aware search (`phraseto_tsquery` /
+  `<->` adjacency, or a curated phrase entry for known collocations). User ACCEPTED the trade to ship C41+PR D
+  and track this. Candidate for a future search wave (bundle with C162 unaccent). NOT a blocker for PR D merge.
 - C162 (unaccent / accent-insensitive search) — independent; a full `search_vector` rebuild; bundle with a
   future trigger-rebuild migration.
 - C43 (rejected single-token synonym pairs preserved as C42 seed data) — belongs to the C42 build.
 - C121 / C122 (Google SSO / admin 2FA) — the other Wave-6 cluster; separate initiative.
-- Two-pass relax (PR D) — contingent on PR B's eval showing a recall cliff.
+- ~~Two-pass relax (PR D) — contingent on PR B's eval showing a recall cliff.~~ **DONE** — the cliff
+  materialized (frozen-recall 0.728→0.688 on strict-AND) and PR D was built + merging on #569 (mig
+  `20260629010000_*`); no longer out-of-scope.
 - New pgTAP search-test infrastructure — only a lightweight expander assertion is in scope.
 
 ## Pointers to durable context
@@ -415,3 +440,19 @@ Next step: push `7af13e2` + this status checkpoint → wait for CI to apply mig 
 (target=test) after-scorecard + MCP TEST verification probes → bring user the scorecard + q40 measured numbers
 for the `[user-verdict]` gold change → edit q40 → re-eval (final committed after-scorecard) → bot triage of
 #569 → (user) merge → PROD verify. Then PR C (C42 spike).
+
+**Session 4 (cont.) — pushed + eval + user decisions:**
+- Pushed `f883e2b` (mig 2 + status). CI applied mig 2 to TEST within ~1 min (MCP-confirmed: OR companion +
+  relax present). Behavioral verify on TEST: cliffs recovered (teamwork 0→44, q09 5→174), floods held
+  (fwd=18, q38=11), q40 re-floods 2→568, `the of and`→1 (trigram, no-error), compost=178 unchanged.
+- `npm run eval:search` (target=test) FINAL scorecard, diffed vs the committed pre-C41 flat-OR baseline:
+  recall 0.728 (zero net loss; strict-AND's cliff at 0.688 fully recovered), precision 0.833→0.800
+  (collocation dip), maxTotalCount violations 6→0 (after q40 repurpose), dup-flood 0, predicate 14/21.
+- **User decisions:** (1) merge + track the phrase/collocation precision follow-up (taste test 7/10→1/10) —
+  recorded in Out-of-scope; (2) q40 repurposed to a recall-recovery probe (drop maxTotalCount, bar ≥3/10) —
+  `queries.json` + `gold-provenance.md` edited (user-signed-off frozen-gold change), re-eval → 0 violations.
+- Learnings: the committed `scorecards/test.md` on disk was the FLAT-OR baseline (Session 3's strict-AND
+  scorecard was uncommitted + reverted), so the PR's scorecard diff correctly shows the full flat-OR→relax
+  delta. Predicate threshold is parsed from the predicate `description` `>=N/10` (no separate field) — so the
+  q40 bar change is the `>=4`→`>=3` text edit. Fix-up push next: q40 gold + provenance + final scorecard +
+  this status.
