@@ -1,12 +1,44 @@
 # Wave 6 — Search Depth (C41 + C42 spike) Execution Status
 
-**Last updated:** 2026-06-29 by Session 3 (PR A merged; PR B started, B.1 done)
+**Last updated:** 2026-06-29 by Session 3 (PR A merged; PR B B.1+B.2 done + all 3 gates clean; pushing)
 
 ## Current State
 
-**Phase:** **PR A MERGED (#568, squash → `48ad150` on main). PR B IN PROGRESS — Task B.1 DONE, B.2 (author
-migration) NEXT.** PR A landed all 3 `claude-review` rounds (R1 `b993699` / R2 `6c83675` / R3 `4f5ebfd`,
-user-approved past the round-cap). PR B branch `feat/wave6-c41-and-of-ors` cut off the merged main.
+**Phase:** **PR A MERGED (#568, squash → `48ad150` on main). PR B IN PROGRESS — B.1 + B.2 DONE +
+SUPERVISOR-VERIFIED + GATE 2 (Codex) + GATE 3 (code-reviewer) BOTH CLEAN; pushing + opening PR now.** PR A
+landed all 3 `claude-review` rounds (R1 `b993699` / R2 `6c83675` / R3 `4f5ebfd`, user-approved past the
+round-cap). PR B branch `feat/wave6-c41-and-of-ors` cut off the merged main.
+
+**Pre-push gates (all clean, ZERO findings — no rebuttal pass / fixups needed):** GATE 2 Codex (`gpt-5.5`,
+read-only) on the migration SQL — all 11 adversarial checks clean, SAFE-TO-PROCEED (idempotency, DROP/CREATE
+ordering, tsquery algebra, empty guard, rank NULL-handling, GRANT/NOTIFY, injection safety, trigram
+interaction, rollback completeness, single-term parity). GATE 3 Opus code-reviewer on the committed diff —
+nothing blocking; independently re-confirmed conventions, the planner-reorder-robust empty guard
+(numnode/@@ are strict → NULL→false not error), byte-identical count/result WHEREs, rollback fidelity, and
+the minimal types change. Both flagged the same reminder (already Task B.3): TEST-DB MCP verify once the
+preview is live — local 5-row seed can't exercise the multi-term narrowing.
+
+**Task B.2 (author migration) DONE — commit `60f24d6`.** Migration
+`20260629000000_c41_and_of_ors_term_combination.sql` (+ `.sql.rollback`) + 1-line `database.types.ts` regen
+(`expand_search_with_synonyms.Returns: string→unknown`). Authored by an Opus executor, then
+SUPERVISOR-VERIFIED in the main loop: (a) mechanical diff proved `search_lessons` is byte-verbatim vs
+`wave4_pr2` except the 4 intended edits (declare→`expanded_tsquery tsquery`, expander assignment, both-WHERE
+empty guard `(expanded_tsquery IS NOT NULL AND numnode(...)>0 AND @@)`, rank `COALESCE(ts_rank(...,
+expanded_tsquery),0)`); (b) the new expander's synonym-lookup branching is verbatim from w1b, only the
+accumulation target changed (global→per-term `group_words`) + flat `string_agg(' | ')` → per-group `||` OR +
+cross-group `&&` AND + numnode drop + NULL-when-empty; (c) LOCAL probes match the derived model exactly:
+`food waste decay`→`'food' & 'wast' & ( 'decay' | 'decomposit' )`, `compost`→`'compost'` (single-term
+unchanged), `the of and`→NULL, `decay of food`→`( 'decay' | 'decomposit' ) & 'food'`, `herbs & spices`→
+`'herb' & 'spice'` (injection-safe), `search_lessons('the of and')`→0 no-error; (d) `supabase db reset` clean,
+`npm run check` pass, `test:rls` pass (2 `archive_duplicate_lesson` failures proven PRE-EXISTING via a
+files-aside controlled experiment — unrelated to C41); (e) rollback live-tested (restores flat-OR; old OR=2
+vs C41=0). DROP+CREATE for the expander (return-type change), CREATE OR REPLACE for `search_lessons` (sig
+unchanged), both re-GRANTed `anon/authenticated/service_role`, `NOTIFY pgrst` present.
+
+**Types-regen caveat (carry forward):** the committed `database.types.ts` is stylistically behind the local
+CLI (v2.95.4 reformats quotes/unions) and predates the `c02_retag_rollback`/`c02_retag_skipped` snapshot
+tables; the executor made a SURGICAL 1-line edit rather than commit the 3,354-line CLI reformat. Pre-existing
+drift, not C41; those tables aren't referenced in app code so type-check is unaffected. Don't "fix" it here.
 
 **Task B.1 (caller-grep → return-type path) DONE — DEFAULT PATH confirmed.** `grep -rn
 'expand_search_with_synonyms' supabase/ src/ scripts/` enumerated all refs; the **only LIVE runtime caller**
