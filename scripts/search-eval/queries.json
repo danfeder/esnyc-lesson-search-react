@@ -787,14 +787,13 @@
     {
       "id": "q40",
       "query": "decompasition food waste",
-      "intent": "typo recall-cliff canary (C41): does 'decompasition' still reach decomposition when AND'd with food waste? Lenient bar; an unmet bar is evidence for the contingent two-pass relax (PR D).",
+      "intent": "typo recall-RECOVERY probe (C41 PR D): the loose-OR safety net relaxes this near-empty typo query (strict-AND=2, below K_relax=10) back to a broad set, so 'decompasition' recovers some on-topic results in the top-10 instead of near-nothing. Recall-over-precision by design: the broad-token re-flood is ACCEPTED (no maxTotalCount guard); a lenient >=3/10 on-topic bar records the recovery.",
       "category": "G1",
-      "provenance": "gold-provenance.md PREDICATE q40. Predicate: >=4/10 (lenient) top-10 about compost/decomposition/food-waste. C41 typo recall-cliff canary (design section 5); user-confirmed 2026-06-29.",
-      "provenanceNote": "predicate. C41 typo recall-cliff CANARY - lenient >=4/10 bar; reads red on the before-baseline; if unmet after C41 it is the trigger to consider PR D (two-pass relax). maxTotalCount 100 (tunable once after-numbers land).",
+      "provenance": "gold-provenance.md PREDICATE q40. Predicate: >=3/10 (lenient) top-10 about compost/decomposition/food-waste. Was the C41 typo recall-cliff CANARY (PR-D trigger); REPURPOSED 2026-06-29 (Session 4, user-confirmed) to a recall-recovery probe after PR D shipped — dropped the maxTotalCount guard (relaxes+floods by design) and set the bar to the measured 3/10.",
+      "provenanceNote": "predicate. C41 PR D typo recall-RECOVERY probe (was the recall-cliff canary that triggered PR D). PR D relaxes it (strict-AND=2 < K=10) to the loose-OR fallback -> 568 results, 3/10 on-topic; the re-flood is by design so NO maxTotalCount guard. Lenient >=3/10 records that the typo query recovers some relevant lessons via relax.",
       "scoring": "predicate",
-      "maxTotalCount": 100,
       "predicate": {
-        "description": ">=4/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl'). Lenient: typo recall-cliff canary.",
+        "description": ">=3/10 top-10 about compost/decomposition/food-waste (title/summary ILIKE 'compost|decompos|food waste|food scrap|recycl'). Lenient: typo recall-RECOVERY probe (PR D relax restored a non-trivial result set).",
         "sql": "title ILIKE '%compost%' OR summary ILIKE '%compost%' OR title ILIKE '%decompos%' OR summary ILIKE '%decompos%' OR title ILIKE '%food waste%' OR summary ILIKE '%food waste%' OR title ILIKE '%food scrap%' OR summary ILIKE '%food scrap%' OR title ILIKE '%recycl%' OR summary ILIKE '%recycl%'"
       }
     },

@@ -1605,7 +1605,11 @@ export type Database = {
       };
       expand_search_with_synonyms: {
         Args: { query_text: string };
-        Returns: string;
+        Returns: unknown;
+      };
+      expand_search_with_synonyms_or: {
+        Args: { query_text: string };
+        Returns: unknown;
       };
       find_duplicate_pairs: {
         Args: never;
