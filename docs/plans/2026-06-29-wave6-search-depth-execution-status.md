@@ -54,16 +54,93 @@ Design **Locked**. GATE 1A/1B folded during scaffolding (5 GATE-A findings: F1 `
 not `to_tsquery`; F2 empty-tsquery RPC guard; F3 two-function DROP+CREATE scope; F4 types-regen; F5 C42
 provenance-as-risk).
 
-**Active PR:** none yet — PR B not pushed. Migration not yet authored.
+**Active PR:** **#569** `feat/wave6-c41-and-of-ors` → main. Migration 1 (strict-AND, `60f24d6`) pushed +
+applied to TEST + CI green. **PIVOTING to add PR D (two-pass relax) on the SAME branch** (so the recall cliff
+never reaches prod) before merge.
 
-**Current task:** **PR B Task B.2** — author the migration (default path: DROP+CREATE the `tsquery`-returning
-expander via `plainto_tsquery`/`||`/`&&`/`numnode`; redefine `search_lessons` consuming the tsquery + empty
-guard; re-GRANT both; `NOTIFY pgrst`; types regen) + the rollback migration. Then local `db reset` +
-`test:rls` + local eval, GATE 2 Codex, push, four-surface triage, TEST+PROD MCP verify.
+**Current task:** **PR D — two-pass relax** (USER-DECIDED 2026-06-29 Session 3). Add a SECOND migration to
+#569: an OR-companion expander + a `search_lessons` that tries strict-AND and falls back to loose-OR when the
+AND set is too small. Then re-eval (recover cliffs, keep flood fix), GATE 2, re-triage, (user) merge, PROD
+verify.
 
-**Branch:** `feat/wave6-c41-and-of-ors` (off `48ad150`). New migration prefix: `20260629000000_` sorts after
-the latest overall `20260626000000_c02_enforce_check.sql` (no same-day bare-date `20260629_` exists → no ASCII
-trap).
+**B.3 eval RESULT (strict-AND, TEST after-scorecard) — flood FIXED but recall CLIFF (the PR D trigger):**
+- ✅ FLOOD GONE: `food waste decay` 583→**18**, `food waste` 568→**37**, `worm compost food waste` 619→**11**,
+  `food scraps decomposition` 581→**21**; **maxTotalCount violations 6→0**; dup-flood 0; normalized-call
+  mismatches 0. Probe precision held/improved (food scraps 6→7/10, mexican food 8→9/10, seed saving 5→7/10).
+- ⚠️ RECALL CLIFF (fails "zero regression on frozen families"): `teamwork and cooperation` 44→**0 results**
+  (`teamwork & cooper`; recall 0.4→0.0), `bugs that pollinate flowers` 174→5 (precision 9/10→1/5), `taste
+  test` 503→32 (precision 7/10→1/10); **frozen-recall 0.728→0.688, frozen-precision 0.833→0.800**; typo canary
+  `decompasition food waste` 568→2 (can't reach ≥4/10 → tripped). (Sentinel q22 278→36 + G3 churn are EXPECTED
+  C41 tightening on multi-term, NOT regressions.)
+- The intermediate strict-AND scorecard overwrote `scripts/search-eval/scorecards/test.md` (uncommitted) —
+  PR D's re-eval will be the FINAL committed after-scorecard.
+
+**PR D DESIGN (settled by supervisor; the design pre-authorized this contingency):**
+- Mechanism: in `search_lessons`, compute `tq_and := expand_search_with_synonyms(q)` + count the AND-path
+  (AND-FTS ∪ trigram, with filters). If `cnt_and < K` → switch the effective tsquery to
+  `expand_search_with_synonyms_or(q)` (loose-OR) for the count + page + rank. Per-query all-AND OR all-OR (no
+  mix) → clean total_count/pagination.
+- `expand_search_with_synonyms_or(text) RETURNS tsquery`: NEW companion, identical per-group synonym logic but
+  combines groups with `||` (OR) instead of `&&` (AND) — yields the old flat-OR. Same empty/numnode guards.
+- `K` (relax threshold): eval-tuned on TEST. Must catch near-empty (q12=0, q09=5, q40=2) but NOT re-flood
+  healthy AND sets. Gold AND-counts cluster either high (worm-compost-food-waste=11, food-waste-decay=18,
+  food-scraps=21, mexican-food=47, three-sisters=43) or very low (0/2/5) — a clean gap at 6–10, so **K=10**
+  separates cleanly (relaxes ≤9, keeps ≥10). Start K=10; eval-confirm on TEST by `CREATE OR REPLACE`-ing
+  candidate-K `search_lessons` via `mcp__supabase-test__execute_sql` + `npm run eval:search`, then bake the
+  chosen K into the migration (still LOCAL/unpushed → editable) before pushing.
+- **RE-FLOOD-ON-RELAX (important nuance, surfaced 2026-06-29):** relaxing to FULL OR re-floods near-empty
+  queries whose terms include a broad token. q40 `decompasition food waste` (AND=2) relaxes → OR `(decompasition|
+  decomposit|food|waste)` → ~568 (the broad "food" dominates), EXCEEDING q40's `maxTotalCount=100`. This is
+  inherent to "fall back to the old loose OR" (the endorsed mechanism) — a deliberate recall-over-precision
+  choice for otherwise-near-empty queries. NET: recovers q12 (0→~44, relevant) + q09 (5→174, precision 1/5→
+  ~9/10) strongly; q40 floods (typo query — acceptable). **CONSEQUENCE: q40's gold `maxTotalCount` guard must
+  be removed/raised** (it relaxes by design now) — a GOLD-SET change → **USER SIGN-OFF required** (frozen-gold
+  rule, `[user-verdict]`) before editing `queries.json`. The other guarded probes (q36/q37/q38/q41/q27) have
+  AND≥11 ≥K → never relax → their guards still hold.
+- **search_lessons count structure (for the executor):** add DECLARE `cnt_and bigint;` + `K_relax constant int
+  := 10;`. AFTER the AND-expander assignment AND the cultures expansion, BEFORE the existing count, insert the
+  relax block: `IF search_query IS NOT NULL AND search_query <> '' AND expanded_tsquery IS NOT NULL THEN SELECT
+  count(*) INTO cnt_and FROM lessons l WHERE <WHERE-A>; IF cnt_and < K_relax THEN expanded_tsquery :=
+  expand_search_with_synonyms_or(search_query); END IF; END IF;`. The existing total-count + page queries stay
+  UNCHANGED (they reference `expanded_tsquery`, now possibly the OR form). All THREE `<WHERE-A>` blocks
+  (relax-count, total-count, page) are then LITERALLY IDENTICAL (same `expanded_tsquery` var) — verify by
+  diffing them. (One extra indexed count when not relaxed — cheap; chosen for verifiability over micro-opt.)
+- `expand_search_with_synonyms_or(text) RETURNS tsquery`: copy migration-1's AND-expander body VERBATIM,
+  change ONLY the group-combine operator `&&` → `||` (line ~130: `result_q := ... result_q || group_q`) + the
+  fn name/comments. Yields OR-of-all-groups = the old flat-OR. Same numnode/NULL guards. STABLE. GRANT.
+- PR structure: SECOND migration `20260629010000_c41_pr_d_two_pass_relax.sql` (+ `.sql.rollback`) on #569.
+  ADDITIVE + GAP-FREE (fresh CREATE of the OR companion, CREATE OR REPLACE of search_lessons — NO DROP+CREATE)
+  → no atomicity window, and it documents the correction to migration 1's inaccurate atomicity comment. Verify
+  prefix sorts after `20260629000000` (no same-day bare-date trap). Rollback: DROP the OR companion + CREATE OR
+  REPLACE search_lessons back to migration-1's strict-AND body + re-GRANT + NOTIFY.
+- Re-GRANT the new companion + search_lessons (`anon/authenticated/service_role`); `NOTIFY pgrst`; types regen
+  (surgically ADD the `expand_search_with_synonyms_or` block — `Returns: unknown` — do NOT commit the noisy
+  full CLI reformat). Then GATE 2 Codex, push, re-triage, re-eval on TEST (cliffs recovered + flood guards
+  hold), (user) merge, PROD verify.
+- **Fold the bot F5 fix:** add a doc comment to migration-1's `.sql.rollback` (freely editable — never
+  CI-applied) noting it re-introduces the pre-C41 all-stop-word `to_tsquery` crash.
+
+**Bot triage of #569 (strict-AND migration) — all surfaces collected, rebuttal pass done:**
+- **F1 [bot:BLOCKING→recalibrated SHOULD-FIX]** non-atomic DROP+CREATE + a factually-WRONG atomicity comment
+  (mig 1 lines 46-48 claim "Supabase wraps each migration in a transaction"; FALSE — the CLI is autocommit,
+  per the repo's own `c02_retag_apply.sql:60-63`). Bot's "34 migrations wrap" is FALSE (only 1 does; prior
+  search redefs w1b/wave4_pr2 shipped UNWRAPPED). Gap risk negligible (~3-user internal site,
+  [[project_user_base_accounts]]). RESOLUTION: can't edit mig 1 (pushed/applied to TEST per
+  `database-migrations` skill) and a BEGIN/COMMIT can't be retrofitted via a new migration — but PR D's mig 2
+  is GAP-FREE by construction and will carry an accurate comment + document the mig-1 correction.
+- **F6 [bot] types `unknown`→`string`**: REJECTED — `supabase gen types` genuinely emits `unknown` for tsquery
+  (verified by regen); committing `string` would drift from the generator. The committed surgical 1-line edit
+  uses the genuine regen value; pre-existing unrelated drift (CLI reformat + c02 tables) stays out of scope.
+- **F2/F3a/F3b [bot] cosmetic dead-code** (`group_q IS NOT NULL` always-true; `ELSE :=NULL` redundant;
+  `numnode` in WHERE redundant): REJECTED — behavior-identical cosmetics; editing the TEST-applied mig 1 for
+  them would create cosmetic TEST/PROD function-text drift; and the `numnode` guard is design-LOCKED (GATE-A
+  F2 defensive). The PR D search_lessons (mig 2) supersedes mig 1's anyway.
+- **F5 [bot:NOTE] rollback re-introduces the pre-C41 stop-word `to_tsquery` crash, undocumented**: ACCEPTED —
+  the `.sql.rollback` is never CI-applied (freely editable); add a doc comment. Fold into PR D's work.
+
+**Branch:** `feat/wave6-c41-and-of-ors` (off `48ad150`). Migration `20260629000000_c41_and_of_ors_term_combination.sql`
++ `.sql.rollback` shipped in commit `60f24d6`. Prefix sorts after the latest overall
+`20260626000000_c02_enforce_check.sql` (no same-day bare-date `20260629_` → no ASCII trap).
 
 **Last commit on main:** `48ad150` (PR A #568 squash-merge). PR B branched off it.
 
@@ -229,3 +306,49 @@ inert); (3) gold-provenance q06 spec line still said ~567 → synced to ~568. Bo
 "one quick fix-up then merge" past the 2/2 round-cap (findings concrete + cheap + improve the durable baseline).
 
 Next step: squash-merge #568 (user-authorized) → PR B Task B.1 (return-type caller-grep) off updated main.
+
+### Session 3 — 2026-06-29 — PR B built+verified+pushed (#569); eval → recall cliff → PR D chosen
+
+Major events:
+- **PR A confirmed merged** (`48ad150` on main); status reconciled (git ahead of the prior "merging" header).
+- **PR B Task B.1 DONE** — caller-grep → DEFAULT PATH (only `search_lessons` calls the expander; commit
+  `2346dcb`).
+- **PR B Task B.2 DONE** — migration `60f24d6` (strict-AND expander returning tsquery + two-pass-free
+  search_lessons + rollback + 1-line types regen). Authored by an Opus executor; SUPERVISOR-VERIFIED (mechanical
+  verbatim diff of search_lessons vs wave4_pr2 = only the 4 intended edits; expander synonym-logic verbatim from
+  w1b; local db reset + test:rls + npm check pass; local probes exact; rollback live-tested).
+- **GATE 2 (Codex gpt-5.5) + GATE 3 (Opus code-reviewer)** ran in parallel — BOTH clean, zero findings. Pushed
+  `e0dbdb6` + opened **PR #569**. CI green (e2e applied the migration to TEST; all 4 Claude bot reviews success).
+- **B.3 TEST verify (MCP):** flood collapsed on real data — `food waste decay` 583→18, `food waste` 568→37,
+  `the of and` no-error. **B.3 eval (after-scorecard):** flood FIXED (maxTotalCount violations 6→0) but RECALL
+  CLIFF (frozen-recall 0.728→0.688, frozen-precision 0.833→0.800; `teamwork and cooperation`→0; `bugs that
+  pollinate flowers` 174→5/precision 9/10→1/5; typo canary q40 tripped) — the design's PR D trigger.
+- **Bot triage of #569** (all 4 surfaces): F1 (atomicity comment WRONG + naked DROP+CREATE — recalibrated; bot
+  over-stated, mis-cited convention; resolved via PR D's gap-free mig 2) ; F6 (`unknown`→`string` REJECTED — CLI
+  emits unknown, verified) ; F2/F3a/F3b cosmetic dead-code REJECTED (TEST-applied → would drift; numnode guard
+  is design-LOCKED) ; F5 rollback doc comment ACCEPTED (fold into PR D). Rebuttal pass committed in Current State.
+- **USER DECISION: build PR D (two-pass relax).** Full design settled + recorded in Current State (mechanism, OR
+  companion, K=10 eval-tuned, count structure, the RE-FLOOD-ON-RELAX nuance + q40 gold-guard adjustment needing
+  user sign-off, the gap-free 2nd-migration structure).
+
+Decisions / learnings:
+- **e2e.yml does BOTH a dry-run comment AND a real `supabase db push` to TEST** (line 126) — the "dry-run" PR
+  comment is informational; the migration IS applied to TEST (MCP-confirmed). Don't be misled by the dry-run text.
+- **Repo migration convention re-confirmed:** the Supabase CLI is AUTOCOMMIT (no per-file transaction wrapper) —
+  authoritative source is `c02_retag_apply.sql:60-63`. Only 1 migration uses explicit `BEGIN;/COMMIT;` (c02, for
+  a LOCK); function-redef migrations (w1b, wave4_pr2) ship UNWRAPPED. So a DROP+CREATE has a (here-negligible)
+  gap; prefer ADDITIVE/CREATE-OR-REPLACE-only migrations (like PR D's mig 2) to avoid it.
+- **`npm run db:types` has an internal `> src/types/database.types.ts` redirect** — running it OVERWRITES the
+  committed file with the full noisy CLI reformat (≈2007 lines + unrelated c02 tables). To inspect regen output
+  without clobbering, capture differently or `git checkout` to restore. The committed types file uses scoped
+  surgical edits by design.
+- **`supabase gen types` maps `tsquery` → `unknown`** (not `string`) — so the surgical `Returns: unknown` is
+  correct; a `string` "fix" would drift from the generator.
+- Two-pass-full-OR relax RE-FLOODS broad-term near-empty queries (q40) — the blunt edge of the design's chosen
+  mechanism (it rejected quorum). Acceptable as recall-over-precision for near-empty queries; needs the q40
+  gold-guard adjustment.
+
+Next session (PR D BUILD): read this status doc's PR D DESIGN block (complete spec) → get user sign-off on the
+q40 gold-guard change → dispatch executor for mig 2 (`20260629010000_*`: OR companion + two-pass search_lessons
++ rollback) → verify + eval-tune K on TEST → GATE 2 → fold F5 rollback comment → push to #569 → re-triage →
+(user) merge → PROD verify. PR C (C42 spike) still pending after PR B/D close.
