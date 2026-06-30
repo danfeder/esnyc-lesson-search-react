@@ -1,6 +1,6 @@
 # Wave 6 — Search Depth (C41 + C42 spike) Execution Status
 
-**Last updated:** 2026-06-29 by Session 3 (PR A merged; PR B B.1+B.2 done + all 3 gates clean; pushing)
+**Last updated:** 2026-06-29 by Session 4 (PR D built `7af13e2` + 4 independent confirmations — main-loop verify, workflow adversarial verifier 10/10, GATE 2 Codex `gpt-5.5` 10/10, read-only K=10 TEST validation; pushing to #569 → CI→TEST eval next)
 
 ## Current State
 
@@ -58,10 +58,21 @@ provenance-as-risk).
 applied to TEST + CI green. **PIVOTING to add PR D (two-pass relax) on the SAME branch** (so the recall cliff
 never reaches prod) before merge.
 
-**Current task:** **PR D — two-pass relax** (USER-DECIDED 2026-06-29 Session 3). Add a SECOND migration to
-#569: an OR-companion expander + a `search_lessons` that tries strict-AND and falls back to loose-OR when the
-AND set is too small. Then re-eval (recover cliffs, keep flood fix), GATE 2, re-triage, (user) merge, PROD
-verify.
+**Current task:** **PR D BUILT (`7af13e2`) — pushing to #569; next = CI→TEST eval + q40 gold `[user-verdict]`.**
+Mig 2 `20260629010000_c41_pr_d_two_pass_relax.sql` (+rollback +mig-1-rollback F5 comment +surgical 4-line
+types add) authored by an Opus workflow executor; **adversarially verified twice** (workflow verifier 10/10 +
+GATE 2 Codex `gpt-5.5` 10/10, both SAFE-TO-PROCEED) and **supervisor-verified in the main loop** (read the
+file: OR companion = mig-1 expander with the single `&&`→`||` at L140 + numnode drop intact; `search_lessons`
+adds only `cnt_and`/`K_relax:=10` + the relax block; the three WHEREs — relax-count/total-count/page — are
+predicate-identical; gap-free CREATE-OR-REPLACE only, no DROP; rank/F2-guard/ORDER-BY untouched; local probes
++ `npm run check` clean; OR companion → loose flat-OR while strict-AND expander unchanged). **K=10 CONFIRMED
+via read-only TEST `cnt_and` probe** (the live mig-1 strict-AND `total_count` per gold query): clean gap 5↔11
+— relaxers q12=0 / q09=5 / q40=2; keepers q38=11 / q36=18 / q37=21 / q41=46 / q27=130 / taste-test=32 /
+ctrl_compost=178 / ctrl_garden=586. **Known residual to surface in the eval:** `taste test` (32, ≥K) stays
+strict → its strict-AND precision dip is NOT recovered by relax (relax targets near-empty recall cliffs, not
+healthy-count precision). NEXT: push → CI applies mig 2 to TEST → `npm run eval:search` after-scorecard + MCP
+TEST verify → bring user the scorecard + q40's measured relaxed numbers for the `[user-verdict]` gold change →
+edit q40 (the ONLY guarded probe that relaxes) → re-eval → (user) merge → PROD verify (then PR C C42 spike).
 
 **B.3 eval RESULT (strict-AND, TEST after-scorecard) — flood FIXED but recall CLIFF (the PR D trigger):**
 - ✅ FLOOD GONE: `food waste decay` 583→**18**, `food waste` 568→**37**, `worm compost food waste` 619→**11**,
@@ -211,6 +222,16 @@ go/no-go spike doc (`docs/…`, no code). PR D (two-pass relax) contingent on a 
 
 - C42 BUILD + its prereqs C07 (embedding vector-space mismatch) / C01 (full-corpus regen) / C09 (dedup
   rework) — PR C only *scopes* them.
+- **C42 spike (PR C) should name adopt-vs-build OSS options** alongside the in-house pgvector path:
+  **ParadeDB** (`pg_search` Elasticsearch-grade BM25 — runs as a SEPARATE Postgres instance that logically
+  replicates Supabase data, zero-ETL sync; NOT an in-database extension; could cover keyword + hybrid/vector
+  in one Postgres-native engine) and **Meilisearch / Typesense** (typo-tolerance + ranking out of the box,
+  optional vector). Raised by the 2026-06-29 `/btw` OSS-search question. Do NOT act mid-flight — finish C41;
+  these are deliberate evaluations for the spike, and each re-introduces a second service + sync + a separate
+  RLS/permissions story (the exact reasons the project dropped Algolia for PG FTS). **Detailed input notes
+  (candidate table + verified ParadeDB-logical-replication architecture + recommendation) live in the NEW,
+  UNCOMMITTED file `docs/plans/2026-06-29-c42-search-engine-options-notes.md`** — fold into PR C when the
+  spike is written, or commit standalone then; do NOT let it ride the PR D commit history.
 - C162 (unaccent / accent-insensitive search) — independent; a full `search_vector` rebuild; bundle with a
   future trigger-rebuild migration.
 - C43 (rejected single-token synonym pairs preserved as C42 seed data) — belongs to the C42 build.
@@ -352,3 +373,45 @@ Next session (PR D BUILD): read this status doc's PR D DESIGN block (complete sp
 q40 gold-guard change → dispatch executor for mig 2 (`20260629010000_*`: OR companion + two-pass search_lessons
 + rollback) → verify + eval-tune K on TEST → GATE 2 → fold F5 rollback comment → push to #569 → re-triage →
 (user) merge → PROD verify. PR C (C42 spike) still pending after PR B/D close.
+
+### Session 4 — 2026-06-29 — PR D built + 4× verified + pushing (CI→TEST eval next)
+
+Major events:
+- **`/btw` OSS-search-engine detour** (forked agent): ParadeDB / Meilisearch / Typesense surveyed → none worth
+  a mid-flight pivot at ~745 lessons (relevance tuning, not scale; project already dropped Algolia for PG FTS);
+  all three captured as named adopt-vs-build options for the **C42 spike (PR C)**. Detailed input notes in the
+  NEW uncommitted `docs/plans/2026-06-29-c42-search-engine-options-notes.md` (pointer in Out-of-scope below);
+  do NOT let it ride the PR D commit history.
+- **q40 `[user-verdict]` re-sequenced:** user (understandably) wanted the plot re-grounded; agreed to DEFER the
+  q40 gold decision until AFTER the build, when real measured numbers make it concrete. User gave the
+  go-ahead to build. (So q40 sign-off now lands post-eval, not pre-build.)
+- **PR D BUILT — commit `7af13e2`** (4 files, +685): mig 2 + its rollback + mig-1 rollback F5 doc comment +
+  surgical 4-line `database.types.ts` add. Built via a **Workflow** (Opus executor → Opus adversarial verifier;
+  `feedback_workflow_orchestration` default under ultracode). Verifier 10/10 SAFE-TO-PROCEED.
+- **Supervisor main-loop verify** (load-bearing): read mig 2 end-to-end + git show --stat + `npm run check`
+  clean + LOCAL MCP probes (OR companion → `'food' | 'wast' | 'decay' | 'decomposit'`; strict-AND expander
+  UNCHANGED; `'the of and'`→NULL; single-term parity; all `search_lessons` calls no-error).
+- **GATE 2 Codex (`gpt-5.5`, read-only, inline)** — all 10 adversarial checks PASS, SAFE-TO-PROCEED (two-pass
+  correctness, three-WHERE mechanical zero-diff, gap-free, OR-companion equivalence, NULL/rank safety,
+  GRANT/NOTIFY, rollback==mig-1 verbatim, idempotency, trigram interaction, injection). Confirmed the 3 known
+  tradeoffs are correctly implemented. GATE 3 (pre-push code-review + adversarial Codex on the diff) treated as
+  satisfied by the workflow verifier + GATE 2 Codex on this exact diff.
+- **K=10 validated read-only on TEST** (mig-1 strict-AND `total_count` per gold query = the `cnt_and` PR D
+  compares): clean gap 5↔11 (see Current task). No tuning needed → chose the canonical data-safe flow: push →
+  CI applies mig 2 to TEST → eval there (NOT a manual MCP CREATE-OR-REPLACE on TEST).
+
+Decisions / learnings:
+- **K=10 needs no pre-push MCP tuning** — the read-only `cnt_and` probe (calling the already-TEST-applied mig-1
+  strict-AND `search_lessons`) fully validates the relax partition without writing any function to TEST. This
+  supersedes the PR D DESIGN block's "CREATE OR REPLACE candidate-K on TEST via MCP" step (which was contingent
+  on K being uncertain). Cleaner + more data-safe (CI applies; MCP read-only verifies).
+- **`taste test` (32 results, ≥K) is a residual** the relax does NOT fix — a strict-AND precision dip on a
+  healthy-count 2-term query, outside PR D's near-empty-recall-cliff remit. Surface it honestly in the eval
+  writeup; it is NOT a PR D regression to chase here.
+- Workflow template-literal gotcha: `String.raw` + escaped backticks broke the script parser; rewrote prompts
+  as a `[...].join('\n')` array of plain single-quoted strings (no backticks/backslashes inside).
+
+Next step: push `7af13e2` + this status checkpoint → wait for CI to apply mig 2 to TEST → `npm run eval:search`
+(target=test) after-scorecard + MCP TEST verification probes → bring user the scorecard + q40 measured numbers
+for the `[user-verdict]` gold change → edit q40 → re-eval (final committed after-scorecard) → bot triage of
+#569 → (user) merge → PROD verify. Then PR C (C42 spike).
