@@ -1,109 +1,38 @@
 -- =====================================================
--- ROLLBACK: 20260629000000_c41_and_of_ors_term_combination.sql.rollback
+-- ROLLBACK: 20260629010000_c41_pr_d_two_pass_relax.sql.rollback
 -- =====================================================
--- Reverts C41 (AND-of-ORs term combination), restoring the PRE-C41 state:
---   1. Drop the tsquery-returning expand_search_with_synonyms and recreate the prior
---      text-returning body VERBATIM from 20260620000000_search_lessons_w1b.sql:59-120
---      (unmarked volatility = VOLATILE, as the original) + re-GRANT EXECUTE.
---   2. CREATE OR REPLACE the prior search_lessons VERBATIM from
---      20260622010000_wave4_pr2_delete_ghosts_search_rpc.sql:159-344 (the
---      to_tsquery('english', expanded_query) version, `expanded_query text`) + re-GRANT.
---   3. NOTIFY pgrst, 'reload schema'.
+-- Reverts C41 PR D (the two-pass relax), restoring the MIGRATION-1 STRICT-AND state:
+--   1. Drop the OR-of-ORs companion expand_search_with_synonyms_or (it is unique to PR D).
+--   2. CREATE OR REPLACE search_lessons back to migration 1's strict-AND body VERBATIM
+--      (20260629000000_c41_and_of_ors_term_combination.sql:159-350) — i.e. WITHOUT the
+--      relax block and WITHOUT the cnt_and / K_relax declarations. The strict-AND expander
+--      expand_search_with_synonyms (migration 1) is left in place; this rollback does not
+--      touch it.
+--   3. Re-GRANT search_lessons; NOTIFY pgrst, 'reload schema'.
 --
--- A return-type change (tsquery → text) forbids CREATE OR REPLACE for the expander, so
--- this is itself a DROP + CREATE (which discards grants → must re-GRANT). search_lessons
--- keeps its 15-arg signature, so CREATE OR REPLACE suffices there.
+-- SCOPE: this reverts to migration 1's STRICT-AND, NOT to the pre-C41 flat-OR. That deeper
+--   revert (restoring the text-returning flat-OR expander + the to_tsquery search_lessons)
+--   is migration 1's OWN .sql.rollback (20260629000000_*.sql.rollback) — run that AFTER
+--   this one if a full pre-C41 restore is wanted.
 --
--- DATA SAFETY: function definitions only — no data mutated. After restoring, the
--- generated src/types/database.types.ts should be regenerated (the expander Returns
--- reverts tsquery → string).
+-- ADDITIVE/GAP-FREE NOTE: search_lessons keeps its 15-arg signature, so CREATE OR REPLACE
+--   suffices there. Only the OR companion is dropped (a function unique to PR D, with no
+--   other caller), so there is no missing-function window on the live search path.
 --
--- F5 (PR D bot-triage NOTE): running this rollback GIVES UP C41's empty-tsquery guard.
---   It restores the PRE-C41 flat-OR text-returning expander AND the prior to_tsquery-based
---   search_lessons, which has NO `numnode(...) > 0` / IS-NOT-NULL guard on the FTS branch.
---   So after this rollback, a non-empty all-stop-word query (e.g. "the of and") that the
---   flat-OR expander resolves to an empty/whitespace tsquery string can again reach
---   to_tsquery('english', expanded_query) and ERROR — the exact crash C41's guard was
---   added to prevent. This is an intentional consequence of a FULL pre-C41 revert, called
---   out here so an operator restoring this state knows the guard regression comes with it.
---   (PR D's own rollback, 20260629010000_*.sql.rollback, reverts only to migration 1's
---   strict-AND state and KEEPS the guard.)
+-- DATA SAFETY: function definitions only — no data mutated, no schema/RLS touched. After
+--   restoring, the generated src/types/database.types.ts should drop the
+--   expand_search_with_synonyms_or entry (regenerate from schema).
 -- =====================================================
 
 
 -- =====================================================
--- 1. Restore the prior text-returning expand_search_with_synonyms (w1b body verbatim).
+-- 1. Drop the OR-of-ORs companion (unique to PR D).
 -- =====================================================
-DROP FUNCTION IF EXISTS public.expand_search_with_synonyms(text);
-
-CREATE FUNCTION public.expand_search_with_synonyms(query_text text)
-RETURNS text
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    words TEXT[];
-    expanded_words TEXT[] := '{}';
-    word TEXT;
-    synonym_record RECORD;
-    final_query TEXT;
-BEGIN
-    -- Handle empty query
-    IF query_text IS NULL OR query_text = '' THEN
-        RETURN NULL;
-    END IF;
-
-    -- C136: strip tsquery operators and quotes to spaces BEFORE splitting, so a
-    -- mid-word operator/quote (e.g. the apostrophe in "mother's") becomes a token
-    -- separator instead of an internal space that would make to_tsquery() raise.
-    -- Split on ANY whitespace run (regexp_split_to_array '\s+', not just ' ') so a
-    -- pasted tab/newline/CR also separates tokens rather than surviving inside one
-    -- (a stray tab would otherwise yield a two-lexeme tsquery token -> syntax
-    -- error). Empty tokens from leading/trailing/repeated separators are skipped
-    -- by the CONTINUE guard below.
-    words := regexp_split_to_array(
-               regexp_replace(lower(trim(query_text)), '[&|!():*<>''"]', ' ', 'g'),
-               '\s+');
-
-    FOREACH word IN ARRAY words LOOP
-        -- Skip empty words (consecutive separators / stripped-to-empty tokens)
-        CONTINUE WHEN word = '';
-
-        -- Add original word
-        expanded_words := array_append(expanded_words, word);
-
-        -- Find synonyms
-        FOR synonym_record IN
-            SELECT * FROM search_synonyms
-            WHERE (lower(term) = word AND synonym_type IN ('bidirectional', 'oneway', 'typo_correction'))
-               OR (word = ANY(array(SELECT lower(unnest(synonyms)))) AND synonym_type = 'bidirectional')
-        LOOP
-            IF synonym_record.synonym_type = 'bidirectional' THEN
-                -- Add all synonyms and the term
-                expanded_words := expanded_words || array(SELECT lower(unnest(synonym_record.synonyms)));
-                IF lower(synonym_record.term) != word THEN
-                    expanded_words := array_append(expanded_words, lower(synonym_record.term));
-                END IF;
-            ELSIF synonym_record.synonym_type IN ('oneway', 'typo_correction') THEN
-                -- Only add synonyms if term matches
-                IF lower(synonym_record.term) = word THEN
-                    expanded_words := expanded_words || array(SELECT lower(unnest(synonym_record.synonyms)));
-                END IF;
-            END IF;
-        END LOOP;
-    END LOOP;
-
-    -- Remove duplicates and create OR query
-    SELECT string_agg(DISTINCT unnest, ' | ') INTO final_query FROM unnest(expanded_words);
-
-    RETURN final_query;
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.expand_search_with_synonyms(text) TO anon, authenticated, service_role;
+DROP FUNCTION IF EXISTS public.expand_search_with_synonyms_or(text);
 
 
 -- =====================================================
--- 2. Restore the prior search_lessons (wave4_pr2 body verbatim — to_tsquery + text expander).
+-- 2. Restore migration 1's strict-AND search_lessons (body verbatim, no relax block).
 -- =====================================================
 CREATE OR REPLACE FUNCTION public.search_lessons(
   search_query           text    DEFAULT NULL,
@@ -120,7 +49,7 @@ CREATE OR REPLACE FUNCTION public.search_lessons(
   filter_tags            text[]  DEFAULT NULL,
   page_size              integer DEFAULT 20,
   page_offset            integer DEFAULT 0,
-  order_by               text    DEFAULT 'relevance'   -- NEW (C58): relevance | title | modified
+  order_by               text    DEFAULT 'relevance'   -- C58: relevance | title | modified
 )
 RETURNS TABLE (
   lesson_id    text,
@@ -136,18 +65,18 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  expanded_query    text;
+  expanded_tsquery  tsquery;        -- C41: was `expanded_query text` (now a real tsquery)
   expanded_cultures text[];
   total_results     bigint;
   -- C58: normalize the sort key. The DEFAULT only covers an OMITTED arg; an
   -- explicit NULL / 'grade' / 'confidence' / unknown all collapse to relevance.
   sort_key text := CASE WHEN order_by IN ('title', 'modified') THEN order_by ELSE 'relevance' END;
 BEGIN
-  -- Synonym expansion for FTS
+  -- Synonym expansion for FTS (C41: now returns a tsquery, or NULL/empty)
   IF search_query IS NOT NULL AND search_query <> '' THEN
-    expanded_query := expand_search_with_synonyms(search_query);
+    expanded_tsquery := expand_search_with_synonyms(search_query);
   ELSE
-    expanded_query := NULL;
+    expanded_tsquery := NULL;
   END IF;
 
   -- Cultural heritage: alias FIRST, then expand to children.
@@ -162,7 +91,10 @@ BEGIN
   FROM lessons l
   WHERE
     (search_query IS NULL OR search_query = '' OR (
-      l.search_vector @@ to_tsquery('english', expanded_query) OR
+      -- C41/GATE-A F2: guard the FTS branch for the empty/NULL tsquery (a non-empty
+      -- all-stop-word query resolves to NULL/empty and must not error to_tsquery).
+      (expanded_tsquery IS NOT NULL AND numnode(expanded_tsquery) > 0
+         AND l.search_vector @@ expanded_tsquery) OR
       l.title   % search_query OR
       l.summary % search_query
     ))
@@ -238,7 +170,9 @@ BEGIN
       CASE
         WHEN search_query IS NOT NULL AND search_query <> '' THEN
           GREATEST(
-            COALESCE(ts_rank(l.search_vector, to_tsquery('english', expanded_query)), 0),
+            -- C41: ts_rank consumes the tsquery directly; COALESCE keeps ts_rank(vector,
+            -- NULL) → 0 safe for the empty-tsquery case (GATE-B — do NOT drop it).
+            COALESCE(ts_rank(l.search_vector, expanded_tsquery), 0),
             COALESCE(similarity(l.title,   search_query), 0),
             COALESCE(similarity(l.summary, search_query), 0) * 0.8
           )::double precision
@@ -249,7 +183,8 @@ BEGIN
     FROM lessons l
     WHERE
       (search_query IS NULL OR search_query = '' OR (
-        l.search_vector @@ to_tsquery('english', expanded_query) OR
+        (expanded_tsquery IS NOT NULL AND numnode(expanded_tsquery) > 0
+           AND l.search_vector @@ expanded_tsquery) OR
         l.title   % search_query OR
         l.summary % search_query
       ))
