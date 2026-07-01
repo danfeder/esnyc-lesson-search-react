@@ -1,6 +1,23 @@
 # Wave 6 — Search Depth (C41 + C42 spike) Execution Status
 
-**Last updated:** 2026-06-29 by Session 4 (PR D built `7af13e2` + pushed `f883e2b` + applied to TEST + eval DONE — recall cliff RECOVERED 0.688→0.728, maxTotalCount violations 0, q40 repurposed per user; next = fix-up push → bot triage → user merge → PROD verify)
+**Last updated:** 2026-06-30 by Session 4 — **PR D SHIPPED + PROD-VERIFIED.** Merged #569 (squash `86f04688`);
+PROD migration approved + applied (all 4 jobs success incl. Verify-Recent-Backup + Dry-Run + Apply-to-Production);
+MCP read-only PROD verify GREEN: OR companion + relax live, `food waste decay`=19 (tight), `worm compost food
+waste`=12, `teamwork and cooperation`=44 (cliff recovered), `decompasition food waste`=585 (relaxes by design),
+`the of and`=1 no-error, `compost`=188 (single-term unchanged), strict-AND expander = `'food' & 'wast' & (
+'decay' | 'decomposit' )`. **C41 + PR D two-pass relax is LIVE on production.** Remaining initiative work: **PR C
+(C42 semantic-tier go/no-go spike, docs-only).**
+
+**Next-session handoff (PR C):** PR D is fully shipped+PROD-verified; session wrapped here (user). UNCOMMITTED
+on disk — ride PR C, do NOT lose: (a) THIS status doc's post-merge edits (bot triage + the F2/F3
+migration-maintenance follow-ups + the PROD-verify line above); (b) the untracked
+`docs/plans/2026-06-29-c42-search-engine-options-notes.md` (OSS-engine survey = PR C input). Git: PR D merged
+as squash `86f04688`; the LOCAL `origin/main` ref is STALE → `git fetch` first; the local branch is still the
+merged `feat/wave6-c41-and-of-ors`. For PR C: `git fetch` → branch off updated `main` → carry + commit these
+uncommitted docs with PR C. PR-cycle archival (move PR-A/B/D session entries to an archive file) +
+initiative-close retrospective (lift out-of-scope follow-ups to project memory; audit for feedback-memory
+learnings; template/kickoff amend check; MEMORY.md hygiene incl. updating the campaign line that still says
+"NEXT: W6 search depth") are DUE at PR C close (the final session).
 
 ## Current State
 
@@ -255,6 +272,15 @@ go/no-go spike doc (`docs/…`, no code). PR D (two-pass relax) contingent on a 
   sisters garden` 0.900→0.800. No in-scope fix — a real one needs phrase-aware search (`phraseto_tsquery` /
   `<->` adjacency, or a curated phrase entry for known collocations). User ACCEPTED the trade to ship C41+PR D
   and track this. Candidate for a future search wave (bundle with C162 unaccent). NOT a blocker for PR D merge.
+- **PR D migration maintenance notes (bot-surfaced 2026-06-30, low-sev, NOT actionable on the pushed
+  migration).** (a) **WHERE-sync hazard:** `search_lessons` now has the filter-WHERE block in THREE places
+  (relax-count PASS 0 + total-count PASS 1 + page-query PASS 2); a future migration that adds a filter to PASS
+  1/2 but MISSES PASS 0 would silently make `cnt_and` count a broader set and corrupt the relax decision. When
+  next editing `search_lessons`'s WHERE, keep all three in sync — ideally DRY them (single WHERE / helper) in a
+  future search rework or C42. (b) **Dead code:** `group_q IS NOT NULL` in both expanders is always-true (the
+  inner loop runs ≥1× since `group_words` always has the non-empty `word`; `plainto_tsquery` returns
+  `''::tsquery` not NULL) — only `numnode(group_q) > 0` does work; simplify to `IF numnode(group_q) > 0` in any
+  future copy. Both harmless now; captured so a future `search_lessons`/expander editor sees them.
 - C162 (unaccent / accent-insensitive search) — independent; a full `search_vector` rebuild; bundle with a
   future trigger-rebuild migration.
 - C43 (rejected single-token synonym pairs preserved as C42 seed data) — belongs to the C42 build.
@@ -456,3 +482,29 @@ for the `[user-verdict]` gold change → edit q40 → re-eval (final committed a
   delta. Predicate threshold is parsed from the predicate `description` `>=N/10` (no separate field) — so the
   q40 bar change is the `>=4`→`>=3` text edit. Fix-up push next: q40 gold + provenance + final scorecard +
   this status.
+
+**Bot triage of #569 (PR D — 2 rounds, AT round-cap):** claude[bot] posted across all 4 surfaces
+(issue-comments 03:45 + 04:04, PR reviews 03:45/04:02, 9 line-comments). **NO blockers.** All findings
+rejected-or-captured with a rebuttal pass: (1) trigram-in-`cnt_and` — intentional + eval-tuned (both bots +
+GATE 2 Codex agree relax should NOT fire when the user already sees ≥10 results); (2) OR-companion verbatim
+duplication — deliberate for byte-diff verifiability, possibly superseded by C42; (3) dead `search_query IS
+NULL OR ''` disjuncts in the relax-count — intentional literal-WHERE-identity for verifiability (GATE-2
+confirmed); (4) full `COUNT(*)` vs a `LIMIT 10` subquery — negligible at 745 rows + would break the
+literal-WHERE invariant; deferred for scale; (5) stale example comment in the 2022-seed migration —
+pushed/immutable, comments-only. TWO new low-sev findings CAPTURED as follow-ups (see Out-of-scope): F2
+WHERE-sync maintenance hazard, F3 `group_q IS NOT NULL` dead code. NONE actionable on the pushed+TEST-applied
+migration; NONE a user-visible bug or DB risk. **CI fully GREEN** (E2E pass 4m27s; all 4 Claude reviews +
+Test&Build + CodeQL + Security Audit + Lighthouse + semgrep pass; 0 failures). **PR D = MERGE-READY pending
+user** → then PROD migration approval (user, GitHub Actions) → PROD MCP read-only verify.
+
+**Session 4 close — PR D SHIPPED + PROD-VERIFIED.** User merged #569 (squash `86f04688`), approved the PROD
+migration (4 jobs success incl. backup-verify + dry-run), and PROD MCP read-only verify came back GREEN (OR
+companion + relax live; food-waste-decay=19 tight; teamwork=44 recovered; q40=585 relaxes-by-design;
+`the of and`=1 no-error; compost=188 single-term unchanged; strict-AND tsquery correct). User chose to WRAP
+here; PR C (C42 spike) deferred to a fresh session. Process learnings worth promoting at initiative close:
+(i) under ultracode, a single delicate migration is well served by a Workflow executor→adversarial-verifier
+PLUS supervisor main-loop verify PLUS GATE 2 Codex — 4 independent confirmations caught nothing wrong here but
+the byte-diff discipline was the cheap insurance; (ii) read-only `cnt_and` probing on TEST (calling the
+already-applied strict-AND `search_lessons`) validated K=10 WITHOUT any MCP schema-write — supersedes the
+design's "MCP CREATE OR REPLACE to tune K" step; (iii) eval gold predicate thresholds are parsed from the
+`description` `>=N/10` text (no separate field).

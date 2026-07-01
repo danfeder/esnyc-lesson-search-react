@@ -1,0 +1,101 @@
+-- =====================================================
+-- ROLLBACK: 20260701000000_taste_test_collocation_carveout.sql.rollback
+-- =====================================================
+-- Reverts the T1 "taste test" collocation carve-out, restoring the C41 (pre-carve-out)
+-- expand_search_with_synonyms VERBATIM from
+-- 20260629000000_c41_and_of_ors_term_combination.sql:63-136 (the tsquery-returning
+-- AND-of-ORs body, WITHOUT the collocation pre-pass) + re-GRANT EXECUTE + NOTIFY pgrst.
+--
+-- The carve-out migration was a CREATE OR REPLACE that KEPT the C41 tsquery return type,
+-- so this restore is also a plain CREATE OR REPLACE (no DROP, no grant loss — but the
+-- GRANT is re-issued explicitly per the C41/PR-D convention). search_lessons was never
+-- touched by the carve-out migration, so there is nothing to revert there.
+--
+-- DATA SAFETY: function definition only — no data mutated, no schema/columns/RLS touched.
+-- =====================================================
+
+
+-- =====================================================
+-- 1. Restore the C41 expand_search_with_synonyms (AND-of-ORs, no collocation carve-out).
+-- =====================================================
+CREATE OR REPLACE FUNCTION public.expand_search_with_synonyms(query_text text)
+RETURNS tsquery
+LANGUAGE plpgsql
+STABLE                                    -- deliberate (design §3): reads search_synonyms,
+                                          -- deterministic within a statement. Original was
+                                          -- unmarked (=VOLATILE); STABLE is the safe tightening.
+AS $$
+DECLARE
+    words          TEXT[];
+    word           TEXT;
+    group_words    TEXT[];
+    gw             TEXT;
+    synonym_record RECORD;
+    group_q        tsquery;
+    result_q       tsquery := NULL;
+BEGIN
+    -- Handle empty query
+    IF query_text IS NULL OR query_text = '' THEN
+        RETURN NULL;
+    END IF;
+
+    -- VERBATIM from w1b (20260620000000:83-85): strip tsquery operators + quotes to
+    -- spaces BEFORE splitting, so a mid-word operator/quote (e.g. the apostrophe in
+    -- "mother's") becomes a token separator instead of an internal space; split on ANY
+    -- whitespace run. Empty tokens are skipped by the CONTINUE guard below.
+    words := regexp_split_to_array(
+               regexp_replace(lower(trim(query_text)), '[&|!():*<>''"]', ' ', 'g'),
+               '\s+');
+
+    FOREACH word IN ARRAY words LOOP
+        -- Skip empty words (consecutive separators / stripped-to-empty tokens)
+        CONTINUE WHEN word = '';
+
+        -- Per-term group = the word + its synonyms. Synonym-lookup branching is VERBATIM
+        -- from w1b (20260620000000:94-112), changed ONLY to accumulate into the per-term
+        -- `group_words` array instead of a single global `expanded_words` array.
+        group_words := ARRAY[word];
+        FOR synonym_record IN
+            SELECT * FROM search_synonyms
+            WHERE (lower(term) = word AND synonym_type IN ('bidirectional', 'oneway', 'typo_correction'))
+               OR (word = ANY(array(SELECT lower(unnest(synonyms)))) AND synonym_type = 'bidirectional')
+        LOOP
+            IF synonym_record.synonym_type = 'bidirectional' THEN
+                -- Add all synonyms and the term
+                group_words := group_words || array(SELECT lower(unnest(synonym_record.synonyms)));
+                IF lower(synonym_record.term) != word THEN
+                    group_words := array_append(group_words, lower(synonym_record.term));
+                END IF;
+            ELSIF synonym_record.synonym_type IN ('oneway', 'typo_correction') THEN
+                -- Only add synonyms if term matches
+                IF lower(synonym_record.term) = word THEN
+                    group_words := group_words || array(SELECT lower(unnest(synonym_record.synonyms)));
+                END IF;
+            END IF;
+        END LOOP;
+
+        -- Build the group's OR-tsquery from DISTINCT non-empty lexemes. plainto_tsquery
+        -- = injection-safe single lexeme (or '' for a stop word). `||` = tsquery OR.
+        group_q := NULL;
+        FOR gw IN SELECT DISTINCT u FROM unnest(group_words) AS u WHERE u <> '' LOOP
+            group_q := CASE WHEN group_q IS NULL
+                            THEN plainto_tsquery('english', gw)
+                            ELSE group_q || plainto_tsquery('english', gw) END;
+        END LOOP;
+
+        -- Drop stop-word-only groups (numnode = 0); AND the survivors. `&&` = tsquery AND.
+        IF group_q IS NOT NULL AND numnode(group_q) > 0 THEN
+            result_q := CASE WHEN result_q IS NULL THEN group_q ELSE result_q && group_q END;
+        END IF;
+    END LOOP;
+
+    RETURN result_q;   -- NULL when nothing meaningful survived (all stop words / empty)
+END;
+$$;
+
+-- Re-issue GRANT (CREATE OR REPLACE preserves grants; explicit per C41/PR-D convention).
+GRANT EXECUTE ON FUNCTION public.expand_search_with_synonyms(text) TO anon, authenticated, service_role;
+
+
+-- Reload PostgREST's schema cache.
+NOTIFY pgrst, 'reload schema';
