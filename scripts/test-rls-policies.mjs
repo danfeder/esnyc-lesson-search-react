@@ -212,9 +212,13 @@ async function testPolicyScenarios() {
       name: 'Anonymous cannot enumerate user_invitations; token-scoped RPC works',
       test: async () => {
         const probeEmail = 'rls-probe-invitation@test.invalid';
-        const { data: anyUser } = await supabase.from('user_profiles').select('id').limit(1);
-        if (!anyUser || anyUser.length === 0) {
-          console.log('    ℹ️  Skipping: no user_profiles row to use as invited_by');
+        // invited_by FKs to auth.users, NOT user_profiles — the TEST DB has
+        // orphan profile rows whose auth user is gone, so source the id from
+        // GoTrue's admin API to guarantee the FK holds.
+        const { data: userList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+        const inviterId = userList?.users?.[0]?.id;
+        if (!inviterId) {
+          console.log('    ℹ️  Skipping: no auth user available to use as invited_by');
           return true;
         }
         // Clear any leftover probe row from an aborted earlier run, then seed.
@@ -224,7 +228,7 @@ async function testPolicyScenarios() {
           .insert({
             email: probeEmail,
             role: 'teacher',
-            invited_by: anyUser[0].id,
+            invited_by: inviterId,
             expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
           })
           .select('id, token')
