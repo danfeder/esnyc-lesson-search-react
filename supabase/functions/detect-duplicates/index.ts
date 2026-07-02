@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
 
 interface DetectDuplicatesRequest {
   submissionId: string;
@@ -228,7 +229,7 @@ serve(async (req) => {
     const keyBytes = new TextEncoder().encode(supabaseServiceKey);
     const isServiceRole =
       tokenBytes.length === keyBytes.length &&
-      crypto.subtle.timingSafeEqual(tokenBytes, keyBytes);
+      timingSafeEqual(tokenBytes, keyBytes);
 
     if (!isServiceRole) {
       // Not the service-role key — require an authenticated reviewer/admin user.

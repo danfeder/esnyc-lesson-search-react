@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.1';
 import { generateRoleChangedEmail } from './role-changed-template.ts';
+import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -99,7 +100,7 @@ serve(async (req) => {
     const keyBytes = new TextEncoder().encode(SUPABASE_SERVICE_ROLE_KEY);
     const isServiceRole =
       tokenBytes.length === keyBytes.length &&
-      crypto.subtle.timingSafeEqual(tokenBytes, keyBytes);
+      timingSafeEqual(tokenBytes, keyBytes);
 
     // Email types only legitimately sent by trusted backend services (never a browser).
     const SERVICE_ROLE_ONLY_TYPES = new Set([
