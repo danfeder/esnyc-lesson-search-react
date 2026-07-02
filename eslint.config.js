@@ -27,6 +27,7 @@ export default [
       'scripts/*',
       '!scripts/stage2-retag/',
       '!scripts/heritage/',
+      '!scripts/dedup-sweep/',
       'supabase/functions/**',
       'temp-debug-files/**',
       '.eslintrc.*',
