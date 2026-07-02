@@ -3,8 +3,20 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-02 (Fable + user, **T4 live walkthrough — 3rd authorized Fable
-session**). **WALKTHROUGH DONE — all 113 dedup groups adjudicated with the user; 61 lessons
+**Last updated:** 2026-07-02 (Opus, **t4c retire migration — PR OPEN**). Branch
+`feat/t4c-dedup-retire`: migration `20260702160000_t4_dedup_retire.sql` (+`.sql.rollback`)
+soft-retires the 61 approved duplicates (D5 snapshot-table pattern, never DELETE), generated
+byte-deterministically from decisions.json by the committed
+`scripts/dedup-sweep/generate-retire-migration.mjs` (no hand-typed ids). Local gates green
+(db reset, test:rls, check — incl. an eslint fix for `scripts/dedup-sweep/**/*.mjs` that the
+walkthrough commit had left red — and test:run 2071/2071). PROD re-probe: 764 live, all 61
+present+live, 0 already retired → **703** expected. **TEST rehearsal pre-registered: 57 of 61
+present+live (4 absent) → TEST 742→685.** NEXT = CI→TEST verify, then 🔴 **USER-only PROD
+gate**; then read-only PROD verification per the brief. **t4b** parallel-ok → **T5** launch.
+Prior update below.
+
+**Prior update (2026-07-02, Fable + user, T4 live walkthrough — 3rd authorized Fable
+session). WALKTHROUGH DONE — all 113 dedup groups adjudicated with the user; 61 lessons
 approved for retirement (live corpus 764→703 expected).** Artifact:
 `docs/plans/t4-dedup/decisions.json` (verdicts: retire_duplicate 39 · keep_family 72 ·
 unrelated 2; 250 named survivors; every lesson_id pulled verbatim from candidates.json via
@@ -226,7 +238,7 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 | T2b | Quick-wins patch PR (punch-list bucket 1: gate scoping, decision toasts, card titles, sticky pane, title+summary fields incl. RPC COALESCE-flip migration, sign-in clear, /login fix, copy + error propagation) | Opus | **✅ DONE — shipped PR #572 (`3a7d634`) 2026-07-01.** Brief: `2026-07-01-brief-quickwins-patch.md`. Carried the then-uncommitted sprint docs. |
 | T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus → **Fable** (merge + security fix + go-live) | **✅ TRACK CLOSED 2026-07-02** — #573 (`9a50dc6`) + RLS fix #574 (`104337f`) both merged + PROD-verified; **Part 3c DONE: public signups disabled (422 `signup_disabled` verified) + PROD end-to-end throwaway-teacher invite test passed on the live site and fully cleaned. Site is INVITE-ONLY and live; real invitations safe to send.** Residual: accept-flow Playwright E2E deferred to T3b/T5. |
 | T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus → **Fable** (adjudication + merge) | **✅ DONE 2026-07-02 — PR #575 merged (squash `03ebe4b`) + PROD edge deploy 3-signal-verified (v37, sha `a7fce21d…` = TEST-verified bundle, negative probes reject cleanly).** No migration. Gate-2 TEST smoke had proven the full server loop (CAS flip, stale-similarity clear 1→0, tag+note preservation, 4 negative probes, retired-guard). Residual: UI button click → T5 smoke. Brief: `2026-07-02-brief-t3b-resubmit.md`. |
-| T4 | Corpus dedup sweep (764 live lessons) + review-screen reshape | Fable design ✅ → Opus t4a ✅ → Fable+user walkthrough ✅ → Opus t4c retire / t4b reshape | **Walkthrough DONE 2026-07-02** — 113/113 groups decided, **61 retires user-approved** (`t4-dedup/decisions.json`), IDs PROD-validated. NEXT = **t4c (Opus, brief `2026-07-02-brief-t4c-retire-migration.md`)**; t4b parallel-ok |
+| T4 | Corpus dedup sweep (764 live lessons) + review-screen reshape | Fable design ✅ → Opus t4a ✅ → Fable+user walkthrough ✅ → Opus t4c retire / t4b reshape | **t4c PR OPEN 2026-07-02 (`feat/t4c-dedup-retire`)** — soft-retire migration `20260702160000_t4_dedup_retire.sql` generated from decisions.json (61 losers, D5 snapshot pattern); local gates green; PROD re-probe 764/61-live/0-retired → 703; TEST rehearsal pre-registered 57/61 (742→685). NEXT = CI→TEST verify → 🔴 **USER-only PROD gate** → read-only PROD verify. **t4b** (Opus, `2026-07-02-brief-t4b-review-reshape.md`, independent) parallel-ok |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
 
 ## Track notes
