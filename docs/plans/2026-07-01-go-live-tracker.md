@@ -6,16 +6,23 @@ tracking doc for the sprint — the 4-file scaffold is retired for this phase (s
 **Last updated:** 2026-07-02 (Fable, T3 merge + security-fix session). **#573 MERGED** (squash
 `9a50dc6`) after Fable's own diff review; PROD edge deploy **user-approved** and 3-signal-verified
 (invitation-management v26 + complete-review v9, shas match TEST bundles, bogus-token probe returns
-the fixed 404). **RLS invitation-token fix built** on `fix/invitation-token-rls`: migration
-`20260702150000_lock_down_invitation_token_access.sql` (drop enumeration SELECT policy + dead accept
-UPDATE policy; `validate_invitation_token` becomes the sole token-scoped anon read path), client swap
-in AcceptInvitation, AuthModal dead-signup deletion, invitation-management full route-strip (F4),
-seeded RLS regression test. Deferred from this pass: accept-flow Playwright E2E (needs TEST seeding +
-auth-user cleanup; bundle with T3b/T5). Retired `password-reset` fn was still DEPLOYED on
-TEST+PROD (CI never deletes) — **user-approved, deleted from BOTH 2026-07-02, verified gone,
-deploy queue empty (no resurrection risk).** Process rule (user, binding): **PROD applies
-are USER-only; always self-review a diff before merging.** Part 3c still deferred until this fix is
-on PROD; no real invitations meanwhile. Prior update below.
+the fixed 404). **RLS invitation-token fix = PR #574, TEST-VERIFIED, awaiting USER merge.** Branch
+`fix/invitation-token-rls`, migration `20260702150000_lock_down_invitation_token_access.sql` (drop
+enumeration SELECT policy + dead accept UPDATE policy; `validate_invitation_token` = sole
+token-scoped anon read path, `SECURITY DEFINER` + `search_path=''` + tight grants + `NOTIFY pgrst`),
+client swap in AcceptInvitation, AuthModal dead-signup deletion, invitation-management full
+route-strip (F4), seeded RLS regression test. **Codex cross-check: no blocking findings** (its one
+Low — missing pgrst notify — fixed). **TEST-DB verified live:** both target policies dropped, RPC
+hardened, 3 anon probes pass (enumeration→`[]`, exact-token→1 row, bogus→`[]`). **3 claude bot
+reviews, no blocking** — triaged all 4 surfaces; 2 real fixes applied (nullable `accepted_at` type,
+anon-key env-check), rest rebutted. **Only red = cosmetic "Deploy to TEST — invitation-management"
+no-op** (first #574 run deployed the route-strip live v9→v10; later non-edge commits re-deploy
+identical v10 → strict guard no-ops; verified v10 ACTIVE w/ strip in deployed source; won't recur on
+PROD, which holds pre-strip source). NEXT = **USER merges #574 → USER approves PROD migration → I
+verify anon-can't-enumerate on PROD → Part 3c**. Deferred: accept E2E (→T3b/T5). `password-reset`
+fn **deleted from BOTH TEST+PROD (user-approved), verified gone, deploy queue empty.** Process rules
+(user, binding): **PROD applies are USER-only; self-review a diff before merge; verify Opus-handoff
+claims before continuing.** No real invitations until the fix is on PROD. Prior update below.
 
 **Prior update (2026-07-02, Opus, T3 execution session):** T2a (#571 `eeccedb`) + T2b (#572
 `3a7d634`) shipped per project memory. **T3 built & merge-ready but NOT merged this session** — the
