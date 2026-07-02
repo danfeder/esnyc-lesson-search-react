@@ -1,0 +1,1151 @@
+{
+  "model": "claude-sonnet-4-6",
+  "generated_agents": 113,
+  "summary": {
+    "total": 113,
+    "retire_duplicate": 37,
+    "keep_family": 74,
+    "unrelated": 2
+  },
+  "violations": [
+    "all-about-birds-d0c2f3: retire_duplicate but group max overlap 72% < 75%",
+    "all-about-pumpkins-830be1: retire_duplicate but group max overlap 64% < 75%",
+    "black-panther-party-and-the-free-breakfa-9eee2d: retire_duplicate but group max overlap 75% < 75%",
+    "kitchen-garden-intro-e3c509: retire_duplicate but group max overlap 66% < 75%",
+    "sweet-and-sour-roots-ed3232: retire_duplicate but group max overlap 67% < 75%",
+    "three-sisters-puppet-show-16bd99: retire_duplicate but group max overlap 71% < 75%",
+    "tortilla-espanola-e790b7: retire_duplicate but group max overlap 58% < 75%"
+  ],
+  "deck": [
+    {
+      "group_id": "2nd-grade-decomposition-experiment-part--35ff28",
+      "whats_the_same": "All four lessons are about the same science experiment where students seal soil and everyday items in plastic bags to observe which ones decompose over time. They all target 2nd and 3rd graders and follow the same basic two-part structure: setting up the experiment and making predictions, then returning weeks later to check the results.",
+      "whats_different": "These four lessons are actually two pairs: Lessons A and D are both 'Part 1' (setting up the experiment), and Lessons B and C are both 'Part 2' (observing the results) — so Part 1 and Part 2 are genuinely different lessons that must both be kept. Within each pair, one version is older and simpler (A and B, added in July) while the other is newer and more detailed (D and C, added in September), with richer teacher instructions, petal-point classroom rituals, garden connection notes, and more back-pocket activities for early finishers. Lessons A and D are redundant copies of each other, and Lessons B and C are redundant copies of each other.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "3-5-garden-tasks-2263dd",
+      "whats_the_same": "All four lessons follow the same school-garden visit structure — an opening welcome, hands-on garden tasks, and a closing hand-washing ritual — and were created by the same program (Edible Schoolyard NYC) for the same school setting.",
+      "whats_different": "Lesson A is a specialized version for a self-contained special-education K–2 class, featuring low-demand sensory stations (plastic veggie digging, worm feeding, seed sorting) and an indoor option — quite different from the others. Lessons B, C, and D are the same fall outdoor visit adapted for three different age groups: 3K–PK (Lesson D, watering and an eggplant scavenger hunt), K–2 (Lesson B, watering plus harvesting basil/kale/spinach), and grades 3–5 (Lesson C, harvesting collards and saving watermelon radish seeds). Each targets a different set of real classes and teachers, with activities matched to those students' developmental level.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "3-sisters-tacos-fd35c6",
+      "whats_the_same": "All eight lessons teach students about the Three Sisters — corn, beans, and squash — through the lens of Indigenous and Native American traditions and companion planting. They all share the same cultural storytelling thread about how these three plants help each other grow.",
+      "whats_different": "The lessons cover genuinely different dishes and activities: some make tacos (Lessons A, D, F), one makes succotash (G), two make soup (C and H), one is a garden planting lesson rather than a cooking lesson (E), and one is an umbrella planning guide that lists all the other recipes rather than teaching a single dish (B). They also span very different grade levels, from pre-K through 8th grade. However, the Middle School Three Sisters Soup (Lesson C, grades 6–8) and the Three Sisters Soup (Lesson H, grades 3K–5) are nearly word-for-word copies of each other and one should be retired — the middle school version (C) is the more complete copy with richer discussion content.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "5th-grade-december-2-lesson-e2d221",
+      "whats_the_same": "Both are 5th grade December lessons in the same Salad Project series. They share the same opening paragraph about nutrients and soil health, both use the periodic table to introduce a mineral, both include a tasting activity, and both involve outdoor garden work that includes mulching.",
+      "whats_different": "Lesson A teaches phosphorous and erosion — it runs a three-bottle experiment and has students sow cover crops and amend beds. Lesson B is explicitly a follow-up ('December #2') that opens by reviewing what students learned about phosphorous in the previous lesson, then introduces magnesium, and focuses on putting the garden to bed for winter with a smoothie tasting and notebook decoration. They are two separate class sessions taught back-to-back.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "african-american-food-museum-tour-91fa73",
+      "whats_the_same": "All three lessons center on the same imaginary field trip to the National Museum of African American History and Culture, where students explore artifact stations and worksheets to learn about ingredients, dishes, and cooking techniques contributed by African American farmers and cooks.",
+      "whats_different": "Lesson C is genuinely different from the other two: it is a 90-minute cooking lesson where students first make Hoppin' John burgers and a green bean salad, then do the museum tour as one part of a larger class — making it a cooking activity, not just an academic one. Lessons A and B are both stand-alone academic museum tour lessons with no cooking, but they differ in scope: Lesson A targets only 4th grade in winter and opens with a read-aloud history document, while Lesson B is for grades 3–5, runs 45 minutes, opens with a world map discussion, and is more fully developed — suggesting A may be an older, narrower version that B has largely replaced.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "african-american-foodways-cornbread-and--6821f4",
+      "whats_the_same": "Both lessons teach the exact same class: K–2 students read 'The Color of Us,' discuss skin-tone comparisons to foods, then cook cornbread and collard greens to celebrate Black History Month. The class flow, rotation table names, book list, back-pocket activities, and take-home recipe are all the same.",
+      "whats_different": "Lesson A has a fuller materials list that includes the actual kitchen equipment (stove, saute pan, oven, baking pan, scissors), more detailed prep steps, and a more complete closing ritual. Lesson B has richer written explanations of the social-emotional skills and cultural responsiveness goals, adds 'Social Justice' as a core competency, and mentions reviewing 'modern day Black food and farming heroes' in the closing — but its materials and prep sections are thinner. They appear to be two different drafts of the same lesson, each more developed in different areas.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1fqFWrvA5MWkoXTYM2_RbexrcVC4xNuJBqwlIfVCPDUA",
+      "survivor_why": "Lesson A is the more complete, instructor-ready version with a full equipment list, detailed prep steps, and a thorough closing ritual that teachers can follow without guesswork.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "agar-jelly-k-651f90",
+      "whats_the_same": "Both lessons teach students to make agar jelly as a way to celebrate Lunar New Year, using the same core ingredients (agar powder, coconut milk, sugar) and sharing the same cultural background, objectives, and the idea of pre-making a batch for students to taste.",
+      "whats_different": "The middle school version (Lesson A) is built for older students working in table groups, runs a 30-minute activity, includes paintbrushes and silicone molds, and connects to a follow-up bioplastic lesson. The kindergarten version (Lesson B) is shortened to 15 minutes and adapted for young children with a storybook, movement activity, a 'mix it' song, a 'good afternoon gardeners' song, individual portions poured by the teacher, and a coloring page as a back-pocket activity — clear signs it was designed for a very different age group.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "all-about-birds-d0c2f3",
+      "whats_the_same": "Both lessons teach the same 'All About Birds' activity to Pre-K students: a feather prop game called 'Birdie Says,' making bird feeders from pipe cleaners and Cheerios, and closing with a seed or dried fruit tasting. The objectives, steps, and materials are essentially identical.",
+      "whats_different": "Lesson B is a more fleshed-out version of Lesson A — it adds estimated times for each part of the class, a note to show pictures of birds, tasting norms, a 'show of thumbs' closing prompt, and a full back-pocket activity (paper-roll binoculars with its own materials list). Lesson A is a cleaner, shorter write-up but lacks those extras. Lesson A has a summary filled in on its record; Lesson B does not.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_7f6a2a772f044c0c87f98f9cde200320",
+      "survivor_why": "Lesson B is the more complete version, with timing guides, a back-pocket binocular activity, additional materials, and extra teaching prompts that make it more useful for instructors.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "all-about-compost-b12378",
+      "whats_the_same": "Four of the five lessons — Blue Corn Cookies, Popcorn Party, Corn Celebration, and All About Corn — all center on corn as the main ingredient and are indoor cooking activities from Edible Schoolyard NYC, each touching on corn's role in food and culture.",
+      "whats_different": "Each corn lesson takes a completely different angle: Blue Corn Cookies is a baking and Native American cultural history lesson for 2nd–3rd graders; Popcorn Party is a 6th-grade science lesson about heat transfer (conduction, convection, radiation) that just happens to use popcorn; Corn Celebration is an end-of-year party activity for all grades with craft and decoration stations; and All About Corn is a broad tasting and reading survey for K–5 covering Indigenous and Latin American corn history. The fifth lesson, All About Compost, is entirely unrelated — it covers soil, decomposition, and worm bins — and appears to have been grouped here by mistake due to shared lesson-template wording.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "all-about-pumpkins-830be1",
+      "whats_the_same": "Both lessons teach students about pumpkins as a fall squash crop, then have students season and roast pumpkin seeds together, explore the inside of a real pumpkin, and use the same closing ritual ('Thank you gardeners, Thank you cooks'). They target the same grade levels and follow the same overall class flow.",
+      "whats_different": "Lesson B is a much more developed and detailed version of the same lesson — it includes explicit grade-level variations for 3K through 8th grade, a structured bell-based turn-taking system for the mixing activity, a garden connection section, a fuller materials list, and site-based variation notes. Lesson A is shorter and simpler, names a specific teacher (Ms. Raili), and reads more like an earlier working draft. The core activity and sequence are the same in both.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_011467fd86fa4339a745803f8643fe84",
+      "survivor_why": "Lesson B is more recent, more complete, includes grade-level variations from 3K through 8th grade, and has more detailed step-by-step instructions.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "aloo-gobi-dee3ab",
+      "whats_the_same": "All five lessons teach students how to make Aloo Gobi, a South Asian potato and cauliflower dish, in a hands-on school kitchen setting. They all share the same dish, similar ingredients, and a culturally responsive approach connecting food to Indian and Pakistani heritage.",
+      "whats_different": "The lessons are written for clearly different age groups and use completely different activities: Lessons A and B are nearly identical versions for grades 3–5 that include an elaborate spice-trading simulation across three countries, making them redundant copies of each other (B adds a helpful 'Round 4' step and has richer metadata). Lesson C is for pre-K through 2nd grade and uses naan bread, a petal reward system, and a gentler class flow with no trade activity. Lesson D is a sparse, incomplete outline covering kindergarten through 8th grade that frames the dish inside a broader 'learn about India' world cultures lesson with passports and a map. Lesson E targets pre-K through 2nd grade with a 'Hot Potato' game, a plant-parts song, and math activities built around comparing vegetables.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "anywhere-farm-30bddc",
+      "whats_the_same": "Both lessons are the same 'Anywhere Farm' lesson for grades 3K through 2, covering the same book, the same pea shoot planting activity in recycled containers, the same tasting, the same materials list, the same prep steps, the same anticipated problems, and the same extension activities — word for word throughout.",
+      "whats_different": "The differences are extremely minor: Lesson B's title drops the word 'Lesson,' Lesson B has one extra tag noting it 'promotes student-centered instruction,' and Lesson B contains what appears to be a typo in the opening — it says 'learning about cycling' instead of 'learning about recycling.' Everything else is identical.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1NH0MZyhGNTdv3oPLf9pnmha8R8GOvPoz-_5MLxnS_xk",
+      "survivor_why": "Lesson A has the correct wording ('recycling') where Lesson B contains a typo ('cycling'), making Lesson A the more accurate copy to keep.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "argumentative-writing-a719a3",
+      "whats_the_same": "Both lessons ask middle school students to cook two different recipes side by side, then write an argument convincing someone to choose one over the other. They share the same grade levels, objectives, materials, closing activity, and overall class structure.",
+      "whats_different": "Lesson A is specifically built around plant-based versus meat-based burgers and asks students to use evidence and nutrition information to support their argument — it even includes a worksheet on the health pros and cons of each burger and lists Health as an academic subject. Lesson B is a more general version of the same lesson, not tied to any one recipe pair, and teaches students to use descriptive sensory language rather than evidence and nutrition data to make their case. Lesson A also includes an explicit 'alternative lesson' section with other recipe options, while Lesson B lists those same options as the primary choices.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "baking-intro-pumpkin-muffins-ad6860",
+      "whats_the_same": "All four lessons teach students to bake pumpkin muffins in the fall, following a recipe, measuring ingredients, and mixing batter before putting it in the oven.",
+      "whats_different": "Lesson A is a simpler plan for a very wide age range (preschool through 8th grade) that focuses on why you separate wet and dry ingredients. Lessons B and D are nearly word-for-word the same 3rd–5th grade lesson that adds a math worksheet and a nonfiction pumpkin reading — D is a later duplicate of B with no summary and thinner details. Lesson C is a distinct 6th–7th grade plan built around preparing muffins for the whole school's Fall Harvest Festival; it uses a different recipe with eggs, butter, maple syrup, and a streussel topping, and ties the cooking to community stewardship.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "bean-dips-a76d05",
+      "whats_the_same": "All three lessons have students make hummus from chickpeas, tahini, lemon juice, and garlic, and all come from Edible Schoolyard NYC. They share the same core cooking steps and the message that chickpeas are healthy and culturally significant.",
+      "whats_different": "Lesson A is a Fall/Winter lesson for the youngest grades (pre-K through 2nd) built around reading a picture book about kindness and trying new foods — a very different purpose and season from the other two. Lessons B and C are both Spring, all-grades lessons connecting hummus to seeds and plant proteins, but they are structured differently: Lesson B is a focused, simpler plan that fits into a curriculum sequence (referencing earlier lessons on three sisters and whole grains), while Lesson C is a much more elaborate 50-minute plan with three separate activity trays — one for exploring different types of beans, one where students cook dried chickpeas for the next class, and one for assembling herb hummus — plus appendices, a smashing song, and extensive supporting documents. All three have meaningfully different activities, seasons, and learning goals.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "bee-habitat-1e4c70",
+      "whats_the_same": "All three lessons teach young students (pre-K and kindergarten) about what living things need to survive — food, water, and shelter — and connect those needs to the school garden. They all weave in hands-on or imaginative activities to make the concept real for young children.",
+      "whats_different": "Lesson A centers on humans as animals and has students actually harvest food and plant seeds outdoors. Lesson B is a winter indoor lesson where students learn a habitat song, take an imaginary walk through a cold garden, and build pretend animal homes from craft materials. Lesson C zooms in entirely on bees — students read a book about a bee, make bee puppets, simulate pollination with paintbrushes in the garden, and taste honey; it is a completely different set of activities from the other two.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "bees-blueberries-93e047",
+      "whats_the_same": "Both lessons teach students about native bees, honey bees, and colony collapse using nearly identical explanatory text, and both pair that bee education with making a blueberry baked good, planting native plants, and an optional beeswax craft.",
+      "whats_different": "Lesson A has students make blueberry cobbler and optionally beeswax candles, covers grades 3K through 8th (including special steps for middle schoolers to divide the recipe), and includes a full ingredient list. Lesson B has students make blueberry muffins and optionally beeswax lip balm, is scoped to grades 4–5, and adds NYC-specific content about community gardens protecting urban bees, plus a closing discussion about appreciating all the people who help feed us.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "bees-pollination-806140",
+      "whats_the_same": "Both lessons teach students about bees and pollination in the spring garden, using hands-on activities and covering the same core idea that bees spread pollen from flower to flower and are essential to plant growth.",
+      "whats_different": "Lesson A is designed for Kindergarteners and includes three simple craft-and-cooking stations — making seed bombs, painting flowers, and preparing energy bites — with a short skit to introduce the topic. Lesson B is designed for 3rd graders and revolves around a detailed multi-round simulation game where students physically act as bees and trees using popsicle sticks as pollen, then analyze results to understand how threats like cold weather, disease, and habitat loss affect apple harvests. They share the same topic but are entirely different lesson plans built for different ages.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "beet-ketchup-1a3348",
+      "whats_the_same": "Both are indoor cooking lessons from the same school garden program, covering knife skills, measuring, and stovetop cooking, and both connect cooking to seasonal produce and plant science.",
+      "whats_different": "The lessons are about completely different dishes — one is a Potato Leek Soup made in fall with a connection to Irish history, while the other is a Beet Ketchup made in winter with a focus on root vegetables as storage crops. They have different grade ranges, different primary ingredients, different cultural themes, and different step-by-step activities throughout.",
+      "recommended_verdict": "unrelated",
+      "family_type": null,
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "berry-rosehip-bars-abcddb",
+      "whats_the_same": "Both lessons teach the exact same cooking activity — students bake berry rosehip bars together and learn about foods native to North America. The opening script, core baking steps, closing ritual, materials list, prep instructions, and background information are nearly word-for-word identical.",
+      "whats_different": "Lesson B is a later, more complete version: it adds the 3K grade level, includes two extra sections (a Garden Connection note about mulberry growing in school gardens, and a critical-thinking reflection prompt), expands the grade-level variations with a separate 3K–PK activity and an additional Grade 3 regional-food extension, and adds a few extra prep steps like printing task cards and washing berries for tasting. Lesson A is the earlier, shorter version that lacks these additions.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_03de6aa8ce094d0b9fd6518830e3eae7",
+      "survivor_why": "Lesson B is the newer, more fully developed version — it covers an additional grade band (3K), adds meaningful teaching sections, and includes more detailed prep guidance.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "biodiversity-c790dc",
+      "whats_the_same": "Both lessons introduce students to the concept of biodiversity — what it means and why variety of life matters — and both use a Human Bingo activity to explore the diversity within their own classroom community.",
+      "whats_different": "Lesson A is designed for middle schoolers (grades 6–8), takes place indoors, and centers on reading the Lenape story of the Three Sisters to teach interdependence and cultural connections to biodiversity. Lesson B is designed for younger students (grades 3–5), takes place outdoors in the garden, and uses a hands-on corn-worm game with colored necklaces to show how a diverse crop survives pests better than a single-variety crop. The two lessons share one activity (Human Bingo) but have different primary activities, settings, grade targets, and learning emphases.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "black-eyed-peas-stew-d65698",
+      "whats_the_same": "All three lessons are Black History Month cooking lessons built around black-eyed peas, connecting the food to African and African American cultural history, and all are taught in a similar class structure with hand-washing, a discussion about the slave trade and food traditions, and a cooking activity.",
+      "whats_different": "Lessons A and B are nearly the same lesson — both make a black-eyed pea and collard greens stew served with cornbread, both reference the Gee's Bend quilting tradition as a back-pocket activity, and both share nearly identical text about slavery and teaching tolerance; Lesson A is the more complete version with specific quantities, grade-differentiated tasks, a berbere spice activity for older students, and a riddle handout, while Lesson B is a thinner, less detailed draft using a Creole mix instead of berbere and missing the quantities and handouts. Lesson C is a genuinely different lesson that makes black-eyed pea stew with fried plantains and a variety of vegetables, focuses on the African Diaspora and seed dispersal, includes a planting activity for the youngest students, and does not involve cornbread or quilting at all.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "black-history-month-61d7f9",
+      "whats_the_same": "Both lessons celebrate Black History Month by having students cook a recipe while learning about the role of Black people in American food history. Both are indoor cooking lessons taught in winter.",
+      "whats_different": "The lessons are aimed at completely different age groups — Lesson A is designed for kindergarten through 5th grade and centers on making banana ice cream while spotlighting three individual Black chefs, whereas Lesson B is for middle schoolers (grades 6–8) and has students cook cornbread and Hoppin' John while exploring the West African and Indigenous roots of Southern food traditions. Lesson A is a fully fleshed-out, step-by-step plan; Lesson B is a shorter outline with room to fill in.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "black-panther-party-and-the-free-breakfa-9eee2d",
+      "whats_the_same": "Both lessons teach the same story about the Black Panther Party's free breakfast program during the Civil Rights Movement, and both have students make granola with oats, seeds, dried fruit, and coconut, then eat it with yogurt and sliced fruit. The 45-minute class structure — welcome and discussion, then cooking, then eating together — is identical in both.",
+      "whats_different": "Lesson B is a more fully developed version of Lesson A: it adds extra discussion questions, a section on garden connections, a section on critical thinking, NYC-specific references to the Bronx and Brooklyn, mentions of age-appropriate books, and connections to Black History Month and Juneteenth. Lesson A targets only grades 4–5, while Lesson B is listed for grades pre-K through 5, though the lesson text itself does not show separate grade-specific instructions. Lesson B also has no written summary, while Lesson A does.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_ef043bcf99f44965a0cc5dd6aef52a82",
+      "survivor_why": "Lesson B is the more complete and expanded version, with richer discussion prompts, additional cultural and garden connections, more tags, more academic subjects, and a more recent date.",
+      "confidence": "medium"
+    },
+    {
+      "group_id": "butterflies-f3d4b7",
+      "whats_the_same": "Both lessons teach the exact same activity: students listen to a butterfly book, learn about the butterfly life cycle, make a clothespin-and-coffee-filter butterfly, and fly their butterflies around the room to visit flower pictures. The opening, read-aloud, craft steps, clean-up, and closing discussion are essentially word-for-word the same.",
+      "whats_different": "Lesson B is a more developed version of Lesson A — it adds an outdoor option (letting students take their butterflies into the garden when weather allows), includes a butterfly coloring sheet as an extra activity, and adds two new reflection sections about garden connection and critical thinking. Lesson B also has more tags and garden-skill labels recorded, and its lesson text is noticeably longer and more complete.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_be063faef5704613af4fa8dda5864e88",
+      "survivor_why": "Lesson B is the more complete and recent version, with an added outdoor component, a butterfly coloring sheet, richer metadata, and two additional instructional reflection sections.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "cajun-black-eyed-peas-sliders-7535f9",
+      "whats_the_same": "All four lessons teach the same Cajun Black Eyed Peas Sliders recipe as a Black History Month tribute, with the same objectives, cultural responsiveness framing, social-emotional skills, and basic class flow of opening ritual, cooking activity, and closing ritual.",
+      "whats_different": "Three of the lessons are clearly written for specific grade bands — one for the youngest students (3K–2nd) with songs and no knives, one for grades 3–5 with chips-making added, and one for grades 6–8 with teacher differentiation tips and food-waste discussion prompts. The fourth lesson (Lesson D, added a month later) spans all grades at once but strips out all those age-specific adaptations, making it a flatter, generic version that loses the grade-level nuance.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "callaloo-e8561a",
+      "whats_the_same": "Both lessons teach students how to cook callaloo, a Caribbean leafy green dish, and both explore the food geography of the Caribbean, discussing how climate affects what people grow and cook.",
+      "whats_different": "Lesson A is a classroom cooking lesson for Pre-K through 5th grade, structured around three rotating stations with grade-differentiated activities like recipe comparison and ingredient flip books. Lesson B is a Middle School Family Cooking Night for grades 6–8 where parents attend alongside students, and it adds a unique 'food memory' writing and drawing activity where families share personal food stories — an element entirely absent from Lesson A.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "chilled-cucumber-and-tahini-soup-with-sp-8090b5",
+      "whats_the_same": "Both lessons are the exact same cucumber and tahini soup cooking activity, using the same script, the same step-by-step agenda, the same materials list, and the same back-pocket video discussion questions about Palestinian chef Ayat.",
+      "whats_different": "Lesson B is a more complete and expanded version of Lesson A: it adds grade 6–8 adaptations (students peel cucumbers, toast pumpkin seeds on the stove, and blend their own soup), includes two extra instructional sections on garden connections and critical thinking, covers a wider grade range (down to 3K and up through 8th grade), and has richer tags and subject labels. Lesson A is the older, shorter version with no middle-school content.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_426e363f5de14520b790695e25b95cda",
+      "survivor_why": "Lesson B is the fuller, more recently added version — it extends the lesson to more grade levels including middle school, adds two extra instructional sections, and has more complete metadata.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "compost-relay-stew-2a51f5",
+      "whats_the_same": "All four lessons are about compost — what it is, what goes into it (greens, browns, air, and moisture), and why it matters. They all use the same banana nice cream 'compost stew' idea and the same relay race to act out building a compost pile.",
+      "whats_different": "Lesson B is a completely different lesson aimed at PreK through 1st grade: it centers on a picture-book read-aloud and a card-sorting game, with no relay or cooking. Lessons A, C, and D are all hands-on relay-and-tasting lessons for older students, but C is specifically for grades 3–8 and includes a unique blindfold communication challenge not found in the others. Lessons A and D are near-copies of each other (same title, same grade range of 3K–8, same activity flow), but D is the more complete and more recent version — it adds grade-level variations, explicit timing, a full recipe, and content about the indigenous origins of composting — so the team should retire Lesson A and keep Lesson D.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "daal-and-roti-bf48ee",
+      "whats_the_same": "Both lessons teach students to make the same three-part Pakistani meal — dal (lentil stew), roti (flatbread), and chutney — using the same core ingredients and celebrating Pakistani food culture in an indoor cooking class.",
+      "whats_different": "Lesson A is a fully fleshed-out, 90-minute plan organized around color-coded table teams each prepping a different ingredient, includes grade-by-grade differentiation all the way down to pre-K, and is meant for fall or winter. Lesson B is a shorter, sketchier draft structured around three separate stations (dough, chutney, dal), leaves the standards and cultural considerations sections blank, targets spring (March), and does not include pre-K. They read like two different teachers planned the same dish independently, at different times of year, with different classroom setups in mind.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "eat-the-rainbow-green-954634",
+      "whats_the_same": "All seven lessons are part of the same 'Eat the Rainbow' series for Pre-K students. They share the same classroom routine — opening with the Eat the Rainbow song, a hands-on cooking activity, and closing with 'Thank you gardeners, thank you cooks!' and tasting passports with stickers — and they all reference the same NYC school standards.",
+      "whats_different": "Each lesson focuses on a different color of the rainbow and teaches a different skill with completely different foods: orange covers pumpkin pancakes and measuring, white covers roasting potatoes and cauliflower with knife skills, green covers making a smoothie, yellow covers fruit kabobs, red covers a plant-growth skit and yogurt dip, purple covers a food-art portrait activity, and the Rainbow Finale brings all colors together in a salad. These are seven distinct lessons meant to be taught across the school year, ending with a culminating celebration.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "eat-the-rainbow-intro-lesson-9f0bd5",
+      "whats_the_same": "Both lessons use the 'Eat the Rainbow' theme and have students taste fruits and vegetables from each color of the rainbow. They are both from the same organization and share the idea that colorful foods are good for you.",
+      "whats_different": "Lesson A is a single one-time introductory class for Pre-K only, centered on a garden and kitchen tour, hand-washing, and a quick rainbow tasting with stickers and a passport. Lesson B is a multi-week series (spanning 2–3 classes) for a wider age range (ages 3K through 1st grade) that focuses on teaching the specific health benefits of each color through a craft coloring booklet, with tasting as a closing activity rather than the main event.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "ecology-a2ff16",
+      "whats_the_same": "Both lessons introduce students to the concept of ecology and ecosystems through a science lens, and both are part of the same Edible Schoolyard NYC curriculum with similar values around cultural responsiveness and social-emotional skills.",
+      "whats_different": "Lesson A is a brief, outdoor garden-work session for 8th graders where students do hands-on jobs like composting and winterizing the garden while discussing general ecology. Lesson B is a much more developed indoor lesson for 4th–7th graders focused specifically on pond ecosystems — it includes a whole-class movement song, a book reading, and a craft project where students build miniature water gardens. The activities, grade levels, settings, and specific topics are all different.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "edible-flower-collages-salad-3e29b0",
+      "whats_the_same": "All four lessons take place in a school garden or kitchen setting and connect plants to food, with at least some attention paid to the idea that different parts of a plant — roots, stems, leaves, flowers, fruits — can be eaten or explored. They share a general 'plants are food' theme aimed at early elementary students.",
+      "whats_different": "Lesson A has students use magnifying glasses and observation trays, then blend a plant-part smoothie. Lesson B is a pasta-making cooking class where students grate garlic, cut basil, and measure sauce while matching each ingredient to a plant part. Lesson C has students label a plant diagram and then taste five specific vegetables (broccoli, carrots, peas, bok choy, celery) representing different plant parts. Lesson D is a completely different experience — students go into the garden to collect leaves, petals, and seed pods to make an art portrait of a classmate's face, then separately make and eat an edible flower salad; it is a seasonal craft-plus-cooking hybrid and does not focus on teaching plant part names the way A, B, and C do.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "elementary-introduction-to-pollination-7a9630",
+      "whats_the_same": "Both lessons teach students about pollination using the same core bee scavenger hunt, where kids act as bees moving pom-pom 'pollen' from flower to flower, and both end with a honey tasting and discussion about teamwork.",
+      "whats_different": "Lesson A covers every elementary grade (preschool through 5th) with separate opening instructions for younger and older students, and adds a butterfly craft activity that Lesson B does not have. Lesson B is written specifically for 4th grade only, has a simpler single opening, skips the craft, and gives more time to the closing discussion — making it a leaner, grade-focused version of the same core activity.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "empanadas-bde9b1",
+      "whats_the_same": "All three lessons have students make the same vegetarian empanadas recipe together indoors in fall or winter, exploring the Latin American origins of the dish and practicing kitchen skills as a group.",
+      "whats_different": "Lessons A and C are both written for grades 3K through 5th and cover the same activity, making them redundant copies — but Lesson C is far more developed, with detailed timing, step-by-step grade-level variations, garden connections, cultural discussion prompts, and a back-pocket book activity, while Lesson A is a shorter, school-specific version written for BCCS that includes that school's points system. Lesson B is a genuinely different lesson for 7th graders that adds a reading-and-discussion component alongside the cooking and was developed for a different school entirely.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "empanadas-corn-salad-eadd2e",
+      "whats_the_same": "Both lessons teach the exact same cooking class where students make empanadas and a corn salad together, following the same 90-minute agenda, the same safety rules, the same cultural background about Latin American cuisine, and the same three-part class flow.",
+      "whats_different": "Lesson B is a more complete, updated version — it adds explicit step-by-step grade-level variations for 3K through 5th grade, a garden connection section, back-pocket extension activities, a note about a shorter 45-minute version for pre-K, and richer cultural details naming specific countries and dish names like pastelitos. Lesson A is an earlier, thinner draft with a written summary field but fewer sections overall.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_be2157750d064fd3b7428af9c1944b59",
+      "survivor_why": "Lesson B is the newer, longer version with grade-level variations, extension activities, and a garden connection section that make it a more complete and usable lesson plan.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "expert-s-guide-harvesting-5a56a5",
+      "whats_the_same": "All three lessons are part of a garden-to-table curriculum where students explore vegetables and salads — they share the same broad themes of seasonal produce, plant growth, and preparing food from the garden.",
+      "whats_different": "Each lesson is aimed at a completely different grade level (1st, 2nd, and 5th grade) and has its own distinct activity: the 1st-grade lesson teaches students about what vegetables survive in fall and winter and ends with a kale salad assembly; the 2nd-grade lesson is the final session of a longer project where students harvest lettuce they planted themselves and complete a written 'Expert's Guide' book; the 5th-grade lesson kicks off a year-long class project where students plan and grow their own salad garden. The settings, objectives, materials, and depth of instruction are all different.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "expert-s-guide-to-gardening-compost-f394fd",
+      "whats_the_same": "All six lessons are part of the same 2nd-grade project called 'The Expert's Guide to Gardening,' where students learn garden skills and document each one in a handmade workbook. They share the same grade level, the same workbook format, and a very similar lesson structure with an opening, a garden activity, and a writing/drawing session.",
+      "whats_different": "Each lesson covers a completely different garden topic: one is about starting seeds, another about compost and worms, another about transplanting, another about watering and weeding, another about clearing a bed for spring, and one about mulching. The background notes in several lessons explicitly describe the full sequence and confirm these are meant to be taught one after another across the school year.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "fattoush-8c6942",
+      "whats_the_same": "All four lessons are about making fattoush, a Middle Eastern bread salad, in an indoor kitchen classroom. They share the same general topic, cultural connection to the Middle East, and grade range of kindergarten through fifth grade.",
+      "whats_different": "Lessons B and D are nearly empty stubs with no real lesson content — they even note in their own text that they are duplicates — so they add nothing and should be retired. Lessons A and C are both complete, detailed lesson plans but teach the dish very differently: Lesson A uses group cooking stations and a cultural mapping activity where students explore Middle Eastern countries together, while Lesson C has every student cook their own individual plate, with COVID-era safety protocols built in and a stronger focus on student independence. Those two are genuinely different lessons worth keeping.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "food-justice-food-marketing-673a34",
+      "whats_the_same": "Both lessons teach students about food marketing strategies and have students create their own advertisement for a fruit or vegetable, followed by a hands-on food tasting activity.",
+      "whats_different": "Lesson A frames the topic through a food justice lens — specifically how unhealthy food is unfairly marketed to communities of color and low-income families — and has students make billboard posters with jingles, then blend a smoothie. Lesson B takes a more neutral approach to marketing strategies, has students make fruit kabobs alongside their ads, and adds a hashtag creation element. Lesson A also targets grades 6–8 and is more fully developed with background resources, while Lesson B is written specifically for 6th grade and includes a ready-to-use list of advertising strategy definitions.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "food-miles-87a477",
+      "whats_the_same": "All three lessons teach students about food miles — the idea that food travels long distances before reaching us — and why buying locally matters for the environment.",
+      "whats_different": "Lesson A is a cooking lesson for middle schoolers (grades 6–8) where students make applesauce and measure string to visualize how far ingredients traveled. Lessons B and C are both academic games for elementary students (grades 4–5) where teams draw food cards and physically walk across the room to show where food came from — the activity steps and wording are nearly identical between B and C, but Lesson C is the more developed version, adding a garden connection, a critical-thinking section, broader seasonal use, and a richer back-pocket activity. Lessons B and C are redundant copies of each other and one should be retired.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "food-preservation-bcd7e8",
+      "whats_the_same": "Both lessons teach the exact same Food Preservation lesson to grades 4 and 5, using identical opening words, the same three cultural examples about drying seaweed, pickling cucumbers, and fruit jam, the same list of hands-on activities, and the same closing discussion questions.",
+      "whats_different": "Lesson A is a clean, polished lesson plan with a written summary and easy-to-read formatting. Lesson B appears to be an older template version of the same lesson, still showing unfilled table fields and placeholder instructions that were never removed — it is essentially the same content in a rougher, incomplete form.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1QLiWw08Qi5CSB6uMwwm27WDgMNG-LMhtqOu6z85VRkk",
+      "survivor_why": "Lesson A is the cleaner, fully completed version with a proper summary and no leftover template placeholders.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "food-system-advocates-7db234",
+      "whats_the_same": "Both lessons teach sixth-grade students about food system advocacy using the same opening discussion, the same Abuela Grillo video, and the same structure of having students pick an issue (food worker rights, environmental impact, or food waste) and create something to share with the class.",
+      "whats_different": "The key difference is the final student product: Lesson A has students record a short FlipGrid video to share their advocacy message, while Lesson B has students make a poster or zine instead. Lesson A is also written specifically for sixth grade in the spring, while Lesson B covers sixth through eighth grade and is set in winter. These are genuinely two different versions of the same lesson adapted for different contexts and different creative outputs.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "food-webs-0a2794",
+      "whats_the_same": "Three of the four lessons (A, B, and D) all teach the same core idea: a garden food web, where plants, animals, and decomposers are connected by what eats what, and what happens when part of that web is removed. They all use food chain cards and end with a tasting or eating together.",
+      "whats_different": "Lessons A, B, and D are genuinely different grade-adapted versions of the same food web idea — grade 1 uses a parachute and a running game, grade 3 uses a yarn-web where students drop strings, and grade 8 adds a full salad-making activity and is much briefer. Lesson C is a completely different lesson about animal life cycles and survival adaptations (camouflage, migration, hibernation, butterfly stages) and does not belong with the food web group at all — it appears to have been grouped in by coincidence because of shared topic tags.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "foods-from-around-the-world-caribbean-is-6c992f",
+      "whats_the_same": "All ten lessons belong to the same 'Foods From Around the World' unit created by Edible Schoolyard NYC for 5th graders, and every lesson explicitly lists the same unit sequence: an introductory lesson, six country-based cooking lessons, a recipe design lesson, and a voting lesson.",
+      "whats_different": "Each lesson covers a completely different step in the unit: one introduces the unit with a food-memory writing activity, six teach cooking recipes from specific countries (Ukraine, Uzbekistan, Mexico, Pakistan, China, and the Caribbean Islands), one has students design their own recipe, and one has students vote and plant seeds. The only true duplicates in this set are Lesson G and Lesson J — both are the introductory food-memory lesson, but Lesson J is formatted as an older table-based worksheet template while Lesson G is the cleaner, more complete write-up; the team should retire Lesson J.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "garden-intro-bingo-186fa7",
+      "whats_the_same": "Both lessons use the same Garden Bingo game to introduce students to the school garden at the start of the year, follow the same general flow of opening discussion, outdoor bingo activity, and closing reflection, and share the same basic materials like clipboards, dry-erase markers, and a cowbell to call students together.",
+      "whats_different": "Lesson A targets kindergarten through 5th grade and includes deeper reflection questions suited to older students, while Lesson B targets pre-K through 3rd grade and is clearly adapted for younger learners — it adds physical gestures to help kids remember garden rules, provides separate bingo sheets for the youngest students (3K–1) versus older ones (2–3), and includes a rain-day indoor version of the activity. Lesson A has a written summary and richer discussion prompts; Lesson B has more detailed differentiation guidance and supplemental materials.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "garden-jobs-afbe9e",
+      "whats_the_same": "Both lessons are called 'Garden Jobs' and teach the exact same activity: students pick a garden task (watering, weeding, composting, harvesting, etc.), learn why it matters, do the job together, and then share reflections and enjoy a tasting. The objectives, materials, prep steps, background resource list, and closing questions are word-for-word identical.",
+      "whats_different": "Lesson B adds two sentences to the opening ritual encouraging students to think of the garden job as caring for the earth, and it omits the copyright line found at the end of Lesson A. Lesson A has a written summary, more themes listed, and marks the location as both indoor and outdoor rather than outdoor only. Otherwise the two lessons are the same plan.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1YeuuUtmBUDf4OXVVfrSgSGOe_iaTEAz4",
+      "survivor_why": "Lesson A has a written summary, richer metadata, the copyright attribution, and cleaner formatting, making it the more complete and authoritative copy.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "gardening-the-environment-82a8e4",
+      "whats_the_same": "Both lessons are called 'Gardening & The Environment' and teach the exact same class: a welcome discussion about how gardens help the planet, a garden job review covering planting, weeding, harvesting, composting, and watering, then students rotate through garden stations, and a closing sharing circle with a tasting. The materials list, prep steps, and reference links are identical.",
+      "whats_different": "Lesson B is a more filled-out version of the same lesson — it adds a 'Garden Connection' section, a 'How Does This Lesson Promote Critical Thinking' section, and a more detailed description of the back-pocket group game. Lesson A lists grades 7–8 while Lesson B lists only grade 8, but neither version contains any content that actually differs by grade. Overall the two are the same lesson, with Lesson B being the more complete, later revision.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_8067735e96df493b85b61f4b5bc11308",
+      "survivor_why": "Lesson B is the more recent and more fully developed version, with additional instructional sections and a richer back-pocket activity description.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "gingerbread-cookies-44a548",
+      "whats_the_same": "Both lessons teach the exact same gingerbread cookie recipe with identical ingredients and baking steps, follow the same class flow from introduction through tasting, and use the same handouts and materials list.",
+      "whats_different": "Lesson B is a more complete, expanded version: it covers early childhood grades (3K through 1st) that Lesson A skips entirely, and it includes detailed guidance on how to adapt the activity for each grade band. Lesson B also adds a garden connection note about bees and honey, a critical thinking section, a sensory exploration of molasses, and a coloring sheet as a back-pocket activity — none of which appear in Lesson A.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_f0cfb993e2b94d4c89f272eb4269cb26",
+      "survivor_why": "Lesson B is the fuller, more recent version — it contains everything in Lesson A plus grade-level adaptations for early childhood, additional teaching prompts, and a broader grade range.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "growing-indoor-edible-sprouts-85449a",
+      "whats_the_same": "All three lessons are part of the same three-lesson indoor sprout-growing unit, where students grow microgreens they will eventually harvest and eat in a salad. They share the same materials, the same seed-to-table theme, and the same general classroom structure.",
+      "whats_different": "Lesson A is a genuinely different lesson — it covers Day 5 of the unit, when students dissect lima beans to learn about germination and check on the sprouts they planted earlier; the activity and teaching content are completely different from the other two. Lessons B and C both cover the exact same Day 1 planting activity, but Lesson C is a richer, more complete version with added timing guides, a Garden Connection section, Grade Level Variations, Back Pocket Activities, more tags, and additional subjects — meaning Lesson B is a redundant earlier draft that the team should retire.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "harvest-and-weigh-0130aa",
+      "whats_the_same": "Both lessons teach Kindergarten students to harvest produce from the garden in the fall and use a scale to weigh what they picked, ending with a tasting. They share the same core activity, the same age group, and even the same teaching move of using fingers to count pounds.",
+      "whats_different": "Lesson A is a two-day plan with much more detail — it includes a vocabulary list, specific academic standards, extension activities, and a second day for additional garden jobs. Lesson B is a shorter, single-session plan that adds a cultural responsiveness component, social-emotional learning goals, and an 'anticipated problems' section for the instructor; it also carries an Edible Schoolyard NYC copyright, suggesting it comes from a different curriculum source.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "medium"
+    },
+    {
+      "group_id": "harvest-salsa-0c5aeb",
+      "whats_the_same": "All five lessons teach students to make a harvest salsa, using the same core steps: reviewing kitchen safety rules, practicing knife techniques like the claw and tunnel grip, chopping vegetables, and eating together with the 'Thank you gardeners, thank you cooks!' closing.",
+      "whats_different": "Lesson C (Summer Harvest Salsa) is a genuinely different lesson — it is designed for grades 3–4 only, takes place in summer using seasonal garden produce like peaches, and is framed as an end-of-year celebration outdoors; it stands on its own and should be kept. Lessons B and D are nearly identical copies of each other, both written for a school type referred to as Px12 or P12X — they cover the same smartboard demonstrations, same videos about salsa, and same task cards, with only minor wording differences; one of them is a redundant copy that should be retired. Lessons A and E are related but distinct: A is a mobile-education version with detailed composting and worm activities for specific elementary school sites, while E is the broader base version used across all grade levels.",
+      "recommended_verdict": "keep_family",
+      "family_type": "mobile-ed",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "healthy-breakfast-instant-oatmeal-packet-fc3051",
+      "whats_the_same": "Both lessons teach students why breakfast matters and have them make and taste oatmeal in class, using the same go/grow/glow framework to explain what makes a healthy breakfast and discussing why sugary cereals fall short.",
+      "whats_different": "Lesson A is written for middle schoolers (grades 6–8) and goes further: students also assemble their own take-home instant oatmeal packets, practice knife skills, and optionally write out a recipe on an index card. Lesson B is for younger students (grades 2–5), keeps the activity to a whole-class demo where kids take turns stirring, and ends with everyone tasting together — no take-home packets or recipe writing.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "hispanic-heritage-month-baleadas-71a886",
+      "whats_the_same": "All five lessons are fall cooking lessons tied to Hispanic/Latinx Heritage Month that guide students through a welcome ritual, hands-on cooking, and a closing tasting together, sharing the same basic class structure and cultural education goals.",
+      "whats_different": "Lesson A stands apart entirely — it teaches baleadas, a Honduran dish, for grades 6–8, making it a genuinely different lesson. Lessons B, C, D, and E all teach the same Mexican corn salad (esquites): B is for grades 6–8, C and D are both grade 3–5 versions and are near-identical copies of each other (C is more complete because it includes the actual recipe amounts and a fuller closing ritual, while D is missing those details), and E is a mobile education version adapted for all grade levels with extra back-pocket activities like coloring pages and word searches. The team should retire Lesson D as the redundant copy of Lesson C.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "hoppin-john-burgers-green-bean-salad-cel-36a206",
+      "whats_the_same": "Both lessons celebrate Black History Month by having students make Hoppin' John burgers using the exact same recipe and ingredients, and both share the same cultural background about African American food history and the same safety norms and setup routine.",
+      "whats_different": "Lesson A is for pre-K and kindergarten students and runs 45 minutes, ending with a read-aloud book about appreciating differences. Lesson B is for grades 1 and 2, runs 90 minutes, adds a second recipe (green bean salad), and closes with a discussion connecting the students' pride in cooking to recognizing the unacknowledged work of African American chefs — there is no book reading.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "insect-detectives-2e1a88",
+      "whats_the_same": "Both lessons are the exact same 'Insect Detectives' activity — students do a scavenger hunt in the garden using plastic insects hidden in habitat trays, follow the same class flow from welcome through closing ritual, use the same materials, and are written for the same grades.",
+      "whats_different": "The two copies are nearly word-for-word identical in their lesson steps. Lesson B (added later) has two extra sections — a 'Garden Connection' explanation and a note about how the lesson promotes independent thinking — and slightly more detailed tags, but it is missing the one-sentence summary that Lesson A has filled in.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_8bce4ab6a0e6441b8ca1a49d620f5532",
+      "survivor_why": "Lesson B is the more recent version and includes additional pedagogical sections (Garden Connection and Critical Thinking) that the earlier copy lacks.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "interconnection-native-american-traditio-b4bfaa",
+      "whats_the_same": "Both lessons are the exact same activity: students read about Native American history and environmental stewardship, do seasonal garden work while noticing interconnection between people, plants, and animals, and close with a tasting. The title, objectives, materials, prep steps, anticipated problems, background notes, and extension ideas are all identical.",
+      "whats_different": "The second lesson (Lesson B) is a more developed version of the first. It adds time estimates for each part of the class, an extra suggestion for a hands-clasped activity to feel 'interconnected,' two new sections on garden connection and critical thinking, an explicit mention of Lenape culture and the Manhatta Lenape Center's resources in the back-pocket activities, and a note that images in the reading may be restricted. The first lesson lists the location as indoor or outdoor; the second says outdoor only.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_21119471ac47403e89286545e8036d94",
+      "survivor_why": "This version is more complete, with time allocations, additional cultural specificity around Lenape heritage, filled-in back-pocket activities, and was added more recently.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "kitchen-garden-intro-e3c509",
+      "whats_the_same": "Both lessons introduce students to the kitchen and garden at P.S. 216 in the fall, covering the exact same four activities: kitchen safety skits, dressing-making, garden jobs, and garden rules with harvesting — using the same grade-differentiated approaches and the same harvest ingredients.",
+      "whats_different": "Lesson B is a more complete, polished version: it organizes the class into labeled rotations, and crucially includes the full skit scripts and scavenger hunt questions built right into the document so a teacher can pick it up and go. Lesson A is a shorter outline of the same lesson that references those materials but does not include them. Lesson A also lists Pre-K as a grade level while Lesson B starts at Kindergarten.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1cS3llhLF1k2bwgwz1f62fWk938evVGRE9crGuAWT3_g",
+      "survivor_why": "Lesson B is the more complete version, with the actual skit scripts and scavenger hunt questions embedded so teachers have everything they need in one place.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "kitchen-tool-identification-2f07d0",
+      "whats_the_same": "Both lessons teach the exact same activity: middle school students play a kitchen tool matching game in the Green Room, working in three table groups to pair ID cards with actual tools. They share the same grade levels, season, location, summary, objectives, materials list, prep steps, and even the word-for-word opening script from the teacher.",
+      "whats_different": "The lessons differ in a few concrete ways: Lesson A adds a competitive prize element, ends with a tasting and putting tools away, includes a background note telling the instructor to pair it with the Kitchen Cognate lesson, and has an extension tip for English language learners. Lesson B skips the prize, replaces the tasting closing with a set of reflective discussion questions for students, and adds more detailed written explanations for why each competency is included — but is otherwise thinner on instructor guidance.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "18aRAD5iY1YxcaqTUZBhflNDAstEAHumK",
+      "survivor_why": "Lesson A is more complete for instructors: it includes background context, an ENL extension activity, and richer metadata tags, making it more useful as a standalone reference.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "leaf-collecting-172be1",
+      "whats_the_same": "Both lessons are the exact same Leaf Collecting activity for young students: they discuss how the garden changes in fall, put on gloves to collect fallen leaves, bring the leaves to the compost for worms, and close with a reflection and a leaf tasting. The same books, materials, and back-pocket ideas appear in both.",
+      "whats_different": "Lesson B is a more filled-out version of the same lesson — it adds a site-specific tip (\"At 216...\"), one extra sentence in the opening ritual about getting the garden ready for winter, and extra structured sections on garden connection and critical thinking. Lesson B also tags more skills and social-emotional areas. The only thing Lesson A has that Lesson B does not is grade 1 listed as a target grade.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_624b28fc83214ed1b3999ccf1ea5d085",
+      "survivor_why": "Lesson B is more complete, with additional structured sections, a site-based variation, and richer tagging, making it the better reference copy to keep.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "legend-of-the-3-sisters-eff077",
+      "whats_the_same": "Both lessons teach the same Lenape legend about corn, beans, and squash growing together, using the same discussion questions, the same corn worm game, the same monoculture versus polyculture demo, and the same planting activity with identical materials lists and setup instructions.",
+      "whats_different": "The main differences are in the metadata, not the lesson itself: Lesson A is tagged for all grade levels from pre-K through 8th grade and includes a filled-in background reading list for the instructor, while Lesson B is tagged only for grades 4 through 6 and leaves that background section blank. The opening line of the intro is also slightly reworded, but the actual lesson steps are word-for-word the same.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA",
+      "survivor_why": "Lesson A is more complete — it includes a filled-in background reading section for instructors, a broader grade-level range, and an additional theme tag, making it the richer record to keep.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "lotion-agar-soap-k-1cd46b",
+      "whats_the_same": "Both lessons teach the exact same two activities — making agar soap and a shea butter lotion — using the same ingredients, the same connection to Dr. George Washington Carver, and nearly identical objectives, cultural responsiveness goals, and social-emotional learning goals.",
+      "whats_different": "The middle school version (Lesson A) expects students to handle the steps more independently and includes math as an academic subject. The kindergarten version (Lesson B) is adapted for young children: it opens with a welcome song, uses a 'mix it' song during soap-making, has instructors pour the hot mixture into molds rather than students, and pre-portions lotion ingredients into ziploc bags so kids can mush them — a safer, more sensory-friendly approach. The K lesson also invites children to smell and choose whether to add the mint oil.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "lunar-new-year-and-dumplings-0943e0",
+      "whats_the_same": "Both lessons celebrate Lunar New Year by having students make and eat dumplings, drawing on Chinese food traditions and touching on similar social-emotional skills like teamwork and trying new things.",
+      "whats_different": "Lesson A is designed only for grades K-3, pairs the dumpling-making with a Year of the Rat paper-cutting craft, and uses a pre-made filling so young students just fold wrappers. Lesson B spans PreK through 8th grade, drops the craft entirely, has students actually prep the vegetables and tofu filling themselves, and includes a broader cultural discussion comparing dumplings across many world cuisines (pierogi, pasteles, ravioli, empanadas). They are genuinely different lesson plans built around the same dish.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "making-potting-soil-c6a627",
+      "whats_the_same": "All five lessons teach students how to make potting soil by mixing ingredients like perlite, compost, and coconut fiber, and all tie the hands-on mixing activity to math skills like fractions or ratios.",
+      "whats_different": "Each lesson is designed for a different age group: the earliest version (Lesson C) is a sensory-play activity for pre-K and kindergarten; Lessons B and A are nearly identical in structure but use different soil ingredients and different math skills matched to 3rd and 5th grade respectively; Lesson E is a polished 4th-grade version with both a fractions and a multiplication worksheet option; and Lesson D is a brief middle-school version focused on ratios and environmental stewardship. Lessons A and B are very close in wording but are genuinely different grade adaptations, not accidental duplicates.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "meet-the-food-system-2d1365",
+      "whats_the_same": "Both lessons are about the food system and are designed for middle school students. They share the same broad theme of understanding how food gets from farm to table.",
+      "whats_different": "These are two back-to-back lessons in a unit sequence — Lesson B ('Who's Who in the Food System') explicitly opens by asking students to recall what they learned in 'Meet the Food System' (Lesson A). Lesson A is hands-on: students sort cards to map the food system, do garden tasks, and taste or cook homemade Takis. Lesson B is a reading and discussion lesson where students study the lives of real food workers — a farm worker, fast food worker, line cook, and delivery driver — and explore issues of wages and food justice. They cover genuinely different content and use completely different activities.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "middle-school-garden-tasks-lesson-fc1649",
+      "whats_the_same": "Both are middle school fall garden lessons from the same school program, following the same general class structure — an opening discussion, outdoor garden tasks broken out by class, and a closing 'thank you gardeners, thank you cooks' ritual. Both include harvesting and composting among the garden jobs.",
+      "whats_different": "Lesson A is centered on harvesting specific crops (kale, spinach, peppers, etc.) and ends with a smoothie tasting made from garden produce; composting is only for one class. Lesson B is focused on seasonal change and winter preparation, with a compost relay as the main activity for nearly all classes, plus seed saving and clearing — no smoothie tasting. Lesson B also has a richer discussion of how plants and animals adapt to fall, making it a later-in-the-season companion lesson rather than a copy.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "mural-painting-101-beautifying-the-garde-f10d4b",
+      "whats_the_same": "Both lessons are identical in purpose and structure: students read the same book, view the same mural examples, and collaborate on the same garden mural project, following the same step-by-step agenda with the same opening ritual, engaging activity, and closing.",
+      "whats_different": "Lesson B is a more developed version — it includes an extra section explaining how the lesson promotes critical thinking and independence, has a slightly expanded opening with an additional student prompt about art, and is noticeably longer overall. Lesson A has a filled-in summary in its record and tags it as both a garden and craft activity, while Lesson B lacks a written summary but contains richer lesson content.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_d352a03cea784f46bbda2a545c9de44a",
+      "survivor_why": "Lesson B is the more complete version, with a longer lesson text that includes an additional critical thinking section and more detailed student prompts not found in Lesson A.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "mushroom-cultivation-78da34",
+      "whats_the_same": "Both lessons teach the exact same activity: students watch a video about Te'Lario Watkins and his mushroom farm, discuss how mushrooms differ from plants, then work in small groups to layer cardboard and mushroom spawn into plastic bags. The step-by-step instructions, prep notes, materials list, and background information for the teacher are nearly word-for-word identical.",
+      "whats_different": "Lesson A is written specifically for 4th grade, while Lesson B is written for 2nd and 3rd grade. Lesson B also includes a back-pocket activity (making clay mushrooms) that Lesson A does not have, and it uses an older, more detailed template that asks the teacher to fill in extra sections like garden connection, critical thinking notes, and site-based variations. Lesson A has a cleaner, more finished format with a written summary.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "november-will-it-decompose-part-ii-4ab586",
+      "whats_the_same": "Both lessons are the exact same 'Will It Decompose? Part 2' lesson for 2nd graders — same aim, same questions, same materials list, same step-by-step procedure, and the same extensions. Students dig up items buried in a previous experiment, compare results to their earlier predictions, and discuss what decomposed and why.",
+      "whats_different": "The only real difference is timing: Lesson A has a February header and refers back to a December experiment, while Lesson B has a November header and refers back to an October experiment. This suggests one copy was adapted for a fall run and one for a winter run of the same lesson. Lesson B is also internally consistent — its title and content both say November/October — while Lesson A's title says 'November' but its body says February, indicating a labeling error. Lesson B also lists Math as an academic subject, which matches the math extensions both copies contain.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1XLqd7Hrxr-lacieyRdaVsSBIdOOj-k4QW-Du8Dk3VXE",
+      "survivor_why": "Lesson B is internally consistent (title and content both reference November/fall), correctly lists Math as an academic subject, and does not have the title-versus-body month mismatch that Lesson A has.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "october-seed-saving-7e2559",
+      "whats_the_same": "Both lessons teach students how to physically save seeds from the garden, label and decorate small envelopes to store the seeds, and connect the activity to the plant life cycle. Both also include composting leftover plant material and end with a seed tasting.",
+      "whats_different": "Lesson A is a simple 45-minute class for Kindergarten through 3rd grade that centers on a playful 'seed dance' to act out the plant life cycle — it has no historical or cultural content and is meant for younger or mixed-age groups. Lesson B is a much deeper two-day unit designed specifically for 3rd grade that weaves in a picture book about a Kenyan activist, a comic about the Neolithic Revolution, discussion of immigrant seed traditions, formal academic standards, vocabulary words, and an inquiry investigation sheet — it is roughly three times as long and covers history, social studies, and literacy alongside the garden activity.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "our-garden-community-d5604a",
+      "whats_the_same": "All three lessons teach students what a garden community is by having them role-play as plants, animals, and people in the garden, listen to a read-aloud story, and make their own illustrations. They all open by discussing what a community means and close with a tasting.",
+      "whats_different": "Lesson A is genuinely different from the other two: it adds a full cooking activity where students make vegetarian sancocho together, connects the garden community to a kitchen community, spans grades K–5, and draws on Dominican and Latin American cultural heritage. Lessons B and C are essentially the same lesson — both use the 'Frankie and the Garden' book, character necklaces, and the same illustration activity — but Lesson C is a more developed version: it adds a garden mural option, site-specific variations, back-pocket activities like garden chores, and more detailed prep notes, making B the thinner, earlier draft that can be retired.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "pasta-2c6b5d",
+      "whats_the_same": "Both lessons have students make fresh pasta dough by hand in an indoor kitchen setting during winter, drawing on Italian food traditions and covering kneading, rolling, and cooking pasta on the stovetop.",
+      "whats_different": "Lesson A is a full curriculum lesson for grades K–5 where younger students make fettuccine with tomato sauce and older students make pumpkin ravioli, complete with a culture box, preservation game, and take-home recipes. Lesson B is a celebration reward — a 'pasta party' for classes that earned enough behavior points — focused on grades 4–5 making pici, a specific hand-rolled Tuscan pasta, with a spinach-dyed green version and a party atmosphere where students set tables and pour sparkling water. The pasta types, purposes, and classroom tone are quite different.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "photosynthesis-light-experiment-part-1-5b7e77",
+      "whats_the_same": "Both lessons are for 2nd graders and center on the same light experiment — one group of plants gets sunlight, another is kept in the dark — to show how sunshine affects plant growth and photosynthesis.",
+      "whats_different": "Part 1 is the setup lesson: students play a food chain game, learn what photosynthesis means, and write their predictions before the experiment begins. Part 2 happens about a month later: students return to observe what actually happened to the plants, then learn about chlorophyll and make leaf-rubbing artwork. They are two separate class sessions that must both happen for the experiment to be complete.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "plant-life-cycle-exploration-3e68f8",
+      "whats_the_same": "All three lessons teach students about the plant life cycle — the sequence from seed to sprout to flower to fruit and back to seed again. Each lesson ends with students drawing or recording what they observed, and all include a tasting tied to the life cycle.",
+      "whats_different": "Lesson A is a genuinely different lesson for Kindergartners: students physically act out the life cycle through a classroom dance, then illustrate it indoors — a completely different activity for a younger grade. Lessons B and C are essentially the same lesson: both are outdoor garden scavenger hunts for grades 2–3 where students find plants at different life cycle stages and draw them. Lesson C is a less complete copy of Lesson B — it has no written summary, fewer tags and themes recorded, and its text is formatted in tables rather than clean prose — so the team should retire Lesson C and keep Lesson B.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "plant-part-salad-1-lemon-olive-oil-herb--16425c",
+      "whats_the_same": "All four lessons are May/June cooking lessons for pre-K through 5th grade where students make a plant-part salad and rotate through the same basic stations: a dressing-making table, a chopping table, and a plant-identification activity table. They share the same vocabulary, the same overall agenda structure, and the same educational goals around learning the colors and edible parts of plants.",
+      "whats_different": "Each lesson is a different numbered entry in a series (1, 3, 4, and 5), and each one features a distinct dressing recipe — lemon-olive-oil-herb, sunflower-oil-lemon-honey-green-onion, balsamic-honey-herb, and sweet-and-spicy. The Table 3 activity also varies meaningfully across lessons: one uses a rainbow drawing on butcher paper, another is a card-trading guessing game, another is a timed shopping-basket race, and one leaves the activity essentially blank. Lesson 5 adds an end-of-year yearbook-signing wrap-up, and the lessons vary in completeness and detail.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "plant-part-scavenger-ddf7ef",
+      "whats_the_same": "Both lessons teach kindergarten and first graders the same six plant parts using the same song (to the tune of Frère Jacques), the same board-drawing introduction, the same colored-pencil scavenger hunt worksheet activity in the garden, and the same closing ritual of sharing observations and tasting a plant part.",
+      "whats_different": "Lesson B is a more developed version of the same lesson: it adds an opening feelings check-in, a 'Plant Part Simon Says' back-pocket game with detailed instructions, and extra planning fields like a Garden Connection note and a Critical Thinking reflection — none of which appear in Lesson A. Lesson A, by contrast, has a written summary in its header and cleaner formatting, while Lesson B's text is extracted from a table-based document and lacks a written summary.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_36ef1fadbcb8428c976fa5f575c3390b",
+      "survivor_why": "Lesson B is the more recent and more fully developed version, adding the Simon Says extension activity and additional pedagogical planning fields that make it more useful for instructors.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "plants-and-music-70a00d",
+      "whats_the_same": "Both lessons teach students about the long history of humans making musical instruments from plants, share the idea that plants can respond to sound, and have students build their own plant-based instruments and perform for the garden. The core activities, back-pocket games (Sound Ball, Soundtrack Game), and materials list are nearly word-for-word the same.",
+      "whats_different": "Lesson B extends the lesson to preschool and pre-K students and includes a specific classroom reward system called 'petal points' along with a snack tasting at the end, which appear to be adaptations for a particular school site. Lesson A is more complete and polished — it covers grades K–5, links background resources, and has finished grade-level variations — while Lesson B appears to be an unfinished adaptation: the youngest-grade variation section was left blank.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "medium"
+    },
+    {
+      "group_id": "plants-as-medicine-753d6b",
+      "whats_the_same": "Both lessons are the same 'Plants as Medicine' activity for 2nd and 3rd graders, where students make their own herbal tea bags, smell and explore dried herbs, and decorate a label for their blend. The scripted teacher language, timing, herb examples, materials list, and background information are essentially identical.",
+      "whats_different": "Lesson B is a more fully developed version of the same lesson. It adds a Garden Connection section, a Critical Thinking section, extra cultural context about NYC communities, a note that back-pocket activities are restricted use, a reference to NYBG Summer Herbal Medicine Class recipes, a note that photos exist, and slightly more detailed prep instructions. Lesson A is the leaner, earlier version with a written summary in its record but less supporting detail overall.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_adb1d7099a92424eb7172e582329f6a7",
+      "survivor_why": "Lesson B is the richer, more complete version, with added instructional sections, fuller cultural notes, a reference to accompanying photos and recipes, and more detailed tagging.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "potato-exploration-9223aa",
+      "whats_the_same": "Both lessons are the exact same 'Potato Exploration' lesson — same summary, same teacher scripts word for word, same activities (harvesting potatoes, making potato paint prints, eating french fries), same timing, and the same grade levels and themes.",
+      "whats_different": "The two copies are essentially identical in content. The main differences are minor metadata entries: Lesson A has a written summary and lists the location as both indoor and outdoor (which matches the actual lesson), while Lesson B has no written summary, lists only outdoor, and adds a short 'critical thinking' section not found in Lesson A. Lesson A also has richer cultural heritage tags. These look like two saves of the same document at different points in time.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg",
+      "survivor_why": "Lesson A has a written summary, more complete cultural heritage tags, and correctly lists the location as both indoor and outdoor, making it the more accurate and complete record.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "red-drinks-for-juneteenth-aec1d4",
+      "whats_the_same": "Both lessons are built around Juneteenth, share the same cultural history about West African red drinks, and open with the same discussion questions and background about why red symbolizes strength, power, and resilience. They target the same grade range and both have students making something red in the kitchen.",
+      "whats_different": "Lesson A is titled 'Red Foods' and its objective says students will make a red cabbage slaw, while Lesson B is titled 'Red Drinks' and has students working in table groups to invent and taste their own red drink recipe using hibiscus tea and mashed fruit — with worksheets, mashers, pitchers, and a full tasting at the end. Lesson B is also labeled 'Year 2,' suggesting it is the second-year version of this Juneteenth unit, and its activity section is fully written out, whereas Lesson A's engaging activity section is left blank.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "respect-and-rainbows-in-the-garden-b8d588",
+      "whats_the_same": "Both lessons are fall, beginning-of-year lessons that welcome students to the garden, introduce garden rules and respectful behavior, and include a tasting. Both use student ideas to build the garden norms together.",
+      "whats_different": "Lesson A is designed for grades 3–5 and centers on doing a real garden job (weeding, harvesting, watering) as the hands-on activity, with a simple 45-minute structure and no academic standards listed. Lesson B is designed for grade 1 and is a much richer two-day lesson that includes reading a picture book, a rainbow color-hunt worksheet, drawing and labeling, and watering — with literacy and science standards woven throughout. The activities, length, academic depth, and target age group are genuinely different.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "roots-113a6e",
+      "whats_the_same": "Both lessons teach the exact same 'Roots' lesson: students do a root dance, explore real roots on trays using their senses, pull roots from the garden, and finish with a tasting. The materials list, prep steps, and core activity sequence are essentially identical.",
+      "whats_different": "Lesson A is cleaner and more complete — it has a written summary, the drawing activity is built into the main lesson, and the format is easy to read. Lesson B is a messier version (pulled from a table-based template) that adds time estimates, a few extra back-pocket ideas like using roots as stamps, and lists 3K alongside PK as a grade level, but the actual lesson content is the same and no real 3K adaptation was made.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1dTMg_5AdKV5cJNnt7_L2cXhTK9fmJr8U",
+      "survivor_why": "Lesson A has a written summary, a cleaner and more complete lesson structure, and includes the drawing activity as part of the main lesson rather than as an afterthought.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "salsa-toast-27c8bb",
+      "whats_the_same": "All three lessons have students make salsa on toasted bread using fresh fall vegetables, and all are meant to be an introductory kitchen class at the start of the school year for elementary students.",
+      "whats_different": "Lesson A is genuinely different from the other two — it uses a visualization tray and detailed, grade-by-grade discussion to teach the concepts of crostini and salsa, with a much richer and longer lesson plan that covers Pre-K through 5th grade. Lessons B and C both use a scavenger hunt station format to orient students to the kitchen; B is the full, detailed version covering all grades (Pre-K through 5th) with complete station instructions, while C covers only 2nd through 5th grade and is a brief skeleton outline with the station content section left blank, making it look like an incomplete or stripped-down copy of B. The team should consider retiring Lesson C as a redundant, unfinished copy of Lesson B.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "medium"
+    },
+    {
+      "group_id": "sandor-katz-food-hero-03023c",
+      "whats_the_same": "All three lessons come from Edible Schoolyard NYC, are taught indoors, and connect to food systems themes. They share common structural language — like opening and closing rituals, copyright lines, and formatting — because they all use the same organizational template.",
+      "whats_different": "The three lessons are about completely different topics: Lesson A explores the geographic and historical origins of pizza through a classroom museum activity for 4th graders; Lesson B uses sequencing cards and drawing to teach 1st graders how cheese travels from a cow to a store; Lesson C is a cooking lesson about fermentation expert Sandor Katz aimed at middle schoolers, though notably its lesson text is mostly an unfilled template with placeholder instructions rather than real content.",
+      "recommended_verdict": "unrelated",
+      "family_type": null,
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "school-and-garden-communities-d084f5",
+      "whats_the_same": "Both lessons are the exact same 'School and Garden Communities' lesson for kindergarten and first grade, covering the same activity flow: an introduction about what community means, a hands-on garden job, a closing taste test, and the identical Garden Community Song sung to the tune of 'Old McDonald.'",
+      "whats_different": "Lesson B is a slightly more filled-out version — it adds a few extra teaching sections (a Garden Connection note and a Critical Thinking prompt), includes a cultural example about mosques and churches, and carries more skill tags. Lesson A is cleaner in format and includes the copyright line, but is otherwise the same lesson with slightly less supplementary detail.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_e472ad47218645fd91cc28570e082472",
+      "survivor_why": "Lesson B is the more recent version and includes additional instructional sections (Garden Connection, Critical Thinking) and more complete skill tags, making it the richer copy to keep.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "school-food-heroes-18ae4c",
+      "whats_the_same": "Both lessons celebrate the people who prepare school meals, tie into School Food Hero Day, and ask students to make something by hand as a way of showing gratitude to cafeteria staff.",
+      "whats_different": "Lesson A is an in-person lesson for grades 4–5 with two hands-on projects (decorating aprons and making display signs), a video, and a very detailed step-by-step plan including materials, prep notes, and back-pocket activities. Lesson B covers grades 1–5, was clearly designed for a virtual or remote classroom (it tells students to mute and use a one-mic system), uses a slideshow, and asks students to make thank-you cards — and the plan itself is much shorter and less fleshed out.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "science-scavenger-hunt-aa47f2",
+      "whats_the_same": "Both lessons send students outside to walk through the garden with clipboards, find posted prompts, and write down answers — and both end with a tasting. They come from the same organization and share the same basic scavenger-hunt format.",
+      "whats_different": "Lesson A is for 6th graders in Spring and is specifically designed to review a classroom science unit on thermal energy — the prompts are academic questions tied to that content. Lesson B is for 3rd and 4th graders in Summer and serves as a first-day welcome to the garden program, with prompts that mix garden chores (watering, weeding, composting) and get-to-know-your-partner questions. Lesson B is also more elaborate, including a guided garden tour, paired teamwork, and more prep materials.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "seasonal-changes-6eb799",
+      "whats_the_same": "All four lessons teach students about how the seasons change in the garden, use seasonal tastings, and share the same broad themes of plant growth and garden basics. Lessons B and C are especially close — both are Kindergarten lessons with the identical stated aim and even the same 'Seasons of the Year' song.",
+      "whats_different": "Lesson A (Sun Study) is a distinct 1st-grade February craft lesson focused on the sun specifically, using a different book and clay/playdough activities. Lesson C (The Seasons: Fall) is a November Kindergarten lesson centered on observing and drawing the fall garden. Lesson B (The Year in Seasons) is a June Kindergarten end-of-year lesson that wraps up the whole seasons cycle and includes actual harvesting. Lesson D (Seasonal Changes) is a K–1 lesson using tree role-play and name tags to show how trees look across seasons — it also appears to be incomplete, with placeholder text in the aim and summary. Each lesson was clearly designed to be taught at a different point in the school year as part of a connected curriculum series.",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "medium"
+    },
+    {
+      "group_id": "seed-bursts-0304ec",
+      "whats_the_same": "Both lessons teach the same activity — students learn about community garden history in New York City and make seed bursts (balls of clay, compost, and wildflower seeds) to plant in their neighborhoods. They share the same summary, objectives, materials list, and basic lesson flow.",
+      "whats_different": "Lesson A is written for 3rd and 4th graders in summer and includes richer discussion prompts, a reference to walking field trips, a word search extension, and class norm-setting. Lesson B is written for kindergartners and 1st graders in spring, uses simpler language with guided picture-based storytelling about the 1970s, and has fewer extension activities to match younger learners.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "seed-dispersal-7dc6db",
+      "whats_the_same": "All three lessons teach the same core idea — that seeds travel by floating on water, blowing in the wind, or hitching a ride on animals — and all have students build seed models from craft materials to explore these methods hands-on.",
+      "whats_different": "Lesson B is written for 7th and 8th graders, uses four challenge stations (including an 'exploding jungle'), and has more complex setup and prep instructions; Lessons A and C are both aimed at younger students (grades 2–3), but Lesson A is a two-day plan that also takes students outside to actually plant seeds and includes formal academic standards, while Lesson C is a simpler one-day indoor lesson with a more streamlined format and no listed standards.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "sensory-scavenger-hunt-and-c794de",
+      "whats_the_same": "Both lessons are the same garden orientation activity where students use their five senses to explore the garden, follow the same 45-minute class flow (welcome and sense gestures, scavenger hunt, group sharing and tasting), use the same materials, and teach the same garden safety rules.",
+      "whats_different": "Lesson B is a more developed version: it adds explicit instructions for 3K and Pre-K students (a guided walk instead of the worksheet), includes a required back-pocket activity, and has more complete teaching notes such as a Garden Connection section and a Critical Thinking section. Lesson A is simpler and has a written summary, but is otherwise an earlier, less complete draft of the same lesson.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_df09326b3497429cad55727f6d59d477",
+      "survivor_why": "Lesson B is the more recent and more fully developed version, with explicit grade-level differentiation for 3K/Pre-K students and a required back-pocket activity that Lesson A lacks.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "september-sixth-grade-summer-and-pizza-p-e76791",
+      "whats_the_same": "Both lessons are the same September sixth-grade garden class: students use a map to identify summer crops, water the garden on day two, and do a tasting at the end of day one. The standards, materials, vocabulary, watering instructions, and closing extension activity are identical.",
+      "whats_different": "Lesson B weaves a year-long pizza garden project throughout the whole lesson — the opening introduces students to the pizza project, the map activity asks them to flag plants that might taste good on a pizza, and the closing circle asks them to share what they found for the pizza. Lesson A is a general summer garden exploration with no pizza framing built into the activities (it only mentions the pizza project briefly at the very end as a preview of next time). A teacher running the pizza curriculum would use Lesson B; a teacher doing a standalone garden orientation would use Lesson A.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "sourdough-fungi-k-914e9f",
+      "whats_the_same": "Both lessons cover the exact same topic and sequence: students learn about fungi, make a sourdough starter together, then assemble pasta bowls with mushrooms and vegetables. The materials, timing, closing ritual, and most of the wording are nearly identical.",
+      "whats_different": "The key difference is the grade level each lesson is written for. The Kindergarten version uses simple language ('suuuper tiny living things'), has the instructor cook at the front and read a story aloud to students, and keeps student tasks basic. The Middle School version uses scientific vocabulary ('unicellular fungi'), has student teams cooking at their own tables, and distributes recipe cards for students to follow independently — more autonomy and complexity throughout.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "street-vendors-chicken-over-rice-f6e41b",
+      "whats_the_same": "Both lessons teach the same dish — a mushroom 'chicken' over yellow rice inspired by NYC halal carts — and share the same core story about street vending history, the same food-justice themes, the same back-pocket worksheet activity, and the same PS 7 school site.",
+      "whats_different": "Lesson A is written specifically for grades 6–8 and includes the full, detailed recipes right in the lesson text. Lesson B is a multi-grade version spanning kindergarten all the way through 8th grade, with three separate opening activities tailored to K–3, grades 4–5, and grades 6–8 respectively; it also references printed task cards for younger students and adds tomatoes and lettuce as ingredients for the elementary version. Lesson B is the more recently added and more broadly adapted version, but it lacks a written summary and some of the recipe detail that Lesson A carries.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "sun-printing-ac6918",
+      "whats_the_same": "All three lessons teach the same sun printing art activity, where students walk through the garden collecting leaves, sticks, and plant parts, then arrange them on paper and use sunlight to create an image. The step-by-step script, opening questions, and closing ritual are nearly word-for-word the same across all three.",
+      "whats_different": "Lessons A and B are both written for kindergarten and first grade and are essentially the same document saved twice — Lesson A has a written summary and a 'Year A' label while Lesson B lacks a summary but adds 'relationship skills' as a learning goal. Lesson C is a real adaptation for fourth and fifth graders: it asks students to think about cultural connections to art, frames the social-emotional goals differently (emphasizing self-management and collaboration), and includes a prompt about critical thinking and independence that the younger-grade versions do not have. Lessons A and B are redundant copies of each other and one should be retired.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "sweet-and-sour-roots-ed3232",
+      "whats_the_same": "Both lessons teach the exact same cooking activity: students explore root vegetables, compare them to a strawberry, then cut carrots and make a sauce — roasting half the roots and serving the other half raw so students can compare the two side by side. The opening discussion, core tasks, and grade range are identical.",
+      "whats_different": "Lesson A is a clean, fully written-out lesson plan with complete objectives and a clear summary. Lesson B appears to be an earlier or parallel draft of the same lesson — it has more sections (a vocabulary list, extension activity, detailed supplies list, and tray setup guide) but several of those sections contain placeholder text like 'Students will learn to… and discuss…' and 'See appendix A for lesson objectives,' meaning it was never fully finished. Both plans teach the same activity in the same way.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1vFSTeTtZWM-xc7mUfvEclO1YCmIMiqR8",
+      "survivor_why": "Lesson A is fully written with no placeholder text, complete objectives, and a polished summary, making it the ready-to-use version of this lesson.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "the-apple-story-4c02c3",
+      "whats_the_same": "Both lessons are the exact same Apple Story activity for Kindergarten and 1st grade — students taste apple chips, listen to a story about where apples come from, act it out, color and assemble a class book, and share what they learned. The materials, prep steps, extension activities, and closing ritual are all identical.",
+      "whats_different": "Lesson A is more completely filled out: it has a written summary, more themes and competencies listed, a cooking skills note, and the copyright line at the end. Lesson B adds one small step at the very start of class — asking students to show with their thumbs how they are feeling — and its text is formatted in a table style rather than plain paragraphs, suggesting it came from a different document version.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1pzcXwFx2S-P1q88F1QIhdLKHQiVvUwSq",
+      "survivor_why": "Lesson A has a written summary, richer tags and competencies, a cooking skills field, and the copyright attribution, making it the more complete record.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "the-garden-in-the-fall-ccb9af",
+      "whats_the_same": "Most of these lessons are for the youngest students (Pre-K and 3K) and all take place in or around the school garden, asking children to look for signs of a season, explore plant parts with their senses, and celebrate what they find with a tasting and a closing circle.",
+      "whats_different": "The set is a mix of genuinely different things: Lessons C, D, E, and F are four separate seasonal lessons (Winter, Fall, Summer, Spring) for Pre-K — each one stands on its own. Lessons G and H are nearly identical versions of the same 'I spy plant parts on trays' lesson, with G being more complete (it includes a Canva materials link and a series note); H should be retired. Lessons D and I are also near-identical copies of the same Fall lesson for Pre-K, with D being more complete; I should be retired. Lessons A and B do not belong to this family at all — A is a 6th-grade summer garden map activity, and B is a 3rd-grade pesticide food-chain game.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "the-water-cycle-8a0116",
+      "whats_the_same": "All three lessons are about the water cycle and are meant for indoor settings in fall or winter, and they all follow the same general lesson plan format from the same organization.",
+      "whats_different": "Each lesson does something completely different: Lesson A has students build their own miniature rainforest terrariums to watch the water cycle happen in a jar, which works for a wide range of grades K–8. Lesson B is a cooking and art class for the youngest students (preschool through 2nd grade) where kids make banana snowmen on skewers and seed mosaics to celebrate winter and snow. Lesson C takes 2nd graders outside to observe how water behaves differently on pavement versus in a garden, then plays a physical acting game where students wear water cycle step necklaces and pass a raindrop around, followed by actually watering the garden.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "three-sisters-and-companion-planting-a-s-855f46",
+      "whats_the_same": "Both lessons are the exact same Three Sisters seed study for grades 4-5 in the fall, covering companion planting, Indigenous heritage month, and using the same opening story, discussion questions, seed-sorting activity, and closing ritual word for word.",
+      "whats_different": "Lesson B is a more developed version: it adds a second activity variation where students practice a planting pattern on paper plates, includes a garden visit to see the Three Sisters bed, offers additional back-pocket resources like a cooking video featuring a Navajo chef, and carries more tags. Lesson A is simpler and has a written summary, but is otherwise a shorter earlier draft of the same plan.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_7888524cfdfc48f2bb5379e4edb28742",
+      "survivor_why": "Lesson B is the more complete and more recently added version, offering two activity variations, a garden visit component, and richer back-pocket resources.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "three-sisters-empanadas-855ce4",
+      "whats_the_same": "Both lessons teach students about the Three Sisters — corn, beans, and squash — their role in Native American and Latin American food traditions, and how the three plants support each other in the garden. Both are indoor cooking lessons that use the same core ingredients to make a Latin American dish with a sauce on the side.",
+      "whats_different": "The two lessons make completely different foods: one makes enchiladas (a Mexican dish with a chipotle-tomato sauce, taught in the fall) and the other makes empanadas (a stuffed pastry with chimichurri sauce, taught in the spring). The enchilada lesson runs students through rotating stations and includes grade-specific writing and math activities for grades K–5, while the empanada lesson follows a single whole-class cooking flow and serves a wider range of grades from pre-K through 8th grade with its own detailed recipe and supplies list.",
+      "recommended_verdict": "keep_family",
+      "family_type": "same-dish-different-lesson",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "three-sisters-puppet-show-16bd99",
+      "whats_the_same": "Both lessons teach the same Lenape Three Sisters puppet show to pre-K and 3K students, using the same puppet characters, the same discussion questions about corn, beans, and squash, the same hands-on tasting and drawing activity, and the same materials list.",
+      "whats_different": "Lesson B is a more developed version of the same lesson — it adds an opening ritual (thumb check), a formal closing ritual with specific teacher prompts, a garden connection section, a critical-thinking reflection, more tags, and notes the location as both indoor and outdoor rather than indoor only. Lesson A has a written summary that Lesson B is missing, but otherwise Lesson B is the fuller, more polished version.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "lesson_769f32694684408fbacbe1b02fc9d8a0",
+      "survivor_why": "Lesson B is the more complete plan, with an opening ritual, closing ritual, critical-thinking prompts, garden connection section, and broader tagging, making it more useful for instructors.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "tortilla-espanola-e790b7",
+      "whats_the_same": "Both lessons teach the exact same dish — Tortilla Española — to elementary students in the spring, using eggs from the school's garden chickens. They share the same three-station rotation: one table for chopping vegetables, one for egg cracking and whisking, and one academic table with differentiated activities for younger students (eggs around the world) and older students (life cycle of a chicken).",
+      "whats_different": "Lesson A is a much longer, more fully developed lesson plan — it includes both a single-period and double-period schedule, specific academic standards, detailed step-by-step instructions for each station, a final trivia game or read-aloud activity, appendix references, and covers Pre-K through 5th grade. Lesson B covers the same content but is written in a shorter, streamlined template with an opening ritual / closing ritual structure, a built-in materials list, and a few extra social-emotional learning tags — it reads more like a quick reference version of the same lesson.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1JEpJpbINYmbIN9j5W2dYrgIW6e0EqpalMa3kqm_53cI",
+      "survivor_why": "Lesson A is far more complete, with double and single period plans, academic standards, Pre-K inclusion, detailed station instructions, and supporting appendices that give teachers more to work with.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "varenyky-e36af4",
+      "whats_the_same": "Both lessons teach the exact same Varenyky cooking activity: students explore Ukrainian culture using a world map, then work at three stations to make dough, assemble dumplings, and prepare the potato-mushroom filling, finishing with a shared meal. The objectives, station names, back-pocket activities, materials list, prep notes, and anticipated problems are identical.",
+      "whats_different": "The two lessons are the same lesson saved in two different template formats. Lesson A uses a clean, prose-style layout and has a fuller set of tags and skills recorded. Lesson B uses an older fill-in-the-table template and includes a couple of extra prompt fields (Garden Connection, Critical Thinking) that are mostly left blank, but its metadata tagging is thinner and it has no written summary.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1kk7iWzUOFQY786Ilr2MqaEiCmfv1EpUm",
+      "survivor_why": "Lesson A has a written summary, richer metadata (more skills, ingredients, SEL, and cultural responsiveness tags), and cleaner formatting, making it the more complete and usable record.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "vegetable-ramen-c0f2e8",
+      "whats_the_same": "Three of the five lessons teach the same Vegetable Ramen cooking activity, and two teach a Food Waste lesson — all five are school kitchen lessons set in winter that share themes of healthy eating, environmental awareness, and cooking skills.",
+      "whats_different": "Lesson D is nearly word-for-word the same as Lesson A (same Green Room introduction, same full step list with miso, corn, broccoli, and furikake seasoning) but has no written summary and less complete information, making it a redundant copy of A that should be retired. Lesson C is a genuinely distinct version of the Ramen lesson that strips out some cooking steps and adds an entirely different garden activity — planting and growing pea shoots — so it stands on its own. Lessons B and E both cover food waste but differ meaningfully: Lesson E adds a craft project (a food scrap collage) and a garden connection section that Lesson B does not include, so both are worth keeping.",
+      "recommended_verdict": "keep_family",
+      "family_type": "other",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "welcome-garden-exploration-gardening-for-4f26ca",
+      "whats_the_same": "Both lessons cover exactly the same introductory garden class: students learn garden rules, match garden jobs to their definitions, rotate through hands-on stations in the school garden, share a tasting together, and have the option to write a haiku as a back-pocket activity. The objectives, materials, prep steps, and nearly all wording are identical.",
+      "whats_different": "Lesson A is clearly written out for 6th grade in the fall and includes a short summary, while Lesson B has no summary written and extends the grade range to include 7th grade and adds summer as a season — but the actual lesson content never changes to reflect those additions; the grade-level and site-variation sections are left blank. Lesson B also uses a more template-like layout with extra empty fields, making it feel like a work-in-progress copy of the same lesson.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1qjmWKwdXaFMED7hu4RuSgSEOJvxwEVGGWuBoLHjU_pE",
+      "survivor_why": "Lesson A has a written summary, a polished narrative format, and is the more complete, ready-to-use version of the two.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "what-does-a-gardener-do-1770f1",
+      "whats_the_same": "All four lessons are part of the same early-childhood garden series for 3K and Pre-K students. Two teach what a gardener wears (using a paper dress-up craft), and two teach what a gardener does (using a cover-crop planting activity). They share the same structure: a welcome, a main activity, and a closing song.",
+      "whats_different": "The set actually contains two genuinely different lessons — one about gardener clothing and one about gardening jobs — making them parts of a series, not copies of each other. However, within each topic there is a duplicate: the 'gardener wear' lessons (A and C) are nearly identical, with C being a slightly less complete version of A; likewise, the 'gardener do' lessons (B and D) are nearly identical, with D covering only 3K while B covers both 3K and PK and has a fuller written summary. The team should retire C (keeping A) and retire D (keeping B).",
+      "recommended_verdict": "keep_family",
+      "family_type": "series-part",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "who-lives-in-the-garden-9793a2",
+      "whats_the_same": "Both lessons cover the exact same activity for 3K and PK students: a fall garden tour followed by a read-aloud or puppet show about garden animals, a hands-on food processing task (like shucking beans), and a closing tasting. The agenda, all three activity options, the safety rules, the materials list, and the back-pocket backup activity are word-for-word the same.",
+      "whats_different": "The lessons are the same lesson saved twice in two different document formats — Lesson A is laid out as plain paragraphs while Lesson B uses a table-based template. Lesson A includes a written summary and the 'Year A' label; Lesson B has no written summary but lists a few extra tags (like Arts as a subject and Self-awareness as an SEL skill). There are no meaningful differences in what students actually do.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1dqVb1CXvx_YVQ3cH8UuoGxYZ5A2MzU-bi8n4fZqBTXQ",
+      "survivor_why": "Lesson A has a written summary and cleaner, more readable formatting, making it easier for instructors to pick up and use quickly.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "whole-grains-and-fiber-0dc905",
+      "whats_the_same": "Both lessons teach students about the difference between whole grains and processed grains, and both have students make granola together as the hands-on cooking activity. They share the same background explanation about the seed's endosperm and the same cooking skills focus.",
+      "whats_different": "Lesson A is written for middle schoolers (grades 6–8) and keeps things straightforward — a group discussion, making granola, and a brief reflection. Lesson B is for kindergarten through 2nd grade and is much more detailed, with grade-by-grade instructions, a holiday gift-giving component (students bag the granola as presents), a bread-and-orange-juice comparison activity, a worksheet, a coloring sheet, and specific SEL work around gratitude — making it a significantly richer and differently shaped lesson.",
+      "recommended_verdict": "keep_family",
+      "family_type": "grade-band",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "winter-fruit-salad-mobile-education-4014fd",
+      "whats_the_same": "Both lessons teach the same winter fruit salad activity — students learn about seasonality, read (or listen to) 'An Orange in January,' and chop fruit together to make and taste a salad. The core recipe, cooking skills, and learning goals are nearly identical.",
+      "whats_different": "Lesson B is written specifically for a mobile educator who travels from school to school and needs to introduce themselves, set class expectations, and work with any grade from pre-K through 8th grade using optional, flexible steps. Lesson A is for a resident teacher who already knows the students and uses fixed, grade-differentiated activities (separate instructions for K–2 versus 3–5). The ingredient lists also differ slightly — Lesson B adds kiwi and pomegranate seeds — and Lesson B has a distinct closing ritual ('Thank you gardeners, Thank you Cooks') that reflects its traveling-classroom roots.",
+      "recommended_verdict": "keep_family",
+      "family_type": "mobile-ed",
+      "survivor_lesson_id": null,
+      "survivor_why": null,
+      "confidence": "high"
+    },
+    {
+      "group_id": "worm-breakfast-4606c3",
+      "whats_the_same": "Both lessons teach the exact same activity: students follow a simple recipe to mix compostable garden scraps into a 'worm breakfast,' learning what goes in a compost bin while practicing measuring and taking turns. The step-by-step class flow, materials list, grade-level variations, back-pocket activity, and closing ritual are all identical.",
+      "whats_different": "The two lessons are the same lesson saved twice at different times. Lesson B was added later and carries slightly more metadata tags (a season label, broader grade range listed, and extra social-emotional skills), but its lesson text is poorly formatted with leftover table symbols from a document import, and it has no written summary. Lesson A has cleaner, more readable text and a proper summary paragraph.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c",
+      "survivor_why": "Lesson A has clean, readable lesson text and a written summary, while Lesson B's text is garbled with table-import artifacts and is missing a summary.",
+      "confidence": "high"
+    },
+    {
+      "group_id": "worm-study-65ab90",
+      "whats_the_same": "Both lessons are the exact same Worm Study lesson for early childhood grades — they share the same objectives, the worm dance, the small-group observation activity, the drawing and writing tasks, the materials list, the closing ritual, and the back pocket activities word for word.",
+      "whats_different": "The content is the same lesson saved twice. Lesson A is the cleaner, more complete copy: it has a written summary, a copyright notice, cleaner formatting, and richer theme tags. Lesson B appears to be a later import that was pulled in from a table-based document, leaving '[Table]' markers throughout the text, no written summary, and slightly less complete metadata.",
+      "recommended_verdict": "retire_duplicate",
+      "family_type": null,
+      "survivor_lesson_id": "1wp71sAPQQycFDAHX_k-Tk8fpzz-bb2FW",
+      "survivor_why": "Lesson A has a written summary, cleaner formatting, a copyright notice, and more complete metadata tags, making it the more polished and usable copy.",
+      "confidence": "high"
+    }
+  ]
+}

@@ -3,7 +3,61 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-02 (Fable, T3b brief session). **T3b brief ready:**
+**Last updated:** 2026-07-02 (Opus, **t4a sweep execution**). **T4a DONE — the dedup evidence
+deck is built and ready for the Fable+user walkthrough.** Branch `feat/t4a-dedup-sweep` (PR
+open, carries this session's docs). Read-only sweep pipeline at `scripts/dedup-sweep/`
+(export → candidates → Sonnet-4.6 fan-out → deck; **zero DB writes**, live PROD read via anon
+key). Outputs in `docs/plans/t4-dedup/`: **`candidates.json`** = 113 deterministic groups (Tier
+**A=21 · B=41 · C=51**), every pre-registered calibration gate green (764 live rows, 46
+same-title groups/96 rows, 1 hash pair, all 8 named-pair tiers hold, TS trigram matches SQL
+pg_trgm ≤0.001, byte-identical re-run); **`deck.json` + `deck.md`** = one Sonnet-4.6 verdict per
+group (model pinned `claude-sonnet-4-6`, pin asserted; 113/113 agents, 0 schema failures) —
+tally **retire_duplicate 37 · keep_family 74 · unrelated 2**. **7 Tier-C groups flagged "please
+confirm"** (AI says same lesson but <75% wording overlap = the "one copy is a fuller/table
+import" pattern; per-brief re-run-once done, 1 of 8 flipped, 7 persist and are surfaced — not
+auto-shipped, not overridden; decision is the user's). Mixed groups (a true-copy pair inside a
+real family — Fattoush, Sun Printing, 3-Sisters-Tacos) come out keep_family with the copy-pair
+named in the text (the single-verdict schema can't retire a subset). `npm run check` +
+`test:run` (2059/2059) green; 5-group content spot-check all correct. NEXT = **Fable walkthrough
+with the user** (read `docs/plans/t4-dedup/deck.md`, fill `decisions.json`, then write the t4c
+retire-migration brief); t4b may run parallel (Opus). Prior update below.
+
+**Prior update (2026-07-02, Fable, T4 dedup design session — the 2nd planned Fable
+session). T4 DESIGN COMPLETE** — all decisions locked live with the user; design doc
+`2026-07-02-t4-dedup-design-decisions.md` (D1–D12) + status doc `2026-07-02-t4-status.md` +
+two Opus briefs written (`…-brief-t4a-candidate-sweep.md`, `…-brief-t4b-review-reshape.md`).
+Key recon (PROD, read-only): live corpus 764; **46 same-title groups / ~50 excess copies**;
+1 hash-identical pair; content trigram sim cleanly separates copies (≥0.92) from families
+(≤0.75); pg_trgm installed; soft-retire mechanism already proven (21 May-retired imports —
+that deferred deletion track is ALREADY DONE, nothing to fold in); Aug-2025 dedup pass left
+86 resolutions + a live-routed admin Duplicates page whose "archive" **hard-deletes while
+claiming soft-delete** → page removed + RPC revoked in t4b. User decisions: dup-clean now,
+families project post-sprint (family labels recorded during the same review — no second
+pass); adjudication = **live walkthrough, Fable-run (authorized 3rd Fable session)**;
+review screen = one-decision-list shape; Sonnet fan-out **pinned to Sonnet 4.6** (not
+Sonnet 5). Reject path verified already-supported server-side (frontend wiring only).
+These docs ride the t4a PR. NEXT = **t4a sweep execution (Opus, brief ready)**; t4b may run
+parallel (Opus); then Fable walkthrough with user → t4c retire migration → T5. Prior update
+below.
+
+**Prior update (2026-07-02, Fable, T3b adjudication + merge session).** **T3b ✅ SHIPPED +
+PROD-VERIFIED — PR #575 merged (squash `03ebe4b`)** after Fable's own diff review. All four
+review-round additions beyond the brief's literal text were adjudicated and APPROVED as
+correctness hardenings (CAS on the flip UPDATE; nulling content-derived
+embedding/hash/ai_draft in the flip — fixes a real gap in the brief; retired-original-lesson
+re-check for update-type resubmits; per-card in-flight `Set`). Independently re-verified
+before recommending: TEST fn v20 sha `a7fce21d…` + baseline 763/113/17/0 + 0 orphans (own
+probes); the one red check traced commit-by-commit as the known cosmetic no-op (R3 `760e2e5`
+deploy SUCCEEDED → v20 at 17:20Z; final commit `93ad106` frontend-only → pre=20/post=20).
+User approved the PROD edge gate; **3-signal PROD verify GREEN: `process-submission`
+v36→v37 (18:02Z, right after the 17:58Z merge), `ezbr_sha256` = the TEST-verified
+`a7fce21d…` byte-exact, negative probes (no-auth → 400 "No authorization header"; anon
+`resubmit:true` bogus-id → 400 "Unauthorized") — new bundle live, no PROD data touched.**
+Residual: the UI button click itself still not browser-smoked → folds into T5's final smoke.
+NEXT = **T4 dedup design (Fable session, the 2nd of 2 planned)** → T5 launch. Prior update
+below.
+
+**Prior update (2026-07-02, Fable, T3b brief session):** **T3b brief ready:**
 `2026-07-02-brief-t3b-resubmit.md` — resubmit = a `resubmit` mode in `process-submission`
 (re-extract the same row, flip needs_revision→submitted + null `revision_requested_reason`
 only after a successful re-snapshot, DELETE stale `submission_similarities` before the dedup
@@ -152,8 +206,8 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 | T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE & PROD-VERIFIED — shipped PR #571 → squash `eeccedb`; all 6 gates green (4 TEST + 2 PROD), bot clean approve. Submission pipeline + email gate alive again on PROD.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
 | T2b | Quick-wins patch PR (punch-list bucket 1: gate scoping, decision toasts, card titles, sticky pane, title+summary fields incl. RPC COALESCE-flip migration, sign-in clear, /login fix, copy + error propagation) | Opus | **✅ DONE — shipped PR #572 (`3a7d634`) 2026-07-01.** Brief: `2026-07-01-brief-quickwins-patch.md`. Carried the then-uncommitted sprint docs. |
 | T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus → **Fable** (merge + security fix + go-live) | **✅ TRACK CLOSED 2026-07-02** — #573 (`9a50dc6`) + RLS fix #574 (`104337f`) both merged + PROD-verified; **Part 3c DONE: public signups disabled (422 `signup_disabled` verified) + PROD end-to-end throwaway-teacher invite test passed on the live site and fully cleaned. Site is INVITE-ONLY and live; real invitations safe to send.** Residual: accept-flow Playwright E2E deferred to T3b/T5. |
-| T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus | **NEXT — brief ready (2026-07-02):** `2026-07-02-brief-t3b-resubmit.md`. No migration; `process-submission` resubmit mode + My-submissions button. Accept-flow E2E does NOT ride (no auth fixture exists — T5 call). Carries the uncommitted tracker edits. |
-| T4 | Corpus dedup sweep (~745 lessons) | Fable design → Sonnet candidates → user adjudicates → Opus ships | Pending (design session = 2nd of 2 planned Fable sessions) |
+| T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus → **Fable** (adjudication + merge) | **✅ DONE 2026-07-02 — PR #575 merged (squash `03ebe4b`) + PROD edge deploy 3-signal-verified (v37, sha `a7fce21d…` = TEST-verified bundle, negative probes reject cleanly).** No migration. Gate-2 TEST smoke had proven the full server loop (CAS flip, stale-similarity clear 1→0, tag+note preservation, 4 negative probes, retired-guard). Residual: UI button click → T5 smoke. Brief: `2026-07-02-brief-t3b-resubmit.md`. |
+| T4 | Corpus dedup sweep (764 live lessons) + review-screen reshape | Fable design ✅ → Opus t4a ✅ (Sonnet 4.6 candidates) → Fable+user walkthrough → Opus t4c retire / t4b reshape | **t4a DONE 2026-07-02** (PR `feat/t4a-dedup-sweep`; 113 groups A21/B41/C51, deck built, gates green, 7 Tier-C flagged for confirm). NEXT = **Fable+user walkthrough** (deck at `docs/plans/t4-dedup/deck.md`) → t4c; t4b parallel-ok |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
 
 ## Track notes
@@ -250,6 +304,15 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
   "related, not duplicate" outcome. Pre-delete FK checklist applies (see memory:
   data-mutation gotchas). Known dup evidence: Black Bean Dip ×2, Hummus ×2, School and Garden
   Communities ×2 in one top-10.
+  **Design session 2026-07-02 (Fable):** everything above ratified + designed; see
+  `2026-07-02-t4-dedup-design-decisions.md` for the full record (D1–D12), including: retire =
+  the proven `retired_at` soft-retire, NO deletes (FK checklist moot); three verdicts
+  retire_duplicate / keep_family(label) / unrelated; decisions land in a committed
+  `docs/plans/t4-dedup/decisions.json` (no new DB table pre-launch); `detect-duplicates` gets
+  a pg_trgm RPC (`exact` label = hash match ONLY, retired rows excluded from candidates);
+  the Hummus/Bean-Dip "evidence" turned out to be fuzzy families, not same-title pairs —
+  confirms fuzzy matching is required. The imports-deletion track is already executed
+  (2026-05-08) — not part of T4.
 
 ## Explicitly NOT doing (pre-launch)
 
