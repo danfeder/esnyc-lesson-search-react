@@ -42,6 +42,12 @@ export function normTitle(title: string): string {
  * non-alphanumeric run with a single space, split into words, pad each word
  * `"  <word> "` (two leading spaces, one trailing), and collect all length-3
  * substrings. Duplicates are collapsed (pg_trgm compares unique trigrams).
+ *
+ * Known limitation: only ASCII `[a-z0-9]` count as word characters, so accented
+ * letters (ñ, é, …) split words where Postgres's locale-aware pg_trgm might not.
+ * The brief explicitly does NOT require exact pg_trgm parity — the calibration
+ * gate is the arbiter, and on the pre-registered PROD pairs the TS and SQL
+ * values agree to ≤0.001, so this approximation is intentional.
  */
 export function trigramSet(text: string): Set<string> {
   const set = new Set<string>();
@@ -60,9 +66,13 @@ export function trigramSet(text: string): Set<string> {
   return set;
 }
 
-/** Jaccard similarity of two trigram sets: |A∩B| / |A∪B|. */
+/**
+ * Jaccard similarity of two trigram sets: |A∩B| / |A∪B|. Matches pg_trgm's
+ * `similarity()`, including returning 0 when EITHER set is empty (two strings
+ * with no trigrams are not "identical" — pg_trgm's cnt_sml gives 0, and this
+ * avoids blocking-rule (b) falsely pairing e.g. two punctuation-only titles).
+ */
 export function trigramSim(a: Set<string>, b: Set<string>): number {
-  if (a.size === 0 && b.size === 0) return 1;
   if (a.size === 0 || b.size === 0) return 0;
   const [small, large] = a.size <= b.size ? [a, b] : [b, a];
   let inter = 0;

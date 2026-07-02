@@ -288,7 +288,17 @@ async function main(): Promise<void> {
         2
       )
     );
-    if (res.model && res.model !== MODEL) {
+    // Model-pin assertion, fail-CLOSED: an ACCEPTED verdict must prove it ran on
+    // the pinned model. An envelope missing modelUsage yields res.model === '',
+    // which the old `res.model && …` guard skipped — slipping an unverified
+    // verdict into the deck. Reject any accepted verdict not proven on MODEL.
+    if (res.ok && res.model !== MODEL) {
+      throw new Error(
+        `MODEL PIN VIOLATION on ${group.group_id}: accepted a verdict on model ` +
+          `"${res.model || '(none reported)'}", expected "${MODEL}" — STOP`
+      );
+    }
+    if (!res.ok && res.model && res.model !== MODEL) {
       throw new Error(
         `MODEL PIN VIOLATION on ${group.group_id}: ran on "${res.model}", expected "${MODEL}" — STOP`
       );
@@ -328,11 +338,19 @@ async function main(): Promise<void> {
 
   // In DECK_ONLY mode, merge the re-run verdicts over the existing deck.
   let deck: DeckEntry[];
+  const rerunMisses: string[] = [];
   if (merge) {
     const existing: { deck: DeckEntry[] } = JSON.parse(readFileSync(DECK_JSON_PATH, 'utf8'));
     const map = new Map(existing.deck.map((e) => [e.group_id, e]));
     for (const e of newEntries) map.set(e.group_id, e);
     deck = [...map.values()];
+    // A re-run group that failed BOTH attempts produces no new entry; the merge
+    // silently keeps its STALE prior verdict, and the "missing" check below sees
+    // the stale row and stays quiet. Surface it explicitly (sub-threshold
+    // failRatio must not mask a group that was never actually regenerated).
+    for (const g of groups) {
+      if (!newEntries.some((e) => e.group_id === g.group_id)) rerunMisses.push(g.group_id);
+    }
   } else {
     deck = newEntries;
   }
@@ -350,9 +368,12 @@ async function main(): Promise<void> {
       continue;
     }
     if (entry.recommended_verdict === 'retire_duplicate') {
-      if (g.max_content_sim < TIER_B_MIN) {
+      // Use the raw-derived tier, not the ROUNDED max_content_sim: a raw 0.7496
+      // (tier C) serializes as 0.750 and would pass a `< 0.75` numeric check.
+      // Tier C ⟺ raw max content_sim < 0.75 exactly.
+      if (g.tier === 'C') {
         violations.push(
-          `${entry.group_id}: retire_duplicate but group max overlap ${Math.round(g.max_content_sim * 100)}% < ${TIER_B_MIN * 100}%`
+          `${entry.group_id}: retire_duplicate but group max overlap ${Math.round(g.max_content_sim * 100)}% < ${TIER_B_MIN * 100}% (tier C)`
         );
       }
       if (!entry.survivor_lesson_id) {
@@ -367,6 +388,9 @@ async function main(): Promise<void> {
   }
   const missing = checkGroups.filter((g) => !deck.some((d) => d.group_id === g.group_id));
   for (const g of missing) violations.push(`${g.group_id}: no deck entry produced`);
+  for (const id of rerunMisses) {
+    violations.push(`${id}: DECK_ONLY re-run failed both attempts — stale prior verdict retained`);
+  }
 
   console.log(
     `\nMechanical checks: ${violations.length === 0 ? 'clean ✓' : `${violations.length} violation(s)`}`

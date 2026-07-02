@@ -38,6 +38,31 @@ interface DeckEntry {
 
 const LETTER = (i: number): string => String.fromCharCode(65 + i);
 
+/**
+ * Display-clean a raw lesson title for the markdown deck: replace control
+ * characters (notably the trailing vertical tab that 10 title pairs carry) with
+ * a space and collapse. Without this the raw control bytes would land verbatim
+ * in deck.md, making it a binary (grep-invisible) file. Codepoint scan rather
+ * than a control-character regex (which `no-control-regex` forbids).
+ */
+function cleanTitle(t: string): string {
+  let out = '';
+  let prevSpace = false;
+  for (const ch of t) {
+    const code = ch.codePointAt(0) as number;
+    if (code <= 0x1f || code === 0x7f) {
+      if (!prevSpace) {
+        out += ' ';
+        prevSpace = true;
+      }
+    } else {
+      out += ch;
+      prevSpace = false;
+    }
+  }
+  return out.trim();
+}
+
 const VERDICT_PHRASE: Record<DeckEntry['recommended_verdict'], string> = {
   retire_duplicate: 'Same lesson saved more than once — keep one, retire the extra copies',
   keep_family: 'Keep all of these — related, not the same lesson',
@@ -80,7 +105,7 @@ function memberLine(m: CandidateMember, i: number, survivorId: string | null): s
     m.grade_levels.length > 0 ? `grades ${m.grade_levels.join(', ')}` : 'no grades tagged';
   const summary = m.summary_present ? 'has a summary' : 'no summary';
   return (
-    `- **Lesson ${LETTER(i)}**${isSurvivor ? ' ⭐ (suggested keeper)' : ''} — “${m.title}” · ` +
+    `- **Lesson ${LETTER(i)}**${isSurvivor ? ' ⭐ (suggested keeper)' : ''} — “${cleanTitle(m.title)}” · ` +
     `added ${shortDate(m.created_at)} · ${grades} · ${m.content_length.toLocaleString()} characters · ` +
     `${m.populated_facet_count} tag groups · ${summary}  \n  <sub>id: \`${m.lesson_id}\`</sub>`
   );
@@ -90,7 +115,7 @@ function survivorLabel(group: CandidateGroup, survivorId: string | null): string
   if (!survivorId) return '—';
   const idx = group.members.findIndex((m) => m.lesson_id === survivorId);
   if (idx === -1) return `\`${survivorId}\` (not in group!)`;
-  return `Lesson ${LETTER(idx)} — “${group.members[idx].title}”`;
+  return `Lesson ${LETTER(idx)} — “${cleanTitle(group.members[idx].title)}”`;
 }
 
 function renderGroup(
@@ -101,7 +126,7 @@ function renderGroup(
 ): string {
   const flags = flagPhrases(group.flags);
   const flagStr = flags.length > 0 ? ` · _${flags.join('; ')}_` : '';
-  const header = `### ${index}. ${group.representative_title}  \n**Tier ${group.tier}** · ${group.members.length} lessons${flagStr}`;
+  const header = `### ${index}. ${cleanTitle(group.representative_title)}  \n**Tier ${group.tier}** · ${group.members.length} lessons${flagStr}`;
 
   if (!entry) {
     return `${header}\n\n> ⚠️ No recommendation was produced for this group — review manually.\n\n${group.members
@@ -216,7 +241,7 @@ function main(): void {
         `calls these the same lesson (usually one copy is much more finished than the other), but their ` +
         `wording overlaps less than the tool retires on its own, so please eyeball each one. They are ` +
         `marked "Please confirm" in the Tier C detail: ` +
-        flaggedGroups.map((g) => `_${g.representative_title}_`).join(', ') +
+        flaggedGroups.map((g) => `_${cleanTitle(g.representative_title)}_`).join(', ') +
         '.'
     );
     lines.push('');
@@ -245,7 +270,7 @@ function main(): void {
         ? survivorLabel(g, e.survivor_lesson_id)
         : 'keep all';
     lines.push(
-      `| ${i + 1} | ${g.representative_title} | ${g.members.length} | ${suggestion} | ${keep} |`
+      `| ${i + 1} | ${cleanTitle(g.representative_title)} | ${g.members.length} | ${suggestion} | ${keep} |`
     );
   });
   lines.push('');

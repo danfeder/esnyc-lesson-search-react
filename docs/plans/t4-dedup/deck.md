@@ -33,14 +33,14 @@ true copy *and* a genuinely different lesson, so the suggestion is to keep the s
 | 11 | Vegetable Ramen | 5 | Keep all of these | keep all |
 | 12 | Hispanic Heritage Month: Baleadas | 5 | Keep all of these | keep all |
 | 13 | Baking Intro: Pumpkin Muffins | 4 | Keep all of these | keep all |
-| 14 | Butterflies | 2 | Same lesson saved more than once | Lesson B — “Butterflies” |
+| 14 | Butterflies | 2 | Same lesson saved more than once | Lesson B — “Butterflies” |
 | 15 | The Apple Story | 2 | Same lesson saved more than once | Lesson A — “The Apple Story” |
 | 16 | Garden Jobs | 2 | Same lesson saved more than once | Lesson A — “Garden Jobs” |
 | 17 | Insect Detectives | 2 | Same lesson saved more than once | Lesson B — “Insect Detectives” |
 | 18 | Plant Life Cycle Exploration | 3 | Keep all of these | keep all |
 | 19 | Lotion & Agar Soap - K | 2 | Keep all of these | keep all |
 | 20 | Making Potting Soil | 5 | Keep all of these | keep all |
-| 21 | Worm Breakfast | 2 | Same lesson saved more than once | Lesson A — “Worm Breakfast Recipe” |
+| 21 | Worm Breakfast | 2 | Same lesson saved more than once | Lesson A — “Worm Breakfast Recipe” |
 
 ## Tier A — detail
 
@@ -84,7 +84,7 @@ Lesson C ↔ D: ~30% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** — “Sun Printing” · added 2025-07-10 · grades K, 1 · 8,498 characters · 9 tag groups · has a summary  
   <sub>id: `1YuKoPyuJb5ImdgY1vTne8snk8VQeCCAjaPcJcxWIfhM`</sub>
-- **Lesson B** — “Sun Printing” · added 2025-09-01 · grades K, 1 · 8,574 characters · 9 tag groups · no summary  
+- **Lesson B** — “Sun Printing” · added 2025-09-01 · grades K, 1 · 8,574 characters · 9 tag groups · no summary  
   <sub>id: `lesson_d5c52872fd214f289d3cafaf0af3e607`</sub>
 - **Lesson C** — “Sun Printing/Cyanotype” · added 2025-09-01 · grades 4, 5 · 8,533 characters · 9 tag groups · no summary  
   <sub>id: `lesson_fd594f6d103e41caaac34399cc1c23cc`</sub>
@@ -146,9 +146,9 @@ Lesson B ↔ C: ~93% of the wording overlaps</sub>
   <sub>id: `1Yy7iv3vxPHukKFooYce0yr5BOqUcqprM2rhUWX12Cgo`</sub>
 - **Lesson G** — “I spy...in the garden! Indoors 3K/PK” · added 2025-07-10 · grades 3K, PK · 3,786 characters · 9 tag groups · has a summary  
   <sub>id: `1_YYC5Yr7thlhsTuEA3X3bnsVLw7jMttBAUpoxiud7sY`</sub>
-- **Lesson H** — “I spy…in the garden!” · added 2025-09-01 · grades 3K, PK · 4,037 characters · 9 tag groups · no summary  
+- **Lesson H** — “I spy…in the garden!” · added 2025-09-01 · grades 3K, PK · 4,037 characters · 9 tag groups · no summary  
   <sub>id: `lesson_727ff8bd39e44c7eaa1439302f02c93a`</sub>
-- **Lesson I** — “The Garden in the Fall ” · added 2025-09-01 · grades 3K, PK · 4,787 characters · 9 tag groups · no summary  
+- **Lesson I** — “The Garden in the Fall” · added 2025-09-01 · grades 3K, PK · 4,787 characters · 9 tag groups · no summary  
   <sub>id: `lesson_d4a676556c8d4c03bbc142d0f89c0010`</sub>
 <sub>Overlap: Lesson A ↔ B: ~43% of the wording overlaps  
 Lesson A ↔ C: ~48% of the wording overlaps  
@@ -207,7 +207,7 @@ Lesson H ↔ I: ~54% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** ⭐ (suggested keeper) — “Potato Exploration” · added 2025-07-10 · grades 3K, PK, K, 1, 2, 3, 4, 5 · 9,576 characters · 13 tag groups · has a summary  
   <sub>id: `1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg`</sub>
-- **Lesson B** — “Potato Exploration” · added 2025-09-01 · grades 3K, PK, K, 1, 2, 3, 4, 5 · 10,001 characters · 12 tag groups · no summary  
+- **Lesson B** — “Potato Exploration” · added 2025-09-01 · grades 3K, PK, K, 1, 2, 3, 4, 5 · 10,001 characters · 12 tag groups · no summary  
   <sub>id: `lesson_78fb31393f1e4d629bfdf735ebd97694`</sub>
 <sub>Overlap: Lesson A ↔ B: ~96% of the wording overlaps</sub>
 ### 10. September Sixth Grade Summer and Pizza Plant Hunt  
@@ -298,11 +298,11 @@ Lesson C ↔ D: ~54% of the wording overlaps</sub>
 **What's the same:** Both lessons teach the exact same activity: students listen to a butterfly book, learn about the butterfly life cycle, make a clothespin-and-coffee-filter butterfly, and fly their butterflies around the room to visit flower pictures. The opening, read-aloud, craft steps, clean-up, and closing discussion are essentially word-for-word the same.
 **What's different:** Lesson B is a more developed version of Lesson A — it adds an outdoor option (letting students take their butterflies into the garden when weather allows), includes a butterfly coloring sheet as an extra activity, and adds two new reflection sections about garden connection and critical thinking. Lesson B also has more tags and garden-skill labels recorded, and its lesson text is noticeably longer and more complete.
 **Recommendation:** Same lesson saved more than once — keep one, retire the extra copies  (confidence: high)
-**Keep:** Lesson B — “Butterflies” — Lesson B is the more complete and recent version, with an added outdoor component, a butterfly coloring sheet, richer metadata, and two additional instructional reflection sections.
+**Keep:** Lesson B — “Butterflies” — Lesson B is the more complete and recent version, with an added outdoor component, a butterfly coloring sheet, richer metadata, and two additional instructional reflection sections.
 **The lessons:**
 - **Lesson A** — “Butterflies” · added 2025-07-10 · grades 3K, PK, K, 1 · 6,202 characters · 8 tag groups · has a summary  
   <sub>id: `1WKXLADkrfgZ7462f3JKfHNV-trHtuNtmo3i6Gq-PqeA`</sub>
-- **Lesson B** ⭐ (suggested keeper) — “Butterflies” · added 2025-09-01 · grades 3K, PK, K, 1 · 6,921 characters · 9 tag groups · no summary  
+- **Lesson B** ⭐ (suggested keeper) — “Butterflies” · added 2025-09-01 · grades 3K, PK, K, 1 · 6,921 characters · 9 tag groups · no summary  
   <sub>id: `lesson_be063faef5704613af4fa8dda5864e88`</sub>
 <sub>Overlap: Lesson A ↔ B: ~95% of the wording overlaps</sub>
 ### 15. The Apple Story  
@@ -393,7 +393,7 @@ Lesson B ↔ E: ~55% of the wording overlaps
 Lesson C ↔ D: ~49% of the wording overlaps  
 Lesson C ↔ E: ~57% of the wording overlaps  
 Lesson D ↔ E: ~51% of the wording overlaps</sub>
-### 21. Worm Breakfast  
+### 21. Worm Breakfast  
 **Tier A** · 2 lessons
 **What's the same:** Both lessons teach the exact same activity: students follow a simple recipe to mix compostable garden scraps into a 'worm breakfast,' learning what goes in a compost bin while practicing measuring and taking turns. The step-by-step class flow, materials list, grade-level variations, back-pocket activity, and closing ritual are all identical.
 **What's different:** The two lessons are the same lesson saved twice at different times. Lesson B was added later and carries slightly more metadata tags (a season label, broader grade range listed, and extra social-emotional skills), but its lesson text is poorly formatted with leftover table symbols from a document import, and it has no written summary. Lesson A has cleaner, more readable text and a proper summary paragraph.
@@ -402,7 +402,7 @@ Lesson D ↔ E: ~51% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** ⭐ (suggested keeper) — “Worm Breakfast Recipe” · added 2025-07-10 · grades K, 1 · 5,169 characters · 9 tag groups · has a summary  
   <sub>id: `17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c`</sub>
-- **Lesson B** — “Worm Breakfast” · added 2025-09-01 · grades K, 1, 2, 3 · 5,306 characters · 11 tag groups · no summary  
+- **Lesson B** — “Worm Breakfast” · added 2025-09-01 · grades K, 1, 2, 3 · 5,306 characters · 11 tag groups · no summary  
   <sub>id: `lesson_9d3fa2495f2f41bd9946eec528198210`</sub>
 <sub>Overlap: Lesson A ↔ B: ~92% of the wording overlaps</sub>
 ## Tier B — probable duplicates & families
@@ -440,7 +440,7 @@ Lesson D ↔ E: ~51% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** ⭐ (suggested keeper) — “Welcome & Garden Exploration: Gardening for All” · added 2025-07-10 · grades 6 · 3,914 characters · 10 tag groups · has a summary  
   <sub>id: `1qjmWKwdXaFMED7hu4RuSgSEOJvxwEVGGWuBoLHjU_pE`</sub>
-- **Lesson B** — “Welcome & Garden Exploration: Gardening for All” · added 2025-09-01 · grades 6, 7 · 4,477 characters · 10 tag groups · no summary  
+- **Lesson B** — “Welcome & Garden Exploration: Gardening for All” · added 2025-09-01 · grades 6, 7 · 4,477 characters · 10 tag groups · no summary  
   <sub>id: `lesson_cd3c5ef4e6e848fd9b062d47c382ae5e`</sub>
 <sub>Overlap: Lesson A ↔ B: ~91% of the wording overlaps</sub>
 ### 25. Sourdough & Fungi - K  
@@ -685,11 +685,11 @@ Lesson D ↔ E: ~33% of the wording overlaps</sub>
 **What's the same:** Both lessons are called 'Gardening & The Environment' and teach the exact same class: a welcome discussion about how gardens help the planet, a garden job review covering planting, weeding, harvesting, composting, and watering, then students rotate through garden stations, and a closing sharing circle with a tasting. The materials list, prep steps, and reference links are identical.
 **What's different:** Lesson B is a more filled-out version of the same lesson — it adds a 'Garden Connection' section, a 'How Does This Lesson Promote Critical Thinking' section, and a more detailed description of the back-pocket group game. Lesson A lists grades 7–8 while Lesson B lists only grade 8, but neither version contains any content that actually differs by grade. Overall the two are the same lesson, with Lesson B being the more complete, later revision.
 **Recommendation:** Same lesson saved more than once — keep one, retire the extra copies  (confidence: high)
-**Keep:** Lesson B — “Gardening & The Environment” — Lesson B is the more recent and more fully developed version, with additional instructional sections and a richer back-pocket activity description.
+**Keep:** Lesson B — “Gardening & The Environment” — Lesson B is the more recent and more fully developed version, with additional instructional sections and a richer back-pocket activity description.
 **The lessons:**
 - **Lesson A** — “Gardening & The Environment” · added 2025-07-10 · grades 7, 8 · 3,840 characters · 10 tag groups · has a summary  
   <sub>id: `1vnOYmF90vIaodnDkjLtXQdSLoLdE38HALLK8OfcwntM`</sub>
-- **Lesson B** ⭐ (suggested keeper) — “Gardening & The Environment” · added 2025-09-01 · grades 8 · 5,270 characters · 10 tag groups · no summary  
+- **Lesson B** ⭐ (suggested keeper) — “Gardening & The Environment” · added 2025-09-01 · grades 8 · 5,270 characters · 10 tag groups · no summary  
   <sub>id: `lesson_8067735e96df493b85b61f4b5bc11308`</sub>
 <sub>Overlap: Lesson A ↔ B: ~86% of the wording overlaps</sub>
 ### 38. Leaf Collecting  
@@ -777,7 +777,7 @@ Lesson G ↔ H: ~51% of the wording overlaps</sub>
 - **Lesson B** ⭐ (suggested keeper) — “Interconnection & Native American Traditions” · added 2025-09-01 · grades 4, 5 · 4,757 characters · 11 tag groups · no summary  
   <sub>id: `lesson_21119471ac47403e89286545e8036d94`</sub>
 <sub>Overlap: Lesson A ↔ B: ~85% of the wording overlaps</sub>
-### 42. What does a gardener do?  
+### 42. What does a gardener do?  
 **Tier B** · 4 lessons · _mentions grade levels_
 **What's the same:** All four lessons are part of the same early-childhood garden series for 3K and Pre-K students. Two teach what a gardener wears (using a paper dress-up craft), and two teach what a gardener does (using a cover-crop planting activity). They share the same structure: a welcome, a main activity, and a closing song.
 **What's different:** The set actually contains two genuinely different lessons — one about gardener clothing and one about gardening jobs — making them parts of a series, not copies of each other. However, within each topic there is a duplicate: the 'gardener wear' lessons (A and C) are nearly identical, with C being a slightly less complete version of A; likewise, the 'gardener do' lessons (B and D) are nearly identical, with D covering only 3K while B covers both 3K and PK and has a fuller written summary. The team should retire C (keeping A) and retire D (keeping B).
@@ -787,9 +787,9 @@ Lesson G ↔ H: ~51% of the wording overlaps</sub>
   <sub>id: `1MTqszq20L6jM1i-f19D2PzfrfTunNRmkP-GAl-ZYO9A`</sub>
 - **Lesson B** — “What does a gardener do? 3K/PK” · added 2025-07-10 · grades 3K, PK · 4,829 characters · 9 tag groups · has a summary  
   <sub>id: `1ZAAaZJTBtqnmTbuf-5LujtpCm9ebqSl9aIGw48PZaCg`</sub>
-- **Lesson C** — “What does a gardener wear? ” · added 2025-09-01 · grades 3K, PK · 4,169 characters · 8 tag groups · no summary  
+- **Lesson C** — “What does a gardener wear?” · added 2025-09-01 · grades 3K, PK · 4,169 characters · 8 tag groups · no summary  
   <sub>id: `lesson_c78f6845475d4956bb9a038448bfea0c`</sub>
-- **Lesson D** — “What does a gardener do?” · added 2025-09-01 · grades 3K · 5,043 characters · 8 tag groups · no summary  
+- **Lesson D** — “What does a gardener do?” · added 2025-09-01 · grades 3K · 5,043 characters · 8 tag groups · no summary  
   <sub>id: `lesson_e7dbdb5dc324470392f1b761eb62fac8`</sub>
 <sub>Overlap: Lesson A ↔ B: ~59% of the wording overlaps  
 Lesson A ↔ C: ~85% of the wording overlaps  
@@ -850,7 +850,7 @@ Lesson C ↔ D: ~63% of the wording overlaps, same ingredient & theme tags</sub>
   <sub>id: `1VDKC8Qz73JtOdPdK1u3bpEleKNx2cPPlCsiec6B8nqg`</sub>
 - **Lesson B** — “Growing Indoor Edible Sprouts” · added 2025-07-10 · grades K, 1, 2, 3, 4, 5 · 4,135 characters · 9 tag groups · has a summary  
   <sub>id: `1cwCnyYH_67kVHNbgkbcP0UmGn7vjRenOyndkaR1r1SU`</sub>
-- **Lesson C** — “Growing Indoor Edible Sprouts ” · added 2025-09-01 · grades K, 1, 2, 3, 4, 5 · 5,459 characters · 9 tag groups · no summary  
+- **Lesson C** — “Growing Indoor Edible Sprouts” · added 2025-09-01 · grades K, 1, 2, 3, 4, 5 · 5,459 characters · 9 tag groups · no summary  
   <sub>id: `lesson_a6f5b5177f0642828362f61093e54de5`</sub>
 <sub>Overlap: Lesson A ↔ B: ~59% of the wording overlaps  
 Lesson A ↔ C: ~54% of the wording overlaps  
@@ -977,7 +977,7 @@ Lesson B ↔ C: ~82% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** — “Mushroom Cultivation” · added 2025-07-10 · grades 4 · 4,116 characters · 9 tag groups · has a summary  
   <sub>id: `1yfwfesww-3BopJBAbtt_C0JUGmyJiUDW2ZrW4Pq05Ow`</sub>
-- **Lesson B** — “Mushroom Cultivation” · added 2025-09-01 · grades 2, 3 · 5,265 characters · 9 tag groups · no summary  
+- **Lesson B** — “Mushroom Cultivation” · added 2025-09-01 · grades 2, 3 · 5,265 characters · 9 tag groups · no summary  
   <sub>id: `lesson_b730f385a226452e98a7c3f972843e67`</sub>
 <sub>Overlap: Lesson A ↔ B: ~81% of the wording overlaps</sub>
 ### 55. Roots  
@@ -989,7 +989,7 @@ Lesson B ↔ C: ~82% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** ⭐ (suggested keeper) — “Roots” · added 2025-08-07 · grades PK · 3,873 characters · 9 tag groups · has a summary  
   <sub>id: `1dTMg_5AdKV5cJNnt7_L2cXhTK9fmJr8U`</sub>
-- **Lesson B** — “Roots” · added 2025-09-01 · grades 3K, PK · 4,541 characters · 9 tag groups · no summary  
+- **Lesson B** — “Roots” · added 2025-09-01 · grades 3K, PK · 4,541 characters · 9 tag groups · no summary  
   <sub>id: `lesson_d4dda9480bc14c658352e00a2a49d02c`</sub>
 <sub>Overlap: Lesson A ↔ B: ~80% of the wording overlaps</sub>
 ### 56. Expert’s Guide to Gardening: Compost  
@@ -1178,7 +1178,7 @@ Lesson C ↔ D: ~73% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** — “Bees & Blueberries” · added 2025-07-10 · grades 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8 · 5,165 characters · 12 tag groups · has a summary  
   <sub>id: `1GRwdy72vU9H6xe7txN6D3zwUnSzLyC0Z`</sub>
-- **Lesson B** — “Bees and Blueberries” · added 2025-09-01 · grades 4, 5 · 7,073 characters · 12 tag groups · no summary  
+- **Lesson B** — “Bees and Blueberries” · added 2025-09-01 · grades 4, 5 · 7,073 characters · 12 tag groups · no summary  
   <sub>id: `lesson_3f33219774294a47bc7ba0afd5f29311`</sub>
 <sub>Overlap: Lesson A ↔ B: ~73% of the wording overlaps</sub>
 ### 68. All About Birds  
@@ -1319,7 +1319,7 @@ Lesson C ↔ D: ~47% of the wording overlaps, same ingredient & theme tags</sub>
 **The lessons:**
 - **Lesson A** — “Street Vendors/"Chicken" Over Rice” · added 2025-07-10 · grades 6, 7, 8 · 7,010 characters · 12 tag groups · has a summary  
   <sub>id: `1T1sgLmsWzEYkAXNvsX4NMitYf0Au9o0Y8QZEsXpcPSo`</sub>
-- **Lesson B** — “Street Vendors/"Chicken"   Over Rice” · added 2025-09-01 · grades 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8 · 6,416 characters · 12 tag groups · no summary  
+- **Lesson B** — “Street Vendors/"Chicken"   Over Rice” · added 2025-09-01 · grades 3K, PK, K, 1, 2, 3, 4, 5, 6, 7, 8 · 6,416 characters · 12 tag groups · no summary  
   <sub>id: `lesson_e8fa030e63bf4a9cb13b95448a3450c0`</sub>
 <sub>Overlap: Lesson A ↔ B: ~64% of the wording overlaps</sub>
 ### 77. All About Pumpkins  
@@ -1624,7 +1624,7 @@ Lesson B ↔ C: ~47% of the wording overlaps</sub>
 **The lessons:**
 - **Lesson A** — “Pasta” · added 2025-07-10 · grades K, 1, 2, 3, 4, 5 · 3,155 characters · 12 tag groups · has a summary  
   <sub>id: `1wFKZlUxu_aavugzZuK31_MHzonxS3wC1B1wRQ4c4Nbc`</sub>
-- **Lesson B** — “Pasta Party” · added 2025-09-01 · grades 4, 5 · 5,483 characters · 12 tag groups · no summary  
+- **Lesson B** — “Pasta Party” · added 2025-09-01 · grades 4, 5 · 5,483 characters · 12 tag groups · no summary  
   <sub>id: `lesson_730a61c3737c498fb82cb1c074d1d5b1`</sub>
 <sub>Overlap: Lesson A ↔ B: ~49% of the wording overlaps</sub>
 ### 100. Harvest and Weigh  
