@@ -20,10 +20,16 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// The anon-key scenarios (public read checks + the invitation-enumeration
+// regression) need this too; validate it up front so a missing value fails
+// with this friendly message rather than a deep runtime error in a test.
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
+if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
   console.error('❌ Missing required environment variables');
-  console.error('Please ensure VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in .env');
+  console.error(
+    'Please ensure VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and VITE_SUPABASE_ANON_KEY are set in .env'
+  );
   process.exit(1);
 }
 
