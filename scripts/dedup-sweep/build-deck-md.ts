@@ -189,14 +189,16 @@ function main(): void {
   const entryById = new Map(deckData.deck.map((e) => [e.group_id, e]));
   const groups = candidates.groups; // already sorted Tier A→C
 
-  // Groups the tool flagged: the AI recommends retiring as duplicates, but the
-  // wording overlap sits below the auto-safe threshold — a human should confirm.
-  const flaggedIds = new Set(
-    (deckData.violations ?? [])
-      .filter((v) => v.includes('retire_duplicate but group max overlap'))
-      .map((v) => v.split(':')[0])
+  // Groups to flag "please confirm": the AI recommends retiring as duplicates,
+  // but the group's wording overlap is below the near-duplicate floor (tier C).
+  // Computed STRUCTURALLY from the verdict + the group's raw-derived tier — NOT
+  // by pattern-matching the free-text `violations` message (which would silently
+  // stop flagging if that wording ever changed). This is the one signal that
+  // tells the walkthrough to look before retiring, so it must not be fragile.
+  const flaggedGroups = groups.filter(
+    (g) => entryById.get(g.group_id)?.recommended_verdict === 'retire_duplicate' && g.tier === 'C'
   );
-  const flaggedGroups = groups.filter((g) => flaggedIds.has(g.group_id));
+  const flaggedIds = new Set(flaggedGroups.map((g) => g.group_id));
 
   const tierA = groups.filter((g) => g.tier === 'A');
   const tierB = groups.filter((g) => g.tier === 'B');

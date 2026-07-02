@@ -361,6 +361,10 @@ async function main(): Promise<void> {
   const checkGroups = merge || !limitEnv ? allGroups : groups;
   const byGroupId = new Map(allGroups.map((g) => [g.group_id, g]));
   const violations: string[] = [];
+  // Structured list of the groups flagged "please confirm" (retire_duplicate
+  // below the near-duplicate floor). Carried as data so downstream consumers
+  // (deck.md rendering, t4c decisions.json) never re-derive it from message text.
+  const flaggedLowOverlap: string[] = [];
   for (const entry of deck) {
     const g = byGroupId.get(entry.group_id);
     if (!g) {
@@ -372,8 +376,9 @@ async function main(): Promise<void> {
       // (tier C) serializes as 0.750 and would pass a `< 0.75` numeric check.
       // Tier C ⟺ raw max content_sim < 0.75 exactly.
       if (g.tier === 'C') {
+        flaggedLowOverlap.push(entry.group_id);
         violations.push(
-          `${entry.group_id}: retire_duplicate but group max overlap ${Math.round(g.max_content_sim * 100)}% < ${TIER_B_MIN * 100}% (tier C)`
+          `${entry.group_id}: retire_duplicate but content overlap ${(g.max_content_sim * 100).toFixed(1)}% is below the ${TIER_B_MIN * 100}% near-duplicate floor (tier C)`
         );
       }
       if (!entry.survivor_lesson_id) {
@@ -408,7 +413,7 @@ async function main(): Promise<void> {
   };
   writeFileSync(
     DECK_JSON_PATH,
-    `${JSON.stringify({ model: MODEL, generated_agents: deck.length, summary, violations, deck }, null, 2)}\n`
+    `${JSON.stringify({ model: MODEL, generated_agents: deck.length, summary, flagged_low_overlap: flaggedLowOverlap, violations, deck }, null, 2)}\n`
   );
   console.log(
     `\n✅ Wrote ${deck.length} verdicts to ${DECK_JSON_PATH}\n   ` +
