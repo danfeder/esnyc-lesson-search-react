@@ -298,11 +298,16 @@ serve(async (req) => {
       // NOT lost (it lives on in submission_reviews.notes). reviewer_notes /
       // reviewed_at / review_completed_at are left alone (history).
       //
-      // content_embedding / content_hash are nulled here so that if the
-      // fail-soft embedding regen (Step 4) or the dedup hash write (Step 6)
-      // don't run, the row carries NO derived value rather than the PREVIOUS
-      // snapshot's — a stale vector/hash on fresh content would be actively
-      // wrong. Step 4 repopulates the embedding and Step 6 the hash on success.
+      // content_embedding / content_hash / ai_draft_metadata are all
+      // content-DERIVED, so they're nulled here: if the fail-soft regen (Step 4
+      // embedding, Step 6 hash) or the LLM auto-tag passes (Steps 4.5/4.6) don't
+      // fully re-run on the new content, the row must carry NO derived value
+      // rather than the PREVIOUS snapshot's. In particular the CRF pass (4.5)
+      // only runs when the new content still matches /cultural responsiveness/i,
+      // so a revision that drops that section would otherwise leave a stale
+      // culturalResponsivenessFeatures draft prefilling the reviewer's form.
+      // Steps 4/4.5/4.6/6 repopulate each field from the fresh content on
+      // success (activity-type always runs; CRF/embedding/hash conditionally).
       //
       // The `.eq('status', 'needs_revision')` is a compare-and-swap: only flip
       // if the row is STILL awaiting revisions at write time. This closes the
@@ -319,6 +324,9 @@ serve(async (req) => {
           revision_requested_reason: null,
           content_embedding: null,
           content_hash: null,
+          ai_draft_metadata: null,
+          ai_draft_generated_at: null,
+          ai_draft_model: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', submission.id)
