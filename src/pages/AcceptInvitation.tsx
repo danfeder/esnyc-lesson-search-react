@@ -99,52 +99,32 @@ export function AcceptInvitation() {
     setError(null);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: invitation.email,
-        password: formData.password,
-        options: { data: { full_name: formData.full_name } },
-      });
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
-
-      const { error: profileError } = await supabase.from('user_profiles').insert({
-        id: authData.user.id,
-        user_id: authData.user.id,
-        email: invitation.email,
-        full_name: formData.full_name,
-        role: invitation.role,
-        school_name: invitation.school_name,
-        school_borough: invitation.school_borough,
-        invited_by: invitation.metadata?.invited_by_id,
-        invited_at: invitation.invited_at,
-        accepted_at: new Date().toISOString(),
-        is_active: true,
-      });
-      if (profileError) throw profileError;
-
-      const { error: updateError } = await supabase
-        .from('user_invitations')
-        .update({ accepted_at: new Date().toISOString() })
-        .eq('id', invitation.id);
-      if (updateError) throw updateError;
-
-      await supabase.from('user_management_audit').insert({
-        actor_id: authData.user.id,
-        action: 'invite_accepted',
-        target_user_id: authData.user.id,
-        target_email: invitation.email,
-      });
-
-      try {
-        await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'welcome',
-            to: invitation.email,
-            data: { recipientName: formData.full_name, role: invitation.role },
+      // Invite-only: account creation runs SERVER-SIDE via the invitation-management
+      // accept endpoint (admin API), so it is unaffected by public signup being
+      // disabled. The endpoint validates the token + expiry, creates the auth user
+      // with email pre-confirmed, inserts the user_profiles row with the invited
+      // role, marks the invitation accepted, and writes the audit row. (Previously
+      // this page did a client-side supabase.auth.signUp, which breaks once signups
+      // are turned off.)
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invitation-management/invitations/accept`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
-        });
-      } catch (emailError) {
-        logger.error('Failed to send welcome email:', emailError);
+          body: JSON.stringify({
+            token,
+            password: formData.password,
+            fullName: formData.full_name,
+          }),
+        }
+      );
+      const result = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(result?.error || 'Failed to accept invitation');
       }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({

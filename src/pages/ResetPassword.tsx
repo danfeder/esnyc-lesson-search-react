@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
 import { Lock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { logger } from '@/utils/logger';
 import { IntAuthShell, IntButton, IntFormField } from '@/components/Internal';
 
 export function ResetPassword() {
@@ -60,24 +59,8 @@ export function ResetPassword() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        try {
-          await supabase.functions.invoke('password-reset/notify', {
-            body: {
-              userId: user.id,
-              email: user.email,
-              name: user.user_metadata?.full_name,
-            },
-          });
-        } catch (notifyError) {
-          logger.error('Failed to send password changed notification:', notifyError);
-        }
-      }
-
+      // Password-changed notification email retired for launch per T3
+      // (2026-07-01); the custom password-reset edge function has been deleted.
       setSuccess(true);
       await supabase.auth.signOut();
 

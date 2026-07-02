@@ -175,19 +175,6 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           {mode === 'signin' ? (
             <>
               <div>
-                Don't have an account?{' '}
-                <button
-                  onClick={() => {
-                    setMode('signup');
-                    setError(null);
-                    setSuccess(null);
-                  }}
-                  className="text-green-600 hover:text-green-700 font-medium"
-                >
-                  Sign up
-                </button>
-              </div>
-              <div className="mt-2">
                 <button
                   onClick={() => {
                     setMode('forgot');
