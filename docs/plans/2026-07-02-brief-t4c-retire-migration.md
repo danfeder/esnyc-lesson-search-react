@@ -9,8 +9,11 @@ look wrong, STOP and report — do not adjust it.
 
 ## The numbers (pre-registered from the walkthrough session, PROD-probed 2026-07-02)
 
-- **61 lessons to retire**, across 39 `retire_duplicate` groups and 22 `keep_family` groups
-  that had redundant copies embedded in them.
+- **61 lessons to retire**, from **57 groups**: 39 `retire_duplicate` groups (1 retired each)
+  + 18 `keep_family` groups that had an exact-copy pair embedded — **22 retired rows** from
+  those 18 (4 of them retire 2 apiece). (39 + 22 = 61.) Earlier drafts of this line said
+  "39 + 22 groups"; the accurate breakdown is 57 groups / 61 rows, matching decisions.json
+  and the migration header.
 - All 61 verified against PROD on 2026-07-02: all exist in `lessons`, all currently live
   (`retired_at IS NULL`), none already retired. Live corpus at probe time: **764**.
 - Post-migration PROD expectation: live corpus **703** (764 − 61). 250 survivors named in

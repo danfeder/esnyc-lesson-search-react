@@ -3,17 +3,22 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-02 (Opus, **t4c retire migration — PR OPEN**). Branch
+**Last updated:** 2026-07-02 (Opus, **t4c retire migration — PR #577 OPEN, reviewed**). Branch
 `feat/t4c-dedup-retire`: migration `20260702160000_t4_dedup_retire.sql` (+`.sql.rollback`)
 soft-retires the 61 approved duplicates (D5 snapshot-table pattern, never DELETE), generated
 byte-deterministically from decisions.json by the committed
-`scripts/dedup-sweep/generate-retire-migration.mjs` (no hand-typed ids). Local gates green
-(db reset, test:rls, check — incl. an eslint fix for `scripts/dedup-sweep/**/*.mjs` that the
-walkthrough commit had left red — and test:run 2071/2071). PROD re-probe: 764 live, all 61
-present+live, 0 already retired → **703** expected. **TEST rehearsal pre-registered: 57 of 61
-present+live (4 absent) → TEST 742→685.** NEXT = CI→TEST verify, then 🔴 **USER-only PROD
-gate**; then read-only PROD verification per the brief. **t4b** parallel-ok → **T5** launch.
-Prior update below.
+`scripts/dedup-sweep/generate-retire-migration.mjs` (no hand-typed ids). Local gates green;
+**TEST verified: 57 retired, snapshot 57, 0 survivors, search excludes retired (685 live) —
+matched the pre-registered 57.** CI all-green; both claude bots reviewed. **Atomicity fix
+(claude[bot] HIGH, corroborated by a Codex cross-check):** this repo's `supabase db push` is
+autocommit ([[project_supabase_migration_autocommit]]) so the guarded migration needed an
+explicit `BEGIN;`/`COMMIT;` + `LOCK TABLE lessons SHARE ROW EXCLUSIVE` (c02 precedent) or a
+failing post-assert couldn't roll back the write — added + validated locally. TEST validated
+the unwrapped run's data-logic (identical); the wrapper is c02-PROD-proven + local-fresh-apply
+(full TEST re-run available on request before the PROD gate). Rollback hardened to the 61 ids.
+PROD re-probe: 764/61-present-live/0-retired → **703** expected. NEXT = 🔴 **USER-only** merge +
+PROD gate → read-only PROD verify per the brief. **t4b** parallel-ok → **T5** launch. Prior
+update below.
 
 **Prior update (2026-07-02, Fable + user, T4 live walkthrough — 3rd authorized Fable
 session). WALKTHROUGH DONE — all 113 dedup groups adjudicated with the user; 61 lessons

@@ -19,6 +19,16 @@
 -- linkable by direct id via lessons_with_metadata (20260520030000). Survivors
 -- are untouched — no metadata blending/merging.
 --
+-- ATOMICITY (structurally modeled on the GUARDED precedent c02_retag_apply,
+-- 20260625000000 — NOT the un-guarded imports cleanup): this repo's supabase
+-- CLI applies migration statements in AUTOCOMMIT (extended protocol), so
+-- without an explicit BEGIN/COMMIT the section-(5) UPDATE would commit before
+-- the section-(6) post-asserts run, and a failing assert could NOT roll the
+-- write back (c02_retag_apply:59-64 documents this first-hand). So the whole
+-- body runs in ONE explicit transaction, and a SHARE ROW EXCLUSIVE lock on
+-- lessons serializes the apply against concurrent reviewer edits — so the
+-- guards see one consistent snapshot and every assert can abort atomically.
+--
 -- Rollback: sibling 20260702160000_t4_dedup_retire.sql.rollback restores retired_at /
 -- retired_reason for exactly these 61 ids from the snapshot table below.
 -- The snapshot table public.t4_dedup_retire_rollback is LEFT IN PLACE as the
@@ -29,6 +39,17 @@
 -- TEST may hold fewer than 61 of these ids; the in-migration asserts below are
 -- written to hold for "all targets present in THIS db", not a hard 61 — the
 -- exact-61 check is a PROD-only environment verification (see the brief).
+
+-- The whole apply runs in ONE explicit transaction (see ATOMICITY above).
+BEGIN;
+
+-- Serialize against concurrent writes to public.lessons for the (sub-second)
+-- apply, so the snapshot (3), pre-guard (4), UPDATE (5) and post-asserts (6)
+-- all see ONE consistent snapshot. SHARE ROW EXCLUSIVE blocks concurrent
+-- INSERT/UPDATE/DELETE but still allows SELECT; released at COMMIT. (Requires
+-- the surrounding transaction — a bare LOCK errors in autocommit.) Mirrors
+-- c02_retag_apply:78.
+LOCK TABLE public.lessons IN SHARE ROW EXCLUSIVE MODE;
 
 -- =====================================================
 -- (1) Rollback snapshot table (service-role only: RLS on, NO policies —
@@ -524,6 +545,11 @@ BEGIN
   RAISE NOTICE 't4c dedup retire OK: % present target(s) retired (snapshot=%), 0 survivors touched',
     n_retired_dedup, n_snapshot;
 END $$;
+
+-- Commit the whole apply atomically (releases the lesson lock). If any statement
+-- above raised, this transaction rolls back every write — snapshot INSERT and
+-- UPDATE included.
+COMMIT;
 
 -- =====================================================
 -- ROLLBACK — see sibling 20260702160000_t4_dedup_retire.sql.rollback
