@@ -3,14 +3,14 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-01 (Fable, T2 prep session) — **LAUNCH BLOCKER FOUND during T2
-rehearsal:** the submission pipeline is dead on TEST **and PROD** (`crypto.subtle.timingSafeEqual`
-removed by the hosted runtime's Deno 2 upgrade; every service-role internal call 400s at the auth
-gate — submissions, duplicate detection, and ALL system emails). Verified by live probe on both
-projects; zero user impact so far (no PROD submission attempts since 2025-09). Fix brief ready for
-Opus: `docs/plans/2026-07-01-brief-edge-auth-gate-fix.md`. T2 walkthrough fully prepped
-(`docs/plans/2026-07-01-t2-walkthrough.md` + two shared test Google Docs + TEST accounts verified)
-but **blocked behind the fix**. Next = Opus executes the fix brief, then T2 walkthrough with user.
+**Last updated:** 2026-07-01 (Opus, T2a execution session) — **T2a auth-gate fix SHIPPED &
+TEST-verified** (PR #571 `fix/edge-auth-gate-deno2`): shared XOR-fold `timingSafeEqual` helper + 3
+call-site swaps + CLAUDE.md pattern update + colocated unit test. All four pre-registered TEST
+gates green (garbage-bearer probes 401 not 400 on all three fns; positive `process-submission`
+path = `success:true`, internal `extract-google-doc`+`detect-duplicates` both logged 200; row
+`submitted`/content present; cleanup deleted). bot review = clean approve. **PROD: merge queues
+the deploy behind the manual-approval gate; run PROD gates 5–6 after approval.** Next = T2
+walkthrough with user (unblocked once PROD verified).
 
 ## Working model (binding for every session in this sprint)
 
@@ -40,8 +40,8 @@ but **blocked behind the fix**. Next = Opus executes the fix brief, then T2 walk
 | # | Track | Model | Status |
 |---|---|---|---|
 | T1 | Search: `taste test` fix, then search CLOSES | Opus | **✅ DONE — shipped PR #570 (`d66dcdc`), PROD-verified 2026-07-01: `taste test` top-10 = 10/10 relevant (was ~1/10), q18 1/10→10/10. SEARCH TRACK CLOSED.** |
-| T2 | Submission→review→publish walkthrough WITH user | user + any | **Prepped, BLOCKED behind T2a** — walkthrough doc + test docs + env ready (`2026-07-01-t2-walkthrough.md`); email inventory already drafted from code |
-| T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus (brief ready) | **NEXT** — brief at `2026-07-01-brief-edge-auth-gate-fix.md`; edge-only change, 3 call sites + shared helper; pre-registered gates + STOPs |
+| T2 | Submission→review→publish walkthrough WITH user | user + any | **NEXT (unblocked once T2a PROD-verified)** — walkthrough doc + test docs + env ready (`2026-07-01-t2-walkthrough.md`); email inventory already drafted from code |
+| T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE (TEST) — shipped PR #571 (`fix/edge-auth-gate-deno2`); all 4 TEST gates green + bot clean approve. PROD deploy queued behind manual-approval gate — run gates 5–6 after approval.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
 | T3 | Auth email (invite/reset/login only) via Supabase Auth + Google Workspace SMTP — no DNS | Opus | Pending (Fable brief after T2; map custom email edge fns → retire what built-ins cover) |
 | T4 | Corpus dedup sweep (~745 lessons) | Fable design → Sonnet candidates → user adjudicates → Opus ships | Pending (design session = 2nd of 2 planned Fable sessions) |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
@@ -93,6 +93,19 @@ but **blocked behind the fix**. Next = Opus executes the fix brief, then T2 walk
   call-site swaps + CLAUDE.md pattern update; carries the uncommitted sprint docs. E2E note: CI
   E2E passed throughout because user-JWT paths work — the breakage was invisible to every
   existing check.
+  **SHIPPED 2026-07-01 (Opus): PR #571 `fix/edge-auth-gate-deno2`.** Also added a colocated unit
+  test for the helper (`_shared/timing-safe-equal.test.ts`, 5 cases) per the bot review's one
+  non-blocking suggestion. All four pre-registered TEST gates passed: (1) garbage 219-char bearer
+  probe → **401** (not the 400 TypeError) on extract-google-doc / send-email / detect-duplicates;
+  (2) positive path as `teacher@test.com` → `success:true` (submissionId, `duplicatesFound:0`);
+  (3) row `submitted` + `extracted_content` present, and TEST edge logs show the internal
+  service-bearer calls to `extract-google-doc` (v11) + `detect-duplicates` (v9) both returning
+  **200** (v10 previously logged the 400 TypeError — confirms the deploy advanced the bundle, not
+  a silent no-op); (4) test row deleted. `send-email` bundle sha changed (v13→v14). Full PR CI
+  green incl. E2E; claude bot review = clean approve (verified no 4th call site, no timing
+  side-channel, imports resolve). **PROD gates 5–6 still to run after the manual approval on the
+  merge-to-main deploy.** Squash sha + PROD probe result to be recorded on the next
+  docs-carrying PR (per no-docs-only-push).
 - **T3**: email is auth-only (user 2026-07-01): invitations, password reset, account management.
   NO submission/review notification emails needed. Resend DNS unavailable for weeks →
   route Supabase Auth email through the org's Google Workspace (no DNS needed). Custom
