@@ -91,7 +91,6 @@ const HEALTH_CHECK = [
   'extract-google-doc',
   'process-submission',
   'send-email',
-  'password-reset',
   'invitation-management',
   'user-management',
   'generate-gemini-embeddings',
