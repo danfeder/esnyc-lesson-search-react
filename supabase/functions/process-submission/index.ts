@@ -224,6 +224,32 @@ serve(async (req) => {
 
       submission = existingSubmission;
 
+      // An update-type submission targets an existing lesson. Re-validate that
+      // the target still exists and hasn't been retired since the original
+      // submission — mirrors the normal-flow guard so a resubmit can't quietly
+      // send an update against a soft-retired lesson back into the review queue
+      // (complete_review_atomic's approve_update only checks existence, not
+      // retired_at). Dormant at launch (no retiring in flight), but keeps the
+      // two write paths consistent — data-safety. Runs before any write, so a
+      // failure leaves the row untouched in needs_revision.
+      if (submission.submission_type === 'update' && submission.original_lesson_id) {
+        const { count: lessonCount, error: lessonCheckError } = await supabaseAdmin
+          .from('lessons')
+          .select('lesson_id', { count: 'exact', head: true })
+          .eq('lesson_id', submission.original_lesson_id)
+          .is('retired_at', null);
+        if (lessonCheckError) throw lessonCheckError;
+        if ((lessonCount ?? 0) === 0) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'The lesson this submission updates is no longer available.',
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+      }
+
       // Step 2 (resubmit): re-extract the SAME stored doc — no new URL is
       // accepted here. Mirrors the normal-flow extraction (:253-283) verbatim.
       const extractResponse = await fetch(`${supabaseUrl}/functions/v1/extract-google-doc`, {
