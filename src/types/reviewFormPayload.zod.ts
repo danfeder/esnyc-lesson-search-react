@@ -76,8 +76,11 @@ export const reviewFormPayloadSchema = z.object({
   gradeLevels: z.array(z.string()).optional(),
   culturalHeritage: z.array(z.string()).optional(),
 
-  // Free-form pass-through.
+  // Free-form pass-through. `title` + `summary` are the reviewer-editable
+  // "what gets published" fields (prefilled from the extracted doc); both are
+  // persisted to the lesson by complete_review_atomic.
   processingNotes: z.string().optional(),
+  title: z.string().optional(),
   summary: z.string().optional(),
 });
 

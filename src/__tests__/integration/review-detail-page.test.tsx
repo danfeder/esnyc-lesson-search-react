@@ -18,7 +18,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 import { makeReviewSupabaseMock, type TableResult } from '@/__tests__/helpers/supabaseReviewMock';
 import {
@@ -60,6 +60,23 @@ beforeAll(() => {
   window.HTMLElement.prototype.scrollIntoView = vi.fn();
 });
 
+/**
+ * Post-save `/review` sentinel. Renders a standalone "Dashboard" text node (so
+ * `findByText('Dashboard')` stays exact) PLUS the decision toast that
+ * ReviewDetail hands over via navigation state (punch-list B) — surfaced under a
+ * test id so the toast copy can be asserted without a real ReviewDashboard.
+ */
+function DashboardSentinel() {
+  const location = useLocation();
+  const toast = (location.state as { toast?: { msg: string } } | null)?.toast;
+  return (
+    <div>
+      <div>Dashboard</div>
+      {toast ? <div data-testid="review-toast">{toast.msg}</div> : null}
+    </div>
+  );
+}
+
 /** Render `<ReviewDetail/>` for a fixture, routed at the fixture's submission id. */
 function renderReview(fixture: Record<string, TableResult>, id: string) {
   currentMock = makeReviewSupabaseMock(fixture);
@@ -67,7 +84,7 @@ function renderReview(fixture: Record<string, TableResult>, id: string) {
     <MemoryRouter initialEntries={[`/review/${id}`]}>
       <Routes>
         <Route path="/review/:id" element={<ReviewDetail />} />
-        <Route path="/review" element={<div>Dashboard</div>} />
+        <Route path="/review" element={<DashboardSentinel />} />
       </Routes>
     </MemoryRouter>
   );
@@ -85,10 +102,11 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
   it('1. modern restore: renders metadata controls, progress bar, intent banner, decision radios', async () => {
     renderReview(modernFixture, 'sub-modern');
 
-    // Progress bar reflects a FULL restore (7 base + 3 cooking = 10/10). A failed
-    // metadata restore would lower aria-valuenow — this is the non-vacuous pin.
+    // Progress bar reflects a FULL restore (8 base incl. the prefilled Lesson
+    // title + 3 cooking = 11/11). A failed metadata restore would lower
+    // aria-valuenow — this is the non-vacuous pin.
     const progress = await screen.findByRole('progressbar', { name: 'Required fields' });
-    expect(progress).toHaveAttribute('aria-valuenow', '10');
+    expect(progress).toHaveAttribute('aria-valuenow', '11');
 
     // Restored activity pill: stored ['cooking'] → reAddActivityTypeSuffix →
     // ['cooking-only'] → the "Cooking" pill is pressed.
@@ -132,13 +150,19 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     const user = userEvent.setup();
 
     // Edit: append to the (restored) note-to-teacher textarea.
-    const note = await screen.findByPlaceholderText(/will be emailed to the teacher/i);
+    const note = await screen.findByPlaceholderText(/the teacher will see this note/i);
     await user.type(note, ' Reviewed and approved');
 
     await user.click(screen.getByRole('button', { name: /publish lesson/i }));
 
     // Navigation happened (the /review sentinel mounted).
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+
+    // Punch-list B: approve_new hands over a decision-specific success toast.
+    // Title prefilled from the submission's extracted_title.
+    expect(await screen.findByTestId('review-toast')).toHaveTextContent(
+      'Published: Modern Lesson Title'
+    );
 
     // The invoke body carries the CANONICALIZED activityType (-only stripped) and
     // the edited note — not just "was called".
@@ -252,9 +276,13 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
       const viewModeGroup = await screen.findByRole('group', { name: 'View mode' });
       await user.click(within(viewModeGroup).getByRole('button', { name: 'Text' }));
 
-      // Text view renders the extracted content.
+      // Text view renders the extracted content. Scope to the doc <pre> — the
+      // same phrase now also prefills the Summary textarea (T2b), so an
+      // unscoped match would be ambiguous.
       expect(
-        await screen.findByText(/a canonical modern lesson about cooking with apples/i)
+        await screen.findByText(/a canonical modern lesson about cooking with apples/i, {
+          selector: 'pre',
+        })
       ).toBeInTheDocument();
       // viewMode persisted under the exact localStorage key ReviewDetail uses.
       expect(window.localStorage.getItem('reviewViewMode')).toBe('text');
@@ -634,6 +662,41 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // hook cleared the prior submission instead of leaving it truthy.
     expect(await screen.findByText(/submission not found/i)).toBeInTheDocument();
     expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  // [punch-list A + B] — "Request revisions" bypasses the approve-only
+  // required-tags gate (empty metadata) and still succeeds, landing on /review
+  // with the send-back toast. test 4 pins that approve on an incomplete form is
+  // blocked; this pins the decision-awareness added in T2b (needs_revision
+  // skips the gate — sending it back is how a reviewer asks for the tags).
+  it('19. needs_revision bypasses the required-tags gate and shows the send-back toast', async () => {
+    renderReview(noReviewUpdateFixture, 'sub-noreview');
+    const user = userEvent.setup();
+
+    // Empty-metadata submission (no ai_draft, no review). Switch to "Request
+    // revisions" and send it back with no tags filled.
+    await user.click(await screen.findByRole('radio', { name: /request revisions/i }));
+    await user.click(screen.getByRole('button', { name: /send for revision/i }));
+
+    // Navigated to the queue → the save went through despite empty tags.
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    // The required-fields banner never appeared (the gate was skipped).
+    expect(screen.queryByText(/missing required fields/i)).not.toBeInTheDocument();
+
+    // complete-review invoked with the needs_revision decision (null target).
+    expect(functionsInvokeMock).toHaveBeenCalledTimes(1);
+    const [fnName, opts] = functionsInvokeMock.mock.calls[0] as [
+      string,
+      { body: { decision: string; selectedLessonId: string | null } },
+    ];
+    expect(fnName).toBe('complete-review');
+    expect(opts.body.decision).toBe('needs_revision');
+    expect(opts.body.selectedLessonId).toBeNull();
+
+    // Punch-list B: the send-back toast copy.
+    expect(await screen.findByTestId('review-toast')).toHaveTextContent(
+      'Sent back to the teacher with your note.'
+    );
   });
 });
 

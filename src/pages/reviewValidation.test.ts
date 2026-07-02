@@ -13,9 +13,10 @@ import type { ReviewMetadata } from '@/types';
 // branches) and the progress-bar counts. The cooking/garden derivations gate
 // which conditional fields become required, so they live alongside validation.
 
-// A fully-populated base (the 7 always-required fields), no conditional
-// activity type. Spread + override per case.
+// A fully-populated base (the 8 always-required fields incl. the editable
+// Lesson title), no conditional activity type. Spread + override per case.
 const completeBase: ReviewMetadata = {
+  title: 'A Complete Lesson',
   activityType: ['academic'], // neither cooking nor garden → no conditional fields
   location: 'Indoor',
   gradeLevels: ['3'],
@@ -68,8 +69,9 @@ describe('showGardenFields (gates the garden conditional-required block)', () =>
 });
 
 describe('validateRequiredFields (returns the list of MISSING field labels)', () => {
-  it('empty metadata → all 7 always-required base labels, in order', () => {
+  it('empty metadata → all 8 always-required base labels (Lesson title first), in order', () => {
     expect(validateRequiredFields({})).toEqual([
+      'Lesson title',
       'Activity Type',
       'Location',
       'Grade Levels',
@@ -82,6 +84,12 @@ describe('validateRequiredFields (returns the list of MISSING field labels)', ()
 
   it('neither cooking nor garden + complete base → no errors (no conditional fields required)', () => {
     expect(validateRequiredFields(completeBase)).toEqual([]);
+  });
+
+  it('empty/whitespace title on an otherwise-complete base → only Lesson title', () => {
+    expect(validateRequiredFields({ ...completeBase, title: '' })).toEqual(['Lesson title']);
+    expect(validateRequiredFields({ ...completeBase, title: '   ' })).toEqual(['Lesson title']);
+    expect(validateRequiredFields({ ...completeBase, title: undefined })).toEqual(['Lesson title']);
   });
 
   it('COOKING branch: cooking shown + base complete + cooking fields empty → only the 3 cooking labels', () => {
@@ -133,27 +141,32 @@ describe('validateRequiredFields (returns the list of MISSING field labels)', ()
 });
 
 describe('computeFieldProgress (progress-bar completed/total counts)', () => {
-  it('empty metadata → 0 of 7 (base only, nothing filled)', () => {
-    expect(computeFieldProgress({})).toEqual({ completed: 0, total: 7 });
+  // The base set is 8 (the editable Lesson title + 7 tag fields), kept in sync
+  // with validateRequiredFields so the bar can't read "Complete" while an empty
+  // title still blocks Publish.
+  it('empty metadata → 0 of 8 (base only, nothing filled)', () => {
+    expect(computeFieldProgress({})).toEqual({ completed: 0, total: 8 });
   });
 
-  it('neither conditional, fully filled base → 7 of 7', () => {
-    expect(computeFieldProgress(completeBase)).toEqual({ completed: 7, total: 7 });
+  it('neither conditional, fully filled base (incl. title) → 8 of 8', () => {
+    expect(computeFieldProgress(completeBase)).toEqual({ completed: 8, total: 8 });
   });
 
   it('partial base, no conditionals → counts only the filled base fields', () => {
     expect(
       computeFieldProgress({
+        title: 'Has a title',
         activityType: ['academic'],
         location: 'Indoor',
         gradeLevels: ['3'],
       })
-    ).toEqual({ completed: 3, total: 7 });
+    ).toEqual({ completed: 4, total: 8 });
   });
 
-  it('COOKING shown → total grows to 10; counts filled across base + cooking', () => {
+  it('COOKING shown → total grows to 11; counts filled across base + cooking', () => {
     expect(
       computeFieldProgress({
+        title: 'Has a title', // filled
         activityType: ['cooking-only'], // Activity Type filled
         location: 'Indoor', // filled
         gradeLevels: ['3'], // filled
@@ -161,17 +174,17 @@ describe('computeFieldProgress (progress-bar completed/total counts)', () => {
         // themes/season/coreCompetencies/socialEmotionalLearning empty
         // mainIngredients/cookingSkills empty
       })
-    ).toEqual({ completed: 4, total: 10 });
+    ).toEqual({ completed: 5, total: 11 });
   });
 
-  it('GARDEN shown → total grows to 8', () => {
+  it('GARDEN shown → total grows to 9', () => {
     expect(computeFieldProgress({ ...completeBase, activityType: ['garden-only'] })).toEqual({
-      completed: 7,
-      total: 8,
+      completed: 8,
+      total: 9,
     });
   });
 
-  it('BOTH shown + everything filled → 11 of 11', () => {
+  it('BOTH shown + everything filled → 12 of 12', () => {
     expect(
       computeFieldProgress({
         ...completeBase,
@@ -181,6 +194,6 @@ describe('computeFieldProgress (progress-bar completed/total counts)', () => {
         cookingSkills: ['Measuring'],
         gardenSkills: ['Weeding'],
       })
-    ).toEqual({ completed: 11, total: 11 });
+    ).toEqual({ completed: 12, total: 12 });
   });
 });

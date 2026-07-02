@@ -25,6 +25,7 @@ export const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.sha
   observancesHolidays: 'Observances & Holidays',
   culturalResponsivenessFeatures: 'Cultural Responsiveness Features',
   processingNotes: 'Processing Notes',
+  title: 'Lesson title',
   summary: 'Summary',
 };
 

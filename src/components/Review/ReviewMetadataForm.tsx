@@ -73,6 +73,31 @@ export function ReviewMetadataForm({
   return (
     <div>
       <div className="adm-card">
+        <div className="adm-section-eyebrow">What gets published</div>
+        <p className="adm-section-desc">
+          The title and summary that appear in the library. Prefilled from the doc — edit if needed.
+        </p>
+        <IntFormField label="Lesson title" required error={fieldError('Lesson title')}>
+          <input
+            type="text"
+            className="adm-input"
+            value={metadata.title ?? ''}
+            onChange={(e) => handleMetadataChange('title', e.target.value)}
+            placeholder="Lesson title"
+          />
+        </IntFormField>
+        <IntFormField label="Summary" hint="Optional. A short description shown with the lesson.">
+          <textarea
+            className="adm-textarea"
+            rows={3}
+            value={metadata.summary ?? ''}
+            onChange={(e) => handleMetadataChange('summary', e.target.value)}
+            placeholder="Short summary of the lesson…"
+          />
+        </IntFormField>
+      </div>
+
+      <div className="adm-card">
         <div className="adm-section-eyebrow">Metadata</div>
         <p className="adm-section-desc">Fix tags before publishing. Reviewer has the final call.</p>
         <IntProgressBar

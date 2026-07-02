@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeInitialMetadataFromAiDraft } from './reviewMetadataInit';
+import { computeInitialMetadataFromAiDraft, withPrefilledTitleSummary } from './reviewMetadataInit';
 
 describe('computeInitialMetadataFromAiDraft', () => {
   it('returns null when draft is null', () => {
@@ -55,5 +55,56 @@ describe('computeInitialMetadataFromAiDraft', () => {
         culturalResponsivenessFeatures: ['not-a-real-feature'],
       })
     ).toBeNull();
+  });
+});
+
+describe('withPrefilledTitleSummary (editable title/summary prefill)', () => {
+  it('prefers the trimmed extracted_title for the title', () => {
+    const out = withPrefilledTitleSummary(
+      {},
+      { extractedTitle: '  From Filename  ', extractedContent: 'A Different Body Title\nmore' }
+    );
+    expect(out.title).toBe('From Filename');
+  });
+
+  it('falls back to the parsed doc title when extracted_title is empty', () => {
+    const out = withPrefilledTitleSummary(
+      {},
+      { extractedTitle: '', extractedContent: 'Parsed Title Line\nrest of body' }
+    );
+    expect(out.title).toBe('Parsed Title Line');
+  });
+
+  it('pulls the summary from the parsed doc body', () => {
+    const out = withPrefilledTitleSummary(
+      {},
+      {
+        extractedTitle: 'Doc File',
+        extractedContent: 'Title Line\n\nSummary: A short summary.\n\nMore text',
+      }
+    );
+    expect(out.title).toBe('Doc File');
+    expect(out.summary).toBe('A short summary.');
+  });
+
+  it('preserves existing metadata title/summary over the prefill (restore wins)', () => {
+    const out = withPrefilledTitleSummary(
+      { title: 'Reviewer Edit', summary: 'Reviewer summary' },
+      { extractedTitle: 'Filename', extractedContent: 'X\n\nSummary: Y.\n\nZ' }
+    );
+    expect(out.title).toBe('Reviewer Edit');
+    expect(out.summary).toBe('Reviewer summary');
+  });
+
+  it('leaves title/summary undefined when nothing can be derived', () => {
+    const out = withPrefilledTitleSummary({}, { extractedTitle: null, extractedContent: '' });
+    expect(out.title).toBeUndefined();
+    expect(out.summary).toBeUndefined();
+  });
+
+  it('does not mutate the input metadata', () => {
+    const input = {};
+    withPrefilledTitleSummary(input, { extractedTitle: 'X', extractedContent: 'Y' });
+    expect(input).toEqual({});
   });
 });

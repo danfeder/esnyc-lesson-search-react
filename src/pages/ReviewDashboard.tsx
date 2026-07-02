@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { logger } from '@/utils/logger';
@@ -29,6 +29,7 @@ interface Submission {
   original_lesson_id?: string;
   status: SubmissionStatus;
   extracted_content?: string;
+  extracted_title?: string;
   review_notes?: string;
   teacher?: { full_name?: string };
   similarities?: Similarity[];
@@ -38,6 +39,13 @@ interface Submission {
 
 const FILTER_KEYS = ['all', 'submitted', 'in_review', 'needs_revision', 'approved'] as const;
 type FilterKey = (typeof FILTER_KEYS)[number];
+
+// Decision-outcome confirmation carried here from ReviewDetail via navigation
+// state (the app's existing toast pattern — see AdminInviteUser/AdminInvitations).
+interface Toast {
+  kind: 'success' | 'error';
+  msg: string;
+}
 
 const FILTER_LABELS: Record<FilterKey, string> = {
   all: 'All',
@@ -59,11 +67,23 @@ function parseExtractedContent(content: string): string {
 
 export function ReviewDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [isReviewer, setIsReviewer] = useState(false);
+  const [toast, setToast] = useState<Toast | null>(null);
+
+  // Pick up any decision toast handed over by ReviewDetail on save, then clear
+  // the history state so a refresh doesn't replay it (mirrors AdminInvitations).
+  useEffect(() => {
+    const incoming = (location.state as { toast?: Toast } | null)?.toast;
+    if (incoming) {
+      setToast(incoming);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     // Run sequentially: only fetch submissions after the auth/role check
@@ -185,6 +205,7 @@ export function ReviewDashboard() {
             original_lesson_id: submission.original_lesson_id || undefined,
             status: (submission.status || 'submitted') as SubmissionStatus,
             extracted_content: submission.extracted_content || undefined,
+            extracted_title: submission.extracted_title || undefined,
             teacher: { full_name: profile?.full_name || 'Unknown teacher' },
             similarities: similaritiesBySubmission[submission.id] ?? [],
             originalLessonTitle: submission.original_lesson_id
@@ -204,8 +225,12 @@ export function ReviewDashboard() {
     () =>
       submissions.map((submission) => ({
         ...submission,
+        // Prefer the real extracted_title; fall back to the doc's first line
+        // (why cards used to read "Grade Levels: 5, 6, 7"), then a placeholder.
         extractedTitle: sanitizeContent(
-          parseExtractedContent(submission.extracted_content || '') || 'Untitled submission'
+          submission.extracted_title?.trim() ||
+            parseExtractedContent(submission.extracted_content || '') ||
+            'Untitled submission'
         ),
       })),
     [submissions]
@@ -295,6 +320,12 @@ export function ReviewDashboard() {
             ))
           )}
         </div>
+
+        {toast && (
+          <div role="status" aria-live="polite" className={`adm-toast adm-toast--${toast.kind}`}>
+            {toast.msg}
+          </div>
+        )}
       </div>
     </div>
   );

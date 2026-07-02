@@ -6,7 +6,10 @@ import type { ReviewMetadata } from '@/types';
 import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { type SubmissionStatus } from '@/utils/submissionStatus';
 import { computePreselection } from '@/pages/reviewPreselect';
-import { computeInitialMetadataFromAiDraft } from '@/pages/reviewMetadataInit';
+import {
+  computeInitialMetadataFromAiDraft,
+  withPrefilledTitleSummary,
+} from '@/pages/reviewMetadataInit';
 import { reAddActivityTypeSuffix } from '@/pages/reviewDetailHelpers';
 import type { SimilarityWithLesson, SubmitterTargetLesson } from '@/pages/buildCandidateCards';
 import { MAX_DUPLICATE_CARDS } from '@/pages/buildCandidateCards';
@@ -399,7 +402,12 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           legacyWarning = `This submission was previously marked "${existingDecision}". That option is no longer available — choose a new decision below.`;
         }
         seed = {
-          metadata: restoredMetadata,
+          // Prefill the editable title/summary; a restored review's own
+          // title/summary (once this feature has shipped) wins over the prefill.
+          metadata: withPrefilledTitleSummary(restoredMetadata, {
+            extractedTitle: submissionData.extracted_title,
+            extractedContent: submissionData.extracted_content,
+          }),
           decision: restoredDecision,
           notes: review.notes || '',
           // selectedDuplicate is NOT restored from a prior review — pre-existing
@@ -416,7 +424,10 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         });
         const draft = computeInitialMetadataFromAiDraft(submissionData.ai_draft_metadata);
         seed = {
-          metadata: draft ? reAddActivityTypeSuffix(draft) : {},
+          metadata: withPrefilledTitleSummary(draft ? reAddActivityTypeSuffix(draft) : {}, {
+            extractedTitle: submissionData.extracted_title,
+            extractedContent: submissionData.extracted_content,
+          }),
           decision: preselection.decision,
           notes: '',
           selectedDuplicate: preselection.target ?? null,

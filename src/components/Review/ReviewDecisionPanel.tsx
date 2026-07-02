@@ -220,9 +220,7 @@ export function ReviewDecisionPanel({
       </div>
 
       <div className="adm-card">
-        <div className="adm-section-eyebrow">
-          Note to {(submission.teacher.full_name || 'teacher').split(' ')[0]}
-        </div>
+        <div className="adm-section-eyebrow">Note to the teacher</div>
         <textarea
           className="adm-textarea"
           aria-label="Note to teacher"
@@ -232,7 +230,7 @@ export function ReviewDecisionPanel({
             setNotes(e.target.value);
             setSaveError(null);
           }}
-          placeholder="Optional. Will be emailed to the teacher along with the decision."
+          placeholder="Optional. The teacher will see this note with your decision under My Submissions."
         />
       </div>
 

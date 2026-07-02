@@ -24,11 +24,17 @@ export function showGardenFields(metadata: ReviewMetadata): boolean {
 
 /**
  * Returns the human labels of the required metadata fields that are still
- * missing. The 7 base fields are always required; cooking adds 3 and garden
- * adds 1, gated by the activity type.
+ * missing. The 8 base fields (the editable Lesson title + 7 tag fields) are
+ * always required; cooking adds 3 and garden adds 1, gated by the activity
+ * type. NOTE: the caller (handleSaveReview) runs this ONLY for the two approve
+ * decisions — needs_revision skips the required-fields gate entirely.
  */
 export function validateRequiredFields(metadata: ReviewMetadata): string[] {
   const errors: string[] = [];
+  // "What gets published" — an empty title must not publish. Prefilled from the
+  // extracted doc, so this near-never blocks. Only enforced for approve
+  // decisions (the caller scopes this whole check to approve_new/approve_update).
+  if (!metadata.title?.trim()) errors.push('Lesson title');
   if (!metadata.activityType?.length) errors.push('Activity Type');
   if (!metadata.location) errors.push('Location');
   if (!metadata.gradeLevels?.length) errors.push('Grade Levels');
@@ -50,6 +56,9 @@ export function validateRequiredFields(metadata: ReviewMetadata): string[] {
 /** Computes the progress-bar counts (completed / total required fields). */
 export function computeFieldProgress(metadata: ReviewMetadata): FieldProgress {
   const required: { label: string; filled: boolean }[] = [
+    // Kept in sync with validateRequiredFields' base set so the progress bar
+    // never reads "Complete" while an empty title still blocks Publish.
+    { label: 'Lesson title', filled: !!metadata.title?.trim() },
     { label: 'Activity Type', filled: (metadata.activityType?.length ?? 0) > 0 },
     { label: 'Location', filled: !!metadata.location },
     { label: 'Grade Levels', filled: (metadata.gradeLevels?.length ?? 0) > 0 },

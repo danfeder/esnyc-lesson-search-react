@@ -124,7 +124,11 @@ export function NewSubmissionForm() {
       <IntPageHeader title="Add a new lesson" />
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-        <IntFormField label="Google Doc URL" required>
+        <IntFormField
+          label="Google Doc URL"
+          required
+          hint="Before you submit, share your doc so we can read it: in Google Docs, click Share → “Anyone with the link” (Viewer)."
+        >
           <input
             type="url"
             value={googleDocUrl}
