@@ -17,7 +17,7 @@
 |---|---|
 | Mean recall@10 (frozen-recall) | 0.728 |
 | Mean precision@10 (frozen-precision) | 0.800 |
-| Predicate pass-rate | 0.667 (14/21) |
+| Predicate pass-rate | 0.714 (15/21) |
 | Corpus MRR (mean RR over frozen queries) | 0.923 |
 | maxTotalCount violations | 0 |
 | normalized-call mismatches | 0 |
@@ -56,7 +56,7 @@
 | q04 | a lesson about seeds for first grade | 251 | 10/10 | 7 | true | n/a |
 | q09 | bugs that pollinate flowers | 174 | 9/10 | 8 | true | n/a |
 | q17 | seed saving | 43 | 7/10 | 7 | true | n/a |
-| q18 | taste test | 32 | 1/10 | 7 | false | n/a |
+| q18 | taste test | 51 | 10/10 | 7 | true | n/a |
 | q19 | pumpkin | 107 | 10/10 | 7 | true | n/a |
 | q20 | cooking with tomatoes | 74 | 3/10 | 6 | false | n/a |
 | q24 | tomato | 92 | 10/10 | 6 | true | n/a |
