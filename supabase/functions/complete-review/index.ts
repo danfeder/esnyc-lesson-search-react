@@ -249,92 +249,22 @@ serve(async (req) => {
       );
     }
 
-    // Phase 7c: post-RPC email notification. Fail-open — errors are logged
-    // but do not roll back the approval. The RPC has already committed.
-    try {
-      const { data: subRow, error: subErr } = await serviceClient
-        .from('lesson_submissions')
-        .select('extracted_title, teacher_id, user_profiles!inner(email)')
-        .eq('id', submissionId)
-        .single<{
-          extracted_title: string | null;
-          teacher_id: string;
-          user_profiles: { email: string };
-        }>();
-
-      if (subErr) {
-        // DB error fetching teacher email — log and skip the send. Don't
-        // also fall through to the missing-email warning below; the two
-        // logs would be misleading (DB error vs deleted teacher).
-        console.error(
-          `Phase 7c: failed to fetch teacher email for submission ${submissionId}:`,
-          subErr
-        );
-      } else if (!subRow?.user_profiles?.email) {
-        console.warn(
-          `Phase 7c: no teacher email found for submission ${submissionId}; skipping notification`
-        );
-      } else {
-        const teacherEmail = subRow.user_profiles.email;
-        // Map RPC decision to email type. RPC returns the new status, but
-        // here we map directly from the reviewer's decision since
-        // approve_new and approve_update both result in 'approved'.
-        let emailType:
-          | 'submission-approved'
-          | 'submission-needs-revision'
-          | 'submission-rejected'
-          | null = null;
-
-        if (decision === 'approve_new' || decision === 'approve_update') {
-          emailType = 'submission-approved';
-        } else if (decision === 'needs_revision') {
-          emailType = 'submission-needs-revision';
-        } else if (decision === 'reject') {
-          emailType = 'submission-rejected';
-        }
-
-        if (emailType) {
-          const emailData: Record<string, unknown> = {
-            lessonTitle: subRow.extracted_title ?? 'your submission',
-          };
-          if (emailType === 'submission-needs-revision' && notes) {
-            emailData.reviewerNotes = notes;
-          }
-
-          // Direct fetch instead of supabase.functions.invoke. The SDK's
-          // invoke from inside a deployed edge function with a service-role
-          // client silently fails (auth-header propagation quirk verified
-          // empirically: SDK invoke fired but Resend never received the
-          // request; raw fetch works). Same pattern used for the OpenAI
-          // embedding call earlier in this file.
-          const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${supabaseServiceKey}`,
-              apikey: supabaseServiceKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: emailType,
-              to: teacherEmail,
-              data: emailData,
-            }),
-          });
-          if (!emailRes.ok) {
-            const errText = await emailRes.text().catch(() => '<unreadable>');
-            console.error(
-              `Phase 7c: send-email failed (${emailRes.status}) for submission ${submissionId}:`,
-              errText.substring(0, 500)
-            );
-          }
-        }
-      }
-    } catch (err) {
-      console.error(
-        `Phase 7c: email notification failed for submission ${submissionId}:`,
-        err
-      );
-    }
+    // Decision emails (approved / needs-revision / rejected) were retired for
+    // launch per T3 (2026-07-01). The old block here fetched the teacher's
+    // address via a PostgREST embed
+    // (`lesson_submissions.select('…, user_profiles!inner(email)')`), but
+    // `lesson_submissions` has NO foreign key to `user_profiles` — teacher_id,
+    // reviewer_id and reviewed_by all reference `auth.users` — so the embed can
+    // never resolve. PostgREST returns PGRST200 ("Could not find a relationship
+    // between 'lesson_submissions' and 'user_profiles' in the schema cache"),
+    // which the old fail-open catch silently swallowed (that is why the decision
+    // email vanished with no send-email invocation in the logs). Confirming
+    // probe recorded in the T3 PR. Email is auth-only for launch (invitations +
+    // password reset); teachers are notified out-of-band.
+    console.log(
+      `Review completed for submission ${submissionId} (decision=${decision}); ` +
+        `decision emails retired for launch per T3 (2026-07-01).`
+    );
 
     return jsonResponse(
       {

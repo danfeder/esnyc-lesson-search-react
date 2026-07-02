@@ -195,7 +195,11 @@ export function AdminInvitations() {
           .select('full_name')
           .eq('id', user.id)
           .single();
-        await supabase.functions.invoke('send-email', {
+        // supabase.functions.invoke resolves (does not throw) on a non-2xx
+        // response — the failure surfaces in `error`, not the catch. Check it
+        // explicitly so we never report "delivered" when send-email actually
+        // failed (e.g. the Resend sandbox rejecting a non-owner recipient).
+        const { error: emailError } = await supabase.functions.invoke('send-email', {
           body: {
             type: 'invitation',
             to: inv.email,
@@ -209,6 +213,10 @@ export function AdminInvitations() {
             },
           },
         });
+        if (emailError) {
+          logger.error('Failed to resend invitation email:', emailError);
+          return { emailDelivered: false };
+        }
         return { emailDelivered: true };
       } catch (emailError) {
         logger.error('Failed to resend invitation email:', emailError);
