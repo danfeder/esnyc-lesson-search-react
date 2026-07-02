@@ -154,6 +154,12 @@ serve(async (req) => {
         target_email: invitation.email,
       });
 
+      // Observability for this endpoint now that it is actually reachable
+      // (see the pathname note above — it previously 401'd on every call).
+      console.log(
+        `Invitation accepted: created user ${authData.user.id} (role=${invitation.role})`
+      );
+
       return new Response(JSON.stringify({ success: true, userId: authData.user.id }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
