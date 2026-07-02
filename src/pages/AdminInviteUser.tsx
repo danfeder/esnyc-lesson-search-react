@@ -19,12 +19,6 @@ import {
 } from '@/components/Internal';
 import { cn } from '@/utils/cn';
 
-declare global {
-  interface Window {
-    _lastInvitationLink?: string;
-  }
-}
-
 const NYC_BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
 
 const ROLE_DEFS: { id: IntRole; label: string; desc: string }[] = [
@@ -98,6 +92,10 @@ export function AdminInviteUser() {
   const [pendingInviteFound, setPendingInviteFound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ email: string; link: string; emailSent: boolean } | null>(
+    null
+  );
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -183,44 +181,42 @@ export function AdminInviteUser() {
         },
       });
 
-      if (inviteData) {
-        try {
-          const { error: emailError } = await supabase.functions.invoke('send-email', {
-            body: {
-              type: 'invitation',
-              to: formData.email.trim(),
-              data: {
-                invitationId: inviteData.id,
-                token: inviteData.token,
-                inviterName: user.full_name || user.email,
-                role: formData.role,
-                customMessage: formData.message,
-                permissions: PERMISSIONS_FOR_ROLE[formData.role],
-                expiresAt: inviteData.expires_at,
-              },
+      if (!inviteData) throw new Error('Invitation was created but no data was returned.');
+
+      // Attempt the email, but never claim it sent unless it actually did.
+      // supabase.functions.invoke resolves (does not throw) on a non-2xx
+      // response, so a failure surfaces in `error`, not the catch. Today the
+      // Resend sandbox rejects any non-owner recipient, so this usually fails —
+      // in which case the admin copies the always-visible link below and sends
+      // it manually.
+      let emailSent = false;
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'invitation',
+            to: formData.email.trim(),
+            data: {
+              invitationId: inviteData.id,
+              token: inviteData.token,
+              inviterName: user.full_name || user.email,
+              role: formData.role,
+              customMessage: formData.message,
+              permissions: PERMISSIONS_FOR_ROLE[formData.role],
+              expiresAt: inviteData.expires_at,
             },
-          });
-          if (emailError) {
-            logger.error('Failed to send invitation email:', emailError);
-            const link = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
-            if (import.meta.env.DEV) {
-              window._lastInvitationLink = link;
-              logger.log('Invitation link available in window._lastInvitationLink');
-            }
-          }
-        } catch (err) {
-          logger.error('Error invoking email function:', err);
-          const link = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
-          if (import.meta.env.DEV) {
-            window._lastInvitationLink = link;
-            logger.log('Invitation link available in window._lastInvitationLink');
-          }
+          },
+        });
+        if (emailError) {
+          logger.error('Failed to send invitation email:', emailError);
+        } else {
+          emailSent = true;
         }
+      } catch (err) {
+        logger.error('Error invoking email function:', err);
       }
 
-      navigate('/admin/invitations', {
-        state: { toast: { kind: 'success', msg: `Invitation sent to ${formData.email.trim()}` } },
-      });
+      const link = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
+      setResult({ email: formData.email.trim(), link, emailSent });
     } catch (err) {
       if (isEmailDuplicateError(err)) {
         setError(
@@ -232,6 +228,34 @@ export function AdminInviteUser() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCopyLink = async () => {
+    if (!result) return;
+    try {
+      await window.navigator.clipboard.writeText(result.link);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API can be blocked (permissions / insecure context); the
+      // field is still selectable so the admin can copy manually.
+    }
+  };
+
+  const handleInviteAnother = () => {
+    setResult(null);
+    setCopied(false);
+    setError(null);
+    setFormData({
+      email: '',
+      role: UserRole.TEACHER,
+      school_name: '',
+      school_borough: '',
+      message: '',
+      grades_taught: [],
+      subjects_taught: [],
+    });
+    setSchoolOption(null);
   };
 
   const previewFirstLine = useMemo(() => {
@@ -254,6 +278,69 @@ export function AdminInviteUser() {
       <div className="int-shell-root">
         <div className="adm-page">
           <p className="adm-section-desc">You don't have permission to invite users.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (result) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <IntPageHeader
+            title="Invitation created"
+            description="Send the recipient their personal link so they can set a password and join."
+            back={{ label: 'Back to Users', onClick: () => navigate('/admin/users') }}
+          />
+
+          <div className="adm-card" style={{ padding: 24 }}>
+            <IntAlert
+              variant={result.emailSent ? 'success' : 'warn'}
+              title={
+                result.emailSent
+                  ? `Invitation created and emailed to ${result.email}.`
+                  : 'Invitation created — but the email could NOT be sent automatically.'
+              }
+            >
+              {result.emailSent
+                ? 'You can also copy the link below and send it yourself as a backup.'
+                : `Copy the link below and send it to ${result.email} yourself (email, chat, etc.). The link still works even though the automatic email didn't go out.`}
+            </IntAlert>
+
+            <div style={{ marginTop: 16 }}>
+              <IntFormField
+                label="Invitation link"
+                hint="Anyone with this link can set up the account. It expires in 7 days."
+              >
+                <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                  <input
+                    className="adm-input"
+                    style={{ flex: 1 }}
+                    readOnly
+                    value={result.link}
+                    onFocus={(e) => e.currentTarget.select()}
+                    aria-label="Invitation link"
+                  />
+                  <IntButton type="button" variant="primary" onClick={handleCopyLink}>
+                    {copied ? 'Copied' : 'Copy link'}
+                  </IntButton>
+                </div>
+              </IntFormField>
+            </div>
+
+            <div className="adm-form-actions" style={{ marginTop: 24 }}>
+              <IntButton type="button" onClick={handleInviteAnother}>
+                Invite another
+              </IntButton>
+              <IntButton
+                type="button"
+                variant="primary"
+                onClick={() => navigate('/admin/invitations')}
+              >
+                Go to Invitations
+              </IntButton>
+            </div>
+          </div>
         </div>
       </div>
     );

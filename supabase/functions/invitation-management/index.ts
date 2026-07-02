@@ -51,8 +51,16 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Public endpoint for accepting invitations
-    if (req.method === 'POST' && pathname === '/invitations/accept') {
+    // Public endpoint for accepting invitations.
+    // NOTE: on the hosted edge runtime `pathname` INCLUDES the function slug —
+    // i.e. `/invitation-management/invitations/accept`, not `/invitations/accept`
+    // (see user-management/index.ts:99-103, which strips the `user-management`
+    // prefix for exactly this reason). The original strict `=== '/invitations/accept'`
+    // check therefore never matched on the platform: the request fell through to
+    // the admin auth gate below and 401'd, which is why this endpoint had been
+    // "built but never wired" — it could not have worked. Match the suffix so it
+    // works whether or not the runtime includes the slug.
+    if (req.method === 'POST' && pathname.endsWith('/invitations/accept')) {
       const { token, password, fullName, gradesTaught, subjectsTaught } = await req.json();
 
       if (!token || !password || !fullName) {
