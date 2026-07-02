@@ -190,9 +190,11 @@ serve(async (req) => {
       // + notes are preserved automatically (submission_reviews is one upserted
       // row per submission; the review form restores it on re-open).
       if (!user) {
-        // The JWT path (:143-155) must have run — service-role-only callers
-        // never populate `user`, so they get the same rejection as the normal
-        // new-submission path.
+        // Defensive: a service-role-only caller never actually reaches here.
+        // With resubmit (and no regenerateEmbedding) the auth branch (:142)
+        // routes them through supabaseClient.auth.getUser(token), which fails
+        // and throws 'Unauthorized' upstream. This guards any future auth-path
+        // change that could leave `user` unset.
         throw new Error('User authentication required for resubmission');
       }
 
@@ -205,8 +207,15 @@ serve(async (req) => {
         .single();
 
       if (fetchError || !existingSubmission) {
-        // 200 { success:false } so supabase-js surfaces the message verbatim
-        // (same reasoning as the extraction-error path below).
+        // Log for observability — the resubmit button always targets a real,
+        // teacher-owned row, so a miss here is anomalous (transient DB error or
+        // a deleted row), not a routine path. Without this a transient failure
+        // would be invisible in logs and misreported to the teacher as "not
+        // found." 200 { success:false } so supabase-js surfaces the message
+        // verbatim (same reasoning as the extraction-error path below).
+        if (fetchError) {
+          console.error('[Resubmit] Failed to fetch submission:', fetchError);
+        }
         return new Response(JSON.stringify({ success: false, error: 'Submission not found.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
