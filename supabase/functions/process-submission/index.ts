@@ -9,6 +9,7 @@ import {
   lessonMetadataSchema,
 } from '../_shared/metadataSchemas.ts';
 import { normalizeSubmissionInputs } from './normalizeSubmissionInputs.ts';
+import { validateResubmit } from './validateResubmit.ts';
 
 const CRF_MODEL = 'claude-opus-4-7';
 const CRF_PROMPT_URL = new URL('./prompts/cultural-responsiveness-features.md', import.meta.url);
@@ -34,8 +35,9 @@ interface ProcessSubmissionRequest {
   googleDocUrl?: string;
   submissionType?: 'new' | 'update';
   originalLessonId?: string;
-  submissionId?: string; // For regenerating embeddings
+  submissionId?: string; // For regenerating embeddings / resubmitting
   regenerateEmbedding?: boolean; // Flag to only regenerate embedding
+  resubmit?: boolean; // Resubmit-after-revisions: re-snapshot an existing needs_revision row
   debug?: boolean; // For debugging
   testOpenAI?: boolean; // For testing OpenAI connectivity
 }
@@ -67,6 +69,7 @@ serve(async (req) => {
       originalLessonId,
       submissionId,
       regenerateEmbedding,
+      resubmit,
       debug,
       testOpenAI,
     } = requestBody;
@@ -180,6 +183,142 @@ serve(async (req) => {
       // Extract title from content or use a default
       const titleMatch = content.match(/^#?\s*(.+)/);
       title = titleMatch ? titleMatch[1].trim() : 'Untitled Lesson';
+    } else if (resubmit && submissionId) {
+      // Resubmit-after-revisions (T3b): the teacher edited the SAME Google Doc
+      // after a reviewer sent it back. Re-snapshot that doc onto the existing
+      // row, flip it back into the review queue, and re-run dedup. Reviewer tags
+      // + notes are preserved automatically (submission_reviews is one upserted
+      // row per submission; the review form restores it on re-open).
+      if (!user) {
+        // The JWT path (:143-155) must have run — service-role-only callers
+        // never populate `user`, so they get the same rejection as the normal
+        // new-submission path.
+        throw new Error('User authentication required for resubmission');
+      }
+
+      // Fetch the row with the service client (RLS forbids teacher SELECT of
+      // arbitrary rows; ownership is gated in-code immediately below).
+      const { data: existingSubmission, error: fetchError } = await supabaseAdmin
+        .from('lesson_submissions')
+        .select('*')
+        .eq('id', submissionId)
+        .single();
+
+      if (fetchError || !existingSubmission) {
+        // 200 { success:false } so supabase-js surfaces the message verbatim
+        // (same reasoning as the extraction-error path below).
+        return new Response(JSON.stringify({ success: false, error: 'Submission not found.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // Ownership + status gate (pure helper, unit-tested in validateResubmit.test.ts).
+      const gate = validateResubmit(existingSubmission, user.id);
+      if (!gate.ok) {
+        return new Response(JSON.stringify({ success: false, error: gate.error }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      submission = existingSubmission;
+
+      // Step 2 (resubmit): re-extract the SAME stored doc — no new URL is
+      // accepted here. Mirrors the normal-flow extraction (:253-283) verbatim.
+      const extractResponse = await fetch(`${supabaseUrl}/functions/v1/extract-google-doc`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ googleDocUrl: submission.google_doc_url }),
+      });
+
+      const extractResult = await extractResponse.json();
+      if (!extractResult.success) {
+        // Extraction failed (doc unshared/deleted). Return the honest error and
+        // LEAVE the row in needs_revision so the teacher can fix sharing and
+        // retry — status is only flipped AFTER a successful snapshot below.
+        const extractionError =
+          typeof extractResult.error === 'string' && extractResult.error
+            ? typeof extractResult.serviceAccountEmail === 'string' &&
+              extractResult.serviceAccountEmail
+              ? `${extractResult.error} Share the doc with ${extractResult.serviceAccountEmail}.`
+              : extractResult.error
+            : 'Failed to extract content';
+        return new Response(JSON.stringify({ success: false, error: extractionError }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      title = extractResult.data.title;
+      content = extractResult.data.content;
+      metadataSketch = extractResult.data.metadataSketch ?? {};
+
+      // Step 3 (resubmit): store the fresh snapshot AND flip back into review in
+      // the SAME update. Nulling revision_requested_reason returns the teacher
+      // card cleanly to "Submitted" with no stale ask; the reviewer's note is
+      // NOT lost (it lives on in submission_reviews.notes). reviewer_notes /
+      // reviewed_at / review_completed_at are left alone (history).
+      //
+      // content_embedding / content_hash are nulled here so that if the
+      // fail-soft embedding regen (Step 4) or the dedup hash write (Step 6)
+      // don't run, the row carries NO derived value rather than the PREVIOUS
+      // snapshot's — a stale vector/hash on fresh content would be actively
+      // wrong. Step 4 repopulates the embedding and Step 6 the hash on success.
+      //
+      // The `.eq('status', 'needs_revision')` is a compare-and-swap: only flip
+      // if the row is STILL awaiting revisions at write time. This closes the
+      // TOCTOU window between the gate above and this write (a concurrent
+      // reviewer action, or a double-fired resubmit, could have already moved
+      // the row). The loser of the race gets the same plain message as a stale
+      // gate and leaves the winner's state intact.
+      const { data: flippedRows, error: updateError } = await supabaseAdmin
+        .from('lesson_submissions')
+        .update({
+          extracted_content: content,
+          extracted_title: title,
+          status: 'submitted',
+          revision_requested_reason: null,
+          content_embedding: null,
+          content_hash: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', submission.id)
+        .eq('status', 'needs_revision')
+        .select('id');
+
+      if (updateError) throw updateError;
+      if (!flippedRows || flippedRows.length === 0) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "This submission isn't waiting on revisions.",
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+
+      // Reflect the flipped status so the response returns 'submitted', not the
+      // stale fetched 'needs_revision'.
+      submission.status = 'submitted';
+
+      // Clear stale duplicate candidates from the OLD snapshot before dedup
+      // re-runs (detect-duplicates only INSERTs, and a zero-result re-run
+      // inserts nothing — without this the reviewer would see stale/doubled
+      // candidates). Only the CAS winner reaches here, so there is no concurrent
+      // re-detection to double against. Fail-soft: a failed clear (transient DB
+      // error) logs but does not abort — the row is already flipped and can't be
+      // cleanly rolled back, and a stray stale candidate is reviewer-recoverable.
+      const { error: clearSimilaritiesError } = await supabaseAdmin
+        .from('submission_similarities')
+        .delete()
+        .eq('submission_id', submission.id);
+      if (clearSimilaritiesError) {
+        console.error('[Resubmit] Failed to clear stale similarities:', clearSimilaritiesError);
+      }
     } else {
       // Normal flow: create new submission
       if (!googleDocUrl) {

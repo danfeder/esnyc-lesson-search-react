@@ -1641,6 +1641,14 @@
   background: #E9F4EE;
   color: var(--esy-green-deep);
 }
+/* Resubmit-after-revisions: instruction line + action button inside the
+   "Revision requested" callout (My submissions card). */
+.adm-callout-instruction {
+  margin: 8px 0 0;
+}
+.adm-callout-actions {
+  margin-top: 10px;
+}
 
 /* Card head row (title + trailing action) used by the My submissions card */
 .adm-card-head {

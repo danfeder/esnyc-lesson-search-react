@@ -81,6 +81,10 @@ export function UserProfile() {
 
   const [submissions, setSubmissions] = useState<LessonSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  // Track in-flight resubmits by submission id in a Set (not a single id or a
+  // global boolean) — a teacher can have several returned cards on screen, and
+  // starting one must not re-enable another card that is still in flight.
+  const [resubmittingIds, setResubmittingIds] = useState<Set<string>>(new Set());
   // Signed-out view opens the auth modal in place (auth is modal-based; there
   // is no /login route). After sign-in the profile re-renders signed-in.
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -156,6 +160,35 @@ export function UserProfile() {
       setLoadingSubmissions(false);
     }
   }, [user]);
+
+  const handleResubmit = async (submissionId: string) => {
+    setResubmittingIds((prev) => new Set(prev).add(submissionId));
+    setSuccessMessage('');
+    setErrorMessage('');
+    try {
+      // Re-snapshot the same Google Doc and flip the row back into review. The
+      // edge function gates ownership + status and writes with the service
+      // client. Mirror NewSubmissionForm's handling: both a transport error and
+      // a { success:false } body surface as errors.
+      const { data: response, error: invokeError } = await supabase.functions.invoke(
+        'process-submission',
+        { body: { resubmit: true, submissionId } }
+      );
+      if (invokeError) throw invokeError;
+      if (!response?.success) throw new Error(response?.error ?? 'Could not send back for review.');
+      setSuccessMessage('Sent back for review. A reviewer will take another look.');
+      await loadSubmissions();
+    } catch (error) {
+      logger.error('Error resubmitting for review:', error);
+      setErrorMessage(parseDbError(error));
+    } finally {
+      setResubmittingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(submissionId);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -535,11 +568,43 @@ export function UserProfile() {
                     </a>
                   </p>
 
-                  {submission.revision_requested_reason && (
+                  {submission.status === 'needs_revision' ? (
                     <div className="adm-callout adm-callout--warning">
                       <p className="adm-callout-title">Revision requested</p>
-                      <p>{submission.revision_requested_reason}</p>
+                      {/* A reviewer can request revisions without a note, so the
+                          reason may be empty — gate the whole block on STATUS. */}
+                      {submission.revision_requested_reason && (
+                        <p>{submission.revision_requested_reason}</p>
+                      )}
+                      <p className="adm-callout-instruction">
+                        Open your Google Doc (link above), make the changes, then send it back.
+                        We'll take a fresh copy of your doc for the reviewers.
+                      </p>
+                      <div className="adm-callout-actions">
+                        <IntButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleResubmit(submission.id)}
+                          disabled={resubmittingIds.has(submission.id)}
+                        >
+                          {resubmittingIds.has(submission.id) ? (
+                            <>
+                              <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" />
+                              Sending…
+                            </>
+                          ) : (
+                            "I've updated my doc — send it back for review"
+                          )}
+                        </IntButton>
+                      </div>
                     </div>
+                  ) : (
+                    submission.revision_requested_reason && (
+                      <div className="adm-callout adm-callout--warning">
+                        <p className="adm-callout-title">Revision requested</p>
+                        <p>{submission.revision_requested_reason}</p>
+                      </div>
+                    )
                   )}
 
                   {submission.reviewer_notes && submission.status === 'approved' && (
