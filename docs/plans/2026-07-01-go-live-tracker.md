@@ -3,7 +3,22 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-01 (Fable, post-T2 brief session) — **both execution briefs written
+**Last updated:** 2026-07-02 (Opus, T3 execution session). T2a (#571 `eeccedb`) + T2b (#572
+`3a7d634`) shipped per project memory. **T3 built & merge-ready but NOT merged this session** — the
+user handed the merge to a Fable session, bundled with a security fix that a Codex cross-check + the
+PR review bots surfaced. PR **#573** (`feat/t3-auth-email`, tip `0427d73`): SMTP live from
+`df@esynyc.org` (Gate 1 ✅), invite-accept verified end-to-end on TEST (Gate 3 ✅), all substantive CI
+checks + all four review bots green; the only red is the two "Deploy to TEST" no-op-guard boxes
+(cosmetic — an out-of-band pre-deploy froze the TEST version; the fix is verified live on TEST).
+**Security STOP (fix needs a migration):** the public anon key can enumerate every *pending*
+invitation token via an over-permissive RLS SELECT policy on `user_invitations`. Dormant now (0
+pending on PROD) but T3 makes it live + load-bearing — invite becomes the *only* path to an account,
+so token secrecy is now the whole security model. Full pickup doc:
+`docs/plans/2026-07-02-t3-security-findings-handoff-for-fable.md`. **NEXT = Fable session: design +
+ship the RLS fix → merge #573 → complete Part 3c go-live.** Part 3c (disable public signups + PROD
+invite test) is deferred until the fix ships; no real invitations meanwhile.
+
+**Prior update (2026-07-01, Fable, post-T2 brief session):** **both execution briefs written
 and user decisions locked.** Sequencing ratified by user: quick-wins patch PR now (T2b), resubmit
 button after T3 (T3b), rejection + dup-panel redesign into T4. Briefs:
 `2026-07-01-brief-quickwins-patch.md` (T2b; user added the editable-title field to scope) and
@@ -75,7 +90,7 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 | T2 | Submission→review→publish walkthrough WITH user | user + any | **✅ DONE 2026-07-01 (Fable, live with user)** — all 10 stations; pipeline verified door-to-door on TEST (first full post-outage run); punch-list = 22 rows (3 blockers: revisions-blocked-by-tag-gate, no-resubmit-path, rejection dead-end; 5 bad incl. dup/decision disconnect, blank summaries, uneditable filename titles); email inventory rows 2/4/5/7 confirmed live; TEST cleaned & verified (763 lessons). Full detail + punch-list in `2026-07-01-t2-walkthrough.md` |
 | T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE & PROD-VERIFIED — shipped PR #571 → squash `eeccedb`; all 6 gates green (4 TEST + 2 PROD), bot clean approve. Submission pipeline + email gate alive again on PROD.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
 | T2b | Quick-wins patch PR (punch-list bucket 1: gate scoping, decision toasts, card titles, sticky pane, title+summary fields incl. RPC COALESCE-flip migration, sign-in clear, /login fix, copy + error propagation) | Opus | **NEXT — brief ready:** `2026-07-01-brief-quickwins-patch.md`. Carries the uncommitted sprint docs. |
-| T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus | **Brief ready:** `2026-07-01-brief-t3-auth-email.md` — execute after T2b merges. User decisions locked (sender df@, invite-only, rows 1–3/6/8 retire, 9–10 dormant). |
+| T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus → **Fable** (merge + security fix) | **BUILT & MERGE-READY, NOT merged — handed to Fable (PR #573, tip `0427d73`).** SMTP live; invite-accept verified on TEST; all substantive CI + 4 bots green (only the 2 cosmetic deploy-no-op reds). **Security STOP:** anon can enumerate pending invitation tokens (over-permissive RLS on `user_invitations`; fix needs a migration) — T3 makes it load-bearing. Pickup: `2026-07-02-t3-security-findings-handoff-for-fable.md`. Next: Fable RLS fix → merge #573 → Part 3c. |
 | T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus | Pending — Fable brief after T3 (design already sketched in punch-list row 7) |
 | T4 | Corpus dedup sweep (~745 lessons) | Fable design → Sonnet candidates → user adjudicates → Opus ships | Pending (design session = 2nd of 2 planned Fable sessions) |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
