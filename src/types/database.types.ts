@@ -1766,7 +1766,9 @@ export type Database = {
       validate_invitation_token: {
         Args: { invite_token: string };
         Returns: {
+          accepted_at: string | null;
           email: string;
+          expires_at: string;
           id: string;
           is_valid: boolean;
           metadata: Json;

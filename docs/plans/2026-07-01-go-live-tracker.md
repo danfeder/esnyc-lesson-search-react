@@ -3,7 +3,43 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-01 (Fable, post-T2 brief session) — **both execution briefs written
+**Last updated:** 2026-07-02 (Fable, T3 merge + security-fix session). **#573 MERGED** (squash
+`9a50dc6`) after Fable's own diff review; PROD edge deploy **user-approved** and 3-signal-verified
+(invitation-management v26 + complete-review v9, shas match TEST bundles, bogus-token probe returns
+the fixed 404). **RLS invitation-token fix = PR #574, TEST-VERIFIED, awaiting USER merge.** Branch
+`fix/invitation-token-rls`, migration `20260702150000_lock_down_invitation_token_access.sql` (drop
+enumeration SELECT policy + dead accept UPDATE policy; `validate_invitation_token` = sole
+token-scoped anon read path, `SECURITY DEFINER` + `search_path=''` + tight grants + `NOTIFY pgrst`),
+client swap in AcceptInvitation, AuthModal dead-signup deletion, invitation-management full
+route-strip (F4), seeded RLS regression test. **Codex cross-check: no blocking findings** (its one
+Low — missing pgrst notify — fixed). **TEST-DB verified live:** both target policies dropped, RPC
+hardened, 3 anon probes pass (enumeration→`[]`, exact-token→1 row, bogus→`[]`). **3 claude bot
+reviews, no blocking** — triaged all 4 surfaces; 2 real fixes applied (nullable `accepted_at` type,
+anon-key env-check), rest rebutted. **Only red = cosmetic "Deploy to TEST — invitation-management"
+no-op** (first #574 run deployed the route-strip live v9→v10; later non-edge commits re-deploy
+identical v10 → strict guard no-ops; verified v10 ACTIVE w/ strip in deployed source; won't recur on
+PROD, which holds pre-strip source). NEXT = **USER merges #574 → USER approves PROD migration → I
+verify anon-can't-enumerate on PROD → Part 3c**. Deferred: accept E2E (→T3b/T5). `password-reset`
+fn **deleted from BOTH TEST+PROD (user-approved), verified gone, deploy queue empty.** Process rules
+(user, binding): **PROD applies are USER-only; self-review a diff before merge; verify Opus-handoff
+claims before continuing.** No real invitations until the fix is on PROD. Prior update below.
+
+**Prior update (2026-07-02, Opus, T3 execution session):** T2a (#571 `eeccedb`) + T2b (#572
+`3a7d634`) shipped per project memory. **T3 built & merge-ready but NOT merged this session** — the
+user handed the merge to a Fable session, bundled with a security fix that a Codex cross-check + the
+PR review bots surfaced. PR **#573** (`feat/t3-auth-email`, tip `0427d73`): SMTP live from
+`df@esynyc.org` (Gate 1 ✅), invite-accept verified end-to-end on TEST (Gate 3 ✅), all substantive CI
+checks + all four review bots green; the only red is the two "Deploy to TEST" no-op-guard boxes
+(cosmetic — an out-of-band pre-deploy froze the TEST version; the fix is verified live on TEST).
+**Security STOP (fix needs a migration):** the public anon key can enumerate every *pending*
+invitation token via an over-permissive RLS SELECT policy on `user_invitations`. Dormant now (0
+pending on PROD) but T3 makes it live + load-bearing — invite becomes the *only* path to an account,
+so token secrecy is now the whole security model. Full pickup doc:
+`docs/plans/2026-07-02-t3-security-findings-handoff-for-fable.md`. **NEXT = Fable session: design +
+ship the RLS fix → merge #573 → complete Part 3c go-live.** Part 3c (disable public signups + PROD
+invite test) is deferred until the fix ships; no real invitations meanwhile.
+
+**Prior update (2026-07-01, Fable, post-T2 brief session):** **both execution briefs written
 and user decisions locked.** Sequencing ratified by user: quick-wins patch PR now (T2b), resubmit
 button after T3 (T3b), rejection + dup-panel redesign into T4. Briefs:
 `2026-07-01-brief-quickwins-patch.md` (T2b; user added the editable-title field to scope) and
@@ -75,7 +111,7 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 | T2 | Submission→review→publish walkthrough WITH user | user + any | **✅ DONE 2026-07-01 (Fable, live with user)** — all 10 stations; pipeline verified door-to-door on TEST (first full post-outage run); punch-list = 22 rows (3 blockers: revisions-blocked-by-tag-gate, no-resubmit-path, rejection dead-end; 5 bad incl. dup/decision disconnect, blank summaries, uneditable filename titles); email inventory rows 2/4/5/7 confirmed live; TEST cleaned & verified (763 lessons). Full detail + punch-list in `2026-07-01-t2-walkthrough.md` |
 | T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE & PROD-VERIFIED — shipped PR #571 → squash `eeccedb`; all 6 gates green (4 TEST + 2 PROD), bot clean approve. Submission pipeline + email gate alive again on PROD.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
 | T2b | Quick-wins patch PR (punch-list bucket 1: gate scoping, decision toasts, card titles, sticky pane, title+summary fields incl. RPC COALESCE-flip migration, sign-in clear, /login fix, copy + error propagation) | Opus | **NEXT — brief ready:** `2026-07-01-brief-quickwins-patch.md`. Carries the uncommitted sprint docs. |
-| T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus | **Brief ready:** `2026-07-01-brief-t3-auth-email.md` — execute after T2b merges. User decisions locked (sender df@, invite-only, rows 1–3/6/8 retire, 9–10 dormant). |
+| T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus → **Fable** (merge + security fix) | **✅ MERGED + PROD-VERIFIED 2026-07-02** (squash `9a50dc6`; user approved the PROD edge deploy; 3-signal verify + bogus-token probe passed). **RLS token-enumeration fix in flight:** branch `fix/invitation-token-rls` (migration + RPC-only anon read path + AuthModal dead-signup deletion + F4 route-strip + seeded RLS regression test); local gates green; Codex cross-check → PR → TEST verify → user merges → user approves PROD migration → then Part 3c. NO real invitations until the fix is on PROD. Residual: deployed-but-retired `password-reset` fn deletion (user OK pending); accept-flow E2E deferred to T3b/T5. |
 | T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus | Pending — Fable brief after T3 (design already sketched in punch-list row 7) |
 | T4 | Corpus dedup sweep (~745 lessons) | Fable design → Sonnet candidates → user adjudicates → Opus ships | Pending (design session = 2nd of 2 planned Fable sessions) |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |

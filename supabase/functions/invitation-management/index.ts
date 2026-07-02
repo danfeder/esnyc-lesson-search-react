@@ -46,21 +46,32 @@ serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const pathname = url.pathname;
+
+  // Resolve routes RELATIVE to the function name: the hosted edge runtime
+  // serves this function with the slug still in the path (e.g.
+  // `/invitation-management/invitations/accept`), while local serve may not.
+  // Mirrors user-management/index.ts. Before 2026-07-02 only the accept route
+  // handled this (via endsWith, added in PR #573 after it 401'd on every call
+  // for months); the admin sub-routes below still matched against the raw
+  // path and silently 404'd on the platform (unused by the frontend, which
+  // does client-side queries — but now they work as documented).
+  let pathParts = url.pathname.split('/').filter(Boolean);
+  const fnNameIdx = pathParts.indexOf('invitation-management');
+  if (fnNameIdx >= 0) {
+    pathParts = pathParts.slice(fnNameIdx + 1);
+  }
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Public endpoint for accepting invitations.
-    // NOTE: on the hosted edge runtime `pathname` INCLUDES the function slug —
-    // i.e. `/invitation-management/invitations/accept`, not `/invitations/accept`
-    // (see user-management/index.ts:99-103, which strips the `user-management`
-    // prefix for exactly this reason). The original strict `=== '/invitations/accept'`
-    // check therefore never matched on the platform: the request fell through to
-    // the admin auth gate below and 401'd, which is why this endpoint had been
-    // "built but never wired" — it could not have worked. Match the suffix so it
-    // works whether or not the runtime includes the slug.
-    if (req.method === 'POST' && pathname.endsWith('/invitations/accept')) {
+    // Public endpoint for accepting invitations (token-gated, no user JWT —
+    // the invitee doesn't have an account yet).
+    if (
+      req.method === 'POST' &&
+      pathParts.length === 2 &&
+      pathParts[0] === 'invitations' &&
+      pathParts[1] === 'accept'
+    ) {
       const { token, password, fullName, gradesTaught, subjectsTaught } = await req.json();
 
       if (!token || !password || !fullName) {
@@ -200,8 +211,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const pathParts = pathname.split('/').filter(Boolean);
 
     // POST /invitations - Create new invitation
     if (req.method === 'POST' && pathParts.length === 1 && pathParts[0] === 'invitations') {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
-import { X, Mail, Lock, User as UserIcon } from 'lucide-react';
+import { X, Mail, Lock } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,10 +10,13 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  // The site is invite-only (T3, 2026-07): accounts are created solely through
+  // the invitation-accept flow, so this modal deliberately has NO signup mode —
+  // re-adding one would resurrect a client-side signup path that bypasses
+  // invitations (no role, no user_profiles row).
+  const [mode, setMode] = useState<'signin' | 'forgot'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -27,7 +30,6 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     if (!isOpen) {
       setEmail('');
       setPassword('');
-      setName('');
       setError(null);
       setSuccess(null);
       setMode('signin');
@@ -47,17 +49,6 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
-        });
-        if (error) throw error;
-      } else if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: name,
-            },
-          },
         });
         if (error) throw error;
       } else if (mode === 'forgot') {
@@ -89,30 +80,10 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         </button>
 
         <h2 className="text-2xl font-bold mb-6">
-          {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
+          {mode === 'signin' ? 'Sign In' : 'Reset Password'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <div className="relative">
-                <UserIcon
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  size={20}
-                />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Jane Doe"
-                  required={mode === 'signup'}
-                />
-              </div>
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <div className="relative">
@@ -161,13 +132,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             disabled={loading}
             className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading
-              ? 'Loading...'
-              : mode === 'signin'
-                ? 'Sign In'
-                : mode === 'signup'
-                  ? 'Create Account'
-                  : 'Send Reset Link'}
+            {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Send Reset Link'}
           </button>
         </form>
 
@@ -186,20 +151,6 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   Forgot your password?
                 </button>
               </div>
-            </>
-          ) : mode === 'signup' ? (
-            <>
-              Already have an account?{' '}
-              <button
-                onClick={() => {
-                  setMode('signin');
-                  setError(null);
-                  setSuccess(null);
-                }}
-                className="text-green-600 hover:text-green-700 font-medium"
-              >
-                Sign in
-              </button>
             </>
           ) : (
             <>
