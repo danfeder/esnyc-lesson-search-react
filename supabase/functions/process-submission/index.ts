@@ -262,7 +262,24 @@ serve(async (req) => {
 
       const extractResult = await extractResponse.json();
       if (!extractResult.success) {
-        throw new Error('Failed to extract content');
+        // Surface the SPECIFIC extraction failure to the teacher — most often
+        // "Document not accessible…" from a doc that wasn't shared. Append the
+        // service-account address when extract-google-doc provides it so they
+        // know exactly who to share with. Returned as a 2xx { success:false } so
+        // the frontend reads `response.error` verbatim: on a non-2xx status
+        // supabase-js hands the caller a generic FunctionsHttpError and the
+        // helpful message is lost.
+        const extractionError =
+          typeof extractResult.error === 'string' && extractResult.error
+            ? typeof extractResult.serviceAccountEmail === 'string' &&
+              extractResult.serviceAccountEmail
+              ? `${extractResult.error} Share the doc with ${extractResult.serviceAccountEmail}.`
+              : extractResult.error
+            : 'Failed to extract content';
+        return new Response(JSON.stringify({ success: false, error: extractionError }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
       }
 
       title = extractResult.data.title;

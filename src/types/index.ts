@@ -99,6 +99,11 @@ export interface ViewState {
 
 // Review types for submission processing
 export interface ReviewMetadata {
+  // What gets published: reviewer-editable title + summary (prefilled from the
+  // extracted doc). Persisted to lessons.title / lessons.summary via
+  // complete_review_atomic (title precedence flipped to prefer the reviewer edit).
+  title?: string;
+  summary?: string;
   activityType?: string[]; // Multi-select for review
   location?: string; // Single select for review
   gradeLevels?: string[];

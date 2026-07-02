@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { parseDbError } from '@/utils/errorHandling';
+import { AuthModal } from '@/components/Auth/AuthModal';
 import { SchoolBadge, type School } from '@/components/Schools';
 import {
   AlertCircle,
@@ -44,6 +45,7 @@ type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved
 interface LessonSubmission {
   id: string;
   google_doc_url: string;
+  extracted_title?: string;
   status: SubmissionStatus;
   submission_type: 'new' | 'update';
   reviewer_notes?: string;
@@ -79,6 +81,9 @@ export function UserProfile() {
 
   const [submissions, setSubmissions] = useState<LessonSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  // Signed-out view opens the auth modal in place (auth is modal-based; there
+  // is no /login route). After sign-in the profile re-renders signed-in.
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [pwForm, setPwForm] = useState({ next: '', confirm: '' });
@@ -136,6 +141,7 @@ export function UserProfile() {
           ...sub,
           status: sub.status as SubmissionStatus,
           submission_type: sub.submission_type as 'new' | 'update',
+          extracted_title: sub.extracted_title || undefined,
           created_at: sub.created_at || '',
           updated_at: sub.updated_at || '',
           reviewer_notes: sub.reviewer_notes || undefined,
@@ -246,12 +252,17 @@ export function UserProfile() {
             <h3>Sign in required</h3>
             <p>You need to be signed in to view your profile.</p>
             <div className="adm-empty-actions">
-              <IntButton variant="primary" onClick={() => navigate('/login')}>
-                Go to sign in
+              <IntButton variant="primary" onClick={() => setShowAuthModal(true)}>
+                Sign in
               </IntButton>
             </div>
           </div>
         </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => setShowAuthModal(false)}
+        />
       </div>
     );
   }
@@ -508,6 +519,10 @@ export function UserProfile() {
                       {submission.submission_type === 'update' ? 'Update' : 'New lesson'}
                     </span>
                   </div>
+
+                  <h3 className="adm-submission-row-title">
+                    {submission.extracted_title || 'Untitled submission'}
+                  </h3>
 
                   <p className="adm-submission-row-link">
                     <a

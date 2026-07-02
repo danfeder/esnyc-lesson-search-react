@@ -123,12 +123,20 @@ export function ReviewDetail() {
   const handleSaveReview = async () => {
     if (!submission) return;
 
-    const errors = validateRequiredFields();
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
+    // Punch-list A: the required-tags gate applies ONLY to the two approve
+    // decisions. "Request revisions" must go through even with tags empty —
+    // sending it back is exactly how a reviewer asks for the missing pieces.
+    // (The Zod shape check below still runs for every decision.)
+    if (decision === 'approve_new' || decision === 'approve_update') {
+      const errors = validateRequiredFields();
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
     }
+    // Clear any stale missing-field banner (e.g. left over from a prior approve
+    // attempt before the reviewer switched to "Request revisions").
     setValidationErrors([]);
     setSaveError(null);
 
@@ -188,7 +196,19 @@ export function ReviewDetail() {
         throw new Error(typeof data.error === 'string' ? data.error : 'complete-review failed');
       }
 
-      navigate('/review');
+      // Punch-list B: plain-language success confirmation carried to the queue
+      // as a navigation-state toast (the app's existing toast pattern — see
+      // AdminInviteUser → AdminInvitations). Silent navigation left reviewers
+      // unsure whether the decision took.
+      const publishedTitle =
+        payload.title?.trim() || submission.extracted_title?.trim() || 'this lesson';
+      const toastMsg =
+        decision === 'approve_new'
+          ? `Published: ${publishedTitle}`
+          : decision === 'approve_update'
+            ? 'Merged into the existing lesson.'
+            : 'Sent back to the teacher with your note.';
+      navigate('/review', { state: { toast: { kind: 'success', msg: toastMsg } } });
     } catch (error) {
       const parsed = parseDbError(error);
       logger.error('Error saving review:', parsed);
@@ -369,7 +389,7 @@ export function ReviewDetail() {
                 textTransform: 'uppercase',
               }}
             >
-              {topDuplicates.length} possible dup{topDuplicates.length === 1 ? '' : 'es'}
+              {topDuplicates.length} possible duplicate{topDuplicates.length === 1 ? '' : 's'}
             </span>
           )}
         </div>
@@ -388,13 +408,17 @@ export function ReviewDetail() {
             legacyDecisionWarning={legacyDecisionWarning}
           />
 
-          {/* MIDDLE — document */}
-          <ReviewDocPanel
-            headerTitle={headerTitle}
-            googleDocUrl={submission.google_doc_url}
-            googleDocId={submission.google_doc_id}
-            extractedContent={submission.extracted_content}
-          />
+          {/* MIDDLE — document (sticky so it stays in view while the reviewer
+              scrolls the long metadata + decision columns; collapses to static
+              at the mobile breakpoint via .adm-col-sticky). */}
+          <div className="adm-col-sticky">
+            <ReviewDocPanel
+              headerTitle={headerTitle}
+              googleDocUrl={submission.google_doc_url}
+              googleDocId={submission.google_doc_id}
+              extractedContent={submission.extracted_content}
+            />
+          </div>
 
           {/* RIGHT — duplicates + decision */}
           <ReviewDecisionPanel

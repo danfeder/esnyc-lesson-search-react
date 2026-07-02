@@ -3,14 +3,46 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-01 (Opus, T2a execution session) — **T2a auth-gate fix SHIPPED &
-TEST-verified** (PR #571 `fix/edge-auth-gate-deno2`): shared XOR-fold `timingSafeEqual` helper + 3
-call-site swaps + CLAUDE.md pattern update + colocated unit test. All four pre-registered TEST
-gates green (garbage-bearer probes 401 not 400 on all three fns; positive `process-submission`
-path = `success:true`, internal `extract-google-doc`+`detect-duplicates` both logged 200; row
-`submitted`/content present; cleanup deleted). bot review = clean approve. **PROD: merge queues
-the deploy behind the manual-approval gate; run PROD gates 5–6 after approval.** Next = T2
-walkthrough with user (unblocked once PROD verified).
+**Last updated:** 2026-07-01 (Fable, post-T2 brief session) — **both execution briefs written
+and user decisions locked.** Sequencing ratified by user: quick-wins patch PR now (T2b), resubmit
+button after T3 (T3b), rejection + dup-panel redesign into T4. Briefs:
+`2026-07-01-brief-quickwins-patch.md` (T2b; user added the editable-title field to scope) and
+`2026-07-01-brief-t3-auth-email.md` (T3). User decisions 2026-07-01: (1) AI pre-fills stay OFF
+for launch (manual tagging; revisit post-launch); (2) editable Title field joins the quick-wins
+PR alongside Summary; (3) auth emails send from `df@esynyc.org` via Google Workspace app
+password; (4) site goes **INVITE-ONLY** (public self-signup disabled — T3 rewires invitation
+acceptance off public signUp first, since `AcceptInvitation.tsx` currently uses it). Code-map
+corrections vs earlier suspicions: decision-email root cause is `lesson_submissions` having **NO
+FK to `user_profiles` at all** (all three FKs → auth.users; embed can't resolve; T3 confirms by
+probe then retires the block); the required-tags gate is frontend-only (complete-review's schema
+is already all-optional — no edge relax needed); BUT the title fix needs a small migration
+(`complete_review_atomic` COALESCE order prefers `extracted_title` over reviewer edits, 2 spots).
+NEXT = **T2b quick-wins execution (Opus, brief ready)**. Previous update (T2 walkthrough) below.
+
+**2026-07-01 (Fable, T2 walkthrough session with user)** — **T2 COMPLETE.** All 10
+stations run live; pipeline verified door-to-door on TEST (submit → dup-detect → review →
+revisions → approve → publish → public search — first full run since the Deno-2 outage).
+Punch-list fully populated in `2026-07-01-t2-walkthrough.md` (22 rows: 3 blockers, 5 bad).
+Email inventory rows 2/4/5/7 confirmed live; **row 5 (invitations) = T3 centerpiece: attempt now
+reaches Resend post-T2a but sandbox sender rejects all non-owner recipients (500) AND the invite
+UI shows a success toast unconditionally with no copyable-link fallback.** New T3 scope inputs:
+the complete-review decision-email attempt vanishes without any send-email invocation logged
+(fail-open catch swallows pre-send — investigate); forgot-password reached Supabase's built-in
+mailer and honestly errored on the fake domain (`email_address_invalid`) — real addresses would
+send. TEST cleaned & verified row-by-row (763 lessons, byte-identical state). **PROD real run also
+done same night** (user approved the script's optional offer): real extraction ✓ (title = Drive
+filename incl. `[WALKTHROUGH TEST]` prefix, published verbatim — live proof of the
+title-uneditable finding); dedup happy path ✓ (0 candidates on an original, correct); **AI
+pre-fills NEVER CONFIGURED anywhere — no `ANTHROPIC_API_KEY` in PROD secrets, 0/128 historical
+submissions ever AI-drafted** (decide at T3/T5: add key or accept manual); **decision-email
+vanish REPRODUCED on PROD → code bug, not env** (prime suspect: Phase-7c `user_profiles!inner`
+embed ambiguous across ≥3 FKs → PostgREST error swallowed by fail-open catch — T3 confirm &
+fix-or-retire); blank-summary confirmed with real content. PROD cleaned & verified (785
+lessons, 0 walkthrough artifacts). Punch-list sequencing recommendation (pending user
+ratification): quick-wins patch PR now (tag-gate blocker + toasts/titles/sticky-pane/copy/
+summary-field/`/login` dead button), resubmit-button PR after T3, rejection + dup-panel redesign
+folded into T4 (dup panel logged as **conceptually overloaded** — binding T4 design requirement:
+one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus)**.
 
 ## Working model (binding for every session in this sprint)
 
@@ -40,9 +72,11 @@ walkthrough with user (unblocked once PROD verified).
 | # | Track | Model | Status |
 |---|---|---|---|
 | T1 | Search: `taste test` fix, then search CLOSES | Opus | **✅ DONE — shipped PR #570 (`d66dcdc`), PROD-verified 2026-07-01: `taste test` top-10 = 10/10 relevant (was ~1/10), q18 1/10→10/10. SEARCH TRACK CLOSED.** |
-| T2 | Submission→review→publish walkthrough WITH user | user + any | **NEXT (unblocked once T2a PROD-verified)** — walkthrough doc + test docs + env ready (`2026-07-01-t2-walkthrough.md`); email inventory already drafted from code |
-| T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE (TEST) — shipped PR #571 (`fix/edge-auth-gate-deno2`); all 4 TEST gates green + bot clean approve. PROD deploy queued behind manual-approval gate — run gates 5–6 after approval.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
-| T3 | Auth email (invite/reset/login only) via Supabase Auth + Google Workspace SMTP — no DNS | Opus | Pending (Fable brief after T2; map custom email edge fns → retire what built-ins cover) |
+| T2 | Submission→review→publish walkthrough WITH user | user + any | **✅ DONE 2026-07-01 (Fable, live with user)** — all 10 stations; pipeline verified door-to-door on TEST (first full post-outage run); punch-list = 22 rows (3 blockers: revisions-blocked-by-tag-gate, no-resubmit-path, rejection dead-end; 5 bad incl. dup/decision disconnect, blank summaries, uneditable filename titles); email inventory rows 2/4/5/7 confirmed live; TEST cleaned & verified (763 lessons). Full detail + punch-list in `2026-07-01-t2-walkthrough.md` |
+| T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE & PROD-VERIFIED — shipped PR #571 → squash `eeccedb`; all 6 gates green (4 TEST + 2 PROD), bot clean approve. Submission pipeline + email gate alive again on PROD.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
+| T2b | Quick-wins patch PR (punch-list bucket 1: gate scoping, decision toasts, card titles, sticky pane, title+summary fields incl. RPC COALESCE-flip migration, sign-in clear, /login fix, copy + error propagation) | Opus | **NEXT — brief ready:** `2026-07-01-brief-quickwins-patch.md`. Carries the uncommitted sprint docs. |
+| T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus | **Brief ready:** `2026-07-01-brief-t3-auth-email.md` — execute after T2b merges. User decisions locked (sender df@, invite-only, rows 1–3/6/8 retire, 9–10 dormant). |
+| T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus | Pending — Fable brief after T3 (design already sketched in punch-list row 7) |
 | T4 | Corpus dedup sweep (~745 lessons) | Fable design → Sonnet candidates → user adjudicates → Opus ships | Pending (design session = 2nd of 2 planned Fable sessions) |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
 
@@ -103,9 +137,17 @@ walkthrough with user (unblocked once PROD verified).
   **200** (v10 previously logged the 400 TypeError — confirms the deploy advanced the bundle, not
   a silent no-op); (4) test row deleted. `send-email` bundle sha changed (v13→v14). Full PR CI
   green incl. E2E; claude bot review = clean approve (verified no 4th call site, no timing
-  side-channel, imports resolve). **PROD gates 5–6 still to run after the manual approval on the
-  merge-to-main deploy.** Squash sha + PROD probe result to be recorded on the next
-  docs-carrying PR (per no-docs-only-push).
+  side-channel, imports resolve). **Merged as squash `eeccedb`; PROD deploy approved + succeeded
+  2026-07-01.** PROD gates 5–6 passed: all three fns version-bumped (extract-google-doc 29→30,
+  detect-duplicates 25→26, send-email 31→32) with `ezbr_sha256` matching the TEST-verified
+  bundles exactly (`cb0409d3`/`1b294ff6`/`32e1d570`) → not a silent no-op; garbage 219-char bearer
+  probe → **401** on all three (was the 400 TypeError). Did NOT create a real PROD submission (T2
+  handles live validation). These PROD-verified tracker edits are uncommitted post-merge — they
+  ride the next docs-carrying PR (T3/T4). **Non-blocking follow-up for a future hardening pass
+  (from bot review, out-of-scope here):** `process-submission/index.ts:134` gates its service-role
+  check with a plain `token === supabaseServiceKey` (not constant-time) — pre-existing, unaffected
+  by Deno 2, low severity for an internal high-entropy key; candidate to migrate onto the shared
+  `timingSafeEqual` helper later.
 - **T3**: email is auth-only (user 2026-07-01): invitations, password reset, account management.
   NO submission/review notification emails needed. Resend DNS unavailable for weeks →
   route Supabase Auth email through the org's Google Workspace (no DNS needed). Custom
@@ -115,6 +157,18 @@ walkthrough with user (unblocked once PROD verified).
   columns) in `2026-07-01-t2-walkthrough.md` §Email inventory. Notable: the custom
   `password-reset` request endpoint is orphaned (no frontend caller; live flow uses the
   built-in mailer) — prime retirement candidate.
+  **Brief written 2026-07-01 (`2026-07-01-brief-t3-auth-email.md`); architecture decided:**
+  reset = built-in mailer + Workspace SMTP (config only); invitations KEEP the custom
+  `user_invitations` system (no migration to `auth.admin.inviteUserByEmail`) with honest
+  email-outcome UI + always-visible copyable invite link; invite-only = rewire
+  `AcceptInvitation.tsx` onto the already-built (never wired) admin-API accept endpoint in
+  `invitation-management`, THEN disable signups in the dashboard — order matters, the page
+  currently creates accounts via public `signUp`. Decision-email root cause CORRECTED:
+  `lesson_submissions` has no FK to `user_profiles` at all (all three FKs → `auth.users`), so
+  the `user_profiles!inner(email)` embed at `complete-review/index.ts:257` can never resolve —
+  brief pre-registers a confirm probe, then retires the block. Dispositions: rows 1–3 retire,
+  row 6 retire, row 8 retire + delete the whole `password-reset` fn, rows 9–10 left dormant,
+  row 11 mooted by invite-only.
 - **T4**: use simple text-similarity (pg_trgm) for candidates; **retire the embedding machinery,
   don't repair it** (two mismatched pipelines). Companion lessons (Part 1/Part 2) need a
   "related, not duplicate" outcome. Pre-delete FK checklist applies (see memory:
@@ -129,3 +183,5 @@ walkthrough with user (unblocked once PROD verified).
 - Overengineering hunts / simplification sweeps not in the path of T1–T5
 - Embeddings regeneration (C2.4) — unnecessary if T4 retires embedding-based dedup
 - Any personalization / auth-gated features (audience ≈ 3 internal accounts)
+- AI pre-fill tagging (`ANTHROPIC_API_KEY`) — user decision 2026-07-01: launch manual-only;
+  revisit post-launch if tagging feels slow (feature is built, never configured anywhere)

@@ -398,5 +398,6 @@ export const reviewFormPayloadSchema = z.object({
   culturalHeritage: z.array(z.string()).optional(),
 
   processingNotes: z.string().optional(),
+  title: z.string().optional(),
   summary: z.string().optional(),
 });
