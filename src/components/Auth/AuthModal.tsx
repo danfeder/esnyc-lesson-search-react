@@ -18,13 +18,19 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Clear the credential fields whenever the modal closes so the previous
-  // user's email/password never reappears for the next person (the modal stays
-  // mounted across open/close). Covers sign-out and the ✕/backdrop close alike.
+  // Reset the modal to a clean sign-in state whenever it closes, so nothing from
+  // the previous user reappears for the next person (the modal stays mounted
+  // across open/close). Covers sign-out and the ✕/backdrop close alike — clears
+  // credentials + name AND the transient error/success messages (e.g. a stale
+  // "reset link sent" banner) and returns to the sign-in tab.
   useEffect(() => {
     if (!isOpen) {
       setEmail('');
       setPassword('');
+      setName('');
+      setError(null);
+      setSuccess(null);
+      setMode('signin');
     }
   }, [isOpen]);
 

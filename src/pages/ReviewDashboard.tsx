@@ -85,6 +85,15 @@ export function ReviewDashboard() {
     }
   }, [location.pathname, location.state, navigate]);
 
+  // Auto-dismiss the toast (also mirrors AdminInvitations) — otherwise the
+  // fixed-position banner would sit on screen for the rest of the session while
+  // the reviewer keeps working the queue.
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [toast]);
+
   useEffect(() => {
     // Run sequentially: only fetch submissions after the auth/role check
     // confirms reviewer access. Otherwise a non-reviewer briefly issues a
