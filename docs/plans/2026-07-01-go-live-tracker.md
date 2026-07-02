@@ -3,7 +3,47 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-02 (Fable, T3 merge + security-fix session). **#573 MERGED** (squash
+**Last updated:** 2026-07-02 (Fable, T3b brief session). **T3b brief ready:**
+`2026-07-02-brief-t3b-resubmit.md` — resubmit = a `resubmit` mode in `process-submission`
+(re-extract the same row, flip needs_revision→submitted + null `revision_requested_reason`
+only after a successful re-snapshot, DELETE stale `submission_similarities` before the dedup
+re-run — insert-only + no unique constraint, verified) + an instructions-and-button block in
+the My-submissions revision callout. **No migration needed** (column inventory + status CHECK
+probed on TEST; teacher RLS stays read-only — writes go through the edge fn's service client
+behind ownership/status gates, returned as 200 `success:false` plain-language errors).
+Tag+feedback preservation is free — the `submission_reviews` restore path
+(`useReviewSubmission.ts:373-417`) already prefills tags/note on re-review; RPC 55000 guard
+only blocks terminal statuses, so re-review flows through the UPSERT path. **E2E decision:
+the deferred accept-flow Playwright E2E does NOT ride T3b** — the repo has zero
+authenticated-E2E fixture (`review-flow.spec.ts` is fully `.skip`ped on exactly that gap);
+build-the-fixture-vs-accept-manual-smokes is a T5 call. TEST probe 2026-07-02: 0
+`needs_revision` rows (113 approved + 17 rejected) — the executor creates the state during
+the smoke. The T3b PR carries this tracker + the brief (do NOT sweep other untracked docs).
+NEXT = **T3b execution (Opus, brief ready)**; then T4 dedup design (Fable). Prior update
+below.
+
+**Prior update (2026-07-02, Fable, #574 merge + PROD verify + Part 3c go-live session):**
+**T3 TRACK CLOSED — THE SITE IS NOW INVITE-ONLY AND LIVE; real invitations are SAFE to send.**
+**#574 MERGED** (squash `104337f`) after Fable's own diff review + independent re-verification
+(re-ran all 3 anon probes live on TEST; confirmed the 5 surviving admin/own policies cover every
+client-side admin op; confirmed the deploy-window is safe — PROD's OLD RPC was anon-callable, so the
+new frontend worked before the migration landed). User approved BOTH PROD gates (migration + edge).
+**Migration PROD-verified:** enumeration SELECT + dead accept UPDATE policies GONE; RPC hardened
+(SECURITY DEFINER, `search_path=''`, 9-col return, grants anon/authenticated/service_role only);
+3 anon probes pass on PROD (enumeration→`[]`, exact-token→1 row, bogus→`[]`); probe row deleted
+(RETURNING-verified, baseline restored). **Edge deploy 3-signal-verified:** invitation-management
+v26→v27, `ezbr_sha256` `c3ed3dfc…a160` = the TEST-verified v10 bundle exactly, bogus-token accept
+probe → the fixed `404 Invalid or expired invitation`. **Part 3c COMPLETE:** user toggled OFF
+"Allow new users to sign up"; `auth/v1/signup` → **422 `signup_disabled`** verified; PROD
+end-to-end invite test on the REAL live site (isolated browser context): throwaway teacher invite →
+accept page resolved it via the new token-scoped RPC (showed email + TEACHER role) → account
+created, auto-signed-in, `user_profiles.role='teacher'`, invitation `accepted_at` set → then FULLY
+cleaned (profile + auth user + invitation deleted with RETURNING; residue probes all 0; table back
+to 1 total / 0 pending). NEXT = **T3b resubmit button: Fable brief first, then Opus executes**
+(design sketch in punch-list row 7); after that T4 dedup design (the 2nd planned Fable session).
+Prior update below.
+
+**Prior update (2026-07-02, Fable, T3 merge + security-fix session):** **#573 MERGED** (squash
 `9a50dc6`) after Fable's own diff review; PROD edge deploy **user-approved** and 3-signal-verified
 (invitation-management v26 + complete-review v9, shas match TEST bundles, bogus-token probe returns
 the fixed 404). **RLS invitation-token fix = PR #574, TEST-VERIFIED, awaiting USER merge.** Branch
@@ -110,9 +150,9 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 | T1 | Search: `taste test` fix, then search CLOSES | Opus | **✅ DONE — shipped PR #570 (`d66dcdc`), PROD-verified 2026-07-01: `taste test` top-10 = 10/10 relevant (was ~1/10), q18 1/10→10/10. SEARCH TRACK CLOSED.** |
 | T2 | Submission→review→publish walkthrough WITH user | user + any | **✅ DONE 2026-07-01 (Fable, live with user)** — all 10 stations; pipeline verified door-to-door on TEST (first full post-outage run); punch-list = 22 rows (3 blockers: revisions-blocked-by-tag-gate, no-resubmit-path, rejection dead-end; 5 bad incl. dup/decision disconnect, blank summaries, uneditable filename titles); email inventory rows 2/4/5/7 confirmed live; TEST cleaned & verified (763 lessons). Full detail + punch-list in `2026-07-01-t2-walkthrough.md` |
 | T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE & PROD-VERIFIED — shipped PR #571 → squash `eeccedb`; all 6 gates green (4 TEST + 2 PROD), bot clean approve. Submission pipeline + email gate alive again on PROD.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
-| T2b | Quick-wins patch PR (punch-list bucket 1: gate scoping, decision toasts, card titles, sticky pane, title+summary fields incl. RPC COALESCE-flip migration, sign-in clear, /login fix, copy + error propagation) | Opus | **NEXT — brief ready:** `2026-07-01-brief-quickwins-patch.md`. Carries the uncommitted sprint docs. |
-| T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus → **Fable** (merge + security fix) | **✅ MERGED + PROD-VERIFIED 2026-07-02** (squash `9a50dc6`; user approved the PROD edge deploy; 3-signal verify + bogus-token probe passed). **RLS token-enumeration fix in flight:** branch `fix/invitation-token-rls` (migration + RPC-only anon read path + AuthModal dead-signup deletion + F4 route-strip + seeded RLS regression test); local gates green; Codex cross-check → PR → TEST verify → user merges → user approves PROD migration → then Part 3c. NO real invitations until the fix is on PROD. Residual: deployed-but-retired `password-reset` fn deletion (user OK pending); accept-flow E2E deferred to T3b/T5. |
-| T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus | Pending — Fable brief after T3 (design already sketched in punch-list row 7) |
+| T2b | Quick-wins patch PR (punch-list bucket 1: gate scoping, decision toasts, card titles, sticky pane, title+summary fields incl. RPC COALESCE-flip migration, sign-in clear, /login fix, copy + error propagation) | Opus | **✅ DONE — shipped PR #572 (`3a7d634`) 2026-07-01.** Brief: `2026-07-01-brief-quickwins-patch.md`. Carried the then-uncommitted sprint docs. |
+| T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus → **Fable** (merge + security fix + go-live) | **✅ TRACK CLOSED 2026-07-02** — #573 (`9a50dc6`) + RLS fix #574 (`104337f`) both merged + PROD-verified; **Part 3c DONE: public signups disabled (422 `signup_disabled` verified) + PROD end-to-end throwaway-teacher invite test passed on the live site and fully cleaned. Site is INVITE-ONLY and live; real invitations safe to send.** Residual: accept-flow Playwright E2E deferred to T3b/T5. |
+| T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus | **NEXT — brief ready (2026-07-02):** `2026-07-02-brief-t3b-resubmit.md`. No migration; `process-submission` resubmit mode + My-submissions button. Accept-flow E2E does NOT ride (no auth fixture exists — T5 call). Carries the uncommitted tracker edits. |
 | T4 | Corpus dedup sweep (~745 lessons) | Fable design → Sonnet candidates → user adjudicates → Opus ships | Pending (design session = 2nd of 2 planned Fable sessions) |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
 
