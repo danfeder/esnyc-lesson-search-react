@@ -6,6 +6,7 @@ import {
   extractMetadataFromContent,
 } from '../_shared/google-docs-parser.ts';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
 
 interface ExtractRequest {
   googleDocUrl: string;
@@ -45,7 +46,7 @@ serve(async (req) => {
     const keyBytes = new TextEncoder().encode(supabaseServiceKey);
     const isServiceRole =
       tokenBytes.length === keyBytes.length &&
-      crypto.subtle.timingSafeEqual(tokenBytes, keyBytes);
+      timingSafeEqual(tokenBytes, keyBytes);
 
     if (!isServiceRole) {
       // Verify user token

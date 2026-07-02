@@ -6,6 +6,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
 
 serve(async (req) => {
   // Origin-restricted CORS (see _shared/cors.ts) — do NOT use a literal '*'.
@@ -38,7 +39,7 @@ serve(async (req) => {
     const keyBytes = new TextEncoder().encode(supabaseServiceKey);
     const isServiceRole =
       tokenBytes.length === keyBytes.length &&
-      crypto.subtle.timingSafeEqual(tokenBytes, keyBytes);
+      timingSafeEqual(tokenBytes, keyBytes);
     if (!isServiceRole) {
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       if (authError || !user) {
@@ -99,3 +100,4 @@ curl -X POST 'http://localhost:54321/functions/v1/<name>' \
 | CORS error | Add corsHeaders to ALL responses |
 | JWT verification failed | Use `--no-verify-jwt` locally |
 | RLS policy violation | The service-role key bypasses RLS — but because it does, the function MUST run its own in-code auth gate (see Key Rules). Do NOT reach for the service-role key as a way to skip authentication. |
+| `crypto.subtle.timingSafeEqual is not a function` | Deno 2 (now the hosted edge runtime) removed the non-standard Deno-1 API. Use the shared `timingSafeEqual` from `../_shared/timing-safe-equal.ts` instead. |

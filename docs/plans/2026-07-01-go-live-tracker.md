@@ -3,8 +3,14 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-01 (Fable, redesign session) — T1 synonym fix disproven → redesigned as
-collocation carve-out; new brief written, mechanism fully rehearsed on TEST (q18 10/10), ready to execute.
+**Last updated:** 2026-07-01 (Opus, T2a execution session) — **T2a auth-gate fix SHIPPED &
+TEST-verified** (PR #571 `fix/edge-auth-gate-deno2`): shared XOR-fold `timingSafeEqual` helper + 3
+call-site swaps + CLAUDE.md pattern update + colocated unit test. All four pre-registered TEST
+gates green (garbage-bearer probes 401 not 400 on all three fns; positive `process-submission`
+path = `success:true`, internal `extract-google-doc`+`detect-duplicates` both logged 200; row
+`submitted`/content present; cleanup deleted). bot review = clean approve. **PROD: merge queues
+the deploy behind the manual-approval gate; run PROD gates 5–6 after approval.** Next = T2
+walkthrough with user (unblocked once PROD verified).
 
 ## Working model (binding for every session in this sprint)
 
@@ -33,8 +39,9 @@ collocation carve-out; new brief written, mechanism fully rehearsed on TEST (q18
 
 | # | Track | Model | Status |
 |---|---|---|---|
-| T1 | Search: `taste test` fix, then search CLOSES | Opus | **READY (v2) — brief at `docs/plans/2026-07-01-brief-t1-taste-test-collocation.md`** (v1 synonym brief DISPROVEN on TEST — absorption collapse; see handoff doc) |
-| T2 | Submission→review→publish walkthrough WITH user | user + any | Pending (schedule with user; produces punch-list + email inventory) |
+| T1 | Search: `taste test` fix, then search CLOSES | Opus | **✅ DONE — shipped PR #570 (`d66dcdc`), PROD-verified 2026-07-01: `taste test` top-10 = 10/10 relevant (was ~1/10), q18 1/10→10/10. SEARCH TRACK CLOSED.** |
+| T2 | Submission→review→publish walkthrough WITH user | user + any | **NEXT (unblocked once T2a PROD-verified)** — walkthrough doc + test docs + env ready (`2026-07-01-t2-walkthrough.md`); email inventory already drafted from code |
+| T2a | Edge auth-gate fix (Deno 2 removed `timingSafeEqual`; submissions + all system emails dead on TEST+PROD) | Opus | **✅ DONE (TEST) — shipped PR #571 (`fix/edge-auth-gate-deno2`); all 4 TEST gates green + bot clean approve. PROD deploy queued behind manual-approval gate — run gates 5–6 after approval.** brief at `2026-07-01-brief-edge-auth-gate-fix.md` |
 | T3 | Auth email (invite/reset/login only) via Supabase Auth + Google Workspace SMTP — no DNS | Opus | Pending (Fable brief after T2; map custom email edge fns → retire what built-ins cover) |
 | T4 | Corpus dedup sweep (~745 lessons) | Fable design → Sonnet candidates → user adjudicates → Opus ships | Pending (design session = 2nd of 2 planned Fable sessions) |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
@@ -55,14 +62,59 @@ collocation carve-out; new brief written, mechanism fully rehearsed on TEST (q18
   2 lines, all other rows byte-identical; TEST restored after. The T1 PR also carries the
   outstanding uncommitted docs: this tracker, both briefs, the handoff doc, the Wave-6
   status-doc post-merge edit, and `docs/plans/2026-06-29-c42-search-engine-options-notes.md`.
+  **SHIPPED 2026-07-01 (Opus): PR #570 → squash `d66dcdc`, migration applied to PROD.** CI-applied
+  TEST reproduced the committed scorecard byte-identical; bot triage clean (claude-database-review
+  no findings; the one `claude` review = "no blocking issues", 4 non-blocking observations all
+  rebutted as out-of-scope/not-a-regression). **PROD verification:** `expand_search_with_synonyms
+  ('taste test')` = `'tast':AB`, total_count 52 (PROD corpus vs TEST 51), top-10 = **10/10**
+  `is_tasting` (exactly the predicted set: Tastes Around the World, Eat the Rainbow, Colonial Foods
+  of NY, A Fruit Is A Suitcase For Seeds, All About Corn, Plant Parts, Stems, The Garden in the
+  Winter, 5th grade December #2, Food Geography - Pizza). **Search track CLOSED.** These tracker
+  edits are uncommitted post-merge — they ride the next docs-carrying PR (T3/T4).
 - **T2**: user narrates pain points as teacher + reviewer; also log every email the flow tries
   to send. User dislikes the current flow — their punch-list decides patch-vs-reshape. Rejected-
-  teacher path is a known blind spot to walk explicitly.
+  teacher path is a known blind spot to walk explicitly. **Prep session 2026-07-01 (Fable):**
+  full flow mapped from code; email inventory drafted (13 custom sends + 2 built-in paths, all
+  currently broken in ≥1 of 3 stacked layers); walkthrough runs on local dev server pointed at
+  TEST (real corpus + functions, no PROD risk); two shared test Google Docs prepared (original +
+  near-duplicate of Kimbap for dup-detection theater); teacher/reviewer/admin@test.com verified.
+  Known limitation: TEST lacks `GOOGLE_SERVICE_ACCOUNT_JSON` → extraction returns mock content
+  (flow mechanics real, doc text canned); optional single PROD run at the end if user wants
+  full realism.
+- **T2a (blocker, found 2026-07-01)**: hosted edge runtime upgraded to Deno 2, which removed the
+  non-standard `crypto.subtle.timingSafeEqual`; the service-role auth gate in extract-google-doc
+  / detect-duplicates / send-email throws → 400, but ONLY for bearer tokens whose length equals
+  the service key's — i.e. exactly the legitimate internal calls, while user-JWT calls
+  short-circuit and work, which is why nothing looked wrong. Confirmed by length-probe on both
+  TEST and PROD (`"crypto.subtle.timingSafeEqual is not a function"`). Consequences: submissions
+  fatal-fail at extraction; dup detection silently skipped; ALL system emails die before Resend
+  (a third breakage layer under the sandbox-sender and no-DNS layers). No PROD submission
+  attempts since 2025-09 → no user damage. Fix = shared XOR-fold `timingSafeEqual` helper + 3
+  call-site swaps + CLAUDE.md pattern update; carries the uncommitted sprint docs. E2E note: CI
+  E2E passed throughout because user-JWT paths work — the breakage was invisible to every
+  existing check.
+  **SHIPPED 2026-07-01 (Opus): PR #571 `fix/edge-auth-gate-deno2`.** Also added a colocated unit
+  test for the helper (`_shared/timing-safe-equal.test.ts`, 5 cases) per the bot review's one
+  non-blocking suggestion. All four pre-registered TEST gates passed: (1) garbage 219-char bearer
+  probe → **401** (not the 400 TypeError) on extract-google-doc / send-email / detect-duplicates;
+  (2) positive path as `teacher@test.com` → `success:true` (submissionId, `duplicatesFound:0`);
+  (3) row `submitted` + `extracted_content` present, and TEST edge logs show the internal
+  service-bearer calls to `extract-google-doc` (v11) + `detect-duplicates` (v9) both returning
+  **200** (v10 previously logged the 400 TypeError — confirms the deploy advanced the bundle, not
+  a silent no-op); (4) test row deleted. `send-email` bundle sha changed (v13→v14). Full PR CI
+  green incl. E2E; claude bot review = clean approve (verified no 4th call site, no timing
+  side-channel, imports resolve). **PROD gates 5–6 still to run after the manual approval on the
+  merge-to-main deploy.** Squash sha + PROD probe result to be recorded on the next
+  docs-carrying PR (per no-docs-only-push).
 - **T3**: email is auth-only (user 2026-07-01): invitations, password reset, account management.
   NO submission/review notification emails needed. Resend DNS unavailable for weeks →
   route Supabase Auth email through the org's Google Workspace (no DNS needed). Custom
   `send-email` / `password-reset` / `invitation-management` edge fns: retire whatever the
-  platform built-ins cover (map first — invitations may carry roles).
+  platform built-ins cover (map first — invitations may carry roles). **Email map now exists:**
+  full inventory (13 custom sends, 2 built-in paths, per-email works-today + needed-for-launch
+  columns) in `2026-07-01-t2-walkthrough.md` §Email inventory. Notable: the custom
+  `password-reset` request endpoint is orphaned (no frontend caller; live flow uses the
+  built-in mailer) — prime retirement candidate.
 - **T4**: use simple text-similarity (pg_trgm) for candidates; **retire the embedding machinery,
   don't repair it** (two mismatched pipelines). Companion lessons (Part 1/Part 2) need a
   "related, not duplicate" outcome. Pre-delete FK checklist applies (see memory:
