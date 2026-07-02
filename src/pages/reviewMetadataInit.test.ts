@@ -102,6 +102,15 @@ describe('withPrefilledTitleSummary (editable title/summary prefill)', () => {
     expect(out.summary).toBeUndefined();
   });
 
+  it('re-derives from the doc when the stored value is blank/whitespace (cleared then saved needs_revision)', () => {
+    const out = withPrefilledTitleSummary(
+      { title: '', summary: '   ' },
+      { extractedTitle: 'Doc Title', extractedContent: 'Doc Title\n\nSummary: Doc summary.\n\nX' }
+    );
+    expect(out.title).toBe('Doc Title');
+    expect(out.summary).toBe('Doc summary.');
+  });
+
   it('does not mutate the input metadata', () => {
     const input = {};
     withPrefilledTitleSummary(input, { extractedTitle: 'X', extractedContent: 'Y' });
