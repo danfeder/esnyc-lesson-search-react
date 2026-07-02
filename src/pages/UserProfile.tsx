@@ -177,6 +177,8 @@ export function UserProfile() {
       if (invokeError) throw invokeError;
       if (!response?.success) throw new Error(response?.error ?? 'Could not send back for review.');
       setSuccessMessage('Sent back for review. A reviewer will take another look.');
+      // Auto-dismiss the banner like handleSave/handleChangePassword do.
+      setTimeout(() => setSuccessMessage(''), 4000);
       await loadSubmissions();
     } catch (error) {
       logger.error('Error resubmitting for review:', error);
