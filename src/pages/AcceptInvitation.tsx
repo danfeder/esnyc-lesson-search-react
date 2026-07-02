@@ -12,20 +12,11 @@ import {
   type IntRole,
 } from '@/components/Internal';
 
-interface InvitationMetadata {
-  invited_by_id?: string;
-}
-
 interface InvitationData {
-  id: string;
   email: string;
   role: UserRole;
   school_name?: string;
   school_borough?: string;
-  metadata?: InvitationMetadata;
-  expires_at: string;
-  accepted_at?: string;
-  invited_at: string;
 }
 
 export function AcceptInvitation() {
@@ -46,25 +37,31 @@ export function AcceptInvitation() {
 
   const validateInvitation = useCallback(async () => {
     try {
-      const { data, error: fetchError } = await supabase
-        .from('user_invitations')
-        .select('*')
-        .eq('token', token!)
-        .single();
+      // Token-scoped lookup via the SECURITY DEFINER RPC. Anon has no direct
+      // SELECT path on user_invitations any more — the old list-style policy
+      // let anyone enumerate every pending invitation's token (the .eq filter
+      // was client-side, not access control; dropped 2026-07-02). The RPC
+      // returns only the row matching this exact token, whatever its status,
+      // so we can still say WHY a link no longer works.
+      const { data, error: fetchError } = await supabase.rpc('validate_invitation_token', {
+        invite_token: token!,
+      });
 
-      if (fetchError || !data) throw new Error('Invalid or expired invitation');
-      if (data.accepted_at) throw new Error('This invitation has already been accepted');
-      if (new Date(data.expires_at) < new Date()) {
+      const row = data?.[0];
+      if (fetchError || !row) throw new Error('Invalid or expired invitation');
+      if (row.accepted_at) throw new Error('This invitation has already been accepted');
+      if (row.expires_at && new Date(row.expires_at) < new Date()) {
         throw new Error('This invitation has expired');
       }
+      // Belt-and-braces for the deploy window where the pre-2026-07-02
+      // function shape (no accepted_at/expires_at columns) is still live.
+      if (row.is_valid === false) throw new Error('Invalid or expired invitation');
 
       setInvitation({
-        ...data,
-        role: data.role as UserRole,
-        metadata: (data.metadata as InvitationMetadata | null) || undefined,
-        school_name: data.school_name || undefined,
-        school_borough: data.school_borough || undefined,
-        accepted_at: data.accepted_at || undefined,
+        email: row.email,
+        role: row.role as UserRole,
+        school_name: row.school_name || undefined,
+        school_borough: row.school_borough || undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch invitation');

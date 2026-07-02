@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { requireNonProd } from './lib/require-env.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,6 +26,10 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Please ensure VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in .env');
   process.exit(1);
 }
+
+// The invitation-enumeration scenario below seeds (and deletes) a probe row,
+// so this script now mutates data: guard against accidental prod runs.
+requireNonProd({ scriptName: 'test-rls-policies.mjs' });
 
 // Create Supabase client with service role (bypasses RLS)
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -195,6 +200,77 @@ async function testPolicyScenarios() {
         });
         // Should fail with permission denied
         return error !== null || (data && data.success === false);
+      },
+    },
+    // user_invitations token-harvest regression (fix shipped 2026-07-02):
+    // the old "Public can view valid invitation by token" policy had no
+    // token-equality predicate, so anon could enumerate every pending
+    // invitation's email/role/token. Seed a real pending invitation and
+    // assert (a) anon list-reads see nothing, (b) the token-scoped RPC
+    // returns exactly the seeded row, (c) a wrong token returns nothing.
+    {
+      name: 'Anonymous cannot enumerate user_invitations; token-scoped RPC works',
+      test: async () => {
+        const probeEmail = 'rls-probe-invitation@test.invalid';
+        const { data: anyUser } = await supabase.from('user_profiles').select('id').limit(1);
+        if (!anyUser || anyUser.length === 0) {
+          console.log('    ℹ️  Skipping: no user_profiles row to use as invited_by');
+          return true;
+        }
+        // Clear any leftover probe row from an aborted earlier run, then seed.
+        await supabase.from('user_invitations').delete().eq('email', probeEmail);
+        const { data: seeded, error: seedError } = await supabase
+          .from('user_invitations')
+          .insert({
+            email: probeEmail,
+            role: 'teacher',
+            invited_by: anyUser[0].id,
+            expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          })
+          .select('id, token')
+          .single();
+        if (seedError || !seeded) {
+          console.log(`    ℹ️  Could not seed probe invitation: ${seedError?.message}`);
+          return false;
+        }
+        try {
+          const anonClient = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+
+          const { data: listData, error: listError } = await anonClient
+            .from('user_invitations')
+            .select('token, email, role')
+            .limit(10);
+          const enumerationBlocked = !listError && (!listData || listData.length === 0);
+          if (!enumerationBlocked) {
+            console.log('    ❌ anon list-read returned rows (or errored unexpectedly)');
+          }
+
+          const { data: hitData, error: hitError } = await anonClient.rpc(
+            'validate_invitation_token',
+            { invite_token: seeded.token }
+          );
+          const lookupWorks =
+            !hitError &&
+            hitData?.length === 1 &&
+            hitData[0].email === probeEmail &&
+            hitData[0].is_valid === true;
+          if (!lookupWorks) {
+            console.log(`    ❌ token-scoped RPC lookup failed: ${hitError?.message ?? 'wrong row'}`);
+          }
+
+          const { data: missData, error: missError } = await anonClient.rpc(
+            'validate_invitation_token',
+            { invite_token: 'not-a-real-token' }
+          );
+          const missEmpty = !missError && (!missData || missData.length === 0);
+          if (!missEmpty) {
+            console.log('    ❌ RPC returned data for a bogus token');
+          }
+
+          return enumerationBlocked && lookupWorks && missEmpty;
+        } finally {
+          await supabase.from('user_invitations').delete().eq('id', seeded.id);
+        }
       },
     },
     {
