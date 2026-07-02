@@ -1,0 +1,2755 @@
+{
+  "artifact": "T4 dedup walkthrough decisions (design doc D6)",
+  "decided_by": "Daniel Feder (user), live walkthrough with Claude (Fable) per D4; AI deck recommendations were the starting point, every verdict user-confirmed",
+  "session_dates": [
+    "2026-07-02"
+  ],
+  "source_candidates": "docs/plans/t4-dedup/candidates.json",
+  "evidence_deck": "docs/plans/t4-dedup/deck.md (+ deck.json, model claude-sonnet-4-6)",
+  "verdict_key": {
+    "retire_duplicate": "true copy set: survivors stay live, retired[] get retired_at + retired_reason=dedup:<group_id>",
+    "keep_family": "genuinely different lessons kept for the post-sprint families project (family_label records how they relate); retired[] non-empty when an exact-copy pair was embedded in the family",
+    "unrelated": "false positive — no action, kept for the record"
+  },
+  "groups": [
+    {
+      "group_id": "anywhere-farm-30bddc",
+      "title": "Anywhere Farm",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1NH0MZyhGNTdv3oPLf9pnmha8R8GOvPoz-_5MLxnS_xk",
+          "title": "Anywhere Farm Lesson"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1sKR57WGb9pviOroK2xzmLz9ro6S3w9oAg_oVByk76DM",
+          "title": "Anywhere Farm"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~100% identical; keeper has correct 'recycling' wording where the copy has a typo."
+    },
+    {
+      "group_id": "legend-of-the-3-sisters-eff077",
+      "title": "Legend of the 3 sisters",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "13FPqZmdrIamQqrzLZUoeLt8CGTnP3vNJv_C_q5gyxjA",
+          "title": "The Story of the 3 sisters"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "19Tg4I9XywohpcrdBZ77vaBgyIdYhxGo0bk3FpSUcE2Y",
+          "title": "Legend of the 3 sisters"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~99% identical; keeper has filled-in background reading section and broader grade range."
+    },
+    {
+      "group_id": "november-will-it-decompose-part-ii-4ab586",
+      "title": "November Will It Decompose, Part II",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1XLqd7Hrxr-lacieyRdaVsSBIdOOj-k4QW-Du8Dk3VXE",
+          "title": "November Will It Decompose, Part II"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1Hrjix7fb6KQEVKwegeWLkoiUx8fIWpO1UBKEU0ni2QU",
+          "title": "November Will It Decompose, Part II (1)"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~99% identical; keeper is internally consistent (title and body both say November) and lists Math."
+    },
+    {
+      "group_id": "worm-study-65ab90",
+      "title": "Worm Study",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1wp71sAPQQycFDAHX_k-Tk8fpzz-bb2FW",
+          "title": "Worm Study"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_2004c1a511fe41b58e58f1aefd339773",
+          "title": "Worm Study"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~97% identical; keeper has summary + clean formatting, copy is a table-import with [Table] markers."
+    },
+    {
+      "group_id": "potato-exploration-9223aa",
+      "title": "Potato Exploration",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg",
+          "title": "Potato Exploration"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_78fb31393f1e4d629bfdf735ebd97694",
+          "title": "Potato Exploration\u000b"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~96% identical; keeper has summary, richer heritage tags, correct indoor/outdoor location."
+    },
+    {
+      "group_id": "butterflies-f3d4b7",
+      "title": "Butterflies",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_be063faef5704613af4fa8dda5864e88",
+          "title": "Butterflies\u000b"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1WKXLADkrfgZ7462f3JKfHNV-trHtuNtmo3i6Gq-PqeA",
+          "title": "Butterflies"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~95% identical; keeper is the fuller newer version (outdoor option, coloring sheet, 2 extra sections)."
+    },
+    {
+      "group_id": "the-apple-story-4c02c3",
+      "title": "The Apple Story",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1pzcXwFx2S-P1q88F1QIhdLKHQiVvUwSq",
+          "title": "The Apple Story"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_2d43fc766fa14401b48065f167003ded",
+          "title": "The Apple Story"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~94% identical; keeper has summary, richer tags, copyright attribution."
+    },
+    {
+      "group_id": "garden-jobs-afbe9e",
+      "title": "Garden Jobs",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1YeuuUtmBUDf4OXVVfrSgSGOe_iaTEAz4",
+          "title": "Garden Jobs"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_6c695009089f41f99432563f09f57f40",
+          "title": "Garden Jobs"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~94% identical; keeper has summary, richer metadata, copyright attribution."
+    },
+    {
+      "group_id": "insect-detectives-2e1a88",
+      "title": "Insect Detectives",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_8bce4ab6a0e6441b8ca1a49d620f5532",
+          "title": "Insect Detectives"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1cOoL_f4KW083IAnhyCyo0RUXNXnZQ-LvhShNpuD917k",
+          "title": "Insect Detectives"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~94% identical; keeper is newer with Garden Connection + Critical Thinking sections."
+    },
+    {
+      "group_id": "worm-breakfast-4606c3",
+      "title": "Worm Breakfast\u000b",
+      "tier": "A",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c",
+          "title": "Worm Breakfast Recipe"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_9d3fa2495f2f41bd9946eec528198210",
+          "title": "Worm Breakfast\u000b"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~92% identical; keeper has clean readable text + summary, copy is garbled by table-import symbols."
+    },
+    {
+      "group_id": "fattoush-8c6942",
+      "title": "Fattoush",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1Dz-Jv4cV0N0ntxZ8z0VcRgenI0hpZuOIDJuPbEvr7bI",
+          "title": "Fattoush"
+        },
+        {
+          "lesson_id": "1gh1_OqCpnhDkGOmte5VIdIkEkU8_HpXs34KdcSuPkrQ",
+          "title": "Fattoush"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1YeRlyncgM-gMS-Aica2Fk7wjBsRN9-K6",
+          "title": "Fattoush"
+        },
+        {
+          "lesson_id": "1vDebvrcoPdDcoooLnpF64P3ade4l8ZRqVkfSlEAyYts",
+          "title": "Fattoush"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group. Keep the two real, different lessons (A: cooking stations + cultural mapping; C: individual plates, COVID-era). Retire the two 1,008-char stubs (B, D) — word-for-word identical to each other, self-described duplicates. B/D pair is the corpus's only content_hash-identical pair."
+    },
+    {
+      "group_id": "sun-printing-ac6918",
+      "title": "Sun Printing",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1YuKoPyuJb5ImdgY1vTne8snk8VQeCCAjaPcJcxWIfhM",
+          "title": "Sun Printing"
+        },
+        {
+          "lesson_id": "lesson_fd594f6d103e41caaac34399cc1c23cc",
+          "title": "Sun Printing/Cyanotype"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_d5c52872fd214f289d3cafaf0af3e607",
+          "title": "Sun Printing\u000b"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group. Keep A (K-1, has summary) + C (real 4th-5th grade adaptation). Retire B, the ~99% K-1 copy without a summary."
+    },
+    {
+      "group_id": "the-garden-in-the-fall-ccb9af",
+      "title": "The Garden in the Fall",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "other",
+      "survivors": [
+        {
+          "lesson_id": "0BwC8Pf3ZwAXjN04xRGEwcl9Cd0k",
+          "title": "The Summer Garden"
+        },
+        {
+          "lesson_id": "14j8QuDeVIPE6KlYqa5ebWISE3iiSVuq8",
+          "title": "Pests in the Garden"
+        },
+        {
+          "lesson_id": "15pgBlVdHdxpRCD22dmwzIgG-aBgHwe8dK2BNzg-85ks",
+          "title": "The Garden in the Winter"
+        },
+        {
+          "lesson_id": "1A34UK78EbtdHIVeiVe0lNiLJaJ557y-JlS_o673-hmw",
+          "title": "The Garden in the Fall"
+        },
+        {
+          "lesson_id": "1HHuEkR4gaoN7_Q7mlcteiDQ93glIfluzHF9sZSfZ0k8",
+          "title": "The Garden in the Summer"
+        },
+        {
+          "lesson_id": "1Yy7iv3vxPHukKFooYce0yr5BOqUcqprM2rhUWX12Cgo",
+          "title": "The Garden in the Spring"
+        },
+        {
+          "lesson_id": "1_YYC5Yr7thlhsTuEA3X3bnsVLw7jMttBAUpoxiud7sY",
+          "title": "I spy...in the garden! Indoors 3K/PK"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_727ff8bd39e44c7eaa1439302f02c93a",
+          "title": "I spy…in the garden!\u000b"
+        },
+        {
+          "lesson_id": "lesson_d4a676556c8d4c03bbc142d0f89c0010",
+          "title": "The Garden in the Fall \u000b"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group: seasonal Pre-K series + two unrelated members (A, B) that just matched on wording. Retire H (~87% copy of G, 'I spy...in the garden!', G more complete with Canva link) and I (~97% copy of D, 'The Garden in the Fall', D more complete)."
+    },
+    {
+      "group_id": "vegetable-ramen-c0f2e8",
+      "title": "Vegetable Ramen",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "other",
+      "survivors": [
+        {
+          "lesson_id": "1FUQYevNBKMdDFgZYFGyPDT90O_61dVOf",
+          "title": "Vegetable Ramen"
+        },
+        {
+          "lesson_id": "1JZ2pkduAlf6OArWToNs4xxPEMkhLZKNnjX5kKN0nQuo",
+          "title": "Food Waste"
+        },
+        {
+          "lesson_id": "1d1KP9lfI6jQdF9sBU74ncPv36OZZbTfm",
+          "title": "Vegetable Ramen"
+        },
+        {
+          "lesson_id": "lesson_eb0b8ac045ab4dd8a87be6c8677454bb",
+          "title": "Food Waste"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_d28f99cce1784da08593876f227338ed",
+          "title": "Vegetable Ramen"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group (Ramen lessons + Food Waste lessons). Retire D, the ~96% copy of A with no summary and thinner info. C is a genuinely distinct Ramen variant; B/E are different Food Waste lessons."
+    },
+    {
+      "group_id": "hispanic-heritage-month-baleadas-71a886",
+      "title": "Hispanic Heritage Month: Baleadas",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "other",
+      "survivors": [
+        {
+          "lesson_id": "1VdSjKXnC33YNrhzBrCS_P4g2dP3nZrjnA53rBizPesw",
+          "title": "Hispanic Heritage Month: Baleadas"
+        },
+        {
+          "lesson_id": "1kweucRDWEFk_Hi5LM_9M9DebTwKVZ6U0nhO8oM15sFk",
+          "title": "Hispanic Heritage Month: Esquites"
+        },
+        {
+          "lesson_id": "1ptt-0pUVa3KAR6QcuMQZpqFG3ISZGxMXudLgQmSbwxY",
+          "title": "Hispanic Heritage Month: Mexican Street Corn Salad (Esquites)"
+        },
+        {
+          "lesson_id": "lesson_b76499942d7443cd8db0dc33fbfe73d6",
+          "title": "Mobile Education: Mexican Street Corn Salad (Esquites)"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1z6FCSrVdvFhcui0UKoJMPw5vwfy9iHUd2hC67bEhE5o",
+          "title": "Mexican Street Corn Salad (Esquites)"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group (Baleadas + Esquites lessons, incl. a mobile-ed Esquites). Retire D, the ~96% copy of C missing the recipe amounts and fuller closing ritual that C has."
+    },
+    {
+      "group_id": "baking-intro-pumpkin-muffins-ad6860",
+      "title": "Baking Intro: Pumpkin Muffins",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1K0zdfgOhbMmfWLeSwPfpz3dJ0RM7fLrAilQ2Ebfjilk",
+          "title": "Pumpkin Spice Muffins"
+        },
+        {
+          "lesson_id": "1OWqO3AwjSxS-em8YXeo1rB4pD8dHTF7bjTyMxYHkEx4",
+          "title": "Baking Intro: Pumpkin Muffins"
+        },
+        {
+          "lesson_id": "1hcy6K0I14Kl4UOgNrNoWz7w37_3MV9lLkXAJ29Btk9Y",
+          "title": "Pumpkin Muffins"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_a2c4451732bd464281dfa8f7efd4d464",
+          "title": "Baking Intro: Pumpkin Muffins"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group (grade adaptations + a distinct 6th-7th festival version). Retire D, the ~96% copy of B with no summary and thinner details."
+    },
+    {
+      "group_id": "plant-life-cycle-exploration-3e68f8",
+      "title": "Plant Life Cycle Exploration",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1Bpg8H3y_CHtZ3gqSfoCjm0rldcaGxGOq",
+          "title": "Plant Life Cycle"
+        },
+        {
+          "lesson_id": "1yCK6hD1_eLxD-kyj2EH0BUxt36yC8aqrIW8JY5M0ZpA",
+          "title": "Plant Life Cycle Exploration"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_5bb0699f088d4b6cb0bac14b4477e259",
+          "title": "Plant Life Cycle Exploration"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group (K dance version vs 2-3 scavenger hunt). Retire C, the ~94% copy of B with no summary, fewer tags, table formatting."
+    },
+    {
+      "group_id": "food-system-advocates-7db234",
+      "title": "Food System Advocates",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1iqGFHrQ0rWfyoLo4R4n8FO9N-S7LW1ZpalaLNF5_Tmk",
+          "title": "Food System Advocates (Part 1)"
+        },
+        {
+          "lesson_id": "1ooeavtd1AUn9ZlM9vDS9J9g3rBvRQJ48Hk4lhTzlDw4",
+          "title": "Food System Advocates"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Same 6th-grade advocacy lesson, different final products (FlipGrid video vs poster/zine) and contexts (spring gr6 vs winter gr6-8). Deck flagged possible multi-part series."
+    },
+    {
+      "group_id": "september-sixth-grade-summer-and-pizza-p-e76791",
+      "title": "September Sixth Grade Summer and Pizza Plant Hunt",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "0BxEc0RZeYtCiUGNLaHJQSUFoQVE",
+          "title": "September Sixth Grade Summer Plant Hunt"
+        },
+        {
+          "lesson_id": "15uTWnv3aOIIeOLAhCjiA-9cG9xZlBKONpMZt-oyJYEQ",
+          "title": "September Sixth Grade Summer and Pizza Plant Hunt"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Standalone garden orientation vs pizza-garden-project version of the same September class."
+    },
+    {
+      "group_id": "lotion-agar-soap-k-1cd46b",
+      "title": "Lotion & Agar Soap - K",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1UOqNBD4kfdZth-hyfkGvYat_lVxgIscn",
+          "title": "Lotion & Agar Soap - MS"
+        },
+        {
+          "lesson_id": "1f1FVc2FsYYwFtCFWDRAxSfsT3BcPC1E5",
+          "title": "Lotion & Agar Soap - K"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Middle-school vs kindergarten adaptations of the same soap/lotion activities."
+    },
+    {
+      "group_id": "making-potting-soil-c6a627",
+      "title": "Making Potting Soil",
+      "tier": "A",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "0B25CqYCC7Ofbc1Z3X1Y1cVZFenM",
+          "title": "Making Potting Soil (5th Grade)"
+        },
+        {
+          "lesson_id": "0B25CqYCC7OfbdE5tczBRUFoyS2c",
+          "title": "Making Potting Soil (3rd Grade)"
+        },
+        {
+          "lesson_id": "103KB5-ciAEHWVDI1r02KjR3No2WSzazE",
+          "title": "Making Potting Soil with 3K-K"
+        },
+        {
+          "lesson_id": "1PO5ty9ZydWYF70IhHKtyk4zq5oP2FeSW",
+          "title": "Making Potting Soil"
+        },
+        {
+          "lesson_id": "1lGcRDLkd7n5-CulckQb-rt1M5Q7SeA3K",
+          "title": "Making Potting Soil"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Five age-banded versions with age-matched math; A/B close in wording but genuinely different grade adaptations."
+    },
+    {
+      "group_id": "chilled-cucumber-and-tahini-soup-with-sp-8090b5",
+      "title": "Chilled Cucumber and Tahini Soup with Spicy Pumpkin Seeds",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_426e363f5de14520b790695e25b95cda",
+          "title": "Chilled Cucumber and Tahini Soup with Spicy Pumpkin Seeds"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "13nUlv33cUEy2yjjzCARmrlCIHO4oDwQxyCNHVyUtKGk",
+          "title": "Chilled Cucumber and Tahini Soup with Spicy Pumpkin Seeds"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~92% identical; keeper (B) adds grade 6-8 adaptations, 2 teaching sections, wider grade range."
+    },
+    {
+      "group_id": "empanadas-corn-salad-eadd2e",
+      "title": "Empanadas & Corn Salad",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_be2157750d064fd3b7428af9c1944b59",
+          "title": "Empanadas & Corn Salad"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "16evw1D1b7oSDzm-vyvk2yXaIAt9XEwYsoWUjWE0CgpY",
+          "title": "Empanadas & Corn Salad"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~91% identical; keeper (B) adds grade-level variations 3K-5, garden connection, extensions."
+    },
+    {
+      "group_id": "welcome-garden-exploration-gardening-for-4f26ca",
+      "title": "Welcome & Garden Exploration: Gardening for All",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1qjmWKwdXaFMED7hu4RuSgSEOJvxwEVGGWuBoLHjU_pE",
+          "title": "Welcome & Garden Exploration: Gardening for All"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_cd3c5ef4e6e848fd9b062d47c382ae5e",
+          "title": "Welcome & Garden Exploration: Gardening for All\u000b"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~91% identical; keeper (A) is polished with summary, copy is a work-in-progress template with blank sections."
+    },
+    {
+      "group_id": "berry-rosehip-bars-abcddb",
+      "title": "Berry Rosehip Bars",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_03de6aa8ce094d0b9fd6518830e3eae7",
+          "title": "Berry Rosehip Bars"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "12yRCn3m298kp_ID-baEGYsHYP48f2zfFrGYbFnzdpLM",
+          "title": "Berry Rosehip Bars"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~91% identical; keeper (B) adds 3K grade band, Garden Connection, critical-thinking prompt, extra prep."
+    },
+    {
+      "group_id": "who-lives-in-the-garden-9793a2",
+      "title": "Who Lives in the Garden?",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1dqVb1CXvx_YVQ3cH8UuoGxYZ5A2MzU-bi8n4fZqBTXQ",
+          "title": "Who lives in the garden? 3K/PK"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_adfac505fafc4a6ebfe1533b355ed154",
+          "title": "Who Lives in the Garden?"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~89% identical; keeper (A) has summary + clean paragraph formatting, copy is a table-template import."
+    },
+    {
+      "group_id": "mural-painting-101-beautifying-the-garde-f10d4b",
+      "title": "Mural Painting 101: Beautifying the Garden",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_d352a03cea784f46bbda2a545c9de44a",
+          "title": "Mural Painting 101: Beautifying the Garden"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "13jE3-XsWBgxZpiSFB0MDFxur3HGv_zAxqzstYDhhuaI",
+          "title": "Mural Painting 101: Beautifying the Garden"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~88% identical; keeper (B) is longer with an extra critical-thinking section and expanded prompts."
+    },
+    {
+      "group_id": "three-sisters-and-companion-planting-a-s-855f46",
+      "title": "Three Sisters and Companion Planting: a Seed Study",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_7888524cfdfc48f2bb5379e4edb28742",
+          "title": "Three Sisters and Companion Planting: a Seed Study"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1Vq5KMCGiH_PxhZ88tyRrgnxUChgiNd75El49aimP4yQ",
+          "title": "Three Sisters and Companion Planting: a Seed Study"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~87% identical; keeper (B) adds a second activity variation, garden visit, Navajo chef cooking video."
+    },
+    {
+      "group_id": "plants-as-medicine-753d6b",
+      "title": "Plants as Medicine",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_adb1d7099a92424eb7172e582329f6a7",
+          "title": "Plants as Medicine"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "12eCbV1wJMk_qL3DPKY3qaR_q_eu7CpojLr0tmJXHm5k",
+          "title": "Plants as Medicine"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~87% identical; keeper (B) adds Garden Connection, critical thinking, NYC cultural context, NYBG reference."
+    },
+    {
+      "group_id": "school-and-garden-communities-d084f5",
+      "title": "School and Garden Communities",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_e472ad47218645fd91cc28570e082472",
+          "title": "School and Garden Communities"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1NpJLjpNVppJXHvGcC_W8c4Wwt5UhJA6KizI6QJtKZFg",
+          "title": "School and Garden Communities"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~86% identical; keeper (B) adds Garden Connection + Critical Thinking sections and fuller skill tags."
+    },
+    {
+      "group_id": "gardening-the-environment-82a8e4",
+      "title": "Gardening & The Environment",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_8067735e96df493b85b61f4b5bc11308",
+          "title": "Gardening & The Environment\u000b"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1vnOYmF90vIaodnDkjLtXQdSLoLdE38HALLK8OfcwntM",
+          "title": "Gardening & The Environment"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~86% identical; keeper (B) is the fuller later revision; no content actually differs by grade."
+    },
+    {
+      "group_id": "leaf-collecting-172be1",
+      "title": "Leaf Collecting",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_624b28fc83214ed1b3999ccf1ea5d085",
+          "title": "Leaf Collecting"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1CE324nZDL2kz_4P5TwDuvoX7Zx_NMwUz",
+          "title": "Leaf Collecting"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~86% identical; keeper (B) adds a site-specific tip and structured garden-connection/critical-thinking sections."
+    },
+    {
+      "group_id": "interconnection-native-american-traditio-b4bfaa",
+      "title": "Interconnection & Native American Traditions",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_21119471ac47403e89286545e8036d94",
+          "title": "Interconnection & Native American Traditions"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1g1_hRDipt9_3YcSS2hka46gNwsuVo1sd",
+          "title": "Interconnection & Native American Traditions"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~85% identical; keeper (B) adds time estimates, Lenape cultural specifics, Manhatta Lenape Center resources."
+    },
+    {
+      "group_id": "plant-part-scavenger-ddf7ef",
+      "title": "Plant Part Scavenger",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_36ef1fadbcb8428c976fa5f575c3390b",
+          "title": "Plant Part Scavenger"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1_ZSnx9J--WJCTJEp3YzqOly1axW_65nY",
+          "title": "Plant Part Scavenger Hunt"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~84% identical; keeper (B) adds feelings check-in, Plant Part Simon Says back-pocket game, planning fields."
+    },
+    {
+      "group_id": "sensory-scavenger-hunt-and-c794de",
+      "title": "Sensory Scavenger Hunt and",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_df09326b3497429cad55727f6d59d477",
+          "title": "Sensory Scavenger Hunt and"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1tU6lE36cuzrNIFb4jKLB2hLA4mAY9j7xWBH9jOHhuW0",
+          "title": "Sensory Scavenger Hunt and Orientation"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~82% identical; keeper (B) adds explicit 3K/PK guided-walk differentiation and a required back-pocket activity."
+    },
+    {
+      "group_id": "food-preservation-bcd7e8",
+      "title": "Food Preservation",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1QLiWw08Qi5CSB6uMwwm27WDgMNG-LMhtqOu6z85VRkk",
+          "title": "Food Preservation"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_bf1f76835a7446f78bfa843b7cbb99dd",
+          "title": "Food Preservation"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~81% identical; keeper (A) is polished with summary, copy still has unfilled template fields and placeholders."
+    },
+    {
+      "group_id": "gingerbread-cookies-44a548",
+      "title": "Gingerbread Cookies",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_f0cfb993e2b94d4c89f272eb4269cb26",
+          "title": "Gingerbread Cookies"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "181lWTGhtMXpO95d3JOAiPYXQe963z_Ru5Ibpvc9kbrE",
+          "title": "Gingerbread Cookies"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~81% identical; keeper (B) contains everything in A plus early-childhood (3K-1) adaptations and extra prompts."
+    },
+    {
+      "group_id": "roots-113a6e",
+      "title": "Roots",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1dTMg_5AdKV5cJNnt7_L2cXhTK9fmJr8U",
+          "title": "Roots"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_d4dda9480bc14c658352e00a2a49d02c",
+          "title": "Roots\u000b"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~80% identical; keeper (A) has summary + clean structure, copy is a messier table-template with no real 3K adaptation."
+    },
+    {
+      "group_id": "varenyky-e36af4",
+      "title": "Varenyky",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1kk7iWzUOFQY786Ilr2MqaEiCmfv1EpUm",
+          "title": "Varenyky"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_4d119999d8d54a828d9cb217f6d98613",
+          "title": "Varenyky"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~76% identical; keeper (A) has summary, richer tags, clean prose; copy is an older fill-in-table template, mostly blank extra fields."
+    },
+    {
+      "group_id": "sourdough-fungi-k-914e9f",
+      "title": "Sourdough & Fungi - K",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1LiwBsr5PqwM2P3xLI90XXuhD_Edaho5LtK7WclwBmNw",
+          "title": "Sourdough & Fungi - K"
+        },
+        {
+          "lesson_id": "1ncI1zLlOFK4Rn0sToxLR_a5KzE8DfNSfeCLdT3gRXQI",
+          "title": "Sourdough & Fungi - MS"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "K vs middle-school adaptations of the same sourdough/fungi lesson."
+    },
+    {
+      "group_id": "cajun-black-eyed-peas-sliders-7535f9",
+      "title": "Cajun Black Eyed Peas sliders",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "14fk_yAGgoUM0I7iJDOKaSdZrww1HHPPj",
+          "title": "Cajun Black Eyed Peas Sliders (3rd-5th)"
+        },
+        {
+          "lesson_id": "1JNKJikW1P1lCE4zlt0_2S4F2mNIRF7qm",
+          "title": "Cajun Black Eyed Peas Sliders (6th-8th)"
+        },
+        {
+          "lesson_id": "1QDqLmtbhClI6Hrx-QNUclaTYfsv5Z4Mh",
+          "title": "Cajun Black Eyed Peas Sliders (3K-2nd)"
+        },
+        {
+          "lesson_id": "1sHwSvaFaZC9wpHOqr-dQBMEl-paf6zZV",
+          "title": "Cajun Black Eyed Peas sliders"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Three grade-band versions (3K-2, 3-5, 6-8) plus one later all-grades generic version."
+    },
+    {
+      "group_id": "argumentative-writing-a719a3",
+      "title": "Argumentative Writing",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1CKiTtmLKaCFrswKuCxw8btPkztv_Gu-c4cJI5kwtMKw",
+          "title": "Argumentative Writing: Plant-Based Meats"
+        },
+        {
+          "lesson_id": "1XztHqBQ5DbhqPyG69LNzv6OtiPMJCptBzaMDXTPMKsM",
+          "title": "Argumentative Writing"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Evidence/nutrition-based (plant-based meats) vs sensory-language versions of the same writing+cooking lesson."
+    },
+    {
+      "group_id": "plants-and-music-70a00d",
+      "title": "Plants and Music",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1CAKF0L0SYp5fgaXqZrrb4G-K3LzOu56phWV9JFg67U8",
+          "title": "Plants and Music"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_47fca82c179549c2919a6eb283357b58",
+          "title": "Plants and Music"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "REVISED from keep_family after same-doc discovery: both entries point to ONE Google Doc. Keep A (polished July entry: summary, full K-5 tags). Retire B (Sept re-import: blank youngest-grade section, no summary). Original deck rec was keep-both at medium confidence."
+    },
+    {
+      "group_id": "elementary-introduction-to-pollination-7a9630",
+      "title": "Elementary Introduction to Pollination",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1OTWsMqlZ6xubbc53zT7V8wq7B-lhOW1BvmI0i_odT4c",
+          "title": "Elementary Introduction to Pollination"
+        },
+        {
+          "lesson_id": "1lfH8xM8MZtOtYf7EIXqw7I29Gpd90_s2GBMW9KWmE28",
+          "title": "Introduction to Pollination"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "All-elementary version with craft vs leaner 4th-grade-only version."
+    },
+    {
+      "group_id": "plant-part-salad-1-lemon-olive-oil-herb--16425c",
+      "title": "Plant Part Salad 1- Lemon Olive Oil Herb Dressing",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "17upoxUN1PvxQ8VqOOVD-_lx16etNxNM09o5X-hKQzI8",
+          "title": "Plant Part Salad 3- Best Green Team Dressing"
+        },
+        {
+          "lesson_id": "1Kcxu-MFMtb7JZwxracAS-XPjoTKIc6tLyUfsrtHTbD4",
+          "title": "Plant Part Salad 5- Sweet and Spicy"
+        },
+        {
+          "lesson_id": "1M7m_WxtgZ8EJtZ0Pkii6RV5G4iNFiJHOCTXXvv6Viis",
+          "title": "Plant Part Salad 4- Balsamic, Honey, Herb Dressing"
+        },
+        {
+          "lesson_id": "1c7yZMrlhHmTwTdmiFGLAVAzpESFDK9pIyJeJwHrn-PA",
+          "title": "Plant Part Salad 1- Lemon Olive Oil Herb Dressing"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Numbered series (1, 3, 4, 5), different dressing recipe and Table-3 activity per entry."
+    },
+    {
+      "group_id": "agar-jelly-k-651f90",
+      "title": "Agar Jelly - K",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "16ZNi4Oeu5j4mMOZrEk7OYlrqIhSsqj_f",
+          "title": "Agar Jelly - MS"
+        },
+        {
+          "lesson_id": "1hUNwNfHVudR9tl-UZ8wPn9dKB9h7t33l",
+          "title": "Agar Jelly - K"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "K vs middle-school Lunar New Year agar jelly adaptations."
+    },
+    {
+      "group_id": "eat-the-rainbow-green-954634",
+      "title": "Eat the Rainbow: Green",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1FAkVWiqdQ-B-6OSIu2C7BlD-cYmOG2OD",
+          "title": "Eat the Rainbow: Orange"
+        },
+        {
+          "lesson_id": "1NnjoeztiUEqcOwfduLqA4NYUrpS405q-",
+          "title": "Eat the Rainbow: White"
+        },
+        {
+          "lesson_id": "1YOJ1pRdApcO0q0dfbP-JjM6NhLFiDKEf",
+          "title": "Eat the Rainbow: Green"
+        },
+        {
+          "lesson_id": "1d0ialxuX90WarbOqoWK5jcVS27hGj7eR",
+          "title": "Eat the Rainbow: Yellow"
+        },
+        {
+          "lesson_id": "1i84KNGaRDLMPQpQc8LN6ZqDop0BLyPSQ",
+          "title": "Eat the Rainbow: Rainbow Finale!"
+        },
+        {
+          "lesson_id": "1qlwQLN_WX_BUzSZuxFhAvxjb_b95pW6V",
+          "title": "Eat the Rainbow: Red"
+        },
+        {
+          "lesson_id": "1s10FiZW7qM_IhOUDiY2Wk9yJ4Zewcpy-",
+          "title": "Eat the Rainbow: Purple"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Seven-color Pre-K year-long series ending in Rainbow Finale."
+    },
+    {
+      "group_id": "seed-bursts-0304ec",
+      "title": "Seed Bursts",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1HuffJuy_-bVzIAm4GxzBhG3gOtiRoAKBBapswfhZrCg",
+          "title": "Seed Bursts"
+        },
+        {
+          "lesson_id": "1NqjpqXV8soDQs2W9HonavtlxQT4MbFI0H7pUdnH-mEI",
+          "title": "Seed Bursts"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Grades 3-4 summer vs K-1 spring adaptations of the seed-bursts lesson."
+    },
+    {
+      "group_id": "mushroom-cultivation-78da34",
+      "title": "Mushroom Cultivation",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1yfwfesww-3BopJBAbtt_C0JUGmyJiUDW2ZrW4Pq05Ow",
+          "title": "Mushroom Cultivation"
+        },
+        {
+          "lesson_id": "lesson_b730f385a226452e98a7c3f972843e67",
+          "title": "Mushroom Cultivation\u000b"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "4th grade vs 2nd-3rd grade versions; younger version adds clay-mushroom back-pocket activity."
+    },
+    {
+      "group_id": "expert-s-guide-to-gardening-compost-f394fd",
+      "title": "Expert’s Guide to Gardening: Compost",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "10RLQJ1UxwvhRyz7trKL6327fIt3Cxfr5HT1z_p1s-ds",
+          "title": "The Expert’s Guide to Gardening: Mulching"
+        },
+        {
+          "lesson_id": "117dIoZ0oEp4TQdzDWnS3EXkvP0rLjvDr_U__A65VoQk",
+          "title": "Expert’s Guide to Gardening: Watering and Weeding"
+        },
+        {
+          "lesson_id": "1Ck6V2TB3qvgmK3h6vVGp_FMGtKQDz6FVoBWjjj-Vm2M",
+          "title": "Expert’s Guide to Gardening: Weeding & Clearing"
+        },
+        {
+          "lesson_id": "1NF_sOLKR8um-3T9Eck-_i6j-GEwv0X58TqqJk2Qu350",
+          "title": "Expert’s Guide to Gardening: Seed Starting"
+        },
+        {
+          "lesson_id": "1YyZtfvujMDeYYtAEYDHfh-Z-BO1SxpeV_6FZinilSts",
+          "title": "Expert’s Guide to Gardening: Transplanting"
+        },
+        {
+          "lesson_id": "1iUmZQtejAbOYDkxNhEj47s_O0a5qvo7OskHw2-KhCP4",
+          "title": "Expert’s Guide to Gardening: Compost"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "2nd-grade workbook series, one garden skill per lesson, taught across the year."
+    },
+    {
+      "group_id": "hoppin-john-burgers-green-bean-salad-cel-36a206",
+      "title": "Hoppin’ John Burgers & Green Bean Salad: Celebrating Black History Month",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1B3Phuk-DzUJFDHJKfg9RPlolcBWMeaq6gwWRjOfhU9I",
+          "title": "Hoppin’ John Burgers: Celebrating Black History Month"
+        },
+        {
+          "lesson_id": "1uDDPxAKSjEPYMU36W80bEbSMa_YuuGPNw62CXFGD6hM",
+          "title": "Hoppin’ John Burgers & Green Bean Salad: Celebrating Black History Month"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "PK-K 45-min version vs grades 1-2 90-min version with second recipe."
+    },
+    {
+      "group_id": "empanadas-bde9b1",
+      "title": "Empanadas",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1mAI2VtQntfWhUtIEKT1xP6Q028Hx-Jyqx_Xr-V2vWkI",
+          "title": "Empanadas"
+        },
+        {
+          "lesson_id": "lesson_f5a5f81079a94652b92e4f94f5281ca1",
+          "title": "Empanadas"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "16mykieJMT9T8b1iKHErAUFRhC-Sou_FckP-CzyJIOG4",
+          "title": "BCCS Empanadas"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "REVISED from keep-all after same-doc discovery: A 'BCCS Empanadas' and C 'Empanadas' point to ONE Google Doc — A is a thin July snapshot (2,518 chars), C the Sept snapshot after the doc more than doubled (5,039 chars: timing, grade-by-grade variations, cultural prompts). Retire A, keep C + B (distinct 7th-grade reading+cooking version)."
+    },
+    {
+      "group_id": "red-drinks-for-juneteenth-aec1d4",
+      "title": "Red Drinks for Juneteenth",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1Cj-iXBv_-EE4blTLhBngUNjYtsSUUTFWcXTRRTXOLD8",
+          "title": "Red Foods for Juneteenth"
+        },
+        {
+          "lesson_id": "1TNen8KVizYd-al0B8XTA9wY-3s5O6Rm8aJQDWPhpz7k",
+          "title": "Red Drinks for Juneteenth"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Year 1 (Red Foods) vs Year 2 (Red Drinks) of the same Juneteenth unit."
+    },
+    {
+      "group_id": "harvest-salsa-0c5aeb",
+      "title": "Harvest Salsa",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "mobile-ed",
+      "survivors": [
+        {
+          "lesson_id": "13GXO2eOzTXCHLPK4mEwsMRuaIWr6RxWv",
+          "title": "Harvest Salsa (Mobile Education)"
+        },
+        {
+          "lesson_id": "1UVFHNwDVKhoZU5cmxCASVc4M7kMP_EI8",
+          "title": "Harvest Salsa (Mobile Education-Px12)"
+        },
+        {
+          "lesson_id": "1XmATwlVih6GFIL4MOlhDC2GXQuex6V0W",
+          "title": "Summer Harvest Salsa"
+        },
+        {
+          "lesson_id": "1shFHdzN2mlZzqo5tyIIH3-NCPZRYxO3B",
+          "title": "Harvest Salsa"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1iKSljm8MfixYb1HI9OgTKka-fBf9uln_",
+          "title": "Harvest Salsa (Mobile Education - P12X)"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group. Keep A (big mobile-ed version), C (Summer Harvest Salsa, distinct 3-4 summer lesson), E (base version). Retire D 'Harvest Salsa (Mobile Education - P12X)' — ~90% identical to B 'Px12'; deck named the pair redundant without picking a keeper; user chose to keep B (slightly longer, 5,192 vs 4,876 chars). Two separate Google Docs — eyeballed by user."
+    },
+    {
+      "group_id": "aloo-gobi-dee3ab",
+      "title": "Aloo Gobi",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "12afDXwtfouvdhbJWIlpB07gF2L-N0KDg9Ws_OXqcca0",
+          "title": "Aloo Gobi (3-5)"
+        },
+        {
+          "lesson_id": "1gLuwRIEfiYyfqztlMGAEOeAuJI1flmj7",
+          "title": "Aloo Gobi"
+        },
+        {
+          "lesson_id": "1iTH3kooXMEVDsZaV1wqVGLvgXO3c55lrxtsIHGlaz28",
+          "title": "India / Aloo Gobi"
+        },
+        {
+          "lesson_id": "1mSiEfFWtu_D2cg1A0X4K8hcas-p040hoXB16p-hPAkM",
+          "title": "Aloo Gobi (Pre-K-2)"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "0BwC8Pf3ZwAXjNnhsOUZNLVRIUE0",
+          "title": "Aloo Gobi (3rd-5th)"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group. Keep B 'Aloo Gobi (3-5)' (adds Round 4 trade step, richer tags), C (PK-2 naan version), D (India outline), E (Pre-K-2 Hot Potato version). Retire A 'Aloo Gobi (3rd-5th)' — ~89% identical to B; A is 3.7K chars longer but user reviewed and confirmed the AI's pick. Two separate documents."
+    },
+    {
+      "group_id": "3-sisters-tacos-fd35c6",
+      "title": "3 Sisters Tacos",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "other",
+      "survivors": [
+        {
+          "lesson_id": "0BxbI_EfhfAWTWUdnV1RTTF9WaE0",
+          "title": "Three Sisters Tacos, 4th-PS 311"
+        },
+        {
+          "lesson_id": "13uPiVU50hQcj_Ho1vEhfJmVeK8BFTqb-0BdHmx-wIdg",
+          "title": "Three Sisters in the Kitchen"
+        },
+        {
+          "lesson_id": "1AVz6xA4ZJO7mT3oWSJ2unIiY0APuj9yg",
+          "title": "Middle School Three Sisters Soup and Forage Salad"
+        },
+        {
+          "lesson_id": "1BQdTnCzvCWc7u6MA9ey1HFm-H1g-fXdcgGXFU_Fxzww",
+          "title": "3 Sisters Tacos"
+        },
+        {
+          "lesson_id": "1XlUFSs_ls80ONwWgGCPHHA8re4kfmzgL",
+          "title": "The Three Sisters"
+        },
+        {
+          "lesson_id": "1fNjAzV9JZhGsVCvQZui8jtoSfcSBEiNkU9yhTg55lEQ",
+          "title": "Three Sisters Tacos"
+        },
+        {
+          "lesson_id": "1w_JBTJYmqF0qcXiOtV_nV32nphCjD8uEYRSHdHyROFE",
+          "title": "Three Sisters Succotash"
+        },
+        {
+          "lesson_id": "1zrWJ0unlwyo7hjeb9ZG2betTOIaitwzN",
+          "title": "Three Sisters Soup"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "All 8 kept (tacos, soups, succotash, planting lesson, planning guide — same Three Sisters theme, different dishes/activities). The embedded near-copy soup pair (C 'Middle School Three Sisters Soup and Forage Salad' grades 6-8 ↔ H 'Three Sisters Soup' grades 3K-5, ~85% identical text, two separate docs) was explicitly reviewed: user chose to KEEP BOTH as a grade-band pair to preserve the younger-grades tagging, overriding the deck's retire-H suggestion."
+    },
+    {
+      "group_id": "food-miles-87a477",
+      "title": "Food Miles",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "11WKWZvHkycA5yOZQcRaCViwyoMSGUS9sve64q77T5E0",
+          "title": "Food Miles"
+        },
+        {
+          "lesson_id": "lesson_3aaa27c0096a48368cde2804832ad07c",
+          "title": "How Food Moves (Food Miles)"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1tVWgHidAxvsPRMW2aJXd6YcFP9w0kbK6uOj_nbpu-KM",
+          "title": "Food Miles Game"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Mixed group. Keep A (middle-school applesauce version) + C 'How Food Moves (Food Miles)' (fuller later write-up of the elementary game). Retire B 'Food Miles Game' — ~82% identical earlier draft of C. Two separate documents — user reviewed both docs before confirming."
+    },
+    {
+      "group_id": "kitchen-tool-identification-2f07d0",
+      "title": "Kitchen Tool Identification",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1J4mAP4OTmdckb2AiebgtsosK9xF60cr8W6Cz9lf8AOI",
+          "title": "Kitchen Tool Identification"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "18aRAD5iY1YxcaqTUZBhflNDAstEAHumK",
+          "title": "Kitchen Tool Identification Game"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~77% identical, two separate documents, user eyeballed both. USER OVERRODE the deck's pick: deck suggested keeping A 'Kitchen Tool Identification Game' (prize, tasting, ENL extension); user chose to keep B 'Kitchen Tool Identification' (reflective discussion questions, fuller competency explanations) and retire A."
+    },
+    {
+      "group_id": "african-american-foodways-cornbread-and--6821f4",
+      "title": "African American Foodways: Cornbread and Collard Greens",
+      "tier": "B",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1fqFWrvA5MWkoXTYM2_RbexrcVC4xNuJBqwlIfVCPDUA",
+          "title": "African American Foodways: Cornbread and Collard Greens"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1l7A2jTOeXN5rV-dOhb6eH59URYlCYK8BF8K-xsd_ut8",
+          "title": "African American Foodways: Cornbread and Greens"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "~76% identical, two separate documents, user eyeballed both. Keep A 'Cornbread and Collard Greens' (instructor-ready: full equipment list, detailed prep, complete closing). Retire B 'Cornbread and Greens' — its unique elements (Social Justice competency, modern Black food heroes closing, fuller SEL/CR write-ups) retire with it per no-merge rule; recoverable."
+    },
+    {
+      "group_id": "what-does-a-gardener-do-1770f1",
+      "title": "What does a gardener do?\u000b",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1MTqszq20L6jM1i-f19D2PzfrfTunNRmkP-GAl-ZYO9A",
+          "title": "What does a gardener wear? 3K/PK"
+        },
+        {
+          "lesson_id": "1ZAAaZJTBtqnmTbuf-5LujtpCm9ebqSl9aIGw48PZaCg",
+          "title": "What does a gardener do? 3K/PK"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_c78f6845475d4956bb9a038448bfea0c",
+          "title": "What does a gardener wear? \u000b"
+        },
+        {
+          "lesson_id": "lesson_e7dbdb5dc324470392f1b761eb62fac8",
+          "title": "What does a gardener do?\u000b"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "3K/PK two-lesson series ('wear' + 'do'). Retire C 'What does a gardener wear?' — SAME Google Doc as A (Sept re-import, no summary). Retire D 'What does a gardener do?' — separate doc, ~84% identical to B; user kept B (3K/PK, has summary) after eyeballing both docs."
+    },
+    {
+      "group_id": "foods-from-around-the-world-caribbean-is-6c992f",
+      "title": "Foods From Around the World: Caribbean Islands",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1-AYK5D4_VEmu2ZWgFtaJItK_rn3hhoEK8YdPr_F0Ows",
+          "title": "Foods From Around the World: Ukraine"
+        },
+        {
+          "lesson_id": "167u70cUC4N1EJ9H-9IAl1c4J7zGZ6Ta_LOvDStgqGks",
+          "title": "Foods From Around the World: Recipe Design"
+        },
+        {
+          "lesson_id": "1ChYFdztQt1U-EK4aOzZ6XkY9fKqTCawKlmTlTajQRvg",
+          "title": "Foods From Around the World: Uzbekistan"
+        },
+        {
+          "lesson_id": "1d2ELOzXFQ2h8bIgluCdDXvpmpYXIi2IlFtmZbkmy_HI",
+          "title": "Foods From Around the World: Pakistan"
+        },
+        {
+          "lesson_id": "1m2sMUa9Qjkzqz9dU6CqAkAReX6-92gUC8Va8Zl_EdMw",
+          "title": "Foods From Around the World: China"
+        },
+        {
+          "lesson_id": "1nNPA0q0yh9gE_Qz7Nx5_jmUIqhkOAOWrISWtv7pYLs4",
+          "title": "Foods From Around the World: Final Vote"
+        },
+        {
+          "lesson_id": "1p-OKyRxUgFVkGZaq4DFA7wIvRd5-FVWZmnQngPaE0p8",
+          "title": "Foods From Around the World: Intro Lesson"
+        },
+        {
+          "lesson_id": "1u84NuJq0TStf_mZlUtht2OjNnf8bKkSbBuwEBkDSCfI",
+          "title": "Foods From Around the World: Mexico"
+        },
+        {
+          "lesson_id": "1v1gv3D6WAbUZCBtnmOjxJsvKZypAhKhfhjSx9ZVuuXU",
+          "title": "Foods From Around the World: Caribbean Islands"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_8be5b41f08bd43a99ac8cb113cc6dbd0",
+          "title": "Foods From Around the World: Introduction"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "10-lesson 5th-grade unit (intro, six country cooking lessons, recipe design, final vote) — all kept. Retire J 'Foods From Around the World: Introduction' — same underlying Google Doc as G 'Intro Lesson' (Sept table-template re-import, no summary)."
+    },
+    {
+      "group_id": "growing-indoor-edible-sprouts-85449a",
+      "title": "Growing Indoor Edible Sprouts",
+      "tier": "B",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1VDKC8Qz73JtOdPdK1u3bpEleKNx2cPPlCsiec6B8nqg",
+          "title": "Observing Indoor Edible Sprouts"
+        },
+        {
+          "lesson_id": "lesson_a6f5b5177f0642828362f61093e54de5",
+          "title": "Growing Indoor Edible Sprouts \u000b"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1cwCnyYH_67kVHNbgkbcP0UmGn7vjRenOyndkaR1r1SU",
+          "title": "Growing Indoor Edible Sprouts"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Sprout-growing unit: keep A (Day-5 Observing lesson) + C (Day-1 planting). Retire B — SAME Google Doc as C; C is the Sept snapshot captured after real additions (timing guides, Garden Connection, grade variations, back-pocket activities)."
+    },
+    {
+      "group_id": "black-panther-party-and-the-free-breakfa-9eee2d",
+      "title": "Black Panther Party and the Free Breakfast Program",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_ef043bcf99f44965a0cc5dd6aef52a82",
+          "title": "Black Panther Party and the Free Breakfast Program"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1ov2wUSmaHCy8CwpBt_T6ADqB5jo6QC2IzhqlFBrzYNw",
+          "title": "Black Panther Party and the Free Breakfast Program"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Was a 'please confirm' flag (~75% overlap) — resolved by same-doc check: both entries point to ONE Google Doc. Keep B, the Sept snapshot captured after the doc grew from 4,546 to 10,845 chars (discussion questions, NYC references, BHM/Juneteenth connections)."
+    },
+    {
+      "group_id": "three-sisters-puppet-show-16bd99",
+      "title": "Three Sisters Puppet Show",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_769f32694684408fbacbe1b02fc9d8a0",
+          "title": "Three Sisters Puppet Show"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1zYSlW4BcZajmrZMuhUiRt6zd7hpQWdDFr4SMCuEhG48",
+          "title": "Three Sisters Puppet Show"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Was a 'please confirm' flag (~71% overlap) — resolved by same-doc check: one Google Doc, two entries. Keep B, the fuller Sept snapshot (opening/closing rituals, critical thinking, garden connection)."
+    },
+    {
+      "group_id": "all-about-pumpkins-830be1",
+      "title": "All About Pumpkins",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_011467fd86fa4339a745803f8643fe84",
+          "title": "All About Pumpkins"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1vlKyiIiQPjoJ3Ek790STQlN9Ie87bYNbENpPa52S8Bg",
+          "title": "All About Pumpkins"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Was a 'please confirm' flag (~64% overlap) — resolved by same-doc check: one Google Doc, two entries. Keep B, the fuller Sept snapshot (3K-8 grade variations, bell-based turn-taking, fuller materials)."
+    },
+    {
+      "group_id": "2nd-grade-decomposition-experiment-part--35ff28",
+      "title": "2nd Grade Decomposition Experiment Part 1",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "lesson_a689a2c8fc7b4f2daabc6ecbaf4fdce3",
+          "title": "Decomposition Experiment Part 2"
+        },
+        {
+          "lesson_id": "lesson_d73c3abe21f04406b664d7a9d899859c",
+          "title": "Decomposition Experiment"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1J2HY5aTORYqL2MLI96g-357msUdFSq82SlqE2PHsUl4",
+          "title": "2nd Grade Decomposition Experiment Part 1"
+        },
+        {
+          "lesson_id": "1UCyriRP14jUWMetMP6Olivo6XTS3COl14Et8dtpmkPs",
+          "title": "2nd Grade Decomposition Experiment Part 2"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Two-part experiment series, each part saved twice — and BOTH pairs are same-doc (A↔D one doc, B↔C one doc). Keep the fuller Sept snapshots D (Part 1) and C (Part 2); retire July entries A and B. Series stays intact."
+    },
+    {
+      "group_id": "street-vendors-chicken-over-rice-f6e41b",
+      "title": "Street Vendors/\"Chicken\" Over Rice",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "lesson_e8fa030e63bf4a9cb13b95448a3450c0",
+          "title": "Street Vendors/\"Chicken\"   Over Rice\u000b"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1T1sgLmsWzEYkAXNvsX4NMitYf0Au9o0Y8QZEsXpcPSo",
+          "title": "Street Vendors/\"Chicken\" Over Rice"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "REVISED from the deck's keep-both: same-doc check shows one Google Doc, two snapshots. The 'grade adaptation' was an illusion — the doc was reworked from a 6-8 lesson (July snapshot A, has summary) into a multi-grade K-8 lesson (Sept snapshot B). User chose to keep B, matching the doc's current form."
+    },
+    {
+      "group_id": "compost-relay-stew-2a51f5",
+      "title": "Compost Relay & Stew",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1RY1H0XMEOYQtCk0mV7xaKYBPzoDqBm2m",
+          "title": "Compost"
+        },
+        {
+          "lesson_id": "1epVkBIQPhxeIHEbzSQfogJ0sEVptkm7qmhyzQvfN_38",
+          "title": "Compost Relay"
+        },
+        {
+          "lesson_id": "lesson_7d34e6ab88b64d8a855507ac6c47db20",
+          "title": "Compost Relay & Stew"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1730LjSjM6rScDdd0uqVm1JHFsiomc3yi",
+          "title": "Compost Relay & Stew"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Keep B (book-based PreK-1 compost lesson), C (grades 3-8 relay with blindfold challenge), D (big Sept version: 9,015 chars, grade variations, full recipe, indigenous origins). Retire A — thinner July near-copy of D (~68% overlap, separate docs)."
+    },
+    {
+      "group_id": "our-garden-community-d5604a",
+      "title": "Our Garden Community",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "other",
+      "survivors": [
+        {
+          "lesson_id": "0BwC8Pf3ZwAXjS3JwZUFpbVlETzA",
+          "title": "Our Garden and Kitchen Community"
+        },
+        {
+          "lesson_id": "lesson_36981b6fe32741629a2ddca67acb3ac2",
+          "title": "Our Garden Community"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1JRUHeRL6Ttr5hGyvdU-a5uqsjZC7fBWx",
+          "title": "Our Garden Community"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Keep A (garden+kitchen community with sancocho cooking, Dominican/Latin American heritage) + C (fuller 'Frankie and the Garden' version: mural option, site variations, back-pocket chores). Retire B — thinner earlier draft of C (~70% overlap, separate docs)."
+    },
+    {
+      "group_id": "salsa-toast-27c8bb",
+      "title": "Salsa Toast",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "0B9X3sp9nlAgmVmZpaFd6clptWTA",
+          "title": "September Salsa Toasts"
+        },
+        {
+          "lesson_id": "14MTTw-8EGeW0BMghM8C8imcWlKXB7P1q-SH-84m7E8U",
+          "title": "Salsa Toast"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1sMS_PNeRlanHoPh6iQDCJ4wVcQ5HPsrP",
+          "title": "Salsa Toasts"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Keep A (September Salsa Toasts, rich 15.5K-char visualization-tray lesson) + B (full scavenger-hunt station version). Retire C — 2,481-char skeleton outline of B with station content left blank (deck confidence medium; user confirmed with doc link available)."
+    },
+    {
+      "group_id": "all-about-birds-d0c2f3",
+      "title": "All About Birds",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "156gQEcjZxXoqU9te_0TUzxg0grMxFPD1",
+          "title": "All About Birds"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "lesson_7f6a2a772f044c0c87f98f9cde200320",
+          "title": "All About Birds"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "'Please confirm' flag (~72% overlap), two separate documents, user eyeballed both. USER OVERRODE the deck's pick: deck suggested keeping B (Sept: timing, binoculars back-pocket activity); user chose to keep A (July: written summary, cleaner shorter write-up) and retire B."
+    },
+    {
+      "group_id": "sweet-and-sour-roots-ed3232",
+      "title": "Sweet and Sour Roots",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1vFSTeTtZWM-xc7mUfvEclO1YCmIMiqR8",
+          "title": "Sweet and Sour Roots"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1xdz4aJqRcHYaAluj-x3C0VoQRM3UNy-gERUvpuOuwcM",
+          "title": "Sweet and Sour Roots, Two Ways"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "'Please confirm' flag (~67% overlap), two separate documents, user eyeballed both. Keep A 'Sweet and Sour Roots' (fully written, polished summary, no placeholders). Retire B 'Sweet and Sour Roots, Two Ways' — longer but unfinished (placeholder text in objectives/appendix references)."
+    },
+    {
+      "group_id": "kitchen-garden-intro-e3c509",
+      "title": "Kitchen & Garden Intro",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1XauzA4pCa3WHn-zH98891apaw3FhAXAl",
+          "title": "September Intro Lesson"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1cS3llhLF1k2bwgwz1f62fWk938evVGRE9crGuAWT3_g",
+          "title": "Kitchen & Garden Intro"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "'Please confirm' flag (~66% overlap), two separate documents, user eyeballed both. USER OVERRODE the deck's pick: deck suggested keeping B 'Kitchen & Garden Intro' (embedded skit scripts + scavenger-hunt questions); user chose to keep A 'September Intro Lesson' (has summary, includes Pre-K) and retire B."
+    },
+    {
+      "group_id": "tortilla-espanola-e790b7",
+      "title": "Tortilla Espanola",
+      "tier": "C",
+      "verdict": "retire_duplicate",
+      "survivors": [
+        {
+          "lesson_id": "1N7gRmGohK_fCtpiHemQTl1-Bpg-hwOF9",
+          "title": "Tortilla Española"
+        }
+      ],
+      "retired": [
+        {
+          "lesson_id": "1JEpJpbINYmbIN9j5W2dYrgIW6e0EqpalMa3kqm_53cI",
+          "title": "Tortilla Espanola"
+        }
+      ],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "'Please confirm' flag (~58% overlap, loosest of the flagged sets), two separate documents, user eyeballed both. USER OVERRODE the deck's pick: deck suggested keeping A (12,193-char full version with standards/appendices); user chose to keep B 'Tortilla Española' (streamlined quick-reference template, K-5, extra SEL tags) and retire A."
+    },
+    {
+      "group_id": "3-5-garden-tasks-2263dd",
+      "title": "3-5 Garden Tasks",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1HkHvHBFdGRIu0dJ1GmBiq4OzEXrmRW60odAvls55gZ0",
+          "title": "Garden Tasks"
+        },
+        {
+          "lesson_id": "1QfQnwMEhSLMwZ64WgW6MVG6aAX1o5ii_XkxLobFUrns",
+          "title": "K-2 Garden Tasks"
+        },
+        {
+          "lesson_id": "1olvVADiZt-jO3KhD72MhfPNSmiqPG95iPlrgRbsS63I",
+          "title": "3-5 Garden Tasks"
+        },
+        {
+          "lesson_id": "1ytK3-gaDKtmSpYvuHnrci4DmazDybXrL6SW6dmoUf78",
+          "title": "3K-PK Garden Tasks"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Age-banded fall garden visits (3K-PK / K-2 / 3-5) + a self-contained special-ed sensory version."
+    },
+    {
+      "group_id": "black-eyed-peas-stew-d65698",
+      "title": "Black Eyed Peas Stew",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "14wTm_zkFDwSqkUBJj01zdY2Lq1D6-eXdj6BQcZwOrQ4",
+          "title": "Black Eyed Peas, the South and BHM"
+        },
+        {
+          "lesson_id": "1E2vC2aWzAzrAW6-T68FPK7QM-ehDmISnduOQcsAkCKA",
+          "title": "Black Eyed Peas Stew"
+        },
+        {
+          "lesson_id": "1NHQd8BVmNECNgkMV4FeJjC5fzMxi-Pcp",
+          "title": "Stewed Black Eyed Peas w/Plantains"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Three different BHM black-eyed-peas lessons (stew+cornbread full version, thinner Creole draft, plantains/diaspora version) — all kept per deck."
+    },
+    {
+      "group_id": "bees-blueberries-93e047",
+      "title": "Bees & Blueberries",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1GRwdy72vU9H6xe7txN6D3zwUnSzLyC0Z",
+          "title": "Bees & Blueberries"
+        },
+        {
+          "lesson_id": "lesson_3f33219774294a47bc7ba0afd5f29311",
+          "title": "Bees and Blueberries\u000b"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Cobbler+candles all-grades version vs muffins+lip-balm 4-5 version with NYC content."
+    },
+    {
+      "group_id": "african-american-food-museum-tour-91fa73",
+      "title": "African American Food Museum Tour",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "other",
+      "survivors": [
+        {
+          "lesson_id": "1LYziMRy2LTXb4W1nTpjrDCk6J73XILqo",
+          "title": "African American Food Museum Tour"
+        },
+        {
+          "lesson_id": "1uwZRLYoxThlJxDq-vV3cePHmEMGMCpj5Opk0nHVvqqI",
+          "title": "African American Food Traditions – Museum (45 min)"
+        },
+        {
+          "lesson_id": "1xwTiqazvuLxwYiNB-y6xLaRRVFkDkvOgYroXPstQLjE",
+          "title": "African American Food Traditions"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Two academic museum-tour versions (4th-only vs 3-5) + a 90-min cooking version. Deck noted A may be largely replaced by B but recommended keeping all."
+    },
+    {
+      "group_id": "seasonal-changes-6eb799",
+      "title": "Seasonal Changes",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "0B-9rQRyZMNzUZlFLYlc1Um1oZnM",
+          "title": "Sun Study"
+        },
+        {
+          "lesson_id": "0BxEc0RZeYtCiVVRTV0xRM2FpQ3M",
+          "title": "The Year in Seasons"
+        },
+        {
+          "lesson_id": "1cX_lHizAQAD-XccT95OugIwfmcCXIWsI35hk4ewmF1c",
+          "title": "The Seasons: Fall"
+        },
+        {
+          "lesson_id": "1e0UWQYtEYVnGioomuIHx4LwJn3sJ8wKV",
+          "title": "Seasonal Changes"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Seasons curriculum taught across the year (Sun Study, Year in Seasons, Fall, tree role-play). Deck confidence medium."
+    },
+    {
+      "group_id": "healthy-breakfast-instant-oatmeal-packet-fc3051",
+      "title": "Healthy Breakfast / Instant Oatmeal Packets",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "14H58lppqxAt24rwpI0B3fbPqZ3y0YIXxPc517Cz8TP8",
+          "title": "Healthy Breakfast / Instant Oatmeal Packets"
+        },
+        {
+          "lesson_id": "1TF7HI4p0Ibx1qTjszaqbKcpvtz1VlDbBjhjTT2YB9cM",
+          "title": "Oatmeal and the Power of Breakfast"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Middle-school take-home-packets version vs grades 2-5 whole-class demo."
+    },
+    {
+      "group_id": "photosynthesis-light-experiment-part-1-5b7e77",
+      "title": "Photosynthesis: Light Experiment Part 1",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1J1ghuNNBGsbbVydOoWvfJwIMCignE2qc",
+          "title": "Photosynthesis: Light Experiment Part 1"
+        },
+        {
+          "lesson_id": "1Yx7Yp7W90p_XqfF-n3M78MblwCsQykbjVAFAofwT6GM",
+          "title": "Photosynthesis: Light Experiment Part 2"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Part 1 setup + Part 2 observation, one experiment across two sessions."
+    },
+    {
+      "group_id": "callaloo-e8561a",
+      "title": "Callaloo",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1UnaUuap0s73WmekEM-m0amMyaww8T_bYS6JeNFgZmmY",
+          "title": "Callaloo"
+        },
+        {
+          "lesson_id": "1pGzazTHZbfbNIafJvpMV06eAyvsNTPc6wG71K3CVQr0",
+          "title": "Middle School Family Cooking Night: Callaloo"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "PK-5 station-based classroom lesson vs 6-8 Family Cooking Night with food-memory activity."
+    },
+    {
+      "group_id": "winter-fruit-salad-mobile-education-4014fd",
+      "title": "Winter Fruit Salad (Mobile Education)",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "mobile-ed",
+      "survivors": [
+        {
+          "lesson_id": "1EPkNrvYIN_1pGe7zRjikBwIo2FcfNVxa3QADs26qYf8",
+          "title": "Winter Fruit Salad (Seasonality)"
+        },
+        {
+          "lesson_id": "1kgvrmzkZ7o81URjqGwoq1DK0VicdTIHfvtXEvvmfxK8",
+          "title": "Winter Fruit Salad (Mobile Education)"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Resident-teacher version vs mobile-educator version with flexible steps."
+    },
+    {
+      "group_id": "bean-dips-a76d05",
+      "title": "Bean Dips",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "11ItiMGkBnyCYE13EhzVmUCMSeYivseKkcDcfe-26UEw",
+          "title": "Hummus"
+        },
+        {
+          "lesson_id": "1fEkd9o2C1buVhZsjd8xzOoy7Sfl2FsIW",
+          "title": "Bean Dips"
+        },
+        {
+          "lesson_id": "1wjRd4v-bAua4Tk_8KD9MBl1FwPU4EfXf184NRueNkTA",
+          "title": "Herb Hummus"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Three distinct hummus lessons: book-based PK-2 fall, sequence-embedded spring, elaborate three-tray Herb Hummus."
+    },
+    {
+      "group_id": "garden-intro-bingo-186fa7",
+      "title": "Garden Intro: Bingo",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1Bbnmk4k59LrPdymvyAk-SNPM0NvJEBA-Eil2kSits6E",
+          "title": "Garden Intro: Bingo"
+        },
+        {
+          "lesson_id": "lesson_366d2fba34d34509811093f5adfb744b",
+          "title": "Garden Intro: Bingo"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "K-5 version with deeper reflection vs PK-3 version with gestures, split bingo sheets, rain-day option."
+    },
+    {
+      "group_id": "science-scavenger-hunt-aa47f2",
+      "title": "Science Scavenger Hunt",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1ESUFQVvS6fSejIOM76AL0PIyY3xJKtyW",
+          "title": "Science Scavenger Hunt"
+        },
+        {
+          "lesson_id": "1Ju0BjlCu9t9W_SuQCJnVruaVZxj8r0FhjcMmbwJTPI0",
+          "title": "Summer Scavenger Hunt"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "6th-grade thermal-energy review hunt vs 3rd-4th summer welcome hunt."
+    },
+    {
+      "group_id": "biodiversity-c790dc",
+      "title": "BIODIVERSITY",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1dHNasB4vEvH8G_OIy5Y7kVTOjXSovx_qLUGVB2UYk-M",
+          "title": "BIODIVERSITY"
+        },
+        {
+          "lesson_id": "1v7aPRuAM9q1jdffDr1IqgxZUKqTZ7By-",
+          "title": "Biodiversity"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "6-8 indoor Lenape Three Sisters version vs 3-5 outdoor corn-worm game version."
+    },
+    {
+      "group_id": "lunar-new-year-and-dumplings-0943e0",
+      "title": "Lunar New Year and Dumplings",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1LIpgLeP6F2iRRUklhiZKEKNIJm4XNfwNuO67ilEgwEM",
+          "title": "Lunar New Year and Dumplings"
+        },
+        {
+          "lesson_id": "1uORjUwtJm3Ske0tI3UmZ7RG-IkfsN7v_",
+          "title": "Lunar New Year and Vegetable Dumplings"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "K-3 pre-made-filling + craft version vs PK-8 full-prep version with world-dumplings discussion."
+    },
+    {
+      "group_id": "whole-grains-and-fiber-0dc905",
+      "title": "Whole Grains and Fiber",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "190fsy48bYmHRsn49YEZh1Lkn87CqpqaZQoKzAUJMUYc",
+          "title": "Whole Grains and Fiber"
+        },
+        {
+          "lesson_id": "1OJtcaCozwbHj2H2CdzPvYQOLsP_ISIFYMYMzRiIB7LU",
+          "title": "Whole Grains and Granola"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "6-8 straightforward granola lesson vs K-2 gift-giving version with worksheets."
+    },
+    {
+      "group_id": "middle-school-garden-tasks-lesson-fc1649",
+      "title": "Middle School Garden Tasks Lesson",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1aR8TJy6wbqotVca6i3aazfACXM_7UvrxUYHEFAjJWiE",
+          "title": "Middle School Garden Tasks Lesson"
+        },
+        {
+          "lesson_id": "1eEd1a3R8E3vqbcXUQJ-Diht81xOJDdRJIBQbF5CiBa4",
+          "title": "Seasons/ Middle School Garden Tasks"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Early-fall harvest+smoothie session vs late-fall winterizing companion."
+    },
+    {
+      "group_id": "ecology-a2ff16",
+      "title": "Ecology",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1QS2lWpFV8l7hee8qKZ_OP4HWGQng8BvM",
+          "title": "Ecology"
+        },
+        {
+          "lesson_id": "1eE4tbHy8L1mQhWWcpgMRetRDWzx5P1YS",
+          "title": "Pond Ecology"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "8th-grade outdoor garden-work ecology vs 4-7 indoor pond-ecosystem craft lesson."
+    },
+    {
+      "group_id": "seed-dispersal-7dc6db",
+      "title": "Seed Dispersal",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "0BzCUl-9h7sgESGZ0MThTY0NBYVE",
+          "title": "Seed Dispersal"
+        },
+        {
+          "lesson_id": "1X7HadA1WaR-hNBFIHvAUsFKborDGE5eT3Lhg5Dp9CEI",
+          "title": "Seed Dispersal"
+        },
+        {
+          "lesson_id": "1_WlZmDJv8Ql-sCLlOyxr2qL4zeb1GQda",
+          "title": "Seed Dispersal"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "7-8 four-station version, 3rd-grade two-day version with planting, 2-3 streamlined one-day version."
+    },
+    {
+      "group_id": "food-webs-0a2794",
+      "title": "Food Webs",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "18c3H1c92Dv95kfdZlEe5D0HdbNGdWO4B",
+          "title": "Food Webs"
+        },
+        {
+          "lesson_id": "1PJDsQ0vRviNdY64ny3ZoytCGDuWRjP__Yo9lMFhMh_o",
+          "title": "Food Webs"
+        },
+        {
+          "lesson_id": "1QNvw2_DVlrd8079Jwgyfb8jQzjho1Ut5",
+          "title": "Animal Life Cycles and Adaptations"
+        },
+        {
+          "lesson_id": "1quejMyRwvd1YerJBW09hzoaiFmkmrDPN",
+          "title": "Food Web"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Grade-adapted food-web lessons (1st parachute, 3rd yarn-web, 8th salad). Member C is an unrelated animal-lifecycle lesson swept in by tags — kept, nothing retired."
+    },
+    {
+      "group_id": "all-about-compost-b12378",
+      "title": "All About Compost",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "12ZjWQaqW6hOPDo16zi9PN3iG92jI4KLz",
+          "title": "Blue Corn Cookies"
+        },
+        {
+          "lesson_id": "1482AqITl5WxMGPW5wNNh8wOBShm3kbyU2cpqfYkuxuo",
+          "title": "Popcorn Party"
+        },
+        {
+          "lesson_id": "1Dkx1Q--fGzGDCAu3kx5OTsuRa_lRY2agdiMqyfn2VpI",
+          "title": "All About Compost"
+        },
+        {
+          "lesson_id": "1t6oKO1wyQjRdVqTRsp-aKNfQ-vEL87LwZWNfNqwej6Y",
+          "title": "Corn Celebration"
+        },
+        {
+          "lesson_id": "1xaMyZf2OTGpX2GAD8-qgYADXHw1vTevByfs1bJ55lNs",
+          "title": "All About Corn"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Four distinct corn lessons (Blue Corn Cookies, Popcorn Party, Corn Celebration, All About Corn). Member C 'All About Compost' unrelated, swept in by template wording — kept, nothing retired."
+    },
+    {
+      "group_id": "bee-habitat-1e4c70",
+      "title": "Bee Habitat",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "other",
+      "survivors": [
+        {
+          "lesson_id": "0BwC8Pf3ZwAXjcm9MR3JaaHgxOVk",
+          "title": "Human Habitat"
+        },
+        {
+          "lesson_id": "1I4d-aRwxi4e3z07fv7wIz-InK8XagdQa8uMfqa1NTtg",
+          "title": "Habitat"
+        },
+        {
+          "lesson_id": "1ZynAlPlWZsqiotLYrT7PTASgINLs30N7ETVQYp-AWYQ",
+          "title": "Bee Habitat"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Three different PK/K habitat lessons: human habitat, winter craft habitat, bee habitat."
+    },
+    {
+      "group_id": "the-water-cycle-8a0116",
+      "title": "The Water Cycle",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "135RmnOeDA2UjHnKmfQIh4JylpENfk4CN",
+          "title": "The Water Cycle"
+        },
+        {
+          "lesson_id": "1LO4p1z6TBKdq_ViV9yPH42ZD7_sJhSEU",
+          "title": "The Water Cycle"
+        },
+        {
+          "lesson_id": "1ZvGJGmE8clzkVCOe3xFkdWUpckJ2NF5IbeTmkQXWKZw",
+          "title": "Water Cycle"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Terrarium version, banana-snowmen winter version, outdoor observation+acting version."
+    },
+    {
+      "group_id": "eat-the-rainbow-intro-lesson-9f0bd5",
+      "title": "Eat the Rainbow Intro Lesson",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "14VRzSpor9seknAFnsnI_HCvpMVqf6suG",
+          "title": "Eat the Rainbow Intro Lesson"
+        },
+        {
+          "lesson_id": "1cPBs_lw1xaTCRZOqr_8WKTxwChu6vSWhGk8U7aMj_OI",
+          "title": "Eat the Rainbow Lesson Series"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "One-time PK intro class vs multi-week 3K-1 series."
+    },
+    {
+      "group_id": "meet-the-food-system-2d1365",
+      "title": "Meet The Food System",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1K1tlc3--Dv061Qi1A1AKOGW6_L19VXSTRtKHfe73bjY",
+          "title": "Meet The Food System"
+        },
+        {
+          "lesson_id": "1n8wS0X-dXAw9sfQuLFgsMg_kNvACph3cT4yd9p2i1eg",
+          "title": "Who's Who in the Food System"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "'Meet the Food System' + 'Who's Who in the Food System' back-to-back unit lessons."
+    },
+    {
+      "group_id": "pasta-2c6b5d",
+      "title": "Pasta",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1wFKZlUxu_aavugzZuK31_MHzonxS3wC1B1wRQ4c4Nbc",
+          "title": "Pasta"
+        },
+        {
+          "lesson_id": "lesson_730a61c3737c498fb82cb1c074d1d5b1",
+          "title": "Pasta Party\u000b"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "K-5 curriculum pasta lesson vs 4-5 pici pasta-party behavior reward."
+    },
+    {
+      "group_id": "harvest-and-weigh-0130aa",
+      "title": "Harvest and Weigh",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1IHvZCWETI83NFCVhWAB57sE_cSvc4txycBQtaDzS8cA",
+          "title": "Harvest and Weigh"
+        },
+        {
+          "lesson_id": "1uJV8xVyH95GQO1gVcnllbhv7kUgnfK6P9BrC0Ao4aBg",
+          "title": "Harvesting and Weight"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Two-day detailed plan vs single-session ESYNYC-copyright version. Deck confidence medium; different curriculum sources."
+    },
+    {
+      "group_id": "october-seed-saving-7e2559",
+      "title": "October Seed Saving",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1C4REdzYpDhJIgiyXwTiTnPppPNv5c92b_l3a21MDCxI",
+          "title": "Seed Saving"
+        },
+        {
+          "lesson_id": "1k7KqowpILVoRe-X0sOiOtcwJyC8_fJ17nwLu-DW5_r4",
+          "title": "October Seed Saving"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Playful K-3 seed-dance version vs deep 3rd-grade two-day unit with history/literacy."
+    },
+    {
+      "group_id": "5th-grade-december-2-lesson-e2d221",
+      "title": "5th grade December #2 Lesson",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "series-part",
+      "survivors": [
+        {
+          "lesson_id": "1bEoQ5a8y8wHIsNQsEGJh-F1scPUtF1mkFj9o5jooAJM",
+          "title": "December Lesson"
+        },
+        {
+          "lesson_id": "1qwbgUIiZgmzrK-hQIJZaieaZTnq1sLev-YKHDnncQXM",
+          "title": "5th grade December #2 Lesson"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Phosphorous/erosion lesson + explicit '#2' magnesium follow-up in the Salad Project series."
+    },
+    {
+      "group_id": "edible-flower-collages-salad-3e29b0",
+      "title": "Edible Flower Collages & Salad",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "11zvB7FSc-Z41_BSf3zh_Kc17TZhZK3lb",
+          "title": "Parts of a Plant"
+        },
+        {
+          "lesson_id": "19hyKX60yBWKlC9CcvA93l9Q5q6CfyRXi2xWNFvkz5G0",
+          "title": "Plant Part Pasta"
+        },
+        {
+          "lesson_id": "1bmjJf9tTDt5y28DB0xszcouBQKr0Ud8ZdkNtelNCURE",
+          "title": "Plant Parts"
+        },
+        {
+          "lesson_id": "1ejnMz5mRDOi4NIPakPgEpKCKpnPz7yx-SAg07-FlTr4",
+          "title": "Edible Flower Collages & Salad"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Four different plant-parts lessons: observation trays+smoothie, plant-part pasta, diagram+tasting, flower collage+salad."
+    },
+    {
+      "group_id": "school-food-heroes-18ae4c",
+      "title": "School Food Heroes",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "18sSQUw48YOS12Egcpbk-N4MR3HjN-CnaoI64nzoEElM",
+          "title": "School Lunch Heroes"
+        },
+        {
+          "lesson_id": "1nbnwFytunU5eIfH7IpqfM1wXrqEeU6marG3o6lOBJdM",
+          "title": "School Food Heroes"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "In-person 4-5 version (aprons, signs) vs remote 1-5 version (slideshow, cards)."
+    },
+    {
+      "group_id": "daal-and-roti-bf48ee",
+      "title": "Daal and Roti",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "173asHBA5_t4TpYSZjUJWaophzm6NCEzrt3GlIt0ssDc",
+          "title": "Dal, Roti and Chutney"
+        },
+        {
+          "lesson_id": "1mTrOat6NRL6z3SqwXqINpikZYdyL3VyqUr74t1kYYQA",
+          "title": "Daal and Roti"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Two independently planned versions of the same Pakistani meal — different team structures, seasons, grade spans."
+    },
+    {
+      "group_id": "respect-and-rainbows-in-the-garden-b8d588",
+      "title": "Respect and Rainbows in the Garden",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1PAsbX7TiCV0vlvFwtD_tteWiWWdCAcCmttQEv2oOBwk",
+          "title": "Respect in the Garden"
+        },
+        {
+          "lesson_id": "1xQebmPuWM1ZFPnfDCekLW5qSatOXSoDtJKWRvJQPGnU",
+          "title": "Respect and Rainbows in the Garden"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "3-5 garden-job version vs 1st-grade two-day version with book + worksheet + standards."
+    },
+    {
+      "group_id": "food-justice-food-marketing-673a34",
+      "title": "Food Justice: Food Marketing",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1NKjrltsfTTjAT5IZKGHiiovZvRcvhfJx6rPVn-lbYFM",
+          "title": "Food Justice: Food Marketing"
+        },
+        {
+          "lesson_id": "1YnlgMvzSZPf62gHtWozhokKR47TOZUkf",
+          "title": "Food Marketing"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Food-justice-lens version (billboards, smoothie) vs neutral-marketing version (kabobs, hashtags)."
+    },
+    {
+      "group_id": "bees-pollination-806140",
+      "title": "Bees & Pollination",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1d5L9ARkIeBj7VyrV-4x9xtC-V4QbRb3U",
+          "title": "Bees & Pollination"
+        },
+        {
+          "lesson_id": "1vY0gOo9IooV6W9uAVYskU1G0byTHEfzIPHnFMGPKQQo",
+          "title": "Bees and Pollination"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "K three-station craft/cooking version vs 3rd-grade multi-round simulation game."
+    },
+    {
+      "group_id": "black-history-month-61d7f9",
+      "title": "Black History Month",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "1bjiET8ffFpU5_gCMgJBiTDPuHhE0lCPGBnv72LXzrW4",
+          "title": "Black History Month: Ice Cream Heroes"
+        },
+        {
+          "lesson_id": "1u2kn0lEbeRsF7P340khtFl7TV1G9Xe1teh7QEkWIv58",
+          "title": "Black History Month"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "K-5 ice-cream heroes version vs 6-8 cornbread/Hoppin' John outline."
+    },
+    {
+      "group_id": "three-sisters-empanadas-855ce4",
+      "title": "Three Sisters Empanadas",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "same-dish-different-lesson",
+      "survivors": [
+        {
+          "lesson_id": "1JcQB3OaA0ws5SoJwanWrSOxAZHGuc7Xt",
+          "title": "Three Sisters Enchiladas"
+        },
+        {
+          "lesson_id": "1dYfqKvRGyB45l5D-3KEN9Fx6-lFsNckvakBtMQq614k",
+          "title": "Three Sisters Empanadas"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Enchiladas (fall, K-5 stations) vs empanadas (spring, PK-8 whole-class)."
+    },
+    {
+      "group_id": "expert-s-guide-harvesting-5a56a5",
+      "title": "Expert’s Guide: Harvesting",
+      "tier": "C",
+      "verdict": "keep_family",
+      "family_label": "grade-band",
+      "survivors": [
+        {
+          "lesson_id": "19ZBXDDQ5vZ2y5LrJ8w_7D7sqXSQNQeUF06ovPagaQo0",
+          "title": "Fall/Winter Veggies and Fruits"
+        },
+        {
+          "lesson_id": "1FNaneHQZ6xx_jBlM6429vbQ8w_bMBYzOlF9R-Wqq_g4",
+          "title": "Expert’s Guide: Harvesting"
+        },
+        {
+          "lesson_id": "1V2Xt4cB9K19aItujCO8lrshz1YDSW022Okln4jI0ij8",
+          "title": "Introduction to Salad Project"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "Three different grade-level salad/harvest projects (1st fall-winter veggies, 2nd Expert's Guide finale, 5th Salad Project kickoff)."
+    },
+    {
+      "group_id": "beet-ketchup-1a3348",
+      "title": "Beet Ketchup",
+      "tier": "C",
+      "verdict": "unrelated",
+      "survivors": [
+        {
+          "lesson_id": "18LGHGw5bid1uFmapJbJlSUlwX4-h7oUGNoZ-nu47egM",
+          "title": "Potato Leek Soup"
+        },
+        {
+          "lesson_id": "1kSgjpijAnIVj2ocA_UHc3ggMT2cdk8Z7",
+          "title": "Beet Ketchup"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "False alarm: Potato Leek Soup vs Beet Ketchup — different dishes, seasons, grades, themes. Matched on template wording only."
+    },
+    {
+      "group_id": "sandor-katz-food-hero-03023c",
+      "title": "Sandor Katz: Food Hero",
+      "tier": "C",
+      "verdict": "unrelated",
+      "survivors": [
+        {
+          "lesson_id": "0B5ixnZghJTD6QWZIRUo1cWZ1NWs",
+          "title": "Where Does Pizza Come From?"
+        },
+        {
+          "lesson_id": "167xICOA1ZnU5mHoUIvU6fYb2zv8Km6lU",
+          "title": "Where Does Cheese Come From?"
+        },
+        {
+          "lesson_id": "1w0c7tESqksEPlQL-Fj1tpTL3i2ofmN_Agq-UwwqErBE",
+          "title": "Sandor Katz: Food Hero"
+        }
+      ],
+      "retired": [],
+      "decided_by": "user",
+      "decided_on": "2026-07-02",
+      "note": "False alarm: pizza origins / cheese origins / Sandor Katz fermentation — three unrelated lessons sharing the org template."
+    }
+  ],
+  "summary": {
+    "groups_decided": 113,
+    "groups_total": 113,
+    "verdicts": {
+      "retire_duplicate": 39,
+      "keep_family": 72,
+      "unrelated": 2
+    },
+    "total_lessons_to_retire": 61
+  }
+}
