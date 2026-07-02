@@ -301,4 +301,11 @@ function main(): void {
   console.log(`✅ Wrote ${DECK_MD_PATH} (${groups.length} groups)`);
 }
 
-main();
+// Only run when invoked directly (see the same guard in export-corpus.ts): a
+// future import of a helper from this module must not write deck.md on import.
+const isDirectInvocation =
+  process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectInvocation) {
+  main();
+}

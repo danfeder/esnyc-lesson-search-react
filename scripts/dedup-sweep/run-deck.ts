@@ -22,13 +22,14 @@
  */
 /* eslint-disable no-console -- CLI script: console output is the operator UI */
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
+import { TIER_B_MIN } from './constants';
 import { buildDeckPrompt, type CandidateGroup, type CorpusBody } from './deck-prompt';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -46,9 +47,18 @@ const DECK_JSON_PATH = path.join(REPO_ROOT, 'docs', 'plans', 't4-dedup', 'deck.j
 // self-contained), cutting per-call overhead ~3×.
 const AGENT_CWD = mkdtempSync(path.join(os.tmpdir(), 'dedup-deck-'));
 
+// Best-effort removal of the throwaway agent cwd on ANY exit path — including
+// the process.exit(2) violations path, which would skip a finally().
+process.on('exit', () => {
+  try {
+    rmSync(AGENT_CWD, { recursive: true, force: true });
+  } catch {
+    /* best effort */
+  }
+});
+
 const MODEL = 'claude-sonnet-4-6';
 const CONCURRENCY = 6;
-const TIER_B_MIN = 0.75; // no retire_duplicate below this group-max content_sim
 const SCHEMA_FAIL_STOP_RATIO = 0.1;
 
 const verdictSchema = z.object({
@@ -428,7 +438,12 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error('❌ Deck fan-out failed:', error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+const isDirectInvocation =
+  process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectInvocation) {
+  main().catch((error: unknown) => {
+    console.error('❌ Deck fan-out failed:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}

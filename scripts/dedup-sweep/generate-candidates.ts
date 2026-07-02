@@ -26,6 +26,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { TIER_A_MIN, TIER_B_MIN, TITLE_SIM_THRESHOLD } from './constants';
 import { FACET_ARRAY_COLUMNS } from './export-corpus';
 import { normTitle, trigramSet, trigramSim } from './trigram';
 
@@ -34,12 +35,6 @@ const REPO_ROOT = path.resolve(MODULE_DIR, '..', '..');
 const CORPUS_PATH = path.join(MODULE_DIR, 'artifacts', 'corpus.json');
 const OUTPUT_DIR = path.join(REPO_ROOT, 'docs', 'plans', 't4-dedup');
 const OUTPUT_PATH = path.join(OUTPUT_DIR, 'candidates.json');
-
-// Tier thresholds (brief t4a §2), on a group's max pairwise content_sim.
-const TIER_A_MIN = 0.92;
-const TIER_B_MIN = 0.75;
-// Blocking-rule (b) title-similarity threshold.
-const TITLE_SIM_THRESHOLD = 0.55;
 
 // ---------------------------------------------------------------------------
 // Corpus record shape (mirrors export-corpus.ts CorpusRecord)
@@ -623,4 +618,12 @@ function runCalibrationGate(args: {
   console.log('✅ Calibration gate passed.\n');
 }
 
-main();
+// Only run when invoked directly — importing a helper from this module (e.g. a
+// future unit test) must NOT read the corpus, run the gate, write candidates.json,
+// or process.exit as an import side effect.
+const isDirectInvocation =
+  process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectInvocation) {
+  main();
+}
