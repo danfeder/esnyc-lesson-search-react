@@ -3,7 +3,17 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-02 (Fable, **t4c pre-merge review — APPROVED, no changes requested**).
+**Last updated:** 2026-07-03 (Fable, **t4c ✅ SHIPPED + PROD-VERIFIED — the dedup data track is
+DONE**). Pre-merge review APPROVED with no changes (detail below), then on user authorization:
+merged #577 (squash `badaadf`, 00:12Z) after a final PROD drift probe (still 764 / 61 live / 0
+retired); user approved `migrate-production` run 28629708389 → `success` (00:17Z). **Post-apply
+PROD verify ALL GREEN (queries + raw results posted to PR #577):** live **703** exactly (764−61);
+all 61 targets `dedup:%`-retired; `t4_dedup_retire_rollback` = 61 rows, all-NULL prior state; 0
+dedup-retired rows outside the snapshot (no survivor touched); PROD `schema_migrations` records the
+wrapped BEGIN→LOCK→…→COMMIT sequence; fattoush search returns both kept survivors + neither stub;
+retired stub still linkable via `lessons_with_metadata` (`dedup:fattoush-8c6942`). Recovery
+artifacts in place (snapshot table + `.sql.rollback`); post-launch cleanup migration drops the
+snapshot table once PROD-stable. Review-session detail:
 Independent re-verification of PR #577, all green: generator output byte-identical to the committed
 migration; decisions.json integrity holds (61 unique retired / 250 unique survivors / 0 overlap /
 57 groups); the migration wraps every mutating statement in one `BEGIN` → `LOCK TABLE lessons
@@ -21,10 +31,8 @@ correct final state, and bought real evidence the wrapped file applies cleanly a
 snapshot-empty assert or PROD-only exact-61 guard requested (the design was pre-decided in the
 brief; the mandated post-apply live=703 check covers the residual risk). `.sql.rollback` verified:
 restores prior state from the snapshot for exactly the 61 ids, idempotent, safe on an
-already-applied DB. NEXT = 🔴 **USER-only**: merge #577 + approve `migrate-production` → post-apply
-read-only PROD verify per handoff §6 (live=703, 61 `dedup:%`, rollback table=61, 0 survivors,
-fattoush spot-check, retired row reachable via `lessons_with_metadata`). **t4b** (Opus, brief ready)
-parallel-ok → **T5**. Prior update below.
+already-applied DB. NEXT = **t4b** review-screen reshape + detection rewrite (Opus, brief ready) →
+**T5** smoke + launch. Prior update below.
 
 **Prior update (2026-07-02, Opus, t4c retire migration — PR #577 OPEN, reviewed).** Branch
 `feat/t4c-dedup-retire`: migration `20260702160000_t4_dedup_retire.sql` (+`.sql.rollback`)
