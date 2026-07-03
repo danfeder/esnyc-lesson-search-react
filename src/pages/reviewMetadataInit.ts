@@ -44,3 +44,32 @@ export function withPrefilledTitleSummary(
     summary: metadata.summary?.trim() ? metadata.summary : prefillSummary || undefined,
   };
 }
+
+/**
+ * Detect a doc title that changed between review rounds (title-changed-on-
+ * resubmit hint). Returns the doc's CURRENT title — derived exactly the way
+ * `withPrefilledTitleSummary` derives its prefill (stored `extracted_title`
+ * first, then the title parsed from the doc body) — when BOTH it and the
+ * restored round-1 title are non-blank and differ after trimming +
+ * case-folding; otherwise null.
+ *
+ * This is a SIGNAL ONLY, not a precedence change: the restored title still
+ * wins the Title field by design (see `withPrefilledTitleSummary` — the T2b
+ * "reviewer's title is what gets published" contract). The hint just tells
+ * the reviewer the doc now says something else, so a teacher's rename on
+ * resubmit isn't silently overridden without anyone noticing.
+ *
+ * A blank restored title returns null: the prefill re-derives the field from
+ * the doc in that case, so field and doc already agree — nothing to hint.
+ */
+export function detectDocTitleChange(
+  restoredTitle: string | undefined,
+  source: { extractedTitle?: string | null; extractedContent?: string | null }
+): string | null {
+  const restored = restoredTitle?.trim();
+  if (!restored) return null;
+  const parsed = parseExtractedContent(source.extractedContent ?? '');
+  const docTitle = source.extractedTitle?.trim() || parsed.title?.trim() || '';
+  if (!docTitle) return null;
+  return docTitle.toLowerCase() === restored.toLowerCase() ? null : docTitle;
+}

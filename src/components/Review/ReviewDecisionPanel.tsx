@@ -28,6 +28,13 @@ interface ReviewDecisionPanelProps {
   setDecisionOption: Dispatch<SetStateAction<DecisionOption>>;
   notes: string;
   setNotes: Dispatch<SetStateAction<string>>;
+  /**
+   * The previous round's send-back ask when it's STALE (the teacher has
+   * resubmitted since). Shown read-only above the note box for context — the
+   * box itself seeds empty so the old ask can't ride a fresh decision out to
+   * the teacher's card.
+   */
+  priorRevisionNote?: string | null;
   saveError: string | null;
   setSaveError: Dispatch<SetStateAction<string | null>>;
   saving: boolean;
@@ -80,6 +87,7 @@ export function ReviewDecisionPanel({
   setDecisionOption,
   notes,
   setNotes,
+  priorRevisionNote,
   saveError,
   setSaveError,
   saving,
@@ -342,6 +350,14 @@ export function ReviewDecisionPanel({
         <div className="adm-section-eyebrow">
           {isRejectPath ? 'Reason for the teacher' : 'Note to the teacher'}
         </div>
+        {/* Context from the previous round, read-only. The box below starts
+            empty on a resubmit so the old ask isn't sent out again by accident. */}
+        {priorRevisionNote && (
+          <p className="adm-section-desc">
+            Last round you asked: &ldquo;{priorRevisionNote}&rdquo;. The teacher has resubmitted
+            since — write a fresh note (or leave it empty).
+          </p>
+        )}
         <textarea
           className="adm-textarea"
           aria-label={isRejectPath ? 'Reason for the teacher' : 'Note to the teacher'}

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { computeInitialMetadataFromAiDraft, withPrefilledTitleSummary } from './reviewMetadataInit';
+import {
+  computeInitialMetadataFromAiDraft,
+  detectDocTitleChange,
+  withPrefilledTitleSummary,
+} from './reviewMetadataInit';
 
 describe('computeInitialMetadataFromAiDraft', () => {
   it('returns null when draft is null', () => {
@@ -115,5 +119,49 @@ describe('withPrefilledTitleSummary (editable title/summary prefill)', () => {
     const input = {};
     withPrefilledTitleSummary(input, { extractedTitle: 'X', extractedContent: 'Y' });
     expect(input).toEqual({});
+  });
+});
+
+describe('detectDocTitleChange (title-changed-on-resubmit hint)', () => {
+  it('returns the doc title when it differs from the restored round-1 title', () => {
+    expect(
+      detectDocTitleChange('Old Name', { extractedTitle: 'New Name', extractedContent: '' })
+    ).toBe('New Name');
+  });
+
+  it('falls back to the parsed doc-body title when extracted_title is blank', () => {
+    expect(
+      detectDocTitleChange('Old Name', {
+        extractedTitle: '',
+        extractedContent: 'Parsed Body Title\nrest of the doc',
+      })
+    ).toBe('Parsed Body Title');
+  });
+
+  it('returns null when the titles match ignoring case and whitespace', () => {
+    expect(
+      detectDocTitleChange('  compost cake  ', {
+        extractedTitle: 'Compost Cake',
+        extractedContent: '',
+      })
+    ).toBeNull();
+  });
+
+  it('returns null when the restored title is blank (prefill re-derives from the doc anyway)', () => {
+    expect(
+      detectDocTitleChange('', { extractedTitle: 'New Name', extractedContent: '' })
+    ).toBeNull();
+    expect(
+      detectDocTitleChange('   ', { extractedTitle: 'New Name', extractedContent: '' })
+    ).toBeNull();
+    expect(
+      detectDocTitleChange(undefined, { extractedTitle: 'New Name', extractedContent: '' })
+    ).toBeNull();
+  });
+
+  it('returns null when no doc title can be derived at all', () => {
+    expect(
+      detectDocTitleChange('Old Name', { extractedTitle: null, extractedContent: '' })
+    ).toBeNull();
   });
 });

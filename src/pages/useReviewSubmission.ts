@@ -8,6 +8,7 @@ import { type SubmissionStatus } from '@/utils/submissionStatus';
 import { computePreselection } from '@/pages/reviewPreselect';
 import {
   computeInitialMetadataFromAiDraft,
+  detectDocTitleChange,
   withPrefilledTitleSummary,
 } from '@/pages/reviewMetadataInit';
 import { reAddActivityTypeSuffix } from '@/pages/reviewDetailHelpers';
@@ -62,6 +63,22 @@ export interface ReviewInitialFormState {
   notes: string;
   selectedDuplicate: string | null;
   legacyDecisionWarning: string | null;
+  /**
+   * Title-changed-on-resubmit hint: the doc's CURRENT title when a restored
+   * round-1 title differs from it (see `detectDocTitleChange`). The metadata
+   * form shows a heads-up at the Title field; precedence is unchanged — the
+   * restored title still wins the field. Always null on the preselect branch
+   * (no prior round → nothing to diverge from).
+   */
+  docTitleHint: string | null;
+  /**
+   * The previous round's send-back note, set ONLY when that round's ask is
+   * STALE (prior decision needs_revision + the submission has since been
+   * resubmitted). In that case `notes` seeds EMPTY — republishing the old ask
+   * as a fresh decision note is the bug this closes — and the decision panel
+   * shows this read-only for context instead.
+   */
+  priorRevisionNote: string | null;
 }
 
 /**
@@ -412,6 +429,17 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           );
           legacyWarning = `This submission was previously marked "${existingDecision}". That option is no longer available — choose a new decision below.`;
         }
+        // Stale-ask guard (post-launch item 3): when the prior round SENT THIS
+        // BACK (needs_revision) and the teacher has since resubmitted (status
+        // flipped away from needs_revision — process-submission sets it back to
+        // 'submitted'), the old ask must NOT re-seed the note box: approving
+        // without clearing it would republish the round-1 revision ask as an
+        // approval note on the teacher's card. Reopening while STILL
+        // needs_revision keeps the seed (the reviewer amending their own ask).
+        // approved/rejected are terminal (RPC idempotency guard), so no other
+        // stale combination exists.
+        const revisionAskIsStale =
+          review.decision === 'needs_revision' && submissionData.status !== 'needs_revision';
         seed = {
           // Prefill the editable title/summary; a restored review's own
           // title/summary (once this feature has shipped) wins over the prefill.
@@ -420,11 +448,19 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
             extractedContent: submissionData.extracted_content,
           }),
           decision: restoredDecision,
-          notes: review.notes || '',
+          notes: revisionAskIsStale ? '' : review.notes || '',
+          priorRevisionNote: revisionAskIsStale ? review.notes || null : null,
           // selectedDuplicate is NOT restored from a prior review — pre-existing
           // limitation, out of 8b scope; preserved verbatim (risk 2).
           selectedDuplicate: null,
           legacyDecisionWarning: legacyWarning,
+          // Teacher renamed the doc and resubmitted? The restored title still
+          // wins the field (above); this only tells the reviewer the doc now
+          // says something else.
+          docTitleHint: detectDocTitleChange(restoredMetadata.title, {
+            extractedTitle: submissionData.extracted_title,
+            extractedContent: submissionData.extracted_content,
+          }),
         };
       } else {
         // Phase 8b: pre-select decision + target from submitter intent — only
@@ -443,6 +479,8 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           notes: '',
           selectedDuplicate: preselection.target ?? null,
           legacyDecisionWarning: null,
+          docTitleHint: null,
+          priorRevisionNote: null,
         };
       }
       setInitialFormState(seed);

@@ -72,7 +72,7 @@ export function ReviewDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [filter, setFilter] = useState<FilterKey>('submitted'); // land on Pending — the actionable queue
   const [isReviewer, setIsReviewer] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   // Honest-error state (FP-05/FP-07): a failed fetch must never render as

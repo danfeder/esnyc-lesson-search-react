@@ -5,7 +5,7 @@ import type { ReviewMetadata } from '@/types';
 import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
 import { selectOptionsFromConfig, flattenHeritageOptions } from '@/pages/reviewDetailHelpers';
 import type { FieldProgress } from '@/pages/reviewValidation';
-import { IntFormField, IntPillGroup, IntProgressBar } from '@/components/Internal';
+import { IntButton, IntFormField, IntPillGroup, IntProgressBar } from '@/components/Internal';
 
 // Heritage options depend only on the static culturalHeritage config, so
 // flatten once at module scope rather than recomputing on every render.
@@ -31,6 +31,13 @@ interface ReviewMetadataFormProps {
   validationErrors: string[];
   errorBannerRef: RefObject<HTMLDivElement | null>;
   legacyDecisionWarning: string | null;
+  /**
+   * Title-changed-on-resubmit hint: the Google Doc's CURRENT title when it
+   * differs from the restored round-1 title in the field (computed by the
+   * load hook). Renders a heads-up under the Title field; hides itself once
+   * the field matches the doc's title (the reviewer adopted the new name).
+   */
+  docTitleHint?: string | null;
 }
 
 /**
@@ -55,6 +62,7 @@ export function ReviewMetadataForm({
   validationErrors,
   errorBannerRef,
   legacyDecisionWarning,
+  docTitleHint,
 }: ReviewMetadataFormProps) {
   const fieldError = (label: string) =>
     validationErrors.includes(label) ? `Required.` : undefined;
@@ -86,6 +94,22 @@ export function ReviewMetadataForm({
             placeholder="Lesson title"
           />
         </IntFormField>
+        {/* Title-changed-on-resubmit heads-up. Amber inline note (same styling
+            as TitleMismatchWarning). Hides itself once the field matches the
+            doc's title — whether via the button or a manual retype. */}
+        {docTitleHint &&
+          metadata.title?.trim().toLowerCase() !== docTitleHint.trim().toLowerCase() && (
+            <div className="mt-2 mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900">
+              Heads up: the Google Doc&apos;s title changed since the last review round — it&apos;s
+              now <strong>&ldquo;{docTitleHint}&rdquo;</strong>. The field above still holds the
+              previous round&apos;s title; keep it or update it before publishing.
+              <div style={{ marginTop: 8 }}>
+                <IntButton size="sm" onClick={() => handleMetadataChange('title', docTitleHint)}>
+                  Use the doc&apos;s new title
+                </IntButton>
+              </div>
+            </div>
+          )}
         <IntFormField label="Summary" hint="Optional. A short description shown with the lesson.">
           <textarea
             className="adm-textarea"

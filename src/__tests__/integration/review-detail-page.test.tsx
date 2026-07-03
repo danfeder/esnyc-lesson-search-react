@@ -949,3 +949,108 @@ describe('SubmitterIntentBanner — 4-state coverage', () => {
     expect(screen.queryByText('New lesson')).not.toBeInTheDocument();
   });
 });
+
+describe('Title changed on resubmit — hint at the Title field (post-launch item 2)', () => {
+  // Clone modernFixture (restore branch) with a restored round-1 title and a
+  // freshly re-extracted doc title. NO precedence change is under test here:
+  // the restored title must still WIN the field (T2b contract) — the hint just
+  // says the doc now reads differently.
+  function withTitles(restoredTitle: string, docTitle: string): Record<string, TableResult> {
+    // JSON round-trip clone — the fixture is plain JSON-safe data, and ESLint's
+    // env doesn't know structuredClone.
+    const f = JSON.parse(JSON.stringify(modernFixture)) as Record<string, TableResult>;
+    (f.lesson_submissions.data as Array<Record<string, unknown>>)[0].extracted_title = docTitle;
+    (
+      f.submission_reviews.data as Array<{ tagged_metadata: Record<string, unknown> }>
+    )[0].tagged_metadata.title = restoredTitle;
+    return f;
+  }
+
+  it('shows the amber hint naming the doc title while the field keeps the restored title', async () => {
+    renderReview(withTitles('Old Name', 'New Name'), 'sub-modern');
+
+    // The hint names the doc's NEW title…
+    const hint = await screen.findByText(/changed since the last review round/i);
+    expect(hint).toHaveTextContent('New Name');
+
+    // …while the Title field still holds the restored round-1 title (the
+    // publish path uses the field, so this is what would go out unchanged).
+    expect(screen.getByLabelText('Lesson title')).toHaveValue('Old Name');
+  });
+
+  it('shows no hint when the restored title matches the doc title', async () => {
+    renderReview(withTitles('Modern Lesson Title', 'Modern Lesson Title'), 'sub-modern');
+
+    expect(await screen.findByLabelText('Lesson title')).toHaveValue('Modern Lesson Title');
+    expect(screen.queryByText(/changed since the last review round/i)).not.toBeInTheDocument();
+  });
+
+  it("adopting the doc's new title fills the field and dismisses the hint", async () => {
+    renderReview(withTitles('Old Name', 'New Name'), 'sub-modern');
+    const user = userEvent.setup();
+
+    await screen.findByText(/changed since the last review round/i);
+    await user.click(screen.getByRole('button', { name: /use the doc.s new title/i }));
+
+    expect(screen.getByLabelText('Lesson title')).toHaveValue('New Name');
+    expect(screen.queryByText(/changed since the last review round/i)).not.toBeInTheDocument();
+  });
+
+  it('shows no hint on the preselect branch (no prior round to diverge from)', async () => {
+    renderReview(preselectTargetUpdateFixture, 'sub-preselect');
+
+    expect(await screen.findByLabelText('Lesson title')).toBeInTheDocument();
+    expect(screen.queryByText(/changed since the last review round/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('Stale revision note is not republished (post-launch item 3)', () => {
+  // Clone modernFixture with a prior send-back review and a chosen submission
+  // status. The bug: reopening a RESUBMITTED submission re-seeded the round-1
+  // ask into the note box, so approving without clearing it republished the
+  // old revision ask as an approval note on the teacher's card. The fix is at
+  // the restore seed — an approved row can't tell a stale ask from a genuine
+  // approval note, so UserProfile-side filtering was never an option.
+  function withPriorSendBack(status: string, notes: string): Record<string, TableResult> {
+    const f = JSON.parse(JSON.stringify(modernFixture)) as Record<string, TableResult>;
+    (f.lesson_submissions.data as Array<Record<string, unknown>>)[0].status = status;
+    const review = (f.submission_reviews.data as Array<Record<string, unknown>>)[0];
+    review.decision = 'needs_revision';
+    review.notes = notes;
+    return f;
+  }
+
+  it('resubmitted after a send-back: the note box starts EMPTY and the old ask shows read-only', async () => {
+    renderReview(withPriorSendBack('submitted', 'Please fix the summary'), 'sub-modern');
+
+    // The note box is empty — nothing stale to ride the next decision out.
+    expect(await screen.findByLabelText(/note to the teacher/i)).toHaveValue('');
+
+    // The old ask is still visible for context, read-only above the box.
+    expect(screen.getByText(/last round you asked/i)).toHaveTextContent('Please fix the summary');
+
+    // The prior decision still restores (radio staleness is a separate,
+    // explicitly out-of-scope owner-taste question).
+    expect(screen.getByRole('radio', { name: /send back for revisions/i })).toBeChecked();
+  });
+
+  it('still needs_revision (not yet resubmitted): the reviewer keeps their own ask in the box', async () => {
+    renderReview(withPriorSendBack('needs_revision', 'Please fix the summary'), 'sub-modern');
+
+    // Amending your own ask before the teacher acts — the seed is preserved.
+    expect(await screen.findByLabelText(/note to the teacher/i)).toHaveValue(
+      'Please fix the summary'
+    );
+    expect(screen.queryByText(/last round you asked/i)).not.toBeInTheDocument();
+  });
+
+  it('a prior non-send-back note still restores unchanged', async () => {
+    // modernFixture as-is: decision approve_new + a note, status in_review.
+    renderReview(modernFixture, 'sub-modern');
+
+    expect(await screen.findByLabelText(/note to the teacher/i)).toHaveValue(
+      'Looks good — minor tag cleanup only.'
+    );
+    expect(screen.queryByText(/last round you asked/i)).not.toBeInTheDocument();
+  });
+});
