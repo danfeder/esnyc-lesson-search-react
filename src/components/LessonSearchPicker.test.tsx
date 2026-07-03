@@ -408,6 +408,46 @@ describe('LessonSearchPicker', () => {
     expect(screen.queryByText(/can't find it/i)).not.toBeInTheDocument();
   });
 
+  it('keeps the escape hatch hidden while a retry is still in flight (DQ-1)', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const failing = () => ({
+      select: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: null, error: { message: 'connection refused' } }),
+    });
+    (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(failing);
+
+    const user = userEvent.setup();
+    render(
+      <LessonSearchPicker
+        selected={null}
+        onSelect={vi.fn()}
+        onClear={vi.fn()}
+        cantFindOption
+        onCantFind={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByPlaceholderText(/search by lesson title/i), 'apple');
+    await waitFor(() => screen.getByText(/search failed/i), { timeout: 1000 });
+
+    // Retry whose request never resolves: the in-flight render clears
+    // `errored` but must NOT re-expose the null-target escape hatch.
+    (supabase.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnValue(new Promise(() => {})),
+    }));
+    await user.click(screen.getByRole('button', { name: /try again/i }));
+
+    expect(screen.queryByText(/search failed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/can't find it/i)).not.toBeInTheDocument();
+  });
+
   it('recovers via "Try again" once the query succeeds', async () => {
     const { supabase } = await import('@/lib/supabase');
     const limitMock = vi

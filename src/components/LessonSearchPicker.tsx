@@ -249,7 +249,7 @@ export function LessonSearchPicker({
       {/* Hidden while errored so a failed search can't steer the teacher into
           a null-target UPDATE ("can't find it" would be a lie — we never got
           to look). */}
-      {cantFindOption && onCantFind && hasQueried && !errored && (
+      {cantFindOption && onCantFind && hasQueried && !errored && !isLoading && (
         <div className="mt-2 text-sm text-gray-700">
           <button
             type="button"
