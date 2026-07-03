@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Daily smoke test for all 10 deployed edge functions.
+ * Daily smoke test for 7 PROD edge functions (not the whole deployed set:
+ * complete-review and the legacy check-google-doc-access aren't smoked).
  *
  * Two tiers:
- *   1. Full smoke (2 fns) — POST a real payload and assert response shape.
+ *   1. Full smoke (1 fn) — POST a real payload and assert response shape.
  *      Catches business-logic regressions on top of deploy regressions.
- *      Functions: smart-search, generate-embeddings.
- *   2. Health check (8 fns) — OPTIONS preflight, expect non-404 / non-5xx.
+ *      Functions: smart-search.
+ *   2. Health check (6 fns) — OPTIONS preflight, expect non-404 / non-5xx.
  *      Catches "function not deployed" (404) and module-load crashes (5xx)
  *      without exercising side-effecting code paths. Does NOT catch latent
  *      runtime failures inside the function body — e.g. a missing secret
@@ -25,8 +26,6 @@
  *     the OPTIONS early-return, so the preflight still returns 200 pre-auth.
  *     (The full-smoke payload also deliberately omitted submissionId to avoid
  *     a submission_similarities write; the health check writes nothing either.)
- *   - generate-embeddings makes an OpenAI text-embedding-3-small call;
- *     ~5 input tokens × $0.02/M = ~$0.0000001 per smoke run. Negligible.
  *
  * Env vars (CI provides via repo secrets; local dev loads from .env):
  *   SUPABASE_URL          (default: VITE_SUPABASE_URL)
@@ -74,16 +73,6 @@ const FULL_SMOKE = [
       if (json.totalCount <= 0) throw new Error(`totalCount=${json.totalCount}, expected > 0`);
     },
   },
-  {
-    name: 'generate-embeddings',
-    payload: { text: 'edge function smoke test' },
-    assert: (json) => {
-      if (!Array.isArray(json.embedding)) throw new Error('embedding not an array');
-      if (json.embedding.length !== 1536) {
-        throw new Error(`embedding length=${json.embedding.length}, expected 1536`);
-      }
-    },
-  },
 ];
 
 const HEALTH_CHECK = [
@@ -93,12 +82,11 @@ const HEALTH_CHECK = [
   'send-email',
   'invitation-management',
   'user-management',
-  'generate-gemini-embeddings',
 ];
 
 // Per-request timeout. Sequential execution means one hung endpoint would
 // otherwise block every subsequent check until the job-level 5-min cap
-// killed the run with no per-function visibility. 15 s × 10 ≈ 2.5 min
+// killed the run with no per-function visibility. 15 s × 7 ≈ 1.75 min
 // worst case, still under the cap.
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -157,7 +145,7 @@ async function main() {
   console.log('');
 
   // Sequential so log output reads top-to-bottom in cron logs. Total wall
-  // time is ~5–10 s for 10 functions; parallelism would buy little and
+  // time is ~5–10 s for 7 functions; parallelism would buy little and
   // muddle the output.
   const results = [];
   for (const spec of FULL_SMOKE) {
