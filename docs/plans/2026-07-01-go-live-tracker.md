@@ -3,7 +3,30 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-02 (Opus, **t4c retire migration — PR #577 OPEN, reviewed**). Branch
+**Last updated:** 2026-07-02 (Fable, **t4c pre-merge review — APPROVED, no changes requested**).
+Independent re-verification of PR #577, all green: generator output byte-identical to the committed
+migration; decisions.json integrity holds (61 unique retired / 250 unique survivors / 0 overlap /
+57 groups); the migration wraps every mutating statement in one `BEGIN` → `LOCK TABLE lessons
+SHARE ROW EXCLUSIVE` → … → `COMMIT` transaction with sound guards (compile-time 61-distinct,
+already-retired pre-guard, post-asserts incl. zero-survivor check). **Definitive wrapper proof:
+TEST's `supabase_migrations.schema_migrations` row for `20260702160000` records the applied
+statement sequence BEGIN → LOCK → snapshot → guards → UPDATE → asserts → COMMIT** — the wrapped
+file is what ran on TEST, not workflow-log inference. TEST re-probed: 685 live / 57 dedup-retired /
+snapshot 57 / 0 dedup-retired outside snapshot / fattoush search 3 results 0 retired. PROD re-probed
+read-only: 764 live / all 61 present+live / 0 already retired / no rollback table — **STOP condition
+clear**. Rulings on the handoff's open questions: (1) atomicity fix correct and complete; (2) the
+reversible TEST re-validation surgery was the right call (TEST-only, reversible, left TEST in the
+correct final state, and bought real evidence the wrapped file applies cleanly against real data);
+(3) Codex #2 (snapshot-pollution) and #3 (present-in-this-db vs exact-61) rebuttals are sound — no
+snapshot-empty assert or PROD-only exact-61 guard requested (the design was pre-decided in the
+brief; the mandated post-apply live=703 check covers the residual risk). `.sql.rollback` verified:
+restores prior state from the snapshot for exactly the 61 ids, idempotent, safe on an
+already-applied DB. NEXT = 🔴 **USER-only**: merge #577 + approve `migrate-production` → post-apply
+read-only PROD verify per handoff §6 (live=703, 61 `dedup:%`, rollback table=61, 0 survivors,
+fattoush spot-check, retired row reachable via `lessons_with_metadata`). **t4b** (Opus, brief ready)
+parallel-ok → **T5**. Prior update below.
+
+**Prior update (2026-07-02, Opus, t4c retire migration — PR #577 OPEN, reviewed).** Branch
 `feat/t4c-dedup-retire`: migration `20260702160000_t4_dedup_retire.sql` (+`.sql.rollback`)
 soft-retires the 61 approved duplicates (D5 snapshot-table pattern, never DELETE), generated
 byte-deterministically from decisions.json by the committed
