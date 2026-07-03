@@ -48,7 +48,6 @@ describe('Season parameter naming (RPC and suggestions)', () => {
     vi.clearAllMocks();
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setViewState({ resultsPerPage: 2 });
   });
 
   it('sends `filter_seasons` to RPC when season filters are selected', async () => {

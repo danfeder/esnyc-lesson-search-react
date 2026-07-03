@@ -85,7 +85,7 @@ describe('SearchPage Integration', () => {
     // Reset store to defaults
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setViewState({ resultsPerPage: 10, sortBy: 'relevance' });
+    store.setViewState({ sortBy: 'relevance' });
 
     // Clear suggestions mock
     functionsInvokeMock.mockResolvedValue({ data: null, error: null });

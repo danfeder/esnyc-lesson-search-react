@@ -195,55 +195,6 @@ export function captureMessage(message: string, level: Sentry.SeverityLevel = 'i
 }
 
 /**
- * Set user context for Sentry
- */
-export async function setUserContext(user: { id: string; email?: string; role?: string } | null) {
-  if (isProduction && SENTRY_DSN) {
-    if (user) {
-      Sentry.setUser({
-        id: user.id,
-        // Only include email if necessary, otherwise hash it
-        email: user.email ? await hashEmail(user.email) : undefined,
-        role: user.role,
-      });
-    } else {
-      Sentry.setUser(null);
-    }
-  }
-}
-
-/**
- * Hash email for privacy using a one-way hash
- */
-async function hashEmail(email: string): Promise<string> {
-  const [localPart, domain] = email.split('@');
-
-  // Use Web Crypto API if available
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    try {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(localPart);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-      // Take first 8 chars of hash for brevity
-      return `user_${hashHex.substring(0, 8)}@${domain}`;
-    } catch {
-      // Fall through to simple hash
-    }
-  }
-
-  // Fallback to simple hash
-  let hash = 0;
-  for (let i = 0; i < localPart.length; i++) {
-    const char = localPart.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return `user_${Math.abs(hash).toString(36)}@${domain}`;
-}
-
-/**
  * Add breadcrumb for better error context
  */
 export function addBreadcrumb(breadcrumb: {
@@ -266,28 +217,4 @@ export function addBreadcrumb(breadcrumb: {
     // eslint-disable-next-line no-console
     console.log('[Breadcrumb]', breadcrumb);
   }
-}
-
-/**
- * Wrap async functions with error handling
- */
-export function withErrorHandling<TArgs extends readonly unknown[], TReturn>(
-  fn: (...args: TArgs) => Promise<TReturn>,
-  context?: string
-): (...args: TArgs) => Promise<TReturn> {
-  return (async (...args: TArgs) => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      captureException(error, {
-        tags: {
-          context: context || fn.name || 'unknown',
-        },
-        extra: {
-          arguments: sanitizeData(args),
-        },
-      });
-      throw error;
-    }
-  }) as (...args: TArgs) => Promise<TReturn>;
 }

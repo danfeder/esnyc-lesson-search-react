@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { logger } from './logger';
 
 describe('logger', () => {
-  describe('sanitizeObject (via logger.track)', () => {
+  describe('sanitizeObject (via logger.debug)', () => {
     it('does not mutate the input data object', () => {
       // Suppress console output during test
       vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -10,7 +10,7 @@ describe('logger', () => {
       const input = { name: 'test', password: 'secret123', count: 42 };
       const original = { ...input };
 
-      logger.track('test-event', input);
+      logger.debug('test-event', input);
 
       expect(input).toEqual(original);
 
@@ -24,7 +24,7 @@ describe('logger', () => {
       const input = { info: nested, name: 'test' };
       const originalNested = { ...nested };
 
-      logger.track('test-event', input);
+      logger.debug('test-event', input);
 
       expect(nested).toEqual(originalNested);
 
@@ -34,10 +34,11 @@ describe('logger', () => {
     it('redacts sensitive keys in log output', () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      logger.track('test-event', { password: 'secret', name: 'test' });
+      logger.debug('test-event', { password: 'secret', name: 'test' });
 
       expect(logSpy).toHaveBeenCalledWith(
-        '[TRACK] test-event',
+        '[DEBUG]',
+        'test-event',
         expect.objectContaining({
           password: '[REDACTED]',
           name: 'test',

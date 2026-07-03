@@ -86,7 +86,7 @@ describe('SearchPage split-view viewport coercion (§3.4)', () => {
     const store = useSearchStore.getState();
     store.clearFilters();
     // The user persisted "split" view on a wide laptop.
-    store.setViewState({ view: 'split', resultsPerPage: 10, sortBy: 'relevance' });
+    store.setViewState({ view: 'split', sortBy: 'relevance' });
     functionsInvokeMock.mockResolvedValue({ data: null, error: null });
   });
 

@@ -8,8 +8,6 @@ export type { IntAuthShellProps } from './IntAuthShell';
 export { IntButton } from './IntButton';
 export { IntCard } from './IntCard';
 export { IntCardGrid } from './IntCardGrid';
-export { IntConfidencePill } from './IntConfidencePill';
-export type { IntConfidence, IntConfidencePillProps } from './IntConfidencePill';
 export { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
 export { IntDataTable } from './IntDataTable';
 export type {
@@ -21,8 +19,6 @@ export type {
 export { IntDecisionBar } from './IntDecisionBar';
 export type { IntDecisionBarProps } from './IntDecisionBar';
 export { IntDensitySwitcher } from './IntDensitySwitcher';
-export { IntDetectionMethodChip } from './IntDetectionMethodChip';
-export type { IntDetectionMethod, IntDetectionMethodChipProps } from './IntDetectionMethodChip';
 export { IntDocFrame } from './IntDocFrame';
 export type { IntDocFrameProps, IntDocFrameToggleOption } from './IntDocFrame';
 export { IntDuplicateCard } from './IntDuplicateCard';
@@ -34,21 +30,12 @@ export type {
 export { IntEmptyState } from './IntEmptyState';
 export { IntFilterSection } from './IntFilterSection';
 export { IntFormField } from './IntFormField';
-export { IntGroupReviewBar } from './IntGroupReviewBar';
-export type { IntGroupReviewBarProps } from './IntGroupReviewBar';
 export { IntHubTile } from './IntHubTile';
 export type { IntHubTileProps } from './IntHubTile';
 export { IntLessonDetail } from './IntLessonDetail';
 export { IntLessonDrawer } from './IntLessonDrawer';
 export { IntListRow, intActivityLabel, intGradesLabel } from './IntListRow';
 export { IntListSkeleton } from './IntListSkeleton';
-export { IntMetadataDiff } from './IntMetadataDiff';
-export type {
-  IntDiffField,
-  IntDiffFieldKind,
-  IntDiffMode,
-  IntMetadataDiffProps,
-} from './IntMetadataDiff';
 export { IntMobileFilterButton } from './IntMobileFilterButton';
 export { IntMobileFilterDrawer } from './IntMobileFilterDrawer';
 export { IntPageHeader } from './IntPageHeader';
@@ -60,8 +47,6 @@ export { IntQueueRow } from './IntQueueRow';
 export { IntRoleBadge } from './IntRoleBadge';
 export type { IntRole } from './IntRoleBadge';
 export { IntSidebar } from './IntSidebar';
-export { IntSpecRail } from './IntSpecRail';
-export type { IntSpecRailProps } from './IntSpecRail';
 export { IntSplitDetail } from './IntSplitDetail';
 export { IntStatCard } from './IntStatCard';
 export type { IntStatCardProps } from './IntStatCard';

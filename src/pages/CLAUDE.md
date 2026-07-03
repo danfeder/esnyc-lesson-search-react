@@ -181,7 +181,7 @@ const {
 
 ## 🗂️ Current Pages Reference
 
-`src/pages/*.tsx` is the source of truth — run `ls src/pages/*.tsx` for the authoritative, current list, since this inventory drifts as pages are added. As of 2026-07 there are 16 page components:
+`src/pages/*.tsx` is the source of truth — run `ls src/pages/*.tsx` for the authoritative, current list, since this inventory drifts as pages are added. As of 2026-07 there are 15 page components:
 
 ### Public
 - **SearchPage** - Main search interface, no auth
@@ -189,7 +189,6 @@ const {
 ### Auth & account flows
 - **AcceptInvitation** - Accept an admin/reviewer invitation
 - **ResetPassword** - Password-reset flow
-- **VerifySetup** - Post-signup account setup/verification
 - **UserProfile** - User's profile and settings
 
 ### Teacher / submission

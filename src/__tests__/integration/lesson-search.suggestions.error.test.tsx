@@ -37,7 +37,6 @@ describe('Search suggestions error handling', () => {
     // Reset store to defaults
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setViewState({ resultsPerPage: 2 });
   });
 
   it('does not render suggestions when smart-search fails and falls back', async () => {

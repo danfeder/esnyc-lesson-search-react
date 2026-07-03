@@ -89,7 +89,7 @@ useEffect(() => {
 
 ## 🔍 Legacy: Algolia (Removed)
 
-Algolia was removed from this project. Public search uses the PostgreSQL `search_lessons` RPC (full-text search with synonym/typo expansion via `expand_search_with_synonyms`); the `smart-search` edge function only powers zero-result suggestions. See `src/lib/search.ts` (`getSearchRpcName`) and `src/hooks/useLessonSearch.ts`. (The standalone `search-lessons` edge fn was retired in the search-modernization dead-code cleanup.)
+Algolia was removed from this project. Public search uses the PostgreSQL `search_lessons` RPC (full-text search with synonym/typo expansion via `expand_search_with_synonyms`); the `smart-search` edge function only powers zero-result suggestions. See `src/hooks/useLessonSearch.ts`. (The standalone `search-lessons` edge fn was retired in the search-modernization dead-code cleanup.)
 
 ## 📊 Sentry Error Tracking
 

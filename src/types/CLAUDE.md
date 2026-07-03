@@ -8,7 +8,6 @@
 |------|--------|---------|
 | Component Props | `Props` | `FilterSidebarProps` |
 | Store State | `State` | `SearchState` |
-| API Response | Generic | `ApiResponse<T>` |
 
 ## Case Conventions
 
@@ -39,12 +38,6 @@ interface LessonMetadata {
 
 // Union types for status
 type ReviewDecision = 'approve_new' | 'reject' | 'needs_revision';
-
-// Generic response wrapper
-interface ApiResponse<T> {
-  data: T;
-  error?: string;
-}
 ```
 
 ## Export from index.ts
@@ -52,7 +45,7 @@ interface ApiResponse<T> {
 ```typescript
 export * from './lesson';
 export * from './filters';
-export type { Lesson, SearchFilters, User } from './index';
+export type { Lesson, SearchFilters } from './index';
 ```
 
 ## Avoid

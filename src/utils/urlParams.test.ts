@@ -94,11 +94,6 @@ describe('buildSearchParams', () => {
     expect(buildSearchParams(emptyFilters, 'modified').get('sort')).toBe('modified');
   });
 
-  it('omits a non-whitelisted sort value (grade/confidence) from the URL', () => {
-    expect(buildSearchParams(emptyFilters, 'grade').has('sort')).toBe(false);
-    expect(buildSearchParams(emptyFilters, 'confidence').has('sort')).toBe(false);
-  });
-
   it('never emits a lessonFormat/format param', () => {
     const params = buildSearchParams({ ...emptyFilters, query: 'x', gradeLevels: ['3'] }, 'title');
     expect(params.has('format')).toBe(false);
