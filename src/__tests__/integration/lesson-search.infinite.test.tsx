@@ -302,4 +302,34 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
     expect(retryCall[1].page_offset).toBe(20);
     expect(screen.queryByText(/couldn't load more lessons just now/i)).not.toBeInTheDocument();
   });
+
+  it('hides the load-more trigger entirely when the whole result set fits on page 1 (FP-19)', async () => {
+    // Single lesson, total_count 1 → one page, no next page. The paginated
+    // trigger (and its "No more results to load" terminal footer) is pure noise
+    // here, so the `(hasNextPage || pageCount > 1)` guard should suppress it
+    // outright — neither the load-more control nor the terminal copy renders.
+    rpcMock.mockResolvedValueOnce({
+      data: [
+        {
+          lesson_id: 'only',
+          title: 'Only Lesson',
+          summary: 'ok',
+          file_link: '#',
+          grade_levels: ['3'],
+          metadata: { coreCompetencies: [], culturalHeritage: [], activityType: [] },
+          confidence: { overall: 0.9 },
+          total_count: 1,
+        },
+      ],
+      error: null,
+    });
+
+    renderWithProviders(<SearchPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Only Lesson')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: /load more results/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/no more results to load/i)).not.toBeInTheDocument();
+  });
 });

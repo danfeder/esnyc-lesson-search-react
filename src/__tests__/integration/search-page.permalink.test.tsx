@@ -394,6 +394,47 @@ describe('SearchPage permalinks (D2)', () => {
     });
   });
 
+  it('keeps the open lesson from the seeded cache (no by-id fetch, no spinner) when a filter change drops it from results (rung8-stores F3)', async () => {
+    // handleOpenLesson seeds queryClient.setQueryData(['lesson', id], lesson).
+    // If a later filter change drops that lesson from the result set,
+    // lessonFromResults goes undefined and useLessonById ENABLES — but the seed
+    // (fresh for staleTime: 5min) serves it, so the pane keeps the lesson with no
+    // network by-id fetch and no "Loading lesson…" flash.
+    const seed = createTestLesson({ lesson_id: 'seed-3', title: 'Seeded Lesson' });
+    const other = createTestLesson({ lesson_id: 'other-3', title: 'Other Lesson' });
+    rpcMock
+      .mockResolvedValueOnce({ data: [seed], error: null }) // initial search: lesson present
+      .mockResolvedValue({ data: [other], error: null }); // post-filter search: lesson dropped
+
+    renderSearchApp(['/']);
+
+    await waitFor(() => {
+      expect(screen.getByText('Seeded Lesson')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Seeded Lesson'));
+    await waitFor(() => {
+      expect(drawerHeadingVisible('Seeded Lesson')).toBe(true);
+    });
+    expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/seed-3');
+
+    // Change filters → new result set that no longer contains the open lesson.
+    act(() => {
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+
+    // Once the fresh (lesson-less) result set settles...
+    await waitFor(() => {
+      expect(screen.getByText('Other Lesson')).toBeInTheDocument();
+    });
+    // ...the pane still shows the lesson, served from the seeded cache: no by-id
+    // fetch fired (maybeSingleMock is the by-id-specific signal) and no spinner.
+    expect(drawerHeadingVisible('Seeded Lesson')).toBe(true);
+    expect(screen.queryByText('Loading lesson…')).not.toBeInTheDocument();
+    expect(maybeSingleMock).not.toHaveBeenCalled();
+  });
+
   it('opening a lesson does not refire the search RPC and keeps filter pills (redundant-hydrate seam)', async () => {
     const row = createTestLesson({ lesson_id: 'seam-1', title: 'Seam Lesson' });
     rpcMock.mockResolvedValue({ data: [row], error: null });
