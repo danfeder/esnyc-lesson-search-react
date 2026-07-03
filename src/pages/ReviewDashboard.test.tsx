@@ -106,6 +106,13 @@ describe('ReviewDashboard honest error states (FP-05/FP-07)', () => {
     expect(screen.queryByText(/access denied/i)).not.toBeInTheDocument();
   });
 
+  it('shows the access error card (never a blank page) when getUser itself throws', async () => {
+    getUserMock.mockRejectedValue(new Error('network down'));
+    renderDashboard();
+    expect(await screen.findByText(/couldn't check your access/i)).toBeInTheDocument();
+    expect(screen.queryByText(/access denied/i)).not.toBeInTheDocument();
+  });
+
   it('shows the queue error card + Retry (never "No submissions") when the submissions fetch fails', async () => {
     currentMock = makeReviewSupabaseMock(queueErrorFixture);
 

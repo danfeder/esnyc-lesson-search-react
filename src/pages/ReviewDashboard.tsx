@@ -116,19 +116,28 @@ export function ReviewDashboard() {
   }, [filter]);
 
   const checkAuth = async (): Promise<boolean> => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    let authUser;
+    try {
+      ({
+        data: { user: authUser },
+      } = await supabase.auth.getUser());
+    } catch (error) {
+      // A thrown getUser (network blip) is not a sign-out verdict — render
+      // the access-check error card, never a blank page or a redirect.
+      logger.error('Error checking auth state:', error);
+      setAuthCheckError(true);
+      return false;
+    }
+    if (!authUser) {
       navigate('/');
       return false;
     }
-    setUser(user);
+    setUser(authUser);
 
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', authUser.id)
       .single();
 
     if (error || !profile) {
@@ -279,13 +288,10 @@ export function ReviewDashboard() {
     count: counts?.[key],
   }));
 
-  if (!isReviewer && !user) {
-    return null; // Auth check redirects; nothing to show in the meantime.
-  }
-
   // Role check failed to FETCH (transient error) — this is not a permissions
   // verdict, so never show "Access denied" here. Genuinely denied roles are
-  // handled below after a successful fetch.
+  // handled below after a successful fetch. Must precede the null guard:
+  // a thrown getUser leaves user/isReviewer unset AND sets this flag.
   if (authCheckError) {
     return (
       <div className="int-shell-root">
@@ -301,6 +307,10 @@ export function ReviewDashboard() {
         </div>
       </div>
     );
+  }
+
+  if (!isReviewer && !user) {
+    return null; // Auth check redirects; nothing to show in the meantime.
   }
 
   if (!isReviewer) {

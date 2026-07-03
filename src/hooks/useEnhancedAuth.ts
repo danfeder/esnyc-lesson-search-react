@@ -108,6 +108,10 @@ export function useEnhancedAuth(): AuthContextValue {
       }
     } catch (error) {
       logger.error('Error checking user:', error);
+      // Couldn't even determine auth state — surface the blip (FP-07)
+      // rather than silently falling through to a redirect. Retry
+      // self-corrects: a later successful check clears or redirects.
+      setProfileError(true);
       setLoading(false);
     }
   }, [fetchUserProfile]);

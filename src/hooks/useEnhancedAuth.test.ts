@@ -663,6 +663,10 @@ describe('useEnhancedAuth', () => {
       });
 
       expect(result.current.user).toBeNull();
+      // FP-07 pin: a thrown getUser is a blip, not a sign-out verdict —
+      // it must surface as profileError so ProtectedRoute shows Retry
+      // instead of silently redirecting.
+      expect(result.current.profileError).toBe(true);
     });
 
     it('handles profile fetch error gracefully', async () => {
