@@ -28,6 +28,28 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { browserName: 'chromium' },
+      // The authenticated suite (T5b) runs in its own serial project below.
+      testIgnore: ['**/authenticated/**', '**/auth.setup.ts', '**/auth.teardown.ts'],
+    },
+    // T5b authenticated suite: programmatic login (auth.setup.ts) → serial
+    // journey specs → marker-scoped cleanup (auth.teardown.ts). Locally opt-in
+    // via E2E_AUTH=1; always on in CI. See e2e/README.md.
+    {
+      name: 'auth-setup',
+      testMatch: /auth\.setup\.ts/,
+      teardown: 'auth-cleanup',
+    },
+    {
+      name: 'auth-cleanup',
+      testMatch: /auth\.teardown\.ts/,
+    },
+    {
+      name: 'chromium-auth',
+      use: { browserName: 'chromium' },
+      testMatch: /authenticated\/.+\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      // The journey crosses several edge-function round-trips per test.
+      timeout: 120000,
     },
   ],
 });

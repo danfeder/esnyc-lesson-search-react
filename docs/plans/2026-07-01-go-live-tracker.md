@@ -3,8 +3,66 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-03 (Fable, **t4b BUILT — PR open, Opus first cut salvaged + completed
-by Fable**). Opus's t4b session drifted mid-flight (user stopped it); Fable audited the working
+**Last updated:** 2026-07-03 (Fable, **T5b BUILT — authenticated E2E fixture + 14-test
+review-journey suite, PR #579 open**). Cleanup design decided WITH the user at session start
+(option A): the suite self-cleans via marker-scoped service-key helpers on the Node side —
+recon corrected the brief's premise (CI already held `SUPABASE_SERVICE_ROLE_KEY_TEST` for the
+RLS-test step in the same workflow, so no new secrets; the browser never sees it; hard PROD-URL
+guard). Every row carries `…/d/1E2EAUTH<runId>…`; teardown deletes children-first and FAILS on
+residue; setup sweeps >2h-old markers from crashed runs; retries wipe the prior attempt.
+Replaces the fully-skipped `review-flow.spec.ts` (stale Phase-8b assertions). Coverage mirrors
+the T5 smoke: submit → all 5 decisions (incl. guard fire+cancel+publish-anyway, note re-bind on
+card switch, reject-requires-reason) → revision loop (resubmit clears stale sims, tags
+preserved) → badges ×4 → logged-out public search; publish-as-update targets THIS RUN's lesson
+(no real corpus row written). **Local gates: check ✅, 1960/1960 unit ✅, live suite vs TEST
+16/16 in 55s, teardown receipts 4/4/4/1/1, baseline re-probed byte-exact 763/685/130 + zero
+markers.** Local opt-in `E2E_AUTH=1` (e2e/README.md). PR carries the two outstanding docs
+commits; local main reset to origin. NEXT = CI green on the deploy preview → post-CI TEST
+baseline re-verify → 🔴 **USER merges #579** → phase CLOSES (invitations on the user's own
+timing). Prior update below.
+
+**Prior update (2026-07-03, Fable + user, **T5 LAUNCH SMOKE ✅ ALL 7 STATIONS GREEN — nothing
+launch-blocking**). Full per-station evidence + cleanup receipts in
+`2026-07-03-t5-launch-smoke.md`. Both residuals closed by real clicks: **all 5 reviewer
+decisions committed via browser** (publish-anyway guard fired naming top match + cancelled
+cleanly; already-in-library note prefills + re-binds on card switch AND search-repick + clears
+on decision change; reject requires a reason and the teacher sees the "Not published" badge +
+reason — verified on a fresh row and the real 2025 row; publish-as-update archived exactly 1
+version and updated in place; gate correctly scoped — reject passed at 1/8 tags) and the **T3b
+resubmit button works** (note shown verbatim → click → needs_revision→submitted, reason nulled,
+doc genuinely re-snapshotted, 4 stale similarity rows→0, reviewer tags preserved on reopen).
+PROD read-only checks green with human eyes: "taste test" top-10 = the 10 predicted tasting
+lessons; fattoush stubs invisible (DB cross-check); mobile 390px incl. filter drawer works.
+Password-reset email landed in df@esynyc.org within seconds from **program@esynyc.org**
+(Workspace SMTP live on PROD). Organic bonus: 3 smoke submissions matched the just-published
+smoke lesson at 49% `low` — the exact case the old embedding pipeline false-flagged as EXACT
+now labels honestly. TEST restored byte-exact (763/685/130/0, RETURNING receipts); PROD
+untouched (703/82). Findings: **0 blocking**, 3 nits → Post-launch list below. **USER DECISION:
+build the authenticated-E2E fixture — it becomes the phase's FINAL item (T5b, fresh session;
+Fable brief ready: `2026-07-03-brief-t5b-auth-e2e.md`); phase wraps after T5b**, then user has
+post-phase improvement ideas queued. Invitations: smoke verdict is READY; the user will
+send them personally when ready — not gated on T5b, not tracked here. The two unpushed
+docs commits ride the T5b PR (user call). **Model directive (user, 2026-07-03, same
+session): ALL main-session work now runs on Fable — no Opus handoffs until the user re-opens
+them; subagents may downtier only where Fable definitively adds no benefit.** NEXT = **T5b
+(Fable, fresh session, brief ready)**. Prior update below.
+
+**Prior update (2026-07-03, Fable, **t4b ✅ SHIPPED + PROD-VERIFIED — T4 IS CLOSED**). Merged
+#578 (squash `9e0cc4e`, user-authorized); user approved both PROD gates (`migrate-production` run
+28634657192 + Deploy Edge Functions, both `success`). **Post-apply PROD verify ALL GREEN (posted
+to #578):** both migrations recorded; RPC + archive fn ACLs `{postgres,service_role}` (anon denied
+via `has_function_privilege`); casefold live; retired-exclusion bait probe vs PROD's 61 retired
+rows clean (0 retired candidates, no self-match, twin top 0.891); live corpus untouched at 703;
+**3-signal edge verify: detect-duplicates v27 / process-submission v37→v38 / complete-review v10 —
+all fresh, all shas BYTE-EXACT vs the TEST-verified bundles** (`aaba1497…`/`f4aa4396…`/`1e37ffac…`);
+no-auth probe → 401. Reviewer flow now runs D7 against hash-honest pg_trgm detection (retired
+lessons excluded, permanent CI guardrail); embedding pipeline retired end-to-end; admin Duplicates
+pages + browser-reachable hard-delete gone. **NEXT = T5 smoke + launch** (residuals for T5: browser-
+click the resubmit button + the new decision screen; the 3 deferred t4b follow-ups listed below are
+post-launch). Prior update below.
+
+**Prior update (2026-07-03, Fable, t4b BUILT — PR open, Opus first cut salvaged + completed
+by Fable).** Opus's t4b session drifted mid-flight (user stopped it); Fable audited the working
 tree — verdict: on-brief and worth salvaging (nothing pushed, no DB/edge touched; snapshot commit
 `695e0bb` preserves the as-found state). Kept: migration (RPC + revoke), both edge-fn rewrites,
 §C panel reshape, §D rejected badge, §E page removals. Fable completed: D7 publish-guard wiring in
@@ -277,6 +335,10 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 
 ## Working model (binding for every session in this sprint)
 
+- **⚠️ 2026-07-03 UPDATE (user, binding): ALL main-session work now runs on Fable — no Opus
+  handoffs until the user re-opens them. Subagents may use lesser models only where Fable
+  definitively adds no benefit. The Fable/Opus/Sonnet split below is retained as historical
+  context for the T1–T5 records.**
 - **Fable** (scarce — ration hard): design decisions, briefs, adjudication, anything surprising.
 - **Opus**: executes Fable-written briefs. The brief tells you exactly what to build, how to
   verify, and when to STOP. Do not redesign, do not expand scope, do not improvise around a
@@ -309,7 +371,16 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 | T3 | Auth email (invite/reset only) via Google Workspace SMTP; invite-only signup; custom-email retirements | Opus → **Fable** (merge + security fix + go-live) | **✅ TRACK CLOSED 2026-07-02** — #573 (`9a50dc6`) + RLS fix #574 (`104337f`) both merged + PROD-verified; **Part 3c DONE: public signups disabled (422 `signup_disabled` verified) + PROD end-to-end throwaway-teacher invite test passed on the live site and fully cleaned. Site is INVITE-ONLY and live; real invitations safe to send.** Residual: accept-flow Playwright E2E deferred to T3b/T5. |
 | T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus → **Fable** (adjudication + merge) | **✅ DONE 2026-07-02 — PR #575 merged (squash `03ebe4b`) + PROD edge deploy 3-signal-verified (v37, sha `a7fce21d…` = TEST-verified bundle, negative probes reject cleanly).** No migration. Gate-2 TEST smoke had proven the full server loop (CAS flip, stale-similarity clear 1→0, tag+note preservation, 4 negative probes, retired-guard). Residual: UI button click → T5 smoke. Brief: `2026-07-02-brief-t3b-resubmit.md`. |
 | T4 | Corpus dedup sweep (764 live lessons) + review-screen reshape | Fable design ✅ → Opus t4a ✅ → Fable+user walkthrough ✅ → Opus t4c retire / t4b reshape | **t4c PR OPEN 2026-07-02 (`feat/t4c-dedup-retire`)** — soft-retire migration `20260702160000_t4_dedup_retire.sql` generated from decisions.json (61 losers, D5 snapshot pattern); local gates green; PROD re-probe 764/61-live/0-retired → 703; TEST rehearsal pre-registered 57/61 (742→685). NEXT = CI→TEST verify → 🔴 **USER-only PROD gate** → read-only PROD verify. **t4b** (Opus, `2026-07-02-brief-t4b-review-reshape.md`, independent) parallel-ok |
-| T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | any | Pending |
+| T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | Fable + user | **✅ DONE 2026-07-03 — all 7 stations green, 0 launch-blocking findings.** All 5 reviewer decisions browser-clicked + committed (guard, note re-bind ×3 variants, reject-requires-reason, teacher badges); T3b resubmit loop closed under real clicks; PROD spot-checks + Workspace-SMTP reset email verified; TEST restored byte-exact, PROD untouched. Doc: `2026-07-03-t5-launch-smoke.md`. 3 nits → Post-launch list. |
+| T5b | Authenticated E2E fixture (Playwright storageState; review-flow.spec rewritten) — the phase's FINAL item (user decision 2026-07-03) | **Fable**, fresh session | **PR #579 OPEN 2026-07-03** — fixture (programmatic login → storageState; marker-scoped self-cleanup, option A user-decided; no new CI secrets — reuses the RLS-step's existing `SUPABASE_SERVICE_ROLE_KEY_TEST`) + 14-test serial journey covering the full T5 smoke surface. Local: 16/16 in 55s vs TEST, baseline byte-exact after (763/685/130, 0 markers). Gates left: CI E2E on deploy preview → post-CI baseline re-verify → 🔴 USER merge. Phase closes on merge. |
+
+## Post-launch list
+
+- Review queue lands on the "ALL" tab instead of "PENDING" (T2 punch-list row 4 — never shipped in any bucket).
+- Resubmit keeps the reviewer's round-1 title over a renamed doc (header shows new title, field holds old; add a "title changed on resubmit" hint).
+- Approved teacher cards still display the old revision note under "Reviewer notes" (cosmetic history confusion).
+- The 3 deferred t4b follow-ups (see the t4b prior-update block): complete_review_atomic retired-target guard/revive semantics; lower()-expression trgm index at corpus growth; similarity.test dead block + detect-duplicates scoring unit suite.
+- Drop the `t4_dedup_retire_rollback` snapshot table once PROD-stable (t4c close-out).
 
 ## Track notes
 
