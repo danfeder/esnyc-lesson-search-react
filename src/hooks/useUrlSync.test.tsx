@@ -233,7 +233,7 @@ describe('useUrlSync', () => {
     expect(router.state.location.search).toBe('');
   });
 
-  it('cleans up the debounce timer on unmount (no setSearchParams after unmount)', () => {
+  it('cancels a pending debounce on unmount (no setSearchParams after unmount)', () => {
     const { router, unmount } = renderWithRouter('/');
 
     act(() => {
@@ -241,7 +241,10 @@ describe('useUrlSync', () => {
     });
 
     const searchBefore = router.state.location.search;
-    // Unmount before the debounce fires.
+    // Unmount before the debounce fires. We deliberately CANCEL rather than
+    // flush here — flushing would clobber a concurrent cross-route push (see
+    // useUrlSync.unmount-nav.test.tsx). The live "toggle → open lesson → Back"
+    // flow is covered by flush() on the still-mounted push instead.
     act(() => {
       unmount();
     });

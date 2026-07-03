@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -59,6 +59,7 @@ function RouterProbe() {
     <>
       <div data-testid="probe-path">{location.pathname}</div>
       <div data-testid="probe-search">{location.search}</div>
+      <div data-testid="probe-state">{JSON.stringify(location.state)}</div>
       <button type="button" data-testid="probe-history-back" onClick={() => navigate(-1)}>
         probe-history-back
       </button>
@@ -254,6 +255,77 @@ describe('SearchPage permalinks (D2)', () => {
       expect(screen.getByTestId('probe-path').textContent).toBe('/');
     });
     expect(screen.getByTestId('probe-search').textContent).toBe(`?${qs}`);
+  });
+
+  it('keeps the fromSearch mark when a filter changes while a lesson is open (rung8-permalink-history F1)', async () => {
+    const row = createTestLesson({ lesson_id: 'f1-1', title: 'F1 Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    renderSearchApp(['/']);
+
+    await waitFor(() => {
+      expect(screen.getByText('F1 Lesson')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('F1 Lesson'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/f1-1');
+    });
+    // The pushed entry carries the fromSearch mark (close → navigate(-1)).
+    expect(screen.getByTestId('probe-state').textContent).toContain('fromSearch');
+
+    // Toggle a filter WHILE the lesson is open — this fires the debounced
+    // store→URL write that used to drop location.state, wiping fromSearch and
+    // degrading the close behavior (F1).
+    act(() => {
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+
+    // The debounced write lands in the URL...
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+    });
+    // ...still on the open-lesson entry, and the fromSearch mark SURVIVED.
+    expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/f1-1');
+    expect(screen.getByTestId('probe-state').textContent).toContain('fromSearch');
+  });
+
+  it('a toggle made just before opening a lesson survives Back (rung8-stores F3, via the F2 flush)', async () => {
+    const row = createTestLesson({ lesson_id: 's3-1', title: 'S3 Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    renderSearchApp(['/']);
+    await waitFor(() => {
+      expect(screen.getByText('S3 Lesson')).toBeInTheDocument();
+    });
+
+    // Toggle a filter → arms the 300ms store→URL debounce; NOT yet in the URL.
+    act(() => {
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+
+    // Open the lesson INSIDE the debounce window (fireEvent = no userEvent delay,
+    // so the click lands before the 300ms fires). handleOpenLesson flush()es the
+    // pending toggle onto the CURRENT list entry, then pushes the lesson entry.
+    fireEvent.click(screen.getByText('S3 Lesson'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/s3-1');
+    });
+    // Pushed entry already carries the toggle (built from live filters, not the
+    // pre-toggle URL) — so no stale-filter permalink either.
+    expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+
+    // Back to the list: the list entry was flushed with the toggle, so it's kept
+    // (the rung8-stores F3 loss the flush-on-unmount was meant to prevent).
+    fireEvent.click(screen.getByTestId('probe-history-back'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+    expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
   });
 
   it('browser Back closes the drawer and keeps the list intact (no remount)', async () => {

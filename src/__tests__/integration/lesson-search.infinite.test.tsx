@@ -178,13 +178,41 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
     expect(secondCall[1].page_offset).toBe(20);
   });
 
-  it('shows an error when RPC fails', async () => {
+  it('shows a friendly error card with a working Retry when the RPC fails (FP-13)', async () => {
+    const user = userEvent.setup();
+    // First load fails.
     rpcMock.mockResolvedValueOnce({ data: null, error: new Error('Network error') });
 
     renderWithProviders(<SearchPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/error loading lessons/i)).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+    // Plain language only — never the raw technical error text.
+    expect(screen.queryByText(/network error/i)).not.toBeInTheDocument();
+
+    // Retry re-runs the search; make the next call succeed.
+    rpcMock.mockResolvedValueOnce({
+      data: [
+        {
+          lesson_id: 'L1',
+          title: 'Recovered Lesson',
+          summary: 'ok',
+          file_link: '#',
+          grade_levels: ['3'],
+          metadata: { coreCompetencies: [], culturalHeritage: [], activityType: [] },
+          total_count: 1,
+        },
+      ],
+      error: null,
+    });
+
+    await user.click(screen.getByRole('button', { name: /retry/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Recovered Lesson')).toBeInTheDocument();
+    });
+    // Error card is gone.
+    expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
   });
 });
