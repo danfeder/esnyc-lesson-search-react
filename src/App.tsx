@@ -138,7 +138,6 @@ function AppContent() {
                       permissions={[
                         Permission.VIEW_USERS,
                         Permission.VIEW_ANALYTICS,
-                        Permission.MANAGE_DUPLICATES,
                         Permission.REVIEW_LESSONS,
                       ]}
                     >

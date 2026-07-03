@@ -239,9 +239,7 @@ export function ReviewDecisionPanel({
                 ) : (
                   'the selected lesson'
                 )}
-                <span
-                  style={{ display: 'block', fontSize: 12, color: 'var(--color-esy-ink-50)' }}
-                >
+                <span style={{ display: 'block', fontSize: 12, color: 'var(--color-esy-ink-50)' }}>
                   Replaces the library copy; the old version is archived.
                 </span>
               </span>
@@ -322,7 +320,7 @@ export function ReviewDecisionPanel({
         </div>
         <textarea
           className="adm-textarea"
-          aria-label={isRejectPath ? 'Reason for the teacher' : 'Note to teacher'}
+          aria-label={isRejectPath ? 'Reason for the teacher' : 'Note to the teacher'}
           rows={4}
           value={notes}
           onChange={(e) => {
@@ -351,7 +349,12 @@ export function ReviewDecisionPanel({
             identical. Publish this as a new lesson anyway?
           </p>
           <div className="adm-callout-actions" style={{ display: 'flex', gap: 8 }}>
-            <IntButton variant="primary" size="sm" onClick={onConfirmPublishAnyway} disabled={saving}>
+            <IntButton
+              variant="primary"
+              size="sm"
+              onClick={onConfirmPublishAnyway}
+              disabled={saving}
+            >
               {saving ? 'Publishing…' : 'Publish anyway'}
             </IntButton>
             <IntButton variant="ghost" size="sm" onClick={onCancelPublishGuard}>

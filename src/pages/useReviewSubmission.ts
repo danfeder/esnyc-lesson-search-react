@@ -44,7 +44,6 @@ export interface SubmissionDetail {
   extracted_content: string;
   extracted_title?: string;
   content_hash: string;
-  content_embedding?: string;
   teacher: { email: string; full_name?: string };
   similarities?: SimilarityWithLesson[];
   submitterTargetLesson?: SubmitterTargetLesson | null;
@@ -174,7 +173,7 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         { data: similarities, error: similaritiesError },
         { data: reviews, error: reviewsError },
       ] = await Promise.all([
-        supabase.from('lesson_submissions').select('*, content_embedding').eq('id', id!).single(),
+        supabase.from('lesson_submissions').select('*').eq('id', id!).single(),
         supabase
           .from('submission_similarities')
           .select('*')
@@ -362,7 +361,6 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         content_hash: submissionData.content_hash || '',
         submission_type: (submissionData.submission_type || 'new') as 'new' | 'update',
         original_lesson_id: submissionData.original_lesson_id ?? undefined,
-        content_embedding: submissionData.content_embedding ?? undefined,
         similarities: similaritiesWithLessons,
         submitterTargetLesson,
         teacher: {

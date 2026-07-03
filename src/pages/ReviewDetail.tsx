@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useId, useMemo, useCallback, useRef } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -51,6 +52,9 @@ export function ReviewDetail() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [legacyDecisionWarning, setLegacyDecisionWarning] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // D7 approve-as-new guard: non-null while the "looks like an existing lesson"
+  // interstitial is up; holds the title of the top exact/high match it names.
+  const [publishGuardMatch, setPublishGuardMatch] = useState<string | null>(null);
   // Phase 8b Task 3.6: search escape hatch — collapsible LessonSearchPicker
   // for reviewers to override the submitter's pick or find a target the
   // submitter couldn't. selectedSearchLesson must be declared BEFORE the
@@ -124,7 +128,17 @@ export function ReviewDetail() {
     []
   );
 
-  const handleSaveReview = async () => {
+  // Changing the decision dismisses a pending publish guard — the interstitial
+  // answers one specific approve-as-new attempt, not a standing warning.
+  const setDecisionOptionClearingGuard: Dispatch<SetStateAction<DecisionOption>> = useCallback(
+    (value) => {
+      setPublishGuardMatch(null);
+      setDecisionOption(value);
+    },
+    []
+  );
+
+  const handleSaveReview = async (opts?: { bypassPublishGuard?: boolean }) => {
     if (!submission) return;
 
     // Punch-list A: the required-tags gate applies ONLY to the two publish
@@ -146,10 +160,7 @@ export function ReviewDetail() {
     // as the teacher-visible reason (D8), so require a non-empty note before
     // sending. reject_duplicate prefills it, so this only bites a reviewer who
     // cleared the prefill. The panel's saveError banner sits by the note field.
-    if (
-      (decisionOption === 'reject' || decisionOption === 'reject_duplicate') &&
-      !notes.trim()
-    ) {
+    if ((decisionOption === 'reject' || decisionOption === 'reject_duplicate') && !notes.trim()) {
       setSaveError('Add a reason the teacher will see before rejecting.');
       return;
     }
@@ -186,6 +197,21 @@ export function ReviewDetail() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
+    // D7 guard: publishing as NEW while any exact/high candidate exists on the
+    // submission (selected or not) raises the are-you-sure interstitial naming
+    // the top match. Runs AFTER all validation so "Publish anyway" goes straight
+    // through on the second pass (bypassPublishGuard).
+    if (decisionOption === 'approve_new' && !opts?.bypassPublishGuard) {
+      const strongMatch = candidateCards.find(
+        (c) => c.matchType === 'exact' || c.matchType === 'high'
+      );
+      if (strongMatch) {
+        setPublishGuardMatch(strongMatch.title);
+        return;
+      }
+    }
+    setPublishGuardMatch(null);
 
     setSaving(true);
 
@@ -456,13 +482,17 @@ export function ReviewDetail() {
             selectedDuplicate={selectedDuplicate}
             setSelectedDuplicate={setSelectedDuplicate}
             decisionOption={decisionOption}
-            setDecisionOption={setDecisionOption}
+            setDecisionOption={setDecisionOptionClearingGuard}
             notes={notes}
             setNotes={setNotes}
             saveError={saveError}
             setSaveError={setSaveError}
             saving={saving}
-            onSave={handleSaveReview}
+            onSave={() => handleSaveReview()}
+            showPublishGuard={publishGuardMatch !== null}
+            publishGuardMatchTitle={publishGuardMatch}
+            onConfirmPublishAnyway={() => handleSaveReview({ bypassPublishGuard: true })}
+            onCancelPublishGuard={() => setPublishGuardMatch(null)}
             showMismatch={showMismatch}
             fieldProgress={fieldProgress}
             showSearch={showSearch}

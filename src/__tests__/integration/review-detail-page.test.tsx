@@ -118,12 +118,13 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(banner).toHaveTextContent('Updating');
     expect(banner).toHaveTextContent('Modern Target Lesson');
 
-    // Three decision radios; the restored decision (approve_new) is checked.
-    expect(screen.getAllByRole('radio')).toHaveLength(3);
-    expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeChecked();
+    // T4b/D7: all five decision options render for a submission WITH candidate
+    // cards; the restored decision (approve_new) is checked.
+    expect(screen.getAllByRole('radio')).toHaveLength(5);
+    expect(screen.getByRole('radio', { name: /publish as a new lesson/i })).toBeChecked();
 
     // N5 (a11y): the note-to-teacher textarea has a programmatic label.
-    expect(screen.getByLabelText(/note to teacher/i).tagName).toBe('TEXTAREA');
+    expect(screen.getByLabelText(/note to the teacher/i).tagName).toBe('TEXTAREA');
   });
 
   // [risks 3, 5] — legacy regime: scalar activityType + legacy reject decision.
@@ -133,6 +134,8 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // Page rendered (the .map-on-scalar landmine is HANDLED — an unguarded
     // .map('both') would have thrown out of loadSubmission's try and left
     // metadata/decision unrestored). Decision radios prove the page rendered.
+    // (3 radios: the legacy fixture has NO candidate cards, so the two
+    // card-bound options don't render — D7.)
     expect(await screen.findAllByRole('radio')).toHaveLength(3);
 
     // Scalar 'both' fanned out to BOTH activity pills (the regression pin: if
@@ -140,8 +143,12 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(screen.getByRole('button', { name: 'Cooking', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Garden', pressed: true })).toBeInTheDocument();
 
-    // Legacy 'reject' decision (unsupported by the 3-decision UI) → warning banner.
-    expect(screen.getByText(/previously marked "reject"/i)).toBeInTheDocument();
+    // T4b/D8: 'reject' is now a first-class UI decision — the restored review
+    // checks the Reject radio instead of tripping the legacy-decision warning.
+    expect(
+      screen.getByRole('radio', { name: /reject — with a reason the teacher will see/i })
+    ).toBeChecked();
+    expect(screen.queryByText(/previously marked/i)).not.toBeInTheDocument();
   });
 
   // [save flow 1b.4; activityType round-trip risk 3] — edit→save canonicalizes + navigates.
@@ -154,6 +161,13 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     await user.type(note, ' Reviewed and approved');
 
     await user.click(screen.getByRole('button', { name: /publish lesson/i }));
+
+    // D7 guard: the modern fixture carries a HIGH-code candidate, so the first
+    // save raises the are-you-sure interstitial (no invoke yet) — publishing
+    // proceeds via "Publish anyway".
+    expect(await screen.findByText(/looks like an existing lesson/i)).toBeInTheDocument();
+    expect(functionsInvokeMock).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /publish anyway/i }));
 
     // Navigation happened (the /review sentinel mounted).
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
@@ -211,6 +225,8 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: /publish lesson/i }));
+    // Flow through the D7 guard (high-code candidate on the modern fixture).
+    await user.click(await screen.findByRole('button', { name: /publish anyway/i }));
 
     expect(await screen.findByText(/nothing was written/i)).toBeInTheDocument();
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
@@ -223,12 +239,12 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // Amber (update, null-target) intent banner.
     expect(await screen.findByText(/updating, but couldn.t find target/i)).toBeInTheDocument();
 
-    // computePreselection set the decision to approve_update for the update path.
-    expect(screen.getByRole('radio', { name: /merge into existing/i })).toBeChecked();
-
-    // selectedDuplicate is NOT restored from preselect (null target) → the
-    // "pick a target" hint shows (proves no selectedDuplicate carried in).
-    expect(screen.getByText(/pick a target lesson to merge into/i)).toBeInTheDocument();
+    // computePreselection still seeds approve_update for the update path, but
+    // D7 renders the card-bound options ONLY when candidates exist — this
+    // fixture has none, so no update radio shows and the bar's "Publish update"
+    // stays disabled until the reviewer picks a target (via the search hatch).
+    expect(screen.queryByRole('radio', { name: /publish as an update/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /publish update/i })).toBeDisabled();
 
     // Search escape hatch auto-opened (needsSearch === true).
     expect(screen.getByRole('button', { name: /hide library search/i })).toBeInTheDocument();
@@ -247,7 +263,7 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
 
     // Force a re-render that does NOT change submission.id / needsSearch / noDups
     // (change the decision). The auto-expand effect must NOT reopen the panel.
-    await user.click(screen.getByRole('radio', { name: /request revisions/i }));
+    await user.click(screen.getByRole('radio', { name: /send back for revisions/i }));
 
     expect(screen.queryByRole('button', { name: /hide library search/i })).not.toBeInTheDocument();
     expect(
@@ -318,7 +334,11 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     renderReview(preselectTargetUpdateFixture, 'sub-preselect');
 
     // C-2a: computePreselection set decision=approve_update for the update path.
-    expect(await screen.findByRole('radio', { name: /merge into existing/i })).toBeChecked();
+    // The card-bound radio renders (a candidate exists), is ENABLED (the target
+    // is selected), and names the target inline (D7).
+    const updateRadio = await screen.findByRole('radio', { name: /publish as an update to/i });
+    expect(updateRadio).toBeChecked();
+    expect(updateRadio).toBeEnabled();
 
     // C-2a: the non-null preselect target seeded selectedDuplicate → the hoisted
     // "Submitter's choice" dup card renders SELECTED (aria-pressed=true). This is
@@ -326,9 +346,9 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     const targetCard = screen.getByRole('button', { name: /preselect target lesson/i });
     expect(targetCard).toHaveAttribute('aria-pressed', 'true');
 
-    // C-2a: because selectedDuplicate IS set, the "pick a target" hint is ABSENT
-    // (test 6 shows it present for the null target) — the contrasting pin.
-    expect(screen.queryByText(/pick a target lesson to merge into/i)).not.toBeInTheDocument();
+    // C-2a: because selectedDuplicate IS set, the select-a-card helper hint is
+    // ABSENT (it only shows while the card-bound options are disabled).
+    expect(screen.queryByText(/select a matching lesson above/i)).not.toBeInTheDocument();
 
     // C-2b: computeInitialMetadataFromAiDraft seeded the form — the distinctive
     // canonical-keys ai_draft processingNotes round-tripped into its textarea.
@@ -344,8 +364,9 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     const user = userEvent.setup();
 
     // The ai_draft seeded a complete, canonical form, so the approve_update save
-    // passes validation. The merge button is enabled because selectedDuplicate is set.
-    await user.click(await screen.findByRole('button', { name: /merge & archive/i }));
+    // passes validation. The button is enabled because selectedDuplicate is set.
+    // (The D7 guard only gates approve_new — an update save goes straight through.)
+    await user.click(await screen.findByRole('button', { name: /publish update/i }));
 
     // Navigation happened (the /review sentinel mounted) → the save succeeded.
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
@@ -483,12 +504,11 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
 
     // NON-blocking: the decision form still renders (contrast test 12, which
     // asserts NO radios on the blocking reviews-error screen).
-    expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /publish as a new lesson/i })).toBeInTheDocument();
 
-    // No duplicate cards — the candidate-cards block never rendered.
-    expect(
-      screen.queryByText(/select one to merge into instead of publishing new/i)
-    ).not.toBeInTheDocument();
+    // No duplicate cards — the candidate-cards block (and its D7 question)
+    // never rendered.
+    expect(screen.queryByText(/is this lesson already in the library/i)).not.toBeInTheDocument();
   });
 
   // Fixture for Test B — a `new` submission whose `submission_similarities` LIST
@@ -535,7 +555,7 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
 
     // Retry affordance + the form still renders (non-blocking).
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /publish as a new lesson/i })).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -644,7 +664,7 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // First load: duplicate-details error → non-blocking retry banner AND the
     // decision form (radios) are BOTH on screen (the success-with-banner state).
     expect(await screen.findByRole('button', { name: /retry/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /approve & publish/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /publish as a new lesson/i })).toBeInTheDocument();
 
     // The submission is deleted out from under the reviewer: swap the active mock
     // so the NEXT lesson_submissions fetch resolves PGRST116 (0 rows). The
@@ -673,9 +693,9 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     renderReview(noReviewUpdateFixture, 'sub-noreview');
     const user = userEvent.setup();
 
-    // Empty-metadata submission (no ai_draft, no review). Switch to "Request
-    // revisions" and send it back with no tags filled.
-    await user.click(await screen.findByRole('radio', { name: /request revisions/i }));
+    // Empty-metadata submission (no ai_draft, no review). Switch to "Send back
+    // for revisions" and send it back with no tags filled.
+    await user.click(await screen.findByRole('radio', { name: /send back for revisions/i }));
     await user.click(screen.getByRole('button', { name: /send for revision/i }));
 
     // Navigated to the queue → the save went through despite empty tags.
@@ -697,6 +717,88 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(await screen.findByTestId('review-toast')).toHaveTextContent(
       'Sent back to the teacher with your note.'
     );
+  });
+
+  // [T4b/D7 guard — cancel path] — complements test 3's confirm path: "Keep
+  // reviewing" dismisses the interstitial without invoking or navigating.
+  it('20. publish guard: "Keep reviewing" dismisses without saving', async () => {
+    renderReview(modernFixture, 'sub-modern');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /publish lesson/i }));
+    expect(await screen.findByText(/looks like an existing lesson/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /keep reviewing/i }));
+
+    expect(screen.queryByText(/looks like an existing lesson/i)).not.toBeInTheDocument();
+    expect(functionsInvokeMock).not.toHaveBeenCalled();
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+  });
+
+  // [T4b/D7+D8 option 3] — "already in the library" selects a card, prefills the
+  // teacher note with the selected title, and saves as a `reject` server decision
+  // WITHOUT sending the card id as selectedLessonId (that stays approve_update-only).
+  it('21. already-in-the-library: prefills the note and saves as reject with null selectedLessonId', async () => {
+    renderReview(modernFixture, 'sub-modern');
+    const user = userEvent.setup();
+
+    // Select the candidate card (enables the two card-bound options).
+    await user.click(await screen.findByRole('button', { name: /modern target lesson/i }));
+    const dupRadio = screen.getByRole('radio', { name: /already in the library/i });
+    expect(dupRadio).toBeEnabled();
+    await user.click(dupRadio);
+
+    // The teacher note prefilled with the selected title (still editable).
+    expect(screen.getByLabelText(/reason for the teacher/i)).toHaveValue(
+      'This lesson is already in the library as "Modern Target Lesson".'
+    );
+
+    await user.click(screen.getByRole('button', { name: /don.t publish/i }));
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+
+    expect(functionsInvokeMock).toHaveBeenCalledTimes(1);
+    const [fnName, opts] = functionsInvokeMock.mock.calls[0] as [
+      string,
+      { body: { decision: string; notes: string; selectedLessonId: string | null } },
+    ];
+    expect(fnName).toBe('complete-review');
+    expect(opts.body.decision).toBe('reject');
+    expect(opts.body.notes).toContain('Modern Target Lesson');
+    // The crux: the selected card is note-context only — never the merge target.
+    expect(opts.body.selectedLessonId).toBeNull();
+
+    expect(await screen.findByTestId('review-toast')).toHaveTextContent(
+      'Marked as already in the library — the teacher will see your note.'
+    );
+  });
+
+  // [T4b/D8 option 5] — plain Reject requires a teacher-visible reason before
+  // the save goes out; typing one lets it through as a `reject` decision.
+  it('22. plain reject: blocks on an empty reason, then saves once a reason is typed', async () => {
+    renderReview(noReviewUpdateFixture, 'sub-noreview');
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('radio', { name: /reject — with a reason the teacher will see/i })
+    );
+    await user.click(screen.getByRole('button', { name: /reject submission/i }));
+
+    // Blocked: the reason is empty — no invoke.
+    expect(
+      await screen.findByText(/add a reason the teacher will see before rejecting/i)
+    ).toBeInTheDocument();
+    expect(functionsInvokeMock).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText(/reason for the teacher/i), 'Not a fit for the library.');
+    await user.click(screen.getByRole('button', { name: /reject submission/i }));
+
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    const [, opts] = functionsInvokeMock.mock.calls[0] as [
+      string,
+      { body: { decision: string; notes: string } },
+    ];
+    expect(opts.body.decision).toBe('reject');
+    expect(opts.body.notes).toContain('Not a fit');
   });
 });
 

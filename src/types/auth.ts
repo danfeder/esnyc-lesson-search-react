@@ -24,7 +24,6 @@ export enum Permission {
 
   // Admin Features
   VIEW_ANALYTICS = 'view_analytics',
-  MANAGE_DUPLICATES = 'manage_duplicates',
   EXPORT_DATA = 'export_data',
   SYSTEM_SETTINGS = 'system_settings',
 }
@@ -51,7 +50,6 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.INVITE_USERS,
     Permission.EDIT_USERS,
     Permission.VIEW_ANALYTICS,
-    Permission.MANAGE_DUPLICATES,
     Permission.EXPORT_DATA,
   ],
 

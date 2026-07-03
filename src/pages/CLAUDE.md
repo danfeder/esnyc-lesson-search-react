@@ -181,7 +181,7 @@ const {
 
 ## 🗂️ Current Pages Reference
 
-`src/pages/*.tsx` is the source of truth — run `ls src/pages/*.tsx` for the authoritative, current list, since this inventory drifts as pages are added. As of 2026-06 there are 18 page components:
+`src/pages/*.tsx` is the source of truth — run `ls src/pages/*.tsx` for the authoritative, current list, since this inventory drifts as pages are added. As of 2026-07 there are 16 page components:
 
 ### Public
 - **SearchPage** - Main search interface, no auth
@@ -208,8 +208,9 @@ const {
 - **AdminInvitations** - Invitations list
 - **AdminInviteUser** - Send a new invitation
 - **AdminAnalytics** - Usage statistics
-- **AdminDuplicates** - Duplicate resolution
-- **AdminDuplicateReview** - Duplicate-review detail
+
+(The AdminDuplicates / AdminDuplicateReview pages were removed in T4b (D10) —
+duplicate handling now lives entirely in the reviewer flow on ReviewDetail.)
 
 ## ⚠️ Page-Specific Critical Notes
 
@@ -221,11 +222,6 @@ const {
 - Google Docs extraction WORKING (real API in production, mock fallback in dev)
 - Validates metadata before submission
 - Must handle all filter categories defined in `filterDefinitions.ts`
-
-### AdminDuplicates
-- Uses `archive_duplicate_lesson` RPC for resolution
-- Supports Keep All (dismiss) and Archive actions
-- Archive table tracks all resolutions with `canonical_id` link
 
 ### Submission Flow
 ```

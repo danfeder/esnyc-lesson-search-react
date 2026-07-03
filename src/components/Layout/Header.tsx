@@ -120,7 +120,6 @@ export const Header: React.FC<HeaderProps> = () => {
                     </MenuLink>
                     {(hasPermission(Permission.VIEW_USERS) ||
                       hasPermission(Permission.VIEW_ANALYTICS) ||
-                      hasPermission(Permission.MANAGE_DUPLICATES) ||
                       hasPermission(Permission.REVIEW_LESSONS)) && (
                       <>
                         <div

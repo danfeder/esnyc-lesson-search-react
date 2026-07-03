@@ -79,8 +79,8 @@ serve(async (req) => {
 | Function | Status | Notes |
 |----------|--------|-------|
 | `extract-google-doc` | Working | Needs GOOGLE_SERVICE_ACCOUNT_JSON |
-| `detect-duplicates` | Working | Falls back to text similarity |
-| `process-submission` | Working | Generates embeddings with OPENAI_API_KEY |
+| `detect-duplicates` | Working | pg_trgm text similarity (`find_similar_lessons_text`) + content-hash; embeddings retired (T4b) |
+| `process-submission` | Working | No embedding generation (retired T4b); `resubmit` mode for needs_revision rows |
 | `send-email` | Working | Needs RESEND_API_KEY |
 
 ## Local Testing

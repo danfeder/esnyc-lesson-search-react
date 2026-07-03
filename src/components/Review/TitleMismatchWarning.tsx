@@ -40,7 +40,8 @@ export function TitleMismatchWarning({
   const bySubmitter = selectedCard?.matchLabel === "Submitter's choice";
   return (
     <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900">
-      Heads up: {bySubmitter ? 'the submitter linked this to' : 'the duplicate checker matched this to'}{' '}
+      Heads up:{' '}
+      {bySubmitter ? 'the submitter linked this to' : 'the duplicate checker matched this to'}{' '}
       <strong>&ldquo;{targetTitle}&rdquo;</strong>, but the submission&apos;s extracted title is{' '}
       <strong>&ldquo;{submissionTitle}&rdquo;</strong> — confirm this is the right merge target.
     </div>

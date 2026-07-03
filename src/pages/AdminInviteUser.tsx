@@ -50,7 +50,6 @@ const PERMISSIONS_FOR_ROLE: Record<UserRole, string[]> = {
     'invite_users',
     'edit_users',
     'view_analytics',
-    'manage_duplicates',
     'export_data',
   ],
   [UserRole.SUPER_ADMIN]: [
@@ -63,7 +62,6 @@ const PERMISSIONS_FOR_ROLE: Record<UserRole, string[]> = {
     'invite_users',
     'edit_users',
     'view_analytics',
-    'manage_duplicates',
     'export_data',
   ],
 };

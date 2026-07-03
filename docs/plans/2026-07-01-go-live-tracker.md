@@ -3,8 +3,27 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-03 (Fable, **t4c ✅ SHIPPED + PROD-VERIFIED — the dedup data track is
-DONE**). Pre-merge review APPROVED with no changes (detail below), then on user authorization:
+**Last updated:** 2026-07-03 (Fable, **t4b BUILT — PR open, Opus first cut salvaged + completed
+by Fable**). Opus's t4b session drifted mid-flight (user stopped it); Fable audited the working
+tree — verdict: on-brief and worth salvaging (nothing pushed, no DB/edge touched; snapshot commit
+`695e0bb` preserves the as-found state). Kept: migration (RPC + revoke), both edge-fn rewrites,
+§C panel reshape, §D rejected badge, §E page removals. Fable completed: D7 publish-guard wiring in
+ReviewDetail (was the one TS error), **complete-review embedding-block removal** (brief gap — the
+Phase-4 block called OpenAI on every approve_update and on NULL-embedding approve_new; post-t4b
+every new submission is NULL → publish would depend on OpenAI and 500 without the key; publishing
+must not touch OpenAI), embedding stragglers (`useReviewSubmission` select/type,
+`duplicateDetection.ts` orphan), MANAGE_DUPLICATES full removal (enum + role map + gating lists +
+invite-UI previews), migration ACL-comment correction (live proacl has PUBLIC **and** explicit
+anon/authenticated grants — both revokes load-bearing; verified TEST+PROD), aria-label fix, all
+tests (12 relabeled + 3 new: guard-cancel / option-3 wiring / reject-requires-reason + new
+IntDuplicateCard label-map suite). Gates: check ✅, tests 1958/1958 ✅, db reset ✅, test:rls 6/8
+(2 pre-existing service-role validation failures, unchanged, grants-unrelated), local RPC+ACL
+probes ✅. NEXT: CI applies migration to TEST → TEST verification round (RPC grants + sane sims +
+retired-exclusion + edge smoke) → bot triage → 🔴 USER merge + PROD gates → **T5**. Prior update
+below.
+
+**Prior update (2026-07-03, Fable, t4c ✅ SHIPPED + PROD-VERIFIED — the dedup data track is
+DONE).** Pre-merge review APPROVED with no changes (detail below), then on user authorization:
 merged #577 (squash `badaadf`, 00:12Z) after a final PROD drift probe (still 764 / 61 live / 0
 retired); user approved `migrate-production` run 28629708389 → `success` (00:17Z). **Post-apply
 PROD verify ALL GREEN (queries + raw results posted to PR #577):** live **703** exactly (764−61);

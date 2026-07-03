@@ -69,16 +69,18 @@ REVOKE ALL ON FUNCTION public.find_similar_lessons_text(text, text, text, int) F
 GRANT EXECUTE ON FUNCTION public.find_similar_lessons_text(text, text, text, int) TO service_role;
 
 -- 2. Two-stage retirement of the hard-deleting archive fn (D10).
---    DEVIATION FROM BRIEF §A.2 (documented): the brief specified
---    `REVOKE EXECUTE ... FROM authenticated, anon`, but this function carries a
---    PUBLIC EXECUTE grant (proacl `=X/postgres`, verified LOCAL/TEST 2026-07-03).
---    anon/authenticated hold NO explicit grant — they inherit EXECUTE via
---    PUBLIC — so revoking only those two named roles is a no-op and the browser
---    roles would STILL be able to hard-delete. Revoking PUBLIC is what actually
---    removes browser execute; the explicit service_role grant survives it
---    (the server path + the archive_duplicate_lesson RLS tests keep working).
---    Same D10 goal, correct mechanism. The named-role revokes are kept for
---    explicit intent (no-ops after the PUBLIC revoke). DROP deferred post-launch.
+--    DEVIATION FROM BRIEF §A.2 (documented): the brief specified only
+--    `REVOKE EXECUTE ... FROM authenticated, anon`, but the live ACL carries
+--    BOTH a PUBLIC EXECUTE grant AND explicit anon/authenticated grants
+--    (proacl `{=X/postgres,postgres=X/postgres,anon=X/postgres,
+--    authenticated=X/postgres,service_role=X/postgres}` — verified identical on
+--    TEST and PROD 2026-07-03). The brief's named-role revoke alone would have
+--    left the browser roles with EXECUTE inherited via PUBLIC, so both revokes
+--    below are load-bearing: PUBLIC (kills the inherited grant) AND the named
+--    roles (kills the explicit grants). The explicit service_role grant is
+--    re-asserted after (the server path + the archive_duplicate_lesson RLS
+--    tests keep working). Same D10 goal, correct mechanism. DROP deferred
+--    post-launch.
 REVOKE EXECUTE ON FUNCTION public.archive_duplicate_lesson(text, text) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.archive_duplicate_lesson(text, text) FROM authenticated, anon;
 GRANT EXECUTE ON FUNCTION public.archive_duplicate_lesson(text, text) TO service_role;
