@@ -129,6 +129,7 @@ export function ReviewDashboard() {
       return false;
     }
     if (!authUser) {
+      setAuthCheckError(false); // a stale blip flag must not outlive a real verdict
       navigate('/');
       return false;
     }
@@ -144,6 +145,7 @@ export function ReviewDashboard() {
       if (error?.code === 'PGRST116') {
         // Zero profile rows is deterministic (no profile = no role), not a
         // blip — Retry would fail identically forever. Treat as non-reviewer.
+        setAuthCheckError(false);
         navigate('/');
         return false;
       }

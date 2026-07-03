@@ -106,6 +106,20 @@ describe('ReviewDashboard honest error states (FP-05/FP-07)', () => {
     expect(screen.queryByText(/access denied/i)).not.toBeInTheDocument();
   });
 
+  it('a Retry that resolves to a genuine sign-out clears the blip card (no stale flag)', async () => {
+    getUserMock.mockRejectedValueOnce(new Error('network down'));
+    renderDashboard();
+    expect(await screen.findByText(/couldn't check your access/i)).toBeInTheDocument();
+
+    // Session genuinely expired between the blip and the retry: getUser now
+    // succeeds with NO user. The stale error flag must not survive the verdict.
+    getUserMock.mockResolvedValue({ data: { user: null }, error: null });
+    await userEvent.click(screen.getByRole('button', { name: /retry/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/couldn't check your access/i)).not.toBeInTheDocument();
+    });
+  });
+
   it('treats a missing profile row (PGRST116) as non-reviewer, not a retryable blip', async () => {
     currentMock = makeReviewSupabaseMock({
       user_profiles: { data: null, error: { code: 'PGRST116', message: 'no rows' } },
