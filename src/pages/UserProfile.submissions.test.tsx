@@ -90,8 +90,28 @@ function renderProfile() {
 
 describe('UserProfile "My submissions" honest error state (FP-05)', () => {
   beforeEach(() => {
-    (useEnhancedAuth as Mock).mockReturnValue({ user: teacherUser, loading: false });
+    (useEnhancedAuth as Mock).mockReturnValue({
+      user: teacherUser,
+      loading: false,
+      profileError: false,
+      retryAuth: vi.fn(),
+    });
     currentMock = makeReviewSupabaseMock(submissionsOkFixture);
+  });
+
+  it('shows the account-blip error card (never "Sign in required") when this page\'s own hook instance errors', async () => {
+    const retryAuth = vi.fn();
+    (useEnhancedAuth as Mock).mockReturnValue({
+      user: null,
+      loading: false,
+      profileError: true,
+      retryAuth,
+    });
+    renderProfile();
+    expect(await screen.findByText(/couldn't load your account/i)).toBeInTheDocument();
+    expect(screen.queryByText(/sign in required/i)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /retry/i }));
+    expect(retryAuth).toHaveBeenCalled();
   });
 
   it('shows an error card + Retry (never "No submissions yet") when the fetch fails', async () => {

@@ -141,6 +141,12 @@ export function ReviewDashboard() {
       .single();
 
     if (error || !profile) {
+      if (error?.code === 'PGRST116') {
+        // Zero profile rows is deterministic (no profile = no role), not a
+        // blip — Retry would fail identically forever. Treat as non-reviewer.
+        navigate('/');
+        return false;
+      }
       // Transient fetch failure — NOT a permissions verdict. Leave isReviewer
       // untouched; the authCheckError render branch preempts "Access denied".
       logger.error('Error fetching user profile:', error);

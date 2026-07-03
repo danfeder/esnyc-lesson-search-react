@@ -13,7 +13,7 @@
  * following the review-detail-page.test.tsx conventions.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -104,6 +104,19 @@ describe('ReviewDashboard honest error states (FP-05/FP-07)', () => {
     expect(await screen.findByText(/couldn't check your access/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
     expect(screen.queryByText(/access denied/i)).not.toBeInTheDocument();
+  });
+
+  it('treats a missing profile row (PGRST116) as non-reviewer, not a retryable blip', async () => {
+    currentMock = makeReviewSupabaseMock({
+      user_profiles: { data: null, error: { code: 'PGRST116', message: 'no rows' } },
+    });
+    renderDashboard();
+    // Deterministic no-profile must NOT render the retry card (Retry would
+    // fail identically forever) — it redirects like any non-reviewer.
+    await waitFor(() => {
+      expect(screen.queryByText(/couldn't check your access/i)).not.toBeInTheDocument();
+    });
+    expect(screen.queryByText(/no submissions/i)).not.toBeInTheDocument();
   });
 
   it('shows the access error card (never a blank page) when getUser itself throws', async () => {

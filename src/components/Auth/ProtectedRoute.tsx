@@ -43,7 +43,11 @@ export function ProtectedRoute({
   if (!user && profileError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md"
+        >
           <div className="flex items-center gap-3 text-red-800 mb-4">
             <AlertCircle className="w-6 h-6 flex-shrink-0" />
             <h2 className="text-xl font-semibold">Couldn&apos;t load your account</h2>

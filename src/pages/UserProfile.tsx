@@ -67,7 +67,7 @@ const STATUS_BADGE: Record<SubmissionStatus, IntStatus> = {
 
 export function UserProfile() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useEnhancedAuth();
+  const { user, loading: authLoading, profileError, retryAuth } = useEnhancedAuth();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -282,6 +282,22 @@ export function UserProfile() {
           <p className="adm-section-desc">
             <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" /> Loading your profile…
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user && profileError) {
+    // This page's own hook instance can blip independently of ProtectedRoute's
+    // (each useEnhancedAuth call runs its own profile fetch) — a blip here must
+    // not masquerade as "Sign in required".
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <IntFetchError onRetry={retryAuth}>
+            Couldn&apos;t load your account &mdash; this is usually a connection blip, not a
+            sign-out. Retry to continue.
+          </IntFetchError>
         </div>
       </div>
     );
