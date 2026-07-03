@@ -3,8 +3,22 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-03 (Fable, **t4b BUILT — PR open, Opus first cut salvaged + completed
-by Fable**). Opus's t4b session drifted mid-flight (user stopped it); Fable audited the working
+**Last updated:** 2026-07-03 (Fable, **t4b ✅ SHIPPED + PROD-VERIFIED — T4 IS CLOSED**). Merged
+#578 (squash `9e0cc4e`, user-authorized); user approved both PROD gates (`migrate-production` run
+28634657192 + Deploy Edge Functions, both `success`). **Post-apply PROD verify ALL GREEN (posted
+to #578):** both migrations recorded; RPC + archive fn ACLs `{postgres,service_role}` (anon denied
+via `has_function_privilege`); casefold live; retired-exclusion bait probe vs PROD's 61 retired
+rows clean (0 retired candidates, no self-match, twin top 0.891); live corpus untouched at 703;
+**3-signal edge verify: detect-duplicates v27 / process-submission v37→v38 / complete-review v10 —
+all fresh, all shas BYTE-EXACT vs the TEST-verified bundles** (`aaba1497…`/`f4aa4396…`/`1e37ffac…`);
+no-auth probe → 401. Reviewer flow now runs D7 against hash-honest pg_trgm detection (retired
+lessons excluded, permanent CI guardrail); embedding pipeline retired end-to-end; admin Duplicates
+pages + browser-reachable hard-delete gone. **NEXT = T5 smoke + launch** (residuals for T5: browser-
+click the resubmit button + the new decision screen; the 3 deferred t4b follow-ups listed below are
+post-launch). Prior update below.
+
+**Prior update (2026-07-03, Fable, t4b BUILT — PR open, Opus first cut salvaged + completed
+by Fable).** Opus's t4b session drifted mid-flight (user stopped it); Fable audited the working
 tree — verdict: on-brief and worth salvaging (nothing pushed, no DB/edge touched; snapshot commit
 `695e0bb` preserves the as-found state). Kept: migration (RPC + revoke), both edge-fn rewrites,
 §C panel reshape, §D rejected badge, §E page removals. Fable completed: D7 publish-guard wiring in
