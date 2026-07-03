@@ -323,7 +323,9 @@ describe('computeTrueFacetCounts — location Both-subsumption (F3)', () => {
       makeLesson({ metadata: { locationRequirements: ['Outdoor'] } }),
     ];
     const counts = computeTrueFacetCounts(lessons, filtersWith());
-    expect(counts.location).toEqual({ Indoor: 2, Outdoor: 2, Both: 1 });
+    // FP-18: the search sidebar renders only Indoor/Outdoor, so no `Both` badge
+    // bucket is computed; a Both-stored lesson still counts under BOTH badges.
+    expect(counts.location).toEqual({ Indoor: 2, Outdoor: 2 });
   });
 
   it('is case-insensitive on the stored side (lowercase storage still counts)', () => {

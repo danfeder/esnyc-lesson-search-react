@@ -1,5 +1,5 @@
 import type { LessonMetadata, SearchFilters } from '@/types';
-import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
+import { FILTER_CONFIGS, SEARCH_LOCATION_OPTIONS } from '@/utils/filterDefinitions';
 import { aliasToSlug, ancestorsBySlug } from '@/utils/heritageAncestry.generated';
 
 /**
@@ -137,8 +137,11 @@ function flattenOptionValues(nodes: OptionNode[]): string[] {
 
 /**
  * The RENDERED option values per category — the only keys badges are computed
- * for. Sourced read-only from FILTER_CONFIGS (filterDefinitions.ts is
- * stakeholder-gated; never edited from here). Heritage flattens the nested
+ * for. Sourced read-only from filterDefinitions.ts (FILTER_CONFIGS, plus
+ * SEARCH_LOCATION_OPTIONS for location — FP-18: the search sidebar renders only
+ * Indoor/Outdoor, so no `Both` badge bucket is computed; both-stored lessons
+ * still roll into Indoor+Outdoor via the expansion below). filterDefinitions.ts
+ * is stakeholder-gated; never edited from here. Heritage flattens the nested
  * tree (top + sub tiers; hidden `internal` vocab nodes are NOT rendered and
  * therefore get no badge — their lessons still roll up into rendered
  * ancestors via the expansion below). Consequence, intended: a stored value
@@ -150,7 +153,7 @@ function flattenOptionValues(nodes: OptionNode[]): string[] {
 const OPTION_VALUES_BY_KEY: Record<FacetFilterKey, readonly string[]> = {
   gradeLevels: flattenOptionValues(FILTER_CONFIGS.gradeLevels.options),
   activityType: flattenOptionValues(FILTER_CONFIGS.activityType.options),
-  location: flattenOptionValues(FILTER_CONFIGS.location.options),
+  location: SEARCH_LOCATION_OPTIONS.map((o) => o.value),
   thematicCategories: flattenOptionValues(FILTER_CONFIGS.thematicCategories.options),
   seasonTiming: flattenOptionValues(FILTER_CONFIGS.seasonTiming.options),
   coreCompetencies: flattenOptionValues(FILTER_CONFIGS.coreCompetencies.options),

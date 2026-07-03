@@ -28,8 +28,9 @@ type UrlSortValue = (typeof URL_SORT_VALUES)[number];
 const DEFAULT_SORT: UrlSortValue = 'relevance';
 
 // Every search filter is a string[] in SearchFilters except `query` (a string).
-// `location` is single-select in the UI but is still typed/stored as string[]
-// in SearchFilters, so it serializes like any other array filter.
+// `location` renders as multi-select checkboxes in the search UI (FP-18) and is
+// typed/stored as string[] in SearchFilters, so it serializes like any other
+// array filter.
 type ArrayFilterKey = Exclude<keyof SearchFilters, 'query'>;
 
 // store filter key → short URL param name
