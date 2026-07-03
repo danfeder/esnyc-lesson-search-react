@@ -22,7 +22,12 @@ const CHECKBOX_KEYS: readonly FacetFilterKey[] = [
 ] as const;
 
 interface IntSidebarProps {
-  counts: FacetCounts;
+  /**
+   * TRUE corpus-wide badge counts (FP-01b). `undefined` while the corpus
+   * fetch is in flight (or failed) — badges render blank in that window; once
+   * loaded, a real zero renders as `0` (D-4).
+   */
+  counts?: FacetCounts;
 }
 
 export function IntSidebar({ counts }: IntSidebarProps) {
@@ -68,6 +73,9 @@ export function IntSidebar({ counts }: IntSidebarProps) {
                 aria-pressed={active}
               >
                 {grade}
+                {counts && (
+                  <span className="int-grade-pill-count">{counts.gradeLevels[grade] ?? 0}</span>
+                )}
               </button>
             );
           })}
@@ -88,7 +96,6 @@ export function IntSidebar({ counts }: IntSidebarProps) {
           >
             {cfg.options.map((opt) => {
               const checked = selected.includes(opt.value);
-              const count = counts[key][opt.value] ?? 0;
               return (
                 <label key={opt.value} className="int-check">
                   <input
@@ -98,7 +105,11 @@ export function IntSidebar({ counts }: IntSidebarProps) {
                   />
                   <span className="int-check-box" />
                   <span className="int-check-label">{opt.label}</span>
-                  <span className="int-check-count">{count || ''}</span>
+                  {/* D-4: blank only while counts are loading/errored; a real
+                      zero is information ("none within your other filters"). */}
+                  <span className="int-check-count">
+                    {counts ? (counts[key][opt.value] ?? 0) : ''}
+                  </span>
                 </label>
               );
             })}

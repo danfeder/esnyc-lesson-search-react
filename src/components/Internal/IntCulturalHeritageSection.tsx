@@ -6,7 +6,12 @@ import { cn } from '@/utils/cn';
 import { IntFilterSection } from './IntFilterSection';
 
 interface IntCulturalHeritageSectionProps {
-  counts: FacetCounts;
+  /**
+   * TRUE corpus-wide badge counts (FP-01b). `undefined` while the corpus
+   * fetch is in flight (or failed) — badges render blank; once loaded, a real
+   * zero renders as `0` (D-4).
+   */
+  counts?: FacetCounts;
 }
 
 /** Per-tier indent step (px). Depth 1 keeps the legacy 20px child indent. */
@@ -30,7 +35,8 @@ export function IntCulturalHeritageSection({ counts }: IntCulturalHeritageSectio
   const cfg = FILTER_CONFIGS.culturalHeritage;
 
   const activeCount = selected.length;
-  const countFor = (value: string) => counts.culturalHeritage[value] ?? 0;
+  // D-4: blank only while counts are loading/errored; a loaded zero renders 0.
+  const countFor = (value: string) => (counts ? (counts.culturalHeritage[value] ?? 0) : '');
 
   const renderNode = (node: HeritageOption, depth: number) => (
     <div key={node.value}>
@@ -45,7 +51,7 @@ export function IntCulturalHeritageSection({ counts }: IntCulturalHeritageSectio
         />
         <span className="int-check-box" />
         <span className="int-check-label">{node.label}</span>
-        <span className="int-check-count">{countFor(node.value) || ''}</span>
+        <span className="int-check-count">{countFor(node.value)}</span>
       </label>
       {node.children?.map((child) => renderNode(child, depth + 1))}
     </div>

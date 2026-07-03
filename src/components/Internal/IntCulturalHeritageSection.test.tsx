@@ -88,4 +88,21 @@ describe('IntCulturalHeritageSection', () => {
     const top = screen.getByText('Americas').closest('label')!;
     expect(within(top).getByText('12')).toBeInTheDocument();
   });
+
+  it('renders a loaded zero as "0" (D-4)', () => {
+    // Counts are loaded but Chinese has no matches within the other active
+    // filters — that zero is information and must render, not blank out.
+    render(<IntCulturalHeritageSection counts={makeCounts({ americas: 12 })} />);
+
+    const grandchild = screen.getByText('Chinese').closest('label')!;
+    expect(grandchild.querySelector('.int-check-count')!.textContent).toBe('0');
+  });
+
+  it('renders blank badges while counts are undefined (corpus loading or failed)', () => {
+    render(<IntCulturalHeritageSection counts={undefined} />);
+
+    const badges = document.querySelectorAll('.int-check-count');
+    expect(badges.length).toBeGreaterThan(0);
+    badges.forEach((badge) => expect(badge.textContent).toBe(''));
+  });
 });

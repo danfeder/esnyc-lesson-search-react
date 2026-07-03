@@ -7,6 +7,17 @@ import { BrowserRouter } from 'react-router-dom';
 // Mocks: rpc for list, functions.invoke for smart-search
 const rpcMock = vi.fn();
 const invokeMock = vi.fn();
+// FP-01b: SearchPage mounts useFacetCounts, which fetches the facet corpus via
+// from('lessons').select(...).is('retired_at', null).limit(...). Resolve an
+// empty corpus so the hook settles cleanly (badges just render 0s) instead of
+// TypeError-ing on a missing `from`.
+const fromMock = vi.fn(() => ({
+  select: vi.fn(() => ({
+    is: vi.fn(() => ({
+      limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    })),
+  })),
+}));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -14,6 +25,7 @@ vi.mock('@/lib/supabase', () => ({
     rpc: (...args: any[]) => rpcMock(...args),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     functions: { invoke: (...args: any[]) => invokeMock(...args) },
+    from: () => fromMock(),
   },
 }));
 

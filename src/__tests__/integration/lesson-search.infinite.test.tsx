@@ -7,10 +7,22 @@ import { BrowserRouter } from 'react-router-dom';
 
 // Mock Supabase client
 const rpcMock = vi.fn();
+// FP-01b: SearchPage mounts useFacetCounts, which fetches the facet corpus via
+// from('lessons').select(...).is('retired_at', null).limit(...). Resolve an
+// empty corpus so the hook settles cleanly (badges just render 0s) instead of
+// TypeError-ing on a missing `from`.
+const fromMock = vi.fn(() => ({
+  select: vi.fn(() => ({
+    is: vi.fn(() => ({
+      limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    })),
+  })),
+}));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rpc: (...args: any[]) => rpcMock(...args),
+    from: () => fromMock(),
   },
 }));
 

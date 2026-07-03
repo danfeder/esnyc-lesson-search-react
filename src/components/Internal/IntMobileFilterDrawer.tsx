@@ -7,7 +7,8 @@ import { IntSidebar } from './IntSidebar';
 interface IntMobileFilterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  counts: FacetCounts;
+  /** Pass-through to IntSidebar; undefined = corpus counts still loading. */
+  counts?: FacetCounts;
 }
 
 export function IntMobileFilterDrawer({ isOpen, onClose, counts }: IntMobileFilterDrawerProps) {
