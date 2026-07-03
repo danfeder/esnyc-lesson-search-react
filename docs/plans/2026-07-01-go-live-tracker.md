@@ -339,6 +339,9 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
   handoffs until the user re-opens them. Subagents may use lesser models only where Fable
   definitively adds no benefit. The Fable/Opus/Sonnet split below is retained as historical
   context for the T1–T5 records.**
+- **⚠️ 2026-07-03 LATER SAME DAY (user, binding): the note above is REVERTED — the usage
+  window reset and the token-economy split below is REINSTATED (Fable = design/briefs/
+  adjudication/surprises; Opus executes briefs in separate fresh sessions; Sonnet for bulk).**
 - **Fable** (scarce — ration hard): design decisions, briefs, adjudication, anything surprising.
 - **Opus**: executes Fable-written briefs. The brief tells you exactly what to build, how to
   verify, and when to STOP. Do not redesign, do not expand scope, do not improvise around a

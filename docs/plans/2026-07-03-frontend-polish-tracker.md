@@ -5,9 +5,10 @@ improve the end-user experience, and simplify what two years of vibe-coding with
 overbuilt. Less focused than go-live by design — discovery comes first, fixes ship in small
 themed waves. This is the ONLY tracking doc for the phase.
 
-**Last updated:** 2026-07-03 (Fable, FP1 discovery audit COMPLETE — 9/9 audit agents ran; full
-reports in `docs/plans/fp1-audit/`; ranked backlog + assumptions review synthesized below; docs
-PR pending). NEXT = **FP2 live walkthroughs (user present)**.
+**Last updated:** 2026-07-03 ~04:15am (Fable, OVERNIGHT AUTONOMOUS RUN complete — 5 PRs merged,
+8 left open for morning gates/review; see "Morning handoff (overnight run)" at the bottom of this
+file for the full ledger). NEXT = **user's morning pass over the open PRs + PROD gates, then FP2
+live walkthroughs** (script ready: `2026-07-03-fp2-walkthrough-script.md`).
 
 ## Working model (binding, carried from go-live where it worked)
 
@@ -185,7 +186,7 @@ Plain-language verdicts from `fp1-audit/audit-assumptions.md` (full reasoning th
 |---|---|---|---|
 | FP1 | Discovery audit: re-verify the shelf, sweep the frontend (bugs + overengineering), assumptions review, ranked backlog | No (user reviews output) | **Audit DONE 2026-07-03** (9/9 agents; reports in `fp1-audit/`; ranked backlog below). FP2 walkthrough next |
 | FP2 | Live walkthroughs (public search; teacher/reviewer) — user narrates, Fable explains + logs | **Yes** | **NEXT** — audit findings below sharpen the walkthrough script |
-| FP3+ | Themed fix waves: quick wins first, then bug clusters, then sanctioned redesigns/simplifications | Per wave | Defined by the backlog after FP1+FP2; user picks order |
+| FP3+ | Themed fix waves: quick wins first, then bug clusters, then sanctioned redesigns/simplifications | Per wave | **OVERNIGHT RUN 2026-07-03 shipped the bulk**: FP-11 (E, #581 merged + #582/583/584 gates), FP-15+D3 (D, #587/#588/#592 merged), FP-03/04a/05/06/07 (A, #585/#586/#591 open), FP-02 (#590 open, TEST-verified), FP-01b+D2 (B-lite, #593/#594 open), reviewer-UX batch (#595 open) — see Morning handoff below. Remaining backlog: FP-09 summary backfill, FP-16/17/18 (stakeholder), FP-19/20/21/22/24 tails, FP-04 full dialog rebuild |
 
 ## Explicitly NOT in this phase (unless the user reopens)
 
@@ -194,3 +195,131 @@ Plain-language verdicts from `fp1-audit/audit-assumptions.md` (full reasoning th
 - Backend-only refactors with no user-visible payoff
 - Any personalization/auth-gated features (audience is still ~3 internal accounts)
 - Resend/DNS work
+
+## Morning handoff (overnight run, 2026-07-03 ~1:20am–4:30am ET)
+
+Run per `2026-07-03-brief-fp-overnight.md` (binding). All five waves executed in order, plus
+ladder rungs 2/3/6/7. Every PR below went through: executor agent → independent adversarial
+verifier → my own verify → `npm run check` + `test:run` green before push → full 4-surface bot
+triage with a written rebuttal or fix for every finding. PROD was not touched; no gates approved.
+
+**GATES CLOSED (2026-07-03 late morning, Fable + user):** #590 merged (`6f198d6`) + PROD-applied +
+verified (95 rows normalized, snapshot 95 = 74 active/21 retired, CHECK validated, S2T 421 via RPC);
+#584 slot-renamed `020000`→`040000` (red-team correction) + merged + PROD-applied + verified
+(fn dropped, invariants 785/703/127 unchanged); #582/#583 merged, process-submission v39
+3-signal-verified (sha byte-exact vs TEST, no-auth 400-by-design), hosted `generate-embeddings` +
+`generate-gemini-embeddings` DELETED from PROD+TEST, resurrection check clean (0 queued runs),
+`OPENAI_API_KEY` unset on both projects. Remaining open: #585/#586/#591/#593/#594/#595 → FP2
+walkthrough sessions (script + decision checklist in `2026-07-03-fp2-walkthrough-script.md`).
+
+**✅ FP2 WALKTHROUGH COMPLETE (2026-07-03 AM, owner + Opus).** Full record: decision-capture
+checklist in `2026-07-03-fp2-walkthrough-script.md`; cold-read summary in `2026-07-03-fp2-handoff.md`.
+
+- **Merged today (all frontend-only, no PROD gate fired):** #585 (`5324cec`), #586 (`ef48ef8`),
+  #591 (`ae0df3e` — hand-resolved UserProfile conflict + stale test-mock fix, CI-green),
+  #594 (`b57b490` — D2 permalink smoke passed), #595 (`b0fc09e`). **#593 HELD** — it *is* the
+  counts convention the owner wants to settle with Fable first; do NOT merge until then.
+- **Approved to BUILD (not in the 6 PRs):** FP-16 (friendly drawer labels + collapse heritage
+  chains to the leaf + fix the "cultural" field label), FP-17 (badge from Activity Type field),
+  FP-18 (Location two-checkbox — cosmetic; search already folds Both), FP-08 (darken light-gray
+  text), FP-19 (synonym-match hint), chooser reassurance line, FP-12/13 (real 404 + search-error
+  Retry), grade counts (with #593). ⚠️ **Indoor badge = 607, not the script's 417** (search folds
+  Both). **Heritage reviewer field → CLOSE IT** (owner reversal; make a closed pick-list; build
+  notes in handoff — worksheet confirmed still in flight). Adopt **"index, not host"** as a written
+  principle.
+- **Deferred to Fable (design agenda — hang together):** (1) counts convention [HOLDS #593] +
+  show-0-vs-blank; (2) grade-pill layout; (3) filter roster (Cooking Methods category / promote
+  Main Ingredients / sidebar order); (4) FP-03 primary-flow reachability — the "fill-first" submit
+  flow was removed in Phase-8b (`f218800`), so #585's auto-submit only fires via a direct
+  `/submit/new` deep-link (investigation: `scratchpad/fp03-submission-gate-investigation.md`).
+- **Confirmed/closed (no work):** D3 Analytics gone; AI-draft provenance skip; review drafts +
+  batch-nav skip; FP-06 tradeoff blessed; FP-02 done (#590, PROD-verified live: S2T 421).
+- **TEST DB re-verified clean post-session:** 763 / 685 / 130, 0 markers, 0 submissions created.
+
+### ✅ Merged overnight (under the brief's merge authority — mechanical/repo-side, green + clean bot)
+
+| PR | What | Squash |
+|---|---|---|
+| #581 | **The meter is stopped**: daily smoke no longer makes the paid OpenAI call (generate-embeddings full-smoke + gemini health check removed); trimmed smoke ran live vs PROD twice, 7/7 | `b75c985` |
+| #587 | FP-15 dead-code sweep: 58 files, −2,405 lines (5 orphan Int* components, dead Review/Admin/VerifySetup/Virtualized code, dead exports incl. the per-visit "connection test" request, `@tanstack/react-virtual` dep) | `6efb0b5` |
+| #588 | D3 AdminAnalytics retirement (your locked decision): page, route, nav, CSS, `recharts` + 35 transitive packages | `853234a` |
+| #589 | FP-23 docs hygiene: dead Algolia instructions, archive-policy table rows | `f8d16fb` |
+| #592 | FP-15 CSS sweep: −952 lines of orphaned admin CSS + dead index.css layers (emitted CSS −21%) | `27e254c` |
+
+### 🔴 YOUR GATES — open PRs that need you (in suggested order)
+
+1. **#590 FP-02 kebab-themes data fix** (migration; the ~10%-of-library Thematic-filter bug).
+   TEST-verified twice, every pre-registered expectation hit exactly (incl. `search_lessons`
+   Seed-to-Table 387→413). **Before approving the PROD apply: run the read-only PROD probes in
+   the PR body** — if PROD has any stray theme variant TEST lacked, the migration aborts loudly
+   by design and the mapping question comes back to you. **Merge #590 BEFORE #584** (see note 3).
+2. **#582 embedding edge-fns repo removal + #583 process-submission debug-path removal** (both
+   `supabase/functions/**`). After merging: the **hosted deletions** are yours —
+   `supabase functions delete generate-embeddings` / `generate-gemini-embeddings` on PROD
+   (`jxlxtzkmicfhchkhiojz`) and TEST (`rxgajgmphciuaqzvwmox`), **then check
+   `gh run list --workflow=deploy-edge-functions.yml --status=waiting`** and cancel stale queued
+   runs (resurrection hazard, playbook). Optional afterwards: delete the now-unused
+   `OPENAI_API_KEY` edge secret.
+3. **#584 drop `find_duplicate_pairs()`** (migration draft). Its TEST application was rolled back
+   overnight to unblock #590's CI (two unmerged migration PRs poison each other's dry-run guard —
+   details on both PRs). **⚠️ CORRECTED by the 6:45am red-team: rebase alone is NOT enough** —
+   #584's migration slot `20260703020000` sorts BEFORE #590's already-applied `20260703030000`,
+   and CI/PROD run plain `supabase db push` (no `--include-all`), so it would never apply. After
+   #590 merges: rebase #584, **rename its migration (+.rollback) to a post-030000 slot (e.g.
+   `20260703040000_`)**, update the in-file header references, re-run the local reset, push.
+   Note its PR-body "TEST verification" section is stale until then (the function EXISTS on TEST
+   again after the overnight rollback — expected).
+4. **Behavior PRs to review** (all green, all triaged, none merged — your call): **#585** AuthModal
+   submit-after-sign-in + scrim (confirm DQ-1 auto-resubmit + DQ-2 scrim tone), **#586** UserProfile
+   edit-clobber fix, **#591** honest error+retry on six fail-open surfaces (absorbed FOUR review
+   rounds, each finding a real, narrower bug — all fixed + pinned; a 5th round found only the
+   known out-of-scope F3 staleness item; confirm DQ-2 stale-user-over-false-signout),
+   **#593** true facet counts (D1-b; badge semantics questions listed for FP2), **#594** lesson
+   permalinks (D2; copy-link carries no filters — confirm; one deploy-preview smoke owed: paste a
+   permalink in a private window + probe a retired lesson id), **#595** reviewer-UX batch (Pending
+   default tab, doc-title-changed hint, stale revision-note republish fix).
+5. Suggested merge order for the overlapping frontend PRs: #586 → #591 → #595 (ReviewDashboard/
+   UserProfile overlaps are single-line-disjoint), then #593 → #594 (shared SearchPage hunks) —
+   whichever merges second in each pair rebases trivially.
+
+### 📋 Also ready / noted for you
+
+- **FP2 walkthrough script**: `docs/plans/2026-07-03-fp2-walkthrough-script.md` (uncommitted,
+  rides the next docs PR) — step-by-step for both walkthrough sessions, seeded with every open
+  owner decision from tonight's PRs + the audit's stakeholder questions.
+- **t4b deferral #3 spec** (similarity.test dead block + detect-duplicates scoring extraction) is
+  written (`scratchpad/rung3-postlaunch-specs.md` item 4) but NOT executed: even test-file changes
+  under `supabase/functions/**` trigger the edge-deploy workflow → it's a morning-gate PR.
+- **Discovered tonight, needs a future slot**: (a) `npm run test:rls` has 2 pre-existing failures
+  on main (`archive_duplicate_lesson` scenarios, likely T4b revoke fallout); (b) 28 lessons have
+  order-only column↔metadata-mirror theme diffs (display-inert, pre-existing); (c)
+  `validate_invitation_token.accepted_at` generates as non-nullable but is null for pending
+  invitations (latent footgun, documented on #584); (d) PROD hosts an orphan `check-google-doc-access`
+  edge function that's not in the repo with zero callers; (e) a shared `useFetchWithRetry` hook
+  would de-duplicate the error-handling pattern #591 spread across five call sites.
+- **Repo-local cleanups done**: 2 obsolete kickoff files removed, stale `tools/concepts-worksheet-form`
+  branch deleted, `src/pages/CLAUDE.md` page count corrected (uncommitted, rides next docs PR).
+- **TEST DB baseline**: verified byte-exact at handoff (763/685/130, zero markers) — plus the
+  sanctioned #590 CI mutation (86 rows' theme values normalized, snapshot table present).
+- **Process note**: one green-before-push violation occurred and was self-caught (a `;` where `&&`
+  belonged let a red commit push on #591; superseded within minutes by the amended green commit —
+  detail on the PR).
+
+### STOPs / not done
+
+- Nothing hit a hard STOP. Wave E/D/A + FP-02 + B-lite stretch all shipped. Ladder rung 8
+  (second-pass discovery) was not reached — rungs 2 (flywheel: 3 extra review rounds on #591,
+  independent reviewer on #585), 3 (reviewer-UX batch), 6 (docs PR), 7 (walkthrough script) were.
+
+### Rung-8 second pass (6:41am burn window) — 22 findings, artifacts in scratchpad `rung8-*.md`
+
+Fresh discovery, NOT yet backlog-ranked (next FP session's input). Highlights: **7 fail-open fetch
+sites remain post-#591** (worst: AdminUsers "No users found." / AdminUserDetail "User not found."
+on fetch errors); useLessonSuggestions fires a full discarded search per keystroke (`limit:0`
+coerced to 20 server-side) and caches swallowed errors as 5-min successes; CONFIRMED-live cosmetic:
+unsorted grade arrays render "Grades 1–K" (live on lesson "Sunprints"); #594 follow-ups (urlSync
+wipes `fromSearch` on filter change while a lesson is open; pending debounce fires on the /lesson
+entry); searchStore has a dead `currentPage` field + unversioned persist; one latent (0-rows-today)
+heritage badge/click asymmetry. Red-team also verified the rest of this handoff's shas/stats/
+baseline claims exact. PROD pre-probe for #590 was run and posted: **95 kebab rows, ZERO strays —
+gate pre-cleared** (expect 95, not 86, in the PROD after-probes).
