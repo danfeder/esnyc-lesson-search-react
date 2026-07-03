@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { IntSidebar } from './IntSidebar';
 import { useSearchStore } from '@/stores/searchStore';
@@ -103,6 +103,21 @@ describe('IntSidebar', () => {
   it('renders the badge explainer line at the bottom of the sidebar', () => {
     render(<IntSidebar counts={makeCounts()} />);
     expect(screen.getByText('Numbers show how many lessons carry each tag.')).toBeInTheDocument();
+  });
+
+  it('"Clear all" clears facet selections but keeps the typed query (D-E)', () => {
+    // A query plus an active facet → the "Clear all" button renders (its
+    // visibility gate counts facets only, excluding the query).
+    useSearchStore.getState().setFilters({ query: 'compost', gradeLevels: ['3'] });
+    render(<IntSidebar counts={makeCounts()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
+
+    const { filters } = useSearchStore.getState();
+    expect(filters.gradeLevels).toEqual([]);
+    // The search text is NOT wiped (the D-E fix — the button used to call the
+    // full-reset clearFilters, which cleared the query too).
+    expect(filters.query).toBe('compost');
   });
 
   // D-A: a loaded zero-count option dims (still clickable); a checked/active
