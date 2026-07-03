@@ -67,6 +67,12 @@ const STATUS_BADGE: Record<SubmissionStatus, IntStatus> = {
 export function UserProfile() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useEnhancedAuth();
+  // useEnhancedAuth re-fetches the profile on EVERY auth event (hourly token
+  // refresh, tab refocus, password change) and setUser()s a new object
+  // identity each time. Key all page data-loading on the stable user id so
+  // background auth events don't re-trigger loads — a reload here flashes the
+  // full-page spinner and setFormData() clobbers in-progress edits.
+  const userId = user?.id;
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -97,13 +103,13 @@ export function UserProfile() {
   const [pwSuccess, setPwSuccess] = useState('');
 
   const loadUserProfile = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     setLoading(true);
     try {
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
       if (profileError) throw profileError;
 
@@ -115,7 +121,7 @@ export function UserProfile() {
       const { data: userSchoolData, error: schoolsError } = await supabase
         .from('user_schools')
         .select('schools(id, name)')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       if (schoolsError) throw schoolsError;
 
       const schools =
@@ -128,16 +134,16 @@ export function UserProfile() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   const loadSubmissions = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     setLoadingSubmissions(true);
     try {
       const { data, error } = await supabase
         .from('lesson_submissions')
         .select('*')
-        .eq('teacher_id', user.id)
+        .eq('teacher_id', userId)
         .order('created_at', { ascending: false });
       if (error) throw error;
 
@@ -160,7 +166,7 @@ export function UserProfile() {
     } finally {
       setLoadingSubmissions(false);
     }
-  }, [user]);
+  }, [userId]);
 
   const handleResubmit = async (submissionId: string) => {
     setResubmittingIds((prev) => new Set(prev).add(submissionId));
@@ -194,11 +200,11 @@ export function UserProfile() {
   };
 
   useEffect(() => {
-    if (user && !authLoading) {
+    if (userId && !authLoading) {
       loadUserProfile();
       loadSubmissions();
     }
-  }, [user, authLoading, loadUserProfile, loadSubmissions]);
+  }, [userId, authLoading, loadUserProfile, loadSubmissions]);
 
   const handleSave = async () => {
     if (!user) return;
