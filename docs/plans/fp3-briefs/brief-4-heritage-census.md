@@ -139,3 +139,44 @@ FROM lesson_submissions;
 The brief's STOP rule: if the census surfaces junk values that obviously shouldn't join a
 closed list, stop and surface to the owner. **No junk surfaced** — every stored value is a
 clean canonical vocab entry. No escalation needed; proceeding with the closure.
+
+---
+
+## Addendum — third source: `submission_reviews.tagged_metadata` (added after code review)
+
+Pre-push review flagged that the reviewer form's LOAD path, when a review is reopened,
+restores the latest `submission_reviews.tagged_metadata` (jsonb) — a **third** heritage
+source the initial census (lessons + `ai_draft_metadata`) did not cover. This jsonb column
+historically stored the old `CreatableSelect`'s output. Because the closed enum uses
+Title-Case labels, a reopened legacy row with an off-enum value would display but be
+**rejected on re-save**. So this source needs the same STOP-rule rigor.
+
+### SQL (PROD `jxlxtzkmicfhchkhiojz` AND TEST `rxgajgmphciuaqzvwmox`, read-only, ALL statuses)
+
+```sql
+SELECT ch.val AS heritage_value, count(*) AS occ,
+       (ch.val ~ '^[a-z0-9]+(-[a-z0-9]+)*$') AS is_kebab_slug
+FROM submission_reviews sr
+CROSS JOIN LATERAL jsonb_array_elements_text(sr.tagged_metadata->'culturalHeritage') AS ch(val)
+WHERE sr.tagged_metadata ? 'culturalHeritage'
+GROUP BY ch.val ORDER BY is_kebab_slug DESC, ch.val;
+```
+
+### Raw result — 15 distinct values, **PROD and TEST identical**, ALL kebab slugs
+
+`african`(1), `americas`(1), `asian`(1), `caribbean`(1), `central-asian`(1),
+`east-asian`(5), `eastern-european`(1), `european`(1), `latin-american`(6), `levantine`(3),
+`mediterranean`(2), `middle-eastern`(1), `nigerian`(1), `north-american`(14),
+`south-asian`(3). All `is_kebab_slug = true`; **zero** Title-Case / hand-typed / free-text
+values (despite the old control being a CreatableSelect — reviewers only ever picked presets).
+
+### Verdict
+
+- **Storage regime differs**: `tagged_metadata` stores KEBAB SLUGS (the old picker's
+  `value`), unlike `lessons.cultural_heritage` (Title-Case labels).
+- **0 unrecoverable**: every one of the 15 slugs is a canonical vocab key → recovers to its
+  Title-Case label via `culturalHeritageSlugToLabel` (wired into `canonicalizeReviewMetadata`,
+  which runs on both the load-restore and save paths). No junk; STOP-rule holds for this
+  source too.
+- **Fix**: reopening a legacy review row now restores e.g. `east-asian → "East Asian"`,
+  displays correctly, and re-saves cleanly. See commit `c6f9ec0`.

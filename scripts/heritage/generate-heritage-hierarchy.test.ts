@@ -339,11 +339,12 @@ describe('heritage hierarchy generator — reviewer options artifact (Output D, 
 
   it('orders roots by frequency DESC then key ASC (americas first, middle-eastern last)', () => {
     const rootLabels = vocab.canonical.filter((n) => n.parent === null).map((n) => n.label);
-    const firstRootPositions = rootLabels
+    const rootPositions = rootLabels
       .map((label) => reviewOptions.findIndex((o) => o.value === label))
       .sort((a, b) => a - b);
     // americas(170) is the first root emitted; middle-eastern(23) the last.
-    expect(reviewOptions[firstRootPositions[0]].value).toBe('Americas');
+    expect(reviewOptions[rootPositions[0]].value).toBe('Americas');
+    expect(reviewOptions[rootPositions[rootPositions.length - 1]].value).toBe('Middle Eastern');
   });
 });
 
