@@ -13,12 +13,6 @@ export interface Lesson {
   fileLink: string;
   gradeLevels: string[];
   metadata: LessonMetadata;
-  confidence: {
-    overall: number;
-    title: number;
-    summary: number;
-    gradeLevels: number;
-  };
   last_modified?: string;
   processing_notes?: string;
   created_at?: string;
@@ -62,36 +56,12 @@ export interface SearchFilters {
   cookingMethods: string[]; // Multi-select
 }
 
-export interface FacetCount {
-  value: string;
-  count: number;
-}
-
-// User and authentication types
-export interface User {
-  id: string;
-  email: string;
-  profile: UserProfile;
-}
-
-export interface UserProfile {
-  id: string;
-  user_id: string;
-  full_name: string;
-  school?: string;
-  grades_taught: string[];
-  subjects: string[];
-  created_at: string;
-  updated_at: string;
-}
-
 // UI state types
 export type ResultView = 'list' | 'grid' | 'split';
 export type ResultDensity = 'comfy' | 'compact' | 'ultra';
 
 export interface ViewState {
-  sortBy: 'title' | 'confidence' | 'grade' | 'modified' | 'relevance';
-  resultsPerPage: number;
+  sortBy: 'title' | 'modified' | 'relevance';
   currentPage: number;
   view: ResultView;
   density: ResultDensity;
@@ -120,11 +90,4 @@ export interface ReviewMetadata {
   observancesHolidays?: string[];
   culturalResponsivenessFeatures?: string[];
   processingNotes?: string;
-}
-
-// API response types
-export interface ApiResponse<T> {
-  data: T;
-  error?: string;
-  message?: string;
 }

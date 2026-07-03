@@ -27,7 +27,6 @@ describe('searchStore', () => {
       const { result } = renderHook(() => useSearchStore());
 
       expect(result.current.viewState.sortBy).toBe('relevance');
-      expect(result.current.viewState.resultsPerPage).toBe(20);
       expect(result.current.viewState.currentPage).toBe(1);
       expect(result.current.viewState.view).toBe('list');
       expect(result.current.viewState.density).toBe('comfy');
@@ -220,12 +219,12 @@ describe('searchStore', () => {
       act(() => {
         result.current.setViewState({
           sortBy: 'modified',
-          resultsPerPage: 50,
+          density: 'compact',
         });
       });
 
       expect(result.current.viewState.sortBy).toBe('modified');
-      expect(result.current.viewState.resultsPerPage).toBe(50);
+      expect(result.current.viewState.density).toBe('compact');
     });
 
     it('should merge view state updates', () => {
@@ -236,11 +235,11 @@ describe('searchStore', () => {
       });
 
       act(() => {
-        result.current.setViewState({ resultsPerPage: 50 });
+        result.current.setViewState({ density: 'compact' });
       });
 
       expect(result.current.viewState.sortBy).toBe('modified');
-      expect(result.current.viewState.resultsPerPage).toBe(50);
+      expect(result.current.viewState.density).toBe('compact');
       expect(result.current.viewState.currentPage).toBe(1);
     });
 
@@ -251,7 +250,6 @@ describe('searchStore', () => {
         result.current.setViewState({
           sortBy: 'modified',
           currentPage: 5,
-          resultsPerPage: 50,
         });
       });
 
@@ -261,7 +259,6 @@ describe('searchStore', () => {
 
       expect(result.current.viewState.sortBy).toBe('relevance');
       expect(result.current.viewState.currentPage).toBe(1);
-      expect(result.current.viewState.resultsPerPage).toBe(20);
     });
 
     it('should update view and density', () => {

@@ -35,7 +35,6 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
     // Reset store to defaults
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setViewState({ resultsPerPage: 2 });
   });
 
   it('renders initial results from first page', async () => {
@@ -81,12 +80,12 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
       expect(screen.getByText('Lesson Two')).toBeInTheDocument();
     });
 
-    // Ensure RPC called with page_offset 0
+    // Ensure RPC called with page_offset 0 and the fixed page size (20)
     expect(rpcMock).toHaveBeenCalled();
     const callArgs = rpcMock.mock.calls[0];
     expect(callArgs[0]).toMatch(/search_lessons/);
     expect(callArgs[1].page_offset).toBe(0);
-    expect(callArgs[1].page_size).toBe(2);
+    expect(callArgs[1].page_size).toBe(20);
   });
 
   it('loads more results when load more is triggered', async () => {
@@ -162,9 +161,9 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
       expect(screen.getByText('Lesson Three')).toBeInTheDocument();
     });
 
-    // Ensure second call uses page_offset = 2
+    // Ensure second call advances by one fixed-size page (offset = 20)
     const secondCall = rpcMock.mock.calls[1];
-    expect(secondCall[1].page_offset).toBe(2);
+    expect(secondCall[1].page_offset).toBe(20);
   });
 
   it('shows an error when RPC fails', async () => {

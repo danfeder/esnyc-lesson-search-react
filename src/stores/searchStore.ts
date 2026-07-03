@@ -73,7 +73,6 @@ export const initialFilters: SearchFilters = {
 
 const initialViewState: ViewState = {
   sortBy: 'relevance',
-  resultsPerPage: 20,
   currentPage: 1,
   view: 'list',
   density: 'comfy',

@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { School } from './SchoolSelector';
 import { logger } from '@/utils/logger';
+
+export interface School {
+  id: string;
+  name: string;
+}
 
 interface SchoolCheckboxGroupProps {
   selectedSchools: School[];

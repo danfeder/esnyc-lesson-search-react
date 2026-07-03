@@ -84,12 +84,6 @@ export function makeLesson(overrides: Partial<Lesson> = {}): Lesson {
       socialEmotionalLearning: [],
       culturalResponsivenessFeatures: [],
     },
-    confidence: overrides.confidence ?? {
-      overall: 0.9,
-      title: 0.9,
-      summary: 0.9,
-      gradeLevels: 0.9,
-    },
     last_modified: overrides.last_modified,
     processing_notes: overrides.processing_notes,
     created_at: overrides.created_at,

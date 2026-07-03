@@ -131,53 +131,6 @@ export const logger = {
   },
 
   /**
-   * General logging
-   */
-  log: (...args: unknown[]) => {
-    const sanitized = sanitizeArgs(args);
-
-    if (isDevelopment) {
-      // eslint-disable-next-line no-console
-      console.log(...sanitized);
-    }
-
-    // Add as breadcrumb in production for context
-    if (isProduction) {
-      addBreadcrumb({
-        message: argsToMessage(sanitized),
-        level: 'info' as SeverityLevel,
-        category: 'console',
-      });
-    }
-  },
-
-  /**
-   * Info level logging - informational messages
-   */
-  info: (...args: unknown[]) => {
-    const sanitized = sanitizeArgs(args);
-
-    if (isDevelopment) {
-      // eslint-disable-next-line no-console
-      console.info(...sanitized);
-    }
-
-    // In production, only capture important info messages
-    if (isProduction) {
-      const message = argsToMessage(sanitized);
-      if (message.includes('success') || message.includes('complete')) {
-        captureMessage(message, 'info');
-      } else {
-        addBreadcrumb({
-          message,
-          level: 'info' as SeverityLevel,
-          category: 'console',
-        });
-      }
-    }
-  },
-
-  /**
    * Warning level logging - potential issues but not errors
    */
   warn: (...args: unknown[]) => {
@@ -216,28 +169,6 @@ export const logger = {
         // Convert to error message
         captureMessage(argsToMessage(sanitized), 'error');
       }
-    }
-  },
-
-  /**
-   * Track specific events or metrics
-   */
-  track: (eventName: string, data?: Record<string, unknown>) => {
-    const sanitizedData = data ? (sanitizeObject(data) as Record<string, unknown>) : undefined;
-
-    if (isDevelopment) {
-      // eslint-disable-next-line no-console
-      console.log(`[TRACK] ${eventName}`, sanitizedData);
-    }
-
-    // In production, add as breadcrumb for context
-    if (isProduction) {
-      addBreadcrumb({
-        message: eventName,
-        category: 'track',
-        level: 'info' as SeverityLevel,
-        data: sanitizedData,
-      });
     }
   },
 };

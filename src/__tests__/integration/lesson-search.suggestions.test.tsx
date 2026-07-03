@@ -49,7 +49,6 @@ describe('Search suggestions integration', () => {
     vi.clearAllMocks();
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setViewState({ resultsPerPage: 2 });
   });
 
   it('shows suggestions and applies one to trigger a new search', async () => {

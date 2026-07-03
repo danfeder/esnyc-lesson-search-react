@@ -62,7 +62,6 @@ export const SearchPage: React.FC = () => {
     isFetchingNextPage,
   } = useLessonSearch({
     filters,
-    pageSize: viewState.resultsPerPage,
     sortBy: viewState.sortBy,
     // Gate the first query on hydration (see useUrlSync above). While disabled
     // the query is `status:'pending'` so the C59 skeleton — not IntEmptyState —

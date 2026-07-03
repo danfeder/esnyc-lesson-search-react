@@ -59,9 +59,6 @@ const AcceptInvitation = lazy(() =>
 const ResetPassword = lazy(() =>
   import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPassword }))
 );
-const VerifySetup = lazy(() =>
-  import('@/pages/VerifySetup').then((m) => ({ default: m.VerifySetup }))
-);
 
 // Create a client
 const queryClient = new QueryClient({
@@ -193,8 +190,6 @@ function AppContent() {
                     </ProtectedRoute>
                   }
                 />
-                {/* Temporary route for testing - only available in development */}
-                {import.meta.env.DEV && <Route path="/verify-setup" element={<VerifySetup />} />}
               </Routes>
             </Suspense>
           </main>

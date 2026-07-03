@@ -1,4 +1,4 @@
-export { ErrorBoundary, DefaultErrorFallback } from './ErrorBoundary';
+export { ErrorBoundary } from './ErrorBoundary';
 export { AppErrorFallback } from './AppErrorFallback';
 export { RouteErrorFallback } from './RouteErrorFallback';
 export { InfiniteScrollTrigger } from './InfiniteScrollTrigger';
@@ -6,5 +6,4 @@ export { PageLoader } from './PageLoader';
 export { ReviewErrorBoundary } from './ReviewErrorBoundary';
 export { ScreenReaderAnnouncer } from './ScreenReaderAnnouncer';
 export { SkipLink } from './SkipLink';
-export { VirtualizedTable } from './VirtualizedTable';
 export type { ErrorFallbackProps } from './ErrorBoundary';

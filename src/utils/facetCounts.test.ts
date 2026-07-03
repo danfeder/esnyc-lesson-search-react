@@ -20,7 +20,6 @@ function makeLesson(overrides: LessonOverrides): Lesson {
       activityType: [],
       ...(overrides.metadata ?? {}),
     },
-    confidence: { overall: 1, title: 1, summary: 1, gradeLevels: 1 },
   };
 }
 

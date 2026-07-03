@@ -5,5 +5,3 @@ export { ReviewMetadataForm } from './ReviewMetadataForm';
 export { ReviewSearchPanel } from './ReviewSearchPanel';
 export { SubmitterIntentBanner } from './SubmitterIntentBanner';
 export { TitleMismatchWarning } from './TitleMismatchWarning';
-export { ReviewActions } from './ReviewActions';
-export { ReviewContent } from './ReviewContent';

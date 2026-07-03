@@ -21,9 +21,8 @@ interface IntToolbarProps {
 }
 
 // C58: real server-side sort is relevance/title/modified only. The 'grade'
-// option was a no-op (no defined ordering over grade_levels) and is removed;
-// it remains in the ViewState.sortBy TS union as a harmless legacy value (a
-// stale persisted 'grade' falls back to relevance in the RPC).
+// option was a no-op (no defined ordering over grade_levels) and is removed
+// (a stale persisted 'grade' falls back to relevance in the RPC).
 const SORT_OPTIONS: Array<{ value: SortBy; label: string }> = [
   { value: 'relevance', label: 'Sort: Relevance' },
   { value: 'title', label: 'Sort: Title A–Z' },

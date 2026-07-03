@@ -12,8 +12,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// logger.log('🔗 Supabase client initialized with URL:', supabaseUrl);
-
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -21,40 +19,3 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
-
-// Test the connection
-supabase
-  .from('lessons_with_metadata')
-  .select('count', { count: 'exact', head: true })
-  .then(({ error }) => {
-    if (error) {
-      logger.error('❌ Supabase connection test failed:', error);
-    }
-    // else {
-    //   logger.log(`✅ Supabase connected successfully! Found ${count} lessons in database`);
-    // }
-  });
-// Helper function for handling Supabase errors
-export const handleSupabaseError = (error: unknown) => {
-  logger.error('Supabase error:', error);
-  const err = error as { message?: string; code?: string };
-  return {
-    message: err.message || 'An unexpected error occurred',
-    code: err.code || 'UNKNOWN_ERROR',
-  };
-};
-
-// Helper function for building search queries
-export const buildSearchQuery = (query: string) => {
-  // Convert search query to tsquery format for full-text search
-  return (
-    query
-      .split(' ')
-      .filter((term) => term.length > 0)
-      // Sanitize input to prevent SQL injection - allow only alphanumeric and basic punctuation
-      .map((term) => term.replace(/[^a-zA-Z0-9\-_\s]/g, '').trim())
-      .filter((term) => term.length > 0) // Re-filter after sanitization
-      .map((term) => `${term}:*`)
-      .join(' & ')
-  );
-};

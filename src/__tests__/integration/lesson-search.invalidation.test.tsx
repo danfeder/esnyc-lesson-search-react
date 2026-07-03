@@ -36,7 +36,6 @@ describe('Search invalidation and cache-key isolation', () => {
     // Reset store to defaults
     const store = useSearchStore.getState();
     store.clearFilters();
-    store.setViewState({ resultsPerPage: 2 });
   });
 
   it('resets to first page and refetches when filters change', async () => {
@@ -117,69 +116,6 @@ describe('Search invalidation and cache-key isolation', () => {
     await waitFor(() => {
       expect(screen.getByText('Filtered One')).toBeInTheDocument();
       expect(screen.getByText('Filtered Two')).toBeInTheDocument();
-    });
-  });
-
-  it('uses a separate cache key when page size changes (triggers refetch with new size)', async () => {
-    // First call with pageSize 2
-    rpcMock
-      .mockResolvedValueOnce({
-        data: [
-          makeRpcRow({ lesson_id: 'L1', title: 'Lesson One', grade_levels: ['3'], total_count: 5 }),
-          makeRpcRow({ lesson_id: 'L2', title: 'Lesson Two', grade_levels: ['4'], total_count: 5 }),
-        ],
-        error: null,
-      })
-      .mockResolvedValueOnce({
-        data: [
-          makeRpcRow({
-            lesson_id: 'L3',
-            title: 'Lesson Three',
-            grade_levels: ['5'],
-            total_count: 5,
-          }),
-          makeRpcRow({
-            lesson_id: 'L4',
-            title: 'Lesson Four',
-            grade_levels: ['6'],
-            total_count: 5,
-          }),
-          makeRpcRow({
-            lesson_id: 'L5',
-            title: 'Lesson Five',
-            grade_levels: ['7'],
-            total_count: 5,
-          }),
-        ],
-        error: null,
-      });
-
-    renderWithProviders(<SearchPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Lesson One')).toBeInTheDocument();
-      expect(screen.getByText('Lesson Two')).toBeInTheDocument();
-    });
-
-    // Change resultsPerPage from 2 to 3
-    const store = useSearchStore.getState();
-    await act(async () => {
-      store.setViewState({ resultsPerPage: 3 });
-    });
-
-    await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledTimes(2);
-    });
-
-    const secondCall = rpcMock.mock.calls[1];
-    expect(secondCall[0]).toMatch(/search_lessons/);
-    expect(secondCall[1].page_offset).toBe(0);
-    expect(secondCall[1].page_size).toBe(3);
-
-    await waitFor(() => {
-      expect(screen.getByText('Lesson Three')).toBeInTheDocument();
-      expect(screen.getByText('Lesson Four')).toBeInTheDocument();
-      expect(screen.getByText('Lesson Five')).toBeInTheDocument();
     });
   });
 });

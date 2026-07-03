@@ -1,8 +1,10 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { getSearchRpcName } from '@/lib/search';
 import { parseSearchQuery } from '@/utils/parseSearchQuery';
 import type { Lesson, LessonMetadata, SearchFilters, ViewState } from '@/types';
+
+/** The single public-search RPC. */
+const SEARCH_RPC_NAME = 'search_lessons';
 
 interface UseLessonSearchOptions {
   filters: SearchFilters;
@@ -10,8 +12,8 @@ interface UseLessonSearchOptions {
   /**
    * C58: the active sort, passed straight through to the RPC's `order_by`
    * param. The RPC normalizes anything outside relevance/title/modified
-   * (incl. a stale persisted 'grade'/'confidence') back to relevance, so no
-   * client-side mapping is needed. Defaults to relevance.
+   * back to relevance, so no client-side mapping is needed. Defaults to
+   * relevance.
    */
   sortBy?: ViewState['sortBy'];
   /**
@@ -24,13 +26,6 @@ interface UseLessonSearchOptions {
   enabled?: boolean;
 }
 
-interface ConfidenceScores {
-  overall?: number;
-  title?: number;
-  summary?: number;
-  gradeLevels?: number;
-}
-
 interface RpcRow {
   lesson_id: string;
   title: string;
@@ -38,7 +33,6 @@ interface RpcRow {
   file_link: string;
   grade_levels: string[];
   metadata: Record<string, unknown> | null;
-  confidence?: ConfidenceScores;
   total_count?: number;
 }
 
@@ -92,12 +86,6 @@ function mapRowToLesson(row: RpcRow): Lesson {
     fileLink: row.file_link,
     gradeLevels: Array.isArray(row.grade_levels) ? row.grade_levels : [],
     metadata: normalizeMetadata(row.metadata),
-    confidence: {
-      overall: row.confidence?.overall ?? 0,
-      title: row.confidence?.title ?? 0,
-      summary: row.confidence?.summary ?? 0,
-      gradeLevels: row.confidence?.gradeLevels ?? 0,
-    },
   };
 }
 
@@ -107,8 +95,6 @@ export function useLessonSearch({
   sortBy = 'relevance',
   enabled = true,
 }: UseLessonSearchOptions) {
-  const rpcName = getSearchRpcName();
-
   // Preprocess the raw search box term: strip filler + route grade cues (S1.2).
   // Pure + deterministic from `filters`, so the existing queryKey still fully
   // determines the derived RPC call (caching stays correct).
@@ -119,7 +105,7 @@ export function useLessonSearch({
   const effectiveGradeLevels = hasExplicitGradeFilter ? filters.gradeLevels : detectedGrades;
 
   return useInfiniteQuery<PageResult, Error>({
-    queryKey: ['lesson-search', rpcName, filters, sortBy, pageSize],
+    queryKey: ['lesson-search', SEARCH_RPC_NAME, filters, sortBy, pageSize],
     // W1c: when disabled (SearchPage's pre-hydration window) the query stays in
     // `status:'pending'` (TanStack v5) without fetching, so SearchPage's C59
     // skeleton branch wins over a false "No matches" until hydration enables it.
@@ -152,13 +138,13 @@ export function useLessonSearch({
           : undefined,
         filter_cooking_method: filters.cookingMethods?.length ? filters.cookingMethods : undefined,
         // C58: pass the active sort straight through; the RPC's ELSE→relevance
-        // branch safely handles any stale value (e.g. a persisted 'grade').
+        // branch safely handles any stale value.
         order_by: sortBy,
         page_size: pageSize,
         page_offset: currentPage * pageSize,
       };
 
-      const { data, error } = await supabase.rpc(rpcName, searchParams);
+      const { data, error } = await supabase.rpc(SEARCH_RPC_NAME, searchParams);
       if (error) throw error;
 
       const rows = (data || []) as RpcRow[];

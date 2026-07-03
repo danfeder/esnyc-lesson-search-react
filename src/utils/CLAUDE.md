@@ -5,7 +5,7 @@
 | File | Purpose |
 |------|---------|
 | `filterDefinitions.ts` | Filter categories (consult stakeholders before changes) |
-| `filterConstants.ts` | Cultural hierarchy, ingredient groups |
+| `heritageHierarchy.generated.ts` | Generated cultural-heritage hierarchy (do not hand-edit) |
 | `logger.ts` | Use instead of console.log |
 | `cn.ts` | Tailwind class merging |
 
