@@ -142,11 +142,6 @@ export const Header: React.FC<HeaderProps> = () => {
                         <BarChart3 className="w-4 h-4" /> Analytics
                       </MenuLink>
                     )}
-                    {hasPermission(Permission.MANAGE_DUPLICATES) && (
-                      <MenuLink to="/admin/duplicates" onSelect={() => setShowUserMenu(false)}>
-                        <Shield className="w-4 h-4" /> Manage Duplicates
-                      </MenuLink>
-                    )}
                     <button
                       type="button"
                       onClick={handleSignOut}

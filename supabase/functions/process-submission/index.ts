@@ -35,8 +35,7 @@ interface ProcessSubmissionRequest {
   googleDocUrl?: string;
   submissionType?: 'new' | 'update';
   originalLessonId?: string;
-  submissionId?: string; // For regenerating embeddings / resubmitting
-  regenerateEmbedding?: boolean; // Flag to only regenerate embedding
+  submissionId?: string; // For resubmitting an existing submission
   resubmit?: boolean; // Resubmit-after-revisions: re-snapshot an existing needs_revision row
   debug?: boolean; // For debugging
   testOpenAI?: boolean; // For testing OpenAI connectivity
@@ -68,7 +67,6 @@ serve(async (req) => {
       submissionType,
       originalLessonId,
       submissionId,
-      regenerateEmbedding,
       resubmit,
       debug,
       testOpenAI,
@@ -132,69 +130,42 @@ serve(async (req) => {
     // Create service client for admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // If regenerating embeddings with service role key, skip user auth
     const token = authHeader.replace('Bearer ', '');
-    const isServiceRole = token === supabaseServiceKey;
 
+    // Regular user flow — the user's client with RLS. The embedding-regeneration
+    // service-role entrypoint was retired with the embedding pipeline (T4b), so
+    // process-submission is now always called by an authenticated teacher
+    // (new submission or resubmit-after-revisions).
     let user: any = null;
-    let supabaseClient: any;
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
-    if (isServiceRole && regenerateEmbedding) {
-      // Service role for embedding regeneration only
-      supabaseClient = supabaseAdmin;
-    } else {
-      // Regular user flow - default to user's client with RLS
-      supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-
-      // Get user - need to pass the JWT token
-      const {
-        data: { user: authUser },
-        error: userError,
-      } = await supabaseClient.auth.getUser(token);
-      if (userError || !authUser) throw new Error('Unauthorized');
-      user = authUser;
-    }
+    // Get user - need to pass the JWT token
+    const {
+      data: { user: authUser },
+      error: userError,
+    } = await supabaseClient.auth.getUser(token);
+    if (userError || !authUser) throw new Error('Unauthorized');
+    user = authUser;
 
     let submission;
     let title: string;
     let content: string;
     let metadataSketch: MetadataSketch = {};
 
-    // Handle regenerating embeddings for existing submissions
-    if (regenerateEmbedding && submissionId) {
-      console.log('[Regenerate] Processing existing submission:', submissionId);
-
-      // Fetch existing submission
-      const { data: existingSubmission, error: fetchError } = await supabaseAdmin
-        .from('lesson_submissions')
-        .select('*')
-        .eq('id', submissionId)
-        .single();
-
-      if (fetchError || !existingSubmission) {
-        throw new Error(`Submission not found: ${submissionId}`);
-      }
-
-      submission = existingSubmission;
-      content = submission.extracted_content || '';
-
-      // Extract title from content or use a default
-      const titleMatch = content.match(/^#?\s*(.+)/);
-      title = titleMatch ? titleMatch[1].trim() : 'Untitled Lesson';
-    } else if (resubmit && submissionId) {
+    // Handle resubmit-after-revisions for existing submissions
+    if (resubmit && submissionId) {
       // Resubmit-after-revisions (T3b): the teacher edited the SAME Google Doc
       // after a reviewer sent it back. Re-snapshot that doc onto the existing
       // row, flip it back into the review queue, and re-run dedup. Reviewer tags
       // + notes are preserved automatically (submission_reviews is one upserted
       // row per submission; the review form restores it on re-open).
       if (!user) {
-        // Defensive: a service-role-only caller never actually reaches here.
-        // With resubmit (and no regenerateEmbedding) the auth branch (:142)
-        // routes them through supabaseClient.auth.getUser(token), which fails
-        // and throws 'Unauthorized' upstream. This guards any future auth-path
-        // change that could leave `user` unset.
+        // Defensive: the auth path above always resolves `user` via
+        // supabaseClient.auth.getUser(token) (throwing 'Unauthorized' on
+        // failure), so this is unreachable today. Kept to guard any future
+        // auth-path change that could leave `user` unset.
         throw new Error('User authentication required for resubmission');
       }
 
@@ -298,16 +269,17 @@ serve(async (req) => {
       // NOT lost (it lives on in submission_reviews.notes). reviewer_notes /
       // reviewed_at / review_completed_at are left alone (history).
       //
-      // content_embedding / content_hash / ai_draft_metadata are all
-      // content-DERIVED, so they're nulled here: if the fail-soft regen (Step 4
-      // embedding, Step 6 hash) or the LLM auto-tag passes (Steps 4.5/4.6) don't
-      // fully re-run on the new content, the row must carry NO derived value
-      // rather than the PREVIOUS snapshot's. In particular the CRF pass (4.5)
-      // only runs when the new content still matches /cultural responsiveness/i,
-      // so a revision that drops that section would otherwise leave a stale
-      // culturalResponsivenessFeatures draft prefilling the reviewer's form.
-      // Steps 4/4.5/4.6/6 repopulate each field from the fresh content on
-      // success (activity-type always runs; CRF/embedding/hash conditionally).
+      // content_hash / ai_draft_metadata are content-DERIVED, so they're nulled
+      // here: if the fail-soft regen (Step 6 hash) or the LLM auto-tag passes
+      // (Steps 4.5/4.6) don't fully re-run on the new content, the row must carry
+      // NO derived value rather than the PREVIOUS snapshot's. In particular the
+      // CRF pass (4.5) only runs when the new content still matches /cultural
+      // responsiveness/i, so a revision that drops that section would otherwise
+      // leave a stale culturalResponsivenessFeatures draft prefilling the
+      // reviewer's form. Steps 4.5/4.6/6 repopulate each field from the fresh
+      // content on success (activity-type always runs; CRF/hash conditionally).
+      // content_embedding is NOT touched — the embedding pipeline was retired
+      // (T4b); the column is inert.
       //
       // The `.eq('status', 'needs_revision')` is a compare-and-swap: only flip
       // if the row is STILL awaiting revisions at write time. This closes the
@@ -322,7 +294,6 @@ serve(async (req) => {
           extracted_title: title,
           status: 'submitted',
           revision_requested_reason: null,
-          content_embedding: null,
           content_hash: null,
           ai_draft_metadata: null,
           ai_draft_generated_at: null,
@@ -480,80 +451,17 @@ serve(async (req) => {
       if (updateError) throw updateError;
     }
 
-    // Step 4: Generate embedding
-    let contentEmbedding = null;
-    try {
-      const openAIKey = Deno.env.get('OPENAI_API_KEY');
-      if (!openAIKey) {
-        console.warn('[OpenAI] OPENAI_API_KEY not configured, skipping embedding generation');
-      } else {
-        console.log('[OpenAI] Generating embedding for submission:', submission.id);
-        const startTime = Date.now();
-
-        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${openAIKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: `${title}\n${content}`.substring(0, 8000), // Truncate to avoid token limits
-          }),
-        });
-
-        const responseTime = Date.now() - startTime;
-        console.log(
-          `[OpenAI] Response received in ${responseTime}ms - Status: ${embeddingResponse.status}`
-        );
-
-        if (embeddingResponse.ok) {
-          const embeddingData = await embeddingResponse.json();
-          contentEmbedding = embeddingData.data[0].embedding;
-
-          console.log(
-            `[OpenAI] Embedding generated successfully - Dimensions: ${contentEmbedding.length}`
-          );
-
-          // Store embedding in submission
-          const vectorString = `[${contentEmbedding.join(',')}]`;
-          const { error: updateError } = await supabaseAdmin
-            .from('lesson_submissions')
-            .update({ content_embedding: vectorString })
-            .eq('id', submission.id);
-
-          if (updateError) {
-            console.error('[OpenAI] Failed to store embedding:', updateError);
-          } else {
-            console.log('[OpenAI] Embedding stored successfully for submission:', submission.id);
-          }
-        } else {
-          // Log detailed error information
-          const errorText = await embeddingResponse.text();
-          console.error('[OpenAI] API error:', {
-            status: embeddingResponse.status,
-            statusText: embeddingResponse.statusText,
-            error: errorText,
-            submissionId: submission.id,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('[OpenAI] Embedding generation failed:', {
-        error: error.message,
-        stack: error.stack,
-        submissionId: submission.id,
-      });
-      // Continue without embedding
-    }
+    // Step 4 (embedding generation) was removed in T4b — dedup detection no
+    // longer uses embeddings (D9). The lessons/lesson_submissions
+    // content_embedding columns stay but are inert.
 
     // Step 4.5: LLM auto-tag — Cultural Responsiveness Features (D9). Skip
     // when body has no "Cultural Responsiveness" header (older legacy
-    // template, ~45% of corpus) and on regenerate-embedding-only flow.
-    // Output is canonical-keys shape per `lessonMetadataSchema`. Reviewer
-    // flips `lessons.crf_confirmed` true via the existing review save flow
-    // when the draft is accepted (Phase 2 picker UI redesign deferred).
-    if (!regenerateEmbedding && /cultural\s+responsiveness/i.test(content)) {
+    // template, ~45% of corpus). Output is canonical-keys shape per
+    // `lessonMetadataSchema`. Reviewer flips `lessons.crf_confirmed` true via
+    // the existing review save flow when the draft is accepted (Phase 2 picker
+    // UI redesign deferred).
+    if (/cultural\s+responsiveness/i.test(content)) {
       try {
         const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
         if (!anthropicKey) {
@@ -645,14 +553,17 @@ serve(async (req) => {
 
     // Step 4.6: LLM auto-tag — Activity Type (D2). Multi-label output (1-or-more
     // of cooking/garden/academic/craft) per Rule Y hybrid garden semantics.
-    // Skip on regenerate-embedding-only flow. Output is canonical-keys shape
-    // per `lessonMetadataSchema`. Reviewer edits via the existing multi-select
-    // picker (post-PR-1b Task 1b.5).
+    // Output is canonical-keys shape per `lessonMetadataSchema`. Reviewer edits
+    // via the existing multi-select picker (post-PR-1b Task 1b.5).
     //
     // Read-modify-write into ai_draft_metadata: preserves any keys written by
     // earlier auto-tag passes (e.g., culturalResponsivenessFeatures from CRF)
     // since the CRF writer overwrites the JSONB column.
-    if (!regenerateEmbedding) {
+    //
+    // Runs for every submission (new + resubmit). The block scope is retained
+    // only to preserve the surrounding structure after the embedding-regen
+    // guard that used to wrap it was removed in T4b.
+    {
       try {
         const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
         if (!anthropicKey) {
@@ -761,71 +672,52 @@ serve(async (req) => {
       }
     }
 
-    // Skip duplicate detection if we're just regenerating embeddings
-    if (!regenerateEmbedding) {
-      // Step 5: Detect duplicates
-      const duplicateResponse = await fetch(`${supabaseUrl}/functions/v1/detect-duplicates`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          submissionId: submission.id,
-          content,
-          title,
-          metadata: metadataSketch,
-          embedding: contentEmbedding,
-        }),
-      });
+    // Step 5: Detect duplicates
+    const duplicateResponse = await fetch(`${supabaseUrl}/functions/v1/detect-duplicates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({
+        submissionId: submission.id,
+        content,
+        title,
+        metadata: metadataSketch,
+      }),
+    });
 
-      const duplicateResult = await duplicateResponse.json();
-      if (!duplicateResult.success) {
-        console.error('Duplicate detection failed:', duplicateResult.error);
-      }
-
-      // Step 6: Update submission with content hash
-      if (duplicateResult.data?.contentHash) {
-        await supabaseAdmin
-          .from('lesson_submissions')
-          .update({
-            content_hash: duplicateResult.data.contentHash,
-          })
-          .eq('id', submission.id);
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            submissionId: submission.id,
-            status: submission.status,
-            extractedTitle: title,
-            duplicatesFound: duplicateResult.data?.duplicatesFound || 0,
-            topDuplicates: duplicateResult.data?.duplicates?.slice(0, 3) || [],
-          },
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    } else {
-      // Return simple success for embedding regeneration
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            submissionId: submission.id,
-            embeddingGenerated: contentEmbedding !== null,
-          },
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
+    const duplicateResult = await duplicateResponse.json();
+    if (!duplicateResult.success) {
+      console.error('Duplicate detection failed:', duplicateResult.error);
     }
+
+    // Step 6: Update submission with content hash
+    if (duplicateResult.data?.contentHash) {
+      await supabaseAdmin
+        .from('lesson_submissions')
+        .update({
+          content_hash: duplicateResult.data.contentHash,
+        })
+        .eq('id', submission.id);
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: {
+          submissionId: submission.id,
+          status: submission.status,
+          extractedTitle: title,
+          duplicatesFound: duplicateResult.data?.duplicatesFound || 0,
+          topDuplicates: duplicateResult.data?.duplicates?.slice(0, 3) || [],
+        },
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error('Process submission error:', error);
     return new Response(

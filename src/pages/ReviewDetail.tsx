@@ -15,7 +15,11 @@ import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
 import { ZOD_FIELD_TO_LABEL, parseExtractedContent } from '@/pages/reviewDetailHelpers';
 import { buildCandidateCards, MAX_DUPLICATE_CARDS } from '@/pages/buildCandidateCards';
-import { useReviewSubmission, type ReviewDecision } from '@/pages/useReviewSubmission';
+import {
+  useReviewSubmission,
+  type ReviewDecision,
+  type DecisionOption,
+} from '@/pages/useReviewSubmission';
 import { useSearchEscapeHatch } from '@/pages/useSearchEscapeHatch';
 import {
   showCookingFields as deriveShowCookingFields,
@@ -41,7 +45,7 @@ export function ReviewDetail() {
     useReviewSubmission(id);
   const [saving, setSaving] = useState(false);
   const [metadata, setMetadata] = useState<ReviewMetadata>({});
-  const [decision, setDecision] = useState<ReviewDecision>('approve_new');
+  const [decisionOption, setDecisionOption] = useState<DecisionOption>('approve_new');
   const [notes, setNotes] = useState('');
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -93,7 +97,7 @@ export function ReviewDetail() {
   useLayoutEffect(() => {
     if (initialFormState) {
       setMetadata(initialFormState.metadata);
-      setDecision(initialFormState.decision);
+      setDecisionOption(initialFormState.decision);
       setNotes(initialFormState.notes);
       setSelectedDuplicate(initialFormState.selectedDuplicate);
       setLegacyDecisionWarning(initialFormState.legacyDecisionWarning);
@@ -123,11 +127,10 @@ export function ReviewDetail() {
   const handleSaveReview = async () => {
     if (!submission) return;
 
-    // Punch-list A: the required-tags gate applies ONLY to the two approve
-    // decisions. "Request revisions" must go through even with tags empty —
-    // sending it back is exactly how a reviewer asks for the missing pieces.
-    // (The Zod shape check below still runs for every decision.)
-    if (decision === 'approve_new' || decision === 'approve_update') {
+    // Punch-list A: the required-tags gate applies ONLY to the two publish
+    // decisions. "Send back for revisions" / reject must go through even with
+    // tags empty. (The Zod shape check below still runs for every decision.)
+    if (decisionOption === 'approve_new' || decisionOption === 'approve_update') {
       const errors = validateRequiredFields();
       if (errors.length > 0) {
         setValidationErrors(errors);
@@ -136,8 +139,20 @@ export function ReviewDetail() {
       }
     }
     // Clear any stale missing-field banner (e.g. left over from a prior approve
-    // attempt before the reviewer switched to "Request revisions").
+    // attempt before the reviewer switched to "Send back for revisions").
     setValidationErrors([]);
+
+    // Both reject paths (plain reject + "already in the library") write the note
+    // as the teacher-visible reason (D8), so require a non-empty note before
+    // sending. reject_duplicate prefills it, so this only bites a reviewer who
+    // cleared the prefill. The panel's saveError banner sits by the note field.
+    if (
+      (decisionOption === 'reject' || decisionOption === 'reject_duplicate') &&
+      !notes.trim()
+    ) {
+      setSaveError('Add a reason the teacher will see before rejecting.');
+      return;
+    }
     setSaveError(null);
 
     // activityType UI option values end in `-only` (cooking-only / garden-only
@@ -181,13 +196,23 @@ export function ReviewDetail() {
       // The RPC wraps submission_reviews + lesson_submissions + lessons +
       // lesson_versions writes in one transaction, closing the orphan-
       // creation pathway that the Tier-1 work is recovering from.
+      // Map the UI option to the server decision contract (D7/D8).
+      // reject_duplicate is a `reject`; approve_update is the ONLY decision that
+      // binds the selected card to the server as the merge target —
+      // reject_duplicate uses the selection only to prefill the note, never as
+      // p_selected_lesson_id. The old silent-ignore ternary (:190) is gone: the
+      // panel structurally prevents choosing a card-bound option without a card.
+      const serverDecision: ReviewDecision =
+        decisionOption === 'reject_duplicate' ? 'reject' : decisionOption;
+      const selectedLessonId = decisionOption === 'approve_update' ? selectedDuplicate : null;
+
       const { data, error: invokeError } = await supabase.functions.invoke('complete-review', {
         body: {
           submissionId: submission.id,
-          decision,
+          decision: serverDecision,
           metadata: payload,
           notes,
-          selectedLessonId: decision === 'approve_update' ? selectedDuplicate : null,
+          selectedLessonId,
         },
       });
 
@@ -203,11 +228,15 @@ export function ReviewDetail() {
       const publishedTitle =
         payload.title?.trim() || submission.extracted_title?.trim() || 'this lesson';
       const toastMsg =
-        decision === 'approve_new'
+        decisionOption === 'approve_new'
           ? `Published: ${publishedTitle}`
-          : decision === 'approve_update'
-            ? 'Merged into the existing lesson.'
-            : 'Sent back to the teacher with your note.';
+          : decisionOption === 'approve_update'
+            ? 'Published as an update to the existing lesson.'
+            : decisionOption === 'reject_duplicate'
+              ? 'Marked as already in the library — the teacher will see your note.'
+              : decisionOption === 'reject'
+                ? 'Rejected — the teacher will see your reason.'
+                : 'Sent back to the teacher with your note.';
       navigate('/review', { state: { toast: { kind: 'success', msg: toastMsg } } });
     } catch (error) {
       const parsed = parseDbError(error);
@@ -382,11 +411,8 @@ export function ReviewDetail() {
             <span
               style={{
                 color: 'var(--color-esy-orange-revision)',
-                fontFamily: 'var(--esy-font-display)',
-                fontWeight: 700,
-                fontSize: 10,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
+                fontWeight: 600,
+                fontSize: 13,
               }}
             >
               {topDuplicates.length} possible duplicate{topDuplicates.length === 1 ? '' : 's'}
@@ -429,8 +455,8 @@ export function ReviewDetail() {
             onRetryDuplicates={reload}
             selectedDuplicate={selectedDuplicate}
             setSelectedDuplicate={setSelectedDuplicate}
-            decision={decision}
-            setDecision={setDecision}
+            decisionOption={decisionOption}
+            setDecisionOption={setDecisionOption}
             notes={notes}
             setNotes={setNotes}
             saveError={saveError}

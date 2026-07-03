@@ -792,12 +792,22 @@
 .adm-dup-matchtype {
   display: block;
   font-family: var(--esy-font-display);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size: 11px;
   color: var(--esy-ink-50);
   margin-top: 2px;
+  /* Plain sentence-case labels ("Nearly identical") wrap and right-align inside
+     the card's trailing column instead of the old micro-caps that spilled out
+     the right edge (T4b / D11 overflow fix). */
+  text-align: right;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Let the title (1fr) and trailing (auto) grid cells shrink/wrap rather than
+   forcing the card to overflow its width. */
+.adm-dup > div {
+  min-width: 0;
 }
 .adm-dup-matchtype--exact { color: var(--esy-red); }
 .adm-dup-matchtype--high  { color: var(--esy-orange-revision); }

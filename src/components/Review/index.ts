@@ -7,4 +7,3 @@ export { SubmitterIntentBanner } from './SubmitterIntentBanner';
 export { TitleMismatchWarning } from './TitleMismatchWarning';
 export { ReviewActions } from './ReviewActions';
 export { ReviewContent } from './ReviewContent';
-export { ReviewDuplicates } from './ReviewDuplicates';

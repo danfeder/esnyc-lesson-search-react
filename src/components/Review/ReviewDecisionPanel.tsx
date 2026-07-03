@@ -6,7 +6,7 @@ import { TitleMismatchWarning } from '@/components/Review/TitleMismatchWarning';
 import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import type {
   SubmissionDetail,
-  ReviewDecision,
+  DecisionOption,
   DuplicatesLoadError,
 } from '@/pages/useReviewSubmission';
 import type { CandidateCard, SimilarityWithLesson } from '@/pages/buildCandidateCards';
@@ -23,18 +23,17 @@ interface ReviewDecisionPanelProps {
   onRetryDuplicates: () => void;
   selectedDuplicate: string | null;
   setSelectedDuplicate: Dispatch<SetStateAction<string | null>>;
-  decision: ReviewDecision;
-  setDecision: Dispatch<SetStateAction<ReviewDecision>>;
+  decisionOption: DecisionOption;
+  setDecisionOption: Dispatch<SetStateAction<DecisionOption>>;
   notes: string;
   setNotes: Dispatch<SetStateAction<string>>;
   saveError: string | null;
   setSaveError: Dispatch<SetStateAction<string | null>>;
   saving: boolean;
   /**
-   * Thin save trigger — the page's `handleSaveReview` (validate → strip
-   * activityType `-only` slugs → canonicalize → Zod → `complete-review` invoke →
-   * navigate). It stays declared in the page (form-state ownership lives there);
-   * the decision-bar Save buttons just call it.
+   * Thin save trigger — the page's `handleSaveReview` (validate → map the UI
+   * option to the server decision → maybe raise the approve-as-new guard →
+   * `complete-review` invoke → navigate). Form-state ownership lives in the page.
    */
   onSave: () => void;
   /** `shouldShowMismatchWarning` gate (computed in the page). */
@@ -45,17 +44,28 @@ interface ReviewDecisionPanelProps {
   searchHelpText: string;
   selectedSearchLesson: LessonSearchResult | null;
   setSelectedSearchLesson: Dispatch<SetStateAction<LessonSearchResult | null>>;
+  /**
+   * Approve-as-new "are you sure?" guard (D7), owned by the page so it fires
+   * AFTER form validation. When true the interstitial below names the top match
+   * and offers Publish-anyway / Keep-reviewing.
+   */
+  showPublishGuard: boolean;
+  /** Title of the exact/high match that triggered the guard (null hides it). */
+  publishGuardMatchTitle: string | null;
+  onConfirmPublishAnyway: () => void;
+  onCancelPublishGuard: () => void;
 }
 
 /**
- * RIGHT column of the reviewer screen: duplicates + decision. Lifted verbatim
- * from ReviewDetail (Wave 5 PR-1b Task 1b.4) — markup/props/classNames
- * byte-identical. Composes the already-extracted SubmitterIntentBanner /
- * TitleMismatchWarning / ReviewSearchPanel sub-seams + the candidate cards,
- * decision radios, note textarea, saveError banner, and IntDecisionBar.
+ * RIGHT column of the reviewer screen: the "is this already in the library?"
+ * evidence cards + the one honest decision list (D7). Composes the
+ * SubmitterIntentBanner / TitleMismatchWarning / ReviewSearchPanel sub-seams,
+ * the candidate cards, the five-option decision list, the note textarea, the
+ * saveError banner, the approve-as-new guard, and IntDecisionBar.
  *
- * `handleSaveReview` stays in the page and is passed as `onSave`; the
- * `complete-review` invoke payload is unchanged.
+ * The five UI options collapse to four server decisions in the page's save
+ * handler: "already in the library" is a `reject` with a prefilled note (D8).
+ * `handleSaveReview` stays in the page and is passed as `onSave`.
  */
 export function ReviewDecisionPanel({
   submission,
@@ -65,8 +75,8 @@ export function ReviewDecisionPanel({
   onRetryDuplicates,
   selectedDuplicate,
   setSelectedDuplicate,
-  decision,
-  setDecision,
+  decisionOption,
+  setDecisionOption,
   notes,
   setNotes,
   saveError,
@@ -80,13 +90,22 @@ export function ReviewDecisionPanel({
   searchHelpText,
   selectedSearchLesson,
   setSelectedSearchLesson,
+  showPublishGuard,
+  publishGuardMatchTitle,
+  onConfirmPublishAnyway,
+  onCancelPublishGuard,
 }: ReviewDecisionPanelProps) {
+  const hasCandidates = candidateCards.length > 0;
+  const selectedTitle = candidateCards.find((c) => c.id === selectedDuplicate)?.title ?? null;
+  // Options 2 & 3 bind a chosen card; disabled until one is selected.
+  const cardBoundDisabled = !selectedDuplicate;
+  const isRejectPath = decisionOption === 'reject' || decisionOption === 'reject_duplicate';
+
   return (
     <div>
-      {/* Phase 8b: binding-intent banner. Rendered FIRST so the reviewer
-          reads what the submitter declared BEFORE the candidate cards,
-          mismatch warning, and search escape hatch — all of which
-          depend on or react to that declared intent. */}
+      {/* Binding-intent banner — rendered FIRST so the reviewer reads what the
+          submitter declared BEFORE the candidate cards, mismatch warning, and
+          search escape hatch. */}
       <SubmitterIntentBanner
         submissionType={submission.submission_type}
         targetId={submission.original_lesson_id}
@@ -94,11 +113,9 @@ export function ReviewDecisionPanel({
         topDuplicates={topDuplicates}
       />
 
-      {/* Task 1 (data-integrity): when the duplicate candidates would silently
-          vanish due to a transient fetch failure, surface a non-blocking warning
-          + Retry instead of zero cards — so the reviewer doesn't approve a true
-          duplicate as new. Renders independent of card count (off-list /
-          reviewer-search cards still render normally below). */}
+      {/* Transient duplicate-details fetch failure → non-blocking warning +
+          Retry instead of zero cards, so the reviewer doesn't approve a true
+          duplicate as new. */}
       {duplicatesError && (
         <div className="adm-card">
           <IntAlert variant="error">
@@ -117,14 +134,16 @@ export function ReviewDecisionPanel({
         </div>
       )}
 
-      {candidateCards.length > 0 && (
+      {/* D7: the plain question, with the candidate cards as evidence beneath. */}
+      {hasCandidates && (
         <div className="adm-card">
-          <div className="adm-section-eyebrow">
-            {candidateCards[0]?.matchLabel === "Submitter's choice"
-              ? 'Candidate matches'
-              : 'Possible duplicates'}
-          </div>
-          <p className="adm-section-desc">Select one to merge into instead of publishing new.</p>
+          <p style={{ fontWeight: 700, fontSize: 15, margin: '0 0 4px' }}>
+            Is this lesson already in the library?
+          </p>
+          <p className="adm-section-desc">
+            If one of these is the same lesson, select it — then choose &ldquo;Publish as an
+            update&rdquo; or &ldquo;Already in the library&rdquo; below.
+          </p>
           <div className="adm-dup-list">
             {candidateCards.map((c) => (
               <IntDuplicateCard
@@ -139,8 +158,17 @@ export function ReviewDecisionPanel({
                 }}
                 selected={selectedDuplicate === c.id}
                 onSelect={() => {
-                  setSelectedDuplicate(selectedDuplicate === c.id ? null : c.id);
+                  const next = selectedDuplicate === c.id ? null : c.id;
+                  setSelectedDuplicate(next);
                   setSaveError(null);
+                  // Clearing the selection while a card-bound option is active
+                  // would strand the decision — fall back to "publish as new".
+                  if (
+                    !next &&
+                    (decisionOption === 'approve_update' || decisionOption === 'reject_duplicate')
+                  ) {
+                    setDecisionOption('approve_new');
+                  }
                 }}
               />
             ))}
@@ -148,11 +176,8 @@ export function ReviewDecisionPanel({
         </div>
       )}
 
-      {/* Phase 8b Task 3.7: title-mismatch warning. Fires only when the
-          target was auto-picked (submitter-bound or dup-detector hit)
-          AND the target's title diverges from the submission's
-          extracted title (word-set Jaccard < 0.3). Suppressed for
-          reviewer manual picks via the search escape hatch. */}
+      {/* Title-mismatch warning — fires only when the target was auto-picked and
+          its title diverges from the submission's extracted title. */}
       <TitleMismatchWarning
         showMismatch={showMismatch}
         candidateCards={candidateCards}
@@ -160,8 +185,8 @@ export function ReviewDecisionPanel({
         extractedTitle={submission.extracted_title}
       />
 
-      {/* Phase 8b Task 3.6: search escape hatch — collapsed by default,
-          auto-expanded for (update, null) and zero-candidate cases. */}
+      {/* Search escape hatch — collapsed by default, auto-expanded for
+          (update, null) and zero-candidate cases. */}
       <ReviewSearchPanel
         showSearch={showSearch}
         onToggle={() => setShowSearch((v) => !v)}
@@ -177,60 +202,138 @@ export function ReviewDecisionPanel({
         <div className="adm-section-eyebrow">Decision</div>
         <fieldset className="adm-radio-group" style={{ border: 0, padding: 0, margin: 0 }}>
           <legend className="sr-only">Choose a decision</legend>
+
+          {/* 1. Publish as a new lesson */}
           <label className="adm-radio">
             <input
               type="radio"
               name="decision"
               value="approve_new"
-              checked={decision === 'approve_new'}
+              checked={decisionOption === 'approve_new'}
               onChange={() => {
-                setDecision('approve_new');
+                setDecisionOption('approve_new');
                 setSaveError(null);
               }}
             />
-            Approve &amp; publish
+            Publish as a new lesson
           </label>
-          <label className="adm-radio">
-            <input
-              type="radio"
-              name="decision"
-              value="approve_update"
-              checked={decision === 'approve_update'}
-              onChange={() => {
-                setDecision('approve_update');
-                setSaveError(null);
-              }}
-            />
-            Merge into existing
-          </label>
+
+          {/* 2. Publish as an update to <selected> — card-bound */}
+          {hasCandidates && (
+            <label className="adm-radio" style={{ opacity: cardBoundDisabled ? 0.55 : 1 }}>
+              <input
+                type="radio"
+                name="decision"
+                value="approve_update"
+                checked={decisionOption === 'approve_update'}
+                disabled={cardBoundDisabled}
+                onChange={() => {
+                  setDecisionOption('approve_update');
+                  setSaveError(null);
+                }}
+              />
+              <span>
+                Publish as an update to{' '}
+                {selectedTitle ? (
+                  <strong>&ldquo;{selectedTitle}&rdquo;</strong>
+                ) : (
+                  'the selected lesson'
+                )}
+                <span
+                  style={{ display: 'block', fontSize: 12, color: 'var(--color-esy-ink-50)' }}
+                >
+                  Replaces the library copy; the old version is archived.
+                </span>
+              </span>
+            </label>
+          )}
+
+          {/* 3. Don't publish — already in the library — card-bound */}
+          {hasCandidates && (
+            <label className="adm-radio" style={{ opacity: cardBoundDisabled ? 0.55 : 1 }}>
+              <input
+                type="radio"
+                name="decision"
+                value="reject_duplicate"
+                checked={decisionOption === 'reject_duplicate'}
+                disabled={cardBoundDisabled}
+                onChange={() => {
+                  setDecisionOption('reject_duplicate');
+                  setSaveError(null);
+                  // Prefill the editable teacher note with the selected title.
+                  if (selectedTitle) {
+                    setNotes(`This lesson is already in the library as "${selectedTitle}".`);
+                  }
+                }}
+              />
+              <span>
+                Don&apos;t publish — it&apos;s already in the library
+                {selectedTitle ? (
+                  <>
+                    {' '}
+                    (duplicate of <strong>&ldquo;{selectedTitle}&rdquo;</strong>)
+                  </>
+                ) : null}
+              </span>
+            </label>
+          )}
+
+          {/* 4. Send back for revisions */}
           <label className="adm-radio">
             <input
               type="radio"
               name="decision"
               value="needs_revision"
-              checked={decision === 'needs_revision'}
+              checked={decisionOption === 'needs_revision'}
               onChange={() => {
-                setDecision('needs_revision');
+                setDecisionOption('needs_revision');
                 setSaveError(null);
               }}
             />
-            Request revisions
+            Send back for revisions
+          </label>
+
+          {/* 5. Reject with a reason the teacher will see */}
+          <label className="adm-radio">
+            <input
+              type="radio"
+              name="decision"
+              value="reject"
+              checked={decisionOption === 'reject'}
+              onChange={() => {
+                setDecisionOption('reject');
+                setSaveError(null);
+              }}
+            />
+            Reject — with a reason the teacher will see
           </label>
         </fieldset>
+
+        {hasCandidates && cardBoundDisabled && (
+          <p className="adm-section-desc" style={{ marginTop: 8 }}>
+            Select a matching lesson above to enable the update / already-in-the-library options.
+          </p>
+        )}
       </div>
 
       <div className="adm-card">
-        <div className="adm-section-eyebrow">Note to the teacher</div>
+        <div className="adm-section-eyebrow">
+          {isRejectPath ? 'Reason for the teacher' : 'Note to the teacher'}
+        </div>
         <textarea
           className="adm-textarea"
-          aria-label="Note to teacher"
+          aria-label={isRejectPath ? 'Reason for the teacher' : 'Note to teacher'}
           rows={4}
           value={notes}
           onChange={(e) => {
             setNotes(e.target.value);
             setSaveError(null);
           }}
-          placeholder="Optional. The teacher will see this note with your decision under My Submissions."
+          placeholder={
+            isRejectPath
+              ? 'Required. The teacher will see this reason under My Submissions.'
+              : 'Optional. The teacher will see this note with your decision under My Submissions.'
+          }
         />
       </div>
 
@@ -238,37 +341,66 @@ export function ReviewDecisionPanel({
         <IntAlert variant="error">Save failed — nothing was written. {saveError}</IntAlert>
       )}
 
+      {/* Approve-as-new are-you-sure guard (D7) — raised by the page after
+          validation passes when a card is exact/high. */}
+      {decisionOption === 'approve_new' && showPublishGuard && publishGuardMatchTitle && (
+        <div className="adm-callout adm-callout--warning" role="alert">
+          <p className="adm-callout-title">This looks like an existing lesson</p>
+          <p>
+            &ldquo;{publishGuardMatchTitle}&rdquo; is already in the library and looks nearly
+            identical. Publish this as a new lesson anyway?
+          </p>
+          <div className="adm-callout-actions" style={{ display: 'flex', gap: 8 }}>
+            <IntButton variant="primary" size="sm" onClick={onConfirmPublishAnyway} disabled={saving}>
+              {saving ? 'Publishing…' : 'Publish anyway'}
+            </IntButton>
+            <IntButton variant="ghost" size="sm" onClick={onCancelPublishGuard}>
+              Keep reviewing
+            </IntButton>
+          </div>
+        </div>
+      )}
+
       <IntDecisionBar
         eyebrow="Metadata"
         detail={`${fieldProgress.completed}/${fieldProgress.total} required filled`}
       >
-        {decision === 'approve_new' && (
+        {decisionOption === 'approve_new' && (
           <IntButton variant="primary" size="lg" onClick={onSave} disabled={saving}>
             {saving ? 'Publishing…' : 'Publish lesson'}
           </IntButton>
         )}
-        {decision === 'approve_update' && (
+        {decisionOption === 'approve_update' && (
           <IntButton
             variant="ink"
             size="lg"
             onClick={onSave}
             disabled={saving || !selectedDuplicate}
           >
-            {saving ? 'Merging…' : 'Merge & archive'}
+            {saving ? 'Publishing…' : 'Publish update'}
           </IntButton>
         )}
-        {decision === 'needs_revision' && (
+        {decisionOption === 'reject_duplicate' && (
+          <IntButton
+            variant="ink"
+            size="lg"
+            onClick={onSave}
+            disabled={saving || !selectedDuplicate}
+          >
+            {saving ? 'Saving…' : "Don't publish"}
+          </IntButton>
+        )}
+        {decisionOption === 'needs_revision' && (
           <IntButton variant="ink" size="lg" onClick={onSave} disabled={saving}>
             {saving ? 'Sending…' : 'Send for revision'}
           </IntButton>
         )}
+        {decisionOption === 'reject' && (
+          <IntButton variant="ink" size="lg" onClick={onSave} disabled={saving}>
+            {saving ? 'Rejecting…' : 'Reject submission'}
+          </IntButton>
+        )}
       </IntDecisionBar>
-
-      {decision === 'approve_update' && !selectedDuplicate && (
-        <p className="text-sm text-gray-600 mt-2">
-          Pick a target lesson to merge into, or change to Approve as new.
-        </p>
-      )}
     </div>
   );
 }

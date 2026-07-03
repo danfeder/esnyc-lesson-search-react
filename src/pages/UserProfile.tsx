@@ -40,7 +40,7 @@ interface ProfileFormData {
   school_borough: string;
 }
 
-type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved';
+type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved' | 'rejected';
 
 interface LessonSubmission {
   id: string;
@@ -61,6 +61,7 @@ const STATUS_BADGE: Record<SubmissionStatus, IntStatus> = {
   in_review: 'review',
   needs_revision: 'revision',
   approved: 'approved',
+  rejected: 'rejected',
 };
 
 export function UserProfile() {
@@ -549,7 +550,9 @@ export function UserProfile() {
               {submissions.map((submission) => (
                 <article key={submission.id} className="adm-submission-row">
                   <div className="adm-submission-row-head">
-                    <IntStatusBadge status={STATUS_BADGE[submission.status]} />
+                    <IntStatusBadge status={STATUS_BADGE[submission.status]}>
+                      {submission.status === 'rejected' ? 'Not published' : undefined}
+                    </IntStatusBadge>
                     <span className="adm-submission-row-type">
                       {submission.submission_type === 'update' ? 'Update' : 'New lesson'}
                     </span>
@@ -599,6 +602,16 @@ export function UserProfile() {
                           )}
                         </IntButton>
                       </div>
+                    </div>
+                  ) : submission.status === 'rejected' ? (
+                    // D8: rejected submissions get an honest, plain "Not
+                    // published" callout with the reviewer's reason. The reason
+                    // lives in reviewer_notes (verified populated on every
+                    // rejected row); a reviewer could reject without one, so the
+                    // note paragraph is gated on its presence.
+                    <div className="adm-callout">
+                      <p className="adm-callout-title">Not published</p>
+                      {submission.reviewer_notes && <p>{submission.reviewer_notes}</p>}
                     </div>
                   ) : (
                     submission.revision_requested_reason && (

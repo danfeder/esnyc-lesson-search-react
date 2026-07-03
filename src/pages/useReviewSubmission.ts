@@ -14,11 +14,18 @@ import { reAddActivityTypeSuffix } from '@/pages/reviewDetailHelpers';
 import type { SimilarityWithLesson, SubmitterTargetLesson } from '@/pages/buildCandidateCards';
 import { MAX_DUPLICATE_CARDS } from '@/pages/buildCandidateCards';
 
-// As of Phase 4 (complete-review edge function + complete_review_atomic
-// RPC), the DB-side CHECK on lesson_submissions.status accepts 'rejected'
-// too. The UI here still only renders three decisions — Phase 8a will add
-// the reject radio. The four-decision union is reserved for that flip.
-export type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision';
+// Server decision contract — matches complete-review's ReviewDecision and the
+// complete_review_atomic CHECK. T4b (D8) wired the reject path into the UI, so
+// the union now carries all four server decisions. The reviewer screen also
+// offers a FIFTH ui-only option (`reject_duplicate`) that maps to a `reject`
+// server decision with a prefilled teacher note — see DecisionOption.
+export type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision' | 'reject';
+
+// UI-only decision options for the reviewer screen (D7). `reject_duplicate`
+// ("already in the library") maps to a `reject` server decision at save time,
+// prefilling the teacher note; it never sends p_selected_lesson_id (that stays
+// approve_update-only). Every other option maps 1:1 to its ReviewDecision.
+export type DecisionOption = ReviewDecision | 'reject_duplicate';
 
 // SimilarityWithLesson + SubmitterTargetLesson live in
 // `@/pages/buildCandidateCards` (Wave 5 PR-1a Task 1a.2) and are imported
@@ -388,13 +395,19 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         if (
           existingDecision === 'approve_new' ||
           existingDecision === 'approve_update' ||
-          existingDecision === 'needs_revision'
+          existingDecision === 'needs_revision' ||
+          existingDecision === 'reject'
         ) {
+          // 'reject' is now a first-class UI decision (T4b/D8). A restored
+          // reject maps to the plain "Reject" option; the "already in the
+          // library" variant is a fresh-choice convenience only (its prefilled
+          // note is already persisted), so there's no need to distinguish them
+          // on restore.
           restoredDecision = existingDecision;
         } else if (existingDecision) {
-          // Legacy values like 'reject' that the new UI doesn't expose. Surface
-          // it so the reviewer doesn't accidentally re-approve a previously
-          // rejected submission. (decision falls back to the approve_new default.)
+          // A truly-unknown legacy value the new UI doesn't expose. Surface it
+          // so the reviewer doesn't unknowingly re-decide. (decision falls back
+          // to the approve_new default.)
           logger.warn(
             'Loaded review with unsupported decision, falling back to default:',
             existingDecision

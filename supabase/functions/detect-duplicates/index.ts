@@ -8,7 +8,6 @@ interface DetectDuplicatesRequest {
   content: string;
   title: string;
   metadata?: any;
-  embedding?: number[];
 }
 
 interface DuplicateResult {
@@ -19,6 +18,11 @@ interface DuplicateResult {
   matchDetails: {
     hashMatch: boolean;
     titleSimilarity: number;
+    // Kept for byte-compatibility of the submission_similarities write shape
+    // (match_details JSON + the content_similarity column). As of the T4b
+    // rewrite this now carries the pg_trgm CONTENT-text similarity, not the
+    // retired embedding "semantic" similarity — value semantics changed, keys
+    // unchanged.
     semanticSimilarity: number;
     metadataOverlap: number;
   };
@@ -55,80 +59,6 @@ async function generateContentHash(content: string, metadata: any = {}): Promise
     // Prefix to indicate this is metadata-only
     return 'META_' + hash;
   }
-}
-
-// Common English stop words to filter out
-const STOP_WORDS = new Set([
-  'a',
-  'an',
-  'and',
-  'are',
-  'as',
-  'at',
-  'be',
-  'by',
-  'for',
-  'from',
-  'has',
-  'he',
-  'in',
-  'is',
-  'it',
-  'its',
-  'of',
-  'on',
-  'that',
-  'the',
-  'to',
-  'was',
-  'will',
-  'with',
-  'this',
-  'these',
-  'those',
-  'what',
-  'when',
-  'where',
-  'which',
-  'who',
-  'why',
-  'how',
-]);
-
-// Normalize title for comparison
-function normalizeTitle(title: string): string[] {
-  // Lowercase, remove punctuation, split into words
-  const words = title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter((word) => word.length > 0 && !STOP_WORDS.has(word));
-
-  return words;
-}
-
-// Calculate improved title similarity using token set ratio
-function calculateTitleSimilarity(title1: string, title2: string): number {
-  const words1 = normalizeTitle(title1);
-  const words2 = normalizeTitle(title2);
-
-  // Handle empty cases
-  if (words1.length === 0 && words2.length === 0) return 1.0;
-  if (words1.length === 0 || words2.length === 0) return 0.0;
-
-  const set1 = new Set(words1);
-  const set2 = new Set(words2);
-
-  const intersection = new Set([...set1].filter((x) => set2.has(x)));
-  const union = new Set([...set1, ...set2]);
-
-  // Token set ratio with length penalty
-  const jaccardScore = union.size === 0 ? 0 : intersection.size / union.size;
-  const lengthRatio =
-    Math.min(words1.length, words2.length) / Math.max(words1.length, words2.length);
-
-  // Weighted combination favoring Jaccard but considering length
-  return jaccardScore * 0.8 + lengthRatio * 0.2;
 }
 
 // Calculate Jaccard similarity for array fields
@@ -199,6 +129,21 @@ function calculateMetadataOverlap(meta1: any, meta2: any): number {
   return totalWeight > 0 ? weightedScore / totalWeight : 0;
 }
 
+// Combined-score weights (T4b, D9). Content trigram carries the most signal,
+// then title trigram, then metadata-set overlap.
+const W_TITLE = 0.35;
+const W_CONTENT = 0.45;
+const W_METADATA = 0.2;
+
+// Bucket floors on the combined score. `exact` is awarded ONLY on a content-hash
+// match (below) — never from similarity — which kills the old false-"EXACT"
+// class (an embedding tie of 0.999997 with a disagreeing hash).
+const HIGH_FLOOR = 0.8;
+const MEDIUM_FLOOR = 0.6;
+const COMBINED_SCORE_FLOOR = 0.45; // low floor; below this a candidate is dropped
+const MAX_RESULTS = 10;
+const CANDIDATE_LIMIT = 20; // top-N candidates the SQL RPC returns to score here
+
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const corsHeaders = getRestrictedCorsHeaders(origin);
@@ -256,13 +201,13 @@ serve(async (req) => {
       }
     }
 
-    const { submissionId, content, title, metadata, embedding } =
+    const { submissionId, content, title, metadata } =
       (await req.json()) as DetectDuplicatesRequest;
 
     // Generate content hash
     const contentHash = await generateContentHash(content, metadata);
 
-    // First, check for exact hash matches.
+    // Leg 1 — exact content-hash matches.
     // Intentionally queries the full corpus (no retired filter) so reviewers
     // catch a future re-submission of a previously retired import.
     const { data: hashMatches, error: hashError } = await supabase.rpc('find_lessons_by_hash', {
@@ -273,7 +218,7 @@ serve(async (req) => {
 
     const duplicates: DuplicateResult[] = [];
 
-    // Process hash matches (exact duplicates)
+    // Process hash matches (the ONLY source of an `exact` label).
     if (hashMatches && hashMatches.length > 0) {
       for (const match of hashMatches) {
         duplicates.push({
@@ -291,104 +236,80 @@ serve(async (req) => {
       }
     }
 
-    // Get semantic matches if embedding provided
-    if (embedding && embedding.length === 1536) {
-      const vectorString = `[${embedding.join(',')}]`;
+    // Leg 2 — pg_trgm title + content similarity over LIVE lessons
+    // (find_similar_lessons_text filters retired_at IS NULL — a retired lesson
+    // must never be offered as an update target). The RPC returns the top
+    // CANDIDATE_LIMIT by GREATEST(title_sim, content_sim); we score each here
+    // against the caller's combined-score floor. Replaces the retired embedding
+    // leg entirely (D9).
+    const { data: textMatches, error: textError } = await supabase.rpc(
+      'find_similar_lessons_text',
+      {
+        p_title: title,
+        p_content: content,
+        p_exclude_lesson_id: null,
+        p_limit: CANDIDATE_LIMIT,
+      }
+    );
 
-      // Use the SQL function for semantic search.
-      // Intentionally unfiltered — see comment at the hash check above.
-      const { data: semanticMatches, error: semanticError } = await supabase.rpc(
-        'find_similar_lessons_by_embedding',
-        {
-          query_embedding: vectorString,
-          similarity_threshold: 0.5,
-          max_results: 20,
-        }
-      );
+    if (textError) throw textError;
 
-      if (!semanticError && semanticMatches) {
-        for (const match of semanticMatches) {
-          // Skip if already found as exact match
-          if (duplicates.some((d) => d.lessonId === match.lesson_id)) continue;
+    if (textMatches && textMatches.length > 0) {
+      // Batch-fetch candidate metadata for the overlap leg (one query, not N).
+      const candidateIds = textMatches
+        .map((m: { lesson_id: string }) => m.lesson_id)
+        .filter((id: string) => !duplicates.some((d) => d.lessonId === id));
 
-          // Get full lesson data for metadata.
-          // Intentionally unfiltered — if `match.lesson_id` is a retired row,
-          // we still want its metadata so the dup-check report surfaces it.
-          const { data: lesson } = await supabase
-            .from('lessons_with_metadata')
-            .select('metadata')
-            .eq('lesson_id', match.lesson_id)
-            .single();
-
-          const titleSim = calculateTitleSimilarity(title, match.title);
-          const metaOverlap = calculateMetadataOverlap(metadata, lesson?.metadata);
-          const semanticSim = match.similarity_score;
-
-          // Combined score with improved weighting
-          // Semantic similarity is most important (0.5), then title (0.3), then metadata (0.2)
-          const combinedScore = titleSim * 0.3 + metaOverlap * 0.2 + semanticSim * 0.5;
-
-          duplicates.push({
-            lessonId: match.lesson_id,
-            title: match.title,
-            similarityScore: combinedScore,
-            matchType: match.match_type as any,
-            matchDetails: {
-              hashMatch: false,
-              titleSimilarity: titleSim,
-              semanticSimilarity: semanticSim,
-              metadataOverlap: metaOverlap,
-            },
-          });
+      const metadataById = new Map<string, any>();
+      if (candidateIds.length > 0) {
+        const { data: metaRows } = await supabase
+          .from('lessons_with_metadata')
+          .select('lesson_id, metadata')
+          .in('lesson_id', candidateIds);
+        for (const row of metaRows || []) {
+          metadataById.set(row.lesson_id, row.metadata);
         }
       }
-    } else {
-      // Fallback to title-based search if no embedding.
-      // Intentionally unfiltered — see comment at the hash check above.
-      const { data: allLessons, error: lessonsError } = await supabase
-        .from('lessons_with_metadata')
-        .select('lesson_id, title, metadata')
-        .limit(100);
 
-      if (lessonsError) throw lessonsError;
+      for (const match of textMatches) {
+        // Skip anything already surfaced as an exact hash match.
+        if (duplicates.some((d) => d.lessonId === match.lesson_id)) continue;
 
-      for (const lesson of allLessons || []) {
-        if (duplicates.some((d) => d.lessonId === lesson.lesson_id)) continue;
+        const titleSim = match.title_sim ?? 0;
+        const contentSim = match.content_sim ?? 0;
+        const metaOverlap = calculateMetadataOverlap(
+          metadata,
+          metadataById.get(match.lesson_id)
+        );
 
-        const titleSim = calculateTitleSimilarity(title, lesson.title);
-        const metaOverlap = calculateMetadataOverlap(metadata, lesson.metadata);
-        const combinedScore = titleSim * 0.7 + metaOverlap * 0.3;
+        const combinedScore = titleSim * W_TITLE + contentSim * W_CONTENT + metaOverlap * W_METADATA;
 
-        // Apply floor for fallback path as well
-        if (combinedScore >= 0.45) {
-          let matchType: 'high' | 'medium' | 'low';
-          if (combinedScore >= 0.85) matchType = 'high';
-          else if (combinedScore >= 0.7) matchType = 'medium';
-          else matchType = 'low';
+        // Non-hash candidates can never be `exact`.
+        let matchType: 'high' | 'medium' | 'low';
+        if (combinedScore >= HIGH_FLOOR) matchType = 'high';
+        else if (combinedScore >= MEDIUM_FLOOR) matchType = 'medium';
+        else matchType = 'low';
 
-          duplicates.push({
-            lessonId: lesson.lesson_id,
-            title: lesson.title,
-            similarityScore: combinedScore,
-            matchType,
-            matchDetails: {
-              hashMatch: false,
-              titleSimilarity: titleSim,
-              semanticSimilarity: 0,
-              metadataOverlap: metaOverlap,
-            },
-          });
-        }
+        duplicates.push({
+          lessonId: match.lesson_id,
+          title: match.title,
+          similarityScore: combinedScore,
+          matchType,
+          matchDetails: {
+            hashMatch: false,
+            titleSimilarity: titleSim,
+            semanticSimilarity: contentSim,
+            metadataOverlap: metaOverlap,
+          },
+        });
       }
     }
 
     // Sort by similarity score
     duplicates.sort((a, b) => b.similarityScore - a.similarityScore);
 
-    // Apply combined score floor (0.45) and limit to top 10
-    const COMBINED_SCORE_FLOOR = 0.45;
-    const MAX_RESULTS = 10;
-
+    // Apply combined score floor (0.45) and limit to top 10. Exact (hash) always
+    // survives the floor.
     const filteredDuplicates = duplicates
       .filter((dup) => dup.similarityScore >= COMBINED_SCORE_FLOOR || dup.matchType === 'exact')
       .slice(0, MAX_RESULTS);
@@ -423,8 +344,10 @@ serve(async (req) => {
       matchCounts,
       scoreStats,
       thresholds: {
-        semantic: 0.5,
+        highFloor: HIGH_FLOOR,
+        mediumFloor: MEDIUM_FLOOR,
         combinedFloor: COMBINED_SCORE_FLOOR,
+        candidateLimit: CANDIDATE_LIMIT,
         maxResults: MAX_RESULTS,
       },
     });
