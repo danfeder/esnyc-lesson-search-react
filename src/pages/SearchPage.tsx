@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Lightbulb } from 'lucide-react';
 import { ScreenReaderAnnouncer } from '@/components/Common/ScreenReaderAnnouncer';
 import { SkipLink } from '@/components/Common/SkipLink';
@@ -14,10 +15,12 @@ import {
   IntSidebar,
   IntSplitDetail,
   IntToolbar,
+  type LessonPaneStatus,
 } from '@/components/Internal';
 import { useSearchStore } from '@/stores/searchStore';
 import { useUrlSync } from '@/hooks/useUrlSync';
 import { useLessonSearch } from '@/hooks/useLessonSearch';
+import { useLessonById } from '@/hooks/useLessonById';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useFacetCounts } from '@/utils/facetCounts';
@@ -48,7 +51,18 @@ export const SearchPage: React.FC = () => {
   // (with default filters) on mount, so the gate opens after exactly one pass.
   const { hydrated } = useUrlSync();
 
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  // D2: the open lesson is ROUTE state — `/lesson/:lessonId` renders this same
+  // SearchPage element as `/` and `/search`, so `params.lessonId` presence IS
+  // the open/closed state (no component-state copy) and open/close navigation
+  // never remounts the list. Known-harmless seam: each pathname change re-fires
+  // useUrlSync's URL→store effect with structurally identical filters — React
+  // Query hashes keys structurally so NO search refetch results. Pinned by the
+  // "does not refire the search RPC" test in search-page.permalink.test.tsx.
+  const params = useParams<{ lessonId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const routeLessonId = params.lessonId ?? null;
+
   const [isMobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const {
@@ -73,6 +87,29 @@ export const SearchPage: React.FC = () => {
   const totalCount = data?.pages?.[0]?.totalCount || 0;
   const counts = useFacetCounts(lessons);
 
+  // D2 §2c: resolve the routed lesson. Fast path from the loaded pages (no
+  // fetch, no flash — covers every click-to-open); fallback fetch-by-id for a
+  // deep link whose lesson is outside the loaded pages. The extra `!isPending`
+  // gate waits for the FIRST search page before deciding, so an in-page deep
+  // link never fires a redundant by-id request racing the search.
+  const lessonFromResults = routeLessonId
+    ? (lessons.find((l) => l.lessonId === routeLessonId) ?? null)
+    : null;
+  const lessonById = useLessonById(routeLessonId, {
+    enabled: !!routeLessonId && !lessonFromResults && !isPending,
+  });
+  const openedLesson = lessonFromResults ?? lessonById.data ?? null;
+  // Derived pane status — pure derivation, no state variable.
+  const paneStatus: LessonPaneStatus | 'closed' = !routeLessonId
+    ? 'closed'
+    : openedLesson
+      ? 'ready'
+      : lessonById.isError
+        ? 'error'
+        : lessonById.isSuccess
+          ? 'not-found' // by-id succeeded with null: unknown, retired, or malformed id
+          : 'loading';
+
   const { data: suggestionsData } = useLessonSuggestions({
     filters,
     enabled: !!filters.query?.trim(),
@@ -86,11 +123,46 @@ export const SearchPage: React.FC = () => {
     await fetchNextPage();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData]);
 
+  // D2 §2b history semantics. Open = push (Back closes the drawer); opening
+  // ANOTHER lesson while one is already open (split-view click-through) =
+  // replace, so A→B→C stays ONE history entry and Back returns to the list.
+  // `fromSearch` marks entries WE pushed: close pops exactly that entry
+  // (no history garbage); a direct deep-link landing has no such mark, so
+  // close replaces to the list keeping any URL filters — Back then honestly
+  // leaves the site (where the visitor came from).
+  const cameFromSearch = Boolean((location.state as { fromSearch?: boolean } | null)?.fromSearch);
+
+  const handleOpenLesson = useCallback(
+    (lesson: Lesson) => {
+      const isReplace = routeLessonId !== null;
+      navigate(
+        { pathname: `/lesson/${encodeURIComponent(lesson.lessonId)}`, search: location.search },
+        // A replace must PROPAGATE the current entry's mark, not mint one:
+        // stamping fromSearch on a deep-link LANDING entry would point close
+        // at navigate(-1), which no-ops in a fresh tab (history length 1).
+        { replace: isReplace, state: { fromSearch: isReplace ? cameFromSearch : true } }
+      );
+    },
+    [navigate, location.search, routeLessonId, cameFromSearch]
+  );
+  const handleCloseLesson = useCallback(() => {
+    if (cameFromSearch) {
+      navigate(-1);
+    } else {
+      navigate({ pathname: '/', search: location.search }, { replace: true });
+    }
+  }, [navigate, cameFromSearch, location.search]);
+
+  const { refetch: refetchLessonById } = lessonById;
+  const handleRetryLesson = useCallback(() => {
+    void refetchLessonById();
+  }, [refetchLessonById]);
+
   const activeFilterCount = countActiveFilters(filters);
   const hasQuery = !!filters.query?.trim();
   const view = viewState.view;
   const density = viewState.density;
-  const selectedId = selectedLesson?.lessonId ?? null;
+  const selectedId = routeLessonId;
   // §3.4: split view is a desktop-only affordance — the detail rail is
   // CSS-hidden below 1100px. Coerce the EFFECTIVE view to non-split when narrow
   // (non-destructive: the stored `view` preference is left untouched, so a
@@ -176,7 +248,7 @@ export const SearchPage: React.FC = () => {
               }
             />
           ) : isGrid ? (
-            <IntCardGrid lessons={lessons} selectedId={selectedId} onSelect={setSelectedLesson} />
+            <IntCardGrid lessons={lessons} selectedId={selectedId} onSelect={handleOpenLesson} />
           ) : (
             <div className="int-list">
               {lessons.map((lesson) => (
@@ -184,7 +256,7 @@ export const SearchPage: React.FC = () => {
                   key={lesson.lessonId}
                   lesson={lesson}
                   selected={lesson.lessonId === selectedId}
-                  onClick={(l) => setSelectedLesson(l)}
+                  onClick={handleOpenLesson}
                 />
               ))}
             </div>
@@ -245,13 +317,24 @@ export const SearchPage: React.FC = () => {
         </div>
 
         {isSplit && (
-          <IntSplitDetail lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />
+          <IntSplitDetail
+            status={paneStatus}
+            lesson={openedLesson}
+            onClose={handleCloseLesson}
+            onRetry={handleRetryLesson}
+          />
         )}
       </div>
 
       {/* Drawer only outside split view — split uses the sticky right rail */}
       {!isSplit && (
-        <IntLessonDrawer lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />
+        <IntLessonDrawer
+          open={paneStatus !== 'closed'}
+          status={paneStatus === 'closed' ? 'ready' : paneStatus}
+          lesson={openedLesson}
+          onClose={handleCloseLesson}
+          onRetry={handleRetryLesson}
+        />
       )}
 
       <IntMobileFilterDrawer

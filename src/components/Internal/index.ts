@@ -34,6 +34,8 @@ export { IntHubTile } from './IntHubTile';
 export type { IntHubTileProps } from './IntHubTile';
 export { IntLessonDetail } from './IntLessonDetail';
 export { IntLessonDrawer } from './IntLessonDrawer';
+export { IntLessonPaneBody } from './IntLessonPaneBody';
+export type { LessonPaneStatus } from './IntLessonPaneBody';
 export { IntListRow, intActivityLabel, intGradesLabel } from './IntListRow';
 export { IntListSkeleton } from './IntListSkeleton';
 export { IntMobileFilterButton } from './IntMobileFilterButton';

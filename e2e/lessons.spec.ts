@@ -88,6 +88,37 @@ test.describe('Lesson Interaction', () => {
   });
 });
 
+test.describe('Lesson permalinks (D2)', () => {
+  test('clicking a lesson updates the URL and the permalink survives reload', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const firstRow = page.locator('.int-list-row').first();
+    await expect(firstRow).toBeVisible({ timeout: 10000 });
+    const rowTitle = (await firstRow.locator('.int-row-title').textContent())?.trim();
+    expect(rowTitle).toBeTruthy();
+
+    await firstRow.click();
+    await expect(page).toHaveURL(/\/lesson\//);
+    await expect(page.locator('.int-drawer .int-detail-title')).toContainText(rowTitle!);
+
+    // Hard refresh: the permalink reopens the same lesson (deep-link path).
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('.int-drawer .int-detail-title')).toContainText(rowTitle!, {
+      timeout: 10000,
+    });
+  });
+
+  test('unknown lesson id shows an honest not-found state', async ({ page }) => {
+    await page.goto('/lesson/definitely-not-a-real-lesson-id');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByText('Lesson not found').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /back to search/i })).toBeVisible();
+  });
+});
+
 test.describe('Pagination/Infinite Scroll', () => {
   test('page loads with content and is scrollable', async ({ page }) => {
     await page.goto('/');

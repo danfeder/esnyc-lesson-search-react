@@ -104,6 +104,11 @@ function AppContent() {
               <Routes>
                 <Route path="/" element={<SearchPage />} />
                 <Route path="/search" element={<SearchPage />} />
+                {/* D2: lesson permalink. Deliberately the SAME element type at
+                    the same tree position as '/' — React Router does NOT
+                    remount SearchPage when navigating between them, so list
+                    scroll, loaded pages, and store state survive open/close. */}
+                <Route path="/lesson/:lessonId" element={<SearchPage />} />
                 <Route path="/submit" element={<SubmissionPage />} />
                 <Route path="/submit/new" element={<NewSubmissionForm />} />
                 <Route path="/submit/revising" element={<RevisingSubmissionForm />} />
