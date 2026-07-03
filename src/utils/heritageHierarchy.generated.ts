@@ -4,7 +4,7 @@
 // Regenerate: npx tsx scripts/heritage/generate-heritage-hierarchy.ts
 
 /**
- * Recursive nested option for the Cultural Heritage filter. `value` is the
+ * Recursive nested option for the Cultural Heritage SEARCH filter. `value` is the
  * kebab vocab slug sent by the UI; `label` is the Title-Case display string;
  * `children` recurses for nested groups. Only the `top` + `sub` vocab tiers
  * appear here — `internal` nodes are hidden in the UI but still match via the
@@ -166,3 +166,177 @@ export const culturalHeritageOptions: HeritageOption[] = [
     ],
   },
 ];
+
+/**
+ * Flat option for the REVIEWER Cultural Heritage control. `value` is the Title-Case
+ * label (the stored representation — a reviewer pick round-trips byte-identically
+ * with `lessons.cultural_heritage`); `label` shows the full ancestor chain so the
+ * flat control still reads hierarchically. Covers ALL 71 tiers incl. `internal`, so
+ * closing the former free-text box invalidates nothing. See buildHeritageReviewOptions.
+ */
+export interface HeritageReviewOption {
+  value: string;
+  label: string;
+}
+
+export const culturalHeritageReviewOptions: HeritageReviewOption[] = [
+  { value: 'Americas', label: 'Americas' },
+  { value: 'North American', label: 'Americas → North American' },
+  { value: 'Southern United States', label: 'Americas → North American → Southern United States' },
+  { value: 'Latin American', label: 'Americas → Latin American' },
+  { value: 'Mexican', label: 'Americas → Latin American → Mexican' },
+  { value: 'Puerto Rican', label: 'Americas → Latin American → Puerto Rican' },
+  { value: 'Honduran', label: 'Americas → Latin American → Honduran' },
+  { value: 'Peruvian', label: 'Americas → Latin American → Peruvian' },
+  { value: 'Salvadoran', label: 'Americas → Latin American → Salvadoran' },
+  { value: 'Brazilian', label: 'Americas → Latin American → Brazilian' },
+  { value: 'Ecuadorian', label: 'Americas → Latin American → Ecuadorian' },
+  { value: 'Guyanese', label: 'Americas → Latin American → Guyanese' },
+  { value: 'Dominican', label: 'Americas → Latin American → Dominican' },
+  { value: 'Caribbean', label: 'Americas → Caribbean' },
+  { value: 'Cuban', label: 'Americas → Caribbean → Cuban' },
+  { value: 'Jamaican', label: 'Americas → Caribbean → Jamaican' },
+  { value: 'Central American', label: 'Americas → Central American' },
+  { value: 'South American', label: 'Americas → South American' },
+  { value: 'Asian', label: 'Asian' },
+  { value: 'East Asian', label: 'Asian → East Asian' },
+  { value: 'Chinese', label: 'Asian → East Asian → Chinese' },
+  { value: 'Japanese', label: 'Asian → East Asian → Japanese' },
+  { value: 'Korean', label: 'Asian → East Asian → Korean' },
+  { value: 'Taiwanese', label: 'Asian → East Asian → Taiwanese' },
+  { value: 'South Asian', label: 'Asian → South Asian' },
+  { value: 'Indian', label: 'Asian → South Asian → Indian' },
+  { value: 'Pakistani', label: 'Asian → South Asian → Pakistani' },
+  { value: 'Sri Lankan', label: 'Asian → South Asian → Sri Lankan' },
+  { value: 'Southeast Asian', label: 'Asian → Southeast Asian' },
+  { value: 'Vietnamese', label: 'Asian → Southeast Asian → Vietnamese' },
+  { value: 'Malaysian', label: 'Asian → Southeast Asian → Malaysian' },
+  { value: 'Central Asian', label: 'Asian → Central Asian' },
+  { value: 'Uzbek', label: 'Asian → Central Asian → Uzbek' },
+  { value: 'Indigenous and Diaspora', label: 'Indigenous and Diaspora' },
+  { value: 'African American', label: 'Indigenous and Diaspora → African American' },
+  {
+    value: 'Black culinary history',
+    label: 'Indigenous and Diaspora → African American → Black culinary history',
+  },
+  { value: 'Soul Food', label: 'Indigenous and Diaspora → African American → Soul Food' },
+  { value: 'Indigenous', label: 'Indigenous and Diaspora → Indigenous' },
+  { value: 'Lenape', label: 'Indigenous and Diaspora → Indigenous → Lenape' },
+  { value: 'Haudenosaunee', label: 'Indigenous and Diaspora → Indigenous → Haudenosaunee' },
+  {
+    value: 'Three Sisters traditions',
+    label: 'Indigenous and Diaspora → Indigenous → Three Sisters traditions',
+  },
+  { value: 'Cajun/Creole', label: 'Indigenous and Diaspora → Cajun/Creole' },
+  { value: 'European', label: 'European' },
+  { value: 'Mediterranean', label: 'European → Mediterranean' },
+  { value: 'Italian', label: 'European → Mediterranean → Italian' },
+  { value: 'Spanish', label: 'European → Mediterranean → Spanish' },
+  { value: 'Greek', label: 'European → Mediterranean → Greek' },
+  { value: 'Eastern European', label: 'European → Eastern European' },
+  { value: 'Ukrainian', label: 'European → Eastern European → Ukrainian' },
+  { value: 'Russian', label: 'European → Eastern European → Russian' },
+  { value: 'Polish', label: 'European → Eastern European → Polish' },
+  { value: 'Irish', label: 'European → Irish' },
+  { value: 'French', label: 'European → French' },
+  { value: 'African', label: 'African' },
+  { value: 'West African', label: 'African → West African' },
+  { value: 'Nigerian', label: 'African → West African → Nigerian' },
+  { value: 'North African', label: 'African → North African' },
+  { value: 'Egyptian', label: 'African → North African → Egyptian' },
+  { value: 'Moroccan', label: 'African → North African → Moroccan' },
+  { value: 'East African', label: 'African → East African' },
+  { value: 'Kenyan', label: 'African → East African → Kenyan' },
+  { value: 'Ethiopian', label: 'African → East African → Ethiopian' },
+  { value: 'Middle Eastern', label: 'Middle Eastern' },
+  { value: 'Levantine', label: 'Middle Eastern → Levantine' },
+  { value: 'Palestinian', label: 'Middle Eastern → Levantine → Palestinian' },
+  { value: 'Jordanian', label: 'Middle Eastern → Levantine → Jordanian' },
+  { value: 'Lebanese', label: 'Middle Eastern → Levantine → Lebanese' },
+  { value: 'Syrian', label: 'Middle Eastern → Levantine → Syrian' },
+  { value: 'Yemeni', label: 'Middle Eastern → Yemeni' },
+  { value: 'Israeli', label: 'Middle Eastern → Israeli' },
+  { value: 'Persian', label: 'Middle Eastern → Persian' },
+];
+
+/**
+ * The CLOSED set of Cultural Heritage values a reviewer may save — the `value`s of
+ * culturalHeritageReviewOptions, same order. Consumed by `CulturalHeritageEnum` in
+ * src/types/lessonMetadata.zod.ts (and hand-mirrored in the edge module
+ * supabase/functions/_shared/metadataSchemas.ts; the equivalence test guards drift).
+ * There is NO reviewer free-text path: to add a value, add it to
+ * data/vocab/cultural-heritage.vocab.json and regenerate (ask the maintainer).
+ */
+export const CULTURAL_HERITAGE_VALUES = [
+  'Americas',
+  'North American',
+  'Southern United States',
+  'Latin American',
+  'Mexican',
+  'Puerto Rican',
+  'Honduran',
+  'Peruvian',
+  'Salvadoran',
+  'Brazilian',
+  'Ecuadorian',
+  'Guyanese',
+  'Dominican',
+  'Caribbean',
+  'Cuban',
+  'Jamaican',
+  'Central American',
+  'South American',
+  'Asian',
+  'East Asian',
+  'Chinese',
+  'Japanese',
+  'Korean',
+  'Taiwanese',
+  'South Asian',
+  'Indian',
+  'Pakistani',
+  'Sri Lankan',
+  'Southeast Asian',
+  'Vietnamese',
+  'Malaysian',
+  'Central Asian',
+  'Uzbek',
+  'Indigenous and Diaspora',
+  'African American',
+  'Black culinary history',
+  'Soul Food',
+  'Indigenous',
+  'Lenape',
+  'Haudenosaunee',
+  'Three Sisters traditions',
+  'Cajun/Creole',
+  'European',
+  'Mediterranean',
+  'Italian',
+  'Spanish',
+  'Greek',
+  'Eastern European',
+  'Ukrainian',
+  'Russian',
+  'Polish',
+  'Irish',
+  'French',
+  'African',
+  'West African',
+  'Nigerian',
+  'North African',
+  'Egyptian',
+  'Moroccan',
+  'East African',
+  'Kenyan',
+  'Ethiopian',
+  'Middle Eastern',
+  'Levantine',
+  'Palestinian',
+  'Jordanian',
+  'Lebanese',
+  'Syrian',
+  'Yemeni',
+  'Israeli',
+  'Persian',
+] as const;

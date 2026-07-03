@@ -37,6 +37,13 @@
  * details.
  */
 import { z } from 'zod';
+// Cultural Heritage closed vocabulary (Brief 4 — reviewer field closed 2026-07-03).
+// Unlike the inline literals below, the 71 heritage values are GENERATED from the
+// single source of truth (data/vocab/cultural-heritage.vocab.json) via
+// scripts/heritage/generate-heritage-hierarchy.ts, so the closed reviewer list can
+// never drift from the vocab. Relative (not `@/`) import so the tsx build scripts
+// that consume this file (e.g. scripts/generate-enums-json.ts) resolve it too.
+import { CULTURAL_HERITAGE_VALUES } from '../utils/heritageHierarchy.generated';
 
 // =============================================================================
 // Closed-enum value lists (single source of truth — also exported so
@@ -45,6 +52,10 @@ import { z } from 'zod';
 // =============================================================================
 
 export const ACTIVITY_TYPE_VALUES = ['cooking', 'garden', 'academic', 'craft'] as const;
+
+// Re-exported so the edge equivalence test imports it from the canonical schema
+// file alongside the inline value lists. Source: heritageHierarchy.generated.ts.
+export { CULTURAL_HERITAGE_VALUES };
 
 export const TAG_VALUES = ['orientation', 'bilingual_handouts'] as const;
 
@@ -324,6 +335,9 @@ export const ObservancesHolidaysEnum = z.enum(OBSERVANCES_HOLIDAYS_VALUES);
 export const GardenSkillsEnum = z.enum(GARDEN_SKILLS_VALUES);
 export const CookingSkillsEnum = z.enum(COOKING_SKILLS_VALUES);
 export const MainIngredientsEnum = z.enum(MAIN_INGREDIENTS_VALUES);
+// Cultural Heritage closed 2026-07-03 (Brief 4). Values GENERATED from the vocab
+// (see import above); the reviewer control offers exactly these and no free text.
+export const CulturalHeritageEnum = z.enum(CULTURAL_HERITAGE_VALUES);
 
 export type ActivityTypeValue = z.infer<typeof ActivityTypeEnum>;
 export type TagValue = z.infer<typeof TagEnum>;
@@ -337,6 +351,7 @@ export type ObservancesHolidaysValue = z.infer<typeof ObservancesHolidaysEnum>;
 export type GardenSkillsValue = z.infer<typeof GardenSkillsEnum>;
 export type CookingSkillsValue = z.infer<typeof CookingSkillsEnum>;
 export type MainIngredientsValue = z.infer<typeof MainIngredientsEnum>;
+export type CulturalHeritageValue = z.infer<typeof CulturalHeritageEnum>;
 
 // =============================================================================
 // main_ingredients specific→group invariant (C02 design §4 Q7 / §7).

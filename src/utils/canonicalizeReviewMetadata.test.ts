@@ -422,7 +422,11 @@ describe('canonicalizeReviewMetadata', () => {
         gardenSkills: ['composting', 'sensory-exploration', 'beneficial-insect-id'],
         cookingMethods: ['basic-prep', 'stovetop'],
         observancesHolidays: ['AAPI Heritage Month', 'Juneteenth'],
-        culturalHeritage: ['asian'],
+        // culturalHeritage is Title-Case in the corpus and is NOT slug-canonicalized
+        // (not in canonicalizeReviewMetadata's FIELD_MAPS). Closed to a pick-list in
+        // Brief 4, so supply an already-canonical value — a kebab slug would (correctly)
+        // be rejected by the closed enum.
+        culturalHeritage: ['Asian'],
       };
       const canonicalized = canonicalizeReviewMetadata(legacyPayload);
       const parsed = reviewFormPayloadSchema.safeParse(canonicalized);

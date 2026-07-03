@@ -1,15 +1,20 @@
 import type { RefObject } from 'react';
 import Select from 'react-select';
-import CreatableSelect from 'react-select/creatable';
 import type { ReviewMetadata } from '@/types';
 import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
-import { selectOptionsFromConfig, flattenHeritageOptions } from '@/pages/reviewDetailHelpers';
+import { selectOptionsFromConfig } from '@/pages/reviewDetailHelpers';
+import { culturalHeritageReviewOptions } from '@/utils/heritageHierarchy.generated';
 import type { FieldProgress } from '@/pages/reviewValidation';
 import { IntButton, IntFormField, IntPillGroup, IntProgressBar } from '@/components/Internal';
 
-// Heritage options depend only on the static culturalHeritage config, so
-// flatten once at module scope rather than recomputing on every render.
-const HERITAGE_OPTIONS = flattenHeritageOptions(ALL_FIELD_CONFIGS.culturalHeritage);
+// Closed Cultural Heritage pick-list (Brief 4 — reviewer free-text ended 2026-07-03).
+// The full-tier options (all 71 canonical values incl. internal, `value` = the stored
+// Title-Case label, `label` = full ancestor chain) are GENERATED from the vocab, so
+// every currently-stored value round-trips and the picker reads hierarchically. This
+// is DELIBERATELY sourced from heritageHierarchy.generated (not the search filter's
+// top+sub-only `culturalHeritageOptions`, which would drop the 40 internal-tier values
+// lessons actually store). To add a value: edit the vocab + regenerate (ask maintainer).
+const HERITAGE_OPTIONS = culturalHeritageReviewOptions;
 
 /** Stable react-select input ids, declared in the page (uses `useId`). */
 export interface ReviewMetadataInputIds {
@@ -234,7 +239,12 @@ export function ReviewMetadataForm({
             <label className="adm-label" htmlFor={inputIds.heritage}>
               Cultural heritage
             </label>
-            <CreatableSelect
+            {/* Non-creatable Select: culturalHeritage is a closed enum (Brief 4, */}
+            {/* 2026-07-03) enforced by Zod client + edge. Was a CreatableSelect */}
+            {/* (the last reviewer free-text field); CreatableSelect would invite */}
+            {/* reviewer-typed values the save path now rejects. Options are the */}
+            {/* full-tier generated list so every stored value round-trips. */}
+            <Select
               inputId={inputIds.heritage}
               classNamePrefix="adm-rs"
               isMulti

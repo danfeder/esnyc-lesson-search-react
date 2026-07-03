@@ -12,6 +12,7 @@ import {
   GARDEN_SKILLS_VALUES as canonicalGardenSkills,
   COOKING_SKILLS_VALUES as canonicalCookingSkills,
   MAIN_INGREDIENTS_VALUES as canonicalMainIngredients,
+  CULTURAL_HERITAGE_VALUES as canonicalHeritage,
   INGREDIENT_PARENT_MAP as canonicalIngredientParentMap,
   lessonMetadataSchema as canonicalLessonSchema,
 } from './lessonMetadata.zod';
@@ -30,6 +31,7 @@ import {
   GARDEN_SKILLS_VALUES as sharedGardenSkills,
   COOKING_SKILLS_VALUES as sharedCookingSkills,
   MAIN_INGREDIENTS_VALUES as sharedMainIngredients,
+  CULTURAL_HERITAGE_VALUES as sharedHeritage,
   INGREDIENT_PARENT_MAP as sharedIngredientParentMap,
   lessonMetadataSchema as sharedLessonSchema,
   reviewFormPayloadSchema as sharedReviewSchema,
@@ -81,6 +83,9 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
     });
     it('main_ingredients values match', () => {
       expect([...sharedMainIngredients]).toEqual([...canonicalMainIngredients]);
+    });
+    it('cultural_heritage values match (Brief 4 — closed enum, order-identical)', () => {
+      expect([...sharedHeritage]).toEqual([...canonicalHeritage]);
     });
     it('ingredient parent map matches', () => {
       expect(sharedIngredientParentMap).toEqual(canonicalIngredientParentMap);
@@ -205,6 +210,8 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { cookingSkills: ['Knife skills', 'Roasting'] },
       { mainIngredients: ['Citrus fruits', 'Lemon'] },
       { mainIngredients: ['Seaweed (nori)'] }, // null-parent specific alone
+      // Brief 4 — closed heritage accepts canonical values incl. internal-tier ones.
+      { culturalHeritage: ['Mexican', 'Soul Food', 'Southern United States'] },
       // All-fields-populated fixture — drift protection. See lessonMetadata
       // counterpart above for rationale.
       {
@@ -252,6 +259,9 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { cookingSkills: ['Mixing'] }, // near-miss, canonical 'Mixing & stirring'
       { mainIngredients: ['Dragonfruit'] }, // off-vocab ingredient
       { mainIngredients: ['Lemon'] }, // orphan specific (missing parent 'Citrus fruits')
+      // Brief 4 — closed heritage rejects free text + kebab slugs on the review side.
+      { culturalHeritage: ['Martian cuisine'] }, // reviewer free text, off-vocab
+      { culturalHeritage: ['east-asian'] }, // kebab slug (corpus stores Title-Case labels)
     ];
     it.each(invalid)('rejects %j', (fixture) => {
       const c = canonicalReviewSchema.safeParse(fixture);

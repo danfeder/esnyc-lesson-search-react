@@ -22,8 +22,10 @@
  * the review side is a plain `string[]` (not the lesson-side object|array
  * union), so it closes to `z.array(AcademicIntegrationEnum)`. Closed in C02
  * (P4a): mainIngredients (with the lesson-side specific→group invariant) and
- * cookingSkills. Other vocabulary fields stay open until Stage 1 worksheets
- * close them.
+ * cookingSkills. Closed in Brief 4 (2026-07-03): culturalHeritage — the reviewer
+ * field became a closed pick-list ahead of the heritage worksheet (owner reversal);
+ * its enum is GENERATED from the vocab (all tiers) so nothing stored is invalidated.
+ * Other vocabulary fields stay open until Stage 1 worksheets close them.
  *
  * Note: `tags` (orientation / bilingual_handouts) is not currently exposed
  * in the review form — those values come from the LLM-draft canonical-keys
@@ -42,6 +44,7 @@ import {
   ObservancesHolidaysEnum,
   GardenSkillsEnum,
   CookingSkillsEnum,
+  CulturalHeritageEnum,
   mainIngredientsArraySchema,
 } from './lessonMetadata.zod';
 
@@ -70,11 +73,17 @@ export const reviewFormPayloadSchema = z.object({
   mainIngredients: mainIngredientsArraySchema.optional(),
   cookingSkills: z.array(CookingSkillsEnum).optional(),
 
+  // Cultural Heritage closed 2026-07-03 (Brief 4 — reviewer field closed to a
+  // pick-list; ends reviewer free-text). Reuses the lesson-side enum (GENERATED
+  // from the vocab, all 71 tiers incl. internal) so every currently-stored value
+  // round-trips and nothing is invalidated. UI-level closure only — no DB CHECK
+  // (the heritage worksheet will reshape the vocab later, via code).
+  culturalHeritage: z.array(CulturalHeritageEnum).optional(),
+
   // Open-string-array fields (review-form key names where they diverge from
   // canonical — see translation rules above).
   themes: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  culturalHeritage: z.array(z.string()).optional(),
 
   // Free-form pass-through. `title` + `summary` are the reviewer-editable
   // "what gets published" fields (prefilled from the extracted doc); both are

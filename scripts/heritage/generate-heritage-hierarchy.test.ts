@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildHeritageOptions,
+  buildHeritageReviewOptions,
   buildAliasToSlug,
   buildAncestorsBySlug,
   renderGeneratedTs,
@@ -270,6 +271,78 @@ describe('heritage hierarchy generator — ancestry artifact (Output C, C1.6)', 
     const committed = readFileSync(ANCESTRY_TS_PATH, 'utf8');
     const regenerated = await renderAncestryTs(vocab);
     expect(regenerated).toBe(committed);
+  });
+});
+
+describe('heritage hierarchy generator — reviewer options artifact (Output D, Brief 4)', () => {
+  const reviewOptions = buildHeritageReviewOptions(vocab);
+  const labelByKey = new Map(vocab.canonical.map((n) => [n.key, n.label]));
+
+  it('covers ALL canonical nodes incl. internal (71 total, vs 31 in the search tree)', () => {
+    expect(reviewOptions.length).toBe(vocab.canonical.length);
+    expect(vocab.canonical.length).toBe(71);
+    const values = new Set(reviewOptions.map((o) => o.value));
+    // Every canonical label is offered.
+    for (const node of vocab.canonical) {
+      expect(values.has(node.label)).toBe(true);
+    }
+  });
+
+  it('INCLUDES internal-tier values that the search tree EXCLUDES (nothing invalidated)', () => {
+    const values = new Set(reviewOptions.map((o) => o.value));
+    // These are filter_ui_tier=internal — absent from culturalHeritageOptions but
+    // present in the stored PROD corpus (Brief-4 census), so a closed reviewer
+    // pick-list MUST offer them.
+    for (const label of [
+      'Soul Food',
+      'Egyptian',
+      'Southern United States',
+      'Three Sisters traditions',
+    ]) {
+      expect(values.has(label)).toBe(true);
+    }
+  });
+
+  it('uses the Title-Case label as the value (round-trips the stored corpus)', () => {
+    for (const opt of reviewOptions) {
+      // value is a canonical label, not a kebab slug.
+      expect([...labelByKey.values()]).toContain(opt.value);
+      expect(opt.value).not.toMatch(/^[a-z0-9]+(-[a-z0-9]+)+$/);
+    }
+  });
+
+  it('label is the full ancestor chain (root → … → self)', () => {
+    const byLabel = (label: string) => reviewOptions.find((o) => o.value === label)!;
+    expect(byLabel('Mexican').label).toBe('Americas → Latin American → Mexican');
+    expect(byLabel('Soul Food').label).toBe(
+      'Indigenous and Diaspora → African American → Soul Food'
+    );
+    expect(byLabel('Chinese').label).toBe('Asian → East Asian → Chinese');
+    // A root maps to just itself.
+    expect(byLabel('Asian').label).toBe('Asian');
+  });
+
+  it('is DFS pre-order: every node appears after its parent', () => {
+    const keyByLabel = new Map(vocab.canonical.map((n) => [n.label, n.key]));
+    const parentByKey = new Map(vocab.canonical.map((n) => [n.key, n.parent]));
+    const indexByValue = new Map(reviewOptions.map((o, i) => [o.value, i]));
+    for (const opt of reviewOptions) {
+      const key = keyByLabel.get(opt.value)!;
+      const parentKey = parentByKey.get(key);
+      if (parentKey) {
+        const parentLabel = labelByKey.get(parentKey)!;
+        expect(indexByValue.get(parentLabel)!).toBeLessThan(indexByValue.get(opt.value)!);
+      }
+    }
+  });
+
+  it('orders roots by frequency DESC then key ASC (americas first, middle-eastern last)', () => {
+    const rootLabels = vocab.canonical.filter((n) => n.parent === null).map((n) => n.label);
+    const firstRootPositions = rootLabels
+      .map((label) => reviewOptions.findIndex((o) => o.value === label))
+      .sort((a, b) => a - b);
+    // americas(170) is the first root emitted; middle-eastern(23) the last.
+    expect(reviewOptions[firstRootPositions[0]].value).toBe('Americas');
   });
 });
 

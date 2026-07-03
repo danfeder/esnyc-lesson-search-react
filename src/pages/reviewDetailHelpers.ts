@@ -102,15 +102,3 @@ export function normalizeMatchType(raw: string | null): IntDuplicateMatchType | 
 export function selectOptionsFromConfig(config: FilterConfig) {
   return config.options.map((o) => ({ value: o.value, label: o.label }));
 }
-
-/** Hierarchical -> flat options for cultural heritage CreatableSelect. */
-export function flattenHeritageOptions(config: FilterConfig) {
-  return config.options.flatMap((parent) => {
-    const parentOpt = { value: parent.value, label: parent.label };
-    const childOpts = (parent.children ?? []).map((c) => ({
-      value: c.value,
-      label: `${parent.label} → ${c.label}`,
-    }));
-    return [parentOpt, ...childOpts];
-  });
-}

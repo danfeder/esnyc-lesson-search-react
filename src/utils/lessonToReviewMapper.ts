@@ -16,7 +16,11 @@
  * { concepts, selected } object regimes. Review form is string[] only;
  * this mapper extracts `selected` from the object form.
  */
-import type { LessonMetadataValidated, AcademicIntegrationValue } from '@/types/lessonMetadata.zod';
+import type {
+  LessonMetadataValidated,
+  AcademicIntegrationValue,
+  CulturalHeritageValue,
+} from '@/types/lessonMetadata.zod';
 import type { ReviewFormPayloadValidated } from '@/types/reviewFormPayload.zod';
 import { normalizeThematicCategories } from '@/utils/thematicNormalize';
 
@@ -66,7 +70,14 @@ export function lessonToReview(input: LessonMetadataValidated): ReviewFormPayloa
     out.cookingSkills = input.cookingSkills;
   }
   if (input.culturalHeritage && input.culturalHeritage.length > 0) {
-    out.culturalHeritage = input.culturalHeritage;
+    // The lesson side keeps culturalHeritage open (`string[]`) while the review
+    // field is now the closed CulturalHeritageEnum[] (Brief 4). This is the read
+    // path — it only DISPLAYS existing stored values, and the closed list is derived
+    // from the current corpus so every stored value is in-list on PROD. Narrow at
+    // the boundary (mirrors the academicIntegration object branch below); any truly
+    // off-list value still displays via the form's tolerant value-map and is caught
+    // by the closed Zod enum on save.
+    out.culturalHeritage = input.culturalHeritage as CulturalHeritageValue[];
   }
   if (input.observancesHolidays && input.observancesHolidays.length > 0) {
     out.observancesHolidays = input.observancesHolidays;

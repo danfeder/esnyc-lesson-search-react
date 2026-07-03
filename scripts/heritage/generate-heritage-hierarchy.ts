@@ -6,11 +6,18 @@
  * committed, reviewable artifacts (no build-time magic):
  *
  *   A. `src/utils/heritageHierarchy.generated.ts`
- *      The nested UI options tree of ONLY the `top` + `sub` tier nodes
- *      (`internal` EXCLUDED). 31 options across 6 roots. Consumed by
- *      `filterDefinitions.ts` at C1.4. Each option carries a kebab `value`
- *      (= vocab `key`), a Title-Case `label`, and an optional recursive
- *      `children` array nested by vocab `parent`.
+ *      Three exports:
+ *      - `culturalHeritageOptions`: the nested SEARCH-filter options tree of ONLY
+ *        the `top` + `sub` tier nodes (`internal` EXCLUDED). 31 options across 6
+ *        roots. Consumed by `filterDefinitions.ts` at C1.4. Each option carries a
+ *        kebab `value` (= vocab `key`), a Title-Case `label`, and an optional
+ *        recursive `children` array nested by vocab `parent`.
+ *      - `culturalHeritageReviewOptions` (Brief 4): the FLAT, closed option list
+ *        for the REVIEWER metadata control, covering ALL tiers (incl. `internal`)
+ *        with Title-Case `value` (= the stored representation) and full-chain
+ *        `label`. See `buildHeritageReviewOptions`.
+ *      - `CULTURAL_HERITAGE_VALUES` (Brief 4): the closed reviewer value set for
+ *        `CulturalHeritageEnum` (src/types/lessonMetadata.zod.ts + edge mirror).
  *
  *   B. `scripts/heritage/artifacts/heritage-hierarchy-seed.sql`
  *      An INERT SQL fragment with INSERT rows for ALL nodes — top + sub +
@@ -208,6 +215,68 @@ export function buildHeritageOptions(vocab: HeritageVocab): HeritageOption[] {
 }
 
 // ---------------------------------------------------------------------------
+// Output D — flat CLOSED option list for the REVIEWER control (ALL tiers)
+// ---------------------------------------------------------------------------
+
+/** Flat option consumed by the REVIEWER Cultural Heritage control (all tiers). */
+export interface HeritageReviewOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * Build the FLAT, closed option list for the REVIEWER Cultural Heritage control.
+ *
+ * Unlike Output A (search filter — top+sub tiers only, kebab `value`), this list:
+ *   - covers ALL 71 canonical nodes INCLUDING `internal` tiers, so every value a
+ *     lesson can currently store (e.g. "Soul Food", "Egyptian", "Southern United
+ *     States") stays pickable — nothing gets invalidated when the former free-text
+ *     control is closed (40 of the 71 stored PROD values are internal-tier);
+ *   - uses the Title-Case `label` as BOTH the `value` and the stored representation,
+ *     matching how `lessons.cultural_heritage` actually stores values (Title-Case
+ *     labels — verified by the Brief-4 PROD census). A reviewer pick therefore
+ *     round-trips byte-identically with the existing corpus, and the SEARCH side
+ *     (which normalizes labels↔slugs via `aliasToSlug`) is left untouched;
+ *   - carries the full ancestor chain ("Americas → Latin American → Mexican") as
+ *     the display `label` so the flat control still reads hierarchically.
+ *
+ * Order: DFS pre-order over the full tree (each parent immediately followed by its
+ * descendants); siblings sort by the same display rule as Output A (frequency DESC,
+ * then key ASC).
+ */
+export function buildHeritageReviewOptions(vocab: HeritageVocab): HeritageReviewOption[] {
+  const byKey = new Map(vocab.canonical.map((n) => [n.key, n]));
+
+  const childrenByParent = new Map<string | null, HeritageNode[]>();
+  for (const node of vocab.canonical) {
+    const bucket = childrenByParent.get(node.parent);
+    if (bucket) bucket.push(node);
+    else childrenByParent.set(node.parent, [node]);
+  }
+
+  const chainLabel = (node: HeritageNode): string => {
+    const parts: string[] = [];
+    let cur: HeritageNode | undefined = node;
+    while (cur) {
+      parts.unshift(cur.label);
+      cur = cur.parent === null ? undefined : byKey.get(cur.parent);
+    }
+    return parts.join(' → ');
+  };
+
+  const out: HeritageReviewOption[] = [];
+  const walk = (parentKey: string | null): void => {
+    const kids = (childrenByParent.get(parentKey) ?? []).slice().sort(compareNodes);
+    for (const node of kids) {
+      out.push({ value: node.label, label: chainLabel(node) });
+      walk(node.key);
+    }
+  };
+  walk(null);
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Output A rendering — committed TS artifact
 // ---------------------------------------------------------------------------
 
@@ -245,9 +314,14 @@ function renderOption(option: HeritageOption, depth: number): string {
 export async function renderGeneratedTs(vocab: HeritageVocab): Promise<string> {
   const options = buildHeritageOptions(vocab);
   const optionLines = options.map((o) => renderOption(o, 1)).join('\n');
+  const reviewOptions = buildHeritageReviewOptions(vocab);
+  const reviewOptionLines = reviewOptions
+    .map((o) => `  { value: ${JSON.stringify(o.value)}, label: ${JSON.stringify(o.label)} },`)
+    .join('\n');
+  const reviewValueLines = reviewOptions.map((o) => `  ${JSON.stringify(o.value)},`).join('\n');
   const source = `${GENERATED_HEADER}
 /**
- * Recursive nested option for the Cultural Heritage filter. \`value\` is the
+ * Recursive nested option for the Cultural Heritage SEARCH filter. \`value\` is the
  * kebab vocab slug sent by the UI; \`label\` is the Title-Case display string;
  * \`children\` recurses for nested groups. Only the \`top\` + \`sub\` vocab tiers
  * appear here — \`internal\` nodes are hidden in the UI but still match via the
@@ -262,6 +336,34 @@ export interface HeritageOption {
 export const culturalHeritageOptions: HeritageOption[] = [
 ${optionLines}
 ];
+
+/**
+ * Flat option for the REVIEWER Cultural Heritage control. \`value\` is the Title-Case
+ * label (the stored representation — a reviewer pick round-trips byte-identically
+ * with \`lessons.cultural_heritage\`); \`label\` shows the full ancestor chain so the
+ * flat control still reads hierarchically. Covers ALL 71 tiers incl. \`internal\`, so
+ * closing the former free-text box invalidates nothing. See buildHeritageReviewOptions.
+ */
+export interface HeritageReviewOption {
+  value: string;
+  label: string;
+}
+
+export const culturalHeritageReviewOptions: HeritageReviewOption[] = [
+${reviewOptionLines}
+];
+
+/**
+ * The CLOSED set of Cultural Heritage values a reviewer may save — the \`value\`s of
+ * culturalHeritageReviewOptions, same order. Consumed by \`CulturalHeritageEnum\` in
+ * src/types/lessonMetadata.zod.ts (and hand-mirrored in the edge module
+ * supabase/functions/_shared/metadataSchemas.ts; the equivalence test guards drift).
+ * There is NO reviewer free-text path: to add a value, add it to
+ * data/vocab/cultural-heritage.vocab.json and regenerate (ask the maintainer).
+ */
+export const CULTURAL_HERITAGE_VALUES = [
+${reviewValueLines}
+] as const;
 `;
   const config = (await prettier.resolveConfig(GENERATED_TS_PATH)) ?? {};
   return prettier.format(source, { ...config, filepath: GENERATED_TS_PATH });
