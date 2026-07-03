@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Link2 } from 'lucide-react';
 import type { Lesson } from '@/types';
+import { collapseHeritageToLeaves, fieldValueLabeler } from '@/utils/filterUtils';
 import { IntButton } from './IntButton';
-import { culturalLabel, intActivityLabel, intGradesLabel } from './IntListRow';
+import { culturalLabel, intActivityLabel, intGradesLabel, sortGradeLevels } from './IntListRow';
+
+// FP-16: Cooking Methods stores kebab canonical values (`basic-prep`); map them
+// through the field's display labels ("Basic prep") so the drawer never shows a
+// raw slug. Built once at module load.
+const labelCookingMethod = fieldValueLabeler('cookingMethods');
 
 type CopyLinkState = 'idle' | 'copied' | 'failed';
 
@@ -109,17 +115,27 @@ export function IntLessonDetail({ lesson }: IntLessonDetailProps) {
         </IntButton>
       </div>
       <dl className="int-detail-meta-list">
-        <MetaRow label="Grades" items={lesson.gradeLevels} />
+        <MetaRow label="Grades" items={sortGradeLevels(lesson.gradeLevels)} />
         <MetaRow label="Location" items={meta.locationRequirements ?? []} />
         <MetaRow label="Season" items={meta.seasonTiming ?? []} />
         <MetaRow label="Themes" items={meta.thematicCategories ?? []} />
         <MetaRow label="Competencies" items={meta.coreCompetencies} />
-        <MetaRow label="Cultural" items={meta.culturalHeritage} format={culturalLabel} />
+        {/* FP-16: collapse ancestor chains to the leaf ("Asian, East Asian,
+            Chinese" → "Chinese"); display-only, stored data unchanged. */}
+        <MetaRow
+          label="Cultural Heritage"
+          items={collapseHeritageToLeaves(meta.culturalHeritage)}
+          format={culturalLabel}
+        />
         <MetaRow label="Academic" items={academicSelected(meta.academicIntegration)} />
         <MetaRow label="Garden Skills" items={meta.gardenSkills ?? []} />
         <MetaRow label="Cooking Skills" items={meta.cookingSkills ?? []} />
         <MetaRow label="Ingredients" items={meta.mainIngredients ?? []} />
-        <MetaRow label="Cooking Method" items={meta.cookingMethods ?? []} />
+        <MetaRow
+          label="Cooking Method"
+          items={meta.cookingMethods ?? []}
+          format={labelCookingMethod}
+        />
         <MetaRow label="SEL" items={meta.socialEmotionalLearning ?? []} />
         <MetaRow label="Observances" items={meta.observancesHolidays ?? []} />
       </dl>

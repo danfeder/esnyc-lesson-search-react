@@ -37,6 +37,11 @@
   --color-esy-yellow: #FFD100;
   --color-esy-purple: #7E4E9C;
   --color-esy-mint: #9ED9C3;
+  /* Activity badge accent for Craft lessons (FP-17). A warm goldenrod that
+     reads as "making/handwork" and stays distinct from cook-red, grow-green,
+     both-purple, and academic-ink. Darkened to clear WCAG AA (4.9:1 on paper,
+     5.2:1 on white) at the 12px/500 badge size, matching the other badges. */
+  --color-esy-craft: #8F6508;
   --color-esy-black: #1A1A1A;
   --color-esy-white: #FFFFFF;
   --color-esy-ink: #1A1A1A;

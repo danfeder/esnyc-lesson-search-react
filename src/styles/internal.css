@@ -417,6 +417,7 @@
 .int-row-meta .activity.cook { color: var(--color-esy-red); }
 .int-row-meta .activity.grow { color: var(--color-esy-green); }
 .int-row-meta .activity.both { color: var(--color-esy-purple); }
+.int-row-meta .activity.craft { color: var(--color-esy-craft); }
 .int-row-meta .activity.academic { color: var(--color-esy-ink-70); }
 .int-row-right {
   display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
