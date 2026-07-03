@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger';
 import { sanitizeContent } from '@/utils/sanitize';
 import {
   IntEmptyState,
+  IntFetchError,
   IntPageHeader,
   IntQueueRow,
   IntTabs,
@@ -74,6 +75,11 @@ export function ReviewDashboard() {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [isReviewer, setIsReviewer] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  // Honest-error state (FP-05/FP-07): a failed fetch must never render as
+  // "No submissions" / "Access denied" — those are reserved for successful
+  // fetches that genuinely returned empty / non-reviewer.
+  const [loadError, setLoadError] = useState(false);
+  const [authCheckError, setAuthCheckError] = useState(false);
 
   // Pick up any decision toast handed over by ReviewDetail on save, then clear
   // the history state so a refresh doesn't replay it (mirrors AdminInvitations).
@@ -94,14 +100,18 @@ export function ReviewDashboard() {
     return () => window.clearTimeout(t);
   }, [toast]);
 
+  // Component-scope so the auth-error Retry button can re-run the whole page
+  // load, not just the submissions fetch.
+  const loadPage = async () => {
+    const ok = await checkAuth();
+    if (ok) await loadSubmissions();
+  };
+
   useEffect(() => {
     // Run sequentially: only fetch submissions after the auth/role check
     // confirms reviewer access. Otherwise a non-reviewer briefly issues a
     // submissions read while waiting for the redirect.
-    (async () => {
-      const ok = await checkAuth();
-      if (ok) await loadSubmissions();
-    })();
+    loadPage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
@@ -122,10 +132,13 @@ export function ReviewDashboard() {
       .single();
 
     if (error || !profile) {
+      // Transient fetch failure — NOT a permissions verdict. Leave isReviewer
+      // untouched; the authCheckError render branch preempts "Access denied".
       logger.error('Error fetching user profile:', error);
-      setIsReviewer(false);
+      setAuthCheckError(true);
       return false;
     }
+    setAuthCheckError(false);
 
     const ok = ['reviewer', 'admin', 'super_admin'].includes(profile.role ?? '');
     setIsReviewer(ok);
@@ -135,6 +148,7 @@ export function ReviewDashboard() {
 
   const loadSubmissions = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       let query = supabase
         .from('lesson_submissions')
@@ -225,6 +239,7 @@ export function ReviewDashboard() {
       );
     } catch (err) {
       logger.error('Error loading submissions:', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -268,6 +283,26 @@ export function ReviewDashboard() {
     return null; // Auth check redirects; nothing to show in the meantime.
   }
 
+  // Role check failed to FETCH (transient error) — this is not a permissions
+  // verdict, so never show "Access denied" here. Genuinely denied roles are
+  // handled below after a successful fetch.
+  if (authCheckError) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <IntPageHeader
+            title="Review queue"
+            description="Pending and recent lesson submissions awaiting reviewer action."
+          />
+          <IntFetchError onRetry={loadPage}>
+            Couldn&apos;t check your access — this is usually a connection blip, not a permissions
+            problem. Retry to load the queue.
+          </IntFetchError>
+        </div>
+      </div>
+    );
+  }
+
   if (!isReviewer) {
     return (
       <div className="int-shell-root">
@@ -300,6 +335,13 @@ export function ReviewDashboard() {
           {loading ? (
             <div style={{ padding: 48, textAlign: 'center', color: 'var(--esy-ink-70)' }}>
               Loading submissions…
+            </div>
+          ) : loadError ? (
+            <div style={{ padding: 24 }}>
+              <IntFetchError onRetry={loadSubmissions}>
+                Couldn&apos;t load the review queue. Check your connection and retry — submissions
+                may be waiting even though the list is empty.
+              </IntFetchError>
             </div>
           ) : submissionsWithTitles.length === 0 ? (
             <div style={{ padding: 24 }}>

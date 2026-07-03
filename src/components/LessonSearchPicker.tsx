@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useId, type KeyboardEvent } f
 import { Search, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
+import { IntFetchError } from '@/components/Internal';
 
 export interface LessonSearchResult {
   lesson_id: string;
@@ -40,6 +41,9 @@ export function LessonSearchPicker({
   const [results, setResults] = useState<LessonSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasQueried, setHasQueried] = useState(false);
+  // Honest-error state (FP-05): a failed query must not render as "No matches
+  // found." — nor steer the teacher into the can't-find escape hatch.
+  const [errored, setErrored] = useState(false);
   // -1 means no option is keyboard-active (aria-activedescendant unset).
   const [activeIndex, setActiveIndex] = useState(-1);
   // Collapsed by Escape; reset to false whenever a fresh query runs so the
@@ -65,9 +69,13 @@ export function LessonSearchPicker({
         setResults([]);
         setHasQueried(false);
         setIsLoading(false);
+        setErrored(false);
         return;
       }
       setIsLoading(true);
+      // Clear the error card while a retry is in flight; the requestId guard
+      // already protects against stale responses re-setting it.
+      setErrored(false);
       try {
         let qry = supabase
           .from('lessons')
@@ -83,9 +91,10 @@ export function LessonSearchPicker({
         setHasQueried(true);
       } catch (err) {
         if (myRequestId !== requestIdRef.current) return;
-        logger.debug('LessonSearchPicker query failed:', err);
+        logger.error('LessonSearchPicker query failed:', err);
         setResults([]);
         setHasQueried(true);
+        setErrored(true);
       } finally {
         if (myRequestId === requestIdRef.current) {
           setIsLoading(false);
@@ -222,13 +231,25 @@ export function LessonSearchPicker({
         </ul>
       )}
 
-      {hasQueried && results.length === 0 && !isLoading && (
+      {hasQueried && !errored && results.length === 0 && !isLoading && (
         <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
           No matches found.
         </div>
       )}
 
-      {cantFindOption && onCantFind && hasQueried && (
+      {errored && !isLoading && (
+        <div className="mt-2">
+          <IntFetchError onRetry={() => runSearch(query)} retryLabel="Try again">
+            Search failed — we couldn&apos;t check the library. This is a connection problem, not an
+            empty result.
+          </IntFetchError>
+        </div>
+      )}
+
+      {/* Hidden while errored so a failed search can't steer the teacher into
+          a null-target UPDATE ("can't find it" would be a lie — we never got
+          to look). */}
+      {cantFindOption && onCantFind && hasQueried && !errored && (
         <div className="mt-2 text-sm text-gray-700">
           <button
             type="button"

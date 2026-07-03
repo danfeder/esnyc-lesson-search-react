@@ -28,6 +28,7 @@ export type {
   IntDuplicateMatchType,
 } from './IntDuplicateCard';
 export { IntEmptyState } from './IntEmptyState';
+export { IntFetchError } from './IntFetchError';
 export { IntFilterSection } from './IntFilterSection';
 export { IntFormField } from './IntFormField';
 export { IntHubTile } from './IntHubTile';

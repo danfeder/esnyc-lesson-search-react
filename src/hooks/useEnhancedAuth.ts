@@ -13,9 +13,15 @@ import { logger } from '@/utils/logger';
 export function useEnhancedAuth(): AuthContextValue {
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // FP-07: a failed profile fetch for a signed-in auth user is a transient
+  // error, not a sign-out. Consumers (ProtectedRoute) surface it with a Retry
+  // instead of silently redirecting.
+  const [profileError, setProfileError] = useState(false);
 
   const fetchUserProfile = useCallback(async (authUser: User) => {
     try {
+      // Each attempt starts clean.
+      setProfileError(false);
       // First, check if profile exists
       const { data, error } = await supabase
         .from('user_profiles')
@@ -25,6 +31,7 @@ export function useEnhancedAuth(): AuthContextValue {
 
       if (error && error.code !== 'PGRST116') {
         logger.error('Error fetching user profile:', error);
+        setProfileError(true);
         setLoading(false);
         return;
       }
@@ -77,7 +84,10 @@ export function useEnhancedAuth(): AuthContextValue {
       }
     } catch (error) {
       logger.error('Error in fetchUserProfile:', error);
-      setUser(null);
+      // Keep the last-known user instead of visually signing them out on a
+      // thrown refetch error. Real sign-outs are handled by the
+      // onAuthStateChange listener, which nulls the user on SIGNED_OUT.
+      setProfileError(true);
     } finally {
       setLoading(false);
     }
@@ -91,6 +101,9 @@ export function useEnhancedAuth(): AuthContextValue {
       if (authUser) {
         await fetchUserProfile(authUser);
       } else {
+        // No session: a latched profileError must not survive sign-out, or
+        // ProtectedRoute would show a dead-end error card instead of redirecting.
+        setProfileError(false);
         setLoading(false);
       }
     } catch (error) {
@@ -98,6 +111,12 @@ export function useEnhancedAuth(): AuthContextValue {
       setLoading(false);
     }
   }, [fetchUserProfile]);
+
+  // Re-run the auth + profile check after a profileError (FP-07 Retry).
+  const retryAuth = useCallback(async () => {
+    setLoading(true);
+    await checkUser();
+  }, [checkUser]);
 
   useEffect(() => {
     // Check initial auth state
@@ -111,6 +130,7 @@ export function useEnhancedAuth(): AuthContextValue {
         fetchUserProfile(session.user);
       } else {
         setUser(null);
+        setProfileError(false);
         setLoading(false);
       }
     });
@@ -189,6 +209,8 @@ export function useEnhancedAuth(): AuthContextValue {
   return {
     user,
     loading,
+    profileError,
+    retryAuth,
     permissions,
     hasPermission,
     hasAnyPermission,

@@ -25,6 +25,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/utils/logger';
 import {
   IntButton,
+  IntFetchError,
   IntFormField,
   IntPageHeader,
   IntRoleBadge,
@@ -82,6 +83,10 @@ export function UserProfile() {
 
   const [submissions, setSubmissions] = useState<LessonSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  // Honest-error state (FP-05): a failed fetch must not render as "No
+  // submissions yet" — that would also hide the resubmit path for returned
+  // lessons.
+  const [submissionsError, setSubmissionsError] = useState(false);
   // Track in-flight resubmits by submission id in a Set (not a single id or a
   // global boolean) — a teacher can have several returned cards on screen, and
   // starting one must not re-enable another card that is still in flight.
@@ -133,6 +138,7 @@ export function UserProfile() {
   const loadSubmissions = useCallback(async () => {
     if (!user) return;
     setLoadingSubmissions(true);
+    setSubmissionsError(false);
     try {
       const { data, error } = await supabase
         .from('lesson_submissions')
@@ -157,6 +163,7 @@ export function UserProfile() {
       );
     } catch (error) {
       logger.error('Error loading submissions:', error);
+      setSubmissionsError(true);
     } finally {
       setLoadingSubmissions(false);
     }
@@ -540,6 +547,11 @@ export function UserProfile() {
             <p className="adm-submission-row-loading">
               <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" /> Loading submissions…
             </p>
+          ) : submissionsError ? (
+            <IntFetchError onRetry={loadSubmissions}>
+              Couldn&apos;t load your submissions. Check your connection and retry — if you came
+              here to send a lesson back for review, it should appear after a retry.
+            </IntFetchError>
           ) : submissions.length === 0 ? (
             <div className="adm-empty">
               <h3>No submissions yet</h3>
