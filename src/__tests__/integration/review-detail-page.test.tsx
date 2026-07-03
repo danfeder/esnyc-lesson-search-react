@@ -830,6 +830,92 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
       'This lesson is already in the library as "Modern Target Lesson". See the 2024 version.'
     );
   });
+
+  // Fixture for test 24 — a `new` submission with TWO resolvable candidate
+  // cards, so the option-3 prefill can be re-bound between cards (every other
+  // fixture has at most one card).
+  const twoCardFixture: Record<string, TableResult> = {
+    lesson_submissions: {
+      data: [
+        {
+          id: 'sub-twocard',
+          created_at: '2026-07-03T12:00:00.000Z',
+          google_doc_url: 'https://docs.google.com/document/d/twocard-doc/edit',
+          google_doc_id: 'twocard-doc',
+          submission_type: 'new',
+          original_lesson_id: null,
+          status: 'submitted',
+          extracted_content: 'Two Card Title\n\nSummary: drives the card-rebind prefill test.',
+          extracted_title: 'Two Card Title',
+          content_hash: 'hash-twocard',
+          content_embedding: null,
+          teacher_id: 'teacher-twocard',
+          ai_draft_metadata: null,
+        },
+      ],
+      error: null,
+    },
+    submission_similarities: {
+      data: [
+        {
+          lesson_id: 'lesson-aa',
+          submission_id: 'sub-twocard',
+          combined_score: 0.9,
+          match_type: 'high',
+          title_similarity: 0.9,
+          content_similarity: 0.9,
+        },
+        {
+          lesson_id: 'lesson-bb',
+          submission_id: 'sub-twocard',
+          combined_score: 0.7,
+          match_type: 'medium',
+          title_similarity: 0.7,
+          content_similarity: 0.7,
+        },
+      ],
+      error: null,
+    },
+    lessons_with_metadata: {
+      data: [
+        { lesson_id: 'lesson-aa', title: 'Alpha Lesson', grade_levels: ['3'], metadata: {} },
+        { lesson_id: 'lesson-bb', title: 'Beta Lesson', grade_levels: ['3'], metadata: {} },
+      ],
+      error: null,
+    },
+    submission_reviews: { data: [], error: null },
+    user_profiles: { data: [{ id: 'teacher-twocard', full_name: 'Tess Twocard' }], error: null },
+  };
+
+  // [PR #578 bot round 2] — switching the bound card while option 3 stays
+  // active must re-bind an UNEDITED prefill to the new card's title (the
+  // teacher-visible reason must never name the wrong lesson); an edited note
+  // still survives any card switch untouched.
+  it('24. re-binding the card while option 3 is active refreshes an unedited prefill only', async () => {
+    renderReview(twoCardFixture, 'sub-twocard');
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /alpha lesson/i }));
+    await user.click(screen.getByRole('radio', { name: /already in the library/i }));
+    expect(screen.getByLabelText(/reason for the teacher/i)).toHaveValue(
+      'This lesson is already in the library as "Alpha Lesson".'
+    );
+
+    // Card switch A → B WITHOUT deselecting (bot round 2 repro): option 3
+    // stays checked and the unedited prefill re-binds to B.
+    await user.click(screen.getByRole('button', { name: /beta lesson/i }));
+    expect(screen.getByRole('radio', { name: /already in the library/i })).toBeChecked();
+    expect(screen.getByLabelText(/reason for the teacher/i)).toHaveValue(
+      'This lesson is already in the library as "Beta Lesson".'
+    );
+
+    // An EDITED note fails the prefill-shape check and survives a card switch.
+    await user.type(screen.getByLabelText(/reason for the teacher/i), ' Use that one.');
+    await user.click(screen.getByRole('button', { name: /alpha lesson/i }));
+    expect(screen.getByLabelText(/reason for the teacher/i)).toHaveValue(
+      'This lesson is already in the library as "Beta Lesson". Use that one.'
+    );
+  });
 });
 
 describe('SubmitterIntentBanner — 4-state coverage', () => {

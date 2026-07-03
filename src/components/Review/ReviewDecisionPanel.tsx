@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { IntAlert, IntButton, IntDecisionBar, IntDuplicateCard } from '@/components/Internal';
 import { ReviewSearchPanel } from '@/components/Review/ReviewSearchPanel';
@@ -101,25 +102,40 @@ export function ReviewDecisionPanel({
   const cardBoundDisabled = !selectedDuplicate;
   const isRejectPath = decisionOption === 'reject' || decisionOption === 'reject_duplicate';
 
-  // Option 3's auto-prefill, kept in one place so LEAVING that option can
-  // recognize an UNEDITED prefill and clear it — a stale "already in the
-  // library" note must never ride a different decision as the teacher-visible
-  // text (bot review round 1: select card → option 3 → change your mind →
-  // publish-as-new would have sent the self-contradicting note). A note the
-  // reviewer typed or amended is never touched.
+  // Option 3's auto-prefill, kept in one place so the panel can recognize an
+  // UNEDITED prefill (the regex matches the prefill shape regardless of which
+  // title it names) — a stale "already in the library" note must never go out
+  // naming the wrong lesson or riding a different decision (bot rounds 1+2).
+  // A note the reviewer typed or amended never matches and is never touched.
   const dupNotePrefill = (title: string) => `This lesson is already in the library as "${title}".`;
+  const DUP_NOTE_PREFILL_RE = /^This lesson is already in the library as ".*"\.$/;
+
+  // Leaving option 3 (radio switch, or card deselect via the fallback below)
+  // clears an unedited prefill (bot round 1).
   const chooseOption = (next: DecisionOption) => {
     if (
       decisionOption === 'reject_duplicate' &&
       next !== 'reject_duplicate' &&
-      selectedTitle !== null &&
-      notes === dupNotePrefill(selectedTitle)
+      DUP_NOTE_PREFILL_RE.test(notes)
     ) {
       setNotes('');
     }
     setDecisionOption(next);
     setSaveError(null);
   };
+
+  // RE-BINDING the card while option 3 stays active (clicking another card, or
+  // picking a different lesson via the search hatch) must refresh an unedited
+  // prefill to the new title — otherwise the teacher-visible reason names the
+  // wrong lesson (bot round 2; the search-pick variant is the same class).
+  useEffect(() => {
+    if (decisionOption !== 'reject_duplicate') return;
+    if (!DUP_NOTE_PREFILL_RE.test(notes)) return; // reviewer edited it — hands off
+    if (selectedTitle !== null && notes !== dupNotePrefill(selectedTitle)) {
+      setNotes(dupNotePrefill(selectedTitle));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTitle, decisionOption, notes]);
 
   return (
     <div>
