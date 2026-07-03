@@ -52,16 +52,7 @@ npm run import-data
 - `EXPORT_SOURCE_URL` (optional) — defaults to the known PROD project URL
 
 ### Search sync (legacy)
-Algolia sync and configuration scripts have been removed as the project now uses PostgreSQL full‑text search. If search sync is needed in the future, prefer SQL functions or Edge Functions.
-
-**Usage:**
-```bash
-node scripts/remove-algolia.js
-```
-
-**Required Environment Variables:**
-- `VITE_ALGOLIA_APP_ID`
-- `ALGOLIA_ADMIN_API_KEY`
+Algolia sync and configuration scripts have been removed as the project now uses PostgreSQL full‑text search. There is nothing to run and no script reads an Algolia environment variable (the stale ALGOLIA_* entries still listed in the .env*.example files are a separate cleanup, tracked with the Netlify env-var removal). If search sync is needed in the future, prefer SQL functions or Edge Functions.
 
 ## Testing Scripts
 

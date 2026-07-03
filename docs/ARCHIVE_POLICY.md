@@ -11,6 +11,8 @@ All archived content is organized in designated directories:
 | Directory | Purpose | Documentation |
 |-----------|---------|---------------|
 | `/archive/` | General archives (data, docs) | `/archive/README.md` |
+| `/docs/archive/` | Superseded standalone documentation | `/docs/archive/README.md` |
+| `/docs/plans/archive/` | Shipped/closed planning & status docs | `/docs/plans/ARCHIVAL_MANIFEST.md` |
 | `/scripts/archive/` | Deprecated scripts | `/scripts/archive/README.md` |
 | `/supabase/migrations/archive/` | Applied database migrations | `/supabase/migrations/archive/MANIFEST.md` |
 
