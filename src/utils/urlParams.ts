@@ -1,5 +1,5 @@
 import type { SearchFilters, ViewState } from '@/types';
-import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
+import { FILTER_CONFIGS, SEARCH_LOCATION_OPTIONS } from '@/utils/filterDefinitions';
 
 /**
  * Pure (no-React) serialize / parse / validate for the public search URL
@@ -28,8 +28,9 @@ type UrlSortValue = (typeof URL_SORT_VALUES)[number];
 const DEFAULT_SORT: UrlSortValue = 'relevance';
 
 // Every search filter is a string[] in SearchFilters except `query` (a string).
-// `location` is single-select in the UI but is still typed/stored as string[]
-// in SearchFilters, so it serializes like any other array filter.
+// `location` renders as multi-select checkboxes in the search UI (FP-18) and is
+// typed/stored as string[] in SearchFilters, so it serializes like any other
+// array filter.
 type ArrayFilterKey = Exclude<keyof SearchFilters, 'query'>;
 
 // store filter key → short URL param name
@@ -105,6 +106,13 @@ export function buildSearchParams(
  * returns zero results, so we drop it on parse (→ graceful "no grade filter").
  */
 function validValuesForFilter(filterKey: keyof SearchFilters): Set<string> | null {
+  // FP-18: the public search facet accepts only Indoor/Outdoor — `Both` is not a
+  // search option (search folds it into both server-side), so a stale or shared
+  // `?loc=Both` is dropped here rather than becoming a phantom filter chip.
+  if (filterKey === 'location') {
+    return new Set(SEARCH_LOCATION_OPTIONS.map((o) => o.value));
+  }
+
   const config = FILTER_CONFIGS[filterKey];
   if (!config) return null;
 

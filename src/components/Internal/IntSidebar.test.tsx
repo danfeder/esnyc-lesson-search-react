@@ -53,6 +53,16 @@ describe('IntSidebar', () => {
     expect(screen.queryByText('Lesson Type')).toBeNull();
   });
 
+  it('FP-18: renders Location as two friendly checkboxes, no "Both"', () => {
+    render(<IntSidebar counts={makeCounts()} />);
+
+    const locationSection = sectionByLabel('Location');
+    expect(locationSection.querySelectorAll('.int-check').length).toBe(2);
+    expect(locationSection.textContent).toContain('Indoor-friendly');
+    expect(locationSection.textContent).toContain('Outdoor-friendly');
+    expect(locationSection.textContent).not.toContain('Both');
+  });
+
   it('renders per-option count badges in checkbox sections', () => {
     // activityType shows its badge: give the slug a real count and assert the
     // span survives — proves badges still render after the tags retirement.

@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
+import { FILTER_CONFIGS, SEARCH_LOCATION_OPTIONS } from '@/utils/filterDefinitions';
 import { buildCultureLabelMap } from '@/utils/filterUtils';
 import { parseSearchQuery } from '@/utils/parseSearchQuery';
 import { useSearchStore } from '@/stores/searchStore';
@@ -20,6 +20,11 @@ const CULTURE_LABELS = buildCultureLabelMap();
 function labelFor(key: FilterKey, value: string): string {
   if (key === 'gradeLevels') return `Grade ${value}`;
   if (key === 'culturalHeritage') return CULTURE_LABELS[value] ?? value;
+  // FP-18: the location chip mirrors the sidebar's friendly labels
+  // (Indoor → "Indoor-friendly"); a stale `Both` falls through to verbatim.
+  if (key === 'location') {
+    return SEARCH_LOCATION_OPTIONS.find((o) => o.value === value)?.label ?? value;
+  }
   if (!(key in FILTER_CONFIGS)) return value;
   const cfg = FILTER_CONFIGS[key as keyof typeof FILTER_CONFIGS];
   const match = cfg.options.find((o) => o.value === value);
