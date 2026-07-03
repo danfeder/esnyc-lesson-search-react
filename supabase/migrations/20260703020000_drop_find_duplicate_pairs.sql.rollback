@@ -1,0 +1,105 @@
+-- =====================================================
+-- ROLLBACK: 20260703020000_drop_find_duplicate_pairs.sql.rollback
+-- =====================================================
+-- Restores find_duplicate_pairs() exactly as it existed before
+-- 20260703020000_drop_find_duplicate_pairs.sql dropped it. Use ONLY if the
+-- drop turns out to be wrong (e.g. some caller of the embedding-based
+-- duplicate-pair scanner resurfaces). Idempotent; safe to re-run.
+--
+-- DEVIATION FROM BRIEF (documented): the brief asked for the ORIGINAL
+-- 20251201_duplicate_detection_revamp.sql body (~line 64), but that version
+-- was superseded by 20251202_add_function_permission_checks.sql, which added
+-- the has_duplicate_review_permission() gate. A PROD pg_proc probe
+-- (2026-07-03, pg_get_functiondef) confirms the LIVE body is the 20251202
+-- version — restoring the 20251201 body would silently remove the permission
+-- check from a SECURITY DEFINER function. So the CREATE below is copied
+-- verbatim from 20251202 (lines 50-128), the COMMENT verbatim from 20251201
+-- (line 139 — never re-issued, still the live comment), and the GRANT from
+-- 20251202 (line 237 — live ACL verified:
+-- {=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}).
+--
+-- Requires has_duplicate_review_permission() (20251202), still present.
+
+CREATE OR REPLACE FUNCTION find_duplicate_pairs()
+RETURNS TABLE (
+  id1 TEXT,
+  id2 TEXT,
+  title1 TEXT,
+  title2 TEXT,
+  detection_method TEXT,
+  similarity DOUBLE PRECISION
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Permission check
+  IF NOT has_duplicate_review_permission() THEN
+    RAISE EXCEPTION 'Permission denied: requires admin, reviewer, or super_admin role';
+  END IF;
+
+  RETURN QUERY
+  WITH pairs AS (
+    SELECT
+      LEAST(l1.lesson_id, l2.lesson_id) as pair_id1,
+      GREATEST(l1.lesson_id, l2.lesson_id) as pair_id2,
+      CASE
+        WHEN l1.lesson_id < l2.lesson_id THEN l1.title
+        ELSE l2.title
+      END as pair_title1,
+      CASE
+        WHEN l1.lesson_id < l2.lesson_id THEN l2.title
+        ELSE l1.title
+      END as pair_title2,
+      CASE
+        WHEN LOWER(TRIM(l1.title)) = LOWER(TRIM(l2.title))
+             AND l1.content_embedding IS NOT NULL
+             AND l2.content_embedding IS NOT NULL
+             AND 1 - (l1.content_embedding <=> l2.content_embedding) >= 0.95
+        THEN 'both'
+        WHEN LOWER(TRIM(l1.title)) = LOWER(TRIM(l2.title))
+        THEN 'same_title'
+        ELSE 'embedding'
+      END as pair_detection_method,
+      CASE
+        WHEN l1.content_embedding IS NOT NULL AND l2.content_embedding IS NOT NULL
+        THEN 1 - (l1.content_embedding <=> l2.content_embedding)
+        ELSE NULL
+      END as pair_similarity
+    FROM lessons l1
+    CROSS JOIN lessons l2
+    WHERE l1.lesson_id < l2.lesson_id
+      AND l1.title != 'Unknown'
+      AND l2.title != 'Unknown'
+      AND (
+        -- Same normalized title
+        LOWER(TRIM(l1.title)) = LOWER(TRIM(l2.title))
+        OR (
+          -- High embedding similarity (>= 0.95)
+          l1.content_embedding IS NOT NULL
+          AND l2.content_embedding IS NOT NULL
+          AND 1 - (l1.content_embedding <=> l2.content_embedding) >= 0.95
+        )
+      )
+  )
+  SELECT
+    p.pair_id1 as id1,
+    p.pair_id2 as id2,
+    p.pair_title1 as title1,
+    p.pair_title2 as title2,
+    p.pair_detection_method as detection_method,
+    p.pair_similarity as similarity
+  FROM pairs p
+  ORDER BY
+    CASE p.pair_detection_method
+      WHEN 'both' THEN 1
+      WHEN 'same_title' THEN 2
+      WHEN 'embedding' THEN 3
+    END,
+    p.pair_similarity DESC NULLS LAST;
+END;
+$$;
+
+COMMENT ON FUNCTION find_duplicate_pairs IS 'Find all potential duplicate lesson pairs based on title matching or embedding similarity >= 0.95';
+
+GRANT EXECUTE ON FUNCTION find_duplicate_pairs() TO authenticated;

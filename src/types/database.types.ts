@@ -64,6 +64,87 @@ export type Database = {
           },
         ];
       };
+      c02_retag_rollback: {
+        Row: {
+          academic_integration: string[] | null;
+          activity_type: string[] | null;
+          cooking_methods: string[] | null;
+          cooking_skills: string[] | null;
+          core_competencies: string[] | null;
+          cultural_heritage: string[] | null;
+          cultural_responsiveness_features: string[] | null;
+          garden_skills: string[] | null;
+          grade_levels: string[] | null;
+          lesson_id: string;
+          main_ingredients: string[] | null;
+          metadata: Json | null;
+          observances_holidays: string[] | null;
+          season_timing: string[] | null;
+          social_emotional_learning: string[] | null;
+          tags: string[] | null;
+        };
+        Insert: {
+          academic_integration?: string[] | null;
+          activity_type?: string[] | null;
+          cooking_methods?: string[] | null;
+          cooking_skills?: string[] | null;
+          core_competencies?: string[] | null;
+          cultural_heritage?: string[] | null;
+          cultural_responsiveness_features?: string[] | null;
+          garden_skills?: string[] | null;
+          grade_levels?: string[] | null;
+          lesson_id: string;
+          main_ingredients?: string[] | null;
+          metadata?: Json | null;
+          observances_holidays?: string[] | null;
+          season_timing?: string[] | null;
+          social_emotional_learning?: string[] | null;
+          tags?: string[] | null;
+        };
+        Update: {
+          academic_integration?: string[] | null;
+          activity_type?: string[] | null;
+          cooking_methods?: string[] | null;
+          cooking_skills?: string[] | null;
+          core_competencies?: string[] | null;
+          cultural_heritage?: string[] | null;
+          cultural_responsiveness_features?: string[] | null;
+          garden_skills?: string[] | null;
+          grade_levels?: string[] | null;
+          lesson_id?: string;
+          main_ingredients?: string[] | null;
+          metadata?: Json | null;
+          observances_holidays?: string[] | null;
+          season_timing?: string[] | null;
+          social_emotional_learning?: string[] | null;
+          tags?: string[] | null;
+        };
+        Relationships: [];
+      };
+      c02_retag_skipped: {
+        Row: {
+          current_cooking_skills: string[] | null;
+          current_main_ingredients: string[] | null;
+          expected_cooking_skills: string[] | null;
+          expected_main_ingredients: string[] | null;
+          lesson_id: string;
+        };
+        Insert: {
+          current_cooking_skills?: string[] | null;
+          current_main_ingredients?: string[] | null;
+          expected_cooking_skills?: string[] | null;
+          expected_main_ingredients?: string[] | null;
+          lesson_id: string;
+        };
+        Update: {
+          current_cooking_skills?: string[] | null;
+          current_main_ingredients?: string[] | null;
+          expected_cooking_skills?: string[] | null;
+          expected_main_ingredients?: string[] | null;
+          lesson_id?: string;
+        };
+        Relationships: [];
+      };
       canonical_lessons: {
         Row: {
           canonical_id: string;
@@ -929,6 +1010,30 @@ export type Database = {
           },
         ];
       };
+      t4_dedup_retire_rollback: {
+        Row: {
+          group_id: string;
+          lesson_id: string;
+          prior_retired_at: string | null;
+          prior_retired_reason: string | null;
+          snapshotted_at: string;
+        };
+        Insert: {
+          group_id: string;
+          lesson_id: string;
+          prior_retired_at?: string | null;
+          prior_retired_reason?: string | null;
+          snapshotted_at?: string;
+        };
+        Update: {
+          group_id?: string;
+          lesson_id?: string;
+          prior_retired_at?: string | null;
+          prior_retired_reason?: string | null;
+          snapshotted_at?: string;
+        };
+        Relationships: [];
+      };
       user_invitations: {
         Row: {
           accepted_at: string | null;
@@ -1611,17 +1716,6 @@ export type Database = {
         Args: { query_text: string };
         Returns: unknown;
       };
-      find_duplicate_pairs: {
-        Args: never;
-        Returns: {
-          detection_method: string;
-          id1: string;
-          id2: string;
-          similarity: number;
-          title1: string;
-          title2: string;
-        }[];
-      };
       find_lessons_by_hash: {
         Args: { hash_value: string };
         Returns: {
@@ -1641,6 +1735,20 @@ export type Database = {
           match_type: string;
           similarity_score: number;
           title: string;
+        }[];
+      };
+      find_similar_lessons_text: {
+        Args: {
+          p_content: string;
+          p_exclude_lesson_id?: string;
+          p_limit?: number;
+          p_title: string;
+        };
+        Returns: {
+          content_sim: number;
+          lesson_id: string;
+          title: string;
+          title_sim: number;
         }[];
       };
       get_canonical_lesson_id: {
@@ -1766,7 +1874,7 @@ export type Database = {
       validate_invitation_token: {
         Args: { invite_token: string };
         Returns: {
-          accepted_at: string | null;
+          accepted_at: string;
           email: string;
           expires_at: string;
           id: string;
