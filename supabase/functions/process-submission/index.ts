@@ -37,8 +37,6 @@ interface ProcessSubmissionRequest {
   originalLessonId?: string;
   submissionId?: string; // For resubmitting an existing submission
   resubmit?: boolean; // Resubmit-after-revisions: re-snapshot an existing needs_revision row
-  debug?: boolean; // For debugging
-  testOpenAI?: boolean; // For testing OpenAI connectivity
 }
 
 serve(async (req) => {
@@ -68,64 +66,7 @@ serve(async (req) => {
       originalLessonId,
       submissionId,
       resubmit,
-      debug,
-      testOpenAI,
     } = requestBody;
-
-    // Debug mode to test OpenAI configuration (only allow in development)
-    if (debug && testOpenAI) {
-      // Restrict debug endpoint to development environment
-      const isDevelopment = Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
-      if (!isDevelopment) {
-        throw new Error('Debug endpoint is only available in development');
-      }
-
-      const openAIKey = Deno.env.get('OPENAI_API_KEY');
-      let keyStatus = 'not configured';
-      let keyLength = 0;
-      let apiTest = null;
-
-      if (openAIKey) {
-        keyLength = openAIKey.length;
-        keyStatus = 'configured';
-
-        // Test the API
-        try {
-          const testResponse = await fetch('https://api.openai.com/v1/models', {
-            headers: {
-              Authorization: `Bearer ${openAIKey}`,
-            },
-          });
-
-          apiTest = {
-            status: testResponse.status,
-            ok: testResponse.ok,
-            statusText: testResponse.statusText,
-          };
-
-          if (!testResponse.ok) {
-            const errorText = await testResponse.text();
-            apiTest.error = errorText.substring(0, 200);
-          }
-        } catch (error) {
-          apiTest = { error: error.message };
-        }
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          debug: true,
-          openAIKeyStatus: keyStatus,
-          keyLength,
-          apiTest,
-          timestamp: new Date().toISOString(),
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
 
     // Create service client for admin operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
