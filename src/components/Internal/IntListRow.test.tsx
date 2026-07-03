@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import type { Lesson } from '@/types';
 import { makeLesson } from '@/__tests__/helpers/factories';
-import { intActivityLabel, intGradesLabel, sortGradeLevels } from './IntListRow';
+import { IntListRow, intActivityLabel, intGradesLabel, sortGradeLevels } from './IntListRow';
 
 // Build a Lesson with a partial metadata override, keeping the factory's full
 // metadata shape (required fields present).
@@ -103,5 +104,16 @@ describe('intActivityLabel (FP-17 — badge derives from activity_type)', () => 
   it('falls back to skills when activity_type has only unrecognized nouns', () => {
     const lesson = lessonWith({ activityType: ['mystery'], gardenSkills: ['Planting'] });
     expect(intActivityLabel(lesson)).toEqual({ label: 'Grow', className: 'grow' });
+  });
+});
+
+describe('IntListRow heritage badge (FP-16 — collapse to leaf, agrees with drawer)', () => {
+  it('shows the leaf, not a broader ancestor, for a 3-deep chain', () => {
+    const lesson = lessonWith({ culturalHeritage: ['Asian', 'East Asian', 'Chinese'] });
+    render(<IntListRow lesson={lesson} selected={false} onClick={() => {}} />);
+
+    expect(screen.getByText('Chinese')).toBeInTheDocument();
+    expect(screen.queryByText('Asian')).not.toBeInTheDocument();
+    expect(screen.queryByText('East Asian')).not.toBeInTheDocument();
   });
 });

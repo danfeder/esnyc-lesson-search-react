@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
-import { buildCultureLabelMap } from '@/utils/filterUtils';
+import { buildCultureLabelMap, collapseHeritageToLeaves } from '@/utils/filterUtils';
 import { cn } from '@/utils/cn';
 
 type ActivityClass = 'cook' | 'grow' | 'both' | 'craft' | 'academic';
@@ -96,7 +96,10 @@ export function IntListRow({ lesson, selected, onClick }: IntListRowProps) {
   const meta = lesson.metadata;
   const season = meta.seasonTiming?.[0];
   const theme = meta.thematicCategories?.[0];
-  const heritage = meta.culturalHeritage?.[0];
+  // FP-16: show the most-specific leaf, not a broader ancestor — collapse first
+  // so the row's single heritage tag agrees with the drawer's collapsed list
+  // (a lesson tagged [Asian, East Asian, Chinese] reads "Chinese" in both).
+  const heritage = collapseHeritageToLeaves(meta.culturalHeritage ?? [])[0];
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
