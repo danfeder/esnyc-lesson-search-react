@@ -1,4 +1,4 @@
-import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
+import { FILTER_CONFIGS, SEARCH_LOCATION_OPTIONS } from '@/utils/filterDefinitions';
 import { useSearchStore } from '@/stores/searchStore';
 import type { FacetCounts, FacetFilterKey } from '@/utils/facetCounts';
 import type { SearchFilters } from '@/types';
@@ -95,6 +95,9 @@ export function IntSidebar({ counts }: IntSidebarProps) {
         if (!cfg) return null;
         const selected = (filters[key] ?? []) as string[];
         const defaultOpen = key === 'activityType' || key === 'seasonTiming';
+        // FP-18: Location renders the search-only friendly options (Indoor-friendly /
+        // Outdoor-friendly, no Both); every other facet renders its config options.
+        const options = key === 'location' ? SEARCH_LOCATION_OPTIONS : cfg.options;
         return (
           <IntFilterSection
             key={key}
@@ -102,7 +105,7 @@ export function IntSidebar({ counts }: IntSidebarProps) {
             count={selected.length}
             defaultOpen={defaultOpen}
           >
-            {cfg.options.map((opt) => {
+            {options.map((opt) => {
               const checked = selected.includes(opt.value);
               // undefined while loading (blank badge, no dim); a number once loaded.
               const count = counts ? (counts[key][opt.value] ?? 0) : undefined;

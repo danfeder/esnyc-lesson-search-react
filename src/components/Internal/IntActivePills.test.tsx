@@ -124,5 +124,13 @@ describe('IntActivePills', () => {
 
       expect(getFilters().query).toBe('');
     });
+
+    it('FP-18: the location chip mirrors the sidebar friendly label', () => {
+      setFilters({ location: ['Indoor'] });
+      render(<IntActivePills />);
+
+      expect(screen.getByText('Indoor-friendly')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Remove Indoor-friendly' })).toBeInTheDocument();
+    });
   });
 });

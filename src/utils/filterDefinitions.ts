@@ -40,7 +40,10 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
 
   location: {
     label: 'Location',
-    type: 'single',
+    // Multi-select in the public search facet (rendered as SEARCH_LOCATION_OPTIONS
+    // below). The REVIEWER metadata form treats it single-select via its own form
+    // logic and still tags the literal Indoor/Outdoor/Both options kept here.
+    type: 'multiple',
     options: [
       { value: 'Indoor', label: 'Indoor' },
       { value: 'Outdoor', label: 'Outdoor' },
@@ -284,6 +287,20 @@ export const METADATA_CONFIGS: Record<string, FilterConfig> = {
     ],
   },
 };
+
+// FP-18 (search UI only): the public search sidebar renders Location as two
+// friendly checkboxes — Indoor-friendly / Outdoor-friendly. The stored value
+// `Both` is intentionally NOT offered as a search option — search folds it into
+// both indoor and outdoor server-side (`_match_location`) and in the badge
+// counts (`expandLocationSelection`), so an explicit Both checkbox would be
+// redundant. `FILTER_CONFIGS.location.options` above keeps the literal
+// Indoor/Outdoor/Both for the REVIEWER metadata form, which must still be able
+// to tag a lesson as `Both`. Consumed by IntSidebar, IntActivePills, and the
+// URL validator (which drops a stale `?loc=Both`).
+export const SEARCH_LOCATION_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'Indoor', label: 'Indoor-friendly' },
+  { value: 'Outdoor', label: 'Outdoor-friendly' },
+];
 
 // Export filter keys for easy iteration
 export const FILTER_KEYS = Object.keys(FILTER_CONFIGS) as Array<keyof typeof FILTER_CONFIGS>;

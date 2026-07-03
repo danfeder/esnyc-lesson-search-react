@@ -223,7 +223,7 @@ describe('round-trip identity', () => {
       seasonTiming: ['Fall', 'Winter'],
       activityType: ['cooking-only'],
       culturalHeritage: ['americas', 'mexican'],
-      location: ['Both'],
+      location: ['Indoor'],
     };
     const sortBy: SortBy = 'title';
 
@@ -236,6 +236,23 @@ describe('round-trip identity', () => {
     expect(filters.culturalHeritage).toEqual(original.culturalHeritage);
     expect(filters.location).toEqual(original.location);
     expect(parsedSort).toBe(sortBy);
+  });
+});
+
+describe('FP-18 — location accepts only the search options (Indoor/Outdoor), drops Both', () => {
+  it('drops a stale/shared ?loc=Both rather than storing a phantom filter', () => {
+    const { filters } = parseSearchParams(new URLSearchParams('loc=Both'));
+    expect(filters.location).toBeUndefined();
+  });
+
+  it('keeps Indoor/Outdoor but strips a co-listed Both', () => {
+    const { filters } = parseSearchParams(new URLSearchParams('loc=Indoor,Both,Outdoor'));
+    expect(filters.location).toEqual(['Indoor', 'Outdoor']);
+  });
+
+  it('accepts a plain Indoor selection', () => {
+    const { filters } = parseSearchParams(new URLSearchParams('loc=Indoor'));
+    expect(filters.location).toEqual(['Indoor']);
   });
 });
 
