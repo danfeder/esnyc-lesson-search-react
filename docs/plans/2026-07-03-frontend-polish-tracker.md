@@ -5,10 +5,10 @@ improve the end-user experience, and simplify what two years of vibe-coding with
 overbuilt. Less focused than go-live by design — discovery comes first, fixes ship in small
 themed waves. This is the ONLY tracking doc for the phase.
 
-**Last updated:** 2026-07-03 ~04:15am (Fable, OVERNIGHT AUTONOMOUS RUN complete — 5 PRs merged,
-8 left open for morning gates/review; see "Morning handoff (overnight run)" at the bottom of this
-file for the full ledger). NEXT = **user's morning pass over the open PRs + PROD gates, then FP2
-live walkthroughs** (script ready: `2026-07-03-fp2-walkthrough-script.md`).
+**Last updated:** 2026-07-03 afternoon (Fable, DESIGN SESSION complete — all 4 deferred design
+questions decided with the owner; record: `2026-07-03-fable-design-session.md`; five Opus
+execution briefs written in `fp3-briefs/`). NEXT = **Opus executes the briefs in separate fresh
+sessions, Brief 1 (#593 finalization) first**; owner merges each.
 
 ## Working model (binding, carried from go-live where it worked)
 
@@ -186,7 +186,7 @@ Plain-language verdicts from `fp1-audit/audit-assumptions.md` (full reasoning th
 |---|---|---|---|
 | FP1 | Discovery audit: re-verify the shelf, sweep the frontend (bugs + overengineering), assumptions review, ranked backlog | No (user reviews output) | **Audit DONE 2026-07-03** (9/9 agents; reports in `fp1-audit/`; ranked backlog below). FP2 walkthrough next |
 | FP2 | Live walkthroughs (public search; teacher/reviewer) — user narrates, Fable explains + logs | **Yes** | **NEXT** — audit findings below sharpen the walkthrough script |
-| FP3+ | Themed fix waves: quick wins first, then bug clusters, then sanctioned redesigns/simplifications | Per wave | **OVERNIGHT RUN 2026-07-03 shipped the bulk**: FP-11 (E, #581 merged + #582/583/584 gates), FP-15+D3 (D, #587/#588/#592 merged), FP-03/04a/05/06/07 (A, #585/#586/#591 open), FP-02 (#590 open, TEST-verified), FP-01b+D2 (B-lite, #593/#594 open), reviewer-UX batch (#595 open) — see Morning handoff below. Remaining backlog: FP-09 summary backfill, FP-16/17/18 (stakeholder), FP-19/20/21/22/24 tails, FP-04 full dialog rebuild |
+| FP3+ | Themed fix waves: quick wins first, then bug clusters, then sanctioned redesigns/simplifications | Per wave | **NOW BRIEF-DRIVEN (2026-07-03 PM):** five Opus briefs in `fp3-briefs/` (1 = #593 finalize, 2 = display truth, 3 = search polish, 4 = heritage close, 5 = ingredients promote — run 5 last). Earlier: **OVERNIGHT RUN 2026-07-03 shipped the bulk**: FP-11 (E, #581 merged + #582/583/584 gates), FP-15+D3 (D, #587/#588/#592 merged), FP-03/04a/05/06/07 (A, #585/#586/#591 open), FP-02 (#590 open, TEST-verified), FP-01b+D2 (B-lite, #593/#594 open), reviewer-UX batch (#595 open) — see Morning handoff below. Remaining backlog: FP-09 summary backfill, FP-16/17/18 (stakeholder), FP-19/20/21/22/24 tails, FP-04 full dialog rebuild |
 
 ## Explicitly NOT in this phase (unless the user reopens)
 
@@ -211,6 +211,18 @@ verified (95 rows normalized, snapshot 95 = 74 active/21 retired, CHECK validate
 `generate-gemini-embeddings` DELETED from PROD+TEST, resurrection check clean (0 queued runs),
 `OPENAI_API_KEY` unset on both projects. Remaining open: #585/#586/#591/#593/#594/#595 → FP2
 walkthrough sessions (script + decision checklist in `2026-07-03-fp2-walkthrough-script.md`).
+
+**✅ FABLE DESIGN SESSION COMPLETE (2026-07-03 PM, owner + Fable).** All four deferred design
+questions decided (record: `2026-07-03-fable-design-session.md`): (1) counts = standard
+convention + explainer line, 0-with-dimmed-row → **#593 UNBLOCKED**, finalization spec =
+`fp3-briefs/brief-1-593-finalization.md`; (2) grade-pill counts inline as built; (3) roster:
+Cooking Methods KEPT, **Main Ingredients PROMOTED** to a search filter (tree UI, slot #3,
+brief-5 — carries the only PROD gates), sidebar order otherwise unchanged; (4) FP-03 **CLOSED**
+— gate-first stays (invite-only site, no signup exists; fill-first protects nobody). Bonus
+decision: filter-panel "Clear all" → clears filters only (rides brief-3). New finding: 3 stray
+off-vocab main_ingredients values on 4 PROD lessons (cleanup in brief-5). "Index, not host"
+written into `docs/PRODUCT_PRINCIPLES.md`. Non-overlapping rung8 findings stay parked (list at
+the end of the design-session doc).
 
 **✅ FP2 WALKTHROUGH COMPLETE (2026-07-03 AM, owner + Opus).** Full record: decision-capture
 checklist in `2026-07-03-fp2-walkthrough-script.md`; cold-read summary in `2026-07-03-fp2-handoff.md`.
