@@ -81,8 +81,9 @@ mirror the T5 launch smoke. They are wired differently from the public specs:
 
 ### Running it locally
 
-The suite is **opt-in locally** (`E2E_AUTH=1`) so a casual `npm run test:e2e`
-still runs only the public specs. It needs env for a Supabase project with the
+The suite is **opt-in locally** (`E2E_AUTH=1`) — without it, a casual
+`npm run test:e2e` self-skips the authenticated projects (they still appear in
+the run report, marked skipped) and only the public specs actually execute. It needs env for a Supabase project with the
 seeded test accounts + edge functions — either the local stack (default `.env`)
 or the TEST project (export its `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
 and `SUPABASE_SERVICE_ROLE_KEY` in your shell first):

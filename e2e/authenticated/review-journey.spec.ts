@@ -398,13 +398,14 @@ test('teacher sees the revision note and resubmits; status flips and stale dupli
   expect(after?.status).toBe('submitted');
   expect(after?.revision_requested_reason).toBeNull();
 
-  // Both planted exact/high rows must be gone (fresh detection may add real
-  // low-score rows for the new canned content — those are legitimate).
+  // Both planted "stale" rows must be gone — asserted by their plant
+  // signature, so a legitimate organic row from the fresh detection re-run
+  // can never flake this (regardless of its score).
   const { count } = await svc
     .from('submission_similarities')
     .select('id', { count: 'exact', head: true })
     .eq('submission_id', S.subA!)
-    .gte('combined_score', 0.9);
+    .eq('match_details->>planted_by', 'auth-e2e');
   expect(count).toBe(0);
   await page.close();
 });

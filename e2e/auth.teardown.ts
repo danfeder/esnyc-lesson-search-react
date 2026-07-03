@@ -30,9 +30,10 @@ teardown('delete this run’s marker rows and verify zero residue', async () => 
   const deleted = await cleanupMarkerRows(svc, pattern);
   console.warn(`[auth-e2e] cleanup receipts for run ${runId}:`, deleted);
 
-  const residue = await markerResidue(svc, pattern);
+  const residue = await markerResidue(svc, pattern, runId);
   expect(residue, 'this run must leave zero marker rows behind').toEqual({
     submissions: 0,
     lessons: 0,
+    plantedSimilarities: 0,
   });
 });

@@ -3,7 +3,25 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-03 (Fable + user, **T5 LAUNCH SMOKE ✅ ALL 7 STATIONS GREEN — nothing
+**Last updated:** 2026-07-03 (Fable, **T5b BUILT — authenticated E2E fixture + 14-test
+review-journey suite, PR #579 open**). Cleanup design decided WITH the user at session start
+(option A): the suite self-cleans via marker-scoped service-key helpers on the Node side —
+recon corrected the brief's premise (CI already held `SUPABASE_SERVICE_ROLE_KEY_TEST` for the
+RLS-test step in the same workflow, so no new secrets; the browser never sees it; hard PROD-URL
+guard). Every row carries `…/d/1E2EAUTH<runId>…`; teardown deletes children-first and FAILS on
+residue; setup sweeps >2h-old markers from crashed runs; retries wipe the prior attempt.
+Replaces the fully-skipped `review-flow.spec.ts` (stale Phase-8b assertions). Coverage mirrors
+the T5 smoke: submit → all 5 decisions (incl. guard fire+cancel+publish-anyway, note re-bind on
+card switch, reject-requires-reason) → revision loop (resubmit clears stale sims, tags
+preserved) → badges ×4 → logged-out public search; publish-as-update targets THIS RUN's lesson
+(no real corpus row written). **Local gates: check ✅, 1960/1960 unit ✅, live suite vs TEST
+16/16 in 55s, teardown receipts 4/4/4/1/1, baseline re-probed byte-exact 763/685/130 + zero
+markers.** Local opt-in `E2E_AUTH=1` (e2e/README.md). PR carries the two outstanding docs
+commits; local main reset to origin. NEXT = CI green on the deploy preview → post-CI TEST
+baseline re-verify → 🔴 **USER merges #579** → phase CLOSES (invitations on the user's own
+timing). Prior update below.
+
+**Prior update (2026-07-03, Fable + user, **T5 LAUNCH SMOKE ✅ ALL 7 STATIONS GREEN — nothing
 launch-blocking**). Full per-station evidence + cleanup receipts in
 `2026-07-03-t5-launch-smoke.md`. Both residuals closed by real clicks: **all 5 reviewer
 decisions committed via browser** (publish-anyway guard fired naming top match + cancelled
@@ -354,7 +372,7 @@ one plain question, evidence beneath). Next = **T3 (Fable brief first, then Opus
 | T3b | Resubmit-after-revisions button (punch-list bucket 2; user-designed re-snapshot flow) | Opus → **Fable** (adjudication + merge) | **✅ DONE 2026-07-02 — PR #575 merged (squash `03ebe4b`) + PROD edge deploy 3-signal-verified (v37, sha `a7fce21d…` = TEST-verified bundle, negative probes reject cleanly).** No migration. Gate-2 TEST smoke had proven the full server loop (CAS flip, stale-similarity clear 1→0, tag+note preservation, 4 negative probes, retired-guard). Residual: UI button click → T5 smoke. Brief: `2026-07-02-brief-t3b-resubmit.md`. |
 | T4 | Corpus dedup sweep (764 live lessons) + review-screen reshape | Fable design ✅ → Opus t4a ✅ → Fable+user walkthrough ✅ → Opus t4c retire / t4b reshape | **t4c PR OPEN 2026-07-02 (`feat/t4c-dedup-retire`)** — soft-retire migration `20260702160000_t4_dedup_retire.sql` generated from decisions.json (61 losers, D5 snapshot pattern); local gates green; PROD re-probe 764/61-live/0-retired → 703; TEST rehearsal pre-registered 57/61 (742→685). NEXT = CI→TEST verify → 🔴 **USER-only PROD gate** → read-only PROD verify. **t4b** (Opus, `2026-07-02-brief-t4b-review-reshape.md`, independent) parallel-ok |
 | T5 | Final smoke (public search incl. mobile + submission flow) → LAUNCH | Fable + user | **✅ DONE 2026-07-03 — all 7 stations green, 0 launch-blocking findings.** All 5 reviewer decisions browser-clicked + committed (guard, note re-bind ×3 variants, reject-requires-reason, teacher badges); T3b resubmit loop closed under real clicks; PROD spot-checks + Workspace-SMTP reset email verified; TEST restored byte-exact, PROD untouched. Doc: `2026-07-03-t5-launch-smoke.md`. 3 nits → Post-launch list. |
-| T5b | Authenticated E2E fixture (Playwright storageState; un-skip review-flow.spec) — the phase's FINAL item (user decision 2026-07-03) | **Fable**, fresh session | **Brief ready:** `2026-07-03-brief-t5b-auth-e2e.md`. Covers the 5 decisions + resubmit + badges + publish-to-search; cleanup design on shared TEST DB is the flagged open question (STOP conditions binding). |
+| T5b | Authenticated E2E fixture (Playwright storageState; review-flow.spec rewritten) — the phase's FINAL item (user decision 2026-07-03) | **Fable**, fresh session | **PR #579 OPEN 2026-07-03** — fixture (programmatic login → storageState; marker-scoped self-cleanup, option A user-decided; no new CI secrets — reuses the RLS-step's existing `SUPABASE_SERVICE_ROLE_KEY_TEST`) + 14-test serial journey covering the full T5 smoke surface. Local: 16/16 in 55s vs TEST, baseline byte-exact after (763/685/130, 0 markers). Gates left: CI E2E on deploy preview → post-CI baseline re-verify → 🔴 USER merge. Phase closes on merge. |
 
 ## Post-launch list
 

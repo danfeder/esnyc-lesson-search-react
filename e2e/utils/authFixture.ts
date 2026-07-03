@@ -46,7 +46,7 @@ function parseDotEnv(): Record<string, string> {
   for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
     const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
     if (m && !line.trimStart().startsWith('#')) {
-      out[m[1]] = m[2].replace(/^["']|["']$/g, '');
+      out[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
     }
   }
   return out;
@@ -296,13 +296,25 @@ export async function cleanupMarkerRows(
   return counts;
 }
 
-/** Residue probe used by the teardown gate: marker-matching parent rows left
- * behind (children can't exist without these — every child delete above keys
- * off parent ids, and the FKs would block a parent delete with children). */
+/**
+ * Residue probe used by the teardown gate. Coverage argument, per table:
+ * - lesson_submissions / lessons: counted directly by marker pattern.
+ * - organic children (similarities from detection, versions from
+ *   approve_update): every one the suite can create references one of our
+ *   submissions via a real NO-ACTION FK (`submission_id` /
+ *   `archived_from_submission_id`), so the submission deletes above would
+ *   have errored — not silently skipped — if any remained. submissions=0
+ *   therefore proves them gone. (The lessons-side `lesson_id` columns carry
+ *   NO FK, which is why that argument is never used for them.)
+ * - planted similarity rows: counted directly by their `match_details` run
+ *   signature, so the gate holds even if a future refactor changed how
+ *   cleanup collects ids.
+ */
 export async function markerResidue(
   svc: SupabaseClient,
-  likePattern: string
-): Promise<{ submissions: number; lessons: number }> {
+  likePattern: string,
+  runId?: string
+): Promise<{ submissions: number; lessons: number; plantedSimilarities: number }> {
   const { count: subCount, error: e1 } = await svc
     .from('lesson_submissions')
     .select('id', { count: 'exact', head: true })
@@ -313,5 +325,19 @@ export async function markerResidue(
     .select('id', { count: 'exact', head: true })
     .like('file_link', likePattern);
   if (e2) throw new Error(`residue probe (lessons) failed: ${e2.message}`);
-  return { submissions: subCount ?? 0, lessons: lessonCount ?? 0 };
+  let plantedCount = 0;
+  if (runId) {
+    const { count, error: e3 } = await svc
+      .from('submission_similarities')
+      .select('id', { count: 'exact', head: true })
+      .eq('match_details->>planted_by', 'auth-e2e')
+      .eq('match_details->>run', runId);
+    if (e3) throw new Error(`residue probe (planted similarities) failed: ${e3.message}`);
+    plantedCount = count ?? 0;
+  }
+  return {
+    submissions: subCount ?? 0,
+    lessons: lessonCount ?? 0,
+    plantedSimilarities: plantedCount,
+  };
 }
