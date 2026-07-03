@@ -27,6 +27,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHeritageOptions,
   buildHeritageReviewOptions,
+  buildHeritageSlugToLabel,
   buildAliasToSlug,
   buildAncestorsBySlug,
   renderGeneratedTs,
@@ -343,6 +344,24 @@ describe('heritage hierarchy generator — reviewer options artifact (Output D, 
       .sort((a, b) => a - b);
     // americas(170) is the first root emitted; middle-eastern(23) the last.
     expect(reviewOptions[firstRootPositions[0]].value).toBe('Americas');
+  });
+});
+
+describe('heritage hierarchy generator — slug→label map (Brief 4, tagged_metadata recovery)', () => {
+  const slugToLabel = buildHeritageSlugToLabel(vocab);
+
+  it('maps every canonical kebab slug to its Title-Case label (all 71 tiers incl. internal)', () => {
+    expect(Object.keys(slugToLabel).length).toBe(vocab.canonical.length);
+    for (const node of vocab.canonical) {
+      expect(slugToLabel[node.key]).toBe(node.label);
+    }
+  });
+
+  it('recovers the internal-tier kebab slugs stored in tagged_metadata', () => {
+    expect(slugToLabel['east-asian']).toBe('East Asian');
+    expect(slugToLabel['latin-american']).toBe('Latin American');
+    expect(slugToLabel['soul-food']).toBe('Soul Food');
+    expect(slugToLabel['cajun-creole']).toBe('Cajun/Creole');
   });
 });
 

@@ -18,6 +18,9 @@
  *        `label`. See `buildHeritageReviewOptions`.
  *      - `CULTURAL_HERITAGE_VALUES` (Brief 4): the closed reviewer value set for
  *        `CulturalHeritageEnum` (src/types/lessonMetadata.zod.ts + edge mirror).
+ *      - `culturalHeritageSlugToLabel` (Brief 4): kebab slug → Title-Case label
+ *        (all tiers), used by `canonicalizeReviewMetadata` to restore legacy KEBAB
+ *        heritage in `submission_reviews.tagged_metadata` on reviewer reopen.
  *
  *   B. `scripts/heritage/artifacts/heritage-hierarchy-seed.sql`
  *      An INERT SQL fragment with INSERT rows for ALL nodes — top + sub +
@@ -276,6 +279,25 @@ export function buildHeritageReviewOptions(vocab: HeritageVocab): HeritageReview
   return out;
 }
 
+/**
+ * Kebab canonical slug → canonical Title-Case label, for ALL tiers (Brief 4).
+ *
+ * `submission_reviews.tagged_metadata.culturalHeritage` historically stored KEBAB
+ * SLUGS (`east-asian`, `latin-american`) — the value of the old CreatableSelect
+ * (whose options were the search-filter's kebab-valued tree). When a reviewer
+ * reopens such a legacy review row under the now-closed Title-Case enum, the raw
+ * slug would display but be REJECTED on re-save. This map lets
+ * `canonicalizeReviewMetadata` restore each slug to its canonical label on the
+ * load/save paths (exactly like the other closed fields' legacy→canonical maps).
+ * Already-canonical Title-Case values are not keys here, so they pass through
+ * unchanged; a truly unknown value passes through and is caught by the closed enum.
+ */
+export function buildHeritageSlugToLabel(vocab: HeritageVocab): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const node of vocab.canonical) out[node.key] = node.label;
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Output A rendering — committed TS artifact
 // ---------------------------------------------------------------------------
@@ -364,6 +386,18 @@ ${reviewOptionLines}
 export const CULTURAL_HERITAGE_VALUES = [
 ${reviewValueLines}
 ] as const;
+
+/**
+ * Kebab canonical slug → canonical Title-Case label (ALL 71 tiers). Consumed by
+ * \`canonicalizeReviewMetadata\` to restore legacy KEBAB heritage values stored in
+ * \`submission_reviews.tagged_metadata\` (the old CreatableSelect's slug output) to
+ * their canonical label on reopen, so a reopened legacy review row isn't rejected
+ * by the now-closed enum. Title-Case values aren't keys here (they pass through
+ * unchanged); unknown values pass through and are caught by the closed enum.
+ */
+export const culturalHeritageSlugToLabel: Record<string, string> = ${renderRecord(
+    buildHeritageSlugToLabel(vocab)
+  )};
 `;
   const config = (await prettier.resolveConfig(GENERATED_TS_PATH)) ?? {};
   return prettier.format(source, { ...config, filepath: GENERATED_TS_PATH });
