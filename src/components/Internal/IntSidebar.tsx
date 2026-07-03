@@ -82,7 +82,8 @@ export function IntSidebar({ counts }: IntSidebarProps) {
                 aria-pressed={active}
               >
                 {grade}
-                {counts && <span className="int-grade-pill-count">{count ?? 0}</span>}
+                {/* Inside this guard counts is loaded, so count is a number (incl. 0). */}
+                {counts && <span className="int-grade-pill-count">{count}</span>}
               </button>
             );
           })}
