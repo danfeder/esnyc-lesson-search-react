@@ -186,7 +186,7 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
     renderWithProviders(<SearchPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+      expect(screen.getByText(/couldn't load lessons just now/i)).toBeInTheDocument();
     });
     // Plain language only — never the raw technical error text.
     expect(screen.queryByText(/network error/i)).not.toBeInTheDocument();
@@ -213,6 +213,6 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
       expect(screen.getByText('Recovered Lesson')).toBeInTheDocument();
     });
     // Error card is gone.
-    expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/couldn't load lessons just now/i)).not.toBeInTheDocument();
   });
 });

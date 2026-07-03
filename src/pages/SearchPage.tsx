@@ -9,6 +9,7 @@ import {
   IntActivePills,
   IntCardGrid,
   IntEmptyState,
+  IntFetchError,
   IntLessonDrawer,
   IntListRow,
   IntListSkeleton,
@@ -283,32 +284,27 @@ export const SearchPage: React.FC = () => {
               results have settled and there are some — the no-results case is
               handled by the suggestions panel below. */}
           {synonymTerms.length > 0 && totalCount > 0 && !isPending && !isPlaceholderData && (
-            <p className="text-sm text-gray-600" style={{ margin: '4px 0 8px' }}>
+            // aria-live so screen-reader users hear the transparency note too,
+            // not just sighted users (this PR is about search transparency).
+            <p
+              className="text-sm text-gray-600"
+              style={{ margin: '4px 0 8px' }}
+              role="status"
+              aria-live="polite"
+            >
               Including matches for {synonymTerms.join(', ')}.
             </p>
           )}
 
           {isError && (
             // FP-13: honest, plain-language failure card + a working Retry —
-            // never raw technical error text. Retry re-runs the search query.
-            <div
-              role="alert"
-              className="int-empty"
-              style={{ borderStyle: 'solid', borderColor: 'var(--color-esy-red)' }}
-            >
-              <h3>Something went wrong</h3>
-              <p style={{ marginBottom: 12 }}>
-                We couldn&apos;t load lessons just now. Please check your connection and try again.
-              </p>
-              <button
-                type="button"
-                className="int-pill"
-                style={{ cursor: 'pointer' }}
-                onClick={() => refetchSearch()}
-              >
-                Retry
-              </button>
-            </div>
+            // never raw technical error text. Reuses the shared IntFetchError
+            // (IntAlert + IntButton, role="alert" aria-live="assertive") so this
+            // matches the FP-05/FP-07 error surfaces elsewhere. Retry re-runs the
+            // search query.
+            <IntFetchError onRetry={() => refetchSearch()}>
+              We couldn&apos;t load lessons just now. Please check your connection and try again.
+            </IntFetchError>
           )}
 
           {!isError && isPending ? (
