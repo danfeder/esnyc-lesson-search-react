@@ -284,6 +284,14 @@ jobs:
         run: npm run test:e2e
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.netlify.outputs.url }}
+          # T5b authenticated suite: programmatic login + marker-scoped
+          # cleanup against the TEST project. Reuses the exact secrets the
+          # "Test RLS policies" step above already consumes — no new secrets.
+          # The service key stays in the Node test runner (setup/teardown);
+          # the browser only ever sees the anon key baked into the preview.
+          VITE_SUPABASE_URL: https://rxgajgmphciuaqzvwmox.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY_TEST }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_TEST }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v7

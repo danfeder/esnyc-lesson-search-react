@@ -57,6 +57,44 @@ npm run test:e2e:ui
 | `lessons.spec.ts`       | Lesson display - cards, titles, grades, interactions              |
 | `accessibility.spec.ts` | A11y compliance - keyboard nav, ARIA, color contrast              |
 | `performance.spec.ts`   | Performance - load times, responsive design, touch targets        |
+| `authenticated/review-journey.spec.ts` | T5b authenticated journey - submit → all 5 reviewer decisions → revision loop → publish → public search (see below) |
+
+## Authenticated suite (T5b)
+
+The `authenticated/` specs drive the logged-in teacher + reviewer surfaces and
+mirror the T5 launch smoke. They are wired differently from the public specs:
+
+- **Login is programmatic.** `auth.setup.ts` signs in `teacher@test.com` and
+  `reviewer@test.com` (seeded test accounts, `password123`) via supabase-js and
+  saves Playwright `storageState` — no UI login per spec.
+- **Every row is marked.** Each created submission carries a run-unique marker
+  in its Google-Doc URL (`…/d/1E2EAUTH<runId>…`). Duplicate-candidate evidence
+  is planted through marker-scoped helpers (extraction is canned on the TEST
+  project, so detection scenarios must be deterministic).
+- **Cleanup is automatic and marker-scoped.** `auth.teardown.ts` deletes every
+  row matching this run's marker (service-role key, Node side only — the
+  browser never sees it) and fails the run if any marker row survives. Setup
+  also sweeps markers older than 2h left by crashed runs.
+- **Serial on purpose.** The journey is one story with shared state; the
+  project runs it in a single worker, and retries re-run the whole file with a
+  fresh attempt suffix after wiping the previous attempt's rows.
+
+### Running it locally
+
+The suite is **opt-in locally** (`E2E_AUTH=1`) so a casual `npm run test:e2e`
+still runs only the public specs. It needs env for a Supabase project with the
+seeded test accounts + edge functions — either the local stack (default `.env`)
+or the TEST project (export its `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+and `SUPABASE_SERVICE_ROLE_KEY` in your shell first):
+
+```bash
+E2E_AUTH=1 npx playwright test --project=chromium-auth
+```
+
+It refuses to run against the production project (hard URL guard).
+
+In CI the suite always runs; the workflow passes the TEST env + service key to
+the Playwright step (the same secrets `npm run test:rls` already uses).
 
 ## Writing New Tests
 
