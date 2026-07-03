@@ -151,6 +151,10 @@ export type AuditAction =
 export interface AuthContextValue {
   user: EnhancedUserProfile | null;
   loading: boolean;
+  /** True when the signed-in user's profile fetch failed (transient error, NOT signed-out). */
+  profileError: boolean;
+  /** Re-run the auth + profile check after a profileError. */
+  retryAuth: () => Promise<void>;
   permissions: Permission[];
 
   hasPermission: (permission: Permission) => boolean;

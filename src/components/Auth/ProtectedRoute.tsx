@@ -19,7 +19,8 @@ export function ProtectedRoute({
   fallback,
   redirectTo = '/',
 }: ProtectedRouteProps) {
-  const { user, loading, hasAllPermissions, hasAnyPermission } = useEnhancedAuth();
+  const { user, loading, profileError, retryAuth, hasAllPermissions, hasAnyPermission } =
+    useEnhancedAuth();
   const location = useLocation();
 
   // Show loading state
@@ -29,6 +30,38 @@ export function ProtectedRoute({
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // FP-07: the profile fetch failed for a (probably) signed-in user — a
+  // transient error, not a sign-out. Offer a Retry instead of silently
+  // redirecting home. When a LATER refetch errors while `user` is still set,
+  // we fall through to children below: stale-but-authenticated beats a false
+  // sign-out (RLS still enforces server-side).
+  if (!user && profileError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md"
+        >
+          <div className="flex items-center gap-3 text-red-800 mb-4">
+            <AlertCircle className="w-6 h-6 flex-shrink-0" />
+            <h2 className="text-xl font-semibold">Couldn&apos;t load your account</h2>
+          </div>
+          <p className="text-red-700 mb-4">
+            We couldn&apos;t confirm your sign-in because of a connection problem. You are probably
+            still signed in — retry to continue.
+          </p>
+          <button
+            onClick={() => void retryAuth()}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

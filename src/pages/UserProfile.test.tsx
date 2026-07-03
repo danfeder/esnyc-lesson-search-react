@@ -51,6 +51,8 @@ function makeAuth(user: EnhancedUserProfile | null): AuthContextValue {
   return {
     user,
     loading: false,
+    profileError: false,
+    retryAuth: vi.fn(),
     permissions: [],
     hasPermission: vi.fn(() => false),
     hasAnyPermission: vi.fn(() => false),

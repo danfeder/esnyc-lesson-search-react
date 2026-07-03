@@ -663,6 +663,10 @@ describe('useEnhancedAuth', () => {
       });
 
       expect(result.current.user).toBeNull();
+      // FP-07 pin: a thrown getUser is a blip, not a sign-out verdict —
+      // it must surface as profileError so ProtectedRoute shows Retry
+      // instead of silently redirecting.
+      expect(result.current.profileError).toBe(true);
     });
 
     it('handles profile fetch error gracefully', async () => {
@@ -688,6 +692,181 @@ describe('useEnhancedAuth', () => {
 
       // Should not crash, user remains null
       expect(result.current.user).toBeNull();
+      // FP-07: the failure is surfaced as a transient profileError, not a
+      // silent signed-out state.
+      expect(result.current.profileError).toBe(true);
+    });
+
+    it('leaves profileError false on a successful profile fetch', async () => {
+      const mockUser = createMockAuthUser();
+
+      mockGetUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      mockFrom.mockReturnValue(
+        createMockProfileFetchQuery({ data: createMockProfile(), error: null })
+      );
+
+      const { result } = renderHook(() => useEnhancedAuth());
+
+      await waitFor(() => {
+        expect(result.current.user).not.toBeNull();
+      });
+
+      expect(result.current.profileError).toBe(false);
+    });
+
+    it('leaves profileError false on the PGRST116 no-profile path', async () => {
+      const mockUser = createMockAuthUser();
+      const insertMock = vi.fn().mockReturnThis();
+
+      mockGetUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      const { chain: insertChain } = createMockProfileInsertQuery(
+        { data: createMockProfile(), error: null },
+        insertMock
+      );
+      mockFrom
+        .mockReturnValueOnce(
+          createMockProfileFetchQuery({
+            data: null,
+            error: { code: 'PGRST116', message: 'Row not found' },
+          })
+        )
+        .mockReturnValueOnce(insertChain);
+
+      const { result } = renderHook(() => useEnhancedAuth());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      // PGRST116 means "no profile yet" (creation path), not a fetch failure.
+      expect(result.current.user).not.toBeNull();
+      expect(result.current.profileError).toBe(false);
+    });
+
+    it('retryAuth re-runs the check and clears profileError on success', async () => {
+      const mockUser = createMockAuthUser();
+
+      mockGetUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      mockFrom.mockReturnValue(
+        createMockProfileFetchQuery({
+          data: null,
+          error: { code: 'SOME_ERROR', message: 'Database error' },
+        })
+      );
+
+      const { result } = renderHook(() => useEnhancedAuth());
+
+      await waitFor(() => {
+        expect(result.current.profileError).toBe(true);
+      });
+      expect(result.current.user).toBeNull();
+
+      // The blip clears — retry succeeds.
+      mockFrom.mockReturnValue(
+        createMockProfileFetchQuery({ data: createMockProfile(), error: null })
+      );
+
+      await act(async () => {
+        await result.current.retryAuth();
+      });
+
+      expect(result.current.profileError).toBe(false);
+      expect(result.current.user).not.toBeNull();
+      expect(result.current.loading).toBe(false);
+    });
+
+    it('keeps the last-known user when a signed-in refetch throws (no visual sign-out)', async () => {
+      const mockUser = createMockAuthUser();
+
+      mockGetUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      mockFrom.mockReturnValue(
+        createMockProfileFetchQuery({ data: createMockProfile(), error: null })
+      );
+
+      const { result } = renderHook(() => useEnhancedAuth());
+
+      await waitFor(() => {
+        expect(result.current.user).not.toBeNull();
+      });
+
+      // Later refetch (e.g. token refresh fires SIGNED_IN) REJECTS outright.
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockRejectedValue(new Error('network down')),
+      } as unknown as ReturnType<typeof supabase.from>);
+
+      act(() => {
+        authCallback?.('SIGNED_IN', { user: mockUser });
+      });
+
+      await waitFor(() => {
+        expect(result.current.profileError).toBe(true);
+      });
+      // DQ-2: stale-but-authenticated beats a false sign-out.
+      expect(result.current.user).not.toBeNull();
+    });
+
+    it('clears a latched profileError on genuine sign-out (redirect, not a dead-end card)', async () => {
+      const mockUser = createMockAuthUser();
+
+      mockGetUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      mockFrom.mockReturnValue(
+        createMockProfileFetchQuery({ data: createMockProfile(), error: null })
+      );
+
+      const { result } = renderHook(() => useEnhancedAuth());
+
+      await waitFor(() => {
+        expect(result.current.user).not.toBeNull();
+      });
+
+      // Latch profileError via a rejecting refetch (as in the test above).
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockRejectedValue(new Error('network down')),
+      } as unknown as ReturnType<typeof supabase.from>);
+
+      act(() => {
+        authCallback?.('SIGNED_IN', { user: mockUser });
+      });
+
+      await waitFor(() => {
+        expect(result.current.profileError).toBe(true);
+      });
+
+      // A genuine sign-out must clear the latch: ProtectedRoute should
+      // redirect (user null, no profileError), never show a sticky
+      // "Couldn't load your account" card whose Retry can't succeed.
+      act(() => {
+        authCallback?.('SIGNED_OUT', null);
+      });
+
+      await waitFor(() => {
+        expect(result.current.user).toBeNull();
+      });
+      expect(result.current.profileError).toBe(false);
     });
 
     it('treats PGRST116 error as no profile exists and creates profile', async () => {

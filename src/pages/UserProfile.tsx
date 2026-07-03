@@ -25,6 +25,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/utils/logger';
 import {
   IntButton,
+  IntFetchError,
   IntFormField,
   IntPageHeader,
   IntRoleBadge,
@@ -66,7 +67,7 @@ const STATUS_BADGE: Record<SubmissionStatus, IntStatus> = {
 
 export function UserProfile() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useEnhancedAuth();
+  const { user, loading: authLoading, profileError, retryAuth } = useEnhancedAuth();
   // useEnhancedAuth re-fetches the profile on EVERY auth event (hourly token
   // refresh, tab refocus, password change) and setUser()s a new object
   // identity each time. Key all page data-loading on the stable user id so
@@ -88,6 +89,10 @@ export function UserProfile() {
 
   const [submissions, setSubmissions] = useState<LessonSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  // Honest-error state (FP-05): a failed fetch must not render as "No
+  // submissions yet" — that would also hide the resubmit path for returned
+  // lessons.
+  const [submissionsError, setSubmissionsError] = useState(false);
   // Track in-flight resubmits by submission id in a Set (not a single id or a
   // global boolean) — a teacher can have several returned cards on screen, and
   // starting one must not re-enable another card that is still in flight.
@@ -139,6 +144,7 @@ export function UserProfile() {
   const loadSubmissions = useCallback(async () => {
     if (!userId) return;
     setLoadingSubmissions(true);
+    setSubmissionsError(false);
     try {
       const { data, error } = await supabase
         .from('lesson_submissions')
@@ -163,6 +169,7 @@ export function UserProfile() {
       );
     } catch (error) {
       logger.error('Error loading submissions:', error);
+      setSubmissionsError(true);
     } finally {
       setLoadingSubmissions(false);
     }
@@ -281,6 +288,22 @@ export function UserProfile() {
           <p className="adm-section-desc">
             <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" /> Loading your profile…
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user && profileError) {
+    // This page's own hook instance can blip independently of ProtectedRoute's
+    // (each useEnhancedAuth call runs its own profile fetch) — a blip here must
+    // not masquerade as "Sign in required".
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page adm-page--narrow">
+          <IntFetchError onRetry={retryAuth}>
+            Couldn&apos;t load your account &mdash; this is usually a connection blip, not a
+            sign-out. Retry to continue.
+          </IntFetchError>
         </div>
       </div>
     );
@@ -546,6 +569,11 @@ export function UserProfile() {
             <p className="adm-submission-row-loading">
               <Loader2 className="w-4 h-4 adm-spin" aria-hidden="true" /> Loading submissions…
             </p>
+          ) : submissionsError ? (
+            <IntFetchError onRetry={loadSubmissions}>
+              Couldn&apos;t load your submissions. Check your connection and retry — if you came
+              here to send a lesson back for review, it should appear after a retry.
+            </IntFetchError>
           ) : submissions.length === 0 ? (
             <div className="adm-empty">
               <h3>No submissions yet</h3>
