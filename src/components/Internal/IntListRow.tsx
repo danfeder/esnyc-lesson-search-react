@@ -3,14 +3,35 @@ import type { Lesson } from '@/types';
 import { buildCultureLabelMap } from '@/utils/filterUtils';
 import { cn } from '@/utils/cn';
 
-type ActivityClass = 'cook' | 'grow' | 'both' | 'academic';
+type ActivityClass = 'cook' | 'grow' | 'both' | 'craft' | 'academic';
 
 interface ActivityLabel {
   label: string;
   className: ActivityClass;
 }
 
+// FP-17: the card/row badge derives from the `activity_type` field (the same
+// field the Activity Type filter uses — bare nouns cooking/garden/academic/craft),
+// falling back to the legacy skills heuristic only when activity_type is empty
+// or carries no recognized noun. This closes the "Craft activity → no badge / a
+// wrong Academic badge" gap: a craft lesson with no cooking/garden skills now
+// reads "Craft" instead of falling through to "Academic".
 export function intActivityLabel(lesson: Lesson): ActivityLabel {
+  const types = lesson.metadata.activityType ?? [];
+  if (types.length > 0) {
+    const hasCook = types.includes('cooking');
+    const hasGrow = types.includes('garden');
+    const hasCraft = types.includes('craft');
+    const hasAcademic = types.includes('academic');
+    if (hasCook && hasGrow) return { label: 'Cook + Grow', className: 'both' };
+    if (hasCook) return { label: 'Cook', className: 'cook' };
+    if (hasGrow) return { label: 'Grow', className: 'grow' };
+    if (hasCraft) return { label: 'Craft', className: 'craft' };
+    if (hasAcademic) return { label: 'Academic', className: 'academic' };
+    // Only unrecognized nouns — fall through to the skills-based fallback below.
+  }
+
+  // Fallback (activity_type empty/unrecognized): the legacy skills heuristic.
   const hasC = (lesson.metadata.cookingSkills?.length ?? 0) > 0;
   const hasG = (lesson.metadata.gardenSkills?.length ?? 0) > 0;
   if (hasC && hasG) return { label: 'Cook + Grow', className: 'both' };
@@ -19,10 +40,40 @@ export function intActivityLabel(lesson: Lesson): ActivityLabel {
   return { label: 'Academic', className: 'academic' };
 }
 
+// Canonical grade order (matches filterDefinitions.gradeLevels option order).
+// Unknown values sort to the end, preserving their relative input order.
+const GRADE_ORDER = ['3K', 'PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8'] as const;
+const gradeRank = (g: string): number => {
+  const i = (GRADE_ORDER as readonly string[]).indexOf(g);
+  return i === -1 ? GRADE_ORDER.length : i;
+};
+
+/**
+ * Sort a grade array into canonical order (3K, PK, K, 1…8) and de-duplicate —
+ * grades are a set, and stored arrays can arrive in reviewer/import order, so
+ * display surfaces must not assume sorted (or unique). Dedup also keeps the
+ * contiguity check honest (a repeated grade can't mask a gap).
+ */
+export function sortGradeLevels(grades: readonly string[]): string[] {
+  return [...new Set(grades)].sort((a, b) => gradeRank(a) - gradeRank(b));
+}
+
+/**
+ * A compact grades label. Sorts through canonical order first (so "Sunprints",
+ * stored {1,2,3,K}, reads "K–3" not the backwards "1–K"). A run of >2 grades
+ * renders as a first–last range ONLY when it is contiguous in canonical order;
+ * a set with gaps (e.g. K, 4, 8) renders as a comma list so the dash never
+ * implies grades the lesson doesn't cover.
+ */
 export function intGradesLabel(grades: string[] | undefined): string {
   if (!grades || grades.length === 0) return '—';
-  if (grades.length <= 2) return grades.join(', ');
-  return `${grades[0]}–${grades[grades.length - 1]}`;
+  const sorted = sortGradeLevels(grades);
+  if (sorted.length <= 2) return sorted.join(', ');
+  const first = gradeRank(sorted[0]);
+  const last = gradeRank(sorted[sorted.length - 1]);
+  // Contiguous iff the run exactly spans first..last with no gaps or unknowns.
+  const contiguous = last < GRADE_ORDER.length && last - first + 1 === sorted.length;
+  return contiguous ? `${sorted[0]}–${sorted[sorted.length - 1]}` : sorted.join(', ');
 }
 
 // Recursive value → label lookup across the full cultural-heritage tree
