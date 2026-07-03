@@ -3,17 +3,33 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import { makeRpcRow } from '../helpers/factories';
 
 // Mock Supabase client
 const rpcMock = vi.fn();
 const functionsInvokeMock = vi.fn().mockResolvedValue({ data: null, error: null });
+// D2: SearchPage's by-id fallback (useLessonById) calls supabase.from(...).
+// Every test in this file resolves its lesson from the loaded search page
+// (fast path), so a `from` call is unexpected — stub the chain to resolve null
+// so a stray call surfaces as a visible "Lesson not found" state instead of a
+// mid-render TypeError. Deep-link behavior itself is covered in
+// search-page.permalink.test.tsx.
+const fromMock = vi.fn((..._args: unknown[]) => ({
+  select: () => ({
+    eq: () => ({
+      is: () => ({
+        maybeSingle: () => Promise.resolve({ data: null, error: null }),
+      }),
+    }),
+  }),
+}));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpcMock(...args),
+    from: (...args: unknown[]) => fromMock(...args),
     functions: { invoke: (...args: unknown[]) => functionsInvokeMock(...args) },
   },
 }));
@@ -34,9 +50,20 @@ function renderWithProviders(ui: React.ReactElement, initialEntries: string[] = 
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // D2: mount under real <Routes> — the open lesson is now route state
+  // (/lesson/:lessonId), so clicking a row NAVIGATES; a bare element would
+  // never match the new path and the drawer would never open. All three paths
+  // render the same element (same component type, same tree position), which is
+  // exactly the production no-remount shape.
   return render(
     <MemoryRouter initialEntries={initialEntries}>
-      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <Routes>
+          <Route path="/" element={ui} />
+          <Route path="/search" element={ui} />
+          <Route path="/lesson/:lessonId" element={ui} />
+        </Routes>
+      </QueryClientProvider>
     </MemoryRouter>
   );
 }

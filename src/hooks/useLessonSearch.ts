@@ -26,7 +26,7 @@ interface UseLessonSearchOptions {
   enabled?: boolean;
 }
 
-interface RpcRow {
+export interface RpcRow {
   lesson_id: string;
   title: string;
   summary: string;
@@ -78,7 +78,7 @@ export function normalizeMetadata(
   } as LessonMetadata;
 }
 
-function mapRowToLesson(row: RpcRow): Lesson {
+export function mapRowToLesson(row: RpcRow): Lesson {
   return {
     lessonId: row.lesson_id,
     title: row.title,

@@ -1,16 +1,21 @@
 import { X } from 'lucide-react';
 import type { Lesson } from '@/types';
-import { IntLessonDetail } from './IntLessonDetail';
+import { IntLessonPaneBody, type LessonPaneStatus } from './IntLessonPaneBody';
 
 interface IntSplitDetailProps {
+  /** 'closed' renders the rail's empty prompt (non-modal, always visible). */
+  status: LessonPaneStatus | 'closed';
   lesson: Lesson | null;
   onClose: () => void;
+  onRetry?: () => void;
 }
 
-export function IntSplitDetail({ lesson, onClose }: IntSplitDetailProps) {
+export function IntSplitDetail({ status, lesson, onClose, onRetry }: IntSplitDetailProps) {
   return (
     <aside className="int-detail" aria-label="Lesson detail">
-      {lesson ? (
+      {status === 'closed' ? (
+        <div className="int-detail-empty">Select a lesson to preview details.</div>
+      ) : (
         <>
           <button
             type="button"
@@ -20,10 +25,8 @@ export function IntSplitDetail({ lesson, onClose }: IntSplitDetailProps) {
           >
             <X width={16} height={16} />
           </button>
-          <IntLessonDetail lesson={lesson} />
+          <IntLessonPaneBody status={status} lesson={lesson} onClose={onClose} onRetry={onRetry} />
         </>
-      ) : (
-        <div className="int-detail-empty">Select a lesson to preview details.</div>
       )}
     </aside>
   );

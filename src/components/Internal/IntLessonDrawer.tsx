@@ -2,17 +2,30 @@ import { Fragment } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { X } from 'lucide-react';
 import type { Lesson } from '@/types';
-import { IntLessonDetail } from './IntLessonDetail';
+import { IntLessonPaneBody, type LessonPaneStatus } from './IntLessonPaneBody';
 
 interface IntLessonDrawerProps {
+  open: boolean;
+  status: LessonPaneStatus;
   lesson: Lesson | null;
   onClose: () => void;
+  onRetry?: () => void;
 }
 
-export function IntLessonDrawer({ lesson, onClose }: IntLessonDrawerProps) {
+const STATUS_TITLES: Record<Exclude<LessonPaneStatus, 'ready'>, string> = {
+  loading: 'Loading lesson',
+  'not-found': 'Lesson not found',
+  error: "Couldn't load this lesson",
+};
+
+export function IntLessonDrawer({ open, status, lesson, onClose, onRetry }: IntLessonDrawerProps) {
+  // D2 §2d: the dialog has an accessible name in EVERY open status (not just
+  // ready) — a deep link lands in loading/not-found before any lesson exists.
+  const title = status === 'ready' ? (lesson?.title ?? 'Lesson details') : STATUS_TITLES[status];
+
   return (
-    <Transition show={lesson !== null} as={Fragment}>
-      <Dialog open={lesson !== null} onClose={onClose} className="relative z-50">
+    <Transition show={open} as={Fragment}>
+      <Dialog open={open} onClose={onClose} className="relative z-50">
         <TransitionChild
           as={Fragment}
           enter="transition-opacity duration-200"
@@ -36,20 +49,21 @@ export function IntLessonDrawer({ lesson, onClose }: IntLessonDrawerProps) {
             leaveTo="translate-x-full"
           >
             <DialogPanel className="int-drawer pointer-events-auto">
-              {lesson && (
-                <>
-                  <DialogTitle className="sr-only">{lesson.title}</DialogTitle>
-                  <button
-                    type="button"
-                    className="int-drawer-close"
-                    onClick={onClose}
-                    aria-label="Close lesson details"
-                  >
-                    <X width={16} height={16} />
-                  </button>
-                  <IntLessonDetail lesson={lesson} />
-                </>
-              )}
+              <DialogTitle className="sr-only">{title}</DialogTitle>
+              <button
+                type="button"
+                className="int-drawer-close"
+                onClick={onClose}
+                aria-label="Close lesson details"
+              >
+                <X width={16} height={16} />
+              </button>
+              <IntLessonPaneBody
+                status={status}
+                lesson={lesson}
+                onClose={onClose}
+                onRetry={onRetry}
+              />
             </DialogPanel>
           </TransitionChild>
         </div>
