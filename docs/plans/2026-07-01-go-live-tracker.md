@@ -18,9 +18,24 @@ anon/authenticated grants — both revokes load-bearing; verified TEST+PROD), ar
 tests (12 relabeled + 3 new: guard-cancel / option-3 wiring / reject-requires-reason + new
 IntDuplicateCard label-map suite). Gates: check ✅, tests 1958/1958 ✅, db reset ✅, test:rls 6/8
 (2 pre-existing service-role validation failures, unchanged, grants-unrelated), local RPC+ACL
-probes ✅. NEXT: CI applies migration to TEST → TEST verification round (RPC grants + sane sims +
-retired-exclusion + edge smoke) → bot triage → 🔴 USER merge + PROD gates → **T5**. Prior update
-below.
+probes ✅. **TEST verification COMPLETE (2 DB rounds, queries+raw results on the PR):** migrations
+`20260703000000`+`010000` recorded; ACLs `{postgres,service_role}` both fns; retired-exclusion
+live-fire (bait = retired Aloo Gobi's own text → 0 retired in results, no self-match, twin top at
+0.891); live edge smoke on v10 (near-copy → `hashMatch:false`/`medium`, NO false `exact`; score
+math exact; artifacts cleaned, baseline 130/763/685 restored). **3 bot review rounds CONVERGED**
+(R1 stale-note-on-leave + RPC casefold → fixed `e6d63fd` + migration `010000`; R2 stale-note-on-
+card-switch → fixed `856fcd6` generalized to the search-repick variant; R3 = convergence, no new
+bugs) + 2 permanent RLS-scenario guardrails added (anon-cannot-call RPC; RPC-never-returns-retired
+— live-fire on TEST data every CI run). The 3 red "Deploy to TEST" checks are the documented
+COSMETIC no-op (byte-identical bundles, shas verified — T3b pattern; PROD deploy on merge advances
+genuinely). **Deferred follow-ups (post-launch list):** (1) `complete_review_atomic` guard/revive
+semantics for approve_update-into-retired-target (Codex; pre-existing, narrowed by t4b); (2) GIN
+trgm index for the RPC if corpus grows — note it must be a `lower()` expression index or a
+`%`-operator rewrite (existing `idx_lessons_title_trgm` is raw-`title`, unusable by this query);
+(3) delete `similarity.test.ts`'s dead title-similarity block + extract detect-duplicates
+scoring/buckets into a pure fn with a unit suite. NEXT: 🔴 **USER merge #578 + PROD gates**
+(migration approval + edge deploy — a PROD deploy no-op would be REAL, unlike TEST) → 3-signal
+PROD verify → **T5**. Prior update below.
 
 **Prior update (2026-07-03, Fable, t4c ✅ SHIPPED + PROD-VERIFIED — the dedup data track is
 DONE).** Pre-merge review APPROVED with no changes (detail below), then on user authorization:
