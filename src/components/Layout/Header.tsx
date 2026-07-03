@@ -1,17 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  Search,
-  User,
-  Plus,
-  Shield,
-  LogOut,
-  LogIn,
-  ChevronDown,
-  Users,
-  BarChart3,
-  X,
-} from 'lucide-react';
+import { Search, User, Plus, Shield, LogOut, LogIn, ChevronDown, Users, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { AuthModal } from '@/components/Auth/AuthModal';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
@@ -134,11 +123,6 @@ export const Header: React.FC<HeaderProps> = () => {
                     {hasPermission(Permission.VIEW_USERS) && (
                       <MenuLink to="/admin/users" onSelect={() => setShowUserMenu(false)}>
                         <Users className="w-4 h-4" /> Manage Users
-                      </MenuLink>
-                    )}
-                    {hasPermission(Permission.VIEW_ANALYTICS) && (
-                      <MenuLink to="/admin/analytics" onSelect={() => setShowUserMenu(false)}>
-                        <BarChart3 className="w-4 h-4" /> Analytics
                       </MenuLink>
                     )}
                     <button

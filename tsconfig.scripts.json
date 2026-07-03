@@ -9,6 +9,7 @@
     "scripts/heritage/**/*.ts",
     "scripts/lib/**/*.ts",
     "scripts/search-eval/**/*.ts",
-    "scripts/dedup-sweep/**/*.ts"
+    "scripts/dedup-sweep/**/*.ts",
+    "scripts/fp02-theme-normalize/**/*.ts"
   ]
 }

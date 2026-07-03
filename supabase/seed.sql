@@ -80,7 +80,11 @@ VALUES
     ARRAY['3', '4', '5'],
     ARRAY['garden', 'cooking'],
     ARRAY['Garden', 'Kitchen'],
-    ARRAY['Plant Science', 'Nutrition'],
+    -- Thematic categories must use the canonical vocabulary from
+    -- src/utils/filterDefinitions.ts — the valid_thematic_categories CHECK
+    -- (migration 20260703030000, FP-02) rejects anything else, and seed.sql
+    -- runs AFTER migrations.
+    ARRAY['Plant Growth', 'Seed to Table'],
     ARRAY['Spring', 'Summer'],
     ARRAY['Garden Skills and Related Academic Content', 'Kitchen Skills and Related Academic Content'],
     ARRAY['Italian', 'Mexican'],
@@ -96,7 +100,7 @@ VALUES
     ARRAY['4', '5', '6'],
     ARRAY['cooking'],
     ARRAY['Kitchen'],
-    ARRAY['Food Science', 'Chemistry'],
+    ARRAY['Food Systems'],
     ARRAY['Fall', 'Winter', 'Spring', 'Summer'],
     ARRAY['Kitchen Skills and Related Academic Content'],
     ARRAY['European'],
@@ -112,7 +116,7 @@ VALUES
     ARRAY['K', '1', '2'],
     ARRAY['garden'],
     ARRAY['Garden', 'Outdoor Classroom'],
-    ARRAY['Environmental Science', 'Ecology'],
+    ARRAY['Ecosystems', 'Garden Basics'],
     ARRAY['Fall', 'Spring'],
     ARRAY['Environmental and Community Stewardship', 'Garden Skills and Related Academic Content'],
     ARRAY[]::text[],
@@ -128,7 +132,7 @@ VALUES
     ARRAY['5', '6', '7', '8'],
     ARRAY['cooking'],
     ARRAY['Kitchen'],
-    ARRAY['Cultural Heritage', 'Nutrition'],
+    ARRAY['Food Systems'],
     ARRAY['Summer', 'Fall'],
     ARRAY['Kitchen Skills and Related Academic Content', 'Culturally Responsive Education'],
     ARRAY['Mexican', 'Latin American'],
@@ -144,7 +148,7 @@ VALUES
     ARRAY['PK', 'K', '1'],
     ARRAY['garden'],
     ARRAY['Greenhouse', 'Indoor Classroom'],
-    ARRAY['Plant Science'],
+    ARRAY['Plant Growth'],
     ARRAY['Spring'],
     ARRAY['Garden Skills and Related Academic Content'],
     ARRAY[]::text[],

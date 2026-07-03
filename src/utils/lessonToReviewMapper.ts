@@ -18,6 +18,7 @@
  */
 import type { LessonMetadataValidated, AcademicIntegrationValue } from '@/types/lessonMetadata.zod';
 import type { ReviewFormPayloadValidated } from '@/types/reviewFormPayload.zod';
+import { normalizeThematicCategories } from '@/utils/thematicNormalize';
 
 export function lessonToReview(input: LessonMetadataValidated): ReviewFormPayloadValidated {
   const out: ReviewFormPayloadValidated = {};
@@ -30,8 +31,13 @@ export function lessonToReview(input: LessonMetadataValidated): ReviewFormPayloa
   }
 
   // Key renames (canonical → review form).
+  // FP-02 Tier-1 guard: legacy kebab theme values ('seed-to-table') are
+  // normalized to the canonical Title-Case vocabulary at form-init, so the
+  // pill UI can display them and a reviewer save self-repairs a drifted row
+  // instead of round-tripping the drift back into the DB (which now rejects
+  // it via the valid_thematic_categories CHECK).
   if (input.thematicCategories && input.thematicCategories.length > 0) {
-    out.themes = input.thematicCategories;
+    out.themes = normalizeThematicCategories(input.thematicCategories);
   }
   if (input.seasonTiming && input.seasonTiming.length > 0) {
     out.season = input.seasonTiming;

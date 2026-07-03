@@ -44,9 +44,6 @@ const AdminInviteUser = lazy(() =>
 const AdminInvitations = lazy(() =>
   import('@/pages/AdminInvitations').then((m) => ({ default: m.AdminInvitations }))
 );
-const AdminAnalytics = lazy(() =>
-  import('@/pages/AdminAnalytics').then((m) => ({ default: m.AdminAnalytics }))
-);
 const AdminDashboard = lazy(() =>
   import('@/pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
 );
@@ -171,14 +168,6 @@ function AppContent() {
                   element={
                     <ProtectedRoute permissions={[Permission.VIEW_USERS]}>
                       <AdminUserDetail />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/analytics"
-                  element={
-                    <ProtectedRoute permissions={[Permission.VIEW_ANALYTICS]}>
-                      <AdminAnalytics />
                     </ProtectedRoute>
                   }
                 />
