@@ -47,9 +47,14 @@ function countActiveFilters(filters: SearchFilters): number {
  * morphological variants of each typed word (the word, word−lastchar, word+'s'
  * — see expandSearchTerms in the edge function); we reconstruct that exact set
  * and subtract it so the hint names ONLY genuine synonyms, never stemming noise
- * (`tomato` never surfaces `tomat`/`tomatos`). The results RPC
+ * (`tomato` never surfaces `tomat`/`tomatos`). Both the results RPC
  * (expand_search_with_synonyms) and smart-search read the same search_synonyms
- * table, so a term shown here was genuinely searched against the results too.
+ * table. Caveat: the hint expands the RAW query, while the results search the
+ * CLEANED query (parseSearchQuery strips filler + routed grade cues, e.g.
+ * "3rd grade squash" → "squash"). So "genuinely searched against the results" is
+ * strictly guaranteed only for tokens that survive cleaning — which in practice is
+ * all of them, since the curated food/garden synonyms table has no entries for the
+ * filler/grade words cleaning removes (a stripped token can't contribute a synonym).
  */
 export function extractSynonymTerms(query: string, expandedQuery: string | undefined): string[] {
   if (!expandedQuery) return [];

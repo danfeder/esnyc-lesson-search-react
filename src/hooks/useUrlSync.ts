@@ -21,6 +21,9 @@ interface UseUrlSyncResult {
    * (rung8-permalink-history F2). This ALSO covers rung8-stores F3 (toggle →
    * open lesson → Back must keep the toggle), since post-D2 opening a lesson no
    * longer unmounts SearchPage — it's a same-element push through this path.
+   * (On a split-view click-through — replacing one open lesson with another — the
+   * pending write lands on the OUTGOING lesson entry, which the following
+   * `navigate(replace)` immediately overwrites; harmless, a no-op in effect there.)
    * A no-op when no write is pending. NOTE: intentionally NOT called on unmount
    * — flushing there would re-navigate through a stale router closure and
    * clobber a concurrent cross-route push (verified in
