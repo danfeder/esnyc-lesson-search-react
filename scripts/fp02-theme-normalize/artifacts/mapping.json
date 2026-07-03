@@ -1,0 +1,35 @@
+{
+  "source": "src/utils/filterDefinitions.ts FILTER_CONFIGS.thematicCategories.options",
+  "rule": "kebab = canonical.toLowerCase().replace(/\\s+/g, '-')",
+  "migration": "supabase/migrations/20260703030000_normalize_kebab_theme_values.sql",
+  "pairs": [
+    {
+      "kebab": "garden-basics",
+      "canon": "Garden Basics"
+    },
+    {
+      "kebab": "plant-growth",
+      "canon": "Plant Growth"
+    },
+    {
+      "kebab": "garden-communities",
+      "canon": "Garden Communities"
+    },
+    {
+      "kebab": "ecosystems",
+      "canon": "Ecosystems"
+    },
+    {
+      "kebab": "seed-to-table",
+      "canon": "Seed to Table"
+    },
+    {
+      "kebab": "food-systems",
+      "canon": "Food Systems"
+    },
+    {
+      "kebab": "food-justice",
+      "canon": "Food Justice"
+    }
+  ]
+}
