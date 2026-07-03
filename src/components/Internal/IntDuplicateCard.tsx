@@ -11,7 +11,7 @@ export interface IntDuplicateCardData {
   /** Combined similarity score in 0..1. */
   similarity: number;
   matchType?: IntDuplicateMatchType | null;
-  /** Optional human label for the match type (e.g. "Near-duplicate"). Falls back to a default per matchType. */
+  /** Optional human label for the match type (e.g. "Nearly identical"). Falls back to a default per matchType. */
   matchLabel?: string;
 }
 
@@ -23,11 +23,13 @@ export interface IntDuplicateCardProps {
   className?: string;
 }
 
+// Plain-language match labels (T4b / D7 / D11). The score % stays as small
+// secondary text; these carry the human read of the match strength.
 const DEFAULT_MATCH_LABELS: Record<IntDuplicateMatchType, string> = {
-  exact: 'Near-duplicate',
-  high: 'High similarity',
-  medium: 'Some overlap',
-  low: 'Low overlap',
+  exact: 'Identical copy',
+  high: 'Nearly identical',
+  medium: 'Very similar',
+  low: 'Some overlap',
 };
 
 export function IntDuplicateCard({ dup, selected, onSelect, className }: IntDuplicateCardProps) {

@@ -33,13 +33,6 @@ const adminSections: AdminSection[] = [
     permission: Permission.VIEW_USERS,
   },
   {
-    eyebrow: 'Library',
-    title: 'Duplicate Management',
-    description: 'Review and resolve duplicate lessons.',
-    path: '/admin/duplicates',
-    permission: Permission.MANAGE_DUPLICATES,
-  },
-  {
     eyebrow: 'Submissions',
     title: 'Review Dashboard',
     description: 'Review and approve submitted lessons.',

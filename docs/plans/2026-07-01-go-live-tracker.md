@@ -3,7 +3,72 @@
 **Goal:** basic functionality solid and live for real users, minimum effort. This is the ONLY
 tracking doc for the sprint — the 4-file scaffold is retired for this phase (see Working model).
 
-**Last updated:** 2026-07-02 (Opus, **t4c retire migration — PR #577 OPEN, reviewed**). Branch
+**Last updated:** 2026-07-03 (Fable, **t4b BUILT — PR open, Opus first cut salvaged + completed
+by Fable**). Opus's t4b session drifted mid-flight (user stopped it); Fable audited the working
+tree — verdict: on-brief and worth salvaging (nothing pushed, no DB/edge touched; snapshot commit
+`695e0bb` preserves the as-found state). Kept: migration (RPC + revoke), both edge-fn rewrites,
+§C panel reshape, §D rejected badge, §E page removals. Fable completed: D7 publish-guard wiring in
+ReviewDetail (was the one TS error), **complete-review embedding-block removal** (brief gap — the
+Phase-4 block called OpenAI on every approve_update and on NULL-embedding approve_new; post-t4b
+every new submission is NULL → publish would depend on OpenAI and 500 without the key; publishing
+must not touch OpenAI), embedding stragglers (`useReviewSubmission` select/type,
+`duplicateDetection.ts` orphan), MANAGE_DUPLICATES full removal (enum + role map + gating lists +
+invite-UI previews), migration ACL-comment correction (live proacl has PUBLIC **and** explicit
+anon/authenticated grants — both revokes load-bearing; verified TEST+PROD), aria-label fix, all
+tests (12 relabeled + 3 new: guard-cancel / option-3 wiring / reject-requires-reason + new
+IntDuplicateCard label-map suite). Gates: check ✅, tests 1958/1958 ✅, db reset ✅, test:rls 6/8
+(2 pre-existing service-role validation failures, unchanged, grants-unrelated), local RPC+ACL
+probes ✅. **TEST verification COMPLETE (2 DB rounds, queries+raw results on the PR):** migrations
+`20260703000000`+`010000` recorded; ACLs `{postgres,service_role}` both fns; retired-exclusion
+live-fire (bait = retired Aloo Gobi's own text → 0 retired in results, no self-match, twin top at
+0.891); live edge smoke on v10 (near-copy → `hashMatch:false`/`medium`, NO false `exact`; score
+math exact; artifacts cleaned, baseline 130/763/685 restored). **3 bot review rounds CONVERGED**
+(R1 stale-note-on-leave + RPC casefold → fixed `e6d63fd` + migration `010000`; R2 stale-note-on-
+card-switch → fixed `856fcd6` generalized to the search-repick variant; R3 = convergence, no new
+bugs) + 2 permanent RLS-scenario guardrails added (anon-cannot-call RPC; RPC-never-returns-retired
+— live-fire on TEST data every CI run). The 3 red "Deploy to TEST" checks are the documented
+COSMETIC no-op (byte-identical bundles, shas verified — T3b pattern; PROD deploy on merge advances
+genuinely). **Deferred follow-ups (post-launch list):** (1) `complete_review_atomic` guard/revive
+semantics for approve_update-into-retired-target (Codex; pre-existing, narrowed by t4b); (2) GIN
+trgm index for the RPC if corpus grows — note it must be a `lower()` expression index or a
+`%`-operator rewrite (existing `idx_lessons_title_trgm` is raw-`title`, unusable by this query);
+(3) delete `similarity.test.ts`'s dead title-similarity block + extract detect-duplicates
+scoring/buckets into a pure fn with a unit suite. NEXT: 🔴 **USER merge #578 + PROD gates**
+(migration approval + edge deploy — a PROD deploy no-op would be REAL, unlike TEST) → 3-signal
+PROD verify → **T5**. Prior update below.
+
+**Prior update (2026-07-03, Fable, t4c ✅ SHIPPED + PROD-VERIFIED — the dedup data track is
+DONE).** Pre-merge review APPROVED with no changes (detail below), then on user authorization:
+merged #577 (squash `badaadf`, 00:12Z) after a final PROD drift probe (still 764 / 61 live / 0
+retired); user approved `migrate-production` run 28629708389 → `success` (00:17Z). **Post-apply
+PROD verify ALL GREEN (queries + raw results posted to PR #577):** live **703** exactly (764−61);
+all 61 targets `dedup:%`-retired; `t4_dedup_retire_rollback` = 61 rows, all-NULL prior state; 0
+dedup-retired rows outside the snapshot (no survivor touched); PROD `schema_migrations` records the
+wrapped BEGIN→LOCK→…→COMMIT sequence; fattoush search returns both kept survivors + neither stub;
+retired stub still linkable via `lessons_with_metadata` (`dedup:fattoush-8c6942`). Recovery
+artifacts in place (snapshot table + `.sql.rollback`); post-launch cleanup migration drops the
+snapshot table once PROD-stable. Review-session detail:
+Independent re-verification of PR #577, all green: generator output byte-identical to the committed
+migration; decisions.json integrity holds (61 unique retired / 250 unique survivors / 0 overlap /
+57 groups); the migration wraps every mutating statement in one `BEGIN` → `LOCK TABLE lessons
+SHARE ROW EXCLUSIVE` → … → `COMMIT` transaction with sound guards (compile-time 61-distinct,
+already-retired pre-guard, post-asserts incl. zero-survivor check). **Definitive wrapper proof:
+TEST's `supabase_migrations.schema_migrations` row for `20260702160000` records the applied
+statement sequence BEGIN → LOCK → snapshot → guards → UPDATE → asserts → COMMIT** — the wrapped
+file is what ran on TEST, not workflow-log inference. TEST re-probed: 685 live / 57 dedup-retired /
+snapshot 57 / 0 dedup-retired outside snapshot / fattoush search 3 results 0 retired. PROD re-probed
+read-only: 764 live / all 61 present+live / 0 already retired / no rollback table — **STOP condition
+clear**. Rulings on the handoff's open questions: (1) atomicity fix correct and complete; (2) the
+reversible TEST re-validation surgery was the right call (TEST-only, reversible, left TEST in the
+correct final state, and bought real evidence the wrapped file applies cleanly against real data);
+(3) Codex #2 (snapshot-pollution) and #3 (present-in-this-db vs exact-61) rebuttals are sound — no
+snapshot-empty assert or PROD-only exact-61 guard requested (the design was pre-decided in the
+brief; the mandated post-apply live=703 check covers the residual risk). `.sql.rollback` verified:
+restores prior state from the snapshot for exactly the 61 ids, idempotent, safe on an
+already-applied DB. NEXT = **t4b** review-screen reshape + detection rewrite (Opus, brief ready) →
+**T5** smoke + launch. Prior update below.
+
+**Prior update (2026-07-02, Opus, t4c retire migration — PR #577 OPEN, reviewed).** Branch
 `feat/t4c-dedup-retire`: migration `20260702160000_t4_dedup_retire.sql` (+`.sql.rollback`)
 soft-retires the 61 approved duplicates (D5 snapshot-table pattern, never DELETE), generated
 byte-deterministically from decisions.json by the committed

@@ -70,7 +70,6 @@ const PERMISSIONS_FOR_ROLE: Record<string, string[]> = {
     'invite_users',
     'edit_users',
     'view_analytics',
-    'manage_duplicates',
     'export_data',
   ],
   super_admin: [
@@ -83,7 +82,6 @@ const PERMISSIONS_FOR_ROLE: Record<string, string[]> = {
     'invite_users',
     'edit_users',
     'view_analytics',
-    'manage_duplicates',
     'export_data',
   ],
 };

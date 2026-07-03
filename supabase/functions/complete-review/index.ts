@@ -132,101 +132,16 @@ serve(async (req) => {
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Embedding handling. For non-approve decisions the embedding doesn't
-    // matter (no lessons row gets written). For approve_update we always
-    // regenerate — the doc content is the source of truth and the prior
-    // embedding is being replaced anyway. For approve_new we only
-    // regenerate when the submission's embedding is null (e.g. the
-    // process-submission run that originally created the row didn't have
-    // OpenAI configured at the time).
-    if (decision === 'approve_new' || decision === 'approve_update') {
-      const { data: submission, error: subErr } = await serviceClient
-        .from('lesson_submissions')
-        .select('content_embedding, extracted_content, extracted_title')
-        .eq('id', submissionId)
-        .single();
-
-      if (subErr || !submission) {
-        return jsonResponse({ error: 'Submission not found' }, 404, corsHeaders);
-      }
-
-      const embeddingMissing = !submission.content_embedding;
-      const needsRegen = decision === 'approve_update' || embeddingMissing;
-
-      if (needsRegen) {
-        if (!submission.extracted_content) {
-          return jsonResponse(
-            {
-              error:
-                'Submission has no extracted_content; cannot regenerate embedding. Re-run process-submission first.',
-            },
-            422,
-            corsHeaders
-          );
-        }
-
-        const openAIKey = Deno.env.get('OPENAI_API_KEY');
-        if (!openAIKey) {
-          return jsonResponse(
-            { error: 'OPENAI_API_KEY not configured; cannot regenerate embedding' },
-            500,
-            corsHeaders
-          );
-        }
-
-        const titlePrefix = submission.extracted_title ? `${submission.extracted_title}\n` : '';
-        const embedInput = `${titlePrefix}${submission.extracted_content}`.substring(0, 8000);
-
-        const embedRes = await fetch('https://api.openai.com/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${openAIKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: embedInput,
-          }),
-        });
-
-        if (!embedRes.ok) {
-          const errText = await embedRes.text();
-          return jsonResponse(
-            {
-              error: `OpenAI embedding request failed: ${embedRes.status}`,
-              detail: errText.substring(0, 200),
-            },
-            502,
-            corsHeaders
-          );
-        }
-
-        const embedJson = await embedRes.json();
-        const embedding = embedJson?.data?.[0]?.embedding;
-        if (!Array.isArray(embedding) || embedding.length === 0) {
-          return jsonResponse(
-            { error: 'OpenAI returned an invalid embedding payload' },
-            502,
-            corsHeaders
-          );
-        }
-
-        // pgvector text format. Matches process-submission's storage shape.
-        const vectorString = `[${embedding.join(',')}]`;
-        const { error: updateErr } = await serviceClient
-          .from('lesson_submissions')
-          .update({ content_embedding: vectorString })
-          .eq('id', submissionId);
-
-        if (updateErr) {
-          return jsonResponse(
-            { error: `Failed to store regenerated embedding: ${updateErr.message}` },
-            500,
-            corsHeaders
-          );
-        }
-      }
-    }
+    // Embedding regeneration RETIRED (T4b, D9). The Phase-4 block here called
+    // OpenAI on approve_update (always) and on approve_new when the submission's
+    // content_embedding was NULL. Post-T4b nothing consumes fresh embeddings —
+    // detect-duplicates scores with pg_trgm + content-hash + metadata overlap —
+    // and process-submission no longer generates them, so every new submission
+    // would have hit the OpenAI call here at publish time (and a missing
+    // OPENAI_API_KEY hard-failed the publish with a 500). Publishing must not
+    // depend on OpenAI: the block is gone. complete_review_atomic copies the
+    // submission's content_embedding (now NULL for new work) into the lessons
+    // row as-is; both columns stay, inert.
 
     const { data: lessonId, error: rpcErr } = await serviceClient.rpc('complete_review_atomic', {
       p_submission_id: submissionId,

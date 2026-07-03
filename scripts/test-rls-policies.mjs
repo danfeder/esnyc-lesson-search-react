@@ -208,6 +208,48 @@ async function testPolicyScenarios() {
         return error !== null || (data && data.success === false);
       },
     },
+    // find_similar_lessons_text (T4b): service_role-only SECURITY DEFINER RPC.
+    {
+      name: 'Anonymous cannot call find_similar_lessons_text',
+      test: async () => {
+        const anonClient = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+        const { error } = await anonClient.rpc('find_similar_lessons_text', {
+          p_title: 'probe',
+          p_content: 'probe content',
+        });
+        // Must fail: EXECUTE is revoked from PUBLIC/anon/authenticated.
+        return error !== null;
+      },
+    },
+    // T4b hard behavioral requirement: a retired lesson must never be offered
+    // as a duplicate/update candidate. Read-only probe: feed the RPC a retired
+    // row's OWN title+content (a perfect self-match if the filter were ever
+    // dropped) and assert it does not come back. Runs wherever retired rows
+    // exist (TEST/PROD-shaped data); skips on a fresh local seed with none.
+    {
+      name: 'find_similar_lessons_text never returns retired lessons',
+      test: async () => {
+        const { data: retired } = await supabase
+          .from('lessons')
+          .select('lesson_id, title, content_text')
+          .not('retired_at', 'is', null)
+          .not('content_text', 'is', null)
+          .limit(1);
+        if (!retired || retired.length === 0) {
+          console.log('    ℹ️  Skipping: no retired lessons in this database');
+          return true;
+        }
+        const bait = retired[0];
+        const { data: results, error } = await supabase.rpc('find_similar_lessons_text', {
+          p_title: bait.title,
+          p_content: bait.content_text,
+          p_limit: 10,
+        });
+        if (error || !Array.isArray(results)) return false;
+        // The bait itself (and any other retired row) must be filtered out.
+        return results.every((r) => r.lesson_id !== bait.lesson_id);
+      },
+    },
     // user_invitations token-harvest regression (fix shipped 2026-07-02):
     // the old "Public can view valid invitation by token" policy had no
     // token-equality predicate, so anon could enumerate every pending
