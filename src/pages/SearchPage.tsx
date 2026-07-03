@@ -27,6 +27,7 @@ import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useFacetCounts } from '@/hooks/useFacetCounts';
 import { buildSearchParams } from '@/utils/urlParams';
+import { parseSearchQuery } from '@/utils/parseSearchQuery';
 import type { Lesson, SearchFilters, ViewState } from '@/types';
 
 function countActiveFilters(filters: SearchFilters): number {
@@ -47,14 +48,17 @@ function countActiveFilters(filters: SearchFilters): number {
  * morphological variants of each typed word (the word, word−lastchar, word+'s'
  * — see expandSearchTerms in the edge function); we reconstruct that exact set
  * and subtract it so the hint names ONLY genuine synonyms, never stemming noise
- * (`tomato` never surfaces `tomat`/`tomatos`). Both the results RPC
- * (expand_search_with_synonyms) and smart-search read the same search_synonyms
- * table. Caveat: the hint expands the RAW query, while the results search the
- * CLEANED query (parseSearchQuery strips filler + routed grade cues, e.g.
- * "3rd grade squash" → "squash"). So "genuinely searched against the results" is
- * strictly guaranteed only for tokens that survive cleaning — which in practice is
- * all of them, since the curated food/garden synonyms table has no entries for the
- * filler/grade words cleaning removes (a stripped token can't contribute a synonym).
+ * (`tomato` never surfaces `tomat`/`tomatos`). The hint is built from the SAME
+ * cleaned query the results RPC searches: `useLessonSuggestions` expands
+ * `parseSearchQuery(query).cleanedQuery` — filler + routed grade cues stripped,
+ * identical to what `useLessonSearch` passes to `search_lessons` — so every term
+ * shown here was genuinely searched against the results. This closes a real leak:
+ * feeding the RAW query let smart-search's bidirectional reverse index fold in
+ * synonyms of stripped FILLER words. The live `activity → [activities, lesson,
+ * lessons, project, projects]` row means a raw "compost lesson" would announce
+ * "activity/activities/project/projects" that the cleaned "compost" search never
+ * matched. Pass this the cleaned query (the same one `useLessonSuggestions` sent)
+ * so the morphological subtraction lines up with the expanded terms.
  */
 export function extractSynonymTerms(query: string, expandedQuery: string | undefined): string[] {
   if (!expandedQuery) return [];
@@ -167,7 +171,14 @@ export const SearchPage: React.FC = () => {
   });
   const suggestions = suggestionsData?.suggestions || [];
   // FP-19: synonym-expansion terms to name in the "Including matches for…" hint.
-  const synonymTerms = extractSynonymTerms(filters.query ?? '', suggestionsData?.expandedQuery);
+  // FP-19: build the hint from the cleaned query the results RPC actually
+  // searched (matching what useLessonSuggestions expanded), not the raw box text —
+  // otherwise synonyms of stripped filler words leak in via smart-search's
+  // bidirectional reverse index and the hint names terms the results never matched.
+  const synonymTerms = extractSynonymTerms(
+    parseSearchQuery(filters.query ?? '').cleanedQuery,
+    suggestionsData?.expandedQuery
+  );
 
   const handleLoadMore = useCallback(async () => {
     // C59: never fetch the next page while showing placeholder data — the

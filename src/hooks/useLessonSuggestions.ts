@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
+import { parseSearchQuery } from '@/utils/parseSearchQuery';
 import type { SearchFilters } from '@/types';
 
 interface SuggestionResponse {
@@ -14,7 +15,13 @@ interface UseLessonSuggestionsOptions {
 }
 
 export function useLessonSuggestions({ filters, enabled = true }: UseLessonSuggestionsOptions) {
-  const query = (filters.query || '').trim();
+  // Expand the SAME cleaned query the results RPC actually searches
+  // (useLessonSearch also runs parseSearchQuery). Sending the RAW query here let
+  // smart-search's bidirectional reverse index fold in synonyms of stripped
+  // FILLER words — e.g. the live `activity → [activities, lesson, lessons,
+  // project, projects]` row means raw "compost lesson" expands to activity/project,
+  // which the cleaned "compost" search never matched, making the FP-19 hint lie.
+  const query = parseSearchQuery(filters.query ?? '').cleanedQuery;
   const isEnabled = enabled && query.length > 0;
 
   return useQuery<SuggestionResponse, Error>({

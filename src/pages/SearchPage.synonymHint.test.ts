@@ -32,4 +32,25 @@ describe('extractSynonymTerms (FP-19 synonym hint)', () => {
       extractSynonymTerms('sweet corn', 'sweet:* | swee:* | sweets:* | corn:* | maize:*')
     ).toEqual(['maize']);
   });
+
+  it('cannot itself filter a reverse-index leak — the fix must send the cleaned query upstream (FP-19)', () => {
+    // If the RAW "compost lesson" reaches smart-search, its bidirectional reverse
+    // index expands the live `activity → [activities, lesson, lessons, project,
+    // projects]` row (matched via "lesson" in the synonyms array), so expandedQuery
+    // carries activity/activities/project/projects. This function only strips
+    // morphological variants of the base words, so those genuinely-unmatched terms
+    // survive — proving the leak must be prevented in useLessonSuggestions (send
+    // parseSearchQuery(query).cleanedQuery), not here.
+    expect(
+      extractSynonymTerms(
+        'compost lesson',
+        'compost:* | lesson:* | activity:* | activities:* | lessons:* | project:* | projects:*'
+      )
+    ).toEqual(['activity', 'activities', 'project', 'projects']);
+
+    // With the cleaned query sent upstream, smart-search only ever expands
+    // "compost" (filler "lesson" removed), so no reverse-index terms appear and the
+    // hint is empty — the honest result for a search that matched only "compost".
+    expect(extractSynonymTerms('compost', 'compost:*')).toEqual([]);
+  });
 });

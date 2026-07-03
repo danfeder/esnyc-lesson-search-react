@@ -39,6 +39,44 @@ describe('useLessonSuggestions', () => {
     expect(invokeMock.mock.calls[0][1].body.limit).toBe(1);
   });
 
+  it("sends the CLEANED query (filler stripped), so the hint can't leak reverse-index synonyms of filler words (FP-19)", async () => {
+    invokeMock.mockResolvedValue({
+      data: { suggestions: [], expandedQuery: 'compost:*' },
+      error: null,
+    });
+
+    renderHook(
+      () => useLessonSuggestions({ filters: { ...initialFilters, query: 'compost lesson' } }),
+      { wrapper: makeWrapper() }
+    );
+
+    await waitFor(() => expect(invokeMock).toHaveBeenCalled());
+    // "lesson" is a FILLER word (parseSearchQuery strips it); the results RPC
+    // searches "compost". If we sent the raw "compost lesson", smart-search's
+    // bidirectional reverse index would fold in the live
+    // `activity → [activities, lesson, lessons, project, projects]` row and the
+    // FP-19 hint would announce activity/project — terms the results never
+    // matched. Asserting the cleaned "compost" is what's sent keeps the hint honest.
+    expect(invokeMock.mock.calls[0][1].body.query).toBe('compost');
+  });
+
+  it('sends the CLEANED query with routed grade cues stripped too (FP-19)', async () => {
+    invokeMock.mockResolvedValue({
+      data: { suggestions: [], expandedQuery: 'squash:*' },
+      error: null,
+    });
+
+    renderHook(
+      () => useLessonSuggestions({ filters: { ...initialFilters, query: '3rd grade squash' } }),
+      { wrapper: makeWrapper() }
+    );
+
+    await waitFor(() => expect(invokeMock).toHaveBeenCalled());
+    // "3rd grade" routes to the grade filter and is stripped from the search text;
+    // the results RPC searches "squash", so the hint must expand "squash" only.
+    expect(invokeMock.mock.calls[0][1].body.query).toBe('squash');
+  });
+
   it('throws on invoke error instead of caching an empty success (rung8-hooks F2)', async () => {
     invokeMock.mockResolvedValue({ data: null, error: new Error('edge cold-start') });
 
