@@ -41,7 +41,8 @@ export const useStoreName = create<StoreState>()(
 
 - Manages filters and view state (not results - those come from React Query)
 - `setFilters`: Updates filters AND resets `currentPage` to 1
-- `clearFilters`: Resets to initial state
+- `clearFilters`: FULL reset to initial state (query + sort included). Used by tests/teardown, not the UI.
+- `clearFilterSelections`: Clears facet selections only — the typed query and sort survive (D-E). This is what the Filters-panel "Clear all" button calls.
 - `toggleFilter`: Add/remove filter values
 
 ## State Updates

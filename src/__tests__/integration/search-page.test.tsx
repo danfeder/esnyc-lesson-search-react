@@ -333,7 +333,7 @@ describe('SearchPage Integration', () => {
       });
     });
 
-    it('Clear all button removes all filters', async () => {
+    it('Clear all clears the facet filters but keeps the typed query (D-E)', async () => {
       const testLesson = createTestLesson();
       rpcMock.mockResolvedValueOnce({
         data: [testLesson],
@@ -358,12 +358,15 @@ describe('SearchPage Integration', () => {
       const user = userEvent.setup();
       await user.click(screen.getByText('Clear all'));
 
+      // Facet selections are cleared...
       await waitFor(() => {
         const currentState = useSearchStore.getState();
-        expect(currentState.filters.query).toBe('');
         expect(currentState.filters.gradeLevels).toEqual([]);
         expect(currentState.filters.thematicCategories).toEqual([]);
       });
+      // ...but the typed search text SURVIVES (D-E, 2026-07-03). It used to be
+      // wiped because the button called the full-reset clearFilters.
+      expect(useSearchStore.getState().filters.query).toBe('test search');
     });
 
     it('displays search query as a pill', async () => {

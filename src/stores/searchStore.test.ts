@@ -89,6 +89,32 @@ describe('searchStore', () => {
       expect(result.current.filters.seasonTiming).toEqual([]);
     });
 
+    it('clearFilterSelections clears facets but KEEPS the query and sort (D-E)', () => {
+      const { result } = renderHook(() => useSearchStore());
+
+      act(() => {
+        result.current.setFilters({
+          query: 'compost',
+          gradeLevels: ['3rd', '4th'],
+          seasonTiming: ['Fall'],
+        });
+        result.current.setViewState({ sortBy: 'title', currentPage: 5 });
+      });
+
+      act(() => {
+        result.current.clearFilterSelections();
+      });
+
+      // Facet selections cleared...
+      expect(result.current.filters.gradeLevels).toEqual([]);
+      expect(result.current.filters.seasonTiming).toEqual([]);
+      // ...but the typed query and the sort choice SURVIVE (unlike clearFilters).
+      expect(result.current.filters.query).toBe('compost');
+      expect(result.current.viewState.sortBy).toBe('title');
+      // Page reset like any filter change.
+      expect(result.current.viewState.currentPage).toBe(1);
+    });
+
     it('should reset page when filters change', () => {
       const { result } = renderHook(() => useSearchStore());
 

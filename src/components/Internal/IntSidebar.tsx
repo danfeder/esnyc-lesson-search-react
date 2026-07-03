@@ -33,7 +33,9 @@ interface IntSidebarProps {
 export function IntSidebar({ counts }: IntSidebarProps) {
   const filters = useSearchStore((s) => s.filters);
   const toggleFilter = useSearchStore((s) => s.toggleFilter);
-  const clearFilters = useSearchStore((s) => s.clearFilters);
+  // D-E: "Clear all" clears facet selections only — the typed search query and
+  // the sort choice survive (NOT the full-reset clearFilters).
+  const clearFilterSelections = useSearchStore((s) => s.clearFilterSelections);
 
   const activeCountFor = (key: keyof SearchFilters): number => {
     const v = filters[key];
@@ -55,7 +57,7 @@ export function IntSidebar({ counts }: IntSidebarProps) {
       <div className="int-sidebar-head">
         <h2>Filters</h2>
         {totalActive > 0 && (
-          <button type="button" className="int-sidebar-clear" onClick={clearFilters}>
+          <button type="button" className="int-sidebar-clear" onClick={clearFilterSelections}>
             Clear all
           </button>
         )}

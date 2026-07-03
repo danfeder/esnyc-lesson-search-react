@@ -42,6 +42,13 @@ interface SearchState {
   // Actions
   setFilters: (filters: Partial<SearchFilters>) => void;
   clearFilters: () => void;
+  /**
+   * D-E (2026-07-03 design decision): the Filters panel's "Clear all" clears
+   * facet SELECTIONS only — the typed search query and the sort choice survive.
+   * Distinct from `clearFilters`, which is a FULL reset (query + sort included)
+   * used by tests/teardown, not by the UI.
+   */
+  clearFilterSelections: () => void;
   setViewState: (viewState: Partial<ViewState>) => void;
   // Atomic URL → store hydration (W1c): fully REPLACES filters (fields absent
   // from the URL reset to their empty default — so Back-to-unfiltered clears
@@ -96,12 +103,22 @@ export const useSearchStore = create<SearchState>()(
         clearFilters: () =>
           set((state) => ({
             filters: initialFilters,
-            // Preserve layout preferences (view + density) across "Clear all"
+            // Preserve layout preferences (view + density) across a full reset.
             viewState: {
               ...initialViewState,
               view: state.viewState.view,
               density: state.viewState.density,
             },
+          })),
+
+        clearFilterSelections: () =>
+          set((state) => ({
+            // D-E: clear every facet filter but KEEP the typed query so the
+            // Filters-panel "Clear all" doesn't wipe the user's search text.
+            filters: { ...initialFilters, query: state.filters.query },
+            // Keep sortBy/view/density untouched; just reset the page like any
+            // other filter change (src/stores/CLAUDE.md reset rule).
+            viewState: { ...state.viewState, currentPage: 1 },
           })),
 
         setViewState: (newViewState) =>
