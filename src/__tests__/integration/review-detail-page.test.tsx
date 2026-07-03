@@ -800,6 +800,36 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(opts.body.decision).toBe('reject');
     expect(opts.body.notes).toContain('Not a fit');
   });
+
+  // [PR #578 bot round 1] — an UNEDITED option-3 prefill must not survive
+  // leaving that option (deselect fallback or radio switch); a note the
+  // reviewer amended must never be clobbered.
+  it('23. leaving "already in the library" clears an unedited prefill but keeps an edited note', async () => {
+    renderReview(modernFixture, 'sub-modern');
+    const user = userEvent.setup();
+
+    // Select the card, pick option 3 → prefill lands.
+    await user.click(await screen.findByRole('button', { name: /modern target lesson/i }));
+    await user.click(screen.getByRole('radio', { name: /already in the library/i }));
+    const note = screen.getByLabelText(/reason for the teacher/i);
+    expect(note).toHaveValue('This lesson is already in the library as "Modern Target Lesson".');
+
+    // Deselect the card → decision falls back to approve_new AND the unedited
+    // prefill clears (it would otherwise ride the publish as a false note).
+    await user.click(screen.getByRole('button', { name: /modern target lesson/i }));
+    expect(screen.getByRole('radio', { name: /publish as a new lesson/i })).toBeChecked();
+    expect(screen.getByLabelText(/note to the teacher/i)).toHaveValue('');
+
+    // Re-select, option 3 again, AMEND the prefill, then switch radios: the
+    // edited note survives.
+    await user.click(screen.getByRole('button', { name: /modern target lesson/i }));
+    await user.click(screen.getByRole('radio', { name: /already in the library/i }));
+    await user.type(screen.getByLabelText(/reason for the teacher/i), ' See the 2024 version.');
+    await user.click(screen.getByRole('radio', { name: /publish as a new lesson/i }));
+    expect(screen.getByLabelText(/note to the teacher/i)).toHaveValue(
+      'This lesson is already in the library as "Modern Target Lesson". See the 2024 version.'
+    );
+  });
 });
 
 describe('SubmitterIntentBanner — 4-state coverage', () => {

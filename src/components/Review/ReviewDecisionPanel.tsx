@@ -101,6 +101,26 @@ export function ReviewDecisionPanel({
   const cardBoundDisabled = !selectedDuplicate;
   const isRejectPath = decisionOption === 'reject' || decisionOption === 'reject_duplicate';
 
+  // Option 3's auto-prefill, kept in one place so LEAVING that option can
+  // recognize an UNEDITED prefill and clear it — a stale "already in the
+  // library" note must never ride a different decision as the teacher-visible
+  // text (bot review round 1: select card → option 3 → change your mind →
+  // publish-as-new would have sent the self-contradicting note). A note the
+  // reviewer typed or amended is never touched.
+  const dupNotePrefill = (title: string) => `This lesson is already in the library as "${title}".`;
+  const chooseOption = (next: DecisionOption) => {
+    if (
+      decisionOption === 'reject_duplicate' &&
+      next !== 'reject_duplicate' &&
+      selectedTitle !== null &&
+      notes === dupNotePrefill(selectedTitle)
+    ) {
+      setNotes('');
+    }
+    setDecisionOption(next);
+    setSaveError(null);
+  };
+
   return (
     <div>
       {/* Binding-intent banner — rendered FIRST so the reviewer reads what the
@@ -162,12 +182,13 @@ export function ReviewDecisionPanel({
                   setSelectedDuplicate(next);
                   setSaveError(null);
                   // Clearing the selection while a card-bound option is active
-                  // would strand the decision — fall back to "publish as new".
+                  // would strand the decision — fall back to "publish as new"
+                  // (via chooseOption, so an unedited option-3 prefill clears too).
                   if (
                     !next &&
                     (decisionOption === 'approve_update' || decisionOption === 'reject_duplicate')
                   ) {
-                    setDecisionOption('approve_new');
+                    chooseOption('approve_new');
                   }
                 }}
               />
@@ -210,10 +231,7 @@ export function ReviewDecisionPanel({
               name="decision"
               value="approve_new"
               checked={decisionOption === 'approve_new'}
-              onChange={() => {
-                setDecisionOption('approve_new');
-                setSaveError(null);
-              }}
+              onChange={() => chooseOption('approve_new')}
             />
             Publish as a new lesson
           </label>
@@ -227,10 +245,7 @@ export function ReviewDecisionPanel({
                 value="approve_update"
                 checked={decisionOption === 'approve_update'}
                 disabled={cardBoundDisabled}
-                onChange={() => {
-                  setDecisionOption('approve_update');
-                  setSaveError(null);
-                }}
+                onChange={() => chooseOption('approve_update')}
               />
               <span>
                 Publish as an update to{' '}
@@ -256,11 +271,10 @@ export function ReviewDecisionPanel({
                 checked={decisionOption === 'reject_duplicate'}
                 disabled={cardBoundDisabled}
                 onChange={() => {
-                  setDecisionOption('reject_duplicate');
-                  setSaveError(null);
+                  chooseOption('reject_duplicate');
                   // Prefill the editable teacher note with the selected title.
                   if (selectedTitle) {
-                    setNotes(`This lesson is already in the library as "${selectedTitle}".`);
+                    setNotes(dupNotePrefill(selectedTitle));
                   }
                 }}
               />
@@ -283,10 +297,7 @@ export function ReviewDecisionPanel({
               name="decision"
               value="needs_revision"
               checked={decisionOption === 'needs_revision'}
-              onChange={() => {
-                setDecisionOption('needs_revision');
-                setSaveError(null);
-              }}
+              onChange={() => chooseOption('needs_revision')}
             />
             Send back for revisions
           </label>
@@ -298,10 +309,7 @@ export function ReviewDecisionPanel({
               name="decision"
               value="reject"
               checked={decisionOption === 'reject'}
-              onChange={() => {
-                setDecisionOption('reject');
-                setSaveError(null);
-              }}
+              onChange={() => chooseOption('reject')}
             />
             Reject — with a reason the teacher will see
           </label>
