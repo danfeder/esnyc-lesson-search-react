@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
+import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { buildCultureLabelMap, collapseHeritageToLeaves } from '@/utils/filterUtils';
 import { cn } from '@/utils/cn';
 
@@ -40,11 +41,12 @@ export function intActivityLabel(lesson: Lesson): ActivityLabel {
   return { label: 'Academic', className: 'academic' };
 }
 
-// Canonical grade order (matches filterDefinitions.gradeLevels option order).
+// Canonical grade order, single-sourced from the gradeLevels filter config
+// (3K, PK, K, 1…8) so an added/renamed grade there flows here automatically.
 // Unknown values sort to the end, preserving their relative input order.
-const GRADE_ORDER = ['3K', 'PK', 'K', '1', '2', '3', '4', '5', '6', '7', '8'] as const;
+const GRADE_ORDER = FILTER_CONFIGS.gradeLevels.options.map((o) => o.value);
 const gradeRank = (g: string): number => {
-  const i = (GRADE_ORDER as readonly string[]).indexOf(g);
+  const i = GRADE_ORDER.indexOf(g);
   return i === -1 ? GRADE_ORDER.length : i;
 };
 
