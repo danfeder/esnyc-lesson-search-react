@@ -303,22 +303,31 @@ export const SearchPage: React.FC = () => {
               </p>
             )}
 
-          {isError && (
+          {isError && lessons.length === 0 && (
             // FP-13: honest, plain-language failure card + a working Retry —
             // never raw technical error text. Reuses the shared IntFetchError
             // (IntAlert + IntButton, role="alert" aria-live="assertive") so this
             // matches the FP-05/FP-07 error surfaces elsewhere. Retry re-runs the
             // search query.
+            // `lessons.length === 0` scopes this to a COLD failure (nothing loaded
+            // yet). A `fetchNextPage()` failure flips `isError` for the whole query
+            // too (useInfiniteQuery shares one status) but keeps the loaded pages —
+            // there we preserve the rows and show a scoped "couldn't load more"
+            // retry below, rather than replacing a full result set with this card.
             <IntFetchError onRetry={() => refetchSearch()}>
               We couldn&apos;t load lessons just now. Please check your connection and try again.
             </IntFetchError>
           )}
 
-          {/* On error the IntFetchError card above is the SOLE content — don't
-              render stale skeleton/empty/rows underneath it (a failed refetch
-              retains last-good data, so this whole block would otherwise show
-              through the error). */}
-          {!isError &&
+          {/* Keep the rows whenever we actually have data, even mid-error: a
+              failed `fetchNextPage()` flips `isError` for the whole query, but the
+              already-loaded pages are still valid — wiping them would be worse than
+              the failure. Only a COLD error (no data) hides everything, and that's
+              the error card above (excluded here because `lessons.length > 0` is
+              false, so the `|| lessons.length > 0` guard falls back to `!isError`,
+              which is also false). A same-key refetch that fails while retaining
+              last-good data likewise keeps its rows visible rather than blanking. */}
+          {(!isError || lessons.length > 0) &&
             (isPending ? (
               // C59: cold load (no cached/placeholder data) — show the skeleton,
               // never a false "No matches". With keepPreviousData a refetch keeps
@@ -410,6 +419,19 @@ export const SearchPage: React.FC = () => {
                 totalCount={totalCount}
               />
             )}
+
+          {/* FP-13 (load-more): a `fetchNextPage()` failure keeps the loaded rows
+              (see the results guard above) and hides the auto-firing scroll trigger
+              (gated on `!isError`), which would otherwise retry-loop against a dead
+              server. Surface an honest, manual retry in its place instead of a
+              silent dead-end. onRetry re-attempts the NEXT page via handleLoadMore —
+              not refetchSearch, which for an infinite query only re-pulls the pages
+              that already succeeded and leaves the failed one still missing. */}
+          {isError && lessons.length > 0 && (
+            <IntFetchError onRetry={() => handleLoadMore()}>
+              We couldn&apos;t load more lessons just now. Please try again.
+            </IntFetchError>
+          )}
         </div>
 
         {isSplit && (
