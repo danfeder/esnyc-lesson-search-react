@@ -8,6 +8,7 @@ import { type SubmissionStatus } from '@/utils/submissionStatus';
 import { computePreselection } from '@/pages/reviewPreselect';
 import {
   computeInitialMetadataFromAiDraft,
+  detectDocTitleChange,
   withPrefilledTitleSummary,
 } from '@/pages/reviewMetadataInit';
 import { reAddActivityTypeSuffix } from '@/pages/reviewDetailHelpers';
@@ -62,6 +63,14 @@ export interface ReviewInitialFormState {
   notes: string;
   selectedDuplicate: string | null;
   legacyDecisionWarning: string | null;
+  /**
+   * Title-changed-on-resubmit hint: the doc's CURRENT title when a restored
+   * round-1 title differs from it (see `detectDocTitleChange`). The metadata
+   * form shows a heads-up at the Title field; precedence is unchanged — the
+   * restored title still wins the field. Always null on the preselect branch
+   * (no prior round → nothing to diverge from).
+   */
+  docTitleHint: string | null;
 }
 
 /**
@@ -425,6 +434,13 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           // limitation, out of 8b scope; preserved verbatim (risk 2).
           selectedDuplicate: null,
           legacyDecisionWarning: legacyWarning,
+          // Teacher renamed the doc and resubmitted? The restored title still
+          // wins the field (above); this only tells the reviewer the doc now
+          // says something else.
+          docTitleHint: detectDocTitleChange(restoredMetadata.title, {
+            extractedTitle: submissionData.extracted_title,
+            extractedContent: submissionData.extracted_content,
+          }),
         };
       } else {
         // Phase 8b: pre-select decision + target from submitter intent — only
@@ -443,6 +459,7 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           notes: '',
           selectedDuplicate: preselection.target ?? null,
           legacyDecisionWarning: null,
+          docTitleHint: null,
         };
       }
       setInitialFormState(seed);

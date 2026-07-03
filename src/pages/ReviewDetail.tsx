@@ -51,6 +51,9 @@ export function ReviewDetail() {
   const [selectedDuplicate, setSelectedDuplicate] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [legacyDecisionWarning, setLegacyDecisionWarning] = useState<string | null>(null);
+  // Title-changed-on-resubmit hint (computed by the hook's restore branch):
+  // the doc's current title when it diverges from the restored round-1 title.
+  const [docTitleHint, setDocTitleHint] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   // D7 approve-as-new guard: non-null while the "looks like an existing lesson"
   // interstitial is up; holds the title of the top exact/high match it names.
@@ -105,6 +108,7 @@ export function ReviewDetail() {
       setNotes(initialFormState.notes);
       setSelectedDuplicate(initialFormState.selectedDuplicate);
       setLegacyDecisionWarning(initialFormState.legacyDecisionWarning);
+      setDocTitleHint(initialFormState.docTitleHint);
     }
   }, [initialFormState]);
 
@@ -458,6 +462,7 @@ export function ReviewDetail() {
             validationErrors={validationErrors}
             errorBannerRef={errorBannerRef}
             legacyDecisionWarning={legacyDecisionWarning}
+            docTitleHint={docTitleHint}
           />
 
           {/* MIDDLE — document (sticky so it stays in view while the reviewer

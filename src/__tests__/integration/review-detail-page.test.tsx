@@ -949,3 +949,57 @@ describe('SubmitterIntentBanner — 4-state coverage', () => {
     expect(screen.queryByText('New lesson')).not.toBeInTheDocument();
   });
 });
+
+describe('Title changed on resubmit — hint at the Title field (post-launch item 2)', () => {
+  // Clone modernFixture (restore branch) with a restored round-1 title and a
+  // freshly re-extracted doc title. NO precedence change is under test here:
+  // the restored title must still WIN the field (T2b contract) — the hint just
+  // says the doc now reads differently.
+  function withTitles(restoredTitle: string, docTitle: string): Record<string, TableResult> {
+    // JSON round-trip clone — the fixture is plain JSON-safe data, and ESLint's
+    // env doesn't know structuredClone.
+    const f = JSON.parse(JSON.stringify(modernFixture)) as Record<string, TableResult>;
+    (f.lesson_submissions.data as Array<Record<string, unknown>>)[0].extracted_title = docTitle;
+    (
+      f.submission_reviews.data as Array<{ tagged_metadata: Record<string, unknown> }>
+    )[0].tagged_metadata.title = restoredTitle;
+    return f;
+  }
+
+  it('shows the amber hint naming the doc title while the field keeps the restored title', async () => {
+    renderReview(withTitles('Old Name', 'New Name'), 'sub-modern');
+
+    // The hint names the doc's NEW title…
+    const hint = await screen.findByText(/changed since the last review round/i);
+    expect(hint).toHaveTextContent('New Name');
+
+    // …while the Title field still holds the restored round-1 title (the
+    // publish path uses the field, so this is what would go out unchanged).
+    expect(screen.getByLabelText('Lesson title')).toHaveValue('Old Name');
+  });
+
+  it('shows no hint when the restored title matches the doc title', async () => {
+    renderReview(withTitles('Modern Lesson Title', 'Modern Lesson Title'), 'sub-modern');
+
+    expect(await screen.findByLabelText('Lesson title')).toHaveValue('Modern Lesson Title');
+    expect(screen.queryByText(/changed since the last review round/i)).not.toBeInTheDocument();
+  });
+
+  it("adopting the doc's new title fills the field and dismisses the hint", async () => {
+    renderReview(withTitles('Old Name', 'New Name'), 'sub-modern');
+    const user = userEvent.setup();
+
+    await screen.findByText(/changed since the last review round/i);
+    await user.click(screen.getByRole('button', { name: /use the doc.s new title/i }));
+
+    expect(screen.getByLabelText('Lesson title')).toHaveValue('New Name');
+    expect(screen.queryByText(/changed since the last review round/i)).not.toBeInTheDocument();
+  });
+
+  it('shows no hint on the preselect branch (no prior round to diverge from)', async () => {
+    renderReview(preselectTargetUpdateFixture, 'sub-preselect');
+
+    expect(await screen.findByLabelText('Lesson title')).toBeInTheDocument();
+    expect(screen.queryByText(/changed since the last review round/i)).not.toBeInTheDocument();
+  });
+});
