@@ -2,7 +2,7 @@
    ESYNYC Internal Admin — extensions for admin / review / submission pages
    Ported from the design handoff at lessonplanlibrayr/project/styles/admin.css.
    Class prefix: .adm-*
-   Consumed by: AdminDashboard, AdminUsers, AdminAnalytics, ReviewDashboard,
+   Consumed by: AdminDashboard, AdminUsers, ReviewDashboard,
                 ReviewDetail, SubmissionPage (Phase 3 internal design).
 
    The bundle's CSS uses bare --esy-* var names; our codebase's index.css
@@ -1208,101 +1208,11 @@
 }
 .adm-kanban-card-meta .sep { color: var(--esy-ink-30); }
 
-/* --- Analytics page ----------------------------------------------- */
-.adm-analytics-grid {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.adm-analytics-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.adm-analytics-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-.adm-analytics-grid .adm-card { padding: 18px 20px; }
-.adm-analytics-grid .adm-card + .adm-card { margin-top: 0; }
-
-.adm-leaderboard {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-.adm-leaderboard li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  font-size: 13px;
-  color: var(--esy-ink);
-  border-top: 1px solid var(--esy-ink-10);
-}
-.adm-leaderboard li:first-child { border-top: 0; padding-top: 2px; }
-.adm-leaderboard-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.adm-leaderboard-count {
-  color: var(--esy-ink-70);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.adm-activity-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-.adm-activity-list li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 0;
-  border-top: 1px solid var(--esy-ink-10);
-  font-size: 13px;
-}
-.adm-activity-list li:first-child { border-top: 0; padding-top: 2px; }
-.adm-activity-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: baseline;
-  min-width: 0;
-}
-.adm-activity-actor { color: var(--esy-ink); font-weight: 500; }
-.adm-activity-action { color: var(--esy-ink-70); }
-.adm-activity-target {
-  color: var(--esy-ink-50);
-  overflow-wrap: anywhere;
-}
-.adm-activity-time {
-  color: var(--esy-ink-50);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
 .adm-empty-text {
   font-size: 12px;
   color: var(--esy-ink-70);
   margin: 0;
 }
-
-/* Recharts tweaks — scoped so we don't affect other charts */
-.adm-card .recharts-default-legend {
-  font-family: var(--esy-font-display);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 10px !important;
-}
-.adm-card .recharts-tooltip-label { color: var(--esy-ink); font-weight: 500; }
 
 /* Empty state */
 .adm-empty {
@@ -1332,9 +1242,6 @@
   .adm-queue-row { grid-template-columns: 100px 1fr; }
   .adm-queue-row > :nth-child(3), .adm-queue-row > :nth-child(4) { grid-column: 2; }
   .adm-page { padding: 16px 16px 32px; }
-  .adm-analytics-grid--2,
-  .adm-analytics-grid--3 { grid-template-columns: 1fr; }
-  .adm-activity-list li { flex-wrap: wrap; gap: 4px; }
 }/* =========================================================================
    ESYNYC Internal Admin — auth & profile additions
    Appended to src/styles/internal-admin.css in production.
