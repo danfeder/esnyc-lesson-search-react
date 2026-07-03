@@ -206,10 +206,10 @@ const {
 - **AdminUserDetail** - Single-user detail
 - **AdminInvitations** - Invitations list
 - **AdminInviteUser** - Send a new invitation
-- **AdminAnalytics** - Usage statistics
 
 (The AdminDuplicates / AdminDuplicateReview pages were removed in T4b (D10) —
-duplicate handling now lives entirely in the reviewer flow on ReviewDetail.)
+duplicate handling now lives entirely in the reviewer flow on ReviewDetail.
+AdminAnalytics was retired in the frontend-polish phase, owner decision D3.)
 
 ## ⚠️ Page-Specific Critical Notes
 

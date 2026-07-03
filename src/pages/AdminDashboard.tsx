@@ -19,13 +19,6 @@ const adminSections: AdminSection[] = [
     permission: Permission.VIEW_USERS,
   },
   {
-    eyebrow: 'Insights',
-    title: 'Analytics',
-    description: 'View user activity and system insights.',
-    path: '/admin/analytics',
-    permission: Permission.VIEW_ANALYTICS,
-  },
-  {
     eyebrow: 'People',
     title: 'Invitations',
     description: 'Send and manage invitations to new users.',
