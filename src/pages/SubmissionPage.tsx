@@ -81,6 +81,12 @@ export function SubmissionPage() {
         </button>
       </div>
 
+      {/* Reassurance so an unsure submitter doesn't stall on the choice — either
+          path lands in the same reviewer queue. */}
+      <p className="text-sm text-gray-600 mt-4">
+        Not sure? Pick either — a reviewer checks everything.
+      </p>
+
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => {
