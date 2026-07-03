@@ -17,6 +17,17 @@ Parent selection includes all children:
 isParentCultureSelected(selected, 'Chinese')
 ```
 
+**Closed reviewer vocabulary (Brief 4, 2026-07-03).** The reviewer's Cultural Heritage
+field is a closed pick-list — reviewers can no longer type new values. Both the picker
+options (`culturalHeritageReviewOptions`) and the closed enum (`CULTURAL_HERITAGE_VALUES`
+→ `CulturalHeritageEnum`) are GENERATED from the single source of truth
+`data/vocab/cultural-heritage.vocab.json`. **To add a new heritage value: a maintainer
+edits the vocab and runs `npx tsx scripts/heritage/generate-heritage-hierarchy.ts`, then
+hand-syncs the value list into the edge mirror
+`supabase/functions/_shared/metadataSchemas.ts` (the equivalence test flags drift).**
+There is no reviewer free-text path. The SEARCH filter tree (`culturalHeritageOptions`,
+top+sub tiers only) is a separate, untouched export.
+
 ## Logger Usage
 
 ```typescript

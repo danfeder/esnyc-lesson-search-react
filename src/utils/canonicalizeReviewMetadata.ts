@@ -17,6 +17,13 @@
  * `scripts/stage2-retag/data/smaller-fields.vocab.json` (the locked vocab,
  * = the live PROD column CHECK arrays).
  *
+ * Brief 4 (2026-07-03) adds `culturalHeritage` to the same treatment: after that
+ * field was closed to a Title-Case enum, reopening a legacy review row whose
+ * `tagged_metadata.culturalHeritage` holds the old KEBAB slugs (`east-asian`… —
+ * 33 approved PROD rows) would REJECT the re-save. Its map (kebab slug → canonical
+ * label) is GENERATED from the vocab, not hand-written — see
+ * `culturalHeritageSlugToLabel` in `heritageHierarchy.generated.ts`.
+ *
  * DEFENSIVE BY DESIGN: each field looks an element up in its legacy→canonical
  * map; an element NOT in the map passes through UNCHANGED (never thrown, never
  * dropped). So already-canonical values round-trip, and any unforeseen value
@@ -24,6 +31,9 @@
  */
 import type { ReviewMetadata } from '@/types';
 import { INGREDIENT_PARENT_MAP } from '@/types/lessonMetadata.zod';
+// Kebab canonical slug → Title-Case label (all 71 tiers), GENERATED from the vocab.
+// Restores legacy KEBAB culturalHeritage values stored in tagged_metadata (Brief 4).
+import { culturalHeritageSlugToLabel } from '@/utils/heritageHierarchy.generated';
 
 // academic_integration — canonical Title forms (smaller-fields.vocab.json).
 const ACADEMIC_INTEGRATION_MAP: Record<string, string> = {
@@ -193,6 +203,10 @@ const FIELD_MAPS: Partial<Record<keyof ReviewMetadata, Record<string, string>>> 
   observancesHolidays: OBSERVANCES_HOLIDAYS_MAP,
   cookingSkills: COOKING_SKILLS_MAP,
   mainIngredients: MAIN_INGREDIENTS_MAP,
+  // Brief 4: culturalHeritage closed to a Title-Case enum. tagged_metadata stored
+  // KEBAB slugs (33 approved PROD review rows) that the closed enum rejects on
+  // reopen — this map (GENERATED, kebab slug → canonical label) unblocks re-save.
+  culturalHeritage: culturalHeritageSlugToLabel,
 };
 
 /** Returns a new array with duplicates removed, preserving first-seen order. */

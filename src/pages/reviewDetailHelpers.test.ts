@@ -4,7 +4,6 @@ import {
   parseExtractedContent,
   normalizeMatchType,
   selectOptionsFromConfig,
-  flattenHeritageOptions,
   ZOD_FIELD_TO_LABEL,
 } from '@/pages/reviewDetailHelpers';
 import type { ReviewMetadata } from '@/types';
@@ -145,46 +144,6 @@ describe('selectOptionsFromConfig', () => {
   it('empty options → empty array', () => {
     const config: FilterConfig = { label: 'Empty', type: 'multiple', options: [] };
     expect(selectOptionsFromConfig(config)).toEqual([]);
-  });
-});
-
-describe('flattenHeritageOptions', () => {
-  it('flattens parents and children, prefixing child labels with "parent → "', () => {
-    const config: FilterConfig = {
-      label: 'Cultural Heritage',
-      type: 'hierarchical',
-      options: [
-        {
-          value: 'asian',
-          label: 'Asian',
-          children: [
-            { value: 'chinese', label: 'Chinese' },
-            { value: 'japanese', label: 'Japanese' },
-          ],
-        },
-        { value: 'african', label: 'African' },
-      ],
-    };
-    expect(flattenHeritageOptions(config)).toEqual([
-      { value: 'asian', label: 'Asian' },
-      { value: 'chinese', label: 'Asian → Chinese' },
-      { value: 'japanese', label: 'Asian → Japanese' },
-      { value: 'african', label: 'African' },
-    ]);
-  });
-
-  it('parent without children → just the parent option', () => {
-    const config: FilterConfig = {
-      label: 'Cultural Heritage',
-      type: 'hierarchical',
-      options: [{ value: 'african', label: 'African' }],
-    };
-    expect(flattenHeritageOptions(config)).toEqual([{ value: 'african', label: 'African' }]);
-  });
-
-  it('empty options → empty array', () => {
-    const config: FilterConfig = { label: 'Cultural Heritage', type: 'hierarchical', options: [] };
-    expect(flattenHeritageOptions(config)).toEqual([]);
   });
 });
 

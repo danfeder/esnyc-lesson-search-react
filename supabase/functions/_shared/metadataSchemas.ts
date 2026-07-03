@@ -272,6 +272,87 @@ export const INGREDIENT_PARENT_MAP: Record<string, string | null> = {
   'Cocoa & chocolate': null,
 };
 
+// Cultural Heritage closed vocabulary (Brief 4 — reviewer field closed 2026-07-03).
+// MUST match src/types/lessonMetadata.zod.ts, which re-exports CULTURAL_HERITAGE_VALUES
+// from src/utils/heritageHierarchy.generated.ts (GENERATED from
+// data/vocab/cultural-heritage.vocab.json). Edge can't import from src/, so this list
+// is hand-synced; the equivalence test (edgeSharedSchemas.equivalence.test.ts) fails on
+// drift. All 71 tiers incl. internal — every currently-stored value round-trips. To add
+// a value: edit the vocab, regenerate, then copy the new list here (ask the maintainer).
+export const CULTURAL_HERITAGE_VALUES = [
+  'Americas',
+  'North American',
+  'Southern United States',
+  'Latin American',
+  'Mexican',
+  'Puerto Rican',
+  'Honduran',
+  'Peruvian',
+  'Salvadoran',
+  'Brazilian',
+  'Ecuadorian',
+  'Guyanese',
+  'Dominican',
+  'Caribbean',
+  'Cuban',
+  'Jamaican',
+  'Central American',
+  'South American',
+  'Asian',
+  'East Asian',
+  'Chinese',
+  'Japanese',
+  'Korean',
+  'Taiwanese',
+  'South Asian',
+  'Indian',
+  'Pakistani',
+  'Sri Lankan',
+  'Southeast Asian',
+  'Vietnamese',
+  'Malaysian',
+  'Central Asian',
+  'Uzbek',
+  'Indigenous and Diaspora',
+  'African American',
+  'Black culinary history',
+  'Soul Food',
+  'Indigenous',
+  'Lenape',
+  'Haudenosaunee',
+  'Three Sisters traditions',
+  'Cajun/Creole',
+  'European',
+  'Mediterranean',
+  'Italian',
+  'Spanish',
+  'Greek',
+  'Eastern European',
+  'Ukrainian',
+  'Russian',
+  'Polish',
+  'Irish',
+  'French',
+  'African',
+  'West African',
+  'Nigerian',
+  'North African',
+  'Egyptian',
+  'Moroccan',
+  'East African',
+  'Kenyan',
+  'Ethiopian',
+  'Middle Eastern',
+  'Levantine',
+  'Palestinian',
+  'Jordanian',
+  'Lebanese',
+  'Syrian',
+  'Yemeni',
+  'Israeli',
+  'Persian',
+] as const;
+
 // =============================================================================
 // Closed-enum Zod types
 // =============================================================================
@@ -288,6 +369,7 @@ export const ObservancesHolidaysEnum = z.enum(OBSERVANCES_HOLIDAYS_VALUES);
 export const GardenSkillsEnum = z.enum(GARDEN_SKILLS_VALUES);
 export const CookingSkillsEnum = z.enum(COOKING_SKILLS_VALUES);
 export const MainIngredientsEnum = z.enum(MAIN_INGREDIENTS_VALUES);
+export const CulturalHeritageEnum = z.enum(CULTURAL_HERITAGE_VALUES);
 
 // =============================================================================
 // main_ingredients specific→group invariant (C02 §4 Q7) — mirror of the
@@ -393,9 +475,13 @@ export const reviewFormPayloadSchema = z.object({
   mainIngredients: mainIngredientsArraySchema.optional(),
   cookingSkills: z.array(CookingSkillsEnum).optional(),
 
+  // Cultural Heritage closed 2026-07-03 (Brief 4 — mirror src/types). Enum is the
+  // full vocab (all tiers) so every stored value round-trips; UI-level closure, no
+  // DB CHECK.
+  culturalHeritage: z.array(CulturalHeritageEnum).optional(),
+
   themes: z.array(z.string()).optional(),
   gradeLevels: z.array(z.string()).optional(),
-  culturalHeritage: z.array(z.string()).optional(),
 
   processingNotes: z.string().optional(),
   title: z.string().optional(),

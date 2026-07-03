@@ -8,8 +8,10 @@ import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import {
   COOKING_SKILLS_VALUES,
   MAIN_INGREDIENTS_VALUES,
+  CULTURAL_HERITAGE_VALUES,
   INGREDIENT_PARENT_MAP,
 } from '@/types/lessonMetadata.zod';
+import { culturalHeritageSlugToLabel } from '@/utils/heritageHierarchy.generated';
 import smallerFieldsVocab from '../../scripts/stage2-retag/data/smaller-fields.vocab.json';
 import type { ReviewMetadata } from '@/types';
 
@@ -251,18 +253,18 @@ describe('canonicalizeReviewMetadata', () => {
       );
     });
 
-    it('does not touch unrelated keys (themes, cookingSkills, culturalHeritage, etc.)', () => {
+    it('leaves unmapped keys and already-canonical values unchanged (themes, cookingSkills, culturalHeritage, etc.)', () => {
       const input: ReviewMetadata = {
-        themes: ['garden-to-cafeteria'],
-        cookingSkills: ['knife-skills'],
-        culturalHeritage: ['asian'],
+        themes: ['garden-to-cafeteria'], // themes not in FIELD_MAPS → unchanged
+        cookingSkills: ['knife-skills'], // not a COOKING_SKILLS_MAP key → unchanged
+        culturalHeritage: ['Asian'], // already canonical Title-Case (not a kebab slug) → unchanged
         location: 'indoor',
         processingNotes: 'note',
       };
       const result = canonicalizeReviewMetadata(input);
       expect(result.themes).toEqual(['garden-to-cafeteria']);
       expect(result.cookingSkills).toEqual(['knife-skills']);
-      expect(result.culturalHeritage).toEqual(['asian']);
+      expect(result.culturalHeritage).toEqual(['Asian']);
       expect(result.location).toBe('indoor');
       expect(result.processingNotes).toBe('note');
     });
@@ -422,11 +424,16 @@ describe('canonicalizeReviewMetadata', () => {
         gardenSkills: ['composting', 'sensory-exploration', 'beneficial-insect-id'],
         cookingMethods: ['basic-prep', 'stovetop'],
         observancesHolidays: ['AAPI Heritage Month', 'Juneteenth'],
+        // Brief 4: culturalHeritage was closed to a Title-Case enum, and legacy
+        // tagged_metadata stored KEBAB slugs. canonicalizeReviewMetadata now maps the
+        // slug → canonical label ('asian' → 'Asian') so a reopened legacy row re-saves.
         culturalHeritage: ['asian'],
       };
       const canonicalized = canonicalizeReviewMetadata(legacyPayload);
       const parsed = reviewFormPayloadSchema.safeParse(canonicalized);
       expect(parsed.success).toBe(true);
+      // The kebab slug was recovered to its canonical Title-Case label.
+      expect(canonicalized.culturalHeritage).toEqual(['Asian']);
     });
 
     it('the raw legacy payload (without canonicalization) is REJECTED by the closed schema', () => {
@@ -437,5 +444,63 @@ describe('canonicalizeReviewMetadata', () => {
       const parsed = reviewFormPayloadSchema.safeParse(legacyPayload);
       expect(parsed.success).toBe(false);
     });
+  });
+});
+
+/**
+ * culturalHeritage legacy-slug recovery (Brief 4). `submission_reviews.tagged_metadata`
+ * historically stored KEBAB slugs (the old CreatableSelect's value) for heritage. After
+ * the field was closed to a Title-Case enum, reopening such a row would reject the re-save
+ * — so canonicalizeReviewMetadata now maps the slug back to its canonical label, exactly
+ * like the other closed fields. Slugs below are the distinct kebab values actually present
+ * in PROD tagged_metadata (33 approved rows), censused via supabase-remote.
+ */
+describe('canonicalizeReviewMetadata — culturalHeritage kebab recovery (Brief 4)', () => {
+  const PROD_TAGGED_HERITAGE_SLUGS = [
+    'african',
+    'americas',
+    'asian',
+    'caribbean',
+    'central-asian',
+    'east-asian',
+    'eastern-european',
+    'european',
+    'latin-american',
+    'levantine',
+    'mediterranean',
+    'middle-eastern',
+    'nigerian',
+    'north-american',
+    'south-asian',
+  ];
+
+  it('maps a legacy KEBAB heritage slug to its canonical Title-Case label', () => {
+    const out = canonicalizeReviewMetadata({ culturalHeritage: ['east-asian', 'soul-food'] });
+    expect(out.culturalHeritage).toEqual(['East Asian', 'Soul Food']);
+  });
+
+  it('passes an already-canonical Title-Case label through unchanged', () => {
+    const out = canonicalizeReviewMetadata({ culturalHeritage: ['East Asian', 'Mexican'] });
+    expect(out.culturalHeritage).toEqual(['East Asian', 'Mexican']);
+  });
+
+  it('every PROD tagged_metadata kebab slug canonicalizes to a value the closed schema accepts', () => {
+    const out = canonicalizeReviewMetadata({ culturalHeritage: PROD_TAGGED_HERITAGE_SLUGS });
+    expect(reviewFormPayloadSchema.safeParse(out).success).toBe(true);
+    for (const v of out.culturalHeritage ?? []) {
+      expect(CULTURAL_HERITAGE_VALUES as readonly string[]).toContain(v);
+    }
+  });
+
+  it('every culturalHeritageSlugToLabel VALUE ∈ CULTURAL_HERITAGE_VALUES (drift-lock)', () => {
+    for (const v of Object.values(culturalHeritageSlugToLabel)) {
+      expect(CULTURAL_HERITAGE_VALUES as readonly string[]).toContain(v);
+    }
+  });
+
+  it('an unknown heritage value passes through, then the closed enum rejects it', () => {
+    const out = canonicalizeReviewMetadata({ culturalHeritage: ['not-a-heritage'] });
+    expect(out.culturalHeritage).toEqual(['not-a-heritage']);
+    expect(reviewFormPayloadSchema.safeParse(out).success).toBe(false);
   });
 });
