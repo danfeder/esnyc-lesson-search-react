@@ -15,7 +15,7 @@
 - `npm run test` | `test:ui` | `test:coverage`: Run Vitest (CLI, UI, with coverage). Reports in `coverage/`.
 - `npm run lint` | `lint:fix`: Lint code, optionally auto-fix.
 - `npm run format`: Apply Prettier to `src/**/*`.
-- Data/search ops: `npm run import-data`, `sync-algolia`, `configure-synonyms` (see `scripts/`).
+- Data ops: `npm run import-data` (see `scripts/`). Search uses PostgreSQL full-text search — there is no sync step (the legacy Algolia `sync-algolia` / `configure-synonyms` scripts were removed).
 
 ## Coding Style & Naming Conventions
 - Formatting: Prettier (2 spaces, single quotes, width 100, semicolons). Run `npm run format`.
