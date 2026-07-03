@@ -71,6 +71,14 @@ export interface ReviewInitialFormState {
    * (no prior round → nothing to diverge from).
    */
   docTitleHint: string | null;
+  /**
+   * The previous round's send-back note, set ONLY when that round's ask is
+   * STALE (prior decision needs_revision + the submission has since been
+   * resubmitted). In that case `notes` seeds EMPTY — republishing the old ask
+   * as a fresh decision note is the bug this closes — and the decision panel
+   * shows this read-only for context instead.
+   */
+  priorRevisionNote: string | null;
 }
 
 /**
@@ -421,6 +429,17 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           );
           legacyWarning = `This submission was previously marked "${existingDecision}". That option is no longer available — choose a new decision below.`;
         }
+        // Stale-ask guard (post-launch item 3): when the prior round SENT THIS
+        // BACK (needs_revision) and the teacher has since resubmitted (status
+        // flipped away from needs_revision — process-submission sets it back to
+        // 'submitted'), the old ask must NOT re-seed the note box: approving
+        // without clearing it would republish the round-1 revision ask as an
+        // approval note on the teacher's card. Reopening while STILL
+        // needs_revision keeps the seed (the reviewer amending their own ask).
+        // approved/rejected are terminal (RPC idempotency guard), so no other
+        // stale combination exists.
+        const revisionAskIsStale =
+          review.decision === 'needs_revision' && submissionData.status !== 'needs_revision';
         seed = {
           // Prefill the editable title/summary; a restored review's own
           // title/summary (once this feature has shipped) wins over the prefill.
@@ -429,7 +448,8 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
             extractedContent: submissionData.extracted_content,
           }),
           decision: restoredDecision,
-          notes: review.notes || '',
+          notes: revisionAskIsStale ? '' : review.notes || '',
+          priorRevisionNote: revisionAskIsStale ? review.notes || null : null,
           // selectedDuplicate is NOT restored from a prior review — pre-existing
           // limitation, out of 8b scope; preserved verbatim (risk 2).
           selectedDuplicate: null,
@@ -460,6 +480,7 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
           selectedDuplicate: preselection.target ?? null,
           legacyDecisionWarning: null,
           docTitleHint: null,
+          priorRevisionNote: null,
         };
       }
       setInitialFormState(seed);

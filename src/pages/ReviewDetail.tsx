@@ -54,6 +54,9 @@ export function ReviewDetail() {
   // Title-changed-on-resubmit hint (computed by the hook's restore branch):
   // the doc's current title when it diverges from the restored round-1 title.
   const [docTitleHint, setDocTitleHint] = useState<string | null>(null);
+  // The previous round's send-back ask when it's stale (submission resubmitted
+  // since) — shown read-only by the decision panel; the note box seeds empty.
+  const [priorRevisionNote, setPriorRevisionNote] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   // D7 approve-as-new guard: non-null while the "looks like an existing lesson"
   // interstitial is up; holds the title of the top exact/high match it names.
@@ -109,6 +112,7 @@ export function ReviewDetail() {
       setSelectedDuplicate(initialFormState.selectedDuplicate);
       setLegacyDecisionWarning(initialFormState.legacyDecisionWarning);
       setDocTitleHint(initialFormState.docTitleHint);
+      setPriorRevisionNote(initialFormState.priorRevisionNote);
     }
   }, [initialFormState]);
 
@@ -490,6 +494,7 @@ export function ReviewDetail() {
             setDecisionOption={setDecisionOptionClearingGuard}
             notes={notes}
             setNotes={setNotes}
+            priorRevisionNote={priorRevisionNote}
             saveError={saveError}
             setSaveError={setSaveError}
             saving={saving}
