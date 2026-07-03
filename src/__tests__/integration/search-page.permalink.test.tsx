@@ -7,13 +7,23 @@ import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-rou
 import { makeRpcRow } from '../helpers/factories';
 
 // Mock Supabase client. `rpcMock` serves the search RPC; the `from(...)` chain
-// serves useLessonById's deep-link fallback — `maybeSingleMock` is the single
-// controllable resolution point for it.
+// serves TWO callers, so both must be stubbed:
+//   • useLessonById's deep-link fallback: .select().eq().is().maybeSingle() —
+//     `maybeSingleMock` is the single controllable resolution point, and the
+//     one true signal that a BY-ID fetch fired (the facet corpus never calls it).
+//   • useFacetCounts (FP-01b): .select().is('retired_at', null).limit() — fires
+//     unconditionally on mount. Resolve an empty corpus so it settles quietly
+//     (badges just render blank; this suite doesn't assert on them). This is why
+//     "no by-id fetch" assertions check maybeSingleMock, not fromMock — fromMock
+//     is always called once by the facet fetch.
 const rpcMock = vi.fn();
 const functionsInvokeMock = vi.fn().mockResolvedValue({ data: null, error: null });
 const maybeSingleMock = vi.fn();
 const fromMock = vi.fn((..._args: unknown[]) => ({
   select: () => ({
+    is: () => ({
+      limit: () => Promise.resolve({ data: [], error: null }),
+    }),
     eq: () => ({
       is: () => ({
         maybeSingle: () => maybeSingleMock(),
@@ -128,7 +138,10 @@ describe('SearchPage permalinks (D2)', () => {
       expect(drawerHeadingVisible('Deep Linked Lesson')).toBe(true);
     });
     expect(screen.getByRole('button', { name: /close lesson details/i })).toBeInTheDocument();
-    expect(fromMock).not.toHaveBeenCalled();
+    // Fast path: the lesson resolved from the loaded page, so NO by-id fetch.
+    // (fromMock still fired once for the facet corpus — maybeSingleMock is the
+    // by-id-specific signal.)
+    expect(maybeSingleMock).not.toHaveBeenCalled();
   });
 
   it('deep link outside the loaded pages fetches by id (loading, then ready)', async () => {
@@ -333,7 +346,9 @@ describe('SearchPage permalinks (D2)', () => {
     // structurally identical filters; React Query's structural key hashing
     // must swallow it — NO new search RPC, no by-id call, pills intact.
     expect(rpcMock.mock.calls.length).toBe(searchCallsBefore);
-    expect(fromMock).not.toHaveBeenCalled();
+    // by-id-specific signal (fromMock also carries the once-per-session facet
+    // corpus fetch, so it isn't a clean "no fetch" proxy anymore).
+    expect(maybeSingleMock).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /remove food systems/i })).toBeInTheDocument();
   });
 });

@@ -10,11 +10,19 @@ import { makeRpcRow } from '../helpers/factories';
 // Mock Supabase client (mirrors search-page.test.tsx so the RPC is controllable).
 const rpcMock = vi.fn();
 const functionsInvokeMock = vi.fn().mockResolvedValue({ data: null, error: null });
-// D2: stub the by-id chain (useLessonById) — clicks here resolve from the
-// loaded page (fast path), so `from` should stay uncalled; the stub keeps an
-// unexpected call visible instead of a mid-render TypeError.
+// SearchPage issues two supabase.from('lessons') chains; stub BOTH so the page
+// settles instead of TypeError-ing mid-render:
+//   • useFacetCounts (FP-01b): .select().is('retired_at', null).limit() —
+//     resolve an EMPTY corpus (badges just render 0s; this suite doesn't assert
+//     on badge numbers).
+//   • useLessonById (D2 by-id fallback): .select().eq().is().maybeSingle() —
+//     clicks here resolve from the loaded page (fast path), so a by-id call is
+//     unexpected; resolve null to keep a stray call visible instead of crashing.
 const fromMock = vi.fn((..._args: unknown[]) => ({
   select: () => ({
+    is: () => ({
+      limit: () => Promise.resolve({ data: [], error: null }),
+    }),
     eq: () => ({
       is: () => ({
         maybeSingle: () => Promise.resolve({ data: null, error: null }),

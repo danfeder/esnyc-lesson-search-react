@@ -10,14 +10,25 @@ import { makeRpcRow } from '../helpers/factories';
 // Mock Supabase client
 const rpcMock = vi.fn();
 const functionsInvokeMock = vi.fn().mockResolvedValue({ data: null, error: null });
-// D2: SearchPage's by-id fallback (useLessonById) calls supabase.from(...).
-// Every test in this file resolves its lesson from the loaded search page
-// (fast path), so a `from` call is unexpected — stub the chain to resolve null
-// so a stray call surfaces as a visible "Lesson not found" state instead of a
-// mid-render TypeError. Deep-link behavior itself is covered in
-// search-page.permalink.test.tsx.
+// SearchPage issues two distinct supabase.from('lessons') chains, and BOTH must
+// be stubbed or the page throws mid-render:
+//   • useFacetCounts (FP-01b): .select(cols).is('retired_at', null).limit(n) —
+//     the facet corpus. Defaults to an EMPTY corpus (badges render 0s); the
+//     facet-badge tests override facetCorpusResultMock per test.
+//   • useLessonById (D2 by-id fallback): .select(cols).eq('lesson_id', id)
+//     .is('retired_at', null).maybeSingle(). Every test here resolves its lesson
+//     from the loaded search page (fast path), so a real by-id call is
+//     unexpected — resolve null so a stray call surfaces as a visible "Lesson
+//     not found" state instead of a mid-render TypeError. Deep-link behavior
+//     itself is covered in search-page.permalink.test.tsx.
+const facetCorpusResultMock = vi.fn(() =>
+  Promise.resolve({ data: [] as unknown[], error: null as unknown })
+);
 const fromMock = vi.fn((..._args: unknown[]) => ({
   select: () => ({
+    is: () => ({
+      limit: () => facetCorpusResultMock(),
+    }),
     eq: () => ({
       is: () => ({
         maybeSingle: () => Promise.resolve({ data: null, error: null }),
@@ -686,8 +697,10 @@ describe('SearchPage Integration', () => {
 
       await waitFor(() => {
         // Toolbar still renders the "0 lessons" count; IntEmptyState surfaces
-        // the "No matches" heading.
-        expect(screen.getByText('0')).toBeInTheDocument();
+        // the "No matches" heading. Scope the zero to the toolbar's <strong> —
+        // FP-01b badges legitimately render their own zeros elsewhere.
+        const toolbarCount = document.querySelector('.int-toolbar-left strong');
+        expect(toolbarCount?.textContent).toBe('0');
         expect(screen.getByRole('heading', { name: /no matches/i })).toBeInTheDocument();
       });
     });
@@ -839,6 +852,74 @@ describe('SearchPage Integration', () => {
         // After filter change, the message should include the new count
         expect(announcer).toHaveTextContent(/10 lessons/i);
       });
+    });
+  });
+
+  describe('Facet badge counts (FP-01b)', () => {
+    /** A facet-corpus row in DB (snake_case) shape, as the slim select returns it. */
+    function corpusRow(activity: string) {
+      return {
+        grade_levels: null,
+        activity_type: [activity], // stored as the bare noun on real rows
+        location_requirements: null,
+        thematic_categories: null,
+        season_timing: null,
+        core_competencies: null,
+        cultural_heritage: null,
+        academic_integration: null,
+        social_emotional_learning: null,
+        cooking_methods: null,
+      };
+    }
+
+    /** The .int-check row for `label` inside the sidebar section titled `sectionLabel`. */
+    function optionRow(sectionLabel: string, label: string) {
+      const section = screen.getByText(sectionLabel).closest('.int-filter');
+      if (!section) throw new Error(`No .int-filter wrapper for section "${sectionLabel}"`);
+      const row = Array.from(section.querySelectorAll('label.int-check')).find((l) =>
+        l.querySelector('.int-check-label')?.textContent?.includes(label)
+      );
+      if (!row) throw new Error(`No option row "${label}" in section "${sectionLabel}"`);
+      return row;
+    }
+
+    it('shows corpus-wide counts on first paint, independent of the loaded result pages', async () => {
+      // Corpus: 2 cooking + 1 garden lessons…
+      facetCorpusResultMock.mockResolvedValueOnce({
+        data: [corpusRow('cooking'), corpusRow('cooking'), corpusRow('garden')],
+        error: null,
+      });
+      // …while the search RPC returns only ONE result row. Pre-FP-01b the
+      // Cooking badge tallied the loaded page (1); now it must read the corpus
+      // truth (2) on first paint, with no scrolling.
+      rpcMock.mockResolvedValue({
+        data: [createTestLesson({ total_count: 1 })],
+        error: null,
+      });
+
+      renderWithProviders(<SearchPage />);
+
+      await waitFor(() => {
+        expect(
+          optionRow('Activity Type', 'Cooking').querySelector('.int-check-count')!.textContent
+        ).toBe('2');
+      });
+      expect(
+        optionRow('Activity Type', 'Garden').querySelector('.int-check-count')!.textContent
+      ).toBe('1');
+      // Loaded zero renders as "0", not blank (D-4).
+      expect(
+        optionRow('Activity Type', 'Craft').querySelector('.int-check-count')!.textContent
+      ).toBe('0');
+
+      // The badge does not budge once the (single-page) results land — it no
+      // longer reads the result rows at all.
+      await waitFor(() => {
+        expect(screen.getByText('Test Lesson Title')).toBeInTheDocument();
+      });
+      expect(
+        optionRow('Activity Type', 'Cooking').querySelector('.int-check-count')!.textContent
+      ).toBe('2');
     });
   });
 });

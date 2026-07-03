@@ -23,7 +23,7 @@ import { useLessonSearch } from '@/hooks/useLessonSearch';
 import { useLessonById } from '@/hooks/useLessonById';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useFacetCounts } from '@/utils/facetCounts';
+import { useFacetCounts } from '@/hooks/useFacetCounts';
 import type { Lesson, SearchFilters, ViewState } from '@/types';
 
 function countActiveFilters(filters: SearchFilters): number {
@@ -85,7 +85,10 @@ export const SearchPage: React.FC = () => {
 
   const lessons = (data?.pages || []).flatMap((p) => p.lessons);
   const totalCount = data?.pages?.[0]?.totalCount || 0;
-  const counts = useFacetCounts(lessons);
+  // FP-01b: badges no longer tally the loaded result pages — they come from a
+  // once-per-session corpus fetch, restricted by the OTHER active filter
+  // categories (undefined until that fetch resolves → blank badges).
+  const counts = useFacetCounts(filters);
 
   // D2 §2c: resolve the routed lesson. Fast path from the loaded pages (no
   // fetch, no flash — covers every click-to-open); fallback fetch-by-id for a
