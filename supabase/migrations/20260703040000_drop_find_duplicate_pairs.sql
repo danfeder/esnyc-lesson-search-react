@@ -1,0 +1,41 @@
+-- =====================================================
+-- Migration: 20260703040000_drop_find_duplicate_pairs.sql
+-- =====================================================
+-- Description: FP-11 E4 — drop the orphan embedding-based duplicate-pair
+--   scanner find_duplicate_pairs().
+--
+--   Orphan evidence:
+--   - Zero app callers since T4b (PR #578) removed duplicateGroupService and
+--     the admin Duplicates pages; the ONLY remaining repo reference was the
+--     generated TS type entry in src/types/database.types.ts (removed in this
+--     PR via `npm run db:types` against the reset local DB).
+--   - Embedding-based per its own COMMENT ("title matching or embedding
+--     similarity >= 0.95") — the embedding leg of duplicate detection was
+--     retired in T4b in favor of the pg_trgm text RPC
+--     (20260703000000_t4b_detect_text_rpc_and_archive_revoke.sql); this
+--     scanner belongs to the retired design.
+--   - PROD pg_proc probe 2026-07-03 confirms the function exists there (live
+--     body = the 20251202 permission-checked version) and is unreferenced.
+--
+-- Single idempotent DDL statement; no data mutation, so no BEGIN/COMMIT txn
+-- wrapper is load-bearing (cf. project_supabase_migration_autocommit, which
+-- matters only for guarded snapshot→mutate→assert migrations).
+--
+-- Rollback: full restore script (live 20251202 definition + COMMENT + grant)
+-- in 20260703040000_drop_find_duplicate_pairs.sql.rollback.
+
+-- =====================================================
+-- CHANGES
+-- =====================================================
+
+-- The function takes no arguments; created 20251201_duplicate_detection_revamp.sql,
+-- last replaced 20251202_add_function_permission_checks.sql.
+DROP FUNCTION IF EXISTS public.find_duplicate_pairs();
+
+-- =====================================================
+-- ROLLBACK (see the .rollback file for the full script)
+-- =====================================================
+-- Re-run the CREATE OR REPLACE FUNCTION + COMMENT + GRANT in
+-- 20260703040000_drop_find_duplicate_pairs.sql.rollback, which restores the
+-- pre-drop live state (the 20251202 permission-checked body — NOT the original
+-- 20251201 body, which lacked the has_duplicate_review_permission() gate).
