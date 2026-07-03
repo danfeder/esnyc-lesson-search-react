@@ -37,9 +37,10 @@ export function IntSidebar({ counts }: IntSidebarProps) {
 
   const activeCountFor = (key: keyof SearchFilters): number => {
     const v = filters[key];
-    if (Array.isArray(v)) return v.length;
-    if (typeof v === 'string') return v && key !== 'query' ? 1 : 0;
-    return 0;
+    // Every facet filter is a string[]; only `query` is a string, and the sole
+    // caller (totalActive) already excludes it — so an array length is the only
+    // reachable count.
+    return Array.isArray(v) ? v.length : 0;
   };
 
   const totalActive = (Object.keys(filters) as Array<keyof SearchFilters>)
@@ -64,18 +65,24 @@ export function IntSidebar({ counts }: IntSidebarProps) {
         <div className="int-grades">
           {gradeOptions.map((grade) => {
             const active = filters.gradeLevels.includes(grade);
+            // undefined while the corpus loads (badges blank, no dimming);
+            // a number once loaded. D-A: dim a loaded zero — never an active pill.
+            const count = counts ? (counts.gradeLevels[grade] ?? 0) : undefined;
+            const dimmed = count === 0 && !active;
             return (
               <button
                 key={grade}
                 type="button"
-                className={cn('int-grade-pill', active && 'active')}
+                className={cn(
+                  'int-grade-pill',
+                  active && 'active',
+                  dimmed && 'int-grade-pill--dim'
+                )}
                 onClick={() => toggleFilter('gradeLevels', grade)}
                 aria-pressed={active}
               >
                 {grade}
-                {counts && (
-                  <span className="int-grade-pill-count">{counts.gradeLevels[grade] ?? 0}</span>
-                )}
+                {counts && <span className="int-grade-pill-count">{count ?? 0}</span>}
               </button>
             );
           })}
@@ -96,8 +103,12 @@ export function IntSidebar({ counts }: IntSidebarProps) {
           >
             {cfg.options.map((opt) => {
               const checked = selected.includes(opt.value);
+              // undefined while loading (blank badge, no dim); a number once loaded.
+              const count = counts ? (counts[key][opt.value] ?? 0) : undefined;
+              // D-A: dim a loaded zero row (stays clickable); never a checked one.
+              const dimmed = count === 0 && !checked;
               return (
-                <label key={opt.value} className="int-check">
+                <label key={opt.value} className={cn('int-check', dimmed && 'int-check--dim')}>
                   <input
                     type="checkbox"
                     checked={checked}
@@ -107,9 +118,7 @@ export function IntSidebar({ counts }: IntSidebarProps) {
                   <span className="int-check-label">{opt.label}</span>
                   {/* D-4: blank only while counts are loading/errored; a real
                       zero is information ("none within your other filters"). */}
-                  <span className="int-check-count">
-                    {counts ? (counts[key][opt.value] ?? 0) : ''}
-                  </span>
+                  <span className="int-check-count">{count === undefined ? '' : count}</span>
                 </label>
               );
             })}
@@ -118,6 +127,9 @@ export function IntSidebar({ counts }: IntSidebarProps) {
       })}
 
       <IntCulturalHeritageSection counts={counts} />
+
+      {/* D-A: quiet explainer for what the badge numbers mean. */}
+      <p className="int-sidebar-hint">Numbers show how many lessons carry each tag.</p>
     </aside>
   );
 }

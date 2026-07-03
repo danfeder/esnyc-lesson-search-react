@@ -159,6 +159,14 @@
   text-decoration: underline;
   padding: 2px 0;
 }
+/* FP-01b (D-A): a quiet one-line explainer for the badge numbers, at the very
+   bottom of the sidebar so it never competes with the filters themselves. */
+.int-sidebar-hint {
+  padding: 12px 16px 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-esy-ink-50);
+}
 
 .int-filter {
   border-top: 1px solid var(--color-esy-ink-10);
@@ -254,6 +262,11 @@
    tree can nest to arbitrary depth; this class only carries the smaller type. */
 .int-check--child { font-size: 12px; }
 
+/* FP-01b (D-A): dim a loaded zero-count row so "nothing here under your other
+   filters" reads at a glance. The row stays fully clickable (opacity only); a
+   checked row is never dimmed, and nothing dims while counts are still blank. */
+.int-check--dim { opacity: 0.45; }
+
 .int-grades {
   display: flex; flex-wrap: wrap; gap: 4px;
   padding: 4px 16px 12px;
@@ -283,6 +296,9 @@
   opacity: 0.65;
   font-variant-numeric: tabular-nums; /* matches .int-check-count */
 }
+/* FP-01b (D-A): zero-count grade pill dims (still clickable); active pills and
+   loading-state pills never dim. Mirrors .int-check--dim. */
+.int-grade-pill--dim { opacity: 0.45; }
 
 /* --- Main region ---------------------------------------------------- */
 .int-main {

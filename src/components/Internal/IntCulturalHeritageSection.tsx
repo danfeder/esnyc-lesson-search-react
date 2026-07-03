@@ -35,27 +35,33 @@ export function IntCulturalHeritageSection({ counts }: IntCulturalHeritageSectio
   const cfg = FILTER_CONFIGS.culturalHeritage;
 
   const activeCount = selected.length;
-  // D-4: blank only while counts are loading/errored; a loaded zero renders 0.
-  const countFor = (value: string) => (counts ? (counts.culturalHeritage[value] ?? 0) : '');
 
-  const renderNode = (node: HeritageOption, depth: number) => (
-    <div key={node.value}>
-      <label
-        className={cn('int-check', depth > 0 && 'int-check--child')}
-        style={depth > 0 ? { paddingLeft: depth * INDENT_STEP } : undefined}
-      >
-        <input
-          type="checkbox"
-          checked={selected.includes(node.value)}
-          onChange={() => toggleFilter('culturalHeritage', node.value)}
-        />
-        <span className="int-check-box" />
-        <span className="int-check-label">{node.label}</span>
-        <span className="int-check-count">{countFor(node.value)}</span>
-      </label>
-      {node.children?.map((child) => renderNode(child, depth + 1))}
-    </div>
-  );
+  const renderNode = (node: HeritageOption, depth: number) => {
+    const checked = selected.includes(node.value);
+    // D-4: blank only while counts are loading/errored; a loaded zero renders 0.
+    // undefined while loading (blank badge, no dim); a number once loaded.
+    const count = counts ? (counts.culturalHeritage[node.value] ?? 0) : undefined;
+    // D-A: dim a loaded zero row (stays clickable); never a checked one.
+    const dimmed = count === 0 && !checked;
+    return (
+      <div key={node.value}>
+        <label
+          className={cn('int-check', depth > 0 && 'int-check--child', dimmed && 'int-check--dim')}
+          style={depth > 0 ? { paddingLeft: depth * INDENT_STEP } : undefined}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={() => toggleFilter('culturalHeritage', node.value)}
+          />
+          <span className="int-check-box" />
+          <span className="int-check-label">{node.label}</span>
+          <span className="int-check-count">{count === undefined ? '' : count}</span>
+        </label>
+        {node.children?.map((child) => renderNode(child, depth + 1))}
+      </div>
+    );
+  };
 
   return (
     <IntFilterSection label={cfg.label} count={activeCount}>
