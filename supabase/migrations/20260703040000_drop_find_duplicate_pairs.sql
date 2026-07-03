@@ -1,5 +1,5 @@
 -- =====================================================
--- Migration: 20260703020000_drop_find_duplicate_pairs.sql
+-- Migration: 20260703040000_drop_find_duplicate_pairs.sql
 -- =====================================================
 -- Description: FP-11 E4 — drop the orphan embedding-based duplicate-pair
 --   scanner find_duplicate_pairs().
@@ -22,7 +22,7 @@
 -- matters only for guarded snapshot→mutate→assert migrations).
 --
 -- Rollback: full restore script (live 20251202 definition + COMMENT + grant)
--- in 20260703020000_drop_find_duplicate_pairs.sql.rollback.
+-- in 20260703040000_drop_find_duplicate_pairs.sql.rollback.
 
 -- =====================================================
 -- CHANGES
@@ -36,6 +36,6 @@ DROP FUNCTION IF EXISTS public.find_duplicate_pairs();
 -- ROLLBACK (see the .rollback file for the full script)
 -- =====================================================
 -- Re-run the CREATE OR REPLACE FUNCTION + COMMENT + GRANT in
--- 20260703020000_drop_find_duplicate_pairs.sql.rollback, which restores the
+-- 20260703040000_drop_find_duplicate_pairs.sql.rollback, which restores the
 -- pre-drop live state (the 20251202 permission-checked body — NOT the original
 -- 20251201 body, which lacked the has_duplicate_review_permission() gate).

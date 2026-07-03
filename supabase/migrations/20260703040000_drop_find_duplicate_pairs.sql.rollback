@@ -1,8 +1,8 @@
 -- =====================================================
--- ROLLBACK: 20260703020000_drop_find_duplicate_pairs.sql.rollback
+-- ROLLBACK: 20260703040000_drop_find_duplicate_pairs.sql.rollback
 -- =====================================================
 -- Restores find_duplicate_pairs() exactly as it existed before
--- 20260703020000_drop_find_duplicate_pairs.sql dropped it. Use ONLY if the
+-- 20260703040000_drop_find_duplicate_pairs.sql dropped it. Use ONLY if the
 -- drop turns out to be wrong (e.g. some caller of the embedding-based
 -- duplicate-pair scanner resurfaces). Idempotent; safe to re-run.
 --
