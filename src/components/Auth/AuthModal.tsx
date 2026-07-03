@@ -6,7 +6,14 @@ import { X, Mail, Lock } from 'lucide-react';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  /**
+   * Called after successful sign-in. The consumer owns closing the modal here.
+   * AuthModal deliberately does NOT call onClose on success: consumers treat
+   * onClose as user-dismissal and clear pending-intent state in it
+   * (NewSubmissionForm / RevisingSubmissionForm clear pendingSubmitRef), which
+   * used to kill the auto-resubmit-after-sign-in flow (FP-03).
+   */
+  onSuccess: () => void;
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
@@ -60,8 +67,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         return;
       }
 
-      onSuccess?.();
-      onClose();
+      onSuccess();
     } catch (err) {
       setError(parseDbError(err));
     } finally {
@@ -70,7 +76,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-esy-ink/30 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
         <button
           onClick={onClose}
