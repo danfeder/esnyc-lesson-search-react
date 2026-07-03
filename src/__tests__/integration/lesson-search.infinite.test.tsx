@@ -190,6 +190,9 @@ describe('SearchPage + useLessonSearch (infinite)', () => {
     });
     // Plain language only — never the raw technical error text.
     expect(screen.queryByText(/network error/i)).not.toBeInTheDocument();
+    // On error the card is the SOLE content — the results block is gated on
+    // !isError, so no (stale/empty) list container renders underneath it.
+    expect(document.querySelector('.int-list')).toBeNull();
 
     // Retry re-runs the search; make the next call succeed.
     rpcMock.mockResolvedValueOnce({

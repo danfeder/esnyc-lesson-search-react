@@ -282,19 +282,26 @@ export const SearchPage: React.FC = () => {
           {/* FP-19: quiet, dismiss-free transparency line when the engine folded
               in synonyms (e.g. searching "corn" also matched "maize"). Only once
               results have settled and there are some — the no-results case is
-              handled by the suggestions panel below. */}
-          {synonymTerms.length > 0 && totalCount > 0 && !isPending && !isPlaceholderData && (
-            // aria-live so screen-reader users hear the transparency note too,
-            // not just sighted users (this PR is about search transparency).
-            <p
-              className="text-sm text-gray-600"
-              style={{ margin: '4px 0 8px' }}
-              role="status"
-              aria-live="polite"
-            >
-              Including matches for {synonymTerms.join(', ')}.
-            </p>
-          )}
+              handled by the suggestions panel below. `!isError` so it never sits
+              above the error card: a failed background refetch keeps the last-good
+              `totalCount`/`data` (TanStack v5), which would otherwise imply a
+              search just succeeded right under a "couldn't load" message. */}
+          {synonymTerms.length > 0 &&
+            totalCount > 0 &&
+            !isPending &&
+            !isPlaceholderData &&
+            !isError && (
+              // aria-live so screen-reader users hear the transparency note too,
+              // not just sighted users (this PR is about search transparency).
+              <p
+                className="text-sm text-gray-600"
+                style={{ margin: '4px 0 8px' }}
+                role="status"
+                aria-live="polite"
+              >
+                Including matches for {synonymTerms.join(', ')}.
+              </p>
+            )}
 
           {isError && (
             // FP-13: honest, plain-language failure card + a working Retry —
@@ -307,36 +314,41 @@ export const SearchPage: React.FC = () => {
             </IntFetchError>
           )}
 
-          {!isError && isPending ? (
-            // C59: cold load (no cached/placeholder data) — show the skeleton,
-            // never a false "No matches". With keepPreviousData a refetch keeps
-            // the prior rows instead of reaching this branch.
-            <IntListSkeleton />
-          ) : !isError && lessons.length === 0 ? (
-            <IntEmptyState
-              title={hasQuery || activeFilterCount > 0 ? 'No matches' : 'No results'}
-              // Neutral hint when nothing is queried/filtered — the "Try removing
-              // a filter" copy is nonsensical with no active filters (C59).
-              hint={
-                hasQuery || activeFilterCount > 0
-                  ? 'Try removing a filter or broadening your search.'
-                  : 'No lessons to show.'
-              }
-            />
-          ) : isGrid ? (
-            <IntCardGrid lessons={lessons} selectedId={selectedId} onSelect={handleOpenLesson} />
-          ) : (
-            <div className="int-list">
-              {lessons.map((lesson) => (
-                <IntListRow
-                  key={lesson.lessonId}
-                  lesson={lesson}
-                  selected={lesson.lessonId === selectedId}
-                  onClick={handleOpenLesson}
-                />
-              ))}
-            </div>
-          )}
+          {/* On error the IntFetchError card above is the SOLE content — don't
+              render stale skeleton/empty/rows underneath it (a failed refetch
+              retains last-good data, so this whole block would otherwise show
+              through the error). */}
+          {!isError &&
+            (isPending ? (
+              // C59: cold load (no cached/placeholder data) — show the skeleton,
+              // never a false "No matches". With keepPreviousData a refetch keeps
+              // the prior rows instead of reaching this branch.
+              <IntListSkeleton />
+            ) : lessons.length === 0 ? (
+              <IntEmptyState
+                title={hasQuery || activeFilterCount > 0 ? 'No matches' : 'No results'}
+                // Neutral hint when nothing is queried/filtered — the "Try removing
+                // a filter" copy is nonsensical with no active filters (C59).
+                hint={
+                  hasQuery || activeFilterCount > 0
+                    ? 'Try removing a filter or broadening your search.'
+                    : 'No lessons to show.'
+                }
+              />
+            ) : isGrid ? (
+              <IntCardGrid lessons={lessons} selectedId={selectedId} onSelect={handleOpenLesson} />
+            ) : (
+              <div className="int-list">
+                {lessons.map((lesson) => (
+                  <IntListRow
+                    key={lesson.lessonId}
+                    lesson={lesson}
+                    selected={lesson.lessonId === selectedId}
+                    onClick={handleOpenLesson}
+                  />
+                ))}
+              </div>
+            ))}
 
           {/* C59: only after the data settles — totalCount lags one fetch under
               keepPreviousData, so gating on a stale 0 here would flash/mis-fire
@@ -375,26 +387,29 @@ export const SearchPage: React.FC = () => {
               </div>
             )}
 
-          {lessons.length > 0 && !isPlaceholderData && (hasNextPage || pageCount > 1) && (
-            // C59: hide the whole trigger during a filter-changed refetch
-            // (placeholder rows are the PREVIOUS query's). This both stops the
-            // sentinel firing fetchNextPage against stale data AND avoids the
-            // trigger's "No more results to load" terminal copy flashing over
-            // those stale rows when hasMore would be forced false. It reappears
-            // with the correct hasMore once the fresh page resolves.
-            // FP-19: also require an actual paginated result set — when the whole
-            // set fit on page 1 (pageCount===1, no next page) the terminal "No
-            // more results to load" footer is pure noise, so skip the trigger
-            // entirely. It still shows as a reassuring end-marker after the user
-            // has genuinely loaded ≥2 pages.
-            <InfiniteScrollTrigger
-              onLoadMore={handleLoadMore}
-              isLoading={isFetchingNextPage}
-              hasMore={!!hasNextPage}
-              currentCount={lessons.length}
-              totalCount={totalCount}
-            />
-          )}
+          {!isError &&
+            lessons.length > 0 &&
+            !isPlaceholderData &&
+            (hasNextPage || pageCount > 1) && (
+              // C59: hide the whole trigger during a filter-changed refetch
+              // (placeholder rows are the PREVIOUS query's). This both stops the
+              // sentinel firing fetchNextPage against stale data AND avoids the
+              // trigger's "No more results to load" terminal copy flashing over
+              // those stale rows when hasMore would be forced false. It reappears
+              // with the correct hasMore once the fresh page resolves.
+              // FP-19: also require an actual paginated result set — when the whole
+              // set fit on page 1 (pageCount===1, no next page) the terminal "No
+              // more results to load" footer is pure noise, so skip the trigger
+              // entirely. It still shows as a reassuring end-marker after the user
+              // has genuinely loaded ≥2 pages.
+              <InfiniteScrollTrigger
+                onLoadMore={handleLoadMore}
+                isLoading={isFetchingNextPage}
+                hasMore={!!hasNextPage}
+                currentCount={lessons.length}
+                totalCount={totalCount}
+              />
+            )}
         </div>
 
         {isSplit && (
