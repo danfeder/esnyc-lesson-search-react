@@ -55,8 +55,12 @@ export const InfiniteScrollTrigger: React.FC<InfiniteScrollTriggerProps> = ({
 
   // Don't render anything if there are no more results
   if (!hasMore && !isLoading) {
+    // FP-08: text-gray-600 (not -500) for readable contrast on the terminal
+    // footer. FP-19 suppresses this footer entirely when the whole result set
+    // fit on one page (see SearchPage) — it now only appears after real
+    // pagination, as a reassuring "you've reached the end".
     return (
-      <div className={`text-center py-8 text-gray-500 ${className}`}>
+      <div className={`text-center py-8 text-gray-600 ${className}`}>
         <p>No more results to load</p>
       </div>
     );

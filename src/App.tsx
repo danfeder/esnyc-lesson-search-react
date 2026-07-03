@@ -9,6 +9,9 @@ import { ReviewErrorBoundary } from '@/components/Common/ReviewErrorBoundary';
 import { PageLoader } from '@/components/Common/PageLoader';
 import { Header } from '@/components/Layout/Header';
 import { SearchPage } from '@/pages/SearchPage';
+// Eager (not lazy) so an unknown route renders the 404 instantly with no
+// PageLoader flash — it's a tiny leaf component.
+import { NotFound } from '@/pages/NotFound';
 import { useLessonStats } from '@/hooks/useLessonStats';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import { Permission } from '@/types/auth';
@@ -184,6 +187,9 @@ function AppContent() {
                     </ProtectedRoute>
                   }
                 />
+                {/* FP-12: catch-all 404 for unknown routes (incl. stale
+                    bookmarks to removed admin pages). Must be LAST. */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </main>

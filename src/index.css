@@ -41,7 +41,12 @@
   --color-esy-white: #FFFFFF;
   --color-esy-ink: #1A1A1A;
   --color-esy-ink-70: #4D4D4D;
-  --color-esy-ink-50: #808080;
+  /* FP-08: darkened from #808080 (3.95:1 on white — failed WCAG AA for the
+     small text it colors) to #6B6B6B (5.4:1 on white, ≥4.5:1 on paper &
+     paper-alt). Used ONLY as a text/icon color app-wide (facet counts, card
+     grades line, the submit-form share hint, admin muted labels) — never for
+     borders/backgrounds — so darkening in place carries no layout risk. */
+  --color-esy-ink-50: #6B6B6B;
   --color-esy-ink-30: #B3B3B3;
   --color-esy-ink-10: #E6E6E6;
   --color-esy-paper: #FAF8F3;
@@ -50,8 +55,12 @@
   /* Status accents (warm ochre + sienna) used by .adm-status--review and
      .adm-status--revision in internal-admin.css. Not in the Phase 1 palette;
      added in Phase 3 for admin/review status eyebrows. */
-  --color-esy-amber-review: #B8860B;
-  --color-esy-orange-revision: #C97A2A;
+  /* FP-08: darkened for WCAG AA. amber #B8860B (3.25:1) → #8A6508 (5.3:1),
+     orange #C97A2A (3.33:1) → #9D5F1F (5.1:1) — both on white. These color
+     the "In review" / "Revision requested" status text and the reviewer's
+     revision-reason paragraph teachers must read (UserProfile). */
+  --color-esy-amber-review: #8A6508;
+  --color-esy-orange-revision: #9D5F1F;
 
   --font-display: 'Intro Caps', 'Intro', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'Intro', 'Helvetica Neue', Arial, sans-serif;
