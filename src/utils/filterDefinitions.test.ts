@@ -57,6 +57,30 @@ describe('Filter Definitions Compliance', () => {
       // Group→specific tree: at least one top-level group carries `children`.
       expect(cfg.options.some((o) => (o.children?.length ?? 0) > 0)).toBe(true);
     });
+
+    // value === label is load-bearing for mainIngredients: the reviewer form's
+    // chip-label map and IntActivePills both fall back to the raw value for a
+    // NESTED specific (their flat `.options.find()` only sees top-level nodes),
+    // so a specific's chip renders correctly ONLY while value === label. Lock it.
+    it('every mainIngredients tree value (recursive) has value === label', () => {
+      const offenders: string[] = [];
+      const walk = (opts: Array<{ value: string; label: string; children?: unknown }>) => {
+        for (const o of opts) {
+          if (o.value !== o.label) offenders.push(`${o.value} != ${o.label}`);
+          if (Array.isArray((o as { children?: unknown[] }).children)) {
+            walk((o as { children: Array<{ value: string; label: string }> }).children);
+          }
+        }
+      };
+      walk(
+        FILTER_CONFIGS.mainIngredients.options as Array<{
+          value: string;
+          label: string;
+          children?: unknown;
+        }>
+      );
+      expect(offenders).toEqual([]);
+    });
   });
 
   describe('Filter Structure Validation', () => {
