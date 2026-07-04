@@ -19,6 +19,7 @@ const emptyFilters: SearchFilters = {
   culturalHeritage: [],
   location: [],
   activityType: [],
+  mainIngredients: [],
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: [],
@@ -324,26 +325,60 @@ describe('canonicalSearchString', () => {
 });
 
 describe('comma-safety invariant', () => {
-  it('no current FILTER_CONFIGS option value (recursive) contains a comma', () => {
-    const offenders: string[] = [];
-    const walk = (options: Array<{ value: string; children?: unknown }>) => {
-      for (const opt of options) {
-        if (opt.value.includes(',')) offenders.push(opt.value);
-        if (Array.isArray((opt as { children?: unknown[] }).children)) {
-          walk((opt as { children: Array<{ value: string }> }).children);
-        }
-      }
-    };
-    for (const key of Object.keys(FILTER_CONFIGS)) {
-      const config = FILTER_CONFIGS[key];
-      walk(config.options as Array<{ value: string; children?: unknown }>);
-      if (config.groups) {
-        for (const g of config.groups) {
-          if (g.id.includes(',')) offenders.push(g.id);
-        }
+  // Collect every option value (recursively) + grade group ids across FILTER_CONFIGS.
+  const allValues: string[] = [];
+  const walk = (options: Array<{ value: string; children?: unknown }>) => {
+    for (const opt of options) {
+      allValues.push(opt.value);
+      if (Array.isArray((opt as { children?: unknown[] }).children)) {
+        walk((opt as { children: Array<{ value: string }> }).children);
       }
     }
+  };
+  for (const key of Object.keys(FILTER_CONFIGS)) {
+    const config = FILTER_CONFIGS[key];
+    walk(config.options as Array<{ value: string; children?: unknown }>);
+    if (config.groups) for (const g of config.groups) allValues.push(g.id);
+  }
+
+  // Array params are comma-joined; commas inside a value are escaped to `%2C`
+  // (Brief 5 — the `Squash, cucumbers & melons` ingredient group). The escape is
+  // only unambiguous if no value contains the literal sentinel `%2C`.
+  it('no FILTER_CONFIGS value contains the %2C escape sentinel literally', () => {
+    const offenders = allValues.filter((v) => v.includes('%2C'));
     expect(offenders).toEqual([]);
+  });
+
+  // Any comma-containing value MUST survive a build → parse round-trip intact
+  // (this is what the pre-Brief-5 "no commas allowed" invariant used to guarantee
+  // by avoidance; now the escape guarantees it by construction).
+  it('comma-containing FILTER_CONFIGS values round-trip through the URL', () => {
+    const commaValues = allValues.filter((v) => v.includes(','));
+    // Sanity: the known Brief-5 case is present (guards against silent vocab drift).
+    expect(commaValues).toContain('Squash, cucumbers & melons');
+    for (const value of commaValues) {
+      // Find the filter key that owns this value so we build the right param.
+      const ownerKey = (Object.keys(FILTER_CONFIGS) as Array<keyof typeof FILTER_CONFIGS>).find(
+        (k) => {
+          let found = false;
+          const scan = (opts: Array<{ value: string; children?: unknown }>) => {
+            for (const o of opts) {
+              if (o.value === value) found = true;
+              if (Array.isArray((o as { children?: unknown[] }).children)) {
+                scan((o as { children: Array<{ value: string }> }).children);
+              }
+            }
+          };
+          scan(FILTER_CONFIGS[k].options as Array<{ value: string; children?: unknown }>);
+          return found;
+        }
+      );
+      expect(ownerKey).toBeDefined();
+      const filters = { ...emptyFilters, [ownerKey as keyof SearchFilters]: [value] };
+      const params = buildSearchParams(filters, 'relevance');
+      const round = parseSearchParams(new URLSearchParams(params.toString()));
+      expect(round.filters[ownerKey as keyof SearchFilters]).toEqual([value]);
+    }
   });
 
   it('exposes the expected sort whitelist constant', () => {

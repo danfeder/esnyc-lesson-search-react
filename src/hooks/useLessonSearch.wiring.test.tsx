@@ -27,6 +27,7 @@ const EMPTY_FILTERS: SearchFilters = {
   culturalHeritage: [],
   location: [],
   activityType: [],
+  mainIngredients: [],
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: [],

@@ -14,6 +14,7 @@ function makeCounts(overrides: Partial<FacetCounts> = {}): FacetCounts {
     gradeLevels: {},
     activityType: {},
     location: {},
+    mainIngredients: {},
     thematicCategories: {},
     seasonTiming: {},
     coreCompetencies: {},

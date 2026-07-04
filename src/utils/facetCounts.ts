@@ -39,6 +39,7 @@ export type FacetFilterKey =
   | 'gradeLevels'
   | 'activityType'
   | 'location'
+  | 'mainIngredients'
   | 'thematicCategories'
   | 'seasonTiming'
   | 'coreCompetencies'
@@ -63,6 +64,7 @@ export interface FacetLesson {
     | 'culturalHeritage'
     | 'locationRequirements'
     | 'activityType'
+    | 'mainIngredients'
     | 'academicIntegration'
     | 'socialEmotionalLearning'
     | 'cookingMethods'
@@ -94,6 +96,7 @@ const EMPTY_COUNTS = (): FacetCounts => ({
   gradeLevels: {},
   activityType: {},
   location: {},
+  mainIngredients: {},
   thematicCategories: {},
   seasonTiming: {},
   coreCompetencies: {},
@@ -107,6 +110,7 @@ const KEYS: readonly FacetFilterKey[] = [
   'gradeLevels',
   'activityType',
   'location',
+  'mainIngredients',
   'thematicCategories',
   'seasonTiming',
   'coreCompetencies',
@@ -154,6 +158,11 @@ const OPTION_VALUES_BY_KEY: Record<FacetFilterKey, readonly string[]> = {
   gradeLevels: flattenOptionValues(FILTER_CONFIGS.gradeLevels.options),
   activityType: flattenOptionValues(FILTER_CONFIGS.activityType.options),
   location: SEARCH_LOCATION_OPTIONS.map((o) => o.value),
+  // Flattens the group→specific tree → all 70 values get a badge (groups AND
+  // specifics). Direct-match: a group badge counts lessons carrying that group
+  // tag verbatim (the parent rides along by the invariant), a specific badge
+  // counts lessons carrying that specific.
+  mainIngredients: flattenOptionValues(FILTER_CONFIGS.mainIngredients.options),
   thematicCategories: flattenOptionValues(FILTER_CONFIGS.thematicCategories.options),
   seasonTiming: flattenOptionValues(FILTER_CONFIGS.seasonTiming.options),
   coreCompetencies: flattenOptionValues(FILTER_CONFIGS.coreCompetencies.options),
@@ -217,6 +226,8 @@ interface PreparedLesson {
   socialEmotionalLearning: string[];
   /** Raw stored activity values (bare nouns on real rows). */
   activityType: string[];
+  /** Stored main_ingredients (canonical Title-Case; matched verbatim). */
+  mainIngredients: string[];
   /** Lowercased stored locations (the SQL compares lowercase both sides). */
   locationLower: string[];
   /** Lowercased stored cooking methods (ditto). */
@@ -235,6 +246,7 @@ function prepareLesson(lesson: FacetLesson): PreparedLesson {
     academicIntegration: academicValues(meta.academicIntegration),
     socialEmotionalLearning: meta.socialEmotionalLearning ?? [],
     activityType: meta.activityType ?? [],
+    mainIngredients: meta.mainIngredients ?? [],
     locationLower: (meta.locationRequirements ?? []).map((v) => v.toLowerCase()),
     cookingLower: (meta.cookingMethods ?? []).map((v) => v.toLowerCase()),
     heritageSlugs: heritageSlugSet(meta.culturalHeritage ?? []),
@@ -313,6 +325,14 @@ function matchesPrepared(lesson: PreparedLesson, key: FacetFilterKey, selected: 
           (noun !== undefined && lesson.activityType.includes(noun))
         );
       });
+    // SQL twin: `l.main_ingredients && filter_main_ingredients` — the plain
+    // direct-overlap clause added to search_lessons alongside
+    // filter_main_ingredients (20260704000000_search_lessons_add_main_ingredients.sql).
+    // No expansion: a group value matches lessons carrying that group tag
+    // verbatim (the specific's parent group rides along by the enforced/backfilled
+    // invariant), a specific value matches lessons carrying that specific.
+    case 'mainIngredients':
+      return overlaps(lesson.mainIngredients, selected);
     // SQL twin: `l.academic_integration && filter_academic` (:303-304)
     case 'academicIntegration':
       return overlaps(lesson.academicIntegration, selected);

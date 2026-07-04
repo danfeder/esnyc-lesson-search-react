@@ -100,5 +100,18 @@ export function normalizeMatchType(raw: string | null): IntDuplicateMatchType | 
 }
 
 export function selectOptionsFromConfig(config: FilterConfig) {
-  return config.options.map((o) => ({ value: o.value, label: o.label }));
+  // Flatten one or more levels of `children` (depth-first, parent before its
+  // specifics) so a group→specific tree config (e.g. the promoted Main
+  // Ingredients — 24 groups + 46 specifics) offers EVERY value in the reviewer
+  // <Select>, not just the top-level groups. Flat configs (no children) are
+  // unaffected. value === label on the tree configs, so chip labels resolve.
+  const out: Array<{ value: string; label: string }> = [];
+  const walk = (options: FilterConfig['options']): void => {
+    for (const o of options) {
+      out.push({ value: o.value, label: o.label });
+      if (o.children && o.children.length > 0) walk(o.children);
+    }
+  };
+  walk(config.options);
+  return out;
 }

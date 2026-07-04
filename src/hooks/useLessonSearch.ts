@@ -130,6 +130,12 @@ export function useLessonSearch({
         filter_cultures: filters.culturalHeritage?.length ? filters.culturalHeritage : undefined,
         filter_location: filters.location?.length ? filters.location : undefined,
         filter_activity_type: filters.activityType?.length ? filters.activityType : undefined,
+        // Direct-match ingredient filter (group OR specific matched verbatim via
+        // the RPC's `l.main_ingredients && filter_main_ingredients`). Omitted when
+        // empty so the RPC's DEFAULT NULL guard skips the clause.
+        filter_main_ingredients: filters.mainIngredients?.length
+          ? filters.mainIngredients
+          : undefined,
         filter_academic: filters.academicIntegration?.length
           ? filters.academicIntegration
           : undefined,

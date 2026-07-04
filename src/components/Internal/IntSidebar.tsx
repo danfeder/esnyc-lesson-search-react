@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { FILTER_CONFIGS, SEARCH_LOCATION_OPTIONS } from '@/utils/filterDefinitions';
 import { useSearchStore } from '@/stores/searchStore';
 import type { FacetCounts, FacetFilterKey } from '@/utils/facetCounts';
@@ -5,10 +6,13 @@ import type { SearchFilters } from '@/types';
 import { cn } from '@/utils/cn';
 import { IntFilterSection } from './IntFilterSection';
 import { IntCulturalHeritageSection } from './IntCulturalHeritageSection';
+import { IntMainIngredientsSection } from './IntMainIngredientsSection';
 
 /**
  * Filter categories rendered as a simple checkbox list, in order.
- * `gradeLevels` and `culturalHeritage` get bespoke sections.
+ * `gradeLevels`, `mainIngredients` and `culturalHeritage` get bespoke sections —
+ * Main Ingredients is injected at slot #3 (right after Activity Type) below,
+ * so it is intentionally NOT in this flat list.
  */
 const CHECKBOX_KEYS: readonly FacetFilterKey[] = [
   'activityType',
@@ -101,34 +105,35 @@ export function IntSidebar({ counts }: IntSidebarProps) {
         // Outdoor-friendly, no Both); every other facet renders its config options.
         const options = key === 'location' ? SEARCH_LOCATION_OPTIONS : cfg.options;
         return (
-          <IntFilterSection
-            key={key}
-            label={cfg.label}
-            count={selected.length}
-            defaultOpen={defaultOpen}
-          >
-            {options.map((opt) => {
-              const checked = selected.includes(opt.value);
-              // undefined while loading (blank badge, no dim); a number once loaded.
-              const count = counts ? (counts[key][opt.value] ?? 0) : undefined;
-              // D-A: dim a loaded zero row (stays clickable); never a checked one.
-              const dimmed = count === 0 && !checked;
-              return (
-                <label key={opt.value} className={cn('int-check', dimmed && 'int-check--dim')}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleFilter(key, opt.value)}
-                  />
-                  <span className="int-check-box" />
-                  <span className="int-check-label">{opt.label}</span>
-                  {/* D-4: blank only while counts are loading/errored; a real
+          // Main Ingredients is bespoke (group→specific tree) and slots in at #3,
+          // right after Activity Type — hence the map is broken by this Fragment.
+          <Fragment key={key}>
+            <IntFilterSection label={cfg.label} count={selected.length} defaultOpen={defaultOpen}>
+              {options.map((opt) => {
+                const checked = selected.includes(opt.value);
+                // undefined while loading (blank badge, no dim); a number once loaded.
+                const count = counts ? (counts[key][opt.value] ?? 0) : undefined;
+                // D-A: dim a loaded zero row (stays clickable); never a checked one.
+                const dimmed = count === 0 && !checked;
+                return (
+                  <label key={opt.value} className={cn('int-check', dimmed && 'int-check--dim')}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleFilter(key, opt.value)}
+                    />
+                    <span className="int-check-box" />
+                    <span className="int-check-label">{opt.label}</span>
+                    {/* D-4: blank only while counts are loading/errored; a real
                       zero is information ("none within your other filters"). */}
-                  <span className="int-check-count">{count === undefined ? '' : count}</span>
-                </label>
-              );
-            })}
-          </IntFilterSection>
+                    <span className="int-check-count">{count === undefined ? '' : count}</span>
+                  </label>
+                );
+              })}
+            </IntFilterSection>
+            {/* Slot #3: Main Ingredients tree renders immediately after Activity Type. */}
+            {key === 'activityType' && <IntMainIngredientsSection counts={counts} />}
+          </Fragment>
         );
       })}
 
