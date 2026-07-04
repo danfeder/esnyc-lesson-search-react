@@ -14,7 +14,11 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25 (was 15): the 77-test suite takes 11.5–15+ min end-to-end depending on
+    # runner speed — three 15-min timeout kills on 2026-07-04 alone (PRs #605/#606),
+    # and a mid-suite kill strands published fixtures on the TEST DB that poison
+    # later runs' duplicate detection.
+    timeout-minutes: 25
 
     steps:
       - name: Checkout code
