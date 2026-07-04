@@ -84,7 +84,7 @@ async function fetchFacetCorpus(): Promise<FacetLesson[]> {
 }
 
 /**
- * TRUE facet-count badges (FP-01b): fetches a slim 10-column select of every
+ * TRUE facet-count badges (FP-01b): fetches a slim 11-column select of every
  * non-retired lesson ONCE per tab session and computes, per rendered filter
  * option, how many lessons in the whole library match it under the server's
  * matching rules AND every OTHER active filter category (see facetCounts.ts
