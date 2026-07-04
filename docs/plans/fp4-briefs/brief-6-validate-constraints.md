@@ -101,8 +101,52 @@ the 7 rows (no specific without its group).
 
 ## STOP conditions
 
-Any old token in the live rows not in the tables above; any active violator; TEST/PROD
-divergence in the 7 rows' arrays; VALIDATE failing after the heal (means the census missed
-something — do NOT widen the mutation). "STOP = write the hand-back and END YOUR TURN;
-design forks route to Fable; the owner only answers explicit approvals (data fix / merge /
-gates)."
+Any old token in the live rows not in the tables above; any active violator **after
+Step 0 below**; TEST/PROD divergence in the 7 rows' arrays; VALIDATE failing after the heal
+(means the census missed something — do NOT widen the mutation). "STOP = write the hand-back
+and END YOUR TURN; design forks route to Fable; the owner only answers explicit approvals
+(data fix / merge / gates)."
+
+## ADDENDUM — Fable ruling 2026-07-04 (supersedes conflicting lines above)
+
+A first executor correctly STOPPED at Sequence step 1 (evidence:
+`docs/plans/fp4-briefs/brief-6-census.md`, in the tree uncommitted — re-probe, apply the
+corrections below, commit it on your branch). Fable independently re-verified both blockers
+live on 2026-07-04 (census §5). Rulings:
+
+**1. Blocker A (TEST active violators) → mirror FP3 B5 onto TEST (census Option 1).**
+New **Step 0**, before Sequence step 1: apply `docs/plans/fp3-briefs/brief-5-data-fix.sql`
+**verbatim, unedited,** to TEST via `mcp__supabase-test__execute_sql` (the file self-wraps
+`BEGIN;`/`COMMIT;` and self-asserts 0/0/0/0 scoped to active rows — the same file PROD
+received 2026-07-04, owner-gated). Do NOT roll back this time: TEST keeps it, permanently
+matching PROD. Post-probe: TEST active violators = 0 for both constraints; retired
+violators = exactly the brief's 7. If the file errors on TEST, STOP — do not modify it.
+Rejected alternatives: folding the active heal into this migration re-touches 11 live PROD
+lessons that are already correct (widens the owner's one gate for zero benefit); a generic
+TEST-sync mechanism is overkill — the drift IS exactly FP3 B5 (Fable-verified: TEST's 11
+active violators = precisely the FP3 B5 heal set; the 7 retired rows are byte-identical
+PROD↔TEST including JSONB mirrors).
+
+**2. Blocker B (parent-invariant post-assert) → byte-equality replaces the absolute
+invariant.** The literal "parent-invariant holds on the 7 rows" is unimplementable
+remap-only (3 rows carry PRE-existing orphan specifics — census §2 — invisible on retired
+rows and out of scope to fix). Instead post-assert: each healed row's `cooking_skills`,
+`main_ingredients`, `metadata->'cookingSkills'`, `metadata->'mainIngredients'` equal the
+census §3b healed arrays **exactly** (Fable spot-verified §3b old arrays against live PROD).
+This is stronger than "no new orphan" and stable: the 7 rows are frozen (any UPDATE fails
+the NOT VALID re-check) so they cannot drift before the PROD apply. Do NOT backfill parents.
+
+**3. Local-reset guard.** The migration must pass on databases where the 7 rows don't exist
+(local `supabase db reset`, CI resets): universal asserts always run (0 violating rows for
+both constraints; `convalidated=true` × 2); per-row byte-equality asserts only for the ids
+actually present; also assert updated-row-count = count of the 7 ids present (7 on
+TEST/PROD, 0 locally).
+
+**4. Corrections of record** (fix in the census doc when committing): TEST active violators
+= **11 distinct rows** (11 cooking_skills violators, 4 of which also carry the
+main_ingredients strays — "15" was double-counting); canonical main_ingredients vocab =
+**70** values (brief's "71" was wrong; census already parsed the live def correctly).
+
+**5. Standing policy (new, all future work):** any owner-gated PROD data fix must be
+mirrored onto TEST at ship time — this whole blocker existed because FP3 B5 shipped
+PROD-only.
