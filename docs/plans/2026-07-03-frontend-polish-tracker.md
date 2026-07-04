@@ -359,7 +359,7 @@ HELD; 0 kills). Owner set scope from explicit options; **six briefs**, all in
 | 2 synonym seed safety net (60 unowned live rows → idempotent migration) | NOT STARTED |
 | 3 close-lesson filter revert fix (new bug FP4-SP-01, design ruled) | NOT STARTED |
 | 4 small-stuff cleanup (logger redaction + dead code + stale docs + announcer) | NOT STARTED |
-| 5 summary backfill, extract-first (65 active blanks + "---" title; 2 owner gates) | NOT STARTED |
+| 5 summary backfill, extract-first | ✅ COMPLETE ON PROD 2026-07-03 — 65 summaries (all EXTRACTED), 21 titles cleaned, `---` dupe retired (active 703→702); Fable post-apply probes 8/8 green; artifacts brief-5-summary-data-fix.sql + brief-5-phase2-rehearsal.md |
 | 6 heal 7 retired + VALIDATE both constraints (single self-contained migration) | NOT STARTED |
 
 Shelf disposition: FP-02 CLOSED (verified resolved on PROD), the 4 overnight P1s CLOSED
