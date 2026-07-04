@@ -5,10 +5,18 @@ improve the end-user experience, and simplify what two years of vibe-coding with
 overbuilt. Less focused than go-live by design — discovery comes first, fixes ship in small
 themed waves. This is the ONLY tracking doc for the phase.
 
-**Last updated:** 2026-07-03 afternoon (Fable, DESIGN SESSION complete — all 4 deferred design
-questions decided with the owner; record: `2026-07-03-fable-design-session.md`; five Opus
-execution briefs written in `fp3-briefs/`). NEXT = **Opus executes the briefs in separate fresh
-sessions, Brief 1 (#593 finalization) first**; owner merges each.
+**Last updated:** 2026-07-04 (Fable, receiving session) — **FP3 WAVE COMPLETE.** All five
+briefs + FP-18 shipped, Fable-verified, and live on PROD: Brief 1 #593 (`314d3c4`), Brief 2
+#599 (`44525b2`) + FP-18 #603 (`2e4f102`), Brief 3 #598 (`a88ca13`) / #602 (`6373f94`) /
+#601 (`a02d61a`), Brief 4 #600 (`e570bfd`, complete-review v12), Brief 5 #604 (`57cca0a`) —
+Main Ingredients promoted to a search filter (tree at sidebar slot #3, direct-match RPC
+16-arg `search_lessons`, migration `20260704000000`), owner-gated combined data fix applied
+to PROD 2026-07-04 (11 frozen legacy lessons healed: cooking_skills remap + ingredient
+parent backfill + strays + metadata-JSONB mirror; post-probes 0/0/0/0), migrate-production
+approved + verified (RPC==SQL: Root vegetables 140, Beans 90; live UI drive green). Parked
+from Brief 5: 7 retired frozen rows + `VALIDATE CONSTRAINT` for the two NOT-VALID checks.
+NEXT = owner picks from the shelf (see design-session doc §parked + memory) — nothing
+pre-authorized.
 
 ## Working model (binding, carried from go-live where it worked)
 
@@ -186,7 +194,7 @@ Plain-language verdicts from `fp1-audit/audit-assumptions.md` (full reasoning th
 |---|---|---|---|
 | FP1 | Discovery audit: re-verify the shelf, sweep the frontend (bugs + overengineering), assumptions review, ranked backlog | No (user reviews output) | **Audit DONE 2026-07-03** (9/9 agents; reports in `fp1-audit/`; ranked backlog below). FP2 walkthrough next |
 | FP2 | Live walkthroughs (public search; teacher/reviewer) — user narrates, Fable explains + logs | **Yes** | **NEXT** — audit findings below sharpen the walkthrough script |
-| FP3+ | Themed fix waves: quick wins first, then bug clusters, then sanctioned redesigns/simplifications | Per wave | **NOW BRIEF-DRIVEN (2026-07-03 PM):** five Opus briefs in `fp3-briefs/` (1 = #593 finalize, 2 = display truth, 3 = search polish, 4 = heritage close, 5 = ingredients promote — run 5 last). Earlier: **OVERNIGHT RUN 2026-07-03 shipped the bulk**: FP-11 (E, #581 merged + #582/583/584 gates), FP-15+D3 (D, #587/#588/#592 merged), FP-03/04a/05/06/07 (A, #585/#586/#591 open), FP-02 (#590 open, TEST-verified), FP-01b+D2 (B-lite, #593/#594 open), reviewer-UX batch (#595 open) — see Morning handoff below. Remaining backlog: FP-09 summary backfill, FP-16/17/18 (stakeholder), FP-19/20/21/22/24 tails, FP-04 full dialog rebuild |
+| FP3+ | Themed fix waves: quick wins first, then bug clusters, then sanctioned redesigns/simplifications | Per wave | **✅ WAVE COMPLETE 2026-07-04** — all five briefs + FP-18 merged, verified, live on PROD (see Last-updated header for PRs/shas). Earlier context: **BRIEF-DRIVEN (2026-07-03 PM):** five Opus briefs in `fp3-briefs/` (1 = #593 finalize, 2 = display truth, 3 = search polish, 4 = heritage close, 5 = ingredients promote — run 5 last). Earlier: **OVERNIGHT RUN 2026-07-03 shipped the bulk**: FP-11 (E, #581 merged + #582/583/584 gates), FP-15+D3 (D, #587/#588/#592 merged), FP-03/04a/05/06/07 (A, #585/#586/#591 open), FP-02 (#590 open, TEST-verified), FP-01b+D2 (B-lite, #593/#594 open), reviewer-UX batch (#595 open) — see Morning handoff below. Remaining backlog: FP-09 summary backfill, FP-16/17/18 (stakeholder), FP-19/20/21/22/24 tails, FP-04 full dialog rebuild |
 
 ## Explicitly NOT in this phase (unless the user reopens)
 
