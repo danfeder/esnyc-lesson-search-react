@@ -227,8 +227,12 @@ AdminAnalytics was retired in the frontend-polish phase, owner decision D3.)
   "Culturally Responsive Education" — same concept). The template's
   Social-Emotional words map onto the **Social-Emotional Skills** category (the 5
   CASEL values + Bravery/Kindness/Respect/Collaboration/Pride/Joy).
-  **Social-Emotional Intelligence** is a *Core Competency* the template dropped —
-  don't pick it for new lessons (old lessons keep it).
+  **Social-Emotional Intelligence** is a *Core Competency* the template dropped.
+  **FP5 Brief 3 (owner 2026-07-04):** the reviewer form now enforces this — its
+  Core Competencies pill is hidden unless the review's metadata AS INITIALLY
+  LOADED already carries it (so old carriers stay editable; unticking it
+  mid-review keeps the pill visible). It remains a legal stored value and the
+  public search facet keeps it (388/431 active lessons carry it).
 
 ### Submission Flow
 ```

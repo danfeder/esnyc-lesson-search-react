@@ -44,8 +44,8 @@ Three deliberate behaviors, not bugs:
   (renamed from "Culturally Responsive Education" — same concept).
 - The doc's SEL words (bravery, kindness, respect, self-management, collaboration,
   pride, joy) map 1:1 onto the **Social-Emotional Skills** checkboxes.
-- **Don't pick "Social-Emotional Intelligence"** (under Core Competencies) for new
-  lessons — it's a legacy value old lessons carry; the template dropped it.
+- **"Social-Emotional Intelligence"** (under Core Competencies) no longer appears as a
+  choice for new lessons — the template dropped it; it's a legacy tag only old lessons carry.
 - **AI auto-tagging is off** (owner decision 2026-07-04). Nothing else fills in tags;
   there is nothing to wait for.
 

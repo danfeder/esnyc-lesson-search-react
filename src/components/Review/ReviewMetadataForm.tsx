@@ -2,7 +2,10 @@ import type { RefObject } from 'react';
 import Select from 'react-select';
 import type { ReviewMetadata } from '@/types';
 import { ALL_FIELD_CONFIGS } from '@/utils/filterDefinitions';
-import { selectOptionsFromConfig } from '@/pages/reviewDetailHelpers';
+import {
+  selectOptionsFromConfig,
+  SOCIAL_EMOTIONAL_INTELLIGENCE,
+} from '@/pages/reviewDetailHelpers';
 import { culturalHeritageReviewOptions } from '@/utils/heritageHierarchy.generated';
 import type { FieldProgress } from '@/pages/reviewValidation';
 import { IntButton, IntFormField, IntPillGroup, IntProgressBar } from '@/components/Internal';
@@ -49,6 +52,14 @@ interface ReviewMetadataFormProps {
    * summary or switches decision. Null in the normal case.
    */
   summaryError?: string | null;
+  /**
+   * FP5 B3 (owner 2026-07-04): whether to offer the legacy Core Competency
+   * 'Social-Emotional Intelligence'. The 2026 template dropped it, so it's
+   * hidden by default; passed `true` ONLY when this review's metadata AS
+   * INITIALLY LOADED already carries it (judged in ReviewDetail, NOT from the
+   * live selection — so unticking it mid-review keeps the pill visible).
+   */
+  showLegacySocialEmotionalIntelligence: boolean;
 }
 
 /**
@@ -75,9 +86,21 @@ export function ReviewMetadataForm({
   legacyDecisionWarning,
   docTitleHint,
   summaryError,
+  showLegacySocialEmotionalIntelligence,
 }: ReviewMetadataFormProps) {
   const fieldError = (label: string) =>
     validationErrors.includes(label) ? `Required.` : undefined;
+
+  // FP5 B3 (owner 2026-07-04): the 2026 template dropped
+  // 'Social-Emotional Intelligence' as a Core Competency, so don't offer its
+  // pill for a lesson that doesn't already carry it. When shown (loaded
+  // metadata had it — see the prop doc) it behaves like any other pill. The
+  // value stays legal everywhere else (388/431 carriers, public search facet).
+  const coreCompetencyOptions = selectOptionsFromConfig(ALL_FIELD_CONFIGS.coreCompetencies).filter(
+    (o) =>
+      showLegacySocialEmotionalIntelligence ||
+      o.value.toLowerCase() !== SOCIAL_EMOTIONAL_INTELLIGENCE.toLowerCase()
+  );
 
   // Single-select pill adapter: mode='single' lets IntPillGroup talk in arrays
   // while we store a single value on metadata.
@@ -217,7 +240,7 @@ export function ReviewMetadataForm({
 
           <IntFormField label="Competencies" required error={fieldError('Core Competencies')}>
             <IntPillGroup
-              options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.coreCompetencies)}
+              options={coreCompetencyOptions}
               selected={metadata.coreCompetencies ?? []}
               onChange={(next) => handleMetadataChange('coreCompetencies', next)}
               ariaLabel="Core competencies"
