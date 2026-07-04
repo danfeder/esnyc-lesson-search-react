@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   reAddActivityTypeSuffix,
   parseExtractedContent,
+  parseTemplateTags,
   normalizeMatchType,
   selectOptionsFromConfig,
   ZOD_FIELD_TO_LABEL,
@@ -188,5 +189,175 @@ describe('ZOD_FIELD_TO_LABEL', () => {
       'Cultural Responsiveness Features'
     );
     expect(ZOD_FIELD_TO_LABEL.summary).toBe('Summary');
+  });
+});
+
+describe('parseTemplateTags (FP5 Brief 2 mechanical template prefill)', () => {
+  // VERBATIM stock text of the LOCKED 2026 template
+  // (Google Doc 1C0tCnRJXgdNxUJtv25aq2ZDnKHjTcjA0H6LIY248xQk), rendered the way
+  // the app's Google-Docs extractor emits table cells (label and value split by
+  // ` | ` on pipe/text-run boundaries, one row per line, `[Table]` markers). This
+  // is the untouched template — a teacher who leaves it has answered NOTHING.
+  const STOCK_TEMPLATE = [
+    'Lesson Title [DO NOT TYPE ON THIS: MAKE A COPY!!!!]',
+    '',
+    '[Table]',
+    'Summary:',
+    '',
+    '[Table]',
+    'Objectives: | Students will be able to….',
+    '',
+    '[Table]',
+    'Core Competencies: | List all that apply: Environmental and community stewardship, social justice, garden skills and related academic content, kitchen skills and related academic content, cultural diversity.',
+    '',
+    '[Table]',
+    'Cultural Responsiveness | : Are any New York City cultures represented in this lesson? If so, which ones?',
+    '',
+    '[Table]',
+    'Social-Emotional Skills | (pick all that apply or add your own): Bravery, kindness, respect, self-management (safety), collaboration, pride, joy',
+    '',
+    '[Table]',
+    'Garden Connection: How does this lesson make use of the garden?',
+    '',
+    '[Table]',
+    'How Does This Lesson Promote Critical Thinking/Independence?',
+    '',
+    '[Table]',
+    'Food and Nutrition Standard:',
+    '',
+    '[Table]',
+    'Tags–Pick a tag from each category: | For all lessons: monthly theme, holiday or heritage month (if applicable), region of the world (if applicable), food education standard If cooking: Cooking skill(s), Main ingredient(s). Heating element: none, stove or oven. If gardening: garden theme (ie pollinators, soil, seeds, compost, animals, stewardship, vegetables, water, etc)',
+    '',
+    '[Table]',
+    'Agenda/Class Flow: Opening ritual with SEL component AND with emphasis on yearly theme.',
+  ].join('\n');
+
+  it('the untouched stock template prefills NOTHING (every guard-b stock list survives)', () => {
+    // Core Competencies / SEL still carry all their stock options → unanswered.
+    // Heating element still lists none/stove/oven → unanswered. The Tags cell is
+    // pure instruction → nothing to match.
+    expect(parseTemplateTags(STOCK_TEMPLATE)).toEqual({});
+  });
+
+  it('a filled template maps each answered cell to its canonical closed-vocab values', () => {
+    const filled = [
+      '[Table]',
+      'Core Competencies: | List all that apply: social justice, cultural diversity',
+      '[Table]',
+      'Cultural Responsiveness | : We highlight Chinese heritage.',
+      '[Table]',
+      'Social-Emotional Skills | (pick all that apply or add your own): kindness, collaboration',
+      '[Table]',
+      'Tags–Pick a tag from each category: | Lunar New Year, Rice, Knife skills, Composting, Heating element: stove',
+      '[Table]',
+      'Agenda/Class Flow: Opening ritual.',
+    ].join('\n');
+
+    expect(parseTemplateTags(filled)).toEqual({
+      // "cultural diversity" → the post-Brief-1 canonical Cultural Diversity.
+      coreCompetencies: ['Social Justice', 'Cultural Diversity'],
+      socialEmotionalLearning: ['Kindness', 'Collaboration'],
+      // Heating element: stove → kebab stovetop (per FILTER_CONFIGS.cookingMethods).
+      cookingMethods: ['stovetop'],
+      observancesHolidays: ['Lunar New Year'],
+      cookingSkills: ['Knife skills'],
+      gardenSkills: ['Composting'],
+      // Rice auto-adds its parent group (INGREDIENT_PARENT_MAP) so the Zod
+      // refinement passes; the group precedes the specific (frozen vocab order).
+      mainIngredients: ['Grains & starches', 'Rice'],
+    });
+  });
+
+  it('half-filled: an untouched stock SEL cell stays UNANSWERED while a real competencies cell is read', () => {
+    const halfFilled = [
+      '[Table]',
+      'Core Competencies: | List all that apply: cultural diversity',
+      '[Table]',
+      'Social-Emotional Skills | (pick all that apply or add your own): Bravery, kindness, respect, self-management (safety), collaboration, pride, joy',
+      '[Table]',
+      'Garden Connection: none',
+    ].join('\n');
+
+    expect(parseTemplateTags(halfFilled)).toEqual({
+      coreCompetencies: ['Cultural Diversity'],
+      // socialEmotionalLearning intentionally ABSENT — stock list untouched.
+    });
+  });
+
+  it('never prefills Social-Emotional Intelligence (the template dropped it) even if the words appear', () => {
+    const withSei = [
+      '[Table]',
+      'Core Competencies: | Social-Emotional Intelligence, social justice',
+      '[Table]',
+      'Cultural Responsiveness | : n/a',
+    ].join('\n');
+    // Only Social Justice survives; SEI is not a template option.
+    expect(parseTemplateTags(withSei)).toEqual({ coreCompetencies: ['Social Justice'] });
+  });
+
+  it('heating element mappings: none → basic-prep, oven → oven, and a stray value is ignored', () => {
+    const noneCase = [
+      '[Table]',
+      'Tags–Pick a tag from each category: | Heating element: none',
+    ].join('\n');
+    expect(parseTemplateTags(noneCase)).toEqual({ cookingMethods: ['basic-prep'] });
+
+    const ovenCase = [
+      '[Table]',
+      'Tags–Pick a tag from each category: | Heating element: oven',
+    ].join('\n');
+    expect(parseTemplateTags(ovenCase)).toEqual({ cookingMethods: ['oven'] });
+  });
+
+  it('only EXACT closed-vocab tokens match — a substring or off-vocab phrase never prefills', () => {
+    // "composting soil" is one token (never split across words) and does not
+    // equal "Composting"; "region of the world" is instruction boilerplate.
+    const fuzzy = [
+      '[Table]',
+      'Tags–Pick a tag from each category: | composting soil, region of the world, Rices',
+    ].join('\n');
+    expect(parseTemplateTags(fuzzy)).toEqual({});
+  });
+
+  it('a non-template doc (plain lesson body, no labeled cells) prefills nothing', () => {
+    const legacyBody =
+      'Compost Cake\n\nSummary: Students practice kindness and respect while learning to plant seeds and measure ingredients.';
+    // No "Core Competencies:" / "Social-Emotional Skills" / "pick a tag" labels,
+    // so the incidental words ("kindness", "respect", "measure", "seeds") never
+    // leak in — matching is bounded to the template's labeled cells.
+    expect(parseTemplateTags(legacyBody)).toEqual({});
+  });
+
+  it('is tolerant of empty / null-ish content', () => {
+    expect(parseTemplateTags('')).toEqual({});
+    expect(parseTemplateTags(undefined as unknown as string)).toEqual({});
+  });
+
+  // Autocorrect / delimiter robustness (adversarial review). All fold BOTH sides,
+  // so they absorb keyboard variance without widening the closed vocab.
+  it('matches a directly-typed comma-containing group value (the comma is not an item separator here)', () => {
+    const content = [
+      '[Table]',
+      'Tags–Pick a tag from each category: | Squash, cucumbers & melons',
+    ].join('\n');
+    // The one vocab value with an internal comma must still match as a whole.
+    expect(parseTemplateTags(content)).toEqual({ mainIngredients: ['Squash, cucumbers & melons'] });
+  });
+
+  it('matches an accent-dropped cooking skill (Sauteing → Sautéing)', () => {
+    const content = [
+      '[Table]',
+      'Tags–Pick a tag from each category: | Sauteing & stir-frying',
+    ].join('\n');
+    expect(parseTemplateTags(content)).toEqual({ cookingSkills: ['Sautéing & stir-frying'] });
+  });
+
+  it("matches a Google-Docs curly apostrophe against straight-apostrophe vocab (Women's History Month)", () => {
+    const content = ['[Table]', 'Tags–Pick a tag from each category: | Women’s History Month'].join(
+      '\n'
+    );
+    expect(parseTemplateTags(content)).toEqual({
+      observancesHolidays: ["Women's History Month"],
+    });
   });
 });

@@ -1,6 +1,10 @@
 import { lessonMetadataSchema } from '@/types/lessonMetadata.zod';
 import { lessonToReview } from '@/utils/lessonToReviewMapper';
-import { parseExtractedContent } from '@/pages/reviewDetailHelpers';
+import {
+  parseExtractedContent,
+  parseTemplateTags,
+  type TemplateTagPrefill,
+} from '@/pages/reviewDetailHelpers';
 import { logger } from '@/utils/logger';
 import type { ReviewMetadata } from '@/types';
 
@@ -43,6 +47,43 @@ export function withPrefilledTitleSummary(
     title: metadata.title?.trim() ? metadata.title : prefillTitle || undefined,
     summary: metadata.summary?.trim() ? metadata.summary : prefillSummary || undefined,
   };
+}
+
+// The closed-vocab tag fields `parseTemplateTags` can mechanically prefill.
+const TEMPLATE_TAG_FIELDS: (keyof TemplateTagPrefill)[] = [
+  'coreCompetencies',
+  'socialEmotionalLearning',
+  'cookingMethods',
+  'observancesHolidays',
+  'cookingSkills',
+  'mainIngredients',
+  'gardenSkills',
+];
+
+/**
+ * Mechanically prefill the closed-vocab tag fields from the 2026 template's
+ * labeled cells (FP5 Brief 2). ONLY fills a field that is currently EMPTY
+ * (undefined or []), so a restored review's existing reviewer selections — and
+ * an already-set field on the preselect path — always win, exactly like the
+ * title/summary prefill. Fields the parser can't exact-match stay untouched, so
+ * a non-template doc renders the form exactly as today. Never mutates the input.
+ */
+export function withPrefilledTemplateTags(
+  metadata: ReviewMetadata,
+  extractedContent: string | null | undefined
+): ReviewMetadata {
+  const prefill = parseTemplateTags(extractedContent ?? '');
+  const out: ReviewMetadata = { ...metadata };
+  const writable = out as Record<string, string[] | undefined>;
+  for (const field of TEMPLATE_TAG_FIELDS) {
+    const current = metadata[field];
+    const proposed = prefill[field];
+    const isEmpty = !Array.isArray(current) || current.length === 0;
+    if (isEmpty && proposed && proposed.length > 0) {
+      writable[field] = proposed;
+    }
+  }
+  return out;
 }
 
 /**

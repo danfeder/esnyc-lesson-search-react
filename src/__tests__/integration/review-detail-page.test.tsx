@@ -918,6 +918,70 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
   });
 });
 
+describe('Empty-summary approve guard (FP5 Brief 2 §3 / candidates §1)', () => {
+  // approve_new must not publish a NEW lesson with a blank summary — it's the
+  // search-result blurb (FTS weight-B). The guard is inline at the Summary field
+  // and runs BEFORE the D7 publish interstitial.
+  it('25. blocks approve_new on a blank summary with an inline message and no invoke', async () => {
+    renderReview(modernFixture, 'sub-modern');
+    const user = userEvent.setup();
+
+    // The summary prefilled from the doc — clear it to hit the guard.
+    const summary = await screen.findByPlaceholderText(/short summary of the lesson/i);
+    await user.clear(summary);
+
+    await user.click(screen.getByRole('button', { name: /publish lesson/i }));
+
+    // Inline guard message shows; the D7 "looks like an existing lesson"
+    // interstitial does NOT (the summary guard returns first); nothing saved.
+    expect(await screen.findByText(/it appears in search results/i)).toBeInTheDocument();
+    expect(screen.queryByText(/looks like an existing lesson/i)).not.toBeInTheDocument();
+    expect(functionsInvokeMock).not.toHaveBeenCalled();
+  });
+
+  it('26. clears the block once a summary is typed, then publishes with that summary', async () => {
+    renderReview(modernFixture, 'sub-modern');
+    const user = userEvent.setup();
+
+    const summary = await screen.findByPlaceholderText(/short summary of the lesson/i);
+    await user.clear(summary);
+    await user.click(screen.getByRole('button', { name: /publish lesson/i }));
+    expect(await screen.findByText(/it appears in search results/i)).toBeInTheDocument();
+
+    // Typing a summary dismisses the inline message immediately…
+    await user.type(summary, 'A short blurb for search.');
+    expect(screen.queryByText(/it appears in search results/i)).not.toBeInTheDocument();
+
+    // …and now the save proceeds (through the D7 high-candidate interstitial).
+    await user.click(screen.getByRole('button', { name: /publish lesson/i }));
+    await user.click(await screen.findByRole('button', { name: /publish anyway/i }));
+
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    const [, opts] = functionsInvokeMock.mock.calls[0] as [
+      string,
+      { body: { decision: string; metadata: { summary?: string } } },
+    ];
+    expect(opts.body.decision).toBe('approve_new');
+    expect(opts.body.metadata.summary).toBe('A short blurb for search.');
+  });
+
+  it('27. does NOT gate approve_update on a blank summary (the RPC keeps the existing summary)', async () => {
+    renderReview(preselectTargetUpdateFixture, 'sub-preselect');
+    const user = userEvent.setup();
+
+    // Clear the prefilled summary — an update must still publish.
+    const summary = await screen.findByPlaceholderText(/short summary of the lesson/i);
+    await user.clear(summary);
+
+    await user.click(screen.getByRole('button', { name: /publish update/i }));
+
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    expect(screen.queryByText(/it appears in search results/i)).not.toBeInTheDocument();
+    const [, opts] = functionsInvokeMock.mock.calls[0] as [string, { body: { decision: string } }];
+    expect(opts.body.decision).toBe('approve_update');
+  });
+});
+
 describe('SubmitterIntentBanner — 4-state coverage', () => {
   // blue (happy update, target in list) — modernFixture.
   it('blue: happy update resolves the target title', async () => {

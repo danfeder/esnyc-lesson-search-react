@@ -31,6 +31,18 @@ async function loadActivityTypePrompt(): Promise<string> {
   return activityTypePromptCache;
 }
 
+// AI auto-tag OFF switch (owner decision 2026-07-04). Short-term the owner does
+// NOT want the two LLM auto-tag passes below (Step 4.5 CRF, Step 4.6
+// activity-type) to run: "i think for the short term i do not want to use it. i
+// dont want to just delete it because i think i will come back to it and build
+// it out." So the code, prompts, models, and merge logic all STAY — only the
+// runtime gate flips off. Both passes have never run in PROD (all drafts predate
+// the feature) and previously depended silently on whether ANTHROPIC_API_KEY
+// happened to be set; this makes the OFF state explicit and deliberate.
+// Re-enable by setting the edge secret ENABLE_AI_AUTO_TAG=true (owner will
+// revisit and build this out later — see docs/plans/fp5-briefs/brief-2-*).
+const AI_AUTO_TAG_ENABLED = Deno.env.get('ENABLE_AI_AUTO_TAG') === 'true';
+
 interface ProcessSubmissionRequest {
   googleDocUrl?: string;
   submissionType?: 'new' | 'update';
@@ -396,13 +408,19 @@ serve(async (req) => {
     // longer uses embeddings (D9). The lessons/lesson_submissions
     // content_embedding columns stay but are inert.
 
+    // AI auto-tag off switch (owner decision 2026-07-04): when disabled, log
+    // one line and skip BOTH passes below entirely. Steps 5/6 still run.
+    if (!AI_AUTO_TAG_ENABLED) {
+      console.log('[auto-tag] disabled by owner decision 2026-07-04');
+    }
+
     // Step 4.5: LLM auto-tag — Cultural Responsiveness Features (D9). Skip
     // when body has no "Cultural Responsiveness" header (older legacy
     // template, ~45% of corpus). Output is canonical-keys shape per
     // `lessonMetadataSchema`. Reviewer flips `lessons.crf_confirmed` true via
     // the existing review save flow when the draft is accepted (Phase 2 picker
     // UI redesign deferred).
-    if (/cultural\s+responsiveness/i.test(content)) {
+    if (AI_AUTO_TAG_ENABLED && /cultural\s+responsiveness/i.test(content)) {
       try {
         const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
         if (!anthropicKey) {
@@ -501,10 +519,10 @@ serve(async (req) => {
     // earlier auto-tag passes (e.g., culturalResponsivenessFeatures from CRF)
     // since the CRF writer overwrites the JSONB column.
     //
-    // Runs for every submission (new + resubmit). The block scope is retained
-    // only to preserve the surrounding structure after the embedding-regen
-    // guard that used to wrap it was removed in T4b.
-    {
+    // Runs for every submission (new + resubmit) WHEN the auto-tag switch is on.
+    // The block scope is retained only to preserve the surrounding structure
+    // after the embedding-regen guard that used to wrap it was removed in T4b.
+    if (AI_AUTO_TAG_ENABLED) {
       try {
         const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
         if (!anthropicKey) {

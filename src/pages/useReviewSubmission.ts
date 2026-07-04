@@ -10,6 +10,7 @@ import {
   computeInitialMetadataFromAiDraft,
   detectDocTitleChange,
   withPrefilledTitleSummary,
+  withPrefilledTemplateTags,
 } from '@/pages/reviewMetadataInit';
 import { reAddActivityTypeSuffix } from '@/pages/reviewDetailHelpers';
 import type { SimilarityWithLesson, SubmitterTargetLesson } from '@/pages/buildCandidateCards';
@@ -443,10 +444,16 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         seed = {
           // Prefill the editable title/summary; a restored review's own
           // title/summary (once this feature has shipped) wins over the prefill.
-          metadata: withPrefilledTitleSummary(restoredMetadata, {
-            extractedTitle: submissionData.extracted_title,
-            extractedContent: submissionData.extracted_content,
-          }),
+          // Then mechanically prefill any still-EMPTY closed-vocab tag fields
+          // from the 2026 template cells (the reviewer's restored selections
+          // always win — only-empty fill).
+          metadata: withPrefilledTemplateTags(
+            withPrefilledTitleSummary(restoredMetadata, {
+              extractedTitle: submissionData.extracted_title,
+              extractedContent: submissionData.extracted_content,
+            }),
+            submissionData.extracted_content
+          ),
           decision: restoredDecision,
           notes: revisionAskIsStale ? '' : review.notes || '',
           priorRevisionNote: revisionAskIsStale ? review.notes || null : null,
@@ -471,10 +478,16 @@ export function useReviewSubmission(id: string | undefined): UseReviewSubmission
         });
         const draft = computeInitialMetadataFromAiDraft(submissionData.ai_draft_metadata);
         seed = {
-          metadata: withPrefilledTitleSummary(draft ? reAddActivityTypeSuffix(draft) : {}, {
-            extractedTitle: submissionData.extracted_title,
-            extractedContent: submissionData.extracted_content,
-          }),
+          // First-open of a wave submission (no prior review, AI auto-tag off):
+          // prefill title/summary, then mechanically prefill the closed-vocab
+          // tag fields from the 2026 template cells.
+          metadata: withPrefilledTemplateTags(
+            withPrefilledTitleSummary(draft ? reAddActivityTypeSuffix(draft) : {}, {
+              extractedTitle: submissionData.extracted_title,
+              extractedContent: submissionData.extracted_content,
+            }),
+            submissionData.extracted_content
+          ),
           decision: preselection.decision,
           notes: '',
           selectedDuplicate: preselection.target ?? null,
