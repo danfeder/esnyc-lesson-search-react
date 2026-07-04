@@ -23,6 +23,7 @@ import { logger } from '@/utils/logger';
 import {
   IntButton,
   IntDataTable,
+  IntFetchError,
   IntPageHeader,
   IntRoleBadge,
   IntTabs,
@@ -45,6 +46,11 @@ export function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<EnrichedUser[]>([]);
   const [loading, setLoading] = useState(true);
+  // Honest-error state (FP-05/FP-07): a failed load must never render as the
+  // confidently-wrong "No users found." — and, on a refetch failure, must not
+  // leave the previous page's rows on screen labelled as the new query's result.
+  const [loadError, setLoadError] = useState(false);
+  const [schoolsError, setSchoolsError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [filters, setFilters] = useState<UserFilters>({
@@ -67,6 +73,10 @@ export function AdminUsers() {
   const bulkActionsRef = useRef<HTMLDivElement>(null);
   const bulkTriggerRef = useRef<HTMLButtonElement>(null);
   const bulkFirstItemRef = useRef<HTMLButtonElement>(null);
+  // FP-20a staleness guard: fast role-tab clicks / debounced-search overlap can
+  // land an older query's rows last. Bumped at each load's start so only the
+  // newest load may apply. Idiom copied from LessonSearchPicker.tsx.
+  const requestIdRef = useRef(0);
 
   const USERS_PER_PAGE = 20;
 
@@ -76,7 +86,9 @@ export function AdminUsers() {
   }, [debouncedSearch]);
 
   const loadUsers = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
+    setLoadError(false);
     try {
       let query;
       if (filters.schoolId && filters.schoolId !== 'all') {
@@ -116,6 +128,7 @@ export function AdminUsers() {
       query = query.range(from, to);
 
       const { data: profiles, error, count } = await query;
+      if (requestId !== requestIdRef.current) return; // superseded by a newer load
 
       if (error) throw error;
 
@@ -146,6 +159,7 @@ export function AdminUsers() {
           Promise.all(lessonCountQueries),
           Promise.all(reviewCountQueries),
         ]);
+        if (requestId !== requestIdRef.current) return; // superseded by a newer load
 
         interface EmailData {
           id: string;
@@ -210,9 +224,11 @@ export function AdminUsers() {
 
       setTotalPages(Math.max(1, Math.ceil((count || 0) / USERS_PER_PAGE)));
     } catch (error) {
+      if (requestId !== requestIdRef.current) return; // superseded — don't flip UI state
       logger.error('Error loading users:', error);
+      setLoadError(true);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, [filters, page]);
 
@@ -253,11 +269,16 @@ export function AdminUsers() {
   };
 
   const loadSchools = async () => {
+    setSchoolsError(false);
     try {
       const { data, error } = await supabase.from('schools').select('id, name').order('name');
-      if (!error && data) setSchools(data);
+      if (error) throw error;
+      setSchools(data ?? []);
     } catch (error) {
+      // Non-blocking: the users list still loads; surface a small signal at the
+      // school-filter dropdown so a failed fetch isn't an invisible empty list.
       logger.error('Error loading schools:', error);
+      setSchoolsError(true);
     }
   };
 
@@ -390,7 +411,10 @@ export function AdminUsers() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
+      // FP-20b: a failed export used to be a silent no-op — surface a toast so
+      // the admin knows the click didn't produce a file.
       logger.error('Error exporting users:', error);
+      setToast({ kind: 'error', msg: 'Could not export users. Please try again.' });
     }
   };
 
@@ -559,12 +583,22 @@ export function AdminUsers() {
             aria-label="Filter by school"
           >
             <option value="all">All schools</option>
+            {schoolsError && (
+              <option value="__schools_unavailable__" disabled>
+                Schools unavailable — retry →
+              </option>
+            )}
             {schools.map((school) => (
               <option key={school.id} value={school.id}>
                 {school.name}
               </option>
             ))}
           </select>
+          {schoolsError && (
+            <button type="button" className="adm-link" onClick={loadSchools}>
+              Retry schools
+            </button>
+          )}
         </div>
 
         {selectedUsers.length > 0 && (
@@ -634,6 +668,13 @@ export function AdminUsers() {
 
         {loading && users.length === 0 ? (
           <p className="adm-section-desc">Loading users…</p>
+        ) : loadError ? (
+          <div className="adm-card" style={{ marginTop: 16, padding: 24 }}>
+            <IntFetchError onRetry={() => loadUsers()}>
+              Could not load users. Check your connection and retry — accounts may exist even though
+              the list is empty.
+            </IntFetchError>
+          </div>
         ) : (
           <IntDataTable
             columns={columns}
@@ -648,29 +689,31 @@ export function AdminUsers() {
           />
         )}
 
-        <div className="adm-pagination">
-          <span>
-            Page {page} of {totalPages}
-          </span>
-          <div className="adm-pagination-controls">
-            <IntButton
-              size="sm"
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              aria-label="Previous page"
-            >
-              <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-            </IntButton>
-            <IntButton
-              size="sm"
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              aria-label="Next page"
-            >
-              <ChevronRight className="w-4 h-4" aria-hidden="true" />
-            </IntButton>
+        {!loadError && (
+          <div className="adm-pagination">
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <div className="adm-pagination-controls">
+              <IntButton
+                size="sm"
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+              </IntButton>
+              <IntButton
+                size="sm"
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </IntButton>
+            </div>
           </div>
-        </div>
+        )}
 
         {toast && (
           <div role="status" aria-live="polite" className={`adm-toast adm-toast--${toast.kind}`}>

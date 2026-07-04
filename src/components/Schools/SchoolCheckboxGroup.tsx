@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 
@@ -21,38 +21,48 @@ export function SchoolCheckboxGroup({
 }: SchoolCheckboxGroupProps) {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
+  // F7: distinguish a genuinely-empty list from a failed fetch. Without this, a
+  // fetch error rendered the same "No schools available" as an empty table —
+  // hiding the admin's assigned schools and prompting needless manual re-editing.
+  const [error, setError] = useState(false);
+
+  const fetchSchools = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('schools')
+        .select('id, name')
+        .order('name');
+
+      if (fetchError) throw fetchError;
+
+      // Add validation
+      if (!Array.isArray(data)) throw new Error('Invalid schools data');
+
+      // Filter out any invalid entries
+      const validSchools = data.filter(
+        (school) =>
+          school &&
+          typeof school.id === 'string' &&
+          typeof school.name === 'string' &&
+          school.id.trim() !== '' &&
+          school.name.trim() !== ''
+      );
+
+      setSchools(validSchools);
+    } catch (err) {
+      logger.error('Error fetching schools:', err);
+      setSchools([]); // Set empty array on error
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function fetchSchools() {
-      try {
-        const { data, error } = await supabase.from('schools').select('id, name').order('name');
-
-        if (error) throw error;
-
-        // Add validation
-        if (!Array.isArray(data)) throw new Error('Invalid schools data');
-
-        // Filter out any invalid entries
-        const validSchools = data.filter(
-          (school) =>
-            school &&
-            typeof school.id === 'string' &&
-            typeof school.name === 'string' &&
-            school.id.trim() !== '' &&
-            school.name.trim() !== ''
-        );
-
-        setSchools(validSchools);
-      } catch (error) {
-        logger.error('Error fetching schools:', error);
-        setSchools([]); // Set empty array on error
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchSchools();
-  }, []);
+  }, [fetchSchools]);
 
   const toggleSchool = (school: School) => {
     const isSelected = selectedSchools.some((s) => s.id === school.id);
@@ -65,6 +75,21 @@ export function SchoolCheckboxGroup({
 
   if (loading) {
     return <div className="text-sm text-gray-500">Loading schools...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-sm text-gray-500">
+        Couldn&apos;t load schools.{' '}
+        <button
+          type="button"
+          onClick={fetchSchools}
+          className="text-green-700 underline hover:text-green-800"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (schools.length === 0) {

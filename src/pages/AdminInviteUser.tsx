@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
@@ -87,7 +87,17 @@ export function AdminInviteUser() {
   });
   const [schoolOption, setSchoolOption] = useState<SchoolOption | null>(null);
   const [schoolOptions, setSchoolOptions] = useState<SchoolOption[]>([]);
+  // F5: a failed schools fetch used to leave the dropdown silently empty. Non-
+  // blocking (the field is a CreatableSelect — the admin can still type one),
+  // so we surface a small inline retry rather than blocking the form.
+  const [schoolsError, setSchoolsError] = useState(false);
   const [pendingInviteFound, setPendingInviteFound] = useState(false);
+  // F6: the pending-invite check used to swallow query errors and treat null
+  // data as "no duplicate", proceeding as if the email were free. On error we
+  // now flag it, block submit, and offer a retry (bumping the tick re-runs the
+  // check effect for the same email).
+  const [dupCheckError, setDupCheckError] = useState(false);
+  const [dupCheckRetryTick, setDupCheckRetryTick] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ email: string; link: string; emailSent: boolean } | null>(
@@ -95,20 +105,24 @@ export function AdminInviteUser() {
   );
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data, error: schoolsErr } = await supabase
-          .from('schools')
-          .select('id, name')
-          .order('name');
-        if (schoolsErr) throw schoolsErr;
-        setSchoolOptions((data ?? []).map((s) => ({ value: s.name, label: s.name })));
-      } catch (err) {
-        logger.error('Failed to load schools list:', err);
-      }
-    })();
+  const loadSchoolOptions = useCallback(async () => {
+    setSchoolsError(false);
+    try {
+      const { data, error: schoolsErr } = await supabase
+        .from('schools')
+        .select('id, name')
+        .order('name');
+      if (schoolsErr) throw schoolsErr;
+      setSchoolOptions((data ?? []).map((s) => ({ value: s.name, label: s.name })));
+    } catch (err) {
+      logger.error('Failed to load schools list:', err);
+      setSchoolsError(true);
+    }
   }, []);
+
+  useEffect(() => {
+    loadSchoolOptions();
+  }, [loadSchoolOptions]);
 
   // Check pending-invite existence as the admin types — debounced lightly via
   // effect deps.
@@ -116,25 +130,38 @@ export function AdminInviteUser() {
     const email = formData.email.trim();
     if (!isValidEmail(email)) {
       setPendingInviteFound(false);
+      setDupCheckError(false);
       return;
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('user_invitations')
         .select('id')
         .eq('email', email)
         .is('accepted_at', null)
         .limit(1);
-      if (!cancelled) setPendingInviteFound((data ?? []).length > 0);
+      if (cancelled) return;
+      if (error) {
+        // Don't treat a query failure as "no pending invite" — that would let
+        // the admin proceed on a false all-clear. Flag it and block submit.
+        logger.error('Failed to check for a pending invitation:', error);
+        setDupCheckError(true);
+        setPendingInviteFound(false);
+        return;
+      }
+      setDupCheckError(false);
+      setPendingInviteFound((data ?? []).length > 0);
     })();
     return () => {
       cancelled = true;
     };
-  }, [formData.email]);
+    // dupCheckRetryTick re-runs the check for the same email on an explicit retry.
+  }, [formData.email, dupCheckRetryTick]);
 
   const emailIsValid = isValidEmail(formData.email.trim());
-  const canSubmit = !!formData.email && emailIsValid && !pendingInviteFound && !submitting;
+  const canSubmit =
+    !!formData.email && emailIsValid && !pendingInviteFound && !dupCheckError && !submitting;
 
   const selectedRoleDef = ROLE_DEFS.find((r) => r.id === formData.role) ?? ROLE_DEFS[0];
 
@@ -388,6 +415,20 @@ export function AdminInviteUser() {
               </IntAlert>
             )}
 
+            {!error && emailIsValid && dupCheckError && (
+              <IntAlert variant="error" title="Couldn't check for an existing invite.">
+                We couldn't verify whether this email already has a pending invite.{' '}
+                <button
+                  type="button"
+                  className="adm-link"
+                  onClick={() => setDupCheckRetryTick((t) => t + 1)}
+                >
+                  Retry
+                </button>{' '}
+                before sending.
+              </IntAlert>
+            )}
+
             <div className="adm-invite-fields">
               <IntFormField label="Email address" required>
                 <input
@@ -442,6 +483,14 @@ export function AdminInviteUser() {
                   onChange={handleSchoolChange}
                   formatCreateLabel={(input) => `Use "${input}" as school name`}
                 />
+                {schoolsError && (
+                  <p style={{ marginTop: 6, fontSize: 12, color: 'var(--color-esy-ink-70)' }}>
+                    Couldn&apos;t load the school list — you can still type one in.{' '}
+                    <button type="button" className="adm-link" onClick={loadSchoolOptions}>
+                      Retry
+                    </button>
+                  </p>
+                )}
               </IntFormField>
 
               <IntFormField label="Borough">
