@@ -54,14 +54,19 @@ const SOCIAL_EMOTIONAL_LEARNING_MAP: Record<string, string> = {
   'social-awareness': 'Social awareness',
 };
 
-// core_competencies — canonical forms.
+// core_competencies — canonical forms. FP5 Brief 1: 'Culturally Responsive
+// Education' was renamed to 'Cultural Diversity' (owner 2026-07-04). Both the
+// legacy KEBAB slug AND the legacy Title-Case string fold to the new name so
+// ANY legacy jsonb source (old tagged_metadata shapes, stray drafts) reopens
+// with the new value selected and re-saves against the renamed closed enum.
 const CORE_COMPETENCIES_MAP: Record<string, string> = {
   'environmental-stewardship': 'Environmental and Community Stewardship',
   'social-justice': 'Social Justice',
   'social-emotional': 'Social-Emotional Intelligence',
   'garden-skills': 'Garden Skills and Related Academic Content',
   'kitchen-skills': 'Kitchen Skills and Related Academic Content',
-  'culturally-responsive': 'Culturally Responsive Education',
+  'culturally-responsive': 'Cultural Diversity',
+  'Culturally Responsive Education': 'Cultural Diversity',
 };
 
 // garden_skills — the full PRE-E2b filterDefinitions slug→label set

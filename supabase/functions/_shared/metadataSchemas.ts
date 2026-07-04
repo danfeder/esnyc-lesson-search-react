@@ -50,21 +50,30 @@ export const ACADEMIC_INTEGRATION_VALUES = [
   'Arts',
 ] as const;
 
+// FP5 Brief 1: 5 CASEL values + 6 template-era skills (order-identical to
+// src/types/lessonMetadata.zod.ts — the equivalence test asserts lock-step).
 export const SOCIAL_EMOTIONAL_LEARNING_VALUES = [
   'Relationship skills',
   'Self-awareness',
   'Responsible decision-making',
   'Self-management',
   'Social awareness',
+  'Bravery',
+  'Kindness',
+  'Respect',
+  'Collaboration',
+  'Pride',
+  'Joy',
 ] as const;
 
+// FP5 Brief 1: "Culturally Responsive Education" → "Cultural Diversity" (rename).
 export const CORE_COMPETENCIES_VALUES = [
   'Environmental and Community Stewardship',
   'Social Justice',
   'Social-Emotional Intelligence',
   'Garden Skills and Related Academic Content',
   'Kitchen Skills and Related Academic Content',
-  'Culturally Responsive Education',
+  'Cultural Diversity',
 ] as const;
 
 export const COOKING_METHODS_VALUES = ['basic-prep', 'stovetop', 'oven'] as const;

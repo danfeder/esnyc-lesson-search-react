@@ -112,7 +112,8 @@ describe('canonicalizeReviewMetadata', () => {
         coreCompetencies: [...CENSUS.coreCompetencies],
       });
       expect(result.coreCompetencies).toEqual([
-        'Culturally Responsive Education',
+        // FP5 Brief 1: 'culturally-responsive' now folds to the renamed 'Cultural Diversity'.
+        'Cultural Diversity',
         'Environmental and Community Stewardship',
         'Garden Skills and Related Academic Content',
         'Kitchen Skills and Related Academic Content',
@@ -122,6 +123,21 @@ describe('canonicalizeReviewMetadata', () => {
       for (const v of result.coreCompetencies!) {
         expect(VOCAB.core_competencies).toContain(v);
       }
+    });
+
+    it('folds the legacy Title-Case "Culturally Responsive Education" → "Cultural Diversity" (FP5 Brief 1 rename)', () => {
+      // Any legacy jsonb source that stored the OLD canonical string (stray drafts,
+      // old tagged_metadata shapes) canonicalizes to the new name on load/save so a
+      // reopened row shows "Cultural Diversity" selected and re-saves against the
+      // renamed closed enum. Other canonical competencies pass through untouched.
+      const result = canonicalizeReviewMetadata({
+        coreCompetencies: ['Culturally Responsive Education', 'Social Justice'],
+      });
+      expect(result.coreCompetencies).toEqual(['Cultural Diversity', 'Social Justice']);
+      for (const v of result.coreCompetencies!) {
+        expect(VOCAB.core_competencies).toContain(v);
+      }
+      expect(reviewFormPayloadSchema.safeParse(result).success).toBe(true);
     });
 
     it('maps gardenSkills legacy slugs to canonical Title forms', () => {

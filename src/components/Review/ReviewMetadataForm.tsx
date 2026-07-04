@@ -214,15 +214,15 @@ export function ReviewMetadataForm({
           </IntFormField>
 
           <IntFormField
-            label="Social-emotional learning"
+            label="Social-emotional skills"
             required
-            error={fieldError('Social-Emotional Learning')}
+            error={fieldError('Social-Emotional Skills')}
           >
             <IntPillGroup
               options={selectOptionsFromConfig(ALL_FIELD_CONFIGS.socialEmotionalLearning)}
               selected={metadata.socialEmotionalLearning ?? []}
               onChange={(next) => handleMetadataChange('socialEmotionalLearning', next)}
-              ariaLabel="Social-emotional learning"
+              ariaLabel="Social-emotional skills"
             />
           </IntFormField>
 

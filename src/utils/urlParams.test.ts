@@ -173,6 +173,34 @@ describe('parseSearchParams', () => {
     expect(filters.culturalHeritage).toEqual(['mexican']);
   });
 
+  it('folds the legacy coreCompetencies value on parse (FP5 Brief 1 rename)', () => {
+    // Old bookmarked/shared links carried 'Culturally Responsive Education' in the
+    // `skills` param; after the rename that value is no longer a valid option, so
+    // without the fold it would be silently dropped. Fold → 'Cultural Diversity'.
+    const params = new URLSearchParams();
+    params.set('skills', 'Culturally Responsive Education');
+    const { filters } = parseSearchParams(params);
+    expect(filters.coreCompetencies).toEqual(['Cultural Diversity']);
+  });
+
+  it('folds the legacy value alongside a still-valid one, de-duplicating', () => {
+    const params = new URLSearchParams();
+    // Legacy value + the new canonical value → both resolve to 'Cultural Diversity',
+    // and the parse-time Set de-dupes them to a single entry.
+    params.set('skills', ['Culturally Responsive Education', 'Cultural Diversity'].join(','));
+    const { filters } = parseSearchParams(params);
+    expect(filters.coreCompetencies).toEqual(['Cultural Diversity']);
+  });
+
+  it('the fold is scoped to coreCompetencies (does not leak to other facets)', () => {
+    // The legacy string is meaningless for e.g. thematicCategories — it must be
+    // dropped there, not folded.
+    const params = new URLSearchParams();
+    params.set('themes', 'Culturally Responsive Education');
+    const { filters } = parseSearchParams(params);
+    expect(filters.thematicCategories).toBeUndefined();
+  });
+
   it('drops a grade group id (only individual grade values are URL-valid)', () => {
     // The sidebar only emits individual grades (K/1/3…); the RPC matches lessons
     // by those, so a group id (lower-elementary) would silently return zero

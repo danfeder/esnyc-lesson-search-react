@@ -41,7 +41,7 @@ export function validateRequiredFields(metadata: ReviewMetadata): string[] {
   if (!metadata.themes?.length) errors.push('Thematic Categories');
   if (!metadata.season?.length) errors.push('Season & Timing');
   if (!metadata.coreCompetencies?.length) errors.push('Core Competencies');
-  if (!metadata.socialEmotionalLearning?.length) errors.push('Social-Emotional Learning');
+  if (!metadata.socialEmotionalLearning?.length) errors.push('Social-Emotional Skills');
   if (showCookingFields(metadata)) {
     if (!metadata.cookingMethods?.length) errors.push('Cooking Methods');
     if (!metadata.mainIngredients?.length) errors.push('Main Ingredients');
@@ -66,7 +66,7 @@ export function computeFieldProgress(metadata: ReviewMetadata): FieldProgress {
     { label: 'Season & Timing', filled: (metadata.season?.length ?? 0) > 0 },
     { label: 'Core Competencies', filled: (metadata.coreCompetencies?.length ?? 0) > 0 },
     {
-      label: 'Social-Emotional Learning',
+      label: 'Social-Emotional Skills',
       filled: (metadata.socialEmotionalLearning?.length ?? 0) > 0,
     },
   ];

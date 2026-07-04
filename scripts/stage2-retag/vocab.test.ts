@@ -206,15 +206,18 @@ describe('smaller fields', () => {
   });
 
   it('core_competencies = the 6 configured values; stray "Food Justice" is NOT canonical', () => {
+    // FP5 Brief 1 (owner 2026-07-04): 'Culturally Responsive Education' renamed
+    // to 'Cultural Diversity' (same concept). The old string is no longer canonical.
     expect(vocab.core_competencies.values).toEqual([
       'Environmental and Community Stewardship',
       'Social Justice',
       'Social-Emotional Intelligence',
       'Garden Skills and Related Academic Content',
       'Kitchen Skills and Related Academic Content',
-      'Culturally Responsive Education',
+      'Cultural Diversity',
     ]);
     expect(vocab.core_competencies.values).not.toContain('Food Justice');
+    expect(vocab.core_competencies.values).not.toContain('Culturally Responsive Education');
   });
 
   it('cooking_methods = the stored-dominant kebab regime; "no-cook" folds away', () => {

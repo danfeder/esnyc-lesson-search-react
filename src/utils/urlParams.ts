@@ -74,6 +74,15 @@ const COMMA_SENTINEL = '%2C';
 const encodeArrayValue = (v: string): string => v.split(',').join(COMMA_SENTINEL);
 const decodeArrayValue = (v: string): string => v.split(COMMA_SENTINEL).join(',');
 
+// Legacy value folds applied at PARSE time so old bookmarked/shared links whose
+// value was renamed still resolve to the current filter option instead of being
+// silently dropped by the `valid.has(v)` check. FP5 Brief 1: 'Culturally
+// Responsive Education' → 'Cultural Diversity' (mirrors the canonicalize fold).
+// Keyed by filter so the fold never leaks across facets.
+const LEGACY_VALUE_FOLDS: Partial<Record<keyof SearchFilters, Record<string, string>>> = {
+  coreCompetencies: { 'Culturally Responsive Education': 'Cultural Diversity' },
+};
+
 /** Narrow an arbitrary sort string to a URL-valid value, defaulting to relevance. */
 function whitelistSort(value: string | null | undefined): UrlSortValue {
   return (URL_SORT_VALUES as readonly string[]).includes(value ?? '')
@@ -181,6 +190,8 @@ export function parseSearchParams(params: URLSearchParams): {
     const valid = validValuesForFilter(key);
     if (!valid) continue;
 
+    const legacyFold = LEGACY_VALUE_FOLDS[key];
+
     // De-duplicate: filter arrays are order-insensitive sets (canonicalSearchString
     // relies on this), so a crafted/shared URL like `?grades=3,3` must not yield a
     // duplicated entry (which would produce duplicate React keys in the active-pill
@@ -193,6 +204,7 @@ export function parseSearchParams(params: URLSearchParams): {
           .filter(Boolean)
           .slice(0, MAX_ARRAY_LENGTH)
           .map(decodeArrayValue)
+          .map((v) => legacyFold?.[v] ?? v)
           .filter((v) => valid.has(v))
       ),
     ];
