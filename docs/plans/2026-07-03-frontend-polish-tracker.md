@@ -343,3 +343,27 @@ entry); searchStore has a dead `currentPage` field + unversioned persist; one la
 heritage badge/click asymmetry. Red-team also verified the rest of this handoff's shas/stats/
 baseline claims exact. PROD pre-probe for #590 was run and posted: **95 kebab rows, ZERO strays —
 gate pre-cleared** (expect 95, not 86, in the PROD after-probes).
+
+---
+
+## FP4 wave — OPEN (2026-07-03 Fable ranking session)
+
+Discovery (Opus workflow sweep, 53 confirmed findings) → `docs/plans/fp4-discovery/
+discovery-evidence.md`, including Fable's independent verification note (12/12 re-probes
+HELD; 0 kills). Owner set scope from explicit options; **six briefs**, all in
+`docs/plans/fp4-briefs/` (see its README for standing rules + run order):
+
+| Brief | Status |
+|---|---|
+| 1 admin error honesty (7 fail-open sites + CSV + tab race) | NOT STARTED |
+| 2 synonym seed safety net (60 unowned live rows → idempotent migration) | NOT STARTED |
+| 3 close-lesson filter revert fix (new bug FP4-SP-01, design ruled) | NOT STARTED |
+| 4 small-stuff cleanup (logger redaction + dead code + stale docs + announcer) | NOT STARTED |
+| 5 summary backfill, extract-first (65 active blanks + "---" title; 2 owner gates) | NOT STARTED |
+| 6 heal 7 retired + VALIDATE both constraints (single self-contained migration) | NOT STARTED |
+
+Shelf disposition: FP-02 CLOSED (verified resolved on PROD), the 4 overnight P1s CLOSED
+(verified fixed), permalink trio CLOSED; polish cluster (FP-04 modal, FP-21 trims, FP-24
+leftovers, FP-22 scripts attic, FP-20c, SYN-05 contract redesign, STORE-04) stays SHELVED
+with exact counts in the evidence file. Executors: Opus, one brief per fresh session,
+thin hand-backs; owner presses all merges/gates.
