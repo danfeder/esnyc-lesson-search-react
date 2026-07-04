@@ -1,8 +1,13 @@
 # Brief 6 census — Heal 7 retired rows + VALIDATE both constraints
 
-**Status: ⛔ STOPPED at Sequence step 1 (pre-probe). Two blockers; primary one is a
-brief-invalidating TEST/PROD divergence → routed to Fable. No branch, no migration, no PR
-created. This doc is uncommitted evidence for the redesign.**
+**Status (updated 2026-07-04, second executor):** ✅ ADDENDUM executed through Sequence
+step 3-local. Step 0 applied to TEST (permanent); migration
+`20260707000000_heal_retired_offvocab_validate_constraints.sql` built + local-verified;
+census committed on branch `fix/heal-retired-offvocab-validate-constraints`. See **§6** for
+the second-executor evidence. §§1–5 below are the FIRST executor's original STOP evidence +
+Fable's ruling, preserved for provenance (the two inline factual errors flagged by ADDENDUM §4
+are corrected in place). PENDING: PR open → CI applies to TEST → TEST verify → owner merge +
+owner PROD migration gate.
 
 Probed live 2026-07-04. PROD `jxlxtzkmicfhchkhiojz`, TEST `rxgajgmphciuaqzvwmox`.
 
@@ -43,7 +48,11 @@ canonical arrays):
 | **TEST** | **11** | 7 | **4** | 7 |
 
 PROD retired violator ids for both constraints = exactly the brief's 7. ✅ matches brief.
-TEST additionally has **15 distinct ACTIVE violator rows** the migration does not touch.
+TEST additionally has **11 distinct ACTIVE violator rows** the migration does not touch.
+(CORRECTED per ADDENDUM §4 — the "15" here was double-counting: 11 cooking_skills
+violators, 4 of which ALSO carry the main_ingredients strays; the union is 11 distinct rows,
+exactly the table below. Second-executor re-probe 2026-07-04 confirms: cs_active=11,
+mi_active=4, mi ⊂ cs.)
 
 **Root cause (confirmed):** the 11 TEST active cooking_skills violators carry precisely the
 FP3 Brief 5 "frozen" legacy tokens (`Simmering`, `Basic Skills`, `Assembling`, `Grinding`,
@@ -208,3 +217,63 @@ Independent re-probes, all live:
 absolute parent-invariant post-assert with byte-equality to §3b (columns + JSONB), no parent
 backfill. Plus a local-reset vacuous-pass guard and a standing policy: PROD data fixes are
 mirrored to TEST at ship time.
+
+---
+
+## 6. Second executor — live re-probe + Step 0 applied + migration built (2026-07-04)
+
+Fresh Opus session executing the ADDENDUM. All probes live; PROD `jxlxtzkmicfhchkhiojz`,
+TEST `rxgajgmphciuaqzvwmox`. Constraint defs re-parsed from live `pg_get_constraintdef` on
+both DBs — byte-identical, both `convalidated=false`; cooking_skills=23 / main_ingredients=70
+canonical values (confirms §0; brief's "71" wrong).
+
+### 6a. Pre-Step-0 violator census (re-probe, exact `<@` test vs the parsed canonical arrays)
+
+| DB | cs active | cs retired | mi active | mi retired |
+|----|----|----|----|----|
+| **PROD** | **0** | 7 | **0** | 7 |
+| **TEST** | **11** | 7 | **4** | 7 |
+
+The 7 retired ids are exactly the brief's 7 on BOTH DBs and BOTH constraints. TEST's 11 cs
+active + 4 mi active (mi ⊂ cs) = 11 distinct rows = the FP3 B5 heal set. ⛔ Blocker A confirmed
+live. The 7 rows are byte-identical PROD↔TEST across (cooking_skills, main_ingredients,
+metadata.cookingSkills, metadata.mainIngredients) — md5 parity matched on all 7. §3b old
+arrays re-pulled raw and matched exactly.
+
+### 6b. Step 0 — `fp3-briefs/brief-5-data-fix.sql` applied VERBATIM to TEST (permanent)
+
+Applied unedited via `mcp__supabase-test__execute_sql`. Returned clean (its own 0/0/0/0
+post-assert passed → COMMIT). Post-probe on TEST:
+- cs_active=**0**, cs_retired=**7**, mi_active=**0**, mi_retired=**7**. ✅ active violators cleared.
+- All **11** healed active rows are now **byte-identical to PROD** (md5 parity over both
+  columns + both JSONB mirror keys matched PROD on all 11). TEST now permanently mirrors PROD's
+  active corpus. No rollback (per ADDENDUM #1).
+
+### 6c. Trigger / collateral analysis (why the migration write is scoped exactly)
+
+`lessons` has two BEFORE INSERT/UPDATE triggers: `lessons_normalize_write` (manages 9 OTHER
+keys — academic_integration, activity_type, cooking_methods, thematic_categories,
+season_timing, location_requirements, core_competencies, cultural_heritage,
+social_emotional_learning; **never references cooking_skills / main_ingredients or their JSONB
+mirrors**) and `update_lesson_search_vector` (reads these columns to build a tsvector, does not
+mutate them). Re-probe: the 7 rows have **0** column↔metadata drift on all 9 managed keys
+(PROD and TEST both returned `[]`). ⇒ the heal UPDATE touches ONLY cooking_skills /
+main_ingredients + the two JSONB mirror keys; zero collateral. Empirical proof the trigger
+doesn't reorder/case-fold these arrays: PROD's healed rows store non-sorted, proper-case,
+accented values (e.g. `[Measuring, Boiling & simmering, Mixing & stirring]`,
+`Sautéing & stir-frying`) that survived the identical write pattern.
+
+### 6d. Migration `20260707000000_heal_retired_offvocab_validate_constraints.sql` (built + local-verified)
+
+One self-contained transaction: `BEGIN` → `LOCK TABLE lessons IN SHARE ROW EXCLUSIVE MODE` →
+heal the 7 rows via a `VALUES` join (healed cs/mi literals from §3b + `jsonb_set` both mirror
+keys, one write per row) with row-count + `RETURNING`-based byte-equality asserts → universal
+0-off-vocab pre-assert → `VALIDATE CONSTRAINT` ×2 → `convalidated=true` ×2 assert → `COMMIT`.
+Local-reset guard: universal asserts always run; per-row byte-equality + row-count scoped to
+present ids (7 on TEST/PROD, 0 locally). Constraints exist NOT VALID from
+`20260626000000_c02_enforce_check.sql`, so `VALIDATE` runs on fresh CI/local.
+
+Local verification (`supabase db reset` on this branch): applied clean; both constraints
+`convalidated=true` locally; `npm run test:rls` = only the 2 known pre-existing
+`archive_duplicate_lesson` failures; `npm run check` clean; `npm run test:run` 2133/2133.
+TEST verification via CI + MCP pending on PR open (Sequence step 3).
