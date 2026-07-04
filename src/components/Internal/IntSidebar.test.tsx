@@ -14,6 +14,7 @@ function makeCounts(overrides: Partial<FacetCounts> = {}): FacetCounts {
     gradeLevels: {},
     activityType: {},
     location: {},
+    mainIngredients: {},
     thematicCategories: {},
     seasonTiming: {},
     coreCompetencies: {},
@@ -61,6 +62,21 @@ describe('IntSidebar', () => {
     expect(locationSection.textContent).toContain('Indoor-friendly');
     expect(locationSection.textContent).toContain('Outdoor-friendly');
     expect(locationSection.textContent).not.toContain('Both');
+  });
+
+  it('Brief 5: Main Ingredients renders immediately after Activity Type (slot #3), collapsed', () => {
+    render(<IntSidebar counts={makeCounts()} />);
+
+    // Section order is read off the IntFilterSection head buttons in DOM order.
+    const heads = Array.from(document.querySelectorAll('.int-filter .int-filter-head'));
+    const labels = heads.map((h) => h.textContent ?? '');
+    const activityIdx = labels.findIndex((t) => t.includes('Activity Type'));
+    const ingredientsIdx = labels.findIndex((t) => t.includes('Main Ingredients'));
+    expect(activityIdx).toBeGreaterThanOrEqual(0);
+    // The design decision (D-C): slot #3 = the section right after Activity Type.
+    expect(ingredientsIdx).toBe(activityIdx + 1);
+    // Collapsed by default (no defaultOpen passed).
+    expect(heads[ingredientsIdx].getAttribute('aria-expanded')).toBe('false');
   });
 
   it('renders per-option count badges in checkbox sections', () => {

@@ -51,6 +51,7 @@ export interface SearchFilters {
   culturalHeritage: string[];
   location: string[];
   activityType: string[];
+  mainIngredients: string[]; // Group→specific tree (direct match), sidebar slot #3
   academicIntegration: string[];
   socialEmotionalLearning: string[];
   cookingMethods: string[]; // Multi-select

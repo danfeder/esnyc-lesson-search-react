@@ -1,5 +1,9 @@
 import { culturalHeritageOptions } from '@/utils/heritageHierarchy.generated';
-import { COOKING_SKILLS_VALUES, MAIN_INGREDIENTS_VALUES } from '@/types/lessonMetadata.zod';
+import {
+  COOKING_SKILLS_VALUES,
+  INGREDIENT_PARENT_MAP,
+  MAIN_INGREDIENTS_VALUES,
+} from '@/types/lessonMetadata.zod';
 
 // Type definitions for filter options.
 // `children` is recursive: a nested option may itself have nested children,
@@ -24,6 +28,29 @@ export interface FilterConfig {
   }>;
 }
 
+// Main Ingredients group→specific tree, generated once from the frozen canonical
+// vocab (MAIN_INGREDIENTS_VALUES) + INGREDIENT_PARENT_MAP (lessonMetadata.zod.ts).
+// 24 groups (17 carry child specifics; 7 are childless top-level groups) + the 4
+// group-less specifics (parent === null: Celery, Fennel, Seaweed (nori),
+// Cocoa & chocolate) as top-level leaves = 28 top-level nodes over all 70 values.
+// value === label throughout (canonical Title-Case), so chips/labels/URL values
+// resolve without a separate lookup.
+const MAIN_INGREDIENT_GROUPS = MAIN_INGREDIENTS_VALUES.filter((v) => !(v in INGREDIENT_PARENT_MAP));
+const mainIngredientsTree: FilterOption[] = [
+  ...MAIN_INGREDIENT_GROUPS.map((group) => {
+    const children = MAIN_INGREDIENTS_VALUES.filter((v) => INGREDIENT_PARENT_MAP[v] === group).map(
+      (v) => ({ value: v, label: v })
+    );
+    return children.length > 0
+      ? { value: group, label: group, children }
+      : { value: group, label: group };
+  }),
+  ...MAIN_INGREDIENTS_VALUES.filter((v) => INGREDIENT_PARENT_MAP[v] === null).map((v) => ({
+    value: v,
+    label: v,
+  })),
+];
+
 // Filter configurations for filters used in search
 // IMPORTANT: Consult stakeholders before adding or removing filter categories
 export const FILTER_CONFIGS: Record<string, FilterConfig> = {
@@ -36,6 +63,24 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'academic-only', label: 'Academic' },
       { value: 'craft-only', label: 'Craft' },
     ],
+  },
+
+  mainIngredients: {
+    label: 'Main Ingredients',
+    // Rendered as a group→specific tree like Cultural Heritage (design §D-C), at
+    // sidebar slot #3, collapsed by default (IntMainIngredientsSection).
+    // IMPORTANT — unlike Cultural Heritage, ingredient group filtering is a
+    // DIRECT MATCH, NOT parent→children expansion: the data guarantees a
+    // specific's parent group rides along in the same array (enforced on save by
+    // `refineMainIngredientParents`; legacy rows healed by the Brief 5 data fix),
+    // so selecting a group matches lessons tagged with that group verbatim. The
+    // RPC WHERE (`filter_main_ingredients &&`) and the facet predicate
+    // (`overlaps`) both match the selected value as-is, and the sidebar section
+    // does NOT auto-check descendants. Do not add expansion logic here.
+    // Promoted from METADATA_CONFIGS (reviewer-only) to a search filter — owner
+    // decision D-C. Frozen 70-value vocab; do not add/remove/rename a value.
+    type: 'hierarchical',
+    options: mainIngredientsTree,
   },
 
   location: {
@@ -171,20 +216,12 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   },
 };
 
-// Metadata fields used in review/submission process (NOT search filters)
-// These are used for lesson data enrichment but not exposed as search filters
-export const METADATA_CONFIGS: Record<string, FilterConfig> = {
-  // Additional metadata fields for review process
-  mainIngredients: {
-    label: 'Main Ingredients',
-    type: 'multiple',
-    // Canonical Title-Case values (C02 re-tag — frozen c02-vocab.json manifest).
-    // value === label so stored canonical values round-trip in the reviewer
-    // control and survive the now-closed mainIngredients enum / DB CHECK.
-    // 70 total: 24 groups + 46 specifics (frozen vocab — do not edit).
-    options: MAIN_INGREDIENTS_VALUES.map((v) => ({ value: v, label: v })),
-  },
-
+// Metadata fields used in review/submission process (NOT search filters).
+// Module-private (F3 dead-export sweep): the only exported surface consumers read
+// is `ALL_FIELD_CONFIGS` below (ReviewMetadataForm). `mainIngredients` was
+// promoted out of here into FILTER_CONFIGS (owner decision D-C) — the reviewer
+// form still reaches it via ALL_FIELD_CONFIGS.
+const METADATA_CONFIGS: Record<string, FilterConfig> = {
   gardenSkills: {
     label: 'Garden Skills',
     type: 'multiple',
@@ -307,9 +344,6 @@ export const FILTER_KEYS = Object.keys(FILTER_CONFIGS) as Array<keyof typeof FIL
 
 // Total number of filter categories (used in stats display)
 export const TOTAL_FILTER_CATEGORIES = FILTER_KEYS.length;
-
-// Export metadata keys separately
-export const METADATA_KEYS = Object.keys(METADATA_CONFIGS) as Array<keyof typeof METADATA_CONFIGS>;
 
 // Combined configs for backward compatibility in review forms
 // WARNING: Do not use this for search filters!

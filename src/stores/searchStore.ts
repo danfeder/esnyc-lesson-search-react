@@ -73,6 +73,7 @@ export const initialFilters: SearchFilters = {
   culturalHeritage: [],
   location: [],
   activityType: [],
+  mainIngredients: [],
   academicIntegration: [],
   socialEmotionalLearning: [],
   cookingMethods: [], // Multi-select, empty array = all

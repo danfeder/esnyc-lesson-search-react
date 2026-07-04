@@ -11,9 +11,15 @@ import { FILTER_CONFIGS, SEARCH_LOCATION_OPTIONS } from '@/utils/filterDefinitio
  * Schema (param ↔ filter):
  *   q → query, grades → gradeLevels, themes → thematicCategories,
  *   season → seasonTiming, skills → coreCompetencies, culture → culturalHeritage,
- *   loc → location, activity → activityType,
+ *   loc → location, activity → activityType, ing → mainIngredients,
  *   academic → academicIntegration, sel → socialEmotionalLearning,
  *   cooking → cookingMethods, plus sort → sortBy.
+ *
+ * `ing` (Main Ingredients) is a group→specific tree; `validValuesForFilter`
+ * walks `children` recursively, so both group and specific values validate for
+ * free. F5 cap note: all 70 ingredient values joined = 749 chars < the 1000-char
+ * MAX_PARAM_LENGTH inbound guard (verified), so the outbound/inbound cap
+ * asymmetry is unreachable for this vocab — parse never silently drops `ing`.
  */
 
 // DoS guards: cap a single param's length and the size of any decoded array.
@@ -43,6 +49,7 @@ const FILTER_TO_PARAM: Record<keyof SearchFilters, string> = {
   culturalHeritage: 'culture',
   location: 'loc',
   activityType: 'activity',
+  mainIngredients: 'ing',
   academicIntegration: 'academic',
   socialEmotionalLearning: 'sel',
   cookingMethods: 'cooking',
@@ -53,6 +60,19 @@ const ARRAY_FILTER_KEYS = (Object.keys(FILTER_TO_PARAM) as Array<keyof SearchFil
 );
 
 const SORT_PARAM = 'sort';
+
+// Array params are comma-JOINED, but one frozen vocab value —
+// `Squash, cucumbers & melons` (a Main Ingredients group, Brief 5) — itself
+// contains a comma, which would shatter on `split(',')`. Escape a literal comma
+// inside each value to `%2C` before joining and restore it after splitting. The
+// sentinel `%2C` never occurs literally in any canonical value (drift-locked by a
+// urlParams test), and comma-FREE values are byte-identical to the pre-Brief-5
+// scheme, so existing shared/bookmarked links are unaffected. (URLSearchParams
+// round-trips any string faithfully, so this app-level escape survives its own
+// encode/decode layer intact.)
+const COMMA_SENTINEL = '%2C';
+const encodeArrayValue = (v: string): string => v.split(',').join(COMMA_SENTINEL);
+const decodeArrayValue = (v: string): string => v.split(COMMA_SENTINEL).join(',');
 
 /** Narrow an arbitrary sort string to a URL-valid value, defaulting to relevance. */
 function whitelistSort(value: string | null | undefined): UrlSortValue {
@@ -82,7 +102,10 @@ export function buildSearchParams(
   for (const key of ARRAY_FILTER_KEYS) {
     const arr = filters[key];
     if (arr && arr.length > 0) {
-      params.set(FILTER_TO_PARAM[key], arr.slice(0, MAX_ARRAY_LENGTH).join(','));
+      params.set(
+        FILTER_TO_PARAM[key],
+        arr.slice(0, MAX_ARRAY_LENGTH).map(encodeArrayValue).join(',')
+      );
     }
   }
 
@@ -169,6 +192,7 @@ export function parseSearchParams(params: URLSearchParams): {
           .map((v) => v.trim())
           .filter(Boolean)
           .slice(0, MAX_ARRAY_LENGTH)
+          .map(decodeArrayValue)
           .filter((v) => valid.has(v))
       ),
     ];

@@ -6,16 +6,16 @@ import { computeTrueFacetCounts, type FacetCounts, type FacetLesson } from '@/ut
 import type { SearchFilters } from '@/types';
 
 /**
- * The ten facet-relevant `text[]` columns — and nothing else (no lesson_id,
+ * The eleven facet-relevant `text[]` columns — and nothing else (no lesson_id,
  * no metadata JSONB, no summary). The search RPC filters on exactly these raw
  * columns (never the JSONB), so counting from them is the definition of
  * click-truth. ~700 rows × ~0.5 KB ≈ 350 KB raw / ~40-70 KB gzipped, once per
  * session.
  */
 export const FACET_COLUMNS =
-  'grade_levels, activity_type, location_requirements, thematic_categories, ' +
-  'season_timing, core_competencies, cultural_heritage, academic_integration, ' +
-  'social_emotional_learning, cooking_methods';
+  'grade_levels, activity_type, location_requirements, main_ingredients, ' +
+  'thematic_categories, season_timing, core_competencies, cultural_heritage, ' +
+  'academic_integration, social_emotional_learning, cooking_methods';
 
 /**
  * Explicit fetch cap (PostgREST's hosted default max-rows is 1000; the live
@@ -28,6 +28,7 @@ interface FacetCorpusRow {
   grade_levels: string[] | null;
   activity_type: string[] | null;
   location_requirements: string[] | null;
+  main_ingredients: string[] | null;
   thematic_categories: string[] | null;
   season_timing: string[] | null;
   core_competencies: string[] | null;
@@ -43,6 +44,7 @@ function rowToFacetLesson(row: FacetCorpusRow): FacetLesson {
     metadata: {
       activityType: row.activity_type ?? [],
       locationRequirements: row.location_requirements ?? [],
+      mainIngredients: row.main_ingredients ?? [],
       thematicCategories: row.thematic_categories ?? [],
       seasonTiming: row.season_timing ?? [],
       coreCompetencies: row.core_competencies ?? [],
@@ -72,7 +74,7 @@ async function fetchFacetCorpus(): Promise<FacetLesson[]> {
   }
 
   // The typed client can't parse the concatenated column-list literal, so it
-  // falls back to an error sentinel type — the runtime rows ARE the 10 columns
+  // falls back to an error sentinel type — the runtime rows ARE the 11 columns
   // above (all `string[] | null` on the lessons Row).
   const rows = (data ?? []) as unknown as FacetCorpusRow[];
   if (rows.length === FACET_CORPUS_MAX) {
@@ -82,7 +84,7 @@ async function fetchFacetCorpus(): Promise<FacetLesson[]> {
 }
 
 /**
- * TRUE facet-count badges (FP-01b): fetches a slim 10-column select of every
+ * TRUE facet-count badges (FP-01b): fetches a slim 11-column select of every
  * non-retired lesson ONCE per tab session and computes, per rendered filter
  * option, how many lessons in the whole library match it under the server's
  * matching rules AND every OTHER active filter category (see facetCounts.ts

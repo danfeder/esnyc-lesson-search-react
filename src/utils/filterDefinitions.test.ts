@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { FILTER_CONFIGS, FILTER_KEYS, METADATA_CONFIGS, METADATA_KEYS } from './filterDefinitions';
+import { ALL_FIELD_CONFIGS, FILTER_CONFIGS, FILTER_KEYS } from './filterDefinitions';
+
+// mainIngredients was promoted from METADATA_CONFIGS to FILTER_CONFIGS (Brief 5).
+// METADATA_CONFIGS is now module-private + METADATA_KEYS was removed (F3 dead-export
+// sweep), so the remaining reviewer-only fields are asserted via ALL_FIELD_CONFIGS.
+const METADATA_ONLY_FIELDS = [
+  'gardenSkills',
+  'cookingSkills',
+  'observancesHolidays',
+  'culturalResponsivenessFeatures',
+] as const;
 
 describe('Filter Definitions Compliance', () => {
   describe('Filter Configuration', () => {
@@ -26,29 +36,50 @@ describe('Filter Definitions Compliance', () => {
   });
 
   describe('Metadata Fields', () => {
-    it('should have metadata fields separated from filters', () => {
-      const expectedMetadataFields = [
-        'mainIngredients',
-        'gardenSkills',
-        'cookingSkills',
-        'observancesHolidays',
-        'culturalResponsivenessFeatures',
-      ];
-
-      const actualMetadataFields = Object.keys(METADATA_CONFIGS);
-      expect(actualMetadataFields.sort()).toEqual(expectedMetadataFields.sort());
+    it('reviewer-only metadata fields are reachable via ALL_FIELD_CONFIGS', () => {
+      for (const field of METADATA_ONLY_FIELDS) {
+        expect(ALL_FIELD_CONFIGS).toHaveProperty(field);
+      }
     });
 
-    it('should have METADATA_KEYS match METADATA_CONFIGS keys', () => {
-      expect(METADATA_KEYS.sort()).toEqual(Object.keys(METADATA_CONFIGS).sort());
-    });
-
-    it('should not have any overlap between filters and metadata', () => {
+    it('reviewer-only metadata fields are NOT search filters', () => {
       const filterKeys = Object.keys(FILTER_CONFIGS);
-      const metadataKeys = Object.keys(METADATA_CONFIGS);
+      for (const field of METADATA_ONLY_FIELDS) {
+        expect(filterKeys).not.toContain(field);
+      }
+    });
 
-      const overlap = filterKeys.filter((key) => metadataKeys.includes(key));
-      expect(overlap).toEqual([]);
+    it('mainIngredients is promoted to a search filter (Brief 5)', () => {
+      // Now a FILTER, no longer reviewer-only metadata.
+      expect(FILTER_CONFIGS).toHaveProperty('mainIngredients');
+      const cfg = FILTER_CONFIGS.mainIngredients;
+      expect(cfg.type).toBe('hierarchical');
+      // Group→specific tree: at least one top-level group carries `children`.
+      expect(cfg.options.some((o) => (o.children?.length ?? 0) > 0)).toBe(true);
+    });
+
+    // value === label is load-bearing for mainIngredients: the reviewer form's
+    // chip-label map and IntActivePills both fall back to the raw value for a
+    // NESTED specific (their flat `.options.find()` only sees top-level nodes),
+    // so a specific's chip renders correctly ONLY while value === label. Lock it.
+    it('every mainIngredients tree value (recursive) has value === label', () => {
+      const offenders: string[] = [];
+      const walk = (opts: Array<{ value: string; label: string; children?: unknown }>) => {
+        for (const o of opts) {
+          if (o.value !== o.label) offenders.push(`${o.value} != ${o.label}`);
+          if (Array.isArray((o as { children?: unknown[] }).children)) {
+            walk((o as { children: Array<{ value: string; label: string }> }).children);
+          }
+        }
+      };
+      walk(
+        FILTER_CONFIGS.mainIngredients.options as Array<{
+          value: string;
+          label: string;
+          children?: unknown;
+        }>
+      );
+      expect(offenders).toEqual([]);
     });
   });
 
@@ -78,17 +109,9 @@ describe('Filter Definitions Compliance', () => {
   });
 
   describe('Filter Integrity', () => {
-    it('should not include metadata fields in FILTER_CONFIGS', () => {
+    it('should not include reviewer-only metadata fields in FILTER_CONFIGS', () => {
       const filterKeys = Object.keys(FILTER_CONFIGS);
-      const metadataFieldNames = [
-        'mainIngredients',
-        'gardenSkills',
-        'cookingSkills',
-        'observancesHolidays',
-        'culturalResponsivenessFeatures',
-      ];
-
-      metadataFieldNames.forEach((field) => {
+      METADATA_ONLY_FIELDS.forEach((field) => {
         expect(filterKeys).not.toContain(field);
       });
     });

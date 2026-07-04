@@ -7,7 +7,7 @@ import {
   ZOD_FIELD_TO_LABEL,
 } from '@/pages/reviewDetailHelpers';
 import type { ReviewMetadata } from '@/types';
-import type { FilterConfig } from '@/utils/filterDefinitions';
+import { ALL_FIELD_CONFIGS, type FilterConfig } from '@/utils/filterDefinitions';
 
 // Characterization tests for ReviewDetail's module-scope pure helpers.
 // These PIN current behavior (PR-0 safety net, Wave 5) — they assert what
@@ -144,6 +144,40 @@ describe('selectOptionsFromConfig', () => {
   it('empty options → empty array', () => {
     const config: FilterConfig = { label: 'Empty', type: 'multiple', options: [] };
     expect(selectOptionsFromConfig(config)).toEqual([]);
+  });
+
+  // Brief 5: the promoted Main Ingredients config is a group→specific TREE; the
+  // recursive flatten is the only thing keeping the reviewer <Select> from
+  // silently losing the 42 nested specifics (offering just the 24 groups).
+  it('flattens `children` depth-first, parent before its specifics', () => {
+    const config: FilterConfig = {
+      label: 'Main Ingredients',
+      type: 'hierarchical',
+      options: [
+        {
+          value: 'Beans & legumes',
+          label: 'Beans & legumes',
+          children: [
+            { value: 'Black beans', label: 'Black beans' },
+            { value: 'Chickpeas', label: 'Chickpeas' },
+          ],
+        },
+        { value: 'Celery', label: 'Celery' },
+      ],
+    };
+    expect(selectOptionsFromConfig(config)).toEqual([
+      { value: 'Beans & legumes', label: 'Beans & legumes' },
+      { value: 'Black beans', label: 'Black beans' },
+      { value: 'Chickpeas', label: 'Chickpeas' },
+      { value: 'Celery', label: 'Celery' },
+    ]);
+  });
+
+  it('offers the reviewer all 70 Main Ingredients values (24 groups + 46 specifics)', () => {
+    const options = selectOptionsFromConfig(ALL_FIELD_CONFIGS.mainIngredients);
+    expect(options).toHaveLength(70);
+    // Spot-check a nested specific survives the flatten.
+    expect(options).toContainEqual({ value: 'Black beans', label: 'Black beans' });
   });
 });
 

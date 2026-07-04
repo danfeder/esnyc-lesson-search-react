@@ -441,3 +441,44 @@ describe('matchesFacetSelection — server-parity predicate rows (§4)', () => {
     expect(matchesFacetSelection(lesson, 'cookingMethods', ['oven'])).toBe(false);
   });
 });
+
+// Brief 5: the client twin of the RPC's `l.main_ingredients && filter_main_ingredients`.
+// The load-bearing property is DIRECT MATCH (no group→children expansion) — a group
+// selection must NOT fan out to lessons carrying only a child specific. (The invariant
+// that heals this on real data is the parent-backfill; the predicate itself must never
+// expand, or badges would drift from the RPC.)
+describe('mainIngredients — direct match, no expansion', () => {
+  it('a group selection matches a lesson carrying that group tag verbatim', () => {
+    const lesson = makeLesson({
+      metadata: { mainIngredients: ['Beans & legumes', 'Black beans'] },
+    });
+    expect(matchesFacetSelection(lesson, 'mainIngredients', ['Beans & legumes'])).toBe(true);
+  });
+
+  it('a group selection does NOT match a lesson carrying only a child specific', () => {
+    // No client- or server-side expansion: a lesson tagged only 'Black beans'
+    // (missing its 'Beans & legumes' parent) is NOT counted under the group.
+    const lesson = makeLesson({ metadata: { mainIngredients: ['Black beans'] } });
+    expect(matchesFacetSelection(lesson, 'mainIngredients', ['Beans & legumes'])).toBe(false);
+  });
+
+  it('a specific selection matches lessons carrying that specific', () => {
+    const lesson = makeLesson({ metadata: { mainIngredients: ['Black beans'] } });
+    expect(matchesFacetSelection(lesson, 'mainIngredients', ['Black beans'])).toBe(true);
+    expect(matchesFacetSelection(lesson, 'mainIngredients', ['Chickpeas'])).toBe(false);
+  });
+
+  it('computeTrueFacetCounts tallies group and specific badges by direct match', () => {
+    const lessons = [
+      makeLesson({ metadata: { mainIngredients: ['Beans & legumes', 'Black beans'] } }),
+      makeLesson({ metadata: { mainIngredients: ['Beans & legumes', 'Chickpeas'] } }),
+      makeLesson({ metadata: { mainIngredients: ['Black beans'] } }), // group tag absent
+    ];
+    const counts = computeTrueFacetCounts(lessons, filtersWith());
+    // Group badge = lessons carrying the literal group tag (the 3rd lacks it).
+    expect(counts.mainIngredients['Beans & legumes']).toBe(2);
+    // Specific badge = lessons carrying that specific (2 carry Black beans).
+    expect(counts.mainIngredients['Black beans']).toBe(2);
+    expect(counts.mainIngredients['Chickpeas']).toBe(1);
+  });
+});

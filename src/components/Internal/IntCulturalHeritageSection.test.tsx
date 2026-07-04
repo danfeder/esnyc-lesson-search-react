@@ -14,6 +14,7 @@ function makeCounts(culturalHeritage: Record<string, number> = {}): FacetCounts 
     gradeLevels: {},
     activityType: {},
     location: {},
+    mainIngredients: {},
     thematicCategories: {},
     seasonTiming: {},
     coreCompetencies: {},
