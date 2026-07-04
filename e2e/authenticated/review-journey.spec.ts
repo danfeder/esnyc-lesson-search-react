@@ -60,7 +60,9 @@ const REQUIRED_TAGS: Array<{ group: string; label: string }> = [
   { group: 'Seasons', label: 'Fall' },
   { group: 'Thematic categories', label: 'Food Justice' },
   { group: 'Core competencies', label: 'Social Justice' },
-  { group: 'Social-emotional learning', label: 'Self-awareness' },
+  // FP5 Brief 1 renamed the category label ("Social-Emotional Learning" →
+  // "Social-Emotional Skills"); the form sentence-cases group names.
+  { group: 'Social-emotional skills', label: 'Self-awareness' },
 ];
 
 let env: AuthEnv;
