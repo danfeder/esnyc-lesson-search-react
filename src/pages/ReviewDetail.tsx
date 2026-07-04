@@ -58,6 +58,9 @@ export function ReviewDetail() {
   // since) — shown read-only by the decision panel; the note box seeds empty.
   const [priorRevisionNote, setPriorRevisionNote] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Empty-summary approve guard (candidates §1): non-null while a blank-summary
+  // approve_new attempt is blocked; renders inline at the Summary field.
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   // D7 approve-as-new guard: non-null while the "looks like an existing lesson"
   // interstitial is up; holds the title of the top exact/high match it names.
   const [publishGuardMatch, setPublishGuardMatch] = useState<string | null>(null);
@@ -132,6 +135,9 @@ export function ReviewDetail() {
       // reviewer changes anything — they're clearly preparing a fresh
       // attempt. Clear on any meaningful state change.
       setSaveError(null);
+      // The empty-summary block is answered the moment the reviewer types a
+      // summary — clear its inline message then (not on unrelated tag edits).
+      if (filterKey === 'summary') setSummaryError(null);
     },
     []
   );
@@ -142,6 +148,9 @@ export function ReviewDetail() {
     (value) => {
       setPublishGuardMatch(null);
       setDecisionOption(value);
+      // The empty-summary block is approve_new-only; a decision switch makes a
+      // pending inline summary message stale, so drop it.
+      setSummaryError(null);
     },
     []
   );
@@ -163,6 +172,18 @@ export function ReviewDetail() {
     // Clear any stale missing-field banner (e.g. left over from a prior approve
     // attempt before the reviewer switched to "Send back for revisions").
     setValidationErrors([]);
+
+    // Empty-summary approve guard (candidates §1): a NEW lesson must not publish
+    // with a blank summary — it's the search-result blurb and FTS weight-B, so a
+    // blank hurts real search quality. Scoped to approve_new ONLY: approve_update
+    // preserves the existing summary via the RPC's COALESCE(NULLIF(...)) and
+    // needs_revision/reject never publish. Inline message at the field, not a toast.
+    if (decisionOption === 'approve_new' && !metadata.summary?.trim()) {
+      setSummaryError('Add a one-or-two-sentence summary — it appears in search results.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setSummaryError(null);
 
     // Both reject paths (plain reject + "already in the library") write the note
     // as the teacher-visible reason (D8), so require a non-empty note before
@@ -467,6 +488,7 @@ export function ReviewDetail() {
             errorBannerRef={errorBannerRef}
             legacyDecisionWarning={legacyDecisionWarning}
             docTitleHint={docTitleHint}
+            summaryError={summaryError}
           />
 
           {/* MIDDLE — document (sticky so it stays in view while the reviewer

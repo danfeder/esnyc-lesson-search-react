@@ -3,6 +3,7 @@ import {
   computeInitialMetadataFromAiDraft,
   detectDocTitleChange,
   withPrefilledTitleSummary,
+  withPrefilledTemplateTags,
 } from './reviewMetadataInit';
 
 describe('computeInitialMetadataFromAiDraft', () => {
@@ -119,6 +120,52 @@ describe('withPrefilledTitleSummary (editable title/summary prefill)', () => {
     const input = {};
     withPrefilledTitleSummary(input, { extractedTitle: 'X', extractedContent: 'Y' });
     expect(input).toEqual({});
+  });
+});
+
+describe('withPrefilledTemplateTags (mechanical template-tag prefill, only-fill-empty)', () => {
+  const templateWithComps = [
+    '[Table]',
+    'Core Competencies: | List all that apply: social justice',
+    '[Table]',
+    'Cultural Responsiveness | : n/a',
+  ].join('\n');
+
+  it('fills an EMPTY closed-vocab field from the template cell', () => {
+    const out = withPrefilledTemplateTags({}, templateWithComps);
+    expect(out.coreCompetencies).toEqual(['Social Justice']);
+  });
+
+  it('never clobbers an existing non-empty field (reviewer/restored selection wins)', () => {
+    const out = withPrefilledTemplateTags(
+      { coreCompetencies: ['Cultural Diversity'] },
+      templateWithComps
+    );
+    expect(out.coreCompetencies).toEqual(['Cultural Diversity']);
+  });
+
+  it('treats an empty array as fillable (a blank field re-derives from the doc)', () => {
+    const out = withPrefilledTemplateTags({ coreCompetencies: [] }, templateWithComps);
+    expect(out.coreCompetencies).toEqual(['Social Justice']);
+  });
+
+  it('leaves a non-template doc untouched (no tag fields added)', () => {
+    const out = withPrefilledTemplateTags(
+      { title: 'X', summary: 'Y' },
+      'Plain body with kindness and respect but no labeled cells.'
+    );
+    expect(out).toEqual({ title: 'X', summary: 'Y' });
+  });
+
+  it('tolerates null/undefined content', () => {
+    expect(withPrefilledTemplateTags({ themes: ['Bread'] }, null)).toEqual({ themes: ['Bread'] });
+    expect(withPrefilledTemplateTags({}, undefined)).toEqual({});
+  });
+
+  it('does not mutate the input metadata', () => {
+    const input = { coreCompetencies: [] as string[] };
+    withPrefilledTemplateTags(input, templateWithComps);
+    expect(input).toEqual({ coreCompetencies: [] });
   });
 });
 

@@ -43,6 +43,12 @@ interface ReviewMetadataFormProps {
    * the field matches the doc's title (the reviewer adopted the new name).
    */
   docTitleHint?: string | null;
+  /**
+   * Empty-summary approve guard message (approve_new only). When set, renders
+   * inline under the Summary field; cleared as soon as the reviewer types a
+   * summary or switches decision. Null in the normal case.
+   */
+  summaryError?: string | null;
 }
 
 /**
@@ -68,6 +74,7 @@ export function ReviewMetadataForm({
   errorBannerRef,
   legacyDecisionWarning,
   docTitleHint,
+  summaryError,
 }: ReviewMetadataFormProps) {
   const fieldError = (label: string) =>
     validationErrors.includes(label) ? `Required.` : undefined;
@@ -115,7 +122,11 @@ export function ReviewMetadataForm({
               </div>
             </div>
           )}
-        <IntFormField label="Summary" hint="Optional. A short description shown with the lesson.">
+        <IntFormField
+          label="Summary"
+          hint="A short description shown with the lesson (required to publish a new lesson)."
+          error={summaryError ?? undefined}
+        >
           <textarea
             className="adm-textarea"
             rows={3}
