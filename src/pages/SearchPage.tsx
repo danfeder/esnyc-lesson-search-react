@@ -190,11 +190,16 @@ export const SearchPage: React.FC = () => {
   // D2 §2b history semantics. Open = push (Back closes the drawer); opening
   // ANOTHER lesson while one is already open (split-view click-through) =
   // replace, so A→B→C stays ONE history entry and Back returns to the list.
-  // `fromSearch` marks entries WE pushed: close pops exactly that entry
-  // (no history garbage); a direct deep-link landing has no such mark, so
-  // close replaces to the list keeping any URL filters — Back then honestly
-  // leaves the site (where the visitor came from).
-  const cameFromSearch = Boolean((location.state as { fromSearch?: boolean } | null)?.fromSearch);
+  // `fromSearch` marks entries WE pushed. Close is a hybrid (C5/FP4-SP-01): if
+  // the filter/sort context is unchanged since open it pops exactly that entry
+  // (no history garbage, byte-identical to before); if a facet/sort changed
+  // while the lesson was open it REPLACES the lesson entry with the live list
+  // instead of popping into the stale pre-open entry (which would revert the
+  // change). A direct deep-link landing has no `fromSearch` mark, so close
+  // replaces to the list carrying the live filters — Back then honestly leaves
+  // the site (where the visitor came from).
+  const locState = location.state as { fromSearch?: boolean; openedSearch?: string } | null;
+  const cameFromSearch = Boolean(locState?.fromSearch);
 
   const handleOpenLesson = useCallback(
     (lesson: Lesson) => {
@@ -208,29 +213,68 @@ export const SearchPage: React.FC = () => {
       // being stranded on the pushed entry — otherwise Back reverts the toggle.
       flush();
       const isReplace = routeLessonId !== null;
+      // Build from LIVE filters, not location.search: inside the debounce race
+      // the URL is still pre-toggle, and the flush above just wrote the live
+      // filters to the list entry — the pushed entry must match.
+      const liveSearch = buildSearchParams(filters, viewState.sortBy).toString();
+      // C5/FP4-SP-01: stamp the search context this lesson was opened over so
+      // close can tell "nothing changed" (pop) from "filters changed while open"
+      // (replace to the live list, don't navigate(-1) into the stale pre-open
+      // entry). On a fresh open this is the flushed list entry's own search; on a
+      // split-view click-through (replace) PROPAGATE the original openedSearch so
+      // it keeps pointing at the pre-open list entry — the entry navigate(-1)
+      // would land on — never the intervening filter state.
+      const openedSearch = isReplace ? (locState?.openedSearch ?? liveSearch) : liveSearch;
       navigate(
         {
           pathname: `/lesson/${encodeURIComponent(lesson.lessonId)}`,
-          // Build from LIVE filters, not location.search: inside the debounce
-          // race the URL is still pre-toggle, and the flush above just wrote the
-          // live filters to the list entry — the pushed entry must match.
-          search: buildSearchParams(filters, viewState.sortBy).toString(),
+          search: liveSearch,
         },
         // A replace must PROPAGATE the current entry's mark, not mint one:
         // stamping fromSearch on a deep-link LANDING entry would point close
         // at navigate(-1), which no-ops in a fresh tab (history length 1).
-        { replace: isReplace, state: { fromSearch: isReplace ? cameFromSearch : true } }
+        {
+          replace: isReplace,
+          state: { fromSearch: isReplace ? cameFromSearch : true, openedSearch },
+        }
       );
     },
-    [navigate, queryClient, flush, filters, viewState.sortBy, routeLessonId, cameFromSearch]
+    [
+      navigate,
+      queryClient,
+      flush,
+      filters,
+      viewState.sortBy,
+      routeLessonId,
+      cameFromSearch,
+      locState,
+    ]
   );
   const handleCloseLesson = useCallback(() => {
+    // C5/FP4-SP-01: the live filter/sort context right now, canonically the same
+    // string form the pushed entry captured in `openedSearch`.
+    const current = buildSearchParams(filters, viewState.sortBy).toString();
     if (cameFromSearch) {
-      navigate(-1);
+      if (current === locState?.openedSearch) {
+        // Untouched since open: pop exactly as before — unchanged history shape
+        // for the open→close-without-touching-anything case.
+        navigate(-1);
+      } else {
+        // A facet/sort changed while the lesson was open. navigate(-1) would pop
+        // to the pre-open entry and silently revert that change; instead REPLACE
+        // the lesson entry with the live-context list. The pre-open entry stays
+        // one Back-press below, so browser Back = "undo my filter change" — the
+        // same semantics as any other filter change. Navigating to a URL equal to
+        // canonical store state makes the URL→store hydrate a no-op (no loss).
+        navigate({ pathname: '/', search: current }, { replace: true });
+      }
     } else {
-      navigate({ pathname: '/', search: location.search }, { replace: true });
+      // Deep-link landing (no history to pop): replace to the list carrying the
+      // LIVE canonical filters. location.search can be debounce-stale, so build
+      // from current. This branch never navigates(-1) — fresh-tab safe.
+      navigate({ pathname: '/', search: current }, { replace: true });
     }
-  }, [navigate, cameFromSearch, location.search]);
+  }, [navigate, cameFromSearch, filters, viewState.sortBy, locState]);
 
   const { refetch: refetchLessonById } = lessonById;
   const handleRetryLesson = useCallback(() => {
