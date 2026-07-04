@@ -1,7 +1,7 @@
-# FP4 Brief 5 — Phase 2 rehearsal evidence (TEST) + PROD apply plan
+# FP4 Brief 5 — Phase 2 rehearsal evidence (TEST) + PROD apply
 
-**Status:** Data-fix built + rehearsed on TEST (clean pass, rolled back). **Awaiting owner
-in-channel approval for the PROD apply gate.** No PROD write has been made.
+**Status:** ✅ **APPLIED to PROD 2026-07-03** (owner-approved in-channel). All post-asserts
+green (§8). Built + rehearsed on TEST (clean pass, rolled back) beforehand.
 **Prepared by:** Opus executor session, 2026-07-03.
 
 - **Data-fix file (the reviewable apply artifact):** `docs/plans/fp4-briefs/brief-5-summary-data-fix.sql`
@@ -119,8 +119,39 @@ row-62 summary, 3 spot-checks byte-equal, `search_vector` refreshed on updated r
 - **`content_embedding` is NOT regenerated** by this change — deferred campaign item **C2.4**.
   Expected; not fixed here.
 
-## 7. STOP / hand-back
+## 7. Hand-back (pre-apply)
 
-Rehearsal clean on TEST, rolled back, baseline restored. **Awaiting explicit owner in-channel
-approval to apply to PROD.** On approval: re-run §5/§6 pre-probes, apply the committed file,
-run the PROD post-asserts, and record them here.
+Rehearsal clean on TEST, rolled back, baseline restored. Awaited explicit owner in-channel
+approval to apply to PROD (given 2026-07-03).
+
+## 8. PROD apply — DONE (2026-07-03, `jxlxtzkmicfhchkhiojz`)
+
+**Pre-probes (re-run on PROD immediately before apply):** `blank_active=65`,
+`distinct_clean=65`, `n_touched=66`, `cooking_violators=0`, `ingredient_violators=0`,
+`---` active+non-blank, twin active+blank. All green → applied.
+
+**Apply:** ran `brief-5-summary-data-fix.sql` verbatim on PROD in one `BEGIN … COMMIT`
+transaction. No `RAISE` from the pre/post `DO` guards or from
+`lessons_normalize_write_trg` — committed.
+
+**Post-apply verification (fresh PROD read):**
+
+```
+active_now                     = 702    ✓ 703 → 702 (--- retired)
+blanks_now                     = 0      ✓
+dirty_active_now               = 0      ✓
+active_ctrl_titles             = 0      ✓ (no control-char titles remain among active rows)
+dashdash_retired               = true   ✓
+dashdash_reason                = dedup:welcome-exploration-byte-identical-of-cc0a5c
+twin_summary                   = "Students are welcomed to the garden, go over garden rules,
+                                  and participate in garden chores acting as different characters."  ✓ row 62
+butterflies_byteequal          = true   ✓ (owner tweak #1)
+butterflies_searchable         = true   ✓ (search_vector refreshed; findable by 'pollinators')
+jam_byteequal                  = true   ✓ (owner tweak #2)
+squirrels_byteequal            = true   ✓ (curly ’ preserved)
+lanternflies_filled_searchable = true   ✓ (a PROD-only row — filled + FTS-findable)
+```
+
+**Not touched (expected):** `content_embedding` not regenerated (deferred C2.4).
+**Result:** 65 summaries populated, 21 titles cleaned, 1 duplicate retired. Brief 5 Phase 2
+complete on PROD.
