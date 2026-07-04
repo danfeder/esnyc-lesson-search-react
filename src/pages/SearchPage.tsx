@@ -26,7 +26,7 @@ import { useLessonById } from '@/hooks/useLessonById';
 import { useLessonSuggestions } from '@/hooks/useLessonSuggestions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useFacetCounts } from '@/hooks/useFacetCounts';
-import { buildSearchParams } from '@/utils/urlParams';
+import { buildSearchParams, canonicalSearchString } from '@/utils/urlParams';
 import { parseSearchQuery } from '@/utils/parseSearchQuery';
 import type { Lesson, SearchFilters, ViewState } from '@/types';
 
@@ -220,11 +220,17 @@ export const SearchPage: React.FC = () => {
       // C5/FP4-SP-01: stamp the search context this lesson was opened over so
       // close can tell "nothing changed" (pop) from "filters changed while open"
       // (replace to the live list, don't navigate(-1) into the stale pre-open
-      // entry). On a fresh open this is the flushed list entry's own search; on a
-      // split-view click-through (replace) PROPAGATE the original openedSearch so
-      // it keeps pointing at the pre-open list entry — the entry navigate(-1)
-      // would land on — never the intervening filter state.
-      const openedSearch = isReplace ? (locState?.openedSearch ?? liveSearch) : liveSearch;
+      // entry). Use the CANONICAL string (sorted keys + array values) as the
+      // comparison key so a no-op facet reorder — remove then re-add a value,
+      // which appends and reorders the array — still reads as "unchanged" and
+      // pops cleanly, preserving the byte-identical-history-shape invariant that
+      // the raw buildSearchParams string (order-sensitive) would break. On a
+      // fresh open this is the flushed list entry's own context; on a split-view
+      // click-through (replace) PROPAGATE the original openedSearch so it keeps
+      // pointing at the pre-open list entry — the entry navigate(-1) would land
+      // on — never the intervening filter state.
+      const liveCanonical = canonicalSearchString(filters, viewState.sortBy);
+      const openedSearch = isReplace ? (locState?.openedSearch ?? liveCanonical) : liveCanonical;
       navigate(
         {
           pathname: `/lesson/${encodeURIComponent(lesson.lessonId)}`,
@@ -251,27 +257,24 @@ export const SearchPage: React.FC = () => {
     ]
   );
   const handleCloseLesson = useCallback(() => {
-    // C5/FP4-SP-01: the live filter/sort context right now, canonically the same
-    // string form the pushed entry captured in `openedSearch`.
+    // C5/FP4-SP-01. `current` is the real URL to land on (raw, insertion order);
+    // `currentCanonical` is the order-insensitive key we compare to the stamped
+    // `openedSearch` to decide pop-vs-replace.
     const current = buildSearchParams(filters, viewState.sortBy).toString();
-    if (cameFromSearch) {
-      if (current === locState?.openedSearch) {
-        // Untouched since open: pop exactly as before — unchanged history shape
-        // for the open→close-without-touching-anything case.
-        navigate(-1);
-      } else {
-        // A facet/sort changed while the lesson was open. navigate(-1) would pop
-        // to the pre-open entry and silently revert that change; instead REPLACE
-        // the lesson entry with the live-context list. The pre-open entry stays
-        // one Back-press below, so browser Back = "undo my filter change" — the
-        // same semantics as any other filter change. Navigating to a URL equal to
-        // canonical store state makes the URL→store hydrate a no-op (no loss).
-        navigate({ pathname: '/', search: current }, { replace: true });
-      }
+    const currentCanonical = canonicalSearchString(filters, viewState.sortBy);
+    if (cameFromSearch && currentCanonical === locState?.openedSearch) {
+      // Untouched since open: pop exactly as before — unchanged history shape for
+      // the open→close-without-touching-anything case.
+      navigate(-1);
     } else {
-      // Deep-link landing (no history to pop): replace to the list carrying the
-      // LIVE canonical filters. location.search can be debounce-stale, so build
-      // from current. This branch never navigates(-1) — fresh-tab safe.
+      // Either a facet/sort changed while the lesson was open (navigate(-1) would
+      // pop to the pre-open entry and silently revert it), or a deep-link landing
+      // with no history to pop. Both REPLACE the lesson entry with the live list:
+      // the pre-open entry (when present) stays one Back-press below, so browser
+      // Back = "undo my filter change". Landing on a URL equal to canonical store
+      // state makes the URL→store hydrate a no-op (no loss). Built from `current`
+      // (live filters), never location.search, which can be debounce-stale. This
+      // branch never navigates(-1) — fresh-tab safe.
       navigate({ pathname: '/', search: current }, { replace: true });
     }
   }, [navigate, cameFromSearch, filters, viewState.sortBy, locState]);

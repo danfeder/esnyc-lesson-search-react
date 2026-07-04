@@ -695,4 +695,43 @@ describe('SearchPage permalinks (D2)', () => {
     });
     expect(screen.getByTestId('probe-path').textContent).toBe('/');
   });
+
+  it('open → reorder a facet to the SAME set → close still POPS (canonical, not raw, comparison) (C5)', async () => {
+    // The "unchanged" check compares the canonical (order-insensitive) string, so
+    // a no-op reorder — remove then re-add a value, which appends and reorders the
+    // array — reads as unchanged and pops cleanly. A raw buildSearchParams compare
+    // would see "3,4" ≠ "4,3" and wrongly take the replace branch.
+    const row = createTestLesson({ lesson_id: 'c5-reorder', title: 'Reorder Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    renderSearchApp(['/?grades=3,4']); // pre-open set {3,4}
+    await waitFor(() => {
+      expect(screen.getByText('Reorder Lesson')).toBeInTheDocument();
+    });
+    expect(useSearchStore.getState().filters.gradeLevels).toEqual(['3', '4']);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Reorder Lesson'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-reorder');
+    });
+
+    // Reorder to the same set: remove '3' then re-add it → array becomes ['4','3'].
+    act(() => {
+      useSearchStore.getState().removeFilter('gradeLevels', '3');
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+    expect(useSearchStore.getState().filters.gradeLevels).toEqual(['4', '3']);
+
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+
+    // POP, not replace: the lesson entry is still forward in the stack.
+    fireEvent.click(screen.getByTestId('probe-history-forward'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-reorder');
+    });
+  });
 });
