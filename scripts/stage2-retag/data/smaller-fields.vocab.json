@@ -8,6 +8,7 @@
     "emitted": "2026-06-12",
     "notes": [
       "core_competencies: stray stored value 'Food Justice' (1 lesson) folds into 'Social Justice' per the walkthrough lock — NOT a canonical value.",
+      "core_competencies (FP5 Brief 1, owner 2026-07-04): 'Culturally Responsive Education' RENAMED to 'Cultural Diversity' (same concept). Kept byte-identical to the live PROD valid_core_competencies CHECK, which migration 20260708000000 swaps to the new name in lock-step.",
       "cooking_methods: canonical FORM is the stored-dominant kebab regime ('basic-prep', 'stovetop', 'oven' — census §5.4); the UI-config Title forms match 0 stored appearances. 'basic-prep-only' folds into 'basic-prep'; 'no-cook' (4 lessons) folds per the walkthrough lock — neither is canonical.",
       "observances_holidays: the configured 17-option list contains the near-dupe pair 'End of year' / 'End of year celebrations'; the locked merge keeps 'End of year celebrations' → 16 canonical values. Stored case-twin 'Earth month' folds into the configured 'Earth Month'. Field closes to this fixed list (PR 6e).",
       "garden_skills: canonical FORM is the stored-dominant Title-Case label regime (census §5.6: labels ≈ 83% of appearances) — the 22 configured METADATA_CONFIGS.gardenSkills labels (zero-usage 'Crop rotation' kept per lock) + walkthrough adds 'Stewardship tasks' (35 lessons) + 'Sensory exploration' (28 as 'sensory-exploration') = 24."
@@ -35,7 +36,7 @@
       "Social-Emotional Intelligence",
       "Garden Skills and Related Academic Content",
       "Kitchen Skills and Related Academic Content",
-      "Culturally Responsive Education"
+      "Cultural Diversity"
     ],
     "cooking_methods": ["basic-prep", "stovetop", "oven"],
     "observances_holidays": [

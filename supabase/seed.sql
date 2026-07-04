@@ -134,7 +134,7 @@ VALUES
     ARRAY['Kitchen'],
     ARRAY['Food Systems'],
     ARRAY['Summer', 'Fall'],
-    ARRAY['Kitchen Skills and Related Academic Content', 'Culturally Responsive Education'],
+    ARRAY['Kitchen Skills and Related Academic Content', 'Cultural Diversity'],
     ARRAY['Mexican', 'Latin American'],
     ARRAY['Social Studies', 'Health'],
     ARRAY['Social awareness'],

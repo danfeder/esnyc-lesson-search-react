@@ -216,7 +216,7 @@ describe('mapper round-trip property', () => {
       themes: ['Food Systems'],
       season: ['Fall', 'Winter'],
       gradeLevels: ['3', '4'],
-      coreCompetencies: ['Culturally Responsive Education'],
+      coreCompetencies: ['Cultural Diversity'],
       culturalResponsivenessFeatures: [
         'Communicates high expectations',
         'Promotes student-centered instruction',

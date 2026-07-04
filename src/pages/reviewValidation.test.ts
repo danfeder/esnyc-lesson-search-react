@@ -78,7 +78,7 @@ describe('validateRequiredFields (returns the list of MISSING field labels)', ()
       'Thematic Categories',
       'Season & Timing',
       'Core Competencies',
-      'Social-Emotional Learning',
+      'Social-Emotional Skills',
     ]);
   });
 

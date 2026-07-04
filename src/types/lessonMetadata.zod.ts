@@ -91,21 +91,38 @@ export const ACADEMIC_INTEGRATION_VALUES = [
   'Arts',
 ] as const;
 
+// FP5 Brief 1 (owner 2026-07-04): the 2026 template's SEL category. The
+// original 5 (CASEL) stay verbatim — old lessons carry them and only they match
+// pre-2026 lessons — and 6 template-era skills are appended (Title-case,
+// value===label). The category LABEL renamed to "Social-Emotional Skills"
+// (filterDefinitions), but the key/column `social_emotional_learning` is
+// unchanged. Mixed-era list is accepted by the owner.
 export const SOCIAL_EMOTIONAL_LEARNING_VALUES = [
   'Relationship skills',
   'Self-awareness',
   'Responsible decision-making',
   'Self-management',
   'Social awareness',
+  'Bravery',
+  'Kindness',
+  'Respect',
+  'Collaboration',
+  'Pride',
+  'Joy',
 ] as const;
 
+// FP5 Brief 1 (owner 2026-07-04): "Culturally Responsive Education" renamed to
+// "Cultural Diversity" everywhere (same concept, per owner) — a rename, not a
+// re-tag. 'Social-Emotional Intelligence' is KEPT (old lessons carry it; new
+// lessons just won't pick it). Migration 20260708000000 renames the 320 stored
+// carriers (column + JSONB mirror) and swaps the valid_core_competencies CHECK.
 export const CORE_COMPETENCIES_VALUES = [
   'Environmental and Community Stewardship',
   'Social Justice',
   'Social-Emotional Intelligence',
   'Garden Skills and Related Academic Content',
   'Kitchen Skills and Related Academic Content',
-  'Culturally Responsive Education',
+  'Cultural Diversity',
 ] as const;
 
 export const COOKING_METHODS_VALUES = ['basic-prep', 'stovetop', 'oven'] as const;

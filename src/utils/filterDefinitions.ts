@@ -163,7 +163,9 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
         value: 'Kitchen Skills and Related Academic Content',
         label: 'Kitchen Skills and Related Academic Content',
       },
-      { value: 'Culturally Responsive Education', label: 'Culturally Responsive Education' },
+      // FP5 Brief 1 (owner 2026-07-04): renamed from "Culturally Responsive
+      // Education" (same concept). Position unchanged.
+      { value: 'Cultural Diversity', label: 'Cultural Diversity' },
     ],
   },
 
@@ -191,7 +193,12 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   },
 
   socialEmotionalLearning: {
-    label: 'Social-Emotional Learning',
+    // FP5 Brief 1 (owner 2026-07-04): label renamed "Social-Emotional Learning"
+    // → "Social-Emotional Skills"; 6 template-era options appended to the 5
+    // CASEL values (the old 5 only match pre-2026 lessons — mixed-era list
+    // accepted). Key/column `socialEmotionalLearning` / `social_emotional_learning`
+    // unchanged.
+    label: 'Social-Emotional Skills',
     type: 'multiple',
     options: [
       { value: 'Relationship skills', label: 'Relationship skills' },
@@ -199,6 +206,12 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
       { value: 'Responsible decision-making', label: 'Responsible decision-making' },
       { value: 'Self-management', label: 'Self-management' },
       { value: 'Social awareness', label: 'Social awareness' },
+      { value: 'Bravery', label: 'Bravery' },
+      { value: 'Kindness', label: 'Kindness' },
+      { value: 'Respect', label: 'Respect' },
+      { value: 'Collaboration', label: 'Collaboration' },
+      { value: 'Pride', label: 'Pride' },
+      { value: 'Joy', label: 'Joy' },
     ],
   },
 

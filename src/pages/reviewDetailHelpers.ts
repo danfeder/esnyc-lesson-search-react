@@ -15,7 +15,7 @@ export const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.sha
   themes: 'Thematic Categories',
   gradeLevels: 'Grade Levels',
   coreCompetencies: 'Core Competencies',
-  socialEmotionalLearning: 'Social-Emotional Learning',
+  socialEmotionalLearning: 'Social-Emotional Skills',
   cookingMethods: 'Cooking Methods',
   mainIngredients: 'Main Ingredients',
   gardenSkills: 'Garden Skills',

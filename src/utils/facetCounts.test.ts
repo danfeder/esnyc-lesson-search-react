@@ -58,7 +58,7 @@ describe('computeTrueFacetCounts — plain tally (no active filters)', () => {
       }),
       makeLesson({
         metadata: {
-          coreCompetencies: ['Social Justice', 'Culturally Responsive Education'],
+          coreCompetencies: ['Social Justice', 'Cultural Diversity'],
           culturalHeritage: [],
           activityType: ['garden'],
           locationRequirements: ['Indoor', 'Outdoor'],
@@ -68,7 +68,7 @@ describe('computeTrueFacetCounts — plain tally (no active filters)', () => {
     const counts = computeTrueFacetCounts(lessons, filtersWith());
     expect(counts.coreCompetencies).toEqual({
       'Social Justice': 2,
-      'Culturally Responsive Education': 1,
+      'Cultural Diversity': 1,
     });
     // Bucket is keyed by the sidebar's option slug, not the stored noun.
     expect(counts.activityType).toEqual({ 'cooking-only': 1, 'garden-only': 1 });

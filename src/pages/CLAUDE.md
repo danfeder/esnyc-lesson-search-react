@@ -221,6 +221,14 @@ AdminAnalytics was retired in the frontend-polish phase, owner decision D3.)
 - Google Docs extraction WORKING (real API in production, mock fallback in dev)
 - Validates metadata before submission
 - Must handle all filter categories defined in `filterDefinitions.ts`
+- **Template vocab mapping (FP5 Brief 1, owner 2026-07-04):** the 2026 lesson
+  template's wording maps 1:1 onto the app's options. "Cultural diversity" in a
+  template doc **is** the Core Competency **Cultural Diversity** (renamed from
+  "Culturally Responsive Education" — same concept). The template's
+  Social-Emotional words map onto the **Social-Emotional Skills** category (the 5
+  CASEL values + Bravery/Kindness/Respect/Collaboration/Pride/Joy).
+  **Social-Emotional Intelligence** is a *Core Competency* the template dropped —
+  don't pick it for new lessons (old lessons keep it).
 
 ### Submission Flow
 ```
