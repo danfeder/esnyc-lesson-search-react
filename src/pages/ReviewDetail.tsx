@@ -14,7 +14,11 @@ import { ReviewMetadataForm } from '@/components/Review/ReviewMetadataForm';
 import { ReviewDecisionPanel } from '@/components/Review/ReviewDecisionPanel';
 import { type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { shouldShowMismatchWarning } from '@/pages/reviewMismatch';
-import { ZOD_FIELD_TO_LABEL, parseExtractedContent } from '@/pages/reviewDetailHelpers';
+import {
+  ZOD_FIELD_TO_LABEL,
+  parseExtractedContent,
+  loadedMetadataHasLegacySei,
+} from '@/pages/reviewDetailHelpers';
 import { buildCandidateCards, MAX_DUPLICATE_CARDS } from '@/pages/buildCandidateCards';
 import {
   useReviewSubmission,
@@ -98,6 +102,15 @@ export function ReviewDetail() {
   );
 
   const fieldProgress = useMemo(() => computeFieldProgress(metadata), [metadata]);
+
+  // FP5 B3 (owner 2026-07-04): hide the legacy 'Social-Emotional Intelligence'
+  // Core Competency pill unless THIS review's loaded metadata already carries
+  // it. Judged from `initialFormState` (the metadata AS LOADED), NOT the live
+  // `metadata` — so unticking it mid-review keeps the pill visible (no undo
+  // trap). `initialFormState` is a stable reference the hook sets once per load.
+  const showLegacySocialEmotionalIntelligence = loadedMetadataHasLegacySei(
+    initialFormState?.metadata.coreCompetencies
+  );
 
   // Seed the page's form state from the hook's computed restore-vs-preselect
   // object. The hook holds `initialFormState` in its own state so the reference
@@ -489,6 +502,7 @@ export function ReviewDetail() {
             legacyDecisionWarning={legacyDecisionWarning}
             docTitleHint={docTitleHint}
             summaryError={summaryError}
+            showLegacySocialEmotionalIntelligence={showLegacySocialEmotionalIntelligence}
           />
 
           {/* MIDDLE — document (sticky so it stays in view while the reviewer

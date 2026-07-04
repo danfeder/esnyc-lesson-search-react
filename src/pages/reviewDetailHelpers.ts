@@ -258,11 +258,30 @@ function matchClosedVocab(
   return vocab.filter((value) => matched.has(value));
 }
 
+// The Core Competency the 2026 template dropped (owner 2026-07-04). It stays a
+// legal STORED value — 388/431 active lessons still carry it — but new lessons
+// never pick it: the prefill parser never emits it (below), and the reviewer
+// form hides its pill unless the loaded metadata already carries it (FP5 B3).
+export const SOCIAL_EMOTIONAL_INTELLIGENCE = 'Social-Emotional Intelligence';
+
+/**
+ * True when a review's INITIALLY-LOADED core competencies already carry the
+ * legacy 'Social-Emotional Intelligence' value — the one signal that keeps its
+ * pill on the reviewer form (FP5 B3). Judge from the metadata AS LOADED, never
+ * the live selection, so unticking it mid-review doesn't make the pill vanish
+ * (no undo trap). Case-insensitive for safety; stored values are canonical.
+ */
+export function loadedMetadataHasLegacySei(coreCompetencies: string[] | undefined): boolean {
+  return (coreCompetencies ?? []).some(
+    (v) => v.toLowerCase() === SOCIAL_EMOTIONAL_INTELLIGENCE.toLowerCase()
+  );
+}
+
 // Core Competencies offered by the template = the app's 6 minus
 // "Social-Emotional Intelligence" (the template deliberately dropped it; the
 // owner said new lessons never pick it — so it's NEVER prefilled).
 const CORE_COMPETENCY_TEMPLATE_OPTIONS = CORE_COMPETENCIES_VALUES.filter(
-  (v) => v !== 'Social-Emotional Intelligence'
+  (v) => v !== SOCIAL_EMOTIONAL_INTELLIGENCE
 );
 
 /**

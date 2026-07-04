@@ -5,6 +5,7 @@ import {
   parseTemplateTags,
   normalizeMatchType,
   selectOptionsFromConfig,
+  loadedMetadataHasLegacySei,
   ZOD_FIELD_TO_LABEL,
 } from '@/pages/reviewDetailHelpers';
 import type { ReviewMetadata } from '@/types';
@@ -359,5 +360,23 @@ describe('parseTemplateTags (FP5 Brief 2 mechanical template prefill)', () => {
     expect(parseTemplateTags(content)).toEqual({
       observancesHolidays: ["Women's History Month"],
     });
+  });
+});
+
+describe('loadedMetadataHasLegacySei (FP5 B3 — keep the legacy SEI pill only for carriers)', () => {
+  it('true when loaded core competencies carry the canonical value', () => {
+    expect(loadedMetadataHasLegacySei(['Social Justice', 'Social-Emotional Intelligence'])).toBe(
+      true
+    );
+  });
+
+  it('matches case-insensitively (defensive; stored values are canonical)', () => {
+    expect(loadedMetadataHasLegacySei(['social-emotional intelligence'])).toBe(true);
+  });
+
+  it('false when absent, and for undefined/empty (new lessons)', () => {
+    expect(loadedMetadataHasLegacySei(['Social Justice'])).toBe(false);
+    expect(loadedMetadataHasLegacySei([])).toBe(false);
+    expect(loadedMetadataHasLegacySei(undefined)).toBe(false);
   });
 });
