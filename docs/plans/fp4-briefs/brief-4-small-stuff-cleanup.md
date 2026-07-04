@@ -1,8 +1,13 @@
 # FP4 Brief 4 — Small-stuff cleanup (S–M)
 
+> **⚠️ RIDER ADDED 2026-07-04 (owner-decided, Fable Q&A session — see
+> `docs/plans/2026-07-04-owner-uiux-candidates.md` §2–3).** Two small owner-visible
+> sidebar tweaks ride along in this PR (item 7 below). They are the ONLY
+> teacher-visible changes; everything else in this brief remains invisible cleanup.
+
 Read `docs/plans/fp4-briefs/README.md` (standing rules) first. Evidence IDs below are in
 `docs/plans/fp4-discovery/discovery-evidence.md`. One PR, zero teacher-visible behavior
-change. Frontend + docs only.
+change **except item 7 (owner-decided sidebar rider)**. Frontend + docs only.
 
 ## Scope
 
@@ -43,6 +48,22 @@ change. Frontend + docs only.
    filters cleared. Showing all 703 lessons." on every fresh page load with zero
    interaction. Suppress the announcement until the first real user-initiated change after
    mount; pick the simplest mechanism that tests cleanly.
+
+7. **Sidebar rider (owner-decided 2026-07-04, teacher-visible).** Two tweaks to
+   `src/components/internal/IntSidebar.tsx`:
+   a. **Only Grade Level starts expanded.** Keep the hardcoded `defaultOpen` on the
+      Grade Level section (line ~70); remove the `defaultOpen = key === 'activityType'
+      || key === 'seasonTiming'` special-case (line ~103) so every other section starts
+      collapsed. Update `IntSidebar.test.tsx` assertions that encode the old trio
+      (re-grep; lines drift — there are default-collapsed comments and an
+      Ingredients-slot-#3-collapsed assertion from FP3 B5 that must keep passing).
+   b. **Move the counts explainer to the top.** Relocate
+      `<p className="int-sidebar-hint">Numbers show how many lessons carry each tag.</p>`
+      from the bottom of the sidebar (currently last child, line ~143) to directly below
+      the `<h2>Filters</h2>` heading, so expanded sections can't push it below the fold.
+      Copy stays VERBATIM (owner-approved string from FP3 brief 1 — do not reword).
+      Check `.int-sidebar-hint` spacing still looks right in its new position (it was
+      styled for bottom placement); adjust margins in the internal CSS if needed.
 
 Out of scope: any FILTER_CONFIGS/filterDefinitions change (stakeholder territory), the
 fieldValueLabeler typing (Option C stands, #603 ruling), FP-21 mechanism trims, scripts/.
