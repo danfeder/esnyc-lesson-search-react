@@ -30,6 +30,7 @@ import {
   IntActivityTimeline,
   IntAlert,
   IntButton,
+  IntFetchError,
   IntPageHeader,
   IntRoleBadge,
   IntStatusBadge,
@@ -102,6 +103,19 @@ export function AdminUserDetail() {
   const [reviews, setReviews] = useState<RecentReview[]>([]);
   const [reviewCount, setReviewCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  // Honest-error state (FP-05/FP-07): reserve "User not found." for a genuine
+  // zero-row profile (PGRST116). Any other load failure sets loadError so we
+  // render the retryable card instead of telling the admin the user doesn't
+  // exist. partialError covers the five soft-fail sub-fetches (email/schools/
+  // audit/subs/reviews): if any errored we flag it inline rather than silently
+  // rendering empty sections.
+  const [loadError, setLoadError] = useState(false);
+  const [partialError, setPartialError] = useState(false);
+  // FP-20a staleness guard: this route is NOT key-remounted (App.tsx renders
+  // AdminUserDetail without a key), so fast user→user navigation reuses the
+  // component and can land an earlier user's data last. Bumped at each load's
+  // start so only the newest load may apply. Idiom from LessonSearchPicker.tsx.
+  const requestIdRef = useRef(0);
   const [toast, setToast] = useState<{ kind: 'success' | 'error' | 'info'; msg: string } | null>(
     null
   );
@@ -121,7 +135,10 @@ export function AdminUserDetail() {
 
   const loadAll = useCallback(async () => {
     if (!userId) return;
+    const requestId = ++requestIdRef.current;
     setLoading(true);
+    setLoadError(false);
+    setPartialError(false);
     try {
       const [profileRes, emailsRes, schoolsRes, auditRes, subsRes, revsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', userId).single(),
@@ -146,9 +163,20 @@ export function AdminUserDetail() {
           .order('created_at', { ascending: false })
           .limit(5),
       ]);
+      if (requestId !== requestIdRef.current) return; // superseded by a newer load
 
       if (profileRes.error) throw profileRes.error;
       const profile = profileRes.data;
+
+      // Any of the five secondary fetches erroring → non-blocking "couldn't load
+      // everything" signal rather than a silently-empty section.
+      setPartialError(
+        !!emailsRes.error ||
+          !!schoolsRes.error ||
+          !!auditRes.error ||
+          !!subsRes.error ||
+          !!revsRes.error
+      );
 
       setUser({
         ...profile,
@@ -187,6 +215,7 @@ export function AdminUserDetail() {
             .from('user_profiles')
             .select('id, full_name')
             .in('id', actorIds);
+          if (requestId !== requestIdRef.current) return; // superseded by a newer load
           const map: Record<string, string> = {};
           for (const p of actorProfiles ?? []) {
             if (p.id && p.full_name) map[p.id] = p.full_name;
@@ -219,9 +248,15 @@ export function AdminUserDetail() {
         setReviewCount(revsRes.count ?? 0);
       }
     } catch (err) {
+      if (requestId !== requestIdRef.current) return; // superseded — don't flip UI state
       logger.error('Error loading user detail:', err);
+      // PGRST116 = `.single()` matched zero rows → the user genuinely doesn't
+      // exist; fall through to the "User not found." branch (user stays null).
+      // Every other error (network/RLS/5xx) is transient → honest error card.
+      const code = (err as { code?: string } | null)?.code;
+      if (code !== 'PGRST116') setLoadError(true);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, [userId]);
 
@@ -447,6 +482,26 @@ export function AdminUserDetail() {
     );
   }
 
+  if (loadError && !user) {
+    return (
+      <div className="int-shell-root">
+        <div className="adm-page">
+          <IntPageHeader
+            title="User"
+            actions={null}
+            back={{ label: 'Back to Users', onClick: () => navigate('/admin/users') }}
+          />
+          <div className="adm-card" style={{ padding: 24 }}>
+            <IntFetchError onRetry={() => loadAll()}>
+              Could not load this user — this is usually a connection blip, not a missing account.
+              Retry to load their details.
+            </IntFetchError>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="int-shell-root">
@@ -543,6 +598,15 @@ export function AdminUserDetail() {
         {saveError && (
           <IntAlert variant="error" title="Save failed">
             {saveError}
+          </IntAlert>
+        )}
+
+        {partialError && (
+          <IntAlert variant="warn" title="Couldn't load everything.">
+            Some sections (schools, activity, or recent items) may be incomplete.{' '}
+            <button type="button" className="adm-link" onClick={() => loadAll()}>
+              Retry
+            </button>
           </IntAlert>
         )}
 

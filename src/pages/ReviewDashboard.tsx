@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -80,6 +80,12 @@ export function ReviewDashboard() {
   // fetches that genuinely returned empty / non-reviewer.
   const [loadError, setLoadError] = useState(false);
   const [authCheckError, setAuthCheckError] = useState(false);
+  // FP-20a staleness guard: fast tab-clicks issue overlapping loads; only the
+  // newest may apply its results. Bumped at each load's start (keyed on the
+  // tab-click, not the fetch's completion) so a slow response A landing after a
+  // later click B can never clobber B's rows. Idiom copied from
+  // LessonSearchPicker.tsx.
+  const requestIdRef = useRef(0);
 
   // Pick up any decision toast handed over by ReviewDetail on save, then clear
   // the history state so a refresh doesn't replay it (mirrors AdminInvitations).
@@ -103,8 +109,13 @@ export function ReviewDashboard() {
   // Component-scope so the auth-error Retry button can re-run the whole page
   // load, not just the submissions fetch.
   const loadPage = async () => {
-    const ok = await checkAuth();
-    if (ok) await loadSubmissions();
+    // Stamp this load before any await so ordering follows the tab-click, not
+    // auth-check latency (a slow checkAuth for an earlier tab must not resume
+    // into loadSubmissions after a newer tab-click started).
+    const requestId = ++requestIdRef.current;
+    const ok = await checkAuth(requestId);
+    if (requestId !== requestIdRef.current) return;
+    if (ok) await loadSubmissions(requestId);
   };
 
   useEffect(() => {
@@ -115,19 +126,25 @@ export function ReviewDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
-  const checkAuth = async (): Promise<boolean> => {
+  // requestId threads the caller's staleness stamp through, so a superseded
+  // auth check (an earlier tab-click resolving late) never applies its own
+  // setUser/setAuthCheckError/navigate side effects over a newer load's state —
+  // e.g. a stale transient profile error must not blank a valid newer queue.
+  const checkAuth = async (requestId: number): Promise<boolean> => {
     let authUser;
     try {
       ({
         data: { user: authUser },
       } = await supabase.auth.getUser());
     } catch (error) {
+      if (requestId !== requestIdRef.current) return false; // superseded
       // A thrown getUser (network blip) is not a sign-out verdict — render
       // the access-check error card, never a blank page or a redirect.
       logger.error('Error checking auth state:', error);
       setAuthCheckError(true);
       return false;
     }
+    if (requestId !== requestIdRef.current) return false; // superseded — don't apply
     if (!authUser) {
       setAuthCheckError(false); // a stale blip flag must not outlive a real verdict
       navigate('/');
@@ -140,6 +157,7 @@ export function ReviewDashboard() {
       .select('role')
       .eq('id', authUser.id)
       .single();
+    if (requestId !== requestIdRef.current) return false; // superseded — don't apply
 
     if (error || !profile) {
       if (error?.code === 'PGRST116') {
@@ -163,7 +181,9 @@ export function ReviewDashboard() {
     return ok;
   };
 
-  const loadSubmissions = async () => {
+  // requestId defaults to a fresh stamp so the loadError Retry button (which
+  // calls loadSubmissions with no args) is always treated as the newest load.
+  const loadSubmissions = async (requestId = ++requestIdRef.current) => {
     setLoading(true);
     setLoadError(false);
     try {
@@ -177,6 +197,7 @@ export function ReviewDashboard() {
       }
 
       const { data, error } = await query;
+      if (requestId !== requestIdRef.current) return; // superseded by a newer load
       if (error) throw error;
 
       if (!data || data.length === 0) {
@@ -203,6 +224,7 @@ export function ReviewDashboard() {
           ? supabase.from('lessons').select('lesson_id, title').in('lesson_id', targetLessonIds)
           : Promise.resolve({ data: [], error: null }),
       ]);
+      if (requestId !== requestIdRef.current) return; // superseded by a newer load
 
       const profiles = profilesResult.data ?? [];
       const allSimilarities = similaritiesResult.data ?? [];
@@ -255,10 +277,11 @@ export function ReviewDashboard() {
         })
       );
     } catch (err) {
+      if (requestId !== requestIdRef.current) return; // superseded — don't flip UI state
       logger.error('Error loading submissions:', err);
       setLoadError(true);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   };
 
@@ -308,7 +331,7 @@ export function ReviewDashboard() {
             title="Review queue"
             description="Pending and recent lesson submissions awaiting reviewer action."
           />
-          <IntFetchError onRetry={loadPage}>
+          <IntFetchError onRetry={() => loadPage()}>
             Couldn&apos;t check your access — this is usually a connection blip, not a permissions
             problem. Retry to load the queue.
           </IntFetchError>
@@ -356,7 +379,7 @@ export function ReviewDashboard() {
             </div>
           ) : loadError ? (
             <div style={{ padding: 24 }}>
-              <IntFetchError onRetry={loadSubmissions}>
+              <IntFetchError onRetry={() => loadSubmissions()}>
                 Couldn&apos;t load the review queue. Check your connection and retry — submissions
                 may be waiting even though the list is empty.
               </IntFetchError>

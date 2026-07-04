@@ -10,6 +10,7 @@ import {
   IntAlert,
   IntButton,
   IntDataTable,
+  IntFetchError,
   IntPageHeader,
   IntRoleBadge,
   IntStatCard,
@@ -109,6 +110,11 @@ export function AdminInvitations() {
   const { user, hasPermission, loading: authLoading } = useEnhancedAuth();
   const [invitations, setInvitations] = useState<UserInvitation[]>([]);
   const [loading, setLoading] = useState(true);
+  // Honest-error state (FP-05/FP-07): a failed LOAD gets a persistent inline
+  // error block + retry, never a self-dismissing toast that leaves the
+  // "Invite your first teacher…" empty CTA as the resting state. (Row-action
+  // failures keep their toasts — those aren't load failures.)
+  const [loadError, setLoadError] = useState(false);
   const [filter, setFilter] = useState<InvitationFilter>('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -127,6 +133,7 @@ export function AdminInvitations() {
 
   const loadInvitations = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const { data, error } = await supabase
         .from('user_invitations')
@@ -145,7 +152,7 @@ export function AdminInvitations() {
       );
     } catch (err) {
       logger.error('Error loading invitations:', err);
-      setToast({ kind: 'error', msg: 'Failed to load invitations.' });
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -664,6 +671,13 @@ export function AdminInvitations() {
 
         {loading && invitations.length === 0 ? (
           <p className="adm-section-desc">Loading invitations…</p>
+        ) : loadError ? (
+          <div className="adm-card" style={{ padding: 24 }}>
+            <IntFetchError onRetry={() => loadInvitations()}>
+              Could not load invitations. Check your connection and retry — invites may exist even
+              though the list is empty.
+            </IntFetchError>
+          </div>
         ) : filteredInvitations.length === 0 ? (
           <div className="adm-empty adm-empty--large">
             <h3>{EMPTY_COPY[filter].title}</h3>
