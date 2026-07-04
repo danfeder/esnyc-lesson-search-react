@@ -40,11 +40,9 @@ language, explain tradeoffs, real numbers from the live system.
    wave starts. Pre-wave outranks everything (FP4 briefs 1–4 are parked).
 
 ## Your loop per step
-- Give the owner a one-paragraph kickoff prompt for a fresh OPUS session pointing at
-  the brief ("Execute <brief path>. Read fp4-briefs/README.md standing rules first.
-  This is step N of docs/plans/2026-07-04-pre-wave-plan.md. STOP = write the hand-back
-  and END YOUR TURN; design forks route to Fable; the owner only answers explicit
-  approvals (data fix / merge / gates).").
+- Give the owner a kickoff prompt for a fresh OPUS session: use Prompt B in
+  docs/plans/2026-07-04-prewave-kickoff-prompts.md (this prompt is Prompt A in the same
+  file), filling in the brief path and step number.
 - When the hand-back arrives: independently re-probe every load-bearing claim with
   cheap probes (live DB > docs; PROD jxlxtzkmicfhchkhiojz SELECTs fine, NEVER write;
   TEST rxgajgmphciuaqzvwmox via mcp__supabase-test__). Check all 4 PR comment surfaces;
