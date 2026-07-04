@@ -23,7 +23,7 @@
 --     the 11 frozen rows are the complete union — exactly 11 distinct rows touched.
 --   * 7 retired frozen rows + a later `VALIDATE CONSTRAINT` pass are PARKED (§8).
 --
--- WHAT IT DOES — one UPDATE, one write per row, three coordinated transforms
+-- WHAT IT DOES — one UPDATE, one write per row, four coordinated transforms
 -- (RHS is computed entirely from the OLD row, so nesting stray-remap inside the
 -- backfill is correct and needs no intermediate write):
 --   (a) cooking_skills: remap each legacy value through the owner-decided map
@@ -33,6 +33,15 @@
 --   (c) main_ingredients parent backfill: append each specific's missing parent
 --       GROUP (INGREDIENT_PARENT_MAP), computed on the post-(b) array so
 --       Avocado's new "Tropical fruits" requirement is honored. APPEND-ONLY.
+--   (d) metadata JSONB mirror [Fable-verify addition 2026-07-04]: set
+--       metadata->'cookingSkills' and metadata->'mainIngredients' to the SAME
+--       healed arrays. The lesson drawer (IntLessonDetail) displays these two
+--       fields from the metadata JSONB, and NEITHER the lessons_normalize_write
+--       trigger NOR the search RPC's metadata reconstruction covers them (both
+--       were reviewer-only fields until Brief 5). JSONB↔column drift is 0
+--       library-wide today (verified PROD+TEST 2026-07-04); without (d) the 11
+--       healed rows would become the only drifted rows and their drawers would
+--       keep showing the legacy tags the filter no longer matches.
 --
 -- OWNER-DECIDED cooking_skills MAP (fork doc §8) + one executor addition:
 --   Basic Skills           -> (DROP)
@@ -61,7 +70,8 @@
 --   * `targets` gate touches ONLY rows that actually need a fix (no library-wide
 --     no-op rewrite); retired rows excluded.
 --   * Post-assert: active invariant violations = 0 AND active strays = 0 AND active
---     off-vocab cooking_skills = 0, else RAISE (rolls back, PROD unchanged).
+--     off-vocab cooking_skills = 0 AND active JSONB↔column drift on the two
+--     mirrored keys = 0, else RAISE (rolls back, PROD unchanged).
 -- =====================================================
 
 BEGIN;
@@ -122,56 +132,73 @@ targets AS (
                  JOIN parent_map pm ON pm.specific = v
                  WHERE NOT (pm.parent = ANY(l.main_ingredients)))
     )
-)
-UPDATE lessons l
-SET
-  -- (a) cooking_skills: map through cs_map, DROP NULL targets, order-preserving de-dupe.
-  cooking_skills = (
-    SELECT COALESCE(array_agg(v ORDER BY ord), ARRAY[]::text[])
-    FROM (
-      SELECT v, min(ord) AS ord
-      FROM (
-        SELECT CASE WHEN m.legacy IS NOT NULL THEN m.canon ELSE x.val END AS v, x.ord
-        FROM unnest(l.cooking_skills) WITH ORDINALITY AS x(val, ord)
-        LEFT JOIN cs_map m ON m.legacy = x.val
-      ) mapped
-      WHERE v IS NOT NULL            -- drops 'Basic Skills' (canon NULL)
-      GROUP BY v
-    ) d
-  ),
-  -- (b)+(c) main_ingredients: stray-remap+de-dupe, then append missing parent groups.
-  main_ingredients = (
-    WITH remapped AS (
-      SELECT COALESCE(array_agg(v ORDER BY ord), ARRAY[]::text[]) AS arr
+),
+-- Healed arrays computed ONCE per target row (entirely from the OLD row), then
+-- written to the columns AND the metadata JSONB mirror in the same single UPDATE.
+computed AS (
+  SELECT
+    l.lesson_id,
+    -- (a) cooking_skills: map through cs_map, DROP NULL targets, order-preserving de-dupe.
+    (
+      SELECT COALESCE(array_agg(v ORDER BY ord), ARRAY[]::text[])
       FROM (
         SELECT v, min(ord) AS ord
         FROM (
-          SELECT CASE WHEN s.legacy IS NOT NULL THEN s.canon ELSE x.val END AS v, x.ord
-          FROM unnest(l.main_ingredients) WITH ORDINALITY AS x(val, ord)
-          LEFT JOIN mi_stray s ON s.legacy = x.val
-        ) m0
+          SELECT CASE WHEN m.legacy IS NOT NULL THEN m.canon ELSE x.val END AS v, x.ord
+          FROM unnest(l.cooking_skills) WITH ORDINALITY AS x(val, ord)
+          LEFT JOIN cs_map m ON m.legacy = x.val
+        ) mapped
+        WHERE v IS NOT NULL            -- drops 'Basic Skills' (canon NULL)
         GROUP BY v
       ) d
-    )
-    SELECT r.arr || COALESCE(
-      (SELECT array_agg(p ORDER BY p)
-       FROM (SELECT DISTINCT pm.parent AS p
-             FROM parent_map pm
-             WHERE pm.specific = ANY(r.arr)
-               AND NOT (pm.parent = ANY(r.arr))) pp),
-      ARRAY[]::text[])
-    FROM remapped r
+    ) AS new_cs,
+    -- (b)+(c) main_ingredients: stray-remap+de-dupe, then append missing parent groups.
+    (
+      WITH remapped AS (
+        SELECT COALESCE(array_agg(v ORDER BY ord), ARRAY[]::text[]) AS arr
+        FROM (
+          SELECT v, min(ord) AS ord
+          FROM (
+            SELECT CASE WHEN s.legacy IS NOT NULL THEN s.canon ELSE x.val END AS v, x.ord
+            FROM unnest(l.main_ingredients) WITH ORDINALITY AS x(val, ord)
+            LEFT JOIN mi_stray s ON s.legacy = x.val
+          ) m0
+          GROUP BY v
+        ) d
+      )
+      SELECT r.arr || COALESCE(
+        (SELECT array_agg(p ORDER BY p)
+         FROM (SELECT DISTINCT pm.parent AS p
+               FROM parent_map pm
+               WHERE pm.specific = ANY(r.arr)
+                 AND NOT (pm.parent = ANY(r.arr))) pp),
+        ARRAY[]::text[])
+      FROM remapped r
+    ) AS new_mi
+  FROM lessons l
+  WHERE l.lesson_id IN (SELECT lesson_id FROM targets)
+)
+UPDATE lessons l
+SET
+  cooking_skills   = c.new_cs,
+  main_ingredients = c.new_mi,
+  -- (d) metadata JSONB mirror — same healed arrays, same single write.
+  metadata = jsonb_set(
+    jsonb_set(COALESCE(l.metadata, '{}'::jsonb), '{cookingSkills}', to_jsonb(c.new_cs)),
+    '{mainIngredients}', to_jsonb(c.new_mi)
   )
-WHERE l.lesson_id IN (SELECT lesson_id FROM targets);
+FROM computed c
+WHERE l.lesson_id = c.lesson_id;
 
 -- ---------------------------------------------------------------------------
--- POST-ASSERT — all three invariants clean on active rows, else roll back.
+-- POST-ASSERT — all four checks clean on active rows, else roll back.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
   v_violations int;
   v_strays     int;
   v_cs_offvocab int;
+  v_jsonb_drift int;
 BEGIN
   WITH parent_map(specific, parent) AS (VALUES
     ('Garlic','Alliums'),('Carrots','Root vegetables'),('Sweet potatoes','Root vegetables'),
@@ -203,12 +230,35 @@ BEGIN
        WHERE l.retired_at IS NULL AND val IN ('Avocados','Basil','Various spices')),
     (SELECT count(DISTINCT l.lesson_id)
        FROM lessons l, unnest(l.cooking_skills) cs
-       WHERE l.retired_at IS NULL AND cs NOT IN (SELECT v FROM canon))
-  INTO v_violations, v_strays, v_cs_offvocab;
+       WHERE l.retired_at IS NULL AND cs NOT IN (SELECT v FROM canon)),
+    -- (d) JSONB mirror sync: no active row may disagree between the column and
+    -- metadata->'mainIngredients' / ->'cookingSkills' (order-insensitive; a
+    -- missing/non-array JSONB key is treated as empty, matching an empty column).
+    (SELECT count(*)
+       FROM lessons l
+       WHERE l.retired_at IS NULL
+         AND (
+           (SELECT COALESCE(array_agg(x ORDER BY x), ARRAY[]::text[])
+              FROM jsonb_array_elements_text(
+                CASE WHEN jsonb_typeof(l.metadata->'mainIngredients') = 'array'
+                     THEN l.metadata->'mainIngredients' ELSE '[]'::jsonb END) x)
+           IS DISTINCT FROM
+           (SELECT COALESCE(array_agg(x ORDER BY x), ARRAY[]::text[])
+              FROM unnest(l.main_ingredients) x)
+           OR
+           (SELECT COALESCE(array_agg(x ORDER BY x), ARRAY[]::text[])
+              FROM jsonb_array_elements_text(
+                CASE WHEN jsonb_typeof(l.metadata->'cookingSkills') = 'array'
+                     THEN l.metadata->'cookingSkills' ELSE '[]'::jsonb END) x)
+           IS DISTINCT FROM
+           (SELECT COALESCE(array_agg(x ORDER BY x), ARRAY[]::text[])
+              FROM unnest(l.cooking_skills) x)
+         ))
+  INTO v_violations, v_strays, v_cs_offvocab, v_jsonb_drift;
 
-  IF v_violations <> 0 OR v_strays <> 0 OR v_cs_offvocab <> 0 THEN
-    RAISE EXCEPTION 'Brief-5 data fix post-assert FAILED: invariant=% strays=% cooking_skills_offvocab=% (rolling back)',
-      v_violations, v_strays, v_cs_offvocab;
+  IF v_violations <> 0 OR v_strays <> 0 OR v_cs_offvocab <> 0 OR v_jsonb_drift <> 0 THEN
+    RAISE EXCEPTION 'Brief-5 data fix post-assert FAILED: invariant=% strays=% cooking_skills_offvocab=% jsonb_drift=% (rolling back)',
+      v_violations, v_strays, v_cs_offvocab, v_jsonb_drift;
   END IF;
 END $$;
 

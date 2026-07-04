@@ -69,3 +69,32 @@ writing the dirty originals back after a commit).
 Run on PROD immediately before apply; expect target rows = 11 and pre-state 7 / 4 / 11.
 After owner-approved apply, the same probes must read invariant = 0, strays = 0,
 active cs off-vocab = 0.
+
+## 6. Amendment: metadata JSONB mirror sync (Fable verify session, 2026-07-04)
+
+The Fable verification pass found a gap: the fix healed only the **columns**, but the
+lesson drawer (`IntLessonDetail`) displays `mainIngredients`/`cookingSkills` from the
+**metadata JSONB**, and neither the `lessons_normalize_write` trigger nor the search
+RPC's metadata reconstruction covers those two keys (they were reviewer-only fields
+until Brief 5). JSONB↔column drift is **0 library-wide today on both DBs** (verified
+2026-07-04, incl. the symmetric missing-key case), so the unamended fix would have
+made the 11 healed rows the only drifted rows — their drawers would keep showing the
+legacy tags the filter no longer matches.
+
+**Amendment** (same single per-row write): the UPDATE now computes each row's healed
+arrays once (`computed` CTE) and writes them to the columns **and**
+`metadata->'cookingSkills'` / `metadata->'mainIngredients'`. The post-assert gains a
+4th check: active JSONB↔column drift on the two mirrored keys = 0 (pre-verified 0 on
+both DBs, so an unrelated drifted row cannot abort the fix).
+
+**Re-rehearsal on TEST (2026-07-04, rollback-based, same forced-`RAISE` method):**
+- Post-assert passed: invariant = 0, strays = 0, cs off-vocab = 0, **jsonb_drift = 0**.
+- Spot-checks matched §4's hand-trace byte-for-byte, now in BOTH representations:
+  - Honduras and Baleadas: `mi` → `[Pinto beans, Wheat/flour, Dairy, Avocado, Beans & legumes, Grains & starches, Tropical fruits]`, `metadata->mainIngredients` identical; `cs` → `[Mashing, Assembling dishes]`, `metadata->cookingSkills` identical.
+  - Mindful Eating: `cs` → `[Blending & juicing, Measuring, Reading & following recipes]`, JSONB identical.
+  - Celebrating Eid: `mi` → `[Rice, Chickpeas, Spices, Beans & legumes, Grains & starches]`.
+- **TEST baseline restored** post-rollback: 763 / 685 / 130, cs off-vocab 11, strays 4,
+  Honduras back to its dirty original (`… Avocados`, no parent groups).
+
+Post-apply PROD probes now read: invariant = 0, strays = 0, active cs off-vocab = 0,
+**and JSONB↔column drift on the two keys = 0**.
