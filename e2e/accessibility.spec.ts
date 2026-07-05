@@ -103,8 +103,10 @@ test.describe('Accessibility', () => {
     // is an sr-only clip (visually hidden, still focusable + role-exposed).
     //
     // The Activity Type section is a real `.int-check` section (NOT the Grade
-    // pills) and renders default-open, so its option checkboxes are present and
-    // not `hidden`. Be defensive: expand it if a future default flips it closed.
+    // pills). It now starts COLLAPSED (only Grade Level is open by default —
+    // FP4 Brief 4 item 7a), so expand it first to bring its option checkboxes
+    // into the (visible) accessibility tree. (This guard already handled the
+    // collapse defensively.)
     const sectionHeader = page.getByRole('button', { name: /^Activity Type(\s+\d+)?$/ });
     await expect(sectionHeader).toBeVisible({ timeout: 15000 });
     if ((await sectionHeader.getAttribute('aria-expanded')) === 'false') {
