@@ -288,9 +288,6 @@ CREATE TABLE lessons (
   activity_type TEXT[],
   location_requirements TEXT[],
 
-  -- Single-select filters (TEXT)
-  lesson_format TEXT,
-
   -- Additional metadata (JSONB for flexibility)
   metadata JSONB NOT NULL DEFAULT '{}',
 
@@ -311,7 +308,7 @@ CREATE TABLE lessons (
 | **Schema clarity** | ✅ `\d lessons` shows all filters | ❌ Hidden in JSONB |
 | **Flexibility** | ❌ Adding filter = migration | ✅ Just use new key |
 
-**Decision**: Performance + type safety outweighed flexibility for our 11 stable filters.
+**Decision**: Performance + type safety outweighed flexibility for our stable multi-select filters.
 
 ---
 
@@ -355,7 +352,7 @@ metadata: {
 
 **Use normalized columns for**:
 - ✅ Filterable fields (grade_levels, themes, etc.)
-- ✅ Sortable fields (lesson_format, created_at)
+- ✅ Sortable fields (created_at, updated_at)
 - ✅ Fields with constraints (season_timing CHECK constraint)
 - ✅ Fields queried frequently (80%+ of queries)
 
@@ -411,21 +408,16 @@ metadata: {
    - Derived from: garden_skills + cooking_skills presence
    - Database: `activity_type TEXT[]`
 
-8. **lesson_format** (TEXT single-select - NOTE: Not an array!)
-   - Values: standalone, multi-session, double-period, single-period, co-taught, remote-virtual, mobile-education
-   - Database: `lesson_format TEXT` (singular)
-   - UI: Dropdown (single-select), not checkbox list
-
-9. **academic_integration** (TEXT[] multi-select)
+8. **academic_integration** (TEXT[] multi-select)
    - Values: Math, Science, Literacy/ELA, Social Studies, Health, Arts
    - Database: `academic_integration TEXT[]`
 
-10. **social_emotional_learning** (TEXT[] multi-select)
+9. **social_emotional_learning** (TEXT[] multi-select)
     - Values: 5 SEL competencies
     - Relationship skills, Self-awareness, Responsible decision-making, Self-management, Social awareness
     - Database: `social_emotional_learning TEXT[]`
 
-11. **cooking_methods** (TEXT[] multi-select)
+10. **cooking_methods** (TEXT[] multi-select)
     - Values: basic-prep, stovetop, oven
     - Note: Consolidated from "no-cook" + "Basic prep only" → just "basic-prep" (migration 20250204)
     - Database: `cooking_methods TEXT[]`
@@ -461,7 +453,7 @@ grade_levels TEXT[] NOT NULL DEFAULT '{}'  -- Performance, type safety
 ```typescript
 interface SearchFilters {
   gradeLevels: string[];      // Multi-select → array
-  lessonFormat: string;       // Single-select → string
+  cookingMethods: string[];   // Multi-select → array
   // ... additional filters
 }
 ```
@@ -836,7 +828,6 @@ CREATE FUNCTION search_lessons(
   filter_cultures TEXT[] DEFAULT NULL,
   filter_location TEXT[] DEFAULT NULL,
   filter_activity_type TEXT[] DEFAULT NULL,
-  filter_lesson_format TEXT DEFAULT NULL,
   filter_academic TEXT[] DEFAULT NULL,
   filter_sel TEXT[] DEFAULT NULL,
   filter_cooking_method TEXT DEFAULT NULL,
@@ -1186,12 +1177,6 @@ CREATE INDEX idx_lessons_main_ingredients ON lessons USING GIN (main_ingredients
 CREATE INDEX idx_lessons_tags ON lessons USING GIN (tags);
 ```
 
-**Single-select field**:
-```sql
-CREATE INDEX idx_lessons_lesson_format ON lessons USING BTREE (lesson_format);
--- BTree for single values (not GIN for arrays)
-```
-
 **Why GIN for arrays?**
 - Supports `&&` operator (array overlap): `grade_levels && ['5','6']`
 - Faster than sequential scan for array containment
@@ -1472,7 +1457,10 @@ test('filters should be properly configured', () => {
 
 ---
 
-### 9.4 Page Components (18 total)
+### 9.4 Page Components
+
+_(Inventory drifts as pages are added/removed — run `ls src/pages/*.tsx` for the
+authoritative current list; see also `src/pages/CLAUDE.md`.)_
 
 #### Public Pages (2)
 - **SearchPage.tsx** - Main search interface (no auth required)
@@ -1486,16 +1474,17 @@ test('filters should be properly configured', () => {
 - **ReviewDashboard.tsx** - List of submissions awaiting review
 - **ReviewDetail.tsx** - Individual submission review + metadata tagging
 
-#### Admin Pages (9)
+#### Admin Pages (5)
 - **AdminDashboard.tsx** - Admin hub (links to all admin features)
 - **AdminUsers.tsx** - User management list
 - **AdminUserDetail.tsx** - Edit user profile + permissions
 - **AdminInviteUser.tsx** - Create invitation form
 - **AdminInvitations.tsx** - Pending invitations list
-- **AdminAnalytics.tsx** - Usage metrics + charts
-- **AdminDuplicates.tsx** - Duplicate groups list
-- **AdminDuplicateDetailV3.tsx** - Side-by-side duplicate resolution
-- **VerifySetup.tsx** - Temporary testing page (remove in production)
+
+_(AdminAnalytics was retired in the frontend-polish phase (owner decision D3);
+AdminDuplicates / AdminDuplicateDetailV3 were removed in T4b (D10) — duplicate
+handling now lives in the reviewer flow on ReviewDetail. VerifySetup was a
+temporary testing page, also removed. None of these files exist.)_
 
 #### Auth Flow (2)
 - **ResetPassword.tsx** - Password reset flow
@@ -1560,7 +1549,6 @@ DROP INDEX idx_lessons_seasons;     -- Replaced by idx_lessons_season_timing
 DROP INDEX idx_lessons_cooking;     -- Replaced by idx_lessons_cooking_methods
 DROP INDEX idx_lessons_location;    -- Replaced by idx_lessons_location_requirements
 DROP INDEX idx_lessons_activity_type;  -- On metadata path (keep the array column index)
-DROP INDEX idx_lessons_format;      -- On metadata path (keep idx_lessons_lesson_format)
 ```
 
 **Boolean column indexes** (unused):
@@ -1845,7 +1833,6 @@ SET metadata = metadata - 'gradeLevel'
                          - 'culturalHeritage'
                          - 'locationRequirements'
                          - 'activityType'
-                         - 'lessonFormat'
                          - 'academicIntegration'  -- Keep .concepts nested, remove .selected
                          - 'socialEmotionalLearning'
                          - 'cookingMethods';

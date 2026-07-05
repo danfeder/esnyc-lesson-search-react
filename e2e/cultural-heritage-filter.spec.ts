@@ -67,16 +67,18 @@ async function openHeritageSection(page: Page): Promise<Locator> {
  * filter rows that share the .int-check class.
  *
  * NOTE: the visible, clickable surface IS the <label> — the underlying
- * <input type="checkbox"> is `display:none` (internal.css: `.int-check input`),
- * with a styled `.int-check-box` span as the visual control. So interactions
- * click the LABEL; checked-state is read off the (hidden) input via
+ * <input type="checkbox"> is visually hidden with the sr-only clip pattern
+ * (internal.css: `.int-check input` — position:absolute + 1px clip, NOT
+ * display:none, so it stays focusable and in the accessibility tree), with a
+ * styled `.int-check-box` span as the visual control. So interactions click
+ * the LABEL; checked-state is read off the (hidden) input via
  * toBeChecked() (a property read that does not require visibility).
  */
 function heritageNode(page: Page, label: string): Locator {
   return page.locator('label.int-check').filter({ has: page.getByText(label, { exact: true }) });
 }
 
-/** The (display:none) checkbox inside a heritage node label — for state reads. */
+/** The (sr-only clipped) checkbox inside a heritage node label — for state reads. */
 function heritageCheckbox(page: Page, label: string): Locator {
   return heritageNode(page, label).locator('input[type="checkbox"]');
 }
@@ -146,7 +148,7 @@ test.describe('Cultural Heritage filter — nested rebuild (PR C1)', () => {
   test('renders the nested tree across tiers incl. the newly-added groups', async ({ page }) => {
     await openHeritageSection(page);
 
-    // Each node renders as a visible <label> row carrying a (display:none)
+    // Each node renders as a visible <label> row carrying an sr-only-clipped
     // checkbox. We assert the label is visible AND its checkbox is attached
     // (the input is hidden by design, so visibility is asserted on the label).
 
