@@ -81,7 +81,6 @@ export const initialFilters: SearchFilters = {
 
 const initialViewState: ViewState = {
   sortBy: 'relevance',
-  currentPage: 1,
   view: 'list',
   density: 'comfy',
 };
@@ -98,7 +97,6 @@ export const useSearchStore = create<SearchState>()(
         setFilters: (newFilters) =>
           set((state) => ({
             filters: { ...state.filters, ...newFilters },
-            viewState: { ...state.viewState, currentPage: 1 }, // Reset to first page
           })),
 
         clearFilters: () =>
@@ -117,9 +115,8 @@ export const useSearchStore = create<SearchState>()(
             // D-E: clear every facet filter but KEEP the typed query so the
             // Filters-panel "Clear all" doesn't wipe the user's search text.
             filters: { ...initialFilters, query: state.filters.query },
-            // Keep sortBy/view/density untouched; just reset the page like any
-            // other filter change (src/stores/CLAUDE.md reset rule).
-            viewState: { ...state.viewState, currentPage: 1 },
+            // sortBy/view/density untouched; pagination resets on its own via
+            // the React Query key (useLessonSearch), not a store field.
           })),
 
         setViewState: (newViewState) =>
@@ -131,8 +128,9 @@ export const useSearchStore = create<SearchState>()(
           set((state) => ({
             // FULL replace — fields absent from the URL reset to empty.
             filters: { ...initialFilters, ...urlFilters },
-            // filters + sort + page in ONE write (one render).
-            viewState: { ...state.viewState, sortBy, currentPage: 1 },
+            // filters + sort in ONE write (one render). Pagination restarts via
+            // the React Query key, not a store field.
+            viewState: { ...state.viewState, sortBy },
           })),
 
         // Filter helpers
@@ -145,7 +143,6 @@ export const useSearchStore = create<SearchState>()(
                   ...state.filters,
                   [key]: [...currentValues, value],
                 },
-                viewState: { ...state.viewState, currentPage: 1 },
               };
             }
             return state;
@@ -155,13 +152,15 @@ export const useSearchStore = create<SearchState>()(
         removeFilter: (key, value) => {
           set((state) => {
             const currentValues = state.filters[key] as string[];
-            if (Array.isArray(currentValues)) {
+            // Mirror addFilter's no-op guard: only rebuild filters when the value
+            // is actually present, so removing an absent value doesn't churn a
+            // new object/render.
+            if (Array.isArray(currentValues) && currentValues.includes(value)) {
               return {
                 filters: {
                   ...state.filters,
                   [key]: currentValues.filter((v) => v !== value),
                 },
-                viewState: { ...state.viewState, currentPage: 1 },
               };
             }
             return state;
@@ -180,7 +179,6 @@ export const useSearchStore = create<SearchState>()(
                     ? currentValues.filter((v) => v !== value)
                     : [...currentValues, value],
                 },
-                viewState: { ...state.viewState, currentPage: 1 },
               };
             }
             return state;

@@ -632,7 +632,7 @@ describe('SearchPage permalinks (D2)', () => {
 
     // Change sort WHILE open (sort is serialized into the URL like a facet).
     act(() => {
-      useSearchStore.getState().setViewState({ sortBy: 'title', currentPage: 1 });
+      useSearchStore.getState().setViewState({ sortBy: 'title' });
     });
     await waitFor(() => {
       expect(screen.getByTestId('probe-search').textContent).toContain('sort=title');

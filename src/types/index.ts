@@ -63,7 +63,10 @@ export type ResultDensity = 'comfy' | 'compact' | 'ultra';
 
 export interface ViewState {
   sortBy: 'title' | 'modified' | 'relevance';
-  currentPage: number;
+  // NOTE: pagination is NOT stored here — it lives in React Query as the
+  // infinite-query `pageParam` (see useLessonSearch). A filter/sort change
+  // rebuilds the query key, which restarts the query at page 0 for free, so
+  // the store never needs a currentPage field (FP4 Brief 4 item 4).
   view: ResultView;
   density: ResultDensity;
 }

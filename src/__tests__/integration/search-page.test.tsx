@@ -481,33 +481,12 @@ describe('SearchPage Integration', () => {
       });
     });
 
-    it('sort change resets the result page to 1 (C58)', async () => {
-      const testLesson = createTestLesson();
-      rpcMock.mockResolvedValue({ data: [testLesson], error: null });
-
-      renderWithProviders(<SearchPage />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('combobox', { name: /sort results/i })).toBeInTheDocument();
-      });
-
-      // Simulate being deeper in the paginated list before re-sorting.
-      const store = useSearchStore.getState();
-      store.setViewState({ currentPage: 4 });
-      expect(useSearchStore.getState().viewState.currentPage).toBe(4);
-
-      const user = userEvent.setup();
-      const sortDropdown = screen.getByRole('combobox', { name: /sort results/i });
-      await user.selectOptions(sortDropdown, 'title');
-
-      await waitFor(() => {
-        const currentState = useSearchStore.getState();
-        expect(currentState.viewState.sortBy).toBe('title');
-        // Changing the sort must reset paging to the first page (mirrors the
-        // filter-change reset rule in src/stores/CLAUDE.md).
-        expect(currentState.viewState.currentPage).toBe(1);
-      });
-    });
+    // NOTE: the former "sort change resets the result page to 1 (C58)" test was
+    // removed with viewState.currentPage (FP4 Brief 4 item 4). Sort-triggered
+    // page reset is now structural: `sortBy` is part of the React Query key
+    // (useLessonSearch), so a sort change restarts the infinite query at page 0.
+    // That query-key threading is exercised by the "sort change reaches the RPC"
+    // test directly above.
   });
 
   describe('Toolbar', () => {

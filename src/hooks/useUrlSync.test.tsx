@@ -135,12 +135,11 @@ describe('useUrlSync', () => {
     expect(filters.gradeLevels).toContain('4');
   });
 
-  it('hydrates sortBy from ?sort=title with currentPage reset to 1', () => {
+  it('hydrates sortBy from ?sort=title', () => {
     renderWithRouter('/?sort=title');
 
     const { viewState } = useSearchStore.getState();
     expect(viewState.sortBy).toBe('title');
-    expect(viewState.currentPage).toBe(1);
   });
 
   it('writes ?sort=title to the URL when sortBy changes', () => {
