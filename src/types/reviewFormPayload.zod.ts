@@ -8,10 +8,11 @@
  *   - `location` key is a single-select string (canonical: `locationRequirements: string[]`)
  *   - `themes` / `season` keys (canonical: `thematicCategories` / `seasonTiming`)
  *
- * The translation between this schema and the canonical schema is performed
- * in two places that must stay in sync:
- *   - SQL: the `complete_review_atomic` RPC (grep migrations for the current definition)
- *   - TS: `src/utils/{reviewToLesson,lessonToReview}Mapper.ts`
+ * The canonical-side translation lives in the `complete_review_atomic` RPC
+ * (grep migrations for the current definition). On the TS read path,
+ * `src/utils/lessonToReviewMapper.ts` maps canonical metadata back into this
+ * review-form shape (the write-path TS mapper was removed as dead code —
+ * complete-review does the review→lesson translation in SQL).
  *
  * Closed-enum scope mirrors `lessonMetadata.zod.ts`: activityType (array),
  * season (array), culturalResponsivenessFeatures (array), and — closed in

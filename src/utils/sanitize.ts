@@ -23,16 +23,3 @@ export function sanitizeContent(content: string | null | undefined): string {
     KEEP_CONTENT: true, // Keep text content from removed tags
   });
 }
-
-/**
- * Sanitize HTML content while preserving safe formatting tags.
- * Use this for rich text content where basic formatting is desired.
- */
-export function sanitizeHtml(content: string | null | undefined): string {
-  if (!content) return '';
-
-  return DOMPurify.sanitize(content, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'ol', 'li'],
-    ALLOWED_ATTR: [],
-  });
-}

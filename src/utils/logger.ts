@@ -32,8 +32,10 @@ const SENSITIVE_KEYS = [
  * Sanitize sensitive data from log arguments
  */
 function sanitizeArgs(args: unknown[]): unknown[] {
-  return args.map((arg) => {
+  return args.map((arg, index) => {
     if (typeof arg === 'string') {
+      // Value-shaped secrets (JWTs, API keys) are redacted in EVERY position,
+      // including arg[0] — a raw token is never a legitimate log label.
       // JWT tokens (more specific pattern)
       if (arg.match(/^ey[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)) {
         return '[REDACTED JWT]';
@@ -42,10 +44,20 @@ function sanitizeArgs(args: unknown[]): unknown[] {
       if (arg.match(/^(sk|pk|pat|ghp|gho|ghs|ghu)_[A-Za-z0-9]{20,}$/)) {
         return '[REDACTED API KEY]';
       }
-      // Check for sensitive keywords
-      const lowerArg = arg.toLowerCase();
-      if (SENSITIVE_KEYS.some((key) => lowerArg.includes(key))) {
-        return '[REDACTED]';
+      // SENSITIVE_KEYS substring redaction applies to VALUE args only (index > 0),
+      // never the label. By repo convention arg[0] is the human-written label
+      // (e.g. logger.error('Error checking auth state:', err)); whole-string
+      // redacting it on a substring hit like "auth"/"session"/"key" turned real
+      // labels into "[REDACTED]" in the dev console and PROD Sentry. Later args
+      // are interpolated values, where a SENSITIVE_KEYS hit is a genuine secret.
+      // Residual (accepted): a real secret interpolated INTO the label string
+      // itself — and not JWT/API-key-shaped — would now survive. Pass secret
+      // values as a later argument, never baked inside arg[0].
+      if (index > 0) {
+        const lowerArg = arg.toLowerCase();
+        if (SENSITIVE_KEYS.some((key) => lowerArg.includes(key))) {
+          return '[REDACTED]';
+        }
       }
     }
 

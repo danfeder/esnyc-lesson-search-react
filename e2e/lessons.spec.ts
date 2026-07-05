@@ -41,8 +41,13 @@ test.describe('Lesson Display', () => {
   });
 
   test('lesson content includes activity types', async ({ page }) => {
-    // Look for activity type indicators (cooking, garden, etc.)
-    const activityIndicators = page.locator('text=/cooking|garden|nutrition/i');
+    // This is about the lesson CARDS carrying activity types, so scope to the
+    // results rows (each `.int-list-row` renders an activity badge + title +
+    // summary). Scoping avoids matching the now-collapsed Activity Type filter
+    // section's hidden option labels in the sidebar (FP4 Brief 4 item 7a).
+    const activityIndicators = page
+      .locator('.int-list-row')
+      .filter({ hasText: /cooking|garden|nutrition/i });
     await expect(activityIndicators.first()).toBeVisible({ timeout: 10000 });
   });
 });

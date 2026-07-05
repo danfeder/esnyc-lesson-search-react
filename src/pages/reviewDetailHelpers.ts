@@ -7,6 +7,7 @@ import {
   SOCIAL_EMOTIONAL_LEARNING_VALUES,
   OBSERVANCES_HOLIDAYS_VALUES,
   COOKING_SKILLS_VALUES,
+  COOKING_METHODS_VALUES,
   GARDEN_SKILLS_VALUES,
   MAIN_INGREDIENTS_VALUES,
   INGREDIENT_PARENT_MAP,
@@ -298,10 +299,16 @@ function parseHeatingElement(flat: string): string[] {
   const hasStove = /\bstove\b/.test(seg);
   const hasOven = /\boven\b/.test(seg);
   if (hasNone && hasStove && hasOven) return []; // untouched stock list
+  // Map the heating-element words onto the canonical cooking-method vocab rather
+  // than restating the kebab strings (PR #608 nit): none→basic-prep,
+  // stove→stovetop, oven→oven. Positional against the order-locked
+  // COOKING_METHODS_VALUES = ['basic-prep', 'stovetop', 'oven'], so a future
+  // rename in the vocab flows through here automatically.
+  const [BASIC_PREP, STOVETOP, OVEN] = COOKING_METHODS_VALUES;
   const out: string[] = [];
-  if (hasNone) out.push('basic-prep');
-  if (hasStove) out.push('stovetop');
-  if (hasOven) out.push('oven');
+  if (hasNone) out.push(BASIC_PREP);
+  if (hasStove) out.push(STOVETOP);
+  if (hasOven) out.push(OVEN);
   return out;
 }
 

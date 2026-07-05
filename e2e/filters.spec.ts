@@ -55,7 +55,18 @@ test.describe('Filter Functionality', () => {
   });
 
   test('activity type content is available', async ({ page }) => {
-    // Look for activity type related content (cooking, garden, etc.)
+    // The Activity Type filter section starts COLLAPSED now (only Grade Level is
+    // open by default — FP4 Brief 4 item 7a), so its option labels are hidden
+    // until the section is expanded. Expand it first (mirrors the
+    // openHeritageSection pattern in cultural-heritage-filter.spec.ts).
+    const header = page.getByRole('button', { name: /^Activity Type(\s+\d+)?$/ });
+    await expect(header).toBeVisible({ timeout: 15000 });
+    if ((await header.getAttribute('aria-expanded')) !== 'true') {
+      await header.click();
+    }
+    await expect(header).toHaveAttribute('aria-expanded', 'true');
+
+    // Now the section's option labels (Cooking / Garden / Academic) are visible.
     const activityTypes = page.locator('text=/cooking|garden|academic/i');
     await expect(activityTypes.first()).toBeVisible({ timeout: 10000 });
   });

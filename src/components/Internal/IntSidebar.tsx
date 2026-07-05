@@ -67,6 +67,11 @@ export function IntSidebar({ counts }: IntSidebarProps) {
         )}
       </div>
 
+      {/* D-A: quiet explainer for what the badge numbers mean. FP4 B4 item 7b
+          moved it to the top (directly under the Filters heading) so expanded
+          sections can't push it below the fold. */}
+      <p className="int-sidebar-hint">Numbers show how many lessons carry each tag.</p>
+
       <IntFilterSection label="Grade Level" count={filters.gradeLevels.length} defaultOpen>
         <div className="int-grades">
           {gradeOptions.map((grade) => {
@@ -100,7 +105,10 @@ export function IntSidebar({ counts }: IntSidebarProps) {
         const cfg = FILTER_CONFIGS[key];
         if (!cfg) return null;
         const selected = (filters[key] ?? []) as string[];
-        const defaultOpen = key === 'activityType' || key === 'seasonTiming';
+        // FP4 B4 item 7a: only Grade Level starts expanded (its defaultOpen is
+        // hardcoded above). Every checkbox facet — Activity Type and Season &
+        // Timing included — now starts COLLAPSED, so expanded sections can't push
+        // the rest of the sidebar below the fold.
         // FP-18: Location renders the search-only friendly options (Indoor-friendly /
         // Outdoor-friendly, no Both); every other facet renders its config options.
         const options = key === 'location' ? SEARCH_LOCATION_OPTIONS : cfg.options;
@@ -108,7 +116,7 @@ export function IntSidebar({ counts }: IntSidebarProps) {
           // Main Ingredients is bespoke (group→specific tree) and slots in at #3,
           // right after Activity Type — hence the map is broken by this Fragment.
           <Fragment key={key}>
-            <IntFilterSection label={cfg.label} count={selected.length} defaultOpen={defaultOpen}>
+            <IntFilterSection label={cfg.label} count={selected.length}>
               {options.map((opt) => {
                 const checked = selected.includes(opt.value);
                 // undefined while loading (blank badge, no dim); a number once loaded.
@@ -138,9 +146,6 @@ export function IntSidebar({ counts }: IntSidebarProps) {
       })}
 
       <IntCulturalHeritageSection counts={counts} />
-
-      {/* D-A: quiet explainer for what the badge numbers mean. */}
-      <p className="int-sidebar-hint">Numbers show how many lessons carry each tag.</p>
     </aside>
   );
 }

@@ -308,6 +308,15 @@ describe('parseTemplateTags (FP5 Brief 2 mechanical template prefill)', () => {
       'Tags–Pick a tag from each category: | Heating element: oven',
     ].join('\n');
     expect(parseTemplateTags(ovenCase)).toEqual({ cookingMethods: ['oven'] });
+
+    // The title's "stray value is ignored" claim, now actually exercised
+    // (PR #608 nit): a heating word outside none/stove/oven maps to nothing,
+    // so no cookingMethods key is emitted.
+    const strayCase = [
+      '[Table]',
+      'Tags–Pick a tag from each category: | Heating element: microwave',
+    ].join('\n');
+    expect(parseTemplateTags(strayCase)).toEqual({});
   });
 
   it('only EXACT closed-vocab tokens match — a substring or off-vocab phrase never prefills', () => {

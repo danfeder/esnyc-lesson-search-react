@@ -159,10 +159,13 @@
   text-decoration: underline;
   padding: 2px 0;
 }
-/* FP-01b (D-A): a quiet one-line explainer for the badge numbers, at the very
-   bottom of the sidebar so it never competes with the filters themselves. */
+/* FP-01b (D-A): a quiet one-line explainer for the badge numbers. FP4 B4
+   item 7b moved it to the TOP, directly under the .int-sidebar-head heading,
+   so expanded sections can't push it below the fold. Spacing retuned for the
+   top slot: sits just under the head (which already carries an 8px bottom pad)
+   with 12px of breathing room before the first filter section. */
 .int-sidebar-hint {
-  padding: 12px 16px 4px;
+  padding: 0 16px 12px;
   font-size: 11px;
   line-height: 1.4;
   color: var(--color-esy-ink-50);

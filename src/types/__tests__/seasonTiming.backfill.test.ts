@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { lessonMetadataSchema } from '@/types/lessonMetadata.zod';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
-import { reviewToLesson } from '@/utils/reviewToLessonMapper';
 
 /**
  * C83 contract-lock (Wave 4): the review season value MUST be a `z.array(SeasonTimingEnum)`.
@@ -53,19 +52,11 @@ describe('C83 season-normalization contract', () => {
     });
   });
 
-  describe('reviewToLesson rename path (season → seasonTiming)', () => {
-    it('renames a season array to seasonTiming, preserving the array', () => {
-      expect(reviewToLesson({ season: ['Winter'] }).seasonTiming).toEqual(['Winter']);
-    });
-
-    // The 3 C83 fallback reviews are normalized to `season: []`. The mapper's
-    // `length > 0` guard (reviewToLessonMapper.ts) drops the key for an empty array,
-    // so reviewToLesson({ season: [] }) emits NO seasonTiming. This is the intended
-    // partial-updater behaviour and harmless for those 3 rows (their published lesson
-    // already has seasonTiming = []); pinned here so a future reader doesn't have to
-    // trace the mapper to learn what `[]` does.
-    it('emits no seasonTiming for an empty season array (partial-updater behaviour)', () => {
-      expect(reviewToLesson({ season: [] }).seasonTiming).toBeUndefined();
-    });
-  });
+  // NOTE: the former `reviewToLesson rename path (season → seasonTiming)` block
+  // was removed with the dead `reviewToLessonMapper` (FP4 Brief 4 item 2). Those
+  // two assertions only exercised the TS write-path mapper, which had no
+  // production consumer — the real season→seasonTiming translation happens in
+  // the SQL `complete_review_atomic` RPC. The season-SHAPE contract this file
+  // exists to pin (array required, bare string rejected) stays fully covered by
+  // the schema describe blocks above.
 });

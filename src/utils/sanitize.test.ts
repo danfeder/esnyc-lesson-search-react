@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeContent, sanitizeHtml } from './sanitize';
+import { sanitizeContent } from './sanitize';
 
 describe('sanitizeContent', () => {
   it('returns empty string for null/undefined', () => {
@@ -54,34 +54,5 @@ describe('sanitizeContent', () => {
     );
     expect(sanitizeContent('Tom &amp; Jerry')).toBe('Tom &amp; Jerry');
     expect(sanitizeContent('&copy; 2024')).toBe('&copy; 2024');
-  });
-});
-
-describe('sanitizeHtml', () => {
-  it('returns empty string for null/undefined', () => {
-    expect(sanitizeHtml(null)).toBe('');
-    expect(sanitizeHtml(undefined)).toBe('');
-  });
-
-  it('preserves safe formatting tags', () => {
-    expect(sanitizeHtml('<b>Bold</b>')).toBe('<b>Bold</b>');
-    expect(sanitizeHtml('<i>Italic</i>')).toBe('<i>Italic</i>');
-    expect(sanitizeHtml('<em>Emphasis</em>')).toBe('<em>Emphasis</em>');
-    expect(sanitizeHtml('<strong>Strong</strong>')).toBe('<strong>Strong</strong>');
-  });
-
-  it('preserves list tags', () => {
-    expect(sanitizeHtml('<ul><li>Item</li></ul>')).toBe('<ul><li>Item</li></ul>');
-    expect(sanitizeHtml('<ol><li>Item</li></ol>')).toBe('<ol><li>Item</li></ol>');
-  });
-
-  it('removes dangerous tags but keeps content', () => {
-    expect(sanitizeHtml('<script>alert(1)</script>')).toBe('');
-    expect(sanitizeHtml('<div>Text</div>')).toBe('Text');
-  });
-
-  it('removes attributes from allowed tags', () => {
-    expect(sanitizeHtml('<b onclick="evil()">Text</b>')).toBe('<b>Text</b>');
-    expect(sanitizeHtml('<p style="color:red">Text</p>')).toBe('<p>Text</p>');
   });
 });

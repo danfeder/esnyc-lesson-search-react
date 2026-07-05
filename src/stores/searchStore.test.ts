@@ -27,7 +27,6 @@ describe('searchStore', () => {
       const { result } = renderHook(() => useSearchStore());
 
       expect(result.current.viewState.sortBy).toBe('relevance');
-      expect(result.current.viewState.currentPage).toBe(1);
       expect(result.current.viewState.view).toBe('list');
       expect(result.current.viewState.density).toBe('comfy');
     });
@@ -98,7 +97,7 @@ describe('searchStore', () => {
           gradeLevels: ['3rd', '4th'],
           seasonTiming: ['Fall'],
         });
-        result.current.setViewState({ sortBy: 'title', currentPage: 5 });
+        result.current.setViewState({ sortBy: 'title' });
       });
 
       act(() => {
@@ -111,36 +110,14 @@ describe('searchStore', () => {
       // ...but the typed query and the sort choice SURVIVE (unlike clearFilters).
       expect(result.current.filters.query).toBe('compost');
       expect(result.current.viewState.sortBy).toBe('title');
-      // Page reset like any filter change.
-      expect(result.current.viewState.currentPage).toBe(1);
     });
 
-    it('should reset page when filters change', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setViewState({ currentPage: 5 });
-      });
-
-      act(() => {
-        result.current.setFilters({ query: 'tomato' });
-      });
-
-      expect(result.current.viewState.currentPage).toBe(1);
-    });
-
-    it('should clear paging when filters change', () => {
-      const { result } = renderHook(() => useSearchStore());
-      act(() => {
-        result.current.setViewState({ currentPage: 3 });
-      });
-
-      act(() => {
-        result.current.setFilters({ query: 'new search' });
-      });
-
-      expect(result.current.viewState.currentPage).toBe(1);
-    });
+    // NOTE: the former "should reset page when filters change" / "should clear
+    // paging when filters change" / "should reset page when using filter
+    // helpers" tests were removed with viewState.currentPage (FP4 Brief 4
+    // item 4). Pagination now lives in React Query as the infinite-query
+    // pageParam; a filter change rebuilds the query key, restarting the query
+    // at page 0 without any store-side reset to assert.
   });
 
   describe('Filter Helpers', () => {
@@ -221,18 +198,21 @@ describe('searchStore', () => {
       expect(result.current.filters.gradeLevels).not.toContain('3rd');
     });
 
-    it('should reset page when using filter helpers', () => {
+    it('removeFilter is a no-op when the value is absent (mirrors addFilter guard)', () => {
       const { result } = renderHook(() => useSearchStore());
 
       act(() => {
-        result.current.setViewState({ currentPage: 3 });
+        result.current.setFilters({ gradeLevels: ['3rd'] });
       });
 
+      // Removing a value that isn't present returns the SAME filters reference
+      // (no churn), and leaves the existing selection intact.
+      const before = result.current.filters;
       act(() => {
-        result.current.addFilter('gradeLevels', '3rd');
+        result.current.removeFilter('gradeLevels', '4th');
       });
-
-      expect(result.current.viewState.currentPage).toBe(1);
+      expect(result.current.filters).toBe(before);
+      expect(result.current.filters.gradeLevels).toEqual(['3rd']);
     });
   });
 
@@ -266,7 +246,6 @@ describe('searchStore', () => {
 
       expect(result.current.viewState.sortBy).toBe('modified');
       expect(result.current.viewState.density).toBe('compact');
-      expect(result.current.viewState.currentPage).toBe(1);
     });
 
     it('should reset view state when clearing filters', () => {
@@ -275,7 +254,6 @@ describe('searchStore', () => {
       act(() => {
         result.current.setViewState({
           sortBy: 'modified',
-          currentPage: 5,
         });
       });
 
@@ -284,7 +262,6 @@ describe('searchStore', () => {
       });
 
       expect(result.current.viewState.sortBy).toBe('relevance');
-      expect(result.current.viewState.currentPage).toBe(1);
     });
 
     it('should update view and density', () => {
@@ -296,28 +273,6 @@ describe('searchStore', () => {
 
       expect(result.current.viewState.view).toBe('grid');
       expect(result.current.viewState.density).toBe('compact');
-    });
-
-    it('should not reset currentPage when changing view or density', () => {
-      const { result } = renderHook(() => useSearchStore());
-
-      act(() => {
-        result.current.setViewState({ currentPage: 4 });
-      });
-
-      act(() => {
-        result.current.setViewState({ view: 'split' });
-      });
-
-      expect(result.current.viewState.currentPage).toBe(4);
-      expect(result.current.viewState.view).toBe('split');
-
-      act(() => {
-        result.current.setViewState({ density: 'ultra' });
-      });
-
-      expect(result.current.viewState.currentPage).toBe(4);
-      expect(result.current.viewState.density).toBe('ultra');
     });
 
     it('should preserve view and density across clearFilters', () => {
@@ -338,7 +293,6 @@ describe('searchStore', () => {
       expect(result.current.viewState.view).toBe('grid');
       expect(result.current.viewState.density).toBe('compact');
       // But non-layout view state still resets
-      expect(result.current.viewState.currentPage).toBe(1);
       expect(result.current.viewState.sortBy).toBe('relevance');
     });
   });
@@ -396,13 +350,13 @@ describe('searchStore', () => {
   });
 
   describe('hydrateUrlState (W1c URL → store)', () => {
-    it('fully replaces filters, sets sort, and resets currentPage in one write', () => {
+    it('fully replaces filters and sets sort in one write', () => {
       const { result } = renderHook(() => useSearchStore());
 
-      // Seed a stale filter + a non-relevance sort + a non-1 page.
+      // Seed a stale filter + a non-relevance sort.
       act(() => {
         result.current.setFilters({ cookingMethods: ['stovetop'] });
-        result.current.setViewState({ sortBy: 'modified', currentPage: 5 });
+        result.current.setViewState({ sortBy: 'modified' });
       });
 
       expect(result.current.filters.cookingMethods).toEqual(['stovetop']);
@@ -418,9 +372,8 @@ describe('searchStore', () => {
       // Every other filter resets to the empty default too.
       expect(result.current.filters.query).toBe('');
       expect(result.current.filters.seasonTiming).toEqual([]);
-      // Sort + page applied in the same write.
+      // Sort applied in the same write.
       expect(result.current.viewState.sortBy).toBe('title');
-      expect(result.current.viewState.currentPage).toBe(1);
     });
 
     it('clears all filters when hydrated with an empty partial', () => {
@@ -437,7 +390,6 @@ describe('searchStore', () => {
       expect(result.current.filters.query).toBe('');
       expect(result.current.filters.gradeLevels).toEqual([]);
       expect(result.current.viewState.sortBy).toBe('relevance');
-      expect(result.current.viewState.currentPage).toBe(1);
     });
 
     it('preserves layout preferences (view + density) across hydration', () => {
