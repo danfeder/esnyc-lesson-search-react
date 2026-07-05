@@ -126,9 +126,29 @@ describe('IntSidebar', () => {
     expect(pill3K!.querySelector('.int-grade-pill-count')!.textContent).toBe('0');
   });
 
-  it('renders the badge explainer line at the bottom of the sidebar', () => {
+  it('renders the badge explainer line above the filter sections (item 7b)', () => {
     render(<IntSidebar counts={makeCounts()} />);
-    expect(screen.getByText('Numbers show how many lessons carry each tag.')).toBeInTheDocument();
+    const hint = screen.getByText('Numbers show how many lessons carry each tag.');
+    expect(hint).toBeInTheDocument();
+    // Top placement: the hint precedes the first filter section in DOM order so
+    // expanded sections can't push it below the fold.
+    const firstFilter = document.querySelector('.int-filter');
+    expect(firstFilter).not.toBeNull();
+    expect(
+      hint.compareDocumentPosition(firstFilter!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('item 7a: only Grade Level starts expanded; other facets start collapsed', () => {
+    render(<IntSidebar counts={makeCounts()} />);
+    const heads = Array.from(document.querySelectorAll('.int-filter .int-filter-head'));
+    const headByLabel = (label: string) => heads.find((h) => (h.textContent ?? '').includes(label));
+
+    expect(headByLabel('Grade Level')!.getAttribute('aria-expanded')).toBe('true');
+    // Activity Type and Season & Timing used to start expanded (the old trio);
+    // now every facet except Grade Level starts collapsed.
+    expect(headByLabel('Activity Type')!.getAttribute('aria-expanded')).toBe('false');
+    expect(headByLabel('Season')!.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('"Clear all" clears facet selections but keeps the typed query (D-E)', () => {

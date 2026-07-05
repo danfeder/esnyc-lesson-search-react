@@ -91,7 +91,8 @@ describe('logger', () => {
     it('redacts JWT and API-key shaped strings in ANY position, including arg[0]', () => {
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NSJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJVadQssw5c';
+      const jwt =
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NSJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJVadQssw5c';
       const apiKey = 'sk_abcdefghij0123456789ABCD';
 
       // Position 0 (would-be label) still redacts value-shaped secrets.
