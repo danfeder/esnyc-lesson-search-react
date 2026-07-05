@@ -63,6 +63,12 @@ function RouterProbe() {
       <button type="button" data-testid="probe-history-back" onClick={() => navigate(-1)}>
         probe-history-back
       </button>
+      {/* Forward nav distinguishes a POP (close-untouched: navigate(-1) leaves
+          the lesson entry in the forward stack) from a REPLACE (close-after-
+          change: the lesson entry is overwritten, nothing forward). */}
+      <button type="button" data-testid="probe-history-forward" onClick={() => navigate(1)}>
+        probe-history-forward
+      </button>
     </>
   );
 }
@@ -463,5 +469,269 @@ describe('SearchPage permalinks (D2)', () => {
     // corpus fetch, so it isn't a clean "no fetch" proxy anymore).
     expect(maybeSingleMock).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /remove food systems/i })).toBeInTheDocument();
+  });
+
+  // C5/FP4-SP-01: close-lesson filter-revert fix. A facet/sort toggled while a
+  // lesson is open must survive close (the old navigate(-1) popped into the
+  // stale pre-open entry and silently reverted it).
+  it('open → toggle facet → close: the toggle survives and the list refetches with it (C5)', async () => {
+    const row = createTestLesson({ lesson_id: 'c5-1', title: 'C5 Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    renderSearchApp(['/']);
+    await waitFor(() => {
+      expect(screen.getByText('C5 Lesson')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('C5 Lesson'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-1');
+    });
+
+    // Toggle a facet WHILE the lesson is open (the sidebar stays interactive).
+    const rpcCallsBeforeToggle = rpcMock.mock.calls.length;
+    act(() => {
+      useSearchStore.getState().addFilter('thematicCategories', 'Food Systems');
+    });
+    // The debounced store→URL write lands the facet on the open-lesson entry...
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-search').textContent).toContain('themes=Food+Systems');
+    });
+    // ...and the list genuinely refetched under the new filter (new RPC call).
+    expect(rpcMock.mock.calls.length).toBeGreaterThan(rpcCallsBeforeToggle);
+
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+    // The toggle SURVIVED close: URL keeps the facet and the active pill is shown.
+    expect(screen.getByTestId('probe-search').textContent).toContain('themes=Food+Systems');
+    expect(screen.getByRole('button', { name: /remove food systems/i })).toBeInTheDocument();
+  });
+
+  it('open → close untouched: history is POPPED exactly as before (forward re-enters the lesson) (C5)', async () => {
+    const row = createTestLesson({ lesson_id: 'c5-pop', title: 'Pop Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    renderSearchApp(['/']);
+    await waitFor(() => {
+      expect(screen.getByText('Pop Lesson')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Pop Lesson'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-pop');
+    });
+
+    // Close WITHOUT touching anything: must pop (navigate(-1)), unchanged shape.
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+
+    // Proof it was a POP, not a replace: the lesson entry is still forward in the
+    // stack, so history-forward re-enters it. (A replace-to-list would truncate
+    // the forward entry and forward would go nowhere.)
+    fireEvent.click(screen.getByTestId('probe-history-forward'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-pop');
+    });
+  });
+
+  it('open → toggle → close → browser Back returns to the pre-open filter state (C5)', async () => {
+    const row = createTestLesson({ lesson_id: 'c5-back', title: 'Back Ctx Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    // Start from a pre-open filter context (season=summer) so we can prove Back
+    // returns to EXACTLY it, not the toggled-open state.
+    const preOpen = buildSearchParams(
+      { ...initialFilters, seasonTiming: ['Summer'] } as SearchFilters,
+      'relevance'
+    ).toString();
+    renderSearchApp([`/?${preOpen}`]);
+    await waitFor(() => {
+      expect(screen.getByText('Back Ctx Lesson')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Back Ctx Lesson'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-back');
+    });
+
+    act(() => {
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+    });
+
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+    // Live context kept on close.
+    expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+
+    // Browser Back = "undo my filter change": returns to the pre-open context,
+    // one entry below (the replace kept it there, not the toggled state).
+    fireEvent.click(screen.getByTestId('probe-history-back'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-search').textContent).not.toContain('grades=3');
+    });
+    expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    expect(screen.getByTestId('probe-search').textContent).toBe(`?${preOpen}`);
+  });
+
+  it('deep-link landing → close replaces to the list carrying LIVE (not debounce-stale) filters (C5)', async () => {
+    const row = createTestLesson({ lesson_id: 'c5-deep', title: 'Deep Ctx Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+    const landed = themesQueryString(); // ?themes=Food Systems
+
+    renderSearchApp([`/lesson/c5-deep?${landed}`]);
+    await waitFor(() => {
+      expect(drawerHeadingVisible('Deep Ctx Lesson')).toBe(true);
+    });
+
+    const user = userEvent.setup();
+    // Toggle a facet, then close IMMEDIATELY — inside the 300ms debounce the URL
+    // (location.search) is still the stale landed value, so a close that read
+    // location.search would drop the toggle. Close must build from LIVE filters.
+    act(() => {
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+    // Replaced to the list carrying the LIVE filters: both the landed theme AND
+    // the just-toggled (still-unwritten-to-URL) grade.
+    expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+    expect(screen.getByTestId('probe-search').textContent).toContain('themes=Food+Systems');
+    expect(screen.queryByRole('button', { name: /close lesson details/i })).not.toBeInTheDocument();
+  });
+
+  it('open → change sort → close: the sort change survives (C5 sort variant)', async () => {
+    const row = createTestLesson({ lesson_id: 'c5-sort', title: 'Sort Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    renderSearchApp(['/']);
+    await waitFor(() => {
+      expect(screen.getByText('Sort Lesson')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Sort Lesson'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-sort');
+    });
+
+    // Change sort WHILE open (sort is serialized into the URL like a facet).
+    act(() => {
+      useSearchStore.getState().setViewState({ sortBy: 'title', currentPage: 1 });
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-search').textContent).toContain('sort=title');
+    });
+
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+    expect(screen.getByTestId('probe-search').textContent).toContain('sort=title');
+  });
+
+  it('split click-through after a toggle: openedSearch propagates so close keeps the toggle and Back undoes it (C5)', async () => {
+    // The load-bearing invariant: on a click-through (isReplace) openedSearch is
+    // PROPAGATED from the outgoing entry, not recomputed — so it keeps pointing at
+    // the pre-open list entry even after a mid-open filter change. Recomputing it
+    // would make close's equality misfire and revert the toggle.
+    useSearchStore.getState().setViewState({ view: 'split' });
+    const rowA = createTestLesson({ lesson_id: 'ct-a', title: 'CT Lesson A', total_count: 2 });
+    const rowB = createTestLesson({ lesson_id: 'ct-b', title: 'CT Lesson B', total_count: 2 });
+    rpcMock.mockResolvedValue({ data: [rowA, rowB], error: null });
+
+    renderSearchApp(['/']); // pre-open context F0 = empty
+    await waitFor(() => {
+      expect(screen.getByText('CT Lesson A')).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('CT Lesson A'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/ct-a');
+    });
+
+    // Toggle a facet while A is open — F0 → F1, written onto the A entry.
+    act(() => {
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+    });
+
+    // Click-through to B (replace): openedSearch must stay F0 (empty), NOT F1.
+    await user.click(screen.getByText('CT Lesson B'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/ct-b');
+    });
+    expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+
+    // Close: current (F1) !== openedSearch (F0) → replace to the live list.
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+    expect(screen.getByTestId('probe-search').textContent).toContain('grades=3');
+
+    // Back = undo the filter change → the pre-open (empty) context, one below.
+    fireEvent.click(screen.getByTestId('probe-history-back'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-search').textContent).not.toContain('grades=3');
+    });
+    expect(screen.getByTestId('probe-path').textContent).toBe('/');
+  });
+
+  it('open → reorder a facet to the SAME set → close still POPS (canonical, not raw, comparison) (C5)', async () => {
+    // The "unchanged" check compares the canonical (order-insensitive) string, so
+    // a no-op reorder — remove then re-add a value, which appends and reorders the
+    // array — reads as unchanged and pops cleanly. A raw buildSearchParams compare
+    // would see "3,4" ≠ "4,3" and wrongly take the replace branch.
+    const row = createTestLesson({ lesson_id: 'c5-reorder', title: 'Reorder Lesson' });
+    rpcMock.mockResolvedValue({ data: [row], error: null });
+
+    renderSearchApp(['/?grades=3,4']); // pre-open set {3,4}
+    await waitFor(() => {
+      expect(screen.getByText('Reorder Lesson')).toBeInTheDocument();
+    });
+    expect(useSearchStore.getState().filters.gradeLevels).toEqual(['3', '4']);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Reorder Lesson'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-reorder');
+    });
+
+    // Reorder to the same set: remove '3' then re-add it → array becomes ['4','3'].
+    act(() => {
+      useSearchStore.getState().removeFilter('gradeLevels', '3');
+      useSearchStore.getState().addFilter('gradeLevels', '3');
+    });
+    expect(useSearchStore.getState().filters.gradeLevels).toEqual(['4', '3']);
+
+    await user.click(screen.getByRole('button', { name: /close lesson details/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/');
+    });
+
+    // POP, not replace: the lesson entry is still forward in the stack.
+    fireEvent.click(screen.getByTestId('probe-history-forward'));
+    await waitFor(() => {
+      expect(screen.getByTestId('probe-path').textContent).toBe('/lesson/c5-reorder');
+    });
   });
 });
