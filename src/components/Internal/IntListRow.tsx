@@ -4,7 +4,10 @@ import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import { buildCultureLabelMap, collapseHeritageToLeaves } from '@/utils/filterUtils';
 import { cn } from '@/utils/cn';
 
-type ActivityClass = 'cook' | 'grow' | 'both' | 'craft' | 'academic';
+// Prefixed with `act-` so no modifier can collide with a Tailwind utility
+// (a bare `grow` matched Tailwind's built-in `.grow { flex-grow: 1 }`, which
+// stretched the Grow badge and shoved the row's other meta labels to the edge).
+type ActivityClass = 'act-cook' | 'act-grow' | 'act-both' | 'act-craft' | 'act-academic';
 
 interface ActivityLabel {
   label: string;
@@ -24,21 +27,21 @@ export function intActivityLabel(lesson: Lesson): ActivityLabel {
     const hasGrow = types.includes('garden');
     const hasCraft = types.includes('craft');
     const hasAcademic = types.includes('academic');
-    if (hasCook && hasGrow) return { label: 'Cook + Grow', className: 'both' };
-    if (hasCook) return { label: 'Cook', className: 'cook' };
-    if (hasGrow) return { label: 'Grow', className: 'grow' };
-    if (hasCraft) return { label: 'Craft', className: 'craft' };
-    if (hasAcademic) return { label: 'Academic', className: 'academic' };
+    if (hasCook && hasGrow) return { label: 'Cook + Grow', className: 'act-both' };
+    if (hasCook) return { label: 'Cook', className: 'act-cook' };
+    if (hasGrow) return { label: 'Grow', className: 'act-grow' };
+    if (hasCraft) return { label: 'Craft', className: 'act-craft' };
+    if (hasAcademic) return { label: 'Academic', className: 'act-academic' };
     // Only unrecognized nouns — fall through to the skills-based fallback below.
   }
 
   // Fallback (activity_type empty/unrecognized): the legacy skills heuristic.
   const hasC = (lesson.metadata.cookingSkills?.length ?? 0) > 0;
   const hasG = (lesson.metadata.gardenSkills?.length ?? 0) > 0;
-  if (hasC && hasG) return { label: 'Cook + Grow', className: 'both' };
-  if (hasC) return { label: 'Cook', className: 'cook' };
-  if (hasG) return { label: 'Grow', className: 'grow' };
-  return { label: 'Academic', className: 'academic' };
+  if (hasC && hasG) return { label: 'Cook + Grow', className: 'act-both' };
+  if (hasC) return { label: 'Cook', className: 'act-cook' };
+  if (hasG) return { label: 'Grow', className: 'act-grow' };
+  return { label: 'Academic', className: 'act-academic' };
 }
 
 // Canonical grade order, single-sourced from the gradeLevels filter config
