@@ -69,41 +69,41 @@ describe('intGradesLabel (grades-sort fix — rung8-lesson-detail F2)', () => {
 describe('intActivityLabel (FP-17 — badge derives from activity_type)', () => {
   it('gives a craft-only lesson (no cooking/garden skills) a Craft badge — the gap fix', () => {
     const lesson = lessonWith({ activityType: ['craft'], cookingSkills: [], gardenSkills: [] });
-    expect(intActivityLabel(lesson)).toEqual({ label: 'Craft', className: 'craft' });
+    expect(intActivityLabel(lesson)).toEqual({ label: 'Craft', className: 'act-craft' });
   });
 
   it('combines cooking + garden into Cook + Grow', () => {
     const lesson = lessonWith({ activityType: ['cooking', 'garden'] });
-    expect(intActivityLabel(lesson)).toEqual({ label: 'Cook + Grow', className: 'both' });
+    expect(intActivityLabel(lesson)).toEqual({ label: 'Cook + Grow', className: 'act-both' });
   });
 
   it('labels the garden+craft "Sunprints" shape as Grow', () => {
     const lesson = lessonWith({ activityType: ['garden', 'craft'] });
-    expect(intActivityLabel(lesson)).toEqual({ label: 'Grow', className: 'grow' });
+    expect(intActivityLabel(lesson)).toEqual({ label: 'Grow', className: 'act-grow' });
   });
 
   it('labels an academic-only lesson Academic', () => {
     const lesson = lessonWith({ activityType: ['academic'] });
-    expect(intActivityLabel(lesson)).toEqual({ label: 'Academic', className: 'academic' });
+    expect(intActivityLabel(lesson)).toEqual({ label: 'Academic', className: 'act-academic' });
   });
 
   it('lets activity_type win even when the skills arrays are empty', () => {
     const lesson = lessonWith({ activityType: ['cooking'], cookingSkills: [] });
-    expect(intActivityLabel(lesson)).toEqual({ label: 'Cook', className: 'cook' });
+    expect(intActivityLabel(lesson)).toEqual({ label: 'Cook', className: 'act-cook' });
   });
 
   it('falls back to the skills heuristic when activity_type is empty', () => {
     const cook = lessonWith({ activityType: [], cookingSkills: ['Chopping'], gardenSkills: [] });
-    expect(intActivityLabel(cook)).toEqual({ label: 'Cook', className: 'cook' });
+    expect(intActivityLabel(cook)).toEqual({ label: 'Cook', className: 'act-cook' });
     const grow = lessonWith({ activityType: [], cookingSkills: [], gardenSkills: ['Planting'] });
-    expect(intActivityLabel(grow)).toEqual({ label: 'Grow', className: 'grow' });
+    expect(intActivityLabel(grow)).toEqual({ label: 'Grow', className: 'act-grow' });
     const none = lessonWith({ activityType: [], cookingSkills: [], gardenSkills: [] });
-    expect(intActivityLabel(none)).toEqual({ label: 'Academic', className: 'academic' });
+    expect(intActivityLabel(none)).toEqual({ label: 'Academic', className: 'act-academic' });
   });
 
   it('falls back to skills when activity_type has only unrecognized nouns', () => {
     const lesson = lessonWith({ activityType: ['mystery'], gardenSkills: ['Planting'] });
-    expect(intActivityLabel(lesson)).toEqual({ label: 'Grow', className: 'grow' });
+    expect(intActivityLabel(lesson)).toEqual({ label: 'Grow', className: 'act-grow' });
   });
 });
 
