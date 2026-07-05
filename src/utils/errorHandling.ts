@@ -12,16 +12,13 @@ export function parseDbError(error: PostgrestError | Error | unknown): string {
   if (error && typeof error === 'object' && 'code' in error) {
     const pgError = error as PostgrestError;
 
-    // Handle unique constraint violations
+    // Handle unique constraint violations. Delegate the email-specific
+    // discrimination to isEmailDuplicateError so the 23505 + email predicate
+    // lives in exactly one place (was duplicated byte-for-byte here).
     if (pgError.code === '23505') {
-      // Check if it's specifically the email constraint
-      if (
-        pgError.message?.includes('idx_user_profiles_email_unique') ||
-        pgError.message?.includes('email')
-      ) {
-        return 'This email address is already registered to another user.';
-      }
-      return 'This value already exists. Please use a different value.';
+      return isEmailDuplicateError(error)
+        ? 'This email address is already registered to another user.'
+        : 'This value already exists. Please use a different value.';
     }
 
     // Handle foreign key violations
