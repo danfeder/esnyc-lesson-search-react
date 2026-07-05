@@ -7,9 +7,11 @@
  *
  * Companion schema `reviewFormPayload.zod.ts` captures the review-form shape
  * (themes/season/location keys, single-select strings) that complete-review
- * accepts. Bidirectional mappers in `src/utils/{reviewToLesson,
- * lessonToReview}Mapper.ts` mirror the SQL translation in
- * `complete_review_atomic` (see migration 20260428000003 lines 142-167).
+ * accepts. The read-path mapper `src/utils/lessonToReviewMapper.ts` translates
+ * canonical metadata into that review-form shape; the review→lesson direction
+ * is done in SQL by `complete_review_atomic` (see migration 20260428000003
+ * lines 142-167). The former TS `reviewToLessonMapper` was removed as dead
+ * code (FP4 Brief 4).
  *
  * Closed-enum coverage:
  *   Foundation phase (PR 1):

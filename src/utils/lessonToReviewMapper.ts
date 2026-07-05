@@ -2,7 +2,9 @@
  * Maps canonical lesson metadata (canonical keys) into a review-form
  * payload (review-form keys).
  *
- * Inverse of `reviewToLessonMapper`. Used at the read site — when
+ * The read-path counterpart of the SQL `complete_review_atomic` write path
+ * (the TS write-path mapper was removed as dead code — FP4 Brief 4). Used at
+ * the read site — when
  * ReviewDetail.tsx initializes the form for a submission whose
  * `lesson_submissions.ai_draft_metadata` was populated by the LLM-draft
  * writer (PR 2 Task 2.2), the draft arrives in canonical keys and must be

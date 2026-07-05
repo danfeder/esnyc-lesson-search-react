@@ -16,6 +16,3 @@ export const FEATURES = {
    */
   GOOGLE_DOC_EMBED: import.meta.env.VITE_ENABLE_DOC_EMBED !== 'false',
 } as const;
-
-// Type for feature flag keys
-export type FeatureFlagKey = keyof typeof FEATURES;
