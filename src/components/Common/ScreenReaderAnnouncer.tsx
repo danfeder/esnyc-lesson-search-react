@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchStore } from '@/stores/searchStore';
 
 interface ScreenReaderAnnouncerProps {
@@ -18,13 +18,29 @@ export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({
   suppressed = false,
 }) => {
   const [announcement, setAnnouncement] = useState('');
-  const { filters } = useSearchStore();
+  // Select only `filters` (not the whole store) so unrelated view-state writes
+  // don't re-run this effect.
+  const filters = useSearchStore((s) => s.filters);
+
+  // FP4 Brief 4 item 6: the FIRST unsuppressed effect run is the mount baseline
+  // — a fresh page load, after useUrlSync's on-mount hydration and the initial
+  // count settle. We skip it so nothing is announced with zero interaction (no
+  // phantom "All filters cleared. Showing all N lessons."). A reference/value
+  // check on `filters` won't do: hydration churns `filters` before any real
+  // interaction. Every run AFTER the baseline is a genuine user filter/sort
+  // change and gets announced.
+  const hasBaselinedRef = useRef(false);
 
   // Announce filter changes
   useEffect(() => {
     // While the result count is stale/placeholder, don't announce — wait for
     // the settled count so screen readers hear it exactly once and correctly.
     if (suppressed) return;
+
+    if (!hasBaselinedRef.current) {
+      hasBaselinedRef.current = true;
+      return;
+    }
 
     const activeFilters = [];
 

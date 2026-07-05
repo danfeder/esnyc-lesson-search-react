@@ -786,7 +786,7 @@ describe('SearchPage Integration', () => {
   });
 
   describe('Screen Reader Announcements', () => {
-    it('announces result count on initial load', async () => {
+    it('stays silent on initial load until the user interacts (FP4 B4 item 6)', async () => {
       const testLesson = createTestLesson({ total_count: 15 });
       rpcMock.mockResolvedValueOnce({
         data: [testLesson],
@@ -795,16 +795,16 @@ describe('SearchPage Integration', () => {
 
       renderWithProviders(<SearchPage />);
 
+      // The announcer live region mounts...
       await waitFor(() => {
-        // Screen reader announcer has role="status"
-        const announcer = screen.getByRole('status');
-        expect(announcer).toBeInTheDocument();
-        // The text format is "All filters cleared. Showing all X lessons." or similar
-        expect(announcer).toHaveTextContent(/15 lessons/i);
+        expect(screen.getByRole('status')).toBeInTheDocument();
       });
+      // ...but says nothing on a fresh load with zero interaction (no phantom
+      // "All filters cleared. Showing all 15 lessons.").
+      expect(screen.getByRole('status').textContent).toBe('');
     });
 
-    it('announces updated count after filter change', async () => {
+    it('announces updated count after a user filter change', async () => {
       const initialLesson = createTestLesson({ total_count: 100 });
       const filteredLesson = createTestLesson({ total_count: 10 });
 
@@ -820,18 +820,17 @@ describe('SearchPage Integration', () => {
 
       renderWithProviders(<SearchPage />);
 
+      // Announcer mounts silent (item 6) — no count announced without interaction.
       await waitFor(() => {
-        const announcer = screen.getByRole('status');
-        expect(announcer).toHaveTextContent(/100 lessons/i);
+        expect(screen.getByRole('status')).toBeInTheDocument();
       });
 
-      // Apply filter
+      // A real user filter change makes it announce the new settled count.
       const store = useSearchStore.getState();
       store.setFilters({ gradeLevels: ['5'] });
 
       await waitFor(() => {
         const announcer = screen.getByRole('status');
-        // After filter change, the message should include the new count
         expect(announcer).toHaveTextContent(/10 lessons/i);
       });
     });
