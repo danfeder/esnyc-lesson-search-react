@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { render, screen, act, renderHook } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ScreenReaderAnnouncer } from './ScreenReaderAnnouncer';
@@ -38,6 +39,19 @@ describe('ScreenReaderAnnouncer', () => {
     render(<ScreenReaderAnnouncer totalCount={703} />);
 
     // No phantom "All filters cleared. Showing all 703 lessons." on fresh load.
+    expect(announcement()).toBe('');
+  });
+
+  it('stays silent on mount even under React.StrictMode (double-invoked effect)', () => {
+    // StrictMode dev-double-invokes the effect; a one-shot "skip first run" latch
+    // would be consumed by the discarded first pass and let the phantom through
+    // on the second. The value-comparison latch must keep mount silent.
+    render(
+      <StrictMode>
+        <ScreenReaderAnnouncer totalCount={703} />
+      </StrictMode>
+    );
+
     expect(announcement()).toBe('');
   });
 

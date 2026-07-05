@@ -22,25 +22,30 @@ export const ScreenReaderAnnouncer: React.FC<ScreenReaderAnnouncerProps> = ({
   // don't re-run this effect.
   const filters = useSearchStore((s) => s.filters);
 
-  // FP4 Brief 4 item 6: the FIRST unsuppressed effect run is the mount baseline
-  // — a fresh page load, after useUrlSync's on-mount hydration and the initial
-  // count settle. We skip it so nothing is announced with zero interaction (no
-  // phantom "All filters cleared. Showing all N lessons."). A reference/value
-  // check on `filters` won't do: hydration churns `filters` before any real
-  // interaction. Every run AFTER the baseline is a genuine user filter/sort
-  // change and gets announced.
-  const hasBaselinedRef = useRef(false);
+  // FP4 Brief 4 item 6: stay silent until the user's first REAL filter change,
+  // so no phantom "All filters cleared. Showing all N lessons." fires on a fresh
+  // load. We compare the serialized filters VALUE against the last one we
+  // announced (seeded with the mount value), rather than a one-shot "skip the
+  // first run" latch: main.tsx wraps <React.StrictMode>, which double-invokes
+  // effects in dev — a one-shot latch gets consumed by the discarded first pass
+  // and the phantom slips through on the second. A value check is also immune to
+  // useUrlSync's on-mount hydration, which hands us a new `filters` REFERENCE
+  // that is value-identical to the mount default.
+  const lastAnnouncedFiltersRef = useRef(JSON.stringify(filters));
 
   // Announce filter changes
   useEffect(() => {
-    // While the result count is stale/placeholder, don't announce — wait for
-    // the settled count so screen readers hear it exactly once and correctly.
+    // While the result count is stale/placeholder, don't announce — wait for the
+    // settled count so screen readers hear it exactly once and correctly. We also
+    // do NOT advance the snapshot here: with keepPreviousData a filter change
+    // arrives DURING this placeholder window, so advancing the snapshot now would
+    // absorb that change and the settled-count announcement would never fire.
     if (suppressed) return;
 
-    if (!hasBaselinedRef.current) {
-      hasBaselinedRef.current = true;
-      return;
-    }
+    // Last-seen-VALUE comparison: announce only on a genuine change.
+    const currentFilters = JSON.stringify(filters);
+    if (currentFilters === lastAnnouncedFiltersRef.current) return;
+    lastAnnouncedFiltersRef.current = currentFilters;
 
     const activeFilters = [];
 
