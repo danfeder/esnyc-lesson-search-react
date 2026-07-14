@@ -68,7 +68,15 @@ jobs:
           # `--retry` absorbs transient network blips so a one-off hiccup
           # doesn't file a false alarm; a genuinely paused project fails all
           # retries and correctly reports.
-          code=$(curl -sS --retry 4 --retry-delay 5 --retry-all-errors \
+          #
+          # `--connect-timeout`/`--max-time` are load-bearing, not cosmetic: an
+          # unreachable/paused host can otherwise HANG (curl's default connect
+          # timeout is ~300s/attempt) past the job's timeout-minutes, and a
+          # timed-out job's conclusion is `cancelled`, not `failure` — which
+          # would skip the `if: failure()` alert below for the exact scenario
+          # this workflow exists to catch. Bounding curl makes it fail fast
+          # (-> code=000 -> step fails -> alert fires) well inside the budget.
+          code=$(curl -sS --connect-timeout 10 --max-time 20 --retry 4 --retry-delay 5 --retry-all-errors \
             -o /tmp/keepalive_body -w '%{http_code}' \
             "$URL/rest/v1/cultural_heritage_hierarchy?select=*&limit=1" \
             -H "apikey: $KEY" \
