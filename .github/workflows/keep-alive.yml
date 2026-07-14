@@ -1,0 +1,134 @@
+name: Keep databases awake
+
+# Supabase pauses Free-plan projects after ~7 days of low "user database
+# activity" (https://supabase.com/docs/guides/platform/free-project-pausing).
+# Once paused, API calls can't wake a project — someone has to click "Resume"
+# in the dashboard. So this cron PREVENTS pausing; it can't un-pause.
+#
+# Each daily run makes ONE read-only REST query against each database. That
+# executes a real query through PostgREST -> Postgres, which counts as user
+# activity and resets the 7-day timer. Nothing is written or changed.
+#
+# Coverage before this workflow:
+#   - TEST: only touched by the WEEKLY reset-test-db cron (Sun 04:00) — a
+#     7-day cadence sitting right on the pause threshold, and if TEST ever
+#     paused, that same reset job failed and couldn't revive it. This is the
+#     project that was actually pausing.
+#   - PROD: pinged daily by edge-function-smoke (04:00) + real user traffic,
+#     so lower risk — but that exercises edge functions, not a guaranteed DB
+#     query. This adds an explicit daily DB touch as belt-and-suspenders.
+
+on:
+  schedule:
+    # Daily 16:00 UTC. Deliberately off the 04:00 (edge-smoke / reset-test-db)
+    # and 09:00–10:00 (security / backup-production) clusters, so activity is
+    # spread across the day and runners don't contend. Exact time is cosmetic.
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+# One keep-alive run at a time; never cancel an in-flight run.
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # `issues: write` for the on-failure alert (matches edge-function-smoke.yml
+  # and reset-test-db.yml).
+  issues: write
+
+jobs:
+  ping:
+    name: Ping ${{ matrix.target }} DB
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      # If one project is paused/unreachable, still ping the other and let it
+      # report independently.
+      fail-fast: false
+      matrix:
+        target: [test, prod]
+
+    steps:
+      - name: Read-only keep-alive ping
+        env:
+          # TEST has no VITE_SUPABASE_URL_TEST secret; its ref is already
+          # hardcoded in reset-test-db.yml and CLAUDE.md, so hardcode it here
+          # too. PROD reuses the existing VITE_SUPABASE_URL secret.
+          TEST_URL: https://rxgajgmphciuaqzvwmox.supabase.co
+          TEST_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY_TEST }}
+          PROD_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          PROD_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          if [ "$TARGET" = "test" ]; then URL="$TEST_URL"; KEY="$TEST_KEY"; else URL="$PROD_URL"; KEY="$PROD_KEY"; fi
+
+          # Read one row from a small, stable, anon-readable reference table.
+          # `--retry` absorbs transient network blips so a one-off hiccup
+          # doesn't file a false alarm; a genuinely paused project fails all
+          # retries and correctly reports.
+          code=$(curl -sS --retry 4 --retry-delay 5 --retry-all-errors \
+            -o /tmp/keepalive_body -w '%{http_code}' \
+            "$URL/rest/v1/cultural_heritage_hierarchy?select=*&limit=1" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY") || code="000"
+
+          if [ "$code" != "200" ]; then
+            echo "❌ Keep-alive ping to ${TARGET^^} returned HTTP $code"
+            echo "--- response body (truncated) ---"
+            head -c 500 /tmp/keepalive_body || true
+            exit 1
+          fi
+          echo "✅ ${TARGET^^} DB is awake (HTTP 200)"
+
+      - name: Alert on failure
+        # Dedup: if an open keep-alive issue already exists for this target,
+        # don't pile on a new one each day the project stays paused. A paused
+        # project needs a manual dashboard "Resume" — one open issue is enough
+        # to signal that.
+        if: failure()
+        uses: actions/github-script@v9
+        env:
+          TARGET: ${{ matrix.target }}
+        with:
+          script: |
+            const target = process.env.TARGET.toUpperCase();
+            const titlePrefix = `⚠️ Keep-alive ping failed: ${target} DB`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'monitoring',
+              per_page: 100,
+            });
+            if (existing.data.some(i => i.title.startsWith(titlePrefix))) {
+              core.info(`Open keep-alive issue for ${target} already exists — skipping.`);
+              return;
+            }
+
+            const body = [
+              `The daily keep-alive ping to the **${target}** database failed.`,
+              ``,
+              `- Workflow run: ${runUrl}`,
+              `- Trigger: \`${context.eventName}\``,
+              ``,
+              `The most likely cause is that the Free-plan project was paused for`,
+              `inactivity (or is otherwise unreachable). API calls can't wake a`,
+              `paused project — open the Supabase dashboard, select the project, and`,
+              `click **Resume**. Once it's back, re-run this workflow to confirm, then`,
+              `close this issue.`,
+              ``,
+              `If ${target} genuinely pauses despite this daily ping, consider`,
+              `upgrading it to the Pro plan, which never pauses.`,
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `${titlePrefix} (${new Date().toISOString().slice(0, 10)})`,
+              body,
+              labels: ['monitoring'],
+            });
