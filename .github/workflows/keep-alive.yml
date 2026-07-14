@@ -86,6 +86,10 @@ jobs:
             echo "❌ Keep-alive ping to ${TARGET^^} returned HTTP $code"
             echo "--- response body (truncated) ---"
             head -c 500 /tmp/keepalive_body || true
+            # Hand the actual status to the alert step so the issue names the
+            # real cause instead of always assuming "paused" (a rotated key
+            # returns 401/403, a removed table 404 — not a pause).
+            echo "PING_HTTP_CODE=$code" >> "$GITHUB_ENV"
             exit 1
           fi
           echo "✅ ${TARGET^^} DB is awake (HTTP 200)"
@@ -102,9 +106,15 @@ jobs:
         with:
           script: |
             const target = process.env.TARGET.toUpperCase();
+            const code = process.env.PING_HTTP_CODE || 'unknown';
+            const keySecret = target === 'TEST' ? 'VITE_SUPABASE_ANON_KEY_TEST' : 'VITE_SUPABASE_ANON_KEY';
             const titlePrefix = `⚠️ Keep-alive ping failed: ${target} DB`;
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
+            // Dedup assumes <100 open `monitoring` issues (always true at this
+            // repo's volume). Beyond that a new failure could duplicate rather
+            // than dedup — a benign worst case (an extra issue, not a missed
+            // alert), so not worth paginating.
             const existing = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -118,16 +128,22 @@ jobs:
             }
 
             const body = [
-              `The daily keep-alive ping to the **${target}** database failed.`,
+              `The daily keep-alive ping to the **${target}** database failed with **HTTP ${code}**.`,
               ``,
               `- Workflow run: ${runUrl}`,
               `- Trigger: \`${context.eventName}\``,
               ``,
-              `The most likely cause is that the Free-plan project was paused for`,
-              `inactivity (or is otherwise unreachable). API calls can't wake a`,
-              `paused project — open the Supabase dashboard, select the project, and`,
-              `click **Resume**. Once it's back, re-run this workflow to confirm, then`,
-              `close this issue.`,
+              `Check the run log's response body first — the fix depends on the code:`,
+              `- **000 / timeout / 5xx** — the Free-plan project is most likely paused`,
+              `  for inactivity (or unreachable). API calls can't wake a paused project:`,
+              `  open the Supabase dashboard, select the project, and click **Resume**.`,
+              `  This is the case this workflow exists to catch.`,
+              `- **401 / 403** — the anon key was rotated or revoked; update the`,
+              `  \`${keySecret}\` repo secret.`,
+              `- **404** — the ping target table/grant changed; update the query in`,
+              `  \`keep-alive.yml\`.`,
+              ``,
+              `Once resolved, re-run this workflow to confirm, then close this issue.`,
               ``,
               `If ${target} genuinely pauses despite this daily ping, consider`,
               `upgrading it to the Pro plan, which never pauses.`,
