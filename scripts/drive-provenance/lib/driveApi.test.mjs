@@ -155,9 +155,49 @@ describe('fetchDriveActivity — per-action actor/timestamp semantics', () => {
 });
 
 describe('fetchDriveFileMetadata (script mirror)', () => {
-  it('flags non-404 failures as transient without throwing', async () => {
+  it('flags persistent non-404 failures as transient without throwing (after retries)', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) }));
-    const result = await fetchDriveFileMetadata('token', 'FILE-F', fetchImpl);
+    const noSleep = vi.fn(async () => {});
+    const result = await fetchDriveFileMetadata('token', 'FILE-F', fetchImpl, noSleep);
     expect(result).toEqual({ ok: false, status: 503, notFound: false });
+    expect(fetchImpl).toHaveBeenCalledTimes(5); // MAX_ATTEMPTS
+  });
+});
+
+describe('retry-with-backoff on transient statuses', () => {
+  it('retries 429s and succeeds once the API recovers', async () => {
+    let call = 0;
+    const responses = [
+      { ok: false, status: 429, headers: { get: () => null }, json: async () => ({}) },
+      { ok: false, status: 429, headers: { get: () => null }, json: async () => ({}) },
+      { ok: true, status: 200, json: async () => ({ activities: [] }) },
+    ];
+    const fetchImpl = vi.fn(async () => responses[call++]);
+    const noSleep = vi.fn(async () => {});
+    const result = await fetchDriveActivity('token', 'FILE-G', fetchImpl, noSleep);
+    expect(result.ok).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(noSleep).toHaveBeenCalledTimes(2);
+  });
+
+  it('honors Retry-After seconds when present', async () => {
+    let call = 0;
+    const responses = [
+      { ok: false, status: 429, headers: { get: () => '3' }, json: async () => ({}) },
+      { ok: true, status: 200, json: async () => ({ activities: [] }) },
+    ];
+    const fetchImpl = vi.fn(async () => responses[call++]);
+    const noSleep = vi.fn(async () => {});
+    await fetchDriveActivity('token', 'FILE-H', fetchImpl, noSleep);
+    expect(noSleep).toHaveBeenCalledWith(3000);
+  });
+
+  it('does NOT retry a 404 — it is a real answer', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) }));
+    const noSleep = vi.fn(async () => {});
+    const result = await fetchDriveActivity('token', 'FILE-I', fetchImpl, noSleep);
+    expect(result).toEqual({ ok: false, status: 404, notFound: true });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(noSleep).not.toHaveBeenCalled();
   });
 });

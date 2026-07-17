@@ -190,8 +190,10 @@ async function main() {
     }
     if (++probed % PAUSE_EVERY === 0) {
       console.log(`  … activity ${probed}/${nativeFileIds.length}`);
-      await sleep(250);
     }
+    // Per-QUERY pacing: back-to-back Activity queries trip the per-100s quota
+    // (the 2026-07-17 session lost 1055 queries to it); ~4 qps stays under.
+    await sleep(250);
   }
 
   // --- pass 2: sweep each approved account over still-unresolved files ------
@@ -214,7 +216,7 @@ async function main() {
       } else {
         activityFailures++;
       }
-      if (sweepQueries % PAUSE_EVERY === 0) await sleep(250);
+      await sleep(250); // per-query pacing — same quota reasoning as the primary pass
     }
     console.log(
       `  … sweep subject ${args.sweepSubjects.indexOf(subject) + 1}/${args.sweepSubjects.length}: ` +
