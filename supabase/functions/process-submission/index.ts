@@ -10,6 +10,7 @@ import {
 } from '../_shared/metadataSchemas.ts';
 import { normalizeSubmissionInputs } from './normalizeSubmissionInputs.ts';
 import { validateResubmit } from './validateResubmit.ts';
+import { buildDriveMetadataUpdate } from './driveMetadataUpdate.ts';
 
 const CRF_MODEL = 'claude-opus-4-7';
 const CRF_PROMPT_URL = new URL('./prompts/cultural-responsiveness-features.md', import.meta.url);
@@ -252,6 +253,12 @@ serve(async (req) => {
           ai_draft_generated_at: null,
           ai_draft_model: null,
           updated_at: new Date().toISOString(),
+          // Drive provenance: refresh the file/date/MIME/sync columns from the
+          // re-extraction. Unlike the content-DERIVED nulls above, these are
+          // Drive-derived: when the metadata fetch failed the helper returns {}
+          // and the PREVIOUS snapshot's values are preserved rather than
+          // blanked (transient API failures must not destroy provenance).
+          ...buildDriveMetadataUpdate(extractResult.data.driveMetadata),
         })
         .eq('id', submission.id)
         .eq('status', 'needs_revision')
@@ -398,6 +405,10 @@ serve(async (req) => {
         .update({
           extracted_content: content,
           extracted_title: title,
+          // Drive provenance: persist the extraction's file/date/MIME/sync
+          // metadata when present ({} when the fail-soft fetch didn't return
+          // it — the columns then simply stay NULL for this new submission).
+          ...buildDriveMetadataUpdate(extractResult.data.driveMetadata),
         })
         .eq('id', submission.id);
 

@@ -212,6 +212,10 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { mainIngredients: ['Seaweed (nori)'] }, // null-parent specific alone
       // Brief 4 — closed heritage accepts canonical values incl. internal-tier ones.
       { culturalHeritage: ['Mexican', 'Soul Food', 'Southern United States'] },
+      // Drive provenance — creator confirmation shapes (synthetic names only).
+      { driveCreatorAttribution: 'omit' },
+      { driveCreatorAttribution: 'created', driveCreatorName: 'Test Person' },
+      { driveCreatorAttribution: 'adapted', driveCreatorName: 'María-José Álvarez' },
       // All-fields-populated fixture — drift protection. See lessonMetadata
       // counterpart above for rationale.
       {
@@ -262,6 +266,16 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       // Brief 4 — closed heritage rejects free text + kebab slugs on the review side.
       { culturalHeritage: ['Martian cuisine'] }, // reviewer free text, off-vocab
       { culturalHeritage: ['east-asian'] }, // kebab slug (corpus stores Title-Case labels)
+      // Drive provenance — the cross-field creator rule (both mirrors).
+      { driveCreatorAttribution: 'created' }, // publishable attribution without a name
+      { driveCreatorAttribution: 'created', driveCreatorName: '' }, // blank name
+      { driveCreatorAttribution: 'created', driveCreatorName: ' Test Person' }, // untrimmed
+      { driveCreatorAttribution: 'adapted', driveCreatorName: 'person@example.org' }, // email
+      { driveCreatorAttribution: 'created', driveCreatorName: 'Jane\nDoe' }, // embedded control char
+      { driveCreatorAttribution: 'created', driveCreatorName: 'see https://example.org' }, // URL
+      { driveCreatorAttribution: 'owner', driveCreatorName: 'Test Person' }, // unknown attribution
+      { driveCreatorAttribution: 'omit', driveCreatorName: 'Test Person' }, // name without publishable attribution
+      { driveCreatorName: 'Test Person' }, // name with no attribution at all
     ];
     it.each(invalid)('rejects %j', (fixture) => {
       const c = canonicalReviewSchema.safeParse(fixture);

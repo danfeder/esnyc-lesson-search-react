@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getGoogleAccessToken } from '../_shared/google-auth-with-delegation.ts';
+import { fetchDriveFileMetadata } from '../_shared/google-drive-metadata.ts';
 import {
   extractTextFromGoogleDoc,
   extractMetadataFromContent,
@@ -122,6 +123,51 @@ serve(async (req) => {
         const content = extractTextFromGoogleDoc(doc);
         const metadataSketch = extractMetadataFromContent(content);
 
+        // Drive provenance: fetch file metadata (id/mimeType/createdTime/
+        // modifiedTime ONLY — see _shared/google-drive-metadata.ts) with the
+        // SAME delegated reader token. Fail-soft: content extraction is the
+        // product; a metadata blip must not fail the submission. But a
+        // SUCCESSFUL Docs API extraction already PROVES this file id is a
+        // native Google Doc (the Docs endpoint serves nothing else), so on a
+        // metadata failure we still emit the trusted fileId + native MIME
+        // (dates omitted; the scheduled refresh fills them in later). Without
+        // this, a transient dates blip would leave the submission's MIME NULL
+        // and the RPC's native-doc gate would silently discard a reviewer's
+        // creator confirmation at publish time.
+        const NATIVE_GOOGLE_DOC_MIME = 'application/vnd.google-apps.document';
+        let driveMetadata: {
+          fileId: string;
+          mimeType: string;
+          createdTime?: string;
+          modifiedTime?: string;
+          syncedAt: string;
+        } = {
+          fileId: docId,
+          mimeType: NATIVE_GOOGLE_DOC_MIME,
+          syncedAt: new Date().toISOString(),
+        };
+        try {
+          const driveResult = await fetchDriveFileMetadata(accessToken, docId);
+          if (driveResult.ok) {
+            driveMetadata = {
+              fileId: driveResult.metadata.id,
+              mimeType: driveResult.metadata.mimeType,
+              createdTime: driveResult.metadata.createdTime,
+              modifiedTime: driveResult.metadata.modifiedTime,
+              syncedAt: new Date().toISOString(),
+            };
+          } else {
+            console.warn(
+              `Drive metadata fetch failed (status ${driveResult.status}) — continuing with native id/MIME only`
+            );
+          }
+        } catch (driveError) {
+          console.warn(
+            'Drive metadata fetch threw — continuing with native id/MIME only:',
+            driveError
+          );
+        }
+
         return new Response(
           JSON.stringify({
             success: true,
@@ -135,6 +181,7 @@ serve(async (req) => {
                 hasImages: doc.inlineObjects ? Object.keys(doc.inlineObjects).length > 0 : false,
               },
               metadataSketch,
+              driveMetadata,
               extractedAt: new Date().toISOString(),
             },
           }),

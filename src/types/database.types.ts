@@ -323,6 +323,27 @@ export type Database = {
           },
         ];
       };
+      fp02_theme_normalize_rollback: {
+        Row: {
+          lesson_id: string;
+          prior_metadata_themes: Json | null;
+          prior_thematic_categories: string[];
+          snapshotted_at: string;
+        };
+        Insert: {
+          lesson_id: string;
+          prior_metadata_themes?: Json | null;
+          prior_thematic_categories: string[];
+          snapshotted_at?: string;
+        };
+        Update: {
+          lesson_id?: string;
+          prior_metadata_themes?: Json | null;
+          prior_thematic_categories?: string[];
+          snapshotted_at?: string;
+        };
+        Relationships: [];
+      };
       lesson_archive: {
         Row: {
           academic_integration: string[] | null;
@@ -514,6 +535,15 @@ export type Database = {
           content_embedding: string | null;
           content_hash: string | null;
           created_at: string | null;
+          drive_created_at: string | null;
+          drive_creator_attribution: string | null;
+          drive_creator_name: string | null;
+          drive_creator_source: string | null;
+          drive_creator_verified_at: string | null;
+          drive_file_id: string | null;
+          drive_metadata_synced_at: string | null;
+          drive_mime_type: string | null;
+          drive_modified_at: string | null;
           extracted_content: string | null;
           extracted_title: string | null;
           google_doc_id: string;
@@ -539,6 +569,15 @@ export type Database = {
           content_embedding?: string | null;
           content_hash?: string | null;
           created_at?: string | null;
+          drive_created_at?: string | null;
+          drive_creator_attribution?: string | null;
+          drive_creator_name?: string | null;
+          drive_creator_source?: string | null;
+          drive_creator_verified_at?: string | null;
+          drive_file_id?: string | null;
+          drive_metadata_synced_at?: string | null;
+          drive_mime_type?: string | null;
+          drive_modified_at?: string | null;
           extracted_content?: string | null;
           extracted_title?: string | null;
           google_doc_id: string;
@@ -564,6 +603,15 @@ export type Database = {
           content_embedding?: string | null;
           content_hash?: string | null;
           created_at?: string | null;
+          drive_created_at?: string | null;
+          drive_creator_attribution?: string | null;
+          drive_creator_name?: string | null;
+          drive_creator_source?: string | null;
+          drive_creator_verified_at?: string | null;
+          drive_file_id?: string | null;
+          drive_metadata_synced_at?: string | null;
+          drive_mime_type?: string | null;
+          drive_modified_at?: string | null;
           extracted_content?: string | null;
           extracted_title?: string | null;
           google_doc_id?: string;
@@ -606,6 +654,15 @@ export type Database = {
           archived_by: string | null;
           archived_from_submission_id: string | null;
           content_text: string | null;
+          drive_created_at: string | null;
+          drive_creator_attribution: string | null;
+          drive_creator_name: string | null;
+          drive_creator_source: string | null;
+          drive_creator_verified_at: string | null;
+          drive_file_id: string | null;
+          drive_metadata_synced_at: string | null;
+          drive_mime_type: string | null;
+          drive_modified_at: string | null;
           file_link: string;
           grade_levels: string[];
           id: string;
@@ -621,6 +678,15 @@ export type Database = {
           archived_by?: string | null;
           archived_from_submission_id?: string | null;
           content_text?: string | null;
+          drive_created_at?: string | null;
+          drive_creator_attribution?: string | null;
+          drive_creator_name?: string | null;
+          drive_creator_source?: string | null;
+          drive_creator_verified_at?: string | null;
+          drive_file_id?: string | null;
+          drive_metadata_synced_at?: string | null;
+          drive_mime_type?: string | null;
+          drive_modified_at?: string | null;
           file_link: string;
           grade_levels: string[];
           id?: string;
@@ -636,6 +702,15 @@ export type Database = {
           archived_by?: string | null;
           archived_from_submission_id?: string | null;
           content_text?: string | null;
+          drive_created_at?: string | null;
+          drive_creator_attribution?: string | null;
+          drive_creator_name?: string | null;
+          drive_creator_source?: string | null;
+          drive_creator_verified_at?: string | null;
+          drive_file_id?: string | null;
+          drive_metadata_synced_at?: string | null;
+          drive_mime_type?: string | null;
+          drive_modified_at?: string | null;
           file_link?: string;
           grade_levels?: string[];
           id?: string;
@@ -671,6 +746,15 @@ export type Database = {
           crf_confirmed: boolean;
           cultural_heritage: string[] | null;
           cultural_responsiveness_features: string[] | null;
+          drive_created_at: string | null;
+          drive_creator_attribution: string | null;
+          drive_creator_name: string | null;
+          drive_creator_source: string | null;
+          drive_creator_verified_at: string | null;
+          drive_file_id: string | null;
+          drive_metadata_synced_at: string | null;
+          drive_mime_type: string | null;
+          drive_modified_at: string | null;
           file_link: string;
           flagged_for_review: boolean | null;
           garden_skills: string[] | null;
@@ -716,6 +800,15 @@ export type Database = {
           crf_confirmed?: boolean;
           cultural_heritage?: string[] | null;
           cultural_responsiveness_features?: string[] | null;
+          drive_created_at?: string | null;
+          drive_creator_attribution?: string | null;
+          drive_creator_name?: string | null;
+          drive_creator_source?: string | null;
+          drive_creator_verified_at?: string | null;
+          drive_file_id?: string | null;
+          drive_metadata_synced_at?: string | null;
+          drive_mime_type?: string | null;
+          drive_modified_at?: string | null;
           file_link: string;
           flagged_for_review?: boolean | null;
           garden_skills?: string[] | null;
@@ -761,6 +854,15 @@ export type Database = {
           crf_confirmed?: boolean;
           cultural_heritage?: string[] | null;
           cultural_responsiveness_features?: string[] | null;
+          drive_created_at?: string | null;
+          drive_creator_attribution?: string | null;
+          drive_creator_name?: string | null;
+          drive_creator_source?: string | null;
+          drive_creator_verified_at?: string | null;
+          drive_file_id?: string | null;
+          drive_metadata_synced_at?: string | null;
+          drive_mime_type?: string | null;
+          drive_modified_at?: string | null;
           file_link?: string;
           flagged_for_review?: boolean | null;
           garden_skills?: string[] | null;
@@ -1846,6 +1948,7 @@ export type Database = {
           filter_cultures?: string[];
           filter_grade_levels?: string[];
           filter_location?: string[];
+          filter_main_ingredients?: string[];
           filter_seasons?: string[];
           filter_sel?: string[];
           filter_tags?: string[];
@@ -1857,6 +1960,12 @@ export type Database = {
         };
         Returns: {
           confidence: Json;
+          drive_created_at: string;
+          drive_creator_attribution: string;
+          drive_creator_name: string;
+          drive_creator_source: string;
+          drive_mime_type: string;
+          drive_modified_at: string;
           file_link: string;
           grade_levels: string[];
           lesson_id: string;

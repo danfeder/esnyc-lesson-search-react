@@ -1,0 +1,107 @@
+# Drive-provenance date refresh (Drive provenance, Phase 6).
+#
+# Loops the internal sync-drive-metadata edge function over the active corpus
+# in ≤50-row batches (cursor pagination) so lessons' Drive created/modified
+# dates stay current. The function never touches creator columns and never
+# calls Drive Activity.
+#
+# ⚠ OPERATIONAL GATE — NOT YET ENABLED. This workflow is reviewable config
+# only until the post-review rollout steps run (see
+# docs/plans/2026-07-17-drive-provenance-rollout.md):
+#   1. deploy the sync-drive-metadata function;
+#   2. install the DRIVE_SYNC_TOKEN edge secret + the two repo secrets below;
+#   3. uncomment the `schedule:` block to turn on the daily run.
+# Until then it is manual-dispatch only, and fails fast (loudly, not
+# silently-green) when the secrets are missing.
+#
+# Required repo secrets (rollout step 2):
+#   SYNC_DRIVE_METADATA_URL — https://<prod-ref>.supabase.co/functions/v1/sync-drive-metadata
+#   DRIVE_SYNC_TOKEN        — the same dedicated secret installed as the edge
+#                             function's DRIVE_SYNC_TOKEN (NOT the service-role key)
+
+name: Sync Drive Metadata
+
+on:
+  workflow_dispatch:
+  # Rollout step 3 — uncomment to enable the once-daily refresh (~04:30 ET):
+  # schedule:
+  #   - cron: '30 8 * * *'
+
+permissions: {}
+
+jobs:
+  sync:
+    name: Refresh Drive dates (batched)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Loop batches until done
+        env:
+          FUNCTION_URL: ${{ secrets.SYNC_DRIVE_METADATA_URL }}
+          DRIVE_SYNC_TOKEN: ${{ secrets.DRIVE_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${FUNCTION_URL:-}" ] || [ -z "${DRIVE_SYNC_TOKEN:-}" ]; then
+            echo "::error::SYNC_DRIVE_METADATA_URL / DRIVE_SYNC_TOKEN secrets are not installed (rollout gate not completed)."
+            exit 1
+          fi
+
+          cursor=""
+          done="false"
+          total_processed=0
+          total_updated=0
+          total_unreadable=0
+          total_transient=0
+          total_unresolvable=0
+
+          # 40 × 50 = 2,000-row headroom over the ~722-row active corpus.
+          for i in $(seq 1 40); do
+            body=$(jq -n --arg c "$cursor" \
+              '{cursor: (if $c == "" then null else $c end), batchSize: 50}')
+            resp=$(curl -sS --fail-with-body -X POST "$FUNCTION_URL" \
+              -H "Authorization: Bearer $DRIVE_SYNC_TOKEN" \
+              -H 'Content-Type: application/json' \
+              -d "$body")
+
+            success=$(echo "$resp" | jq -r '.success // false')
+            if [ "$success" != "true" ]; then
+              echo "::error::Batch $i failed: $(echo "$resp" | jq -r '.error // "unknown error"')"
+              exit 1
+            fi
+
+            processed=$(echo "$resp" | jq -r '.processedRows // 0')
+            updated=$(echo "$resp" | jq -r '.updatedRows // 0')
+            unreadable=$(echo "$resp" | jq -r '.unreadableFiles // 0')
+            transient=$(echo "$resp" | jq -r '.transientFailures // 0')
+            unresolvable=$(echo "$resp" | jq -r '.unresolvableRows // 0')
+            done=$(echo "$resp" | jq -r '.done // false')
+            cursor=$(echo "$resp" | jq -r '.nextCursor // ""')
+
+            total_processed=$((total_processed + processed))
+            total_updated=$((total_updated + updated))
+            total_unreadable=$((total_unreadable + unreadable))
+            total_transient=$((total_transient + transient))
+            total_unresolvable=$((total_unresolvable + unresolvable))
+            echo "Batch $i: processed=$processed updated=$updated unreadable=$unreadable transient=$transient unresolvable=$unresolvable done=$done"
+
+            if [ "$done" = "true" ]; then
+              break
+            fi
+          done
+
+          echo "TOTALS: processed=$total_processed updated=$total_updated unreadable=$total_unreadable transient=$total_transient unresolvable=$total_unresolvable"
+          if [ "$total_unresolvable" -gt 0 ]; then
+            # A permanent data condition (no parseable Drive link), not a run
+            # failure — surfaced as a warning so the operator can fix the rows.
+            echo "::warning::$total_unresolvable lesson row(s) have no resolvable Drive file id and are never refreshed."
+          fi
+
+          if [ "$done" != "true" ]; then
+            echo "::error::Did not reach the end of the corpus within 40 batches — partial processing, failing visibly."
+            exit 1
+          fi
+          if [ "$total_transient" -gt 0 ]; then
+            echo "::error::$total_transient transient Drive/API failure(s) — those files kept last-known metadata; investigate before trusting this run."
+            exit 1
+          fi

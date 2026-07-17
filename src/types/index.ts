@@ -17,6 +17,16 @@ export interface Lesson {
   processing_notes?: string;
   created_at?: string;
   updated_at?: string;
+  // Drive provenance (public subset — file id and sync/verified timestamps are
+  // deliberately NOT part of the public domain type). Dates are ISO strings
+  // from the RPC; attribution/source are narrowed to the trusted unions at
+  // mapping time (mapRowToLesson) so the drawer's safety gate stays simple.
+  driveMimeType?: string;
+  driveCreatedAt?: string;
+  driveModifiedAt?: string;
+  driveCreatorName?: string;
+  driveCreatorAttribution?: 'created' | 'adapted';
+  driveCreatorSource?: 'drive_activity' | 'reviewer_confirmed';
 }
 
 export interface LessonMetadata {
@@ -94,4 +104,10 @@ export interface ReviewMetadata {
   observancesHolidays?: string[];
   culturalResponsivenessFeatures?: string[];
   processingNotes?: string;
+  // Drive provenance — the reviewer's creator confirmation. Defaults to
+  // omitted; 'created'/'adapted' require a safe public full name. The server
+  // (complete_review_atomic) derives source + verified time — the client
+  // never sends them.
+  driveCreatorAttribution?: 'created' | 'adapted' | 'omit';
+  driveCreatorName?: string;
 }

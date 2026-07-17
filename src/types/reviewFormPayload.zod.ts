@@ -48,8 +48,50 @@ import {
   CulturalHeritageEnum,
   mainIngredientsArraySchema,
 } from './lessonMetadata.zod';
+import { isValidPublicCreatorName } from '@/utils/driveProvenance';
 
-export const reviewFormPayloadSchema = z.object({
+/**
+ * Drive provenance (creator confirmation) cross-field rule, applied via
+ * superRefine on the payload schema:
+ *   - 'created'/'adapted' REQUIRE a safe public full name (trimmed, ≤120
+ *     chars, no '@', no obvious URL);
+ *   - a name without a publishable attribution ('omit'/absent) is a shape
+ *     error — the client strips the name in that case, so its presence means
+ *     a bug or a hand-crafted payload.
+ * The server (complete_review_atomic) re-validates and derives
+ * drive_creator_source/verified_at itself; client-sent values for those never
+ * exist in this schema.
+ */
+const refineDriveCreator = (
+  data: { driveCreatorAttribution?: string; driveCreatorName?: string },
+  ctx: z.RefinementCtx
+): void => {
+  const attr = data.driveCreatorAttribution;
+  if (attr === 'created' || attr === 'adapted') {
+    if (!isValidPublicCreatorName(data.driveCreatorName)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['driveCreatorName'],
+        message:
+          'A public full name is required for "Created by"/"Adapted by" — no emails, links, or blank/untrimmed values.',
+      });
+    }
+  } else if (data.driveCreatorName !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['driveCreatorName'],
+      message: 'driveCreatorName requires driveCreatorAttribution "created" or "adapted".',
+    });
+  }
+};
+
+/**
+ * Base object schema — exported separately because `.superRefine` wraps the
+ * object in a ZodEffects, and `ZOD_FIELD_TO_LABEL` (reviewDetailHelpers) needs
+ * the raw `.shape` for its exhaustive key typing. Parse with
+ * `reviewFormPayloadSchema` (below), not this.
+ */
+export const reviewFormPayloadObjectSchema = z.object({
   // Multi-select activity_type; single-select location.
   activityType: z.array(ActivityTypeEnum).optional(),
   location: z.string().optional(),
@@ -92,6 +134,15 @@ export const reviewFormPayloadSchema = z.object({
   processingNotes: z.string().optional(),
   title: z.string().optional(),
   summary: z.string().optional(),
+
+  // Drive provenance — the reviewer's creator confirmation (2026-07 feature).
+  // Defaults to omitted. The cross-field name rule lives in refineDriveCreator
+  // (applied below); the server re-validates and derives source/verified time.
+  driveCreatorAttribution: z.enum(['created', 'adapted', 'omit']).optional(),
+  driveCreatorName: z.string().optional(),
 });
+
+export const reviewFormPayloadSchema =
+  reviewFormPayloadObjectSchema.superRefine(refineDriveCreator);
 
 export type ReviewFormPayloadValidated = z.infer<typeof reviewFormPayloadSchema>;
