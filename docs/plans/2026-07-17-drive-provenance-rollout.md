@@ -59,7 +59,18 @@ secrets exist — see Gate 3) or wait for the backfill to populate dates.
 
 ## Gate 2 — one-time supervised historical backfill (owner present)
 
-Operator-run, local machine only, `scripts/drive-provenance/backfill-drive-provenance.mjs`:
+**Step 0 — regenerate the private actor map** (the investigation persisted
+only aggregates; no `people/NNN → email` artifact exists on disk). Run
+`scripts/drive-provenance/build-actor-map.mjs` with the primary supervised
+Activity subject plus each approved worksheet account as a `--sweep-subject`:
+Drive Activity marks the querying identity's own actions `isCurrentUser`, so
+sweeping the approved accounts over still-unresolved files identifies each
+actor id within the existing scopes (no People API). Local-only, read-only,
+writes exactly the private map file (mode 600, outside the repo); actors that
+resolve to no sweep account (e.g. former staff) stay unresolved and omit
+downstream — correct per the acceptance rules.
+
+Then, operator-run, local machine only, `scripts/drive-provenance/backfill-drive-provenance.mjs`:
 
 1. Full creator dry-run — requires the COMPLETE input set (`--activity-subject`
    + both `--worksheet`s + a validated non-empty `--actor-map` of
