@@ -62,6 +62,47 @@ describe('useLessonById', () => {
     expect(result.current.data?.metadata.cookingSkills).toEqual(['Chopping']);
   });
 
+  it('selects and maps the public Drive-provenance subset (never drive_file_id)', async () => {
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        lesson_id: 'prov-1',
+        title: 'T',
+        summary: 'S',
+        file_link: '#',
+        grade_levels: [],
+        metadata: {},
+        drive_mime_type: 'application/vnd.google-apps.document',
+        drive_created_at: '2024-01-15T15:00:00.000Z',
+        drive_modified_at: '2026-03-02T15:00:00.000Z',
+        drive_creator_name: 'Test Person',
+        drive_creator_attribution: 'created',
+        drive_creator_source: 'drive_activity',
+      },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useLessonById('prov-1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toMatchObject({
+      driveMimeType: 'application/vnd.google-apps.document',
+      driveCreatedAt: '2024-01-15T15:00:00.000Z',
+      driveModifiedAt: '2026-03-02T15:00:00.000Z',
+      driveCreatorName: 'Test Person',
+      driveCreatorAttribution: 'created',
+      driveCreatorSource: 'drive_activity',
+    });
+
+    // The select pins the PUBLIC subset: the six provenance columns ride the
+    // query; drive_file_id and the sync/verified timestamps never do.
+    const selectArg = String(selectMock.mock.calls[0]?.[0] ?? '');
+    expect(selectArg).toContain('drive_mime_type');
+    expect(selectArg).toContain('drive_creator_source');
+    expect(selectArg).not.toContain('drive_file_id');
+    expect(selectArg).not.toContain('drive_metadata_synced_at');
+    expect(selectArg).not.toContain('drive_creator_verified_at');
+  });
+
   it('resolves null (not an error) for an unknown id', async () => {
     const { result } = renderHook(() => useLessonById('no-such-id'), {
       wrapper: createWrapper(),

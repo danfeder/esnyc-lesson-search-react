@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
 import { logger } from '@/utils/logger';
 import type { ReviewMetadata } from '@/types';
+import { isValidPublicCreatorName } from '@/utils/driveProvenance';
 import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
 import { canonicalizeReviewMetadata } from '@/utils/canonicalizeReviewMetadata';
 import { STATUS_LABEL, STATUS_TO_BADGE } from '@/utils/submissionStatus';
@@ -221,6 +222,32 @@ export function ReviewDetail() {
       ...metadata,
       activityType: metadata.activityType?.map((s) => s.replace(/-only$/, '')),
     });
+
+    // Drive provenance: normalize the creator confirmation before validation.
+    // The name rides ONLY with a publishable attribution (trimmed — the schema
+    // rejects untrimmed values); otherwise the key is stripped so a name typed
+    // and then switched back to "Do not show" never leaves the browser.
+    if (
+      payload.driveCreatorAttribution === 'created' ||
+      payload.driveCreatorAttribution === 'adapted'
+    ) {
+      payload.driveCreatorName = payload.driveCreatorName?.trim();
+      // Same principle as the required-tags gate above: an incomplete creator
+      // section must only block the two PUBLISH decisions. Creator data is
+      // never published on needs_revision/reject, so an invalid tuple is
+      // stripped there instead of failing the every-decision Zod gate (the
+      // reviewer's in-progress radio choice still lives in form state).
+      if (
+        decisionOption !== 'approve_new' &&
+        decisionOption !== 'approve_update' &&
+        !isValidPublicCreatorName(payload.driveCreatorName)
+      ) {
+        delete payload.driveCreatorAttribution;
+        delete payload.driveCreatorName;
+      }
+    } else {
+      delete payload.driveCreatorName;
+    }
 
     // PR 1 Task 1.5: defense-in-depth Zod validation against the same
     // reviewFormPayloadSchema the complete-review edge function enforces.

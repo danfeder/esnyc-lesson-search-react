@@ -119,8 +119,9 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     expect(banner).toHaveTextContent('Modern Target Lesson');
 
     // T4b/D7: all five decision options render for a submission WITH candidate
-    // cards; the restored decision (approve_new) is checked.
-    expect(screen.getAllByRole('radio')).toHaveLength(5);
+    // cards (plus the 3 public-creator-credit radios from the Drive-provenance
+    // form section); the restored decision (approve_new) is checked.
+    expect(screen.getAllByRole('radio')).toHaveLength(8);
     expect(screen.getByRole('radio', { name: /publish as a new lesson/i })).toBeChecked();
 
     // N5 (a11y): the note-to-teacher textarea has a programmatic label.
@@ -134,9 +135,10 @@ describe('ReviewDetail page-level safety net (Wave 5 PR-0)', () => {
     // Page rendered (the .map-on-scalar landmine is HANDLED — an unguarded
     // .map('both') would have thrown out of loadSubmission's try and left
     // metadata/decision unrestored). Decision radios prove the page rendered.
-    // (3 radios: the legacy fixture has NO candidate cards, so the two
-    // card-bound options don't render — D7.)
-    expect(await screen.findAllByRole('radio')).toHaveLength(3);
+    // (6 radios: 3 decision radios — the legacy fixture has NO candidate
+    // cards, so the two card-bound options don't render (D7) — plus the 3
+    // public-creator-credit radios from the Drive-provenance form section.)
+    expect(await screen.findAllByRole('radio')).toHaveLength(6);
 
     // Scalar 'both' fanned out to BOTH activity pills (the regression pin: if
     // reAddActivityTypeSuffix regressed, both would be unpressed).

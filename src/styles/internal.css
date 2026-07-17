@@ -508,6 +508,15 @@
   line-height: 1.55;
   margin: 0 0 16px;
 }
+/* Drive provenance line ("Created by … · Created … · Last updated …") —
+   detail drawer only, sits between the summary and the action row. */
+.int-detail-provenance {
+  font-size: 11px;
+  color: var(--color-esy-ink-70);
+  line-height: 1.5;
+  margin: -8px 0 16px;
+}
+.int-detail-provenance-dot { color: var(--color-esy-ink-30); }
 .int-detail-cta {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--color-esy-green);

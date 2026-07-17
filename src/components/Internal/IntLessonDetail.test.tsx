@@ -115,3 +115,90 @@ describe('IntLessonDetail meta display (FP-16)', () => {
     expect(tags).toEqual(['K', '1', '2', '3']);
   });
 });
+
+describe('IntLessonDetail Drive provenance block', () => {
+  const NATIVE = 'application/vnd.google-apps.document';
+  const WORD = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  const nativeWithCreator: Partial<Lesson> = {
+    driveMimeType: NATIVE,
+    driveCreatedAt: '2024-01-15T15:00:00.000Z',
+    driveModifiedAt: '2026-03-02T15:00:00.000Z',
+    driveCreatorName: 'Test Person',
+    driveCreatorAttribution: 'created',
+    driveCreatorSource: 'drive_activity',
+  };
+
+  it('renders creator, Created date, and Last updated for a safe native doc', () => {
+    render(<IntLessonDetail lesson={makeLesson(nativeWithCreator)} />);
+    expect(screen.getByText(/Created by Test Person/)).toBeInTheDocument();
+    expect(screen.getByText(/Created Jan 15, 2024/)).toBeInTheDocument();
+    expect(screen.getByText(/Last updated Mar 2, 2026/)).toBeInTheDocument();
+  });
+
+  it('renders "Adapted by" for a reviewer-confirmed adapted attribution', () => {
+    render(
+      <IntLessonDetail
+        lesson={makeLesson({
+          ...nativeWithCreator,
+          driveCreatorAttribution: 'adapted',
+          driveCreatorSource: 'reviewer_confirmed',
+        })}
+      />
+    );
+    expect(screen.getByText(/Adapted by Test Person/)).toBeInTheDocument();
+    expect(screen.queryByText(/Created by/)).not.toBeInTheDocument();
+  });
+
+  it('renders "Added to Drive" (never "Created") for an imported Word file, and no creator', () => {
+    render(
+      <IntLessonDetail
+        lesson={makeLesson({
+          driveMimeType: WORD,
+          driveCreatedAt: '2023-05-05T12:00:00.000Z',
+          driveModifiedAt: '2024-06-06T12:00:00.000Z',
+          // Even a fully-populated creator tuple must not render on a
+          // non-native file (defense in depth — DB constraints forbid this
+          // state, but the UI still refuses it).
+          driveCreatorName: 'Test Person',
+          driveCreatorAttribution: 'created',
+          driveCreatorSource: 'drive_activity',
+        })}
+      />
+    );
+    expect(screen.getByText(/Added to Drive May 5, 2023/)).toBeInTheDocument();
+    expect(screen.queryByText(/Created by/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Last updated Jun 6, 2024/)).toBeInTheDocument();
+  });
+
+  it('omits the created/added line when MIME is missing but still shows Last updated', () => {
+    render(
+      <IntLessonDetail
+        lesson={makeLesson({
+          driveCreatedAt: '2023-05-05T12:00:00.000Z',
+          driveModifiedAt: '2024-06-06T12:00:00.000Z',
+        })}
+      />
+    );
+    expect(screen.queryByText(/Created /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Added to Drive/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Last updated Jun 6, 2024/)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['unsafe name (email)', { driveCreatorName: 'x@example.org' }],
+    ['missing source', { driveCreatorSource: undefined }],
+    ['unknown source', { driveCreatorSource: 'guessed' as never }],
+    ['missing attribution', { driveCreatorAttribution: undefined }],
+  ])('hides the creator line on %s', (_label, overrides) => {
+    render(<IntLessonDetail lesson={makeLesson({ ...nativeWithCreator, ...overrides })} />);
+    expect(screen.queryByText(/Created by|Adapted by/)).not.toBeInTheDocument();
+    // Dates still render — only the creator is withheld.
+    expect(screen.getByText(/Last updated Mar 2, 2026/)).toBeInTheDocument();
+  });
+
+  it('renders no provenance block at all when the lesson has no Drive metadata', () => {
+    const { container } = render(<IntLessonDetail lesson={makeLesson({})} />);
+    expect(container.querySelector('.int-detail-provenance')).not.toBeInTheDocument();
+  });
+});

@@ -32,9 +32,11 @@ const inputIds: ReviewMetadataInputIds = {
 function Harness({
   initialMetadata,
   showLegacySocialEmotionalIntelligence,
+  validationErrors = [],
 }: {
   initialMetadata: ReviewMetadata;
   showLegacySocialEmotionalIntelligence: boolean;
+  validationErrors?: string[];
 }) {
   const [metadata, setMetadata] = useState<ReviewMetadata>(initialMetadata);
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
@@ -46,7 +48,7 @@ function Harness({
       showCookingFields={false}
       showGardenFields={false}
       fieldProgress={{ completed: 0, total: 8 }}
-      validationErrors={[]}
+      validationErrors={validationErrors}
       errorBannerRef={errorBannerRef}
       legacyDecisionWarning={null}
       docTitleHint={null}
@@ -97,5 +99,81 @@ describe('ReviewMetadataForm — legacy Social-Emotional Intelligence pill (FP5 
       'aria-pressed',
       'true'
     );
+  });
+});
+
+describe('ReviewMetadataForm — public creator credit (Drive provenance)', () => {
+  const omitRadio = () => screen.getByRole('radio', { name: /do not show a creator/i });
+  const createdRadio = () => screen.getByRole('radio', { name: /^created by/i });
+  const adaptedRadio = () => screen.getByRole('radio', { name: /^adapted by/i });
+  const nameInput = () => screen.queryByLabelText(/creator name/i);
+
+  it('defaults to "Do not show a creator" with no name input', () => {
+    render(<Harness initialMetadata={{}} showLegacySocialEmotionalIntelligence={false} />);
+    expect(omitRadio()).toBeChecked();
+    expect(createdRadio()).not.toBeChecked();
+    expect(adaptedRadio()).not.toBeChecked();
+    expect(nameInput()).not.toBeInTheDocument();
+  });
+
+  it('choosing "Created by" reveals a required name input with the public-name warning', async () => {
+    const user = userEvent.setup();
+    render(<Harness initialMetadata={{}} showLegacySocialEmotionalIntelligence={false} />);
+    await user.click(createdRadio());
+    expect(createdRadio()).toBeChecked();
+    const input = nameInput();
+    expect(input).toBeInTheDocument();
+    expect(screen.getByText(/appears publicly .* never an email address/i)).toBeInTheDocument();
+    await user.type(input!, 'Test Person');
+    expect(input).toHaveValue('Test Person');
+  });
+
+  it('restores a saved review state (adapted + name) with the input prefilled', () => {
+    render(
+      <Harness
+        initialMetadata={{ driveCreatorAttribution: 'adapted', driveCreatorName: 'Test Person' }}
+        showLegacySocialEmotionalIntelligence={false}
+      />
+    );
+    expect(adaptedRadio()).toBeChecked();
+    expect(nameInput()).toHaveValue('Test Person');
+  });
+
+  it('restores an explicit omit as the default choice', () => {
+    render(
+      <Harness
+        initialMetadata={{ driveCreatorAttribution: 'omit' }}
+        showLegacySocialEmotionalIntelligence={false}
+      />
+    );
+    expect(omitRadio()).toBeChecked();
+    expect(nameInput()).not.toBeInTheDocument();
+  });
+
+  it('switching back to omit hides the name input (name never rides an omit payload)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness
+        initialMetadata={{ driveCreatorAttribution: 'created', driveCreatorName: 'Test Person' }}
+        showLegacySocialEmotionalIntelligence={false}
+      />
+    );
+    expect(nameInput()).toHaveValue('Test Person');
+    await user.click(omitRadio());
+    expect(omitRadio()).toBeChecked();
+    expect(nameInput()).not.toBeInTheDocument();
+  });
+
+  it('shows the inline creator-name validation error when flagged', () => {
+    render(
+      <Harness
+        initialMetadata={{ driveCreatorAttribution: 'created', driveCreatorName: 'x@y.z' }}
+        showLegacySocialEmotionalIntelligence={false}
+        validationErrors={['Creator name']}
+      />
+    );
+    expect(
+      screen.getByText(/public full name — no emails, links, or extra spaces/i)
+    ).toBeInTheDocument();
   });
 });
