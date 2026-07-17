@@ -17,6 +17,7 @@
  * (Vitest, scripts) it resolves from node_modules. Dual-runtime by design.
  */
 import { z } from 'zod';
+import { isValidPublicCreatorName } from './driveProvenance.ts';
 
 // =============================================================================
 // Closed-enum value lists — MUST match src/types/lessonMetadata.zod.ts.
@@ -465,7 +466,33 @@ export const lessonMetadataSchema = z.object({
 // thematicCategories/seasonTiming).
 // =============================================================================
 
-export const reviewFormPayloadSchema = z.object({
+// Drive provenance cross-field rule — MUST match refineDriveCreator in
+// src/types/reviewFormPayload.zod.ts ('created'/'adapted' require a safe
+// name; a name without a publishable attribution is a shape error).
+const refineDriveCreator = (
+  data: { driveCreatorAttribution?: string; driveCreatorName?: string },
+  ctx: z.RefinementCtx
+): void => {
+  const attr = data.driveCreatorAttribution;
+  if (attr === 'created' || attr === 'adapted') {
+    if (!isValidPublicCreatorName(data.driveCreatorName)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['driveCreatorName'],
+        message:
+          'A public full name is required for "Created by"/"Adapted by" — no emails, links, or blank/untrimmed values.',
+      });
+    }
+  } else if (data.driveCreatorName !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['driveCreatorName'],
+      message: 'driveCreatorName requires driveCreatorAttribution "created" or "adapted".',
+    });
+  }
+};
+
+export const reviewFormPayloadObjectSchema = z.object({
   activityType: z.array(ActivityTypeEnum).optional(),
   location: z.string().optional(),
 
@@ -495,4 +522,13 @@ export const reviewFormPayloadSchema = z.object({
   processingNotes: z.string().optional(),
   title: z.string().optional(),
   summary: z.string().optional(),
+
+  // Drive provenance — the reviewer's creator confirmation. MUST match
+  // src/types/reviewFormPayload.zod.ts (cross-field rule applied below).
+  driveCreatorAttribution: z.enum(['created', 'adapted', 'omit']).optional(),
+  driveCreatorName: z.string().optional(),
 });
+
+export const reviewFormPayloadSchema = reviewFormPayloadObjectSchema.superRefine(
+  refineDriveCreator
+);

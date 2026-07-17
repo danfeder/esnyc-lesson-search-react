@@ -88,5 +88,12 @@ export function makeLesson(overrides: Partial<Lesson> = {}): Lesson {
     processing_notes: overrides.processing_notes,
     created_at: overrides.created_at,
     updated_at: overrides.updated_at,
+    // Drive provenance (public subset) — pass-through, default absent.
+    driveMimeType: overrides.driveMimeType,
+    driveCreatedAt: overrides.driveCreatedAt,
+    driveModifiedAt: overrides.driveModifiedAt,
+    driveCreatorName: overrides.driveCreatorName,
+    driveCreatorAttribution: overrides.driveCreatorAttribution,
+    driveCreatorSource: overrides.driveCreatorSource,
   };
 }

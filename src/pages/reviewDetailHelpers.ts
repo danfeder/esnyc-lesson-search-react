@@ -1,5 +1,5 @@
 import type { ReviewMetadata } from '@/types';
-import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
+import { reviewFormPayloadObjectSchema } from '@/types/reviewFormPayload.zod';
 import { type FilterConfig } from '@/utils/filterDefinitions';
 import { type IntDuplicateMatchType } from '@/components/Internal';
 import {
@@ -18,26 +18,30 @@ import {
 // reviewFormPayloadSchema (src/types/reviewFormPayload.zod.ts) and the
 // existing required-fields labels so a Zod failure highlights the same
 // IntFormField as a missing-required failure would.
-export const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadSchema.shape, string> = {
-  activityType: 'Activity Type',
-  location: 'Location',
-  season: 'Season & Timing',
-  themes: 'Thematic Categories',
-  gradeLevels: 'Grade Levels',
-  coreCompetencies: 'Core Competencies',
-  socialEmotionalLearning: 'Social-Emotional Skills',
-  cookingMethods: 'Cooking Methods',
-  mainIngredients: 'Main Ingredients',
-  gardenSkills: 'Garden Skills',
-  cookingSkills: 'Cooking Skills',
-  culturalHeritage: 'Cultural Heritage',
-  academicIntegration: 'Academic Integration',
-  observancesHolidays: 'Observances & Holidays',
-  culturalResponsivenessFeatures: 'Cultural Responsiveness Features',
-  processingNotes: 'Processing Notes',
-  title: 'Lesson title',
-  summary: 'Summary',
-};
+export const ZOD_FIELD_TO_LABEL: Record<keyof typeof reviewFormPayloadObjectSchema.shape, string> =
+  {
+    activityType: 'Activity Type',
+    location: 'Location',
+    season: 'Season & Timing',
+    themes: 'Thematic Categories',
+    gradeLevels: 'Grade Levels',
+    coreCompetencies: 'Core Competencies',
+    socialEmotionalLearning: 'Social-Emotional Skills',
+    cookingMethods: 'Cooking Methods',
+    mainIngredients: 'Main Ingredients',
+    gardenSkills: 'Garden Skills',
+    cookingSkills: 'Cooking Skills',
+    culturalHeritage: 'Cultural Heritage',
+    academicIntegration: 'Academic Integration',
+    observancesHolidays: 'Observances & Holidays',
+    culturalResponsivenessFeatures: 'Cultural Responsiveness Features',
+    processingNotes: 'Processing Notes',
+    title: 'Lesson title',
+    summary: 'Summary',
+    // Drive provenance (creator confirmation section).
+    driveCreatorAttribution: 'Creator attribution',
+    driveCreatorName: 'Creator name',
+  };
 
 // Mirror of the save-path activityType strip in handleSaveReview. The
 // IntPillGroup option values are slugs (`cooking-only`/`garden-only`/

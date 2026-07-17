@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { lessonMetadataSchema } from '@/types/lessonMetadata.zod';
-import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
+import {
+  reviewFormPayloadSchema,
+  reviewFormPayloadObjectSchema,
+} from '@/types/reviewFormPayload.zod';
 
 /**
  * C83 contract-lock (Wave 4): the review season value MUST be a `z.array(SeasonTimingEnum)`.
@@ -14,29 +17,31 @@ import { reviewFormPayloadSchema } from '@/types/reviewFormPayload.zod';
  * Isolation note: every field on `reviewFormPayloadSchema` / `lessonMetadataSchema` is
  * `.optional()`, so a bare `{ season: ... }` object varies ONLY the season-shape contract and
  * cannot fail for unrelated missing-key reasons. We additionally assert against
- * `reviewFormPayloadSchema.shape.season` directly to isolate the field sub-schema beyond doubt.
+ * `reviewFormPayloadObjectSchema.shape.season` directly to isolate the field sub-schema beyond doubt.
  */
 describe('C83 season-normalization contract', () => {
   describe('reviewFormPayloadSchema.season (review-form key)', () => {
     it('accepts an empty array (the 3-fallback `[]` shape)', () => {
       expect(reviewFormPayloadSchema.safeParse({ season: [] }).success).toBe(true);
       // Field-isolated: prove it is the season sub-schema accepting [], not object completeness.
-      expect(reviewFormPayloadSchema.shape.season.safeParse([]).success).toBe(true);
+      expect(reviewFormPayloadObjectSchema.shape.season.safeParse([]).success).toBe(true);
     });
 
     it('accepts a backfilled array of valid season values', () => {
       expect(reviewFormPayloadSchema.safeParse({ season: ['Winter', 'Spring'] }).success).toBe(
         true
       );
-      expect(reviewFormPayloadSchema.shape.season.safeParse(['Winter', 'Spring']).success).toBe(
-        true
-      );
+      expect(
+        reviewFormPayloadObjectSchema.shape.season.safeParse(['Winter', 'Spring']).success
+      ).toBe(true);
     });
 
     it('rejects a bare string season (the bug being fixed)', () => {
       expect(reviewFormPayloadSchema.safeParse({ season: 'year-round' }).success).toBe(false);
       // Field-isolated: prove the rejection comes from the season sub-schema, not the object.
-      expect(reviewFormPayloadSchema.shape.season.safeParse('year-round').success).toBe(false);
+      expect(reviewFormPayloadObjectSchema.shape.season.safeParse('year-round').success).toBe(
+        false
+      );
     });
   });
 
