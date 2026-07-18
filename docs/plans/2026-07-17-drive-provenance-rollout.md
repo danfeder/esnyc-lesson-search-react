@@ -130,7 +130,7 @@ processed all 722 active rows: 710 updated, 12 unreadable Drive files preserved,
 0 transient failures, and 0 unresolvable rows. Read-only production verification
 confirmed all 710 readable rows received a fresh sync timestamp and the 439
 creator attributions were unchanged. The daily 08:30 UTC schedule is enabled
-by the follow-up workflow-only PR; manual dispatch remains available.
+in the workflow-only PR; manual dispatch remains available.
 
 Completed steps:
 

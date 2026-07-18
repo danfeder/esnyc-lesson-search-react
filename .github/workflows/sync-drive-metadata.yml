@@ -24,6 +24,12 @@ on:
     # Daily at 08:30 UTC (04:30 EDT / 03:30 EST).
     - cron: '30 8 * * *'
 
+# A manual verification/recovery dispatch must not overlap the daily run and
+# double the Drive API load. Preserve any in-flight refresh; queue the next one.
+concurrency:
+  group: sync-drive-metadata
+  cancel-in-progress: false
+
 permissions: {}
 
 jobs:
