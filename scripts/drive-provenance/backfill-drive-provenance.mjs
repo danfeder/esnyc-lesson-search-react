@@ -80,6 +80,10 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '..', '..', '.env') });
 
 const BATCH_SIZE_MAX = 50;
+// PostgREST `.in()` filters ride in the GET querystring — ~710 lesson ids in
+// one filter is a ~27KB URL the server rejects (400). 100 ids ≈ 4KB stays
+// comfortably under every proxy limit.
+const SELECT_CHUNK = 100;
 
 // ---------------------------------------------------------------------------
 // CLI parsing (no deps; explicit and boring).
@@ -558,11 +562,11 @@ async function main() {
     // digest by design.
     const existingBySource = new Map();
     const planLessonIds = planRows.map((r) => r.lesson_id);
-    for (let i = 0; i < planLessonIds.length; i += 1000) {
+    for (let i = 0; i < planLessonIds.length; i += SELECT_CHUNK) {
       const { data, error } = await supabase
         .from('lessons')
         .select('lesson_id, drive_creator_source')
-        .in('lesson_id', planLessonIds.slice(i, i + 1000));
+        .in('lesson_id', planLessonIds.slice(i, i + SELECT_CHUNK));
       if (error) throw new Error(`pre-write select failed: ${error.message}`);
       for (const row of data ?? []) existingBySource.set(row.lesson_id, row.drive_creator_source);
     }
@@ -605,7 +609,7 @@ async function main() {
         `drive-provenance-backup-${Date.now()}.json`);
     const targetIds = updates.map((u) => u.lesson_id);
     const backupRows = [];
-    for (let i = 0; i < targetIds.length; i += 1000) {
+    for (let i = 0; i < targetIds.length; i += SELECT_CHUNK) {
       const { data, error } = await supabase
         .from('lessons')
         .select(
@@ -613,7 +617,7 @@ async function main() {
             'drive_metadata_synced_at, drive_creator_name, drive_creator_attribution, ' +
             'drive_creator_source, drive_creator_verified_at'
         )
-        .in('lesson_id', targetIds.slice(i, i + 1000));
+        .in('lesson_id', targetIds.slice(i, i + SELECT_CHUNK));
       if (error) throw new Error(`backup select failed: ${error.message}`);
       backupRows.push(...(data ?? []));
     }
