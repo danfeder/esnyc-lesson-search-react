@@ -122,12 +122,23 @@ approve production migration.
 
 ## Gate 3 — enable the permanent date refresh
 
-1. Generate a strong random token; install as edge secret `DRIVE_SYNC_TOKEN`.
-2. Install repo secrets `SYNC_DRIVE_METADATA_URL` + `DRIVE_SYNC_TOKEN`.
-3. Manually dispatch `Sync Drive Metadata`; confirm totals (processed ≈ active
+**Status: ✅ COMPLETED 2026-07-18.** A dedicated 256-bit token was installed
+as the production Edge secret and matching GitHub Actions secret; the function
+URL repo secret was installed separately. Manual workflow run
+[`29630901437`](https://github.com/danfeder/esnyc-lesson-search-react/actions/runs/29630901437)
+processed all 722 active rows: 710 updated, 12 unreadable Drive files preserved,
+0 transient failures, and 0 unresolvable rows. Read-only production verification
+confirmed all 710 readable rows received a fresh sync timestamp and the 439
+creator attributions were unchanged. The daily 08:30 UTC schedule is enabled
+by the follow-up workflow-only PR; manual dispatch remains available.
+
+Completed steps:
+
+1. Generated a strong random token and installed it as edge secret `DRIVE_SYNC_TOKEN`.
+2. Installed repo secrets `SYNC_DRIVE_METADATA_URL` + `DRIVE_SYNC_TOKEN`.
+3. Manually dispatched `Sync Drive Metadata`; confirmed totals (processed ≈ active
    corpus; transient=0; unresolvable surfaced as a warning).
-4. Uncomment the `schedule:` block in the workflow (small separate PR) for
-   the once-daily refresh.
+4. Enabled the `schedule:` block in the workflow for the once-daily refresh.
 
 ## Explicitly out of scope / never
 
