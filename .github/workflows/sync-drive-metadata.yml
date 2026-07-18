@@ -5,14 +5,11 @@
 # dates stay current. The function never touches creator columns and never
 # calls Drive Activity.
 #
-# ⚠ OPERATIONAL GATE — NOT YET ENABLED. This workflow is reviewable config
-# only until the post-review rollout steps run (see
-# docs/plans/2026-07-17-drive-provenance-rollout.md):
-#   1. deploy the sync-drive-metadata function;
-#   2. install the DRIVE_SYNC_TOKEN edge secret + the two repo secrets below;
-#   3. uncomment the `schedule:` block to turn on the daily run.
-# Until then it is manual-dispatch only, and fails fast (loudly, not
-# silently-green) when the secrets are missing.
+# ✅ OPERATIONAL GATE COMPLETED 2026-07-18. The production function is
+# deployed, the dedicated edge/repo secrets are installed, and manual run
+# 29630901437 completed the full corpus with processed=722, updated=710,
+# unreadable=12, transient=0, unresolvable=0. The daily schedule is enabled;
+# manual dispatch remains available for supervised verification/recovery.
 #
 # Required repo secrets (rollout step 2):
 #   SYNC_DRIVE_METADATA_URL — https://<prod-ref>.supabase.co/functions/v1/sync-drive-metadata
@@ -23,9 +20,15 @@ name: Sync Drive Metadata
 
 on:
   workflow_dispatch:
-  # Rollout step 3 — uncomment to enable the once-daily refresh (~04:30 ET):
-  # schedule:
-  #   - cron: '30 8 * * *'
+  schedule:
+    # Daily at 08:30 UTC (04:30 EDT / 03:30 EST).
+    - cron: '30 8 * * *'
+
+# A manual verification/recovery dispatch must not overlap the daily run and
+# double the Drive API load. Preserve any in-flight refresh; queue the next one.
+concurrency:
+  group: sync-drive-metadata
+  cancel-in-progress: false
 
 permissions: {}
 
