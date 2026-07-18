@@ -197,6 +197,18 @@ describe('IntLessonDetail Drive provenance block', () => {
     expect(screen.getByText(/Last updated Mar 2, 2026/)).toBeInTheDocument();
   });
 
+  it('keeps an audible separator between segments while the visual dot stays decorative', () => {
+    const { container } = render(<IntLessonDetail lesson={makeLesson(nativeWithCreator)} />);
+    const block = container.querySelector('.int-detail-provenance')!;
+    // Three lines → two separator pairs: a visually-hidden period announced
+    // by screen readers + the aria-hidden decorative dot they skip.
+    const audible = block.querySelectorAll('span.sr-only');
+    const decorative = block.querySelectorAll('[aria-hidden="true"]');
+    expect(audible).toHaveLength(2);
+    expect(decorative).toHaveLength(2);
+    audible.forEach((s) => expect(s.textContent).toBe('. '));
+  });
+
   it('renders no provenance block at all when the lesson has no Drive metadata', () => {
     const { container } = render(<IntLessonDetail lesson={makeLesson({})} />);
     expect(container.querySelector('.int-detail-provenance')).not.toBeInTheDocument();

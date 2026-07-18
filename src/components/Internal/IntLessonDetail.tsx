@@ -91,9 +91,14 @@ function DriveProvenance({ lesson }: { lesson: Lesson }) {
       {lines.map((line, i) => (
         <span key={line}>
           {i > 0 && (
-            <span className="int-detail-provenance-dot" aria-hidden="true">
-              {' · '}
-            </span>
+            <>
+              {/* The dot is decorative-only; screen readers need punctuation
+                  here or the segments announce as one run-on string. */}
+              <span className="sr-only">. </span>
+              <span className="int-detail-provenance-dot" aria-hidden="true">
+                {' · '}
+              </span>
+            </>
           )}
           {line}
         </span>
