@@ -160,7 +160,7 @@ describe('fetchDriveFileMetadata (script mirror)', () => {
     const noSleep = vi.fn(async () => {});
     const result = await fetchDriveFileMetadata('token', 'FILE-F', fetchImpl, noSleep);
     expect(result).toEqual({ ok: false, status: 503, notFound: false });
-    expect(fetchImpl).toHaveBeenCalledTimes(5); // MAX_ATTEMPTS
+    expect(fetchImpl).toHaveBeenCalledTimes(8); // MAX_ATTEMPTS
   });
 });
 

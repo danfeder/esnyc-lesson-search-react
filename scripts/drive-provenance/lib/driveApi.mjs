@@ -8,7 +8,7 @@
 const METADATA_FIELDS = 'id,mimeType,createdTime,modifiedTime';
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503]);
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 8;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Quota 429s and 5xx blips are transient, not answers: retry with exponential
@@ -25,7 +25,7 @@ async function fetchWithRetry(makeRequest, sleepImpl) {
     const backoffMs =
       Number.isFinite(retryAfterSec) && retryAfterSec > 0
         ? retryAfterSec * 1000
-        : Math.min(16000, 1000 * 2 ** (attempt - 1));
+        : Math.min(30000, 1000 * 2 ** (attempt - 1));
     await sleepImpl(backoffMs);
   }
 }
