@@ -652,7 +652,9 @@ async function main() {
 /**
  * Write the aggregate report privately and echo the aggregate summary. In
  * write mode the result goes to `<report>.write-result.json` — the REVIEWED
- * dry-run report (whose sha256 is the --confirm-token) is never overwritten.
+ * dry-run report (which printed the plan_digest used as --confirm-token) is
+ * never overwritten. The token is the computed plan_digest itself, NOT the
+ * report file's sha256.
  */
 function writeReportAndSummarize(report, args, failed) {
   const reportPath = args.write ? `${args.report}.write-result.json` : args.report;

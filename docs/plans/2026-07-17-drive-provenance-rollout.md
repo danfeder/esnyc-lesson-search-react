@@ -59,6 +59,17 @@ secrets exist — see Gate 3) or wait for the backfill to populate dates.
 
 ## Gate 2 — one-time supervised historical backfill (owner present)
 
+**Status: ✅ COMPLETED 2026-07-18** (owner-supervised; digest `5c482c7b…`
+authorized and matched at write time). Outcome, PROD-verified read-only:
+722 active rows → 710 written with dates/metadata, **439 creator-attributed**
+(90 created / 349 adapted), 12 untouched (Drive 404s); 34 mapped actors,
+8 unresolved former-staff groups omitted; 21 same-millisecond copy/edit tie
+files conservatively omitted (owner-ruled — census had over-counted these).
+`updated_at` unperturbed, so the interim public sort was unaffected. Private
+backup + reports retained mode-600 outside the repo. The Activity-scoped
+impersonation is OVER; this gate is a historical record and must not be rerun.
+Full session detail: `2026-07-17-backfill-session-runbook.md`.
+
 **Step 0 — regenerate the private actor map** (the investigation persisted
 only aggregates; no `people/NNN → email` artifact exists on disk). Run
 `scripts/drive-provenance/build-actor-map.mjs` with the primary supervised
