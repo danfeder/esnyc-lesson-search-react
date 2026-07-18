@@ -110,7 +110,8 @@ printed **plan_digest**.
 **[OBSOLETE creator estimate — actual clean dry-run 2026-07-18: 432 accepted
 files / 439 rows (89 created-files / 343 adapted-files). The ~453/~460 census
 figure over-counted by 21 copy-files whose only same-actor "edit" shares the
-copy's exact millisecond timestamp (a copy artifact, not development); the
+copy's exact millisecond timestamp (which did not prove development after the
+copy); the
 locked strictly-after tie rule rejects them, owner-ruled correct. All other
 numbers reconciled exactly.]**
 
