@@ -160,6 +160,73 @@ export function ReviewMetadataForm({
         </IntFormField>
       </div>
 
+      {/* Drive provenance — public creator credit (2026-07). Defaults to "Do
+          not show a creator"; a reviewer must deliberately pick Created/Adapted
+          and enter a safe public full name. Never prefilled from the
+          submitter, reviewer, doc owner, or any revision actor. */}
+      <div className="adm-card">
+        <div className="adm-section-eyebrow">Public creator credit</div>
+        <p className="adm-section-desc">
+          Optional. If you know who wrote this lesson, you can credit them on the public lesson
+          page. Leave it off unless you&apos;re sure.
+        </p>
+        <fieldset className="adm-radio-group" style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend className="sr-only">Public creator credit</legend>
+          <label className="adm-radio">
+            <input
+              type="radio"
+              name="drive-creator-attribution"
+              checked={
+                !metadata.driveCreatorAttribution || metadata.driveCreatorAttribution === 'omit'
+              }
+              onChange={() => handleMetadataChange('driveCreatorAttribution', 'omit')}
+            />
+            <span>Do not show a creator</span>
+          </label>
+          <label className="adm-radio">
+            <input
+              type="radio"
+              name="drive-creator-attribution"
+              checked={metadata.driveCreatorAttribution === 'created'}
+              onChange={() => handleMetadataChange('driveCreatorAttribution', 'created')}
+            />
+            <span>Created by — this person wrote the lesson from scratch</span>
+          </label>
+          <label className="adm-radio">
+            <input
+              type="radio"
+              name="drive-creator-attribution"
+              checked={metadata.driveCreatorAttribution === 'adapted'}
+              onChange={() => handleMetadataChange('driveCreatorAttribution', 'adapted')}
+            />
+            <span>Adapted by — this person copied an existing lesson and developed it</span>
+          </label>
+        </fieldset>
+        {(metadata.driveCreatorAttribution === 'created' ||
+          metadata.driveCreatorAttribution === 'adapted') && (
+          <div style={{ marginTop: 8 }}>
+            <IntFormField
+              label="Creator name"
+              required
+              hint="This name appears publicly on the lesson page. Use the person's full name — never an email address or link."
+              error={
+                validationErrors.includes('Creator name')
+                  ? "Enter the person's public full name — no emails, links, or extra spaces."
+                  : undefined
+              }
+            >
+              <input
+                type="text"
+                className="adm-input"
+                value={metadata.driveCreatorName ?? ''}
+                onChange={(e) => handleMetadataChange('driveCreatorName', e.target.value)}
+                placeholder="Full name as it should appear publicly"
+              />
+            </IntFormField>
+          </div>
+        )}
+      </div>
+
       <div className="adm-card">
         <div className="adm-section-eyebrow">Metadata</div>
         <p className="adm-section-desc">Fix tags before publishing. Reviewer has the final call.</p>

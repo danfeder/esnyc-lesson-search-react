@@ -34,6 +34,15 @@ export interface RpcRow {
   grade_levels: string[];
   metadata: Record<string, unknown> | null;
   total_count?: number;
+  // Drive provenance (public subset returned by search_lessons; the by-ID
+  // query selects the same columns). Null when the row has no readable Drive
+  // metadata; drive_file_id and sync/verified timestamps are never selected.
+  drive_mime_type?: string | null;
+  drive_created_at?: string | null;
+  drive_modified_at?: string | null;
+  drive_creator_name?: string | null;
+  drive_creator_attribution?: string | null;
+  drive_creator_source?: string | null;
 }
 
 type SearchParamValue = string | string[] | number | undefined;
@@ -79,6 +88,18 @@ export function normalizeMetadata(
 }
 
 export function mapRowToLesson(row: RpcRow): Lesson {
+  // Drive provenance: narrow attribution/source to the trusted unions HERE so
+  // downstream renderers (IntLessonDetail's safety gate) never see a stray
+  // string. Anything unrecognized maps to undefined — fail closed.
+  const attribution =
+    row.drive_creator_attribution === 'created' || row.drive_creator_attribution === 'adapted'
+      ? row.drive_creator_attribution
+      : undefined;
+  const source =
+    row.drive_creator_source === 'drive_activity' ||
+    row.drive_creator_source === 'reviewer_confirmed'
+      ? row.drive_creator_source
+      : undefined;
   return {
     lessonId: row.lesson_id,
     title: row.title,
@@ -86,6 +107,12 @@ export function mapRowToLesson(row: RpcRow): Lesson {
     fileLink: row.file_link,
     gradeLevels: Array.isArray(row.grade_levels) ? row.grade_levels : [],
     metadata: normalizeMetadata(row.metadata),
+    driveMimeType: row.drive_mime_type ?? undefined,
+    driveCreatedAt: row.drive_created_at ?? undefined,
+    driveModifiedAt: row.drive_modified_at ?? undefined,
+    driveCreatorName: row.drive_creator_name ?? undefined,
+    driveCreatorAttribution: attribution,
+    driveCreatorSource: source,
   };
 }
 

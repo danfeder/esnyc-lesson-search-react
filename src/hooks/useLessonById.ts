@@ -27,7 +27,13 @@ export function useLessonById(lessonId: string | null, options: UseLessonByIdOpt
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lessons')
-        .select('lesson_id, title, summary, file_link, grade_levels, metadata')
+        .select(
+          'lesson_id, title, summary, file_link, grade_levels, metadata, ' +
+            // Drive provenance: the same public subset search_lessons returns
+            // (drive_file_id and the sync/verified timestamps stay unexposed).
+            'drive_mime_type, drive_created_at, drive_modified_at, ' +
+            'drive_creator_name, drive_creator_attribution, drive_creator_source'
+        )
         .eq('lesson_id', lessonId!)
         .is('retired_at', null)
         .maybeSingle();

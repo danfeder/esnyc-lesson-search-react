@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Link2 } from 'lucide-react';
 import type { Lesson } from '@/types';
+import {
+  driveDateLabelKind,
+  formatDriveDate,
+  isCreatorSafeToRender,
+} from '@/utils/driveProvenance';
 import { collapseHeritageToLeaves, fieldValueLabeler } from '@/utils/filterUtils';
 import { IntButton } from './IntButton';
 import { culturalLabel, intActivityLabel, intGradesLabel, sortGradeLevels } from './IntListRow';
@@ -50,6 +55,58 @@ function MetaRow({ label, items, format }: MetaRowProps) {
   );
 }
 
+/**
+ * Drive provenance block (detail drawer ONLY — never cards/list rows). Every
+ * line is independently gated and the whole block disappears when no line is
+ * safe to show:
+ *   - "Created by [name]" / "Adapted by [name]" only when isCreatorSafeToRender
+ *     passes (native Doc + trusted attribution/source + safe public name);
+ *   - "Created [date]" for a native Google Doc, "Added to Drive [date]" for a
+ *     KNOWN imported type; a missing/unrecognized MIME omits the line (never
+ *     guess what an unknown type's createdTime means);
+ *   - "Last updated [date]" whenever the Drive modified time is readable.
+ */
+function driveProvenanceLines(lesson: Lesson): string[] {
+  const lines: string[] = [];
+  if (isCreatorSafeToRender(lesson)) {
+    const verb = lesson.driveCreatorAttribution === 'adapted' ? 'Adapted by' : 'Created by';
+    lines.push(`${verb} ${lesson.driveCreatorName}`);
+  }
+  const createdDate = formatDriveDate(lesson.driveCreatedAt);
+  if (createdDate) {
+    const kind = driveDateLabelKind(lesson.driveMimeType);
+    if (kind === 'created') lines.push(`Created ${createdDate}`);
+    else if (kind === 'added') lines.push(`Added to Drive ${createdDate}`);
+  }
+  const updatedDate = formatDriveDate(lesson.driveModifiedAt);
+  if (updatedDate) lines.push(`Last updated ${updatedDate}`);
+  return lines;
+}
+
+function DriveProvenance({ lesson }: { lesson: Lesson }) {
+  const lines = driveProvenanceLines(lesson);
+  if (lines.length === 0) return null;
+  return (
+    <p className="int-detail-provenance">
+      {lines.map((line, i) => (
+        <span key={line}>
+          {i > 0 && (
+            <>
+              {/* The dot is decorative-only; screen readers need punctuation
+                  here or the segments announce as one run-on string. */}
+              <span className="sr-only">. </span>
+              <span className="int-detail-provenance-dot" aria-hidden="true">
+                {' · '}
+              </span>
+            </>
+          )}
+          {line}
+        </span>
+      ))}
+    </p>
+  );
+}
+
 export function IntLessonDetail({ lesson }: IntLessonDetailProps) {
   const meta = lesson.metadata;
   const activity = intActivityLabel(lesson);
@@ -94,6 +151,7 @@ export function IntLessonDetail({ lesson }: IntLessonDetailProps) {
       </div>
       <h2 className="int-detail-title">{lesson.title}</h2>
       <p className="int-detail-summary">{lesson.summary}</p>
+      <DriveProvenance lesson={lesson} />
       <div className="int-detail-actions">
         {lesson.fileLink && (
           <a

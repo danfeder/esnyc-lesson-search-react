@@ -7,15 +7,41 @@
 
 const METADATA_FIELDS = 'id,mimeType,createdTime,modifiedTime';
 
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503]);
+const MAX_ATTEMPTS = 8;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Quota 429s and 5xx blips are transient, not answers: retry with exponential
+// backoff (honoring Retry-After) before letting a failure surface. 404 and
+// every other status return immediately — the callers treat those as real
+// evidence and must keep seeing them unchanged.
+async function fetchWithRetry(makeRequest, sleepImpl) {
+  for (let attempt = 1; ; attempt++) {
+    const response = await makeRequest();
+    if (response.ok || !RETRYABLE_STATUSES.has(response.status) || attempt >= MAX_ATTEMPTS) {
+      return response;
+    }
+    const retryAfterSec = Number(response.headers?.get?.('retry-after'));
+    const backoffMs =
+      Number.isFinite(retryAfterSec) && retryAfterSec > 0
+        ? retryAfterSec * 1000
+        : Math.min(30000, 1000 * 2 ** (attempt - 1));
+    await sleepImpl(backoffMs);
+  }
+}
+
 /**
  * @returns {{ok: true, metadata: {id, mimeType, createdTime, modifiedTime}}
  *         | {ok: false, status: number, notFound: boolean}}
  */
-export async function fetchDriveFileMetadata(accessToken, fileId, fetchImpl = fetch) {
+export async function fetchDriveFileMetadata(accessToken, fileId, fetchImpl = fetch, sleepImpl = sleep) {
   const url =
     `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}` +
     `?fields=${encodeURIComponent(METADATA_FIELDS)}&supportsAllDrives=true`;
-  const response = await fetchImpl(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const response = await fetchWithRetry(
+    () => fetchImpl(url, { headers: { Authorization: `Bearer ${accessToken}` } }),
+    sleepImpl
+  );
   if (!response.ok) {
     return { ok: false, status: response.status, notFound: response.status === 404 };
   }
@@ -42,24 +68,28 @@ export async function fetchDriveFileMetadata(accessToken, fileId, fetchImpl = fe
  *   createActions: [{ personName, isCurrentUser, actorIsPerson, subtype, timestamp }]
  *   edits:         [{ personName, isCurrentUser, actorIsPerson, timestamp }]
  */
-export async function fetchDriveActivity(accessToken, fileId, fetchImpl = fetch) {
+export async function fetchDriveActivity(accessToken, fileId, fetchImpl = fetch, sleepImpl = sleep) {
   const createActions = [];
   const edits = [];
   let pageToken;
   do {
-    const response = await fetchImpl('https://driveactivity.googleapis.com/v2/activity:query', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        itemName: `items/${fileId}`,
-        filter: 'detail.action_detail_case:(CREATE EDIT)',
-        pageSize: 100,
-        ...(pageToken ? { pageToken } : {}),
-      }),
-    });
+    const response = await fetchWithRetry(
+      () =>
+        fetchImpl('https://driveactivity.googleapis.com/v2/activity:query', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            itemName: `items/${fileId}`,
+            filter: 'detail.action_detail_case:(CREATE EDIT)',
+            pageSize: 100,
+            ...(pageToken ? { pageToken } : {}),
+          }),
+        }),
+      sleepImpl
+    );
     if (!response.ok) {
       return { ok: false, status: response.status, notFound: response.status === 404 };
     }
