@@ -171,16 +171,17 @@ describe('enums.json fields', () => {
 
 // ---------------------------------------------------------------------------
 // The 6 smaller fields — scripts/stage2-retag/data/smaller-fields.vocab.json
-// (counts locked 6/5/6/3/16/24 per design §4 OQ2 + supervisor resolution)
+// (original counts 6/5/6/3/16/24 per design §4 OQ2 + supervisor resolution;
+// observances amended to 17 by owner decision 2026-08-17)
 // ---------------------------------------------------------------------------
 
 describe('smaller fields', () => {
-  it('has the locked counts 6/5/6/3/16/24', () => {
+  it('has the current counts 6/5/6/3/17/24', () => {
     expect(vocab.academic_integration.values).toHaveLength(6);
     expect(vocab.social_emotional_learning.values).toHaveLength(5);
     expect(vocab.core_competencies.values).toHaveLength(6);
     expect(vocab.cooking_methods.values).toHaveLength(3);
-    expect(vocab.observances_holidays.values).toHaveLength(16);
+    expect(vocab.observances_holidays.values).toHaveLength(17);
     expect(vocab.garden_skills.values).toHaveLength(24);
   });
 
@@ -226,9 +227,10 @@ describe('smaller fields', () => {
     expect(vocab.cooking_methods.values).not.toContain('basic-prep-only');
   });
 
-  it('observances_holidays = 16 after the End-of-year merge ("End of year celebrations" survives)', () => {
+  it('observances_holidays = the 16-value lock plus Arab American Heritage Month', () => {
     expect(vocab.observances_holidays.values).toEqual([
       'AAPI Heritage Month',
+      'Arab American Heritage Month',
       'Black History Month',
       'Hispanic/Latinx Heritage Month',
       "Indigenous Peoples' Month",

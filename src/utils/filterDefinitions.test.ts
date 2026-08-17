@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_FIELD_CONFIGS, FILTER_CONFIGS, FILTER_KEYS } from './filterDefinitions';
 
+const DEFERRED_OBSERVANCE = 'Arab American Heritage Month';
+
 // mainIngredients was promoted from METADATA_CONFIGS to FILTER_CONFIGS (Brief 5).
 // METADATA_CONFIGS is now module-private + METADATA_KEYS was removed (F3 dead-export
 // sweep), so the remaining reviewer-only fields are asserted via ALL_FIELD_CONFIGS.
@@ -56,6 +58,14 @@ describe('Filter Definitions Compliance', () => {
       expect(cfg.type).toBe('hierarchical');
       // Group→specific tree: at least one top-level group carries `children`.
       expect(cfg.options.some((o) => (o.children?.length ?? 0) > 0)).toBe(true);
+    });
+
+    it('keeps the new observance out of the reviewer UI until the UI rollout', () => {
+      const visibleObservances = ALL_FIELD_CONFIGS.observancesHolidays.options.map(
+        (option) => option.value
+      );
+      expect(visibleObservances).toHaveLength(16);
+      expect(visibleObservances).not.toContain(DEFERRED_OBSERVANCE);
     });
 
     // value === label is load-bearing for mainIngredients: the reviewer form's

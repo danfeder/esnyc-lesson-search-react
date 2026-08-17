@@ -81,6 +81,7 @@ export const COOKING_METHODS_VALUES = ['basic-prep', 'stovetop', 'oven'] as cons
 
 export const OBSERVANCES_HOLIDAYS_VALUES = [
   'AAPI Heritage Month',
+  'Arab American Heritage Month',
   'Black History Month',
   'Hispanic/Latinx Heritage Month',
   "Indigenous Peoples' Month",

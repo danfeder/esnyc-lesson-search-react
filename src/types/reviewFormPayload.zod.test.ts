@@ -18,7 +18,11 @@ describe('reviewFormPayloadSchema — canonical small-field vocab (E2b)', () => 
       socialEmotionalLearning: ['Self-management', 'Relationship skills'],
       coreCompetencies: ['Garden Skills and Related Academic Content'],
       cookingMethods: ['basic-prep', 'stovetop', 'oven'],
-      observancesHolidays: ['Lunar New Year', 'End of year celebrations'],
+      observancesHolidays: [
+        'Arab American Heritage Month',
+        'Lunar New Year',
+        'End of year celebrations',
+      ],
       gardenSkills: ['Planting', 'Stewardship tasks', 'Sensory exploration'],
     };
     const result = reviewFormPayloadSchema.safeParse(payload);
@@ -54,6 +58,13 @@ describe('reviewFormPayloadSchema — canonical small-field vocab (E2b)', () => 
 
   it('REJECTS off-vocab observancesHolidays', () => {
     const result = reviewFormPayloadSchema.safeParse({ observancesHolidays: ['End of year'] });
+    expect(result.success).toBe(false);
+  });
+
+  it('REJECTS the non-canonical hyphenated Arab-American spelling', () => {
+    const result = reviewFormPayloadSchema.safeParse({
+      observancesHolidays: ['Arab-American Heritage Month'],
+    });
     expect(result.success).toBe(false);
   });
 });
