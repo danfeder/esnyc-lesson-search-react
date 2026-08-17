@@ -119,6 +119,7 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { mainIngredients: ['Nightshades', 'Tomatoes'] },
       // C02 main_ingredients: a null-parent specific alone parses (no parent required).
       { mainIngredients: ['Celery'] },
+      { observancesHolidays: ['Arab American Heritage Month'] },
       // All-fields-populated fixture — drift protection. If a future edit drops
       // any key from the deno-runtime mirror, the c.data === s.data assertion
       // catches it because the missing key would be absent from s.data.
@@ -170,6 +171,7 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { coreCompetencies: ['Cooking'] }, // not a canonical core competency
       { cookingMethods: ['Stovetop'] }, // canonical is kebab 'stovetop'
       { observancesHolidays: ['Not A Holiday'] },
+      { observancesHolidays: ['Arab-American Heritage Month'] },
       { gardenSkills: ['planting'] }, // legacy slug, canonical Title 'Planting'
       // C02 closed PR 6 P4a — off-vocab + orphan-specific rejected.
       { cookingSkills: ['Mixing'] }, // near-miss, canonical 'Mixing & stirring'
@@ -212,6 +214,7 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { mainIngredients: ['Seaweed (nori)'] }, // null-parent specific alone
       // Brief 4 — closed heritage accepts canonical values incl. internal-tier ones.
       { culturalHeritage: ['Mexican', 'Soul Food', 'Southern United States'] },
+      { observancesHolidays: ['Arab American Heritage Month'] },
       // Drive provenance — creator confirmation shapes (synthetic names only).
       { driveCreatorAttribution: 'omit' },
       { driveCreatorAttribution: 'created', driveCreatorName: 'Test Person' },
@@ -258,6 +261,7 @@ describe('edge _shared/metadataSchemas mirrors canonical src/types schemas', () 
       { coreCompetencies: ['Cooking'] }, // not a canonical core competency
       { cookingMethods: ['Stovetop'] }, // canonical is kebab 'stovetop'
       { observancesHolidays: ['End of year'] }, // merged into 'End of year celebrations'
+      { observancesHolidays: ['Arab-American Heritage Month'] }, // canonical spelling has no hyphen
       { gardenSkills: ['planting'] }, // legacy slug, canonical Title 'Planting'
       // C02 closed PR 6 P4a — off-vocab + orphan-specific rejected on review side.
       { cookingSkills: ['Mixing'] }, // near-miss, canonical 'Mixing & stirring'
