@@ -474,7 +474,7 @@ export function ReviewMetadataForm({
               Observances &amp; holidays
             </label>
             {/* Non-creatable Select: observancesHolidays is a closed enum */}
-            {/* (16 canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
+            {/* (17 canonical values) enforced by Zod + SQL CHECK. */}
             {/* CreatableSelect would invite reviewer-typed values that */}
             {/* the save path rejects. */}
             <Select
