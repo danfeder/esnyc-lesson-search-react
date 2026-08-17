@@ -286,7 +286,7 @@ const METADATA_CONFIGS: Record<string, FilterConfig> = {
     options: COOKING_SKILLS_VALUES.map((v) => ({ value: v, label: v })),
   },
 
-  // Closed vocabulary (PR 6e + owner amendment 2026-08-17, 17 values).
+  // Closed vocabulary sourced from OBSERVANCES_HOLIDAYS_VALUES.
   // type 'multiple' (non-creatable) so reviewers can't type an off-vocab
   // holiday that the now-closed observancesHolidays enum / DB CHECK rejects.
   observancesHolidays: {
