@@ -3,6 +3,7 @@ import {
   COOKING_SKILLS_VALUES,
   INGREDIENT_PARENT_MAP,
   MAIN_INGREDIENTS_VALUES,
+  OBSERVANCES_HOLIDAYS_VALUES,
 } from '@/types/lessonMetadata.zod';
 
 // Type definitions for filter options.
@@ -285,30 +286,13 @@ const METADATA_CONFIGS: Record<string, FilterConfig> = {
     options: COOKING_SKILLS_VALUES.map((v) => ({ value: v, label: v })),
   },
 
-  // Closed vocabulary (PR 6e — locked smaller-fields.vocab.json, 16 values).
+  // Closed vocabulary (PR 6e + owner amendment 2026-08-17, 17 values).
   // type 'multiple' (non-creatable) so reviewers can't type an off-vocab
   // holiday that the now-closed observancesHolidays enum / DB CHECK rejects.
   observancesHolidays: {
     label: 'Observances & Holidays',
     type: 'multiple',
-    options: [
-      { value: 'AAPI Heritage Month', label: 'AAPI Heritage Month' },
-      { value: 'Black History Month', label: 'Black History Month' },
-      { value: 'Hispanic/Latinx Heritage Month', label: 'Hispanic/Latinx Heritage Month' },
-      { value: "Indigenous Peoples' Month", label: "Indigenous Peoples' Month" },
-      { value: "Women's History Month", label: "Women's History Month" },
-      { value: 'Pride', label: 'Pride' },
-      { value: 'Earth Month', label: 'Earth Month' },
-      { value: 'Thanksgiving', label: 'Thanksgiving' },
-      { value: 'Lunar New Year', label: 'Lunar New Year' },
-      { value: 'New Year', label: 'New Year' },
-      { value: 'Ramadan', label: 'Ramadan' },
-      { value: 'Eid', label: 'Eid' },
-      { value: 'Juneteenth', label: 'Juneteenth' },
-      { value: 'School Food Hero Day', label: 'School Food Hero Day' },
-      { value: 'Beginning of year', label: 'Beginning of year' },
-      { value: 'End of year celebrations', label: 'End of year celebrations' },
-    ],
+    options: OBSERVANCES_HOLIDAYS_VALUES.map((v) => ({ value: v, label: v })),
   },
 
   culturalResponsivenessFeatures: {

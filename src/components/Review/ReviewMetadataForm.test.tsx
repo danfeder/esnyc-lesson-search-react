@@ -18,6 +18,7 @@ import { ReviewMetadataForm, type ReviewMetadataInputIds } from './ReviewMetadat
 import type { ReviewMetadata } from '@/types';
 
 const SEI = 'Social-Emotional Intelligence';
+const ARAB_AMERICAN_HERITAGE_MONTH = 'Arab American Heritage Month';
 
 const inputIds: ReviewMetadataInputIds = {
   heritage: 'heritage',
@@ -99,6 +100,20 @@ describe('ReviewMetadataForm — legacy Social-Emotional Intelligence pill (FP5 
       'aria-pressed',
       'true'
     );
+  });
+});
+
+describe('ReviewMetadataForm — observances', () => {
+  it('offers and selects Arab American Heritage Month', async () => {
+    const user = userEvent.setup();
+    render(<Harness initialMetadata={{}} showLegacySocialEmotionalIntelligence={false} />);
+
+    const observances = screen.getByLabelText('Observances & holidays');
+    await user.click(observances);
+    await user.type(observances, 'Arab American');
+    await user.click(await screen.findByRole('option', { name: ARAB_AMERICAN_HERITAGE_MONTH }));
+
+    expect(screen.getByText(ARAB_AMERICAN_HERITAGE_MONTH)).toBeInTheDocument();
   });
 });
 
