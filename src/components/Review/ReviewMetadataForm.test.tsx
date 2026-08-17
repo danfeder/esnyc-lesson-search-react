@@ -113,7 +113,9 @@ describe('ReviewMetadataForm — observances', () => {
     await user.type(observances, 'Arab American');
     await user.click(await screen.findByRole('option', { name: ARAB_AMERICAN_HERITAGE_MONTH }));
 
-    expect(screen.getByText(ARAB_AMERICAN_HERITAGE_MONTH)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: `Remove ${ARAB_AMERICAN_HERITAGE_MONTH}` })
+    ).toBeInTheDocument();
   });
 });
 
