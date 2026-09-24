@@ -31,7 +31,11 @@ if ! docker info >/dev/null 2>&1; then
   setsid nohup dockerd >/var/log/dockerd.log 2>&1 </dev/null &
   for _ in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
 fi
-if docker info >/dev/null 2>&1 && command -v supabase >/dev/null 2>&1; then
+if ! docker info >/dev/null 2>&1; then
+  echo "docker daemon did not come up; skipping image pre-pull (see /var/log/dockerd.log)"
+elif ! command -v supabase >/dev/null 2>&1; then
+  echo "supabase cli missing; skipping image pre-pull"
+else
   # edge-runtime is excluded: inside the sandbox its Deno runtime cannot trust the
   # outbound TLS proxy, so that one container fails its health check.
   (supabase start -x edge-runtime && supabase stop --no-backup) \
