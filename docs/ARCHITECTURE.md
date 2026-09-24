@@ -2505,7 +2505,7 @@ serve(async (req) => {
 **Configuration**:
 - Filter definitions: `src/utils/filterDefinitions.ts` ⭐ SINGLE SOURCE OF TRUTH
 - Environment variables: `.env.local`, `.env.production`
-- Supabase config: `supabase/config.toml` (local only, gitignored)
+- Supabase config: `supabase/config.toml` (committed since #626; settings and `env()` references only, no secrets)
 - TypeScript config: `tsconfig.json`
 
 **State Management**:
