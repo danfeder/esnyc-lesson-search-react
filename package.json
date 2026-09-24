@@ -53,7 +53,7 @@
   "license": "MIT",
   "dependencies": {
     "@headlessui/react": "^2.2.9",
-    "@sentry/react": "^10.38.0",
+    "@sentry/react": "^10.62.0",
     "@supabase/supabase-js": "^2.84.0",
     "@tailwindcss/postcss": "^4.3.1",
     "@tailwindcss/vite": "^4.1.17",
