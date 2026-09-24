@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/install_pkgs.sh",
+            "timeout": 600,
+            "statusMessage": "Installing npm dependencies (cloud sessions only)"
+          }
+        ]
+      }
+    ]
+  }
+}
