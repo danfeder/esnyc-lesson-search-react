@@ -473,8 +473,8 @@ export function ReviewMetadataForm({
             <label className="adm-label" htmlFor={inputIds.observances}>
               Observances &amp; holidays
             </label>
-            {/* Non-creatable Select: observancesHolidays is a closed enum */}
-            {/* (16 canonical values) enforced by Zod + SQL CHECK in PR 6e. */}
+            {/* Non-creatable Select: the canonical observancesHolidays closed */}
+            {/* vocabulary is enforced by Zod + SQL CHECK. */}
             {/* CreatableSelect would invite reviewer-typed values that */}
             {/* the save path rejects. */}
             <Select
