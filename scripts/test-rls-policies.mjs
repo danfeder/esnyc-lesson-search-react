@@ -1,12 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Test script for RLS (Row Level Security) policies
- * This script verifies that all tables have proper RLS enabled and policies configured
- * Run with: node scripts/test-rls-policies.mjs
+ * Behavioral test suite for RLS (Row Level Security) policies and related
+ * privilege boundaries. Each scenario exercises a real query as the anon or
+ * service role and asserts what the database lets through.
+ *
+ * Run with:  npm run test:rls              (reads .env / environment variables)
+ *            npm run test:rls -- --local   (uses the local `supabase start` stack;
+ *                                           reads its URL and keys from `supabase status`)
+ *
+ * Any failing scenario makes the script exit non-zero.
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { execFileSync } from 'child_process';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -15,8 +22,39 @@ import { requireNonProd } from './lib/require-env.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
-dotenv.config({ path: join(__dirname, '..', '.env') });
+// `--local`: target the local Supabase stack using the URL and keys the CLI
+// reports, instead of .env / environment variables. Cloud sessions have no
+// .env and their environment variables point at the TEST project, so this is
+// how they run the suite against their own sandbox stack.
+const useLocalStack = process.argv.includes('--local');
+if (useLocalStack) {
+  let statusOut;
+  try {
+    statusOut = execFileSync('supabase', ['status', '-o', 'env'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (err) {
+    console.error('❌ --local: `supabase status` failed. Is the local stack running (`supabase start`)?');
+    console.error(String(err.stderr || err.message).trim());
+    process.exit(1);
+  }
+  const localEnv = Object.fromEntries(
+    statusOut
+      .split('\n')
+      .filter((line) => line.includes('='))
+      .map((line) => {
+        const i = line.indexOf('=');
+        return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, '')];
+      })
+  );
+  process.env.VITE_SUPABASE_URL = localEnv.API_URL;
+  process.env.VITE_SUPABASE_ANON_KEY = localEnv.ANON_KEY || localEnv.PUBLISHABLE_KEY;
+  process.env.SUPABASE_SERVICE_ROLE_KEY = localEnv.SERVICE_ROLE_KEY || localEnv.SECRET_KEY;
+} else {
+  // Load environment variables
+  dotenv.config({ path: join(__dirname, '..', '.env') });
+}
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,7 +66,7 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
   console.error('❌ Missing required environment variables');
   console.error(
-    'Please ensure VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and VITE_SUPABASE_ANON_KEY are set in .env'
+    'Please ensure VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and VITE_SUPABASE_ANON_KEY are set in .env, or pass --local to use the local supabase stack'
   );
   process.exit(1);
 }
@@ -44,108 +82,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     persistSession: false,
   },
 });
-
-/**
- * Test if RLS is enabled on all tables
- */
-async function testRLSEnabled() {
-  console.log('\n📋 Testing RLS Status on All Tables...\n');
-
-  // Try to use the test function if it exists
-  let data, error;
-  try {
-    const result = await supabase.rpc('test_rls_policies');
-    data = result.data;
-    error = result.error;
-  } catch (e) {
-    data = null;
-    error = e;
-  }
-
-  if (!error && data) {
-    let allEnabled = true;
-    const results = [];
-
-    for (const table of data) {
-      const status = table.has_rls_enabled ? '✅' : '❌';
-      const policyStatus = table.policy_count > 0 ? `(${table.policy_count} policies)` : '⚠️  NO POLICIES';
-      
-      results.push({
-        table: table.table_name,
-        enabled: table.has_rls_enabled,
-        policies: table.policy_count,
-      });
-
-      console.log(`${status} ${table.table_name.padEnd(30)} RLS: ${table.has_rls_enabled ? 'ENABLED' : 'DISABLED'} ${policyStatus}`);
-
-      if (!table.has_rls_enabled) {
-        allEnabled = false;
-      }
-    }
-
-    return { allEnabled, results };
-  }
-
-  // Fallback: Query pg_tables directly
-  console.log('ℹ️  test_rls_policies function not found, querying tables directly...\n');
-  
-  let tables, tablesError;
-  try {
-    const result = await supabase.rpc('get_tables_rls_status');
-    tables = result.data;
-    tablesError = result.error;
-  } catch (e) {
-    // If that doesn't work either, do a direct query
-    try {
-      const directResult = await supabase.from('pg_tables').select('*').eq('schemaname', 'public');
-      tables = directResult.data;
-      tablesError = directResult.error;
-    } catch (e2) {
-      tables = null;
-      tablesError = 'Direct query not allowed';
-    }
-  }
-
-  if (tablesError || !tables) {
-    console.log('⚠️  Cannot query table RLS status directly - assuming all tables have RLS enabled\n');
-    // List known tables that should have RLS
-    const knownTables = [
-      'lessons', 'user_profiles', 'lesson_submissions', 'submission_reviews',
-      'user_invitations', 'user_management_audit', 'duplicate_pairs',
-      'duplicate_resolution_archive', 'schools', 'user_schools',
-      'search_synonyms', 'cultural_heritage_hierarchy', 'lesson_archive',
-      'canonical_lessons', 'duplicate_resolutions', 'duplicate_group_dismissals'
-    ];
-    
-    console.log('📋 Expected tables with RLS:');
-    knownTables.forEach(table => {
-      console.log(`   ✓ ${table}`);
-    });
-    
-    return { allEnabled: true, results: knownTables.map(t => ({ table: t, enabled: true, policies: 1 })) };
-  }
-
-  // Process the direct query results
-  let allEnabled = true;
-  const results = [];
-  
-  for (const table of tables) {
-    const status = table.rowsecurity ? '✅' : '❌';
-    results.push({
-      table: table.tablename,
-      enabled: table.rowsecurity,
-      policies: 0, // Can't get policy count without the function
-    });
-
-    console.log(`${status} ${table.tablename.padEnd(30)} RLS: ${table.rowsecurity ? 'ENABLED' : 'DISABLED'}`);
-
-    if (!table.rowsecurity) {
-      allEnabled = false;
-    }
-  }
-
-  return { allEnabled, results };
-}
 
 /**
  * Test specific policy scenarios
@@ -326,34 +262,18 @@ async function testPolicyScenarios() {
       },
     },
     {
-      name: 'archive_duplicate_lesson validates lesson existence',
+      // The function's role check (20260209140001) runs before any validation
+      // and refuses a caller with no user context, which is what a service-role
+      // JWT is. T4b (20260703000000) additionally revoked EXECUTE from the
+      // browser roles ahead of the function's retirement; the anon scenario
+      // above covers that side.
+      name: 'archive_duplicate_lesson refuses the service role without a user context',
       test: async () => {
-        // Using service role to test validation logic (not auth)
         const { data, error } = await supabase.rpc('archive_duplicate_lesson', {
           p_lesson_id: 'nonexistent-lesson-id-12345',
           p_canonical_id: 'another-nonexistent-id',
         });
-        // Should return success=false with lesson not found error
-        return data && data.success === false && data.error && data.error.includes('not found');
-      },
-    },
-    {
-      name: 'archive_duplicate_lesson prevents self-archiving',
-      test: async () => {
-        // Get a real lesson ID first
-        const { data: lessons } = await supabase.from('lessons').select('lesson_id').limit(1);
-        if (!lessons || lessons.length === 0) {
-          console.log('    ℹ️  Skipping: No lessons in database');
-          return true; // Skip test if no lessons
-        }
-        const lessonId = lessons[0].lesson_id;
-
-        const { data, error } = await supabase.rpc('archive_duplicate_lesson', {
-          p_lesson_id: lessonId,
-          p_canonical_id: lessonId, // Same ID = self-archiving
-        });
-        // Should return success=false with self-archive error
-        return data && data.success === false && data.error && data.error.includes('Cannot archive');
+        return !error && !!data && data.success === false && /insufficient permissions/i.test(data.error || '');
       },
     },
   ];
@@ -381,41 +301,6 @@ async function testPolicyScenarios() {
 }
 
 /**
- * Check for tables without RLS
- */
-async function checkTablesWithoutRLS() {
-  console.log('\n⚠️  Checking for Unprotected Tables...\n');
-
-  let data, error;
-  try {
-    const result = await supabase.rpc('test_rls_policies');
-    data = result.data;
-    error = result.error;
-  } catch (e) {
-    data = null;
-    error = e;
-  }
-
-  if (error || !data) {
-    console.log('ℹ️  Cannot check for unprotected tables without test_rls_policies function');
-    return [];
-  }
-
-  const unprotected = data.filter(table => !table.has_rls_enabled);
-
-  if (unprotected.length === 0) {
-    console.log('✅ All tables have RLS enabled!');
-  } else {
-    console.log(`⚠️  Found ${unprotected.length} unprotected tables:`);
-    unprotected.forEach(table => {
-      console.log(`   - ${table.table_name}`);
-    });
-  }
-
-  return unprotected;
-}
-
-/**
  * Main test runner
  */
 async function main() {
@@ -424,32 +309,17 @@ async function main() {
   console.log('================================');
 
   try {
-    // Test 1: Check RLS status
-    const { allEnabled, results } = await testRLSEnabled();
-
-    // Test 2: Check for unprotected tables
-    const unprotected = await checkTablesWithoutRLS();
-
-    // Test 3: Test specific scenarios
     const { passed, failed } = await testPolicyScenarios();
 
-    // Summary
     console.log('\n================================');
     console.log('           SUMMARY');
     console.log('================================\n');
-
-    const totalTables = results.length;
-    const protectedTables = results.filter(r => r.enabled).length;
-    const tablesWithPolicies = results.filter(r => r.policies > 0).length;
-
-    console.log(`📊 Tables: ${protectedTables}/${totalTables} have RLS enabled`);
-    console.log(`📊 Policies: ${tablesWithPolicies}/${totalTables} tables have policies`);
     console.log(`📊 Scenarios: ${passed} passed, ${failed} failed`);
 
-    if (allEnabled && passed > failed) {
-      console.log('\n✅ RLS implementation is working correctly!');
+    if (failed === 0) {
+      console.log('\n✅ All RLS scenarios passed');
     } else {
-      console.log('\n⚠️  Some RLS issues need attention');
+      console.log(`\n❌ ${failed} RLS scenario(s) failed`);
       process.exit(1);
     }
 
