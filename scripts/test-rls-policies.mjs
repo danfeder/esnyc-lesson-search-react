@@ -262,10 +262,11 @@ async function testPolicyScenarios() {
       },
     },
     {
-      // T4b (migration 20260703000000) revoked EXECUTE on the hard-deleting
-      // archive RPC from the browser roles ahead of its retirement (the anon
-      // scenario above covers that). Only service_role may call it, and the
-      // function's own role check then refuses a caller with no user context.
+      // The function's role check (20260209140001) runs before any validation
+      // and refuses a caller with no user context, which is what a service-role
+      // JWT is. T4b (20260703000000) additionally revoked EXECUTE from the
+      // browser roles ahead of the function's retirement; the anon scenario
+      // above covers that side.
       name: 'archive_duplicate_lesson refuses the service role without a user context',
       test: async () => {
         const { data, error } = await supabase.rpc('archive_duplicate_lesson', {
