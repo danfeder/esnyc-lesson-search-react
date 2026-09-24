@@ -88,6 +88,14 @@ E2E tests run in CI on every PR using Playwright against Netlify deploy previews
 
 **CI Pipeline**: PR → Migrations applied to test DB → Netlify builds preview → E2E tests run → Must pass to merge
 
+## Claude Code Cloud Sessions
+
+Cloud sessions clone `main` fresh into an Anthropic-hosted VM. The `esynyc-lessonsearch` cloud environment sets `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` to the **TEST** project (never production, never a service-role key). Its setup script is kept in `scripts/cloud-setup.sh`; paste that file into the environment's Setup script field whenever it changes. At session start the SessionStart hook (`.claude/settings.json` → `scripts/install_pkgs.sh`) runs `npm ci` if `node_modules` is missing and starts the Docker daemon.
+
+- **Local Supabase stack works in the cloud, minus edge functions:** `supabase start -x edge-runtime`. The edge-runtime container cannot trust the sandbox's outbound TLS proxy, so edge functions can only be run on a developer machine.
+- **RLS tests against that stack:** `npm run test:rls -- --local` reads the local URL and keys from `supabase status`. Without `--local` the script reads `.env` / environment variables, which in the cloud point at TEST and lack the service-role key, so it refuses to run.
+- **Not available in the cloud:** `.env` files, the developer's global CLAUDE.md, memory, and plugins. The repo's CLAUDE.md, `.claude/commands`, `.claude/skills`, and `.mcp.json` do load.
+
 ## Pre-PR Checklist (MANDATORY)
 
 **Before pushing any branch or creating a PR, ALWAYS run:**
