@@ -1,9 +1,14 @@
 import { culturalHeritageOptions } from '@/utils/heritageHierarchy.generated';
 import {
+  ACADEMIC_INTEGRATION_VALUES,
   COOKING_SKILLS_VALUES,
+  CORE_COMPETENCIES_VALUES,
+  GARDEN_SKILLS_VALUES,
   INGREDIENT_PARENT_MAP,
   MAIN_INGREDIENTS_VALUES,
   OBSERVANCES_HOLIDAYS_VALUES,
+  SEASON_TIMING_VALUES,
+  SOCIAL_EMOTIONAL_LEARNING_VALUES,
 } from '@/types/lessonMetadata.zod';
 
 // Type definitions for filter options.
@@ -138,36 +143,20 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   seasonTiming: {
     label: 'Season & Timing',
     type: 'multiple',
-    options: [
-      { value: 'Fall', label: 'Fall' },
-      { value: 'Winter', label: 'Winter' },
-      { value: 'Spring', label: 'Spring' },
-      { value: 'Summer', label: 'Summer' },
-    ],
+    // Derived from the canonical closed enum (SEASON_TIMING_VALUES in
+    // lessonMetadata.zod.ts). UI order = canonical order; value === label.
+    options: SEASON_TIMING_VALUES.map((v) => ({ value: v, label: v })),
   },
 
   coreCompetencies: {
     label: 'Core Competencies',
     type: 'multiple',
-    options: [
-      {
-        value: 'Environmental and Community Stewardship',
-        label: 'Environmental and Community Stewardship',
-      },
-      { value: 'Social Justice', label: 'Social Justice' },
-      { value: 'Social-Emotional Intelligence', label: 'Social-Emotional Intelligence' },
-      {
-        value: 'Garden Skills and Related Academic Content',
-        label: 'Garden Skills and Related Academic Content',
-      },
-      {
-        value: 'Kitchen Skills and Related Academic Content',
-        label: 'Kitchen Skills and Related Academic Content',
-      },
-      // FP5 Brief 1 (owner 2026-07-04): renamed from "Culturally Responsive
-      // Education" (same concept). Position unchanged.
-      { value: 'Cultural Diversity', label: 'Cultural Diversity' },
-    ],
+    // Derived from the canonical closed enum (CORE_COMPETENCIES_VALUES in
+    // lessonMetadata.zod.ts). UI order = canonical order; value === label.
+    // FP5 Brief 1 (owner 2026-07-04): the last value, "Cultural Diversity", was
+    // renamed from "Culturally Responsive Education" (same concept); position
+    // unchanged.
+    options: CORE_COMPETENCIES_VALUES.map((v) => ({ value: v, label: v })),
   },
 
   culturalHeritage: {
@@ -183,14 +172,9 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
   academicIntegration: {
     label: 'Academic Integration',
     type: 'multiple',
-    options: [
-      { value: 'Math', label: 'Math' },
-      { value: 'Science', label: 'Science' },
-      { value: 'Literacy/ELA', label: 'Literacy/ELA' },
-      { value: 'Social Studies', label: 'Social Studies' },
-      { value: 'Health', label: 'Health' },
-      { value: 'Arts', label: 'Arts' },
-    ],
+    // Derived from the canonical closed enum (ACADEMIC_INTEGRATION_VALUES in
+    // lessonMetadata.zod.ts). UI order = canonical order; value === label.
+    options: ACADEMIC_INTEGRATION_VALUES.map((v) => ({ value: v, label: v })),
   },
 
   socialEmotionalLearning: {
@@ -201,19 +185,9 @@ export const FILTER_CONFIGS: Record<string, FilterConfig> = {
     // unchanged.
     label: 'Social-Emotional Skills',
     type: 'multiple',
-    options: [
-      { value: 'Relationship skills', label: 'Relationship skills' },
-      { value: 'Self-awareness', label: 'Self-awareness' },
-      { value: 'Responsible decision-making', label: 'Responsible decision-making' },
-      { value: 'Self-management', label: 'Self-management' },
-      { value: 'Social awareness', label: 'Social awareness' },
-      { value: 'Bravery', label: 'Bravery' },
-      { value: 'Kindness', label: 'Kindness' },
-      { value: 'Respect', label: 'Respect' },
-      { value: 'Collaboration', label: 'Collaboration' },
-      { value: 'Pride', label: 'Pride' },
-      { value: 'Joy', label: 'Joy' },
-    ],
+    // Derived from the canonical closed enum (SOCIAL_EMOTIONAL_LEARNING_VALUES
+    // in lessonMetadata.zod.ts). UI order = canonical order; value === label.
+    options: SOCIAL_EMOTIONAL_LEARNING_VALUES.map((v) => ({ value: v, label: v })),
   },
 
   cookingMethods: {
@@ -239,41 +213,12 @@ const METADATA_CONFIGS: Record<string, FilterConfig> = {
   gardenSkills: {
     label: 'Garden Skills',
     type: 'multiple',
-    // Canonical Title-Case values (PR 6e — locked smaller-fields.vocab.json).
-    // value === label so stored canonical values round-trip in the reviewer
-    // control and survive the now-closed gardenSkills enum / DB CHECK. 24 total
-    // (the 22 prior labels + 'Stewardship tasks' + 'Sensory exploration').
-    options: [
-      // Planting & Growing
-      { value: 'Planting', label: 'Planting' },
-      { value: 'Seed starting', label: 'Seed starting' },
-      { value: 'Transplanting', label: 'Transplanting' },
-      { value: 'Watering techniques', label: 'Watering techniques' },
-      { value: 'Harvesting', label: 'Harvesting' },
-      // Garden Care
-      { value: 'Composting', label: 'Composting' },
-      { value: 'Mulching', label: 'Mulching' },
-      { value: 'Soil preparation and care', label: 'Soil preparation and care' },
-      { value: 'Weeding', label: 'Weeding' },
-      { value: 'Cover cropping', label: 'Cover cropping' },
-      // Planning & Design
-      { value: 'Garden planning', label: 'Garden planning' },
-      { value: 'Companion planting', label: 'Companion planting' },
-      { value: 'Crop rotation', label: 'Crop rotation' },
-      // Observation & Identification
-      { value: 'Observing plant parts', label: 'Observing plant parts' },
-      { value: 'Identifying plants', label: 'Identifying plants' },
-      { value: 'Pest identification', label: 'Pest identification' },
-      { value: 'Beneficial insect identification', label: 'Beneficial insect identification' },
-      { value: 'Pollinator observation', label: 'Pollinator observation' },
-      // Advanced Skills
-      { value: 'Seed saving', label: 'Seed saving' },
-      { value: 'Tool use and maintenance', label: 'Tool use and maintenance' },
-      { value: 'Preservation techniques', label: 'Preservation techniques' },
-      { value: 'Garden exploration', label: 'Garden exploration' },
-      { value: 'Stewardship tasks', label: 'Stewardship tasks' },
-      { value: 'Sensory exploration', label: 'Sensory exploration' },
-    ],
+    // Derived from the canonical closed enum (GARDEN_SKILLS_VALUES in
+    // lessonMetadata.zod.ts — PR 6e locked smaller-fields.vocab.json,
+    // Title-Case). value === label so stored canonical values round-trip in the
+    // reviewer control and survive the closed gardenSkills enum / DB CHECK.
+    // UI order = canonical order.
+    options: GARDEN_SKILLS_VALUES.map((v) => ({ value: v, label: v })),
   },
 
   cookingSkills: {
@@ -286,7 +231,8 @@ const METADATA_CONFIGS: Record<string, FilterConfig> = {
     options: COOKING_SKILLS_VALUES.map((v) => ({ value: v, label: v })),
   },
 
-  // Closed vocabulary sourced from OBSERVANCES_HOLIDAYS_VALUES.
+  // Closed canonical list (see OBSERVANCES_HOLIDAYS_VALUES in
+  // lessonMetadata.zod.ts). UI order = canonical order; value === label.
   // type 'multiple' (non-creatable) so reviewers can't type an off-vocab
   // holiday that the now-closed observancesHolidays enum / DB CHECK rejects.
   observancesHolidays: {
@@ -298,6 +244,12 @@ const METADATA_CONFIGS: Record<string, FilterConfig> = {
   culturalResponsivenessFeatures: {
     label: 'Cultural Responsiveness Features',
     type: 'creatable',
+    // INTENTIONAL ORDER DIVERGENCE — hand-listed, NOT derived. The vocabulary is
+    // set-identical to CULTURAL_RESPONSIVENESS_FEATURE_VALUES (lessonMetadata
+    // .zod.ts, which keeps the v3 taxonomy order), but the reviewer UI keeps
+    // this established order on purpose. Do not reorder, and do not add /
+    // remove / rename a value; filterDefinitions.test.ts asserts set-equality
+    // against the canonical list.
     options: [
       {
         value: 'Promotes student-centered instruction',
